@@ -228,24 +228,65 @@ export function StudyBlockEditor({
 function BlockInsertMenu({
   onInsert
 }: {
-  onInsert: (type: StudyBlockType) => void
+  onInsert: (
+    type: StudyBlockType
+  ) => void
 }): React.JSX.Element {
+  const [open, setOpen] = useState(false)
+
   return (
-    <DropdownMenu.Root>
-      <div className="group/insert flex h-8 items-center">
-        <span className="h-px flex-1 bg-transparent transition-colors group-hover/insert:bg-[var(--app-border)]" />
+    <DropdownMenu.Root
+      open={open}
+      onOpenChange={setOpen}
+    >
+      <div
+        className={cn(
+          'group/insert flex items-center',
+          'transition-[height] duration-150 ease-out',
+          open
+            ? 'h-8'
+            : 'h-3 hover:h-8 focus-within:h-8'
+        )}
+      >
+        <span
+          className={cn(
+            'h-px flex-1 transition-colors duration-150',
+            open
+              ? 'bg-[var(--app-border)]'
+              : 'bg-transparent group-hover/insert:bg-[var(--app-border)] group-focus-within/insert:bg-[var(--app-border)]'
+          )}
+        />
 
         <DropdownMenu.Trigger asChild>
           <button
             type="button"
             aria-label="Добавить блок здесь"
-            className="mx-2 flex size-6 shrink-0 items-center justify-center rounded-full text-[var(--app-muted)] opacity-45 transition-all hover:bg-violet-500/15 hover:text-violet-200 hover:opacity-100 focus-visible:opacity-100"
+            className={cn(
+              'mx-2 flex size-6 shrink-0 items-center justify-center rounded-full',
+              'text-[var(--app-muted)] outline-none',
+              'transition-[opacity,transform,background-color,color] duration-150',
+              'hover:bg-violet-500/15 hover:text-violet-200',
+              'focus-visible:ring-2 focus-visible:ring-violet-500/35',
+              open
+                ? 'scale-100 opacity-100'
+                : 'scale-75 opacity-0 group-hover/insert:scale-100 group-hover/insert:opacity-100 group-focus-within/insert:scale-100 group-focus-within/insert:opacity-100'
+            )}
           >
-            <Plus aria-hidden="true" className="size-3.5" />
+            <Plus
+              aria-hidden="true"
+              className="size-3.5"
+            />
           </button>
         </DropdownMenu.Trigger>
 
-        <span className="h-px flex-1 bg-transparent transition-colors group-hover/insert:bg-[var(--app-border)]" />
+        <span
+          className={cn(
+            'h-px flex-1 transition-colors duration-150',
+            open
+              ? 'bg-[var(--app-border)]'
+              : 'bg-transparent group-hover/insert:bg-[var(--app-border)] group-focus-within/insert:bg-[var(--app-border)]'
+          )}
+        />
       </div>
 
       <DropdownMenu.Portal>
@@ -262,7 +303,10 @@ function BlockInsertMenu({
                 onInsert(option.type)
               }}
             >
-              <StudyBlockTypeIcon type={option.type} className="size-4 text-[var(--app-muted)]" />
+              <StudyBlockTypeIcon
+                type={option.type}
+                className="size-4 text-[var(--app-muted)]"
+              />
 
               {option.label}
             </DropdownMenu.Item>
@@ -272,6 +316,7 @@ function BlockInsertMenu({
     </DropdownMenu.Root>
   )
 }
+
 interface StudyBlockCardProps {
   block: StudyBlock
   isActive: boolean
