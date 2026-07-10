@@ -60,7 +60,12 @@ function documentToPlainText(document: StudyDocument): string {
       if (block.type === 'mermaid') {
         return block.source
       }
-      if (block.type === 'file') {
+      if (
+        block.type === 'image' ||
+        block.type === 'video' ||
+        block.type === 'audio' ||
+        block.type === 'file'
+      ) {
         const sourceName =
           block.source.type === 'local' ? block.source.asset?.name : block.source.url
 

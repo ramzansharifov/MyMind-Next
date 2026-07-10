@@ -8,8 +8,11 @@ import {
   ChevronRight,
   Code2,
   CopyPlus,
+  FileAudio,
   FileCode2,
+  FileImage,
   Files,
+  FileVideo,
   Heading,
   Sigma,
   Workflow,
@@ -82,6 +85,18 @@ const blockTypes: Array<{
   {
     type: 'mermaid',
     label: 'Mermaid'
+  },
+  {
+    type: 'image',
+    label: 'Фото'
+  },
+  {
+    type: 'video',
+    label: 'Видео'
+  },
+  {
+    type: 'audio',
+    label: 'Аудио'
   },
   {
     type: 'file',
@@ -637,7 +652,12 @@ function EditableBlock({
       />
     )
   }
-  if (block.type === 'file') {
+  if (
+    block.type === 'image' ||
+    block.type === 'video' ||
+    block.type === 'audio' ||
+    block.type === 'file'
+  ) {
     return <StudyFileBlockView block={block} />
   }
 
@@ -896,7 +916,12 @@ function StudyBlockReader({ block }: { block: StudyBlock }): React.JSX.Element {
       />
     )
   }
-  if (block.type === 'file') {
+  if (
+    block.type === 'image' ||
+    block.type === 'video' ||
+    block.type === 'audio' ||
+    block.type === 'file'
+  ) {
     return <StudyFileBlockView block={block} />
   }
 
@@ -938,6 +963,19 @@ function StudyBlockTypeIcon({
   if (type === 'mermaid') {
     return <Workflow aria-hidden="true" className={className} />
   }
+
+  if (type === 'image') {
+    return <FileImage aria-hidden="true" className={className} />
+  }
+
+  if (type === 'video') {
+    return <FileVideo aria-hidden="true" className={className} />
+  }
+
+  if (type === 'audio') {
+    return <FileAudio aria-hidden="true" className={className} />
+  }
+
   if (type === 'file') {
     return <Files aria-hidden="true" className={className} />
   }

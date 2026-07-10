@@ -1,7 +1,17 @@
 export type StudyNodeType = 'folder' | 'material'
 
 export type StudyBlockType =
-  'text' | 'heading' | 'code' | 'markdown' | 'latex' | 'mermaid' | 'file' | 'divider'
+  | 'text'
+  | 'heading'
+  | 'code'
+  | 'markdown'
+  | 'latex'
+  | 'mermaid'
+  | 'image'
+  | 'video'
+  | 'audio'
+  | 'file'
+  | 'divider'
 
 export interface StudyTextBlock {
   id: string
@@ -60,7 +70,7 @@ export interface StudyMermaidBlock {
   theme?: StudyMermaidTheme
   scale?: number
 }
-export type StudyFileKind = 'image' | 'video' | 'audio' | 'file'
+export type StudyAssetKind = 'image' | 'video' | 'audio' | 'file'
 
 export type StudyImageFit = 'contain' | 'cover'
 
@@ -73,28 +83,51 @@ export interface StudyLocalAsset {
   url: string
 }
 
-export interface StudyLocalFileSource {
+export interface StudyLocalAssetSource {
   type: 'local'
   asset?: StudyLocalAsset
 }
 
-export interface StudyRemoteFileSource {
+export interface StudyRemoteAssetSource {
   type: 'url'
   url: string
 }
 
-export type StudyFileSource = StudyLocalFileSource | StudyRemoteFileSource
+export type StudyMediaAssetSource = StudyLocalAssetSource | StudyRemoteAssetSource
 
-export interface StudyFileBlock {
+export interface StudyImageBlock {
   id: string
-  type: 'file'
-  kind: StudyFileKind
-  source: StudyFileSource
+  type: 'image'
+  source: StudyMediaAssetSource
   title?: string
   caption?: string
   altText?: string
   imageFit?: StudyImageFit
   imageHeight?: number
+}
+
+export interface StudyVideoBlock {
+  id: string
+  type: 'video'
+  source: StudyMediaAssetSource
+  title?: string
+  caption?: string
+}
+
+export interface StudyAudioBlock {
+  id: string
+  type: 'audio'
+  source: StudyLocalAssetSource
+  title?: string
+  caption?: string
+}
+
+export interface StudyFileBlock {
+  id: string
+  type: 'file'
+  source: StudyLocalAssetSource
+  title?: string
+  caption?: string
 }
 
 export interface StudyDividerBlock {
@@ -111,6 +144,9 @@ export type StudyBlock =
   | StudyMarkdownBlock
   | StudyLatexBlock
   | StudyMermaidBlock
+  | StudyImageBlock
+  | StudyVideoBlock
+  | StudyAudioBlock
   | StudyFileBlock
   | StudyDividerBlock
 
@@ -165,7 +201,7 @@ export interface SaveStudyMaterialInput {
 }
 export interface ImportStudyAssetInput {
   nodeId: string
-  kind: StudyFileKind
+  kind: StudyAssetKind
 }
 
 export const STUDY_IPC_CHANNELS = {

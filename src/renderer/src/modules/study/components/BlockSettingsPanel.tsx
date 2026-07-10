@@ -21,7 +21,7 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 
-import type { StudyBlock, StudyFileKind } from '../../../../../shared/contracts/study'
+import type { StudyAssetKind, StudyBlock } from '../../../../../shared/contracts/study'
 import {
   DEFAULT_DIVIDER_COLOR,
   DEFAULT_DIVIDER_THICKNESS,
@@ -170,25 +170,6 @@ const mermaidThemes = [
     label: 'Лес'
   }
 ]
-const studyFileKinds = [
-  {
-    value: 'image',
-    label: 'Фото',
-    ariaLabel: 'Изображение'
-  },
-  {
-    value: 'video',
-    label: 'Видео'
-  },
-  {
-    value: 'audio',
-    label: 'Аудио'
-  },
-  {
-    value: 'file',
-    label: 'Файл'
-  }
-]
 
 const studyFileSources = [
   {
@@ -256,8 +237,8 @@ export function BlockSettingsPanel({
 
         {block.type === 'mermaid' && <MermaidSettings block={block} onChange={onChange} />}
 
-        {block.type === 'file' && (
-          <FileSettings materialId={materialId} block={block} onChange={onChange} />
+        {isStudyAttachmentBlock(block) && (
+          <AttachmentSettings materialId={materialId} block={block} onChange={onChange} />
         )}
 
         {block.type === 'divider' && <DividerSettings block={block} onChange={onChange} />}
@@ -618,20 +599,25 @@ function MermaidSettings({
     </div>
   )
 }
-function FileSettings({
+type StudyAttachmentBlock = Extract<
+  StudyBlock,
+  {
+    type: StudyAssetKind
+  }
+>
+
+function AttachmentSettings({
   materialId,
   block,
   onChange
 }: {
   materialId: string
-  block: Extract<StudyBlock, { type: 'file' }>
+  block: StudyAttachmentBlock
   onChange: (block: StudyBlock) => void
 }): React.JSX.Element {
   const [isPicking, setIsPicking] = useState(false)
 
   const [importError, setImportError] = useState<string | null>(null)
-
-  const supportsRemoteUrl = block.kind === 'image' || block.kind === 'video'
 
   const localAsset = block.source.type === 'local' ? block.source.asset : undefined
 
@@ -644,7 +630,7 @@ function FileSettings({
     try {
       const asset = await studyClient.importAsset({
         nodeId: materialId,
-        kind: block.kind
+        kind: block.type
       })
 
       if (!asset) {
@@ -667,39 +653,12 @@ function FileSettings({
 
   return (
     <div className="grid gap-5">
-      <SettingsField label="Тип">
-        <SegmentedChoice
-          value={block.kind}
-          options={studyFileKinds}
-          ariaLabel="Тип файлового блока"
-          columns={4}
-          onValueChange={(value) => {
-            if (!isStudyFileKind(value)) {
-              return
-            }
-
-            setImportError(null)
-
-            onChange({
-              ...block,
-              kind: value,
-              source: {
-                type: 'local'
-              },
-              altText: value === 'image' ? block.altText : undefined,
-              imageFit: value === 'image' ? (block.imageFit ?? 'contain') : undefined,
-              imageHeight: value === 'image' ? (block.imageHeight ?? 360) : undefined
-            })
-          }}
-        />
-      </SettingsField>
-
-      {supportsRemoteUrl && (
+      {(block.type === 'image' || block.type === 'video') && (
         <SettingsField label="Источник">
           <SegmentedChoice
             value={block.source.type}
             options={studyFileSources}
-            ariaLabel="Источник медиафайла"
+            ariaLabel={`Источник блока «${getAssetKindLabel(block.type)}»`}
             columns={2}
             onValueChange={(value) => {
               setImportError(null)
@@ -711,9 +670,11 @@ function FileSettings({
                     type: 'local'
                   }
                 })
+
+                return
               }
 
-              if (value === 'url') {
+              if (value === 'url' && (block.type === 'image' || block.type === 'video')) {
                 onChange({
                   ...block,
                   source: {
@@ -729,7 +690,9 @@ function FileSettings({
 
       {block.source.type === 'local' && (
         <div className="grid gap-2">
-          <span className="text-[11px] font-medium text-(--app-muted)">Файл с компьютера</span>
+          <span className="text-[11px] font-medium text-(--app-muted)">
+            {getLocalSourceLabel(block.type)}
+          </span>
 
           <button
             type="button"
@@ -745,12 +708,12 @@ function FileSettings({
               <Upload aria-hidden="true" className="size-4 text-violet-300" />
             )}
 
-            {localAsset ? 'Заменить файл' : 'Выбрать файл'}
+            {localAsset ? 'Заменить' : 'Выбрать'}
           </button>
 
           {localAsset && (
             <div className="flex items-start gap-2 rounded-lg border border-(--app-border) bg-white/[0.025] p-3">
-              <StudyFileSettingsIcon kind={block.kind} />
+              <StudyFileSettingsIcon kind={block.type} />
 
               <div className="min-w-0 flex-1">
                 <p className="truncate text-xs font-medium text-(--app-text)">{localAsset.name}</p>
@@ -762,7 +725,7 @@ function FileSettings({
 
               <button
                 type="button"
-                aria-label="Удалить выбранный файл"
+                aria-label="Удалить выбранное вложение"
                 className="flex size-7 shrink-0 items-center justify-center rounded-md text-(--app-muted) outline-none hover:bg-red-500/10 hover:text-red-300 focus-visible:ring-2 focus-visible:ring-red-500/30"
                 onClick={() => {
                   onChange({
@@ -786,7 +749,7 @@ function FileSettings({
         </div>
       )}
 
-      {block.source.type === 'url' && (
+      {(block.type === 'image' || block.type === 'video') && block.source.type === 'url' && (
         <div className="grid gap-2">
           <span className="text-[11px] font-medium text-(--app-muted)">Прямая HTTPS-ссылка</span>
 
@@ -796,7 +759,7 @@ function FileSettings({
             <input
               value={remoteUrl}
               placeholder={
-                block.kind === 'image' ? 'https://site.com/image.jpg' : 'https://site.com/video.mp4'
+                block.type === 'image' ? 'https://site.com/photo.jpg' : 'https://site.com/video.mp4'
               }
               className="min-w-0 flex-1 bg-transparent py-2 text-sm text-(--app-text) outline-none placeholder:text-(--app-muted)/60"
               onChange={(event) => {
@@ -818,8 +781,7 @@ function FileSettings({
           )}
 
           <p className="text-[11px] leading-5 text-(--app-muted)">
-            Страница YouTube или другого сайта не подойдёт — нужна ссылка непосредственно на
-            изображение или видеофайл.
+            Нужна ссылка непосредственно на файл, а не на страницу YouTube или другого сайта.
           </p>
         </div>
       )}
@@ -838,9 +800,9 @@ function FileSettings({
         />
       </SettingsField>
 
-      {block.kind === 'image' && (
+      {block.type === 'image' && (
         <>
-          <SettingsField label="Описание для изображения">
+          <SettingsField label="Описание изображения">
             <input
               value={block.altText ?? ''}
               placeholder="Что изображено на фотографии"
@@ -858,7 +820,7 @@ function FileSettings({
             <SegmentedChoice
               value={block.imageFit ?? 'contain'}
               options={studyImageFits}
-              ariaLabel="Способ отображения изображения"
+              ariaLabel="Способ отображения фотографии"
               columns={2}
               onValueChange={(imageFit) => {
                 if (imageFit !== 'contain' && imageFit !== 'cover') {
@@ -879,7 +841,7 @@ function FileSettings({
               max={720}
               step={20}
               value={[block.imageHeight ?? 360]}
-              aria-label="Высота изображения"
+              aria-label="Высота фотографии"
               className="relative flex h-5 w-full touch-none items-center select-none"
               onValueChange={(values) => {
                 const imageHeight = values[0]
@@ -922,7 +884,16 @@ function FileSettings({
   )
 }
 
-function StudyFileSettingsIcon({ kind }: { kind: StudyFileKind }): React.JSX.Element {
+function isStudyAttachmentBlock(block: StudyBlock): block is StudyAttachmentBlock {
+  return (
+    block.type === 'image' ||
+    block.type === 'video' ||
+    block.type === 'audio' ||
+    block.type === 'file'
+  )
+}
+
+function StudyFileSettingsIcon({ kind }: { kind: StudyAssetKind }): React.JSX.Element {
   const className = 'mt-0.5 size-4 shrink-0 text-violet-300'
 
   if (kind === 'image') {
@@ -940,8 +911,36 @@ function StudyFileSettingsIcon({ kind }: { kind: StudyFileKind }): React.JSX.Ele
   return <Files aria-hidden="true" className={className} />
 }
 
-function isStudyFileKind(value: string): value is StudyFileKind {
-  return value === 'image' || value === 'video' || value === 'audio' || value === 'file'
+function getAssetKindLabel(kind: StudyAssetKind): string {
+  if (kind === 'image') {
+    return 'Фото'
+  }
+
+  if (kind === 'video') {
+    return 'Видео'
+  }
+
+  if (kind === 'audio') {
+    return 'Аудио'
+  }
+
+  return 'Файл'
+}
+
+function getLocalSourceLabel(kind: StudyAssetKind): string {
+  if (kind === 'image') {
+    return 'Фотография с компьютера'
+  }
+
+  if (kind === 'video') {
+    return 'Видео с компьютера'
+  }
+
+  if (kind === 'audio') {
+    return 'Аудио с компьютера'
+  }
+
+  return 'Файл с компьютера'
 }
 
 function getFileImportErrorMessage(reason: unknown): string {
@@ -949,8 +948,9 @@ function getFileImportErrorMessage(reason: unknown): string {
     return reason.message
   }
 
-  return 'Не удалось импортировать файл'
+  return 'Не удалось импортировать вложение'
 }
+
 function DividerSettings({
   block,
   onChange
@@ -1043,6 +1043,19 @@ function BlockTypeIcon({ type }: { type: StudyBlock['type'] }): React.JSX.Elemen
   if (type === 'mermaid') {
     return <Workflow aria-hidden="true" className="size-4" />
   }
+
+  if (type === 'image') {
+    return <FileImage aria-hidden="true" className="size-4" />
+  }
+
+  if (type === 'video') {
+    return <FileVideo aria-hidden="true" className="size-4" />
+  }
+
+  if (type === 'audio') {
+    return <FileAudio aria-hidden="true" className="size-4" />
+  }
+
   if (type === 'file') {
     return <Files aria-hidden="true" className="size-4" />
   }
@@ -1071,6 +1084,19 @@ function getBlockTitle(block: StudyBlock): string {
   if (block.type === 'mermaid') {
     return 'Mermaid'
   }
+
+  if (block.type === 'image') {
+    return 'Фото'
+  }
+
+  if (block.type === 'video') {
+    return 'Видео'
+  }
+
+  if (block.type === 'audio') {
+    return 'Аудио'
+  }
+
   if (block.type === 'file') {
     return 'Файл'
   }

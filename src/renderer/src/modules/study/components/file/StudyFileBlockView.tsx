@@ -1,32 +1,37 @@
 import { CircleAlert, File, FileAudio, FileImage, FileVideo } from 'lucide-react'
 import { useState } from 'react'
 
-import type { StudyBlock, StudyFileKind } from '../../../../../../shared/contracts/study'
+import type { StudyAssetKind, StudyBlock } from '../../../../../../shared/contracts/study'
 import { cn } from '../../../../shared/lib/cn'
 import { formatStudyFileSize, normalizeStudyRemoteMediaUrl } from './file-utils'
 
-type FileBlock = Extract<StudyBlock, { type: 'file' }>
+type AttachmentBlock = Extract<
+  StudyBlock,
+  {
+    type: StudyAssetKind
+  }
+>
 
 interface StudyFileBlockViewProps {
-  block: FileBlock
+  block: AttachmentBlock
 }
 
 export function StudyFileBlockView({ block }: StudyFileBlockViewProps): React.JSX.Element {
   const asset = block.source.type === 'local' ? block.source.asset : undefined
 
-  const sourceUrl = getStudyFileSourceUrl(block)
+  const sourceUrl = getStudyAttachmentSourceUrl(block)
 
-  const sourceKey = `${block.kind}:${sourceUrl ?? ''}`
+  const sourceKey = `${block.type}:${sourceUrl ?? ''}`
 
   const [failedSourceKey, setFailedSourceKey] = useState<string | null>(null)
 
   const loadError = failedSourceKey === sourceKey
 
-  const title = block.title?.trim() || asset?.name || getStudyFileKindLabel(block.kind)
+  const title = block.title?.trim() || asset?.name || getStudyAssetKindLabel(block.type)
 
-  if (block.kind === 'file') {
+  if (block.type === 'file') {
     if (!asset) {
-      return <EmptyFileBlock kind={block.kind} message="Выбери файл в настройках блока" />
+      return <EmptyAttachmentBlock kind={block.type} message="Выбери файл в настройках блока" />
     }
 
     return (
@@ -66,18 +71,20 @@ export function StudyFileBlockView({ block }: StudyFileBlockViewProps): React.JS
     block.source.type === 'url' && Boolean(block.source.url.trim()) && !sourceUrl
 
   if (invalidRemoteUrl) {
-    return <FileBlockError message="Нужна прямая HTTPS-ссылка на изображение или видео" />
+    return <AttachmentBlockError message="Нужна прямая HTTPS-ссылка на изображение или видео" />
   }
 
   if (!sourceUrl) {
-    return <EmptyFileBlock kind={block.kind} message={getEmptyFileMessage(block.kind)} />
+    return (
+      <EmptyAttachmentBlock kind={block.type} message={getEmptyAttachmentMessage(block.type)} />
+    )
   }
 
   if (loadError) {
-    return <FileBlockError message="Не удалось загрузить содержимое файла" />
+    return <AttachmentBlockError message="Не удалось загрузить содержимое" />
   }
 
-  if (block.kind === 'image') {
+  if (block.type === 'image') {
     const imageHeight = block.imageHeight ?? 360
 
     return (
@@ -106,7 +113,7 @@ export function StudyFileBlockView({ block }: StudyFileBlockViewProps): React.JS
           />
         </div>
 
-        <FileMediaCaption
+        <MediaCaption
           title={title}
           caption={block.caption}
           assetName={asset?.name}
@@ -116,7 +123,7 @@ export function StudyFileBlockView({ block }: StudyFileBlockViewProps): React.JS
     )
   }
 
-  if (block.kind === 'video') {
+  if (block.type === 'video') {
     return (
       <figure className="overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)]">
         <video
@@ -133,7 +140,7 @@ export function StudyFileBlockView({ block }: StudyFileBlockViewProps): React.JS
           }}
         />
 
-        <FileMediaCaption
+        <MediaCaption
           title={title}
           caption={block.caption}
           assetName={asset?.name}
@@ -184,19 +191,19 @@ export function StudyFileBlockView({ block }: StudyFileBlockViewProps): React.JS
   )
 }
 
-function getStudyFileSourceUrl(block: FileBlock): string | null {
+function getStudyAttachmentSourceUrl(block: AttachmentBlock): string | null {
   if (block.source.type === 'local') {
     return block.source.asset?.url ?? null
   }
 
-  if (block.kind !== 'image' && block.kind !== 'video') {
+  if (block.type !== 'image' && block.type !== 'video') {
     return null
   }
 
   return normalizeStudyRemoteMediaUrl(block.source.url)
 }
 
-function FileMediaCaption({
+function MediaCaption({
   title,
   caption,
   assetName,
@@ -214,6 +221,7 @@ function FileMediaCaption({
       {assetName && (
         <p className="mt-1 truncate text-xs text-[var(--app-muted)]">
           {assetName}
+
           {typeof assetSize === 'number' && ` · ${formatStudyFileSize(assetSize)}`}
         </p>
       )}
@@ -225,19 +233,19 @@ function FileMediaCaption({
   )
 }
 
-function EmptyFileBlock({
+function EmptyAttachmentBlock({
   kind,
   message
 }: {
-  kind: StudyFileKind
+  kind: StudyAssetKind
   message: string
 }): React.JSX.Element {
   return (
     <div className="flex min-h-40 flex-col items-center justify-center rounded-xl border border-dashed border-[var(--app-border)] bg-[var(--app-workspace)] px-6 py-8 text-center">
-      <StudyFileKindIcon kind={kind} className="size-7 text-[var(--app-muted)]" />
+      <StudyAssetKindIcon kind={kind} className="size-7 text-[var(--app-muted)]" />
 
       <p className="mt-3 text-sm font-medium text-[var(--app-text)]">
-        {getStudyFileKindLabel(kind)}
+        {getStudyAssetKindLabel(kind)}
       </p>
 
       <p className="mt-1 max-w-sm text-xs leading-5 text-[var(--app-muted)]">{message}</p>
@@ -245,7 +253,7 @@ function EmptyFileBlock({
   )
 }
 
-function FileBlockError({ message }: { message: string }): React.JSX.Element {
+function AttachmentBlockError({ message }: { message: string }): React.JSX.Element {
   return (
     <div
       role="alert"
@@ -255,7 +263,7 @@ function FileBlockError({ message }: { message: string }): React.JSX.Element {
         <CircleAlert aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-red-300" />
 
         <div>
-          <p className="text-sm font-medium text-red-200">Файл недоступен</p>
+          <p className="text-sm font-medium text-red-200">Содержимое недоступно</p>
 
           <p className="mt-1 text-xs leading-5 text-red-300/80">{message}</p>
         </div>
@@ -264,11 +272,11 @@ function FileBlockError({ message }: { message: string }): React.JSX.Element {
   )
 }
 
-function StudyFileKindIcon({
+function StudyAssetKindIcon({
   kind,
   className
 }: {
-  kind: StudyFileKind
+  kind: StudyAssetKind
   className?: string
 }): React.JSX.Element {
   if (kind === 'image') {
@@ -286,9 +294,9 @@ function StudyFileKindIcon({
   return <File aria-hidden="true" className={className} />
 }
 
-function getStudyFileKindLabel(kind: StudyFileKind): string {
+function getStudyAssetKindLabel(kind: StudyAssetKind): string {
   if (kind === 'image') {
-    return 'Изображение'
+    return 'Фото'
   }
 
   if (kind === 'video') {
@@ -302,9 +310,9 @@ function getStudyFileKindLabel(kind: StudyFileKind): string {
   return 'Файл'
 }
 
-function getEmptyFileMessage(kind: StudyFileKind): string {
+function getEmptyAttachmentMessage(kind: StudyAssetKind): string {
   if (kind === 'image') {
-    return 'Выбери изображение с компьютера или добавь прямую HTTPS-ссылку'
+    return 'Выбери фотографию с компьютера или добавь прямую HTTPS-ссылку'
   }
 
   if (kind === 'video') {

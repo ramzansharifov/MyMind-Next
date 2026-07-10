@@ -2,17 +2,16 @@ import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
 import type { StudyBlock } from '../../../../../../shared/contracts/study'
-import { StudyFileBlockView } from './StudyFileBlockView'
 import { formatStudyFileSize } from './file-utils'
+import { StudyFileBlockView } from './StudyFileBlockView'
 
-type FileBlock = Extract<StudyBlock, { type: 'file' }>
+type ImageBlock = Extract<StudyBlock, { type: 'image' }>
 
 describe('StudyFileBlockView', () => {
   it('renders a managed local image', () => {
-    const block: FileBlock = {
-      id: 'file-block',
-      type: 'file',
-      kind: 'image',
+    const block: ImageBlock = {
+      id: 'image-block',
+      type: 'image',
       source: {
         type: 'local',
         asset: {
@@ -36,11 +35,10 @@ describe('StudyFileBlockView', () => {
     ).toHaveAttribute('src', block.source.type === 'local' ? block.source.asset?.url : '')
   })
 
-  it('rejects insecure remote media URLs', () => {
-    const block: FileBlock = {
+  it('rejects insecure remote image URLs', () => {
+    const block: ImageBlock = {
       id: 'remote-image',
-      type: 'file',
-      kind: 'image',
+      type: 'image',
       source: {
         type: 'url',
         url: 'http://example.com/image.png'

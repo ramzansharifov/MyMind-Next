@@ -62,27 +62,52 @@ export const studyLocalAssetSchema = z.object({
   url: z.string().regex(/^mymind-asset:\/\/local\//)
 })
 
-export const studyFileSourceSchema = z.discriminatedUnion('type', [
-  z.object({
-    type: z.literal('local'),
-    asset: studyLocalAssetSchema.optional()
-  }),
-  z.object({
-    type: z.literal('url'),
-    url: z.string().max(4096)
-  })
+const studyLocalAssetSourceSchema = z.object({
+  type: z.literal('local'),
+  asset: studyLocalAssetSchema.optional()
+})
+
+const studyRemoteAssetSourceSchema = z.object({
+  type: z.literal('url'),
+  url: z.string().max(4096)
+})
+
+const studyMediaAssetSourceSchema = z.discriminatedUnion('type', [
+  studyLocalAssetSourceSchema,
+  studyRemoteAssetSourceSchema
 ])
 
-export const studyFileBlockSchema = z.object({
+const studyAttachmentBaseShape = {
   id: z.string().min(1),
-  type: z.literal('file'),
-  kind: z.enum(['image', 'video', 'audio', 'file']),
-  source: studyFileSourceSchema,
   title: z.string().max(240).optional(),
-  caption: z.string().max(1200).optional(),
+  caption: z.string().max(1200).optional()
+}
+
+export const studyImageBlockSchema = z.object({
+  ...studyAttachmentBaseShape,
+  type: z.literal('image'),
+  source: studyMediaAssetSourceSchema,
   altText: z.string().max(500).optional(),
   imageFit: z.enum(['contain', 'cover']).optional(),
   imageHeight: z.number().int().min(180).max(720).optional()
+})
+
+export const studyVideoBlockSchema = z.object({
+  ...studyAttachmentBaseShape,
+  type: z.literal('video'),
+  source: studyMediaAssetSourceSchema
+})
+
+export const studyAudioBlockSchema = z.object({
+  ...studyAttachmentBaseShape,
+  type: z.literal('audio'),
+  source: studyLocalAssetSourceSchema
+})
+
+export const studyFileBlockSchema = z.object({
+  ...studyAttachmentBaseShape,
+  type: z.literal('file'),
+  source: studyLocalAssetSourceSchema
 })
 
 export const studyDividerBlockSchema = z.object({
@@ -102,6 +127,9 @@ export const studyBlockSchema = z.discriminatedUnion('type', [
   studyMarkdownBlockSchema,
   studyLatexBlockSchema,
   studyMermaidBlockSchema,
+  studyImageBlockSchema,
+  studyVideoBlockSchema,
+  studyAudioBlockSchema,
   studyFileBlockSchema,
   studyDividerBlockSchema
 ])

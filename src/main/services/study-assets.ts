@@ -6,8 +6,9 @@ import { pathToFileURL } from 'node:url'
 
 import type {
   ImportStudyAssetInput,
+  StudyAssetKind,
+  StudyBlock,
   StudyDocument,
-  StudyFileKind,
   StudyLocalAsset
 } from '../../shared/contracts/study'
 
@@ -19,7 +20,7 @@ const FILE_KIND_EXTENSIONS = {
   image: new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'avif', 'bmp']),
   video: new Set(['mp4', 'm4v', 'mov', 'webm', 'ogv', 'ogg']),
   audio: new Set(['mp3', 'wav', 'ogg', 'oga', 'm4a', 'aac', 'flac', 'webm'])
-} satisfies Record<Exclude<StudyFileKind, 'file'>, Set<string>>
+} satisfies Record<Exclude<StudyAssetKind, 'file'>, Set<string>>
 
 const MIME_TYPES: Record<string, string> = {
   png: 'image/png',
@@ -186,6 +187,21 @@ export async function importStudyAsset(
   }
 }
 
+type StudyAssetBlock = Extract<
+  StudyBlock,
+  {
+    type: StudyAssetKind
+  }
+>
+
+function isStudyAssetBlock(block: StudyBlock): block is StudyAssetBlock {
+  return (
+    block.type === 'image' ||
+    block.type === 'video' ||
+    block.type === 'audio' ||
+    block.type === 'file'
+  )
+}
 export async function cleanupStudyAssetsForDocument(
   materialId: string,
   document: StudyDocument
@@ -195,7 +211,7 @@ export async function cleanupStudyAssetsForDocument(
   const referencedAssetIds = new Set(
     document.blocks.flatMap((block) => {
       if (
-        block.type !== 'file' ||
+        !isStudyAssetBlock(block) ||
         block.source.type !== 'local' ||
         !block.source.asset ||
         block.source.asset.materialId !== materialId
@@ -301,7 +317,7 @@ function resolveStudyAssetRequest(requestUrl: string): string | null {
   }
 }
 
-function getPickerTitle(kind: StudyFileKind): string {
+function getPickerTitle(kind: StudyAssetKind): string {
   if (kind === 'image') {
     return 'Выбрать изображение'
   }
@@ -317,7 +333,7 @@ function getPickerTitle(kind: StudyFileKind): string {
   return 'Выбрать файл'
 }
 
-function getPickerFilters(kind: StudyFileKind): OpenDialogOptions['filters'] {
+function getPickerFilters(kind: StudyAssetKind): OpenDialogOptions['filters'] {
   if (kind === 'image') {
     return [
       {
@@ -353,7 +369,7 @@ function getPickerFilters(kind: StudyFileKind): OpenDialogOptions['filters'] {
   ]
 }
 
-function validateExtension(kind: StudyFileKind, extension: string): void {
+function validateExtension(kind: StudyAssetKind, extension: string): void {
   if (kind === 'file') {
     return
   }
