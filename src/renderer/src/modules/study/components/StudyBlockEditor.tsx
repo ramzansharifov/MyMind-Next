@@ -8,6 +8,7 @@ import {
   ChevronRight,
   Code2,
   CopyPlus,
+  FileCode2,
   Heading,
   Minus,
   Plus,
@@ -37,6 +38,7 @@ import {
 import { BlockSettingsErrorBoundary } from './BlockSettingsErrorBoundary'
 import { BlockSettingsPanel } from './BlockSettingsPanel'
 import { StudyCodeBlock } from './code/StudyCodeBlock'
+import { StudyMarkdownBlock } from './markdown/StudyMarkdownBlock'
 import { RichTextBlockEditor, RichTextViewer } from './rich-text/RichTextBlockEditor'
 
 interface StudyBlockEditorProps {
@@ -60,6 +62,10 @@ const blockTypes: Array<{
   {
     type: 'code',
     label: 'Код'
+  },
+  {
+    type: 'markdown',
+    label: 'Markdown'
   },
 
   {
@@ -159,9 +165,7 @@ export function StudyBlockEditor({
       <div className="min-w-0">
         <div>
           <BlockInsertMenu
-            persistent={
-              document.blocks.length === 0
-            }
+            persistent={document.blocks.length === 0}
             onInsert={(type) => {
               insertBlock(type, 0)
             }}
@@ -202,15 +206,9 @@ export function StudyBlockEditor({
               />
 
               <BlockInsertMenu
-                persistent={
-                  index ===
-                  document.blocks.length - 1
-                }
+                persistent={index === document.blocks.length - 1}
                 onInsert={(type) => {
-                  insertBlock(
-                    type,
-                    index + 1
-                  )
+                  insertBlock(type, index + 1)
                 }}
               />
             </Fragment>
@@ -239,25 +237,18 @@ function BlockInsertMenu({
   onInsert,
   persistent = false
 }: {
-  onInsert: (
-    type: StudyBlockType
-  ) => void
+  onInsert: (type: StudyBlockType) => void
   persistent?: boolean
 }): React.JSX.Element {
   const [open, setOpen] = useState(false)
 
   return (
-    <DropdownMenu.Root
-      open={open}
-      onOpenChange={setOpen}
-    >
+    <DropdownMenu.Root open={open} onOpenChange={setOpen}>
       <div
         className={cn(
           'group/insert flex items-center',
           'transition-[height] duration-150 ease-out',
-          open || persistent
-            ? 'h-8'
-            : 'h-3 hover:h-8 focus-within:h-8'
+          open || persistent ? 'h-8' : 'h-3 focus-within:h-8 hover:h-8'
         )}
       >
         <span
@@ -265,7 +256,7 @@ function BlockInsertMenu({
             'h-px flex-1 transition-colors duration-150',
             open
               ? 'bg-[var(--app-border)]'
-              : 'bg-transparent group-hover/insert:bg-[var(--app-border)] group-focus-within/insert:bg-[var(--app-border)]'
+              : 'bg-transparent group-focus-within/insert:bg-[var(--app-border)] group-hover/insert:bg-[var(--app-border)]'
           )}
         />
 
@@ -281,13 +272,10 @@ function BlockInsertMenu({
               'focus-visible:ring-2 focus-visible:ring-violet-500/35',
               open || persistent
                 ? 'scale-100 opacity-100'
-                : 'scale-75 opacity-0 group-hover/insert:scale-100 group-hover/insert:opacity-100 group-focus-within/insert:scale-100 group-focus-within/insert:opacity-100'
+                : 'scale-75 opacity-0 group-focus-within/insert:scale-100 group-focus-within/insert:opacity-100 group-hover/insert:scale-100 group-hover/insert:opacity-100'
             )}
           >
-            <Plus
-              aria-hidden="true"
-              className="size-3.5"
-            />
+            <Plus aria-hidden="true" className="size-3.5" />
           </button>
         </DropdownMenu.Trigger>
 
@@ -296,7 +284,7 @@ function BlockInsertMenu({
             'h-px flex-1 transition-colors duration-150',
             open
               ? 'bg-[var(--app-border)]'
-              : 'bg-transparent group-hover/insert:bg-[var(--app-border)] group-focus-within/insert:bg-[var(--app-border)]'
+              : 'bg-transparent group-focus-within/insert:bg-[var(--app-border)] group-hover/insert:bg-[var(--app-border)]'
           )}
         />
       </div>
@@ -315,10 +303,7 @@ function BlockInsertMenu({
                 onInsert(option.type)
               }}
             >
-              <StudyBlockTypeIcon
-                type={option.type}
-                className="size-4 text-[var(--app-muted)]"
-              />
+              <StudyBlockTypeIcon type={option.type} className="size-4 text-[var(--app-muted)]" />
 
               {option.label}
             </DropdownMenu.Item>
@@ -362,11 +347,7 @@ function StudyBlockCard({
   const blockLabel = getBlockLabel(block.type)
 
   return (
-    <Collapsible.Root
-      open={open}
-      onOpenChange={setOpen}
-      asChild
-    >
+    <Collapsible.Root open={open} onOpenChange={setOpen} asChild>
       <section
         className={cn(
           'group rounded-xl border bg-[var(--app-surface)] p-3 transition-colors',
@@ -376,19 +357,12 @@ function StudyBlockCard({
         )}
         onMouseDown={onActivate}
       >
-        <div
-          className={cn(
-            'flex items-center gap-2',
-            open && 'mb-2'
-          )}
-        >
+        <div className={cn('flex items-center gap-2', open && 'mb-2')}>
           <Collapsible.Trigger asChild>
             <button
               type="button"
               aria-label={
-                open
-                  ? `Свернуть блок «${blockLabel}»`
-                  : `Развернуть блок «${blockLabel}»`
+                open ? `Свернуть блок «${blockLabel}»` : `Развернуть блок «${blockLabel}»`
               }
               className={cn(
                 'flex size-7 shrink-0 items-center justify-center rounded-md',
@@ -419,10 +393,7 @@ function StudyBlockCard({
             className="flex size-7 items-center justify-center rounded-md text-[var(--app-muted)] hover:bg-white/[0.06] hover:text-[var(--app-text)] disabled:opacity-25"
             onClick={() => onMove(-1)}
           >
-            <ArrowUp
-              aria-hidden="true"
-              className="size-4"
-            />
+            <ArrowUp aria-hidden="true" className="size-4" />
           </button>
 
           <button
@@ -432,10 +403,7 @@ function StudyBlockCard({
             className="flex size-7 items-center justify-center rounded-md text-[var(--app-muted)] hover:bg-white/[0.06] hover:text-[var(--app-text)] disabled:opacity-25"
             onClick={() => onMove(1)}
           >
-            <ArrowDown
-              aria-hidden="true"
-              className="size-4"
-            />
+            <ArrowDown aria-hidden="true" className="size-4" />
           </button>
 
           <button
@@ -444,10 +412,7 @@ function StudyBlockCard({
             className="flex size-7 items-center justify-center rounded-md text-[var(--app-muted)] hover:bg-white/[0.06] hover:text-[var(--app-text)]"
             onClick={onDuplicate}
           >
-            <CopyPlus
-              aria-hidden="true"
-              className="size-4"
-            />
+            <CopyPlus aria-hidden="true" className="size-4" />
           </button>
 
           <button
@@ -456,17 +421,11 @@ function StudyBlockCard({
             className="flex size-7 items-center justify-center rounded-md text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
             onClick={onDelete}
           >
-            <Trash2
-              aria-hidden="true"
-              className="size-4"
-            />
+            <Trash2 aria-hidden="true" className="size-4" />
           </button>
         </div>
 
-        <Collapsible.Content
-          forceMount
-          className="data-[state=closed]:hidden"
-        >
+        <Collapsible.Content forceMount className="data-[state=closed]:hidden">
           {block.type === 'text' ? (
             <RichTextBlockEditor
               html={getStudyTextBlockHtml(block)}
@@ -482,10 +441,7 @@ function StudyBlockCard({
               }}
             />
           ) : (
-            <EditableBlock
-              block={block}
-              onChange={onChange}
-            />
+            <EditableBlock block={block} onChange={onChange} />
           )}
         </Collapsible.Content>
       </section>
@@ -566,6 +522,27 @@ function EditableBlock({
           onChange({
             ...block,
             source
+          })
+        }}
+      />
+    )
+  }
+  if (block.type === 'markdown') {
+    return (
+      <StudyMarkdownBlock
+        mode="edit"
+        source={block.source}
+        viewMode={block.viewMode ?? 'split'}
+        onChange={(source) => {
+          onChange({
+            ...block,
+            source
+          })
+        }}
+        onViewModeChange={(viewMode) => {
+          onChange({
+            ...block,
+            viewMode
           })
         }}
       />
@@ -803,6 +780,9 @@ function StudyBlockReader({ block }: { block: StudyBlock }): React.JSX.Element {
   if (block.type === 'code') {
     return <StudyCodeBlock mode="read" source={block.source} language={block.language} />
   }
+  if (block.type === 'markdown') {
+    return <StudyMarkdownBlock mode="read" source={block.source} />
+  }
 
   return (
     <div className="py-4">
@@ -832,6 +812,9 @@ function StudyBlockTypeIcon({
 
   if (type === 'code') {
     return <Code2 aria-hidden="true" className={className} />
+  }
+  if (type === 'markdown') {
+    return <FileCode2 aria-hidden="true" className={className} />
   }
 
   if (type === 'divider') {

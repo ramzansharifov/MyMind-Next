@@ -1,7 +1,7 @@
 import type { Editor } from '@tiptap/core'
 import * as Separator from '@radix-ui/react-separator'
 import * as Slider from '@radix-ui/react-slider'
-import { Code2, Heading, Minus, Settings2, Type } from 'lucide-react'
+import { Code2, FileCode2, Heading, Minus, Settings2, Type } from 'lucide-react'
 
 import type { StudyBlock } from '../../../../../shared/contracts/study'
 import {
@@ -50,6 +50,23 @@ const headingBackgroundColors = [
   '#713f12',
   '#7f1d1d'
 ]
+const markdownViewModes = [
+  {
+    value: 'write',
+    label: 'Код',
+    ariaLabel: 'Только Markdown'
+  },
+  {
+    value: 'split',
+    label: '2 окна',
+    ariaLabel: 'Markdown и просмотр'
+  },
+  {
+    value: 'preview',
+    label: 'Вид',
+    ariaLabel: 'Только просмотр'
+  }
+]
 
 export function BlockSettingsPanel({
   block,
@@ -87,6 +104,8 @@ export function BlockSettingsPanel({
         {block.type === 'heading' && <HeadingSettings block={block} onChange={onChange} />}
 
         {block.type === 'code' && <CodeSettings block={block} onChange={onChange} />}
+
+        {block.type === 'markdown' && <MarkdownSettings block={block} onChange={onChange} />}
 
         {block.type === 'divider' && <DividerSettings block={block} onChange={onChange} />}
       </div>
@@ -194,6 +213,40 @@ function CodeSettings({
   )
 }
 
+function MarkdownSettings({
+  block,
+  onChange
+}: {
+  block: Extract<StudyBlock, { type: 'markdown' }>
+  onChange: (block: StudyBlock) => void
+}): React.JSX.Element {
+  return (
+    <div className="grid gap-4">
+      <SettingsField label="Режим">
+        <SegmentedChoice
+          value={block.viewMode ?? 'split'}
+          options={markdownViewModes}
+          ariaLabel="Режим Markdown-блока"
+          columns={3}
+          onValueChange={(viewMode) => {
+            if (viewMode !== 'write' && viewMode !== 'split' && viewMode !== 'preview') {
+              return
+            }
+
+            onChange({
+              ...block,
+              viewMode
+            })
+          }}
+        />
+      </SettingsField>
+
+      <p className="text-xs leading-5 text-[var(--app-muted)]">
+        GFM: таблицы, списки задач, ссылки и блоки кода.
+      </p>
+    </div>
+  )
+}
 function DividerSettings({
   block,
   onChange
@@ -277,6 +330,9 @@ function BlockTypeIcon({ type }: { type: StudyBlock['type'] }): React.JSX.Elemen
   if (type === 'code') {
     return <Code2 aria-hidden="true" className="size-4" />
   }
+  if (type === 'markdown') {
+    return <FileCode2 aria-hidden="true" className="size-4" />
+  }
 
   if (type === 'divider') {
     return <Minus aria-hidden="true" className="size-4" />
@@ -292,6 +348,9 @@ function getBlockTitle(block: StudyBlock): string {
 
   if (block.type === 'code') {
     return 'Код'
+  }
+  if (block.type === 'markdown') {
+    return 'Markdown'
   }
 
   if (block.type === 'divider') {

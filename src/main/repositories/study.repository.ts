@@ -45,6 +45,9 @@ function documentToPlainText(document: StudyDocument): string {
       if (block.type === 'code') {
         return block.source
       }
+      if (block.type === 'markdown') {
+        return block.source
+      }
 
       return ''
     })

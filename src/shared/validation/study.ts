@@ -30,6 +30,12 @@ export const studyCodeBlockSchema = z.object({
   source: z.string(),
   language: z.string()
 })
+export const studyMarkdownBlockSchema = z.object({
+  id: z.string().min(1),
+  type: z.literal('markdown'),
+  source: z.string(),
+  viewMode: z.enum(['write', 'split', 'preview']).optional()
+})
 
 export const studyDividerBlockSchema = z.object({
   id: z.string().min(1),
@@ -45,6 +51,7 @@ export const studyBlockSchema = z.discriminatedUnion('type', [
   studyTextBlockSchema,
   studyHeadingBlockSchema,
   studyCodeBlockSchema,
+  studyMarkdownBlockSchema,
   studyDividerBlockSchema
 ])
 

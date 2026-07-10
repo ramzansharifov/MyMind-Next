@@ -1,18 +1,7 @@
-import {
-  fireEvent,
-  render,
-  screen
-} from '@testing-library/react'
-import {
-  describe,
-  expect,
-  it,
-  vi
-} from 'vitest'
+import { fireEvent, render, screen } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
 
-import type {
-  StudyDocument
-} from '../../../../../shared/contracts/study'
+import type { StudyDocument } from '../../../../../shared/contracts/study'
 import { StudyBlockEditor } from './StudyBlockEditor'
 
 const studyDocument: StudyDocument = {
@@ -29,24 +18,13 @@ const studyDocument: StudyDocument = {
 
 describe('StudyBlockEditor', () => {
   it('collapses and expands a block in edit mode', () => {
-    render(
-      <StudyBlockEditor
-        document={studyDocument}
-        mode="edit"
-        onChange={vi.fn()}
-      />
-    )
+    render(<StudyBlockEditor document={studyDocument} mode="edit" onChange={vi.fn()} />)
 
-    const headingInput =
-      screen.getByDisplayValue('Раздел')
+    const headingInput = screen.getByDisplayValue('Раздел')
 
-    const content =
-      headingInput.closest('[data-state]')
+    const content = headingInput.closest('[data-state]')
 
-    expect(content).toHaveAttribute(
-      'data-state',
-      'open'
-    )
+    expect(content).toHaveAttribute('data-state', 'open')
 
     fireEvent.click(
       screen.getByRole('button', {
@@ -54,10 +32,7 @@ describe('StudyBlockEditor', () => {
       })
     )
 
-    expect(content).toHaveAttribute(
-      'data-state',
-      'closed'
-    )
+    expect(content).toHaveAttribute('data-state', 'closed')
 
     fireEvent.click(
       screen.getByRole('button', {
@@ -65,9 +40,6 @@ describe('StudyBlockEditor', () => {
       })
     )
 
-    expect(content).toHaveAttribute(
-      'data-state',
-      'open'
-    )
+    expect(content).toHaveAttribute('data-state', 'open')
   })
 })

@@ -62,10 +62,43 @@ export const STUDY_CODE_LANGUAGE_OPTIONS: StudyCodeLanguageOption[] = [
   }
 ]
 
+const STUDY_CODE_LANGUAGE_ALIASES: Record<string, string> = {
+  js: 'javascript',
+  jsx: 'javascript',
+  mjs: 'javascript',
+  cjs: 'javascript',
+  ts: 'typescript',
+  tsx: 'typescript',
+  py: 'python',
+  html: 'html',
+  xml: 'html',
+  markup: 'html',
+  sh: 'bash',
+  shell: 'bash',
+  zsh: 'bash',
+  c: 'cpp',
+  'c++': 'cpp',
+  cc: 'cpp',
+  cxx: 'cpp',
+  plaintext: 'text',
+  plain: 'text',
+  txt: 'text'
+}
+
+export function normalizeStudyCodeLanguage(value: string | undefined): string {
+  const normalized = value?.trim().toLowerCase() || 'text'
+
+  const resolved = STUDY_CODE_LANGUAGE_ALIASES[normalized] ?? normalized
+
+  return STUDY_CODE_LANGUAGE_OPTIONS.some((option) => option.value === resolved) ? resolved : 'text'
+}
 const fallbackCodeLanguage = STUDY_CODE_LANGUAGE_OPTIONS[0]
 
 export function getStudyCodeLanguage(value: string | undefined): StudyCodeLanguageOption {
+  const normalized = normalizeStudyCodeLanguage(value)
+
   return (
-    STUDY_CODE_LANGUAGE_OPTIONS.find((option) => option.value === value) ?? fallbackCodeLanguage
+    STUDY_CODE_LANGUAGE_OPTIONS.find((option) => option.value === normalized) ??
+    fallbackCodeLanguage
   )
 }

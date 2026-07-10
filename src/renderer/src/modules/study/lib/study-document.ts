@@ -30,6 +30,14 @@ export function createStudyBlock(type: StudyBlockType): StudyBlock {
       language: 'text'
     }
   }
+  if (type === 'markdown') {
+    return {
+      id,
+      type,
+      source: '',
+      viewMode: 'split'
+    }
+  }
 
   if (type === 'divider') {
     return {
