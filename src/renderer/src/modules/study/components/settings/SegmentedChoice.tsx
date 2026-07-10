@@ -32,7 +32,7 @@ export function SegmentedChoice({
       disabled={disabled}
       aria-label={ariaLabel}
       className={cn(
-        'grid gap-2',
+        'grid min-w-0 gap-2',
         columns === 4 ? 'grid-cols-4' : columns === 2 ? 'grid-cols-2' : 'grid-cols-3'
       )}
       onValueChange={(nextValue) => {
@@ -47,7 +47,7 @@ export function SegmentedChoice({
           value={option.value}
           aria-label={option.ariaLabel ?? option.label}
           className={cn(
-            'flex h-9 min-w-0 items-center justify-center rounded-lg border px-2',
+            'flex h-9 min-w-0 items-center justify-center overflow-hidden rounded-lg border px-2',
             'border-(--app-border) bg-(--app-workspace)',
             'text-xs font-semibold text-(--app-muted)',
             'transition-colors outline-none',
@@ -59,7 +59,9 @@ export function SegmentedChoice({
             'disabled:cursor-not-allowed disabled:opacity-40'
           )}
         >
-          {option.label}
+          <span className="min-w-0 truncate">
+            {option.label}
+          </span>
         </ToggleGroup.Item>
       ))}
     </ToggleGroup.Root>

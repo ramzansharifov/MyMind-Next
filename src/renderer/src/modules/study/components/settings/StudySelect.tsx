@@ -30,7 +30,7 @@ export function StudySelect({
       <Select.Trigger
         aria-label={ariaLabel}
         className={cn(
-          'flex h-10 w-full items-center justify-between gap-2 rounded-lg',
+          'flex h-10 w-full min-w-0 items-center justify-between gap-2 rounded-lg',
           'border border-(--app-border) bg-(--app-workspace) px-3',
           'text-sm text-(--app-text) outline-none',
           'hover:border-(--app-border-strong)',
@@ -38,7 +38,10 @@ export function StudySelect({
           'disabled:cursor-not-allowed disabled:opacity-45'
         )}
       >
-        <Select.Value placeholder={placeholder} />
+        <Select.Value
+          placeholder={placeholder}
+          className="min-w-0 flex-1 truncate text-left"
+        />
 
         <Select.Icon asChild>
           <ChevronDown aria-hidden="true" className="size-4 shrink-0 text-(--app-muted)" />

@@ -201,7 +201,7 @@ export function BlockSettingsPanel({
 }: BlockSettingsPanelProps): React.JSX.Element {
   if (!block) {
     return (
-      <aside className="rounded-xl border border-(--app-border) bg-(--app-surface) p-4">
+      <aside className="w-full min-w-0 max-w-full rounded-xl border border-(--app-border) bg-(--app-surface) p-4">
         <div className="flex items-center gap-2 text-sm font-medium text-(--app-text)">
           <Settings2 aria-hidden="true" className="size-4 text-violet-300" />
           Настройки
@@ -213,18 +213,27 @@ export function BlockSettingsPanel({
   }
 
   return (
-    <aside className="overflow-hidden rounded-xl border border-(--app-border) bg-(--app-surface)">
-      <header className="flex items-center gap-3 border-b border-(--app-border) px-4 py-3.5">
-        <div className="flex size-8 items-center justify-center rounded-lg bg-violet-500/10 text-violet-300">
+    <aside className="flex max-h-[calc(100vh-150px)] w-full min-w-0 max-w-full flex-col overflow-hidden rounded-xl border border-(--app-border) bg-(--app-surface) max-[1180px]:max-h-none">
+      <header className="flex shrink-0 items-center gap-3 border-b border-(--app-border) px-4 py-3.5">
+        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-300">
           <BlockTypeIcon type={block.type} />
         </div>
 
-        <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-(--app-text)">{getBlockTitle(block)}</p>
+        <div className="min-w-0 flex-1">
+          <p
+            title={getBlockTitle(block)}
+            className="truncate text-sm font-medium text-(--app-text)"
+          >
+            {getBlockTitle(block)}
+          </p>
+
+          <p className="mt-0.5 text-[11px] text-(--app-muted)">
+            Настройки блока
+          </p>
         </div>
       </header>
 
-      <div className="p-4">
+      <div className="min-h-0 min-w-0 overflow-x-hidden overflow-y-auto overscroll-contain p-4 [scrollbar-gutter:stable] max-[1180px]:overflow-visible max-[640px]:p-3">
         {block.type === 'text' && <RichTextSettings key={block.id} editor={textEditor} />}
 
         {block.type === 'heading' && <HeadingSettings block={block} onChange={onChange} />}
@@ -652,7 +661,7 @@ function AttachmentSettings({
   }
 
   return (
-    <div className="grid gap-5">
+    <div className="grid min-w-0 gap-5">
       {(block.type === 'image' || block.type === 'video') && (
         <SettingsField label="Источник">
           <SegmentedChoice
@@ -689,7 +698,7 @@ function AttachmentSettings({
       )}
 
       {block.source.type === 'local' && (
-        <div className="grid gap-2">
+        <div className="grid min-w-0 gap-2">
           <span className="text-[11px] font-medium text-(--app-muted)">
             {getLocalSourceLabel(block.type)}
           </span>
@@ -712,13 +721,18 @@ function AttachmentSettings({
           </button>
 
           {localAsset && (
-            <div className="flex items-start gap-2 rounded-lg border border-(--app-border) bg-white/[0.025] p-3">
+            <div className="flex w-full min-w-0 items-start gap-2 overflow-hidden rounded-lg border border-(--app-border) bg-white/[0.025] p-3">
               <StudyFileSettingsIcon kind={block.type} />
 
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-xs font-medium text-(--app-text)">{localAsset.name}</p>
+              <div className="min-w-0 flex-1 overflow-hidden">
+                <p
+                  title={localAsset.name}
+                  className="block w-full truncate text-xs font-medium text-(--app-text)"
+                >
+                  {localAsset.name}
+                </p>
 
-                <p className="mt-1 text-[11px] text-(--app-muted)">
+                <p className="mt-1 truncate text-[11px] text-(--app-muted)">
                   {formatStudyFileSize(localAsset.size)}
                 </p>
               </div>
@@ -750,10 +764,10 @@ function AttachmentSettings({
       )}
 
       {(block.type === 'image' || block.type === 'video') && block.source.type === 'url' && (
-        <div className="grid gap-2">
+        <div className="grid min-w-0 gap-2">
           <span className="text-[11px] font-medium text-(--app-muted)">Прямая HTTPS-ссылка</span>
 
-          <label className="flex min-h-10 items-center gap-2 rounded-lg border border-(--app-border) bg-(--app-workspace) px-3 focus-within:border-violet-500/45">
+          <label className="flex min-h-10 w-full min-w-0 max-w-full items-center gap-2 overflow-hidden rounded-lg border border-(--app-border) bg-(--app-workspace) px-3 focus-within:border-violet-500/45">
             <Link2 aria-hidden="true" className="size-4 shrink-0 text-(--app-muted)" />
 
             <input
@@ -761,7 +775,7 @@ function AttachmentSettings({
               placeholder={
                 block.type === 'image' ? 'https://site.com/photo.jpg' : 'https://site.com/video.mp4'
               }
-              className="min-w-0 flex-1 bg-transparent py-2 text-sm text-(--app-text) outline-none placeholder:text-(--app-muted)/60"
+              className="w-0 min-w-0 flex-1 bg-transparent py-2 text-sm text-(--app-text) outline-none placeholder:text-(--app-muted)/60"
               onChange={(event) => {
                 onChange({
                   ...block,
@@ -789,8 +803,8 @@ function AttachmentSettings({
       <SettingsField label="Название">
         <input
           value={block.title ?? ''}
-          placeholder={localAsset?.name ?? 'Необязательное название'}
-          className="w-full rounded-lg border border-(--app-border) bg-(--app-workspace) px-3 py-2 text-sm text-(--app-text) outline-none placeholder:text-(--app-muted)/60 focus:border-violet-500/45"
+          placeholder="Необязательное название"
+          className="w-full min-w-0 max-w-full rounded-lg border border-(--app-border) bg-(--app-workspace) px-3 py-2 text-sm text-(--app-text) outline-none placeholder:text-(--app-muted)/60 focus:border-violet-500/45"
           onChange={(event) => {
             onChange({
               ...block,
@@ -806,7 +820,7 @@ function AttachmentSettings({
             <input
               value={block.altText ?? ''}
               placeholder="Что изображено на фотографии"
-              className="w-full rounded-lg border border-(--app-border) bg-(--app-workspace) px-3 py-2 text-sm text-(--app-text) outline-none placeholder:text-(--app-muted)/60 focus:border-violet-500/45"
+              className="w-full min-w-0 max-w-full rounded-lg border border-(--app-border) bg-(--app-workspace) px-3 py-2 text-sm text-(--app-text) outline-none placeholder:text-(--app-muted)/60 focus:border-violet-500/45"
               onChange={(event) => {
                 onChange({
                   ...block,
@@ -871,7 +885,7 @@ function AttachmentSettings({
           value={block.caption ?? ''}
           rows={3}
           placeholder="Необязательная подпись или пояснение"
-          className="w-full resize-y rounded-lg border border-(--app-border) bg-(--app-workspace) px-3 py-2 text-sm leading-6 text-(--app-text) outline-none placeholder:text-(--app-muted)/60 focus:border-violet-500/45"
+          className="w-full min-w-0 max-w-full resize-y rounded-lg border border-(--app-border) bg-(--app-workspace) px-3 py-2 text-sm leading-6 text-(--app-text) outline-none placeholder:text-(--app-muted)/60 focus:border-violet-500/45"
           onChange={(event) => {
             onChange({
               ...block,
@@ -1018,7 +1032,7 @@ function SettingsField({
   children: React.ReactNode
 }): React.JSX.Element {
   return (
-    <label className="grid gap-2">
+    <label className="grid min-w-0 gap-2">
       <span className="text-[11px] font-medium text-(--app-muted)">{label}</span>
 
       {children}

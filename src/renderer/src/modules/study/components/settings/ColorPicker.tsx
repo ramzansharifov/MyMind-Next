@@ -41,7 +41,7 @@ export function ColorPicker({
           disabled={disabled}
           aria-label={ariaLabel}
           className={cn(
-            'flex h-10 w-full items-center gap-3 rounded-lg',
+            'flex h-10 w-full min-w-0 items-center gap-3 rounded-lg',
             'border border-(--app-border) bg-(--app-workspace) px-3',
             'text-sm text-(--app-text)',
             'hover:border-(--app-border-strong)',
@@ -52,17 +52,20 @@ export function ColorPicker({
         >
           <span
             aria-hidden="true"
-            className="size-5 rounded-md border border-white/15"
+            className="size-5 shrink-0 rounded-md border border-white/15"
             style={{
               backgroundColor: value
             }}
           />
 
-          <span className="min-w-0 flex-1 text-left text-xs text-(--app-muted)">
+          <span className="min-w-0 flex-1 truncate text-left text-xs text-(--app-muted)">
             {value.toUpperCase()}
           </span>
 
-          <Palette aria-hidden="true" className="size-4 text-(--app-muted)" />
+          <Palette
+            aria-hidden="true"
+            className="size-4 shrink-0 text-(--app-muted)"
+          />
         </button>
       </Popover.Trigger>
 

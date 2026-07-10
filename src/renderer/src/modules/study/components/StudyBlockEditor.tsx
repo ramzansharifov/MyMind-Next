@@ -199,7 +199,7 @@ export function StudyBlockEditor({
   }
 
   return (
-    <div className="mx-auto grid max-w-[1240px] grid-cols-[minmax(0,1fr)_290px] items-start gap-4 max-[1050px]:grid-cols-1">
+    <div className="mx-auto grid w-full max-w-[1320px] grid-cols-[minmax(0,1fr)_320px] items-start gap-5 max-[1180px]:grid-cols-1">
       <div className="min-w-0">
         <div>
           <BlockInsertMenu
@@ -254,7 +254,7 @@ export function StudyBlockEditor({
         </div>
       </div>
 
-      <div className="sticky top-0 max-h-[calc(100vh-150px)] overflow-y-auto pr-1 max-[1050px]:static max-[1050px]:max-h-none">
+      <div className="sticky top-0 min-w-0 max-[1180px]:static max-[1180px]:mx-auto max-[1180px]:mt-2 max-[1180px]:w-full max-[1180px]:max-w-xl">
         <BlockSettingsErrorBoundary key={activeBlock?.id ?? 'empty'}>
           <BlockSettingsPanel
             block={activeBlock}
