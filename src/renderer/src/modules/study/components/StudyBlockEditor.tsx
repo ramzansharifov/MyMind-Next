@@ -476,6 +476,53 @@ function ReadOnlyStudyDocument({ document }: { document: StudyDocument }): React
   )
 }
 
+function moveTrailingDividerOutsideSection(
+  sectionStack: StudyReadSectionNode[],
+  root: StudyReadNode[],
+  nextHeadingLevel: 1 | 2 | 3
+): void {
+  const closingSection =
+    sectionStack[
+      sectionStack.length - 1
+    ]
+
+  if (
+    !closingSection ||
+    closingSection.heading.level !==
+      nextHeadingLevel
+  ) {
+    return
+  }
+
+  const trailingNode =
+    closingSection.children[
+      closingSection.children.length - 1
+    ]
+
+  if (
+    !trailingNode ||
+    trailingNode.kind !== 'block' ||
+    trailingNode.block.type !== 'divider'
+  ) {
+    return
+  }
+
+  closingSection.children.pop()
+
+  const parentSection =
+    sectionStack[
+      sectionStack.length - 2
+    ]
+
+  if (parentSection) {
+    parentSection.children.push(
+      trailingNode
+    )
+    return
+  }
+
+  root.push(trailingNode)
+}
 function buildStudyReadOutline(blocks: StudyBlock[]): StudyReadNode[] {
   const root: StudyReadNode[] = []
   const sectionStack: StudyReadSectionNode[] = []
@@ -488,9 +535,17 @@ function buildStudyReadOutline(blocks: StudyBlock[]): StudyReadNode[] {
         children: []
       }
 
+      moveTrailingDividerOutsideSection(
+        sectionStack,
+        root,
+        block.level
+      )
+
       while (
         sectionStack.length > 0 &&
-        sectionStack[sectionStack.length - 1].heading.level >= block.level
+        sectionStack[
+          sectionStack.length - 1
+        ].heading.level >= block.level
       ) {
         sectionStack.pop()
       }
