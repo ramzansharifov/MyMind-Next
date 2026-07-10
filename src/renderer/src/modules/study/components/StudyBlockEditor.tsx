@@ -159,6 +159,9 @@ export function StudyBlockEditor({
       <div className="min-w-0">
         <div>
           <BlockInsertMenu
+            persistent={
+              document.blocks.length === 0
+            }
             onInsert={(type) => {
               insertBlock(type, 0)
             }}
@@ -199,8 +202,15 @@ export function StudyBlockEditor({
               />
 
               <BlockInsertMenu
+                persistent={
+                  index ===
+                  document.blocks.length - 1
+                }
                 onInsert={(type) => {
-                  insertBlock(type, index + 1)
+                  insertBlock(
+                    type,
+                    index + 1
+                  )
                 }}
               />
             </Fragment>
@@ -226,11 +236,13 @@ export function StudyBlockEditor({
 }
 
 function BlockInsertMenu({
-  onInsert
+  onInsert,
+  persistent = false
 }: {
   onInsert: (
     type: StudyBlockType
   ) => void
+  persistent?: boolean
 }): React.JSX.Element {
   const [open, setOpen] = useState(false)
 
@@ -243,7 +255,7 @@ function BlockInsertMenu({
         className={cn(
           'group/insert flex items-center',
           'transition-[height] duration-150 ease-out',
-          open
+          open || persistent
             ? 'h-8'
             : 'h-3 hover:h-8 focus-within:h-8'
         )}
@@ -267,7 +279,7 @@ function BlockInsertMenu({
               'transition-[opacity,transform,background-color,color] duration-150',
               'hover:bg-violet-500/15 hover:text-violet-200',
               'focus-visible:ring-2 focus-visible:ring-violet-500/35',
-              open
+              open || persistent
                 ? 'scale-100 opacity-100'
                 : 'scale-75 opacity-0 group-hover/insert:scale-100 group-hover/insert:opacity-100 group-focus-within/insert:scale-100 group-focus-within/insert:opacity-100'
             )}
