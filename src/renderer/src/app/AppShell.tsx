@@ -1,19 +1,9 @@
 import { cva } from 'class-variance-authority'
-import {
-  BrainCircuit,
-  PanelLeftClose,
-  PanelLeftOpen
-} from 'lucide-react'
-import {
-  useState,
-  type ReactNode
-} from 'react'
+import { BrainCircuit, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { useState, type ReactNode } from 'react'
 
 import { cn } from '../shared/lib/cn'
-import {
-  Tooltip,
-  TooltipProvider
-} from '../shared/ui/tooltip'
+import { Tooltip, TooltipProvider } from '../shared/ui/tooltip'
 import {
   primaryNavigationItems,
   utilityNavigationItems,
@@ -50,11 +40,7 @@ const navigationButtonVariants = cva(
       },
       active: {
         true: 'bg-[var(--app-sidebar-active)] text-violet-300',
-        false: [
-          'text-[var(--app-muted)]',
-          'hover:bg-white/[0.045]',
-          'hover:text-[var(--app-text)]'
-        ]
+        false: ['text-[var(--app-muted)]', 'hover:bg-white/[0.045]', 'hover:text-[var(--app-text)]']
       }
     },
     defaultVariants: {
@@ -97,42 +83,25 @@ function NavigationButton({
           'size-5 shrink-0 transition-colors',
           isActive
             ? 'text-violet-300'
-            : [
-                'text-[var(--app-muted)]',
-                'group-hover:text-[var(--app-text)]'
-              ]
+            : ['text-[var(--app-muted)]', 'group-hover:text-[var(--app-text)]']
         )}
       />
 
-      {!isCollapsed && (
-        <span className="min-w-0 truncate">
-          {item.label}
-        </span>
-      )}
+      {!isCollapsed && <span className="min-w-0 truncate">{item.label}</span>}
     </button>
   )
 
   return (
-    <Tooltip
-      content={item.label}
-      side="right"
-      disabled={!isCollapsed}
-    >
+    <Tooltip content={item.label} side="right" disabled={!isCollapsed}>
       {button}
     </Tooltip>
   )
 }
 
-export function AppShell({
-  activeView,
-  onViewChange,
-  children
-}: AppShellProps): React.JSX.Element {
+export function AppShell({ activeView, onViewChange, children }: AppShellProps): React.JSX.Element {
   const [isCollapsed, setIsCollapsed] = useState(false)
 
-  const toggleLabel = isCollapsed
-    ? 'Развернуть боковую панель'
-    : 'Свернуть боковую панель'
+  const toggleLabel = isCollapsed ? 'Развернуть боковую панель' : 'Свернуть боковую панель'
 
   return (
     <TooltipProvider>
@@ -145,33 +114,24 @@ export function AppShell({
             'border-r border-[var(--app-border)] bg-[var(--app-sidebar)]',
             'transition-[width] duration-200 ease-out',
             'motion-reduce:transition-none',
-            isCollapsed
-              ? 'w-[72px]'
-              : 'w-64'
+            isCollapsed ? 'w-[72px]' : 'w-64'
           )}
         >
           <header
             className={cn(
               'flex h-16 shrink-0 items-center border-b',
               'border-[var(--app-border)]',
-              isCollapsed
-                ? 'justify-center px-0'
-                : 'px-3'
+              isCollapsed ? 'justify-center px-0' : 'px-3'
             )}
           >
             <div
               className={cn(
                 'flex min-w-0 items-center',
-                isCollapsed
-                  ? 'justify-center'
-                  : 'w-full gap-3'
+                isCollapsed ? 'justify-center' : 'w-full gap-3'
               )}
             >
               <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/15 text-violet-300">
-                <BrainCircuit
-                  aria-hidden="true"
-                  className="size-[18px]"
-                />
+                <BrainCircuit aria-hidden="true" className="size-[18px]" />
               </div>
 
               {!isCollapsed && (
@@ -180,18 +140,13 @@ export function AppShell({
                     MyMind
                   </p>
 
-                  <p className="truncate text-[11px] text-[var(--app-muted)]">
-                    Личная система
-                  </p>
+                  <p className="truncate text-[11px] text-[var(--app-muted)]">Личная система</p>
                 </div>
               )}
             </div>
           </header>
 
-          <Tooltip
-            content={toggleLabel}
-            side="right"
-          >
+          <Tooltip content={toggleLabel} side="right">
             <button
               type="button"
               aria-label={toggleLabel}
@@ -220,15 +175,9 @@ export function AppShell({
               }}
             >
               {isCollapsed ? (
-                <PanelLeftOpen
-                  aria-hidden="true"
-                  className="size-4"
-                />
+                <PanelLeftOpen aria-hidden="true" className="size-4" />
               ) : (
-                <PanelLeftClose
-                  aria-hidden="true"
-                  className="size-4"
-                />
+                <PanelLeftClose aria-hidden="true" className="size-4" />
               )}
             </button>
           </Tooltip>
@@ -261,10 +210,7 @@ export function AppShell({
           </footer>
         </aside>
 
-        <main
-          id="workspace"
-          className="min-w-0 flex-1 overflow-hidden bg-[var(--app-workspace)]"
-        >
+        <main id="workspace" className="min-w-0 flex-1 overflow-hidden bg-[var(--app-workspace)]">
           {children}
         </main>
       </div>

@@ -1,8 +1,5 @@
 import * as TooltipPrimitive from '@radix-ui/react-tooltip'
-import {
-  type PropsWithChildren,
-  type ReactElement
-} from 'react'
+import { type PropsWithChildren, type ReactElement } from 'react'
 
 import { cn } from '../lib/cn'
 
@@ -26,10 +23,7 @@ export function TooltipProvider({
   delayDuration = 250
 }: TooltipProviderProps): React.JSX.Element {
   return (
-    <TooltipPrimitive.Provider
-      delayDuration={delayDuration}
-      skipDelayDuration={100}
-    >
+    <TooltipPrimitive.Provider delayDuration={delayDuration} skipDelayDuration={100}>
       {children}
     </TooltipPrimitive.Provider>
   )
@@ -48,9 +42,7 @@ export function Tooltip({
 
   return (
     <TooltipPrimitive.Root>
-      <TooltipPrimitive.Trigger asChild>
-        {children}
-      </TooltipPrimitive.Trigger>
+      <TooltipPrimitive.Trigger asChild>{children}</TooltipPrimitive.Trigger>
 
       <TooltipPrimitive.Portal>
         <TooltipPrimitive.Content
@@ -59,7 +51,7 @@ export function Tooltip({
           sideOffset={9}
           collisionPadding={12}
           className={cn(
-            'z-50 max-w-64 select-none rounded-lg border',
+            'z-50 max-w-64 rounded-lg border select-none',
             'border-[var(--app-tooltip-border)] bg-[var(--app-tooltip)]',
             'px-2.5 py-1.5 text-xs font-medium text-[var(--app-text)]',
             'will-change-transform'
@@ -67,11 +59,7 @@ export function Tooltip({
         >
           {content}
 
-          <TooltipPrimitive.Arrow
-            width={8}
-            height={4}
-            className="fill-[var(--app-tooltip)]"
-          />
+          <TooltipPrimitive.Arrow width={8} height={4} className="fill-[var(--app-tooltip)]" />
         </TooltipPrimitive.Content>
       </TooltipPrimitive.Portal>
     </TooltipPrimitive.Root>

@@ -3,12 +3,14 @@ import { ipcMain } from 'electron'
 import { IPC_CHANNELS } from '../../shared/contracts/system'
 import { systemHealthSchema } from '../../shared/validation/system'
 import { getSqlite } from '../database/client'
+import { registerStudyIpcHandlers } from './register-study-ipc'
 
 interface SQLiteVersionRow {
   version: string
 }
 
 export function registerIpcHandlers(): void {
+  registerStudyIpcHandlers()
   ipcMain.removeHandler(IPC_CHANNELS.systemHealth)
 
   ipcMain.handle(IPC_CHANNELS.systemHealth, () => {

@@ -1,3 +1,5 @@
+import type { StudyApi } from './study'
+
 export const IPC_CHANNELS = {
   systemHealth: 'system:health'
 } as const
@@ -11,4 +13,6 @@ export interface MyMindApi {
   system: {
     getHealth(): Promise<SystemHealth>
   }
+
+  study: StudyApi
 }

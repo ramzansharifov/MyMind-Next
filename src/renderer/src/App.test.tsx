@@ -14,6 +14,16 @@ describe('App shell', () => {
             database: 'ready',
             sqliteVersion: '3.0.0'
           })
+        },
+
+        study: {
+          listNodes: vi.fn().mockResolvedValue([]),
+          createNode: vi.fn(),
+          renameNode: vi.fn(),
+          deleteNode: vi.fn(),
+          updateExpansion: vi.fn(),
+          getMaterial: vi.fn(),
+          saveMaterial: vi.fn()
         }
       }
     })
