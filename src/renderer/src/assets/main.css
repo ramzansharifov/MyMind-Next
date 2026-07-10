@@ -27,6 +27,8 @@
   --app-border-strong: #30343e;
   --app-text: #f2f3f5;
   --app-muted: #9297a3;
+  --app-tooltip: #20232a;
+  --app-tooltip-border: #343842;
 }
 
 * {
