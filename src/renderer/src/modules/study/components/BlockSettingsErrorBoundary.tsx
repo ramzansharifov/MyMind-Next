@@ -1,7 +1,4 @@
-import {
-  Component,
-  type ReactNode
-} from 'react'
+import { Component, type ReactNode } from 'react'
 
 interface BlockSettingsErrorBoundaryProps {
   children: ReactNode
@@ -38,13 +35,10 @@ export class BlockSettingsErrorBoundary extends Component<
 
     return (
       <aside className="rounded-xl border border-red-500/20 bg-red-500/[0.05] p-4">
-        <p className="text-sm font-medium text-red-300">
-          Не удалось открыть настройки блока
-        </p>
+        <p className="text-sm font-medium text-red-300">Не удалось открыть настройки блока</p>
 
         <p className="mt-2 text-xs leading-5 text-red-200/70">
-          Сам редактор продолжает работать.
-          Попробуй повторно открыть панель.
+          Сам редактор продолжает работать. Попробуй повторно открыть панель.
         </p>
 
         <button

@@ -14,6 +14,8 @@ export interface StudyHeadingBlock {
   type: 'heading'
   text: string
   level: 1 | 2 | 3
+  color?: string
+  backgroundColor?: string
 }
 
 export interface StudyCodeBlock {

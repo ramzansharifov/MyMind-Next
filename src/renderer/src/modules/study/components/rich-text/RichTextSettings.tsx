@@ -46,6 +46,8 @@ interface EditorFormattingState {
   alignment: TextAlignment
   fontSize: string
   color: string
+  backgroundColor: string
+  highlightActive: boolean
   href: string
   linkActive: boolean
   canUndo: boolean
@@ -68,6 +70,8 @@ const defaultEditorState: EditorFormattingState = {
   alignment: 'left',
   fontSize: 'default',
   color: '#f2f3f5',
+  backgroundColor: '#4c1d95',
+  highlightActive: false,
   href: '',
   linkActive: false,
   canUndo: false,
@@ -105,42 +109,39 @@ const fontSizes = [
   }
 ]
 
-export function RichTextSettings({
-  editor
-}: RichTextSettingsProps): React.JSX.Element {
+const highlightColors = [
+  '#3f3f46',
+  '#4c1d95',
+  '#1e3a8a',
+  '#164e63',
+  '#064e3b',
+  '#713f12',
+  '#7f1d1d',
+  '#701a75'
+]
+export function RichTextSettings({ editor }: RichTextSettingsProps): React.JSX.Element {
   if (!editor || editor.isDestroyed) {
     return <UnavailableEditorSettings />
   }
 
-  return (
-    <ConnectedRichTextSettings
-      editor={editor}
-    />
-  )
+  return <ConnectedRichTextSettings editor={editor} />
 }
 
-function ConnectedRichTextSettings({
-  editor
-}: {
-  editor: Editor
-}): React.JSX.Element {
-  const savedSelectionRef =
-    useRef<SavedSelection | null>(null)
+function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.Element {
+  const savedSelectionRef = useRef<SavedSelection | null>(null)
 
   const editorState =
     useEditorState({
       editor,
       selector: ({ editor: currentEditor }) => {
-        if (
-          !currentEditor ||
-          currentEditor.isDestroyed
-        ) {
+        if (!currentEditor || currentEditor.isDestroyed) {
           return defaultEditorState
         }
 
         const textStyle = currentEditor.getAttributes('textStyle')
         const paragraph = currentEditor.getAttributes('paragraph')
         const link = currentEditor.getAttributes('link')
+        const highlight = currentEditor.getAttributes('highlight')
 
         return {
           bold: currentEditor.isActive('bold'),
@@ -152,19 +153,13 @@ function ConnectedRichTextSettings({
           orderedList: currentEditor.isActive('orderedList'),
           alignment: getTextAlignment(paragraph.textAlign),
           fontSize: typeof textStyle.fontSize === 'string' ? textStyle.fontSize : 'default',
-          color: normalizeColor(textStyle.color),
+          color: normalizeColor(textStyle.color, '#f2f3f5'),
+          backgroundColor: normalizeColor(highlight.color, '#4c1d95'),
+          highlightActive: currentEditor.isActive('highlight'),
           href: typeof link.href === 'string' ? link.href : '',
           linkActive: currentEditor.isActive('link'),
-          canUndo: canRunEditorCommand(
-            currentEditor,
-            (candidate) =>
-              candidate.can().undo()
-          ),
-          canRedo: canRunEditorCommand(
-            currentEditor,
-            (candidate) =>
-              candidate.can().redo()
-          )
+          canUndo: canRunEditorCommand(currentEditor, (candidate) => candidate.can().undo()),
+          canRedo: canRunEditorCommand(currentEditor, (candidate) => candidate.can().redo())
         } satisfies EditorFormattingState
       }
     }) ?? defaultEditorState
@@ -286,6 +281,21 @@ function ConnectedRichTextSettings({
 
   function applyColor(value: string): void {
     createCommandChain()?.setColor(value).run()
+  }
+  function clearColor(): void {
+    createCommandChain()?.unsetColor().run()
+  }
+
+  function applyBackgroundColor(value: string): void {
+    createCommandChain()
+      ?.setHighlight({
+        color: value
+      })
+      .run()
+  }
+
+  function clearBackgroundColor(): void {
+    createCommandChain()?.unsetHighlight().run()
   }
 
   function clearFormatting(): void {
@@ -486,8 +496,32 @@ function ConnectedRichTextSettings({
               value={editorState.color}
               ariaLabel="Цвет текста"
               disabled={!editor}
+              clearLabel="Цвет по умолчанию"
               onChange={applyColor}
+              onClear={clearColor}
             />
+          </label>
+        </SettingsSection>
+
+        <SettingsSection title="Ссылка">
+          <label className="grid gap-2">
+            <span className="text-xs font-medium text-(--app-muted)">Фон выделения</span>
+
+            <ColorPicker
+              value={editorState.backgroundColor}
+              ariaLabel="Фон выделенного текста"
+              disabled={!editor}
+              colors={highlightColors}
+              clearLabel="Убрать фон"
+              onChange={applyBackgroundColor}
+              onClear={clearBackgroundColor}
+            />
+
+            {!editorState.highlightActive && (
+              <span className="text-[11px] leading-4 text-(--app-muted)">
+                Сначала выдели текст, затем выбери фон.
+              </span>
+            )}
           </label>
         </SettingsSection>
 
@@ -750,22 +784,16 @@ function LinkPopover({
 function UnavailableEditorSettings(): React.JSX.Element {
   return (
     <div className="rounded-lg border border-dashed border-(--app-border) p-3">
-      <p className="text-sm font-medium text-(--app-text)">
-        Текстовый блок не активен
-      </p>
+      <p className="text-sm font-medium text-(--app-text)">Текстовый блок не активен</p>
 
       <p className="mt-1 text-xs leading-5 text-(--app-muted)">
-        Установи курсор или выдели текст,
-        чтобы открыть форматирование.
+        Установи курсор или выдели текст, чтобы открыть форматирование.
       </p>
     </div>
   )
 }
 
-function canRunEditorCommand(
-  editor: Editor | null,
-  command: (editor: Editor) => boolean
-): boolean {
+function canRunEditorCommand(editor: Editor | null, command: (editor: Editor) => boolean): boolean {
   if (!editor || editor.isDestroyed) {
     return false
   }
@@ -784,8 +812,8 @@ function isTextAlignment(value: unknown): value is TextAlignment {
   return value === 'left' || value === 'center' || value === 'right' || value === 'justify'
 }
 
-function normalizeColor(value: unknown): string {
-  return typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value) ? value : '#f2f3f5'
+function normalizeColor(value: unknown, fallback: string): string {
+  return typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value) ? value : fallback
 }
 
 function normalizeHref(value: string): string | null {

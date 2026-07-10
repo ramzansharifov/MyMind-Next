@@ -25,6 +25,7 @@ import {
   createStudyBlock,
   DEFAULT_DIVIDER_COLOR,
   DEFAULT_DIVIDER_THICKNESS,
+  DEFAULT_HEADING_COLOR,
   getStudyTextBlockHtml,
   moveStudyBlock,
   removeStudyBlock,
@@ -216,15 +217,11 @@ export function StudyBlockEditor({
       </div>
 
       <div className="sticky top-0 max-h-[calc(100vh-150px)] overflow-y-auto pr-1 max-[1050px]:static max-[1050px]:max-h-none">
-        <BlockSettingsErrorBoundary
-          key={activeBlock?.id ?? 'empty'}
-        >
+        <BlockSettingsErrorBoundary key={activeBlock?.id ?? 'empty'}>
           <BlockSettingsPanel
             block={activeBlock}
             textEditor={
-              activeBlock?.type === 'text' &&
-              activeTextEditor &&
-              !activeTextEditor.isDestroyed
+              activeBlock?.type === 'text' && activeTextEditor && !activeTextEditor.isDestroyed
                 ? activeTextEditor
                 : null
             }
@@ -344,9 +341,16 @@ function EditableBlock({
         value={block.text}
         placeholder="Заголовок"
         className={cn(
-          'w-full bg-transparent font-semibold tracking-tight text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60',
+          'w-full rounded-lg px-2 py-2',
+          'font-semibold tracking-tight outline-none',
+          'placeholder:text-[var(--app-muted)]/60',
+          'transition-colors',
           className
         )}
+        style={{
+          color: block.color ?? DEFAULT_HEADING_COLOR,
+          backgroundColor: block.backgroundColor ?? 'transparent'
+        }}
         onChange={(event) => {
           onChange({
             ...block,
@@ -421,9 +425,17 @@ function StudyBlockReader({ block }: { block: StudyBlock }): React.JSX.Element {
   }
 
   if (block.type === 'heading') {
+    const headingStyle = {
+      color: block.color ?? DEFAULT_HEADING_COLOR,
+      backgroundColor: block.backgroundColor ?? 'transparent'
+    }
+
     if (block.level === 1) {
       return (
-        <h1 className="text-3xl font-semibold tracking-tight text-[var(--app-text)]">
+        <h1
+          className="rounded-lg px-2 py-1 text-3xl font-semibold tracking-tight"
+          style={headingStyle}
+        >
           {block.text || 'Без заголовка'}
         </h1>
       )
@@ -431,14 +443,20 @@ function StudyBlockReader({ block }: { block: StudyBlock }): React.JSX.Element {
 
     if (block.level === 2) {
       return (
-        <h2 className="text-2xl font-semibold tracking-tight text-[var(--app-text)]">
+        <h2
+          className="rounded-lg px-2 py-1 text-2xl font-semibold tracking-tight"
+          style={headingStyle}
+        >
           {block.text || 'Без заголовка'}
         </h2>
       )
     }
 
     return (
-      <h3 className="text-xl font-semibold tracking-tight text-[var(--app-text)]">
+      <h3
+        className="rounded-lg px-2 py-1 text-xl font-semibold tracking-tight"
+        style={headingStyle}
+      >
         {block.text || 'Без заголовка'}
       </h3>
     )

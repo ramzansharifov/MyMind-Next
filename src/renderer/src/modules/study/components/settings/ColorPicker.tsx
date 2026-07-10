@@ -1,5 +1,5 @@
 import * as Popover from '@radix-ui/react-popover'
-import { Check, Palette, X } from 'lucide-react'
+import { Check, Eraser, Palette, X } from 'lucide-react'
 
 import { cn } from '../../../../shared/lib/cn'
 
@@ -19,7 +19,9 @@ interface ColorPickerProps {
   ariaLabel: string
   disabled?: boolean
   colors?: string[]
+  clearLabel?: string
   onChange: (value: string) => void
+  onClear?: () => void
 }
 
 export function ColorPicker({
@@ -27,7 +29,9 @@ export function ColorPicker({
   ariaLabel,
   disabled = false,
   colors = defaultColors,
-  onChange
+  clearLabel = 'Убрать цвет',
+  onChange,
+  onClear
 }: ColorPickerProps): React.JSX.Element {
   return (
     <Popover.Root>
@@ -41,7 +45,8 @@ export function ColorPicker({
             'border border-(--app-border) bg-(--app-workspace) px-3',
             'text-sm text-(--app-text)',
             'hover:border-(--app-border-strong)',
-            'focus-visible:ring-2 focus-visible:ring-violet-500/25 focus-visible:outline-none',
+            'focus-visible:ring-2 focus-visible:ring-violet-500/25',
+            'focus-visible:outline-none',
             'disabled:cursor-not-allowed disabled:opacity-45'
           )}
         >
@@ -91,14 +96,21 @@ export function ColorPicker({
                 <button
                   type="button"
                   aria-label={`Цвет ${color}`}
-                  className="relative flex aspect-square items-center justify-center rounded-lg border border-white/10 outline-none hover:scale-105 focus-visible:ring-2 focus-visible:ring-violet-400"
+                  className={cn(
+                    'relative flex aspect-square items-center justify-center',
+                    'rounded-lg border border-white/10 outline-none',
+                    'transition-transform hover:scale-105',
+                    'focus-visible:ring-2 focus-visible:ring-violet-400'
+                  )}
                   style={{
                     backgroundColor: color
                   }}
-                  onClick={() => onChange(color)}
+                  onClick={() => {
+                    onChange(color)
+                  }}
                 >
                   {color.toLowerCase() === value.toLowerCase() && (
-                    <Check aria-hidden="true" className="size-4 text-black/75" />
+                    <Check aria-hidden="true" className="size-4 text-white drop-shadow" />
                   )}
                 </button>
               </Popover.Close>
@@ -122,6 +134,25 @@ export function ColorPicker({
               <span className="text-xs text-(--app-muted)">{value.toUpperCase()}</span>
             </div>
           </label>
+
+          {onClear && (
+            <Popover.Close asChild>
+              <button
+                type="button"
+                className={cn(
+                  'mt-3 flex h-9 w-full items-center justify-center gap-2',
+                  'rounded-lg border border-(--app-border)',
+                  'text-xs font-medium text-(--app-muted)',
+                  'hover:bg-white/[0.05] hover:text-(--app-text)'
+                )}
+                onClick={onClear}
+              >
+                <Eraser aria-hidden="true" className="size-4" />
+
+                {clearLabel}
+              </button>
+            </Popover.Close>
+          )}
 
           <Popover.Arrow className="fill-(--app-border)" />
         </Popover.Content>

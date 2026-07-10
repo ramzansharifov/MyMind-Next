@@ -1,4 +1,5 @@
 import type { Extensions } from '@tiptap/core'
+import Highlight from '@tiptap/extension-highlight'
 import TextAlign from '@tiptap/extension-text-align'
 import { TextStyleKit } from '@tiptap/extension-text-style'
 import { Placeholder } from '@tiptap/extensions'
@@ -22,11 +23,18 @@ export function createRichTextExtensions(readOnly: boolean): Extensions {
         }
       }
     }),
+
     TextAlign.configure({
       types: ['paragraph'],
       alignments: ['left', 'center', 'right', 'justify']
     }),
+
     TextStyleKit,
+
+    Highlight.configure({
+      multicolor: true
+    }),
+
     Placeholder.configure({
       placeholder: 'Начни писать материал…',
       showOnlyWhenEditable: true

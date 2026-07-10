@@ -4,7 +4,12 @@ import * as Slider from '@radix-ui/react-slider'
 import { Code2, Heading, Link2, Minus, Settings2, Type } from 'lucide-react'
 
 import type { StudyBlock } from '../../../../../shared/contracts/study'
-import { DEFAULT_DIVIDER_COLOR, DEFAULT_DIVIDER_THICKNESS } from '../lib/study-document'
+import {
+  DEFAULT_DIVIDER_COLOR,
+  DEFAULT_DIVIDER_THICKNESS,
+  DEFAULT_HEADING_BACKGROUND_COLOR,
+  DEFAULT_HEADING_COLOR
+} from '../lib/study-document'
 import { RichTextSettings } from './rich-text/RichTextSettings'
 import { ColorPicker } from './settings/ColorPicker'
 import { StudySelect } from './settings/StudySelect'
@@ -16,6 +21,16 @@ interface BlockSettingsPanelProps {
 }
 
 const headingLevels = [
+const headingBackgroundColors = [
+  '#181a20',
+  '#27272a',
+  '#4c1d95',
+  '#1e3a8a',
+  '#164e63',
+  '#064e3b',
+  '#713f12',
+  '#7f1d1d'
+]
   {
     value: '1',
     label: 'H1 — крупный'
@@ -128,29 +143,87 @@ function HeadingSettings({
   block,
   onChange
 }: {
-  block: Extract<StudyBlock, { type: 'heading' }>
+  block: Extract<
+    StudyBlock,
+    { type: 'heading' }
+  >
   onChange: (block: StudyBlock) => void
 }): React.JSX.Element {
   return (
-    <SettingsField label="Уровень заголовка">
-      <StudySelect
-        value={String(block.level)}
-        options={headingLevels}
-        ariaLabel="Уровень заголовка"
-        onValueChange={(value) => {
-          const level = Number(value)
+    <div className="grid gap-4">
+      <SettingsField label="Уровень заголовка">
+        <StudySelect
+          value={String(block.level)}
+          options={headingLevels}
+          ariaLabel="Уровень заголовка"
+          onValueChange={(value) => {
+            const level = Number(value)
 
-          if (level !== 1 && level !== 2 && level !== 3) {
-            return
+            if (
+              level !== 1 &&
+              level !== 2 &&
+              level !== 3
+            ) {
+              return
+            }
+
+            onChange({
+              ...block,
+              level
+            })
+          }}
+        />
+      </SettingsField>
+
+      <Separator.Root className="h-px bg-(--app-border)" />
+
+      <SettingsField label="Цвет текста">
+        <ColorPicker
+          value={
+            block.color ??
+            DEFAULT_HEADING_COLOR
           }
+          ariaLabel="Цвет текста заголовка"
+          clearLabel="Цвет по умолчанию"
+          onChange={(color) => {
+            onChange({
+              ...block,
+              color
+            })
+          }}
+          onClear={() => {
+            onChange({
+              ...block,
+              color: undefined
+            })
+          }}
+        />
+      </SettingsField>
 
-          onChange({
-            ...block,
-            level
-          })
-        }}
-      />
-    </SettingsField>
+      <SettingsField label="Фон заголовка">
+        <ColorPicker
+          value={
+            block.backgroundColor ??
+            DEFAULT_HEADING_BACKGROUND_COLOR
+          }
+          ariaLabel="Фон заголовка"
+          colors={headingBackgroundColors}
+          clearLabel="Прозрачный фон"
+          onChange={(backgroundColor) => {
+            onChange({
+              ...block,
+              backgroundColor
+            })
+          }}
+          onClear={() => {
+            onChange({
+              ...block,
+              backgroundColor: undefined
+            })
+          }}
+        />
+      </SettingsField>
+    </div>
   )
 }
 

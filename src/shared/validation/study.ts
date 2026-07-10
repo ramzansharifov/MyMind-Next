@@ -13,7 +13,15 @@ export const studyHeadingBlockSchema = z.object({
   id: z.string().min(1),
   type: z.literal('heading'),
   text: z.string(),
-  level: z.union([z.literal(1), z.literal(2), z.literal(3)])
+  level: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+  color: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/)
+    .optional(),
+  backgroundColor: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/)
+    .optional()
 })
 
 export const studyCodeBlockSchema = z.object({
