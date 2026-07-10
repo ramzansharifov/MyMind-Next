@@ -29,6 +29,7 @@ import type {
   StudyDocument
 } from '../../../../../shared/contracts/study'
 import { cn } from '../../../shared/lib/cn'
+import { AutoGrowTextarea } from '../../../shared/ui/AutoGrowTextarea'
 import {
   cloneStudyBlock,
   createStudyBlock,
@@ -545,19 +546,25 @@ function EditableBlock({
     const typography = getHeadingTypography(block.level)
 
     return (
-      <input
+      <AutoGrowTextarea
         value={block.text}
+        resizeKey={block.level}
         placeholder="Заголовок"
+        aria-label="Текст заголовка"
         className={cn(
-          'w-full rounded-lg px-2 py-2',
+          'max-h-[24rem] w-full rounded-lg px-2 py-2',
           'font-semibold outline-none',
           'placeholder:text-[var(--app-muted)]/60',
           'transition-[color,background-color,font-size]'
         )}
         style={{
           ...typography,
-          color: block.color ?? DEFAULT_HEADING_COLOR,
-          backgroundColor: block.backgroundColor ?? 'transparent'
+          color:
+            block.color ??
+            DEFAULT_HEADING_COLOR,
+          backgroundColor:
+            block.backgroundColor ??
+            'transparent'
         }}
         onChange={(event) => {
           onChange({

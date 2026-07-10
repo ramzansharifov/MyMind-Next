@@ -35,7 +35,7 @@ export function createStudyBlock(type: StudyBlockType): StudyBlock {
       id,
       type,
       source: '',
-      viewMode: 'split'
+      viewMode: 'write'
     }
   }
   if (type === 'latex') {
@@ -43,7 +43,7 @@ export function createStudyBlock(type: StudyBlockType): StudyBlock {
       id,
       type,
       source: '',
-      viewMode: 'split',
+      viewMode: 'write',
       displayMode: 'display',
       alignment: 'center',
       scale: 100
@@ -54,7 +54,7 @@ export function createStudyBlock(type: StudyBlockType): StudyBlock {
       id,
       type,
       source: '',
-      viewMode: 'split',
+      viewMode: 'write',
       theme: 'dark',
       scale: 100
     }

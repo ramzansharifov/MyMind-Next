@@ -171,13 +171,13 @@ export function StudyMarkdownBlock({
       )}
 
       {activeMode === 'preview' && (
-        <div className="min-h-72 p-5">
+        <div className="p-5">
           <StudyMarkdownPreview source={source} />
         </div>
       )}
 
       {activeMode === 'split' && (
-        <div className="grid min-h-80 grid-cols-2 divide-x divide-[var(--app-border)] max-[900px]:grid-cols-1 max-[900px]:divide-x-0 max-[900px]:divide-y">
+        <div className="grid grid-cols-2 divide-x divide-[var(--app-border)] max-[900px]:grid-cols-1 max-[900px]:divide-x-0 max-[900px]:divide-y">
           <div className="min-w-0">
             <MarkdownPanelLabel>Markdown</MarkdownPanelLabel>
 
@@ -187,7 +187,7 @@ export function StudyMarkdownBlock({
           <div className="min-w-0">
             <MarkdownPanelLabel>Просмотр</MarkdownPanelLabel>
 
-            <div className="min-h-72 p-5">
+            <div className="p-5">
               <StudyMarkdownPreview source={source} />
             </div>
           </div>
@@ -225,7 +225,7 @@ function MarkdownSourceEditor({
           preClassName="study-markdown-source__pre"
           highlight={highlightMarkdown}
           style={{
-            minHeight: '18rem',
+            minHeight: '3.45rem',
             fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
             fontSize: '0.875rem',
             lineHeight: '1.65'

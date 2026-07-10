@@ -67,7 +67,7 @@ button {
   background: rgb(124 58 237 / 45%);
 }
 .mymind-rich-text-editor {
-  min-height: 8rem;
+  min-height: 1.75rem;
   color: var(--app-text);
   caret-color: #a78bfa;
   font-size: 0.9375rem;
@@ -203,6 +203,7 @@ button {
 }
 
 .study-mermaid-source__textarea {
+  overflow: hidden !important;
   outline: none !important;
   caret-color: #f8fafc !important;
 }
@@ -240,7 +241,7 @@ button {
 .study-mermaid-preview {
   display: flex;
   min-width: 0;
-  min-height: 18rem;
+  min-height: 3.5rem;
   align-items: center;
   justify-content: center;
   overflow: auto;
@@ -297,6 +298,7 @@ button {
 }
 
 .study-latex-source__textarea {
+  overflow: hidden !important;
   outline: none !important;
   caret-color: #f8fafc !important;
 }
@@ -333,7 +335,7 @@ button {
 .study-latex-preview {
   display: flex;
   min-width: 0;
-  min-height: 14rem;
+  min-height: 3.5rem;
   align-items: center;
   overflow-x: auto;
   padding: 1.25rem;
@@ -405,6 +407,7 @@ button {
 }
 
 .study-markdown-source__textarea {
+  overflow: hidden !important;
   outline: none !important;
   caret-color: #f8fafc !important;
 }

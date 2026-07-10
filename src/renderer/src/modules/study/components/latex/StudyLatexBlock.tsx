@@ -207,7 +207,7 @@ export function StudyLatexBlock({
         )}
 
         {activeViewMode === 'split' && (
-          <div className="grid min-h-80 grid-cols-2 divide-x divide-[var(--app-border)] max-[900px]:grid-cols-1 max-[900px]:divide-x-0 max-[900px]:divide-y">
+          <div className="grid grid-cols-2 divide-x divide-[var(--app-border)] max-[900px]:grid-cols-1 max-[900px]:divide-x-0 max-[900px]:divide-y">
             <div className="min-w-0">
               <LatexPanelLabel>LaTeX</LatexPanelLabel>
 
@@ -259,7 +259,7 @@ function LatexSourceEditor({
           preClassName="study-latex-source__pre"
           highlight={highlightLatex}
           style={{
-            minHeight: '18rem',
+            minHeight: '3.45rem',
             fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
             fontSize: '0.875rem',
             lineHeight: '1.65'

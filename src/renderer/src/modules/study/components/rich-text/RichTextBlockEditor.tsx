@@ -106,10 +106,17 @@ export function RichTextBlockEditor({
   }, [editor, html])
 
   if (!editor) {
-    return <div className="min-h-32 animate-pulse rounded-lg bg-white/[0.025]" />
+    return (
+      <div className="min-h-7 animate-pulse rounded-lg bg-white/[0.025]" />
+    )
   }
 
-  return <EditorContent editor={editor} className="min-h-32" />
+  return (
+    <EditorContent
+      editor={editor}
+      className="min-h-0"
+    />
+  )
 }
 
 interface RichTextViewerProps {

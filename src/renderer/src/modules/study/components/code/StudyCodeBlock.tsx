@@ -130,7 +130,9 @@ export function StudyCodeBlock({
             preClassName="study-code-block__pre"
             highlight={(value) => highlightStudyCode(value, languageOption.prismLanguage)}
             style={{
-              minHeight: editable ? '15rem' : '6rem',
+              minHeight: editable
+                ? '3.45rem'
+                : '6rem',
               fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
               fontSize: '0.875rem',
               lineHeight: '1.65'
