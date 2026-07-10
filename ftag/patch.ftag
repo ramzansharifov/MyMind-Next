@@ -1,0 +1,572 @@
+@folder src/main/database
+@folder src/main/database/schema
+@folder src/main/ipc
+@folder src/main/services
+@folder src/shared
+@folder src/shared/contracts
+@folder src/shared/types
+@folder src/renderer/src/app
+@folder src/renderer/src/modules
+@folder src/renderer/src/shared
+@folder src/renderer/src/shared/ui
+@folder src/renderer/src/shared/lib
+@folder src/renderer/src/shared/hooks
+@folder src/renderer/src/test
+@folder .data
+
+@write drizzle.config.ts
+import { defineConfig } from 'drizzle-kit'
+
+export default defineConfig({
+  schema: './src/main/database/schema/index.ts',
+  out: './drizzle',
+  dialect: 'sqlite',
+  dbCredentials: {
+    url: './.data/mymind-dev.sqlite'
+  },
+  strict: true,
+  verbose: true
+})
+@end
+
+@write src/main/database/schema/index.ts
+import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+
+export const appMeta = sqliteTable('app_meta', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
+  updatedAt: integer('updated_at', {
+    mode: 'timestamp_ms'
+  }).notNull()
+})
+@end
+
+@write src/main/database/client.ts
+import { app } from 'electron'
+import Database from 'better-sqlite3'
+import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
+import { mkdirSync } from 'node:fs'
+import { join } from 'node:path'
+
+import * as schema from './schema'
+
+let sqlite: Database.Database | null = null
+let database: BetterSQLite3Database<typeof schema> | null = null
+
+export function initializeDatabase(): void {
+  const databaseDirectory = join(app.getPath('userData'), 'data')
+
+  mkdirSync(databaseDirectory, {
+    recursive: true
+  })
+
+  const databasePath = join(databaseDirectory, 'mymind.sqlite')
+
+  sqlite = new Database(databasePath)
+
+  sqlite.pragma('journal_mode = WAL')
+  sqlite.pragma('synchronous = NORMAL')
+  sqlite.pragma('foreign_keys = ON')
+  sqlite.pragma('busy_timeout = 5000')
+
+  database = drizzle(sqlite, {
+    schema
+  })
+}
+
+export function getDatabase(): BetterSQLite3Database<typeof schema> {
+  if (!database) {
+    throw new Error('Database has not been initialized')
+  }
+
+  return database
+}
+
+export function getSqlite(): Database.Database {
+  if (!sqlite) {
+    throw new Error('SQLite has not been initialized')
+  }
+
+  return sqlite
+}
+
+export function closeDatabase(): void {
+  sqlite?.close()
+
+  sqlite = null
+  database = null
+}
+@end
+
+@write src/main/database/migrate.ts
+import { app } from 'electron'
+import { migrate } from 'drizzle-orm/better-sqlite3/migrator'
+import { join } from 'node:path'
+
+import { getDatabase } from './client'
+
+export function runDatabaseMigrations(): void {
+  const migrationsFolder = app.isPackaged
+    ? join(process.resourcesPath, 'drizzle')
+    : join(app.getAppPath(), 'drizzle')
+
+  migrate(getDatabase(), {
+    migrationsFolder
+  })
+}
+@end
+
+@write src/shared/contracts/system.ts
+import { z } from 'zod'
+
+export const IPC_CHANNELS = {
+  systemHealth: 'system:health'
+} as const
+
+export const systemHealthSchema = z.object({
+  database: z.literal('ready'),
+  sqliteVersion: z.string()
+})
+
+export type SystemHealth = z.infer<typeof systemHealthSchema>
+
+export interface MyMindApi {
+  system: {
+    getHealth(): Promise<SystemHealth>
+  }
+}
+@end
+
+@write src/main/ipc/register-ipc.ts
+import { ipcMain } from 'electron'
+
+import {
+  IPC_CHANNELS,
+  systemHealthSchema
+} from '../../shared/contracts/system'
+import { getSqlite } from '../database/client'
+
+interface SQLiteVersionRow {
+  version: string
+}
+
+export function registerIpcHandlers(): void {
+  ipcMain.removeHandler(IPC_CHANNELS.systemHealth)
+
+  ipcMain.handle(IPC_CHANNELS.systemHealth, () => {
+    const result = getSqlite()
+      .prepare('SELECT sqlite_version() AS version')
+      .get() as SQLiteVersionRow
+
+    return systemHealthSchema.parse({
+      database: 'ready',
+      sqliteVersion: result.version
+    })
+  })
+}
+@end
+
+@write src/preload/index.ts
+import { contextBridge, ipcRenderer } from 'electron'
+
+import {
+  IPC_CHANNELS,
+  systemHealthSchema,
+  type MyMindApi
+} from '../shared/contracts/system'
+
+const api: MyMindApi = {
+  system: {
+    getHealth: async () => {
+      const result = await ipcRenderer.invoke(IPC_CHANNELS.systemHealth)
+
+      return systemHealthSchema.parse(result)
+    }
+  }
+}
+
+if (!process.contextIsolated) {
+  throw new Error('Context isolation must be enabled')
+}
+
+contextBridge.exposeInMainWorld('api', api)
+@end
+
+@write src/preload/index.d.ts
+import type { MyMindApi } from '../shared/contracts/system'
+
+declare global {
+  interface Window {
+    api: MyMindApi
+  }
+}
+
+export {}
+@end
+
+@replace-first src/main/index.ts
+@find
+import { app, shell, BrowserWindow, ipcMain } from 'electron'
+@endfind
+@with
+import { app, shell, BrowserWindow } from 'electron'
+@endwith
+@end
+
+@insert-after-once src/main/index.ts
+@find
+import icon from '../../resources/icon.png?asset'
+@endfind
+@content
+
+import { closeDatabase, initializeDatabase } from './database/client'
+import { runDatabaseMigrations } from './database/migrate'
+import { registerIpcHandlers } from './ipc/register-ipc'
+@endcontent
+@end
+
+@replace-first src/main/index.ts
+@find
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      sandbox: false
+    }
+@endfind
+@with
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true
+    }
+@endwith
+@end
+
+@replace-block src/main/index.ts
+@from
+  mainWindow.webContents.setWindowOpenHandler((details) => {
+@endfrom
+@to
+  })
+@endto
+@with
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    try {
+      const parsedUrl = new URL(url)
+
+      if (parsedUrl.protocol === 'https:' || parsedUrl.protocol === 'mailto:') {
+        void shell.openExternal(url)
+      }
+    } catch {
+      // Invalid URL — do nothing.
+    }
+
+    return {
+      action: 'deny'
+    }
+  })
+
+  mainWindow.webContents.on('will-navigate', (event, navigationUrl) => {
+    const currentUrl = mainWindow.webContents.getURL()
+
+    if (navigationUrl !== currentUrl) {
+      event.preventDefault()
+    }
+  })
+@endwith
+@end
+
+@replace-first src/main/index.ts
+@find
+  electronApp.setAppUserModelId('com.electron')
+@endfind
+@with
+  electronApp.setAppUserModelId('com.mymind.desktop')
+@endwith
+@end
+
+@replace-first src/main/index.ts
+@find
+  // IPC test
+  ipcMain.on('ping', () => console.log('pong'))
+@endfind
+@with
+  // Application services are initialized below.
+@endwith
+@end
+
+@insert-before-once src/main/index.ts
+@find
+  createWindow()
+@endfind
+@content
+  initializeDatabase()
+  runDatabaseMigrations()
+  registerIpcHandlers()
+
+@endcontent
+@end
+
+@insert-before-once src/main/index.ts
+@find
+// Quit when all windows are closed, except on macOS. There, it's common
+@endfind
+@content
+app.on('before-quit', () => {
+  closeDatabase()
+})
+
+@endcontent
+@end
+
+@write src/renderer/src/App.tsx
+import { useEffect, useState } from 'react'
+
+import type { SystemHealth } from '../../shared/contracts/system'
+
+function App(): React.JSX.Element {
+  const [health, setHealth] = useState<SystemHealth | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let mounted = true
+
+    window.api.system
+      .getHealth()
+      .then((result) => {
+        if (mounted) {
+          setHealth(result)
+        }
+      })
+      .catch((reason: unknown) => {
+        if (!mounted) {
+          return
+        }
+
+        setError(reason instanceof Error ? reason.message : 'Unknown startup error')
+      })
+
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-zinc-950 p-6 text-zinc-100">
+      <section className="w-full max-w-xl rounded-2xl border border-zinc-800 bg-zinc-900 p-8">
+        <p className="text-sm font-medium text-violet-400">MyMind Next</p>
+
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight">
+          Local-first personal OS
+        </h1>
+
+        <p className="mt-3 text-sm leading-6 text-zinc-400">
+          Electron, React, TypeScript, Tailwind, Drizzle and SQLite are ready.
+        </p>
+
+        <div className="mt-8 rounded-xl border border-zinc-800 bg-zinc-950 p-4">
+          {error && <p className="text-sm text-red-400">Database error: {error}</p>}
+
+          {!health && !error && (
+            <p className="text-sm text-zinc-400">Checking local database…</p>
+          )}
+
+          {health && (
+            <div>
+              <p className="text-sm font-medium text-emerald-400">Database ready</p>
+              <p className="mt-1 text-sm text-zinc-500">SQLite {health.sqliteVersion}</p>
+            </div>
+          )}
+        </div>
+      </section>
+    </main>
+  )
+}
+
+export default App
+@end
+
+@delete src/renderer/src/components/Versions.tsx
+
+@replace-first src/renderer/index.html
+@find
+    <title>Electron</title>
+@endfind
+@with
+    <title>MyMind</title>
+@endwith
+@end
+
+@replace-first src/renderer/index.html
+@find
+    <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
+    />
+@endfind
+@with
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' http://localhost:* ws://localhost:* http://127.0.0.1:* ws://127.0.0.1:*"
+    />
+@endwith
+@end
+
+@write vitest.config.ts
+import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vitest/config'
+
+export default defineConfig({
+  plugins: [react()],
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['./src/renderer/src/test/setup.ts'],
+    css: true
+  }
+})
+@end
+
+@write src/renderer/src/test/setup.ts
+import '@testing-library/jest-dom/vitest'
+@end
+
+@write src/renderer/src/App.test.tsx
+import { render, screen } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import App from './App'
+
+describe('App', () => {
+  beforeEach(() => {
+    Object.defineProperty(window, 'api', {
+      configurable: true,
+      value: {
+        system: {
+          getHealth: vi.fn().mockResolvedValue({
+            database: 'ready',
+            sqliteVersion: '3.0.0'
+          })
+        }
+      }
+    })
+  })
+
+  it('shows the SQLite health result', async () => {
+    render(<App />)
+
+    expect(await screen.findByText('Database ready')).toBeInTheDocument()
+    expect(screen.getByText('SQLite 3.0.0')).toBeInTheDocument()
+  })
+})
+@end
+
+@replace-first package.json
+@find
+    "rebuild:native": "electron-rebuild -f -w better-sqlite3"
+@endfind
+@with
+    "rebuild:native": "electron-rebuild -f -w better-sqlite3",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "db:check": "drizzle-kit check",
+    "check": "npm run lint && npm run test:run && npm run build"
+@endwith
+@end
+
+@replace-first electron-builder.yml
+@find
+appId: com.electron.app
+@endfind
+@with
+appId: com.mymind.desktop
+@endwith
+@end
+
+@replace-first electron-builder.yml
+@find
+productName: mymind-next
+@endfind
+@with
+productName: MyMind
+@endwith
+@end
+
+@replace-first electron-builder.yml
+@find
+  executableName: mymind-next
+@endfind
+@with
+  executableName: MyMind
+@endwith
+@end
+
+@replace-first electron-builder.yml
+@find
+asarUnpack:
+  - resources/**
+@endfind
+@with
+asarUnpack:
+  - resources/**
+  - node_modules/better-sqlite3/**
+  - node_modules/bindings/**
+extraResources:
+  - from: drizzle
+    to: drizzle
+    filter:
+      - '**/*'
+@endwith
+@end
+
+@replace-first electron-builder.yml
+@find
+npmRebuild: false
+@endfind
+@with
+# Native modules are rebuilt by electron-builder install-app-deps.
+@endwith
+@end
+
+@replace-first electron-builder.yml
+@find
+publish:
+  provider: generic
+  url: https://example.com/auto-updates
+@endfind
+@with
+# Auto-update publishing will be configured later.
+@endwith
+@end
+
+@insert-after-once .gitignore
+@find
+*.log*
+@endfind
+@content
+
+# Environment
+.env
+.env.*
+
+# Local development data
+.data/
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.sqlite3
+
+# Tests
+coverage/
+
+# IDE
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+@endcontent
+@end

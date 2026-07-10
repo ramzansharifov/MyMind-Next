@@ -1,34 +1,59 @@
-import Versions from './components/Versions'
-import electronLogo from './assets/electron.svg'
+import { useEffect, useState } from 'react'
+
+import type { SystemHealth } from '../../shared/contracts/system'
 
 function App(): React.JSX.Element {
-  const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')
+  const [health, setHealth] = useState<SystemHealth | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let mounted = true
+
+    window.api.system
+      .getHealth()
+      .then((result) => {
+        if (mounted) {
+          setHealth(result)
+        }
+      })
+      .catch((reason: unknown) => {
+        if (!mounted) {
+          return
+        }
+
+        setError(reason instanceof Error ? reason.message : 'Unknown startup error')
+      })
+
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   return (
-    <>
-      <img alt="logo" className="logo" src={electronLogo} />
-      <div className="creator">Powered by electron-vite</div>
-      <div className="text">
-        Build an Electron app with <span className="react">React</span>
-        &nbsp;and <span className="ts">TypeScript</span>
-      </div>
-      <p className="tip">
-        Please try pressing <code>F12</code> to open the devTool
-      </p>
-      <div className="actions">
-        <div className="action">
-          <a href="https://electron-vite.org/" target="_blank" rel="noreferrer">
-            Documentation
-          </a>
+    <main className="flex min-h-screen items-center justify-center bg-zinc-950 p-6 text-zinc-100">
+      <section className="w-full max-w-xl rounded-2xl border border-zinc-800 bg-zinc-900 p-8">
+        <p className="text-sm font-medium text-violet-400">MyMind Next</p>
+
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight">Local-first personal OS</h1>
+
+        <p className="mt-3 text-sm leading-6 text-zinc-400">
+          Electron, React, TypeScript, Tailwind, Drizzle and SQLite are ready.
+        </p>
+
+        <div className="mt-8 rounded-xl border border-zinc-800 bg-zinc-950 p-4">
+          {error && <p className="text-sm text-red-400">Database error: {error}</p>}
+
+          {!health && !error && <p className="text-sm text-zinc-400">Checking local database…</p>}
+
+          {health && (
+            <div>
+              <p className="text-sm font-medium text-emerald-400">Database ready</p>
+              <p className="mt-1 text-sm text-zinc-500">SQLite {health.sqliteVersion}</p>
+            </div>
+          )}
         </div>
-        <div className="action">
-          <a target="_blank" rel="noreferrer" onClick={ipcHandle}>
-            Send IPC
-          </a>
-        </div>
-      </div>
-      <Versions></Versions>
-    </>
+      </section>
+    </main>
   )
 }
 

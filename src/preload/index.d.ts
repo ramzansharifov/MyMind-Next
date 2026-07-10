@@ -1,8 +1,9 @@
-import { ElectronAPI } from '@electron-toolkit/preload'
+import type { MyMindApi } from '../shared/contracts/system'
 
 declare global {
   interface Window {
-    electron: ElectronAPI
-    api: unknown
+    api: MyMindApi
   }
 }
+
+export {}

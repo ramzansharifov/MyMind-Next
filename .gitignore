@@ -4,3 +4,26 @@ out
 .DS_Store
 .eslintcache
 *.log*
+
+# Environment
+.env
+.env.*
+
+# Local development data
+.data/
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.sqlite3
+
+# Tests
+coverage/
+
+# IDE
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json

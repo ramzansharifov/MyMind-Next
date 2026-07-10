@@ -1,5 +1,5 @@
-appId: com.mymind.desktop
-productName: MyMind
+appId: com.electron.app
+productName: mymind-next
 directories:
   buildResources: build
 files:
@@ -11,15 +11,8 @@ files:
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
 asarUnpack:
   - resources/**
-  - node_modules/better-sqlite3/**
-  - node_modules/bindings/**
-extraResources:
-  - from: drizzle
-    to: drizzle
-    filter:
-      - '**/*'
 win:
-  executableName: MyMind
+  executableName: mymind-next
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
@@ -44,5 +37,7 @@ linux:
   category: Utility
 appImage:
   artifactName: ${name}-${version}.${ext}
-# Native modules are rebuilt by electron-builder install-app-deps.
-# Auto-update publishing will be configured later.
+npmRebuild: false
+publish:
+  provider: generic
+  url: https://example.com/auto-updates

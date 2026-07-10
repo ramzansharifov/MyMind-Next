@@ -1,0 +1,91 @@
+{
+  "createdAt": "2026-07-10T08:20:58.153Z",
+  "backupPath": ".filetags/backups/2026-07-10T08-20-58-086Z",
+  "filesBackedUp": [
+    {
+      "originalPath": "src/preload/index.ts",
+      "backupRelativePath": "files/src/preload/index.ts"
+    },
+    {
+      "originalPath": "src/preload/index.d.ts",
+      "backupRelativePath": "files/src/preload/index.d.ts"
+    },
+    {
+      "originalPath": "src/main/index.ts",
+      "backupRelativePath": "files/src/main/index.ts"
+    },
+    {
+      "originalPath": "src/renderer/src/App.tsx",
+      "backupRelativePath": "files/src/renderer/src/App.tsx"
+    },
+    {
+      "originalPath": "src/renderer/src/components/Versions.tsx",
+      "backupRelativePath": "files/src/renderer/src/components/Versions.tsx"
+    },
+    {
+      "originalPath": "src/renderer/index.html",
+      "backupRelativePath": "files/src/renderer/index.html"
+    },
+    {
+      "originalPath": "package.json",
+      "backupRelativePath": "files/package.json"
+    },
+    {
+      "originalPath": "electron-builder.yml",
+      "backupRelativePath": "files/electron-builder.yml"
+    },
+    {
+      "originalPath": ".gitignore",
+      "backupRelativePath": "files/.gitignore"
+    }
+  ],
+  "directoriesRecorded": [],
+  "plannedChanges": [
+    "Create folder: src/main/database",
+    "Create folder: src/main/database/schema",
+    "Create folder: src/main/ipc",
+    "Create folder: src/main/services",
+    "Create folder: src/shared",
+    "Create folder: src/shared/contracts",
+    "Create folder: src/shared/types",
+    "Create folder: src/renderer/src/app",
+    "Create folder: src/renderer/src/modules",
+    "Create folder: src/renderer/src/shared",
+    "Create folder: src/renderer/src/shared/ui",
+    "Create folder: src/renderer/src/shared/lib",
+    "Create folder: src/renderer/src/shared/hooks",
+    "Create folder: src/renderer/src/test",
+    "Create folder: .data",
+    "Write file: drizzle.config.ts\n   old: missing\n   new: 12 line(s)",
+    "Write file: src/main/database/schema/index.ts\n   old: missing\n   new: 9 line(s)",
+    "Write file: src/main/database/client.ts\n   old: missing\n   new: 54 line(s)",
+    "Write file: src/main/database/migrate.ts\n   old: missing\n   new: 15 line(s)",
+    "Write file: src/shared/contracts/system.ts\n   old: missing\n   new: 18 line(s)",
+    "Write file: src/main/ipc/register-ipc.ts\n   old: missing\n   new: 26 line(s)",
+    "Write file: src/preload/index.ts\n   old: 23 line(s)\n   new: 23 line(s)",
+    "Write file: src/preload/index.d.ts\n   old: 9 line(s)\n   new: 9 line(s)",
+    "Replace file: src/main/index.ts\n   found: yes\n   old: 75 line(s)\n   new: 75 line(s)",
+    "Insert after: src/main/index.ts\n   found: yes\n   old: 75 line(s)\n   new: 79 line(s)",
+    "Replace file: src/main/index.ts\n   found: yes\n   old: 79 line(s)\n   new: 81 line(s)",
+    "Replace file: src/main/index.ts\n   found: yes\n   old: 81 line(s)\n   new: 100 line(s)",
+    "Replace file: src/main/index.ts\n   found: yes\n   old: 100 line(s)\n   new: 100 line(s)",
+    "Replace file: src/main/index.ts\n   found: yes\n   old: 100 line(s)\n   new: 99 line(s)",
+    "Insert before: src/main/index.ts\n   found: yes\n   old: 99 line(s)\n   new: 102 line(s)",
+    "Insert before: src/main/index.ts\n   found: yes\n   old: 102 line(s)\n   new: 105 line(s)",
+    "Write file: src/renderer/src/App.tsx\n   old: 36 line(s)\n   new: 64 line(s)",
+    "Delete: src/renderer/src/components/Versions.tsx\n   exists: yes",
+    "Replace file: src/renderer/index.html\n   found: yes\n   old: 18 line(s)\n   new: 18 line(s)",
+    "Replace file: src/renderer/index.html\n   found: yes\n   old: 18 line(s)\n   new: 17 line(s)",
+    "Write file: vitest.config.ts\n   old: missing\n   new: 11 line(s)",
+    "Write file: src/renderer/src/test/setup.ts\n   old: missing\n   new: 1 line(s)",
+    "Write file: src/renderer/src/App.test.tsx\n   old: missing\n   new: 27 line(s)",
+    "Replace file: package.json\n   found: yes\n   old: 92 line(s)\n   new: 97 line(s)",
+    "Replace file: electron-builder.yml\n   found: yes\n   old: 44 line(s)\n   new: 44 line(s)",
+    "Replace file: electron-builder.yml\n   found: yes\n   old: 44 line(s)\n   new: 44 line(s)",
+    "Replace file: electron-builder.yml\n   found: yes\n   old: 44 line(s)\n   new: 44 line(s)",
+    "Replace file: electron-builder.yml\n   found: yes\n   old: 44 line(s)\n   new: 51 line(s)",
+    "Replace file: electron-builder.yml\n   found: yes\n   old: 51 line(s)\n   new: 51 line(s)",
+    "Replace file: electron-builder.yml\n   found: yes\n   old: 51 line(s)\n   new: 49 line(s)",
+    "Insert after: .gitignore\n   found: yes\n   old: 7 line(s)\n   new: 30 line(s)"
+  ]
+}

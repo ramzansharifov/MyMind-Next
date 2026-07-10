@@ -1,11 +1,7 @@
-import { app, shell, BrowserWindow } from 'electron'
+import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
-
-import { closeDatabase, initializeDatabase } from './database/client'
-import { runDatabaseMigrations } from './database/migrate'
-import { registerIpcHandlers } from './ipc/register-ipc'
 
 function createWindow(): void {
   // Create the browser window.
@@ -17,9 +13,7 @@ function createWindow(): void {
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: true
+      sandbox: false
     }
   })
 
@@ -27,28 +21,9 @@ function createWindow(): void {
     mainWindow.show()
   })
 
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    try {
-      const parsedUrl = new URL(url)
-
-      if (parsedUrl.protocol === 'https:' || parsedUrl.protocol === 'mailto:') {
-        void shell.openExternal(url)
-      }
-    } catch {
-      // Invalid URL — do nothing.
-    }
-
-    return {
-      action: 'deny'
-    }
-  })
-
-  mainWindow.webContents.on('will-navigate', (event, navigationUrl) => {
-    const currentUrl = mainWindow.webContents.getURL()
-
-    if (navigationUrl !== currentUrl) {
-      event.preventDefault()
-    }
+  mainWindow.webContents.setWindowOpenHandler((details) => {
+    shell.openExternal(details.url)
+    return { action: 'deny' }
   })
 
   // HMR for renderer base on electron-vite cli.
@@ -65,7 +40,7 @@ function createWindow(): void {
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
   // Set app user model id for windows
-  electronApp.setAppUserModelId('com.mymind.desktop')
+  electronApp.setAppUserModelId('com.electron')
 
   // Default open or close DevTools by F12 in development
   // and ignore CommandOrControl + R in production.
@@ -74,11 +49,9 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  // Application services are initialized below.
+  // IPC test
+  ipcMain.on('ping', () => console.log('pong'))
 
-  initializeDatabase()
-  runDatabaseMigrations()
-  registerIpcHandlers()
   createWindow()
 
   app.on('activate', function () {
@@ -88,9 +61,6 @@ app.whenReady().then(() => {
   })
 })
 
-app.on('before-quit', () => {
-  closeDatabase()
-})
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
