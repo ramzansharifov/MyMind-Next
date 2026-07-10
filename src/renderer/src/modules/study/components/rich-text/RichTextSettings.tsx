@@ -1,7 +1,6 @@
 import type { Editor } from '@tiptap/core'
 import { useEditorState } from '@tiptap/react'
 import * as Popover from '@radix-ui/react-popover'
-import * as Separator from '@radix-ui/react-separator'
 import * as ToggleGroup from '@radix-ui/react-toggle-group'
 import * as Tooltip from '@radix-ui/react-tooltip'
 import {
@@ -119,6 +118,7 @@ const highlightColors = [
   '#7f1d1d',
   '#701a75'
 ]
+
 export function RichTextSettings({ editor }: RichTextSettingsProps): React.JSX.Element {
   if (!editor || editor.isDestroyed) {
     return <UnavailableEditorSettings />
@@ -158,20 +158,19 @@ function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.El
           highlightActive: currentEditor.isActive('highlight'),
           href: typeof link.href === 'string' ? link.href : '',
           linkActive: currentEditor.isActive('link'),
-          canUndo: canRunEditorCommand(currentEditor, (candidate) => candidate.can().undo()),
-          canRedo: canRunEditorCommand(currentEditor, (candidate) => candidate.can().redo())
+          canUndo: canRunEditorCommand(currentEditor, (candidate) =>
+            candidate.can().chain().undo().run()
+          ),
+          canRedo: canRunEditorCommand(currentEditor, (candidate) =>
+            candidate.can().chain().redo().run()
+          )
         } satisfies EditorFormattingState
       }
     }) ?? defaultEditorState
 
   useEffect(() => {
-    if (!editor) {
-      savedSelectionRef.current = null
-      return
-    }
-
     function rememberSelection(): void {
-      if (!editor) {
+      if (!editor || editor.isDestroyed) {
         return
       }
 
@@ -203,7 +202,7 @@ function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.El
   ].filter((value): value is string => Boolean(value))
 
   function createCommandChain(): ReturnType<Editor['chain']> | null {
-    if (!editor) {
+    if (!editor || editor.isDestroyed) {
       return null
     }
 
@@ -282,6 +281,7 @@ function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.El
   function applyColor(value: string): void {
     createCommandChain()?.setColor(value).run()
   }
+
   function clearColor(): void {
     createCommandChain()?.unsetColor().run()
   }
@@ -343,20 +343,14 @@ function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.El
   }
 
   return (
-    <Tooltip.Provider delayDuration={350}>
+    <Tooltip.Provider delayDuration={300}>
       <div className="space-y-4">
-        {!editor && (
-          <p className="rounded-lg border border-dashed border-(--app-border) p-3 text-sm leading-6 text-(--app-muted)">
-            Установи курсор или выдели текст в текстовом блоке.
-          </p>
-        )}
-
-        <SettingsSection title="История">
+        <SettingsSection title="Быстро">
           <ToolbarButton
             label="Отменить"
-            disabled={!editor || !editorState.canUndo}
+            disabled={!editorState.canUndo}
             onClick={() => {
-              editor?.chain().focus().undo().run()
+              editor.chain().focus().undo().run()
             }}
           >
             <Undo2 className="size-4" />
@@ -364,29 +358,24 @@ function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.El
 
           <ToolbarButton
             label="Повторить"
-            disabled={!editor || !editorState.canRedo}
+            disabled={!editorState.canRedo}
             onClick={() => {
-              editor?.chain().focus().redo().run()
+              editor.chain().focus().redo().run()
             }}
           >
             <Redo2 className="size-4" />
           </ToolbarButton>
 
-          <ToolbarButton
-            label="Очистить форматирование"
-            disabled={!editor}
-            onClick={clearFormatting}
-          >
+          <ToolbarButton label="Очистить" onClick={clearFormatting}>
             <RemoveFormatting className="size-4" />
           </ToolbarButton>
         </SettingsSection>
 
-        <SettingsSection title="Начертание">
+        <SettingsSection title="Текст">
           <ToggleGroup.Root
             type="multiple"
             value={activeMarks}
-            disabled={!editor}
-            aria-label="Начертание текста"
+            aria-label="Форматирование текста"
             className="flex flex-wrap gap-2"
             onValueChange={applyMarkValues}
           >
@@ -406,7 +395,7 @@ function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.El
               <Strikethrough className="size-4" />
             </ToolbarToggle>
 
-            <ToolbarToggle value="code" label="Моноширный текст">
+            <ToolbarToggle value="code" label="Код">
               <Code2 className="size-4" />
             </ToolbarToggle>
           </ToggleGroup.Root>
@@ -416,8 +405,7 @@ function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.El
           <ToggleGroup.Root
             type="single"
             value={editorState.bulletList ? 'bullet' : editorState.orderedList ? 'ordered' : ''}
-            disabled={!editor}
-            aria-label="Тип списка"
+            aria-label="Списки"
             className="flex flex-wrap gap-2"
             onValueChange={(value) => {
               if (!value) {
@@ -439,11 +427,11 @@ function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.El
               }
             }}
           >
-            <ToolbarToggle value="bullet" label="Маркированный список">
+            <ToolbarToggle value="bullet" label="Маркированный">
               <List className="size-4" />
             </ToolbarToggle>
 
-            <ToolbarToggle value="ordered" label="Нумерованный список">
+            <ToolbarToggle value="ordered" label="Нумерованный">
               <ListOrdered className="size-4" />
             </ToolbarToggle>
           </ToggleGroup.Root>
@@ -453,12 +441,11 @@ function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.El
           <ToggleGroup.Root
             type="single"
             value={editorState.alignment}
-            disabled={!editor}
-            aria-label="Выравнивание текста"
+            aria-label="Выравнивание"
             className="flex flex-wrap gap-2"
             onValueChange={applyAlignment}
           >
-            <ToolbarToggle value="left" label="По левому краю">
+            <ToolbarToggle value="left" label="Слева">
               <AlignLeft className="size-4" />
             </ToolbarToggle>
 
@@ -466,7 +453,7 @@ function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.El
               <AlignCenter className="size-4" />
             </ToolbarToggle>
 
-            <ToolbarToggle value="right" label="По правому краю">
+            <ToolbarToggle value="right" label="Справа">
               <AlignRight className="size-4" />
             </ToolbarToggle>
 
@@ -477,57 +464,42 @@ function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.El
         </SettingsSection>
 
         <SettingsSection title="Оформление" vertical>
-          <label className="grid gap-2">
-            <span className="text-xs font-medium text-(--app-muted)">Размер текста</span>
-
+          <SettingsField label="Размер">
             <StudySelect
               value={editorState.fontSize}
               options={fontSizes}
               ariaLabel="Размер текста"
-              disabled={!editor}
               onValueChange={applyFontSize}
             />
-          </label>
+          </SettingsField>
 
-          <label className="grid gap-2">
-            <span className="text-xs font-medium text-(--app-muted)">Цвет текста</span>
+          <div className="grid grid-cols-2 gap-3">
+            <SettingsField label="Текст">
+              <ColorPicker
+                value={editorState.color}
+                ariaLabel="Цвет текста"
+                clearLabel="Сбросить"
+                onChange={applyColor}
+                onClear={clearColor}
+              />
+            </SettingsField>
 
-            <ColorPicker
-              value={editorState.color}
-              ariaLabel="Цвет текста"
-              disabled={!editor}
-              clearLabel="Цвет по умолчанию"
-              onChange={applyColor}
-              onClear={clearColor}
-            />
-          </label>
-        </SettingsSection>
-
-        <SettingsSection title="Ссылка">
-          <label className="grid gap-2">
-            <span className="text-xs font-medium text-(--app-muted)">Фон выделения</span>
-
-            <ColorPicker
-              value={editorState.backgroundColor}
-              ariaLabel="Фон выделенного текста"
-              disabled={!editor}
-              colors={highlightColors}
-              clearLabel="Убрать фон"
-              onChange={applyBackgroundColor}
-              onClear={clearBackgroundColor}
-            />
-
-            {!editorState.highlightActive && (
-              <span className="text-[11px] leading-4 text-(--app-muted)">
-                Сначала выдели текст, затем выбери фон.
-              </span>
-            )}
-          </label>
+            <SettingsField label="Фон">
+              <ColorPicker
+                value={editorState.backgroundColor}
+                ariaLabel="Фон выделенного текста"
+                colors={highlightColors}
+                clearLabel="Убрать"
+                onChange={applyBackgroundColor}
+                onClear={clearBackgroundColor}
+              />
+            </SettingsField>
+          </div>
         </SettingsSection>
 
         <SettingsSection title="Ссылка">
           <LinkPopover
-            disabled={!editor}
+            disabled={false}
             active={editorState.linkActive}
             currentHref={editorState.href}
             onApply={applyLink}
@@ -549,15 +521,29 @@ function SettingsSection({
   vertical?: boolean
 }): React.JSX.Element {
   return (
-    <section>
+    <section className="space-y-2 border-b border-(--app-border) pb-4 last:border-b-0 last:pb-0">
       <h3 className="text-[11px] font-semibold tracking-[0.08em] text-(--app-muted) uppercase">
         {title}
       </h3>
 
-      <div className={cn('mt-2', vertical ? 'grid gap-4' : 'flex flex-wrap gap-2')}>{children}</div>
-
-      <Separator.Root className="mt-4 h-px bg-(--app-border)" />
+      <div className={cn(vertical ? 'grid gap-3' : 'flex flex-wrap gap-2')}>{children}</div>
     </section>
+  )
+}
+
+function SettingsField({
+  label,
+  children
+}: {
+  label: string
+  children: ReactNode
+}): React.JSX.Element {
+  return (
+    <label className="grid gap-2">
+      <span className="text-[11px] font-medium text-(--app-muted)">{label}</span>
+
+      {children}
+    </label>
   )
 }
 
@@ -624,8 +610,7 @@ function ToolbarToggle({
             'focus-visible:ring-2 focus-visible:ring-violet-500/35',
             'data-[state=on]:border-violet-500/45',
             'data-[state=on]:bg-violet-500/15',
-            'data-[state=on]:text-violet-200',
-            'disabled:cursor-not-allowed disabled:opacity-35'
+            'data-[state=on]:text-violet-200'
           )}
           onMouseDown={(event) => {
             event.preventDefault()
@@ -686,7 +671,7 @@ function LinkPopover({
     event.preventDefault()
 
     if (!onApply(href)) {
-      setError('Введите корректную ссылку с протоколом HTTP, HTTPS или MAILTO.')
+      setError('Нужна корректная ссылка')
       return
     }
 
@@ -711,7 +696,6 @@ function LinkPopover({
           )}
         >
           <Link2 aria-hidden="true" className="size-4" />
-
           {active ? 'Изменить ссылку' : 'Добавить ссылку'}
         </button>
       </Popover.Trigger>
@@ -784,11 +768,7 @@ function LinkPopover({
 function UnavailableEditorSettings(): React.JSX.Element {
   return (
     <div className="rounded-lg border border-dashed border-(--app-border) p-3">
-      <p className="text-sm font-medium text-(--app-text)">Текстовый блок не активен</p>
-
-      <p className="mt-1 text-xs leading-5 text-(--app-muted)">
-        Установи курсор или выдели текст, чтобы открыть форматирование.
-      </p>
+      <p className="text-sm text-(--app-muted)">Выбери текстовый блок</p>
     </div>
   )
 }
@@ -804,6 +784,7 @@ function canRunEditorCommand(editor: Editor | null, command: (editor: Editor) =>
     return false
   }
 }
+
 function getTextAlignment(value: unknown): TextAlignment {
   return isTextAlignment(value) ? value : 'left'
 }

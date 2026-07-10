@@ -23,15 +23,15 @@ interface BlockSettingsPanelProps {
 const headingLevels = [
   {
     value: '1',
-    label: 'H1 — крупный'
+    label: 'H1'
   },
   {
     value: '2',
-    label: 'H2 — средний'
+    label: 'H2'
   },
   {
     value: '3',
-    label: 'H3 — малый'
+    label: 'H3'
   }
 ]
 
@@ -49,7 +49,7 @@ const headingBackgroundColors = [
 const codeLanguages = [
   {
     value: 'text',
-    label: 'Обычный текст'
+    label: 'Текст'
   },
   {
     value: 'javascript',
@@ -103,10 +103,10 @@ export function BlockSettingsPanel({
       <aside className="rounded-xl border border-(--app-border) bg-(--app-surface) p-4">
         <div className="flex items-center gap-2 text-sm font-medium text-(--app-text)">
           <Settings2 aria-hidden="true" className="size-4 text-violet-300" />
-          Настройки блока
+          Настройки
         </div>
 
-        <p className="mt-3 text-sm leading-6 text-(--app-muted)">Выбери блок в редакторе.</p>
+        <p className="mt-3 text-sm text-(--app-muted)">Выбери блок</p>
       </aside>
     )
   }
@@ -120,8 +120,6 @@ export function BlockSettingsPanel({
 
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-(--app-text)">{getBlockTitle(block)}</p>
-
-          <p className="text-xs text-(--app-muted)">Настройки активного блока</p>
         </div>
       </header>
 
@@ -149,7 +147,7 @@ function HeadingSettings({
 }): React.JSX.Element {
   return (
     <div className="grid gap-4">
-      <SettingsField label="Уровень заголовка">
+      <SettingsField label="Уровень">
         <StudySelect
           value={String(block.level)}
           options={headingLevels}
@@ -169,48 +167,48 @@ function HeadingSettings({
         />
       </SettingsField>
 
-      <Separator.Root className="h-px bg-(--app-border)" />
+      <div className="grid grid-cols-2 gap-3">
+        <SettingsField label="Текст">
+          <ColorPicker
+            value={block.color ?? DEFAULT_HEADING_COLOR}
+            ariaLabel="Цвет текста заголовка"
+            clearLabel="Сбросить"
+            onChange={(color) => {
+              onChange({
+                ...block,
+                color
+              })
+            }}
+            onClear={() => {
+              onChange({
+                ...block,
+                color: undefined
+              })
+            }}
+          />
+        </SettingsField>
 
-      <SettingsField label="Цвет текста">
-        <ColorPicker
-          value={block.color ?? DEFAULT_HEADING_COLOR}
-          ariaLabel="Цвет текста заголовка"
-          clearLabel="Цвет по умолчанию"
-          onChange={(color) => {
-            onChange({
-              ...block,
-              color
-            })
-          }}
-          onClear={() => {
-            onChange({
-              ...block,
-              color: undefined
-            })
-          }}
-        />
-      </SettingsField>
-
-      <SettingsField label="Фон заголовка">
-        <ColorPicker
-          value={block.backgroundColor ?? DEFAULT_HEADING_BACKGROUND_COLOR}
-          ariaLabel="Фон заголовка"
-          colors={headingBackgroundColors}
-          clearLabel="Прозрачный фон"
-          onChange={(backgroundColor) => {
-            onChange({
-              ...block,
-              backgroundColor
-            })
-          }}
-          onClear={() => {
-            onChange({
-              ...block,
-              backgroundColor: undefined
-            })
-          }}
-        />
-      </SettingsField>
+        <SettingsField label="Фон">
+          <ColorPicker
+            value={block.backgroundColor ?? DEFAULT_HEADING_BACKGROUND_COLOR}
+            ariaLabel="Фон заголовка"
+            colors={headingBackgroundColors}
+            clearLabel="Сбросить"
+            onChange={(backgroundColor) => {
+              onChange({
+                ...block,
+                backgroundColor
+              })
+            }}
+            onClear={() => {
+              onChange({
+                ...block,
+                backgroundColor: undefined
+              })
+            }}
+          />
+        </SettingsField>
+      </div>
     </div>
   )
 }
@@ -253,7 +251,7 @@ function LinkSettings({
       <SettingsField label="Название">
         <input
           value={block.title}
-          placeholder="Название ссылки"
+          placeholder="Название"
           className="h-10 rounded-lg border border-(--app-border) bg-(--app-workspace) px-3 text-sm text-(--app-text) outline-none placeholder:text-(--app-muted)/60 focus:border-violet-500/50"
           onChange={(event) => {
             onChange({
@@ -278,7 +276,7 @@ function LinkSettings({
         />
 
         {block.url.trim() && !linkStatus && (
-          <p className="text-xs leading-5 text-red-300">Допустимы только HTTP, HTTPS и MAILTO.</p>
+          <p className="text-xs leading-5 text-red-300">Неверная ссылка</p>
         )}
       </SettingsField>
     </div>
@@ -297,7 +295,7 @@ function DividerSettings({
 
   return (
     <div className="grid gap-4">
-      <SettingsField label={`Толщина — ${thickness}px`}>
+      <SettingsField label={`Толщина: ${thickness}px`}>
         <Slider.Root
           min={1}
           max={12}
@@ -353,7 +351,7 @@ function SettingsField({
 }): React.JSX.Element {
   return (
     <label className="grid gap-2">
-      <span className="text-xs font-medium text-(--app-muted)">{label}</span>
+      <span className="text-[11px] font-medium text-(--app-muted)">{label}</span>
 
       {children}
     </label>
@@ -386,7 +384,7 @@ function getBlockTitle(block: StudyBlock): string {
   }
 
   if (block.type === 'code') {
-    return 'Блок кода'
+    return 'Код'
   }
 
   if (block.type === 'link') {
