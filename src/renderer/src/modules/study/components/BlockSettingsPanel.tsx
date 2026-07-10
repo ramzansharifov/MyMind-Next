@@ -22,7 +22,7 @@ export function BlockSettingsPanel({
     return (
       <aside className="rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4">
         <div className="flex items-center gap-2 text-sm font-medium text-[var(--app-text)]">
-          <Settings2 className="size-4 text-violet-300" />
+          <Settings2 aria-hidden="true" className="size-4 text-violet-300" />
           Настройки блока
         </div>
 
@@ -31,13 +31,11 @@ export function BlockSettingsPanel({
     )
   }
 
-  const Icon = getBlockIcon(block)
-
   return (
     <aside className="rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)]">
       <header className="flex items-center gap-3 border-b border-[var(--app-border)] px-4 py-3.5">
         <div className="flex size-8 items-center justify-center rounded-lg bg-violet-500/10 text-violet-300">
-          <Icon className="size-4" />
+          <BlockTypeIcon type={block.type} />
         </div>
 
         <div>
@@ -52,164 +50,204 @@ export function BlockSettingsPanel({
           <RichTextSettings editor={textEditor} revision={editorRevision} />
         )}
 
-        {block.type === 'heading' && (
-          <label className="grid gap-2">
-            <span className="text-xs font-medium text-[var(--app-muted)]">Уровень заголовка</span>
+        {block.type === 'heading' && <HeadingSettings block={block} onChange={onChange} />}
 
-            <select
-              value={block.level}
-              className="h-10 rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/45"
-              onChange={(event) => {
-                onChange({
-                  ...block,
-                  level: Number(event.target.value) as 1 | 2 | 3
-                })
-              }}
-            >
-              <option value={1}>H1 — крупный</option>
-              <option value={2}>H2 — средний</option>
-              <option value={3}>H3 — малый</option>
-            </select>
-          </label>
-        )}
+        {block.type === 'code' && <CodeSettings block={block} onChange={onChange} />}
 
-        {block.type === 'code' && (
-          <label className="grid gap-2">
-            <span className="text-xs font-medium text-[var(--app-muted)]">Язык</span>
+        {block.type === 'link' && <LinkSettings block={block} onChange={onChange} />}
 
-            <select
-              value={block.language}
-              className="h-10 rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/45"
-              onChange={(event) => {
-                onChange({
-                  ...block,
-                  language: event.target.value
-                })
-              }}
-            >
-              <option value="text">Обычный текст</option>
-              <option value="javascript">JavaScript</option>
-              <option value="typescript">TypeScript</option>
-              <option value="python">Python</option>
-              <option value="html">HTML</option>
-              <option value="css">CSS</option>
-              <option value="sql">SQL</option>
-              <option value="json">JSON</option>
-              <option value="bash">Bash</option>
-              <option value="cpp">C++</option>
-              <option value="java">Java</option>
-            </select>
-          </label>
-        )}
-
-        {block.type === 'link' && (
-          <div className="grid gap-4">
-            <label className="grid gap-2">
-              <span className="text-xs font-medium text-[var(--app-muted)]">Название</span>
-
-              <input
-                value={block.title}
-                placeholder="Название ссылки"
-                className="h-10 rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45"
-                onChange={(event) => {
-                  onChange({
-                    ...block,
-                    title: event.target.value
-                  })
-                }}
-              />
-            </label>
-
-            <label className="grid gap-2">
-              <span className="text-xs font-medium text-[var(--app-muted)]">URL</span>
-
-              <input
-                value={block.url}
-                placeholder="https://example.com"
-                className="h-10 rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45"
-                onChange={(event) => {
-                  onChange({
-                    ...block,
-                    url: event.target.value
-                  })
-                }}
-              />
-            </label>
-          </div>
-        )}
-
-        {block.type === 'divider' && (
-          <div className="grid gap-5">
-            <label className="grid gap-2">
-              <span className="flex items-center justify-between text-xs font-medium text-[var(--app-muted)]">
-                <span>Толщина</span>
-                <span>
-                  {block.thickness ?? DEFAULT_DIVIDER_THICKNESS}
-                  px
-                </span>
-              </span>
-
-              <input
-                type="range"
-                min={1}
-                max={12}
-                value={block.thickness ?? DEFAULT_DIVIDER_THICKNESS}
-                className="accent-violet-500"
-                onChange={(event) => {
-                  onChange({
-                    ...block,
-                    thickness: Number(event.target.value)
-                  })
-                }}
-              />
-            </label>
-
-            <label className="grid gap-2">
-              <span className="text-xs font-medium text-[var(--app-muted)]">Цвет</span>
-
-              <div className="flex h-10 items-center gap-3 rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] px-2">
-                <input
-                  type="color"
-                  value={block.color ?? DEFAULT_DIVIDER_COLOR}
-                  className="size-7 cursor-pointer border-0 bg-transparent p-0"
-                  onChange={(event) => {
-                    onChange({
-                      ...block,
-                      color: event.target.value
-                    })
-                  }}
-                />
-
-                <span className="text-xs text-[var(--app-muted)]">
-                  {block.color ?? DEFAULT_DIVIDER_COLOR}
-                </span>
-              </div>
-            </label>
-          </div>
-        )}
+        {block.type === 'divider' && <DividerSettings block={block} onChange={onChange} />}
       </div>
     </aside>
   )
 }
 
-function getBlockIcon(block: StudyBlock): typeof Type {
-  if (block.type === 'heading') {
-    return Heading
+function HeadingSettings({
+  block,
+  onChange
+}: {
+  block: Extract<StudyBlock, { type: 'heading' }>
+  onChange: (block: StudyBlock) => void
+}): React.JSX.Element {
+  return (
+    <label className="grid gap-2">
+      <span className="text-xs font-medium text-[var(--app-muted)]">Уровень заголовка</span>
+
+      <select
+        value={block.level}
+        className="h-10 rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/45"
+        onChange={(event) => {
+          onChange({
+            ...block,
+            level: Number(event.target.value) as 1 | 2 | 3
+          })
+        }}
+      >
+        <option value={1}>H1 — крупный</option>
+        <option value={2}>H2 — средний</option>
+        <option value={3}>H3 — малый</option>
+      </select>
+    </label>
+  )
+}
+
+function CodeSettings({
+  block,
+  onChange
+}: {
+  block: Extract<StudyBlock, { type: 'code' }>
+  onChange: (block: StudyBlock) => void
+}): React.JSX.Element {
+  return (
+    <label className="grid gap-2">
+      <span className="text-xs font-medium text-[var(--app-muted)]">Язык</span>
+
+      <select
+        value={block.language}
+        className="h-10 rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/45"
+        onChange={(event) => {
+          onChange({
+            ...block,
+            language: event.target.value
+          })
+        }}
+      >
+        <option value="text">Обычный текст</option>
+        <option value="javascript">JavaScript</option>
+        <option value="typescript">TypeScript</option>
+        <option value="python">Python</option>
+        <option value="html">HTML</option>
+        <option value="css">CSS</option>
+        <option value="sql">SQL</option>
+        <option value="json">JSON</option>
+        <option value="bash">Bash</option>
+        <option value="cpp">C++</option>
+        <option value="java">Java</option>
+      </select>
+    </label>
+  )
+}
+
+function LinkSettings({
+  block,
+  onChange
+}: {
+  block: Extract<StudyBlock, { type: 'link' }>
+  onChange: (block: StudyBlock) => void
+}): React.JSX.Element {
+  return (
+    <div className="grid gap-4">
+      <label className="grid gap-2">
+        <span className="text-xs font-medium text-[var(--app-muted)]">Название</span>
+
+        <input
+          value={block.title}
+          placeholder="Название ссылки"
+          className="h-10 rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45"
+          onChange={(event) => {
+            onChange({
+              ...block,
+              title: event.target.value
+            })
+          }}
+        />
+      </label>
+
+      <label className="grid gap-2">
+        <span className="text-xs font-medium text-[var(--app-muted)]">URL</span>
+
+        <input
+          value={block.url}
+          placeholder="https://example.com"
+          className="h-10 rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45"
+          onChange={(event) => {
+            onChange({
+              ...block,
+              url: event.target.value
+            })
+          }}
+        />
+      </label>
+    </div>
+  )
+}
+
+function DividerSettings({
+  block,
+  onChange
+}: {
+  block: Extract<StudyBlock, { type: 'divider' }>
+  onChange: (block: StudyBlock) => void
+}): React.JSX.Element {
+  const thickness = block.thickness ?? DEFAULT_DIVIDER_THICKNESS
+
+  const color = block.color ?? DEFAULT_DIVIDER_COLOR
+
+  return (
+    <div className="grid gap-5">
+      <label className="grid gap-2">
+        <span className="flex items-center justify-between text-xs font-medium text-[var(--app-muted)]">
+          <span>Толщина</span>
+          <span>{thickness}px</span>
+        </span>
+
+        <input
+          type="range"
+          min={1}
+          max={12}
+          value={thickness}
+          className="accent-violet-500"
+          onChange={(event) => {
+            onChange({
+              ...block,
+              thickness: Number(event.target.value)
+            })
+          }}
+        />
+      </label>
+
+      <label className="grid gap-2">
+        <span className="text-xs font-medium text-[var(--app-muted)]">Цвет</span>
+
+        <div className="flex h-10 items-center gap-3 rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] px-2">
+          <input
+            type="color"
+            value={color}
+            aria-label="Цвет разделителя"
+            className="size-7 cursor-pointer border-0 bg-transparent p-0"
+            onChange={(event) => {
+              onChange({
+                ...block,
+                color: event.target.value
+              })
+            }}
+          />
+
+          <span className="text-xs text-[var(--app-muted)]">{color}</span>
+        </div>
+      </label>
+    </div>
+  )
+}
+
+function BlockTypeIcon({ type }: { type: StudyBlock['type'] }): React.JSX.Element {
+  if (type === 'heading') {
+    return <Heading aria-hidden="true" className="size-4" />
   }
 
-  if (block.type === 'code') {
-    return Code2
+  if (type === 'code') {
+    return <Code2 aria-hidden="true" className="size-4" />
   }
 
-  if (block.type === 'link') {
-    return Link2
+  if (type === 'link') {
+    return <Link2 aria-hidden="true" className="size-4" />
   }
 
-  if (block.type === 'divider') {
-    return Minus
+  if (type === 'divider') {
+    return <Minus aria-hidden="true" className="size-4" />
   }
 
-  return Type
+  return <Type aria-hidden="true" className="size-4" />
 }
 
 function getBlockTitle(block: StudyBlock): string {
