@@ -183,6 +183,45 @@ button {
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
 }
+.study-read-collapsible-content {
+  will-change: height, opacity;
+}
+
+.study-read-collapsible-content[data-state='open'] {
+  animation: study-read-expand 180ms ease-out;
+}
+
+.study-read-collapsible-content[data-state='closed'] {
+  animation: study-read-collapse 150ms ease-in;
+}
+
+@keyframes study-read-expand {
+  from {
+    height: 0;
+    opacity: 0;
+    transform: translateY(-0.2rem);
+  }
+
+  to {
+    height: var(--radix-collapsible-content-height);
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes study-read-collapse {
+  from {
+    height: var(--radix-collapsible-content-height);
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  to {
+    height: 0;
+    opacity: 0;
+    transform: translateY(-0.15rem);
+  }
+}
 .mymind-rich-text-viewer {
   min-height: 0;
   caret-color: transparent;

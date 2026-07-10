@@ -5,7 +5,7 @@ import * as Separator from '@radix-ui/react-separator'
 import {
   ArrowDown,
   ArrowUp,
-  ChevronDown,
+  ChevronRight,
   Code2,
   ExternalLink,
   Heading,
@@ -322,6 +322,33 @@ function StudyBlockCard({
   )
 }
 
+function getHeadingTypography(level: 1 | 2 | 3): {
+  fontSize: string
+  lineHeight: string
+  letterSpacing: string
+} {
+  if (level === 1) {
+    return {
+      fontSize: '3rem',
+      lineHeight: '1.05',
+      letterSpacing: '-0.035em'
+    }
+  }
+
+  if (level === 2) {
+    return {
+      fontSize: '2.25rem',
+      lineHeight: '1.15',
+      letterSpacing: '-0.025em'
+    }
+  }
+
+  return {
+    fontSize: '1.875rem',
+    lineHeight: '1.2',
+    letterSpacing: '-0.02em'
+  }
+}
 function EditableBlock({
   block,
   onChange
@@ -330,12 +357,7 @@ function EditableBlock({
   onChange: (block: StudyBlock) => void
 }): React.JSX.Element {
   if (block.type === 'heading') {
-    const className =
-      block.level === 1
-        ? 'text-5xl leading-[1.05]'
-        : block.level === 2
-          ? 'text-4xl leading-tight'
-          : 'text-3xl leading-tight'
+    const typography = getHeadingTypography(block.level)
 
     return (
       <input
@@ -343,12 +365,12 @@ function EditableBlock({
         placeholder="Заголовок"
         className={cn(
           'w-full rounded-lg px-2 py-2',
-          'font-semibold tracking-tight outline-none',
+          'font-semibold outline-none',
           'placeholder:text-[var(--app-muted)]/60',
-          'transition-colors',
-          className
+          'transition-[color,background-color,font-size]'
         )}
         style={{
+          ...typography,
           color: block.color ?? DEFAULT_HEADING_COLOR,
           backgroundColor: block.backgroundColor ?? 'transparent'
         }}
@@ -359,249 +381,6 @@ function EditableBlock({
           })
         }}
       />
-    )
-  }
-
-  if (block.type === 'code') {
-    return (
-      <textarea
-        value={block.source}
-        rows={10}
-        spellCheck={false}
-        placeholder="Код…"
-        className="w-full resize-y rounded-lg bg-[#090a0c] p-4 font-mono text-sm leading-6 text-zinc-200 outline-none placeholder:text-zinc-600"
-        onChange={(event) => {
-          onChange({
-            ...block,
-            source: event.target.value
-          })
-        }}
-      />
-    )
-  }
-
-  if (block.type === 'link') {
-    const href = normalizeExternalHref(block.url)
-
-    if (!href) {
-      return (
-        <div className="inline-flex items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/[0.05] px-4 py-3 text-sm text-red-300">
-          <Link2 className="size-4" />
-
-          {block.url.trim() ? 'Некорректная или небезопасная ссылка' : 'Пустая ссылка'}
-        </div>
-      )
-    }
-
-    return (
-      <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center gap-2 rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-4 py-3 text-sm font-medium text-violet-300 hover:border-violet-500/35 hover:bg-violet-500/[0.05]"
-      >
-        <Link2 className="size-4" />
-
-        {block.title || block.url}
-      </a>
-    )
-  }
-
-  return (
-    <div className="py-4">
-      <div
-        className="w-full rounded-full"
-        style={{
-          height: `${block.thickness ?? DEFAULT_DIVIDER_THICKNESS}px`,
-          backgroundColor: block.color ?? DEFAULT_DIVIDER_COLOR
-        }}
-      />
-    </div>
-  )
-}
-
-type StudyHeadingBlock = Extract<StudyBlock, { type: 'heading' }>
-
-interface StudyReadBlockNode {
-  kind: 'block'
-  block: StudyBlock
-}
-
-interface StudyReadSectionNode {
-  kind: 'section'
-  heading: StudyHeadingBlock
-  children: StudyReadNode[]
-}
-
-type StudyReadNode = StudyReadBlockNode | StudyReadSectionNode
-
-function ReadOnlyStudyDocument({ document }: { document: StudyDocument }): React.JSX.Element {
-  const outline = buildStudyReadOutline(document.blocks)
-
-  return (
-    <article className="mx-auto max-w-4xl space-y-6">
-      {outline.map((node) => (
-        <StudyReadNodeView key={getStudyReadNodeKey(node)} node={node} />
-      ))}
-    </article>
-  )
-}
-
-function buildStudyReadOutline(blocks: StudyBlock[]): StudyReadNode[] {
-  const root: StudyReadNode[] = []
-  const sectionStack: StudyReadSectionNode[] = []
-
-  blocks.forEach((block) => {
-    if (block.type === 'heading') {
-      const section: StudyReadSectionNode = {
-        kind: 'section',
-        heading: block,
-        children: []
-      }
-
-      while (
-        sectionStack.length > 0 &&
-        sectionStack[sectionStack.length - 1].heading.level >= block.level
-      ) {
-        sectionStack.pop()
-      }
-
-      const parentSection = sectionStack[sectionStack.length - 1]
-
-      if (parentSection) {
-        parentSection.children.push(section)
-      } else {
-        root.push(section)
-      }
-
-      sectionStack.push(section)
-
-      return
-    }
-
-    const blockNode: StudyReadBlockNode = {
-      kind: 'block',
-      block
-    }
-
-    const parentSection = sectionStack[sectionStack.length - 1]
-
-    if (parentSection) {
-      parentSection.children.push(blockNode)
-    } else {
-      root.push(blockNode)
-    }
-  })
-
-  return root
-}
-
-function StudyReadNodeView({ node }: { node: StudyReadNode }): React.JSX.Element {
-  if (node.kind === 'section') {
-    return <StudyReadSection section={node} />
-  }
-
-  return <StudyBlockReader block={node.block} />
-}
-
-function StudyReadSection({ section }: { section: StudyReadSectionNode }): React.JSX.Element {
-  const [open, setOpen] = useState(true)
-  const hasContent = section.children.length > 0
-
-  return (
-    <Collapsible.Root open={open} onOpenChange={setOpen} className="group/read-section">
-      <Collapsible.Trigger asChild>
-        <button
-          type="button"
-          disabled={!hasContent}
-          aria-label={
-            open
-              ? `Свернуть раздел «${section.heading.text || 'Без заголовка'}»`
-              : `Развернуть раздел «${section.heading.text || 'Без заголовка'}»`
-          }
-          className={cn(
-            'flex w-full items-start gap-2 rounded-xl text-left outline-none',
-            'transition-colors',
-            hasContent && 'hover:bg-white/[0.025]',
-            'focus-visible:ring-2 focus-visible:ring-violet-500/35',
-            !hasContent && 'cursor-default'
-          )}
-        >
-          <ChevronDown
-            aria-hidden="true"
-            className={cn(
-              'mt-4 size-4 shrink-0 text-[var(--app-muted)]',
-              'transition-transform duration-200',
-              !open && '-rotate-90',
-              !hasContent && 'opacity-0'
-            )}
-          />
-
-          <div className="min-w-0 flex-1">
-            <StudyBlockReader block={section.heading} />
-          </div>
-        </button>
-      </Collapsible.Trigger>
-
-      <Collapsible.Content>
-        <div
-          className={cn(
-            'mt-5 space-y-6',
-            section.heading.level > 1 && 'ml-2 border-l border-[var(--app-border)] pl-5'
-          )}
-        >
-          {section.children.map((child) => (
-            <StudyReadNodeView key={getStudyReadNodeKey(child)} node={child} />
-          ))}
-        </div>
-      </Collapsible.Content>
-    </Collapsible.Root>
-  )
-}
-
-function getStudyReadNodeKey(node: StudyReadNode): string {
-  return node.kind === 'section' ? node.heading.id : node.block.id
-}
-function StudyBlockReader({ block }: { block: StudyBlock }): React.JSX.Element {
-  if (block.type === 'text') {
-    return <RichTextViewer html={getStudyTextBlockHtml(block)} plainText={block.text} />
-  }
-
-  if (block.type === 'heading') {
-    const headingStyle = {
-      color: block.color ?? DEFAULT_HEADING_COLOR,
-      backgroundColor: block.backgroundColor ?? 'transparent'
-    }
-
-    if (block.level === 1) {
-      return (
-        <h1
-          className="rounded-lg px-2 py-2 text-5xl leading-[1.05] font-semibold tracking-[-0.035em]"
-          style={headingStyle}
-        >
-          {block.text || 'Без заголовка'}
-        </h1>
-      )
-    }
-
-    if (block.level === 2) {
-      return (
-        <h2
-          className="rounded-lg px-2 py-2 text-4xl leading-tight font-semibold tracking-[-0.025em]"
-          style={headingStyle}
-        >
-          {block.text || 'Без заголовка'}
-        </h2>
-      )
-    }
-
-    return (
-      <h3
-        className="rounded-lg px-2 py-2 text-3xl leading-tight font-semibold tracking-[-0.02em]"
-        style={headingStyle}
-      >
-        {block.text || 'Без заголовка'}
-      </h3>
     )
   }
 
