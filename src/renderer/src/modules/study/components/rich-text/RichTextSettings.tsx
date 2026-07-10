@@ -158,10 +158,10 @@ function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.El
           bulletList: currentEditor.isActive('bulletList'),
           orderedList: currentEditor.isActive('orderedList'),
           canIndentListItem: canRunEditorCommand(currentEditor, (candidate) =>
-            candidate.can().chain().sinkListItem().run()
+            candidate.can().chain().sinkListItem('listItem').run()
           ),
           canOutdentListItem: canRunEditorCommand(currentEditor, (candidate) =>
-            candidate.can().chain().liftListItem().run()
+            candidate.can().chain().liftListItem('listItem').run()
           ),
           alignment: getTextAlignment(paragraph.textAlign),
           fontSize: typeof textStyle.fontSize === 'string' ? textStyle.fontSize : 'default',
@@ -484,7 +484,7 @@ function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.El
             label="Увеличить вложенность — Tab"
             disabled={!editorState.canIndentListItem}
             onClick={() => {
-              createCommandChain()?.sinkListItem().run()
+              createCommandChain()?.sinkListItem('listItem').run()
             }}
           >
             <IndentIncrease className="size-4" />
@@ -494,7 +494,7 @@ function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.El
             label="Уменьшить вложенность — Shift+Tab"
             disabled={!editorState.canOutdentListItem}
             onClick={() => {
-              createCommandChain()?.liftListItem().run()
+              createCommandChain()?.liftListItem('listItem').run()
             }}
           >
             <IndentDecrease className="size-4" />
