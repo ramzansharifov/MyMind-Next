@@ -41,32 +41,26 @@ interface StudyBlockEditorProps {
 const blockTypes: Array<{
   type: StudyBlockType
   label: string
-  icon: typeof Type
 }> = [
   {
     type: 'text',
-    label: 'Форматированный текст',
-    icon: Type
+    label: 'Форматированный текст'
   },
   {
     type: 'heading',
-    label: 'Заголовок',
-    icon: Heading
+    label: 'Заголовок'
   },
   {
     type: 'code',
-    label: 'Код',
-    icon: Code2
+    label: 'Код'
   },
   {
     type: 'link',
-    label: 'Ссылка',
-    icon: Link2
+    label: 'Ссылка'
   },
   {
     type: 'divider',
-    label: 'Разделитель',
-    icon: Minus
+    label: 'Разделитель'
   }
 ]
 
@@ -77,7 +71,6 @@ export function StudyBlockEditor({
 }: StudyBlockEditorProps): React.JSX.Element {
   const [activeBlockId, setActiveBlockId] = useState<string | null>(document.blocks[0]?.id ?? null)
   const [activeTextEditor, setActiveTextEditor] = useState<Editor | null>(null)
-  const [editorRevision, setEditorRevision] = useState(0)
 
   const editorsRef = useRef(new Map<string, Editor>())
 
@@ -109,6 +102,14 @@ export function StudyBlockEditor({
     if (activeBlock?.id === blockId) {
       setActiveTextEditor(editor)
     }
+  }
+
+  function unregisterTextEditor(blockId: string, editor: Editor): void {
+    if (editorsRef.current.get(blockId) === editor) {
+      editorsRef.current.delete(blockId)
+    }
+
+    setActiveTextEditor((currentEditor) => (currentEditor === editor ? null : currentEditor))
   }
 
   function addBlock(type: StudyBlockType): void {
@@ -160,8 +161,8 @@ export function StudyBlockEditor({
                 setActiveBlockId(block.id)
                 setActiveTextEditor(editor)
               }}
-              onTextEditorStateChange={() => {
-                setEditorRevision((current) => current + 1)
+              onTextEditorDispose={(editor) => {
+                unregisterTextEditor(block.id, editor)
               }}
               onChange={updateBlock}
               onMove={(direction) => {
@@ -191,23 +192,22 @@ export function StudyBlockEditor({
               align="center"
               className="z-50 grid min-w-60 gap-1 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-1.5"
             >
-              {blockTypes.map((option) => {
-                const Icon = option.icon
+              {blockTypes.map((option) => (
+                <DropdownMenu.Item
+                  key={option.type}
+                  className="flex cursor-default items-center gap-2 rounded-lg px-3 py-2 text-sm text-[var(--app-text)] outline-none hover:bg-white/[0.06] focus:bg-white/[0.06]"
+                  onSelect={() => {
+                    addBlock(option.type)
+                  }}
+                >
+                  <StudyBlockTypeIcon
+                    type={option.type}
+                    className="size-4 text-[var(--app-muted)]"
+                  />
 
-                return (
-                  <DropdownMenu.Item
-                    key={option.type}
-                    className="flex cursor-default items-center gap-2 rounded-lg px-3 py-2 text-sm text-[var(--app-text)] outline-none hover:bg-white/[0.06] focus:bg-white/[0.06]"
-                    onSelect={() => {
-                      addBlock(option.type)
-                    }}
-                  >
-                    <Icon aria-hidden="true" className="size-4 text-[var(--app-muted)]" />
-
-                    {option.label}
-                  </DropdownMenu.Item>
-                )
-              })}
+                  {option.label}
+                </DropdownMenu.Item>
+              ))}
             </DropdownMenu.Content>
           </DropdownMenu.Portal>
         </DropdownMenu.Root>
@@ -217,7 +217,6 @@ export function StudyBlockEditor({
         <BlockSettingsPanel
           block={activeBlock}
           textEditor={activeBlock?.type === 'text' ? activeTextEditor : null}
-          editorRevision={editorRevision}
           onChange={updateBlock}
         />
       </div>
@@ -233,7 +232,7 @@ interface StudyBlockCardProps {
   onActivate: () => void
   onTextEditorReady: (editor: Editor) => void
   onTextEditorActivate: (editor: Editor) => void
-  onTextEditorStateChange: () => void
+  onTextEditorDispose: (editor: Editor) => void
   onChange: (block: StudyBlock) => void
   onMove: (direction: -1 | 1) => void
   onDelete: () => void
@@ -247,7 +246,7 @@ function StudyBlockCard({
   onActivate,
   onTextEditorReady,
   onTextEditorActivate,
-  onTextEditorStateChange,
+  onTextEditorDispose,
   onChange,
   onMove,
   onDelete
@@ -302,7 +301,7 @@ function StudyBlockCard({
           html={getStudyTextBlockHtml(block)}
           onReady={onTextEditorReady}
           onActivate={onTextEditorActivate}
-          onStateChange={onTextEditorStateChange}
+          onDispose={onTextEditorDispose}
           onChange={(html, plainText) => {
             onChange({
               ...block,
@@ -365,79 +364,28 @@ function EditableBlock({
   }
 
   if (block.type === 'link') {
-    return (
-      <div className="flex min-h-24 items-center justify-center rounded-lg border border-dashed border-[var(--app-border)] p-4">
-        <div className="text-center">
-          <ExternalLink className="mx-auto size-5 text-violet-300" />
+    const href = normalizeExternalHref(block.url)
 
-          <p className="mt-2 text-sm font-medium text-[var(--app-text)]">
-            {block.title || 'Ссылка без названия'}
-          </p>
+    if (!href) {
+      return (
+        <div className="inline-flex items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/[0.05] px-4 py-3 text-sm text-red-300">
+          <Link2 className="size-4" />
 
-          <p className="mt-1 max-w-md truncate text-xs text-[var(--app-muted)]">
-            {block.url || 'Укажи адрес в настройках справа'}
-          </p>
+          {block.url.trim() ? 'Некорректная или небезопасная ссылка' : 'Пустая ссылка'}
         </div>
-      </div>
-    )
-  }
+      )
+    }
 
-  const thickness = block.thickness ?? DEFAULT_DIVIDER_THICKNESS
-  const color = block.color ?? DEFAULT_DIVIDER_COLOR
-
-  return (
-    <div className="py-8">
-      <div
-        className="w-full rounded-full"
-        style={{
-          height: `${thickness}px`,
-          backgroundColor: color
-        }}
-      />
-    </div>
-  )
-}
-
-function StudyBlockReader({ block }: { block: StudyBlock }): React.JSX.Element {
-  if (block.type === 'text') {
-    return <RichTextViewer html={getStudyTextBlockHtml(block)} plainText={block.text} />
-  }
-
-  if (block.type === 'heading') {
-    const className = block.level === 1 ? 'text-3xl' : block.level === 2 ? 'text-2xl' : 'text-xl'
-
-    return (
-      <h2 className={cn('font-semibold tracking-tight text-[var(--app-text)]', className)}>
-        {block.text || 'Без заголовка'}
-      </h2>
-    )
-  }
-
-  if (block.type === 'code') {
-    return (
-      <div>
-        <p className="mb-2 text-xs font-medium text-[var(--app-muted)]">
-          {block.language || 'text'}
-        </p>
-
-        <pre className="overflow-x-auto rounded-xl border border-[var(--app-border)] bg-[#090a0c] p-4 font-mono text-sm leading-6 text-zinc-200">
-          <code>{block.source}</code>
-        </pre>
-      </div>
-    )
-  }
-
-  if (block.type === 'link') {
     return (
       <a
-        href={normalizeExternalHref(block.url)}
+        href={href}
         target="_blank"
         rel="noopener noreferrer"
         className="inline-flex items-center gap-2 rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-4 py-3 text-sm font-medium text-violet-300 hover:border-violet-500/35 hover:bg-violet-500/[0.05]"
       >
         <Link2 className="size-4" />
 
-        {block.title || block.url || 'Пустая ссылка'}
+        {block.title || block.url}
       </a>
     )
   }
@@ -455,16 +403,49 @@ function StudyBlockReader({ block }: { block: StudyBlock }): React.JSX.Element {
   )
 }
 
-function normalizeExternalHref(value: string): string {
+function normalizeExternalHref(value: string): string | null {
   const trimmed = value.trim()
 
   if (!trimmed) {
-    return '#'
+    return null
   }
 
-  return /^[a-z][a-z\d+.-]*:/i.test(trimmed) ? trimmed : `https://${trimmed}`
+  const candidate = /^[a-z][a-z\d+.-]*:/i.test(trimmed) ? trimmed : `https://${trimmed}`
+
+  try {
+    const url = new URL(candidate)
+
+    return ['http:', 'https:', 'mailto:'].includes(url.protocol) ? url.href : null
+  } catch {
+    return null
+  }
 }
 
+function StudyBlockTypeIcon({
+  type,
+  className
+}: {
+  type: StudyBlockType
+  className?: string
+}): React.JSX.Element {
+  if (type === 'heading') {
+    return <Heading aria-hidden="true" className={className} />
+  }
+
+  if (type === 'code') {
+    return <Code2 aria-hidden="true" className={className} />
+  }
+
+  if (type === 'link') {
+    return <Link2 aria-hidden="true" className={className} />
+  }
+
+  if (type === 'divider') {
+    return <Minus aria-hidden="true" className={className} />
+  }
+
+  return <Type aria-hidden="true" className={className} />
+}
 function getBlockLabel(type: StudyBlockType): string {
   return blockTypes.find((option) => option.type === type)?.label ?? type
 }

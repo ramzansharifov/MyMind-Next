@@ -1,54 +1,116 @@
 import type { Editor } from '@tiptap/core'
+import * as Separator from '@radix-ui/react-separator'
+import * as Slider from '@radix-ui/react-slider'
 import { Code2, Heading, Link2, Minus, Settings2, Type } from 'lucide-react'
 
 import type { StudyBlock } from '../../../../../shared/contracts/study'
 import { DEFAULT_DIVIDER_COLOR, DEFAULT_DIVIDER_THICKNESS } from '../lib/study-document'
 import { RichTextSettings } from './rich-text/RichTextSettings'
+import { ColorPicker } from './settings/ColorPicker'
+import { StudySelect } from './settings/StudySelect'
 
 interface BlockSettingsPanelProps {
   block: StudyBlock | null
   textEditor: Editor | null
-  editorRevision: number
   onChange: (block: StudyBlock) => void
 }
+
+const headingLevels = [
+  {
+    value: '1',
+    label: 'H1 — крупный'
+  },
+  {
+    value: '2',
+    label: 'H2 — средний'
+  },
+  {
+    value: '3',
+    label: 'H3 — малый'
+  }
+]
+
+const codeLanguages = [
+  {
+    value: 'text',
+    label: 'Обычный текст'
+  },
+  {
+    value: 'javascript',
+    label: 'JavaScript'
+  },
+  {
+    value: 'typescript',
+    label: 'TypeScript'
+  },
+  {
+    value: 'python',
+    label: 'Python'
+  },
+  {
+    value: 'html',
+    label: 'HTML'
+  },
+  {
+    value: 'css',
+    label: 'CSS'
+  },
+  {
+    value: 'sql',
+    label: 'SQL'
+  },
+  {
+    value: 'json',
+    label: 'JSON'
+  },
+  {
+    value: 'bash',
+    label: 'Bash'
+  },
+  {
+    value: 'cpp',
+    label: 'C++'
+  },
+  {
+    value: 'java',
+    label: 'Java'
+  }
+]
 
 export function BlockSettingsPanel({
   block,
   textEditor,
-  editorRevision,
   onChange
 }: BlockSettingsPanelProps): React.JSX.Element {
   if (!block) {
     return (
-      <aside className="rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4">
-        <div className="flex items-center gap-2 text-sm font-medium text-[var(--app-text)]">
+      <aside className="rounded-xl border border-(--app-border) bg-(--app-surface) p-4">
+        <div className="flex items-center gap-2 text-sm font-medium text-(--app-text)">
           <Settings2 aria-hidden="true" className="size-4 text-violet-300" />
           Настройки блока
         </div>
 
-        <p className="mt-3 text-sm leading-6 text-[var(--app-muted)]">Выбери блок в редакторе.</p>
+        <p className="mt-3 text-sm leading-6 text-(--app-muted)">Выбери блок в редакторе.</p>
       </aside>
     )
   }
 
   return (
-    <aside className="rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)]">
-      <header className="flex items-center gap-3 border-b border-[var(--app-border)] px-4 py-3.5">
+    <aside className="overflow-hidden rounded-xl border border-(--app-border) bg-(--app-surface)">
+      <header className="flex items-center gap-3 border-b border-(--app-border) px-4 py-3.5">
         <div className="flex size-8 items-center justify-center rounded-lg bg-violet-500/10 text-violet-300">
           <BlockTypeIcon type={block.type} />
         </div>
 
-        <div>
-          <p className="text-sm font-medium text-[var(--app-text)]">{getBlockTitle(block)}</p>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium text-(--app-text)">{getBlockTitle(block)}</p>
 
-          <p className="text-xs text-[var(--app-muted)]">Настройки активного блока</p>
+          <p className="text-xs text-(--app-muted)">Настройки активного блока</p>
         </div>
       </header>
 
       <div className="p-4">
-        {block.type === 'text' && (
-          <RichTextSettings editor={textEditor} revision={editorRevision} />
-        )}
+        {block.type === 'text' && <RichTextSettings key={block.id} editor={textEditor} />}
 
         {block.type === 'heading' && <HeadingSettings block={block} onChange={onChange} />}
 
@@ -70,24 +132,25 @@ function HeadingSettings({
   onChange: (block: StudyBlock) => void
 }): React.JSX.Element {
   return (
-    <label className="grid gap-2">
-      <span className="text-xs font-medium text-[var(--app-muted)]">Уровень заголовка</span>
+    <SettingsField label="Уровень заголовка">
+      <StudySelect
+        value={String(block.level)}
+        options={headingLevels}
+        ariaLabel="Уровень заголовка"
+        onValueChange={(value) => {
+          const level = Number(value)
 
-      <select
-        value={block.level}
-        className="h-10 rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/45"
-        onChange={(event) => {
+          if (level !== 1 && level !== 2 && level !== 3) {
+            return
+          }
+
           onChange({
             ...block,
-            level: Number(event.target.value) as 1 | 2 | 3
+            level
           })
         }}
-      >
-        <option value={1}>H1 — крупный</option>
-        <option value={2}>H2 — средний</option>
-        <option value={3}>H3 — малый</option>
-      </select>
-    </label>
+      />
+    </SettingsField>
   )
 }
 
@@ -99,32 +162,19 @@ function CodeSettings({
   onChange: (block: StudyBlock) => void
 }): React.JSX.Element {
   return (
-    <label className="grid gap-2">
-      <span className="text-xs font-medium text-[var(--app-muted)]">Язык</span>
-
-      <select
-        value={block.language}
-        className="h-10 rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/45"
-        onChange={(event) => {
+    <SettingsField label="Язык">
+      <StudySelect
+        value={block.language || 'text'}
+        options={codeLanguages}
+        ariaLabel="Язык блока кода"
+        onValueChange={(language) => {
           onChange({
             ...block,
-            language: event.target.value
+            language
           })
         }}
-      >
-        <option value="text">Обычный текст</option>
-        <option value="javascript">JavaScript</option>
-        <option value="typescript">TypeScript</option>
-        <option value="python">Python</option>
-        <option value="html">HTML</option>
-        <option value="css">CSS</option>
-        <option value="sql">SQL</option>
-        <option value="json">JSON</option>
-        <option value="bash">Bash</option>
-        <option value="cpp">C++</option>
-        <option value="java">Java</option>
-      </select>
-    </label>
+      />
+    </SettingsField>
   )
 }
 
@@ -135,15 +185,15 @@ function LinkSettings({
   block: Extract<StudyBlock, { type: 'link' }>
   onChange: (block: StudyBlock) => void
 }): React.JSX.Element {
+  const linkStatus = validateExternalUrl(block.url)
+
   return (
     <div className="grid gap-4">
-      <label className="grid gap-2">
-        <span className="text-xs font-medium text-[var(--app-muted)]">Название</span>
-
+      <SettingsField label="Название">
         <input
           value={block.title}
           placeholder="Название ссылки"
-          className="h-10 rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45"
+          className="h-10 rounded-lg border border-(--app-border) bg-(--app-workspace) px-3 text-sm text-(--app-text) outline-none placeholder:text-(--app-muted)/60 focus:border-violet-500/50"
           onChange={(event) => {
             onChange({
               ...block,
@@ -151,15 +201,13 @@ function LinkSettings({
             })
           }}
         />
-      </label>
+      </SettingsField>
 
-      <label className="grid gap-2">
-        <span className="text-xs font-medium text-[var(--app-muted)]">URL</span>
-
+      <SettingsField label="URL">
         <input
           value={block.url}
           placeholder="https://example.com"
-          className="h-10 rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45"
+          className="h-10 rounded-lg border border-(--app-border) bg-(--app-workspace) px-3 text-sm text-(--app-text) outline-none placeholder:text-(--app-muted)/60 focus:border-violet-500/50"
           onChange={(event) => {
             onChange({
               ...block,
@@ -167,7 +215,11 @@ function LinkSettings({
             })
           }}
         />
-      </label>
+
+        {block.url.trim() && !linkStatus && (
+          <p className="text-xs leading-5 text-red-300">Допустимы только HTTP, HTTPS и MAILTO.</p>
+        )}
+      </SettingsField>
     </div>
   )
 }
@@ -180,53 +232,70 @@ function DividerSettings({
   onChange: (block: StudyBlock) => void
 }): React.JSX.Element {
   const thickness = block.thickness ?? DEFAULT_DIVIDER_THICKNESS
-
   const color = block.color ?? DEFAULT_DIVIDER_COLOR
 
   return (
-    <div className="grid gap-5">
-      <label className="grid gap-2">
-        <span className="flex items-center justify-between text-xs font-medium text-[var(--app-muted)]">
-          <span>Толщина</span>
-          <span>{thickness}px</span>
-        </span>
-
-        <input
-          type="range"
+    <div className="grid gap-4">
+      <SettingsField label={`Толщина — ${thickness}px`}>
+        <Slider.Root
           min={1}
           max={12}
-          value={thickness}
-          className="accent-violet-500"
-          onChange={(event) => {
+          step={1}
+          value={[thickness]}
+          aria-label="Толщина разделителя"
+          className="relative flex h-5 w-full touch-none items-center select-none"
+          onValueChange={(values) => {
+            const nextThickness = values[0]
+
+            if (typeof nextThickness !== 'number') {
+              return
+            }
+
             onChange({
               ...block,
-              thickness: Number(event.target.value)
+              thickness: nextThickness
+            })
+          }}
+        >
+          <Slider.Track className="relative h-1.5 grow overflow-hidden rounded-full bg-white/[0.08]">
+            <Slider.Range className="absolute h-full bg-violet-500" />
+          </Slider.Track>
+
+          <Slider.Thumb className="block size-4 rounded-full border-2 border-violet-400 bg-(--app-surface-raised) outline-none hover:scale-110 focus-visible:ring-4 focus-visible:ring-violet-500/20" />
+        </Slider.Root>
+      </SettingsField>
+
+      <Separator.Root className="h-px bg-(--app-border)" />
+
+      <SettingsField label="Цвет">
+        <ColorPicker
+          value={color}
+          ariaLabel="Цвет разделителя"
+          onChange={(nextColor) => {
+            onChange({
+              ...block,
+              color: nextColor
             })
           }}
         />
-      </label>
-
-      <label className="grid gap-2">
-        <span className="text-xs font-medium text-[var(--app-muted)]">Цвет</span>
-
-        <div className="flex h-10 items-center gap-3 rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] px-2">
-          <input
-            type="color"
-            value={color}
-            aria-label="Цвет разделителя"
-            className="size-7 cursor-pointer border-0 bg-transparent p-0"
-            onChange={(event) => {
-              onChange({
-                ...block,
-                color: event.target.value
-              })
-            }}
-          />
-
-          <span className="text-xs text-[var(--app-muted)]">{color}</span>
-        </div>
-      </label>
+      </SettingsField>
     </div>
+  )
+}
+
+function SettingsField({
+  label,
+  children
+}: {
+  label: string
+  children: React.ReactNode
+}): React.JSX.Element {
+  return (
+    <label className="grid gap-2">
+      <span className="text-xs font-medium text-(--app-muted)">{label}</span>
+
+      {children}
+    </label>
   )
 }
 
@@ -268,4 +337,22 @@ function getBlockTitle(block: StudyBlock): string {
   }
 
   return 'Форматированный текст'
+}
+
+function validateExternalUrl(value: string): string | null {
+  const trimmed = value.trim()
+
+  if (!trimmed) {
+    return null
+  }
+
+  const candidate = /^[a-z][a-z\d+.-]*:/i.test(trimmed) ? trimmed : `https://${trimmed}`
+
+  try {
+    const url = new URL(candidate)
+
+    return ['http:', 'https:', 'mailto:'].includes(url.protocol) ? url.href : null
+  } catch {
+    return null
+  }
 }

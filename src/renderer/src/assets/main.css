@@ -69,9 +69,15 @@ button {
 .mymind-rich-text-editor {
   min-height: 8rem;
   color: var(--app-text);
+  caret-color: #a78bfa;
   font-size: 0.9375rem;
   line-height: 1.75;
+  overflow-wrap: anywhere;
   outline: none;
+}
+
+.mymind-rich-text-editor > * {
+  margin-block: 0;
 }
 
 .mymind-rich-text-editor > * + * {
@@ -80,6 +86,7 @@ button {
 
 .mymind-rich-text-editor p {
   min-height: 1.75rem;
+  white-space: pre-wrap;
 }
 
 .mymind-rich-text-editor p.is-editor-empty:first-child::before {
@@ -91,22 +98,31 @@ button {
   opacity: 0.65;
 }
 
-.mymind-rich-text-editor ul {
+.mymind-rich-text-editor ul,
+.mymind-rich-text-editor ol {
+  display: grid;
+  gap: 0.25rem;
   padding-left: 1.5rem;
+}
+
+.mymind-rich-text-editor ul {
   list-style: disc;
 }
 
 .mymind-rich-text-editor ol {
-  padding-left: 1.5rem;
   list-style: decimal;
 }
 
-.mymind-rich-text-editor li + li {
-  margin-top: 0.25rem;
+.mymind-rich-text-editor li {
+  padding-left: 0.15rem;
+}
+
+.mymind-rich-text-editor li > p {
+  min-height: auto;
 }
 
 .mymind-rich-text-editor blockquote {
-  padding-left: 1rem;
+  padding: 0.25rem 0 0.25rem 1rem;
   color: var(--app-muted);
   border-left: 2px solid var(--app-border-strong);
 }
@@ -115,6 +131,7 @@ button {
   padding: 0.125rem 0.375rem;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.9em;
+  color: #e4e4e7;
   background: #090a0c;
   border: 1px solid var(--app-border);
   border-radius: 0.375rem;
@@ -123,9 +140,22 @@ button {
 .mymind-rich-text-editor a {
   color: #a78bfa;
   text-decoration: underline;
+  text-decoration-color: rgb(167 139 250 / 55%);
   text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.mymind-rich-text-editor a:hover {
+  color: #c4b5fd;
+  text-decoration-color: currentColor;
+}
+
+.mymind-rich-text-editor ::selection {
+  color: #ffffff;
+  background: rgb(124 58 237 / 48%);
 }
 
 .mymind-rich-text-viewer {
   min-height: 0;
+  caret-color: transparent;
 }

@@ -1,17 +1,15 @@
 import type { Editor } from '@tiptap/core'
 import { EditorContent, useEditor } from '@tiptap/react'
+import { useEffect } from 'react'
 
 import { createRichTextExtensions } from './extensions'
-
-const editorExtensions = createRichTextExtensions(false)
-const viewerExtensions = createRichTextExtensions(true)
 
 interface RichTextBlockEditorProps {
   html: string
   onChange: (html: string, plainText: string) => void
   onActivate: (editor: Editor) => void
   onReady: (editor: Editor) => void
-  onStateChange: () => void
+  onDispose?: (editor: Editor) => void
 }
 
 export function RichTextBlockEditor({
@@ -19,37 +17,59 @@ export function RichTextBlockEditor({
   onChange,
   onActivate,
   onReady,
-  onStateChange
+  onDispose
 }: RichTextBlockEditorProps): React.JSX.Element {
   const editor = useEditor({
-    extensions: editorExtensions,
+    extensions: createRichTextExtensions(false),
     content: html,
+    immediatelyRender: true,
+    shouldRerenderOnTransaction: false,
     editorProps: {
       attributes: {
         class: 'mymind-rich-text-editor'
       }
     },
     onCreate: ({ editor: createdEditor }) => {
-      onReady(createdEditor)
+      queueMicrotask(() => {
+        onReady(createdEditor)
+      })
     },
     onFocus: ({ editor: focusedEditor }) => {
-      onActivate(focusedEditor)
-      onStateChange()
-    },
-    onSelectionUpdate: () => {
-      onStateChange()
+      queueMicrotask(() => {
+        onActivate(focusedEditor)
+      })
     },
     onUpdate: ({ editor: updatedEditor }) => {
-      onChange(
-        updatedEditor.getHTML(),
-        updatedEditor.getText({
-          blockSeparator: '\n\n'
-        })
-      )
+      const nextHtml = updatedEditor.getHTML()
+      const nextPlainText = updatedEditor.getText({
+        blockSeparator: '\n\n'
+      })
 
-      onStateChange()
+      queueMicrotask(() => {
+        onChange(nextHtml, nextPlainText)
+      })
+    },
+    onDestroy: ({ editor: destroyedEditor }) => {
+      queueMicrotask(() => {
+        onDispose?.(destroyedEditor)
+      })
     }
   })
+
+  useEffect(() => {
+    if (!editor) {
+      return
+    }
+
+    if (editor.getHTML() === html) {
+      return
+    }
+
+    editor.commands.setContent(html, {
+      emitUpdate: false,
+      errorOnInvalidContent: false
+    })
+  }, [editor, html])
 
   if (!editor) {
     return <div className="min-h-32 animate-pulse rounded-lg bg-white/[0.025]" />
@@ -65,9 +85,11 @@ interface RichTextViewerProps {
 
 export function RichTextViewer({ html, plainText }: RichTextViewerProps): React.JSX.Element {
   const editor = useEditor({
-    extensions: viewerExtensions,
+    extensions: createRichTextExtensions(true),
     content: html,
     editable: false,
+    immediatelyRender: true,
+    shouldRerenderOnTransaction: false,
     editorProps: {
       attributes: {
         class: 'mymind-rich-text-editor mymind-rich-text-viewer'
@@ -75,8 +97,23 @@ export function RichTextViewer({ html, plainText }: RichTextViewerProps): React.
     }
   })
 
+  useEffect(() => {
+    if (!editor) {
+      return
+    }
+
+    if (editor.getHTML() === html) {
+      return
+    }
+
+    editor.commands.setContent(html, {
+      emitUpdate: false,
+      errorOnInvalidContent: false
+    })
+  }, [editor, html])
+
   if (!plainText.trim()) {
-    return <p className="text-sm text-[var(--app-muted)]">Пустой текстовый блок</p>
+    return <p className="text-sm text-(--app-muted)">Пустой текстовый блок</p>
   }
 
   if (!editor) {

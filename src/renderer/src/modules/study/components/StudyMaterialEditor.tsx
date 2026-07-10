@@ -1,4 +1,5 @@
 import { BookOpen, Check, Edit3, LoaderCircle, Save } from 'lucide-react'
+import * as Tabs from '@radix-ui/react-tabs'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import type { StudyDocument, StudyNode } from '../../../../../shared/contracts/study'
@@ -35,6 +36,8 @@ export function StudyMaterialEditor({ node }: StudyMaterialEditorProps): React.J
   }, [])
 
   useEffect(() => {
+    isMountedRef.current = true
+
     let active = true
 
     studyClient
@@ -155,42 +158,42 @@ export function StudyMaterialEditor({ node }: StudyMaterialEditorProps): React.J
 
         <SaveStatus state={saveState} />
 
-        <div className="inline-flex rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] p-1">
-          <button
-            type="button"
-            className={cn(
-              'flex items-center gap-2 rounded-md px-3 py-1.5 text-sm',
-              mode === 'edit'
-                ? 'bg-[var(--app-surface-raised)] text-[var(--app-text)]'
-                : 'text-[var(--app-muted)] hover:text-[var(--app-text)]'
-            )}
-            onClick={() => setMode('edit')}
+        <Tabs.Root
+          value={mode}
+          onValueChange={(value) => {
+            if (value === 'edit' || value === 'read') {
+              setMode(value)
+            }
+          }}
+        >
+          <Tabs.List
+            aria-label="Режим просмотра материала"
+            className="inline-flex rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] p-1"
           >
-            <Edit3 aria-hidden="true" className="size-4" />
-            Правка
-          </button>
+            <Tabs.Trigger
+              value="edit"
+              className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-[var(--app-muted)] transition-colors outline-none hover:text-[var(--app-text)] data-[state=active]:bg-[var(--app-surface-raised)] data-[state=active]:text-[var(--app-text)]"
+            >
+              <Edit3 aria-hidden="true" className="size-4" />
+              Правка
+            </Tabs.Trigger>
 
-          <button
-            type="button"
-            className={cn(
-              'flex items-center gap-2 rounded-md px-3 py-1.5 text-sm',
-              mode === 'read'
-                ? 'bg-[var(--app-surface-raised)] text-[var(--app-text)]'
-                : 'text-[var(--app-muted)] hover:text-[var(--app-text)]'
-            )}
-            onClick={() => setMode('read')}
-          >
-            <BookOpen aria-hidden="true" className="size-4" />
-            Чтение
-          </button>
-        </div>
+            <Tabs.Trigger
+              value="read"
+              className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-[var(--app-muted)] transition-colors outline-none hover:text-[var(--app-text)] data-[state=active]:bg-[var(--app-surface-raised)] data-[state=active]:text-[var(--app-text)]"
+            >
+              <BookOpen aria-hidden="true" className="size-4" />
+              Чтение
+            </Tabs.Trigger>
+          </Tabs.List>
+        </Tabs.Root>
 
         <button
           type="button"
           disabled={saveState === 'saving'}
           className="flex items-center gap-2 rounded-lg bg-violet-500 px-3 py-2 text-sm font-medium text-white hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-50"
           onClick={() => {
-            void save(document)
+            void save(documentRef.current)
           }}
         >
           <Save aria-hidden="true" className="size-4" />

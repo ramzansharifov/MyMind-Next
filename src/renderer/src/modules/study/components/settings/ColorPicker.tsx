@@ -1,0 +1,131 @@
+import * as Popover from '@radix-ui/react-popover'
+import { Check, Palette, X } from 'lucide-react'
+
+import { cn } from '../../../../shared/lib/cn'
+
+const defaultColors = [
+  '#f2f3f5',
+  '#a1a1aa',
+  '#a78bfa',
+  '#60a5fa',
+  '#34d399',
+  '#fbbf24',
+  '#fb7185',
+  '#f87171'
+]
+
+interface ColorPickerProps {
+  value: string
+  ariaLabel: string
+  disabled?: boolean
+  colors?: string[]
+  onChange: (value: string) => void
+}
+
+export function ColorPicker({
+  value,
+  ariaLabel,
+  disabled = false,
+  colors = defaultColors,
+  onChange
+}: ColorPickerProps): React.JSX.Element {
+  return (
+    <Popover.Root>
+      <Popover.Trigger asChild>
+        <button
+          type="button"
+          disabled={disabled}
+          aria-label={ariaLabel}
+          className={cn(
+            'flex h-10 w-full items-center gap-3 rounded-lg',
+            'border border-(--app-border) bg-(--app-workspace) px-3',
+            'text-sm text-(--app-text)',
+            'hover:border-(--app-border-strong)',
+            'focus-visible:ring-2 focus-visible:ring-violet-500/25 focus-visible:outline-none',
+            'disabled:cursor-not-allowed disabled:opacity-45'
+          )}
+        >
+          <span
+            aria-hidden="true"
+            className="size-5 rounded-md border border-white/15"
+            style={{
+              backgroundColor: value
+            }}
+          />
+
+          <span className="min-w-0 flex-1 text-left text-xs text-(--app-muted)">
+            {value.toUpperCase()}
+          </span>
+
+          <Palette aria-hidden="true" className="size-4 text-(--app-muted)" />
+        </button>
+      </Popover.Trigger>
+
+      <Popover.Portal>
+        <Popover.Content
+          align="end"
+          sideOffset={8}
+          className={cn(
+            'z-[90] w-60 rounded-xl border border-(--app-border)',
+            'bg-(--app-surface-raised) p-3 text-(--app-text)',
+            'outline-none'
+          )}
+        >
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium">Выбор цвета</p>
+
+            <Popover.Close asChild>
+              <button
+                type="button"
+                aria-label="Закрыть выбор цвета"
+                className="flex size-7 items-center justify-center rounded-md text-(--app-muted) hover:bg-white/[0.06] hover:text-(--app-text)"
+              >
+                <X aria-hidden="true" className="size-4" />
+              </button>
+            </Popover.Close>
+          </div>
+
+          <div className="mt-3 grid grid-cols-4 gap-2">
+            {colors.map((color) => (
+              <Popover.Close key={color} asChild>
+                <button
+                  type="button"
+                  aria-label={`Цвет ${color}`}
+                  className="relative flex aspect-square items-center justify-center rounded-lg border border-white/10 outline-none hover:scale-105 focus-visible:ring-2 focus-visible:ring-violet-400"
+                  style={{
+                    backgroundColor: color
+                  }}
+                  onClick={() => onChange(color)}
+                >
+                  {color.toLowerCase() === value.toLowerCase() && (
+                    <Check aria-hidden="true" className="size-4 text-black/75" />
+                  )}
+                </button>
+              </Popover.Close>
+            ))}
+          </div>
+
+          <label className="mt-4 grid gap-2">
+            <span className="text-xs font-medium text-(--app-muted)">Произвольный цвет</span>
+
+            <div className="flex h-10 items-center gap-3 rounded-lg border border-(--app-border) bg-(--app-workspace) px-2">
+              <input
+                type="color"
+                value={value}
+                aria-label={ariaLabel}
+                className="size-7 cursor-pointer border-0 bg-transparent p-0"
+                onChange={(event) => {
+                  onChange(event.target.value)
+                }}
+              />
+
+              <span className="text-xs text-(--app-muted)">{value.toUpperCase()}</span>
+            </div>
+          </label>
+
+          <Popover.Arrow className="fill-(--app-border)" />
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
+  )
+}
