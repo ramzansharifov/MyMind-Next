@@ -1,8 +1,10 @@
 import type {
   CreateStudyNodeInput,
+  ImportStudyAssetInput,
   MoveStudyNodeInput,
   SaveStudyMaterialInput,
   StudyApi,
+  StudyLocalAsset,
   StudyMaterial,
   StudyNode
 } from '../../../../../shared/contracts/study'
@@ -51,5 +53,8 @@ export const studyClient = {
 
   saveMaterial(input: SaveStudyMaterialInput): Promise<StudyMaterial> {
     return getStudyApi().saveMaterial(input)
+  },
+  importAsset(input: ImportStudyAssetInput): Promise<StudyLocalAsset | null> {
+    return getStudyApi().importAsset(input)
   }
 }

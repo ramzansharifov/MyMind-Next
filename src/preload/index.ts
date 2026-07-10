@@ -1,7 +1,12 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
 import { IPC_CHANNELS, type MyMindApi, type SystemHealth } from '../shared/contracts/system'
-import { STUDY_IPC_CHANNELS, type StudyMaterial, type StudyNode } from '../shared/contracts/study'
+import {
+  STUDY_IPC_CHANNELS,
+  type StudyLocalAsset,
+  type StudyMaterial,
+  type StudyNode
+} from '../shared/contracts/study'
 
 const api: MyMindApi = {
   system: {
@@ -29,7 +34,10 @@ const api: MyMindApi = {
       ipcRenderer.invoke(STUDY_IPC_CHANNELS.getMaterial, nodeId) as Promise<StudyMaterial>,
 
     saveMaterial: (input) =>
-      ipcRenderer.invoke(STUDY_IPC_CHANNELS.saveMaterial, input) as Promise<StudyMaterial>
+      ipcRenderer.invoke(STUDY_IPC_CHANNELS.saveMaterial, input) as Promise<StudyMaterial>,
+
+    importAsset: (input) =>
+      ipcRenderer.invoke(STUDY_IPC_CHANNELS.importAsset, input) as Promise<StudyLocalAsset | null>
   }
 }
 

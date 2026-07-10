@@ -17,6 +17,10 @@ import {
   studyMaterialSchema,
   studyNodeSchema
 } from '../../shared/validation/study'
+import {
+  cleanupStudyAssetsForDocument,
+  removeStudyAssetsForMaterials
+} from '../services/study-assets'
 
 function createEmptyStudyDocument(): StudyDocument {
   return {
@@ -55,6 +59,14 @@ function documentToPlainText(document: StudyDocument): string {
 
       if (block.type === 'mermaid') {
         return block.source
+      }
+      if (block.type === 'file') {
+        const sourceName =
+          block.source.type === 'local' ? block.source.asset?.name : block.source.url
+
+        return [block.title, sourceName, block.caption]
+          .filter((value): value is string => Boolean(value))
+          .join('\n')
       }
 
       return ''
@@ -309,8 +321,43 @@ export function moveStudyNode(input: MoveStudyNodeInput): StudyNode[] {
 
   return listStudyNodes()
 }
-export function deleteStudyNode(id: string): boolean {
+function getMaterialIdsInStudySubtree(rootId: string): string[] {
+  const rows = getDatabase()
+    .select({
+      id: studyNodes.id,
+      type: studyNodes.type,
+      parentId: studyNodes.parentId
+    })
+    .from(studyNodes)
+    .all()
+
+  const includedIds = new Set<string>([rootId])
+
+  let changed = true
+
+  while (changed) {
+    changed = false
+
+    rows.forEach((row) => {
+      if (row.parentId && includedIds.has(row.parentId) && !includedIds.has(row.id)) {
+        includedIds.add(row.id)
+        changed = true
+      }
+    })
+  }
+
+  return rows
+    .filter((row) => row.type === 'material' && includedIds.has(row.id))
+    .map((row) => row.id)
+}
+export async function deleteStudyNode(id: string): Promise<boolean> {
+  const materialIds = getMaterialIdsInStudySubtree(id)
+
   const result = getDatabase().delete(studyNodes).where(eq(studyNodes.id, id)).run()
+
+  if (result.changes > 0) {
+    await removeStudyAssetsForMaterials(materialIds).catch(() => undefined)
+  }
 
   return result.changes > 0
 }
@@ -354,7 +401,7 @@ export function getStudyMaterial(nodeId: string): StudyMaterial {
   return mapStudyMaterial(material)
 }
 
-export function saveStudyMaterial(input: SaveStudyMaterialInput): StudyMaterial {
+export async function saveStudyMaterial(input: SaveStudyMaterialInput): Promise<StudyMaterial> {
   const database = getDatabase()
   const document = studyDocumentSchema.parse(input.document)
   const plainText = documentToPlainText(document)
@@ -397,5 +444,9 @@ export function saveStudyMaterial(input: SaveStudyMaterialInput): StudyMaterial 
     .where(eq(studyNodes.id, input.nodeId))
     .run()
 
-  return getStudyMaterial(input.nodeId)
+  const savedMaterial = getStudyMaterial(input.nodeId)
+
+  await cleanupStudyAssetsForDocument(input.nodeId, document).catch(() => undefined)
+
+  return savedMaterial
 }

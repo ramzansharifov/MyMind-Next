@@ -1,23 +1,44 @@
 import type { Editor } from '@tiptap/core'
 import * as Separator from '@radix-ui/react-separator'
 import * as Slider from '@radix-ui/react-slider'
-import { Code2, FileCode2, Heading, Minus, Settings2, Sigma, Type, Workflow } from 'lucide-react'
+import {
+  Code2,
+  FileAudio,
+  FileCode2,
+  FileImage,
+  Files,
+  FileVideo,
+  Heading,
+  Link2,
+  LoaderCircle,
+  Minus,
+  Settings2,
+  Sigma,
+  Trash2,
+  Type,
+  Upload,
+  Workflow
+} from 'lucide-react'
+import { useState } from 'react'
 
-import type { StudyBlock } from '../../../../../shared/contracts/study'
+import type { StudyBlock, StudyFileKind } from '../../../../../shared/contracts/study'
 import {
   DEFAULT_DIVIDER_COLOR,
   DEFAULT_DIVIDER_THICKNESS,
   DEFAULT_HEADING_BACKGROUND_COLOR,
   DEFAULT_HEADING_COLOR
 } from '../lib/study-document'
+import { studyClient } from '../api/study-client'
 import { RichTextSettings } from './rich-text/RichTextSettings'
 import { STUDY_CODE_LANGUAGE_OPTIONS } from './code/code-languages'
+import { formatStudyFileSize, isValidStudyRemoteMediaUrl } from './file/StudyFileBlockView'
 import { STUDY_MERMAID_TEMPLATES } from './mermaid/mermaid-templates'
 import { ColorPicker } from './settings/ColorPicker'
 import { SegmentedChoice } from './settings/SegmentedChoice'
 import { StudySelect } from './settings/StudySelect'
 
 interface BlockSettingsPanelProps {
+  materialId: string
   block: StudyBlock | null
   textEditor: Editor | null
   onChange: (block: StudyBlock) => void
@@ -149,8 +170,50 @@ const mermaidThemes = [
     label: 'Лес'
   }
 ]
+const studyFileKinds = [
+  {
+    value: 'image',
+    label: 'Фото',
+    ariaLabel: 'Изображение'
+  },
+  {
+    value: 'video',
+    label: 'Видео'
+  },
+  {
+    value: 'audio',
+    label: 'Аудио'
+  },
+  {
+    value: 'file',
+    label: 'Файл'
+  }
+]
+
+const studyFileSources = [
+  {
+    value: 'local',
+    label: 'Компьютер'
+  },
+  {
+    value: 'url',
+    label: 'Ссылка'
+  }
+]
+
+const studyImageFits = [
+  {
+    value: 'contain',
+    label: 'Целиком'
+  },
+  {
+    value: 'cover',
+    label: 'Заполнить'
+  }
+]
 
 export function BlockSettingsPanel({
+  materialId,
   block,
   textEditor,
   onChange
@@ -192,6 +255,10 @@ export function BlockSettingsPanel({
         {block.type === 'latex' && <LatexSettings block={block} onChange={onChange} />}
 
         {block.type === 'mermaid' && <MermaidSettings block={block} onChange={onChange} />}
+
+        {block.type === 'file' && (
+          <FileSettings materialId={materialId} block={block} onChange={onChange} />
+        )}
 
         {block.type === 'divider' && <DividerSettings block={block} onChange={onChange} />}
       </div>
@@ -551,6 +618,339 @@ function MermaidSettings({
     </div>
   )
 }
+function FileSettings({
+  materialId,
+  block,
+  onChange
+}: {
+  materialId: string
+  block: Extract<StudyBlock, { type: 'file' }>
+  onChange: (block: StudyBlock) => void
+}): React.JSX.Element {
+  const [isPicking, setIsPicking] = useState(false)
+
+  const [importError, setImportError] = useState<string | null>(null)
+
+  const supportsRemoteUrl = block.kind === 'image' || block.kind === 'video'
+
+  const localAsset = block.source.type === 'local' ? block.source.asset : undefined
+
+  const remoteUrl = block.source.type === 'url' ? block.source.url : ''
+
+  async function chooseLocalFile(): Promise<void> {
+    setIsPicking(true)
+    setImportError(null)
+
+    try {
+      const asset = await studyClient.importAsset({
+        nodeId: materialId,
+        kind: block.kind
+      })
+
+      if (!asset) {
+        return
+      }
+
+      onChange({
+        ...block,
+        source: {
+          type: 'local',
+          asset
+        }
+      })
+    } catch (reason: unknown) {
+      setImportError(getFileImportErrorMessage(reason))
+    } finally {
+      setIsPicking(false)
+    }
+  }
+
+  return (
+    <div className="grid gap-5">
+      <SettingsField label="Тип">
+        <SegmentedChoice
+          value={block.kind}
+          options={studyFileKinds}
+          ariaLabel="Тип файлового блока"
+          columns={4}
+          onValueChange={(value) => {
+            if (!isStudyFileKind(value)) {
+              return
+            }
+
+            setImportError(null)
+
+            onChange({
+              ...block,
+              kind: value,
+              source: {
+                type: 'local'
+              },
+              altText: value === 'image' ? block.altText : undefined,
+              imageFit: value === 'image' ? (block.imageFit ?? 'contain') : undefined,
+              imageHeight: value === 'image' ? (block.imageHeight ?? 360) : undefined
+            })
+          }}
+        />
+      </SettingsField>
+
+      {supportsRemoteUrl && (
+        <SettingsField label="Источник">
+          <SegmentedChoice
+            value={block.source.type}
+            options={studyFileSources}
+            ariaLabel="Источник медиафайла"
+            columns={2}
+            onValueChange={(value) => {
+              setImportError(null)
+
+              if (value === 'local') {
+                onChange({
+                  ...block,
+                  source: {
+                    type: 'local'
+                  }
+                })
+              }
+
+              if (value === 'url') {
+                onChange({
+                  ...block,
+                  source: {
+                    type: 'url',
+                    url: ''
+                  }
+                })
+              }
+            }}
+          />
+        </SettingsField>
+      )}
+
+      {block.source.type === 'local' && (
+        <div className="grid gap-2">
+          <span className="text-[11px] font-medium text-(--app-muted)">Файл с компьютера</span>
+
+          <button
+            type="button"
+            disabled={isPicking}
+            className="flex min-h-10 items-center justify-center gap-2 rounded-lg border border-(--app-border) bg-(--app-workspace) px-3 py-2 text-sm font-medium text-(--app-text) transition-colors outline-none hover:border-violet-500/35 hover:bg-violet-500/[0.06] focus-visible:ring-2 focus-visible:ring-violet-500/35 disabled:cursor-wait disabled:opacity-60"
+            onClick={() => {
+              void chooseLocalFile()
+            }}
+          >
+            {isPicking ? (
+              <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
+            ) : (
+              <Upload aria-hidden="true" className="size-4 text-violet-300" />
+            )}
+
+            {localAsset ? 'Заменить файл' : 'Выбрать файл'}
+          </button>
+
+          {localAsset && (
+            <div className="flex items-start gap-2 rounded-lg border border-(--app-border) bg-white/[0.025] p-3">
+              <StudyFileSettingsIcon kind={block.kind} />
+
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs font-medium text-(--app-text)">{localAsset.name}</p>
+
+                <p className="mt-1 text-[11px] text-(--app-muted)">
+                  {formatStudyFileSize(localAsset.size)}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                aria-label="Удалить выбранный файл"
+                className="flex size-7 shrink-0 items-center justify-center rounded-md text-(--app-muted) outline-none hover:bg-red-500/10 hover:text-red-300 focus-visible:ring-2 focus-visible:ring-red-500/30"
+                onClick={() => {
+                  onChange({
+                    ...block,
+                    source: {
+                      type: 'local'
+                    }
+                  })
+                }}
+              >
+                <Trash2 aria-hidden="true" className="size-3.5" />
+              </button>
+            </div>
+          )}
+
+          {importError && (
+            <p className="rounded-lg border border-red-500/20 bg-red-500/[0.06] px-3 py-2 text-xs leading-5 text-red-300">
+              {importError}
+            </p>
+          )}
+        </div>
+      )}
+
+      {block.source.type === 'url' && (
+        <div className="grid gap-2">
+          <span className="text-[11px] font-medium text-(--app-muted)">Прямая HTTPS-ссылка</span>
+
+          <label className="flex min-h-10 items-center gap-2 rounded-lg border border-(--app-border) bg-(--app-workspace) px-3 focus-within:border-violet-500/45">
+            <Link2 aria-hidden="true" className="size-4 shrink-0 text-(--app-muted)" />
+
+            <input
+              value={remoteUrl}
+              placeholder={
+                block.kind === 'image' ? 'https://site.com/image.jpg' : 'https://site.com/video.mp4'
+              }
+              className="min-w-0 flex-1 bg-transparent py-2 text-sm text-(--app-text) outline-none placeholder:text-(--app-muted)/60"
+              onChange={(event) => {
+                onChange({
+                  ...block,
+                  source: {
+                    type: 'url',
+                    url: event.target.value
+                  }
+                })
+              }}
+            />
+          </label>
+
+          {remoteUrl.trim() && !isValidStudyRemoteMediaUrl(remoteUrl) && (
+            <p className="text-xs leading-5 text-amber-300">
+              Используй прямую HTTPS-ссылку без логина и пароля.
+            </p>
+          )}
+
+          <p className="text-[11px] leading-5 text-(--app-muted)">
+            Страница YouTube или другого сайта не подойдёт — нужна ссылка непосредственно на
+            изображение или видеофайл.
+          </p>
+        </div>
+      )}
+
+      <SettingsField label="Название">
+        <input
+          value={block.title ?? ''}
+          placeholder={localAsset?.name ?? 'Необязательное название'}
+          className="w-full rounded-lg border border-(--app-border) bg-(--app-workspace) px-3 py-2 text-sm text-(--app-text) outline-none placeholder:text-(--app-muted)/60 focus:border-violet-500/45"
+          onChange={(event) => {
+            onChange({
+              ...block,
+              title: event.target.value
+            })
+          }}
+        />
+      </SettingsField>
+
+      {block.kind === 'image' && (
+        <>
+          <SettingsField label="Описание для изображения">
+            <input
+              value={block.altText ?? ''}
+              placeholder="Что изображено на фотографии"
+              className="w-full rounded-lg border border-(--app-border) bg-(--app-workspace) px-3 py-2 text-sm text-(--app-text) outline-none placeholder:text-(--app-muted)/60 focus:border-violet-500/45"
+              onChange={(event) => {
+                onChange({
+                  ...block,
+                  altText: event.target.value
+                })
+              }}
+            />
+          </SettingsField>
+
+          <SettingsField label="Заполнение">
+            <SegmentedChoice
+              value={block.imageFit ?? 'contain'}
+              options={studyImageFits}
+              ariaLabel="Способ отображения изображения"
+              columns={2}
+              onValueChange={(imageFit) => {
+                if (imageFit !== 'contain' && imageFit !== 'cover') {
+                  return
+                }
+
+                onChange({
+                  ...block,
+                  imageFit
+                })
+              }}
+            />
+          </SettingsField>
+
+          <SettingsField label={`Высота: ${block.imageHeight ?? 360}px`}>
+            <Slider.Root
+              min={180}
+              max={720}
+              step={20}
+              value={[block.imageHeight ?? 360]}
+              aria-label="Высота изображения"
+              className="relative flex h-5 w-full touch-none items-center select-none"
+              onValueChange={(values) => {
+                const imageHeight = values[0]
+
+                if (typeof imageHeight !== 'number') {
+                  return
+                }
+
+                onChange({
+                  ...block,
+                  imageHeight
+                })
+              }}
+            >
+              <Slider.Track className="relative h-1.5 grow overflow-hidden rounded-full bg-white/[0.08]">
+                <Slider.Range className="absolute h-full bg-violet-500" />
+              </Slider.Track>
+
+              <Slider.Thumb className="block size-4 rounded-full border-2 border-violet-400 bg-(--app-surface-raised) outline-none hover:scale-110 focus-visible:ring-4 focus-visible:ring-violet-500/20" />
+            </Slider.Root>
+          </SettingsField>
+        </>
+      )}
+
+      <SettingsField label="Подпись">
+        <textarea
+          value={block.caption ?? ''}
+          rows={3}
+          placeholder="Необязательная подпись или пояснение"
+          className="w-full resize-y rounded-lg border border-(--app-border) bg-(--app-workspace) px-3 py-2 text-sm leading-6 text-(--app-text) outline-none placeholder:text-(--app-muted)/60 focus:border-violet-500/45"
+          onChange={(event) => {
+            onChange({
+              ...block,
+              caption: event.target.value
+            })
+          }}
+        />
+      </SettingsField>
+    </div>
+  )
+}
+
+function StudyFileSettingsIcon({ kind }: { kind: StudyFileKind }): React.JSX.Element {
+  const className = 'mt-0.5 size-4 shrink-0 text-violet-300'
+
+  if (kind === 'image') {
+    return <FileImage aria-hidden="true" className={className} />
+  }
+
+  if (kind === 'video') {
+    return <FileVideo aria-hidden="true" className={className} />
+  }
+
+  if (kind === 'audio') {
+    return <FileAudio aria-hidden="true" className={className} />
+  }
+
+  return <Files aria-hidden="true" className={className} />
+}
+
+function isStudyFileKind(value: string): value is StudyFileKind {
+  return value === 'image' || value === 'video' || value === 'audio' || value === 'file'
+}
+
+function getFileImportErrorMessage(reason: unknown): string {
+  if (reason instanceof Error && reason.message) {
+    return reason.message
+  }
+
+  return 'Не удалось импортировать файл'
+}
 function DividerSettings({
   block,
   onChange
@@ -643,6 +1043,9 @@ function BlockTypeIcon({ type }: { type: StudyBlock['type'] }): React.JSX.Elemen
   if (type === 'mermaid') {
     return <Workflow aria-hidden="true" className="size-4" />
   }
+  if (type === 'file') {
+    return <Files aria-hidden="true" className="size-4" />
+  }
 
   if (type === 'divider') {
     return <Minus aria-hidden="true" className="size-4" />
@@ -667,6 +1070,9 @@ function getBlockTitle(block: StudyBlock): string {
   }
   if (block.type === 'mermaid') {
     return 'Mermaid'
+  }
+  if (block.type === 'file') {
+    return 'Файл'
   }
 
   if (block.type === 'divider') {

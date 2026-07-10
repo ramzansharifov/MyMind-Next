@@ -53,6 +53,37 @@ export const studyMermaidBlockSchema = z.object({
   theme: z.enum(['dark', 'default', 'neutral', 'forest']).optional(),
   scale: z.number().int().min(60).max(180).optional()
 })
+export const studyLocalAssetSchema = z.object({
+  id: z.string().uuid(),
+  materialId: z.string().min(1).max(120),
+  name: z.string().min(1).max(180),
+  mimeType: z.string().min(1).max(120),
+  size: z.number().int().nonnegative(),
+  url: z.string().regex(/^mymind-asset:\/\/local\//)
+})
+
+export const studyFileSourceSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('local'),
+    asset: studyLocalAssetSchema.optional()
+  }),
+  z.object({
+    type: z.literal('url'),
+    url: z.string().max(4096)
+  })
+])
+
+export const studyFileBlockSchema = z.object({
+  id: z.string().min(1),
+  type: z.literal('file'),
+  kind: z.enum(['image', 'video', 'audio', 'file']),
+  source: studyFileSourceSchema,
+  title: z.string().max(240).optional(),
+  caption: z.string().max(1200).optional(),
+  altText: z.string().max(500).optional(),
+  imageFit: z.enum(['contain', 'cover']).optional(),
+  imageHeight: z.number().int().min(180).max(720).optional()
+})
 
 export const studyDividerBlockSchema = z.object({
   id: z.string().min(1),
@@ -71,6 +102,7 @@ export const studyBlockSchema = z.discriminatedUnion('type', [
   studyMarkdownBlockSchema,
   studyLatexBlockSchema,
   studyMermaidBlockSchema,
+  studyFileBlockSchema,
   studyDividerBlockSchema
 ])
 
@@ -119,6 +151,10 @@ export const moveStudyNodeInputSchema = z.object({
   position: z.number().int().min(0)
 })
 
+export const importStudyAssetInputSchema = z.object({
+  nodeId: z.string().min(1).max(120),
+  kind: z.enum(['image', 'video', 'audio', 'file'])
+})
 export const saveStudyMaterialInputSchema = z.object({
   nodeId: z.string().min(1),
   document: studyDocumentSchema

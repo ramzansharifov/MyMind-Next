@@ -190,7 +190,12 @@ export function StudyMaterialEditor({ node }: StudyMaterialEditorProps): React.J
       </header>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
-        <StudyBlockEditor document={document} mode={mode} onChange={updateDocument} />
+        <StudyBlockEditor
+          materialId={node.id}
+          document={document}
+          mode={mode}
+          onChange={updateDocument}
+        />
       </div>
     </section>
   )

@@ -1,8 +1,9 @@
-import { ipcMain } from 'electron'
+import { BrowserWindow, ipcMain } from 'electron'
 
 import { STUDY_IPC_CHANNELS } from '../../shared/contracts/study'
 import {
   createStudyNodeInputSchema,
+  importStudyAssetInputSchema,
   moveStudyNodeInputSchema,
   renameStudyNodeInputSchema,
   saveStudyMaterialInputSchema,
@@ -18,6 +19,7 @@ import {
   saveStudyMaterial,
   updateStudyNodeExpansion
 } from '../repositories/study.repository'
+import { importStudyAsset } from '../services/study-assets'
 
 export function registerStudyIpcHandlers(): void {
   Object.values(STUDY_IPC_CHANNELS).forEach((channel) => {
@@ -69,5 +71,18 @@ export function registerStudyIpcHandlers(): void {
     const input = saveStudyMaterialInputSchema.parse(rawInput)
 
     return saveStudyMaterial(input)
+  })
+  ipcMain.handle(STUDY_IPC_CHANNELS.importAsset, (event, rawInput: unknown) => {
+    if (!event.senderFrame || event.senderFrame !== event.sender.mainFrame) {
+      throw new Error('Untrusted study asset request')
+    }
+
+    const input = importStudyAssetInputSchema.parse(rawInput)
+
+    getStudyMaterial(input.nodeId)
+
+    const parentWindow = BrowserWindow.fromWebContents(event.sender)
+
+    return importStudyAsset(input, parentWindow)
   })
 }

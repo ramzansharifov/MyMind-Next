@@ -9,6 +9,7 @@ import {
   Code2,
   CopyPlus,
   FileCode2,
+  Files,
   Heading,
   Sigma,
   Workflow,
@@ -41,12 +42,14 @@ import { BlockSettingsErrorBoundary } from './BlockSettingsErrorBoundary'
 import { BlockSettingsPanel } from './BlockSettingsPanel'
 import { DeleteConfirmationDialog } from './DeleteConfirmationDialog'
 import { StudyCodeBlock } from './code/StudyCodeBlock'
+import { StudyFileBlockView } from './file/StudyFileBlockView'
 import { StudyMarkdownBlock } from './markdown/StudyMarkdownBlock'
 import { StudyLatexBlock } from './latex/StudyLatexBlock'
 import { StudyMermaidBlock } from './mermaid/StudyMermaidBlock'
 import { RichTextBlockEditor, RichTextViewer } from './rich-text/RichTextBlockEditor'
 
 interface StudyBlockEditorProps {
+  materialId: string
   document: StudyDocument
   mode: 'edit' | 'read'
   onChange: (document: StudyDocument) => void
@@ -80,6 +83,10 @@ const blockTypes: Array<{
     type: 'mermaid',
     label: 'Mermaid'
   },
+  {
+    type: 'file',
+    label: 'Файл'
+  },
 
   {
     type: 'divider',
@@ -88,6 +95,7 @@ const blockTypes: Array<{
 ]
 
 export function StudyBlockEditor({
+  materialId,
   document,
   mode,
   onChange
@@ -235,6 +243,7 @@ export function StudyBlockEditor({
         <BlockSettingsErrorBoundary key={activeBlock?.id ?? 'empty'}>
           <BlockSettingsPanel
             block={activeBlock}
+            materialId={materialId}
             textEditor={
               activeBlock?.type === 'text' && activeTextEditor && !activeTextEditor.isDestroyed
                 ? activeTextEditor
@@ -628,6 +637,9 @@ function EditableBlock({
       />
     )
   }
+  if (block.type === 'file') {
+    return <StudyFileBlockView block={block} />
+  }
 
   return (
     <div className="py-8">
@@ -922,6 +934,9 @@ function StudyBlockTypeIcon({
   }
   if (type === 'mermaid') {
     return <Workflow aria-hidden="true" className={className} />
+  }
+  if (type === 'file') {
+    return <Files aria-hidden="true" className={className} />
   }
 
   if (type === 'divider') {

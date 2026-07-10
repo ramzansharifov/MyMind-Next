@@ -59,6 +59,18 @@ export function createStudyBlock(type: StudyBlockType): StudyBlock {
       scale: 100
     }
   }
+  if (type === 'file') {
+    return {
+      id,
+      type,
+      kind: 'image',
+      source: {
+        type: 'local'
+      },
+      imageFit: 'contain',
+      imageHeight: 360
+    }
+  }
 
   if (type === 'divider') {
     return {

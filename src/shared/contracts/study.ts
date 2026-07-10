@@ -1,7 +1,7 @@
 export type StudyNodeType = 'folder' | 'material'
 
 export type StudyBlockType =
-  'text' | 'heading' | 'code' | 'markdown' | 'latex' | 'mermaid' | 'divider'
+  'text' | 'heading' | 'code' | 'markdown' | 'latex' | 'mermaid' | 'file' | 'divider'
 
 export interface StudyTextBlock {
   id: string
@@ -60,6 +60,42 @@ export interface StudyMermaidBlock {
   theme?: StudyMermaidTheme
   scale?: number
 }
+export type StudyFileKind = 'image' | 'video' | 'audio' | 'file'
+
+export type StudyImageFit = 'contain' | 'cover'
+
+export interface StudyLocalAsset {
+  id: string
+  materialId: string
+  name: string
+  mimeType: string
+  size: number
+  url: string
+}
+
+export interface StudyLocalFileSource {
+  type: 'local'
+  asset?: StudyLocalAsset
+}
+
+export interface StudyRemoteFileSource {
+  type: 'url'
+  url: string
+}
+
+export type StudyFileSource = StudyLocalFileSource | StudyRemoteFileSource
+
+export interface StudyFileBlock {
+  id: string
+  type: 'file'
+  kind: StudyFileKind
+  source: StudyFileSource
+  title?: string
+  caption?: string
+  altText?: string
+  imageFit?: StudyImageFit
+  imageHeight?: number
+}
 
 export interface StudyDividerBlock {
   id: string
@@ -75,6 +111,7 @@ export type StudyBlock =
   | StudyMarkdownBlock
   | StudyLatexBlock
   | StudyMermaidBlock
+  | StudyFileBlock
   | StudyDividerBlock
 
 export interface StudyDocument {
@@ -126,6 +163,10 @@ export interface SaveStudyMaterialInput {
   nodeId: string
   document: StudyDocument
 }
+export interface ImportStudyAssetInput {
+  nodeId: string
+  kind: StudyFileKind
+}
 
 export const STUDY_IPC_CHANNELS = {
   listNodes: 'study:list-nodes',
@@ -135,7 +176,8 @@ export const STUDY_IPC_CHANNELS = {
   updateExpansion: 'study:update-expansion',
   moveNode: 'study:move-node',
   getMaterial: 'study:get-material',
-  saveMaterial: 'study:save-material'
+  saveMaterial: 'study:save-material',
+  importAsset: 'study:import-asset'
 } as const
 
 export interface StudyApi {
@@ -147,4 +189,5 @@ export interface StudyApi {
   moveNode(input: MoveStudyNodeInput): Promise<StudyNode[]>
   getMaterial(nodeId: string): Promise<StudyMaterial>
   saveMaterial(input: SaveStudyMaterialInput): Promise<StudyMaterial>
+  importAsset(input: ImportStudyAssetInput): Promise<StudyLocalAsset | null>
 }

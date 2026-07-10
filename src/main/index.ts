@@ -6,6 +6,9 @@ import icon from '../../resources/icon.png?asset'
 import { closeDatabase, initializeDatabase } from './database/client'
 import { runDatabaseMigrations } from './database/migrate'
 import { registerIpcHandlers } from './ipc/register-ipc'
+import { registerStudyAssetProtocol, registerStudyAssetScheme } from './services/study-assets'
+
+registerStudyAssetScheme()
 
 function createWindow(): void {
   // Create the browser window.
@@ -75,6 +78,7 @@ app.whenReady().then(() => {
   })
 
   // Application services are initialized below.
+  registerStudyAssetProtocol()
 
   initializeDatabase()
   runDatabaseMigrations()
