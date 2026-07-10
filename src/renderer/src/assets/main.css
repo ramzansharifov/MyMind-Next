@@ -207,14 +207,12 @@ button {
   caret-color: #f8fafc !important;
 }
 
-.study-code-block[data-mode='read']
-  .study-code-block__textarea {
+.study-code-block[data-mode='read'] .study-code-block__textarea {
   cursor: text;
   caret-color: transparent !important;
 }
 
-.study-code-block
-  .study-code-block__textarea::selection {
+.study-code-block .study-code-block__textarea::selection {
   background: rgb(124 58 237 / 48%);
 }
 

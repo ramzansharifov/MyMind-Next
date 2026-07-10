@@ -62,15 +62,10 @@ export const STUDY_CODE_LANGUAGE_OPTIONS: StudyCodeLanguageOption[] = [
   }
 ]
 
-const fallbackCodeLanguage =
-  STUDY_CODE_LANGUAGE_OPTIONS[0]
+const fallbackCodeLanguage = STUDY_CODE_LANGUAGE_OPTIONS[0]
 
-export function getStudyCodeLanguage(
-  value: string | undefined
-): StudyCodeLanguageOption {
+export function getStudyCodeLanguage(value: string | undefined): StudyCodeLanguageOption {
   return (
-    STUDY_CODE_LANGUAGE_OPTIONS.find(
-      (option) => option.value === value
-    ) ?? fallbackCodeLanguage
+    STUDY_CODE_LANGUAGE_OPTIONS.find((option) => option.value === value) ?? fallbackCodeLanguage
   )
 }

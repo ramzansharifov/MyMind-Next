@@ -12,21 +12,11 @@ import 'prismjs/components/prism-bash'
 import 'prismjs/components/prism-c'
 import 'prismjs/components/prism-cpp'
 import 'prismjs/components/prism-java'
-import {
-  Check,
-  Copy
-} from 'lucide-react'
-import {
-  useEffect,
-  useRef,
-  useState
-} from 'react'
+import { Check, Copy } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 
 import { cn } from '../../../../shared/lib/cn'
-import {
-  Tooltip,
-  TooltipProvider
-} from '../../../../shared/ui/tooltip'
+import { Tooltip, TooltipProvider } from '../../../../shared/ui/tooltip'
 import { getStudyCodeLanguage } from './code-languages'
 
 interface StudyCodeBlockProps {
@@ -36,10 +26,7 @@ interface StudyCodeBlockProps {
   onChange?: (source: string) => void
 }
 
-type CopyState =
-  | 'idle'
-  | 'copied'
-  | 'error'
+type CopyState = 'idle' | 'copied' | 'error'
 
 export function StudyCodeBlock({
   source,
@@ -47,23 +34,18 @@ export function StudyCodeBlock({
   mode,
   onChange
 }: StudyCodeBlockProps): React.JSX.Element {
-  const [copyState, setCopyState] =
-    useState<CopyState>('idle')
+  const [copyState, setCopyState] = useState<CopyState>('idle')
 
-  const resetTimerRef =
-    useRef<number | null>(null)
+  const resetTimerRef = useRef<number | null>(null)
 
-  const languageOption =
-    getStudyCodeLanguage(language)
+  const languageOption = getStudyCodeLanguage(language)
 
   const editable = mode === 'edit'
 
   useEffect(() => {
     return () => {
       if (resetTimerRef.current !== null) {
-        window.clearTimeout(
-          resetTimerRef.current
-        )
+        window.clearTimeout(resetTimerRef.current)
       }
     }
   }, [])
@@ -77,15 +59,12 @@ export function StudyCodeBlock({
     }
 
     if (resetTimerRef.current !== null) {
-      window.clearTimeout(
-        resetTimerRef.current
-      )
+      window.clearTimeout(resetTimerRef.current)
     }
 
-    resetTimerRef.current =
-      window.setTimeout(() => {
-        setCopyState('idle')
-      }, 1600)
+    resetTimerRef.current = window.setTimeout(() => {
+      setCopyState('idle')
+    }, 1600)
   }
 
   const copyLabel =
@@ -106,10 +85,7 @@ export function StudyCodeBlock({
             {languageOption.label}
           </span>
 
-          <Tooltip
-            content={copyLabel}
-            side="top"
-          >
+          <Tooltip content={copyLabel} side="top">
             <button
               type="button"
               aria-label={copyLabel}
@@ -121,34 +97,22 @@ export function StudyCodeBlock({
                 'hover:bg-white/[0.06] hover:text-[var(--app-text)]',
                 'focus-visible:ring-2 focus-visible:ring-violet-500/35',
                 'disabled:cursor-not-allowed disabled:opacity-30',
-                copyState === 'copied' &&
-                  'text-emerald-300'
+                copyState === 'copied' && 'text-emerald-300'
               )}
               onClick={() => {
                 void handleCopy()
               }}
             >
               {copyState === 'copied' ? (
-                <Check
-                  aria-hidden="true"
-                  className="size-4"
-                />
+                <Check aria-hidden="true" className="size-4" />
               ) : (
-                <Copy
-                  aria-hidden="true"
-                  className="size-4"
-                />
+                <Copy aria-hidden="true" className="size-4" />
               )}
             </button>
           </Tooltip>
 
-          <span
-            aria-live="polite"
-            className="sr-only"
-          >
-            {copyState === 'copied'
-              ? 'Код скопирован'
-              : ''}
+          <span aria-live="polite" className="sr-only">
+            {copyState === 'copied' ? 'Код скопирован' : ''}
           </span>
         </header>
 
@@ -160,26 +124,14 @@ export function StudyCodeBlock({
             insertSpaces
             tabSize={2}
             padding={16}
-            placeholder={
-              editable
-                ? 'Код…'
-                : 'Пустой блок кода'
-            }
+            placeholder={editable ? 'Код…' : 'Пустой блок кода'}
             className="study-code-block__editor"
             textareaClassName="study-code-block__textarea"
             preClassName="study-code-block__pre"
-            highlight={(value) =>
-              highlightStudyCode(
-                value,
-                languageOption.prismLanguage
-              )
-            }
+            highlight={(value) => highlightStudyCode(value, languageOption.prismLanguage)}
             style={{
-              minHeight: editable
-                ? '15rem'
-                : '6rem',
-              fontFamily:
-                'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+              minHeight: editable ? '15rem' : '6rem',
+              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
               fontSize: '0.875rem',
               lineHeight: '1.65'
             }}
@@ -195,26 +147,18 @@ export function StudyCodeBlock({
   )
 }
 
-function highlightStudyCode(
-  source: string,
-  prismLanguage: string
-): string {
+function highlightStudyCode(source: string, prismLanguage: string): string {
   if (prismLanguage === 'plain') {
     return escapeHtml(source)
   }
 
-  const grammar =
-    Prism.languages[prismLanguage]
+  const grammar = Prism.languages[prismLanguage]
 
   if (!grammar) {
     return escapeHtml(source)
   }
 
-  return Prism.highlight(
-    source,
-    grammar,
-    prismLanguage
-  )
+  return Prism.highlight(source, grammar, prismLanguage)
 }
 
 function escapeHtml(value: string): string {
@@ -226,22 +170,16 @@ function escapeHtml(value: string): string {
     .replaceAll("'", '&#039;')
 }
 
-async function writeClipboard(
-  value: string
-): Promise<void> {
+async function writeClipboard(value: string): Promise<void> {
   if (navigator.clipboard?.writeText) {
     await navigator.clipboard.writeText(value)
     return
   }
 
-  const textarea =
-    document.createElement('textarea')
+  const textarea = document.createElement('textarea')
 
   textarea.value = value
-  textarea.setAttribute(
-    'aria-hidden',
-    'true'
-  )
+  textarea.setAttribute('aria-hidden', 'true')
 
   Object.assign(textarea.style, {
     position: 'fixed',
@@ -257,14 +195,11 @@ async function writeClipboard(
   textarea.focus()
   textarea.select()
 
-  const copied =
-    document.execCommand('copy')
+  const copied = document.execCommand('copy')
 
   textarea.remove()
 
   if (!copied) {
-    throw new Error(
-      'Clipboard is unavailable'
-    )
+    throw new Error('Clipboard is unavailable')
   }
 }

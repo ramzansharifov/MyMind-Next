@@ -662,13 +662,7 @@ function StudyBlockReader({ block }: { block: StudyBlock }): React.JSX.Element {
   }
 
   if (block.type === 'code') {
-    return (
-      <StudyCodeBlock
-        mode="read"
-        source={block.source}
-        language={block.language}
-      />
-    )
+    return <StudyCodeBlock mode="read" source={block.source} language={block.language} />
   }
 
   if (block.type === 'link') {
