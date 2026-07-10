@@ -105,14 +105,36 @@ const fontSizes = [
   }
 ]
 
-export function RichTextSettings({ editor }: RichTextSettingsProps): React.JSX.Element {
-  const savedSelectionRef = useRef<SavedSelection | null>(null)
+export function RichTextSettings({
+  editor
+}: RichTextSettingsProps): React.JSX.Element {
+  if (!editor || editor.isDestroyed) {
+    return <UnavailableEditorSettings />
+  }
+
+  return (
+    <ConnectedRichTextSettings
+      editor={editor}
+    />
+  )
+}
+
+function ConnectedRichTextSettings({
+  editor
+}: {
+  editor: Editor
+}): React.JSX.Element {
+  const savedSelectionRef =
+    useRef<SavedSelection | null>(null)
 
   const editorState =
     useEditorState({
       editor,
       selector: ({ editor: currentEditor }) => {
-        if (!currentEditor) {
+        if (
+          !currentEditor ||
+          currentEditor.isDestroyed
+        ) {
           return defaultEditorState
         }
 
@@ -133,8 +155,16 @@ export function RichTextSettings({ editor }: RichTextSettingsProps): React.JSX.E
           color: normalizeColor(textStyle.color),
           href: typeof link.href === 'string' ? link.href : '',
           linkActive: currentEditor.isActive('link'),
-          canUndo: currentEditor.can().chain().undo().run(),
-          canRedo: currentEditor.can().chain().redo().run()
+          canUndo: canRunEditorCommand(
+            currentEditor,
+            (candidate) =>
+              candidate.can().undo()
+          ),
+          canRedo: canRunEditorCommand(
+            currentEditor,
+            (candidate) =>
+              candidate.can().redo()
+          )
         } satisfies EditorFormattingState
       }
     }) ?? defaultEditorState
@@ -717,6 +747,35 @@ function LinkPopover({
   )
 }
 
+function UnavailableEditorSettings(): React.JSX.Element {
+  return (
+    <div className="rounded-lg border border-dashed border-(--app-border) p-3">
+      <p className="text-sm font-medium text-(--app-text)">
+        Текстовый блок не активен
+      </p>
+
+      <p className="mt-1 text-xs leading-5 text-(--app-muted)">
+        Установи курсор или выдели текст,
+        чтобы открыть форматирование.
+      </p>
+    </div>
+  )
+}
+
+function canRunEditorCommand(
+  editor: Editor | null,
+  command: (editor: Editor) => boolean
+): boolean {
+  if (!editor || editor.isDestroyed) {
+    return false
+  }
+
+  try {
+    return command(editor)
+  } catch {
+    return false
+  }
+}
 function getTextAlignment(value: unknown): TextAlignment {
   return isTextAlignment(value) ? value : 'left'
 }

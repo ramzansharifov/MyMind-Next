@@ -31,6 +31,7 @@ import {
   replaceStudyBlock
 } from '../lib/study-document'
 import { BlockSettingsPanel } from './BlockSettingsPanel'
+import { BlockSettingsErrorBoundary } from './BlockSettingsErrorBoundary'
 import { RichTextBlockEditor, RichTextViewer } from './rich-text/RichTextBlockEditor'
 
 interface StudyBlockEditorProps {
@@ -215,11 +216,21 @@ export function StudyBlockEditor({
       </div>
 
       <div className="sticky top-0 max-h-[calc(100vh-150px)] overflow-y-auto pr-1 max-[1050px]:static max-[1050px]:max-h-none">
-        <BlockSettingsPanel
-          block={activeBlock}
-          textEditor={activeBlock?.type === 'text' ? activeTextEditor : null}
-          onChange={updateBlock}
-        />
+        <BlockSettingsErrorBoundary
+          key={activeBlock?.id ?? 'empty'}
+        >
+          <BlockSettingsPanel
+            block={activeBlock}
+            textEditor={
+              activeBlock?.type === 'text' &&
+              activeTextEditor &&
+              !activeTextEditor.isDestroyed
+                ? activeTextEditor
+                : null
+            }
+            onChange={updateBlock}
+          />
+        </BlockSettingsErrorBoundary>
       </div>
     </div>
   )
