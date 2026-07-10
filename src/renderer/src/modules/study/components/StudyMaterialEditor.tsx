@@ -1,4 +1,4 @@
-import { BookOpen, Check, Edit3, LoaderCircle, Save } from 'lucide-react'
+import { BookOpen, Check, Edit3, LoaderCircle } from 'lucide-react'
 import * as Tabs from '@radix-ui/react-tabs'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
@@ -187,18 +187,6 @@ export function StudyMaterialEditor({ node }: StudyMaterialEditorProps): React.J
             </Tabs.Trigger>
           </Tabs.List>
         </Tabs.Root>
-
-        <button
-          type="button"
-          disabled={saveState === 'saving'}
-          className="flex items-center gap-2 rounded-lg bg-violet-500 px-3 py-2 text-sm font-medium text-white hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-50"
-          onClick={() => {
-            void save(documentRef.current)
-          }}
-        >
-          <Save aria-hidden="true" className="size-4" />
-          Сохранить
-        </button>
       </header>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">

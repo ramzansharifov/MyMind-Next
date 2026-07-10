@@ -303,10 +303,16 @@ function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.El
   }
 
   function applyLink(rawHref: string): boolean {
-    const href = normalizeHref(rawHref)
+    const linkText = rawHref.trim()
+    const href = normalizeHref(linkText)
 
     if (!href) {
       return false
+    }
+
+    const selection = savedSelectionRef.current ?? {
+      from: editor.state.selection.from,
+      to: editor.state.selection.to
     }
 
     const chain = createCommandChain()
@@ -316,7 +322,33 @@ function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.El
     }
 
     if (editorState.linkActive) {
-      chain.extendMarkRange('link')
+      chain
+        .extendMarkRange('link')
+        .setLink({
+          href
+        })
+        .run()
+
+      return true
+    }
+
+    if (selection.from === selection.to) {
+      chain
+        .insertContent({
+          type: 'text',
+          text: linkText,
+          marks: [
+            {
+              type: 'link',
+              attrs: {
+                href
+              }
+            }
+          ]
+        })
+        .run()
+
+      return true
     }
 
     chain
