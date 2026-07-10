@@ -1,7 +1,8 @@
 import { BookOpen, Check, Edit3, LoaderCircle, Save } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import type { StudyDocument, StudyNode } from '../../../../../shared/contracts/study'
+import { cn } from '../../../shared/lib/cn'
 import { studyClient } from '../api/study-client'
 import { createEmptyStudyDocument } from '../lib/study-document'
 import { StudyBlockEditor } from './StudyBlockEditor'
@@ -13,17 +14,28 @@ interface StudyMaterialEditorProps {
 type SaveState = 'saved' | 'dirty' | 'saving' | 'error'
 
 export function StudyMaterialEditor({ node }: StudyMaterialEditorProps): React.JSX.Element {
-
   const [document, setDocument] = useState<StudyDocument>(createEmptyStudyDocument())
   const [mode, setMode] = useState<'edit' | 'read'>('edit')
   const [saveState, setSaveState] = useState<SaveState>('saved')
   const [isLoading, setIsLoading] = useState(true)
+
   const saveTimerRef = useRef<number | null>(null)
+  const documentRef = useRef<StudyDocument>(document)
+  const draftVersionRef = useRef(0)
+  const hasUnsavedChangesRef = useRef(false)
+  const isMountedRef = useRef(true)
+
+  const clearSaveTimer = useCallback((): void => {
+    if (saveTimerRef.current === null) {
+      return
+    }
+
+    window.clearTimeout(saveTimerRef.current)
+    saveTimerRef.current = null
+  }, [])
 
   useEffect(() => {
     let active = true
-
-
 
     studyClient
       .getMaterial(node.id)
@@ -32,7 +44,12 @@ export function StudyMaterialEditor({ node }: StudyMaterialEditorProps): React.J
           return
         }
 
+        documentRef.current = loadedMaterial.document
+        draftVersionRef.current = 0
+        hasUnsavedChangesRef.current = false
+
         setDocument(loadedMaterial.document)
+        setSaveState('saved')
       })
       .catch(() => {
         if (active) {
@@ -47,45 +64,70 @@ export function StudyMaterialEditor({ node }: StudyMaterialEditorProps): React.J
 
     return () => {
       active = false
+      isMountedRef.current = false
 
-      if (saveTimerRef.current !== null) {
-        window.clearTimeout(saveTimerRef.current)
+      clearSaveTimer()
+
+      if (hasUnsavedChangesRef.current) {
+        void studyClient
+          .saveMaterial({
+            nodeId: node.id,
+            document: documentRef.current
+          })
+          .catch(() => undefined)
       }
     }
-  }, [node.id])
+  }, [clearSaveTimer, node.id])
 
-  async function save(nextDocument: StudyDocument): Promise<void> {
-    try {
+  async function save(
+    nextDocument: StudyDocument,
+    draftVersion = draftVersionRef.current
+  ): Promise<void> {
+    clearSaveTimer()
+
+    if (isMountedRef.current) {
       setSaveState('saving')
+    }
 
+    try {
       await studyClient.saveMaterial({
         nodeId: node.id,
         document: nextDocument
       })
 
-      setSaveState('saved')
-    } catch {
-      setSaveState('error')
-    }
-  })
+      if (!isMountedRef.current) {
+        return
+      }
 
-      setMaterial(saved)
-      setSaveState('saved')
+      if (draftVersionRef.current === draftVersion) {
+        hasUnsavedChangesRef.current = false
+        setSaveState('saved')
+      } else {
+        setSaveState('dirty')
+      }
     } catch {
-      setSaveState('error')
+      if (isMountedRef.current) {
+        setSaveState('error')
+      }
     }
   }
 
   function updateDocument(nextDocument: StudyDocument): void {
+    const nextDraftVersion = draftVersionRef.current + 1
+
+    draftVersionRef.current = nextDraftVersion
+    hasUnsavedChangesRef.current = true
+    documentRef.current = nextDocument
+
     setDocument(nextDocument)
     setSaveState('dirty')
 
-    if (saveTimerRef.current !== null) {
-      window.clearTimeout(saveTimerRef.current)
-    }
+    clearSaveTimer()
 
     saveTimerRef.current = window.setTimeout(() => {
-      void save(nextDocument)
+      saveTimerRef.current = null
+
+      void save(nextDocument, nextDraftVersion)
     }, 800)
   }
 
@@ -116,11 +158,12 @@ export function StudyMaterialEditor({ node }: StudyMaterialEditorProps): React.J
         <div className="inline-flex rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] p-1">
           <button
             type="button"
-            className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-sm ${
+            className={cn(
+              'flex items-center gap-2 rounded-md px-3 py-1.5 text-sm',
               mode === 'edit'
                 ? 'bg-[var(--app-surface-raised)] text-[var(--app-text)]'
-                : 'text-[var(--app-muted)]'
-            }`}
+                : 'text-[var(--app-muted)] hover:text-[var(--app-text)]'
+            )}
             onClick={() => setMode('edit')}
           >
             <Edit3 aria-hidden="true" className="size-4" />
@@ -129,11 +172,12 @@ export function StudyMaterialEditor({ node }: StudyMaterialEditorProps): React.J
 
           <button
             type="button"
-            className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-sm ${
+            className={cn(
+              'flex items-center gap-2 rounded-md px-3 py-1.5 text-sm',
               mode === 'read'
                 ? 'bg-[var(--app-surface-raised)] text-[var(--app-text)]'
-                : 'text-[var(--app-muted)]'
-            }`}
+                : 'text-[var(--app-muted)] hover:text-[var(--app-text)]'
+            )}
             onClick={() => setMode('read')}
           >
             <BookOpen aria-hidden="true" className="size-4" />
@@ -144,8 +188,10 @@ export function StudyMaterialEditor({ node }: StudyMaterialEditorProps): React.J
         <button
           type="button"
           disabled={saveState === 'saving'}
-          className="flex items-center gap-2 rounded-lg bg-violet-500 px-3 py-2 text-sm font-medium text-white hover:bg-violet-400 disabled:opacity-50"
-          onClick={() => void save(document)}
+          className="flex items-center gap-2 rounded-lg bg-violet-500 px-3 py-2 text-sm font-medium text-white hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-50"
+          onClick={() => {
+            void save(document)
+          }}
         >
           <Save aria-hidden="true" className="size-4" />
           Сохранить
