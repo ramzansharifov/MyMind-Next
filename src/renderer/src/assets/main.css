@@ -183,6 +183,97 @@ button {
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
 }
+.study-code-block__editor {
+  min-width: 100%;
+  background: #090a0c;
+}
+
+.study-code-block__pre,
+.study-code-block__textarea {
+  margin: 0 !important;
+  white-space: pre !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+  tab-size: 2;
+}
+
+.study-code-block__pre {
+  min-width: max-content;
+  color: #d4d4d8;
+}
+
+.study-code-block__textarea {
+  outline: none !important;
+  caret-color: #f8fafc !important;
+}
+
+.study-code-block[data-mode='read']
+  .study-code-block__textarea {
+  cursor: text;
+  caret-color: transparent !important;
+}
+
+.study-code-block
+  .study-code-block__textarea::selection {
+  background: rgb(124 58 237 / 48%);
+}
+
+.study-code-block .token.comment,
+.study-code-block .token.prolog,
+.study-code-block .token.doctype,
+.study-code-block .token.cdata {
+  color: #71717a;
+}
+
+.study-code-block .token.punctuation {
+  color: #a1a1aa;
+}
+
+.study-code-block .token.namespace {
+  opacity: 0.8;
+}
+
+.study-code-block .token.property,
+.study-code-block .token.tag,
+.study-code-block .token.boolean,
+.study-code-block .token.number,
+.study-code-block .token.constant,
+.study-code-block .token.symbol,
+.study-code-block .token.deleted {
+  color: #f472b6;
+}
+
+.study-code-block .token.selector,
+.study-code-block .token.attr-name,
+.study-code-block .token.string,
+.study-code-block .token.char,
+.study-code-block .token.builtin,
+.study-code-block .token.inserted {
+  color: #86efac;
+}
+
+.study-code-block .token.operator,
+.study-code-block .token.entity,
+.study-code-block .token.url {
+  color: #93c5fd;
+}
+
+.study-code-block .token.atrule,
+.study-code-block .token.attr-value,
+.study-code-block .token.keyword {
+  color: #c4b5fd;
+}
+
+.study-code-block .token.function,
+.study-code-block .token.class-name {
+  color: #fde68a;
+}
+
+.study-code-block .token.regex,
+.study-code-block .token.important,
+.study-code-block .token.variable {
+  color: #fca5a5;
+}
 .study-read-collapsible-content {
   will-change: height, opacity;
 }

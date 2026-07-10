@@ -35,6 +35,7 @@ import {
 } from '../lib/study-document'
 import { BlockSettingsErrorBoundary } from './BlockSettingsErrorBoundary'
 import { BlockSettingsPanel } from './BlockSettingsPanel'
+import { StudyCodeBlock } from './code/StudyCodeBlock'
 import { RichTextBlockEditor, RichTextViewer } from './rich-text/RichTextBlockEditor'
 
 interface StudyBlockEditorProps {
@@ -393,16 +394,14 @@ function EditableBlock({
 
   if (block.type === 'code') {
     return (
-      <textarea
-        value={block.source}
-        rows={10}
-        spellCheck={false}
-        placeholder="Код…"
-        className="w-full resize-y rounded-lg bg-[#090a0c] p-4 font-mono text-sm leading-6 text-zinc-200 outline-none placeholder:text-zinc-600"
-        onChange={(event) => {
+      <StudyCodeBlock
+        mode="edit"
+        source={block.source}
+        language={block.language}
+        onChange={(source) => {
           onChange({
             ...block,
-            source: event.target.value
+            source
           })
         }}
       />
@@ -664,15 +663,11 @@ function StudyBlockReader({ block }: { block: StudyBlock }): React.JSX.Element {
 
   if (block.type === 'code') {
     return (
-      <section>
-        <p className="mb-2 text-xs font-medium text-[var(--app-muted)]">
-          {block.language || 'text'}
-        </p>
-
-        <pre className="overflow-x-auto rounded-xl border border-[var(--app-border)] bg-[#090a0c] p-4 font-mono text-sm leading-6 text-zinc-200">
-          <code>{block.source}</code>
-        </pre>
-      </section>
+      <StudyCodeBlock
+        mode="read"
+        source={block.source}
+        language={block.language}
+      />
     )
   }
 

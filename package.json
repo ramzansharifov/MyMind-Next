@@ -71,7 +71,9 @@
     "drizzle-orm": "^0.45.2",
     "drizzle-zod": "^0.8.3",
     "lucide-react": "^1.24.0",
+    "prismjs": "^1.30.0",
     "react-hook-form": "^7.81.0",
+    "react-simple-code-editor": "^0.14.1",
     "tailwind-merge": "^3.6.0",
     "zod": "^4.4.3"
   },
@@ -86,6 +88,7 @@
     "@testing-library/user-event": "^14.6.1",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^22.19.1",
+    "@types/prismjs": "^1.26.6",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",

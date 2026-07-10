@@ -11,6 +11,7 @@ import {
   DEFAULT_HEADING_COLOR
 } from '../lib/study-document'
 import { RichTextSettings } from './rich-text/RichTextSettings'
+import { STUDY_CODE_LANGUAGE_OPTIONS } from './code/code-languages'
 import { ColorPicker } from './settings/ColorPicker'
 import { SegmentedChoice } from './settings/SegmentedChoice'
 import { StudySelect } from './settings/StudySelect'
@@ -48,53 +49,6 @@ const headingBackgroundColors = [
   '#064e3b',
   '#713f12',
   '#7f1d1d'
-]
-
-const codeLanguages = [
-  {
-    value: 'text',
-    label: 'Текст'
-  },
-  {
-    value: 'javascript',
-    label: 'JavaScript'
-  },
-  {
-    value: 'typescript',
-    label: 'TypeScript'
-  },
-  {
-    value: 'python',
-    label: 'Python'
-  },
-  {
-    value: 'html',
-    label: 'HTML'
-  },
-  {
-    value: 'css',
-    label: 'CSS'
-  },
-  {
-    value: 'sql',
-    label: 'SQL'
-  },
-  {
-    value: 'json',
-    label: 'JSON'
-  },
-  {
-    value: 'bash',
-    label: 'Bash'
-  },
-  {
-    value: 'cpp',
-    label: 'C++'
-  },
-  {
-    value: 'java',
-    label: 'Java'
-  }
 ]
 
 export function BlockSettingsPanel({
@@ -229,7 +183,7 @@ function CodeSettings({
     <SettingsField label="Язык">
       <StudySelect
         value={block.language || 'text'}
-        options={codeLanguages}
+        options={STUDY_CODE_LANGUAGE_OPTIONS}
         ariaLabel="Язык блока кода"
         onValueChange={(language) => {
           onChange({
