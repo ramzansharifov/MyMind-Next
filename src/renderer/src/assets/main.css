@@ -1,6 +1,8 @@
 @import 'tailwindcss';
 
 :root {
+  color-scheme: dark;
+
   font-family:
     Inter,
     ui-sans-serif,
@@ -9,14 +11,28 @@
     BlinkMacSystemFont,
     'Segoe UI',
     sans-serif;
-  color: #e5e7eb;
-  background: #09090b;
+
+  color: #f4f4f5;
+  background: #0a0b0d;
+
   font-synthesis: none;
   text-rendering: optimizeLegibility;
+
+  --app-workspace: #0a0b0d;
+  --app-sidebar: #101114;
+  --app-sidebar-active: #211d31;
+  --app-surface: #121419;
+  --app-surface-raised: #181a20;
+  --app-border: #252830;
+  --app-border-strong: #30343e;
+  --app-text: #f2f3f5;
+  --app-muted: #9297a3;
 }
 
 * {
   box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: #353945 transparent;
 }
 
 html,
@@ -30,6 +46,7 @@ body,
 body {
   min-width: 320px;
   overflow: hidden;
+  background: var(--app-workspace);
 }
 
 button,
@@ -37,4 +54,13 @@ input,
 textarea,
 select {
   font: inherit;
+}
+
+button {
+  border: 0;
+}
+
+::selection {
+  color: #ffffff;
+  background: rgb(124 58 237 / 45%);
 }
