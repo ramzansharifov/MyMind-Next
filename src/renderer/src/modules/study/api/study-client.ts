@@ -1,5 +1,6 @@
 import type {
   CreateStudyNodeInput,
+  MoveStudyNodeInput,
   SaveStudyMaterialInput,
   StudyApi,
   StudyMaterial,
@@ -39,6 +40,9 @@ export const studyClient = {
       id,
       isExpanded
     })
+  },
+  moveNode(input: MoveStudyNodeInput): Promise<StudyNode[]> {
+    return getStudyApi().moveNode(input)
   },
 
   getMaterial(nodeId: string): Promise<StudyMaterial> {

@@ -7,6 +7,7 @@ import {
   ArrowUp,
   ChevronRight,
   Code2,
+  CopyPlus,
   ExternalLink,
   Heading,
   Link2,
@@ -15,7 +16,7 @@ import {
   Trash2,
   Type
 } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { Fragment, useRef, useState } from 'react'
 
 import type {
   StudyBlock,
@@ -24,11 +25,13 @@ import type {
 } from '../../../../../shared/contracts/study'
 import { cn } from '../../../shared/lib/cn'
 import {
+  cloneStudyBlock,
   createStudyBlock,
   DEFAULT_DIVIDER_COLOR,
   DEFAULT_DIVIDER_THICKNESS,
   DEFAULT_HEADING_COLOR,
   getStudyTextBlockHtml,
+  insertStudyBlock,
   moveStudyBlock,
   removeStudyBlock,
   replaceStudyBlock
@@ -60,10 +63,7 @@ const blockTypes: Array<{
     type: 'code',
     label: 'Код'
   },
-  {
-    type: 'link',
-    label: 'Ссылка'
-  },
+
   {
     type: 'divider',
     label: 'Разделитель'
@@ -113,15 +113,27 @@ export function StudyBlockEditor({
     setActiveTextEditor((currentEditor) => (currentEditor === editor ? null : currentEditor))
   }
 
-  function addBlock(type: StudyBlockType): void {
+  function insertBlock(type: StudyBlockType, index: number): void {
     const block = createStudyBlock(type)
 
-    onChange({
-      ...document,
-      blocks: [...document.blocks, block]
-    })
+    onChange(insertStudyBlock(document, index, block))
 
     setActiveBlockId(block.id)
+    setActiveTextEditor(null)
+  }
+
+  function duplicateBlock(blockId: string): void {
+    const sourceIndex = document.blocks.findIndex((block) => block.id === blockId)
+
+    if (sourceIndex < 0) {
+      return
+    }
+
+    const duplicate = cloneStudyBlock(document.blocks[sourceIndex])
+
+    onChange(insertStudyBlock(document, sourceIndex + 1, duplicate))
+
+    setActiveBlockId(duplicate.id)
     setActiveTextEditor(null)
   }
 
@@ -147,76 +159,55 @@ export function StudyBlockEditor({
   return (
     <div className="mx-auto grid max-w-[1240px] grid-cols-[minmax(0,1fr)_290px] items-start gap-4 max-[1050px]:grid-cols-1">
       <div className="min-w-0">
-        <div className="space-y-3">
-          {document.blocks.map((block, index) => (
-            <StudyBlockCard
-              key={block.id}
-              block={block}
-              isActive={activeBlock?.id === block.id}
-              isFirst={index === 0}
-              isLast={index === document.blocks.length - 1}
-              onActivate={() => {
-                activateBlock(block.id)
-              }}
-              onTextEditorReady={(editor) => {
-                registerTextEditor(block.id, editor)
-              }}
-              onTextEditorActivate={(editor) => {
-                editorsRef.current.set(block.id, editor)
+        <div>
+          <BlockInsertMenu
+            onInsert={(type) => {
+              insertBlock(type, 0)
+            }}
+          />
 
-                setActiveBlockId(block.id)
-                setActiveTextEditor(editor)
-              }}
-              onTextEditorDispose={(editor) => {
-                unregisterTextEditor(block.id, editor)
-              }}
-              onChange={updateBlock}
-              onMove={(direction) => {
-                onChange(moveStudyBlock(document, block.id, direction))
-              }}
-              onDelete={() => {
-                deleteBlock(block.id)
-              }}
-            />
+          {document.blocks.map((block, index) => (
+            <Fragment key={block.id}>
+              <StudyBlockCard
+                block={block}
+                isActive={activeBlock?.id === block.id}
+                isFirst={index === 0}
+                isLast={index === document.blocks.length - 1}
+                onActivate={() => {
+                  activateBlock(block.id)
+                }}
+                onTextEditorReady={(editor) => {
+                  registerTextEditor(block.id, editor)
+                }}
+                onTextEditorActivate={(editor) => {
+                  editorsRef.current.set(block.id, editor)
+
+                  setActiveBlockId(block.id)
+                  setActiveTextEditor(editor)
+                }}
+                onTextEditorDispose={(editor) => {
+                  unregisterTextEditor(block.id, editor)
+                }}
+                onChange={updateBlock}
+                onMove={(direction) => {
+                  onChange(moveStudyBlock(document, block.id, direction))
+                }}
+                onDuplicate={() => {
+                  duplicateBlock(block.id)
+                }}
+                onDelete={() => {
+                  deleteBlock(block.id)
+                }}
+              />
+
+              <BlockInsertMenu
+                onInsert={(type) => {
+                  insertBlock(type, index + 1)
+                }}
+              />
+            </Fragment>
           ))}
         </div>
-
-        <DropdownMenu.Root>
-          <DropdownMenu.Trigger asChild>
-            <button
-              type="button"
-              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[var(--app-border-strong)] py-3 text-sm font-medium text-[var(--app-muted)] transition-colors hover:border-violet-500/40 hover:bg-violet-500/[0.05] hover:text-violet-200"
-            >
-              <Plus aria-hidden="true" className="size-4" />
-              Добавить блок
-            </button>
-          </DropdownMenu.Trigger>
-
-          <DropdownMenu.Portal>
-            <DropdownMenu.Content
-              sideOffset={8}
-              align="center"
-              className="z-50 grid min-w-60 gap-1 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-1.5"
-            >
-              {blockTypes.map((option) => (
-                <DropdownMenu.Item
-                  key={option.type}
-                  className="flex cursor-default items-center gap-2 rounded-lg px-3 py-2 text-sm text-[var(--app-text)] outline-none hover:bg-white/[0.06] focus:bg-white/[0.06]"
-                  onSelect={() => {
-                    addBlock(option.type)
-                  }}
-                >
-                  <StudyBlockTypeIcon
-                    type={option.type}
-                    className="size-4 text-[var(--app-muted)]"
-                  />
-
-                  {option.label}
-                </DropdownMenu.Item>
-              ))}
-            </DropdownMenu.Content>
-          </DropdownMenu.Portal>
-        </DropdownMenu.Root>
       </div>
 
       <div className="sticky top-0 max-h-[calc(100vh-150px)] overflow-y-auto pr-1 max-[1050px]:static max-[1050px]:max-h-none">
@@ -236,6 +227,53 @@ export function StudyBlockEditor({
   )
 }
 
+function BlockInsertMenu({
+  onInsert
+}: {
+  onInsert: (type: StudyBlockType) => void
+}): React.JSX.Element {
+  return (
+    <DropdownMenu.Root>
+      <div className="group/insert flex h-8 items-center">
+        <span className="h-px flex-1 bg-transparent transition-colors group-hover/insert:bg-[var(--app-border)]" />
+
+        <DropdownMenu.Trigger asChild>
+          <button
+            type="button"
+            aria-label="Добавить блок здесь"
+            className="mx-2 flex size-6 shrink-0 items-center justify-center rounded-full text-[var(--app-muted)] opacity-45 transition-all hover:bg-violet-500/15 hover:text-violet-200 hover:opacity-100 focus-visible:opacity-100"
+          >
+            <Plus aria-hidden="true" className="size-3.5" />
+          </button>
+        </DropdownMenu.Trigger>
+
+        <span className="h-px flex-1 bg-transparent transition-colors group-hover/insert:bg-[var(--app-border)]" />
+      </div>
+
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content
+          sideOffset={6}
+          align="center"
+          className="z-50 grid min-w-60 gap-1 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-1.5"
+        >
+          {blockTypes.map((option) => (
+            <DropdownMenu.Item
+              key={option.type}
+              className="flex cursor-default items-center gap-2 rounded-lg px-3 py-2 text-sm text-[var(--app-text)] outline-none hover:bg-white/[0.06] focus:bg-white/[0.06]"
+              onSelect={() => {
+                onInsert(option.type)
+              }}
+            >
+              <StudyBlockTypeIcon type={option.type} className="size-4 text-[var(--app-muted)]" />
+
+              {option.label}
+            </DropdownMenu.Item>
+          ))}
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
+  )
+}
 interface StudyBlockCardProps {
   block: StudyBlock
   isActive: boolean
@@ -247,6 +285,7 @@ interface StudyBlockCardProps {
   onTextEditorDispose: (editor: Editor) => void
   onChange: (block: StudyBlock) => void
   onMove: (direction: -1 | 1) => void
+  onDuplicate: () => void
   onDelete: () => void
 }
 
@@ -261,6 +300,7 @@ function StudyBlockCard({
   onTextEditorDispose,
   onChange,
   onMove,
+  onDuplicate,
   onDelete
 }: StudyBlockCardProps): React.JSX.Element {
   return (
@@ -298,6 +338,14 @@ function StudyBlockCard({
           <ArrowDown aria-hidden="true" className="size-4" />
         </button>
 
+        <button
+          type="button"
+          aria-label="Дублировать блок"
+          className="flex size-7 items-center justify-center rounded-md text-[var(--app-muted)] hover:bg-white/[0.06] hover:text-[var(--app-text)]"
+          onClick={onDuplicate}
+        >
+          <CopyPlus aria-hidden="true" className="size-4" />
+        </button>
         <button
           type="button"
           aria-label="Удалить блок"
@@ -751,6 +799,6 @@ function StudyBlockTypeIcon({
   return <Type aria-hidden="true" className={className} />
 }
 
-function getBlockLabel(type: StudyBlockType): string {
+function getBlockLabel(type: StudyBlock['type']): string {
   return blockTypes.find((option) => option.type === type)?.label ?? type
 }

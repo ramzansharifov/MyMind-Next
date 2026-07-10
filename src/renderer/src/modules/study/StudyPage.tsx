@@ -110,6 +110,9 @@ export function StudyPage(): React.JSX.Element {
               }}
               onRename={openRename}
               onDelete={setDeleteTarget}
+              onMove={(input) => {
+                void study.moveNode(input)
+              }}
             />
           )}
 

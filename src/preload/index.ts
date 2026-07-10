@@ -22,6 +22,8 @@ const api: MyMindApi = {
 
     updateExpansion: (input) =>
       ipcRenderer.invoke(STUDY_IPC_CHANNELS.updateExpansion, input) as Promise<StudyNode>,
+    moveNode: (input) =>
+      ipcRenderer.invoke(STUDY_IPC_CHANNELS.moveNode, input) as Promise<StudyNode[]>,
 
     getMaterial: (nodeId) =>
       ipcRenderer.invoke(STUDY_IPC_CHANNELS.getMaterial, nodeId) as Promise<StudyMaterial>,

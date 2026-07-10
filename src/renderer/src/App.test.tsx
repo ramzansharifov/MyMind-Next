@@ -22,6 +22,7 @@ describe('App shell', () => {
           renameNode: vi.fn(),
           deleteNode: vi.fn(),
           updateExpansion: vi.fn(),
+          moveNode: vi.fn(),
           getMaterial: vi.fn(),
           saveMaterial: vi.fn()
         }

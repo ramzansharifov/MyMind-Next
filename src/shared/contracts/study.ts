@@ -1,6 +1,6 @@
 export type StudyNodeType = 'folder' | 'material'
 
-export type StudyBlockType = 'text' | 'heading' | 'code' | 'divider' | 'link'
+export type StudyBlockType = 'text' | 'heading' | 'code' | 'divider'
 
 export interface StudyTextBlock {
   id: string
@@ -81,6 +81,11 @@ export interface UpdateStudyNodeExpansionInput {
   id: string
   isExpanded: boolean
 }
+export interface MoveStudyNodeInput {
+  id: string
+  parentId: string | null
+  position: number
+}
 
 export interface SaveStudyMaterialInput {
   nodeId: string
@@ -93,6 +98,7 @@ export const STUDY_IPC_CHANNELS = {
   renameNode: 'study:rename-node',
   deleteNode: 'study:delete-node',
   updateExpansion: 'study:update-expansion',
+  moveNode: 'study:move-node',
   getMaterial: 'study:get-material',
   saveMaterial: 'study:save-material'
 } as const
@@ -103,6 +109,7 @@ export interface StudyApi {
   renameNode(input: RenameStudyNodeInput): Promise<StudyNode>
   deleteNode(nodeId: string): Promise<boolean>
   updateExpansion(input: UpdateStudyNodeExpansionInput): Promise<StudyNode>
+  moveNode(input: MoveStudyNodeInput): Promise<StudyNode[]>
   getMaterial(nodeId: string): Promise<StudyMaterial>
   saveMaterial(input: SaveStudyMaterialInput): Promise<StudyMaterial>
 }

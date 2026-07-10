@@ -5,6 +5,7 @@ import { studyMaterials, studyNodes } from '../database/schema/study'
 import { getDatabase } from '../database/client'
 import type {
   CreateStudyNodeInput,
+  MoveStudyNodeInput,
   SaveStudyMaterialInput,
   StudyBlock,
   StudyDocument,
@@ -197,6 +198,110 @@ export function updateStudyNodeExpansion(id: string, isExpanded: boolean): Study
   return mapStudyNode(updated)
 }
 
+export function moveStudyNode(input: MoveStudyNodeInput): StudyNode[] {
+  const database = getDatabase()
+
+  const rows = database.select().from(studyNodes).all()
+
+  const source = rows.find((node) => node.id === input.id)
+
+  if (!source) {
+    throw new Error('Study node was not found')
+  }
+
+  const nodesById = new Map(rows.map((node) => [node.id, node]))
+
+  if (input.parentId === source.id) {
+    throw new Error('A node cannot be moved into itself')
+  }
+
+  if (input.parentId !== null) {
+    const parent = nodesById.get(input.parentId)
+
+    if (!parent || parent.type !== 'folder') {
+      throw new Error('Target study folder was not found')
+    }
+
+    if (source.type === 'folder') {
+      let ancestor: typeof parent | undefined = parent
+
+      while (ancestor) {
+        if (ancestor.id === source.id) {
+          throw new Error('A folder cannot be moved into its descendant')
+        }
+
+        ancestor = ancestor.parentId ? nodesById.get(ancestor.parentId) : undefined
+      }
+    }
+  }
+
+  const sameParent = source.parentId === input.parentId
+
+  const sourceSiblings = rows
+    .filter((node) => node.parentId === source.parentId && node.id !== source.id)
+    .sort((first, second) => first.position - second.position)
+
+  const targetSiblings = rows
+    .filter((node) => node.parentId === input.parentId && node.id !== source.id)
+    .sort((first, second) => first.position - second.position)
+
+  const nextPosition = Math.max(0, Math.min(input.position, targetSiblings.length))
+
+  const currentPosition = rows
+    .filter((node) => node.parentId === source.parentId)
+    .sort((first, second) => first.position - second.position)
+    .findIndex((node) => node.id === source.id)
+
+  if (sameParent && currentPosition === nextPosition) {
+    return listStudyNodes()
+  }
+
+  const now = new Date()
+
+  database.transaction((transaction) => {
+    if (!sameParent) {
+      sourceSiblings.forEach((node, position) => {
+        transaction
+          .update(studyNodes)
+          .set({
+            position,
+            updatedAt: now
+          })
+          .where(eq(studyNodes.id, node.id))
+          .run()
+      })
+    }
+
+    const arrangedTarget = [...targetSiblings]
+
+    arrangedTarget.splice(nextPosition, 0, source)
+
+    arrangedTarget.forEach((node, position) => {
+      transaction
+        .update(studyNodes)
+        .set({
+          parentId: input.parentId,
+          position,
+          updatedAt: now
+        })
+        .where(eq(studyNodes.id, node.id))
+        .run()
+    })
+
+    if (input.parentId) {
+      transaction
+        .update(studyNodes)
+        .set({
+          isExpanded: true,
+          updatedAt: now
+        })
+        .where(eq(studyNodes.id, input.parentId))
+        .run()
+    }
+  })
+
+  return listStudyNodes()
+}
 export function deleteStudyNode(id: string): boolean {
   const result = getDatabase().delete(studyNodes).where(eq(studyNodes.id, id)).run()
 

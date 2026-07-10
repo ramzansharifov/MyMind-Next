@@ -95,6 +95,11 @@ export const updateStudyNodeExpansionInputSchema = z.object({
   id: z.string().min(1),
   isExpanded: z.boolean()
 })
+export const moveStudyNodeInputSchema = z.object({
+  id: z.string().min(1),
+  parentId: z.string().min(1).nullable(),
+  position: z.number().int().min(0)
+})
 
 export const saveStudyMaterialInputSchema = z.object({
   nodeId: z.string().min(1),

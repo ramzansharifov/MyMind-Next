@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { StudyDocument, StudyNode } from '../../../../../shared/contracts/study'
 
 import { studyClient } from '../api/study-client'
-import { createEmptyStudyDocument } from '../lib/study-document'
+import { createEmptyStudyDocument, normalizeStudyDocument } from '../lib/study-document'
 import { StudyBlockEditor } from './StudyBlockEditor'
 
 interface StudyMaterialEditorProps {
@@ -42,16 +42,36 @@ export function StudyMaterialEditor({ node }: StudyMaterialEditorProps): React.J
 
     studyClient
       .getMaterial(node.id)
-      .then((loadedMaterial) => {
+      .then(async (loadedMaterial) => {
         if (!active) {
           return
         }
 
-        documentRef.current = loadedMaterial.document
-        draftVersionRef.current = 0
-        hasUnsavedChangesRef.current = false
+        const normalized = normalizeStudyDocument(loadedMaterial.document)
 
-        setDocument(loadedMaterial.document)
+        documentRef.current = normalized.document
+        draftVersionRef.current = 0
+        hasUnsavedChangesRef.current = normalized.changed
+
+        setDocument(normalized.document)
+
+        if (!normalized.changed) {
+          setSaveState('saved')
+          return
+        }
+
+        setSaveState('saving')
+
+        await studyClient.saveMaterial({
+          nodeId: node.id,
+          document: normalized.document
+        })
+
+        if (!active) {
+          return
+        }
+
+        hasUnsavedChangesRef.current = false
         setSaveState('saved')
       })
       .catch(() => {

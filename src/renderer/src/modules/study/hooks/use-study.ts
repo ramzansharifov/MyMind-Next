@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 
-import type { CreateStudyNodeInput, StudyNode } from '../../../../../shared/contracts/study'
+import type {
+  CreateStudyNodeInput,
+  MoveStudyNodeInput,
+  StudyNode
+} from '../../../../../shared/contracts/study'
 import { studyClient } from '../api/study-client'
 
 interface UseStudyResult {
@@ -13,6 +17,7 @@ interface UseStudyResult {
   renameNode: (nodeId: string, title: string) => Promise<void>
   deleteNode: (nodeId: string) => Promise<void>
   toggleFolder: (node: StudyNode) => Promise<void>
+  moveNode: (input: MoveStudyNodeInput) => Promise<void>
 }
 
 export function useStudy(): UseStudyResult {
@@ -142,6 +147,17 @@ export function useStudy(): UseStudyResult {
     }
   }, [])
 
+  const moveNode = useCallback(async (input: MoveStudyNodeInput): Promise<void> => {
+    try {
+      setError(null)
+
+      const updatedNodes = await studyClient.moveNode(input)
+
+      setNodes(updatedNodes)
+    } catch (reason: unknown) {
+      setError(reason instanceof Error ? reason.message : 'Не удалось переместить элемент')
+    }
+  }, [])
   return {
     nodes,
     selectedNodeId,
@@ -151,6 +167,7 @@ export function useStudy(): UseStudyResult {
     createNode,
     renameNode,
     deleteNode,
-    toggleFolder
+    toggleFolder,
+    moveNode
   }
 }

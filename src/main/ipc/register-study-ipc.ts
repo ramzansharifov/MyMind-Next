@@ -3,6 +3,7 @@ import { ipcMain } from 'electron'
 import { STUDY_IPC_CHANNELS } from '../../shared/contracts/study'
 import {
   createStudyNodeInputSchema,
+  moveStudyNodeInputSchema,
   renameStudyNodeInputSchema,
   saveStudyMaterialInputSchema,
   updateStudyNodeExpansionInputSchema
@@ -12,6 +13,7 @@ import {
   deleteStudyNode,
   getStudyMaterial,
   listStudyNodes,
+  moveStudyNode,
   renameStudyNode,
   saveStudyMaterial,
   updateStudyNodeExpansion
@@ -48,6 +50,11 @@ export function registerStudyIpcHandlers(): void {
     const input = updateStudyNodeExpansionInputSchema.parse(rawInput)
 
     return updateStudyNodeExpansion(input.id, input.isExpanded)
+  })
+  ipcMain.handle(STUDY_IPC_CHANNELS.moveNode, (_event, rawInput: unknown) => {
+    const input = moveStudyNodeInputSchema.parse(rawInput)
+
+    return moveStudyNode(input)
   })
 
   ipcMain.handle(STUDY_IPC_CHANNELS.getMaterial, (_event, nodeId: unknown) => {
