@@ -4,3 +4,10 @@ pnpm-lock.yaml
 LICENSE.md
 tsconfig.json
 tsconfig.*.json
+
+node_modules
+.filetags
+.data
+coverage
+drizzle/meta
+package-lock.json

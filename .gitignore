@@ -5,6 +5,9 @@ out
 .eslintcache
 *.log*
 
+# FileTags local backups
+.filetags/
+
 # Environment
 .env
 .env.*
