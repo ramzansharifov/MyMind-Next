@@ -12,6 +12,7 @@ import {
 } from '../lib/study-document'
 import { RichTextSettings } from './rich-text/RichTextSettings'
 import { ColorPicker } from './settings/ColorPicker'
+import { SegmentedChoice } from './settings/SegmentedChoice'
 import { StudySelect } from './settings/StudySelect'
 
 interface BlockSettingsPanelProps {
@@ -23,15 +24,18 @@ interface BlockSettingsPanelProps {
 const headingLevels = [
   {
     value: '1',
-    label: 'H1'
+    label: 'H1',
+    ariaLabel: 'Заголовок первого уровня'
   },
   {
     value: '2',
-    label: 'H2'
+    label: 'H2',
+    ariaLabel: 'Заголовок второго уровня'
   },
   {
     value: '3',
-    label: 'H3'
+    label: 'H3',
+    ariaLabel: 'Заголовок третьего уровня'
   }
 ]
 
@@ -148,10 +152,11 @@ function HeadingSettings({
   return (
     <div className="grid gap-4">
       <SettingsField label="Уровень">
-        <StudySelect
+        <SegmentedChoice
           value={String(block.level)}
           options={headingLevels}
           ariaLabel="Уровень заголовка"
+          columns={3}
           onValueChange={(value) => {
             const level = Number(value)
 

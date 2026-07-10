@@ -28,7 +28,7 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'rea
 
 import { cn } from '../../../../shared/lib/cn'
 import { ColorPicker } from '../settings/ColorPicker'
-import { StudySelect } from '../settings/StudySelect'
+import { SegmentedChoice } from '../settings/SegmentedChoice'
 
 interface RichTextSettingsProps {
   editor: Editor | null
@@ -86,31 +86,43 @@ const defaultEditorState: EditorFormattingState = {
 const fontSizes = [
   {
     value: 'default',
-    label: 'По умолчанию'
+    label: 'Авто',
+    ariaLabel: 'Автоматический размер'
+  },
+  {
+    value: '0.75rem',
+    label: '12',
+    ariaLabel: 'Размер 12 пикселей'
   },
   {
     value: '0.875rem',
-    label: 'Мелкий'
+    label: '14',
+    ariaLabel: 'Размер 14 пикселей'
   },
   {
     value: '1rem',
-    label: 'Обычный'
+    label: '16',
+    ariaLabel: 'Размер 16 пикселей'
   },
   {
     value: '1.125rem',
-    label: 'Средний'
+    label: '18',
+    ariaLabel: 'Размер 18 пикселей'
   },
   {
     value: '1.35rem',
-    label: 'Большой'
+    label: '22',
+    ariaLabel: 'Размер 22 пикселя'
   },
   {
     value: '1.65rem',
-    label: 'Крупный'
+    label: '26',
+    ariaLabel: 'Размер 26 пикселей'
   },
   {
     value: '2rem',
-    label: 'Очень крупный'
+    label: '32',
+    ariaLabel: 'Размер 32 пикселя'
   }
 ]
 
@@ -529,10 +541,11 @@ function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.El
 
         <SettingsSection title="Оформление" vertical>
           <SettingsField label="Размер">
-            <StudySelect
+            <SegmentedChoice
               value={editorState.fontSize}
               options={fontSizes}
               ariaLabel="Размер текста"
+              columns={4}
               onValueChange={applyFontSize}
             />
           </SettingsField>
