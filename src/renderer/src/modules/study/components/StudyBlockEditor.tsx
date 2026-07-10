@@ -1,5 +1,6 @@
 import type { Editor } from '@tiptap/core'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
+import * as Separator from '@radix-ui/react-separator'
 import {
   ArrowDown,
   ArrowUp,
@@ -403,6 +404,90 @@ function EditableBlock({
   )
 }
 
+function StudyBlockReader({ block }: { block: StudyBlock }): React.JSX.Element {
+  if (block.type === 'text') {
+    return <RichTextViewer html={getStudyTextBlockHtml(block)} plainText={block.text} />
+  }
+
+  if (block.type === 'heading') {
+    if (block.level === 1) {
+      return (
+        <h1 className="text-3xl font-semibold tracking-tight text-[var(--app-text)]">
+          {block.text || 'Без заголовка'}
+        </h1>
+      )
+    }
+
+    if (block.level === 2) {
+      return (
+        <h2 className="text-2xl font-semibold tracking-tight text-[var(--app-text)]">
+          {block.text || 'Без заголовка'}
+        </h2>
+      )
+    }
+
+    return (
+      <h3 className="text-xl font-semibold tracking-tight text-[var(--app-text)]">
+        {block.text || 'Без заголовка'}
+      </h3>
+    )
+  }
+
+  if (block.type === 'code') {
+    return (
+      <section>
+        <p className="mb-2 text-xs font-medium text-[var(--app-muted)]">
+          {block.language || 'text'}
+        </p>
+
+        <pre className="overflow-x-auto rounded-xl border border-[var(--app-border)] bg-[#090a0c] p-4 font-mono text-sm leading-6 text-zinc-200">
+          <code>{block.source}</code>
+        </pre>
+      </section>
+    )
+  }
+
+  if (block.type === 'link') {
+    const href = normalizeExternalHref(block.url)
+
+    if (!href) {
+      return (
+        <div className="inline-flex items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/[0.05] px-4 py-3 text-sm text-red-300">
+          <ExternalLink aria-hidden="true" className="size-4" />
+
+          {block.url.trim() ? 'Некорректная или небезопасная ссылка' : 'Пустая ссылка'}
+        </div>
+      )
+    }
+
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-2 rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-4 py-3 text-sm font-medium text-violet-300 transition-colors hover:border-violet-500/35 hover:bg-violet-500/[0.05]"
+      >
+        <ExternalLink aria-hidden="true" className="size-4" />
+
+        {block.title || block.url}
+      </a>
+    )
+  }
+
+  return (
+    <div className="py-4">
+      <Separator.Root
+        decorative
+        orientation="horizontal"
+        className="w-full rounded-full"
+        style={{
+          height: `${block.thickness ?? DEFAULT_DIVIDER_THICKNESS}px`,
+          backgroundColor: block.color ?? DEFAULT_DIVIDER_COLOR
+        }}
+      />
+    </div>
+  )
+}
 function normalizeExternalHref(value: string): string | null {
   const trimmed = value.trim()
 

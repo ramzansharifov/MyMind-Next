@@ -3,7 +3,7 @@ import * as Tabs from '@radix-ui/react-tabs'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import type { StudyDocument, StudyNode } from '../../../../../shared/contracts/study'
-import { cn } from '../../../shared/lib/cn'
+
 import { studyClient } from '../api/study-client'
 import { createEmptyStudyDocument } from '../lib/study-document'
 import { StudyBlockEditor } from './StudyBlockEditor'
