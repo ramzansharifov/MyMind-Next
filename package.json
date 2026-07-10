@@ -14,7 +14,8 @@
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "start": "npm run native:electron && electron-vite preview",
     "dev": "npm run native:electron && electron-vite dev",
-    "build": "npm run typecheck && electron-vite build",
+    "build:bundle": "electron-vite build",
+    "build": "npm run typecheck && npm run build:bundle",
     "postinstall": "electron-builder install-app-deps",
     "build:unpack": "npm run build && npm run native:electron && electron-builder --dir",
     "build:win": "npm run build && npm run native:electron && electron-builder --win",
@@ -30,7 +31,8 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "check": "npm run format:check && npm run lint && npm run test:run && npm run db:check && npm run build"
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm run test:run && npm run db:check && npm run build:bundle",
+    "check:fix": "npm run format && npm run check"
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",

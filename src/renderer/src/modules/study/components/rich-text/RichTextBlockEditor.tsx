@@ -48,14 +48,18 @@ export function RichTextBlockEditor({
       queueMicrotask(() => {
         onChange(nextHtml, nextPlainText)
       })
-    },
-    onDestroy: ({ editor: destroyedEditor }) => {
-      queueMicrotask(() => {
-        onDispose?.(destroyedEditor)
-      })
     }
   })
 
+  useEffect(() => {
+    if (!editor) {
+      return
+    }
+
+    return () => {
+      onDispose?.(editor)
+    }
+  }, [editor, onDispose])
   useEffect(() => {
     if (!editor) {
       return
