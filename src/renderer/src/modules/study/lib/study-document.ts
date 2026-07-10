@@ -38,6 +38,17 @@ export function createStudyBlock(type: StudyBlockType): StudyBlock {
       viewMode: 'split'
     }
   }
+  if (type === 'latex') {
+    return {
+      id,
+      type,
+      source: '',
+      viewMode: 'split',
+      displayMode: 'display',
+      alignment: 'center',
+      scale: 100
+    }
+  }
 
   if (type === 'divider') {
     return {

@@ -1,6 +1,6 @@
 export type StudyNodeType = 'folder' | 'material'
 
-export type StudyBlockType = 'text' | 'heading' | 'code' | 'markdown' | 'divider'
+export type StudyBlockType = 'text' | 'heading' | 'code' | 'markdown' | 'latex' | 'divider'
 
 export interface StudyTextBlock {
   id: string
@@ -32,6 +32,21 @@ export interface StudyMarkdownBlock {
   source: string
   viewMode?: StudyMarkdownViewMode
 }
+export type StudyLatexViewMode = 'write' | 'split' | 'preview'
+
+export type StudyLatexDisplayMode = 'display' | 'inline'
+
+export type StudyLatexAlignment = 'left' | 'center' | 'right'
+
+export interface StudyLatexBlock {
+  id: string
+  type: 'latex'
+  source: string
+  viewMode?: StudyLatexViewMode
+  displayMode?: StudyLatexDisplayMode
+  alignment?: StudyLatexAlignment
+  scale?: number
+}
 
 export interface StudyDividerBlock {
   id: string
@@ -41,7 +56,12 @@ export interface StudyDividerBlock {
 }
 
 export type StudyBlock =
-  StudyTextBlock | StudyHeadingBlock | StudyCodeBlock | StudyMarkdownBlock | StudyDividerBlock
+  | StudyTextBlock
+  | StudyHeadingBlock
+  | StudyCodeBlock
+  | StudyMarkdownBlock
+  | StudyLatexBlock
+  | StudyDividerBlock
 
 export interface StudyDocument {
   version: 1

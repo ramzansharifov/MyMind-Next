@@ -49,6 +49,10 @@ function documentToPlainText(document: StudyDocument): string {
         return block.source
       }
 
+      if (block.type === 'latex') {
+        return block.source
+      }
+
       return ''
     })
     .filter(Boolean)

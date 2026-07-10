@@ -216,11 +216,7 @@ export function StudyPage(): React.JSX.Element {
 
       <DeleteConfirmationDialog
         open={deleteTarget !== null}
-        title={
-          deleteTarget?.type === 'folder'
-            ? 'Удалить папку?'
-            : 'Удалить материал?'
-        }
+        title={deleteTarget?.type === 'folder' ? 'Удалить папку?' : 'Удалить материал?'}
         subject={deleteTarget?.title}
         description={
           deleteTarget?.type === 'folder'
@@ -234,9 +230,7 @@ export function StudyPage(): React.JSX.Element {
         }}
         onConfirm={() => {
           if (deleteTarget) {
-            void study.deleteNode(
-              deleteTarget.id
-            )
+            void study.deleteNode(deleteTarget.id)
           }
 
           setDeleteTarget(null)

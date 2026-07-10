@@ -10,6 +10,7 @@ import {
   CopyPlus,
   FileCode2,
   Heading,
+  Sigma,
   Minus,
   Plus,
   Trash2,
@@ -40,6 +41,7 @@ import { BlockSettingsPanel } from './BlockSettingsPanel'
 import { DeleteConfirmationDialog } from './DeleteConfirmationDialog'
 import { StudyCodeBlock } from './code/StudyCodeBlock'
 import { StudyMarkdownBlock } from './markdown/StudyMarkdownBlock'
+import { StudyLatexBlock } from './latex/StudyLatexBlock'
 import { RichTextBlockEditor, RichTextViewer } from './rich-text/RichTextBlockEditor'
 
 interface StudyBlockEditorProps {
@@ -68,6 +70,10 @@ const blockTypes: Array<{
     type: 'markdown',
     label: 'Markdown'
   },
+  {
+    type: 'latex',
+    label: 'LaTeX'
+  },
 
   {
     type: 'divider',
@@ -84,10 +90,7 @@ export function StudyBlockEditor({
 
   const [activeTextEditor, setActiveTextEditor] = useState<Editor | null>(null)
 
-  const [
-    deleteTarget,
-    setDeleteTarget
-  ] = useState<StudyBlock | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<StudyBlock | null>(null)
 
   const editorsRef = useRef(new Map<string, Editor>())
 
@@ -238,13 +241,7 @@ export function StudyBlockEditor({
       <DeleteConfirmationDialog
         open={deleteTarget !== null}
         title="Удалить блок?"
-        subject={
-          deleteTarget
-            ? getBlockLabel(
-                deleteTarget.type
-              )
-            : undefined
-        }
+        subject={deleteTarget ? getBlockLabel(deleteTarget.type) : undefined}
         description="Блок и всё его содержимое будут удалены из материала."
         onOpenChange={(open) => {
           if (!open) {
@@ -578,6 +575,30 @@ function EditableBlock({
       />
     )
   }
+  if (block.type === 'latex') {
+    return (
+      <StudyLatexBlock
+        mode="edit"
+        source={block.source}
+        viewMode={block.viewMode ?? 'split'}
+        displayMode={block.displayMode ?? 'display'}
+        alignment={block.alignment ?? 'center'}
+        scale={block.scale ?? 100}
+        onChange={(source) => {
+          onChange({
+            ...block,
+            source
+          })
+        }}
+        onViewModeChange={(viewMode) => {
+          onChange({
+            ...block,
+            viewMode
+          })
+        }}
+      />
+    )
+  }
 
   return (
     <div className="py-8">
@@ -813,6 +834,17 @@ function StudyBlockReader({ block }: { block: StudyBlock }): React.JSX.Element {
   if (block.type === 'markdown') {
     return <StudyMarkdownBlock mode="read" source={block.source} />
   }
+  if (block.type === 'latex') {
+    return (
+      <StudyLatexBlock
+        mode="read"
+        source={block.source}
+        displayMode={block.displayMode ?? 'display'}
+        alignment={block.alignment ?? 'center'}
+        scale={block.scale ?? 100}
+      />
+    )
+  }
 
   return (
     <div className="py-4">
@@ -845,6 +877,9 @@ function StudyBlockTypeIcon({
   }
   if (type === 'markdown') {
     return <FileCode2 aria-hidden="true" className={className} />
+  }
+  if (type === 'latex') {
+    return <Sigma aria-hidden="true" className={className} />
   }
 
   if (type === 'divider') {

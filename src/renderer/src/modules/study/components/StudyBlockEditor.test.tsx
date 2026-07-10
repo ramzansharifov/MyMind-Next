@@ -46,13 +46,7 @@ describe('StudyBlockEditor', () => {
   it('requires confirmation before deleting a block', () => {
     const onChange = vi.fn()
 
-    render(
-      <StudyBlockEditor
-        document={studyDocument}
-        mode="edit"
-        onChange={onChange}
-      />
-    )
+    render(<StudyBlockEditor document={studyDocument} mode="edit" onChange={onChange} />)
 
     fireEvent.click(
       screen.getByRole('button', {
@@ -60,13 +54,9 @@ describe('StudyBlockEditor', () => {
       })
     )
 
-    expect(
-      screen.getByRole('alertdialog')
-    ).toBeInTheDocument()
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument()
 
-    expect(
-      screen.getByText('Удалить блок?')
-    ).toBeInTheDocument()
+    expect(screen.getByText('Удалить блок?')).toBeInTheDocument()
 
     expect(onChange).not.toHaveBeenCalled()
 

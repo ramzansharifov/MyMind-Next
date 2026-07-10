@@ -12,7 +12,7 @@ interface SegmentedChoiceProps {
   value: string
   options: SegmentedChoiceOption[]
   ariaLabel: string
-  columns?: 3 | 4
+  columns?: 2 | 3 | 4
   disabled?: boolean
   onValueChange: (value: string) => void
 }
@@ -31,7 +31,10 @@ export function SegmentedChoice({
       value={value}
       disabled={disabled}
       aria-label={ariaLabel}
-      className={cn('grid gap-2', columns === 4 ? 'grid-cols-4' : 'grid-cols-3')}
+      className={cn(
+        'grid gap-2',
+        columns === 4 ? 'grid-cols-4' : columns === 2 ? 'grid-cols-2' : 'grid-cols-3'
+      )}
       onValueChange={(nextValue) => {
         if (nextValue) {
           onValueChange(nextValue)

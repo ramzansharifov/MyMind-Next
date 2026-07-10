@@ -1,7 +1,7 @@
 import type { Editor } from '@tiptap/core'
 import * as Separator from '@radix-ui/react-separator'
 import * as Slider from '@radix-ui/react-slider'
-import { Code2, FileCode2, Heading, Minus, Settings2, Type } from 'lucide-react'
+import { Code2, FileCode2, Heading, Minus, Settings2, Sigma, Type } from 'lucide-react'
 
 import type { StudyBlock } from '../../../../../shared/contracts/study'
 import {
@@ -67,6 +67,51 @@ const markdownViewModes = [
     ariaLabel: 'Только просмотр'
   }
 ]
+const latexViewModes = [
+  {
+    value: 'write',
+    label: 'Код',
+    ariaLabel: 'Только исходный LaTeX'
+  },
+  {
+    value: 'split',
+    label: '2 окна',
+    ariaLabel: 'LaTeX и формула'
+  },
+  {
+    value: 'preview',
+    label: 'Вид',
+    ariaLabel: 'Только формула'
+  }
+]
+
+const latexDisplayModes = [
+  {
+    value: 'display',
+    label: 'Блочная',
+    ariaLabel: 'Блочная формула'
+  },
+  {
+    value: 'inline',
+    label: 'Строчная',
+    ariaLabel: 'Строчная формула'
+  }
+]
+
+const latexAlignments = [
+  {
+    value: 'left',
+    label: 'Слева'
+  },
+  {
+    value: 'center',
+    label: 'Центр'
+  },
+  {
+    value: 'right',
+    label: 'Справа'
+  }
+]
 
 export function BlockSettingsPanel({
   block,
@@ -106,6 +151,8 @@ export function BlockSettingsPanel({
         {block.type === 'code' && <CodeSettings block={block} onChange={onChange} />}
 
         {block.type === 'markdown' && <MarkdownSettings block={block} onChange={onChange} />}
+
+        {block.type === 'latex' && <LatexSettings block={block} onChange={onChange} />}
 
         {block.type === 'divider' && <DividerSettings block={block} onChange={onChange} />}
       </div>
@@ -247,6 +294,109 @@ function MarkdownSettings({
     </div>
   )
 }
+function LatexSettings({
+  block,
+  onChange
+}: {
+  block: Extract<StudyBlock, { type: 'latex' }>
+  onChange: (block: StudyBlock) => void
+}): React.JSX.Element {
+  const scale = block.scale ?? 100
+
+  return (
+    <div className="grid gap-4">
+      <SettingsField label="Режим редактора">
+        <SegmentedChoice
+          value={block.viewMode ?? 'split'}
+          options={latexViewModes}
+          ariaLabel="Режим LaTeX-блока"
+          columns={3}
+          onValueChange={(viewMode) => {
+            if (viewMode !== 'write' && viewMode !== 'split' && viewMode !== 'preview') {
+              return
+            }
+
+            onChange({
+              ...block,
+              viewMode
+            })
+          }}
+        />
+      </SettingsField>
+
+      <SettingsField label="Тип формулы">
+        <SegmentedChoice
+          value={block.displayMode ?? 'display'}
+          options={latexDisplayModes}
+          ariaLabel="Тип LaTeX-формулы"
+          columns={2}
+          onValueChange={(displayMode) => {
+            if (displayMode !== 'display' && displayMode !== 'inline') {
+              return
+            }
+
+            onChange({
+              ...block,
+              displayMode
+            })
+          }}
+        />
+      </SettingsField>
+
+      <SettingsField label="Выравнивание">
+        <SegmentedChoice
+          value={block.alignment ?? 'center'}
+          options={latexAlignments}
+          ariaLabel="Выравнивание формулы"
+          columns={3}
+          onValueChange={(alignment) => {
+            if (alignment !== 'left' && alignment !== 'center' && alignment !== 'right') {
+              return
+            }
+
+            onChange({
+              ...block,
+              alignment
+            })
+          }}
+        />
+      </SettingsField>
+
+      <SettingsField label={`Размер: ${scale}%`}>
+        <Slider.Root
+          min={70}
+          max={180}
+          step={5}
+          value={[scale]}
+          aria-label="Размер LaTeX-формулы"
+          className="relative flex h-5 w-full touch-none items-center select-none"
+          onValueChange={(values) => {
+            const nextScale = values[0]
+
+            if (typeof nextScale !== 'number') {
+              return
+            }
+
+            onChange({
+              ...block,
+              scale: nextScale
+            })
+          }}
+        >
+          <Slider.Track className="relative h-1.5 grow overflow-hidden rounded-full bg-white/[0.08]">
+            <Slider.Range className="absolute h-full bg-violet-500" />
+          </Slider.Track>
+
+          <Slider.Thumb className="block size-4 rounded-full border-2 border-violet-400 bg-(--app-surface-raised) outline-none hover:scale-110 focus-visible:ring-4 focus-visible:ring-violet-500/20" />
+        </Slider.Root>
+      </SettingsField>
+
+      <p className="text-xs leading-5 text-[var(--app-muted)]">
+        Поддерживаются формулы, матрицы, системы уравнений, суммы и интегралы.
+      </p>
+    </div>
+  )
+}
 function DividerSettings({
   block,
   onChange
@@ -333,6 +483,9 @@ function BlockTypeIcon({ type }: { type: StudyBlock['type'] }): React.JSX.Elemen
   if (type === 'markdown') {
     return <FileCode2 aria-hidden="true" className="size-4" />
   }
+  if (type === 'latex') {
+    return <Sigma aria-hidden="true" className="size-4" />
+  }
 
   if (type === 'divider') {
     return <Minus aria-hidden="true" className="size-4" />
@@ -351,6 +504,9 @@ function getBlockTitle(block: StudyBlock): string {
   }
   if (block.type === 'markdown') {
     return 'Markdown'
+  }
+  if (block.type === 'latex') {
+    return 'LaTeX'
   }
 
   if (block.type === 'divider') {

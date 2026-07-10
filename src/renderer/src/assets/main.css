@@ -183,6 +183,114 @@ button {
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
 }
+.study-latex-source {
+  min-width: 100%;
+  background: #0c0d10;
+}
+
+.study-latex-source__pre,
+.study-latex-source__textarea {
+  margin: 0 !important;
+  white-space: pre !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+  tab-size: 2;
+}
+
+.study-latex-source__pre {
+  min-width: max-content;
+  color: #d4d4d8;
+}
+
+.study-latex-source__textarea {
+  outline: none !important;
+  caret-color: #f8fafc !important;
+}
+
+.study-latex-source__textarea::selection {
+  background: rgb(124 58 237 / 48%);
+}
+
+.study-latex-source .token.keyword,
+.study-latex-source .token.function,
+.study-latex-source .token.selector {
+  color: #c4b5fd;
+}
+
+.study-latex-source .token.punctuation,
+.study-latex-source .token.operator {
+  color: #a1a1aa;
+}
+
+.study-latex-source .token.string,
+.study-latex-source .token.number {
+  color: #86efac;
+}
+
+.study-latex-source .token.comment {
+  color: #71717a;
+}
+
+.study-latex-source .token.url,
+.study-latex-source .token.variable {
+  color: #93c5fd;
+}
+
+.study-latex-preview {
+  display: flex;
+  min-width: 0;
+  min-height: 14rem;
+  align-items: center;
+  overflow-x: auto;
+  padding: 1.25rem;
+  color: var(--app-text);
+}
+
+.study-latex-preview[data-framed='true'] {
+  min-height: 8rem;
+}
+
+.study-latex-preview[data-alignment='left'] {
+  justify-content: flex-start;
+}
+
+.study-latex-preview[data-alignment='center'] {
+  justify-content: center;
+}
+
+.study-latex-preview[data-alignment='right'] {
+  justify-content: flex-end;
+}
+
+.study-latex-render {
+  min-width: 0;
+  max-width: 100%;
+  color: var(--app-text);
+}
+
+.study-latex-render .katex {
+  color: inherit;
+}
+
+.study-latex-render .katex-display {
+  max-width: 100%;
+  margin: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.25rem 0;
+}
+
+.study-latex-preview[data-alignment='left'] .katex-display {
+  text-align: left;
+}
+
+.study-latex-preview[data-alignment='center'] .katex-display {
+  text-align: center;
+}
+
+.study-latex-preview[data-alignment='right'] .katex-display {
+  text-align: right;
+}
 .study-markdown-source {
   min-width: 100%;
   background: #0c0d10;
