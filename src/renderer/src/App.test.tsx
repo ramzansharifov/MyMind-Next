@@ -24,4 +24,16 @@ describe('App', () => {
     expect(await screen.findByText('Database ready')).toBeInTheDocument()
     expect(screen.getByText('SQLite 3.0.0')).toBeInTheDocument()
   })
+
+  it('shows an error when the preload API is unavailable', async () => {
+    Object.defineProperty(window, 'api', {
+      configurable: true,
+      value: undefined
+    })
+
+    render(<App />)
+
+    expect(await screen.findByText('Startup error')).toBeInTheDocument()
+    expect(screen.getByText('Preload API is unavailable')).toBeInTheDocument()
+  })
 })

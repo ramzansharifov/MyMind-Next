@@ -9,20 +9,29 @@ function App(): React.JSX.Element {
   useEffect(() => {
     let mounted = true
 
-    window.api.system
-      .getHealth()
-      .then((result) => {
+    const checkSystemHealth = async (): Promise<void> => {
+      try {
+        const api = window.api
+
+        if (!api?.system || typeof api.system.getHealth !== 'function') {
+          throw new Error('Preload API is unavailable')
+        }
+
+        const result = await api.system.getHealth()
+
         if (mounted) {
           setHealth(result)
         }
-      })
-      .catch((reason: unknown) => {
+      } catch (reason: unknown) {
         if (!mounted) {
           return
         }
 
         setError(reason instanceof Error ? reason.message : 'Unknown startup error')
-      })
+      }
+    }
+
+    void checkSystemHealth()
 
     return () => {
       mounted = false
@@ -41,13 +50,20 @@ function App(): React.JSX.Element {
         </p>
 
         <div className="mt-8 rounded-xl border border-zinc-800 bg-zinc-950 p-4">
-          {error && <p className="text-sm text-red-400">Database error: {error}</p>}
+          {error && (
+            <div>
+              <p className="text-sm font-medium text-red-400">Startup error</p>
+
+              <p className="mt-1 text-sm text-red-300">{error}</p>
+            </div>
+          )}
 
           {!health && !error && <p className="text-sm text-zinc-400">Checking local database…</p>}
 
           {health && (
             <div>
               <p className="text-sm font-medium text-emerald-400">Database ready</p>
+
               <p className="mt-1 text-sm text-zinc-500">SQLite {health.sqliteVersion}</p>
             </div>
           )}

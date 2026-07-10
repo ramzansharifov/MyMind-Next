@@ -1,14 +1,10 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
-import { IPC_CHANNELS, systemHealthSchema, type MyMindApi } from '../shared/contracts/system'
+import { IPC_CHANNELS, type MyMindApi, type SystemHealth } from '../shared/contracts/system'
 
 const api: MyMindApi = {
   system: {
-    getHealth: async () => {
-      const result = await ipcRenderer.invoke(IPC_CHANNELS.systemHealth)
-
-      return systemHealthSchema.parse(result)
-    }
+    getHealth: () => ipcRenderer.invoke(IPC_CHANNELS.systemHealth) as Promise<SystemHealth>
   }
 }
 
