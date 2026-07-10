@@ -21,16 +21,6 @@ interface BlockSettingsPanelProps {
 }
 
 const headingLevels = [
-const headingBackgroundColors = [
-  '#181a20',
-  '#27272a',
-  '#4c1d95',
-  '#1e3a8a',
-  '#164e63',
-  '#064e3b',
-  '#713f12',
-  '#7f1d1d'
-]
   {
     value: '1',
     label: 'H1 — крупный'
@@ -43,6 +33,17 @@ const headingBackgroundColors = [
     value: '3',
     label: 'H3 — малый'
   }
+]
+
+const headingBackgroundColors = [
+  '#181a20',
+  '#27272a',
+  '#4c1d95',
+  '#1e3a8a',
+  '#164e63',
+  '#064e3b',
+  '#713f12',
+  '#7f1d1d'
 ]
 
 const codeLanguages = [
@@ -143,10 +144,7 @@ function HeadingSettings({
   block,
   onChange
 }: {
-  block: Extract<
-    StudyBlock,
-    { type: 'heading' }
-  >
+  block: Extract<StudyBlock, { type: 'heading' }>
   onChange: (block: StudyBlock) => void
 }): React.JSX.Element {
   return (
@@ -159,11 +157,7 @@ function HeadingSettings({
           onValueChange={(value) => {
             const level = Number(value)
 
-            if (
-              level !== 1 &&
-              level !== 2 &&
-              level !== 3
-            ) {
+            if (level !== 1 && level !== 2 && level !== 3) {
               return
             }
 
@@ -179,10 +173,7 @@ function HeadingSettings({
 
       <SettingsField label="Цвет текста">
         <ColorPicker
-          value={
-            block.color ??
-            DEFAULT_HEADING_COLOR
-          }
+          value={block.color ?? DEFAULT_HEADING_COLOR}
           ariaLabel="Цвет текста заголовка"
           clearLabel="Цвет по умолчанию"
           onChange={(color) => {
@@ -202,10 +193,7 @@ function HeadingSettings({
 
       <SettingsField label="Фон заголовка">
         <ColorPicker
-          value={
-            block.backgroundColor ??
-            DEFAULT_HEADING_BACKGROUND_COLOR
-          }
+          value={block.backgroundColor ?? DEFAULT_HEADING_BACKGROUND_COLOR}
           ariaLabel="Фон заголовка"
           colors={headingBackgroundColors}
           clearLabel="Прозрачный фон"
