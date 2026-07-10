@@ -20,11 +20,7 @@ import type {
 } from '../../../../../../shared/contracts/study'
 import { cn } from '../../../../shared/lib/cn'
 import { Tooltip, TooltipProvider } from '../../../../shared/ui/tooltip'
-import {
-  getStudyMermaidErrorMessage,
-  renderStudyMermaid,
-  type StudyMermaidRenderResult
-} from './mermaid-renderer'
+import { getStudyMermaidErrorMessage, renderStudyMermaid } from './mermaid-renderer'
 
 interface StudyMermaidBlockProps {
   source: string
