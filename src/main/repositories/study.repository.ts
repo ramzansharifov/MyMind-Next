@@ -1,4 +1,4 @@
-import { asc, eq } from 'drizzle-orm'
+import { asc, eq, isNull } from 'drizzle-orm'
 import { randomUUID } from 'node:crypto'
 
 import { studyMaterials, studyNodes } from '../database/schema/study'
@@ -17,15 +17,17 @@ import {
   studyNodeSchema
 } from '../../shared/validation/study'
 
-const emptyStudyDocument: StudyDocument = {
-  version: 1,
-  blocks: [
-    {
-      id: randomUUID(),
-      type: 'text',
-      text: ''
-    }
-  ]
+function createEmptyStudyDocument(): StudyDocument {
+  return {
+    version: 1,
+    blocks: [
+      {
+        id: randomUUID(),
+        type: 'text',
+        text: ''
+      }
+    ]
+  }
 }
 
 function documentToPlainText(document: StudyDocument): string {
@@ -92,7 +94,11 @@ export function createStudyNode(input: CreateStudyNodeInput): StudyNode {
       position: studyNodes.position
     })
     .from(studyNodes)
-    .where(input.parentId === null ? undefined : eq(studyNodes.parentId, input.parentId))
+    .where(
+      input.parentId === null
+        ? isNull(studyNodes.parentId)
+        : eq(studyNodes.parentId, input.parentId)
+    )
     .all()
 
   const nextPosition =
@@ -120,7 +126,7 @@ export function createStudyNode(input: CreateStudyNodeInput): StudyNode {
         .insert(studyMaterials)
         .values({
           nodeId: id,
-          document: emptyStudyDocument,
+          document: createEmptyStudyDocument(),
           plainText: '',
           createdAt: now,
           updatedAt: now
@@ -219,7 +225,7 @@ export function getStudyMaterial(nodeId: string): StudyMaterial {
       .insert(studyMaterials)
       .values({
         nodeId,
-        document: emptyStudyDocument,
+        document: createEmptyStudyDocument(),
         plainText: '',
         createdAt: now,
         updatedAt: now

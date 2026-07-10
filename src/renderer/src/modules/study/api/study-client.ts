@@ -1,11 +1,12 @@
 import type {
   CreateStudyNodeInput,
   SaveStudyMaterialInput,
+  StudyApi,
   StudyMaterial,
   StudyNode
 } from '../../../../../shared/contracts/study'
 
-function getStudyApi() {
+function getStudyApi(): StudyApi {
   if (!window.api?.study) {
     throw new Error('Study API is unavailable')
   }

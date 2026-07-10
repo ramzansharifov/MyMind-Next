@@ -1,4 +1,10 @@
-import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import {
+  index,
+  integer,
+  sqliteTable,
+  text,
+  type AnySQLiteColumn
+} from 'drizzle-orm/sqlite-core'
 
 export const studyNodes = sqliteTable(
   'study_nodes',
@@ -7,9 +13,12 @@ export const studyNodes = sqliteTable(
     type: text('type', {
       enum: ['folder', 'material']
     }).notNull(),
-    parentId: text('parent_id').references((): any => studyNodes.id, {
-      onDelete: 'cascade'
-    }),
+    parentId: text('parent_id').references(
+      (): AnySQLiteColumn => studyNodes.id,
+      {
+        onDelete: 'cascade'
+      }
+    ),
     title: text('title').notNull(),
     position: integer('position').notNull(),
     isExpanded: integer('is_expanded', {

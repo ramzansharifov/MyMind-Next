@@ -127,7 +127,7 @@ export function StudyPage(): React.JSX.Element {
         ) : selectedNode?.type === 'folder' ? (
           <FolderWorkspace
             node={selectedNode}
-            children={study.nodes.filter((node) => node.parentId === selectedNode.id)}
+            items={study.nodes.filter((node) => node.parentId === selectedNode.id)}
             onSelect={study.selectNode}
             onCreateFolder={() => {
               void study.createNode({
@@ -267,13 +267,13 @@ export function StudyPage(): React.JSX.Element {
 
 function FolderWorkspace({
   node,
-  children,
+  items,
   onSelect,
   onCreateFolder,
   onCreateMaterial
 }: {
   node: StudyNode
-  children: StudyNode[]
+  items: StudyNode[]
   onSelect: (nodeId: string) => void
   onCreateFolder: () => void
   onCreateMaterial: () => void
@@ -295,7 +295,7 @@ function FolderWorkspace({
               {node.title}
             </h1>
 
-            <p className="mt-1 text-sm text-[var(--app-muted)]">{children.length} элементов</p>
+            <p className="mt-1 text-sm text-[var(--app-muted)]">{items.length} элементов</p>
           </div>
 
           <button
@@ -316,7 +316,7 @@ function FolderWorkspace({
         </div>
 
         <div className="mt-8 grid grid-cols-[repeat(auto-fill,minmax(210px,1fr))] gap-3">
-          {children.map((child) => (
+          {items.map((child) => (
             <button
               key={child.id}
               type="button"

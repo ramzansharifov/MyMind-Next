@@ -1,7 +1,7 @@
 import { BookOpen, Check, Edit3, LoaderCircle, Save } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
-import type { StudyDocument, StudyMaterial, StudyNode } from '../../../../../shared/contracts/study'
+import type { StudyDocument, StudyNode } from '../../../../../shared/contracts/study'
 import { studyClient } from '../api/study-client'
 import { createEmptyStudyDocument } from '../lib/study-document'
 import { StudyBlockEditor } from './StudyBlockEditor'
@@ -13,7 +13,7 @@ interface StudyMaterialEditorProps {
 type SaveState = 'saved' | 'dirty' | 'saving' | 'error'
 
 export function StudyMaterialEditor({ node }: StudyMaterialEditorProps): React.JSX.Element {
-  const [material, setMaterial] = useState<StudyMaterial | null>(null)
+
   const [document, setDocument] = useState<StudyDocument>(createEmptyStudyDocument())
   const [mode, setMode] = useState<'edit' | 'read'>('edit')
   const [saveState, setSaveState] = useState<SaveState>('saved')
@@ -23,8 +23,7 @@ export function StudyMaterialEditor({ node }: StudyMaterialEditorProps): React.J
   useEffect(() => {
     let active = true
 
-    setIsLoading(true)
-    setSaveState('saved')
+
 
     studyClient
       .getMaterial(node.id)
@@ -33,7 +32,6 @@ export function StudyMaterialEditor({ node }: StudyMaterialEditorProps): React.J
           return
         }
 
-        setMaterial(loadedMaterial)
         setDocument(loadedMaterial.document)
       })
       .catch(() => {
@@ -60,10 +58,16 @@ export function StudyMaterialEditor({ node }: StudyMaterialEditorProps): React.J
     try {
       setSaveState('saving')
 
-      const saved = await studyClient.saveMaterial({
+      await studyClient.saveMaterial({
         nodeId: node.id,
         document: nextDocument
       })
+
+      setSaveState('saved')
+    } catch {
+      setSaveState('error')
+    }
+  })
 
       setMaterial(saved)
       setSaveState('saved')
