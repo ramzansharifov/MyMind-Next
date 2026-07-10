@@ -896,6 +896,13 @@ function StudyBlockReader({ block }: { block: StudyBlock }): React.JSX.Element {
       />
     )
   }
+  if (block.type === 'file') {
+    return (
+      <StudyFileBlockView
+        block={block}
+      />
+    )
+  }
 
   return (
     <div className="py-4">
