@@ -379,8 +379,8 @@ function sanitizeStudyAssetFileName(value: string): string {
 
   const rawStem = originalName.slice(0, originalName.length - originalExtension.length)
 
-  const stem = rawStem
-    .replace(/[<>:"/\\|?*\u0000-\u001f]/g, '_')
+  const stem = replaceControlCharacters(rawStem)
+    .replace(/[<>:"/\\|?*]/g, '_')
     .replace(/[.\s]+$/g, '')
     .trim()
     .slice(0, 150)
@@ -393,10 +393,19 @@ function isSafeAssetFileName(value: string): boolean {
     Boolean(value) &&
     value.length <= 180 &&
     basename(value) === value &&
-    !/[\u0000-\u001f]/.test(value)
+    !hasControlCharacters(value)
   )
 }
 
+function replaceControlCharacters(value: string): string {
+  return Array.from(value)
+    .map((character) => (character.charCodeAt(0) <= 31 ? '_' : character))
+    .join('')
+}
+
+function hasControlCharacters(value: string): boolean {
+  return Array.from(value).some((character) => character.charCodeAt(0) <= 31)
+}
 function assertSafeAssetSegment(value: string, label: string): void {
   if (!SAFE_ASSET_SEGMENT.test(value)) {
     throw new Error(`Invalid study asset ${label}`)

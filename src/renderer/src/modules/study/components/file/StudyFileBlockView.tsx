@@ -1,8 +1,9 @@
-import { CircleAlert, File, FileAudio, FileImage, FileVideo, ImageOff } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { CircleAlert, File, FileAudio, FileImage, FileVideo } from 'lucide-react'
+import { useState } from 'react'
 
 import type { StudyBlock, StudyFileKind } from '../../../../../../shared/contracts/study'
 import { cn } from '../../../../shared/lib/cn'
+import { formatStudyFileSize, normalizeStudyRemoteMediaUrl } from './file-utils'
 
 type FileBlock = Extract<StudyBlock, { type: 'file' }>
 
@@ -15,11 +16,11 @@ export function StudyFileBlockView({ block }: StudyFileBlockViewProps): React.JS
 
   const sourceUrl = getStudyFileSourceUrl(block)
 
-  const [loadError, setLoadError] = useState(false)
+  const sourceKey = `${block.kind}:${sourceUrl ?? ''}`
 
-  useEffect(() => {
-    setLoadError(false)
-  }, [sourceUrl, block.kind])
+  const [failedSourceKey, setFailedSourceKey] = useState<string | null>(null)
+
+  const loadError = failedSourceKey === sourceKey
 
   const title = block.title?.trim() || asset?.name || getStudyFileKindLabel(block.kind)
 
@@ -97,10 +98,10 @@ export function StudyFileBlockView({ block }: StudyFileBlockViewProps): React.JS
               (block.imageFit ?? 'contain') === 'cover' ? 'object-cover' : 'object-contain'
             )}
             onLoad={() => {
-              setLoadError(false)
+              setFailedSourceKey(null)
             }}
             onError={() => {
-              setLoadError(true)
+              setFailedSourceKey(sourceKey)
             }}
           />
         </div>
@@ -125,10 +126,10 @@ export function StudyFileBlockView({ block }: StudyFileBlockViewProps): React.JS
           preload="metadata"
           className="max-h-[36rem] w-full bg-black object-contain"
           onLoadedMetadata={() => {
-            setLoadError(false)
+            setFailedSourceKey(null)
           }}
           onError={() => {
-            setLoadError(true)
+            setFailedSourceKey(sourceKey)
           }}
         />
 
@@ -169,10 +170,10 @@ export function StudyFileBlockView({ block }: StudyFileBlockViewProps): React.JS
         preload="metadata"
         className="mt-4 w-full"
         onLoadedMetadata={() => {
-          setLoadError(false)
+          setFailedSourceKey(null)
         }}
         onError={() => {
-          setLoadError(true)
+          setFailedSourceKey(sourceKey)
         }}
       />
 
@@ -181,54 +182,6 @@ export function StudyFileBlockView({ block }: StudyFileBlockViewProps): React.JS
       )}
     </section>
   )
-}
-
-export function normalizeStudyRemoteMediaUrl(value: string): string | null {
-  const trimmedValue = value.trim()
-
-  if (!trimmedValue) {
-    return null
-  }
-
-  try {
-    const parsedUrl = new URL(trimmedValue)
-
-    if (parsedUrl.protocol !== 'https:' || parsedUrl.username || parsedUrl.password) {
-      return null
-    }
-
-    return parsedUrl.href
-  } catch {
-    return null
-  }
-}
-
-export function isValidStudyRemoteMediaUrl(value: string): boolean {
-  return normalizeStudyRemoteMediaUrl(value) !== null
-}
-
-export function formatStudyFileSize(bytes: number): string {
-  if (!Number.isFinite(bytes) || bytes < 0) {
-    return 'Неизвестный размер'
-  }
-
-  if (bytes < 1024) {
-    return `${bytes} Б`
-  }
-
-  const units = ['КБ', 'МБ', 'ГБ', 'ТБ']
-
-  let value = bytes / 1024
-  let unitIndex = 0
-
-  while (value >= 1024 && unitIndex < units.length - 1) {
-    value /= 1024
-    unitIndex += 1
-  }
-
-  const precision = value >= 10 ? 0 : 1
-
-  return `${value.toFixed(precision)} ${units[unitIndex]}`
 }
 
 function getStudyFileSourceUrl(block: FileBlock): string | null {

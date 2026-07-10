@@ -31,7 +31,7 @@ import {
 import { studyClient } from '../api/study-client'
 import { RichTextSettings } from './rich-text/RichTextSettings'
 import { STUDY_CODE_LANGUAGE_OPTIONS } from './code/code-languages'
-import { formatStudyFileSize, isValidStudyRemoteMediaUrl } from './file/StudyFileBlockView'
+import { formatStudyFileSize, isValidStudyRemoteMediaUrl } from './file/file-utils'
 import { STUDY_MERMAID_TEMPLATES } from './mermaid/mermaid-templates'
 import { ColorPicker } from './settings/ColorPicker'
 import { SegmentedChoice } from './settings/SegmentedChoice'

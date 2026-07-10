@@ -18,7 +18,14 @@ const studyDocument: StudyDocument = {
 
 describe('StudyBlockEditor', () => {
   it('collapses and expands a block in edit mode', () => {
-    render(<StudyBlockEditor document={studyDocument} mode="edit" onChange={vi.fn()} />)
+    render(
+      <StudyBlockEditor
+        materialId="material-1"
+        document={studyDocument}
+        mode="edit"
+        onChange={vi.fn()}
+      />
+    )
 
     const headingInput = screen.getByDisplayValue('Раздел')
 
@@ -46,7 +53,14 @@ describe('StudyBlockEditor', () => {
   it('requires confirmation before deleting a block', () => {
     const onChange = vi.fn()
 
-    render(<StudyBlockEditor document={studyDocument} mode="edit" onChange={onChange} />)
+    render(
+      <StudyBlockEditor
+        materialId="material-1"
+        document={studyDocument}
+        mode="edit"
+        onChange={onChange}
+      />
+    )
 
     fireEvent.click(
       screen.getByRole('button', {

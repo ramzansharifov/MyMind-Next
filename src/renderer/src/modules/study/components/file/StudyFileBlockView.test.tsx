@@ -2,7 +2,8 @@ import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
 import type { StudyBlock } from '../../../../../../shared/contracts/study'
-import { formatStudyFileSize, StudyFileBlockView } from './StudyFileBlockView'
+import { StudyFileBlockView } from './StudyFileBlockView'
+import { formatStudyFileSize } from './file-utils'
 
 type FileBlock = Extract<StudyBlock, { type: 'file' }>
 
