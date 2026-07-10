@@ -605,12 +605,7 @@ function StudyReadSection({ section }: { section: StudyReadSectionNode }): React
       </Collapsible.Trigger>
 
       <Collapsible.Content className="study-read-collapsible-content overflow-hidden">
-        <div
-          className={cn(
-            'mt-3 space-y-6',
-            section.heading.level > 1 && 'ml-5 border-l border-[var(--app-border)] pl-4'
-          )}
-        >
+        <div className="mt-3 ml-5 space-y-6 border-l border-[var(--app-border)] pl-4">
           {section.children.map((child) => (
             <StudyReadNodeView key={getStudyReadNodeKey(child)} node={child} />
           ))}
