@@ -1,6 +1,6 @@
 import type { Editor } from '@tiptap/core'
-import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import * as Collapsible from '@radix-ui/react-collapsible'
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import * as Separator from '@radix-ui/react-separator'
 import {
   ArrowDown,
@@ -33,8 +33,8 @@ import {
   removeStudyBlock,
   replaceStudyBlock
 } from '../lib/study-document'
-import { BlockSettingsPanel } from './BlockSettingsPanel'
 import { BlockSettingsErrorBoundary } from './BlockSettingsErrorBoundary'
+import { BlockSettingsPanel } from './BlockSettingsPanel'
 import { RichTextBlockEditor, RichTextViewer } from './rich-text/RichTextBlockEditor'
 
 interface StudyBlockEditorProps {
@@ -75,6 +75,7 @@ export function StudyBlockEditor({
   onChange
 }: StudyBlockEditorProps): React.JSX.Element {
   const [activeBlockId, setActiveBlockId] = useState<string | null>(document.blocks[0]?.id ?? null)
+
   const [activeTextEditor, setActiveTextEditor] = useState<Editor | null>(null)
 
   const editorsRef = useRef(new Map<string, Editor>())
@@ -127,12 +128,16 @@ export function StudyBlockEditor({
     editorsRef.current.delete(blockId)
 
     const currentIndex = document.blocks.findIndex((block) => block.id === blockId)
+
     const nextDocument = removeStudyBlock(document, blockId)
+
     const nextActiveBlock =
       nextDocument.blocks[Math.min(currentIndex, nextDocument.blocks.length - 1)] ?? null
 
     onChange(nextDocument)
+
     setActiveBlockId(nextActiveBlock?.id ?? null)
+
     setActiveTextEditor(
       nextActiveBlock ? (editorsRef.current.get(nextActiveBlock.id) ?? null) : null
     )
@@ -157,6 +162,7 @@ export function StudyBlockEditor({
               }}
               onTextEditorActivate={(editor) => {
                 editorsRef.current.set(block.id, editor)
+
                 setActiveBlockId(block.id)
                 setActiveTextEditor(editor)
               }}
@@ -278,7 +284,7 @@ function StudyBlockCard({
           className="flex size-7 items-center justify-center rounded-md text-[var(--app-muted)] hover:bg-white/[0.06] hover:text-[var(--app-text)] disabled:opacity-25"
           onClick={() => onMove(-1)}
         >
-          <ArrowUp className="size-4" />
+          <ArrowUp aria-hidden="true" className="size-4" />
         </button>
 
         <button
@@ -288,7 +294,7 @@ function StudyBlockCard({
           className="flex size-7 items-center justify-center rounded-md text-[var(--app-muted)] hover:bg-white/[0.06] hover:text-[var(--app-text)] disabled:opacity-25"
           onClick={() => onMove(1)}
         >
-          <ArrowDown className="size-4" />
+          <ArrowDown aria-hidden="true" className="size-4" />
         </button>
 
         <button
@@ -297,7 +303,7 @@ function StudyBlockCard({
           className="flex size-7 items-center justify-center rounded-md text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
           onClick={onDelete}
         >
-          <Trash2 className="size-4" />
+          <Trash2 aria-hidden="true" className="size-4" />
         </button>
       </div>
 
@@ -349,6 +355,7 @@ function getHeadingTypography(level: 1 | 2 | 3): {
     letterSpacing: '-0.02em'
   }
 }
+
 function EditableBlock({
   block,
   onChange
@@ -382,6 +389,252 @@ function EditableBlock({
         }}
       />
     )
+  }
+
+  if (block.type === 'code') {
+    return (
+      <textarea
+        value={block.source}
+        rows={10}
+        spellCheck={false}
+        placeholder="Код…"
+        className="w-full resize-y rounded-lg bg-[#090a0c] p-4 font-mono text-sm leading-6 text-zinc-200 outline-none placeholder:text-zinc-600"
+        onChange={(event) => {
+          onChange({
+            ...block,
+            source: event.target.value
+          })
+        }}
+      />
+    )
+  }
+
+  if (block.type === 'link') {
+    const href = normalizeExternalHref(block.url)
+
+    return (
+      <div className="flex min-h-24 items-center justify-center rounded-lg border border-dashed border-[var(--app-border)] p-4">
+        <div className="min-w-0 text-center">
+          <ExternalLink aria-hidden="true" className="mx-auto size-5 text-violet-300" />
+
+          <p className="mt-2 truncate text-sm font-medium text-[var(--app-text)]">
+            {block.title || 'Ссылка без названия'}
+          </p>
+
+          <p
+            className={cn(
+              'mt-1 max-w-md truncate text-xs',
+              href ? 'text-[var(--app-muted)]' : 'text-red-300'
+            )}
+          >
+            {block.url || 'Укажи адрес в настройках'}
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="py-8">
+      <Separator.Root
+        decorative
+        orientation="horizontal"
+        className="w-full rounded-full"
+        style={{
+          height: `${block.thickness ?? DEFAULT_DIVIDER_THICKNESS}px`,
+          backgroundColor: block.color ?? DEFAULT_DIVIDER_COLOR
+        }}
+      />
+    </div>
+  )
+}
+
+type StudyHeadingBlock = Extract<StudyBlock, { type: 'heading' }>
+
+interface StudyReadBlockNode {
+  kind: 'block'
+  block: StudyBlock
+}
+
+interface StudyReadSectionNode {
+  kind: 'section'
+  heading: StudyHeadingBlock
+  children: StudyReadNode[]
+}
+
+type StudyReadNode = StudyReadBlockNode | StudyReadSectionNode
+
+function ReadOnlyStudyDocument({ document }: { document: StudyDocument }): React.JSX.Element {
+  const outline = buildStudyReadOutline(document.blocks)
+
+  return (
+    <article className="mx-auto max-w-4xl space-y-6">
+      {outline.map((node) => (
+        <StudyReadNodeView key={getStudyReadNodeKey(node)} node={node} />
+      ))}
+    </article>
+  )
+}
+
+function buildStudyReadOutline(blocks: StudyBlock[]): StudyReadNode[] {
+  const root: StudyReadNode[] = []
+  const sectionStack: StudyReadSectionNode[] = []
+
+  blocks.forEach((block) => {
+    if (block.type === 'heading') {
+      const section: StudyReadSectionNode = {
+        kind: 'section',
+        heading: block,
+        children: []
+      }
+
+      while (
+        sectionStack.length > 0 &&
+        sectionStack[sectionStack.length - 1].heading.level >= block.level
+      ) {
+        sectionStack.pop()
+      }
+
+      const parentSection = sectionStack[sectionStack.length - 1]
+
+      if (parentSection) {
+        parentSection.children.push(section)
+      } else {
+        root.push(section)
+      }
+
+      sectionStack.push(section)
+
+      return
+    }
+
+    const blockNode: StudyReadBlockNode = {
+      kind: 'block',
+      block
+    }
+
+    const parentSection = sectionStack[sectionStack.length - 1]
+
+    if (parentSection) {
+      parentSection.children.push(blockNode)
+    } else {
+      root.push(blockNode)
+    }
+  })
+
+  return root
+}
+
+function StudyReadNodeView({ node }: { node: StudyReadNode }): React.JSX.Element {
+  if (node.kind === 'section') {
+    return <StudyReadSection section={node} />
+  }
+
+  return <StudyBlockReader block={node.block} />
+}
+
+function StudyReadSection({ section }: { section: StudyReadSectionNode }): React.JSX.Element {
+  const [open, setOpen] = useState(true)
+
+  const hasContent = section.children.length > 0
+
+  const headingTitle = section.heading.text || 'Без заголовка'
+
+  return (
+    <Collapsible.Root open={open} onOpenChange={setOpen} className="group/read-section">
+      <Collapsible.Trigger asChild>
+        <button
+          type="button"
+          disabled={!hasContent}
+          aria-label={
+            open ? `Свернуть раздел «${headingTitle}»` : `Развернуть раздел «${headingTitle}»`
+          }
+          className={cn(
+            'flex w-full items-center gap-1 rounded-xl py-0.5 pr-2 pl-1',
+            'text-left outline-none',
+            'transition-colors duration-150',
+            hasContent && 'hover:bg-white/[0.025]',
+            'focus-visible:ring-2 focus-visible:ring-violet-500/35',
+            !hasContent && 'cursor-default'
+          )}
+        >
+          <ChevronRight
+            aria-hidden="true"
+            className={cn(
+              'ml-0.5 size-4 shrink-0 text-[var(--app-muted)]',
+              'transition-transform duration-200 ease-out',
+              open && 'rotate-90',
+              !hasContent && 'opacity-0'
+            )}
+          />
+
+          <div className="min-w-0 flex-1">
+            <StudyReadHeading heading={section.heading} />
+          </div>
+        </button>
+      </Collapsible.Trigger>
+
+      <Collapsible.Content className="study-read-collapsible-content overflow-hidden">
+        <div
+          className={cn(
+            'mt-3 space-y-6',
+            section.heading.level > 1 && 'ml-5 border-l border-[var(--app-border)] pl-4'
+          )}
+        >
+          {section.children.map((child) => (
+            <StudyReadNodeView key={getStudyReadNodeKey(child)} node={child} />
+          ))}
+        </div>
+      </Collapsible.Content>
+    </Collapsible.Root>
+  )
+}
+
+function getStudyReadNodeKey(node: StudyReadNode): string {
+  return node.kind === 'section' ? node.heading.id : node.block.id
+}
+
+function StudyReadHeading({ heading }: { heading: StudyHeadingBlock }): React.JSX.Element {
+  const typography = getHeadingTypography(heading.level)
+
+  const style = {
+    ...typography,
+    color: heading.color ?? DEFAULT_HEADING_COLOR,
+    backgroundColor: heading.backgroundColor ?? 'transparent'
+  }
+
+  const className = 'rounded-lg px-1 py-1.5 font-semibold'
+
+  if (heading.level === 1) {
+    return (
+      <h1 className={className} style={style}>
+        {heading.text || 'Без заголовка'}
+      </h1>
+    )
+  }
+
+  if (heading.level === 2) {
+    return (
+      <h2 className={className} style={style}>
+        {heading.text || 'Без заголовка'}
+      </h2>
+    )
+  }
+
+  return (
+    <h3 className={className} style={style}>
+      {heading.text || 'Без заголовка'}
+    </h3>
+  )
+}
+
+function StudyBlockReader({ block }: { block: StudyBlock }): React.JSX.Element {
+  if (block.type === 'text') {
+    return <RichTextViewer html={getStudyTextBlockHtml(block)} plainText={block.text} />
+  }
+
+  if (block.type === 'heading') {
+    return <StudyReadHeading heading={block} />
   }
 
   if (block.type === 'code') {
@@ -439,6 +692,7 @@ function EditableBlock({
     </div>
   )
 }
+
 function normalizeExternalHref(value: string): string | null {
   const trimmed = value.trim()
 
@@ -482,6 +736,7 @@ function StudyBlockTypeIcon({
 
   return <Type aria-hidden="true" className={className} />
 }
+
 function getBlockLabel(type: StudyBlockType): string {
   return blockTypes.find((option) => option.type === type)?.label ?? type
 }
