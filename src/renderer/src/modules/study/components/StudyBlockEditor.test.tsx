@@ -42,4 +42,40 @@ describe('StudyBlockEditor', () => {
 
     expect(content).toHaveAttribute('data-state', 'open')
   })
+
+  it('requires confirmation before deleting a block', () => {
+    const onChange = vi.fn()
+
+    render(
+      <StudyBlockEditor
+        document={studyDocument}
+        mode="edit"
+        onChange={onChange}
+      />
+    )
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Удалить блок'
+      })
+    )
+
+    expect(
+      screen.getByRole('alertdialog')
+    ).toBeInTheDocument()
+
+    expect(
+      screen.getByText('Удалить блок?')
+    ).toBeInTheDocument()
+
+    expect(onChange).not.toHaveBeenCalled()
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Удалить'
+      })
+    )
+
+    expect(onChange).toHaveBeenCalledTimes(1)
+  })
 })

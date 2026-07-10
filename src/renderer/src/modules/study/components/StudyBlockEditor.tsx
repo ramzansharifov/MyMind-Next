@@ -37,6 +37,7 @@ import {
 } from '../lib/study-document'
 import { BlockSettingsErrorBoundary } from './BlockSettingsErrorBoundary'
 import { BlockSettingsPanel } from './BlockSettingsPanel'
+import { DeleteConfirmationDialog } from './DeleteConfirmationDialog'
 import { StudyCodeBlock } from './code/StudyCodeBlock'
 import { StudyMarkdownBlock } from './markdown/StudyMarkdownBlock'
 import { RichTextBlockEditor, RichTextViewer } from './rich-text/RichTextBlockEditor'
@@ -82,6 +83,11 @@ export function StudyBlockEditor({
   const [activeBlockId, setActiveBlockId] = useState<string | null>(document.blocks[0]?.id ?? null)
 
   const [activeTextEditor, setActiveTextEditor] = useState<Editor | null>(null)
+
+  const [
+    deleteTarget,
+    setDeleteTarget
+  ] = useState<StudyBlock | null>(null)
 
   const editorsRef = useRef(new Map<string, Editor>())
 
@@ -201,7 +207,7 @@ export function StudyBlockEditor({
                   duplicateBlock(block.id)
                 }}
                 onDelete={() => {
-                  deleteBlock(block.id)
+                  setDeleteTarget(block)
                 }}
               />
 
@@ -229,6 +235,30 @@ export function StudyBlockEditor({
           />
         </BlockSettingsErrorBoundary>
       </div>
+      <DeleteConfirmationDialog
+        open={deleteTarget !== null}
+        title="Удалить блок?"
+        subject={
+          deleteTarget
+            ? getBlockLabel(
+                deleteTarget.type
+              )
+            : undefined
+        }
+        description="Блок и всё его содержимое будут удалены из материала."
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteTarget(null)
+          }
+        }}
+        onConfirm={() => {
+          if (deleteTarget) {
+            deleteBlock(deleteTarget.id)
+          }
+
+          setDeleteTarget(null)
+        }}
+      />
     </div>
   )
 }

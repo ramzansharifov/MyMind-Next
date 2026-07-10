@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 
 import type { StudyNode } from '../../../../shared/contracts/study'
 import { StudyMaterialEditor } from './components/StudyMaterialEditor'
+import { DeleteConfirmationDialog } from './components/DeleteConfirmationDialog'
 import { StudyTree } from './components/StudyTree'
 import { useStudy } from './hooks/use-study'
 
@@ -213,57 +214,34 @@ export function StudyPage(): React.JSX.Element {
         </AlertDialog.Portal>
       </AlertDialog.Root>
 
-      <AlertDialog.Root
+      <DeleteConfirmationDialog
         open={deleteTarget !== null}
+        title={
+          deleteTarget?.type === 'folder'
+            ? 'Удалить папку?'
+            : 'Удалить материал?'
+        }
+        subject={deleteTarget?.title}
+        description={
+          deleteTarget?.type === 'folder'
+            ? 'Папка будет удалена вместе со всеми вложенными папками и материалами.'
+            : 'Материал и всё его содержимое будут удалены без возможности восстановления.'
+        }
         onOpenChange={(open) => {
           if (!open) {
             setDeleteTarget(null)
           }
         }}
-      >
-        <AlertDialog.Portal>
-          <AlertDialog.Overlay className="fixed inset-0 z-50 bg-black/60" />
+        onConfirm={() => {
+          if (deleteTarget) {
+            void study.deleteNode(
+              deleteTarget.id
+            )
+          }
 
-          <AlertDialog.Content className="fixed top-1/2 left-1/2 z-50 w-[min(420px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-5">
-            <AlertDialog.Title className="text-lg font-semibold text-[var(--app-text)]">
-              Удалить «{deleteTarget?.title}»?
-            </AlertDialog.Title>
-
-            <AlertDialog.Description className="mt-2 text-sm leading-6 text-[var(--app-muted)]">
-              {deleteTarget?.type === 'folder'
-                ? 'Папка будет удалена вместе со всеми вложенными материалами.'
-                : 'Материал и его содержимое будут удалены без возможности восстановления.'}
-            </AlertDialog.Description>
-
-            <div className="mt-5 flex justify-end gap-2">
-              <AlertDialog.Cancel asChild>
-                <button
-                  type="button"
-                  className="rounded-lg px-3 py-2 text-sm text-[var(--app-muted)] hover:bg-white/[0.06]"
-                >
-                  Отмена
-                </button>
-              </AlertDialog.Cancel>
-
-              <AlertDialog.Action asChild>
-                <button
-                  type="button"
-                  className="rounded-lg bg-red-500 px-3 py-2 text-sm font-medium text-white hover:bg-red-400"
-                  onClick={() => {
-                    if (deleteTarget) {
-                      void study.deleteNode(deleteTarget.id)
-                    }
-
-                    setDeleteTarget(null)
-                  }}
-                >
-                  Удалить
-                </button>
-              </AlertDialog.Action>
-            </div>
-          </AlertDialog.Content>
-        </AlertDialog.Portal>
-      </AlertDialog.Root>
+          setDeleteTarget(null)
+        }}
+      />
     </section>
   )
 }
