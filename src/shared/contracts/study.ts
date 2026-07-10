@@ -1,6 +1,7 @@
 export type StudyNodeType = 'folder' | 'material'
 
-export type StudyBlockType = 'text' | 'heading' | 'code' | 'markdown' | 'latex' | 'divider'
+export type StudyBlockType =
+  'text' | 'heading' | 'code' | 'markdown' | 'latex' | 'mermaid' | 'divider'
 
 export interface StudyTextBlock {
   id: string
@@ -47,6 +48,18 @@ export interface StudyLatexBlock {
   alignment?: StudyLatexAlignment
   scale?: number
 }
+export type StudyMermaidViewMode = 'write' | 'split' | 'preview'
+
+export type StudyMermaidTheme = 'dark' | 'default' | 'neutral' | 'forest'
+
+export interface StudyMermaidBlock {
+  id: string
+  type: 'mermaid'
+  source: string
+  viewMode?: StudyMermaidViewMode
+  theme?: StudyMermaidTheme
+  scale?: number
+}
 
 export interface StudyDividerBlock {
   id: string
@@ -61,6 +74,7 @@ export type StudyBlock =
   | StudyCodeBlock
   | StudyMarkdownBlock
   | StudyLatexBlock
+  | StudyMermaidBlock
   | StudyDividerBlock
 
 export interface StudyDocument {

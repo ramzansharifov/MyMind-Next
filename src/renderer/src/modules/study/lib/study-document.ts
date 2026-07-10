@@ -49,6 +49,16 @@ export function createStudyBlock(type: StudyBlockType): StudyBlock {
       scale: 100
     }
   }
+  if (type === 'mermaid') {
+    return {
+      id,
+      type,
+      source: '',
+      viewMode: 'split',
+      theme: 'dark',
+      scale: 100
+    }
+  }
 
   if (type === 'divider') {
     return {

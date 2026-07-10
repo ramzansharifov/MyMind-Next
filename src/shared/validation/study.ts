@@ -45,6 +45,14 @@ export const studyLatexBlockSchema = z.object({
   alignment: z.enum(['left', 'center', 'right']).optional(),
   scale: z.number().int().min(70).max(180).optional()
 })
+export const studyMermaidBlockSchema = z.object({
+  id: z.string().min(1),
+  type: z.literal('mermaid'),
+  source: z.string(),
+  viewMode: z.enum(['write', 'split', 'preview']).optional(),
+  theme: z.enum(['dark', 'default', 'neutral', 'forest']).optional(),
+  scale: z.number().int().min(60).max(180).optional()
+})
 
 export const studyDividerBlockSchema = z.object({
   id: z.string().min(1),
@@ -62,6 +70,7 @@ export const studyBlockSchema = z.discriminatedUnion('type', [
   studyCodeBlockSchema,
   studyMarkdownBlockSchema,
   studyLatexBlockSchema,
+  studyMermaidBlockSchema,
   studyDividerBlockSchema
 ])
 

@@ -53,6 +53,10 @@ function documentToPlainText(document: StudyDocument): string {
         return block.source
       }
 
+      if (block.type === 'mermaid') {
+        return block.source
+      }
+
       return ''
     })
     .filter(Boolean)

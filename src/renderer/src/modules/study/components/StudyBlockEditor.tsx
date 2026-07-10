@@ -11,6 +11,7 @@ import {
   FileCode2,
   Heading,
   Sigma,
+  Workflow,
   Minus,
   Plus,
   Trash2,
@@ -42,6 +43,7 @@ import { DeleteConfirmationDialog } from './DeleteConfirmationDialog'
 import { StudyCodeBlock } from './code/StudyCodeBlock'
 import { StudyMarkdownBlock } from './markdown/StudyMarkdownBlock'
 import { StudyLatexBlock } from './latex/StudyLatexBlock'
+import { StudyMermaidBlock } from './mermaid/StudyMermaidBlock'
 import { RichTextBlockEditor, RichTextViewer } from './rich-text/RichTextBlockEditor'
 
 interface StudyBlockEditorProps {
@@ -73,6 +75,10 @@ const blockTypes: Array<{
   {
     type: 'latex',
     label: 'LaTeX'
+  },
+  {
+    type: 'mermaid',
+    label: 'Mermaid'
   },
 
   {
@@ -599,6 +605,29 @@ function EditableBlock({
       />
     )
   }
+  if (block.type === 'mermaid') {
+    return (
+      <StudyMermaidBlock
+        mode="edit"
+        source={block.source}
+        viewMode={block.viewMode ?? 'split'}
+        theme={block.theme ?? 'dark'}
+        scale={block.scale ?? 100}
+        onChange={(source) => {
+          onChange({
+            ...block,
+            source
+          })
+        }}
+        onViewModeChange={(viewMode) => {
+          onChange({
+            ...block,
+            viewMode
+          })
+        }}
+      />
+    )
+  }
 
   return (
     <div className="py-8">
@@ -845,6 +874,16 @@ function StudyBlockReader({ block }: { block: StudyBlock }): React.JSX.Element {
       />
     )
   }
+  if (block.type === 'mermaid') {
+    return (
+      <StudyMermaidBlock
+        mode="read"
+        source={block.source}
+        theme={block.theme ?? 'dark'}
+        scale={block.scale ?? 100}
+      />
+    )
+  }
 
   return (
     <div className="py-4">
@@ -880,6 +919,9 @@ function StudyBlockTypeIcon({
   }
   if (type === 'latex') {
     return <Sigma aria-hidden="true" className={className} />
+  }
+  if (type === 'mermaid') {
+    return <Workflow aria-hidden="true" className={className} />
   }
 
   if (type === 'divider') {

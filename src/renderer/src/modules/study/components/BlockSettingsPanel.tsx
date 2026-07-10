@@ -1,7 +1,7 @@
 import type { Editor } from '@tiptap/core'
 import * as Separator from '@radix-ui/react-separator'
 import * as Slider from '@radix-ui/react-slider'
-import { Code2, FileCode2, Heading, Minus, Settings2, Sigma, Type } from 'lucide-react'
+import { Code2, FileCode2, Heading, Minus, Settings2, Sigma, Type, Workflow } from 'lucide-react'
 
 import type { StudyBlock } from '../../../../../shared/contracts/study'
 import {
@@ -12,6 +12,7 @@ import {
 } from '../lib/study-document'
 import { RichTextSettings } from './rich-text/RichTextSettings'
 import { STUDY_CODE_LANGUAGE_OPTIONS } from './code/code-languages'
+import { STUDY_MERMAID_TEMPLATES } from './mermaid/mermaid-templates'
 import { ColorPicker } from './settings/ColorPicker'
 import { SegmentedChoice } from './settings/SegmentedChoice'
 import { StudySelect } from './settings/StudySelect'
@@ -112,6 +113,42 @@ const latexAlignments = [
     label: 'Справа'
   }
 ]
+const mermaidViewModes = [
+  {
+    value: 'write',
+    label: 'Код',
+    ariaLabel: 'Только Mermaid-код'
+  },
+  {
+    value: 'split',
+    label: '2 окна',
+    ariaLabel: 'Код и диаграмма'
+  },
+  {
+    value: 'preview',
+    label: 'Вид',
+    ariaLabel: 'Только диаграмма'
+  }
+]
+
+const mermaidThemes = [
+  {
+    value: 'dark',
+    label: 'Тёмная'
+  },
+  {
+    value: 'default',
+    label: 'Светлая'
+  },
+  {
+    value: 'neutral',
+    label: 'Нейтр.'
+  },
+  {
+    value: 'forest',
+    label: 'Лес'
+  }
+]
 
 export function BlockSettingsPanel({
   block,
@@ -153,6 +190,8 @@ export function BlockSettingsPanel({
         {block.type === 'markdown' && <MarkdownSettings block={block} onChange={onChange} />}
 
         {block.type === 'latex' && <LatexSettings block={block} onChange={onChange} />}
+
+        {block.type === 'mermaid' && <MermaidSettings block={block} onChange={onChange} />}
 
         {block.type === 'divider' && <DividerSettings block={block} onChange={onChange} />}
       </div>
@@ -397,6 +436,121 @@ function LatexSettings({
     </div>
   )
 }
+function MermaidSettings({
+  block,
+  onChange
+}: {
+  block: Extract<StudyBlock, { type: 'mermaid' }>
+  onChange: (block: StudyBlock) => void
+}): React.JSX.Element {
+  const scale = block.scale ?? 100
+
+  return (
+    <div className="grid gap-4">
+      <SettingsField label="Режим редактора">
+        <SegmentedChoice
+          value={block.viewMode ?? 'split'}
+          options={mermaidViewModes}
+          ariaLabel="Режим Mermaid-блока"
+          columns={3}
+          onValueChange={(viewMode) => {
+            if (viewMode !== 'write' && viewMode !== 'split' && viewMode !== 'preview') {
+              return
+            }
+
+            onChange({
+              ...block,
+              viewMode
+            })
+          }}
+        />
+      </SettingsField>
+
+      <SettingsField label="Тема">
+        <SegmentedChoice
+          value={block.theme ?? 'dark'}
+          options={mermaidThemes}
+          ariaLabel="Тема Mermaid-диаграммы"
+          columns={2}
+          onValueChange={(theme) => {
+            if (
+              theme !== 'dark' &&
+              theme !== 'default' &&
+              theme !== 'neutral' &&
+              theme !== 'forest'
+            ) {
+              return
+            }
+
+            onChange({
+              ...block,
+              theme
+            })
+          }}
+        />
+      </SettingsField>
+
+      <SettingsField label={`Размер: ${scale}%`}>
+        <Slider.Root
+          min={60}
+          max={180}
+          step={10}
+          value={[scale]}
+          aria-label="Размер Mermaid-диаграммы"
+          className="relative flex h-5 w-full touch-none items-center select-none"
+          onValueChange={(values) => {
+            const nextScale = values[0]
+
+            if (typeof nextScale !== 'number') {
+              return
+            }
+
+            onChange({
+              ...block,
+              scale: nextScale
+            })
+          }}
+        >
+          <Slider.Track className="relative h-1.5 grow overflow-hidden rounded-full bg-white/[0.08]">
+            <Slider.Range className="absolute h-full bg-violet-500" />
+          </Slider.Track>
+
+          <Slider.Thumb className="block size-4 rounded-full border-2 border-violet-400 bg-(--app-surface-raised) outline-none hover:scale-110 focus-visible:ring-4 focus-visible:ring-violet-500/20" />
+        </Slider.Root>
+      </SettingsField>
+
+      {!block.source.trim() && (
+        <div className="grid gap-2">
+          <span className="text-[11px] font-medium text-(--app-muted)">Быстрый старт</span>
+
+          <div className="grid grid-cols-2 gap-2">
+            {STUDY_MERMAID_TEMPLATES.map((template) => (
+              <button
+                key={template.id}
+                type="button"
+                className="rounded-lg border border-(--app-border) bg-(--app-workspace) px-2.5 py-2 text-xs font-medium text-(--app-muted) transition-colors outline-none hover:border-(--app-border-strong) hover:text-(--app-text) focus-visible:ring-2 focus-visible:ring-violet-500/35"
+                onClick={() => {
+                  onChange({
+                    ...block,
+                    source: template.source,
+                    viewMode: 'split'
+                  })
+                }}
+              >
+                {template.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <p className="text-xs leading-5 text-[var(--app-muted)]">
+        Поддерживаются блок-схемы, последовательности, классы, состояния, ER, Gantt, mindmap и
+        другие диаграммы.
+      </p>
+    </div>
+  )
+}
 function DividerSettings({
   block,
   onChange
@@ -486,6 +640,9 @@ function BlockTypeIcon({ type }: { type: StudyBlock['type'] }): React.JSX.Elemen
   if (type === 'latex') {
     return <Sigma aria-hidden="true" className="size-4" />
   }
+  if (type === 'mermaid') {
+    return <Workflow aria-hidden="true" className="size-4" />
+  }
 
   if (type === 'divider') {
     return <Minus aria-hidden="true" className="size-4" />
@@ -507,6 +664,9 @@ function getBlockTitle(block: StudyBlock): string {
   }
   if (block.type === 'latex') {
     return 'LaTeX'
+  }
+  if (block.type === 'mermaid') {
+    return 'Mermaid'
   }
 
   if (block.type === 'divider') {
