@@ -4,6 +4,7 @@ import { useState } from 'react'
 import type { StudyAssetKind, StudyBlock } from '../../../../../../shared/contracts/study'
 import { cn } from '../../../../shared/lib/cn'
 import { formatStudyFileSize, normalizeStudyRemoteMediaUrl } from './file-utils'
+import { StudyAudioPlayer } from './StudyAudioPlayer'
 
 type AttachmentBlock = Extract<
   StudyBlock,
@@ -170,17 +171,17 @@ export function StudyFileBlockView({ block }: StudyFileBlockViewProps): React.JS
         </div>
       </div>
 
-      <audio
+      <StudyAudioPlayer
         key={sourceUrl}
         src={sourceUrl}
-        controls
-        preload="metadata"
-        className="mt-4 w-full"
-        onLoadedMetadata={() => {
+        title={title}
+        onReady={() => {
           setFailedSourceKey(null)
         }}
         onError={() => {
-          setFailedSourceKey(sourceKey)
+          setFailedSourceKey(
+            sourceKey
+          )
         }}
       />
 
