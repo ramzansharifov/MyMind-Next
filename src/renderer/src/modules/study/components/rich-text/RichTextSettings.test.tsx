@@ -4,9 +4,9 @@ import { describe, expect, it } from 'vitest'
 import { RichTextSettings } from './RichTextSettings'
 
 describe('RichTextSettings', () => {
-  it('does not crash without an active editor', () => {
+  it('shows a compact empty state without an active editor', () => {
     render(<RichTextSettings editor={null} />)
 
-    expect(screen.getByText('Текстовый блок не активен')).toBeInTheDocument()
+    expect(screen.getByText('Выбери текстовый блок')).toBeInTheDocument()
   })
 })
