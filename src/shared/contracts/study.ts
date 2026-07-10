@@ -6,6 +6,7 @@ export interface StudyTextBlock {
   id: string
   type: 'text'
   text: string
+  html?: string
 }
 
 export interface StudyHeadingBlock {
@@ -25,6 +26,8 @@ export interface StudyCodeBlock {
 export interface StudyDividerBlock {
   id: string
   type: 'divider'
+  thickness?: number
+  color?: string
 }
 
 export interface StudyLinkBlock {

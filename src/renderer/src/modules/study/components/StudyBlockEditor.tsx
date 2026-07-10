@@ -1,17 +1,36 @@
+import type { Editor } from '@tiptap/core'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
-import { ArrowDown, ArrowUp, Code2, Heading, Link2, Minus, Plus, Trash2, Type } from 'lucide-react'
+import {
+  ArrowDown,
+  ArrowUp,
+  Code2,
+  ExternalLink,
+  Heading,
+  Link2,
+  Minus,
+  Plus,
+  Trash2,
+  Type
+} from 'lucide-react'
+import { useRef, useState } from 'react'
 
 import type {
   StudyBlock,
   StudyBlockType,
   StudyDocument
 } from '../../../../../shared/contracts/study'
+import { cn } from '../../../shared/lib/cn'
 import {
   createStudyBlock,
+  DEFAULT_DIVIDER_COLOR,
+  DEFAULT_DIVIDER_THICKNESS,
+  getStudyTextBlockHtml,
   moveStudyBlock,
   removeStudyBlock,
   replaceStudyBlock
 } from '../lib/study-document'
+import { BlockSettingsPanel } from './BlockSettingsPanel'
+import { RichTextBlockEditor, RichTextViewer } from './rich-text/RichTextBlockEditor'
 
 interface StudyBlockEditorProps {
   document: StudyDocument
@@ -26,7 +45,7 @@ const blockTypes: Array<{
 }> = [
   {
     type: 'text',
-    label: 'Текст',
+    label: 'Форматированный текст',
     icon: Type
   },
   {
@@ -56,6 +75,15 @@ export function StudyBlockEditor({
   mode,
   onChange
 }: StudyBlockEditorProps): React.JSX.Element {
+  const [activeBlockId, setActiveBlockId] = useState<string | null>(document.blocks[0]?.id ?? null)
+  const [activeTextEditor, setActiveTextEditor] = useState<Editor | null>(null)
+  const [editorRevision, setEditorRevision] = useState(0)
+
+  const editorsRef = useRef(new Map<string, Editor>())
+
+  const activeBlock =
+    document.blocks.find((block) => block.id === activeBlockId) ?? document.blocks[0] ?? null
+
   if (mode === 'read') {
     return (
       <article className="mx-auto max-w-4xl space-y-5">
@@ -66,78 +94,146 @@ export function StudyBlockEditor({
     )
   }
 
+  function updateBlock(replacement: StudyBlock): void {
+    onChange(replaceStudyBlock(document, replacement.id, replacement))
+  }
+
+  function activateBlock(blockId: string): void {
+    setActiveBlockId(blockId)
+    setActiveTextEditor(editorsRef.current.get(blockId) ?? null)
+  }
+
+  function registerTextEditor(blockId: string, editor: Editor): void {
+    editorsRef.current.set(blockId, editor)
+
+    if (activeBlock?.id === blockId) {
+      setActiveTextEditor(editor)
+    }
+  }
+
   function addBlock(type: StudyBlockType): void {
+    const block = createStudyBlock(type)
+
     onChange({
       ...document,
-      blocks: [...document.blocks, createStudyBlock(type)]
+      blocks: [...document.blocks, block]
     })
+
+    setActiveBlockId(block.id)
+    setActiveTextEditor(null)
+  }
+
+  function deleteBlock(blockId: string): void {
+    editorsRef.current.delete(blockId)
+
+    const currentIndex = document.blocks.findIndex((block) => block.id === blockId)
+    const nextDocument = removeStudyBlock(document, blockId)
+    const nextActiveBlock =
+      nextDocument.blocks[Math.min(currentIndex, nextDocument.blocks.length - 1)] ?? null
+
+    onChange(nextDocument)
+    setActiveBlockId(nextActiveBlock?.id ?? null)
+    setActiveTextEditor(
+      nextActiveBlock ? (editorsRef.current.get(nextActiveBlock.id) ?? null) : null
+    )
   }
 
   return (
-    <div className="mx-auto max-w-4xl">
-      <div className="space-y-3">
-        {document.blocks.map((block, index) => (
-          <StudyBlockCard
-            key={block.id}
-            block={block}
-            isFirst={index === 0}
-            isLast={index === document.blocks.length - 1}
-            onChange={(replacement) => {
-              onChange(replaceStudyBlock(document, block.id, replacement))
-            }}
-            onMove={(direction) => {
-              onChange(moveStudyBlock(document, block.id, direction))
-            }}
-            onDelete={() => {
-              onChange(removeStudyBlock(document, block.id))
-            }}
-          />
-        ))}
+    <div className="mx-auto grid max-w-[1240px] grid-cols-[minmax(0,1fr)_290px] items-start gap-4 max-[1050px]:grid-cols-1">
+      <div className="min-w-0">
+        <div className="space-y-3">
+          {document.blocks.map((block, index) => (
+            <StudyBlockCard
+              key={block.id}
+              block={block}
+              isActive={activeBlock?.id === block.id}
+              isFirst={index === 0}
+              isLast={index === document.blocks.length - 1}
+              onActivate={() => {
+                activateBlock(block.id)
+              }}
+              onTextEditorReady={(editor) => {
+                registerTextEditor(block.id, editor)
+              }}
+              onTextEditorActivate={(editor) => {
+                editorsRef.current.set(block.id, editor)
+                setActiveBlockId(block.id)
+                setActiveTextEditor(editor)
+              }}
+              onTextEditorStateChange={() => {
+                setEditorRevision((current) => current + 1)
+              }}
+              onChange={updateBlock}
+              onMove={(direction) => {
+                onChange(moveStudyBlock(document, block.id, direction))
+              }}
+              onDelete={() => {
+                deleteBlock(block.id)
+              }}
+            />
+          ))}
+        </div>
+
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger asChild>
+            <button
+              type="button"
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[var(--app-border-strong)] py-3 text-sm font-medium text-[var(--app-muted)] transition-colors hover:border-violet-500/40 hover:bg-violet-500/[0.05] hover:text-violet-200"
+            >
+              <Plus aria-hidden="true" className="size-4" />
+              Добавить блок
+            </button>
+          </DropdownMenu.Trigger>
+
+          <DropdownMenu.Portal>
+            <DropdownMenu.Content
+              sideOffset={8}
+              align="center"
+              className="z-50 grid min-w-60 gap-1 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-1.5"
+            >
+              {blockTypes.map((option) => {
+                const Icon = option.icon
+
+                return (
+                  <DropdownMenu.Item
+                    key={option.type}
+                    className="flex cursor-default items-center gap-2 rounded-lg px-3 py-2 text-sm text-[var(--app-text)] outline-none hover:bg-white/[0.06] focus:bg-white/[0.06]"
+                    onSelect={() => {
+                      addBlock(option.type)
+                    }}
+                  >
+                    <Icon aria-hidden="true" className="size-4 text-[var(--app-muted)]" />
+
+                    {option.label}
+                  </DropdownMenu.Item>
+                )
+              })}
+            </DropdownMenu.Content>
+          </DropdownMenu.Portal>
+        </DropdownMenu.Root>
       </div>
 
-      <DropdownMenu.Root>
-        <DropdownMenu.Trigger asChild>
-          <button
-            type="button"
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[var(--app-border-strong)] py-3 text-sm font-medium text-[var(--app-muted)] transition-colors hover:border-violet-500/40 hover:bg-violet-500/[0.05] hover:text-violet-200"
-          >
-            <Plus aria-hidden="true" className="size-4" />
-            Добавить блок
-          </button>
-        </DropdownMenu.Trigger>
-
-        <DropdownMenu.Portal>
-          <DropdownMenu.Content
-            sideOffset={8}
-            align="center"
-            className="z-50 grid min-w-52 gap-1 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-1.5"
-          >
-            {blockTypes.map((option) => {
-              const Icon = option.icon
-
-              return (
-                <DropdownMenu.Item
-                  key={option.type}
-                  className="flex cursor-default items-center gap-2 rounded-lg px-3 py-2 text-sm text-[var(--app-text)] outline-none hover:bg-white/[0.06] focus:bg-white/[0.06]"
-                  onSelect={() => addBlock(option.type)}
-                >
-                  <Icon aria-hidden="true" className="size-4 text-[var(--app-muted)]" />
-
-                  {option.label}
-                </DropdownMenu.Item>
-              )
-            })}
-          </DropdownMenu.Content>
-        </DropdownMenu.Portal>
-      </DropdownMenu.Root>
+      <div className="sticky top-0 max-h-[calc(100vh-150px)] overflow-y-auto pr-1 max-[1050px]:static max-[1050px]:max-h-none">
+        <BlockSettingsPanel
+          block={activeBlock}
+          textEditor={activeBlock?.type === 'text' ? activeTextEditor : null}
+          editorRevision={editorRevision}
+          onChange={updateBlock}
+        />
+      </div>
     </div>
   )
 }
 
 interface StudyBlockCardProps {
   block: StudyBlock
+  isActive: boolean
   isFirst: boolean
   isLast: boolean
+  onActivate: () => void
+  onTextEditorReady: (editor: Editor) => void
+  onTextEditorActivate: (editor: Editor) => void
+  onTextEditorStateChange: () => void
   onChange: (block: StudyBlock) => void
   onMove: (direction: -1 | 1) => void
   onDelete: () => void
@@ -145,14 +241,27 @@ interface StudyBlockCardProps {
 
 function StudyBlockCard({
   block,
+  isActive,
   isFirst,
   isLast,
+  onActivate,
+  onTextEditorReady,
+  onTextEditorActivate,
+  onTextEditorStateChange,
   onChange,
   onMove,
   onDelete
 }: StudyBlockCardProps): React.JSX.Element {
   return (
-    <section className="group rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 transition-colors focus-within:border-violet-500/35">
+    <section
+      className={cn(
+        'group rounded-xl border bg-[var(--app-surface)] p-3 transition-colors',
+        isActive
+          ? 'border-violet-500/40'
+          : 'border-[var(--app-border)] hover:border-[var(--app-border-strong)]'
+      )}
+      onMouseDown={onActivate}
+    >
       <div className="mb-2 flex items-center gap-2">
         <span className="mr-auto text-[11px] font-semibold tracking-[0.08em] text-[var(--app-muted)] uppercase">
           {getBlockLabel(block.type)}
@@ -165,7 +274,7 @@ function StudyBlockCard({
           className="flex size-7 items-center justify-center rounded-md text-[var(--app-muted)] hover:bg-white/[0.06] hover:text-[var(--app-text)] disabled:opacity-25"
           onClick={() => onMove(-1)}
         >
-          <ArrowUp aria-hidden="true" className="size-4" />
+          <ArrowUp className="size-4" />
         </button>
 
         <button
@@ -175,7 +284,7 @@ function StudyBlockCard({
           className="flex size-7 items-center justify-center rounded-md text-[var(--app-muted)] hover:bg-white/[0.06] hover:text-[var(--app-text)] disabled:opacity-25"
           onClick={() => onMove(1)}
         >
-          <ArrowDown aria-hidden="true" className="size-4" />
+          <ArrowDown className="size-4" />
         </button>
 
         <button
@@ -184,11 +293,27 @@ function StudyBlockCard({
           className="flex size-7 items-center justify-center rounded-md text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
           onClick={onDelete}
         >
-          <Trash2 aria-hidden="true" className="size-4" />
+          <Trash2 className="size-4" />
         </button>
       </div>
 
-      <EditableBlock block={block} onChange={onChange} />
+      {block.type === 'text' ? (
+        <RichTextBlockEditor
+          html={getStudyTextBlockHtml(block)}
+          onReady={onTextEditorReady}
+          onActivate={onTextEditorActivate}
+          onStateChange={onTextEditorStateChange}
+          onChange={(html, plainText) => {
+            onChange({
+              ...block,
+              html,
+              text: plainText
+            })
+          }}
+        />
+      ) : (
+        <EditableBlock block={block} onChange={onChange} />
+      )}
     </section>
   )
 }
@@ -197,16 +322,20 @@ function EditableBlock({
   block,
   onChange
 }: {
-  block: StudyBlock
+  block: Exclude<StudyBlock, { type: 'text' }>
   onChange: (block: StudyBlock) => void
 }): React.JSX.Element {
-  if (block.type === 'text') {
+  if (block.type === 'heading') {
+    const className = block.level === 1 ? 'text-3xl' : block.level === 2 ? 'text-2xl' : 'text-xl'
+
     return (
-      <textarea
+      <input
         value={block.text}
-        rows={5}
-        placeholder="Начни писать..."
-        className="w-full resize-y bg-transparent text-sm leading-7 text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60"
+        placeholder="Заголовок"
+        className={cn(
+          'w-full bg-transparent font-semibold tracking-tight text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60',
+          className
+        )}
         onChange={(event) => {
           onChange({
             ...block,
@@ -217,122 +346,68 @@ function EditableBlock({
     )
   }
 
-  if (block.type === 'heading') {
-    return (
-      <div className="grid gap-3 sm:grid-cols-[100px_minmax(0,1fr)]">
-        <select
-          value={block.level}
-          className="rounded-lg border border-[var(--app-border)] bg-[var(--app-surface-raised)] px-3 py-2 text-sm outline-none"
-          onChange={(event) => {
-            onChange({
-              ...block,
-              level: Number(event.target.value) as 1 | 2 | 3
-            })
-          }}
-        >
-          <option value={1}>H1</option>
-          <option value={2}>H2</option>
-          <option value={3}>H3</option>
-        </select>
-
-        <input
-          value={block.text}
-          placeholder="Заголовок"
-          className="min-w-0 bg-transparent text-lg font-semibold text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60"
-          onChange={(event) => {
-            onChange({
-              ...block,
-              text: event.target.value
-            })
-          }}
-        />
-      </div>
-    )
-  }
-
   if (block.type === 'code') {
     return (
-      <div className="space-y-3">
-        <input
-          value={block.language}
-          placeholder="Язык"
-          className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-surface-raised)] px-3 py-2 text-sm outline-none"
-          onChange={(event) => {
-            onChange({
-              ...block,
-              language: event.target.value
-            })
-          }}
-        />
-
-        <textarea
-          value={block.source}
-          rows={8}
-          spellCheck={false}
-          placeholder="Код..."
-          className="w-full resize-y rounded-lg bg-[#090a0c] p-4 font-mono text-sm leading-6 text-zinc-200 outline-none"
-          onChange={(event) => {
-            onChange({
-              ...block,
-              source: event.target.value
-            })
-          }}
-        />
-      </div>
+      <textarea
+        value={block.source}
+        rows={10}
+        spellCheck={false}
+        placeholder="Код…"
+        className="w-full resize-y rounded-lg bg-[#090a0c] p-4 font-mono text-sm leading-6 text-zinc-200 outline-none placeholder:text-zinc-600"
+        onChange={(event) => {
+          onChange({
+            ...block,
+            source: event.target.value
+          })
+        }}
+      />
     )
   }
 
   if (block.type === 'link') {
     return (
-      <div className="grid gap-3">
-        <input
-          value={block.title}
-          placeholder="Название ссылки"
-          className="w-full rounded-lg border border-[var(--app-border)] bg-transparent px-3 py-2 text-sm outline-none"
-          onChange={(event) => {
-            onChange({
-              ...block,
-              title: event.target.value
-            })
-          }}
-        />
+      <div className="flex min-h-24 items-center justify-center rounded-lg border border-dashed border-[var(--app-border)] p-4">
+        <div className="text-center">
+          <ExternalLink className="mx-auto size-5 text-violet-300" />
 
-        <input
-          value={block.url}
-          placeholder="https://..."
-          className="w-full rounded-lg border border-[var(--app-border)] bg-transparent px-3 py-2 text-sm outline-none"
-          onChange={(event) => {
-            onChange({
-              ...block,
-              url: event.target.value
-            })
-          }}
-        />
+          <p className="mt-2 text-sm font-medium text-[var(--app-text)]">
+            {block.title || 'Ссылка без названия'}
+          </p>
+
+          <p className="mt-1 max-w-md truncate text-xs text-[var(--app-muted)]">
+            {block.url || 'Укажи адрес в настройках справа'}
+          </p>
+        </div>
       </div>
     )
   }
 
+  const thickness = block.thickness ?? DEFAULT_DIVIDER_THICKNESS
+  const color = block.color ?? DEFAULT_DIVIDER_COLOR
+
   return (
-    <div className="py-4">
-      <div className="h-px bg-[var(--app-border-strong)]" />
+    <div className="py-8">
+      <div
+        className="w-full rounded-full"
+        style={{
+          height: `${thickness}px`,
+          backgroundColor: color
+        }}
+      />
     </div>
   )
 }
 
 function StudyBlockReader({ block }: { block: StudyBlock }): React.JSX.Element {
   if (block.type === 'text') {
-    return (
-      <p className="text-[15px] leading-7 whitespace-pre-wrap text-zinc-300">
-        {block.text || 'Пустой текстовый блок'}
-      </p>
-    )
+    return <RichTextViewer html={getStudyTextBlockHtml(block)} plainText={block.text} />
   }
 
   if (block.type === 'heading') {
     const className = block.level === 1 ? 'text-3xl' : block.level === 2 ? 'text-2xl' : 'text-xl'
 
     return (
-      <h2 className={`${className} font-semibold tracking-tight text-[var(--app-text)]`}>
+      <h2 className={cn('font-semibold tracking-tight text-[var(--app-text)]', className)}>
         {block.text || 'Без заголовка'}
       </h2>
     )
@@ -340,19 +415,27 @@ function StudyBlockReader({ block }: { block: StudyBlock }): React.JSX.Element {
 
   if (block.type === 'code') {
     return (
-      <pre className="overflow-x-auto rounded-xl border border-[var(--app-border)] bg-[#090a0c] p-4 font-mono text-sm leading-6 text-zinc-200">
-        <code>{block.source}</code>
-      </pre>
+      <div>
+        <p className="mb-2 text-xs font-medium text-[var(--app-muted)]">
+          {block.language || 'text'}
+        </p>
+
+        <pre className="overflow-x-auto rounded-xl border border-[var(--app-border)] bg-[#090a0c] p-4 font-mono text-sm leading-6 text-zinc-200">
+          <code>{block.source}</code>
+        </pre>
+      </div>
     )
   }
 
   if (block.type === 'link') {
     return (
       <a
-        href={block.url}
-        className="inline-flex items-center gap-2 text-sm font-medium text-violet-300 hover:underline"
+        href={normalizeExternalHref(block.url)}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-2 rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-4 py-3 text-sm font-medium text-violet-300 hover:border-violet-500/35 hover:bg-violet-500/[0.05]"
       >
-        <Link2 aria-hidden="true" className="size-4" />
+        <Link2 className="size-4" />
 
         {block.title || block.url || 'Пустая ссылка'}
       </a>
@@ -361,9 +444,25 @@ function StudyBlockReader({ block }: { block: StudyBlock }): React.JSX.Element {
 
   return (
     <div className="py-4">
-      <div className="h-px bg-[var(--app-border-strong)]" />
+      <div
+        className="w-full rounded-full"
+        style={{
+          height: `${block.thickness ?? DEFAULT_DIVIDER_THICKNESS}px`,
+          backgroundColor: block.color ?? DEFAULT_DIVIDER_COLOR
+        }}
+      />
     </div>
   )
+}
+
+function normalizeExternalHref(value: string): string {
+  const trimmed = value.trim()
+
+  if (!trimmed) {
+    return '#'
+  }
+
+  return /^[a-z][a-z\d+.-]*:/i.test(trimmed) ? trimmed : `https://${trimmed}`
 }
 
 function getBlockLabel(type: StudyBlockType): string {

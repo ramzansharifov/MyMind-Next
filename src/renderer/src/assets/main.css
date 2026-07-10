@@ -66,3 +66,66 @@ button {
   color: #ffffff;
   background: rgb(124 58 237 / 45%);
 }
+.mymind-rich-text-editor {
+  min-height: 8rem;
+  color: var(--app-text);
+  font-size: 0.9375rem;
+  line-height: 1.75;
+  outline: none;
+}
+
+.mymind-rich-text-editor > * + * {
+  margin-top: 0.75rem;
+}
+
+.mymind-rich-text-editor p {
+  min-height: 1.75rem;
+}
+
+.mymind-rich-text-editor p.is-editor-empty:first-child::before {
+  float: left;
+  height: 0;
+  color: var(--app-muted);
+  pointer-events: none;
+  content: attr(data-placeholder);
+  opacity: 0.65;
+}
+
+.mymind-rich-text-editor ul {
+  padding-left: 1.5rem;
+  list-style: disc;
+}
+
+.mymind-rich-text-editor ol {
+  padding-left: 1.5rem;
+  list-style: decimal;
+}
+
+.mymind-rich-text-editor li + li {
+  margin-top: 0.25rem;
+}
+
+.mymind-rich-text-editor blockquote {
+  padding-left: 1rem;
+  color: var(--app-muted);
+  border-left: 2px solid var(--app-border-strong);
+}
+
+.mymind-rich-text-editor code {
+  padding: 0.125rem 0.375rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.9em;
+  background: #090a0c;
+  border: 1px solid var(--app-border);
+  border-radius: 0.375rem;
+}
+
+.mymind-rich-text-editor a {
+  color: #a78bfa;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.mymind-rich-text-viewer {
+  min-height: 0;
+}

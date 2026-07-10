@@ -5,7 +5,8 @@ export const studyNodeTypeSchema = z.enum(['folder', 'material'])
 export const studyTextBlockSchema = z.object({
   id: z.string().min(1),
   type: z.literal('text'),
-  text: z.string()
+  text: z.string(),
+  html: z.string().optional()
 })
 
 export const studyHeadingBlockSchema = z.object({
@@ -24,7 +25,12 @@ export const studyCodeBlockSchema = z.object({
 
 export const studyDividerBlockSchema = z.object({
   id: z.string().min(1),
-  type: z.literal('divider')
+  type: z.literal('divider'),
+  thickness: z.number().int().min(1).max(12).optional(),
+  color: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/)
+    .optional()
 })
 
 export const studyLinkBlockSchema = z.object({
