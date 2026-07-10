@@ -120,6 +120,27 @@ button {
 .mymind-rich-text-editor li > p {
   min-height: auto;
 }
+.mymind-rich-text-editor li > ul,
+.mymind-rich-text-editor li > ol {
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.mymind-rich-text-editor ul ul {
+  list-style-type: circle;
+}
+
+.mymind-rich-text-editor ul ul ul {
+  list-style-type: square;
+}
+
+.mymind-rich-text-editor ol ol {
+  list-style-type: lower-alpha;
+}
+
+.mymind-rich-text-editor ol ol ol {
+  list-style-type: lower-roman;
+}
 
 .mymind-rich-text-editor blockquote {
   padding: 0.25rem 0 0.25rem 1rem;

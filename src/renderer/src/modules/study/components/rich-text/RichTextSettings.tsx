@@ -10,6 +10,8 @@ import {
   AlignRight,
   Bold,
   Code2,
+  IndentDecrease,
+  IndentIncrease,
   Italic,
   Link2,
   List,
@@ -42,6 +44,8 @@ interface EditorFormattingState {
   code: boolean
   bulletList: boolean
   orderedList: boolean
+  canIndentListItem: boolean
+  canOutdentListItem: boolean
   alignment: TextAlignment
   fontSize: string
   color: string
@@ -66,6 +70,8 @@ const defaultEditorState: EditorFormattingState = {
   code: false,
   bulletList: false,
   orderedList: false,
+  canIndentListItem: false,
+  canOutdentListItem: false,
   alignment: 'left',
   fontSize: 'default',
   color: '#f2f3f5',
@@ -151,6 +157,12 @@ function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.El
           code: currentEditor.isActive('code'),
           bulletList: currentEditor.isActive('bulletList'),
           orderedList: currentEditor.isActive('orderedList'),
+          canIndentListItem: canRunEditorCommand(currentEditor, (candidate) =>
+            candidate.can().chain().sinkListItem().run()
+          ),
+          canOutdentListItem: canRunEditorCommand(currentEditor, (candidate) =>
+            candidate.can().chain().liftListItem().run()
+          ),
           alignment: getTextAlignment(paragraph.textAlign),
           fontSize: typeof textStyle.fontSize === 'string' ? textStyle.fontSize : 'default',
           color: normalizeColor(textStyle.color, '#f2f3f5'),
@@ -437,7 +449,7 @@ function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.El
           <ToggleGroup.Root
             type="single"
             value={editorState.bulletList ? 'bullet' : editorState.orderedList ? 'ordered' : ''}
-            aria-label="Списки"
+            aria-label="Тип списка"
             className="flex flex-wrap gap-2"
             onValueChange={(value) => {
               if (!value) {
@@ -459,14 +471,34 @@ function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.El
               }
             }}
           >
-            <ToolbarToggle value="bullet" label="Маркированный">
+            <ToolbarToggle value="bullet" label="Маркированный список">
               <List className="size-4" />
             </ToolbarToggle>
 
-            <ToolbarToggle value="ordered" label="Нумерованный">
+            <ToolbarToggle value="ordered" label="Нумерованный список">
               <ListOrdered className="size-4" />
             </ToolbarToggle>
           </ToggleGroup.Root>
+
+          <ToolbarButton
+            label="Увеличить вложенность — Tab"
+            disabled={!editorState.canIndentListItem}
+            onClick={() => {
+              createCommandChain()?.sinkListItem().run()
+            }}
+          >
+            <IndentIncrease className="size-4" />
+          </ToolbarButton>
+
+          <ToolbarButton
+            label="Уменьшить вложенность — Shift+Tab"
+            disabled={!editorState.canOutdentListItem}
+            onClick={() => {
+              createCommandChain()?.liftListItem().run()
+            }}
+          >
+            <IndentDecrease className="size-4" />
+          </ToolbarButton>
         </SettingsSection>
 
         <SettingsSection title="Выравнивание">
