@@ -346,77 +346,138 @@ function StudyBlockCard({
   onDuplicate,
   onDelete
 }: StudyBlockCardProps): React.JSX.Element {
+  const [open, setOpen] = useState(true)
+  const blockLabel = getBlockLabel(block.type)
+
   return (
-    <section
-      className={cn(
-        'group rounded-xl border bg-[var(--app-surface)] p-3 transition-colors',
-        isActive
-          ? 'border-violet-500/40'
-          : 'border-[var(--app-border)] hover:border-[var(--app-border-strong)]'
-      )}
-      onMouseDown={onActivate}
+    <Collapsible.Root
+      open={open}
+      onOpenChange={setOpen}
+      asChild
     >
-      <div className="mb-2 flex items-center gap-2">
-        <span className="mr-auto text-[11px] font-semibold tracking-[0.08em] text-[var(--app-muted)] uppercase">
-          {getBlockLabel(block.type)}
-        </span>
-
-        <button
-          type="button"
-          aria-label="Переместить блок вверх"
-          disabled={isFirst}
-          className="flex size-7 items-center justify-center rounded-md text-[var(--app-muted)] hover:bg-white/[0.06] hover:text-[var(--app-text)] disabled:opacity-25"
-          onClick={() => onMove(-1)}
+      <section
+        className={cn(
+          'group rounded-xl border bg-[var(--app-surface)] p-3 transition-colors',
+          isActive
+            ? 'border-violet-500/40'
+            : 'border-[var(--app-border)] hover:border-[var(--app-border-strong)]'
+        )}
+        onMouseDown={onActivate}
+      >
+        <div
+          className={cn(
+            'flex items-center gap-2',
+            open && 'mb-2'
+          )}
         >
-          <ArrowUp aria-hidden="true" className="size-4" />
-        </button>
+          <Collapsible.Trigger asChild>
+            <button
+              type="button"
+              aria-label={
+                open
+                  ? `Свернуть блок «${blockLabel}»`
+                  : `Развернуть блок «${blockLabel}»`
+              }
+              className={cn(
+                'flex size-7 shrink-0 items-center justify-center rounded-md',
+                'text-[var(--app-muted)] outline-none',
+                'transition-colors',
+                'hover:bg-white/[0.06] hover:text-[var(--app-text)]',
+                'focus-visible:ring-2 focus-visible:ring-violet-500/35'
+              )}
+            >
+              <ChevronRight
+                aria-hidden="true"
+                className={cn(
+                  'size-4 transition-transform duration-200 ease-out',
+                  open && 'rotate-90'
+                )}
+              />
+            </button>
+          </Collapsible.Trigger>
 
-        <button
-          type="button"
-          aria-label="Переместить блок вниз"
-          disabled={isLast}
-          className="flex size-7 items-center justify-center rounded-md text-[var(--app-muted)] hover:bg-white/[0.06] hover:text-[var(--app-text)] disabled:opacity-25"
-          onClick={() => onMove(1)}
-        >
-          <ArrowDown aria-hidden="true" className="size-4" />
-        </button>
+          <span className="mr-auto text-[11px] font-semibold tracking-[0.08em] text-[var(--app-muted)] uppercase">
+            {blockLabel}
+          </span>
 
-        <button
-          type="button"
-          aria-label="Дублировать блок"
-          className="flex size-7 items-center justify-center rounded-md text-[var(--app-muted)] hover:bg-white/[0.06] hover:text-[var(--app-text)]"
-          onClick={onDuplicate}
-        >
-          <CopyPlus aria-hidden="true" className="size-4" />
-        </button>
-        <button
-          type="button"
-          aria-label="Удалить блок"
-          className="flex size-7 items-center justify-center rounded-md text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
-          onClick={onDelete}
-        >
-          <Trash2 aria-hidden="true" className="size-4" />
-        </button>
-      </div>
+          <button
+            type="button"
+            aria-label="Переместить блок вверх"
+            disabled={isFirst}
+            className="flex size-7 items-center justify-center rounded-md text-[var(--app-muted)] hover:bg-white/[0.06] hover:text-[var(--app-text)] disabled:opacity-25"
+            onClick={() => onMove(-1)}
+          >
+            <ArrowUp
+              aria-hidden="true"
+              className="size-4"
+            />
+          </button>
 
-      {block.type === 'text' ? (
-        <RichTextBlockEditor
-          html={getStudyTextBlockHtml(block)}
-          onReady={onTextEditorReady}
-          onActivate={onTextEditorActivate}
-          onDispose={onTextEditorDispose}
-          onChange={(html, plainText) => {
-            onChange({
-              ...block,
-              html,
-              text: plainText
-            })
-          }}
-        />
-      ) : (
-        <EditableBlock block={block} onChange={onChange} />
-      )}
-    </section>
+          <button
+            type="button"
+            aria-label="Переместить блок вниз"
+            disabled={isLast}
+            className="flex size-7 items-center justify-center rounded-md text-[var(--app-muted)] hover:bg-white/[0.06] hover:text-[var(--app-text)] disabled:opacity-25"
+            onClick={() => onMove(1)}
+          >
+            <ArrowDown
+              aria-hidden="true"
+              className="size-4"
+            />
+          </button>
+
+          <button
+            type="button"
+            aria-label="Дублировать блок"
+            className="flex size-7 items-center justify-center rounded-md text-[var(--app-muted)] hover:bg-white/[0.06] hover:text-[var(--app-text)]"
+            onClick={onDuplicate}
+          >
+            <CopyPlus
+              aria-hidden="true"
+              className="size-4"
+            />
+          </button>
+
+          <button
+            type="button"
+            aria-label="Удалить блок"
+            className="flex size-7 items-center justify-center rounded-md text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
+            onClick={onDelete}
+          >
+            <Trash2
+              aria-hidden="true"
+              className="size-4"
+            />
+          </button>
+        </div>
+
+        <Collapsible.Content
+          forceMount
+          className="data-[state=closed]:hidden"
+        >
+          {block.type === 'text' ? (
+            <RichTextBlockEditor
+              html={getStudyTextBlockHtml(block)}
+              onReady={onTextEditorReady}
+              onActivate={onTextEditorActivate}
+              onDispose={onTextEditorDispose}
+              onChange={(html, plainText) => {
+                onChange({
+                  ...block,
+                  html,
+                  text: plainText
+                })
+              }}
+            />
+          ) : (
+            <EditableBlock
+              block={block}
+              onChange={onChange}
+            />
+          )}
+        </Collapsible.Content>
+      </section>
+    </Collapsible.Root>
   )
 }
 
