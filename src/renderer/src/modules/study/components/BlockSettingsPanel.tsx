@@ -1,7 +1,7 @@
 import type { Editor } from '@tiptap/core'
 import * as Separator from '@radix-ui/react-separator'
 import * as Slider from '@radix-ui/react-slider'
-import { Code2, Heading, Link2, Minus, Settings2, Type } from 'lucide-react'
+import { Code2, Heading, Minus, Settings2, Type } from 'lucide-react'
 
 import type { StudyBlock } from '../../../../../shared/contracts/study'
 import {
@@ -87,8 +87,6 @@ export function BlockSettingsPanel({
         {block.type === 'heading' && <HeadingSettings block={block} onChange={onChange} />}
 
         {block.type === 'code' && <CodeSettings block={block} onChange={onChange} />}
-
-        {block.type === 'link' && <LinkSettings block={block} onChange={onChange} />}
 
         {block.type === 'divider' && <DividerSettings block={block} onChange={onChange} />}
       </div>
@@ -196,52 +194,6 @@ function CodeSettings({
   )
 }
 
-function LinkSettings({
-  block,
-  onChange
-}: {
-  block: Extract<StudyBlock, { type: 'link' }>
-  onChange: (block: StudyBlock) => void
-}): React.JSX.Element {
-  const linkStatus = validateExternalUrl(block.url)
-
-  return (
-    <div className="grid gap-4">
-      <SettingsField label="Название">
-        <input
-          value={block.title}
-          placeholder="Название"
-          className="h-10 rounded-lg border border-(--app-border) bg-(--app-workspace) px-3 text-sm text-(--app-text) outline-none placeholder:text-(--app-muted)/60 focus:border-violet-500/50"
-          onChange={(event) => {
-            onChange({
-              ...block,
-              title: event.target.value
-            })
-          }}
-        />
-      </SettingsField>
-
-      <SettingsField label="URL">
-        <input
-          value={block.url}
-          placeholder="https://example.com"
-          className="h-10 rounded-lg border border-(--app-border) bg-(--app-workspace) px-3 text-sm text-(--app-text) outline-none placeholder:text-(--app-muted)/60 focus:border-violet-500/50"
-          onChange={(event) => {
-            onChange({
-              ...block,
-              url: event.target.value
-            })
-          }}
-        />
-
-        {block.url.trim() && !linkStatus && (
-          <p className="text-xs leading-5 text-red-300">Неверная ссылка</p>
-        )}
-      </SettingsField>
-    </div>
-  )
-}
-
 function DividerSettings({
   block,
   onChange
@@ -326,10 +278,6 @@ function BlockTypeIcon({ type }: { type: StudyBlock['type'] }): React.JSX.Elemen
     return <Code2 aria-hidden="true" className="size-4" />
   }
 
-  if (type === 'link') {
-    return <Link2 aria-hidden="true" className="size-4" />
-  }
-
   if (type === 'divider') {
     return <Minus aria-hidden="true" className="size-4" />
   }
@@ -346,31 +294,9 @@ function getBlockTitle(block: StudyBlock): string {
     return 'Код'
   }
 
-  if (block.type === 'link') {
-    return 'Ссылка'
-  }
-
   if (block.type === 'divider') {
     return 'Разделитель'
   }
 
   return 'Форматированный текст'
-}
-
-function validateExternalUrl(value: string): string | null {
-  const trimmed = value.trim()
-
-  if (!trimmed) {
-    return null
-  }
-
-  const candidate = /^[a-z][a-z\d+.-]*:/i.test(trimmed) ? trimmed : `https://${trimmed}`
-
-  try {
-    const url = new URL(candidate)
-
-    return ['http:', 'https:', 'mailto:'].includes(url.protocol) ? url.href : null
-  } catch {
-    return null
-  }
 }

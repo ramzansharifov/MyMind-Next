@@ -8,9 +8,7 @@ import {
   ChevronRight,
   Code2,
   CopyPlus,
-  ExternalLink,
   Heading,
-  Link2,
   Minus,
   Plus,
   Trash2,
@@ -456,31 +454,6 @@ function EditableBlock({
     )
   }
 
-  if (block.type === 'link') {
-    const href = normalizeExternalHref(block.url)
-
-    return (
-      <div className="flex min-h-24 items-center justify-center rounded-lg border border-dashed border-[var(--app-border)] p-4">
-        <div className="min-w-0 text-center">
-          <ExternalLink aria-hidden="true" className="mx-auto size-5 text-violet-300" />
-
-          <p className="mt-2 truncate text-sm font-medium text-[var(--app-text)]">
-            {block.title || 'Ссылка без названия'}
-          </p>
-
-          <p
-            className={cn(
-              'mt-1 max-w-md truncate text-xs',
-              href ? 'text-[var(--app-muted)]' : 'text-red-300'
-            )}
-          >
-            {block.url || 'Укажи адрес в настройках'}
-          </p>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="py-8">
       <Separator.Root
@@ -713,33 +686,6 @@ function StudyBlockReader({ block }: { block: StudyBlock }): React.JSX.Element {
     return <StudyCodeBlock mode="read" source={block.source} language={block.language} />
   }
 
-  if (block.type === 'link') {
-    const href = normalizeExternalHref(block.url)
-
-    if (!href) {
-      return (
-        <div className="inline-flex items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/[0.05] px-4 py-3 text-sm text-red-300">
-          <ExternalLink aria-hidden="true" className="size-4" />
-
-          {block.url.trim() ? 'Некорректная или небезопасная ссылка' : 'Пустая ссылка'}
-        </div>
-      )
-    }
-
-    return (
-      <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center gap-2 rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-4 py-3 text-sm font-medium text-violet-300 transition-colors hover:border-violet-500/35 hover:bg-violet-500/[0.05]"
-      >
-        <ExternalLink aria-hidden="true" className="size-4" />
-
-        {block.title || block.url}
-      </a>
-    )
-  }
-
   return (
     <div className="py-4">
       <Separator.Root
@@ -755,24 +701,6 @@ function StudyBlockReader({ block }: { block: StudyBlock }): React.JSX.Element {
   )
 }
 
-function normalizeExternalHref(value: string): string | null {
-  const trimmed = value.trim()
-
-  if (!trimmed) {
-    return null
-  }
-
-  const candidate = /^[a-z][a-z\d+.-]*:/i.test(trimmed) ? trimmed : `https://${trimmed}`
-
-  try {
-    const url = new URL(candidate)
-
-    return ['http:', 'https:', 'mailto:'].includes(url.protocol) ? url.href : null
-  } catch {
-    return null
-  }
-}
-
 function StudyBlockTypeIcon({
   type,
   className
@@ -786,10 +714,6 @@ function StudyBlockTypeIcon({
 
   if (type === 'code') {
     return <Code2 aria-hidden="true" className={className} />
-  }
-
-  if (type === 'link') {
-    return <Link2 aria-hidden="true" className={className} />
   }
 
   if (type === 'divider') {

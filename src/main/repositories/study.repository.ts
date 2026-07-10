@@ -46,10 +46,6 @@ function documentToPlainText(document: StudyDocument): string {
         return block.source
       }
 
-      if (block.type === 'link') {
-        return [block.title, block.url].filter(Boolean).join(' ')
-      }
-
       return ''
     })
     .filter(Boolean)

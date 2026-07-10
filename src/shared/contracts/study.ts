@@ -32,15 +32,7 @@ export interface StudyDividerBlock {
   color?: string
 }
 
-export interface StudyLinkBlock {
-  id: string
-  type: 'link'
-  title: string
-  url: string
-}
-
-export type StudyBlock =
-  StudyTextBlock | StudyHeadingBlock | StudyCodeBlock | StudyDividerBlock | StudyLinkBlock
+export type StudyBlock = StudyTextBlock | StudyHeadingBlock | StudyCodeBlock | StudyDividerBlock
 
 export interface StudyDocument {
   version: 1

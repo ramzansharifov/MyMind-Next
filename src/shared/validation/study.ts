@@ -41,19 +41,11 @@ export const studyDividerBlockSchema = z.object({
     .optional()
 })
 
-export const studyLinkBlockSchema = z.object({
-  id: z.string().min(1),
-  type: z.literal('link'),
-  title: z.string(),
-  url: z.string()
-})
-
 export const studyBlockSchema = z.discriminatedUnion('type', [
   studyTextBlockSchema,
   studyHeadingBlockSchema,
   studyCodeBlockSchema,
-  studyDividerBlockSchema,
-  studyLinkBlockSchema
+  studyDividerBlockSchema
 ])
 
 export const studyDocumentSchema = z.object({

@@ -72,65 +72,6 @@ export function cloneStudyBlock(block: StudyBlock): StudyBlock {
   }
 }
 
-export interface NormalizeStudyDocumentResult {
-  document: StudyDocument
-  changed: boolean
-}
-
-export function normalizeStudyDocument(document: StudyDocument): NormalizeStudyDocumentResult {
-  let changed = false
-
-  const blocks = document.blocks.map((block): StudyBlock => {
-    if (block.type !== 'link') {
-      return block
-    }
-
-    changed = true
-
-    const label = block.title.trim() || block.url.trim() || 'Ссылка'
-
-    const href = normalizeEmbeddedLinkHref(block.url)
-
-    return {
-      id: block.id,
-      type: 'text',
-      text: label,
-      html: href
-        ? `<p><a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(
-            label
-          )}</a></p>`
-        : `<p>${escapeHtml(label)}</p>`
-    }
-  })
-
-  return {
-    document: changed
-      ? {
-          ...document,
-          blocks
-        }
-      : document,
-    changed
-  }
-}
-
-function normalizeEmbeddedLinkHref(value: string): string | null {
-  const trimmed = value.trim()
-
-  if (!trimmed) {
-    return null
-  }
-
-  const candidate = /^[a-z][a-z\d+.-]*:/i.test(trimmed) ? trimmed : `https://${trimmed}`
-
-  try {
-    const url = new URL(candidate)
-
-    return ['http:', 'https:', 'mailto:'].includes(url.protocol) ? url.href : null
-  } catch {
-    return null
-  }
-}
 export function createEmptyStudyDocument(): StudyDocument {
   return {
     version: 1,
