@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import App from './App'
 
@@ -28,6 +28,9 @@ describe('App shell', () => {
         }
       }
     })
+  })
+  afterEach(() => {
+    Reflect.deleteProperty(window, 'api')
   })
 
   it('shows the study module by default', () => {
