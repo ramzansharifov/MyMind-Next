@@ -201,7 +201,7 @@ export function BlockSettingsPanel({
 }: BlockSettingsPanelProps): React.JSX.Element {
   if (!block) {
     return (
-      <aside className="w-full min-w-0 max-w-full rounded-xl border border-(--app-border) bg-(--app-surface) p-4">
+      <aside className="w-full max-w-full min-w-0 rounded-xl border border-(--app-border) bg-(--app-surface) p-4">
         <div className="flex items-center gap-2 text-sm font-medium text-(--app-text)">
           <Settings2 aria-hidden="true" className="size-4 text-violet-300" />
           Настройки
@@ -213,7 +213,7 @@ export function BlockSettingsPanel({
   }
 
   return (
-    <aside className="flex max-h-[calc(100vh-150px)] w-full min-w-0 max-w-full flex-col overflow-hidden rounded-xl border border-(--app-border) bg-(--app-surface) max-[1180px]:max-h-none">
+    <aside className="flex max-h-[calc(100vh-150px)] w-full max-w-full min-w-0 flex-col overflow-hidden rounded-xl border border-(--app-border) bg-(--app-surface) max-[1180px]:max-h-none">
       <header className="flex shrink-0 items-center gap-3 border-b border-(--app-border) px-4 py-3.5">
         <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-300">
           <BlockTypeIcon type={block.type} />
@@ -227,13 +227,11 @@ export function BlockSettingsPanel({
             {getBlockTitle(block)}
           </p>
 
-          <p className="mt-0.5 text-[11px] text-(--app-muted)">
-            Настройки блока
-          </p>
+          <p className="mt-0.5 text-[11px] text-(--app-muted)">Настройки блока</p>
         </div>
       </header>
 
-      <div className="min-h-0 min-w-0 overflow-x-hidden overflow-y-auto overscroll-contain p-4 [scrollbar-gutter:stable] max-[1180px]:overflow-visible max-[640px]:p-3">
+      <div className="min-h-0 min-w-0 [scrollbar-gutter:stable] overflow-x-hidden overflow-y-auto overscroll-contain p-4 max-[1180px]:overflow-visible max-[640px]:p-3">
         {block.type === 'text' && <RichTextSettings key={block.id} editor={textEditor} />}
 
         {block.type === 'heading' && <HeadingSettings block={block} onChange={onChange} />}
@@ -767,7 +765,7 @@ function AttachmentSettings({
         <div className="grid min-w-0 gap-2">
           <span className="text-[11px] font-medium text-(--app-muted)">Прямая HTTPS-ссылка</span>
 
-          <label className="flex min-h-10 w-full min-w-0 max-w-full items-center gap-2 overflow-hidden rounded-lg border border-(--app-border) bg-(--app-workspace) px-3 focus-within:border-violet-500/45">
+          <label className="flex min-h-10 w-full max-w-full min-w-0 items-center gap-2 overflow-hidden rounded-lg border border-(--app-border) bg-(--app-workspace) px-3 focus-within:border-violet-500/45">
             <Link2 aria-hidden="true" className="size-4 shrink-0 text-(--app-muted)" />
 
             <input
@@ -804,7 +802,7 @@ function AttachmentSettings({
         <input
           value={block.title ?? ''}
           placeholder="Необязательное название"
-          className="w-full min-w-0 max-w-full rounded-lg border border-(--app-border) bg-(--app-workspace) px-3 py-2 text-sm text-(--app-text) outline-none placeholder:text-(--app-muted)/60 focus:border-violet-500/45"
+          className="w-full max-w-full min-w-0 rounded-lg border border-(--app-border) bg-(--app-workspace) px-3 py-2 text-sm text-(--app-text) outline-none placeholder:text-(--app-muted)/60 focus:border-violet-500/45"
           onChange={(event) => {
             onChange({
               ...block,
@@ -820,7 +818,7 @@ function AttachmentSettings({
             <input
               value={block.altText ?? ''}
               placeholder="Что изображено на фотографии"
-              className="w-full min-w-0 max-w-full rounded-lg border border-(--app-border) bg-(--app-workspace) px-3 py-2 text-sm text-(--app-text) outline-none placeholder:text-(--app-muted)/60 focus:border-violet-500/45"
+              className="w-full max-w-full min-w-0 rounded-lg border border-(--app-border) bg-(--app-workspace) px-3 py-2 text-sm text-(--app-text) outline-none placeholder:text-(--app-muted)/60 focus:border-violet-500/45"
               onChange={(event) => {
                 onChange({
                   ...block,
@@ -885,7 +883,7 @@ function AttachmentSettings({
           value={block.caption ?? ''}
           rows={3}
           placeholder="Необязательная подпись или пояснение"
-          className="w-full min-w-0 max-w-full resize-y rounded-lg border border-(--app-border) bg-(--app-workspace) px-3 py-2 text-sm leading-6 text-(--app-text) outline-none placeholder:text-(--app-muted)/60 focus:border-violet-500/45"
+          className="w-full max-w-full min-w-0 resize-y rounded-lg border border-(--app-border) bg-(--app-workspace) px-3 py-2 text-sm leading-6 text-(--app-text) outline-none placeholder:text-(--app-muted)/60 focus:border-violet-500/45"
           onChange={(event) => {
             onChange({
               ...block,

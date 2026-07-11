@@ -179,9 +179,7 @@ export function StudyFileBlockView({ block }: StudyFileBlockViewProps): React.JS
           setFailedSourceKey(null)
         }}
         onError={() => {
-          setFailedSourceKey(
-            sourceKey
-          )
+          setFailedSourceKey(sourceKey)
         }}
       />
 

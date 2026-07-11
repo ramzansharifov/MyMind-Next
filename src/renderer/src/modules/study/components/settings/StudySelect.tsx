@@ -38,10 +38,7 @@ export function StudySelect({
           'disabled:cursor-not-allowed disabled:opacity-45'
         )}
       >
-        <Select.Value
-          placeholder={placeholder}
-          className="min-w-0 flex-1 truncate text-left"
-        />
+        <Select.Value placeholder={placeholder} className="min-w-0 flex-1 truncate text-left" />
 
         <Select.Icon asChild>
           <ChevronDown aria-hidden="true" className="size-4 shrink-0 text-(--app-muted)" />

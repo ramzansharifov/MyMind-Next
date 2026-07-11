@@ -62,10 +62,7 @@ export function ColorPicker({
             {value.toUpperCase()}
           </span>
 
-          <Palette
-            aria-hidden="true"
-            className="size-4 shrink-0 text-(--app-muted)"
-          />
+          <Palette aria-hidden="true" className="size-4 shrink-0 text-(--app-muted)" />
         </button>
       </Popover.Trigger>
 

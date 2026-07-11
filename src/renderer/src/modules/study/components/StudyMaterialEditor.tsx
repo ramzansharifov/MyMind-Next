@@ -189,7 +189,13 @@ export function StudyMaterialEditor({ node }: StudyMaterialEditorProps): React.J
         </Tabs.Root>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
+      <div
+        className={
+          mode === 'read'
+            ? 'min-h-0 flex-1 overflow-y-auto bg-[#0b0c10] px-6 py-8 max-[640px]:px-3 max-[640px]:py-4'
+            : 'min-h-0 flex-1 overflow-y-auto px-6 py-6'
+        }
+      >
         <StudyBlockEditor
           materialId={node.id}
           document={document}

@@ -59,9 +59,7 @@ export function SegmentedChoice({
             'disabled:cursor-not-allowed disabled:opacity-40'
           )}
         >
-          <span className="min-w-0 truncate">
-            {option.label}
-          </span>
+          <span className="min-w-0 truncate">{option.label}</span>
         </ToggleGroup.Item>
       ))}
     </ToggleGroup.Root>

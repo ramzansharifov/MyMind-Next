@@ -559,12 +559,8 @@ function EditableBlock({
         )}
         style={{
           ...typography,
-          color:
-            block.color ??
-            DEFAULT_HEADING_COLOR,
-          backgroundColor:
-            block.backgroundColor ??
-            'transparent'
+          color: block.color ?? DEFAULT_HEADING_COLOR,
+          backgroundColor: block.backgroundColor ?? 'transparent'
         }}
         onChange={(event) => {
           onChange({
@@ -702,11 +698,16 @@ function ReadOnlyStudyDocument({ document }: { document: StudyDocument }): React
   const outline = buildStudyReadOutline(document.blocks)
 
   return (
-    <article className="mx-auto max-w-4xl space-y-6">
-      {outline.map((node) => (
-        <StudyReadNodeView key={getStudyReadNodeKey(node)} node={node} />
-      ))}
-    </article>
+    <div className="mx-auto min-h-[85vh] w-full max-w-5xl rounded-2xl border border-[var(--app-border)]">
+      <article
+        aria-label="Содержимое материала"
+        className="mx-auto min-h-64 max-w-4xl space-y-7 px-8 py-10 max-[640px]:space-y-6 max-[640px]:px-4 max-[640px]:py-6"
+      >
+        {outline.map((node) => (
+          <StudyReadNodeView key={getStudyReadNodeKey(node)} node={node} />
+        ))}
+      </article>
+    </div>
   )
 }
 
