@@ -1,5 +1,9 @@
 import * as TooltipPrimitive from '@radix-ui/react-tooltip'
-import { type PropsWithChildren, type ReactElement } from 'react'
+import {
+  type PropsWithChildren,
+  type ReactElement,
+  type ReactNode
+} from 'react'
 
 import { cn } from '../lib/cn'
 
@@ -12,10 +16,12 @@ interface TooltipProviderProps extends PropsWithChildren {
 
 interface TooltipProps {
   children: ReactElement
-  content: string
+  content: ReactNode
   side?: TooltipSide
   align?: TooltipAlign
   disabled?: boolean
+  delayDuration?: number
+  contentClassName?: string
 }
 
 export function TooltipProvider({
@@ -34,14 +40,18 @@ export function Tooltip({
   content,
   side = 'right',
   align = 'center',
-  disabled = false
+  disabled = false,
+  delayDuration,
+  contentClassName
 }: TooltipProps): React.JSX.Element {
   if (disabled) {
     return children
   }
 
   return (
-    <TooltipPrimitive.Root>
+    <TooltipPrimitive.Root
+      delayDuration={delayDuration}
+    >
       <TooltipPrimitive.Trigger asChild>{children}</TooltipPrimitive.Trigger>
 
       <TooltipPrimitive.Portal>
@@ -51,10 +61,11 @@ export function Tooltip({
           sideOffset={9}
           collisionPadding={12}
           className={cn(
-            'z-50 max-w-64 rounded-lg border select-none',
+            'z-[160] max-w-64 rounded-lg border select-none',
             'border-[var(--app-tooltip-border)] bg-[var(--app-tooltip)]',
             'px-2.5 py-1.5 text-xs font-medium text-[var(--app-text)]',
-            'will-change-transform'
+            'will-change-transform',
+            contentClassName
           )}
         >
           {content}

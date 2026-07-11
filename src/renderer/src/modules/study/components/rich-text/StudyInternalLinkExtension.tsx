@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 
 import type { StudyInternalLinkTarget } from '../../../../../../shared/contracts/study'
 import { cn } from '../../../../shared/lib/cn'
+import { Tooltip } from '../../../../shared/ui/tooltip'
 import { studyClient } from '../../api/study-client'
 import {
   STUDY_INTERNAL_LINK_NAVIGATE_EVENT,
@@ -195,11 +196,16 @@ function StudyInternalLinkNodeView({ node, editor, getPos }: NodeViewProps): Rea
 
   const location = [...folderPath, materialTitle].filter(Boolean).join(' / ')
 
-  const tooltip = isMissing
+  const tooltipTitle = isMissing
     ? 'Цель внутренней ссылки удалена'
-    : targetKind === 'heading'
-      ? `${displayLabel} · ${location}`
-      : location || displayLabel
+    : displayLabel ||
+      'Внутренняя ссылка'
+
+  const tooltipAction = isMissing
+    ? 'Цель больше не существует'
+    : editor.isEditable
+      ? 'Клик — открыть · Shift+клик — выбрать'
+      : 'Клик — открыть'
 
   function selectLinkNode(): void {
     const position = getPos()
@@ -262,14 +268,45 @@ function StudyInternalLinkNodeView({ node, editor, getPos }: NodeViewProps): Rea
   }
 
   return (
-    <NodeViewWrapper
+    <Tooltip
+      side="top"
+      align="center"
+      delayDuration={350}
+      contentClassName="max-w-80 px-3 py-2"
+      content={
+        <span className="grid min-w-0 gap-1">
+          <span className="truncate font-semibold text-[var(--app-text)]">
+            {tooltipTitle}
+          </span>
+
+          {!isMissing &&
+            location && (
+              <span className="truncate text-[11px] font-normal text-[var(--app-muted)]">
+                {location}
+              </span>
+            )}
+
+          <span
+            className={cn(
+              'text-[10px] font-normal',
+              isMissing
+                ? 'text-red-300'
+                : 'text-violet-300'
+            )}
+          >
+            {tooltipAction}
+          </span>
+        </span>
+      }
+    >
+      <NodeViewWrapper
       as="span"
       role="link"
       tabIndex={0}
-      title={
-        editor.isEditable
-          ? `${tooltip} · Клик — открыть, Shift+клик — выбрать`
-          : tooltip
+      aria-label={
+        isMissing
+          ? `Недоступная внутренняя ссылка: ${displayLabel || 'без названия'}`
+          : `Открыть внутреннюю ссылку: ${displayLabel || 'без названия'}`
       }
       contentEditable={false}
       data-study-internal-link="true"
@@ -331,7 +368,8 @@ function StudyInternalLinkNodeView({ node, editor, getPos }: NodeViewProps): Rea
       <span className="truncate">{displayLabel || 'Внутренняя ссылка'}</span>
 
       {isMissing && <Link2 aria-hidden="true" className="size-3 shrink-0" />}
-    </NodeViewWrapper>
+      </NodeViewWrapper>
+    </Tooltip>
   )
 }
 

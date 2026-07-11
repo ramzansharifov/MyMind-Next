@@ -2,7 +2,6 @@ import type { Editor } from '@tiptap/core'
 import { useEditorState } from '@tiptap/react'
 import * as Popover from '@radix-ui/react-popover'
 import * as ToggleGroup from '@radix-ui/react-toggle-group'
-import * as Tooltip from '@radix-ui/react-tooltip'
 import {
   AlignCenter,
   AlignJustify,
@@ -27,6 +26,7 @@ import {
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 
 import { cn } from '../../../../shared/lib/cn'
+import { Tooltip } from '../../../../shared/ui/tooltip'
 import { STUDY_OPEN_INTERNAL_LINK_PICKER_EVENT } from '../../lib/study-internal-link'
 import { ColorPicker } from '../settings/ColorPicker'
 import { SegmentedChoice } from '../settings/SegmentedChoice'
@@ -400,8 +400,7 @@ function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.El
   }
 
   return (
-    <Tooltip.Provider delayDuration={300}>
-      <div className="space-y-4">
+    <div className="space-y-4">
         <SettingsSection title="Быстро">
           <ToolbarButton
             label="Отменить"
@@ -603,8 +602,7 @@ function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.El
             onRemove={removeLink}
           />
         </SettingsSection>
-      </div>
-    </Tooltip.Provider>
+    </div>
   )
 }
 
@@ -656,31 +654,31 @@ function ToolbarButton({
   onClick: () => void
 }): React.JSX.Element {
   return (
-    <Tooltip.Root>
-      <Tooltip.Trigger asChild>
-        <button
-          type="button"
-          aria-label={label}
-          disabled={disabled}
-          className={cn(
-            'flex size-9 items-center justify-center rounded-lg border',
-            'border-(--app-border) bg-(--app-workspace) text-(--app-muted)',
-            'transition-colors outline-none',
-            'hover:bg-white/[0.05] hover:text-(--app-text)',
-            'focus-visible:ring-2 focus-visible:ring-violet-500/35',
-            'disabled:cursor-not-allowed disabled:opacity-35'
-          )}
-          onMouseDown={(event) => {
-            event.preventDefault()
-          }}
-          onClick={onClick}
-        >
-          {children}
-        </button>
-      </Tooltip.Trigger>
-
-      <ToolbarTooltipContent label={label} />
-    </Tooltip.Root>
+    <Tooltip
+      content={label}
+      side="top"
+      delayDuration={300}
+    >
+      <button
+        type="button"
+        aria-label={label}
+        disabled={disabled}
+        className={cn(
+          'flex size-9 items-center justify-center rounded-lg border',
+          'border-(--app-border) bg-(--app-workspace) text-(--app-muted)',
+          'transition-colors outline-none',
+          'hover:bg-white/[0.05] hover:text-(--app-text)',
+          'focus-visible:ring-2 focus-visible:ring-violet-500/35',
+          'disabled:cursor-not-allowed disabled:opacity-35'
+        )}
+        onMouseDown={(event) => {
+          event.preventDefault()
+        }}
+        onClick={onClick}
+      >
+        {children}
+      </button>
+    </Tooltip>
   )
 }
 
@@ -694,49 +692,35 @@ function ToolbarToggle({
   children: ReactNode
 }): React.JSX.Element {
   return (
-    <Tooltip.Root>
-      <Tooltip.Trigger asChild>
-        <ToggleGroup.Item
-          value={value}
-          aria-label={label}
-          className={cn(
-            'flex size-9 items-center justify-center rounded-lg border',
-            'border-(--app-border) bg-(--app-workspace) text-(--app-muted)',
-            'transition-colors outline-none',
-            'hover:bg-white/[0.05] hover:text-(--app-text)',
-            'focus-visible:ring-2 focus-visible:ring-violet-500/35',
-            'data-[state=on]:border-violet-500/45',
-            'data-[state=on]:bg-violet-500/15',
-            'data-[state=on]:text-violet-200'
-          )}
-          onMouseDown={(event) => {
-            event.preventDefault()
-          }}
-        >
-          {children}
-        </ToggleGroup.Item>
-      </Tooltip.Trigger>
-
-      <ToolbarTooltipContent label={label} />
-    </Tooltip.Root>
-  )
-}
-
-function ToolbarTooltipContent({ label }: { label: string }): React.JSX.Element {
-  return (
-    <Tooltip.Portal>
-      <Tooltip.Content
-        side="top"
-        sideOffset={6}
-        className="z-[100] rounded-md border border-(--app-tooltip-border) bg-(--app-tooltip) px-2 py-1 text-xs text-(--app-text)"
+    <Tooltip
+      content={label}
+      side="top"
+      delayDuration={300}
+    >
+      <ToggleGroup.Item
+        value={value}
+        aria-label={label}
+        className={cn(
+          'flex size-9 items-center justify-center rounded-lg border',
+          'border-(--app-border) bg-(--app-workspace) text-(--app-muted)',
+          'transition-colors outline-none',
+          'hover:bg-white/[0.05] hover:text-(--app-text)',
+          'focus-visible:ring-2 focus-visible:ring-violet-500/35',
+          'data-[state=on]:border-violet-500/45',
+          'data-[state=on]:bg-violet-500/15',
+          'data-[state=on]:text-violet-200'
+        )}
+        onMouseDown={(event) => {
+          event.preventDefault()
+        }}
       >
-        {label}
-
-        <Tooltip.Arrow className="fill-(--app-tooltip)" />
-      </Tooltip.Content>
-    </Tooltip.Portal>
+        {children}
+      </ToggleGroup.Item>
+    </Tooltip>
   )
 }
+
+
 
 function LinkPopover({
   disabled,
