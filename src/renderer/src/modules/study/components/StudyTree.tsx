@@ -12,7 +12,16 @@ import {
   type DragStartEvent
 } from '@dnd-kit/core'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
-import { ChevronDown, ChevronRight, FileText, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
+import {
+  ChevronDown,
+  ChevronRight,
+  FilePlus2,
+  FileText,
+  FolderPlus,
+  MoreHorizontal,
+  Pencil,
+  Trash2
+} from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import type { MoveStudyNodeInput, StudyNode } from '../../../../../shared/contracts/study'
@@ -36,6 +45,12 @@ interface StudyTreeProps {
   onToggleFolder: (node: StudyNode) => void
   onRename: (node: StudyNode) => void
   onDelete: (node: StudyNode) => void
+  onCreateFolder: (
+    parentId: string
+  ) => void
+  onCreateMaterial: (
+    parentId: string
+  ) => void
   onMove: (input: MoveStudyNodeInput) => void
 }
 
@@ -61,6 +76,8 @@ export function StudyTree({
   onToggleFolder,
   onRename,
   onDelete,
+  onCreateFolder,
+  onCreateMaterial,
   onMove
 }: StudyTreeProps): React.JSX.Element {
   const visibleNodes = useMemo(() => getVisibleStudyNodes(nodes, search), [nodes, search])
@@ -177,6 +194,12 @@ export function StudyTree({
                 onToggleFolder={onToggleFolder}
                 onRename={onRename}
                 onDelete={onDelete}
+                onCreateFolder={
+                  onCreateFolder
+                }
+                onCreateMaterial={
+                  onCreateMaterial
+                }
               />
             ))}
           </div>
@@ -288,6 +311,9 @@ function StudyTreeItem({
   onRename,
   onDelete
 }: StudyTreeItemProps): React.JSX.Element {
+  ,
+  onCreateFolder,
+  onCreateMaterial
   const [menuOpen, setMenuOpen] = useState(false)
 
   const isFolder = node.type === 'folder'
@@ -349,25 +375,35 @@ function StudyTreeItem({
         <span className="pointer-events-none absolute right-1 bottom-0 left-1 h-0.5 translate-y-1/2 rounded-full bg-violet-400" />
       )}
 
-      {isFolder ? (
-        <button
-          type="button"
-          aria-label={node.isExpanded ? 'Свернуть папку' : 'Развернуть папку'}
-          className={cn(
-            'z-20 flex size-7 shrink-0 items-center justify-center rounded-md hover:bg-white/[0.05]',
-            collapsed && 'absolute left-0 size-5 text-[var(--app-muted)]'
-          )}
-          onClick={() => onToggleFolder(node)}
-        >
-          {node.isExpanded ? (
-            <ChevronDown aria-hidden="true" className="size-3.5" />
-          ) : (
-            <ChevronRight aria-hidden="true" className="size-3.5" />
-          )}
-        </button>
-      ) : (
-        !collapsed && <span className="size-7 shrink-0" />
-      )}
+      {!collapsed &&
+        (isFolder ? (
+          <button
+            type="button"
+            aria-label={
+              node.isExpanded
+                ? 'Свернуть папку'
+                : 'Развернуть папку'
+            }
+            className="z-20 flex size-7 shrink-0 items-center justify-center rounded-md hover:bg-white/[0.05]"
+            onClick={() => {
+              onToggleFolder(node)
+            }}
+          >
+            {node.isExpanded ? (
+              <ChevronDown
+                aria-hidden="true"
+                className="size-3.5"
+              />
+            ) : (
+              <ChevronRight
+                aria-hidden="true"
+                className="size-3.5"
+              />
+            )}
+          </button>
+        ) : (
+          <span className="size-7 shrink-0" />
+        ))}
 
       <Tooltip content={`${node.title} · ${isFolder ? 'Папка' : 'Материал'}`} side="right">
         <button
@@ -402,48 +438,105 @@ function StudyTreeItem({
         </button>
       </Tooltip>
 
-      <DropdownMenu.Root open={menuOpen} onOpenChange={setMenuOpen}>
-        <DropdownMenu.Trigger asChild>
-          <button
-            type="button"
-            aria-label={`Действия: ${node.title}`}
-            className={cn(
-              'z-20 flex size-7 shrink-0 items-center justify-center rounded-md',
-              collapsed ? 'absolute right-0' : 'mr-1',
-              'text-[var(--app-muted)] hover:bg-white/[0.07] hover:text-[var(--app-text)]',
-              menuOpen
-                ? 'opacity-100'
-                : 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'
-            )}
-          >
-            <MoreHorizontal aria-hidden="true" className="size-4" />
-          </button>
-        </DropdownMenu.Trigger>
-
-        <DropdownMenu.Portal>
-          <DropdownMenu.Content
-            sideOffset={6}
-            align="start"
-            className="z-50 min-w-44 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-1.5 text-sm text-[var(--app-text)]"
-          >
-            <DropdownMenu.Item
-              className="flex cursor-default items-center gap-2 rounded-lg px-2.5 py-2 outline-none hover:bg-white/[0.06] focus:bg-white/[0.06]"
-              onSelect={() => onRename(node)}
+      {!collapsed && (
+        <DropdownMenu.Root
+          open={menuOpen}
+          onOpenChange={setMenuOpen}
+        >
+          <DropdownMenu.Trigger asChild>
+            <button
+              type="button"
+              aria-label={`Действия: ${node.title}`}
+              className={cn(
+                'z-20 mr-1 flex size-7 shrink-0 items-center justify-center rounded-md',
+                'text-[var(--app-muted)] hover:bg-white/[0.07] hover:text-[var(--app-text)]',
+                menuOpen
+                  ? 'opacity-100'
+                  : 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'
+              )}
             >
-              <Pencil aria-hidden="true" className="size-4" />
-              Переименовать
-            </DropdownMenu.Item>
+              <MoreHorizontal
+                aria-hidden="true"
+                className="size-4"
+              />
+            </button>
+          </DropdownMenu.Trigger>
 
-            <DropdownMenu.Item
-              className="flex cursor-default items-center gap-2 rounded-lg px-2.5 py-2 text-red-300 outline-none hover:bg-red-500/10 focus:bg-red-500/10"
-              onSelect={() => onDelete(node)}
+          <DropdownMenu.Portal>
+            <DropdownMenu.Content
+              sideOffset={6}
+              align="start"
+              className="z-50 min-w-48 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-1.5 text-sm text-[var(--app-text)] shadow-xl shadow-black/25"
             >
-              <Trash2 aria-hidden="true" className="size-4" />
-              Удалить
-            </DropdownMenu.Item>
-          </DropdownMenu.Content>
-        </DropdownMenu.Portal>
-      </DropdownMenu.Root>
+              {isFolder && (
+                <>
+                  <DropdownMenu.Item
+                    className="flex cursor-default items-center gap-2 rounded-lg px-2.5 py-2 outline-none hover:bg-white/[0.06] focus:bg-white/[0.06]"
+                    onSelect={() => {
+                      onCreateFolder(
+                        node.id
+                      )
+                    }}
+                  >
+                    <FolderPlus
+                      aria-hidden="true"
+                      className="size-4 text-violet-300"
+                    />
+
+                    Новая папка
+                  </DropdownMenu.Item>
+
+                  <DropdownMenu.Item
+                    className="flex cursor-default items-center gap-2 rounded-lg px-2.5 py-2 outline-none hover:bg-white/[0.06] focus:bg-white/[0.06]"
+                    onSelect={() => {
+                      onCreateMaterial(
+                        node.id
+                      )
+                    }}
+                  >
+                    <FilePlus2
+                      aria-hidden="true"
+                      className="size-4 text-violet-300"
+                    />
+
+                    Новый материал
+                  </DropdownMenu.Item>
+
+                  <DropdownMenu.Separator className="my-1 h-px bg-[var(--app-border)]" />
+                </>
+              )}
+
+              <DropdownMenu.Item
+                className="flex cursor-default items-center gap-2 rounded-lg px-2.5 py-2 outline-none hover:bg-white/[0.06] focus:bg-white/[0.06]"
+                onSelect={() => {
+                  onRename(node)
+                }}
+              >
+                <Pencil
+                  aria-hidden="true"
+                  className="size-4"
+                />
+
+                Переименовать
+              </DropdownMenu.Item>
+
+              <DropdownMenu.Item
+                className="flex cursor-default items-center gap-2 rounded-lg px-2.5 py-2 text-red-300 outline-none hover:bg-red-500/10 focus:bg-red-500/10"
+                onSelect={() => {
+                  onDelete(node)
+                }}
+              >
+                <Trash2
+                  aria-hidden="true"
+                  className="size-4"
+                />
+
+                Удалить
+              </DropdownMenu.Item>
+            </DropdownMenu.Content>
+          </DropdownMenu.Portal>
+        </DropdownMenu.Root>
+      )}
     </div>
   )
 }

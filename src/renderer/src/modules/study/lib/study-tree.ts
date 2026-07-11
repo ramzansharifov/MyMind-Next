@@ -4,6 +4,32 @@ export interface VisibleStudyNode {
   node: StudyNode
   depth: number
 }
+export function getStudyAncestorFolders(nodes: StudyNode[], nodeId: string): StudyNode[] {
+  const nodesById = new Map(nodes.map((node) => [node.id, node]))
+
+  const ancestors: StudyNode[] = []
+  const visited = new Set<string>()
+
+  let parentId = nodesById.get(nodeId)?.parentId ?? null
+
+  while (parentId && !visited.has(parentId)) {
+    visited.add(parentId)
+
+    const parent = nodesById.get(parentId)
+
+    if (!parent) {
+      break
+    }
+
+    if (parent.type === 'folder') {
+      ancestors.unshift(parent)
+    }
+
+    parentId = parent.parentId
+  }
+
+  return ancestors
+}
 
 export function getVisibleStudyNodes(nodes: StudyNode[], search: string): VisibleStudyNode[] {
   const normalizedSearch = search.trim().toLowerCase()

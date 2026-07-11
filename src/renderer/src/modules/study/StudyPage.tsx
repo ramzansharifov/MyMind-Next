@@ -5,6 +5,7 @@ import {
   FilePlus2,
   FileText,
   FolderPlus,
+  Palette,
   PanelLeftClose,
   PanelLeftOpen
 } from 'lucide-react'
@@ -20,6 +21,7 @@ import { StudyFolderIcon } from './components/StudyFolderIcon'
 import { STUDY_FOLDER_ICON_OPTIONS } from './components/study-folder-icon-options'
 import { StudyTree } from './components/StudyTree'
 import { useStudy } from './hooks/use-study'
+import { getStudyAncestorFolders } from './lib/study-tree'
 
 export function StudyPage(): React.JSX.Element {
   const study = useStudy()
@@ -40,6 +42,17 @@ export function StudyPage(): React.JSX.Element {
   function openRename(node: StudyNode): void {
     setRenameTarget(node)
     setRenameValue(node.title)
+  }
+  function selectStudyNode(nodeId: string): void {
+    const ancestorFolders = getStudyAncestorFolders(study.nodes, nodeId)
+
+    ancestorFolders.forEach((folder) => {
+      if (!folder.isExpanded) {
+        void study.toggleFolder(folder)
+      }
+    })
+
+    study.selectNode(nodeId)
   }
 
   return (
@@ -132,7 +145,7 @@ export function StudyPage(): React.JSX.Element {
               selectedNodeId={study.selectedNodeId}
               activeParentId={selectedParentId}
               collapsed={isSidebarCollapsed}
-              onSelect={study.selectNode}
+              onSelect={selectStudyNode}
               onSelectRoot={() => {
                 study.selectNode(null)
               }}
@@ -141,6 +154,30 @@ export function StudyPage(): React.JSX.Element {
               }}
               onRename={openRename}
               onDelete={setDeleteTarget}
+              onCreateFolder={(parentId) => {
+                const parentFolder = study.nodes.find((node) => node.id === parentId)
+
+                if (parentFolder?.type === 'folder' && !parentFolder.isExpanded) {
+                  void study.toggleFolder(parentFolder)
+                }
+
+                void study.createNode({
+                  type: 'folder',
+                  parentId
+                })
+              }}
+              onCreateMaterial={(parentId) => {
+                const parentFolder = study.nodes.find((node) => node.id === parentId)
+
+                if (parentFolder?.type === 'folder' && !parentFolder.isExpanded) {
+                  void study.toggleFolder(parentFolder)
+                }
+
+                void study.createNode({
+                  type: 'material',
+                  parentId
+                })
+              }}
               onMove={(input) => {
                 void study.moveNode(input)
               }}
@@ -162,7 +199,7 @@ export function StudyPage(): React.JSX.Element {
           <FolderWorkspace
             node={selectedNode}
             items={study.nodes.filter((node) => node.parentId === selectedNode.id)}
-            onSelect={study.selectNode}
+            onSelect={selectStudyNode}
             onCreateFolder={() => {
               void study.createNode({
                 type: 'folder',
@@ -184,7 +221,7 @@ export function StudyPage(): React.JSX.Element {
             nodes={study.nodes}
             isLoading={study.isLoading}
             onOpen={(nodeId) => {
-              study.selectNode(nodeId)
+              selectStudyNode(nodeId)
             }}
             onCreateFolder={() => {
               void study.createNode({
@@ -314,53 +351,9 @@ function FolderWorkspace({
       <div className="mx-auto grid w-full max-w-6xl gap-5">
         <section className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)]">
           <header className="flex items-start gap-4 p-5 max-[760px]:flex-wrap">
-            <DropdownMenu.Root>
-              <Tooltip content="Изменить иконку папки" side="bottom">
-                <DropdownMenu.Trigger asChild>
-                  <button
-                    type="button"
-                    aria-label="Изменить иконку папки"
-                    className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-violet-500/10 text-violet-300 ring-1 ring-violet-500/15 transition-colors outline-none ring-inset hover:bg-violet-500/15 focus-visible:ring-2 focus-visible:ring-violet-500/50"
-                  >
-                    <StudyFolderIcon name={activeIcon} expanded className="size-6" />
-                  </button>
-                </DropdownMenu.Trigger>
-              </Tooltip>
-
-              <DropdownMenu.Portal>
-                <DropdownMenu.Content
-                  sideOffset={8}
-                  align="start"
-                  className="z-50 w-72 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-2 shadow-xl shadow-black/25"
-                >
-                  <DropdownMenu.Label className="px-2 py-1.5 text-xs font-medium text-[var(--app-muted)]">
-                    Иконка папки
-                  </DropdownMenu.Label>
-
-                  <div className="grid grid-cols-4 gap-1">
-                    {STUDY_FOLDER_ICON_OPTIONS.map((option) => (
-                      <DropdownMenu.Item
-                        key={option.value}
-                        aria-label={option.label}
-                        title={option.label}
-                        className={cn(
-                          'flex aspect-square cursor-default items-center justify-center rounded-lg outline-none',
-                          'text-[var(--app-muted)] transition-colors',
-                          'hover:bg-white/[0.06] hover:text-[var(--app-text)]',
-                          'focus:bg-white/[0.06] focus:text-[var(--app-text)]',
-                          option.value === activeIcon && 'bg-violet-500/15 text-violet-200'
-                        )}
-                        onSelect={() => {
-                          onIconChange(option.value)
-                        }}
-                      >
-                        <StudyFolderIcon name={option.value} className="size-5" />
-                      </DropdownMenu.Item>
-                    ))}
-                  </div>
-                </DropdownMenu.Content>
-              </DropdownMenu.Portal>
-            </DropdownMenu.Root>
+            <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-violet-500/10 text-violet-300 ring-1 ring-violet-500/15 ring-inset">
+              <StudyFolderIcon name={activeIcon} expanded className="size-6" />
+            </div>
 
             <div className="min-w-0 flex-1">
               <p className="text-xs font-semibold tracking-[0.08em] text-violet-300 uppercase">
@@ -377,6 +370,7 @@ function FolderWorkspace({
             </div>
 
             <div className="flex shrink-0 items-center gap-2 max-[560px]:w-full max-[560px]:flex-col">
+              <FolderIconPicker value={activeIcon} onChange={onIconChange} />
               <button
                 type="button"
                 className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-[var(--app-border)] px-3.5 text-sm font-medium text-[var(--app-text)] transition-colors outline-none hover:border-violet-500/30 hover:bg-white/[0.04] focus-visible:ring-2 focus-visible:ring-violet-500/35 max-[560px]:w-full"
@@ -426,6 +420,61 @@ function FolderWorkspace({
   )
 }
 
+function FolderIconPicker({
+  value,
+  onChange
+}: {
+  value: StudyFolderIconName
+  onChange: (icon: StudyFolderIconName) => void
+}): React.JSX.Element {
+  return (
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger asChild>
+        <button
+          type="button"
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-[var(--app-border)] px-3.5 text-sm font-medium text-[var(--app-text)] transition-colors outline-none hover:border-violet-500/30 hover:bg-white/[0.04] focus-visible:ring-2 focus-visible:ring-violet-500/35 max-[560px]:w-full"
+        >
+          <Palette aria-hidden="true" className="size-4 text-violet-300" />
+          Иконка
+        </button>
+      </DropdownMenu.Trigger>
+
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content
+          sideOffset={8}
+          align="end"
+          className="z-50 w-72 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-2 shadow-xl shadow-black/25"
+        >
+          <DropdownMenu.Label className="px-2 py-1.5 text-xs font-medium text-[var(--app-muted)]">
+            Выбери иконку папки
+          </DropdownMenu.Label>
+
+          <div className="grid grid-cols-4 gap-1">
+            {STUDY_FOLDER_ICON_OPTIONS.map((option) => (
+              <DropdownMenu.Item
+                key={option.value}
+                aria-label={option.label}
+                title={option.label}
+                className={cn(
+                  'flex aspect-square cursor-default items-center justify-center rounded-lg outline-none',
+                  'text-[var(--app-muted)] transition-colors',
+                  'hover:bg-white/[0.06] hover:text-[var(--app-text)]',
+                  'focus:bg-white/[0.06] focus:text-[var(--app-text)]',
+                  option.value === value && 'bg-violet-500/15 text-violet-200'
+                )}
+                onSelect={() => {
+                  onChange(option.value)
+                }}
+              >
+                <StudyFolderIcon name={option.value} className="size-5" />
+              </DropdownMenu.Item>
+            ))}
+          </div>
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
+  )
+}
 function FolderStatistic({
   value,
   label,
