@@ -22,18 +22,19 @@ import {
   Pencil,
   Trash2
 } from 'lucide-react'
-import { useCallback, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import type { MoveStudyNodeInput, StudyNode } from '../../../../../shared/contracts/study'
 import { cn } from '../../../shared/lib/cn'
 import {
   createStudyMoveInput,
-  getStudyDropPlacement,
   type StudyDropPlacement
 } from '../lib/study-dnd'
 import { getVisibleStudyNodes } from '../lib/study-tree'
 
 const ROOT_DROP_ID = 'study-tree-root-drop'
+const NODE_DROP_ID_PREFIX =
+  'study-tree-node-drop'
 
 interface StudyTreeProps {
   nodes: StudyNode[]
@@ -52,6 +53,14 @@ interface StudyDropPreview {
   overId: string | null
   placement: StudyDropPlacement
   input: MoveStudyNodeInput
+}
+interface StudyNodeDropData {
+  kind: 'study-node'
+  nodeId: string
+  placement: Exclude<
+    StudyDropPlacement,
+    'root'
+  >
 }
 
 export function StudyTree({
@@ -203,36 +212,52 @@ function resolveDropPreview(
       : null
   }
 
-  const target = nodes.find((node) => node.id === overId)
+  const dropData = over.data.current
 
-  if (!target) {
+  if (!isStudyNodeDropData(dropData)) {
     return null
   }
 
-  const translated = event.active.rect.current.translated
-
-  const activeCenterY = translated
-    ? translated.top + translated.height / 2
-    : over.rect.top + over.rect.height / 2
-
-  const placement = getStudyDropPlacement(
-    activeCenterY,
-    over.rect.top,
-    over.rect.height,
-    target.type === 'folder'
+  const input = createStudyMoveInput(
+    nodes,
+    activeId,
+    dropData.nodeId,
+    dropData.placement
   )
-
-  const input = createStudyMoveInput(nodes, activeId, overId, placement)
 
   return input
     ? {
-        overId,
-        placement,
+        overId: dropData.nodeId,
+        placement: dropData.placement,
         input
       }
     : null
 }
 
+function isStudyNodeDropData(
+  value: unknown
+): value is StudyNodeDropData {
+  if (
+    !value ||
+    typeof value !== 'object'
+  ) {
+    return false
+  }
+
+  const candidate =
+    value as Partial<StudyNodeDropData>
+
+  return (
+    candidate.kind === 'study-node' &&
+    typeof candidate.nodeId ===
+      'string' &&
+    (candidate.placement ===
+      'before' ||
+      candidate.placement ===
+        'inside' ||
+      candidate.placement === 'after')
+  )
+}
 interface StudyTreeItemProps {
   node: StudyNode
   depth: number
@@ -274,22 +299,11 @@ function StudyTreeItem({
     disabled: dragDisabled
   })
 
-  const { setNodeRef: setDroppableRef } = useDroppable({
-    id: node.id,
-    disabled: dragDisabled
-  })
 
-  const setItemRef = useCallback(
-    (element: HTMLDivElement | null) => {
-      setDraggableRef(element)
-      setDroppableRef(element)
-    },
-    [setDraggableRef, setDroppableRef]
-  )
 
   return (
     <div
-      ref={setItemRef}
+      ref={setDraggableRef}
       className={cn(
         'group relative flex h-9 items-center rounded-lg',
         isSelected
@@ -306,6 +320,10 @@ function StudyTreeItem({
         paddingLeft: `${4 + depth * 16}px`
       }}
     >
+      <StudyTreeDropZones
+        node={node}
+        dragDisabled={dragDisabled}
+      />
       {dropPlacement === 'before' && (
         <span className="pointer-events-none absolute top-0 right-1 left-1 h-0.5 -translate-y-1/2 rounded-full bg-violet-400" />
       )}
@@ -405,6 +423,87 @@ function StudyTreeItem({
   )
 }
 
+function StudyTreeDropZones({
+  node,
+  dragDisabled
+}: {
+  node: StudyNode
+  dragDisabled: boolean
+}): React.JSX.Element {
+  const isFolder =
+    node.type === 'folder'
+
+  const {
+    setNodeRef: setBeforeDropRef
+  } = useDroppable({
+    id: `${NODE_DROP_ID_PREFIX}:${node.id}:before`,
+    disabled: dragDisabled,
+    data: {
+      kind: 'study-node',
+      nodeId: node.id,
+      placement: 'before'
+    } satisfies StudyNodeDropData
+  })
+
+  const {
+    setNodeRef: setInsideDropRef
+  } = useDroppable({
+    id: `${NODE_DROP_ID_PREFIX}:${node.id}:inside`,
+    disabled:
+      dragDisabled || !isFolder,
+    data: {
+      kind: 'study-node',
+      nodeId: node.id,
+      placement: 'inside'
+    } satisfies StudyNodeDropData
+  })
+
+  const {
+    setNodeRef: setAfterDropRef
+  } = useDroppable({
+    id: `${NODE_DROP_ID_PREFIX}:${node.id}:after`,
+    disabled: dragDisabled,
+    data: {
+      kind: 'study-node',
+      nodeId: node.id,
+      placement: 'after'
+    } satisfies StudyNodeDropData
+  })
+
+  return (
+    <>
+      <span
+        ref={setBeforeDropRef}
+        aria-hidden="true"
+        className={cn(
+          'pointer-events-none absolute inset-x-0 top-0',
+          isFolder
+            ? 'h-1/4'
+            : 'h-1/2'
+        )}
+      />
+
+      {isFolder && (
+        <span
+          ref={setInsideDropRef}
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 top-1/4 h-1/2"
+        />
+      )}
+
+      <span
+        ref={setAfterDropRef}
+        aria-hidden="true"
+        className={cn(
+          'pointer-events-none absolute inset-x-0 bottom-0',
+          isFolder
+            ? 'h-1/4'
+            : 'h-1/2'
+        )}
+      />
+    </>
+  )
+}
 function StudyRootDropZone({
   dragDisabled,
   active,
@@ -437,19 +536,16 @@ function StudyRootDropZone({
           ? 'border-dashed border-violet-400 bg-violet-500/10 text-violet-200'
           : active
             ? 'border-dashed border-[var(--app-border)] text-[var(--app-muted)]'
-            : isContextActive
-              ? 'border-violet-500/15 bg-violet-500/[0.025] text-violet-300/80'
-              : 'border-transparent text-transparent hover:bg-white/[0.018] hover:text-[var(--app-muted)]'
+            : 'border-transparent text-transparent hover:bg-white/[0.018] hover:text-[var(--app-muted)] focus-visible:bg-white/[0.018] focus-visible:text-[var(--app-muted)]'
       )}
       onClick={onSelect}
     >
       <span
         className={cn(
           'rounded-md px-2 py-1 transition-opacity',
-          active ||
-            isContextActive
+          active
             ? 'opacity-100'
-            : 'opacity-0 group-hover/root:opacity-100'
+            : 'opacity-0 group-hover/root:opacity-100 group-focus-visible/root:opacity-100'
         )}
       >
         {active

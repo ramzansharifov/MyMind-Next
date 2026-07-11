@@ -2,22 +2,7 @@ import type { MoveStudyNodeInput, StudyNode } from '../../../../../shared/contra
 
 export type StudyDropPlacement = 'before' | 'inside' | 'after' | 'root'
 
-export function getStudyDropPlacement(
-  activeCenterY: number,
-  overTop: number,
-  overHeight: number,
-  targetIsFolder: boolean
-): StudyDropPlacement {
-  const safeHeight = Math.max(overHeight, 1)
 
-  const relativePosition = (activeCenterY - overTop) / safeHeight
-
-  if (targetIsFolder && relativePosition >= 0.28 && relativePosition <= 0.72) {
-    return 'inside'
-  }
-
-  return relativePosition < 0.5 ? 'before' : 'after'
-}
 
 export function createStudyMoveInput(
   nodes: StudyNode[],

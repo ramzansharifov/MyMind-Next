@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { StudyNode } from '../../../../../shared/contracts/study'
-import { createStudyMoveInput, getStudyDropPlacement } from './study-dnd'
+import { createStudyMoveInput } from './study-dnd'
 
 const nodes: StudyNode[] = [
   createNode('folder-a', 'folder', null, 0),
@@ -31,9 +31,7 @@ describe('study drag and drop', () => {
     })
   })
 
-  it('uses the middle of a folder as the inside zone', () => {
-    expect(getStudyDropPlacement(50, 0, 100, true)).toBe('inside')
-  })
+
   it('moves a nested node back to the root', () => {
     expect(
       createStudyMoveInput(
