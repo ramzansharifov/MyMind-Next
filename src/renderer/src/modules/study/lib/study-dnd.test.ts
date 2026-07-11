@@ -31,24 +31,13 @@ describe('study drag and drop', () => {
     })
   })
 
-
   it('moves a nested node back to the root', () => {
-    expect(
-      createStudyMoveInput(
-        nodes,
-        'folder-child',
-        null,
-        'root'
-      )
-    ).toEqual({
+    expect(createStudyMoveInput(nodes, 'folder-child', null, 'root')).toEqual({
       id: 'folder-child',
       parentId: null,
       position: 3
     })
   })
-})
-
-function createNode(
 })
 
 function createNode(

@@ -12,29 +12,18 @@ import {
   type DragStartEvent
 } from '@dnd-kit/core'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
-import {
-  ChevronDown,
-  ChevronRight,
-  FileText,
-  MoreHorizontal,
-  Pencil,
-  Trash2
-} from 'lucide-react'
+import { ChevronDown, ChevronRight, FileText, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import type { MoveStudyNodeInput, StudyNode } from '../../../../../shared/contracts/study'
 import { cn } from '../../../shared/lib/cn'
 import { Tooltip } from '../../../shared/ui/tooltip'
-import {
-  createStudyMoveInput,
-  type StudyDropPlacement
-} from '../lib/study-dnd'
+import { createStudyMoveInput, type StudyDropPlacement } from '../lib/study-dnd'
 import { getVisibleStudyNodes } from '../lib/study-tree'
 import { StudyFolderIcon } from './StudyFolderIcon'
 
 const ROOT_DROP_ID = 'study-tree-root-drop'
-const NODE_DROP_ID_PREFIX =
-  'study-tree-node-drop'
+const NODE_DROP_ID_PREFIX = 'study-tree-node-drop'
 
 interface StudyTreeProps {
   nodes: StudyNode[]
@@ -58,10 +47,7 @@ interface StudyDropPreview {
 interface StudyNodeDropData {
   kind: 'study-node'
   nodeId: string
-  placement: Exclude<
-    StudyDropPlacement,
-    'root'
-  >
+  placement: Exclude<StudyDropPlacement, 'root'>
 }
 
 export function StudyTree({
@@ -80,66 +66,37 @@ export function StudyTree({
   const visibleNodes = useMemo(() => getVisibleStudyNodes(nodes, search), [nodes, search])
 
   const treeMeta = useMemo(() => {
-    const childrenByParent =
-      new Map<
-        string | null,
-        StudyNode[]
-      >()
+    const childrenByParent = new Map<string | null, StudyNode[]>()
 
     nodes.forEach((node) => {
-      const children =
-        childrenByParent.get(
-          node.parentId
-        ) ?? []
+      const children = childrenByParent.get(node.parentId) ?? []
 
       children.push(node)
 
-      childrenByParent.set(
-        node.parentId,
-        children
-      )
+      childrenByParent.set(node.parentId, children)
     })
 
-    const lastSiblingIds =
-      new Set<string>()
+    const lastSiblingIds = new Set<string>()
 
-    childrenByParent.forEach(
-      (children) => {
-        children.sort(
-          (first, second) =>
-            first.position -
-            second.position
-        )
+    childrenByParent.forEach((children) => {
+      children.sort((first, second) => first.position - second.position)
 
-        const lastChild =
-          children[
-            children.length - 1
-          ]
+      const lastChild = children[children.length - 1]
 
-        if (lastChild) {
-          lastSiblingIds.add(
-            lastChild.id
-          )
-        }
+      if (lastChild) {
+        lastSiblingIds.add(lastChild.id)
       }
-    )
+    })
 
-    const foldersWithVisibleChildren =
-      new Set<string>()
+    const foldersWithVisibleChildren = new Set<string>()
 
     nodes.forEach((node) => {
       if (
         node.type === 'folder' &&
         node.isExpanded &&
-        (
-          childrenByParent.get(
-            node.id
-          ) ?? []
-        ).length > 0
+        (childrenByParent.get(node.id) ?? []).length > 0
       ) {
-        foldersWithVisibleChildren.add(
-          node.id
-        )
+        foldersWithVisibleChildren.add(node.id)
       }
     })
 
@@ -200,67 +157,37 @@ export function StudyTree({
       <div className="flex min-h-full flex-col">
         {visibleNodes.length === 0 ? (
           <div className="flex min-h-32 shrink-0 items-center justify-center rounded-xl border border-dashed border-[var(--app-border)] px-4 text-center text-sm text-[var(--app-muted)]">
-            {search
-              ? 'Ничего не найдено'
-              : 'Создай первую папку или материал'}
+            {search ? 'Ничего не найдено' : 'Создай первую папку или материал'}
           </div>
         ) : (
-          <div
-            className={cn(
-              'shrink-0',
-              collapsed
-                ? 'space-y-1.5'
-                : 'space-y-1'
-            )}
-          >
-            {visibleNodes.map(
-              ({ node, depth }) => (
-                <StudyTreeItem
-                  key={node.id}
-                  node={node}
-                  depth={depth}
-                  collapsed={collapsed}
-                  isLastSibling={treeMeta.lastSiblingIds.has(
-                    node.id
-                  )}
-                  hasVisibleChildren={treeMeta.foldersWithVisibleChildren.has(
-                    node.id
-                  )}
-                  isSelected={
-                    selectedNodeId === node.id
-                  }
-                  isCreationContext={
-                    activeParentId === node.id
-                  }
-                  dragDisabled={dragDisabled}
-                  dropPlacement={
-                    dropPreview?.overId ===
-                    node.id
-                      ? dropPreview.placement
-                      : null
-                  }
-                  onSelect={onSelect}
-                  onToggleFolder={
-                    onToggleFolder
-                  }
-                  onRename={onRename}
-                  onDelete={onDelete}
-                />
-              )
-            )}
+          <div className={cn('shrink-0', collapsed ? 'space-y-1.5' : 'space-y-1')}>
+            {visibleNodes.map(({ node, depth }) => (
+              <StudyTreeItem
+                key={node.id}
+                node={node}
+                depth={depth}
+                collapsed={collapsed}
+                isLastSibling={treeMeta.lastSiblingIds.has(node.id)}
+                hasVisibleChildren={treeMeta.foldersWithVisibleChildren.has(node.id)}
+                isSelected={selectedNodeId === node.id}
+                isCreationContext={activeParentId === node.id}
+                dragDisabled={dragDisabled}
+                dropPlacement={dropPreview?.overId === node.id ? dropPreview.placement : null}
+                onSelect={onSelect}
+                onToggleFolder={onToggleFolder}
+                onRename={onRename}
+                onDelete={onDelete}
+              />
+            ))}
           </div>
         )}
 
         <StudyRootDropZone
           dragDisabled={dragDisabled}
           active={activeNode !== null}
-          highlighted={
-            dropPreview?.placement ===
-            'root'
-          }
-          isContextActive={
-            activeParentId === null
-          }
+          highlighted={dropPreview?.placement === 'root'}
+          isContextActive={activeParentId === null}
+          collapsed={collapsed}
           onSelect={onSelectRoot}
         />
       </div>
@@ -304,12 +231,7 @@ function resolveDropPreview(
     return null
   }
 
-  const input = createStudyMoveInput(
-    nodes,
-    activeId,
-    dropData.nodeId,
-    dropData.placement
-  )
+  const input = createStudyMoveInput(nodes, activeId, dropData.nodeId, dropData.placement)
 
   return input
     ? {
@@ -320,27 +242,18 @@ function resolveDropPreview(
     : null
 }
 
-function isStudyNodeDropData(
-  value: unknown
-): value is StudyNodeDropData {
-  if (
-    !value ||
-    typeof value !== 'object'
-  ) {
+function isStudyNodeDropData(value: unknown): value is StudyNodeDropData {
+  if (!value || typeof value !== 'object') {
     return false
   }
 
-  const candidate =
-    value as Partial<StudyNodeDropData>
+  const candidate = value as Partial<StudyNodeDropData>
 
   return (
     candidate.kind === 'study-node' &&
-    typeof candidate.nodeId ===
-      'string' &&
-    (candidate.placement ===
-      'before' ||
-      candidate.placement ===
-        'inside' ||
+    typeof candidate.nodeId === 'string' &&
+    (candidate.placement === 'before' ||
+      candidate.placement === 'inside' ||
       candidate.placement === 'after')
   )
 }
@@ -379,8 +292,6 @@ function StudyTreeItem({
 
   const isFolder = node.type === 'folder'
 
-
-
   const {
     attributes,
     listeners,
@@ -391,35 +302,31 @@ function StudyTreeItem({
     disabled: dragDisabled
   })
 
-
-
   return (
     <div
       ref={setDraggableRef}
       className={cn(
         'group relative flex h-9 items-center rounded-lg',
-        collapsed &&
-          'justify-center',
+        collapsed && 'justify-center',
         isSelected
           ? 'bg-violet-500/12 text-violet-200'
           : 'text-[var(--app-muted)] hover:bg-white/[0.04] hover:text-[var(--app-text)]',
         isCreationContext &&
           !isSelected &&
-          'bg-violet-500/[0.045] text-[var(--app-text)] ring-1 ring-inset ring-violet-500/15',
-        dropPlacement === 'inside' &&
-          'bg-violet-500/15 ring-1 ring-violet-500/45',
+          'bg-violet-500/[0.045] text-[var(--app-text)] ring-1 ring-violet-500/15 ring-inset',
+        dropPlacement === 'inside' && 'bg-violet-500/15 ring-1 ring-violet-500/45',
         isDragging && 'opacity-35'
       )}
       style={
         collapsed
           ? undefined
           : {
-              paddingLeft:
-                `${4 + depth * 16}px`
+              paddingLeft: `${4 + depth * 16}px`
             }
       }
     >
-      <StudyTreeDropZones
+      <StudyTreeDropZones node={node} dragDisabled={dragDisabled} />
+
       {collapsed && depth > 0 && (
         <span
           aria-hidden="true"
@@ -427,17 +334,13 @@ function StudyTreeItem({
         />
       )}
 
-      {collapsed &&
-        (hasVisibleChildren ||
-          !isLastSibling) && (
-          <span
-            aria-hidden="true"
-            className="pointer-events-none absolute bottom-0 left-1/2 h-1/2 w-px -translate-x-1/2 bg-[var(--app-border-strong)]"
-          />
-        )}
-        node={node}
-        dragDisabled={dragDisabled}
-      />
+      {collapsed && (hasVisibleChildren || !isLastSibling) && (
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute bottom-0 left-1/2 h-1/2 w-px -translate-x-1/2 bg-[var(--app-border-strong)]"
+        />
+      )}
+
       {dropPlacement === 'before' && (
         <span className="pointer-events-none absolute top-0 right-1 left-1 h-0.5 -translate-y-1/2 rounded-full bg-violet-400" />
       )}
@@ -446,16 +349,13 @@ function StudyTreeItem({
         <span className="pointer-events-none absolute right-1 bottom-0 left-1 h-0.5 translate-y-1/2 rounded-full bg-violet-400" />
       )}
 
-
-
       {isFolder ? (
         <button
           type="button"
           aria-label={node.isExpanded ? 'Свернуть папку' : 'Развернуть папку'}
           className={cn(
             'z-20 flex size-7 shrink-0 items-center justify-center rounded-md hover:bg-white/[0.05]',
-            collapsed &&
-              'absolute left-0 size-5 text-[var(--app-muted)]'
+            collapsed && 'absolute left-0 size-5 text-[var(--app-muted)]'
           )}
           onClick={() => onToggleFolder(node)}
         >
@@ -466,32 +366,21 @@ function StudyTreeItem({
           )}
         </button>
       ) : (
-        !collapsed && (
-          <span className="size-7 shrink-0" />
-        )
+        !collapsed && <span className="size-7 shrink-0" />
       )}
 
-      <Tooltip
-        content={`${node.title} · ${
-          isFolder
-            ? 'Папка'
-            : 'Материал'
-        }`}
-        side="right"
-      >
+      <Tooltip content={`${node.title} · ${isFolder ? 'Папка' : 'Материал'}`} side="right">
         <button
           type="button"
           aria-label={`Открыть: ${node.title}`}
           className={cn(
             'relative z-10 flex min-w-0 touch-none items-center text-left text-sm',
             'outline-none select-none',
-            'focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-500/35',
+            'focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:ring-inset',
             collapsed
               ? 'size-8 shrink-0 justify-center rounded-lg bg-[var(--app-sidebar)] p-0'
               : 'flex-1 gap-2 py-2',
-            dragDisabled
-              ? 'cursor-pointer'
-              : 'cursor-grab active:cursor-grabbing'
+            dragDisabled ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'
           )}
           {...attributes}
           {...listeners}
@@ -506,17 +395,10 @@ function StudyTreeItem({
               className="size-4 shrink-0"
             />
           ) : (
-            <FileText
-              aria-hidden="true"
-              className="size-4 shrink-0"
-            />
+            <FileText aria-hidden="true" className="size-4 shrink-0" />
           )}
 
-          {!collapsed && (
-            <span className="truncate">
-              {node.title}
-            </span>
-          )}
+          {!collapsed && <span className="truncate">{node.title}</span>}
         </button>
       </Tooltip>
 
@@ -527,9 +409,7 @@ function StudyTreeItem({
             aria-label={`Действия: ${node.title}`}
             className={cn(
               'z-20 flex size-7 shrink-0 items-center justify-center rounded-md',
-              collapsed
-                ? 'absolute right-0'
-                : 'mr-1',
+              collapsed ? 'absolute right-0' : 'mr-1',
               'text-[var(--app-muted)] hover:bg-white/[0.07] hover:text-[var(--app-text)]',
               menuOpen
                 ? 'opacity-100'
@@ -575,12 +455,9 @@ function StudyTreeDropZones({
   node: StudyNode
   dragDisabled: boolean
 }): React.JSX.Element {
-  const isFolder =
-    node.type === 'folder'
+  const isFolder = node.type === 'folder'
 
-  const {
-    setNodeRef: setBeforeDropRef
-  } = useDroppable({
+  const { setNodeRef: setBeforeDropRef } = useDroppable({
     id: `${NODE_DROP_ID_PREFIX}:${node.id}:before`,
     disabled: dragDisabled,
     data: {
@@ -590,12 +467,9 @@ function StudyTreeDropZones({
     } satisfies StudyNodeDropData
   })
 
-  const {
-    setNodeRef: setInsideDropRef
-  } = useDroppable({
+  const { setNodeRef: setInsideDropRef } = useDroppable({
     id: `${NODE_DROP_ID_PREFIX}:${node.id}:inside`,
-    disabled:
-      dragDisabled || !isFolder,
+    disabled: dragDisabled || !isFolder,
     data: {
       kind: 'study-node',
       nodeId: node.id,
@@ -603,9 +477,7 @@ function StudyTreeDropZones({
     } satisfies StudyNodeDropData
   })
 
-  const {
-    setNodeRef: setAfterDropRef
-  } = useDroppable({
+  const { setNodeRef: setAfterDropRef } = useDroppable({
     id: `${NODE_DROP_ID_PREFIX}:${node.id}:after`,
     disabled: dragDisabled,
     data: {
@@ -620,12 +492,7 @@ function StudyTreeDropZones({
       <span
         ref={setBeforeDropRef}
         aria-hidden="true"
-        className={cn(
-          'pointer-events-none absolute inset-x-0 top-0',
-          isFolder
-            ? 'h-1/4'
-            : 'h-1/2'
-        )}
+        className={cn('pointer-events-none absolute inset-x-0 top-0', isFolder ? 'h-1/4' : 'h-1/2')}
       />
 
       {isFolder && (
@@ -641,9 +508,7 @@ function StudyTreeDropZones({
         aria-hidden="true"
         className={cn(
           'pointer-events-none absolute inset-x-0 bottom-0',
-          isFolder
-            ? 'h-1/4'
-            : 'h-1/2'
+          isFolder ? 'h-1/4' : 'h-1/2'
         )}
       />
     </>
@@ -678,8 +543,8 @@ function StudyRootDropZone({
       className={cn(
         'group/root mt-2 flex min-h-20 flex-1 items-start justify-center rounded-lg border pt-3',
         collapsed && 'px-0',
-        'text-xs outline-none transition-colors',
-        'focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-500/35',
+        'text-xs transition-colors outline-none',
+        'focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:ring-inset',
         highlighted
           ? 'border-dashed border-violet-400 bg-violet-500/10 text-violet-200'
           : active
@@ -697,36 +562,22 @@ function StudyRootDropZone({
             : 'opacity-0 group-hover/root:opacity-100 group-focus-visible/root:opacity-100'
         )}
       >
-        {active
-          ? 'Переместить в корень'
-          : 'Корень библиотеки'}
+        {active ? 'Переместить в корень' : 'Корень библиотеки'}
       </span>
     </button>
   )
 }
 
-function StudyDragOverlay({
-  node
-}: {
-  node: StudyNode
-}): React.JSX.Element {
+function StudyDragOverlay({ node }: { node: StudyNode }): React.JSX.Element {
   return (
     <div className="flex h-9 max-w-60 items-center gap-2 rounded-lg border border-violet-500/40 bg-[var(--app-surface-raised)] px-3 text-sm text-[var(--app-text)] shadow-lg shadow-black/25">
       {node.type === 'folder' ? (
-        <StudyFolderIcon
-          name={node.icon}
-          className="size-4 shrink-0 text-violet-300"
-        />
+        <StudyFolderIcon name={node.icon} className="size-4 shrink-0 text-violet-300" />
       ) : (
-        <FileText
-          aria-hidden="true"
-          className="size-4 shrink-0 text-violet-300"
-        />
+        <FileText aria-hidden="true" className="size-4 shrink-0 text-violet-300" />
       )}
 
-      <span className="truncate">
-        {node.title}
-      </span>
+      <span className="truncate">{node.title}</span>
     </div>
   )
 }

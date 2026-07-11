@@ -193,6 +193,7 @@ export interface CreateStudyNodeInput {
   type: StudyNodeType
   parentId: string | null
   title?: string
+  icon?: StudyFolderIconName
 }
 
 export interface RenameStudyNodeInput {
