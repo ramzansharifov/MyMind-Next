@@ -620,6 +620,7 @@ function StudyBlockDragOverlay({ block }: { block: StudyBlock }): React.JSX.Elem
 }
 interface StudyBlockCardProps {
   block: StudyBlock
+  materialId: string
   isActive: boolean
   isFirst: boolean
   isLast: boolean
@@ -639,6 +640,7 @@ interface StudyBlockCardProps {
 
 function StudyBlockCard({
   block,
+  materialId,
   isActive,
   isFirst,
   isLast,
@@ -760,6 +762,7 @@ function StudyBlockCard({
         <Collapsible.Content forceMount className="data-[state=closed]:hidden">
           {block.type === 'text' ? (
             <RichTextBlockEditor
+              materialId={materialId}
               html={getStudyTextBlockHtml(block)}
               onReady={onTextEditorReady}
               onActivate={onTextEditorActivate}
