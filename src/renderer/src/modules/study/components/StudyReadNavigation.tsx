@@ -44,8 +44,15 @@ export function StudyReadNavigation({
     function updateActiveHeading(): void {
       frameId = null
 
+      const currentScrollContainer = scrollContainerRef.current
+
+      if (!currentScrollContainer) {
+        setActiveHeadingId(null)
+        return
+      }
+
       const headingElements = Array.from(
-        scrollContainer.querySelectorAll<HTMLElement>('[data-study-heading-id]')
+        currentScrollContainer.querySelectorAll<HTMLElement>('[data-study-heading-id]')
       )
 
       if (headingElements.length === 0) {
@@ -53,7 +60,7 @@ export function StudyReadNavigation({
         return
       }
 
-      const containerTop = scrollContainer.getBoundingClientRect().top
+      const containerTop = currentScrollContainer.getBoundingClientRect().top
 
       const activationLine = containerTop + 56
 
@@ -66,7 +73,8 @@ export function StudyReadNavigation({
       })
 
       const isAtBottom =
-        scrollContainer.scrollTop + scrollContainer.clientHeight >= scrollContainer.scrollHeight - 4
+        currentScrollContainer.scrollTop + currentScrollContainer.clientHeight >=
+        currentScrollContainer.scrollHeight - 4
 
       if (isAtBottom) {
         nextHeadingId =
