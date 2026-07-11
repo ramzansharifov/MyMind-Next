@@ -11,6 +11,22 @@ export const studyNodes = sqliteTable(
       onDelete: 'cascade'
     }),
     title: text('title').notNull(),
+    icon: text('icon', {
+      enum: [
+        'folder',
+        'book',
+        'graduation',
+        'science',
+        'calculator',
+        'code',
+        'languages',
+        'history',
+        'microscope',
+        'art',
+        'music',
+        'work'
+      ]
+    }),
     position: integer('position').notNull(),
     isExpanded: integer('is_expanded', {
       mode: 'boolean'

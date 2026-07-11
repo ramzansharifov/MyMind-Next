@@ -4,6 +4,7 @@ import type {
   MoveStudyNodeInput,
   SaveStudyMaterialInput,
   StudyApi,
+  StudyFolderIconName,
   StudyLocalAsset,
   StudyMaterial,
   StudyNode
@@ -30,6 +31,12 @@ export const studyClient = {
     return getStudyApi().renameNode({
       id,
       title
+    })
+  },
+  updateFolderIcon(id: string, icon: StudyFolderIconName): Promise<StudyNode> {
+    return getStudyApi().updateFolderIcon({
+      id,
+      icon
     })
   },
 

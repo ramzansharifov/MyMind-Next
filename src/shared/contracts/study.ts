@@ -1,5 +1,19 @@
 export type StudyNodeType = 'folder' | 'material'
 
+export type StudyFolderIconName =
+  | 'folder'
+  | 'book'
+  | 'graduation'
+  | 'science'
+  | 'calculator'
+  | 'code'
+  | 'languages'
+  | 'history'
+  | 'microscope'
+  | 'art'
+  | 'music'
+  | 'work'
+
 export type StudyBlockType =
   | 'text'
   | 'heading'
@@ -160,6 +174,7 @@ export interface StudyNode {
   type: StudyNodeType
   parentId: string | null
   title: string
+  icon?: StudyFolderIconName
   position: number
   isExpanded: boolean
   createdAt: number
@@ -183,6 +198,10 @@ export interface CreateStudyNodeInput {
 export interface RenameStudyNodeInput {
   id: string
   title: string
+}
+export interface UpdateStudyFolderIconInput {
+  id: string
+  icon: StudyFolderIconName
 }
 
 export interface UpdateStudyNodeExpansionInput {
@@ -208,6 +227,7 @@ export const STUDY_IPC_CHANNELS = {
   listNodes: 'study:list-nodes',
   createNode: 'study:create-node',
   renameNode: 'study:rename-node',
+  updateFolderIcon: 'study:update-folder-icon',
   deleteNode: 'study:delete-node',
   updateExpansion: 'study:update-expansion',
   moveNode: 'study:move-node',
@@ -220,6 +240,7 @@ export interface StudyApi {
   listNodes(): Promise<StudyNode[]>
   createNode(input: CreateStudyNodeInput): Promise<StudyNode>
   renameNode(input: RenameStudyNodeInput): Promise<StudyNode>
+  updateFolderIcon(input: UpdateStudyFolderIconInput): Promise<StudyNode>
   deleteNode(nodeId: string): Promise<boolean>
   updateExpansion(input: UpdateStudyNodeExpansionInput): Promise<StudyNode>
   moveNode(input: MoveStudyNodeInput): Promise<StudyNode[]>

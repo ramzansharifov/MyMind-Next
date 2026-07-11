@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type {
   CreateStudyNodeInput,
   MoveStudyNodeInput,
+  StudyFolderIconName,
   StudyNode
 } from '../../../../../shared/contracts/study'
 import { studyClient } from '../api/study-client'
@@ -12,11 +13,10 @@ interface UseStudyResult {
   selectedNodeId: string | null
   isLoading: boolean
   error: string | null
-  selectNode: (
-    nodeId: string | null
-  ) => void
+  selectNode: (nodeId: string | null) => void
   createNode: (input: CreateStudyNodeInput) => Promise<StudyNode | null>
   renameNode: (nodeId: string, title: string) => Promise<void>
+  updateFolderIcon: (nodeId: string, icon: StudyFolderIconName) => Promise<void>
   deleteNode: (nodeId: string) => Promise<void>
   toggleFolder: (node: StudyNode) => Promise<void>
   moveNode: (input: MoveStudyNodeInput) => Promise<void>
@@ -82,6 +82,20 @@ export function useStudy(): UseStudyResult {
       setError(reason instanceof Error ? reason.message : 'Не удалось переименовать элемент')
     }
   }, [])
+  const updateFolderIcon = useCallback(
+    async (nodeId: string, icon: StudyFolderIconName): Promise<void> => {
+      try {
+        setError(null)
+
+        const updated = await studyClient.updateFolderIcon(nodeId, icon)
+
+        setNodes((current) => current.map((node) => (node.id === updated.id ? updated : node)))
+      } catch (reason: unknown) {
+        setError(reason instanceof Error ? reason.message : 'Не удалось изменить иконку папки')
+      }
+    },
+    []
+  )
 
   const deleteNode = useCallback(async (nodeId: string): Promise<void> => {
     try {
@@ -104,13 +118,7 @@ export function useStudy(): UseStudyResult {
 
         const remaining = current.filter((node) => !removed.has(node.id))
 
-        setSelectedNodeId(
-          (selected) =>
-            selected &&
-            removed.has(selected)
-              ? null
-              : selected
-        )
+        setSelectedNodeId((selected) => (selected && removed.has(selected) ? null : selected))
 
         return remaining
       })
@@ -165,6 +173,7 @@ export function useStudy(): UseStudyResult {
     selectNode: setSelectedNodeId,
     createNode,
     renameNode,
+    updateFolderIcon,
     deleteNode,
     toggleFolder,
     moveNode

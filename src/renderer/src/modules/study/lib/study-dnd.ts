@@ -2,8 +2,6 @@ import type { MoveStudyNodeInput, StudyNode } from '../../../../../shared/contra
 
 export type StudyDropPlacement = 'before' | 'inside' | 'after' | 'root'
 
-
-
 export function createStudyMoveInput(
   nodes: StudyNode[],
   activeId: string,

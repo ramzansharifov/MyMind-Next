@@ -8,6 +8,7 @@ import type {
   MoveStudyNodeInput,
   SaveStudyMaterialInput,
   StudyBlock,
+  StudyFolderIconName,
   StudyDocument,
   StudyMaterial,
   StudyNode
@@ -84,6 +85,7 @@ function documentToPlainText(document: StudyDocument): string {
 function mapStudyNode(row: typeof studyNodes.$inferSelect): StudyNode {
   return studyNodeSchema.parse({
     ...row,
+    icon: row.icon ?? undefined,
     createdAt: row.createdAt.getTime(),
     updatedAt: row.updatedAt.getTime()
   })
@@ -140,6 +142,7 @@ export function createStudyNode(input: CreateStudyNodeInput): StudyNode {
         parentId: input.parentId,
         title,
         position: nextPosition,
+        icon: input.type === 'folder' ? (input.icon ?? 'folder') : null,
         isExpanded: true,
         createdAt: now,
         updatedAt: now
@@ -196,6 +199,32 @@ export function renameStudyNode(id: string, title: string): StudyNode {
 
   if (!updated) {
     throw new Error('Study node was not found')
+  }
+
+  return mapStudyNode(updated)
+}
+export function updateStudyFolderIcon(id: string, icon: StudyFolderIconName): StudyNode {
+  const database = getDatabase()
+
+  const folder = database.select().from(studyNodes).where(eq(studyNodes.id, id)).get()
+
+  if (!folder || folder.type !== 'folder') {
+    throw new Error('Study folder was not found')
+  }
+
+  database
+    .update(studyNodes)
+    .set({
+      icon,
+      updatedAt: new Date()
+    })
+    .where(eq(studyNodes.id, id))
+    .run()
+
+  const updated = database.select().from(studyNodes).where(eq(studyNodes.id, id)).get()
+
+  if (!updated) {
+    throw new Error('Study folder was not found')
   }
 
   return mapStudyNode(updated)

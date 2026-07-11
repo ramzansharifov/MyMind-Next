@@ -21,6 +21,8 @@ const api: MyMindApi = {
 
     renameNode: (input) =>
       ipcRenderer.invoke(STUDY_IPC_CHANNELS.renameNode, input) as Promise<StudyNode>,
+    updateFolderIcon: (input) =>
+      ipcRenderer.invoke(STUDY_IPC_CHANNELS.updateFolderIcon, input) as Promise<StudyNode>,
 
     deleteNode: (nodeId) =>
       ipcRenderer.invoke(STUDY_IPC_CHANNELS.deleteNode, nodeId) as Promise<boolean>,

@@ -308,8 +308,7 @@ function BlockInsertMenu({
       <div
         className={cn(
           'group/insert flex items-center',
-          overlay &&
-            'absolute inset-x-0 top-0 z-10 -translate-y-1/2',
+          overlay && 'absolute inset-x-0 top-0 z-10 -translate-y-1/2',
           'transition-[height] duration-150 ease-out',
           open || persistent ? 'h-8' : 'h-3 focus-within:h-8 hover:h-8'
         )}

@@ -2,6 +2,21 @@ import { z } from 'zod'
 
 export const studyNodeTypeSchema = z.enum(['folder', 'material'])
 
+export const studyFolderIconSchema = z.enum([
+  'folder',
+  'book',
+  'graduation',
+  'science',
+  'calculator',
+  'code',
+  'languages',
+  'history',
+  'microscope',
+  'art',
+  'music',
+  'work'
+])
+
 export const studyTextBlockSchema = z.object({
   id: z.string().min(1),
   type: z.literal('text'),
@@ -144,6 +159,7 @@ export const studyNodeSchema = z.object({
   type: studyNodeTypeSchema,
   parentId: z.string().nullable(),
   title: z.string().min(1),
+  icon: studyFolderIconSchema.optional(),
   position: z.number().int(),
   isExpanded: z.boolean(),
   createdAt: z.number().int(),
@@ -161,12 +177,17 @@ export const studyMaterialSchema = z.object({
 export const createStudyNodeInputSchema = z.object({
   type: studyNodeTypeSchema,
   parentId: z.string().nullable(),
-  title: z.string().trim().optional()
+  title: z.string().trim().optional(),
+  icon: studyFolderIconSchema.optional()
 })
 
 export const renameStudyNodeInputSchema = z.object({
   id: z.string().min(1),
   title: z.string().trim().min(1).max(120)
+})
+export const updateStudyFolderIconInputSchema = z.object({
+  id: z.string().min(1),
+  icon: studyFolderIconSchema
 })
 
 export const updateStudyNodeExpansionInputSchema = z.object({

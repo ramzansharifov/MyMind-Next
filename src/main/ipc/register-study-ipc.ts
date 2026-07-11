@@ -7,6 +7,7 @@ import {
   moveStudyNodeInputSchema,
   renameStudyNodeInputSchema,
   saveStudyMaterialInputSchema,
+  updateStudyFolderIconInputSchema,
   updateStudyNodeExpansionInputSchema
 } from '../../shared/validation/study'
 import {
@@ -17,6 +18,7 @@ import {
   moveStudyNode,
   renameStudyNode,
   saveStudyMaterial,
+  updateStudyFolderIcon,
   updateStudyNodeExpansion
 } from '../repositories/study.repository'
 import { importStudyAsset } from '../services/study-assets'
@@ -38,6 +40,11 @@ export function registerStudyIpcHandlers(): void {
     const input = renameStudyNodeInputSchema.parse(rawInput)
 
     return renameStudyNode(input.id, input.title)
+  })
+  ipcMain.handle(STUDY_IPC_CHANNELS.updateFolderIcon, (_event, rawInput: unknown) => {
+    const input = updateStudyFolderIconInputSchema.parse(rawInput)
+
+    return updateStudyFolderIcon(input.id, input.icon)
   })
 
   ipcMain.handle(STUDY_IPC_CHANNELS.deleteNode, (_event, nodeId: unknown) => {
