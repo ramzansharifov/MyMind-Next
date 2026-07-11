@@ -1,16 +1,20 @@
 import * as AlertDialog from '@radix-ui/react-alert-dialog'
-import { FilePlus2, FolderOpen, FolderPlus, Search, X } from 'lucide-react'
+import {
+  BookOpen,
+  FolderOpen
+} from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import type { StudyNode } from '../../../../shared/contracts/study'
 import { StudyMaterialEditor } from './components/StudyMaterialEditor'
 import { DeleteConfirmationDialog } from './components/DeleteConfirmationDialog'
+import { StudyHome } from './components/StudyHome'
 import { StudyTree } from './components/StudyTree'
 import { useStudy } from './hooks/use-study'
 
 export function StudyPage(): React.JSX.Element {
   const study = useStudy()
-  const [search, setSearch] = useState('')
+
   const [renameTarget, setRenameTarget] = useState<StudyNode | null>(null)
   const [renameValue, setRenameValue] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<StudyNode | null>(null)
@@ -21,20 +25,14 @@ export function StudyPage(): React.JSX.Element {
   )
 
   const selectedParentId =
-    selectedNode?.type === 'folder' ? selectedNode.id : (selectedNode?.parentId ?? null)
-  const creationParent =
-    selectedParentId
-      ? study.nodes.find(
-          (node) =>
-            node.id === selectedParentId &&
-            node.type === 'folder'
-        ) ?? null
-      : null
+    selectedNode?.type === 'folder'
+      ? selectedNode.id
+      : (selectedNode?.parentId ??
+        null)
 
-  const creationContextTitle =
-    creationParent?.title ?? 'Корень'
-
-  function openRename(node: StudyNode): void {
+  function openRename(
+    node: StudyNode
+  ): void {
     setRenameTarget(node)
     setRenameValue(node.title)
   }
@@ -42,82 +40,34 @@ export function StudyPage(): React.JSX.Element {
   return (
     <section className="grid h-full min-h-0 grid-cols-[280px_minmax(0,1fr)] overflow-hidden">
       <aside className="flex min-h-0 flex-col border-r border-[var(--app-border)] bg-[var(--app-sidebar)]">
-        <header className="shrink-0 border-b border-[var(--app-border)] p-4">
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-[11px] font-semibold tracking-[0.08em] text-violet-300 uppercase">
-                Библиотека
-              </p>
+        <header className="shrink-0 border-b border-[var(--app-border)] p-3">
+          <button
+            type="button"
+            aria-current={
+              selectedNode === null
+                ? 'page'
+                : undefined
+            }
+            className={
+              selectedNode === null
+                ? 'flex h-11 w-full items-center gap-3 rounded-xl bg-violet-500/10 px-3 text-left text-violet-200 outline-none ring-1 ring-inset ring-violet-500/15'
+                : 'flex h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-[var(--app-muted)] outline-none transition-colors hover:bg-white/[0.04] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35'
+            }
+            onClick={() => {
+              study.selectNode(null)
+            }}
+          >
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-300">
+              <BookOpen
+                aria-hidden="true"
+                className="size-4"
+              />
+            </span>
 
-              <h1 className="mt-1 text-base font-semibold text-[var(--app-text)]">
-                Обучение
-              </h1>
-
-              <p
-                title={`Новые элементы: ${creationContextTitle}`}
-                className="mt-1 max-w-40 truncate text-[10px] text-[var(--app-muted)]"
-              >
-                Новые элементы:{' '}
-                <span className="text-violet-300/90">
-                  {creationContextTitle}
-                </span>
-              </p>
-            </div>
-
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                aria-label="Создать папку"
-                className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-white/[0.06] hover:text-[var(--app-text)]"
-                onClick={() => {
-                  void study.createNode({
-                    type: 'folder',
-                    parentId: selectedParentId
-                  })
-                }}
-              >
-                <FolderPlus aria-hidden="true" className="size-4" />
-              </button>
-
-              <button
-                type="button"
-                aria-label="Создать материал"
-                className="flex size-8 items-center justify-center rounded-lg bg-violet-500 text-white hover:bg-violet-400"
-                onClick={() => {
-                  void study.createNode({
-                    type: 'material',
-                    parentId: selectedParentId
-                  })
-                }}
-              >
-                <FilePlus2 aria-hidden="true" className="size-4" />
-              </button>
-            </div>
-          </div>
-
-          <label className="mt-4 flex h-9 items-center gap-2 rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 focus-within:border-violet-500/45">
-            <Search aria-hidden="true" className="size-4 shrink-0 text-[var(--app-muted)]" />
-
-            <input
-              value={search}
-              placeholder="Поиск"
-              className="min-w-0 flex-1 bg-transparent text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]"
-              onChange={(event) => {
-                setSearch(event.target.value)
-              }}
-            />
-
-            {search && (
-              <button
-                type="button"
-                aria-label="Очистить поиск"
-                className="text-[var(--app-muted)] hover:text-[var(--app-text)]"
-                onClick={() => setSearch('')}
-              >
-                <X aria-hidden="true" className="size-3.5" />
-              </button>
-            )}
-          </label>
+            <span className="text-sm font-semibold">
+              Обучение
+            </span>
+          </button>
         </header>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-3">
@@ -126,7 +76,7 @@ export function StudyPage(): React.JSX.Element {
           ) : (
             <StudyTree
               nodes={study.nodes}
-              search={search}
+              search=""
               selectedNodeId={study.selectedNodeId}
               activeParentId={selectedParentId}
               onSelect={study.selectNode}
@@ -174,7 +124,18 @@ export function StudyPage(): React.JSX.Element {
             }}
           />
         ) : (
-          <EmptyWorkspace
+          <StudyHome
+            nodes={study.nodes}
+            isLoading={study.isLoading}
+            onOpen={(nodeId) => {
+              study.selectNode(nodeId)
+            }}
+            onCreateFolder={() => {
+              void study.createNode({
+                type: 'folder',
+                parentId: null
+              })
+            }}
             onCreateMaterial={() => {
               void study.createNode({
                 type: 'material',
@@ -338,24 +299,4 @@ function FolderWorkspace({
   )
 }
 
-function EmptyWorkspace({ onCreateMaterial }: { onCreateMaterial: () => void }): React.JSX.Element {
-  return (
-    <div className="flex h-full items-center justify-center p-8">
-      <div className="max-w-sm text-center">
-        <h1 className="text-xl font-semibold text-[var(--app-text)]">Библиотека пуста</h1>
 
-        <p className="mt-2 text-sm leading-6 text-[var(--app-muted)]">
-          Создай первый материал и начни собирать свою учебную базу.
-        </p>
-
-        <button
-          type="button"
-          className="mt-5 rounded-lg bg-violet-500 px-4 py-2 text-sm font-medium text-white hover:bg-violet-400"
-          onClick={onCreateMaterial}
-        >
-          Создать материал
-        </button>
-      </div>
-    </div>
-  )
-}

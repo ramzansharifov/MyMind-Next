@@ -39,13 +39,6 @@ export function useStudy(): UseStudyResult {
         }
 
         setNodes(loadedNodes)
-        setSelectedNodeId(
-          (current) =>
-            current ??
-            loadedNodes.find((node) => node.type === 'material')?.id ??
-            loadedNodes[0]?.id ??
-            null
-        )
       })
       .catch((reason: unknown) => {
         if (active) {
@@ -111,8 +104,12 @@ export function useStudy(): UseStudyResult {
 
         const remaining = current.filter((node) => !removed.has(node.id))
 
-        setSelectedNodeId((selected) =>
-          selected && removed.has(selected) ? (remaining[0]?.id ?? null) : selected
+        setSelectedNodeId(
+          (selected) =>
+            selected &&
+            removed.has(selected)
+              ? null
+              : selected
         )
 
         return remaining
