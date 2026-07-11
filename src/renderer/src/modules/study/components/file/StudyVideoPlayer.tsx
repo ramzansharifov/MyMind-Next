@@ -22,16 +22,6 @@ interface StudyVideoPlayerProps {
   onError?: () => void
 }
 
-interface PictureInPictureDocument extends Document {
-  pictureInPictureEnabled?: boolean
-  pictureInPictureElement?: Element | null
-  exitPictureInPicture?: () => Promise<void>
-}
-
-interface PictureInPictureVideoElement extends HTMLVideoElement {
-  requestPictureInPicture?: () => Promise<unknown>
-}
-
 const playbackRates = [0.75, 1, 1.25, 1.5, 2] as const
 
 const controlButtonClassName = cn(
@@ -91,7 +81,9 @@ export function StudyVideoPlayer({
   const isSilent = isMuted || volume === 0
 
   const pictureInPictureAvailable =
-    isReady && Boolean((document as PictureInPictureDocument).pictureInPictureEnabled)
+    isReady &&
+    document.pictureInPictureEnabled &&
+    typeof videoRef.current?.requestPictureInPicture === 'function'
 
   useEffect(() => {
     function handleFullscreenChange(): void {
@@ -263,22 +255,19 @@ export function StudyVideoPlayer({
   }
 
   async function togglePictureInPicture(): Promise<void> {
-    const video = videoRef.current as PictureInPictureVideoElement | null
-
-    const pictureInPictureDocument = document as PictureInPictureDocument
+    const video = videoRef.current
 
     if (
       !video ||
-      !pictureInPictureDocument.pictureInPictureEnabled ||
-      !video.requestPictureInPicture
+      !document.pictureInPictureEnabled ||
+      typeof video.requestPictureInPicture !== 'function'
     ) {
       return
     }
 
     try {
-      if (pictureInPictureDocument.pictureInPictureElement === video) {
-        await pictureInPictureDocument.exitPictureInPicture?.()
-
+      if (document.pictureInPictureElement === video) {
+        await document.exitPictureInPicture()
         return
       }
 
