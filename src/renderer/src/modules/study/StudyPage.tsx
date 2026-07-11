@@ -22,6 +22,17 @@ export function StudyPage(): React.JSX.Element {
 
   const selectedParentId =
     selectedNode?.type === 'folder' ? selectedNode.id : (selectedNode?.parentId ?? null)
+  const creationParent =
+    selectedParentId
+      ? study.nodes.find(
+          (node) =>
+            node.id === selectedParentId &&
+            node.type === 'folder'
+        ) ?? null
+      : null
+
+  const creationContextTitle =
+    creationParent?.title ?? 'Корень'
 
   function openRename(node: StudyNode): void {
     setRenameTarget(node)
@@ -33,12 +44,24 @@ export function StudyPage(): React.JSX.Element {
       <aside className="flex min-h-0 flex-col border-r border-[var(--app-border)] bg-[var(--app-sidebar)]">
         <header className="shrink-0 border-b border-[var(--app-border)] p-4">
           <div className="flex items-center justify-between gap-3">
-            <div>
+            <div className="min-w-0">
               <p className="text-[11px] font-semibold tracking-[0.08em] text-violet-300 uppercase">
                 Библиотека
               </p>
 
-              <h1 className="mt-1 text-base font-semibold text-[var(--app-text)]">Обучение</h1>
+              <h1 className="mt-1 text-base font-semibold text-[var(--app-text)]">
+                Обучение
+              </h1>
+
+              <p
+                title={`Новые элементы: ${creationContextTitle}`}
+                className="mt-1 max-w-40 truncate text-[10px] text-[var(--app-muted)]"
+              >
+                Новые элементы:{' '}
+                <span className="text-violet-300/90">
+                  {creationContextTitle}
+                </span>
+              </p>
             </div>
 
             <div className="flex items-center gap-1">
@@ -105,7 +128,11 @@ export function StudyPage(): React.JSX.Element {
               nodes={study.nodes}
               search={search}
               selectedNodeId={study.selectedNodeId}
+              activeParentId={selectedParentId}
               onSelect={study.selectNode}
+              onSelectRoot={() => {
+                study.selectNode(null)
+              }}
               onToggleFolder={(node) => {
                 void study.toggleFolder(node)
               }}

@@ -39,7 +39,9 @@ interface StudyTreeProps {
   nodes: StudyNode[]
   search: string
   selectedNodeId: string | null
+  activeParentId: string | null
   onSelect: (nodeId: string) => void
+  onSelectRoot: () => void
   onToggleFolder: (node: StudyNode) => void
   onRename: (node: StudyNode) => void
   onDelete: (node: StudyNode) => void
@@ -56,7 +58,9 @@ export function StudyTree({
   nodes,
   search,
   selectedNodeId,
+  activeParentId,
   onSelect,
+  onSelectRoot,
   onToggleFolder,
   onRename,
   onDelete,
@@ -100,14 +104,6 @@ export function StudyTree({
     }
   }
 
-  if (visibleNodes.length === 0) {
-    return (
-      <div className="flex min-h-32 items-center justify-center rounded-xl border border-dashed border-[var(--app-border)] px-4 text-center text-sm text-[var(--app-muted)]">
-        {search ? 'Ничего не найдено' : 'Создай первую папку или материал'}
-      </div>
-    )
-  }
-
   return (
     <DndContext
       sensors={sensors}
@@ -120,25 +116,57 @@ export function StudyTree({
         setDropPreview(null)
       }}
     >
-      <div className="space-y-1">
-        {visibleNodes.map(({ node, depth }) => (
-          <StudyTreeItem
-            key={node.id}
-            node={node}
-            depth={depth}
-            isSelected={selectedNodeId === node.id}
-            dragDisabled={dragDisabled}
-            dropPlacement={dropPreview?.overId === node.id ? dropPreview.placement : null}
-            onSelect={onSelect}
-            onToggleFolder={onToggleFolder}
-            onRename={onRename}
-            onDelete={onDelete}
-          />
-        ))}
+      <div className="flex min-h-full flex-col">
+        {visibleNodes.length === 0 ? (
+          <div className="flex min-h-32 shrink-0 items-center justify-center rounded-xl border border-dashed border-[var(--app-border)] px-4 text-center text-sm text-[var(--app-muted)]">
+            {search
+              ? 'Ничего не найдено'
+              : 'Создай первую папку или материал'}
+          </div>
+        ) : (
+          <div className="shrink-0 space-y-1">
+            {visibleNodes.map(
+              ({ node, depth }) => (
+                <StudyTreeItem
+                  key={node.id}
+                  node={node}
+                  depth={depth}
+                  isSelected={
+                    selectedNodeId === node.id
+                  }
+                  isCreationContext={
+                    activeParentId === node.id
+                  }
+                  dragDisabled={dragDisabled}
+                  dropPlacement={
+                    dropPreview?.overId ===
+                    node.id
+                      ? dropPreview.placement
+                      : null
+                  }
+                  onSelect={onSelect}
+                  onToggleFolder={
+                    onToggleFolder
+                  }
+                  onRename={onRename}
+                  onDelete={onDelete}
+                />
+              )
+            )}
+          </div>
+        )}
 
         <StudyRootDropZone
+          dragDisabled={dragDisabled}
           active={activeNode !== null}
-          highlighted={dropPreview?.placement === 'root'}
+          highlighted={
+            dropPreview?.placement ===
+            'root'
+          }
+          isContextActive={
+            activeParentId === null
+          }
+          onSelect={onSelectRoot}
         />
       </div>
 
@@ -209,6 +237,7 @@ interface StudyTreeItemProps {
   node: StudyNode
   depth: number
   isSelected: boolean
+  isCreationContext: boolean
   dragDisabled: boolean
   dropPlacement: StudyDropPlacement | null
   onSelect: (nodeId: string) => void
@@ -221,6 +250,7 @@ function StudyTreeItem({
   node,
   depth,
   isSelected,
+  isCreationContext,
   dragDisabled,
   dropPlacement,
   onSelect,
@@ -265,7 +295,11 @@ function StudyTreeItem({
         isSelected
           ? 'bg-violet-500/12 text-violet-200'
           : 'text-[var(--app-muted)] hover:bg-white/[0.04] hover:text-[var(--app-text)]',
-        dropPlacement === 'inside' && 'bg-violet-500/15 ring-1 ring-violet-500/45',
+        isCreationContext &&
+          !isSelected &&
+          'bg-violet-500/[0.045] text-[var(--app-text)] ring-1 ring-inset ring-violet-500/15',
+        dropPlacement === 'inside' &&
+          'bg-violet-500/15 ring-1 ring-violet-500/45',
         isDragging && 'opacity-35'
       )}
       style={{
@@ -372,34 +406,57 @@ function StudyTreeItem({
 }
 
 function StudyRootDropZone({
+  dragDisabled,
   active,
-  highlighted
+  highlighted,
+  isContextActive,
+  onSelect
 }: {
+  dragDisabled: boolean
   active: boolean
   highlighted: boolean
-}): React.JSX.Element | null {
+  isContextActive: boolean
+  onSelect: () => void
+}): React.JSX.Element {
   const { setNodeRef } = useDroppable({
     id: ROOT_DROP_ID,
-    disabled: !active
+    disabled: dragDisabled
   })
 
-  if (!active) {
-    return null
-  }
-
   return (
-    <div
+    <button
       ref={setNodeRef}
+      type="button"
+      aria-label="Выбрать корень библиотеки"
+      aria-pressed={isContextActive}
       className={cn(
-        'mt-2 flex h-10 items-center justify-center rounded-lg border border-dashed',
-        'text-xs transition-colors',
+        'group/root mt-2 flex min-h-20 flex-1 items-start justify-center rounded-lg border pt-3',
+        'text-xs outline-none transition-colors',
+        'focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-500/35',
         highlighted
-          ? 'border-violet-400 bg-violet-500/10 text-violet-200'
-          : 'border-[var(--app-border)] text-[var(--app-muted)]'
+          ? 'border-dashed border-violet-400 bg-violet-500/10 text-violet-200'
+          : active
+            ? 'border-dashed border-[var(--app-border)] text-[var(--app-muted)]'
+            : isContextActive
+              ? 'border-violet-500/15 bg-violet-500/[0.025] text-violet-300/80'
+              : 'border-transparent text-transparent hover:bg-white/[0.018] hover:text-[var(--app-muted)]'
       )}
+      onClick={onSelect}
     >
-      Переместить в корень
-    </div>
+      <span
+        className={cn(
+          'rounded-md px-2 py-1 transition-opacity',
+          active ||
+            isContextActive
+            ? 'opacity-100'
+            : 'opacity-0 group-hover/root:opacity-100'
+        )}
+      >
+        {active
+          ? 'Переместить в корень'
+          : 'Корень библиотеки'}
+      </span>
+    </button>
   )
 }
 

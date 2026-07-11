@@ -12,7 +12,9 @@ interface UseStudyResult {
   selectedNodeId: string | null
   isLoading: boolean
   error: string | null
-  selectNode: (nodeId: string) => void
+  selectNode: (
+    nodeId: string | null
+  ) => void
   createNode: (input: CreateStudyNodeInput) => Promise<StudyNode | null>
   renameNode: (nodeId: string, title: string) => Promise<void>
   deleteNode: (nodeId: string) => Promise<void>

@@ -34,6 +34,23 @@ describe('study drag and drop', () => {
   it('uses the middle of a folder as the inside zone', () => {
     expect(getStudyDropPlacement(50, 0, 100, true)).toBe('inside')
   })
+  it('moves a nested node back to the root', () => {
+    expect(
+      createStudyMoveInput(
+        nodes,
+        'folder-child',
+        null,
+        'root'
+      )
+    ).toEqual({
+      id: 'folder-child',
+      parentId: null,
+      position: 3
+    })
+  })
+})
+
+function createNode(
 })
 
 function createNode(
