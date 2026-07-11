@@ -31,6 +31,10 @@ import {
 export function StudyPage(): React.JSX.Element {
   const study = useStudy()
 
+  const studyNodes = study.nodes
+  const selectNode = study.selectNode
+  const toggleFolder = study.toggleFolder
+
   const [renameTarget, setRenameTarget] = useState<StudyNode | null>(null)
   const [renameValue, setRenameValue] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<StudyNode | null>(null)
@@ -55,17 +59,17 @@ export function StudyPage(): React.JSX.Element {
   }
   const selectStudyNode = useCallback(
     (nodeId: string): void => {
-      const ancestorFolders = getStudyAncestorFolders(study.nodes, nodeId)
+      const ancestorFolders = getStudyAncestorFolders(studyNodes, nodeId)
 
       ancestorFolders.forEach((folder) => {
         if (!folder.isExpanded) {
-          void study.toggleFolder(folder)
+          void toggleFolder(folder)
         }
       })
 
-      study.selectNode(nodeId)
+      selectNode(nodeId)
     },
-    [study.nodes, study.selectNode, study.toggleFolder]
+    [selectNode, studyNodes, toggleFolder]
   )
 
   useEffect(() => {

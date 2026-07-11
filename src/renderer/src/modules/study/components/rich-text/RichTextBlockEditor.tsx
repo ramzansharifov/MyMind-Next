@@ -1,6 +1,6 @@
 import type { Editor } from '@tiptap/core'
 import { EditorContent, useEditor } from '@tiptap/react'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import type { StudyInternalLinkTarget } from '../../../../../../shared/contracts/study'
 import { studyClient } from '../../api/study-client'
@@ -54,11 +54,53 @@ export function RichTextBlockEditor({
 
   const targetsRef = useRef(targets)
 
-  const selectTargetRef = useRef<(target: StudyInternalLinkTarget) => void>(() => undefined)
+  useEffect(() => {
+    pickerStateRef.current = pickerState
+  }, [pickerState])
 
-  pickerStateRef.current = pickerState
+  useEffect(() => {
+    targetsRef.current = targets
+  }, [targets])
 
-  targetsRef.current = targets
+  const selectInternalLinkTarget = useCallback((target: StudyInternalLinkTarget): void => {
+    const current = pickerStateRef.current
+
+    const currentEditor = editorInstanceRef.current
+
+    if (!currentEditor || currentEditor.isDestroyed || !current) {
+      return
+    }
+
+    const selectedLabel = current.selectedText.trim()
+
+    const label = selectedLabel || target.title
+
+    currentEditor
+      .chain()
+      .focus()
+      .deleteRange({
+        from: current.from,
+        to: current.to
+      })
+      .insertContent({
+        type: 'studyInternalLink',
+        attrs: {
+          targetKind: target.kind,
+          materialId: target.materialId,
+          headingId: target.headingId,
+          headingLevel: target.headingLevel,
+          labelMode: selectedLabel ? 'custom' : 'auto',
+          label,
+          materialTitle: target.materialTitle,
+          folderPath: target.folderPath
+        }
+      })
+      .run()
+
+    setPickerState(null)
+    setTargets([])
+    setIsSearching(false)
+  }, [])
 
   function synchronizeTriggerPicker(currentEditor: Editor): void {
     const trigger = findWikiLinkTrigger(currentEditor)
@@ -154,7 +196,7 @@ export function RichTextBlockEditor({
           }
 
           event.preventDefault()
-          selectTargetRef.current(target)
+          selectInternalLinkTarget(target)
 
           return true
         }
@@ -209,46 +251,6 @@ export function RichTextBlockEditor({
       }
     }
   })
-
-  function selectInternalLinkTarget(target: StudyInternalLinkTarget): void {
-    const current = pickerStateRef.current
-
-    if (!editor || editor.isDestroyed || !current) {
-      return
-    }
-
-    const selectedLabel = current.selectedText.trim()
-
-    const label = selectedLabel || target.title
-
-    editor
-      .chain()
-      .focus()
-      .deleteRange({
-        from: current.from,
-        to: current.to
-      })
-      .insertContent({
-        type: 'studyInternalLink',
-        attrs: {
-          targetKind: target.kind,
-          materialId: target.materialId,
-          headingId: target.headingId,
-          headingLevel: target.headingLevel,
-          labelMode: selectedLabel ? 'custom' : 'auto',
-          label,
-          materialTitle: target.materialTitle,
-          folderPath: target.folderPath
-        }
-      })
-      .run()
-
-    setPickerState(null)
-    setTargets([])
-    setIsSearching(false)
-  }
-
-  selectTargetRef.current = selectInternalLinkTarget
 
   useEffect(() => {
     onChangeRef.current = onChange
@@ -318,6 +320,8 @@ export function RichTextBlockEditor({
 
   const pickerQuery = pickerState?.query ?? ''
 
+  const pickerOpen = pickerState !== null
+
   useEffect(() => {
     if (!pickerMode) {
       return
@@ -373,7 +377,7 @@ export function RichTextBlockEditor({
   }, [materialId, pickerMode, pickerQuery])
 
   useEffect(() => {
-    if (!editor || !pickerState) {
+    if (!editor || !pickerOpen) {
       return
     }
 
@@ -399,7 +403,7 @@ export function RichTextBlockEditor({
 
       document.removeEventListener('scroll', reposition, true)
     }
-  }, [editor, pickerState !== null])
+  }, [editor, pickerOpen])
 
   if (!editor) {
     return <div className="min-h-7 animate-pulse rounded-lg bg-white/[0.025]" />
