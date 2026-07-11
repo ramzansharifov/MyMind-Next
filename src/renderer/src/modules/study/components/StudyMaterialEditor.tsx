@@ -7,6 +7,7 @@ import type { StudyDocument, StudyNode } from '../../../../../shared/contracts/s
 import { studyClient } from '../api/study-client'
 import { createEmptyStudyDocument } from '../lib/study-document'
 import { StudyBlockEditor } from './StudyBlockEditor'
+import { StudyReadNavigation } from './StudyReadNavigation'
 
 interface StudyMaterialEditorProps {
   node: StudyNode
@@ -25,6 +26,7 @@ export function StudyMaterialEditor({ node }: StudyMaterialEditorProps): React.J
   const draftVersionRef = useRef(0)
   const hasUnsavedChangesRef = useRef(false)
   const isMountedRef = useRef(true)
+  const readScrollRef = useRef<HTMLDivElement | null>(null)
 
   const clearSaveTimer = useCallback((): void => {
     if (saveTimerRef.current === null) {
@@ -190,18 +192,31 @@ export function StudyMaterialEditor({ node }: StudyMaterialEditorProps): React.J
       </header>
 
       <div
+        ref={mode === 'read' ? readScrollRef : undefined}
         className={
           mode === 'read'
-            ? 'min-h-0 flex-1 overflow-y-auto bg-[#0b0c10] px-6 py-8 max-[640px]:px-3 max-[640px]:py-4'
+            ? 'min-h-0 flex-1 [scrollbar-gutter:stable] overflow-y-auto bg-[#0b0c10] px-6 py-8 max-[640px]:px-3 max-[640px]:py-4'
             : 'min-h-0 flex-1 overflow-y-auto px-6 py-6'
         }
       >
-        <StudyBlockEditor
-          materialId={node.id}
-          document={document}
-          mode={mode}
-          onChange={updateDocument}
-        />
+        <div
+          className={
+            mode === 'read'
+              ? 'mx-auto grid w-full max-w-[1400px] grid-cols-[minmax(0,1fr)_280px] items-start gap-5 max-[1180px]:grid-cols-1'
+              : undefined
+          }
+        >
+          <StudyBlockEditor
+            materialId={node.id}
+            document={document}
+            mode={mode}
+            onChange={updateDocument}
+          />
+
+          {mode === 'read' && (
+            <StudyReadNavigation blocks={document.blocks} scrollContainerRef={readScrollRef} />
+          )}
+        </div>
       </div>
     </section>
   )

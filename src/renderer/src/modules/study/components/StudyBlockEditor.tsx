@@ -21,7 +21,7 @@ import {
   Trash2,
   Type
 } from 'lucide-react'
-import { Fragment, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 
 import type {
   StudyBlock,
@@ -42,6 +42,11 @@ import {
   removeStudyBlock,
   replaceStudyBlock
 } from '../lib/study-document'
+import {
+  getStudyHeadingElementId,
+  STUDY_REVEAL_HEADING_EVENT,
+  type StudyRevealHeadingDetail
+} from '../lib/study-read-navigation'
 import { BlockSettingsErrorBoundary } from './BlockSettingsErrorBoundary'
 import { BlockSettingsPanel } from './BlockSettingsPanel'
 import { DeleteConfirmationDialog } from './DeleteConfirmationDialog'
@@ -805,6 +810,24 @@ function StudyReadNodeView({ node }: { node: StudyReadNode }): React.JSX.Element
 function StudyReadSection({ section }: { section: StudyReadSectionNode }): React.JSX.Element {
   const [open, setOpen] = useState(true)
 
+  useEffect(() => {
+    function handleRevealHeading(event: Event): void {
+      const detail = (event as CustomEvent<StudyRevealHeadingDetail>).detail
+
+      if (!detail?.headingId || !sectionContainsHeading(section, detail.headingId)) {
+        return
+      }
+
+      setOpen(true)
+    }
+
+    window.addEventListener(STUDY_REVEAL_HEADING_EVENT, handleRevealHeading)
+
+    return () => {
+      window.removeEventListener(STUDY_REVEAL_HEADING_EVENT, handleRevealHeading)
+    }
+  }, [section])
+
   const hasContent = section.children.length > 0
 
   const headingTitle = section.heading.text || 'Без заголовка'
@@ -854,6 +877,15 @@ function StudyReadSection({ section }: { section: StudyReadSectionNode }): React
   )
 }
 
+function sectionContainsHeading(section: StudyReadSectionNode, headingId: string): boolean {
+  if (section.heading.id === headingId) {
+    return true
+  }
+
+  return section.children.some(
+    (child) => child.kind === 'section' && sectionContainsHeading(child, headingId)
+  )
+}
 function getStudyReadNodeKey(node: StudyReadNode): string {
   return node.kind === 'section' ? node.heading.id : node.block.id
 }
@@ -867,11 +899,16 @@ function StudyReadHeading({ heading }: { heading: StudyHeadingBlock }): React.JS
     backgroundColor: heading.backgroundColor ?? 'transparent'
   }
 
-  const className = 'rounded-lg px-1 py-1.5 font-semibold'
+  const className = 'scroll-mt-6 rounded-lg px-1 py-1.5 font-semibold'
 
   if (heading.level === 1) {
     return (
-      <h1 className={className} style={style}>
+      <h1
+        id={getStudyHeadingElementId(heading.id)}
+        data-study-heading-id={heading.id}
+        className={className}
+        style={style}
+      >
         {heading.text || 'Без заголовка'}
       </h1>
     )
@@ -879,14 +916,24 @@ function StudyReadHeading({ heading }: { heading: StudyHeadingBlock }): React.JS
 
   if (heading.level === 2) {
     return (
-      <h2 className={className} style={style}>
+      <h2
+        id={getStudyHeadingElementId(heading.id)}
+        data-study-heading-id={heading.id}
+        className={className}
+        style={style}
+      >
         {heading.text || 'Без заголовка'}
       </h2>
     )
   }
 
   return (
-    <h3 className={className} style={style}>
+    <h3
+      id={getStudyHeadingElementId(heading.id)}
+      data-study-heading-id={heading.id}
+      className={className}
+      style={style}
+    >
       {heading.text || 'Без заголовка'}
     </h3>
   )
