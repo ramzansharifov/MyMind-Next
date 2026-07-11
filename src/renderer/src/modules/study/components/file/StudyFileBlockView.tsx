@@ -5,6 +5,7 @@ import type { StudyAssetKind, StudyBlock } from '../../../../../../shared/contra
 import { cn } from '../../../../shared/lib/cn'
 import { formatStudyFileSize, normalizeStudyRemoteMediaUrl } from './file-utils'
 import { StudyAudioPlayer } from './StudyAudioPlayer'
+import { StudyVideoPlayer } from './StudyVideoPlayer'
 
 type AttachmentBlock = Extract<
   StudyBlock,
@@ -127,13 +128,11 @@ export function StudyFileBlockView({ block }: StudyFileBlockViewProps): React.JS
   if (block.type === 'video') {
     return (
       <figure className="overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)]">
-        <video
+        <StudyVideoPlayer
           key={sourceUrl}
           src={sourceUrl}
-          controls
-          preload="metadata"
-          className="max-h-[36rem] w-full bg-black object-contain"
-          onLoadedMetadata={() => {
+          title={title}
+          onReady={() => {
             setFailedSourceKey(null)
           }}
           onError={() => {
