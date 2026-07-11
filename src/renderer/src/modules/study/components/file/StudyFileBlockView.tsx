@@ -29,15 +29,9 @@ export function StudyFileBlockView({ block }: StudyFileBlockViewProps): React.JS
 
   const loadError = failedSourceKey === sourceKey
 
-  const customTitle =
-    block.title?.trim() ?? ''
+  const customTitle = block.title?.trim() ?? ''
 
-  const accessibleTitle =
-    customTitle ||
-    asset?.name ||
-    getStudyAssetKindLabel(
-      block.type
-    )
+  const accessibleTitle = customTitle || asset?.name || getStudyAssetKindLabel(block.type)
 
   if (block.type === 'file') {
     if (!asset) {
@@ -52,28 +46,21 @@ export function StudyFileBlockView({ block }: StudyFileBlockViewProps): React.JS
           </div>
 
           <div className="min-w-0 flex-1">
-            <p className="break-words text-sm font-medium text-[var(--app-text)]">
-              {customTitle ||
-                asset.name}
+            <p className="text-sm font-medium break-words text-[var(--app-text)]">
+              {customTitle || asset.name}
             </p>
 
             {customTitle && (
-              <p className="mt-1 break-all text-xs text-[var(--app-muted)]">
-                {asset.name}
-              </p>
+              <p className="mt-1 text-xs break-all text-[var(--app-muted)]">{asset.name}</p>
             )}
 
             <p className="mt-1 text-xs text-[var(--app-muted)]">
-              {formatStudyFileSize(
-                asset.size
-              )}
+              {formatStudyFileSize(asset.size)}
               {' · '}
               {asset.mimeType}
             </p>
           </div>
         </div>
-
-
 
         <p className="mt-3 text-xs text-[var(--app-muted)]/70">
           Открытие файла будет добавлено отдельным действием.
@@ -100,14 +87,11 @@ export function StudyFileBlockView({ block }: StudyFileBlockViewProps): React.JS
   }
 
   if (block.type === 'image') {
-    const imageHeight =
-      block.imageHeight ?? 360
+    const imageHeight = block.imageHeight ?? 360
 
     return (
       <figure className="overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)]">
-        <MediaTitleBar
-          title={customTitle}
-        />
+        <MediaTitleBar title={customTitle} />
 
         <div
           className="flex w-full items-center justify-center overflow-hidden bg-black/20"
@@ -117,28 +101,18 @@ export function StudyFileBlockView({ block }: StudyFileBlockViewProps): React.JS
         >
           <img
             src={sourceUrl}
-            alt={
-              block.altText?.trim() ||
-              customTitle ||
-              ''
-            }
+            alt={customTitle}
             loading="lazy"
             referrerPolicy="no-referrer"
             className={cn(
               'size-full',
-              (block.imageFit ??
-                'contain') ===
-                'cover'
-                ? 'object-cover'
-                : 'object-contain'
+              (block.imageFit ?? 'contain') === 'cover' ? 'object-cover' : 'object-contain'
             )}
             onLoad={() => {
               setFailedSourceKey(null)
             }}
             onError={() => {
-              setFailedSourceKey(
-                sourceKey
-              )
+              setFailedSourceKey(sourceKey)
             }}
           />
         </div>
@@ -149,9 +123,7 @@ export function StudyFileBlockView({ block }: StudyFileBlockViewProps): React.JS
   if (block.type === 'video') {
     return (
       <figure className="overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)]">
-        <MediaTitleBar
-          title={customTitle}
-        />
+        <MediaTitleBar title={customTitle} />
 
         <StudyVideoPlayer
           key={sourceUrl}
@@ -161,9 +133,7 @@ export function StudyFileBlockView({ block }: StudyFileBlockViewProps): React.JS
             setFailedSourceKey(null)
           }}
           onError={() => {
-            setFailedSourceKey(
-              sourceKey
-            )
+            setFailedSourceKey(sourceKey)
           }}
         />
       </figure>
@@ -172,9 +142,7 @@ export function StudyFileBlockView({ block }: StudyFileBlockViewProps): React.JS
 
   return (
     <figure className="overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)]">
-      <MediaTitleBar
-        title={customTitle}
-      />
+      <MediaTitleBar title={customTitle} />
 
       <StudyAudioPlayer
         key={sourceUrl}
@@ -184,9 +152,7 @@ export function StudyFileBlockView({ block }: StudyFileBlockViewProps): React.JS
           setFailedSourceKey(null)
         }}
         onError={() => {
-          setFailedSourceKey(
-            sourceKey
-          )
+          setFailedSourceKey(sourceKey)
         }}
       />
     </figure>
@@ -205,20 +171,14 @@ function getStudyAttachmentSourceUrl(block: AttachmentBlock): string | null {
   return normalizeStudyRemoteMediaUrl(block.source.url)
 }
 
-function MediaTitleBar({
-  title
-}: {
-  title: string
-}): React.JSX.Element | null {
+function MediaTitleBar({ title }: { title: string }): React.JSX.Element | null {
   if (!title) {
     return null
   }
 
   return (
     <figcaption className="border-b border-[var(--app-border)] bg-white/[0.025] px-4 py-3">
-      <p className="truncate text-sm font-medium text-[var(--app-text)]">
-        {title}
-      </p>
+      <p className="truncate text-sm font-medium text-[var(--app-text)]">{title}</p>
     </figcaption>
   )
 }

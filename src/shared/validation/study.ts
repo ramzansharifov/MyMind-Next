@@ -101,7 +101,6 @@ export const studyImageBlockSchema = z.object({
   ...studyAttachmentBaseShape,
   type: z.literal('image'),
   source: studyMediaAssetSourceSchema,
-  altText: z.string().max(500).optional(),
   imageFit: z.enum(['contain', 'cover']).optional(),
   imageHeight: z.number().int().min(180).max(720).optional()
 })

@@ -814,20 +814,6 @@ function AttachmentSettings({
 
       {block.type === 'image' && (
         <>
-          <SettingsField label="Описание изображения">
-            <input
-              value={block.altText ?? ''}
-              placeholder="Что изображено на фотографии"
-              className="w-full max-w-full min-w-0 rounded-lg border border-(--app-border) bg-(--app-workspace) px-3 py-2 text-sm text-(--app-text) outline-none placeholder:text-(--app-muted)/60 focus:border-violet-500/45"
-              onChange={(event) => {
-                onChange({
-                  ...block,
-                  altText: event.target.value
-                })
-              }}
-            />
-          </SettingsField>
-
           <SettingsField label="Заполнение">
             <SegmentedChoice
               value={block.imageFit ?? 'contain'}
@@ -877,8 +863,6 @@ function AttachmentSettings({
           </SettingsField>
         </>
       )}
-
-
     </div>
   )
 }

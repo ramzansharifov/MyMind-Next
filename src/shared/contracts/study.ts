@@ -114,7 +114,6 @@ export interface StudyImageBlock {
   type: 'image'
   source: StudyMediaAssetSource
   title?: string
-  altText?: string
   imageFit?: StudyImageFit
   imageHeight?: number
 }
