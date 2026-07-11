@@ -1,3 +1,16 @@
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  pointerWithin,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragOverEvent,
+  type DragStartEvent
+} from '@dnd-kit/core'
 import type { Editor } from '@tiptap/core'
 import * as Collapsible from '@radix-ui/react-collapsible'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
@@ -14,6 +27,7 @@ import {
   Files,
   FileVideo,
   Heading,
+  GripVertical,
   Sigma,
   Workflow,
   Minus,
@@ -42,6 +56,7 @@ import {
   removeStudyBlock,
   replaceStudyBlock
 } from '../lib/study-document'
+import { moveStudyBlockByDrop, type StudyBlockDropPlacement } from '../lib/study-block-dnd'
 import {
   getStudyHeadingElementId,
   STUDY_REVEAL_HEADING_EVENT,
@@ -63,6 +78,18 @@ interface StudyBlockEditorProps {
   mode: 'edit' | 'read'
   onChange: (document: StudyDocument) => void
 }
+interface StudyBlockDropPreview {
+  blockId: string
+  placement: StudyBlockDropPlacement
+}
+
+interface StudyBlockDropData {
+  kind: 'study-block-drop'
+  blockId: string
+  placement: StudyBlockDropPlacement
+}
+
+const STUDY_BLOCK_DROP_PREFIX = 'study-block-drop'
 
 const blockTypes: Array<{
   type: StudyBlockType
@@ -127,10 +154,23 @@ export function StudyBlockEditor({
 
   const [deleteTarget, setDeleteTarget] = useState<StudyBlock | null>(null)
 
+  const [draggedBlockId, setDraggedBlockId] = useState<string | null>(null)
+
+  const [blockDropPreview, setBlockDropPreview] = useState<StudyBlockDropPreview | null>(null)
+
+  const blockDragSensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8
+      }
+    })
+  )
+
   const editorsRef = useRef(new Map<string, Editor>())
 
   const activeBlock =
     document.blocks.find((block) => block.id === activeBlockId) ?? document.blocks[0] ?? null
+  const draggedBlock = document.blocks.find((block) => block.id === draggedBlockId) ?? null
 
   if (mode === 'read') {
     return <ReadOnlyStudyDocument document={document} />
@@ -204,99 +244,189 @@ export function StudyBlockEditor({
     )
   }
 
+  function handleBlockDragStart(event: DragStartEvent): void {
+    const blockId = String(event.active.id)
+
+    if (!document.blocks.some((block) => block.id === blockId)) {
+      return
+    }
+
+    setDraggedBlockId(blockId)
+    setBlockDropPreview(null)
+    activateBlock(blockId)
+  }
+
+  function handleBlockDragOver(event: DragOverEvent): void {
+    setBlockDropPreview(resolveStudyBlockDropPreview(event))
+  }
+
+  function handleBlockDragEnd(event: DragEndEvent): void {
+    const activeId = String(event.active.id)
+
+    const preview = resolveStudyBlockDropPreview(event) ?? blockDropPreview
+
+    setDraggedBlockId(null)
+    setBlockDropPreview(null)
+
+    if (!preview) {
+      return
+    }
+
+    const nextDocument = moveStudyBlockByDrop(
+      document,
+      activeId,
+      preview.blockId,
+      preview.placement
+    )
+
+    if (nextDocument !== document) {
+      onChange(nextDocument)
+    }
+  }
+
+  function cancelBlockDrag(): void {
+    setDraggedBlockId(null)
+    setBlockDropPreview(null)
+  }
   return (
-    <div className="mx-auto grid w-full max-w-[1320px] grid-cols-[minmax(0,1fr)_320px] items-start gap-5 max-[1180px]:grid-cols-1">
-      <div className="min-w-0">
-        <div className="relative">
-          <BlockInsertMenu
-            overlay={document.blocks.length > 0}
-            persistent={document.blocks.length === 0}
-            onInsert={(type) => {
-              insertBlock(type, 0)
-            }}
-          />
+    <DndContext
+      sensors={blockDragSensors}
+      collisionDetection={pointerWithin}
+      onDragStart={handleBlockDragStart}
+      onDragOver={handleBlockDragOver}
+      onDragEnd={handleBlockDragEnd}
+      onDragCancel={cancelBlockDrag}
+    >
+      <div className="mx-auto grid w-full max-w-[1320px] grid-cols-[minmax(0,1fr)_320px] items-start gap-5 max-[1180px]:grid-cols-1">
+        <div className="min-w-0">
+          <div className="relative">
+            <BlockInsertMenu
+              overlay={document.blocks.length > 0}
+              persistent={document.blocks.length === 0}
+              onInsert={(type) => {
+                insertBlock(type, 0)
+              }}
+            />
 
-          {document.blocks.map((block, index) => (
-            <Fragment key={block.id}>
-              <StudyBlockCard
-                block={block}
-                isActive={activeBlock?.id === block.id}
-                isFirst={index === 0}
-                isLast={index === document.blocks.length - 1}
-                onActivate={() => {
-                  activateBlock(block.id)
-                }}
-                onTextEditorReady={(editor) => {
-                  registerTextEditor(block.id, editor)
-                }}
-                onTextEditorActivate={(editor) => {
-                  editorsRef.current.set(block.id, editor)
+            {document.blocks.map((block, index) => (
+              <Fragment key={block.id}>
+                <StudyBlockDragItem
+                  block={block}
+                  dragDisabled={document.blocks.length < 2}
+                  isDragging={draggedBlockId === block.id}
+                  dropPlacement={
+                    blockDropPreview?.blockId === block.id ? blockDropPreview.placement : null
+                  }
+                  isActive={activeBlock?.id === block.id}
+                  isFirst={index === 0}
+                  isLast={index === document.blocks.length - 1}
+                  onActivate={() => {
+                    activateBlock(block.id)
+                  }}
+                  onTextEditorReady={(editor) => {
+                    registerTextEditor(block.id, editor)
+                  }}
+                  onTextEditorActivate={(editor) => {
+                    editorsRef.current.set(block.id, editor)
 
-                  setActiveBlockId(block.id)
-                  setActiveTextEditor(editor)
-                }}
-                onTextEditorDispose={(editor) => {
-                  unregisterTextEditor(block.id, editor)
-                }}
-                onChange={updateBlock}
-                onMove={(direction) => {
-                  onChange(moveStudyBlock(document, block.id, direction))
-                }}
-                onDuplicate={() => {
-                  duplicateBlock(block.id)
-                }}
-                onDelete={() => {
-                  setDeleteTarget(block)
-                }}
-              />
+                    setActiveBlockId(block.id)
+                    setActiveTextEditor(editor)
+                  }}
+                  onTextEditorDispose={(editor) => {
+                    unregisterTextEditor(block.id, editor)
+                  }}
+                  onChange={updateBlock}
+                  onMove={(direction) => {
+                    onChange(moveStudyBlock(document, block.id, direction))
+                  }}
+                  onDuplicate={() => {
+                    duplicateBlock(block.id)
+                  }}
+                  onDelete={() => {
+                    setDeleteTarget(block)
+                  }}
+                />
 
-              <BlockInsertMenu
-                persistent={index === document.blocks.length - 1}
-                onInsert={(type) => {
-                  insertBlock(type, index + 1)
-                }}
-              />
-            </Fragment>
-          ))}
+                <BlockInsertMenu
+                  persistent={index === document.blocks.length - 1}
+                  onInsert={(type) => {
+                    insertBlock(type, index + 1)
+                  }}
+                />
+              </Fragment>
+            ))}
+          </div>
         </div>
-      </div>
 
-      <div className="sticky top-0 min-w-0 max-[1180px]:static max-[1180px]:mx-auto max-[1180px]:mt-2 max-[1180px]:w-full max-[1180px]:max-w-xl">
-        <BlockSettingsErrorBoundary key={activeBlock?.id ?? 'empty'}>
-          <BlockSettingsPanel
-            block={activeBlock}
-            materialId={materialId}
-            textEditor={
-              activeBlock?.type === 'text' && activeTextEditor && !activeTextEditor.isDestroyed
-                ? activeTextEditor
-                : null
+        <div className="sticky top-0 min-w-0 max-[1180px]:static max-[1180px]:mx-auto max-[1180px]:mt-2 max-[1180px]:w-full max-[1180px]:max-w-xl">
+          <BlockSettingsErrorBoundary key={activeBlock?.id ?? 'empty'}>
+            <BlockSettingsPanel
+              block={activeBlock}
+              materialId={materialId}
+              textEditor={
+                activeBlock?.type === 'text' && activeTextEditor && !activeTextEditor.isDestroyed
+                  ? activeTextEditor
+                  : null
+              }
+              onChange={updateBlock}
+            />
+          </BlockSettingsErrorBoundary>
+        </div>
+        <DeleteConfirmationDialog
+          open={deleteTarget !== null}
+          title="Удалить блок?"
+          subject={deleteTarget ? getBlockLabel(deleteTarget.type) : undefined}
+          description="Блок и всё его содержимое будут удалены из материала."
+          onOpenChange={(open) => {
+            if (!open) {
+              setDeleteTarget(null)
             }
-            onChange={updateBlock}
-          />
-        </BlockSettingsErrorBoundary>
-      </div>
-      <DeleteConfirmationDialog
-        open={deleteTarget !== null}
-        title="Удалить блок?"
-        subject={deleteTarget ? getBlockLabel(deleteTarget.type) : undefined}
-        description="Блок и всё его содержимое будут удалены из материала."
-        onOpenChange={(open) => {
-          if (!open) {
-            setDeleteTarget(null)
-          }
-        }}
-        onConfirm={() => {
-          if (deleteTarget) {
-            deleteBlock(deleteTarget.id)
-          }
+          }}
+          onConfirm={() => {
+            if (deleteTarget) {
+              deleteBlock(deleteTarget.id)
+            }
 
-          setDeleteTarget(null)
-        }}
-      />
-    </div>
+            setDeleteTarget(null)
+          }}
+        />
+      </div>
+
+      <DragOverlay dropAnimation={null}>
+        {draggedBlock ? <StudyBlockDragOverlay block={draggedBlock} /> : null}
+      </DragOverlay>
+    </DndContext>
   )
 }
 
+function resolveStudyBlockDropPreview(
+  event: DragOverEvent | DragEndEvent
+): StudyBlockDropPreview | null {
+  const data = event.over?.data.current
+
+  if (!isStudyBlockDropData(data)) {
+    return null
+  }
+
+  return {
+    blockId: data.blockId,
+    placement: data.placement
+  }
+}
+
+function isStudyBlockDropData(value: unknown): value is StudyBlockDropData {
+  if (!value || typeof value !== 'object') {
+    return false
+  }
+
+  const candidate = value as Partial<StudyBlockDropData>
+
+  return (
+    candidate.kind === 'study-block-drop' &&
+    typeof candidate.blockId === 'string' &&
+    (candidate.placement === 'before' || candidate.placement === 'after')
+  )
+}
 function BlockInsertMenu({
   onInsert,
   persistent = false,
@@ -381,11 +511,121 @@ function BlockInsertMenu({
   )
 }
 
+interface StudyBlockDragItemProps extends Omit<
+  StudyBlockCardProps,
+  'dragDisabled' | 'dragHandleAttributes' | 'dragHandleListeners' | 'isDragging'
+> {
+  dragDisabled: boolean
+  isDragging: boolean
+  dropPlacement: StudyBlockDropPlacement | null
+}
+
+function StudyBlockDragItem({
+  block,
+  dragDisabled,
+  isDragging,
+  dropPlacement,
+  ...cardProps
+}: StudyBlockDragItemProps): React.JSX.Element {
+  const {
+    attributes,
+    listeners,
+    setNodeRef: setDraggableRef
+  } = useDraggable({
+    id: block.id,
+    disabled: dragDisabled
+  })
+
+  const { setNodeRef: setBeforeDropRef } = useDroppable({
+    id: `${STUDY_BLOCK_DROP_PREFIX}:${block.id}:before`,
+    disabled: dragDisabled,
+    data: {
+      kind: 'study-block-drop',
+      blockId: block.id,
+      placement: 'before'
+    } satisfies StudyBlockDropData
+  })
+
+  const { setNodeRef: setAfterDropRef } = useDroppable({
+    id: `${STUDY_BLOCK_DROP_PREFIX}:${block.id}:after`,
+    disabled: dragDisabled,
+    data: {
+      kind: 'study-block-drop',
+      blockId: block.id,
+      placement: 'after'
+    } satisfies StudyBlockDropData
+  })
+
+  return (
+    <div ref={setDraggableRef} className={cn('relative', isDragging && 'opacity-35')}>
+      <span
+        ref={setBeforeDropRef}
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-0 z-20 h-1/2"
+      />
+
+      <span
+        ref={setAfterDropRef}
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-1/2"
+      />
+
+      {dropPlacement === 'before' && <StudyBlockDropIndicator position="before" />}
+
+      <StudyBlockCard
+        {...cardProps}
+        block={block}
+        dragDisabled={dragDisabled}
+        dragHandleAttributes={attributes}
+        dragHandleListeners={listeners}
+        isDragging={isDragging}
+      />
+
+      {dropPlacement === 'after' && <StudyBlockDropIndicator position="after" />}
+    </div>
+  )
+}
+
+function StudyBlockDropIndicator({
+  position
+}: {
+  position: StudyBlockDropPlacement
+}): React.JSX.Element {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        'pointer-events-none absolute inset-x-1 z-30 flex items-center',
+        position === 'before' ? '-top-1' : '-bottom-1'
+      )}
+    >
+      <span className="size-2 shrink-0 rounded-full bg-violet-400 shadow-[0_0_0_3px_rgb(139_92_246/0.16)]" />
+
+      <span className="h-0.5 flex-1 rounded-full bg-violet-400 shadow-[0_0_12px_rgb(139_92_246/0.45)]" />
+    </span>
+  )
+}
+
+function StudyBlockDragOverlay({ block }: { block: StudyBlock }): React.JSX.Element {
+  return (
+    <div className="flex h-11 max-w-72 items-center gap-3 rounded-xl border border-violet-500/45 bg-[var(--app-surface-raised)] px-3 text-sm text-[var(--app-text)] shadow-2xl shadow-black/35">
+      <GripVertical aria-hidden="true" className="size-4 shrink-0 text-violet-300" />
+
+      <StudyBlockTypeIcon type={block.type} className="size-4 shrink-0 text-[var(--app-muted)]" />
+
+      <span className="truncate font-medium">{getBlockLabel(block.type)}</span>
+    </div>
+  )
+}
 interface StudyBlockCardProps {
   block: StudyBlock
   isActive: boolean
   isFirst: boolean
   isLast: boolean
+  dragDisabled: boolean
+  dragHandleAttributes: ReturnType<typeof useDraggable>['attributes']
+  dragHandleListeners: ReturnType<typeof useDraggable>['listeners']
+  isDragging: boolean
   onActivate: () => void
   onTextEditorReady: (editor: Editor) => void
   onTextEditorActivate: (editor: Editor) => void
@@ -401,6 +641,10 @@ function StudyBlockCard({
   isActive,
   isFirst,
   isLast,
+  dragDisabled,
+  dragHandleAttributes,
+  dragHandleListeners,
+  isDragging,
   onActivate,
   onTextEditorReady,
   onTextEditorActivate,
@@ -417,7 +661,8 @@ function StudyBlockCard({
     <Collapsible.Root open={open} onOpenChange={setOpen} asChild>
       <section
         className={cn(
-          'group rounded-xl border bg-[var(--app-surface)] p-3 transition-colors',
+          'group rounded-xl border bg-[var(--app-surface)] p-3 transition-[border-color,box-shadow]',
+          isDragging && 'shadow-none',
           isActive
             ? 'border-violet-500/40'
             : 'border-[var(--app-border)] hover:border-[var(--app-border-strong)]'
@@ -425,6 +670,25 @@ function StudyBlockCard({
         onMouseDown={onActivate}
       >
         <div className={cn('flex items-center gap-2', open && 'mb-2')}>
+          <button
+            type="button"
+            aria-label={`Перетащить блок «${blockLabel}»`}
+            title="Перетащить блок"
+            disabled={dragDisabled}
+            className={cn(
+              'flex size-7 shrink-0 touch-none items-center justify-center rounded-md',
+              'text-[var(--app-muted)] outline-none',
+              'cursor-grab transition-colors',
+              'hover:bg-white/[0.06] hover:text-violet-300',
+              'active:cursor-grabbing',
+              'focus-visible:ring-2 focus-visible:ring-violet-500/35',
+              'disabled:cursor-default disabled:opacity-25'
+            )}
+            {...dragHandleAttributes}
+            {...dragHandleListeners}
+          >
+            <GripVertical aria-hidden="true" className="size-4" />
+          </button>
           <Collapsible.Trigger asChild>
             <button
               type="button"
