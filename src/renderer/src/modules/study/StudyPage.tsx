@@ -9,7 +9,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen
 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type { StudyFolderIconName, StudyNode } from '../../../../shared/contracts/study'
 import { cn } from '../../shared/lib/cn'
@@ -22,6 +22,11 @@ import { STUDY_FOLDER_ICON_OPTIONS } from './components/study-folder-icon-option
 import { StudyTree } from './components/StudyTree'
 import { useStudy } from './hooks/use-study'
 import { getStudyAncestorFolders } from './lib/study-tree'
+import {
+  STUDY_INTERNAL_LINK_NAVIGATE_EVENT,
+  type StudyInternalLinkNavigateDetail,
+  type StudyInternalLinkNavigationRequest
+} from './lib/study-internal-link'
 
 export function StudyPage(): React.JSX.Element {
   const study = useStudy()
@@ -30,6 +35,11 @@ export function StudyPage(): React.JSX.Element {
   const [renameValue, setRenameValue] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<StudyNode | null>(null)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+
+  const [internalNavigation, setInternalNavigation] =
+    useState<StudyInternalLinkNavigationRequest | null>(null)
+
+  const internalNavigationSequenceRef = useRef(0)
 
   const selectedNode = useMemo(
     () => study.nodes.find((node) => node.id === study.selectedNodeId) ?? null,
@@ -43,17 +53,47 @@ export function StudyPage(): React.JSX.Element {
     setRenameTarget(node)
     setRenameValue(node.title)
   }
-  function selectStudyNode(nodeId: string): void {
-    const ancestorFolders = getStudyAncestorFolders(study.nodes, nodeId)
+  const selectStudyNode = useCallback(
+    (nodeId: string): void => {
+      const ancestorFolders = getStudyAncestorFolders(study.nodes, nodeId)
 
-    ancestorFolders.forEach((folder) => {
-      if (!folder.isExpanded) {
-        void study.toggleFolder(folder)
+      ancestorFolders.forEach((folder) => {
+        if (!folder.isExpanded) {
+          void study.toggleFolder(folder)
+        }
+      })
+
+      study.selectNode(nodeId)
+    },
+    [study.nodes, study.selectNode, study.toggleFolder]
+  )
+
+  useEffect(() => {
+    function handleInternalNavigation(event: Event): void {
+      const detail = (event as CustomEvent<StudyInternalLinkNavigateDetail>).detail
+
+      if (!detail?.materialId || (detail.kind !== 'material' && detail.kind !== 'heading')) {
+        return
       }
-    })
 
-    study.selectNode(nodeId)
-  }
+      internalNavigationSequenceRef.current += 1
+
+      setInternalNavigation({
+        kind: detail.kind,
+        materialId: detail.materialId,
+        headingId: detail.headingId ?? null,
+        requestId: internalNavigationSequenceRef.current
+      })
+
+      selectStudyNode(detail.materialId)
+    }
+
+    window.addEventListener(STUDY_INTERNAL_LINK_NAVIGATE_EVENT, handleInternalNavigation)
+
+    return () => {
+      window.removeEventListener(STUDY_INTERNAL_LINK_NAVIGATE_EVENT, handleInternalNavigation)
+    }
+  }, [selectStudyNode])
 
   return (
     <section
@@ -194,7 +234,18 @@ export function StudyPage(): React.JSX.Element {
 
       <main className="min-h-0 min-w-0 bg-[var(--app-workspace)]">
         {selectedNode?.type === 'material' ? (
-          <StudyMaterialEditor key={selectedNode.id} node={selectedNode} />
+          <StudyMaterialEditor
+            key={selectedNode.id}
+            node={selectedNode}
+            navigation={
+              internalNavigation?.materialId === selectedNode.id ? internalNavigation : null
+            }
+            onNavigationHandled={(requestId) => {
+              setInternalNavigation((current) =>
+                current?.requestId === requestId ? null : current
+              )
+            }}
+          />
         ) : selectedNode?.type === 'folder' ? (
           <FolderWorkspace
             node={selectedNode}

@@ -6,16 +6,24 @@ import type { StudyDocument, StudyNode } from '../../../../../shared/contracts/s
 
 import { studyClient } from '../api/study-client'
 import { createEmptyStudyDocument } from '../lib/study-document'
+import { getStudyHeadingElementId, STUDY_REVEAL_HEADING_EVENT } from '../lib/study-read-navigation'
+import type { StudyInternalLinkNavigationRequest } from '../lib/study-internal-link'
 import { StudyBlockEditor } from './StudyBlockEditor'
 import { StudyReadNavigation } from './StudyReadNavigation'
 
 interface StudyMaterialEditorProps {
   node: StudyNode
+  navigation: StudyInternalLinkNavigationRequest | null
+  onNavigationHandled: (requestId: number) => void
 }
 
 type SaveState = 'saved' | 'dirty' | 'saving' | 'error'
 
-export function StudyMaterialEditor({ node }: StudyMaterialEditorProps): React.JSX.Element {
+export function StudyMaterialEditor({
+  node,
+  navigation,
+  onNavigationHandled
+}: StudyMaterialEditorProps): React.JSX.Element {
   const [document, setDocument] = useState<StudyDocument>(createEmptyStudyDocument())
   const [mode, setMode] = useState<'edit' | 'read'>('edit')
   const [saveState, setSaveState] = useState<SaveState>('saved')
@@ -27,6 +35,7 @@ export function StudyMaterialEditor({ node }: StudyMaterialEditorProps): React.J
   const hasUnsavedChangesRef = useRef(false)
   const isMountedRef = useRef(true)
   const readScrollRef = useRef<HTMLDivElement | null>(null)
+  const handledNavigationRef = useRef<number | null>(null)
 
   const clearSaveTimer = useCallback((): void => {
     if (saveTimerRef.current === null) {
@@ -83,6 +92,94 @@ export function StudyMaterialEditor({ node }: StudyMaterialEditorProps): React.J
       }
     }
   }, [clearSaveTimer, node.id])
+
+  useEffect(() => {
+    if (
+      isLoading ||
+      !navigation ||
+      navigation.materialId !== node.id ||
+      handledNavigationRef.current === navigation.requestId
+    ) {
+      return
+    }
+
+    handledNavigationRef.current = navigation.requestId
+
+    const frames: number[] = []
+
+    function schedule(callback: () => void): void {
+      frames.push(window.requestAnimationFrame(callback))
+    }
+
+    schedule(() => {
+      setMode('read')
+
+      schedule(() => {
+        if (navigation.headingId) {
+          window.dispatchEvent(
+            new CustomEvent(STUDY_REVEAL_HEADING_EVENT, {
+              detail: {
+                headingId: navigation.headingId
+              }
+            })
+          )
+        }
+
+        schedule(() => {
+          const scrollContainer = readScrollRef.current
+
+          if (scrollContainer) {
+            if (navigation.headingId) {
+              const target = window.document.getElementById(
+                getStudyHeadingElementId(navigation.headingId)
+              )
+
+              if (target) {
+                const containerRect = scrollContainer.getBoundingClientRect()
+
+                const targetRect = target.getBoundingClientRect()
+
+                const top = scrollContainer.scrollTop + targetRect.top - containerRect.top - 24
+
+                scrollContainer.scrollTo({
+                  top: Math.max(top, 0),
+                  behavior: 'smooth'
+                })
+
+                target.animate(
+                  [
+                    {
+                      backgroundColor: 'rgb(139 92 246 / 24%)'
+                    },
+                    {
+                      backgroundColor: 'transparent'
+                    }
+                  ],
+                  {
+                    duration: 1400,
+                    easing: 'ease-out'
+                  }
+                )
+              }
+            } else {
+              scrollContainer.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+              })
+            }
+          }
+
+          onNavigationHandled(navigation.requestId)
+        })
+      })
+    })
+
+    return () => {
+      frames.forEach((frame) => {
+        window.cancelAnimationFrame(frame)
+      })
+    }
+  }, [isLoading, navigation, node.id, onNavigationHandled])
 
   async function save(
     nextDocument: StudyDocument,

@@ -2,9 +2,12 @@ import type {
   CreateStudyNodeInput,
   ImportStudyAssetInput,
   MoveStudyNodeInput,
+  ResolveStudyInternalLinkTargetInput,
   SaveStudyMaterialInput,
+  SearchStudyInternalLinkTargetsInput,
   StudyApi,
   StudyFolderIconName,
+  StudyInternalLinkTarget,
   StudyLocalAsset,
   StudyMaterial,
   StudyNode
@@ -60,6 +63,17 @@ export const studyClient = {
 
   saveMaterial(input: SaveStudyMaterialInput): Promise<StudyMaterial> {
     return getStudyApi().saveMaterial(input)
+  },
+  searchInternalLinkTargets(
+    input: SearchStudyInternalLinkTargetsInput
+  ): Promise<StudyInternalLinkTarget[]> {
+    return getStudyApi().searchInternalLinkTargets(input)
+  },
+
+  resolveInternalLinkTarget(
+    input: ResolveStudyInternalLinkTargetInput
+  ): Promise<StudyInternalLinkTarget | null> {
+    return getStudyApi().resolveInternalLinkTarget(input)
   },
   importAsset(input: ImportStudyAssetInput): Promise<StudyLocalAsset | null> {
     return getStudyApi().importAsset(input)

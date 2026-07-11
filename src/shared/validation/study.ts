@@ -171,6 +171,29 @@ export const studyMaterialSchema = z.object({
   createdAt: z.number().int(),
   updatedAt: z.number().int()
 })
+export const studyInternalLinkTargetKindSchema = z.enum(['material', 'heading'])
+
+export const studyInternalLinkTargetSchema = z.object({
+  kind: studyInternalLinkTargetKindSchema,
+  materialId: z.string().min(1),
+  headingId: z.string().min(1).nullable(),
+  title: z.string().min(1),
+  materialTitle: z.string().min(1),
+  folderPath: z.array(z.string().min(1)),
+  headingLevel: z.union([z.literal(1), z.literal(2), z.literal(3)]).nullable()
+})
+
+export const searchStudyInternalLinkTargetsInputSchema = z.object({
+  query: z.string().trim().max(240),
+  currentMaterialId: z.string().min(1).optional(),
+  limit: z.number().int().min(1).max(100).optional()
+})
+
+export const resolveStudyInternalLinkTargetInputSchema = z.object({
+  kind: studyInternalLinkTargetKindSchema,
+  materialId: z.string().min(1),
+  headingId: z.string().min(1).nullable().optional()
+})
 
 export const createStudyNodeInputSchema = z.object({
   type: studyNodeTypeSchema,

@@ -63,3 +63,29 @@ export const studyMaterials = sqliteTable('study_materials', {
     mode: 'timestamp_ms'
   }).notNull()
 })
+export const studyLinkTargets = sqliteTable(
+  'study_link_targets',
+  {
+    id: text('id').primaryKey(),
+    kind: text('kind', {
+      enum: ['material', 'heading']
+    }).notNull(),
+    materialId: text('material_id')
+      .notNull()
+      .references(() => studyNodes.id, {
+        onDelete: 'cascade'
+      }),
+    headingId: text('heading_id'),
+    title: text('title').notNull(),
+    headingLevel: integer('heading_level'),
+    position: integer('position').notNull(),
+    searchText: text('search_text').notNull(),
+    updatedAt: integer('updated_at', {
+      mode: 'timestamp_ms'
+    }).notNull()
+  },
+  (table) => [
+    index('study_link_targets_material_position_idx').on(table.materialId, table.position),
+    index('study_link_targets_search_idx').on(table.searchText)
+  ]
+)

@@ -163,6 +163,29 @@ export interface StudyDocument {
   version: 1
   blocks: StudyBlock[]
 }
+export type StudyInternalLinkTargetKind = 'material' | 'heading'
+
+export interface StudyInternalLinkTarget {
+  kind: StudyInternalLinkTargetKind
+  materialId: string
+  headingId: string | null
+  title: string
+  materialTitle: string
+  folderPath: string[]
+  headingLevel: 1 | 2 | 3 | null
+}
+
+export interface SearchStudyInternalLinkTargetsInput {
+  query: string
+  currentMaterialId?: string
+  limit?: number
+}
+
+export interface ResolveStudyInternalLinkTargetInput {
+  kind: StudyInternalLinkTargetKind
+  materialId: string
+  headingId?: string | null
+}
 
 export interface StudyNode {
   id: string
@@ -229,6 +252,8 @@ export const STUDY_IPC_CHANNELS = {
   moveNode: 'study:move-node',
   getMaterial: 'study:get-material',
   saveMaterial: 'study:save-material',
+  searchInternalLinkTargets: 'study:search-internal-link-targets',
+  resolveInternalLinkTarget: 'study:resolve-internal-link-target',
   importAsset: 'study:import-asset'
 } as const
 
@@ -242,5 +267,11 @@ export interface StudyApi {
   moveNode(input: MoveStudyNodeInput): Promise<StudyNode[]>
   getMaterial(nodeId: string): Promise<StudyMaterial>
   saveMaterial(input: SaveStudyMaterialInput): Promise<StudyMaterial>
+  searchInternalLinkTargets(
+    input: SearchStudyInternalLinkTargetsInput
+  ): Promise<StudyInternalLinkTarget[]>
+  resolveInternalLinkTarget(
+    input: ResolveStudyInternalLinkTargetInput
+  ): Promise<StudyInternalLinkTarget | null>
   importAsset(input: ImportStudyAssetInput): Promise<StudyLocalAsset | null>
 }

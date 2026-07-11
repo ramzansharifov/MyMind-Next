@@ -5,6 +5,8 @@ import { TextStyleKit } from '@tiptap/extension-text-style'
 import { Placeholder } from '@tiptap/extensions'
 import StarterKit from '@tiptap/starter-kit'
 
+import { StudyInternalLinkExtension } from './StudyInternalLinkExtension'
+
 export function createRichTextExtensions(readOnly: boolean): Extensions {
   return [
     StarterKit.configure({
@@ -23,6 +25,8 @@ export function createRichTextExtensions(readOnly: boolean): Extensions {
         }
       }
     }),
+
+    StudyInternalLinkExtension,
 
     TextAlign.configure({
       types: ['paragraph'],

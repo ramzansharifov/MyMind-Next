@@ -6,7 +6,9 @@ import {
   importStudyAssetInputSchema,
   moveStudyNodeInputSchema,
   renameStudyNodeInputSchema,
+  resolveStudyInternalLinkTargetInputSchema,
   saveStudyMaterialInputSchema,
+  searchStudyInternalLinkTargetsInputSchema,
   updateStudyFolderIconInputSchema,
   updateStudyNodeExpansionInputSchema
 } from '../../shared/validation/study'
@@ -17,7 +19,9 @@ import {
   listStudyNodes,
   moveStudyNode,
   renameStudyNode,
+  resolveStudyInternalLinkTarget,
   saveStudyMaterial,
+  searchStudyInternalLinkTargets,
   updateStudyFolderIcon,
   updateStudyNodeExpansion
 } from '../repositories/study.repository'
@@ -78,6 +82,17 @@ export function registerStudyIpcHandlers(): void {
     const input = saveStudyMaterialInputSchema.parse(rawInput)
 
     return saveStudyMaterial(input)
+  })
+  ipcMain.handle(STUDY_IPC_CHANNELS.searchInternalLinkTargets, (_event, rawInput: unknown) => {
+    const input = searchStudyInternalLinkTargetsInputSchema.parse(rawInput)
+
+    return searchStudyInternalLinkTargets(input)
+  })
+
+  ipcMain.handle(STUDY_IPC_CHANNELS.resolveInternalLinkTarget, (_event, rawInput: unknown) => {
+    const input = resolveStudyInternalLinkTargetInputSchema.parse(rawInput)
+
+    return resolveStudyInternalLinkTarget(input)
   })
   ipcMain.handle(STUDY_IPC_CHANNELS.importAsset, (event, rawInput: unknown) => {
     if (!event.senderFrame || event.senderFrame !== event.sender.mainFrame) {

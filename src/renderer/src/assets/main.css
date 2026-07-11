@@ -184,6 +184,54 @@ button {
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
 }
+.study-internal-link-node {
+  display: inline-flex;
+  max-width: min(100%, 28rem);
+  align-items: center;
+  gap: 0.28rem;
+  padding: 0.08rem 0.38rem;
+
+  color: #c4b5fd;
+  vertical-align: baseline;
+  background: rgb(124 58 237 / 13%);
+  border: 1px solid rgb(139 92 246 / 24%);
+  border-radius: 0.4rem;
+
+  cursor: pointer;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+
+  transition:
+    color 140ms ease,
+    background-color 140ms ease,
+    border-color 140ms ease;
+}
+
+.study-internal-link-node:hover {
+  color: #ddd6fe;
+  background: rgb(124 58 237 / 20%);
+  border-color: rgb(167 139 250 / 42%);
+}
+
+.study-internal-link-node:focus-visible {
+  outline: 2px solid rgb(139 92 246 / 65%);
+  outline-offset: 2px;
+}
+
+.study-internal-link-node.ProseMirror-selectednode {
+  color: #ede9fe;
+  background: rgb(124 58 237 / 26%);
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 2px rgb(139 92 246 / 16%);
+}
+
+.study-internal-link-node--missing {
+  color: #fca5a5;
+  background: rgb(239 68 68 / 10%);
+  border-color: rgb(239 68 68 / 26%);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
 .study-mermaid-source {
   min-width: 100%;
   background: #0c0d10;

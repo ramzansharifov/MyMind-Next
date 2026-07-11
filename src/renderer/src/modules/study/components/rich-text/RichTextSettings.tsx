@@ -27,6 +27,7 @@ import {
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 
 import { cn } from '../../../../shared/lib/cn'
+import { STUDY_OPEN_INTERNAL_LINK_PICKER_EVENT } from '../../lib/study-internal-link'
 import { ColorPicker } from '../settings/ColorPicker'
 import { SegmentedChoice } from '../settings/SegmentedChoice'
 
@@ -574,6 +575,25 @@ function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.El
           </div>
         </SettingsSection>
 
+        <SettingsSection title="Внутренняя ссылка" vertical>
+          <button
+            type="button"
+            className="flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-(--app-border) bg-(--app-workspace) px-3 text-sm font-medium text-(--app-text) transition-colors outline-none hover:border-violet-500/35 hover:bg-violet-500/10 focus-visible:ring-2 focus-visible:ring-violet-500/35"
+            onMouseDown={(event) => {
+              event.preventDefault()
+            }}
+            onClick={() => {
+              editor.view.dom.dispatchEvent(new CustomEvent(STUDY_OPEN_INTERNAL_LINK_PICKER_EVENT))
+            }}
+          >
+            <Link2 aria-hidden="true" className="size-4 text-violet-300" />
+            Создать внутреннюю ссылку
+          </button>
+
+          <p className="text-xs leading-5 text-(--app-muted)">
+            Также можно ввести [[ в тексте. Горячая клавиша: Ctrl+Shift+K.
+          </p>
+        </SettingsSection>
         <SettingsSection title="Ссылка">
           <LinkPopover
             disabled={false}
