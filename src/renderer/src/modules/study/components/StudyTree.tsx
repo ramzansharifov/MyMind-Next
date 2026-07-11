@@ -18,7 +18,6 @@ import {
   FileText,
   Folder,
   FolderOpen,
-  GripVertical,
   MoreHorizontal,
   Pencil,
   Trash2
@@ -281,24 +280,7 @@ function StudyTreeItem({
         <span className="pointer-events-none absolute right-1 bottom-0 left-1 h-0.5 translate-y-1/2 rounded-full bg-violet-400" />
       )}
 
-      <button
-        type="button"
-        aria-label={`Перетащить: ${node.title}`}
-        disabled={dragDisabled}
-        className={cn(
-          'flex size-6 shrink-0 touch-none items-center justify-center rounded-md',
-          'cursor-grab text-[var(--app-muted)]',
-          'opacity-0 transition-opacity',
-          'hover:bg-white/[0.06] hover:text-[var(--app-text)]',
-          'group-hover:opacity-100 focus-visible:opacity-100',
-          'active:cursor-grabbing',
-          'disabled:cursor-default disabled:opacity-0'
-        )}
-        {...attributes}
-        {...listeners}
-      >
-        <GripVertical aria-hidden="true" className="size-3.5" />
-      </button>
+
 
       {isFolder ? (
         <button
@@ -319,12 +301,29 @@ function StudyTreeItem({
 
       <button
         type="button"
-        className="flex min-w-0 flex-1 items-center gap-2 py-2 text-left text-sm"
-        onClick={() => onSelect(node.id)}
+        aria-label={`Открыть: ${node.title}`}
+        className={cn(
+          'flex min-w-0 flex-1 touch-none items-center gap-2 py-2 text-left text-sm',
+          'outline-none select-none',
+          'focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-500/35',
+          dragDisabled
+            ? 'cursor-pointer'
+            : 'cursor-grab active:cursor-grabbing'
+        )}
+        {...attributes}
+        {...listeners}
+        onClick={() => {
+          onSelect(node.id)
+        }}
       >
-        <NodeIcon aria-hidden="true" className="size-4 shrink-0" />
+        <NodeIcon
+          aria-hidden="true"
+          className="size-4 shrink-0"
+        />
 
-        <span className="truncate">{node.title}</span>
+        <span className="truncate">
+          {node.title}
+        </span>
       </button>
 
       <DropdownMenu.Root open={menuOpen} onOpenChange={setMenuOpen}>
