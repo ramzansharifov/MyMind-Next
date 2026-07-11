@@ -1,0 +1,1 @@
+ALTER TABLE `study_nodes` ADD `icon` text;
