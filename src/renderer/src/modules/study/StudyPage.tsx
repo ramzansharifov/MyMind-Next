@@ -40,7 +40,7 @@ export function StudyPage(): React.JSX.Element {
   return (
     <section className="grid h-full min-h-0 grid-cols-[280px_minmax(0,1fr)] overflow-hidden">
       <aside className="flex min-h-0 flex-col border-r border-[var(--app-border)] bg-[var(--app-sidebar)]">
-        <header className="shrink-0 border-b border-[var(--app-border)] p-3">
+        <header className="flex h-[var(--app-header-height)] shrink-0 items-center border-b border-[var(--app-border)] px-3">
           <button
             type="button"
             aria-current={

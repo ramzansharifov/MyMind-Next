@@ -202,8 +202,9 @@ export function StudyBlockEditor({
   return (
     <div className="mx-auto grid w-full max-w-[1320px] grid-cols-[minmax(0,1fr)_320px] items-start gap-5 max-[1180px]:grid-cols-1">
       <div className="min-w-0">
-        <div>
+        <div className="relative">
           <BlockInsertMenu
+            overlay={document.blocks.length > 0}
             persistent={document.blocks.length === 0}
             onInsert={(type) => {
               insertBlock(type, 0)
@@ -293,10 +294,12 @@ export function StudyBlockEditor({
 
 function BlockInsertMenu({
   onInsert,
-  persistent = false
+  persistent = false,
+  overlay = false
 }: {
   onInsert: (type: StudyBlockType) => void
   persistent?: boolean
+  overlay?: boolean
 }): React.JSX.Element {
   const [open, setOpen] = useState(false)
 
@@ -305,6 +308,8 @@ function BlockInsertMenu({
       <div
         className={cn(
           'group/insert flex items-center',
+          overlay &&
+            'absolute inset-x-0 top-0 z-10 -translate-y-1/2',
           'transition-[height] duration-150 ease-out',
           open || persistent ? 'h-8' : 'h-3 focus-within:h-8 hover:h-8'
         )}

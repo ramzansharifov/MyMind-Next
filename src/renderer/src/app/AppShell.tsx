@@ -119,7 +119,7 @@ export function AppShell({ activeView, onViewChange, children }: AppShellProps):
         >
           <header
             className={cn(
-              'flex h-16 shrink-0 items-center border-b',
+              'flex h-[var(--app-header-height)] shrink-0 items-center border-b',
               'border-[var(--app-border)]',
               isCollapsed ? 'justify-center px-0' : 'px-3'
             )}
