@@ -1,5 +1,5 @@
 import { mergeAttributes, Node } from '@tiptap/core'
-import { ReactNodeViewRenderer, ReactNodeViewWrapper, type NodeViewProps } from '@tiptap/react'
+import { NodeViewWrapper, ReactNodeViewRenderer, type NodeViewProps } from '@tiptap/react'
 import { FileText, Heading, Link2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
@@ -233,7 +233,7 @@ function StudyInternalLinkNodeView({ node, editor, getPos }: NodeViewProps): Rea
   }
 
   return (
-    <ReactNodeViewWrapper
+    <NodeViewWrapper
       as="span"
       role="link"
       tabIndex={0}
@@ -271,7 +271,7 @@ function StudyInternalLinkNodeView({ node, editor, getPos }: NodeViewProps): Rea
       <span className="truncate">{displayLabel || 'Внутренняя ссылка'}</span>
 
       {isMissing && <Link2 aria-hidden="true" className="size-3 shrink-0" />}
-    </ReactNodeViewWrapper>
+    </NodeViewWrapper>
   )
 }
 

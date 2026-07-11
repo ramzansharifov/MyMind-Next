@@ -312,6 +312,7 @@ export function StudyBlockEditor({
               <Fragment key={block.id}>
                 <StudyBlockDragItem
                   block={block}
+                  materialId={materialId}
                   dragDisabled={document.blocks.length < 2}
                   isDragging={draggedBlockId === block.id}
                   dropPlacement={
