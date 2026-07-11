@@ -878,20 +878,7 @@ function AttachmentSettings({
         </>
       )}
 
-      <SettingsField label="Подпись">
-        <textarea
-          value={block.caption ?? ''}
-          rows={3}
-          placeholder="Необязательная подпись или пояснение"
-          className="w-full max-w-full min-w-0 resize-y rounded-lg border border-(--app-border) bg-(--app-workspace) px-3 py-2 text-sm leading-6 text-(--app-text) outline-none placeholder:text-(--app-muted)/60 focus:border-violet-500/45"
-          onChange={(event) => {
-            onChange({
-              ...block,
-              caption: event.target.value
-            })
-          }}
-        />
-      </SettingsField>
+
     </div>
   )
 }

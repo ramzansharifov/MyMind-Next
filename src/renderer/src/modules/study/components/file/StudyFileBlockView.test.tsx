@@ -23,6 +23,7 @@ describe('StudyFileBlockView', () => {
           url: 'mymind-asset://local/material-1/94a8c6c1-41f5-466d-92c4-5199a0754b17/diagram.png'
         }
       },
+      title: 'Учебная схема',
       altText: 'Учебная диаграмма'
     }
 
@@ -33,6 +34,32 @@ describe('StudyFileBlockView', () => {
         name: 'Учебная диаграмма'
       })
     ).toHaveAttribute('src', block.source.type === 'local' ? block.source.asset?.url : '')
+
+    const image = screen.getByRole(
+      'img',
+      {
+        name: 'Учебная диаграмма'
+      }
+    )
+
+    expect(
+      image.closest('figure')
+        ?.firstElementChild
+    ).toHaveTextContent(
+      'Учебная схема'
+    )
+
+    expect(
+      screen.queryByText(
+        'diagram.png'
+      )
+    ).not.toBeInTheDocument()
+
+    expect(
+      screen.queryByText(
+        '2.0 КБ'
+      )
+    ).not.toBeInTheDocument()
   })
 
   it('rejects insecure remote image URLs', () => {

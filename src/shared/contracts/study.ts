@@ -114,7 +114,6 @@ export interface StudyImageBlock {
   type: 'image'
   source: StudyMediaAssetSource
   title?: string
-  caption?: string
   altText?: string
   imageFit?: StudyImageFit
   imageHeight?: number
@@ -125,7 +124,6 @@ export interface StudyVideoBlock {
   type: 'video'
   source: StudyMediaAssetSource
   title?: string
-  caption?: string
 }
 
 export interface StudyAudioBlock {
@@ -133,7 +131,6 @@ export interface StudyAudioBlock {
   type: 'audio'
   source: StudyLocalAssetSource
   title?: string
-  caption?: string
 }
 
 export interface StudyFileBlock {
@@ -141,7 +138,6 @@ export interface StudyFileBlock {
   type: 'file'
   source: StudyLocalAssetSource
   title?: string
-  caption?: string
 }
 
 export interface StudyDividerBlock {

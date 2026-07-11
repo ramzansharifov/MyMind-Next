@@ -94,8 +94,7 @@ const studyMediaAssetSourceSchema = z.discriminatedUnion('type', [
 
 const studyAttachmentBaseShape = {
   id: z.string().min(1),
-  title: z.string().max(240).optional(),
-  caption: z.string().max(1200).optional()
+  title: z.string().max(240).optional()
 }
 
 export const studyImageBlockSchema = z.object({

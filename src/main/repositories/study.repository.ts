@@ -68,10 +68,18 @@ function documentToPlainText(document: StudyDocument): string {
         block.type === 'file'
       ) {
         const sourceName =
-          block.source.type === 'local' ? block.source.asset?.name : block.source.url
+          block.source.type === 'local'
+            ? block.source.asset?.name
+            : block.source.url
 
-        return [block.title, sourceName, block.caption]
-          .filter((value): value is string => Boolean(value))
+        return [
+          block.title,
+          sourceName
+        ]
+          .filter(
+            (value): value is string =>
+              Boolean(value)
+          )
           .join('\n')
       }
 

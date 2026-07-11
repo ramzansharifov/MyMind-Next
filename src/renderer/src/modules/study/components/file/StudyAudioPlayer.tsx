@@ -156,7 +156,7 @@ export function StudyAudioPlayer({
   }
 
   return (
-    <div className="mt-4 overflow-hidden rounded-xl border border-white/[0.07] bg-[#0a0b0f] shadow-inner shadow-black/20">
+    <div className="overflow-hidden bg-[#0a0b0f] shadow-inner shadow-black/20">
       <audio
         ref={audioRef}
         src={src}
