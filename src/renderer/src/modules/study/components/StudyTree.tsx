@@ -45,12 +45,8 @@ interface StudyTreeProps {
   onToggleFolder: (node: StudyNode) => void
   onRename: (node: StudyNode) => void
   onDelete: (node: StudyNode) => void
-  onCreateFolder: (
-    parentId: string
-  ) => void
-  onCreateMaterial: (
-    parentId: string
-  ) => void
+  onCreateFolder: (parentId: string) => void
+  onCreateMaterial: (parentId: string) => void
   onMove: (input: MoveStudyNodeInput) => void
 }
 
@@ -194,12 +190,8 @@ export function StudyTree({
                 onToggleFolder={onToggleFolder}
                 onRename={onRename}
                 onDelete={onDelete}
-                onCreateFolder={
-                  onCreateFolder
-                }
-                onCreateMaterial={
-                  onCreateMaterial
-                }
+                onCreateFolder={onCreateFolder}
+                onCreateMaterial={onCreateMaterial}
               />
             ))}
           </div>
@@ -294,6 +286,8 @@ interface StudyTreeItemProps {
   onToggleFolder: (node: StudyNode) => void
   onRename: (node: StudyNode) => void
   onDelete: (node: StudyNode) => void
+  onCreateFolder: (parentId: string) => void
+  onCreateMaterial: (parentId: string) => void
 }
 
 function StudyTreeItem({
@@ -309,11 +303,10 @@ function StudyTreeItem({
   onSelect,
   onToggleFolder,
   onRename,
-  onDelete
-}: StudyTreeItemProps): React.JSX.Element {
-  ,
+  onDelete,
   onCreateFolder,
   onCreateMaterial
+}: StudyTreeItemProps): React.JSX.Element {
   const [menuOpen, setMenuOpen] = useState(false)
 
   const isFolder = node.type === 'folder'
@@ -379,26 +372,16 @@ function StudyTreeItem({
         (isFolder ? (
           <button
             type="button"
-            aria-label={
-              node.isExpanded
-                ? 'Свернуть папку'
-                : 'Развернуть папку'
-            }
+            aria-label={node.isExpanded ? 'Свернуть папку' : 'Развернуть папку'}
             className="z-20 flex size-7 shrink-0 items-center justify-center rounded-md hover:bg-white/[0.05]"
             onClick={() => {
               onToggleFolder(node)
             }}
           >
             {node.isExpanded ? (
-              <ChevronDown
-                aria-hidden="true"
-                className="size-3.5"
-              />
+              <ChevronDown aria-hidden="true" className="size-3.5" />
             ) : (
-              <ChevronRight
-                aria-hidden="true"
-                className="size-3.5"
-              />
+              <ChevronRight aria-hidden="true" className="size-3.5" />
             )}
           </button>
         ) : (
@@ -439,10 +422,7 @@ function StudyTreeItem({
       </Tooltip>
 
       {!collapsed && (
-        <DropdownMenu.Root
-          open={menuOpen}
-          onOpenChange={setMenuOpen}
-        >
+        <DropdownMenu.Root open={menuOpen} onOpenChange={setMenuOpen}>
           <DropdownMenu.Trigger asChild>
             <button
               type="button"
@@ -455,10 +435,7 @@ function StudyTreeItem({
                   : 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'
               )}
             >
-              <MoreHorizontal
-                aria-hidden="true"
-                className="size-4"
-              />
+              <MoreHorizontal aria-hidden="true" className="size-4" />
             </button>
           </DropdownMenu.Trigger>
 
@@ -473,32 +450,20 @@ function StudyTreeItem({
                   <DropdownMenu.Item
                     className="flex cursor-default items-center gap-2 rounded-lg px-2.5 py-2 outline-none hover:bg-white/[0.06] focus:bg-white/[0.06]"
                     onSelect={() => {
-                      onCreateFolder(
-                        node.id
-                      )
+                      onCreateFolder(node.id)
                     }}
                   >
-                    <FolderPlus
-                      aria-hidden="true"
-                      className="size-4 text-violet-300"
-                    />
-
+                    <FolderPlus aria-hidden="true" className="size-4 text-violet-300" />
                     Новая папка
                   </DropdownMenu.Item>
 
                   <DropdownMenu.Item
                     className="flex cursor-default items-center gap-2 rounded-lg px-2.5 py-2 outline-none hover:bg-white/[0.06] focus:bg-white/[0.06]"
                     onSelect={() => {
-                      onCreateMaterial(
-                        node.id
-                      )
+                      onCreateMaterial(node.id)
                     }}
                   >
-                    <FilePlus2
-                      aria-hidden="true"
-                      className="size-4 text-violet-300"
-                    />
-
+                    <FilePlus2 aria-hidden="true" className="size-4 text-violet-300" />
                     Новый материал
                   </DropdownMenu.Item>
 
@@ -512,11 +477,7 @@ function StudyTreeItem({
                   onRename(node)
                 }}
               >
-                <Pencil
-                  aria-hidden="true"
-                  className="size-4"
-                />
-
+                <Pencil aria-hidden="true" className="size-4" />
                 Переименовать
               </DropdownMenu.Item>
 
@@ -526,11 +487,7 @@ function StudyTreeItem({
                   onDelete(node)
                 }}
               >
-                <Trash2
-                  aria-hidden="true"
-                  className="size-4"
-                />
-
+                <Trash2 aria-hidden="true" className="size-4" />
                 Удалить
               </DropdownMenu.Item>
             </DropdownMenu.Content>
