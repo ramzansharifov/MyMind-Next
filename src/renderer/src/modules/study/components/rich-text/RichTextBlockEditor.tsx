@@ -62,45 +62,79 @@ export function RichTextBlockEditor({
     targetsRef.current = targets
   }, [targets])
 
-  const selectInternalLinkTarget = useCallback((target: StudyInternalLinkTarget): void => {
-    const current = pickerStateRef.current
-
-    const currentEditor = editorInstanceRef.current
-
-    if (!currentEditor || currentEditor.isDestroyed || !current) {
-      return
-    }
-
-    const selectedLabel = current.selectedText.trim()
-
-    const label = selectedLabel || target.title
-
-    currentEditor
-      .chain()
-      .focus()
-      .deleteRange({
-        from: current.from,
-        to: current.to
-      })
-      .insertContent({
-        type: 'studyInternalLink',
-        attrs: {
-          targetKind: target.kind,
-          materialId: target.materialId,
-          headingId: target.headingId,
-          headingLevel: target.headingLevel,
-          labelMode: selectedLabel ? 'custom' : 'auto',
-          label,
-          materialTitle: target.materialTitle,
-          folderPath: target.folderPath
+  const selectInternalLinkTarget =
+    useCallback(
+      (
+        target:
+          StudyInternalLinkTarget,
+        current =
+          pickerStateRef.current,
+        currentEditor =
+          editorInstanceRef.current
+      ): void => {
+        if (
+          !currentEditor ||
+          currentEditor.isDestroyed ||
+          !current
+        ) {
+          return
         }
-      })
-      .run()
 
-    setPickerState(null)
-    setTargets([])
-    setIsSearching(false)
-  }, [])
+        const selectedLabel =
+          current.selectedText.trim()
+
+        const label =
+          selectedLabel ||
+          target.title
+
+        const inserted =
+          currentEditor
+            .chain()
+            .focus()
+            .insertContentAt(
+              {
+                from: current.from,
+                to: current.to
+              },
+              {
+                type:
+                  'studyInternalLink',
+                attrs: {
+                  targetKind:
+                    target.kind,
+                  materialId:
+                    target.materialId,
+                  headingId:
+                    target.headingId,
+                  headingLevel:
+                    target.headingLevel,
+                  labelMode:
+                    selectedLabel
+                      ? 'custom'
+                      : 'auto',
+                  label,
+                  materialTitle:
+                    target.materialTitle,
+                  folderPath:
+                    target.folderPath
+                }
+              },
+              {
+                updateSelection: true
+              }
+            )
+            .run()
+
+        if (!inserted) {
+          return
+        }
+
+        setPickerState(null)
+        setTargets([])
+        setIsSearching(false)
+      },
+      []
+    )
 
   function synchronizeTriggerPicker(currentEditor: Editor): void {
     const trigger = findWikiLinkTrigger(currentEditor)
@@ -252,6 +286,24 @@ export function RichTextBlockEditor({
     }
   })
 
+  useEffect(() => {
+    if (!editor) {
+      return
+    }
+
+    editorInstanceRef.current =
+      editor
+
+    return () => {
+      if (
+        editorInstanceRef.current ===
+        editor
+      ) {
+        editorInstanceRef.current =
+          null
+      }
+    }
+  }, [editor])
   useEffect(() => {
     onChangeRef.current = onChange
 
@@ -439,7 +491,13 @@ export function RichTextBlockEditor({
                 : current
             )
           }}
-          onSelect={selectInternalLinkTarget}
+          onSelect={(target) => {
+            selectInternalLinkTarget(
+              target,
+              pickerState,
+              editor
+            )
+          }}
           onClose={() => {
             setPickerState(null)
             setTargets([])

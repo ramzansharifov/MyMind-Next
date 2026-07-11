@@ -169,7 +169,9 @@ function StudyInternalLinkNodeView({ node, editor, getPos }: NodeViewProps): Rea
       })
       .catch(() => {
         if (active) {
-          setResolvedTarget(null)
+          setResolvedTarget(
+            undefined
+          )
         }
       })
 
@@ -199,36 +201,63 @@ function StudyInternalLinkNodeView({ node, editor, getPos }: NodeViewProps): Rea
       ? `${displayLabel} · ${location}`
       : location || displayLabel
 
+  function selectLinkNode(): void {
+    const position = getPos()
+
+    if (
+      typeof position === 'number'
+    ) {
+      editor.commands.setNodeSelection(
+        position
+      )
+    }
+  }
+
   function navigate(): void {
-    if (isMissing) {
+    if (!attributes.materialId) {
       return
     }
 
-    const detail: StudyInternalLinkNavigateDetail = {
-      kind: attributes.targetKind,
-      materialId: attributes.materialId,
-      headingId: attributes.headingId
-    }
+    const detail:
+      StudyInternalLinkNavigateDetail =
+      {
+        kind:
+          attributes.targetKind,
+        materialId:
+          attributes.materialId,
+        headingId:
+          attributes.headingId
+      }
 
     window.dispatchEvent(
-      new CustomEvent(STUDY_INTERNAL_LINK_NAVIGATE_EVENT, {
-        detail
-      })
+      new CustomEvent(
+        STUDY_INTERNAL_LINK_NAVIGATE_EVENT,
+        {
+          detail
+        }
+      )
     )
   }
 
-  function handleClick(event: React.MouseEvent<HTMLSpanElement>): void {
-    if (editor.isEditable && !event.ctrlKey && !event.metaKey) {
-      const position = getPos()
-
-      if (typeof position === 'number') {
-        editor.commands.setNodeSelection(position)
-      }
-
+  function handlePointerDown(
+    event:
+      React.PointerEvent<HTMLSpanElement>
+  ): void {
+    if (event.button !== 0) {
       return
     }
 
     event.preventDefault()
+    event.stopPropagation()
+
+    if (
+      editor.isEditable &&
+      event.shiftKey
+    ) {
+      selectLinkNode()
+      return
+    }
+
     navigate()
   }
 
@@ -237,25 +266,56 @@ function StudyInternalLinkNodeView({ node, editor, getPos }: NodeViewProps): Rea
       as="span"
       role="link"
       tabIndex={0}
-      title={tooltip}
+      title={
+        editor.isEditable
+          ? `${tooltip} · Клик — открыть, Shift+клик — выбрать`
+          : tooltip
+      }
       contentEditable={false}
-      data-missing={isMissing ? 'true' : 'false'}
-      className={cn('study-internal-link-node', isMissing && 'study-internal-link-node--missing')}
-      onClick={handleClick}
+      data-study-internal-link="true"
+      data-target-kind={
+        attributes.targetKind
+      }
+      data-material-id={
+        attributes.materialId
+      }
+      data-heading-id={
+        attributes.headingId ??
+        undefined
+      }
+      data-missing={
+        isMissing
+          ? 'true'
+          : 'false'
+      }
+      className={cn(
+        'study-internal-link-node',
+        isMissing &&
+          'study-internal-link-node--missing'
+      )}
+      onPointerDown={
+        handlePointerDown
+      }
+      onClick={(event) => {
+        event.preventDefault()
+        event.stopPropagation()
+      }}
       onKeyDown={(event) => {
-        if (event.key !== 'Enter' && event.key !== ' ') {
+        if (
+          event.key !== 'Enter' &&
+          event.key !== ' '
+        ) {
           return
         }
 
         event.preventDefault()
+        event.stopPropagation()
 
-        if (editor.isEditable) {
-          const position = getPos()
-
-          if (typeof position === 'number') {
-            editor.commands.setNodeSelection(position)
-          }
-
+        if (
+          editor.isEditable &&
+          event.shiftKey
+        ) {
+          selectLinkNode()
           return
         }
 

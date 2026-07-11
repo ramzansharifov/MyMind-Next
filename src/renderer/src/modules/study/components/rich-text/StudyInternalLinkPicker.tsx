@@ -98,10 +98,8 @@ export function StudyInternalLinkPicker({
         left: state.left,
         top: state.top
       }}
-      onMouseDown={(event) => {
-        if (state.mode === 'trigger') {
-          event.preventDefault()
-        }
+      onPointerDown={(event) => {
+        event.stopPropagation()
       }}
       onKeyDown={handlePickerKeyDown}
     >
@@ -175,11 +173,23 @@ export function StudyInternalLinkPicker({
                 onMouseEnter={() => {
                   onSelectedIndexChange(index)
                 }}
-                onMouseDown={(event) => {
+                onPointerDown={(event) => {
+                  if (event.button !== 0) {
+                    return
+                  }
+
                   event.preventDefault()
-                }}
-                onClick={() => {
+                  event.stopPropagation()
+
                   onSelect(target)
+                }}
+                onClick={(event) => {
+                  event.preventDefault()
+                  event.stopPropagation()
+
+                  if (event.detail === 0) {
+                    onSelect(target)
+                  }
                 }}
               >
                 <span
