@@ -3,6 +3,7 @@ import * as Tabs from '@radix-ui/react-tabs'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import type { StudyDocument, StudyNode } from '../../../../../shared/contracts/study'
+import { cn } from '../../../shared/lib/cn'
 
 import { studyClient } from '../api/study-client'
 import { createEmptyStudyDocument } from '../lib/study-document'
@@ -289,12 +290,17 @@ export function StudyMaterialEditor({
       </header>
 
       <div
-        ref={mode === 'read' ? readScrollRef : undefined}
-        className={
+        ref={
           mode === 'read'
-            ? 'min-h-0 flex-1 [scrollbar-gutter:stable] overflow-y-auto bg-[#0b0c10] px-6 py-8 max-[640px]:px-3 max-[640px]:py-4'
-            : 'min-h-0 flex-1 overflow-y-auto px-6 py-6'
+            ? readScrollRef
+            : undefined
         }
+        className={cn(
+          'min-h-0 flex-1 overflow-y-auto px-6 py-6',
+          'max-[640px]:px-3 max-[640px]:py-4',
+          mode === 'read' &&
+            '[scrollbar-gutter:stable] bg-[#0b0c10]'
+        )}
       >
         <div
           className={
