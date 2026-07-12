@@ -975,7 +975,7 @@ function ReadOnlyStudyDocument({ document }: { document: StudyDocument }): React
   const outline = buildStudyReadOutline(document.blocks)
 
   return (
-    <div className="mx-auto min-h-[85vh] w-full max-w-5xl rounded-2xl border border-[var(--app-border)]">
+    <div className="mx-auto min-h-[85vh] w-full max-w-5xl rounded-2xl border border-(--app-border) bg-(--app-surface)">
       <article
         aria-label="Содержимое материала"
         className="min-h-64 w-full space-y-7 px-10 py-10 max-[900px]:px-7 max-[640px]:space-y-6 max-[640px]:px-4 max-[640px]:py-6"
