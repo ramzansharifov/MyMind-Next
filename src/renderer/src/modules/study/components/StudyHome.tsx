@@ -13,6 +13,7 @@ import {
 import { useMemo, useState, type ReactNode } from 'react'
 
 import type { StudyNode } from '../../../../../shared/contracts/study'
+import { StudyActionButton } from './StudyActionButton'
 import { StudyFolderIcon } from './StudyFolderIcon'
 
 interface StudyHomeProps {
@@ -121,26 +122,27 @@ export function StudyHome({
                 </div>
               </div>
 
-              <div className="flex shrink-0 items-center gap-2 max-[520px]:w-full max-[520px]:flex-col">
-                <button
+              <div className="grid w-[22rem] max-w-full shrink-0 grid-cols-2 gap-2 max-[820px]:w-full max-[520px]:grid-cols-1">
+                <StudyActionButton
                   type="button"
                   disabled={isLoading}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[var(--app-border-strong)] bg-black/[0.08] px-4 text-sm font-medium text-[var(--app-text)] transition-colors outline-none hover:border-violet-500/35 hover:bg-white/[0.045] focus-visible:ring-2 focus-visible:ring-violet-500/35 disabled:opacity-40 max-[520px]:w-full"
                   onClick={onCreateFolder}
                 >
-                  <FolderPlus aria-hidden="true" className="size-4" />
-                  Новая папка
-                </button>
+                  <FolderPlus aria-hidden="true" />
 
-                <button
+                  Новая папка
+                </StudyActionButton>
+
+                <StudyActionButton
                   type="button"
+                  variant="primary"
                   disabled={isLoading}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-medium text-white shadow-lg shadow-violet-950/20 transition-colors outline-none hover:bg-violet-400 focus-visible:ring-2 focus-visible:ring-violet-300/50 disabled:opacity-40 max-[520px]:w-full"
                   onClick={onCreateMaterial}
                 >
-                  <FilePlus2 aria-hidden="true" className="size-4" />
+                  <FilePlus2 aria-hidden="true" />
+
                   Новый материал
-                </button>
+                </StudyActionButton>
               </div>
             </header>
 
@@ -486,24 +488,25 @@ function StudyHomeEmptyState({
           знания.
         </p>
 
-        <div className="mt-6 flex items-center gap-2 max-[460px]:w-full max-[460px]:flex-col">
-          <button
+        <div className="mt-6 grid w-[22rem] max-w-full grid-cols-2 gap-2 max-[460px]:w-full max-[460px]:grid-cols-1">
+          <StudyActionButton
             type="button"
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[var(--app-border-strong)] px-4 text-sm font-medium text-[var(--app-text)] transition-colors outline-none hover:bg-white/[0.04] focus-visible:ring-2 focus-visible:ring-violet-500/35 max-[460px]:w-full"
             onClick={onCreateFolder}
           >
-            <FolderPlus aria-hidden="true" className="size-4" />
-            Создать папку
-          </button>
+            <FolderPlus aria-hidden="true" />
 
-          <button
+            Создать папку
+          </StudyActionButton>
+
+          <StudyActionButton
             type="button"
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-medium text-white transition-colors outline-none hover:bg-violet-400 focus-visible:ring-2 focus-visible:ring-violet-300/50 max-[460px]:w-full"
+            variant="primary"
             onClick={onCreateMaterial}
           >
-            <FilePlus2 aria-hidden="true" className="size-4" />
+            <FilePlus2 aria-hidden="true" />
+
             Создать материал
-          </button>
+          </StudyActionButton>
         </div>
       </div>
     </section>

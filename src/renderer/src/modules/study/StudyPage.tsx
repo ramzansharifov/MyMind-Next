@@ -17,6 +17,7 @@ import type { StudyFolderIconName, StudyNode } from '../../../../shared/contract
 import { cn } from '../../shared/lib/cn'
 import { Tooltip } from '../../shared/ui/tooltip'
 import { StudyMaterialEditor } from './components/StudyMaterialEditor'
+import { StudyActionButton } from './components/StudyActionButton'
 import { DeleteConfirmationDialog } from './components/DeleteConfirmationDialog'
 import { StudyHome } from './components/StudyHome'
 import { StudyFolderIcon } from './components/StudyFolderIcon'
@@ -451,26 +452,30 @@ function FolderWorkspace({
                 </div>
               </div>
 
-              <div className="flex shrink-0 items-center gap-2 max-[620px]:w-full max-[620px]:flex-col">
-                <FolderIconPicker value={activeIcon} onChange={onIconChange} />
+              <div className="grid w-[33rem] max-w-full shrink-0 grid-cols-3 gap-2 max-[920px]:w-full max-[620px]:grid-cols-1">
+                <FolderIconPicker
+                  value={activeIcon}
+                  onChange={onIconChange}
+                />
 
-                <button
+                <StudyActionButton
                   type="button"
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[var(--app-border-strong)] bg-black/[0.08] px-4 text-sm font-medium text-[var(--app-text)] transition-colors outline-none hover:border-violet-500/35 hover:bg-white/[0.045] focus-visible:ring-2 focus-visible:ring-violet-500/35 max-[620px]:w-full"
                   onClick={onCreateFolder}
                 >
-                  <FolderPlus aria-hidden="true" className="size-4" />
-                  Новая папка
-                </button>
+                  <FolderPlus aria-hidden="true" />
 
-                <button
+                  Новая папка
+                </StudyActionButton>
+
+                <StudyActionButton
                   type="button"
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-medium text-white shadow-lg shadow-violet-950/20 transition-colors outline-none hover:bg-violet-400 focus-visible:ring-2 focus-visible:ring-violet-300/50 max-[620px]:w-full"
+                  variant="primary"
                   onClick={onCreateMaterial}
                 >
-                  <FilePlus2 aria-hidden="true" className="size-4" />
+                  <FilePlus2 aria-hidden="true" />
+
                   Новый материал
-                </button>
+                </StudyActionButton>
               </div>
             </header>
 
@@ -533,13 +538,16 @@ function FolderIconPicker({
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
-        <button
+        <StudyActionButton
           type="button"
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[var(--app-border-strong)] bg-black/[0.08] px-4 text-sm font-medium text-[var(--app-text)] transition-colors outline-none hover:border-violet-500/35 hover:bg-white/[0.045] focus-visible:ring-2 focus-visible:ring-violet-500/35 max-[620px]:w-full"
         >
-          <Palette aria-hidden="true" className="size-4 text-violet-300" />
+          <Palette
+            aria-hidden="true"
+            className="text-violet-300"
+          />
+
           Иконка
-        </button>
+        </StudyActionButton>
       </DropdownMenu.Trigger>
 
       <DropdownMenu.Portal>
