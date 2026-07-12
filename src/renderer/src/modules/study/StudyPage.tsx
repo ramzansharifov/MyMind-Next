@@ -1,9 +1,11 @@
 import * as AlertDialog from '@radix-ui/react-alert-dialog'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import {
+  ArrowRight,
   BookOpen,
   FilePlus2,
   FileText,
+  Folder,
   FolderPlus,
   Palette,
   PanelLeftClose,
@@ -253,6 +255,7 @@ export function StudyPage(): React.JSX.Element {
         ) : selectedNode?.type === 'folder' ? (
           <FolderWorkspace
             node={selectedNode}
+            allNodes={study.nodes}
             items={study.nodes.filter((node) => node.parentId === selectedNode.id)}
             onSelect={selectStudyNode}
             onCreateFolder={() => {
@@ -376,8 +379,17 @@ export function StudyPage(): React.JSX.Element {
   )
 }
 
+const folderWorkspaceDateFormatter =
+  new Intl.DateTimeFormat(
+    'ru-RU',
+    {
+      day: 'numeric',
+      month: 'short'
+    }
+  )
 function FolderWorkspace({
   node,
+  allNodes,
   items,
   onSelect,
   onCreateFolder,
@@ -385,91 +397,194 @@ function FolderWorkspace({
   onIconChange
 }: {
   node: StudyNode
+  allNodes: StudyNode[]
   items: StudyNode[]
   onSelect: (nodeId: string) => void
   onCreateFolder: () => void
   onCreateMaterial: () => void
-  onIconChange: (icon: StudyFolderIconName) => void
+  onIconChange: (
+    icon: StudyFolderIconName
+  ) => void
 }): React.JSX.Element {
   const folders = items
-    .filter((item) => item.type === 'folder')
-    .sort((first, second) => first.position - second.position)
+    .filter(
+      (item) =>
+        item.type === 'folder'
+    )
+    .sort(
+      (first, second) =>
+        first.position -
+        second.position
+    )
 
   const materials = items
-    .filter((item) => item.type === 'material')
-    .sort((first, second) => first.position - second.position)
+    .filter(
+      (item) =>
+        item.type === 'material'
+    )
+    .sort(
+      (first, second) =>
+        first.position -
+        second.position
+    )
 
-  const activeIcon = node.icon ?? 'folder'
+  const activeIcon =
+    node.icon ?? 'folder'
+
+  const folderPath =
+    getFolderWorkspacePath(
+      node,
+      allNodes
+    )
 
   return (
-    <section className="h-full overflow-y-auto p-8 max-[720px]:p-4">
-      <div className="mx-auto grid w-full max-w-6xl gap-5">
-        <section className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)]">
-          <header className="flex items-start gap-4 p-5 max-[760px]:flex-wrap">
-            <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-violet-500/10 text-violet-300 ring-1 ring-violet-500/15 ring-inset">
-              <StudyFolderIcon name={activeIcon} expanded className="size-6" />
+    <section className="h-full overflow-y-auto bg-[var(--app-workspace)] px-8 py-7 max-[720px]:px-4 max-[720px]:py-5">
+      <div className="mx-auto w-full max-w-[1240px] space-y-5">
+        <section className="relative isolate overflow-hidden rounded-3xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[0_20px_70px_rgb(0_0_0/0.16)]">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -top-32 right-8 -z-10 size-80 rounded-full bg-violet-500/10 blur-3xl"
+          />
+
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -bottom-44 -left-24 -z-10 size-80 rounded-full bg-violet-900/10 blur-3xl"
+          />
+
+          <div className="p-6 max-[720px]:p-4">
+            <header className="flex items-start justify-between gap-6 max-[920px]:flex-col">
+              <div className="flex min-w-0 items-start gap-4">
+                <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-violet-500/20 bg-violet-500/12 text-violet-300 shadow-inner shadow-violet-500/5">
+                  <StudyFolderIcon
+                    name={activeIcon}
+                    expanded
+                    className="size-6"
+                  />
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold tracking-[0.12em] text-violet-300 uppercase">
+                    Папка библиотеки
+                  </p>
+
+                  <h1 className="mt-1 truncate text-3xl font-semibold tracking-[-0.035em] text-[var(--app-text)]">
+                    {node.title}
+                  </h1>
+
+                  <p
+                    title={folderPath.join(
+                      ' / '
+                    )}
+                    className="mt-2 max-w-2xl truncate text-sm text-[var(--app-muted)]"
+                  >
+                    {folderPath.join(
+                      ' / '
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex shrink-0 items-center gap-2 max-[620px]:w-full max-[620px]:flex-col">
+                <FolderIconPicker
+                  value={activeIcon}
+                  onChange={
+                    onIconChange
+                  }
+                />
+
+                <button
+                  type="button"
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[var(--app-border-strong)] bg-black/[0.08] px-4 text-sm font-medium text-[var(--app-text)] outline-none transition-colors hover:border-violet-500/35 hover:bg-white/[0.045] focus-visible:ring-2 focus-visible:ring-violet-500/35 max-[620px]:w-full"
+                  onClick={
+                    onCreateFolder
+                  }
+                >
+                  <FolderPlus
+                    aria-hidden="true"
+                    className="size-4"
+                  />
+
+                  Новая папка
+                </button>
+
+                <button
+                  type="button"
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-medium text-white shadow-lg shadow-violet-950/20 outline-none transition-colors hover:bg-violet-400 focus-visible:ring-2 focus-visible:ring-violet-300/50 max-[620px]:w-full"
+                  onClick={
+                    onCreateMaterial
+                  }
+                >
+                  <FilePlus2
+                    aria-hidden="true"
+                    className="size-4"
+                  />
+
+                  Новый материал
+                </button>
+              </div>
+            </header>
+
+            <div className="mt-6 grid grid-cols-3 gap-3 max-[760px]:grid-cols-1">
+              <FolderStatistic
+                icon={
+                  <BookOpen
+                    aria-hidden="true"
+                    className="size-5"
+                  />
+                }
+                value={items.length}
+                label="Всего"
+                description="Элементов в этой папке"
+              />
+
+              <FolderStatistic
+                icon={
+                  <FileText
+                    aria-hidden="true"
+                    className="size-5"
+                  />
+                }
+                value={
+                  materials.length
+                }
+                label="Материалов"
+                description="Конспекты и записи"
+              />
+
+              <FolderStatistic
+                icon={
+                  <Folder
+                    aria-hidden="true"
+                    className="size-5"
+                  />
+                }
+                value={folders.length}
+                label="Папок"
+                description="Вложенных разделов"
+              />
             </div>
-
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold tracking-[0.08em] text-violet-300 uppercase">
-                Папка
-              </p>
-
-              <h1 className="mt-1 truncate text-2xl font-semibold tracking-[-0.02em] text-[var(--app-text)]">
-                {node.title}
-              </h1>
-
-              <p className="mt-1 text-sm text-[var(--app-muted)]">
-                Материалы и вложенные папки этой области библиотеки
-              </p>
-            </div>
-
-            <div className="flex shrink-0 items-center gap-2 max-[560px]:w-full max-[560px]:flex-col">
-              <FolderIconPicker value={activeIcon} onChange={onIconChange} />
-              <button
-                type="button"
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-[var(--app-border)] px-3.5 text-sm font-medium text-[var(--app-text)] transition-colors outline-none hover:border-violet-500/30 hover:bg-white/[0.04] focus-visible:ring-2 focus-visible:ring-violet-500/35 max-[560px]:w-full"
-                onClick={onCreateFolder}
-              >
-                <FolderPlus aria-hidden="true" className="size-4" />
-                Новая папка
-              </button>
-
-              <button
-                type="button"
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-violet-500 px-3.5 text-sm font-medium text-white transition-colors outline-none hover:bg-violet-400 focus-visible:ring-2 focus-visible:ring-violet-300/50 max-[560px]:w-full"
-                onClick={onCreateMaterial}
-              >
-                <FilePlus2 aria-hidden="true" className="size-4" />
-                Новый материал
-              </button>
-            </div>
-          </header>
-
-          <div className="grid grid-cols-3 border-t border-[var(--app-border)] max-[560px]:grid-cols-1 max-[560px]:divide-y max-[560px]:divide-[var(--app-border)]">
-            <FolderStatistic value={items.length} label="Всего элементов" />
-
-            <FolderStatistic value={folders.length} label="Вложенных папок" bordered />
-
-            <FolderStatistic value={materials.length} label="Материалов" bordered />
           </div>
         </section>
 
-        <FolderItemsSection
-          title="Папки"
-          description="Дополнительные разделы внутри текущей папки"
-          items={folders}
-          emptyText="Вложенных папок пока нет"
-          onSelect={onSelect}
-        />
+        <div className="grid grid-cols-[minmax(0,1.35fr)_minmax(300px,0.75fr)] items-start gap-5 max-[1040px]:grid-cols-1">
+          <FolderItemsSection
+            kind="material"
+            title="Материалы"
+            description="Конспекты и учебные материалы этой папки"
+            items={materials}
+            emptyText="В этой папке пока нет материалов"
+            onSelect={onSelect}
+          />
 
-        <FolderItemsSection
-          title="Материалы"
-          description="Конспекты и учебные материалы этой папки"
-          items={materials}
-          emptyText="В этой папке пока нет материалов"
-          onSelect={onSelect}
-        />
+          <FolderItemsSection
+            kind="folder"
+            title="Вложенные папки"
+            description="Дополнительные разделы текущей папки"
+            items={folders}
+            emptyText="Вложенных папок пока нет"
+            onSelect={onSelect}
+          />
+        </div>
       </div>
     </section>
   )
@@ -480,16 +595,22 @@ function FolderIconPicker({
   onChange
 }: {
   value: StudyFolderIconName
-  onChange: (icon: StudyFolderIconName) => void
+  onChange: (
+    icon: StudyFolderIconName
+  ) => void
 }): React.JSX.Element {
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
         <button
           type="button"
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-[var(--app-border)] px-3.5 text-sm font-medium text-[var(--app-text)] transition-colors outline-none hover:border-violet-500/30 hover:bg-white/[0.04] focus-visible:ring-2 focus-visible:ring-violet-500/35 max-[560px]:w-full"
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[var(--app-border-strong)] bg-black/[0.08] px-4 text-sm font-medium text-[var(--app-text)] outline-none transition-colors hover:border-violet-500/35 hover:bg-white/[0.045] focus-visible:ring-2 focus-visible:ring-violet-500/35 max-[620px]:w-full"
         >
-          <Palette aria-hidden="true" className="size-4 text-violet-300" />
+          <Palette
+            aria-hidden="true"
+            className="size-4 text-violet-300"
+          />
+
           Иконка
         </button>
       </DropdownMenu.Trigger>
@@ -498,109 +619,197 @@ function FolderIconPicker({
         <DropdownMenu.Content
           sideOffset={8}
           align="end"
-          className="z-50 w-72 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-2 shadow-xl shadow-black/25"
+          collisionPadding={12}
+          className="z-50 w-72 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-2 shadow-2xl shadow-black/35"
         >
-          <DropdownMenu.Label className="px-2 py-1.5 text-xs font-medium text-[var(--app-muted)]">
-            Выбери иконку папки
+          <DropdownMenu.Label className="px-2 py-2 text-xs font-medium text-[var(--app-muted)]">
+            Иконка папки
           </DropdownMenu.Label>
 
           <div className="grid grid-cols-4 gap-1">
-            {STUDY_FOLDER_ICON_OPTIONS.map((option) => (
-              <DropdownMenu.Item
-                key={option.value}
-                aria-label={option.label}
-                title={option.label}
-                className={cn(
-                  'flex aspect-square cursor-default items-center justify-center rounded-lg outline-none',
-                  'text-[var(--app-muted)] transition-colors',
-                  'hover:bg-white/[0.06] hover:text-[var(--app-text)]',
-                  'focus:bg-white/[0.06] focus:text-[var(--app-text)]',
-                  option.value === value && 'bg-violet-500/15 text-violet-200'
-                )}
-                onSelect={() => {
-                  onChange(option.value)
-                }}
-              >
-                <StudyFolderIcon name={option.value} className="size-5" />
-              </DropdownMenu.Item>
-            ))}
+            {STUDY_FOLDER_ICON_OPTIONS.map(
+              (option) => (
+                <Tooltip
+                  key={option.value}
+                  content={option.label}
+                  side="top"
+                >
+                  <DropdownMenu.Item
+                    aria-label={
+                      option.label
+                    }
+                    className={cn(
+                      'flex aspect-square cursor-default items-center justify-center rounded-xl border outline-none',
+                      'border-transparent text-[var(--app-muted)] transition-colors',
+                      'hover:bg-white/[0.06] hover:text-[var(--app-text)]',
+                      'focus:bg-white/[0.06] focus:text-[var(--app-text)]',
+                      option.value ===
+                        value &&
+                        'border-violet-500/25 bg-violet-500/15 text-violet-200'
+                    )}
+                    onSelect={() => {
+                      onChange(
+                        option.value
+                      )
+                    }}
+                  >
+                    <StudyFolderIcon
+                      name={
+                        option.value
+                      }
+                      className="size-5"
+                    />
+                  </DropdownMenu.Item>
+                </Tooltip>
+              )
+            )}
           </div>
+
+          <DropdownMenu.Arrow className="fill-[var(--app-surface-raised)]" />
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
     </DropdownMenu.Root>
   )
 }
 function FolderStatistic({
+  icon,
   value,
   label,
-  bordered = false
+  description
 }: {
+  icon: React.ReactNode
   value: number
   label: string
-  bordered?: boolean
+  description: string
 }): React.JSX.Element {
   return (
-    <div
-      className={cn(
-        'px-5 py-4',
-        bordered && 'border-l border-[var(--app-border)] max-[560px]:border-l-0'
-      )}
-    >
-      <p className="text-xl font-semibold text-[var(--app-text)] tabular-nums">{value}</p>
+    <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-[var(--app-border)] bg-black/[0.08] p-3.5 shadow-sm shadow-black/5">
+      <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
+        {icon}
+      </div>
 
-      <p className="mt-1 text-xs text-[var(--app-muted)]">{label}</p>
+      <div className="min-w-0">
+        <div className="flex items-baseline gap-2">
+          <p className="text-xl font-semibold text-[var(--app-text)] tabular-nums">
+            {value}
+          </p>
+
+          <p className="truncate text-xs font-medium text-[var(--app-text)]">
+            {label}
+          </p>
+        </div>
+
+        <p className="mt-0.5 truncate text-[11px] text-[var(--app-muted)]">
+          {description}
+        </p>
+      </div>
     </div>
   )
 }
 
 function FolderItemsSection({
+  kind,
   title,
   description,
   items,
   emptyText,
   onSelect
 }: {
+  kind: 'folder' | 'material'
   title: string
   description: string
   items: StudyNode[]
   emptyText: string
   onSelect: (nodeId: string) => void
 }): React.JSX.Element {
-  return (
-    <section className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)]">
-      <header className="flex items-center justify-between gap-4 border-b border-[var(--app-border)] px-5 py-4">
-        <div className="min-w-0">
-          <h2 className="text-sm font-semibold text-[var(--app-text)]">{title}</h2>
+  const compact =
+    kind === 'folder'
 
-          <p className="mt-1 truncate text-xs text-[var(--app-muted)]">{description}</p>
+  return (
+    <section className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[0_12px_40px_rgb(0_0_0/0.1)]">
+      <header className="flex min-h-20 items-center gap-3 border-b border-[var(--app-border)] px-5 py-4">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
+          {kind === 'folder' ? (
+            <Folder
+              aria-hidden="true"
+              className="size-5"
+            />
+          ) : (
+            <FileText
+              aria-hidden="true"
+              className="size-5"
+            />
+          )}
         </div>
 
-        <span className="shrink-0 rounded-full bg-white/[0.04] px-2.5 py-1 text-xs text-[var(--app-muted)] tabular-nums">
+        <div className="min-w-0 flex-1">
+          <h2 className="truncate text-base font-semibold text-[var(--app-text)]">
+            {title}
+          </h2>
+
+          <p className="mt-0.5 truncate text-xs text-[var(--app-muted)]">
+            {description}
+          </p>
+        </div>
+
+        <span className="flex min-w-7 shrink-0 items-center justify-center rounded-full border border-[var(--app-border)] bg-[var(--app-workspace)] px-2 py-1 text-[11px] font-medium text-[var(--app-muted)] tabular-nums">
           {items.length}
         </span>
       </header>
 
       {items.length > 0 ? (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-3 p-4">
+        <div
+          className={cn(
+            'p-4',
+            compact
+              ? 'grid gap-2'
+              : 'grid grid-cols-2 gap-3 max-[720px]:grid-cols-1'
+          )}
+        >
           {items.map((child) => (
             <button
               key={child.id}
               type="button"
-              title={child.title}
-              className="group flex min-w-0 items-center gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-3.5 text-left transition-colors outline-none hover:border-violet-500/30 hover:bg-[var(--app-surface-raised)] focus-visible:ring-2 focus-visible:ring-violet-500/35"
+              aria-label={`Открыть ${child.type === 'folder' ? 'папку' : 'материал'} «${child.title}»`}
+              className={cn(
+                'group flex w-full min-w-0 items-center gap-3 rounded-xl border text-left outline-none',
+                'border-[var(--app-border)] bg-[var(--app-workspace)]',
+                'transition-[border-color,background-color,transform,box-shadow]',
+                'hover:-translate-y-px hover:border-violet-500/30',
+                'hover:bg-[var(--app-surface-raised)] hover:shadow-lg hover:shadow-black/10',
+                'focus-visible:ring-2 focus-visible:ring-violet-500/35',
+                compact
+                  ? 'p-3'
+                  : 'p-3.5'
+              )}
               onClick={() => {
                 onSelect(child.id)
               }}
             >
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white/[0.035] text-[var(--app-muted)] transition-colors group-hover:bg-violet-500/10 group-hover:text-violet-300">
-                {child.type === 'folder' ? (
+              <span
+                aria-hidden="true"
+                className={cn(
+                  'flex shrink-0 items-center justify-center rounded-xl border',
+                  'border-white/[0.035] bg-white/[0.025] text-[var(--app-muted)]',
+                  'transition-colors',
+                  'group-hover:border-violet-500/15 group-hover:bg-violet-500/10',
+                  'group-hover:text-violet-300',
+                  compact
+                    ? 'size-9'
+                    : 'size-10'
+                )}
+              >
+                {child.type ===
+                'folder' ? (
                   <StudyFolderIcon
                     name={child.icon}
-                    expanded={child.isExpanded}
+                    expanded={
+                      child.isExpanded
+                    }
                     className="size-5"
                   />
                 ) : (
-                  <FileText aria-hidden="true" className="size-5" />
+                  <FileText className="size-5" />
                 )}
               </span>
 
@@ -609,23 +818,72 @@ function FolderItemsSection({
                   {child.title}
                 </span>
 
-                <span className="mt-1 block truncate text-xs text-[var(--app-muted)]">
-                  {child.type === 'folder' ? 'Папка' : 'Материал'}
+                <span className="mt-1 block truncate text-[11px] text-[var(--app-muted)]">
+                  {child.type === 'folder'
+                    ? 'Папка'
+                    : 'Материал'}
                   {' · '}
-                  {new Date(child.updatedAt).toLocaleDateString('ru-RU', {
-                    day: 'numeric',
-                    month: 'short'
-                  })}
+                  {folderWorkspaceDateFormatter.format(
+                    new Date(
+                      child.updatedAt
+                    )
+                  )}
                 </span>
               </span>
+
+              <ArrowRight
+                aria-hidden="true"
+                className="size-4 shrink-0 -translate-x-1 text-[var(--app-muted)] opacity-0 transition-[opacity,transform,color] group-hover:translate-x-0 group-hover:text-violet-300 group-hover:opacity-100"
+              />
             </button>
           ))}
         </div>
       ) : (
-        <div className="m-4 flex min-h-28 items-center justify-center rounded-xl border border-dashed border-[var(--app-border)] px-4 text-center text-sm text-[var(--app-muted)]">
+        <div className="m-4 flex min-h-32 items-center justify-center rounded-xl border border-dashed border-[var(--app-border)] bg-black/[0.04] px-5 py-8 text-center text-sm leading-6 text-[var(--app-muted)]">
           {emptyText}
         </div>
       )}
     </section>
   )
+}
+
+function getFolderWorkspacePath(
+  node: StudyNode,
+  allNodes: StudyNode[]
+): string[] {
+  const nodesById = new Map(
+    allNodes.map((item) => [
+      item.id,
+      item
+    ])
+  )
+
+  const path = [node.title]
+  const visited = new Set([
+    node.id
+  ])
+
+  let parentId = node.parentId
+
+  while (
+    parentId &&
+    !visited.has(parentId)
+  ) {
+    visited.add(parentId)
+
+    const parent =
+      nodesById.get(parentId)
+
+    if (!parent) {
+      break
+    }
+
+    path.unshift(parent.title)
+    parentId = parent.parentId
+  }
+
+  return [
+    'Обучение',
+    ...path
+  ]
 }
