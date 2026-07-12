@@ -8,6 +8,7 @@ import {
   Folder,
   FolderPlus,
   Palette,
+  Pencil,
   PanelLeftClose,
   PanelLeftOpen
 } from 'lucide-react'
@@ -200,6 +201,11 @@ export function StudyPage(): React.JSX.Element {
                 void study.toggleFolder(node)
               }}
               onRename={openRename}
+              onDuplicate={(node) => {
+                void study.duplicateNode(
+                  node.id
+                )
+              }}
               onDelete={setDeleteTarget}
               onCreateFolder={(parentId) => {
                 const parentFolder = study.nodes.find((node) => node.id === parentId)
@@ -244,6 +250,9 @@ export function StudyPage(): React.JSX.Element {
           <StudyMaterialEditor
             key={selectedNode.id}
             node={selectedNode}
+            onRename={() => {
+              openRename(selectedNode)
+            }}
             navigation={
               internalNavigation?.materialId === selectedNode.id ? internalNavigation : null
             }
@@ -311,7 +320,10 @@ export function StudyPage(): React.JSX.Element {
 
           <AlertDialog.Content className="fixed top-1/2 left-1/2 z-50 w-[min(420px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-5">
             <AlertDialog.Title className="text-lg font-semibold text-[var(--app-text)]">
-              Переименовать
+              {renameTarget?.type ===
+              'folder'
+                ? 'Переименовать папку'
+                : 'Переименовать материал'}
             </AlertDialog.Title>
 
             <input
@@ -390,6 +402,7 @@ function FolderWorkspace({
   items,
   onSelect,
   onCreateFolder,
+  onRename,
   onCreateMaterial,
   onIconChange
 }: {
@@ -398,6 +411,7 @@ function FolderWorkspace({
   items: StudyNode[]
   onSelect: (nodeId: string) => void
   onCreateFolder: () => void
+  onRename: () => void
   onCreateMaterial: () => void
   onIconChange: (icon: StudyFolderIconName) => void
 }): React.JSX.Element {
@@ -452,7 +466,16 @@ function FolderWorkspace({
                 </div>
               </div>
 
-              <div className="grid w-[33rem] max-w-full shrink-0 grid-cols-3 gap-2 max-[920px]:w-full max-[620px]:grid-cols-1">
+              <div className="grid w-[44rem] max-w-full shrink-0 grid-cols-4 gap-2 max-[920px]:w-full max-[760px]:grid-cols-2 max-[620px]:grid-cols-1">
+                <StudyActionButton
+                  type="button"
+                  onClick={onRename}
+                >
+                  <Pencil aria-hidden="true" />
+
+                  Переименовать
+                </StudyActionButton>
+
                 <FolderIconPicker
                   value={activeIcon}
                   onChange={onIconChange}

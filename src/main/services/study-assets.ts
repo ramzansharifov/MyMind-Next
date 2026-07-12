@@ -202,6 +202,158 @@ function isStudyAssetBlock(block: StudyBlock): block is StudyAssetBlock {
     block.type === 'file'
   )
 }
+export async function duplicateStudyAssetsForDocument(
+  targetMaterialId: string,
+  document: StudyDocument
+): Promise<StudyDocument> {
+  assertSafeAssetSegment(
+    targetMaterialId,
+    'target material id'
+  )
+
+  const duplicatedAssets =
+    new Map<
+      string,
+      StudyLocalAsset
+    >()
+
+  try {
+    const blocks: StudyBlock[] = []
+
+    for (const block of document.blocks) {
+      if (
+        !isStudyAssetBlock(block) ||
+        block.source.type !== 'local' ||
+        !block.source.asset
+      ) {
+        blocks.push(block)
+        continue
+      }
+
+      const sourceAsset =
+        block.source.asset
+
+      assertSafeAssetSegment(
+        sourceAsset.materialId,
+        'source material id'
+      )
+
+      assertSafeAssetSegment(
+        sourceAsset.id,
+        'source asset id'
+      )
+
+      if (
+        !isSafeAssetFileName(
+          sourceAsset.name
+        )
+      ) {
+        throw new Error(
+          'Некорректное имя вложения'
+        )
+      }
+
+      const sourceAssetKey =
+        `${sourceAsset.materialId}:${sourceAsset.id}`
+
+      let duplicatedAsset =
+        duplicatedAssets.get(
+          sourceAssetKey
+        )
+
+      if (!duplicatedAsset) {
+        const sourcePath = join(
+          getStudyAssetsRoot(),
+          sourceAsset.materialId,
+          sourceAsset.id,
+          sourceAsset.name
+        )
+
+        const sourceStats =
+          await stat(sourcePath)
+
+        if (!sourceStats.isFile()) {
+          throw new Error(
+            `Вложение «${sourceAsset.name}» не найдено`
+          )
+        }
+
+        const targetAssetId =
+          randomUUID()
+
+        const targetDirectory = join(
+          getStudyAssetsRoot(),
+          targetMaterialId,
+          targetAssetId
+        )
+
+        const targetPath = join(
+          targetDirectory,
+          sourceAsset.name
+        )
+
+        await mkdir(
+          targetDirectory,
+          {
+            recursive: true
+          }
+        )
+
+        await copyFile(
+          sourcePath,
+          targetPath
+        )
+
+        duplicatedAsset = {
+          ...sourceAsset,
+          id: targetAssetId,
+          materialId:
+            targetMaterialId,
+          size: sourceStats.size,
+          url: createStudyAssetUrl({
+            materialId:
+              targetMaterialId,
+            assetId:
+              targetAssetId,
+            fileName:
+              sourceAsset.name
+          })
+        }
+
+        duplicatedAssets.set(
+          sourceAssetKey,
+          duplicatedAsset
+        )
+      }
+
+      blocks.push({
+        ...block,
+        source: {
+          type: 'local',
+          asset: duplicatedAsset
+        }
+      } as StudyBlock)
+    }
+
+    return {
+      ...document,
+      blocks
+    }
+  } catch (reason: unknown) {
+    await rm(
+      join(
+        getStudyAssetsRoot(),
+        targetMaterialId
+      ),
+      {
+        recursive: true,
+        force: true
+      }
+    ).catch(() => undefined)
+
+    throw reason
+  }
+}
 export async function cleanupStudyAssetsForDocument(
   materialId: string,
   document: StudyDocument

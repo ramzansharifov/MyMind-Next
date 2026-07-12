@@ -1,5 +1,6 @@
 import type {
   CreateStudyNodeInput,
+  DuplicateStudyNodeResult,
   ImportStudyAssetInput,
   MoveStudyNodeInput,
   ResolveStudyInternalLinkTargetInput,
@@ -35,6 +36,14 @@ export const studyClient = {
       id,
       title
     })
+  },
+  duplicateNode(
+    id: string
+  ): Promise<DuplicateStudyNodeResult> {
+    return getStudyApi()
+      .duplicateNode({
+        id
+      })
   },
   updateFolderIcon(id: string, icon: StudyFolderIconName): Promise<StudyNode> {
     return getStudyApi().updateFolderIcon({

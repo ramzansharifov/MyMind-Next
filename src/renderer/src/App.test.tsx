@@ -20,6 +20,7 @@ describe('App shell', () => {
           listNodes: vi.fn().mockResolvedValue([]),
           createNode: vi.fn(),
           renameNode: vi.fn(),
+          duplicateNode: vi.fn(),
           deleteNode: vi.fn(),
           updateExpansion: vi.fn(),
           moveNode: vi.fn(),

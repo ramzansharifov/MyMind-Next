@@ -1,19 +1,28 @@
-import { BookOpen, Check, Edit3, LoaderCircle } from 'lucide-react'
+import {
+  BookOpen,
+  Check,
+  Edit3,
+  LoaderCircle,
+  Pencil
+} from 'lucide-react'
 import * as Tabs from '@radix-ui/react-tabs'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import type { StudyDocument, StudyNode } from '../../../../../shared/contracts/study'
 import { cn } from '../../../shared/lib/cn'
+import { Tooltip } from '../../../shared/ui/tooltip'
 
 import { studyClient } from '../api/study-client'
 import { createEmptyStudyDocument } from '../lib/study-document'
 import { getStudyHeadingElementId, STUDY_REVEAL_HEADING_EVENT } from '../lib/study-read-navigation'
 import type { StudyInternalLinkNavigationRequest } from '../lib/study-internal-link'
 import { StudyBlockEditor } from './StudyBlockEditor'
+import { StudyActionButton } from './StudyActionButton'
 import { StudyReadNavigation } from './StudyReadNavigation'
 
 interface StudyMaterialEditorProps {
   node: StudyNode
+  onRename: () => void
   navigation: StudyInternalLinkNavigationRequest | null
   onNavigationHandled: (requestId: number) => void
 }
@@ -22,6 +31,7 @@ type SaveState = 'saved' | 'dirty' | 'saving' | 'error'
 
 export function StudyMaterialEditor({
   node,
+  onRename,
   navigation,
   onNavigationHandled
 }: StudyMaterialEditorProps): React.JSX.Element {
@@ -256,6 +266,23 @@ export function StudyMaterialEditor({
           </h1>
         </div>
 
+        <Tooltip
+          content="Переименовать материал"
+          side="bottom"
+        >
+          <StudyActionButton
+            type="button"
+            aria-label="Переименовать материал"
+            className="w-auto shrink-0 px-3 max-[760px]:w-10 max-[760px]:px-0"
+            onClick={onRename}
+          >
+            <Pencil aria-hidden="true" />
+
+            <span className="max-[760px]:hidden">
+              Переименовать
+            </span>
+          </StudyActionButton>
+        </Tooltip>
         <SaveStatus state={saveState} />
 
         <Tabs.Root

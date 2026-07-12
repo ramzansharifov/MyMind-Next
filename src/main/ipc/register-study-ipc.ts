@@ -3,6 +3,7 @@ import { BrowserWindow, ipcMain } from 'electron'
 import { STUDY_IPC_CHANNELS } from '../../shared/contracts/study'
 import {
   createStudyNodeInputSchema,
+  duplicateStudyNodeInputSchema,
   importStudyAssetInputSchema,
   moveStudyNodeInputSchema,
   renameStudyNodeInputSchema,
@@ -15,6 +16,7 @@ import {
 import {
   createStudyNode,
   deleteStudyNode,
+  duplicateStudyNode,
   getStudyMaterial,
   listStudyNodes,
   moveStudyNode,
@@ -45,6 +47,19 @@ export function registerStudyIpcHandlers(): void {
 
     return renameStudyNode(input.id, input.title)
   })
+  ipcMain.handle(
+    STUDY_IPC_CHANNELS.duplicateNode,
+    (_event, rawInput: unknown) => {
+      const input =
+        duplicateStudyNodeInputSchema.parse(
+          rawInput
+        )
+
+      return duplicateStudyNode(
+        input.id
+      )
+    }
+  )
   ipcMain.handle(STUDY_IPC_CHANNELS.updateFolderIcon, (_event, rawInput: unknown) => {
     const input = updateStudyFolderIconInputSchema.parse(rawInput)
 

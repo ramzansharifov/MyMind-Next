@@ -5,6 +5,7 @@ import { studyLinkTargets, studyMaterials, studyNodes } from '../database/schema
 import { getDatabase } from '../database/client'
 import type {
   CreateStudyNodeInput,
+  DuplicateStudyNodeResult,
   MoveStudyNodeInput,
   ResolveStudyInternalLinkTargetInput,
   SaveStudyMaterialInput,
@@ -23,6 +24,7 @@ import {
 } from '../../shared/validation/study'
 import {
   cleanupStudyAssetsForDocument,
+  duplicateStudyAssetsForDocument,
   removeStudyAssetsForMaterials
 } from '../services/study-assets'
 
@@ -305,6 +307,176 @@ function getStudyLinkTargetScore(
   return score
 }
 
+interface PreparedStudyMaterialDuplicate {
+  nodeId: string
+  title: string
+  document: StudyDocument
+  plainText: string
+}
+
+function getStudySubtreeRows(
+  rootId: string,
+  rows: StudyNodeRow[]
+): StudyNodeRow[] {
+  const nodesById = new Map(
+    rows.map((node) => [
+      node.id,
+      node
+    ])
+  )
+
+  const childrenByParent =
+    new Map<
+      string | null,
+      StudyNodeRow[]
+    >()
+
+  rows.forEach((node) => {
+    const children =
+      childrenByParent.get(
+        node.parentId
+      ) ?? []
+
+    children.push(node)
+
+    childrenByParent.set(
+      node.parentId,
+      children
+    )
+  })
+
+  childrenByParent.forEach(
+    (children) => {
+      children.sort(
+        (first, second) =>
+          first.position -
+          second.position
+      )
+    }
+  )
+
+  const subtree: StudyNodeRow[] = []
+  const visited =
+    new Set<string>()
+
+  function visit(nodeId: string): void {
+    if (visited.has(nodeId)) {
+      return
+    }
+
+    const node =
+      nodesById.get(nodeId)
+
+    if (!node) {
+      return
+    }
+
+    visited.add(nodeId)
+    subtree.push(node)
+
+    const children =
+      childrenByParent.get(
+        nodeId
+      ) ?? []
+
+    children.forEach((child) => {
+      visit(child.id)
+    })
+  }
+
+  visit(rootId)
+
+  return subtree
+}
+
+function createStudyDuplicateTitle(
+  title: string,
+  siblingTitles: string[]
+): string {
+  const normalizedTitles =
+    new Set(
+      siblingTitles.map(
+        (value) =>
+          value
+            .trim()
+            .toLocaleLowerCase(
+              'ru-RU'
+            )
+      )
+    )
+
+  const baseTitle =
+    `${title} — копия`
+
+  if (
+    !normalizedTitles.has(
+      baseTitle.toLocaleLowerCase(
+        'ru-RU'
+      )
+    )
+  ) {
+    return baseTitle
+  }
+
+  let index = 2
+
+  while (
+    normalizedTitles.has(
+      `${baseTitle} ${index}`.toLocaleLowerCase(
+        'ru-RU'
+      )
+    )
+  ) {
+    index += 1
+  }
+
+  return `${baseTitle} ${index}`
+}
+
+function remapStudyDocumentInternalLinks(
+  document: StudyDocument,
+  nodeIdMap: Map<string, string>
+): StudyDocument {
+  return {
+    ...document,
+    blocks: document.blocks.map(
+      (block) => {
+        if (
+          block.type !== 'text' ||
+          !block.html
+        ) {
+          return block
+        }
+
+        const html =
+          block.html.replace(
+            /data-material-id=(["'])([^"']+)\1/g,
+            (
+              match,
+              quote: string,
+              materialId: string
+            ) => {
+              const duplicatedId =
+                nodeIdMap.get(
+                  materialId
+                )
+
+              return duplicatedId
+                ? `data-material-id=${quote}${duplicatedId}${quote}`
+                : match
+            }
+          )
+
+        return html === block.html
+          ? block
+          : {
+              ...block,
+              html
+            }
+      }
+    )
+  }
+}
 export function listStudyNodes(): StudyNode[] {
   const rows = getDatabase()
     .select()
@@ -392,6 +564,332 @@ export function createStudyNode(input: CreateStudyNodeInput): StudyNode {
   }
 
   return mapStudyNode(created)
+}
+export async function duplicateStudyNode(
+  id: string
+): Promise<DuplicateStudyNodeResult> {
+  const database = getDatabase()
+
+  const rows = database
+    .select()
+    .from(studyNodes)
+    .all()
+
+  const source = rows.find(
+    (node) => node.id === id
+  )
+
+  if (!source) {
+    throw new Error(
+      'Элемент обучения не найден'
+    )
+  }
+
+  const subtree =
+    getStudySubtreeRows(
+      source.id,
+      rows
+    )
+
+  if (subtree.length === 0) {
+    throw new Error(
+      'Не удалось прочитать содержимое элемента'
+    )
+  }
+
+  const now = new Date()
+
+  const nodeIdMap = new Map(
+    subtree.map((node) => [
+      node.id,
+      randomUUID()
+    ])
+  )
+
+  const rootId =
+    nodeIdMap.get(source.id)
+
+  if (!rootId) {
+    throw new Error(
+      'Не удалось создать идентификатор копии'
+    )
+  }
+
+  const siblingTitles = rows
+    .filter(
+      (node) =>
+        node.parentId ===
+          source.parentId &&
+        node.id !== source.id
+    )
+    .map((node) => node.title)
+
+  const rootTitle =
+    createStudyDuplicateTitle(
+      source.title,
+      siblingTitles
+    )
+
+  const duplicatedNodeRows:
+    Array<
+      typeof studyNodes.$inferInsert
+    > = []
+
+  const duplicatedNodeRowsBySourceId =
+    new Map<
+      string,
+      typeof studyNodes.$inferInsert
+    >()
+
+  subtree.forEach((node) => {
+    const duplicatedId =
+      nodeIdMap.get(node.id)
+
+    if (!duplicatedId) {
+      throw new Error(
+        'Не удалось подготовить копию элемента'
+      )
+    }
+
+    const duplicatedParentId =
+      node.id === source.id
+        ? source.parentId
+        : node.parentId
+          ? (nodeIdMap.get(
+              node.parentId
+            ) ?? null)
+          : null
+
+    const duplicatedNode:
+      typeof studyNodes.$inferInsert =
+      {
+        id: duplicatedId,
+        type: node.type,
+        parentId:
+          duplicatedParentId,
+        title:
+          node.id === source.id
+            ? rootTitle
+            : node.title,
+        icon:
+          node.type === 'folder'
+            ? (node.icon ??
+              'folder')
+            : null,
+        position:
+          node.id === source.id
+            ? source.position + 1
+            : node.position,
+        isExpanded:
+          node.isExpanded,
+        createdAt: now,
+        updatedAt: now
+      }
+
+    duplicatedNodeRows.push(
+      duplicatedNode
+    )
+
+    duplicatedNodeRowsBySourceId.set(
+      node.id,
+      duplicatedNode
+    )
+  })
+
+  const sourceMaterialNodes =
+    subtree.filter(
+      (node) =>
+        node.type === 'material'
+    )
+
+  const duplicatedMaterialIds =
+    sourceMaterialNodes
+      .map((node) =>
+        nodeIdMap.get(node.id)
+      )
+      .filter(
+        (
+          materialId
+        ): materialId is string =>
+          Boolean(materialId)
+      )
+
+  const preparedMaterials:
+    PreparedStudyMaterialDuplicate[] =
+    []
+
+  try {
+    for (
+      const sourceMaterialNode of
+      sourceMaterialNodes
+    ) {
+      const duplicatedNode =
+        duplicatedNodeRowsBySourceId.get(
+          sourceMaterialNode.id
+        )
+
+      if (!duplicatedNode) {
+        throw new Error(
+          'Не удалось подготовить материал'
+        )
+      }
+
+      const sourceMaterial =
+        database
+          .select()
+          .from(studyMaterials)
+          .where(
+            eq(
+              studyMaterials.nodeId,
+              sourceMaterialNode.id
+            )
+          )
+          .get()
+
+      const parsedDocument =
+        studyDocumentSchema.safeParse(
+          sourceMaterial?.document
+        )
+
+      const sourceDocument =
+        parsedDocument.success
+          ? parsedDocument.data
+          : createEmptyStudyDocument()
+
+      const remappedDocument =
+        remapStudyDocumentInternalLinks(
+          sourceDocument,
+          nodeIdMap
+        )
+
+      const duplicatedDocument =
+        await duplicateStudyAssetsForDocument(
+          duplicatedNode.id,
+          remappedDocument
+        )
+
+      preparedMaterials.push({
+        nodeId:
+          duplicatedNode.id,
+        title:
+          duplicatedNode.title,
+        document:
+          duplicatedDocument,
+        plainText:
+          documentToPlainText(
+            duplicatedDocument
+          )
+      })
+    }
+  } catch (reason: unknown) {
+    await removeStudyAssetsForMaterials(
+      duplicatedMaterialIds
+    ).catch(() => undefined)
+
+    throw reason
+  }
+
+  const followingSiblings =
+    rows.filter(
+      (node) =>
+        node.parentId ===
+          source.parentId &&
+        node.position >
+          source.position
+    )
+
+  try {
+    database.transaction(
+      (transaction) => {
+        followingSiblings.forEach(
+          (node) => {
+            transaction
+              .update(studyNodes)
+              .set({
+                position:
+                  node.position + 1,
+                updatedAt: now
+              })
+              .where(
+                eq(
+                  studyNodes.id,
+                  node.id
+                )
+              )
+              .run()
+          }
+        )
+
+        duplicatedNodeRows.forEach(
+          (node) => {
+            transaction
+              .insert(studyNodes)
+              .values(node)
+              .run()
+          }
+        )
+
+        preparedMaterials.forEach(
+          (material) => {
+            transaction
+              .insert(studyMaterials)
+              .values({
+                nodeId:
+                  material.nodeId,
+                document:
+                  material.document,
+                plainText:
+                  material.plainText,
+                createdAt: now,
+                updatedAt: now
+              })
+              .run()
+
+            transaction
+              .insert(
+                studyLinkTargets
+              )
+              .values(
+                buildStudyLinkTargetRows(
+                  material.nodeId,
+                  material.title,
+                  material.document,
+                  now
+                )
+              )
+              .run()
+          }
+        )
+
+        if (source.parentId) {
+          transaction
+            .update(studyNodes)
+            .set({
+              isExpanded: true,
+              updatedAt: now
+            })
+            .where(
+              eq(
+                studyNodes.id,
+                source.parentId
+              )
+            )
+            .run()
+        }
+      }
+    )
+  } catch (reason: unknown) {
+    await removeStudyAssetsForMaterials(
+      duplicatedMaterialIds
+    ).catch(() => undefined)
+
+    throw reason
+  }
+
+  return {
+    rootId,
+    nodes: listStudyNodes()
+  }
 }
 
 export function renameStudyNode(id: string, title: string): StudyNode {

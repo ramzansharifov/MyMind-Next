@@ -221,6 +221,14 @@ export interface RenameStudyNodeInput {
   id: string
   title: string
 }
+export interface DuplicateStudyNodeInput {
+  id: string
+}
+
+export interface DuplicateStudyNodeResult {
+  rootId: string
+  nodes: StudyNode[]
+}
 export interface UpdateStudyFolderIconInput {
   id: string
   icon: StudyFolderIconName
@@ -249,6 +257,7 @@ export const STUDY_IPC_CHANNELS = {
   listNodes: 'study:list-nodes',
   createNode: 'study:create-node',
   renameNode: 'study:rename-node',
+  duplicateNode: 'study:duplicate-node',
   updateFolderIcon: 'study:update-folder-icon',
   deleteNode: 'study:delete-node',
   updateExpansion: 'study:update-expansion',
@@ -264,6 +273,9 @@ export interface StudyApi {
   listNodes(): Promise<StudyNode[]>
   createNode(input: CreateStudyNodeInput): Promise<StudyNode>
   renameNode(input: RenameStudyNodeInput): Promise<StudyNode>
+  duplicateNode(
+    input: DuplicateStudyNodeInput
+  ): Promise<DuplicateStudyNodeResult>
   updateFolderIcon(input: UpdateStudyFolderIconInput): Promise<StudyNode>
   deleteNode(nodeId: string): Promise<boolean>
   updateExpansion(input: UpdateStudyNodeExpansionInput): Promise<StudyNode>

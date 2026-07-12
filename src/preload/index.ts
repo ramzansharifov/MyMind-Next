@@ -3,6 +3,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 import { IPC_CHANNELS, type MyMindApi, type SystemHealth } from '../shared/contracts/system'
 import {
   STUDY_IPC_CHANNELS,
+  type DuplicateStudyNodeResult,
   type StudyInternalLinkTarget,
   type StudyLocalAsset,
   type StudyMaterial,
@@ -22,6 +23,13 @@ const api: MyMindApi = {
 
     renameNode: (input) =>
       ipcRenderer.invoke(STUDY_IPC_CHANNELS.renameNode, input) as Promise<StudyNode>,
+    duplicateNode: (input) =>
+      ipcRenderer.invoke(
+        STUDY_IPC_CHANNELS.duplicateNode,
+        input
+      ) as Promise<
+        DuplicateStudyNodeResult
+      >,
     updateFolderIcon: (input) =>
       ipcRenderer.invoke(STUDY_IPC_CHANNELS.updateFolderIcon, input) as Promise<StudyNode>,
 

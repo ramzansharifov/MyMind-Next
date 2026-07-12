@@ -15,6 +15,7 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import {
   ChevronDown,
   ChevronRight,
+  CopyPlus,
   FilePlus2,
   FileText,
   FolderPlus,
@@ -44,6 +45,9 @@ interface StudyTreeProps {
   onSelectRoot: () => void
   onToggleFolder: (node: StudyNode) => void
   onRename: (node: StudyNode) => void
+  onDuplicate: (
+    node: StudyNode
+  ) => void
   onDelete: (node: StudyNode) => void
   onCreateFolder: (parentId: string) => void
   onCreateMaterial: (parentId: string) => void
@@ -71,6 +75,7 @@ export function StudyTree({
   onSelectRoot,
   onToggleFolder,
   onRename,
+  onDuplicate,
   onDelete,
   onCreateFolder,
   onCreateMaterial,
@@ -189,6 +194,9 @@ export function StudyTree({
                 onSelect={onSelect}
                 onToggleFolder={onToggleFolder}
                 onRename={onRename}
+                onDuplicate={
+                  onDuplicate
+                }
                 onDelete={onDelete}
                 onCreateFolder={onCreateFolder}
                 onCreateMaterial={onCreateMaterial}
@@ -480,6 +488,23 @@ function StudyTreeItem({
                 <Pencil aria-hidden="true" className="size-4" />
                 Переименовать
               </DropdownMenu.Item>
+              <DropdownMenu.Item
+                className="flex cursor-default items-center gap-2 rounded-lg px-2.5 py-2 outline-none hover:bg-white/[0.06] focus:bg-white/[0.06]"
+                onSelect={() => {
+                  onDuplicate(node)
+                }}
+              >
+                <CopyPlus
+                  aria-hidden="true"
+                  className="size-4 text-violet-300"
+                />
+
+                {isFolder
+                  ? 'Дублировать папку'
+                  : 'Дублировать материал'}
+              </DropdownMenu.Item>
+
+              <DropdownMenu.Separator className="my-1 h-px bg-[var(--app-border)]" />
 
               <DropdownMenu.Item
                 className="flex cursor-default items-center gap-2 rounded-lg px-2.5 py-2 text-red-300 outline-none hover:bg-red-500/10 focus:bg-red-500/10"
