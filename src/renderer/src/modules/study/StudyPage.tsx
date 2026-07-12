@@ -268,6 +268,9 @@ export function StudyPage(): React.JSX.Element {
             allNodes={study.nodes}
             items={study.nodes.filter((node) => node.parentId === selectedNode.id)}
             onSelect={selectStudyNode}
+            onRename={() => {
+              openRename(selectedNode)
+            }}
             onCreateFolder={() => {
               void study.createNode({
                 type: 'folder',
