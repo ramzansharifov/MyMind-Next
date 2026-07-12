@@ -47,8 +47,6 @@ import { AutoGrowTextarea } from '../../../shared/ui/AutoGrowTextarea'
 import {
   cloneStudyBlock,
   createStudyBlock,
-  DEFAULT_DIVIDER_COLOR,
-  DEFAULT_DIVIDER_THICKNESS,
   DEFAULT_HEADING_COLOR,
   getStudyTextBlockHtml,
   insertStudyBlock,
