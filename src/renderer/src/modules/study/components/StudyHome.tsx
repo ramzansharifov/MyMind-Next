@@ -1,7 +1,24 @@
-import { BookOpen, FilePlus2, FileText, Folder, FolderPlus, Search, X } from 'lucide-react'
-import { useMemo, useState, type ReactNode } from 'react'
+import {
+  ArrowRight,
+  BookOpen,
+  Clock3,
+  FilePlus2,
+  FileText,
+  Folder,
+  FolderPlus,
+  Layers3,
+  Search,
+  X
+} from 'lucide-react'
+import {
+  useMemo,
+  useState,
+  type ReactNode
+} from 'react'
 
-import type { StudyNode } from '../../../../../shared/contracts/study'
+import type {
+  StudyNode
+} from '../../../../../shared/contracts/study'
 import { StudyFolderIcon } from './StudyFolderIcon'
 
 interface StudyHomeProps {
@@ -12,10 +29,19 @@ interface StudyHomeProps {
   onCreateMaterial: () => void
 }
 
-const studyDateFormatter = new Intl.DateTimeFormat('ru-RU', {
-  day: 'numeric',
-  month: 'short'
-})
+type StudyNodeCardVariant =
+  | 'regular'
+  | 'compact'
+  | 'search'
+
+const studyDateFormatter =
+  new Intl.DateTimeFormat(
+    'ru-RU',
+    {
+      day: 'numeric',
+      month: 'short'
+    }
+  )
 
 export function StudyHome({
   nodes,
@@ -24,151 +50,289 @@ export function StudyHome({
   onCreateFolder,
   onCreateMaterial
 }: StudyHomeProps): React.JSX.Element {
-  const [search, setSearch] = useState('')
+  const [
+    search,
+    setSearch
+  ] = useState('')
 
-  const nodesById = useMemo(() => new Map(nodes.map((node) => [node.id, node])), [nodes])
+  const nodesById = useMemo(
+    () =>
+      new Map(
+        nodes.map((node) => [
+          node.id,
+          node
+        ])
+      ),
+    [nodes]
+  )
 
-  const folders = useMemo(() => nodes.filter((node) => node.type === 'folder'), [nodes])
+  const folders = useMemo(
+    () =>
+      nodes.filter(
+        (node) =>
+          node.type === 'folder'
+      ),
+    [nodes]
+  )
 
-  const materials = useMemo(() => nodes.filter((node) => node.type === 'material'), [nodes])
+  const materials = useMemo(
+    () =>
+      nodes.filter(
+        (node) =>
+          node.type === 'material'
+      ),
+    [nodes]
+  )
 
   const rootNodes = useMemo(
     () =>
       nodes
-        .filter((node) => node.parentId === null)
-        .sort((first, second) => first.position - second.position),
+        .filter(
+          (node) =>
+            node.parentId === null
+        )
+        .sort(
+          (first, second) =>
+            first.position -
+            second.position
+        ),
     [nodes]
   )
 
   const recentMaterials = useMemo(
-    () => [...materials].sort((first, second) => second.updatedAt - first.updatedAt).slice(0, 6),
+    () =>
+      [...materials]
+        .sort(
+          (first, second) =>
+            second.updatedAt -
+            first.updatedAt
+        )
+        .slice(0, 6),
     [materials]
   )
 
-  const normalizedSearch = search.trim().toLocaleLowerCase('ru-RU')
+  const normalizedSearch =
+    search
+      .trim()
+      .toLocaleLowerCase(
+        'ru-RU'
+      )
 
-  const searchResults = useMemo(() => {
-    if (!normalizedSearch) {
-      return []
-    }
+  const searchResults =
+    useMemo(() => {
+      if (!normalizedSearch) {
+        return []
+      }
 
-    return nodes
-      .filter((node) => {
-        const location = getStudyNodeLocation(node, nodesById)
+      return nodes
+        .filter((node) => {
+          const location =
+            getStudyNodeLocation(
+              node,
+              nodesById
+            )
 
-        const searchableText = `${node.title} ${location}`.toLocaleLowerCase('ru-RU')
+          const searchableText =
+            `${node.title} ${location}`.toLocaleLowerCase(
+              'ru-RU'
+            )
 
-        return searchableText.includes(normalizedSearch)
-      })
-      .sort((first, second) => {
-        const titleComparison = first.title.localeCompare(second.title, 'ru-RU')
+          return searchableText.includes(
+            normalizedSearch
+          )
+        })
+        .sort(
+          (first, second) => {
+            const titleComparison =
+              first.title.localeCompare(
+                second.title,
+                'ru-RU'
+              )
 
-        if (titleComparison !== 0) {
-          return titleComparison
-        }
+            if (
+              titleComparison !== 0
+            ) {
+              return titleComparison
+            }
 
-        return second.updatedAt - first.updatedAt
-      })
-  }, [nodes, nodesById, normalizedSearch])
+            return (
+              second.updatedAt -
+              first.updatedAt
+            )
+          }
+        )
+    }, [
+      nodes,
+      nodesById,
+      normalizedSearch
+    ])
 
   return (
-    <section className="h-full overflow-y-auto p-8 max-[720px]:p-4">
-      <div className="mx-auto w-full max-w-6xl">
-        <header className="flex items-start justify-between gap-6 max-[760px]:flex-col">
-          <div className="flex min-w-0 items-start gap-4">
-            <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-violet-500/12 text-violet-300 ring-1 ring-violet-500/15 ring-inset">
-              <BookOpen aria-hidden="true" className="size-6" />
-            </div>
+    <section className="h-full overflow-y-auto bg-[var(--app-workspace)] px-8 py-7 max-[720px]:px-4 max-[720px]:py-5">
+      <div className="mx-auto w-full max-w-[1240px] space-y-5">
+        <section className="relative isolate overflow-hidden rounded-3xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[0_20px_70px_rgb(0_0_0/0.16)]">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -top-32 right-8 -z-10 size-80 rounded-full bg-violet-500/10 blur-3xl"
+          />
 
-            <div className="min-w-0">
-              <p className="text-xs font-semibold tracking-[0.08em] text-violet-300 uppercase">
-                Библиотека
-              </p>
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -bottom-44 -left-24 -z-10 size-80 rounded-full bg-violet-900/10 blur-3xl"
+          />
 
-              <h1 className="mt-1 text-3xl font-semibold tracking-[-0.03em] text-[var(--app-text)]">
-                Обучение
-              </h1>
+          <div className="p-6 max-[720px]:p-4">
+            <header className="flex items-start justify-between gap-6 max-[820px]:flex-col">
+              <div className="flex min-w-0 items-start gap-4">
+                <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-violet-500/20 bg-violet-500/12 text-violet-300 shadow-inner shadow-violet-500/5">
+                  <BookOpen
+                    aria-hidden="true"
+                    className="size-6"
+                  />
+                </div>
 
-              <p className="mt-2 max-w-xl text-sm leading-6 text-[var(--app-muted)]">
-                Материалы, конспекты, формулы, диаграммы и вложения в одном месте.
-              </p>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold tracking-[0.12em] text-violet-300 uppercase">
+                    Библиотека знаний
+                  </p>
+
+                  <h1 className="mt-1 text-3xl font-semibold tracking-[-0.035em] text-[var(--app-text)]">
+                    Обучение
+                  </h1>
+
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--app-muted)]">
+                    Организуй материалы,
+                    конспекты, формулы,
+                    диаграммы и вложения в
+                    едином пространстве.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex shrink-0 items-center gap-2 max-[520px]:w-full max-[520px]:flex-col">
+                <button
+                  type="button"
+                  disabled={isLoading}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[var(--app-border-strong)] bg-black/[0.08] px-4 text-sm font-medium text-[var(--app-text)] outline-none transition-colors hover:border-violet-500/35 hover:bg-white/[0.045] focus-visible:ring-2 focus-visible:ring-violet-500/35 disabled:opacity-40 max-[520px]:w-full"
+                  onClick={
+                    onCreateFolder
+                  }
+                >
+                  <FolderPlus
+                    aria-hidden="true"
+                    className="size-4"
+                  />
+
+                  Новая папка
+                </button>
+
+                <button
+                  type="button"
+                  disabled={isLoading}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-medium text-white shadow-lg shadow-violet-950/20 outline-none transition-colors hover:bg-violet-400 focus-visible:ring-2 focus-visible:ring-violet-300/50 disabled:opacity-40 max-[520px]:w-full"
+                  onClick={
+                    onCreateMaterial
+                  }
+                >
+                  <FilePlus2
+                    aria-hidden="true"
+                    className="size-4"
+                  />
+
+                  Новый материал
+                </button>
+              </div>
+            </header>
+
+            <label className="mt-6 flex h-12 w-full min-w-0 items-center gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 shadow-inner shadow-black/10 transition-colors focus-within:border-violet-500/45 focus-within:ring-2 focus-within:ring-violet-500/10">
+              <Search
+                aria-hidden="true"
+                className="size-4 shrink-0 text-[var(--app-muted)]"
+              />
+
+              <input
+                value={search}
+                aria-label="Поиск по библиотеке"
+                placeholder="Найти материал, папку или путь в библиотеке"
+                className="min-w-0 flex-1 bg-transparent text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/65"
+                onChange={(event) => {
+                  setSearch(
+                    event.target.value
+                  )
+                }}
+              />
+
+              {search && (
+                <button
+                  type="button"
+                  aria-label="Очистить поиск"
+                  className="flex size-7 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] outline-none transition-colors hover:bg-white/[0.06] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35"
+                  onClick={() => {
+                    setSearch('')
+                  }}
+                >
+                  <X
+                    aria-hidden="true"
+                    className="size-4"
+                  />
+                </button>
+              )}
+            </label>
+
+            <div className="mt-4 grid grid-cols-3 gap-3 max-[760px]:grid-cols-1">
+              <StudyStatCard
+                icon={
+                  <FileText
+                    aria-hidden="true"
+                    className="size-5"
+                  />
+                }
+                value={
+                  isLoading
+                    ? '—'
+                    : materials.length
+                }
+                label="Материалов"
+                description="Во всей библиотеке"
+              />
+
+              <StudyStatCard
+                icon={
+                  <Folder
+                    aria-hidden="true"
+                    className="size-5"
+                  />
+                }
+                value={
+                  isLoading
+                    ? '—'
+                    : folders.length
+                }
+                label="Папок"
+                description="Для организации знаний"
+              />
+
+              <StudyStatCard
+                icon={
+                  <Layers3
+                    aria-hidden="true"
+                    className="size-5"
+                  />
+                }
+                value={
+                  isLoading
+                    ? '—'
+                    : rootNodes.length
+                }
+                label="В корне"
+                description="Элементов верхнего уровня"
+              />
             </div>
           </div>
-
-          <div className="flex shrink-0 items-center gap-2 max-[520px]:w-full max-[520px]:flex-col">
-            <button
-              type="button"
-              disabled={isLoading}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-[var(--app-border)] px-3.5 text-sm font-medium text-[var(--app-text)] transition-colors outline-none hover:border-violet-500/30 hover:bg-white/[0.04] focus-visible:ring-2 focus-visible:ring-violet-500/35 disabled:opacity-40 max-[520px]:w-full"
-              onClick={onCreateFolder}
-            >
-              <FolderPlus aria-hidden="true" className="size-4" />
-              Новая папка
-            </button>
-
-            <button
-              type="button"
-              disabled={isLoading}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-violet-500 px-3.5 text-sm font-medium text-white transition-colors outline-none hover:bg-violet-400 focus-visible:ring-2 focus-visible:ring-violet-300/50 disabled:opacity-40 max-[520px]:w-full"
-              onClick={onCreateMaterial}
-            >
-              <FilePlus2 aria-hidden="true" className="size-4" />
-              Новый материал
-            </button>
-          </div>
-        </header>
-
-        <label className="mt-8 flex h-12 w-full min-w-0 items-center gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-4 transition-colors focus-within:border-violet-500/45 focus-within:ring-2 focus-within:ring-violet-500/10">
-          <Search aria-hidden="true" className="size-4 shrink-0 text-[var(--app-muted)]" />
-
-          <input
-            value={search}
-            aria-label="Поиск по библиотеке"
-            placeholder="Найти папку или материал во всей библиотеке"
-            className="min-w-0 flex-1 bg-transparent text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/70"
-            onChange={(event) => {
-              setSearch(event.target.value)
-            }}
-          />
-
-          {search && (
-            <button
-              type="button"
-              aria-label="Очистить поиск"
-              className="flex size-7 shrink-0 items-center justify-center rounded-md text-[var(--app-muted)] outline-none hover:bg-white/[0.05] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35"
-              onClick={() => {
-                setSearch('')
-              }}
-            >
-              <X aria-hidden="true" className="size-4" />
-            </button>
-          )}
-        </label>
-
-        <div className="mt-5 grid grid-cols-3 gap-3 max-[680px]:grid-cols-1">
-          <StudyStatCard
-            icon={<FileText aria-hidden="true" className="size-5" />}
-            value={isLoading ? '—' : materials.length}
-            label="Материалов"
-          />
-
-          <StudyStatCard
-            icon={<Folder aria-hidden="true" className="size-5" />}
-            value={isLoading ? '—' : folders.length}
-            label="Папок"
-          />
-
-          <StudyStatCard
-            icon={<BookOpen aria-hidden="true" className="size-5" />}
-            value={isLoading ? '—' : rootNodes.length}
-            label="Элементов в корне"
-          />
-        </div>
+        </section>
 
         {isLoading ? (
-          <div className="mt-8 flex min-h-44 items-center justify-center rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] text-sm text-[var(--app-muted)]">
-            Загрузка библиотеки…
-          </div>
+          <StudyLoadingPanel />
         ) : normalizedSearch ? (
           <StudySearchResults
             nodes={searchResults}
@@ -178,54 +342,104 @@ export function StudyHome({
           />
         ) : nodes.length === 0 ? (
           <StudyHomeEmptyState
-            onCreateFolder={onCreateFolder}
-            onCreateMaterial={onCreateMaterial}
+            onCreateFolder={
+              onCreateFolder
+            }
+            onCreateMaterial={
+              onCreateMaterial
+            }
           />
         ) : (
-          <>
-            <StudyHomeSection
+          <div className="grid grid-cols-[minmax(0,1.45fr)_minmax(320px,0.75fr)] items-start gap-5 max-[1080px]:grid-cols-1">
+            <StudyHomePanel
+              icon={
+                <Clock3
+                  aria-hidden="true"
+                  className="size-5"
+                />
+              }
               title="Недавние материалы"
-              description="Материалы, которые изменялись последними"
+              description="Последние изменённые записи"
+              count={
+                recentMaterials.length
+              }
             >
-              {recentMaterials.length > 0 ? (
+              {recentMaterials.length >
+              0 ? (
                 <div className="grid grid-cols-2 gap-3 max-[760px]:grid-cols-1">
-                  {recentMaterials.map((material) => (
-                    <StudyNodeCard
-                      key={material.id}
-                      node={material}
-                      location={getStudyNodeLocation(material, nodesById)}
-                      onOpen={onOpen}
-                    />
-                  ))}
+                  {recentMaterials.map(
+                    (material) => (
+                      <StudyNodeCard
+                        key={
+                          material.id
+                        }
+                        node={material}
+                        location={getStudyNodeLocation(
+                          material,
+                          nodesById
+                        )}
+                        variant="regular"
+                        onOpen={onOpen}
+                      />
+                    )
+                  )}
                 </div>
               ) : (
-                <StudySectionEmpty>Здесь появятся недавно изменённые материалы.</StudySectionEmpty>
+                <StudySectionEmpty>
+                  Здесь появятся недавно
+                  изменённые материалы.
+                </StudySectionEmpty>
               )}
-            </StudyHomeSection>
+            </StudyHomePanel>
 
-            <StudyHomeSection
-              title="В корне библиотеки"
-              description={`${rootNodes.length} элементов верхнего уровня`}
+            <StudyHomePanel
+              icon={
+                <Layers3
+                  aria-hidden="true"
+                  className="size-5"
+                />
+              }
+              title="Структура"
+              description="В корне библиотеки"
+              count={rootNodes.length}
             >
               {rootNodes.length > 0 ? (
                 <>
-                  <div className="grid grid-cols-2 gap-3 max-[760px]:grid-cols-1">
-                    {rootNodes.slice(0, 8).map((node) => (
-                      <StudyNodeCard key={node.id} node={node} location="Корень" onOpen={onOpen} />
-                    ))}
+                  <div className="grid gap-2">
+                    {rootNodes
+                      .slice(0, 8)
+                      .map((node) => (
+                        <StudyNodeCard
+                          key={node.id}
+                          node={node}
+                          location="Корень"
+                          variant="compact"
+                          onOpen={
+                            onOpen
+                          }
+                        />
+                      ))}
                   </div>
 
-                  {rootNodes.length > 8 && (
-                    <p className="mt-3 text-xs text-[var(--app-muted)]">
-                      Ещё {rootNodes.length - 8} элементов доступны в дереве слева.
-                    </p>
+                  {rootNodes.length >
+                    8 && (
+                    <div className="mt-3 rounded-xl border border-dashed border-[var(--app-border)] px-3 py-2.5 text-xs leading-5 text-[var(--app-muted)]">
+                      Ещё{' '}
+                      {rootNodes.length -
+                        8}{' '}
+                      элементов доступны в
+                      дереве библиотеки.
+                    </div>
                   )}
                 </>
               ) : (
-                <StudySectionEmpty>Все элементы находятся внутри папок.</StudySectionEmpty>
+                <StudySectionEmpty>
+                  Все элементы находятся
+                  внутри папок.
+                </StudySectionEmpty>
               )}
-            </StudyHomeSection>
-          </>
+            </StudyHomePanel>
+          </div>
         )}
       </div>
     </section>
@@ -235,45 +449,77 @@ export function StudyHome({
 function StudyStatCard({
   icon,
   value,
-  label
+  label,
+  description
 }: {
   icon: ReactNode
   value: number | string
   label: string
+  description: string
 }): React.JSX.Element {
   return (
-    <div className="flex min-w-0 items-center gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4">
-      <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-300">
+    <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-[var(--app-border)] bg-black/[0.08] p-3.5 shadow-sm shadow-black/5">
+      <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
         {icon}
       </div>
 
       <div className="min-w-0">
-        <p className="text-2xl font-semibold text-[var(--app-text)] tabular-nums">{value}</p>
+        <div className="flex items-baseline gap-2">
+          <p className="text-xl font-semibold text-[var(--app-text)] tabular-nums">
+            {value}
+          </p>
 
-        <p className="mt-0.5 truncate text-xs text-[var(--app-muted)]">{label}</p>
+          <p className="truncate text-xs font-medium text-[var(--app-text)]">
+            {label}
+          </p>
+        </div>
+
+        <p className="mt-0.5 truncate text-[11px] text-[var(--app-muted)]">
+          {description}
+        </p>
       </div>
     </div>
   )
 }
 
-function StudyHomeSection({
+function StudyHomePanel({
+  icon,
   title,
   description,
+  count,
   children
 }: {
+  icon: ReactNode
   title: string
   description: string
+  count: number
   children: ReactNode
 }): React.JSX.Element {
   return (
-    <section className="mt-8">
-      <div>
-        <h2 className="text-base font-semibold text-[var(--app-text)]">{title}</h2>
+    <section className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[0_12px_40px_rgb(0_0_0/0.1)]">
+      <header className="flex min-h-20 items-center gap-3 border-b border-[var(--app-border)] px-5 py-4">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
+          {icon}
+        </div>
 
-        <p className="mt-1 text-xs text-[var(--app-muted)]">{description}</p>
+        <div className="min-w-0 flex-1">
+          <h2 className="truncate text-base font-semibold text-[var(--app-text)]">
+            {title}
+          </h2>
+
+          <p className="mt-0.5 truncate text-xs text-[var(--app-muted)]">
+            {description}
+          </p>
+        </div>
+
+        <span className="flex min-w-7 items-center justify-center rounded-full border border-[var(--app-border)] bg-[var(--app-workspace)] px-2 py-1 text-[11px] font-medium text-[var(--app-muted)] tabular-nums">
+          {count}
+        </span>
+      </header>
+
+      <div className="p-4">
+        {children}
       </div>
-
-      <div className="mt-3">{children}</div>
     </section>
   )
 }
@@ -281,44 +527,93 @@ function StudyHomeSection({
 function StudyNodeCard({
   node,
   location,
+  variant,
   onOpen
 }: {
   node: StudyNode
   location: string
+  variant: StudyNodeCardVariant
   onOpen: (nodeId: string) => void
 }): React.JSX.Element {
+  const compact =
+    variant === 'compact'
+
   return (
     <button
       type="button"
-      className="group flex min-w-0 items-center gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 text-left transition-colors outline-none hover:border-violet-500/30 hover:bg-[var(--app-surface-raised)] focus-visible:ring-2 focus-visible:ring-violet-500/35"
+      className={[
+        'group flex w-full min-w-0 items-center gap-3 rounded-xl border text-left outline-none',
+        'border-[var(--app-border)] bg-[var(--app-workspace)]',
+        'transition-[border-color,background-color,transform,box-shadow]',
+        'hover:-translate-y-px hover:border-violet-500/30 hover:bg-[var(--app-surface-raised)]',
+        'hover:shadow-lg hover:shadow-black/10',
+        'focus-visible:ring-2 focus-visible:ring-violet-500/35',
+        compact
+          ? 'p-3'
+          : 'p-3.5'
+      ].join(' ')}
       onClick={() => {
         onOpen(node.id)
       }}
     >
-      <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white/[0.035] text-[var(--app-muted)] transition-colors group-hover:bg-violet-500/10 group-hover:text-violet-300">
+      <div
+        className={[
+          'flex shrink-0 items-center justify-center rounded-xl border',
+          'border-white/[0.035] bg-white/[0.025] text-[var(--app-muted)]',
+          'transition-colors',
+          'group-hover:border-violet-500/15 group-hover:bg-violet-500/10 group-hover:text-violet-300',
+          compact
+            ? 'size-9'
+            : 'size-10'
+        ].join(' ')}
+      >
         {node.type === 'folder' ? (
-          <StudyFolderIcon name={node.icon} expanded={node.isExpanded} className="size-5" />
+          <StudyFolderIcon
+            name={node.icon}
+            expanded={
+              node.isExpanded
+            }
+            className="size-5"
+          />
         ) : (
-          <FileText aria-hidden="true" className="size-5" />
+          <FileText
+            aria-hidden="true"
+            className="size-5"
+          />
         )}
       </div>
 
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-[var(--app-text)]">{node.title}</p>
+        <p className="truncate text-sm font-medium text-[var(--app-text)]">
+          {node.title}
+        </p>
 
-        <p className="mt-1 truncate text-xs text-[var(--app-muted)]">
-          {node.type === 'folder' ? 'Папка' : 'Материал'}
+        <p className="mt-1 truncate text-[11px] text-[var(--app-muted)]">
+          {node.type === 'folder'
+            ? 'Папка'
+            : 'Материал'}
           {' · '}
           {location}
         </p>
       </div>
 
-      <time
-        dateTime={new Date(node.updatedAt).toISOString()}
-        className="shrink-0 text-[11px] text-[var(--app-muted)] max-[520px]:hidden"
-      >
-        {studyDateFormatter.format(new Date(node.updatedAt))}
-      </time>
+      {!compact && (
+        <time
+          dateTime={new Date(
+            node.updatedAt
+          ).toISOString()}
+          className="shrink-0 rounded-lg bg-white/[0.025] px-2 py-1 text-[10px] text-[var(--app-muted)] max-[520px]:hidden"
+        >
+          {studyDateFormatter.format(
+            new Date(node.updatedAt)
+          )}
+        </time>
+      )}
+
+      <ArrowRight
+        aria-hidden="true"
+        className="size-4 shrink-0 -translate-x-1 text-[var(--app-muted)] opacity-0 transition-[opacity,transform,color] group-hover:translate-x-0 group-hover:text-violet-300 group-hover:opacity-100"
+      />
     </button>
   )
 }
@@ -330,34 +625,70 @@ function StudySearchResults({
   onOpen
 }: {
   nodes: StudyNode[]
-  nodesById: Map<string, StudyNode>
+  nodesById: Map<
+    string,
+    StudyNode
+  >
   search: string
   onOpen: (nodeId: string) => void
 }): React.JSX.Element {
   return (
-    <section className="mt-8">
-      <div>
-        <h2 className="text-base font-semibold text-[var(--app-text)]">Результаты поиска</h2>
-
-        <p className="mt-1 text-xs text-[var(--app-muted)]">
-          Найдено: {nodes.length} · Запрос: «{search}»
-        </p>
-      </div>
-
+    <StudyHomePanel
+      icon={
+        <Search
+          aria-hidden="true"
+          className="size-5"
+        />
+      }
+      title="Результаты поиска"
+      description={`Запрос: «${search}»`}
+      count={nodes.length}
+    >
       {nodes.length > 0 ? (
-        <div className="mt-3 grid gap-2">
+        <div className="grid grid-cols-2 gap-3 max-[760px]:grid-cols-1">
           {nodes.map((node) => (
             <StudyNodeCard
               key={node.id}
               node={node}
-              location={getStudyNodeLocation(node, nodesById)}
+              location={getStudyNodeLocation(
+                node,
+                nodesById
+              )}
+              variant="search"
               onOpen={onOpen}
             />
           ))}
         </div>
       ) : (
-        <StudySectionEmpty>По этому запросу ничего не найдено.</StudySectionEmpty>
+        <StudySectionEmpty>
+          По этому запросу ничего не
+          найдено.
+        </StudySectionEmpty>
       )}
+    </StudyHomePanel>
+  )
+}
+
+function StudyLoadingPanel(): React.JSX.Element {
+  return (
+    <section className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)]">
+      <div className="flex min-h-48 flex-col items-center justify-center px-6 text-center">
+        <div className="flex size-11 items-center justify-center rounded-xl bg-violet-500/10 text-violet-300">
+          <BookOpen
+            aria-hidden="true"
+            className="size-5 animate-pulse"
+          />
+        </div>
+
+        <p className="mt-4 text-sm font-medium text-[var(--app-text)]">
+          Загрузка библиотеки
+        </p>
+
+        <p className="mt-1 text-xs text-[var(--app-muted)]">
+          Подготавливаем материалы и
+          структуру папок.
+        </p>
+      </div>
     </section>
   )
 }
@@ -370,56 +701,91 @@ function StudyHomeEmptyState({
   onCreateMaterial: () => void
 }): React.JSX.Element {
   return (
-    <div className="mt-8 flex min-h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface)] px-6 py-10 text-center">
-      <div className="flex size-12 items-center justify-center rounded-2xl bg-violet-500/10 text-violet-300">
-        <BookOpen aria-hidden="true" className="size-6" />
+    <section className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)]">
+      <div className="flex min-h-72 flex-col items-center justify-center px-6 py-10 text-center">
+        <div className="flex size-14 items-center justify-center rounded-2xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
+          <BookOpen
+            aria-hidden="true"
+            className="size-7"
+          />
+        </div>
+
+        <h2 className="mt-5 text-lg font-semibold text-[var(--app-text)]">
+          Библиотека пока пуста
+        </h2>
+
+        <p className="mt-2 max-w-md text-sm leading-6 text-[var(--app-muted)]">
+          Создай первый материал или
+          подготовь структуру из папок,
+          чтобы организовать будущие
+          знания.
+        </p>
+
+        <div className="mt-6 flex items-center gap-2 max-[460px]:w-full max-[460px]:flex-col">
+          <button
+            type="button"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[var(--app-border-strong)] px-4 text-sm font-medium text-[var(--app-text)] outline-none transition-colors hover:bg-white/[0.04] focus-visible:ring-2 focus-visible:ring-violet-500/35 max-[460px]:w-full"
+            onClick={onCreateFolder}
+          >
+            <FolderPlus
+              aria-hidden="true"
+              className="size-4"
+            />
+
+            Создать папку
+          </button>
+
+          <button
+            type="button"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-medium text-white outline-none transition-colors hover:bg-violet-400 focus-visible:ring-2 focus-visible:ring-violet-300/50 max-[460px]:w-full"
+            onClick={onCreateMaterial}
+          >
+            <FilePlus2
+              aria-hidden="true"
+              className="size-4"
+            />
+
+            Создать материал
+          </button>
+        </div>
       </div>
-
-      <h2 className="mt-4 text-lg font-semibold text-[var(--app-text)]">Библиотека пока пуста</h2>
-
-      <p className="mt-2 max-w-md text-sm leading-6 text-[var(--app-muted)]">
-        Создай первый материал или подготовь структуру из папок.
-      </p>
-
-      <div className="mt-5 flex items-center gap-2 max-[460px]:w-full max-[460px]:flex-col">
-        <button
-          type="button"
-          className="rounded-lg border border-[var(--app-border)] px-4 py-2 text-sm font-medium text-[var(--app-text)] hover:bg-white/[0.04] max-[460px]:w-full"
-          onClick={onCreateFolder}
-        >
-          Создать папку
-        </button>
-
-        <button
-          type="button"
-          className="rounded-lg bg-violet-500 px-4 py-2 text-sm font-medium text-white hover:bg-violet-400 max-[460px]:w-full"
-          onClick={onCreateMaterial}
-        >
-          Создать материал
-        </button>
-      </div>
-    </div>
+    </section>
   )
 }
 
-function StudySectionEmpty({ children }: { children: ReactNode }): React.JSX.Element {
+function StudySectionEmpty({
+  children
+}: {
+  children: ReactNode
+}): React.JSX.Element {
   return (
-    <div className="mt-3 rounded-xl border border-dashed border-[var(--app-border)] px-4 py-8 text-center text-sm text-[var(--app-muted)]">
+    <div className="flex min-h-32 items-center justify-center rounded-xl border border-dashed border-[var(--app-border)] bg-black/[0.04] px-5 py-8 text-center text-sm leading-6 text-[var(--app-muted)]">
       {children}
     </div>
   )
 }
 
-function getStudyNodeLocation(node: StudyNode, nodesById: Map<string, StudyNode>): string {
+function getStudyNodeLocation(
+  node: StudyNode,
+  nodesById: Map<
+    string,
+    StudyNode
+  >
+): string {
   const parts: string[] = []
-  const visited = new Set<string>()
+  const visited =
+    new Set<string>()
 
   let parentId = node.parentId
 
-  while (parentId && !visited.has(parentId)) {
+  while (
+    parentId &&
+    !visited.has(parentId)
+  ) {
     visited.add(parentId)
 
-    const parent = nodesById.get(parentId)
+    const parent =
+      nodesById.get(parentId)
 
     if (!parent) {
       break
@@ -429,5 +795,7 @@ function getStudyNodeLocation(node: StudyNode, nodesById: Map<string, StudyNode>
     parentId = parent.parentId
   }
 
-  return parts.length > 0 ? parts.join(' / ') : 'Корень'
+  return parts.length > 0
+    ? parts.join(' / ')
+    : 'Корень'
 }
