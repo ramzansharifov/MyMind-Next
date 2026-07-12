@@ -1,9 +1,5 @@
 import * as TooltipPrimitive from '@radix-ui/react-tooltip'
-import {
-  type PropsWithChildren,
-  type ReactElement,
-  type ReactNode
-} from 'react'
+import { type PropsWithChildren, type ReactElement, type ReactNode } from 'react'
 
 import { cn } from '../lib/cn'
 
@@ -49,9 +45,7 @@ export function Tooltip({
   }
 
   return (
-    <TooltipPrimitive.Root
-      delayDuration={delayDuration}
-    >
+    <TooltipPrimitive.Root delayDuration={delayDuration}>
       <TooltipPrimitive.Trigger asChild>{children}</TooltipPrimitive.Trigger>
 
       <TooltipPrimitive.Portal>

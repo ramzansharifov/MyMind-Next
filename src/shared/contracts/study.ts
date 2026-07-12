@@ -139,9 +139,12 @@ export interface StudyFileBlock {
   title?: string
 }
 
+export type StudyDividerVariant = 'solid' | 'tapered' | 'dashed' | 'dotted'
+
 export interface StudyDividerBlock {
   id: string
   type: 'divider'
+  variant?: StudyDividerVariant
   thickness?: number
   color?: string
 }

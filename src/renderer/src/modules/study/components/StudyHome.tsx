@@ -10,15 +10,9 @@ import {
   Search,
   X
 } from 'lucide-react'
-import {
-  useMemo,
-  useState,
-  type ReactNode
-} from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 
-import type {
-  StudyNode
-} from '../../../../../shared/contracts/study'
+import type { StudyNode } from '../../../../../shared/contracts/study'
 import { StudyFolderIcon } from './StudyFolderIcon'
 
 interface StudyHomeProps {
@@ -29,19 +23,12 @@ interface StudyHomeProps {
   onCreateMaterial: () => void
 }
 
-type StudyNodeCardVariant =
-  | 'regular'
-  | 'compact'
-  | 'search'
+type StudyNodeCardVariant = 'regular' | 'compact' | 'search'
 
-const studyDateFormatter =
-  new Intl.DateTimeFormat(
-    'ru-RU',
-    {
-      day: 'numeric',
-      month: 'short'
-    }
-  )
+const studyDateFormatter = new Intl.DateTimeFormat('ru-RU', {
+  day: 'numeric',
+  month: 'short'
+})
 
 export function StudyHome({
   nodes,
@@ -50,122 +37,52 @@ export function StudyHome({
   onCreateFolder,
   onCreateMaterial
 }: StudyHomeProps): React.JSX.Element {
-  const [
-    search,
-    setSearch
-  ] = useState('')
+  const [search, setSearch] = useState('')
 
-  const nodesById = useMemo(
-    () =>
-      new Map(
-        nodes.map((node) => [
-          node.id,
-          node
-        ])
-      ),
-    [nodes]
-  )
+  const nodesById = useMemo(() => new Map(nodes.map((node) => [node.id, node])), [nodes])
 
-  const folders = useMemo(
-    () =>
-      nodes.filter(
-        (node) =>
-          node.type === 'folder'
-      ),
-    [nodes]
-  )
+  const folders = useMemo(() => nodes.filter((node) => node.type === 'folder'), [nodes])
 
-  const materials = useMemo(
-    () =>
-      nodes.filter(
-        (node) =>
-          node.type === 'material'
-      ),
-    [nodes]
-  )
+  const materials = useMemo(() => nodes.filter((node) => node.type === 'material'), [nodes])
 
   const rootNodes = useMemo(
     () =>
       nodes
-        .filter(
-          (node) =>
-            node.parentId === null
-        )
-        .sort(
-          (first, second) =>
-            first.position -
-            second.position
-        ),
+        .filter((node) => node.parentId === null)
+        .sort((first, second) => first.position - second.position),
     [nodes]
   )
 
   const recentMaterials = useMemo(
-    () =>
-      [...materials]
-        .sort(
-          (first, second) =>
-            second.updatedAt -
-            first.updatedAt
-        )
-        .slice(0, 6),
+    () => [...materials].sort((first, second) => second.updatedAt - first.updatedAt).slice(0, 6),
     [materials]
   )
 
-  const normalizedSearch =
-    search
-      .trim()
-      .toLocaleLowerCase(
-        'ru-RU'
-      )
+  const normalizedSearch = search.trim().toLocaleLowerCase('ru-RU')
 
-  const searchResults =
-    useMemo(() => {
-      if (!normalizedSearch) {
-        return []
-      }
+  const searchResults = useMemo(() => {
+    if (!normalizedSearch) {
+      return []
+    }
 
-      return nodes
-        .filter((node) => {
-          const location =
-            getStudyNodeLocation(
-              node,
-              nodesById
-            )
+    return nodes
+      .filter((node) => {
+        const location = getStudyNodeLocation(node, nodesById)
 
-          const searchableText =
-            `${node.title} ${location}`.toLocaleLowerCase(
-              'ru-RU'
-            )
+        const searchableText = `${node.title} ${location}`.toLocaleLowerCase('ru-RU')
 
-          return searchableText.includes(
-            normalizedSearch
-          )
-        })
-        .sort(
-          (first, second) => {
-            const titleComparison =
-              first.title.localeCompare(
-                second.title,
-                'ru-RU'
-              )
+        return searchableText.includes(normalizedSearch)
+      })
+      .sort((first, second) => {
+        const titleComparison = first.title.localeCompare(second.title, 'ru-RU')
 
-            if (
-              titleComparison !== 0
-            ) {
-              return titleComparison
-            }
+        if (titleComparison !== 0) {
+          return titleComparison
+        }
 
-            return (
-              second.updatedAt -
-              first.updatedAt
-            )
-          }
-        )
-    }, [
-      nodes,
-      nodesById,
-      normalizedSearch
-    ])
+        return second.updatedAt - first.updatedAt
+      })
+  }, [nodes, nodesById, normalizedSearch])
 
   return (
     <section className="h-full overflow-y-auto bg-[var(--app-workspace)] px-8 py-7 max-[720px]:px-4 max-[720px]:py-5">
@@ -185,10 +102,7 @@ export function StudyHome({
             <header className="flex items-start justify-between gap-6 max-[820px]:flex-col">
               <div className="flex min-w-0 items-start gap-4">
                 <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-violet-500/20 bg-violet-500/12 text-violet-300 shadow-inner shadow-violet-500/5">
-                  <BookOpen
-                    aria-hidden="true"
-                    className="size-6"
-                  />
+                  <BookOpen aria-hidden="true" className="size-6" />
                 </div>
 
                 <div className="min-w-0">
@@ -201,10 +115,8 @@ export function StudyHome({
                   </h1>
 
                   <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--app-muted)]">
-                    Организуй материалы,
-                    конспекты, формулы,
-                    диаграммы и вложения в
-                    едином пространстве.
+                    Организуй материалы, конспекты, формулы, диаграммы и вложения в едином
+                    пространстве.
                   </p>
                 </div>
               </div>
@@ -213,42 +125,27 @@ export function StudyHome({
                 <button
                   type="button"
                   disabled={isLoading}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[var(--app-border-strong)] bg-black/[0.08] px-4 text-sm font-medium text-[var(--app-text)] outline-none transition-colors hover:border-violet-500/35 hover:bg-white/[0.045] focus-visible:ring-2 focus-visible:ring-violet-500/35 disabled:opacity-40 max-[520px]:w-full"
-                  onClick={
-                    onCreateFolder
-                  }
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[var(--app-border-strong)] bg-black/[0.08] px-4 text-sm font-medium text-[var(--app-text)] transition-colors outline-none hover:border-violet-500/35 hover:bg-white/[0.045] focus-visible:ring-2 focus-visible:ring-violet-500/35 disabled:opacity-40 max-[520px]:w-full"
+                  onClick={onCreateFolder}
                 >
-                  <FolderPlus
-                    aria-hidden="true"
-                    className="size-4"
-                  />
-
+                  <FolderPlus aria-hidden="true" className="size-4" />
                   Новая папка
                 </button>
 
                 <button
                   type="button"
                   disabled={isLoading}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-medium text-white shadow-lg shadow-violet-950/20 outline-none transition-colors hover:bg-violet-400 focus-visible:ring-2 focus-visible:ring-violet-300/50 disabled:opacity-40 max-[520px]:w-full"
-                  onClick={
-                    onCreateMaterial
-                  }
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-medium text-white shadow-lg shadow-violet-950/20 transition-colors outline-none hover:bg-violet-400 focus-visible:ring-2 focus-visible:ring-violet-300/50 disabled:opacity-40 max-[520px]:w-full"
+                  onClick={onCreateMaterial}
                 >
-                  <FilePlus2
-                    aria-hidden="true"
-                    className="size-4"
-                  />
-
+                  <FilePlus2 aria-hidden="true" className="size-4" />
                   Новый материал
                 </button>
               </div>
             </header>
 
             <label className="mt-6 flex h-12 w-full min-w-0 items-center gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 shadow-inner shadow-black/10 transition-colors focus-within:border-violet-500/45 focus-within:ring-2 focus-within:ring-violet-500/10">
-              <Search
-                aria-hidden="true"
-                className="size-4 shrink-0 text-[var(--app-muted)]"
-              />
+              <Search aria-hidden="true" className="size-4 shrink-0 text-[var(--app-muted)]" />
 
               <input
                 value={search}
@@ -256,9 +153,7 @@ export function StudyHome({
                 placeholder="Найти материал, папку или путь в библиотеке"
                 className="min-w-0 flex-1 bg-transparent text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/65"
                 onChange={(event) => {
-                  setSearch(
-                    event.target.value
-                  )
+                  setSearch(event.target.value)
                 }}
               />
 
@@ -266,64 +161,34 @@ export function StudyHome({
                 <button
                   type="button"
                   aria-label="Очистить поиск"
-                  className="flex size-7 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] outline-none transition-colors hover:bg-white/[0.06] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35"
+                  className="flex size-7 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors outline-none hover:bg-white/[0.06] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35"
                   onClick={() => {
                     setSearch('')
                   }}
                 >
-                  <X
-                    aria-hidden="true"
-                    className="size-4"
-                  />
+                  <X aria-hidden="true" className="size-4" />
                 </button>
               )}
             </label>
 
             <div className="mt-4 grid grid-cols-3 gap-3 max-[760px]:grid-cols-1">
               <StudyStatCard
-                icon={
-                  <FileText
-                    aria-hidden="true"
-                    className="size-5"
-                  />
-                }
-                value={
-                  isLoading
-                    ? '—'
-                    : materials.length
-                }
+                icon={<FileText aria-hidden="true" className="size-5" />}
+                value={isLoading ? '—' : materials.length}
                 label="Материалов"
                 description="Во всей библиотеке"
               />
 
               <StudyStatCard
-                icon={
-                  <Folder
-                    aria-hidden="true"
-                    className="size-5"
-                  />
-                }
-                value={
-                  isLoading
-                    ? '—'
-                    : folders.length
-                }
+                icon={<Folder aria-hidden="true" className="size-5" />}
+                value={isLoading ? '—' : folders.length}
                 label="Папок"
                 description="Для организации знаний"
               />
 
               <StudyStatCard
-                icon={
-                  <Layers3
-                    aria-hidden="true"
-                    className="size-5"
-                  />
-                }
-                value={
-                  isLoading
-                    ? '—'
-                    : rootNodes.length
-                }
+                icon={<Layers3 aria-hidden="true" className="size-5" />}
+                value={isLoading ? '—' : rootNodes.length}
                 label="В корне"
                 description="Элементов верхнего уровня"
               />
@@ -342,63 +207,36 @@ export function StudyHome({
           />
         ) : nodes.length === 0 ? (
           <StudyHomeEmptyState
-            onCreateFolder={
-              onCreateFolder
-            }
-            onCreateMaterial={
-              onCreateMaterial
-            }
+            onCreateFolder={onCreateFolder}
+            onCreateMaterial={onCreateMaterial}
           />
         ) : (
           <div className="grid grid-cols-[minmax(0,1.45fr)_minmax(320px,0.75fr)] items-start gap-5 max-[1080px]:grid-cols-1">
             <StudyHomePanel
-              icon={
-                <Clock3
-                  aria-hidden="true"
-                  className="size-5"
-                />
-              }
+              icon={<Clock3 aria-hidden="true" className="size-5" />}
               title="Недавние материалы"
               description="Последние изменённые записи"
-              count={
-                recentMaterials.length
-              }
+              count={recentMaterials.length}
             >
-              {recentMaterials.length >
-              0 ? (
+              {recentMaterials.length > 0 ? (
                 <div className="grid grid-cols-2 gap-3 max-[760px]:grid-cols-1">
-                  {recentMaterials.map(
-                    (material) => (
-                      <StudyNodeCard
-                        key={
-                          material.id
-                        }
-                        node={material}
-                        location={getStudyNodeLocation(
-                          material,
-                          nodesById
-                        )}
-                        variant="regular"
-                        onOpen={onOpen}
-                      />
-                    )
-                  )}
+                  {recentMaterials.map((material) => (
+                    <StudyNodeCard
+                      key={material.id}
+                      node={material}
+                      location={getStudyNodeLocation(material, nodesById)}
+                      variant="regular"
+                      onOpen={onOpen}
+                    />
+                  ))}
                 </div>
               ) : (
-                <StudySectionEmpty>
-                  Здесь появятся недавно
-                  изменённые материалы.
-                </StudySectionEmpty>
+                <StudySectionEmpty>Здесь появятся недавно изменённые материалы.</StudySectionEmpty>
               )}
             </StudyHomePanel>
 
             <StudyHomePanel
-              icon={
-                <Layers3
-                  aria-hidden="true"
-                  className="size-5"
-                />
-              }
+              icon={<Layers3 aria-hidden="true" className="size-5" />}
               title="Структура"
               description="В корне библиотеки"
               count={rootNodes.length}
@@ -406,37 +244,25 @@ export function StudyHome({
               {rootNodes.length > 0 ? (
                 <>
                   <div className="grid gap-2">
-                    {rootNodes
-                      .slice(0, 8)
-                      .map((node) => (
-                        <StudyNodeCard
-                          key={node.id}
-                          node={node}
-                          location="Корень"
-                          variant="compact"
-                          onOpen={
-                            onOpen
-                          }
-                        />
-                      ))}
+                    {rootNodes.slice(0, 8).map((node) => (
+                      <StudyNodeCard
+                        key={node.id}
+                        node={node}
+                        location="Корень"
+                        variant="compact"
+                        onOpen={onOpen}
+                      />
+                    ))}
                   </div>
 
-                  {rootNodes.length >
-                    8 && (
+                  {rootNodes.length > 8 && (
                     <div className="mt-3 rounded-xl border border-dashed border-[var(--app-border)] px-3 py-2.5 text-xs leading-5 text-[var(--app-muted)]">
-                      Ещё{' '}
-                      {rootNodes.length -
-                        8}{' '}
-                      элементов доступны в
-                      дереве библиотеки.
+                      Ещё {rootNodes.length - 8} элементов доступны в дереве библиотеки.
                     </div>
                   )}
                 </>
               ) : (
-                <StudySectionEmpty>
-                  Все элементы находятся
-                  внутри папок.
-                </StudySectionEmpty>
+                <StudySectionEmpty>Все элементы находятся внутри папок.</StudySectionEmpty>
               )}
             </StudyHomePanel>
           </div>
@@ -465,18 +291,12 @@ function StudyStatCard({
 
       <div className="min-w-0">
         <div className="flex items-baseline gap-2">
-          <p className="text-xl font-semibold text-[var(--app-text)] tabular-nums">
-            {value}
-          </p>
+          <p className="text-xl font-semibold text-[var(--app-text)] tabular-nums">{value}</p>
 
-          <p className="truncate text-xs font-medium text-[var(--app-text)]">
-            {label}
-          </p>
+          <p className="truncate text-xs font-medium text-[var(--app-text)]">{label}</p>
         </div>
 
-        <p className="mt-0.5 truncate text-[11px] text-[var(--app-muted)]">
-          {description}
-        </p>
+        <p className="mt-0.5 truncate text-[11px] text-[var(--app-muted)]">{description}</p>
       </div>
     </div>
   )
@@ -503,13 +323,9 @@ function StudyHomePanel({
         </div>
 
         <div className="min-w-0 flex-1">
-          <h2 className="truncate text-base font-semibold text-[var(--app-text)]">
-            {title}
-          </h2>
+          <h2 className="truncate text-base font-semibold text-[var(--app-text)]">{title}</h2>
 
-          <p className="mt-0.5 truncate text-xs text-[var(--app-muted)]">
-            {description}
-          </p>
+          <p className="mt-0.5 truncate text-xs text-[var(--app-muted)]">{description}</p>
         </div>
 
         <span className="flex min-w-7 items-center justify-center rounded-full border border-[var(--app-border)] bg-[var(--app-workspace)] px-2 py-1 text-[11px] font-medium text-[var(--app-muted)] tabular-nums">
@@ -517,9 +333,7 @@ function StudyHomePanel({
         </span>
       </header>
 
-      <div className="p-4">
-        {children}
-      </div>
+      <div className="p-4">{children}</div>
     </section>
   )
 }
@@ -535,8 +349,7 @@ function StudyNodeCard({
   variant: StudyNodeCardVariant
   onOpen: (nodeId: string) => void
 }): React.JSX.Element {
-  const compact =
-    variant === 'compact'
+  const compact = variant === 'compact'
 
   return (
     <button
@@ -548,9 +361,7 @@ function StudyNodeCard({
         'hover:-translate-y-px hover:border-violet-500/30 hover:bg-[var(--app-surface-raised)]',
         'hover:shadow-lg hover:shadow-black/10',
         'focus-visible:ring-2 focus-visible:ring-violet-500/35',
-        compact
-          ? 'p-3'
-          : 'p-3.5'
+        compact ? 'p-3' : 'p-3.5'
       ].join(' ')}
       onClick={() => {
         onOpen(node.id)
@@ -562,36 +373,21 @@ function StudyNodeCard({
           'border-white/[0.035] bg-white/[0.025] text-[var(--app-muted)]',
           'transition-colors',
           'group-hover:border-violet-500/15 group-hover:bg-violet-500/10 group-hover:text-violet-300',
-          compact
-            ? 'size-9'
-            : 'size-10'
+          compact ? 'size-9' : 'size-10'
         ].join(' ')}
       >
         {node.type === 'folder' ? (
-          <StudyFolderIcon
-            name={node.icon}
-            expanded={
-              node.isExpanded
-            }
-            className="size-5"
-          />
+          <StudyFolderIcon name={node.icon} expanded={node.isExpanded} className="size-5" />
         ) : (
-          <FileText
-            aria-hidden="true"
-            className="size-5"
-          />
+          <FileText aria-hidden="true" className="size-5" />
         )}
       </div>
 
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-[var(--app-text)]">
-          {node.title}
-        </p>
+        <p className="truncate text-sm font-medium text-[var(--app-text)]">{node.title}</p>
 
         <p className="mt-1 truncate text-[11px] text-[var(--app-muted)]">
-          {node.type === 'folder'
-            ? 'Папка'
-            : 'Материал'}
+          {node.type === 'folder' ? 'Папка' : 'Материал'}
           {' · '}
           {location}
         </p>
@@ -599,14 +395,10 @@ function StudyNodeCard({
 
       {!compact && (
         <time
-          dateTime={new Date(
-            node.updatedAt
-          ).toISOString()}
+          dateTime={new Date(node.updatedAt).toISOString()}
           className="shrink-0 rounded-lg bg-white/[0.025] px-2 py-1 text-[10px] text-[var(--app-muted)] max-[520px]:hidden"
         >
-          {studyDateFormatter.format(
-            new Date(node.updatedAt)
-          )}
+          {studyDateFormatter.format(new Date(node.updatedAt))}
         </time>
       )}
 
@@ -625,21 +417,13 @@ function StudySearchResults({
   onOpen
 }: {
   nodes: StudyNode[]
-  nodesById: Map<
-    string,
-    StudyNode
-  >
+  nodesById: Map<string, StudyNode>
   search: string
   onOpen: (nodeId: string) => void
 }): React.JSX.Element {
   return (
     <StudyHomePanel
-      icon={
-        <Search
-          aria-hidden="true"
-          className="size-5"
-        />
-      }
+      icon={<Search aria-hidden="true" className="size-5" />}
       title="Результаты поиска"
       description={`Запрос: «${search}»`}
       count={nodes.length}
@@ -650,20 +434,14 @@ function StudySearchResults({
             <StudyNodeCard
               key={node.id}
               node={node}
-              location={getStudyNodeLocation(
-                node,
-                nodesById
-              )}
+              location={getStudyNodeLocation(node, nodesById)}
               variant="search"
               onOpen={onOpen}
             />
           ))}
         </div>
       ) : (
-        <StudySectionEmpty>
-          По этому запросу ничего не
-          найдено.
-        </StudySectionEmpty>
+        <StudySectionEmpty>По этому запросу ничего не найдено.</StudySectionEmpty>
       )}
     </StudyHomePanel>
   )
@@ -674,19 +452,13 @@ function StudyLoadingPanel(): React.JSX.Element {
     <section className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)]">
       <div className="flex min-h-48 flex-col items-center justify-center px-6 text-center">
         <div className="flex size-11 items-center justify-center rounded-xl bg-violet-500/10 text-violet-300">
-          <BookOpen
-            aria-hidden="true"
-            className="size-5 animate-pulse"
-          />
+          <BookOpen aria-hidden="true" className="size-5 animate-pulse" />
         </div>
 
-        <p className="mt-4 text-sm font-medium text-[var(--app-text)]">
-          Загрузка библиотеки
-        </p>
+        <p className="mt-4 text-sm font-medium text-[var(--app-text)]">Загрузка библиотеки</p>
 
         <p className="mt-1 text-xs text-[var(--app-muted)]">
-          Подготавливаем материалы и
-          структуру папок.
+          Подготавливаем материалы и структуру папок.
         </p>
       </div>
     </section>
@@ -704,47 +476,32 @@ function StudyHomeEmptyState({
     <section className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)]">
       <div className="flex min-h-72 flex-col items-center justify-center px-6 py-10 text-center">
         <div className="flex size-14 items-center justify-center rounded-2xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
-          <BookOpen
-            aria-hidden="true"
-            className="size-7"
-          />
+          <BookOpen aria-hidden="true" className="size-7" />
         </div>
 
-        <h2 className="mt-5 text-lg font-semibold text-[var(--app-text)]">
-          Библиотека пока пуста
-        </h2>
+        <h2 className="mt-5 text-lg font-semibold text-[var(--app-text)]">Библиотека пока пуста</h2>
 
         <p className="mt-2 max-w-md text-sm leading-6 text-[var(--app-muted)]">
-          Создай первый материал или
-          подготовь структуру из папок,
-          чтобы организовать будущие
+          Создай первый материал или подготовь структуру из папок, чтобы организовать будущие
           знания.
         </p>
 
         <div className="mt-6 flex items-center gap-2 max-[460px]:w-full max-[460px]:flex-col">
           <button
             type="button"
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[var(--app-border-strong)] px-4 text-sm font-medium text-[var(--app-text)] outline-none transition-colors hover:bg-white/[0.04] focus-visible:ring-2 focus-visible:ring-violet-500/35 max-[460px]:w-full"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[var(--app-border-strong)] px-4 text-sm font-medium text-[var(--app-text)] transition-colors outline-none hover:bg-white/[0.04] focus-visible:ring-2 focus-visible:ring-violet-500/35 max-[460px]:w-full"
             onClick={onCreateFolder}
           >
-            <FolderPlus
-              aria-hidden="true"
-              className="size-4"
-            />
-
+            <FolderPlus aria-hidden="true" className="size-4" />
             Создать папку
           </button>
 
           <button
             type="button"
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-medium text-white outline-none transition-colors hover:bg-violet-400 focus-visible:ring-2 focus-visible:ring-violet-300/50 max-[460px]:w-full"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-medium text-white transition-colors outline-none hover:bg-violet-400 focus-visible:ring-2 focus-visible:ring-violet-300/50 max-[460px]:w-full"
             onClick={onCreateMaterial}
           >
-            <FilePlus2
-              aria-hidden="true"
-              className="size-4"
-            />
-
+            <FilePlus2 aria-hidden="true" className="size-4" />
             Создать материал
           </button>
         </div>
@@ -753,11 +510,7 @@ function StudyHomeEmptyState({
   )
 }
 
-function StudySectionEmpty({
-  children
-}: {
-  children: ReactNode
-}): React.JSX.Element {
+function StudySectionEmpty({ children }: { children: ReactNode }): React.JSX.Element {
   return (
     <div className="flex min-h-32 items-center justify-center rounded-xl border border-dashed border-[var(--app-border)] bg-black/[0.04] px-5 py-8 text-center text-sm leading-6 text-[var(--app-muted)]">
       {children}
@@ -765,27 +518,16 @@ function StudySectionEmpty({
   )
 }
 
-function getStudyNodeLocation(
-  node: StudyNode,
-  nodesById: Map<
-    string,
-    StudyNode
-  >
-): string {
+function getStudyNodeLocation(node: StudyNode, nodesById: Map<string, StudyNode>): string {
   const parts: string[] = []
-  const visited =
-    new Set<string>()
+  const visited = new Set<string>()
 
   let parentId = node.parentId
 
-  while (
-    parentId &&
-    !visited.has(parentId)
-  ) {
+  while (parentId && !visited.has(parentId)) {
     visited.add(parentId)
 
-    const parent =
-      nodesById.get(parentId)
+    const parent = nodesById.get(parentId)
 
     if (!parent) {
       break
@@ -795,7 +537,5 @@ function getStudyNodeLocation(
     parentId = parent.parentId
   }
 
-  return parts.length > 0
-    ? parts.join(' / ')
-    : 'Корень'
+  return parts.length > 0 ? parts.join(' / ') : 'Корень'
 }

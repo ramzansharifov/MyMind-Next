@@ -126,6 +126,7 @@ export const studyFileBlockSchema = z.object({
 export const studyDividerBlockSchema = z.object({
   id: z.string().min(1),
   type: z.literal('divider'),
+  variant: z.enum(['solid', 'tapered', 'dashed', 'dotted']).optional(),
   thickness: z.number().int().min(1).max(12).optional(),
   color: z
     .string()

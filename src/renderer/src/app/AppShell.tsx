@@ -1,10 +1,6 @@
 import { cva } from 'class-variance-authority'
 import { BrainCircuit, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
-import {
-  useEffect,
-  useState,
-  type ReactNode
-} from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 
 import { cn } from '../shared/lib/cn'
 import { Tooltip, TooltipProvider } from '../shared/ui/tooltip'
@@ -102,17 +98,8 @@ function NavigationButton({
   )
 }
 
-export function AppShell({
-  activeView,
-  onViewChange,
-  children
-}: AppShellProps): React.JSX.Element {
-  const [
-    isCollapsed,
-    setIsCollapsed
-  ] = useState(
-    () => activeView === 'study'
-  )
+export function AppShell({ activeView, onViewChange, children }: AppShellProps): React.JSX.Element {
+  const [isCollapsed, setIsCollapsed] = useState(() => activeView === 'study')
 
   useEffect(() => {
     if (activeView === 'study') {
@@ -120,9 +107,7 @@ export function AppShell({
     }
   }, [activeView])
 
-  const toggleLabel = isCollapsed
-    ? 'Развернуть боковую панель'
-    : 'Свернуть боковую панель'
+  const toggleLabel = isCollapsed ? 'Развернуть боковую панель' : 'Свернуть боковую панель'
 
   return (
     <TooltipProvider>

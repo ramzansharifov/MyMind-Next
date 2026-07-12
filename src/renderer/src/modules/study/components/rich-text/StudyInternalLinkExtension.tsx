@@ -170,9 +170,7 @@ function StudyInternalLinkNodeView({ node, editor, getPos }: NodeViewProps): Rea
       })
       .catch(() => {
         if (active) {
-          setResolvedTarget(
-            undefined
-          )
+          setResolvedTarget(undefined)
         }
       })
 
@@ -198,8 +196,7 @@ function StudyInternalLinkNodeView({ node, editor, getPos }: NodeViewProps): Rea
 
   const tooltipTitle = isMissing
     ? 'Цель внутренней ссылки удалена'
-    : displayLabel ||
-      'Внутренняя ссылка'
+    : displayLabel || 'Внутренняя ссылка'
 
   const tooltipAction = isMissing
     ? 'Цель больше не существует'
@@ -210,12 +207,8 @@ function StudyInternalLinkNodeView({ node, editor, getPos }: NodeViewProps): Rea
   function selectLinkNode(): void {
     const position = getPos()
 
-    if (
-      typeof position === 'number'
-    ) {
-      editor.commands.setNodeSelection(
-        position
-      )
+    if (typeof position === 'number') {
+      editor.commands.setNodeSelection(position)
     }
   }
 
@@ -224,31 +217,20 @@ function StudyInternalLinkNodeView({ node, editor, getPos }: NodeViewProps): Rea
       return
     }
 
-    const detail:
-      StudyInternalLinkNavigateDetail =
-      {
-        kind:
-          attributes.targetKind,
-        materialId:
-          attributes.materialId,
-        headingId:
-          attributes.headingId
-      }
+    const detail: StudyInternalLinkNavigateDetail = {
+      kind: attributes.targetKind,
+      materialId: attributes.materialId,
+      headingId: attributes.headingId
+    }
 
     window.dispatchEvent(
-      new CustomEvent(
-        STUDY_INTERNAL_LINK_NAVIGATE_EVENT,
-        {
-          detail
-        }
-      )
+      new CustomEvent(STUDY_INTERNAL_LINK_NAVIGATE_EVENT, {
+        detail
+      })
     )
   }
 
-  function handlePointerDown(
-    event:
-      React.PointerEvent<HTMLSpanElement>
-  ): void {
+  function handlePointerDown(event: React.PointerEvent<HTMLSpanElement>): void {
     if (event.button !== 0) {
       return
     }
@@ -256,10 +238,7 @@ function StudyInternalLinkNodeView({ node, editor, getPos }: NodeViewProps): Rea
     event.preventDefault()
     event.stopPropagation()
 
-    if (
-      editor.isEditable &&
-      event.shiftKey
-    ) {
+    if (editor.isEditable && event.shiftKey) {
       selectLinkNode()
       return
     }
@@ -275,23 +254,18 @@ function StudyInternalLinkNodeView({ node, editor, getPos }: NodeViewProps): Rea
       contentClassName="max-w-80 px-3 py-2"
       content={
         <span className="grid min-w-0 gap-1">
-          <span className="truncate font-semibold text-[var(--app-text)]">
-            {tooltipTitle}
-          </span>
+          <span className="truncate font-semibold text-[var(--app-text)]">{tooltipTitle}</span>
 
-          {!isMissing &&
-            location && (
-              <span className="truncate text-[11px] font-normal text-[var(--app-muted)]">
-                {location}
-              </span>
-            )}
+          {!isMissing && location && (
+            <span className="truncate text-[11px] font-normal text-[var(--app-muted)]">
+              {location}
+            </span>
+          )}
 
           <span
             className={cn(
               'text-[10px] font-normal',
-              isMissing
-                ? 'text-red-300'
-                : 'text-violet-300'
+              isMissing ? 'text-red-300' : 'text-violet-300'
             )}
           >
             {tooltipAction}
@@ -300,74 +274,51 @@ function StudyInternalLinkNodeView({ node, editor, getPos }: NodeViewProps): Rea
       }
     >
       <NodeViewWrapper
-      as="span"
-      role="link"
-      tabIndex={0}
-      aria-label={
-        isMissing
-          ? `Недоступная внутренняя ссылка: ${displayLabel || 'без названия'}`
-          : `Открыть внутреннюю ссылку: ${displayLabel || 'без названия'}`
-      }
-      contentEditable={false}
-      data-study-internal-link="true"
-      data-target-kind={
-        attributes.targetKind
-      }
-      data-material-id={
-        attributes.materialId
-      }
-      data-heading-id={
-        attributes.headingId ??
-        undefined
-      }
-      data-missing={
-        isMissing
-          ? 'true'
-          : 'false'
-      }
-      className={cn(
-        'study-internal-link-node',
-        isMissing &&
-          'study-internal-link-node--missing'
-      )}
-      onPointerDown={
-        handlePointerDown
-      }
-      onClick={(event) => {
-        event.preventDefault()
-        event.stopPropagation()
-      }}
-      onKeyDown={(event) => {
-        if (
-          event.key !== 'Enter' &&
-          event.key !== ' '
-        ) {
-          return
+        as="span"
+        role="link"
+        tabIndex={0}
+        aria-label={
+          isMissing
+            ? `Недоступная внутренняя ссылка: ${displayLabel || 'без названия'}`
+            : `Открыть внутреннюю ссылку: ${displayLabel || 'без названия'}`
         }
+        contentEditable={false}
+        data-study-internal-link="true"
+        data-target-kind={attributes.targetKind}
+        data-material-id={attributes.materialId}
+        data-heading-id={attributes.headingId ?? undefined}
+        data-missing={isMissing ? 'true' : 'false'}
+        className={cn('study-internal-link-node', isMissing && 'study-internal-link-node--missing')}
+        onPointerDown={handlePointerDown}
+        onClick={(event) => {
+          event.preventDefault()
+          event.stopPropagation()
+        }}
+        onKeyDown={(event) => {
+          if (event.key !== 'Enter' && event.key !== ' ') {
+            return
+          }
 
-        event.preventDefault()
-        event.stopPropagation()
+          event.preventDefault()
+          event.stopPropagation()
 
-        if (
-          editor.isEditable &&
-          event.shiftKey
-        ) {
-          selectLinkNode()
-          return
-        }
+          if (editor.isEditable && event.shiftKey) {
+            selectLinkNode()
+            return
+          }
 
-        navigate()
-      }}
-    >
-      {targetKind === 'heading' ? (
-        <Heading aria-hidden="true" className="size-3.5 shrink-0" />
-      ) : (
-        <FileText aria-hidden="true" className="size-3.5 shrink-0" />
-      )}
+          navigate()
+        }}
+      >
+        {targetKind === 'heading' ? (
+          <Heading aria-hidden="true" className="size-3.5 shrink-0" />
+        ) : (
+          <FileText aria-hidden="true" className="size-3.5 shrink-0" />
+        )}
 
-      <span className="truncate">{displayLabel || 'Внутренняя ссылка'}</span>
+        <span className="truncate">{displayLabel || 'Внутренняя ссылка'}</span>
 
-      {isMissing && <Link2 aria-hidden="true" className="size-3 shrink-0" />}
+        {isMissing && <Link2 aria-hidden="true" className="size-3 shrink-0" />}
       </NodeViewWrapper>
     </Tooltip>
   )

@@ -14,7 +14,7 @@ import {
 import type { Editor } from '@tiptap/core'
 import * as Collapsible from '@radix-ui/react-collapsible'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
-import * as Separator from '@radix-ui/react-separator'
+
 import {
   ArrowDown,
   ArrowUp,
@@ -65,6 +65,7 @@ import {
 import { BlockSettingsErrorBoundary } from './BlockSettingsErrorBoundary'
 import { BlockSettingsPanel } from './BlockSettingsPanel'
 import { DeleteConfirmationDialog } from './DeleteConfirmationDialog'
+import { StudyDivider } from './StudyDivider'
 import { StudyCodeBlock } from './code/StudyCodeBlock'
 import { StudyFileBlockView } from './file/StudyFileBlockView'
 import { StudyMarkdownBlock } from './markdown/StudyMarkdownBlock'
@@ -941,19 +942,7 @@ function EditableBlock({
     return <StudyFileBlockView block={block} />
   }
 
-  return (
-    <div className="py-8">
-      <Separator.Root
-        decorative
-        orientation="horizontal"
-        className="w-full rounded-full"
-        style={{
-          height: `${block.thickness ?? DEFAULT_DIVIDER_THICKNESS}px`,
-          backgroundColor: block.color ?? DEFAULT_DIVIDER_COLOR
-        }}
-      />
-    </div>
-  )
+  return <StudyDivider block={block} spacing="edit" />
 }
 
 type StudyHeadingBlock = Extract<StudyBlock, { type: 'heading' }>
@@ -990,12 +979,11 @@ function ReadOnlyStudyDocument({ document }: { document: StudyDocument }): React
 
 function moveTrailingDividerOutsideSection(
   sectionStack: StudyReadSectionNode[],
-  root: StudyReadNode[],
-  nextHeadingLevel: 1 | 2 | 3
+  root: StudyReadNode[]
 ): void {
   const closingSection = sectionStack[sectionStack.length - 1]
 
-  if (!closingSection || closingSection.heading.level !== nextHeadingLevel) {
+  if (!closingSection) {
     return
   }
 
@@ -1016,6 +1004,24 @@ function moveTrailingDividerOutsideSection(
 
   root.push(trailingNode)
 }
+
+function closeStudyReadSections(
+  sectionStack: StudyReadSectionNode[],
+  root: StudyReadNode[],
+  nextHeadingLevel?: 1 | 2 | 3
+): void {
+  while (sectionStack.length > 0) {
+    const closingSection = sectionStack[sectionStack.length - 1]
+
+    if (nextHeadingLevel !== undefined && closingSection.heading.level < nextHeadingLevel) {
+      return
+    }
+
+    moveTrailingDividerOutsideSection(sectionStack, root)
+
+    sectionStack.pop()
+  }
+}
 function buildStudyReadOutline(blocks: StudyBlock[]): StudyReadNode[] {
   const root: StudyReadNode[] = []
   const sectionStack: StudyReadSectionNode[] = []
@@ -1028,14 +1034,7 @@ function buildStudyReadOutline(blocks: StudyBlock[]): StudyReadNode[] {
         children: []
       }
 
-      moveTrailingDividerOutsideSection(sectionStack, root, block.level)
-
-      while (
-        sectionStack.length > 0 &&
-        sectionStack[sectionStack.length - 1].heading.level >= block.level
-      ) {
-        sectionStack.pop()
-      }
+      closeStudyReadSections(sectionStack, root, block.level)
 
       const parentSection = sectionStack[sectionStack.length - 1]
 
@@ -1063,6 +1062,8 @@ function buildStudyReadOutline(blocks: StudyBlock[]): StudyReadNode[] {
       root.push(blockNode)
     }
   })
+
+  closeStudyReadSections(sectionStack, root)
 
   return root
 }
@@ -1252,19 +1253,7 @@ function StudyBlockReader({ block }: { block: StudyBlock }): React.JSX.Element {
     return <StudyFileBlockView block={block} />
   }
 
-  return (
-    <div className="py-4">
-      <Separator.Root
-        decorative
-        orientation="horizontal"
-        className="w-full rounded-full"
-        style={{
-          height: `${block.thickness ?? DEFAULT_DIVIDER_THICKNESS}px`,
-          backgroundColor: block.color ?? DEFAULT_DIVIDER_COLOR
-        }}
-      />
-    </div>
-  )
+  return <StudyDivider block={block} spacing="read" />
 }
 
 function StudyBlockTypeIcon({

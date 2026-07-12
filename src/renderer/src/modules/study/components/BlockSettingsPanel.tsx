@@ -25,6 +25,7 @@ import type { StudyAssetKind, StudyBlock } from '../../../../../shared/contracts
 import {
   DEFAULT_DIVIDER_COLOR,
   DEFAULT_DIVIDER_THICKNESS,
+  DEFAULT_DIVIDER_VARIANT,
   DEFAULT_HEADING_BACKGROUND_COLOR,
   DEFAULT_HEADING_COLOR
 } from '../lib/study-document'
@@ -36,6 +37,7 @@ import { STUDY_MERMAID_TEMPLATES } from './mermaid/mermaid-templates'
 import { ColorPicker } from './settings/ColorPicker'
 import { SegmentedChoice } from './settings/SegmentedChoice'
 import { StudySelect } from './settings/StudySelect'
+import { StudyDivider } from './StudyDivider'
 
 interface BlockSettingsPanelProps {
   materialId: string
@@ -190,6 +192,28 @@ const studyImageFits = [
   {
     value: 'cover',
     label: 'Заполнить'
+  }
+]
+const studyDividerVariants = [
+  {
+    value: 'solid',
+    label: 'Сплошной',
+    ariaLabel: 'Сплошной разделитель'
+  },
+  {
+    value: 'tapered',
+    label: 'Акцентный',
+    ariaLabel: 'Разделитель с утолщением в центре'
+  },
+  {
+    value: 'dashed',
+    label: 'Пунктир',
+    ariaLabel: 'Пунктирный разделитель'
+  },
+  {
+    value: 'dotted',
+    label: 'Точки',
+    ariaLabel: 'Точечный разделитель'
   }
 ]
 
@@ -938,14 +962,46 @@ function DividerSettings({
   block,
   onChange
 }: {
-  block: Extract<StudyBlock, { type: 'divider' }>
+  block: Extract<
+    StudyBlock,
+    {
+      type: 'divider'
+    }
+  >
   onChange: (block: StudyBlock) => void
 }): React.JSX.Element {
+  const variant = block.variant ?? DEFAULT_DIVIDER_VARIANT
+
   const thickness = block.thickness ?? DEFAULT_DIVIDER_THICKNESS
+
   const color = block.color ?? DEFAULT_DIVIDER_COLOR
 
   return (
     <div className="grid gap-4">
+      <SettingsField label="Стиль">
+        <SegmentedChoice
+          value={variant}
+          options={studyDividerVariants}
+          ariaLabel="Стиль разделителя"
+          columns={2}
+          onValueChange={(nextVariant) => {
+            if (
+              nextVariant !== 'solid' &&
+              nextVariant !== 'tapered' &&
+              nextVariant !== 'dashed' &&
+              nextVariant !== 'dotted'
+            ) {
+              return
+            }
+
+            onChange({
+              ...block,
+              variant: nextVariant
+            })
+          }}
+        />
+      </SettingsField>
+
       <SettingsField label={`Толщина: ${thickness}px`}>
         <Slider.Root
           min={1}
@@ -975,8 +1031,6 @@ function DividerSettings({
         </Slider.Root>
       </SettingsField>
 
-      <Separator.Root className="h-px bg-(--app-border)" />
-
       <SettingsField label="Цвет">
         <ColorPicker
           value={color}
@@ -988,6 +1042,14 @@ function DividerSettings({
             })
           }}
         />
+      </SettingsField>
+
+      <Separator.Root className="h-px bg-(--app-border)" />
+
+      <SettingsField label="Предпросмотр">
+        <div className="rounded-xl border border-(--app-border) bg-(--app-workspace) px-4 py-6">
+          <StudyDivider block={block} spacing="none" />
+        </div>
       </SettingsField>
     </div>
   )

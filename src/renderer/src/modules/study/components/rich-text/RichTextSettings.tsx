@@ -401,207 +401,207 @@ function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.El
 
   return (
     <div className="space-y-4">
-        <SettingsSection title="Быстро">
-          <ToolbarButton
-            label="Отменить"
-            disabled={!editorState.canUndo}
-            onClick={() => {
-              editor.chain().focus().undo().run()
-            }}
-          >
-            <Undo2 className="size-4" />
-          </ToolbarButton>
+      <SettingsSection title="Быстро">
+        <ToolbarButton
+          label="Отменить"
+          disabled={!editorState.canUndo}
+          onClick={() => {
+            editor.chain().focus().undo().run()
+          }}
+        >
+          <Undo2 className="size-4" />
+        </ToolbarButton>
 
-          <ToolbarButton
-            label="Повторить"
-            disabled={!editorState.canRedo}
-            onClick={() => {
-              editor.chain().focus().redo().run()
-            }}
-          >
-            <Redo2 className="size-4" />
-          </ToolbarButton>
+        <ToolbarButton
+          label="Повторить"
+          disabled={!editorState.canRedo}
+          onClick={() => {
+            editor.chain().focus().redo().run()
+          }}
+        >
+          <Redo2 className="size-4" />
+        </ToolbarButton>
 
-          <ToolbarButton label="Очистить" onClick={clearFormatting}>
-            <RemoveFormatting className="size-4" />
-          </ToolbarButton>
-        </SettingsSection>
+        <ToolbarButton label="Очистить" onClick={clearFormatting}>
+          <RemoveFormatting className="size-4" />
+        </ToolbarButton>
+      </SettingsSection>
 
-        <SettingsSection title="Текст">
-          <ToggleGroup.Root
-            type="multiple"
-            value={activeMarks}
-            aria-label="Форматирование текста"
-            className="flex flex-wrap gap-2"
-            onValueChange={applyMarkValues}
-          >
-            <ToolbarToggle value="bold" label="Жирный">
-              <Bold className="size-4" />
-            </ToolbarToggle>
+      <SettingsSection title="Текст">
+        <ToggleGroup.Root
+          type="multiple"
+          value={activeMarks}
+          aria-label="Форматирование текста"
+          className="flex flex-wrap gap-2"
+          onValueChange={applyMarkValues}
+        >
+          <ToolbarToggle value="bold" label="Жирный">
+            <Bold className="size-4" />
+          </ToolbarToggle>
 
-            <ToolbarToggle value="italic" label="Курсив">
-              <Italic className="size-4" />
-            </ToolbarToggle>
+          <ToolbarToggle value="italic" label="Курсив">
+            <Italic className="size-4" />
+          </ToolbarToggle>
 
-            <ToolbarToggle value="underline" label="Подчёркивание">
-              <Underline className="size-4" />
-            </ToolbarToggle>
+          <ToolbarToggle value="underline" label="Подчёркивание">
+            <Underline className="size-4" />
+          </ToolbarToggle>
 
-            <ToolbarToggle value="strike" label="Зачёркивание">
-              <Strikethrough className="size-4" />
-            </ToolbarToggle>
+          <ToolbarToggle value="strike" label="Зачёркивание">
+            <Strikethrough className="size-4" />
+          </ToolbarToggle>
 
-            <ToolbarToggle value="code" label="Код">
-              <Code2 className="size-4" />
-            </ToolbarToggle>
-          </ToggleGroup.Root>
-        </SettingsSection>
+          <ToolbarToggle value="code" label="Код">
+            <Code2 className="size-4" />
+          </ToolbarToggle>
+        </ToggleGroup.Root>
+      </SettingsSection>
 
-        <SettingsSection title="Списки">
-          <ToggleGroup.Root
-            type="single"
-            value={editorState.bulletList ? 'bullet' : editorState.orderedList ? 'ordered' : ''}
-            aria-label="Тип списка"
-            className="flex flex-wrap gap-2"
-            onValueChange={(value) => {
-              if (!value) {
-                if (editorState.bulletList) {
-                  createCommandChain()?.toggleBulletList().run()
-                } else if (editorState.orderedList) {
-                  createCommandChain()?.toggleOrderedList().run()
-                }
-
-                return
-              }
-
-              if (value === 'bullet') {
+      <SettingsSection title="Списки">
+        <ToggleGroup.Root
+          type="single"
+          value={editorState.bulletList ? 'bullet' : editorState.orderedList ? 'ordered' : ''}
+          aria-label="Тип списка"
+          className="flex flex-wrap gap-2"
+          onValueChange={(value) => {
+            if (!value) {
+              if (editorState.bulletList) {
                 createCommandChain()?.toggleBulletList().run()
-              }
-
-              if (value === 'ordered') {
+              } else if (editorState.orderedList) {
                 createCommandChain()?.toggleOrderedList().run()
               }
-            }}
-          >
-            <ToolbarToggle value="bullet" label="Маркированный список">
-              <List className="size-4" />
-            </ToolbarToggle>
 
-            <ToolbarToggle value="ordered" label="Нумерованный список">
-              <ListOrdered className="size-4" />
-            </ToolbarToggle>
-          </ToggleGroup.Root>
+              return
+            }
 
-          <ToolbarButton
-            label="Увеличить вложенность — Tab"
-            disabled={!editorState.canIndentListItem}
-            onClick={() => {
-              createCommandChain()?.sinkListItem('listItem').run()
-            }}
-          >
-            <IndentIncrease className="size-4" />
-          </ToolbarButton>
+            if (value === 'bullet') {
+              createCommandChain()?.toggleBulletList().run()
+            }
 
-          <ToolbarButton
-            label="Уменьшить вложенность — Shift+Tab"
-            disabled={!editorState.canOutdentListItem}
-            onClick={() => {
-              createCommandChain()?.liftListItem('listItem').run()
-            }}
-          >
-            <IndentDecrease className="size-4" />
-          </ToolbarButton>
-        </SettingsSection>
+            if (value === 'ordered') {
+              createCommandChain()?.toggleOrderedList().run()
+            }
+          }}
+        >
+          <ToolbarToggle value="bullet" label="Маркированный список">
+            <List className="size-4" />
+          </ToolbarToggle>
 
-        <SettingsSection title="Выравнивание">
-          <ToggleGroup.Root
-            type="single"
-            value={editorState.alignment}
-            aria-label="Выравнивание"
-            className="flex flex-wrap gap-2"
-            onValueChange={applyAlignment}
-          >
-            <ToolbarToggle value="left" label="Слева">
-              <AlignLeft className="size-4" />
-            </ToolbarToggle>
+          <ToolbarToggle value="ordered" label="Нумерованный список">
+            <ListOrdered className="size-4" />
+          </ToolbarToggle>
+        </ToggleGroup.Root>
 
-            <ToolbarToggle value="center" label="По центру">
-              <AlignCenter className="size-4" />
-            </ToolbarToggle>
+        <ToolbarButton
+          label="Увеличить вложенность — Tab"
+          disabled={!editorState.canIndentListItem}
+          onClick={() => {
+            createCommandChain()?.sinkListItem('listItem').run()
+          }}
+        >
+          <IndentIncrease className="size-4" />
+        </ToolbarButton>
 
-            <ToolbarToggle value="right" label="Справа">
-              <AlignRight className="size-4" />
-            </ToolbarToggle>
+        <ToolbarButton
+          label="Уменьшить вложенность — Shift+Tab"
+          disabled={!editorState.canOutdentListItem}
+          onClick={() => {
+            createCommandChain()?.liftListItem('listItem').run()
+          }}
+        >
+          <IndentDecrease className="size-4" />
+        </ToolbarButton>
+      </SettingsSection>
 
-            <ToolbarToggle value="justify" label="По ширине">
-              <AlignJustify className="size-4" />
-            </ToolbarToggle>
-          </ToggleGroup.Root>
-        </SettingsSection>
+      <SettingsSection title="Выравнивание">
+        <ToggleGroup.Root
+          type="single"
+          value={editorState.alignment}
+          aria-label="Выравнивание"
+          className="flex flex-wrap gap-2"
+          onValueChange={applyAlignment}
+        >
+          <ToolbarToggle value="left" label="Слева">
+            <AlignLeft className="size-4" />
+          </ToolbarToggle>
 
-        <SettingsSection title="Оформление" vertical>
-          <SettingsField label="Размер">
-            <SegmentedChoice
-              value={editorState.fontSize}
-              options={fontSizes}
-              ariaLabel="Размер текста"
-              columns={4}
-              onValueChange={applyFontSize}
+          <ToolbarToggle value="center" label="По центру">
+            <AlignCenter className="size-4" />
+          </ToolbarToggle>
+
+          <ToolbarToggle value="right" label="Справа">
+            <AlignRight className="size-4" />
+          </ToolbarToggle>
+
+          <ToolbarToggle value="justify" label="По ширине">
+            <AlignJustify className="size-4" />
+          </ToolbarToggle>
+        </ToggleGroup.Root>
+      </SettingsSection>
+
+      <SettingsSection title="Оформление" vertical>
+        <SettingsField label="Размер">
+          <SegmentedChoice
+            value={editorState.fontSize}
+            options={fontSizes}
+            ariaLabel="Размер текста"
+            columns={4}
+            onValueChange={applyFontSize}
+          />
+        </SettingsField>
+
+        <div className="grid grid-cols-2 gap-3">
+          <SettingsField label="Текст">
+            <ColorPicker
+              value={editorState.color}
+              ariaLabel="Цвет текста"
+              clearLabel="Сбросить"
+              onChange={applyColor}
+              onClear={clearColor}
             />
           </SettingsField>
 
-          <div className="grid grid-cols-2 gap-3">
-            <SettingsField label="Текст">
-              <ColorPicker
-                value={editorState.color}
-                ariaLabel="Цвет текста"
-                clearLabel="Сбросить"
-                onChange={applyColor}
-                onClear={clearColor}
-              />
-            </SettingsField>
+          <SettingsField label="Фон">
+            <ColorPicker
+              value={editorState.backgroundColor}
+              ariaLabel="Фон выделенного текста"
+              colors={highlightColors}
+              clearLabel="Убрать"
+              onChange={applyBackgroundColor}
+              onClear={clearBackgroundColor}
+            />
+          </SettingsField>
+        </div>
+      </SettingsSection>
 
-            <SettingsField label="Фон">
-              <ColorPicker
-                value={editorState.backgroundColor}
-                ariaLabel="Фон выделенного текста"
-                colors={highlightColors}
-                clearLabel="Убрать"
-                onChange={applyBackgroundColor}
-                onClear={clearBackgroundColor}
-              />
-            </SettingsField>
-          </div>
-        </SettingsSection>
+      <SettingsSection title="Внутренняя ссылка" vertical>
+        <button
+          type="button"
+          className="flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-(--app-border) bg-(--app-workspace) px-3 text-sm font-medium text-(--app-text) transition-colors outline-none hover:border-violet-500/35 hover:bg-violet-500/10 focus-visible:ring-2 focus-visible:ring-violet-500/35"
+          onMouseDown={(event) => {
+            event.preventDefault()
+          }}
+          onClick={() => {
+            editor.view.dom.dispatchEvent(new CustomEvent(STUDY_OPEN_INTERNAL_LINK_PICKER_EVENT))
+          }}
+        >
+          <Link2 aria-hidden="true" className="size-4 text-violet-300" />
+          Создать внутреннюю ссылку
+        </button>
 
-        <SettingsSection title="Внутренняя ссылка" vertical>
-          <button
-            type="button"
-            className="flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-(--app-border) bg-(--app-workspace) px-3 text-sm font-medium text-(--app-text) transition-colors outline-none hover:border-violet-500/35 hover:bg-violet-500/10 focus-visible:ring-2 focus-visible:ring-violet-500/35"
-            onMouseDown={(event) => {
-              event.preventDefault()
-            }}
-            onClick={() => {
-              editor.view.dom.dispatchEvent(new CustomEvent(STUDY_OPEN_INTERNAL_LINK_PICKER_EVENT))
-            }}
-          >
-            <Link2 aria-hidden="true" className="size-4 text-violet-300" />
-            Создать внутреннюю ссылку
-          </button>
-
-          <p className="text-xs leading-5 text-(--app-muted)">
-            Также можно ввести [[ в тексте. Горячая клавиша: Ctrl+Shift+K.
-          </p>
-        </SettingsSection>
-        <SettingsSection title="Ссылка">
-          <LinkPopover
-            disabled={false}
-            active={editorState.linkActive}
-            currentHref={editorState.href}
-            onApply={applyLink}
-            onRemove={removeLink}
-          />
-        </SettingsSection>
+        <p className="text-xs leading-5 text-(--app-muted)">
+          Также можно ввести [[ в тексте. Горячая клавиша: Ctrl+Shift+K.
+        </p>
+      </SettingsSection>
+      <SettingsSection title="Ссылка">
+        <LinkPopover
+          disabled={false}
+          active={editorState.linkActive}
+          currentHref={editorState.href}
+          onApply={applyLink}
+          onRemove={removeLink}
+        />
+      </SettingsSection>
     </div>
   )
 }
@@ -654,11 +654,7 @@ function ToolbarButton({
   onClick: () => void
 }): React.JSX.Element {
   return (
-    <Tooltip
-      content={label}
-      side="top"
-      delayDuration={300}
-    >
+    <Tooltip content={label} side="top" delayDuration={300}>
       <button
         type="button"
         aria-label={label}
@@ -692,11 +688,7 @@ function ToolbarToggle({
   children: ReactNode
 }): React.JSX.Element {
   return (
-    <Tooltip
-      content={label}
-      side="top"
-      delayDuration={300}
-    >
+    <Tooltip content={label} side="top" delayDuration={300}>
       <ToggleGroup.Item
         value={value}
         aria-label={label}
@@ -719,8 +711,6 @@ function ToolbarToggle({
     </Tooltip>
   )
 }
-
-
 
 function LinkPopover({
   disabled,

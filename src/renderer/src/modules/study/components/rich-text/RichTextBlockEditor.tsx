@@ -62,79 +62,57 @@ export function RichTextBlockEditor({
     targetsRef.current = targets
   }, [targets])
 
-  const selectInternalLinkTarget =
-    useCallback(
-      (
-        target:
-          StudyInternalLinkTarget,
-        current =
-          pickerStateRef.current,
-        currentEditor =
-          editorInstanceRef.current
-      ): void => {
-        if (
-          !currentEditor ||
-          currentEditor.isDestroyed ||
-          !current
-        ) {
-          return
-        }
+  const selectInternalLinkTarget = useCallback(
+    (
+      target: StudyInternalLinkTarget,
+      current = pickerStateRef.current,
+      currentEditor = editorInstanceRef.current
+    ): void => {
+      if (!currentEditor || currentEditor.isDestroyed || !current) {
+        return
+      }
 
-        const selectedLabel =
-          current.selectedText.trim()
+      const selectedLabel = current.selectedText.trim()
 
-        const label =
-          selectedLabel ||
-          target.title
+      const label = selectedLabel || target.title
 
-        const inserted =
-          currentEditor
-            .chain()
-            .focus()
-            .insertContentAt(
-              {
-                from: current.from,
-                to: current.to
-              },
-              {
-                type:
-                  'studyInternalLink',
-                attrs: {
-                  targetKind:
-                    target.kind,
-                  materialId:
-                    target.materialId,
-                  headingId:
-                    target.headingId,
-                  headingLevel:
-                    target.headingLevel,
-                  labelMode:
-                    selectedLabel
-                      ? 'custom'
-                      : 'auto',
-                  label,
-                  materialTitle:
-                    target.materialTitle,
-                  folderPath:
-                    target.folderPath
-                }
-              },
-              {
-                updateSelection: true
-              }
-            )
-            .run()
+      const inserted = currentEditor
+        .chain()
+        .focus()
+        .insertContentAt(
+          {
+            from: current.from,
+            to: current.to
+          },
+          {
+            type: 'studyInternalLink',
+            attrs: {
+              targetKind: target.kind,
+              materialId: target.materialId,
+              headingId: target.headingId,
+              headingLevel: target.headingLevel,
+              labelMode: selectedLabel ? 'custom' : 'auto',
+              label,
+              materialTitle: target.materialTitle,
+              folderPath: target.folderPath
+            }
+          },
+          {
+            updateSelection: true
+          }
+        )
+        .run()
 
-        if (!inserted) {
-          return
-        }
+      if (!inserted) {
+        return
+      }
 
-        setPickerState(null)
-        setTargets([])
-        setIsSearching(false)
-      },
-      []
-    )
+      setPickerState(null)
+      setTargets([])
+      setIsSearching(false)
+    },
+    []
+  )
 
   function synchronizeTriggerPicker(currentEditor: Editor): void {
     const trigger = findWikiLinkTrigger(currentEditor)
@@ -291,16 +269,11 @@ export function RichTextBlockEditor({
       return
     }
 
-    editorInstanceRef.current =
-      editor
+    editorInstanceRef.current = editor
 
     return () => {
-      if (
-        editorInstanceRef.current ===
-        editor
-      ) {
-        editorInstanceRef.current =
-          null
+      if (editorInstanceRef.current === editor) {
+        editorInstanceRef.current = null
       }
     }
   }, [editor])
@@ -492,11 +465,7 @@ export function RichTextBlockEditor({
             )
           }}
           onSelect={(target) => {
-            selectInternalLinkTarget(
-              target,
-              pickerState,
-              editor
-            )
+            selectInternalLinkTarget(target, pickerState, editor)
           }}
           onClose={() => {
             setPickerState(null)
