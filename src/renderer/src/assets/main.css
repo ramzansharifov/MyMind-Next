@@ -674,8 +674,47 @@ button {
   border: 1px solid var(--app-border);
   border-radius: 0.75rem;
 }
-.study-code-block__editor {
+.study-code-block__body {
+  display: flex;
   min-width: 100%;
+  align-items: stretch;
+  background: #090a0c;
+}
+
+.study-code-block__line-numbers {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: flex-end;
+
+  padding: 1rem 0.75rem;
+  color: #52525b;
+  background: #0c0d10;
+  border-right: 1px solid var(--app-border);
+  box-shadow: 0.5rem 0 1rem rgb(0 0 0 / 12%);
+
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.65;
+
+  user-select: none;
+  pointer-events: none;
+}
+
+.study-code-block__line-number {
+  display: block;
+  width: 100%;
+  text-align: right;
+}
+
+.study-code-block__editor {
+  flex: 1 1 auto;
+  min-width: 0;
   background: #090a0c;
 }
 

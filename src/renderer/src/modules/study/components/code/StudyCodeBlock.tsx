@@ -13,7 +13,7 @@ import 'prismjs/components/prism-c'
 import 'prismjs/components/prism-cpp'
 import 'prismjs/components/prism-java'
 import { Check, Copy } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { cn } from '../../../../shared/lib/cn'
 import { Tooltip, TooltipProvider } from '../../../../shared/ui/tooltip'
@@ -41,6 +41,10 @@ export function StudyCodeBlock({
   const languageOption = getStudyCodeLanguage(language)
 
   const editable = mode === 'edit'
+
+  const lineNumbers = useMemo(() => createStudyCodeLineNumbers(source), [source])
+
+  const lineNumberDigits = Math.max(2, String(lineNumbers.length).length)
 
   useEffect(() => {
     return () => {
@@ -117,36 +121,67 @@ export function StudyCodeBlock({
         </header>
 
         <div className="study-code-block__scroll max-h-[32rem] overflow-auto">
-          <Editor
-            value={source}
-            readOnly={!editable}
-            ignoreTabKey={!editable}
-            insertSpaces
-            tabSize={2}
-            padding={16}
-            placeholder={editable ? 'Код…' : 'Пустой блок кода'}
-            className="study-code-block__editor"
-            textareaClassName="study-code-block__textarea"
-            preClassName="study-code-block__pre"
-            highlight={(value) => highlightStudyCode(value, languageOption.prismLanguage)}
-            style={{
-              minHeight: editable ? '3.45rem' : '6rem',
-              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-              fontSize: '0.875rem',
-              lineHeight: '1.65'
-            }}
-            onValueChange={(value) => {
-              if (editable) {
-                onChange?.(value)
-              }
-            }}
-          />
+          <div className="study-code-block__body">
+            <div
+              aria-hidden="true"
+              data-study-code-line-numbers
+              className="study-code-block__line-numbers"
+              style={{
+                minWidth: `calc(${lineNumberDigits}ch + 1.5rem)`
+              }}
+            >
+              {lineNumbers.map((lineNumber) => (
+                <span
+                  key={lineNumber}
+                  data-study-code-line-number={lineNumber}
+                  className="study-code-block__line-number"
+                >
+                  {lineNumber}
+                </span>
+              ))}
+            </div>
+
+            <Editor
+              value={source}
+              readOnly={!editable}
+              ignoreTabKey={!editable}
+              insertSpaces
+              tabSize={2}
+              padding={16}
+              placeholder={editable ? 'Код…' : 'Пустой блок кода'}
+              className="study-code-block__editor"
+              textareaClassName="study-code-block__textarea"
+              preClassName="study-code-block__pre"
+              highlight={(value) => highlightStudyCode(value, languageOption.prismLanguage)}
+              style={{
+                minHeight: editable ? '3.45rem' : '6rem',
+                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                fontSize: '0.875rem',
+                lineHeight: '1.65'
+              }}
+              onValueChange={(value) => {
+                if (editable) {
+                  onChange?.(value)
+                }
+              }}
+            />
+          </div>
         </div>
       </section>
     </TooltipProvider>
   )
 }
 
+function createStudyCodeLineNumbers(source: string): number[] {
+  const lineCount = source.split('\n').length
+
+  return Array.from(
+    {
+      length: Math.max(lineCount, 1)
+    },
+    (_value, index) => index + 1
+  )
+}
 function highlightStudyCode(source: string, prismLanguage: string): string {
   if (prismLanguage === 'plain') {
     return escapeHtml(source)
