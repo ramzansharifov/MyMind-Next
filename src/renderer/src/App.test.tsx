@@ -69,33 +69,95 @@ describe('App shell', () => {
     expect(await screen.findByText('SQLite 3.0.0')).toBeInTheDocument()
   })
 
-  it('collapses and expands the sidebar', async () => {
-    const user = userEvent.setup()
+  it(
+    'starts with a collapsed sidebar in study and allows expansion',
+    async () => {
+      const user =
+        userEvent.setup()
 
-    render(<App />)
+      render(<App />)
 
-    await user.click(
-      screen.getByRole('button', {
-        name: 'Свернуть боковую панель'
-      })
-    )
+      expect(
+        screen.getByRole(
+          'button',
+          {
+            name: 'Развернуть боковую панель'
+          }
+        )
+      ).toBeInTheDocument()
 
-    expect(
-      screen.getByRole('button', {
-        name: 'Развернуть боковую панель'
-      })
-    ).toBeInTheDocument()
+      await user.click(
+        screen.getByRole(
+          'button',
+          {
+            name: 'Развернуть боковую панель'
+          }
+        )
+      )
 
-    await user.click(
-      screen.getByRole('button', {
-        name: 'Развернуть боковую панель'
-      })
-    )
+      expect(
+        screen.getByRole(
+          'button',
+          {
+            name: 'Свернуть боковую панель'
+          }
+        )
+      ).toBeInTheDocument()
+    }
+  )
 
-    expect(
-      screen.getByRole('button', {
-        name: 'Свернуть боковую панель'
-      })
-    ).toBeInTheDocument()
-  })
+  it(
+    'collapses the sidebar when returning to study',
+    async () => {
+      const user =
+        userEvent.setup()
+
+      render(<App />)
+
+      await user.click(
+        screen.getByRole(
+          'button',
+          {
+            name: 'Развернуть боковую панель'
+          }
+        )
+      )
+
+      await user.click(
+        screen.getByRole(
+          'button',
+          {
+            name: 'Настройки'
+          }
+        )
+      )
+
+      expect(
+        screen.getByRole(
+          'heading',
+          {
+            name: 'Настройки'
+          }
+        )
+      ).toBeInTheDocument()
+
+      await user.click(
+        screen.getByRole(
+          'button',
+          {
+            name: 'Обучение'
+          }
+        )
+      )
+
+      expect(
+        screen.getByRole(
+          'button',
+          {
+            name: 'Развернуть боковую панель'
+          }
+        )
+      ).toBeInTheDocument()
+    }
+  )
 })
