@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -46,6 +46,61 @@ describe('StudyFileBlockView', () => {
     expect(screen.queryByText('diagram.png')).not.toBeInTheDocument()
 
     expect(screen.queryByText('2.0 КБ')).not.toBeInTheDocument()
+  })
+  it('opens and closes a fullscreen image preview', async () => {
+    const user = userEvent.setup()
+
+    const sourceUrl =
+      'mymind-asset://local/material-1/94a8c6c1-41f5-466d-92c4-5199a0754b17/photo.png'
+
+    const block: ImageBlock = {
+      id: 'fullscreen-image',
+      type: 'image',
+      source: {
+        type: 'local',
+        asset: {
+          id: '94a8c6c1-41f5-466d-92c4-5199a0754b17',
+          materialId: 'material-1',
+          name: 'photo.png',
+          mimeType: 'image/png',
+          size: 4096,
+          url: sourceUrl
+        }
+      },
+      title: 'Учебная фотография'
+    }
+
+    render(<StudyFileBlockView block={block} />)
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Развернуть фотографию «Учебная фотография»'
+      })
+    )
+
+    const dialog = screen.getByRole('dialog', {
+      name: 'Учебная фотография'
+    })
+
+    expect(
+      within(dialog).getByRole('img', {
+        name: 'Учебная фотография'
+      })
+    ).toHaveAttribute('src', sourceUrl)
+
+    expect(dialog.querySelector('[data-study-image-fullscreen]')).toBeInTheDocument()
+
+    await user.click(
+      within(dialog).getByRole('button', {
+        name: 'Свернуть фотографию «Учебная фотография»'
+      })
+    )
+
+    expect(
+      screen.queryByRole('dialog', {
+        name: 'Учебная фотография'
+      })
+    ).not.toBeInTheDocument()
   })
 
   it('rejects insecure remote image URLs', () => {

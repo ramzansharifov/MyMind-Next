@@ -1,3 +1,4 @@
+import * as Dialog from '@radix-ui/react-dialog'
 import {
   CircleAlert,
   ExternalLink,
@@ -5,7 +6,9 @@ import {
   FileAudio,
   FileImage,
   FileVideo,
-  LoaderCircle
+  LoaderCircle,
+  Maximize2,
+  Minimize2
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -178,34 +181,113 @@ export function StudyFileBlockView({
   if (block.type === 'image') {
     const imageHeight = block.imageHeight ?? 360
 
-    return (
-      <figure className="overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)]">
-        <MediaTitleBar title={customTitle} />
+    const expandImageLabel = `Развернуть фотографию «${accessibleTitle}»`
+    const collapseImageLabel = `Свернуть фотографию «${accessibleTitle}»`
 
-        <div
-          className="flex w-full items-center justify-center overflow-hidden bg-black/20"
-          style={{
-            height: `${imageHeight}px`
-          }}
-        >
-          <img
-            src={sourceUrl}
-            alt={customTitle}
-            loading="lazy"
-            referrerPolicy="no-referrer"
-            className={cn(
-              'size-full',
-              (block.imageFit ?? 'contain') === 'cover' ? 'object-cover' : 'object-contain'
-            )}
-            onLoad={() => {
-              setFailedSourceKey(null)
+    const imageFitClassName =
+      (block.imageFit ?? 'contain') === 'cover' ? 'object-cover' : 'object-contain'
+
+    function handleImageLoad(): void {
+      setFailedSourceKey(null)
+    }
+
+    function handleImageError(): void {
+      setFailedSourceKey(sourceKey)
+    }
+
+    return (
+      <Dialog.Root>
+        <figure className="overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)]">
+          <MediaTitleBar title={customTitle} />
+
+          <div
+            className="group relative flex w-full items-center justify-center overflow-hidden bg-black/20"
+            style={{
+              height: `${imageHeight}px`
             }}
-            onError={() => {
-              setFailedSourceKey(sourceKey)
-            }}
-          />
-        </div>
-      </figure>
+          >
+            <img
+              data-study-image-preview
+              src={sourceUrl}
+              alt={accessibleTitle}
+              loading="lazy"
+              referrerPolicy="no-referrer"
+              className={cn('size-full', imageFitClassName)}
+              onLoad={handleImageLoad}
+              onError={handleImageError}
+            />
+
+            <Dialog.Trigger asChild>
+              <button
+                type="button"
+                aria-label={expandImageLabel}
+                title={expandImageLabel}
+                className={cn(
+                  'absolute top-3 right-3 z-10 flex size-9 items-center justify-center rounded-lg',
+                  'border border-white/10 bg-black/60 text-white shadow-lg backdrop-blur-sm',
+                  'opacity-80 transition-all',
+                  'hover:scale-[1.03] hover:bg-black/75 hover:opacity-100',
+                  'focus-visible:scale-[1.03] focus-visible:opacity-100',
+                  'outline-none focus-visible:ring-2 focus-visible:ring-violet-400/70'
+                )}
+              >
+                <Maximize2 aria-hidden="true" className="size-4" />
+              </button>
+            </Dialog.Trigger>
+          </div>
+        </figure>
+
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-[69] bg-black/80 backdrop-blur-[3px]" />
+
+          <Dialog.Content
+            data-study-image-fullscreen-dialog
+            className="fixed inset-0 z-[70] grid min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden bg-[#07080a] outline-none"
+          >
+            <header className="flex h-12 min-w-0 items-center justify-between gap-4 border-b border-white/10 bg-black/30 px-4">
+              <Dialog.Title className="min-w-0 truncate text-sm font-medium text-white">
+                {accessibleTitle}
+              </Dialog.Title>
+
+              <Dialog.Close asChild>
+                <button
+                  type="button"
+                  aria-label={collapseImageLabel}
+                  aria-keyshortcuts="Escape"
+                  title={collapseImageLabel}
+                  className={cn(
+                    'flex size-8 shrink-0 items-center justify-center rounded-lg',
+                    'text-white/70 transition-colors outline-none',
+                    'hover:bg-white/10 hover:text-white',
+                    'focus-visible:ring-2 focus-visible:ring-violet-400/70'
+                  )}
+                >
+                  <Minimize2 aria-hidden="true" className="size-4" />
+                </button>
+              </Dialog.Close>
+            </header>
+
+            <Dialog.Description className="sr-only">
+              Полноэкранный просмотр фотографии. Нажмите Escape или кнопку сворачивания, чтобы
+              вернуться к материалу.
+            </Dialog.Description>
+
+            <div className="min-h-0 overflow-hidden p-4">
+              <img
+                data-study-image-fullscreen
+                src={sourceUrl}
+                alt={accessibleTitle}
+                loading="eager"
+                draggable={false}
+                referrerPolicy="no-referrer"
+                className="block size-full object-contain select-none"
+                onLoad={handleImageLoad}
+                onError={handleImageError}
+              />
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
     )
   }
 
