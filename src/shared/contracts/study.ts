@@ -45,6 +45,11 @@ export const STUDY_FOLDER_ICON_NAMES = [
   'shopping',
   'achievements',
   'checklist',
+  'personal',
+  'documents',
+  'downloads',
+  'team',
+  'weather',
   'sport'
 ] as const
 

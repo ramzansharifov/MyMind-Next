@@ -183,6 +183,26 @@ export const STUDY_FOLDER_ICON_OPTIONS = [
     label: 'Задачи'
   },
   {
+    value: 'personal',
+    label: 'Личное'
+  },
+  {
+    value: 'documents',
+    label: 'Документы'
+  },
+  {
+    value: 'downloads',
+    label: 'Загрузки'
+  },
+  {
+    value: 'team',
+    label: 'Команда'
+  },
+  {
+    value: 'weather',
+    label: 'Погода'
+  },
+  {
     value: 'sport',
     label: 'Спорт'
   }

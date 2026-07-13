@@ -12,6 +12,6 @@ describe('STUDY_FOLDER_ICON_OPTIONS', () => {
   })
 
   it('contains the complete expanded folder icon set', () => {
-    expect(STUDY_FOLDER_ICON_OPTIONS).toHaveLength(45)
+    expect(STUDY_FOLDER_ICON_OPTIONS).toHaveLength(50)
   })
 })
