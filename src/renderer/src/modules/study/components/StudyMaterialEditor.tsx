@@ -1,10 +1,4 @@
-import {
-  BookOpen,
-  Check,
-  Edit3,
-  LoaderCircle,
-  Pencil
-} from 'lucide-react'
+import { BookOpen, Check, Edit3, LoaderCircle, Pencil } from 'lucide-react'
 import * as Tabs from '@radix-ui/react-tabs'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
@@ -266,10 +260,7 @@ export function StudyMaterialEditor({
           </h1>
         </div>
 
-        <Tooltip
-          content="Переименовать материал"
-          side="bottom"
-        >
+        <Tooltip content="Переименовать материал" side="bottom">
           <StudyActionButton
             type="button"
             aria-label="Переименовать материал"
@@ -278,9 +269,7 @@ export function StudyMaterialEditor({
           >
             <Pencil aria-hidden="true" />
 
-            <span className="max-[760px]:hidden">
-              Переименовать
-            </span>
+            <span className="max-[760px]:hidden">Переименовать</span>
           </StudyActionButton>
         </Tooltip>
         <SaveStatus state={saveState} />

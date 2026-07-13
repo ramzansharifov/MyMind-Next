@@ -37,13 +37,10 @@ export const studyClient = {
       title
     })
   },
-  duplicateNode(
-    id: string
-  ): Promise<DuplicateStudyNodeResult> {
-    return getStudyApi()
-      .duplicateNode({
-        id
-      })
+  duplicateNode(id: string): Promise<DuplicateStudyNodeResult> {
+    return getStudyApi().duplicateNode({
+      id
+    })
   },
   updateFolderIcon(id: string, icon: StudyFolderIconName): Promise<StudyNode> {
     return getStudyApi().updateFolderIcon({

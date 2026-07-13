@@ -207,10 +207,9 @@ export const renameStudyNodeInputSchema = z.object({
   id: z.string().min(1),
   title: z.string().trim().min(1).max(120)
 })
-export const duplicateStudyNodeInputSchema =
-  z.object({
-    id: z.string().min(1)
-  })
+export const duplicateStudyNodeInputSchema = z.object({
+  id: z.string().min(1)
+})
 export const updateStudyFolderIconInputSchema = z.object({
   id: z.string().min(1),
   icon: studyFolderIconSchema

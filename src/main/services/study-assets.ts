@@ -206,60 +206,32 @@ export async function duplicateStudyAssetsForDocument(
   targetMaterialId: string,
   document: StudyDocument
 ): Promise<StudyDocument> {
-  assertSafeAssetSegment(
-    targetMaterialId,
-    'target material id'
-  )
+  assertSafeAssetSegment(targetMaterialId, 'target material id')
 
-  const duplicatedAssets =
-    new Map<
-      string,
-      StudyLocalAsset
-    >()
+  const duplicatedAssets = new Map<string, StudyLocalAsset>()
 
   try {
     const blocks: StudyBlock[] = []
 
     for (const block of document.blocks) {
-      if (
-        !isStudyAssetBlock(block) ||
-        block.source.type !== 'local' ||
-        !block.source.asset
-      ) {
+      if (!isStudyAssetBlock(block) || block.source.type !== 'local' || !block.source.asset) {
         blocks.push(block)
         continue
       }
 
-      const sourceAsset =
-        block.source.asset
+      const sourceAsset = block.source.asset
 
-      assertSafeAssetSegment(
-        sourceAsset.materialId,
-        'source material id'
-      )
+      assertSafeAssetSegment(sourceAsset.materialId, 'source material id')
 
-      assertSafeAssetSegment(
-        sourceAsset.id,
-        'source asset id'
-      )
+      assertSafeAssetSegment(sourceAsset.id, 'source asset id')
 
-      if (
-        !isSafeAssetFileName(
-          sourceAsset.name
-        )
-      ) {
-        throw new Error(
-          'Некорректное имя вложения'
-        )
+      if (!isSafeAssetFileName(sourceAsset.name)) {
+        throw new Error('Некорректное имя вложения')
       }
 
-      const sourceAssetKey =
-        `${sourceAsset.materialId}:${sourceAsset.id}`
+      const sourceAssetKey = `${sourceAsset.materialId}:${sourceAsset.id}`
 
-      let duplicatedAsset =
-        duplicatedAssets.get(
-          sourceAssetKey
-        )
+      let duplicatedAsset = duplicatedAssets.get(sourceAssetKey)
 
       if (!duplicatedAsset) {
         const sourcePath = join(
@@ -269,61 +241,37 @@ export async function duplicateStudyAssetsForDocument(
           sourceAsset.name
         )
 
-        const sourceStats =
-          await stat(sourcePath)
+        const sourceStats = await stat(sourcePath).catch(() => null)
 
-        if (!sourceStats.isFile()) {
-          throw new Error(
-            `Вложение «${sourceAsset.name}» не найдено`
-          )
+        if (!sourceStats || !sourceStats.isFile()) {
+          throw new Error(`Вложение «${sourceAsset.name}» не найдено`)
         }
 
-        const targetAssetId =
-          randomUUID()
+        const targetAssetId = randomUUID()
 
-        const targetDirectory = join(
-          getStudyAssetsRoot(),
-          targetMaterialId,
-          targetAssetId
-        )
+        const targetDirectory = join(getStudyAssetsRoot(), targetMaterialId, targetAssetId)
 
-        const targetPath = join(
-          targetDirectory,
-          sourceAsset.name
-        )
+        const targetPath = join(targetDirectory, sourceAsset.name)
 
-        await mkdir(
-          targetDirectory,
-          {
-            recursive: true
-          }
-        )
+        await mkdir(targetDirectory, {
+          recursive: true
+        })
 
-        await copyFile(
-          sourcePath,
-          targetPath
-        )
+        await copyFile(sourcePath, targetPath)
 
         duplicatedAsset = {
           ...sourceAsset,
           id: targetAssetId,
-          materialId:
-            targetMaterialId,
+          materialId: targetMaterialId,
           size: sourceStats.size,
           url: createStudyAssetUrl({
-            materialId:
-              targetMaterialId,
-            assetId:
-              targetAssetId,
-            fileName:
-              sourceAsset.name
+            materialId: targetMaterialId,
+            assetId: targetAssetId,
+            fileName: sourceAsset.name
           })
         }
 
-        duplicatedAssets.set(
-          sourceAssetKey,
-          duplicatedAsset
-        )
+        duplicatedAssets.set(sourceAssetKey, duplicatedAsset)
       }
 
       blocks.push({
@@ -340,16 +288,10 @@ export async function duplicateStudyAssetsForDocument(
       blocks
     }
   } catch (reason: unknown) {
-    await rm(
-      join(
-        getStudyAssetsRoot(),
-        targetMaterialId
-      ),
-      {
-        recursive: true,
-        force: true
-      }
-    ).catch(() => undefined)
+    await rm(join(getStudyAssetsRoot(), targetMaterialId), {
+      recursive: true,
+      force: true
+    }).catch(() => undefined)
 
     throw reason
   }

@@ -20,7 +20,10 @@ describe('App shell', () => {
           listNodes: vi.fn().mockResolvedValue([]),
           createNode: vi.fn(),
           renameNode: vi.fn(),
-          duplicateNode: vi.fn(),
+          duplicateNode: vi.fn().mockImplementation(async ({ id }: { id: string }) => ({
+            rootId: id,
+            nodes: []
+          })),
           deleteNode: vi.fn(),
           updateExpansion: vi.fn(),
           moveNode: vi.fn(),

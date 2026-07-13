@@ -123,13 +123,8 @@ export function StudyHome({
               </div>
 
               <div className="grid w-[22rem] max-w-full shrink-0 grid-cols-2 gap-2 max-[820px]:w-full max-[520px]:grid-cols-1">
-                <StudyActionButton
-                  type="button"
-                  disabled={isLoading}
-                  onClick={onCreateFolder}
-                >
+                <StudyActionButton type="button" disabled={isLoading} onClick={onCreateFolder}>
                   <FolderPlus aria-hidden="true" />
-
                   Новая папка
                 </StudyActionButton>
 
@@ -140,7 +135,6 @@ export function StudyHome({
                   onClick={onCreateMaterial}
                 >
                   <FilePlus2 aria-hidden="true" />
-
                   Новый материал
                 </StudyActionButton>
               </div>
@@ -489,22 +483,13 @@ function StudyHomeEmptyState({
         </p>
 
         <div className="mt-6 grid w-[22rem] max-w-full grid-cols-2 gap-2 max-[460px]:w-full max-[460px]:grid-cols-1">
-          <StudyActionButton
-            type="button"
-            onClick={onCreateFolder}
-          >
+          <StudyActionButton type="button" onClick={onCreateFolder}>
             <FolderPlus aria-hidden="true" />
-
             Создать папку
           </StudyActionButton>
 
-          <StudyActionButton
-            type="button"
-            variant="primary"
-            onClick={onCreateMaterial}
-          >
+          <StudyActionButton type="button" variant="primary" onClick={onCreateMaterial}>
             <FilePlus2 aria-hidden="true" />
-
             Создать материал
           </StudyActionButton>
         </div>

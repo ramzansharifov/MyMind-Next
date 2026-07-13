@@ -273,9 +273,7 @@ export interface StudyApi {
   listNodes(): Promise<StudyNode[]>
   createNode(input: CreateStudyNodeInput): Promise<StudyNode>
   renameNode(input: RenameStudyNodeInput): Promise<StudyNode>
-  duplicateNode(
-    input: DuplicateStudyNodeInput
-  ): Promise<DuplicateStudyNodeResult>
+  duplicateNode(input: DuplicateStudyNodeInput): Promise<DuplicateStudyNodeResult>
   updateFolderIcon(input: UpdateStudyFolderIconInput): Promise<StudyNode>
   deleteNode(nodeId: string): Promise<boolean>
   updateExpansion(input: UpdateStudyNodeExpansionInput): Promise<StudyNode>

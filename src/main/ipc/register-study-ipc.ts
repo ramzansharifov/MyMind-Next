@@ -47,19 +47,11 @@ export function registerStudyIpcHandlers(): void {
 
     return renameStudyNode(input.id, input.title)
   })
-  ipcMain.handle(
-    STUDY_IPC_CHANNELS.duplicateNode,
-    (_event, rawInput: unknown) => {
-      const input =
-        duplicateStudyNodeInputSchema.parse(
-          rawInput
-        )
+  ipcMain.handle(STUDY_IPC_CHANNELS.duplicateNode, (_event, rawInput: unknown) => {
+    const input = duplicateStudyNodeInputSchema.parse(rawInput)
 
-      return duplicateStudyNode(
-        input.id
-      )
-    }
-  )
+    return duplicateStudyNode(input.id)
+  })
   ipcMain.handle(STUDY_IPC_CHANNELS.updateFolderIcon, (_event, rawInput: unknown) => {
     const input = updateStudyFolderIconInputSchema.parse(rawInput)
 

@@ -202,9 +202,7 @@ export function StudyPage(): React.JSX.Element {
               }}
               onRename={openRename}
               onDuplicate={(node) => {
-                void study.duplicateNode(
-                  node.id
-                )
+                void study.duplicateNode(node.id)
               }}
               onDelete={setDeleteTarget}
               onCreateFolder={(parentId) => {
@@ -323,10 +321,7 @@ export function StudyPage(): React.JSX.Element {
 
           <AlertDialog.Content className="fixed top-1/2 left-1/2 z-50 w-[min(420px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-5">
             <AlertDialog.Title className="text-lg font-semibold text-[var(--app-text)]">
-              {renameTarget?.type ===
-              'folder'
-                ? 'Переименовать папку'
-                : 'Переименовать материал'}
+              {renameTarget?.type === 'folder' ? 'Переименовать папку' : 'Переименовать материал'}
             </AlertDialog.Title>
 
             <input
@@ -470,36 +465,20 @@ function FolderWorkspace({
               </div>
 
               <div className="grid w-[44rem] max-w-full shrink-0 grid-cols-4 gap-2 max-[920px]:w-full max-[760px]:grid-cols-2 max-[620px]:grid-cols-1">
-                <StudyActionButton
-                  type="button"
-                  onClick={onRename}
-                >
+                <StudyActionButton type="button" onClick={onRename}>
                   <Pencil aria-hidden="true" />
-
                   Переименовать
                 </StudyActionButton>
 
-                <FolderIconPicker
-                  value={activeIcon}
-                  onChange={onIconChange}
-                />
+                <FolderIconPicker value={activeIcon} onChange={onIconChange} />
 
-                <StudyActionButton
-                  type="button"
-                  onClick={onCreateFolder}
-                >
+                <StudyActionButton type="button" onClick={onCreateFolder}>
                   <FolderPlus aria-hidden="true" />
-
                   Новая папка
                 </StudyActionButton>
 
-                <StudyActionButton
-                  type="button"
-                  variant="primary"
-                  onClick={onCreateMaterial}
-                >
+                <StudyActionButton type="button" variant="primary" onClick={onCreateMaterial}>
                   <FilePlus2 aria-hidden="true" />
-
                   Новый материал
                 </StudyActionButton>
               </div>
@@ -564,14 +543,8 @@ function FolderIconPicker({
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
-        <StudyActionButton
-          type="button"
-        >
-          <Palette
-            aria-hidden="true"
-            className="text-violet-300"
-          />
-
+        <StudyActionButton type="button">
+          <Palette aria-hidden="true" className="text-violet-300" />
           Иконка
         </StudyActionButton>
       </DropdownMenu.Trigger>

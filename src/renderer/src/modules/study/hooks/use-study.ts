@@ -16,9 +16,7 @@ interface UseStudyResult {
   selectNode: (nodeId: string | null) => void
   createNode: (input: CreateStudyNodeInput) => Promise<StudyNode | null>
   renameNode: (nodeId: string, title: string) => Promise<void>
-  duplicateNode: (
-    nodeId: string
-  ) => Promise<StudyNode | null>
+  duplicateNode: (nodeId: string) => Promise<StudyNode | null>
   updateFolderIcon: (nodeId: string, icon: StudyFolderIconName) => Promise<void>
   deleteNode: (nodeId: string) => Promise<void>
   toggleFolder: (node: StudyNode) => Promise<void>
@@ -85,44 +83,34 @@ export function useStudy(): UseStudyResult {
       setError(reason instanceof Error ? reason.message : 'Не удалось переименовать элемент')
     }
   }, [])
-  const duplicateNode =
-    useCallback(
-      async (
-        nodeId: string
-      ): Promise<StudyNode | null> => {
-        try {
-          setError(null)
+  const duplicateNode = useCallback(async (nodeId: string): Promise<StudyNode | null> => {
+    try {
+      setError(null)
 
-          const result =
-            await studyClient
-              .duplicateNode(
-                nodeId
-              )
+      const result = await studyClient.duplicateNode(nodeId)
 
-          setNodes(result.nodes)
-          setSelectedNodeId(
-            result.rootId
-          )
+      const duplicatedRoot = result.nodes.find((node) => node.id === result.rootId)
 
-          return (
-            result.nodes.find(
-              (node) =>
-                node.id ===
-                result.rootId
-            ) ?? null
-          )
-        } catch (reason: unknown) {
-          setError(
-            reason instanceof Error
-              ? reason.message
-              : 'Не удалось дублировать элемент'
-          )
+      if (!duplicatedRoot) {
+        throw new Error('Сервер не вернул корневой элемент копии')
+      }
 
-          return null
-        }
-      },
-      []
-    )
+      const uniqueNodeIds = new Set(result.nodes.map((node) => node.id))
+
+      if (uniqueNodeIds.size !== result.nodes.length) {
+        throw new Error('Сервер вернул некорректное дерево копии')
+      }
+
+      setNodes(result.nodes)
+      setSelectedNodeId(duplicatedRoot.id)
+
+      return duplicatedRoot
+    } catch (reason: unknown) {
+      setError(reason instanceof Error ? reason.message : 'Не удалось дублировать элемент')
+
+      return null
+    }
+  }, [])
   const updateFolderIcon = useCallback(
     async (nodeId: string, icon: StudyFolderIconName): Promise<void> => {
       try {

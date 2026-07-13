@@ -27,9 +27,7 @@ const api: MyMindApi = {
       ipcRenderer.invoke(
         STUDY_IPC_CHANNELS.duplicateNode,
         input
-      ) as Promise<
-        DuplicateStudyNodeResult
-      >,
+      ) as Promise<DuplicateStudyNodeResult>,
     updateFolderIcon: (input) =>
       ipcRenderer.invoke(STUDY_IPC_CHANNELS.updateFolderIcon, input) as Promise<StudyNode>,
 
