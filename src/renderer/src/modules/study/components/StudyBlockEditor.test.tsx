@@ -33,6 +33,45 @@ describe('StudyBlockEditor', () => {
     expect(content).toHaveAttribute('data-state', 'open')
   })
 
+  it('uses a two-pixel accent border for the active block', () => {
+    const document: StudyDocument = {
+      version: 1,
+      blocks: [
+        {
+          id: 'heading-first',
+          type: 'heading',
+          text: 'Первый блок',
+          level: 1
+        },
+        {
+          id: 'heading-second',
+          type: 'heading',
+          text: 'Второй блок',
+          level: 1
+        }
+      ]
+    }
+
+    render(
+      <StudyBlockEditor
+        materialId="material-1"
+        document={document}
+        mode="edit"
+        onChange={vi.fn()}
+      />
+    )
+
+    const firstCard = screen.getByDisplayValue('Первый блок').closest('section')
+    const secondCard = screen.getByDisplayValue('Второй блок').closest('section')
+
+    expect(firstCard).toHaveClass('border-2', 'border-violet-500/40', 'p-[11px]')
+    expect(secondCard).toHaveClass('border', 'border-[var(--app-border)]', 'p-3')
+
+    fireEvent.mouseDown(secondCard!)
+
+    expect(secondCard).toHaveClass('border-2', 'border-violet-500/40', 'p-[11px]')
+    expect(firstCard).toHaveClass('border', 'border-[var(--app-border)]', 'p-3')
+  })
   it('keeps a trailing divider visible when the final heading section is collapsed', () => {
     const document: StudyDocument = {
       version: 1,

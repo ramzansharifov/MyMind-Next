@@ -709,11 +709,11 @@ function StudyBlockCard({
     <Collapsible.Root open={open} onOpenChange={setOpen} asChild>
       <section
         className={cn(
-          'group rounded-xl border bg-[var(--app-surface)] p-3 transition-[border-color,box-shadow]',
+          'group rounded-xl bg-[var(--app-surface)] transition-[border-color,box-shadow]',
           isDragging && 'shadow-none',
           isActive
-            ? 'border-violet-500/40'
-            : 'border-[var(--app-border)] hover:border-[var(--app-border-strong)]'
+            ? 'border-2 border-violet-500/40 p-[11px]'
+            : 'border border-[var(--app-border)] p-3 hover:border-[var(--app-border-strong)]'
         )}
         onMouseDown={onActivate}
       >
