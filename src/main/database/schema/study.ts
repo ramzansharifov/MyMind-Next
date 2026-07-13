@@ -1,4 +1,5 @@
 import { index, integer, sqliteTable, text, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core'
+import { STUDY_FOLDER_ICON_NAMES } from '../../../shared/contracts/study'
 
 export const studyNodes = sqliteTable(
   'study_nodes',
@@ -12,20 +13,7 @@ export const studyNodes = sqliteTable(
     }),
     title: text('title').notNull(),
     icon: text('icon', {
-      enum: [
-        'folder',
-        'book',
-        'graduation',
-        'science',
-        'calculator',
-        'code',
-        'languages',
-        'history',
-        'microscope',
-        'art',
-        'music',
-        'work'
-      ]
+      enum: STUDY_FOLDER_ICON_NAMES
     }),
     position: integer('position').notNull(),
     isExpanded: integer('is_expanded', {
