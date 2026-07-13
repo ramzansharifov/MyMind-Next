@@ -17,6 +17,7 @@ describe('createContentSecurityPolicy', () => {
 
     expect(policy).toContain('http://localhost:*')
     expect(policy).toContain('ws://localhost:*')
+    expect(policy).toContain("script-src 'self' 'unsafe-inline'")
   })
 
   it('contains mandatory restrictions', () => {
@@ -24,6 +25,7 @@ describe('createContentSecurityPolicy', () => {
 
     expect(policy).toContain("default-src 'self'")
     expect(policy).toContain("script-src 'self'")
+    expect(policy).not.toContain("script-src 'self' 'unsafe-inline'")
     expect(policy).toContain("object-src 'none'")
     expect(policy).toContain("base-uri 'none'")
     expect(policy).toContain("form-action 'none'")
