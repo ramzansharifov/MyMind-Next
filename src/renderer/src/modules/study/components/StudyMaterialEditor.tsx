@@ -1,4 +1,4 @@
-import { BookOpen, Check, Edit3, LoaderCircle, Pencil } from 'lucide-react'
+import { ArrowLeft, BookOpen, Check, Edit3, LoaderCircle, Pencil } from 'lucide-react'
 import * as Tabs from '@radix-ui/react-tabs'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
@@ -17,6 +17,7 @@ import { StudyReadNavigation } from './StudyReadNavigation'
 interface StudyMaterialEditorProps {
   node: StudyNode
   onRename: () => void
+  onBack?: () => void
   navigation: StudyInternalLinkNavigationRequest | null
   onNavigationHandled: (requestId: number) => void
 }
@@ -26,6 +27,7 @@ type SaveState = 'saved' | 'dirty' | 'saving' | 'error'
 export function StudyMaterialEditor({
   node,
   onRename,
+  onBack,
   navigation,
   onNavigationHandled
 }: StudyMaterialEditorProps): React.JSX.Element {
@@ -134,7 +136,27 @@ export function StudyMaterialEditor({
           const scrollContainer = readScrollRef.current
 
           if (scrollContainer) {
-            if (navigation.headingId) {
+            if (navigation.revealSourcePosition !== undefined) {
+              const target = scrollContainer.querySelector<HTMLElement>(
+                `[data-study-internal-link-position="${navigation.revealSourcePosition}"]`
+              )
+
+              if (target) {
+                const containerRect = scrollContainer.getBoundingClientRect()
+                const targetRect = target.getBoundingClientRect()
+                const top = scrollContainer.scrollTop + targetRect.top - containerRect.top - 80
+
+                scrollContainer.scrollTo({ top: Math.max(top, 0), behavior: 'smooth' })
+                target.focus({ preventScroll: true })
+                target.animate(
+                  [
+                    { boxShadow: '0 0 0 4px rgb(139 92 246 / 35%)' },
+                    { boxShadow: '0 0 0 0 rgb(139 92 246 / 0%)' }
+                  ],
+                  { duration: 1400, easing: 'ease-out' }
+                )
+              }
+            } else if (navigation.headingId) {
               const target = window.document.getElementById(
                 getStudyHeadingElementId(navigation.headingId)
               )
@@ -250,6 +272,19 @@ export function StudyMaterialEditor({
   return (
     <section className="flex h-full min-h-0 flex-col">
       <header className="flex min-h-20 shrink-0 items-center gap-4 border-b border-[var(--app-border)] px-6">
+        {onBack && (
+          <Tooltip content="Вернуться к внутренней ссылке" side="bottom">
+            <StudyActionButton
+              type="button"
+              aria-label="Вернуться к внутренней ссылке"
+              className="w-auto shrink-0 px-3"
+              onClick={onBack}
+            >
+              <ArrowLeft aria-hidden="true" />
+              <span className="max-[760px]:hidden">Назад</span>
+            </StudyActionButton>
+          </Tooltip>
+        )}
         <div className="min-w-0 flex-1">
           <p className="text-[11px] font-semibold tracking-[0.08em] text-violet-300 uppercase">
             Материал

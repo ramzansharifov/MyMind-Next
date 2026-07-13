@@ -217,10 +217,12 @@ function StudyInternalLinkNodeView({ node, editor, getPos }: NodeViewProps): Rea
       return
     }
 
+    const position = getPos()
     const detail: StudyInternalLinkNavigateDetail = {
       kind: attributes.targetKind,
       materialId: attributes.materialId,
-      headingId: attributes.headingId
+      headingId: attributes.headingId,
+      sourcePosition: typeof position === 'number' ? position : undefined
     }
 
     window.dispatchEvent(
@@ -288,6 +290,7 @@ function StudyInternalLinkNodeView({ node, editor, getPos }: NodeViewProps): Rea
         data-material-id={attributes.materialId}
         data-heading-id={attributes.headingId ?? undefined}
         data-missing={isMissing ? 'true' : 'false'}
+        data-study-internal-link-position={getPos()}
         className={cn('study-internal-link-node', isMissing && 'study-internal-link-node--missing')}
         onPointerDown={handlePointerDown}
         onClick={(event) => {

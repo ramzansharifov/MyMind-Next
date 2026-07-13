@@ -8,8 +8,10 @@ export interface StudyInternalLinkNavigateDetail {
   kind: StudyInternalLinkTargetKind
   materialId: string
   headingId: string | null
+  sourcePosition?: number
 }
 
 export interface StudyInternalLinkNavigationRequest extends StudyInternalLinkNavigateDetail {
   requestId: number
+  revealSourcePosition?: number
 }

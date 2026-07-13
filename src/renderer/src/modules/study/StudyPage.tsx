@@ -46,6 +46,12 @@ export function StudyPage(): React.JSX.Element {
 
   const [internalNavigation, setInternalNavigation] =
     useState<StudyInternalLinkNavigationRequest | null>(null)
+  const [internalLinkHistory, setInternalLinkHistory] = useState<
+    Array<{
+      materialId: string
+      sourcePosition?: number
+    }>
+  >([])
 
   const internalNavigationSequenceRef = useRef(0)
 
@@ -84,6 +90,16 @@ export function StudyPage(): React.JSX.Element {
         return
       }
 
+      if (selectedNode?.type === 'material' && selectedNode.id !== detail.materialId) {
+        setInternalLinkHistory((current) => [
+          ...current,
+          {
+            materialId: selectedNode.id,
+            sourcePosition: detail.sourcePosition
+          }
+        ])
+      }
+
       internalNavigationSequenceRef.current += 1
 
       setInternalNavigation({
@@ -101,7 +117,7 @@ export function StudyPage(): React.JSX.Element {
     return () => {
       window.removeEventListener(STUDY_INTERNAL_LINK_NAVIGATE_EVENT, handleInternalNavigation)
     }
-  }, [selectStudyNode])
+  }, [selectStudyNode, selectedNode])
 
   return (
     <section
@@ -251,6 +267,28 @@ export function StudyPage(): React.JSX.Element {
             onRename={() => {
               openRename(selectedNode)
             }}
+            onBack={
+              internalLinkHistory.length > 0
+                ? () => {
+                    const backTarget = internalLinkHistory.at(-1)
+
+                    if (!backTarget) {
+                      return
+                    }
+
+                    internalNavigationSequenceRef.current += 1
+                    setInternalNavigation({
+                      kind: 'material',
+                      materialId: backTarget.materialId,
+                      headingId: null,
+                      revealSourcePosition: backTarget.sourcePosition,
+                      requestId: internalNavigationSequenceRef.current
+                    })
+                    selectStudyNode(backTarget.materialId)
+                    setInternalLinkHistory((current) => current.slice(0, -1))
+                  }
+                : undefined
+            }
             navigation={
               internalNavigation?.materialId === selectedNode.id ? internalNavigation : null
             }
