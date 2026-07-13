@@ -11,7 +11,7 @@ describe('STUDY_FOLDER_ICON_OPTIONS', () => {
     expect(new Set(optionValues).size).toBe(optionValues.length)
   })
 
-  it('contains at least twice as many options as the original icon set', () => {
-    expect(STUDY_FOLDER_ICON_OPTIONS.length).toBeGreaterThanOrEqual(24)
+  it('contains the complete expanded folder icon set', () => {
+    expect(STUDY_FOLDER_ICON_OPTIONS).toHaveLength(45)
   })
 })

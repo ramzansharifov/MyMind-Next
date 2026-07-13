@@ -619,7 +619,7 @@ function FolderIconPicker({
             Иконка папки
           </DropdownMenu.Label>
 
-          <div className="grid grid-cols-5 gap-1">
+          <div className="grid max-h-[28rem] grid-cols-5 gap-1 overflow-y-auto pr-1">
             {STUDY_FOLDER_ICON_OPTIONS.map((option) => (
               <Tooltip key={option.value} content={option.label} side="top">
                 <DropdownMenu.Item

@@ -123,6 +123,66 @@ export const STUDY_FOLDER_ICON_OPTIONS = [
     label: 'Цели'
   },
   {
+    value: 'reminders',
+    label: 'Напоминания'
+  },
+  {
+    value: 'bookmarks',
+    label: 'Закладки'
+  },
+  {
+    value: 'resources',
+    label: 'Ресурсы'
+  },
+  {
+    value: 'calendar',
+    label: 'Календарь'
+  },
+  {
+    value: 'cloud',
+    label: 'Облако'
+  },
+  {
+    value: 'direction',
+    label: 'Направления'
+  },
+  {
+    value: 'database',
+    label: 'База данных'
+  },
+  {
+    value: 'games',
+    label: 'Игры'
+  },
+  {
+    value: 'home',
+    label: 'Дом'
+  },
+  {
+    value: 'mail',
+    label: 'Почта'
+  },
+  {
+    value: 'network',
+    label: 'Сеть'
+  },
+  {
+    value: 'security',
+    label: 'Безопасность'
+  },
+  {
+    value: 'shopping',
+    label: 'Покупки'
+  },
+  {
+    value: 'achievements',
+    label: 'Достижения'
+  },
+  {
+    value: 'checklist',
+    label: 'Задачи'
+  },
+  {
     value: 'sport',
     label: 'Спорт'
   }

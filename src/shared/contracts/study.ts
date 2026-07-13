@@ -30,6 +30,21 @@ export const STUDY_FOLDER_ICON_NAMES = [
   'law',
   'favorites',
   'goals',
+  'reminders',
+  'bookmarks',
+  'resources',
+  'calendar',
+  'cloud',
+  'direction',
+  'database',
+  'games',
+  'home',
+  'mail',
+  'network',
+  'security',
+  'shopping',
+  'achievements',
+  'checklist',
   'sport'
 ] as const
 
