@@ -516,7 +516,9 @@ export async function duplicateStudyNode(id: string): Promise<DuplicateStudyNode
 
   const now = new Date()
 
-  const nodeIdMap = new Map(subtree.map((node) => [node.id, randomUUID()]))
+  const nodeIdMap = new Map<string, string>(
+    subtree.map((node): [string, string] => [node.id, randomUUID()])
+  )
 
   const rootId = nodeIdMap.get(source.id)
 
@@ -567,9 +569,9 @@ export async function duplicateStudyNode(id: string): Promise<DuplicateStudyNode
 
   const sourceMaterialNodes = subtree.filter((node) => node.type === 'material')
 
-  const duplicatedMaterialIds = sourceMaterialNodes
+  const duplicatedMaterialIds: string[] = sourceMaterialNodes
     .map((node) => nodeIdMap.get(node.id))
-    .filter((materialId): materialId is string => Boolean(materialId))
+    .filter((materialId): materialId is string => materialId !== undefined)
 
   const preparedMaterials: PreparedStudyMaterialDuplicate[] = []
 

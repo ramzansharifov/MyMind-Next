@@ -38,7 +38,13 @@ export const studyClient = {
     })
   },
   duplicateNode(id: string): Promise<DuplicateStudyNodeResult> {
-    return getStudyApi().duplicateNode({
+    const api = getStudyApi() as Partial<StudyApi>
+
+    if (typeof api.duplicateNode !== 'function') {
+      throw new Error('API дублирования не загружен. Полностью перезапусти приложение MyMind.')
+    }
+
+    return api.duplicateNode({
       id
     })
   },
