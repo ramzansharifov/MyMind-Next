@@ -6,7 +6,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/renderer/src/test/setup.ts'],
-    include: ['src/renderer/src/**/*.test.{ts,tsx}'],
+    include: ['src/renderer/src/**/*.test.{ts,tsx}', 'src/main/**/*.test.ts'],
     exclude: ['node_modules/**', 'dist/**', 'out/**', 'coverage/**', '.filetags/**'],
     pool: 'threads',
     isolate: false,

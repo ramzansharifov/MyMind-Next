@@ -142,7 +142,7 @@ export function StudyMermaidBlock({
 
   return (
     <TooltipProvider delayDuration={250}>
-      <section className="overflow-hidden rounded-xl border border-[var(--app-border)] bg-[#0c0d10]">
+      <section className="overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-code-surface)]">
         <header className="flex min-h-11 items-center justify-between gap-3 border-b border-[var(--app-border)] bg-white/[0.025] px-3">
           <div className="flex min-w-0 items-center gap-2">
             <Workflow aria-hidden="true" className="size-4 shrink-0 text-violet-300" />

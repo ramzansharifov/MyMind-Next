@@ -16,6 +16,8 @@ const defaultColors = [
 
 interface ColorPickerProps {
   value: string
+  displayColor?: string
+  displayLabel?: string
   ariaLabel: string
   disabled?: boolean
   colors?: string[]
@@ -26,6 +28,8 @@ interface ColorPickerProps {
 
 export function ColorPicker({
   value,
+  displayColor = value,
+  displayLabel = value.toUpperCase(),
   ariaLabel,
   disabled = false,
   colors = defaultColors,
@@ -54,12 +58,12 @@ export function ColorPicker({
             aria-hidden="true"
             className="size-5 shrink-0 rounded-md border border-white/15"
             style={{
-              backgroundColor: value
+              backgroundColor: displayColor
             }}
           />
 
           <span className="min-w-0 flex-1 truncate text-left text-xs text-(--app-muted)">
-            {value.toUpperCase()}
+            {displayLabel}
           </span>
 
           <Palette aria-hidden="true" className="size-4 shrink-0 text-(--app-muted)" />

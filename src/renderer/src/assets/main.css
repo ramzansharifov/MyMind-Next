@@ -20,7 +20,7 @@
 
   --app-workspace: #0a0b0d;
   --app-sidebar: #101114;
-  --app-sidebar-active: #211d31;
+  --app-sidebar-active: color-mix(in srgb, var(--app-accent-500) 14%, var(--app-sidebar));
   --app-surface: #121419;
   --app-surface-raised: #181a20;
   --app-border: #252830;
@@ -30,6 +30,129 @@
   --app-tooltip: #20232a;
   --app-tooltip-border: #343842;
   --app-header-height: 4rem;
+
+  --app-overlay-soft: rgb(255 255 255 / 4%);
+  --app-overlay-faint: rgb(255 255 255 / 2.5%);
+  --app-code-surface: #090a0c;
+  --app-reader-surface: #0b0c10;
+
+  --app-accent-50: #f5f3ff;
+  --app-accent-100: #ede9fe;
+  --app-accent-200: #ddd6fe;
+  --app-accent-300: #c4b5fd;
+  --app-accent-400: #a78bfa;
+  --app-accent-500: #8b5cf6;
+  --app-accent-600: #7c3aed;
+  --app-accent-700: #6d28d9;
+  --app-accent-800: #5b21b6;
+  --app-accent-900: #4c1d95;
+  --app-accent-950: #2e1065;
+
+  --color-violet-50: var(--app-accent-50);
+  --color-violet-100: var(--app-accent-100);
+  --color-violet-200: var(--app-accent-200);
+  --color-violet-300: var(--app-accent-300);
+  --color-violet-400: var(--app-accent-400);
+  --color-violet-500: var(--app-accent-500);
+  --color-violet-600: var(--app-accent-600);
+  --color-violet-700: var(--app-accent-700);
+  --color-violet-800: var(--app-accent-800);
+  --color-violet-900: var(--app-accent-900);
+  --color-violet-950: var(--app-accent-950);
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  color: #18181b;
+  background: #f6f7f9;
+  --app-workspace: #f6f7f9;
+  --app-sidebar: #ffffff;
+  --app-sidebar-active: color-mix(in srgb, var(--app-accent-500) 11%, white);
+  --app-surface: #ffffff;
+  --app-surface-raised: #f9fafb;
+  --app-border: #e2e4e9;
+  --app-border-strong: #cfd3da;
+  --app-text: #18181b;
+  --app-muted: #646a76;
+  --app-tooltip: #ffffff;
+  --app-tooltip-border: #d8dbe2;
+  --app-overlay-soft: rgb(24 24 27 / 4%);
+  --app-overlay-faint: rgb(24 24 27 / 2.5%);
+  --app-code-surface: #f1f3f6;
+  --app-reader-surface: #eef1f5;
+}
+
+:root[data-accent='blue'] {
+  --app-accent-50: #eff6ff;
+  --app-accent-100: #dbeafe;
+  --app-accent-200: #bfdbfe;
+  --app-accent-300: #93c5fd;
+  --app-accent-400: #60a5fa;
+  --app-accent-500: #3b82f6;
+  --app-accent-600: #2563eb;
+  --app-accent-700: #1d4ed8;
+  --app-accent-800: #1e40af;
+  --app-accent-900: #1e3a8a;
+  --app-accent-950: #172554;
+}
+
+:root[data-accent='emerald'] {
+  --app-accent-50: #ecfdf5;
+  --app-accent-100: #d1fae5;
+  --app-accent-200: #a7f3d0;
+  --app-accent-300: #6ee7b7;
+  --app-accent-400: #34d399;
+  --app-accent-500: #10b981;
+  --app-accent-600: #059669;
+  --app-accent-700: #047857;
+  --app-accent-800: #065f46;
+  --app-accent-900: #064e3b;
+  --app-accent-950: #022c22;
+}
+
+:root[data-accent='amber'] {
+  --app-accent-50: #fffbeb;
+  --app-accent-100: #fef3c7;
+  --app-accent-200: #fde68a;
+  --app-accent-300: #fcd34d;
+  --app-accent-400: #fbbf24;
+  --app-accent-500: #f59e0b;
+  --app-accent-600: #d97706;
+  --app-accent-700: #b45309;
+  --app-accent-800: #92400e;
+  --app-accent-900: #78350f;
+  --app-accent-950: #451a03;
+}
+
+:root[data-accent='rose'] {
+  --app-accent-50: #fff1f2;
+  --app-accent-100: #ffe4e6;
+  --app-accent-200: #fecdd3;
+  --app-accent-300: #fda4af;
+  --app-accent-400: #fb7185;
+  --app-accent-500: #f43f5e;
+  --app-accent-600: #e11d48;
+  --app-accent-700: #be123c;
+  --app-accent-800: #9f1239;
+  --app-accent-900: #881337;
+  --app-accent-950: #4c0519;
+}
+
+:root[data-theme='light'] .mymind-rich-text-editor code,
+:root[data-theme='light'] .study-mermaid-source,
+:root[data-theme='light'] .study-latex-source,
+:root[data-theme='light'] .study-markdown-source,
+:root[data-theme='light'] .study-code-block__body,
+:root[data-theme='light'] .study-code-block__editor,
+:root[data-theme='light'] .study-code-block__line-numbers {
+  background: var(--app-code-surface);
+}
+
+:root[data-theme='light'] .study-mermaid-source__pre,
+:root[data-theme='light'] .study-latex-source__pre,
+:root[data-theme='light'] .study-markdown-source__pre,
+:root[data-theme='light'] .study-code-block__pre {
+  color: #27272a;
 }
 
 * {
@@ -65,12 +188,12 @@ button {
 
 ::selection {
   color: #ffffff;
-  background: rgb(124 58 237 / 45%);
+  background: color-mix(in srgb, var(--app-accent-600) 55%, transparent);
 }
 .mymind-rich-text-editor {
   min-height: 1.75rem;
   color: var(--app-text);
-  caret-color: #a78bfa;
+  caret-color: var(--app-accent-400);
   font-size: 0.9375rem;
   line-height: 1.75;
   overflow-wrap: anywhere;
@@ -160,21 +283,21 @@ button {
 }
 
 .mymind-rich-text-editor a {
-  color: #a78bfa;
+  color: var(--app-accent-400);
   text-decoration: underline;
-  text-decoration-color: rgb(167 139 250 / 55%);
+  text-decoration-color: color-mix(in srgb, var(--app-accent-400) 55%, transparent);
   text-underline-offset: 3px;
   cursor: pointer;
 }
 
 .mymind-rich-text-editor a:hover {
-  color: #c4b5fd;
+  color: var(--app-accent-300);
   text-decoration-color: currentColor;
 }
 
 .mymind-rich-text-editor ::selection {
   color: #ffffff;
-  background: rgb(124 58 237 / 48%);
+  background: color-mix(in srgb, var(--app-accent-600) 48%, transparent);
 }
 
 .mymind-rich-text-editor mark {
@@ -191,10 +314,10 @@ button {
   gap: 0.28rem;
   padding: 0.08rem 0.38rem;
 
-  color: #c4b5fd;
+  color: var(--app-accent-300);
   vertical-align: baseline;
-  background: rgb(124 58 237 / 13%);
-  border: 1px solid rgb(139 92 246 / 24%);
+  background: color-mix(in srgb, var(--app-accent-600) 13%, transparent);
+  border: 1px solid color-mix(in srgb, var(--app-accent-500) 24%, transparent);
   border-radius: 0.4rem;
 
   cursor: pointer;
@@ -208,21 +331,21 @@ button {
 }
 
 .study-internal-link-node:hover {
-  color: #ddd6fe;
-  background: rgb(124 58 237 / 20%);
-  border-color: rgb(167 139 250 / 42%);
+  color: var(--app-accent-200);
+  background: color-mix(in srgb, var(--app-accent-600) 20%, transparent);
+  border-color: color-mix(in srgb, var(--app-accent-400) 42%, transparent);
 }
 
 .study-internal-link-node:focus-visible {
-  outline: 2px solid rgb(139 92 246 / 65%);
+  outline: 2px solid color-mix(in srgb, var(--app-accent-500) 65%, transparent);
   outline-offset: 2px;
 }
 
 .study-internal-link-node.ProseMirror-selectednode {
-  color: #ede9fe;
-  background: rgb(124 58 237 / 26%);
-  border-color: #8b5cf6;
-  box-shadow: 0 0 0 2px rgb(139 92 246 / 16%);
+  color: var(--app-accent-100);
+  background: color-mix(in srgb, var(--app-accent-600) 26%, transparent);
+  border-color: var(--app-accent-500);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--app-accent-500) 16%, transparent);
 }
 
 .study-internal-link-node--missing {
@@ -258,7 +381,7 @@ button {
 }
 
 .study-mermaid-source__textarea::selection {
-  background: rgb(124 58 237 / 48%);
+  background: color-mix(in srgb, var(--app-accent-600) 48%, transparent);
 }
 
 .study-mermaid-source .token.comment {
@@ -353,7 +476,7 @@ button {
 }
 
 .study-latex-source__textarea::selection {
-  background: rgb(124 58 237 / 48%);
+  background: color-mix(in srgb, var(--app-accent-600) 48%, transparent);
 }
 
 .study-latex-source .token.keyword,
@@ -462,7 +585,7 @@ button {
 }
 
 .study-markdown-source__textarea::selection {
-  background: rgb(124 58 237 / 48%);
+  background: color-mix(in srgb, var(--app-accent-600) 48%, transparent);
 }
 
 .study-markdown-source .token.title,
@@ -552,14 +675,14 @@ button {
 }
 
 .study-markdown-preview a {
-  color: #a78bfa;
+  color: var(--app-accent-400);
   text-decoration: underline;
-  text-decoration-color: rgb(167 139 250 / 45%);
+  text-decoration-color: color-mix(in srgb, var(--app-accent-400) 45%, transparent);
   text-underline-offset: 0.2em;
 }
 
 .study-markdown-preview a:hover {
-  color: #c4b5fd;
+  color: var(--app-accent-300);
   text-decoration-color: currentColor;
 }
 
@@ -586,7 +709,7 @@ button {
 }
 
 .study-markdown-preview blockquote {
-  border-left: 3px solid rgb(139 92 246 / 55%);
+  border-left: 3px solid color-mix(in srgb, var(--app-accent-500) 55%, transparent);
   padding: 0.25rem 0 0.25rem 1rem;
   color: var(--app-muted);
 }
@@ -664,7 +787,7 @@ button {
 
 .study-markdown-preview input[type='checkbox'] {
   margin-top: 0.42rem;
-  accent-color: #8b5cf6;
+  accent-color: var(--app-accent-500);
 }
 
 .study-markdown-preview img {
@@ -743,7 +866,7 @@ button {
 }
 
 .study-code-block .study-code-block__textarea::selection {
-  background: rgb(124 58 237 / 48%);
+  background: color-mix(in srgb, var(--app-accent-600) 48%, transparent);
 }
 
 .study-code-block .token.comment,
@@ -846,8 +969,8 @@ button {
   --media-primary-color: #f4f4f5;
   --media-secondary-color: rgb(9 10 13 / 92%);
   --media-control-background: transparent;
-  --media-control-hover-background: rgb(139 92 246 / 22%);
-  --media-range-bar-color: #a78bfa;
+  --media-control-hover-background: color-mix(in srgb, var(--app-accent-500) 22%, transparent);
+  --media-range-bar-color: var(--app-accent-400);
   --media-range-thumb-background: #f4f4f5;
   --media-range-track-background: rgb(255 255 255 / 16%);
   --media-font-family: inherit;
@@ -933,8 +1056,8 @@ button {
   height: 4rem;
   border-radius: 9999px;
 
-  --media-control-background: rgb(124 58 237 / 96%);
-  --media-control-hover-background: rgb(139 92 246 / 100%);
+  --media-control-background: color-mix(in srgb, var(--app-accent-600) 96%, transparent);
+  --media-control-hover-background: var(--app-accent-500);
   --media-control-padding: 1rem;
 
   box-shadow: 0 1rem 2.5rem rgb(0 0 0 / 38%);

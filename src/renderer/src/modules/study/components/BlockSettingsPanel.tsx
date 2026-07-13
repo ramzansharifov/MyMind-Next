@@ -24,6 +24,7 @@ import { useState } from 'react'
 import type { StudyAssetKind, StudyBlock } from '../../../../../shared/contracts/study'
 import {
   DEFAULT_DIVIDER_COLOR,
+  DEFAULT_DIVIDER_CSS_COLOR,
   DEFAULT_DIVIDER_THICKNESS,
   DEFAULT_DIVIDER_VARIANT,
   DEFAULT_HEADING_BACKGROUND_COLOR,
@@ -975,6 +976,7 @@ function DividerSettings({
   const thickness = block.thickness ?? DEFAULT_DIVIDER_THICKNESS
 
   const color = block.color ?? DEFAULT_DIVIDER_COLOR
+  const usesAccentColor = color.toLowerCase() === DEFAULT_DIVIDER_COLOR
 
   return (
     <div className="grid gap-4">
@@ -1034,11 +1036,20 @@ function DividerSettings({
       <SettingsField label="Цвет">
         <ColorPicker
           value={color}
+          displayColor={usesAccentColor ? DEFAULT_DIVIDER_CSS_COLOR : color}
+          displayLabel={usesAccentColor ? 'Акцент приложения' : color.toUpperCase()}
           ariaLabel="Цвет разделителя"
           onChange={(nextColor) => {
             onChange({
               ...block,
               color: nextColor
+            })
+          }}
+          clearLabel="Использовать акцент приложения"
+          onClear={() => {
+            onChange({
+              ...block,
+              color: DEFAULT_DIVIDER_COLOR
             })
           }}
         />

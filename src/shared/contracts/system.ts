@@ -1,4 +1,5 @@
 import type { StudyApi } from './study'
+import type { PreferencesApi } from './preferences'
 
 export const IPC_CHANNELS = {
   systemHealth: 'system:health'
@@ -15,4 +16,5 @@ export interface MyMindApi {
   }
 
   study: StudyApi
+  preferences: PreferencesApi
 }

@@ -2,6 +2,10 @@ import { contextBridge, ipcRenderer } from 'electron'
 
 import { IPC_CHANNELS, type MyMindApi, type SystemHealth } from '../shared/contracts/system'
 import {
+  PREFERENCES_IPC_CHANNELS,
+  type AppearancePreferences
+} from '../shared/contracts/preferences'
+import {
   STUDY_IPC_CHANNELS,
   type DuplicateStudyNodeResult,
   type StudyInternalLinkTarget,
@@ -13,6 +17,16 @@ import {
 const api: MyMindApi = {
   system: {
     getHealth: () => ipcRenderer.invoke(IPC_CHANNELS.systemHealth) as Promise<SystemHealth>
+  },
+
+  preferences: {
+    getAppearance: () =>
+      ipcRenderer.invoke(PREFERENCES_IPC_CHANNELS.getAppearance) as Promise<AppearancePreferences>,
+    updateAppearance: (input) =>
+      ipcRenderer.invoke(
+        PREFERENCES_IPC_CHANNELS.updateAppearance,
+        input
+      ) as Promise<AppearancePreferences>
   },
 
   study: {

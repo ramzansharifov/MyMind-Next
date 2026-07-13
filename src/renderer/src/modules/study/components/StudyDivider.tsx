@@ -6,7 +6,8 @@ import { cn } from '../../../shared/lib/cn'
 import {
   DEFAULT_DIVIDER_COLOR,
   DEFAULT_DIVIDER_THICKNESS,
-  DEFAULT_DIVIDER_VARIANT
+  DEFAULT_DIVIDER_VARIANT,
+  resolveStudyDividerColor
 } from '../lib/study-document'
 
 type StudyDividerSpacing = 'none' | 'read' | 'edit'
@@ -21,7 +22,7 @@ export function StudyDivider({ block, spacing = 'read' }: StudyDividerProps): Re
 
   const thickness = block.thickness ?? DEFAULT_DIVIDER_THICKNESS
 
-  const color = block.color ?? DEFAULT_DIVIDER_COLOR
+  const color = resolveStudyDividerColor(block.color ?? DEFAULT_DIVIDER_COLOR)
 
   return (
     <div className={cn(spacing === 'edit' && 'py-8', spacing === 'read' && 'py-4')}>

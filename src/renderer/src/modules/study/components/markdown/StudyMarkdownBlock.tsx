@@ -125,7 +125,7 @@ export function StudyMarkdownBlock({
   const activeMode = isMarkdownViewMode(viewMode) ? viewMode : 'split'
 
   return (
-    <section className="overflow-hidden rounded-xl border border-[var(--app-border)] bg-[#0c0d10]">
+    <section className="overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-code-surface)]">
       <header className="flex min-h-11 items-center justify-between gap-3 border-b border-[var(--app-border)] bg-white/[0.025] px-3">
         <span className="text-[11px] font-semibold tracking-[0.08em] text-[var(--app-muted)] uppercase">
           Markdown

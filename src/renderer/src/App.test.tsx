@@ -6,9 +6,18 @@ import App from './App'
 
 describe('App shell', () => {
   beforeEach(() => {
+    window.localStorage.clear()
     Object.defineProperty(window, 'api', {
       configurable: true,
       value: {
+        preferences: {
+          getAppearance: vi.fn().mockResolvedValue({ version: 1, theme: 'dark', accent: 'violet' }),
+          updateAppearance: vi.fn().mockImplementation(async (input) => ({
+            version: 1,
+            theme: input.theme ?? 'dark',
+            accent: input.accent ?? 'violet'
+          }))
+        },
         system: {
           getHealth: vi.fn().mockResolvedValue({
             database: 'ready',
@@ -71,6 +80,35 @@ describe('App shell', () => {
     ).toBeInTheDocument()
 
     expect(await screen.findByText('SQLite 3.0.0')).toBeInTheDocument()
+  })
+
+  it('applies theme and accent changes from settings immediately', async () => {
+    const user = userEvent.setup()
+
+    render(<App />)
+    await user.click(screen.getByRole('button', { name: 'Настройки' }))
+    await user.click(screen.getByRole('button', { name: /Внешний вид/ }))
+
+    await user.click(await screen.findByRole('radio', { name: /Светлая/ }))
+    expect(document.documentElement).toHaveAttribute('data-theme', 'light')
+
+    await user.click(screen.getByRole('radio', { name: 'Изумрудный' }))
+    expect(document.documentElement).toHaveAttribute('data-accent', 'emerald')
+    expect(window.api.preferences.updateAppearance).toHaveBeenCalled()
+  })
+
+  it('opens appearance as a separate settings category and returns to the overview', async () => {
+    const user = userEvent.setup()
+
+    render(<App />)
+    await user.click(screen.getByRole('button', { name: 'Настройки' }))
+    await user.click(screen.getByRole('button', { name: /Внешний вид/ }))
+
+    expect(screen.getByRole('heading', { name: 'Внешний вид' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Все настройки' }))
+
+    expect(screen.getByRole('heading', { name: 'Настройки' })).toBeInTheDocument()
   })
 
   it('starts with a collapsed sidebar in study and allows expansion', async () => {

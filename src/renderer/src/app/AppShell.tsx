@@ -1,5 +1,5 @@
 import { cva } from 'class-variance-authority'
-import { BrainCircuit, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { BrainCircuit, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 
 import { cn } from '../shared/lib/cn'
@@ -162,17 +162,16 @@ export function AppShell({ activeView, onViewChange, children }: AppShellProps):
                 'absolute top-8 right-0 z-20',
                 'flex size-7 translate-x-1/2 -translate-y-1/2',
                 'items-center justify-center rounded-full border',
-                'border-[var(--app-border-strong)]',
-                'bg-[var(--app-surface-raised)]',
-                'text-[var(--app-muted)]',
+                'border-violet-500/25',
+                'bg-violet-500/12',
+                'text-violet-300',
                 'opacity-0 outline-none',
                 'transition-[opacity,background-color,color,transform]',
                 'duration-150',
                 'group-hover/sidebar:opacity-100',
                 'group-focus-within/sidebar:opacity-100',
                 'hover:scale-105',
-                'hover:bg-[var(--app-sidebar-active)]',
-                'hover:text-violet-300',
+                'hover:bg-violet-500/20',
                 'focus-visible:opacity-100',
                 'focus-visible:ring-2',
                 'focus-visible:ring-violet-500/70',
@@ -183,9 +182,9 @@ export function AppShell({ activeView, onViewChange, children }: AppShellProps):
               }}
             >
               {isCollapsed ? (
-                <PanelLeftOpen aria-hidden="true" className="size-4" />
+                <ChevronRight aria-hidden="true" className="size-4" />
               ) : (
-                <PanelLeftClose aria-hidden="true" className="size-4" />
+                <ChevronLeft aria-hidden="true" className="size-4" />
               )}
             </button>
           </Tooltip>

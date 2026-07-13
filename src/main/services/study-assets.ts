@@ -1,8 +1,8 @@
-import { app, dialog, net, protocol, type BrowserWindow, type OpenDialogOptions } from 'electron'
+import { app, dialog, protocol, type BrowserWindow, type OpenDialogOptions } from 'electron'
+import { createReadStream } from 'node:fs'
 import { copyFile, mkdir, readdir, rm, stat } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import { basename, extname, isAbsolute, join, relative, resolve } from 'node:path'
-import { pathToFileURL } from 'node:url'
 
 import type {
   ImportStudyAssetInput,
@@ -11,6 +11,7 @@ import type {
   StudyDocument,
   StudyLocalAsset
 } from '../../shared/contracts/study'
+import { resolveStudyAssetByteRange } from './study-asset-range'
 
 export const STUDY_ASSET_SCHEME = 'mymind-asset'
 
@@ -110,10 +111,84 @@ export function registerStudyAssetProtocol(): void {
       })
     }
 
-    return net.fetch(pathToFileURL(filePath).toString(), {
-      method: request.method,
-      headers: request.headers
+    return createStudyAssetResponse(request, filePath, fileStats.size)
+  })
+}
+
+function createStudyAssetResponse(request: Request, filePath: string, fileSize: number): Response {
+  const byteRange = resolveStudyAssetByteRange(request.headers.get('range'), fileSize)
+
+  const headers = new Headers({
+    'Accept-Ranges': 'bytes',
+    'Cache-Control': 'private, max-age=31536000, immutable',
+    'Content-Type': getStudyAssetMimeType(extname(filePath).slice(1).toLowerCase())
+  })
+
+  if (byteRange.kind === 'unsatisfiable') {
+    headers.set('Content-Range', `bytes */${fileSize}`)
+
+    return new Response(null, {
+      status: 416,
+      headers
     })
+  }
+
+  const start = byteRange.kind === 'partial' ? byteRange.start : 0
+  const end = byteRange.kind === 'partial' ? byteRange.end : fileSize - 1
+  const contentLength = Math.max(end - start + 1, 0)
+
+  headers.set('Content-Length', String(contentLength))
+
+  if (byteRange.kind === 'partial') {
+    headers.set('Content-Range', `bytes ${start}-${end}/${fileSize}`)
+  }
+
+  const body =
+    request.method === 'HEAD' || contentLength === 0
+      ? null
+      : createStudyAssetBody(filePath, start, end)
+
+  return new Response(body, {
+    status: byteRange.kind === 'partial' ? 206 : 200,
+    headers
+  })
+}
+
+function createStudyAssetBody(
+  filePath: string,
+  start: number,
+  end: number
+): ReadableStream<Uint8Array> {
+  const fileStream = createReadStream(filePath, { start, end })
+
+  return new ReadableStream<Uint8Array>({
+    start(controller) {
+      fileStream.on('data', (chunk: string | Buffer) => {
+        const bytes = typeof chunk === 'string' ? Buffer.from(chunk) : chunk
+
+        controller.enqueue(Uint8Array.from(bytes))
+
+        if ((controller.desiredSize ?? 1) <= 0) {
+          fileStream.pause()
+        }
+      })
+
+      fileStream.once('end', () => {
+        controller.close()
+      })
+
+      fileStream.once('error', (reason: Error) => {
+        controller.error(reason)
+      })
+    },
+
+    pull() {
+      fileStream.resume()
+    },
+
+    cancel() {
+      fileStream.destroy()
+    }
   })
 }
 

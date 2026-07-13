@@ -5,8 +5,9 @@ import { type AppViewId } from './app/navigation'
 import { SettingsPage } from './modules/settings/SettingsPage'
 import { StudyPage } from './modules/study/StudyPage'
 import { useSystemHealth } from './shared/hooks/use-system-health'
+import { AppearanceProvider } from './app/appearance/AppearanceProvider'
 
-function App(): React.JSX.Element {
+function AppContent(): React.JSX.Element {
   const [activeView, setActiveView] = useState<AppViewId>('study')
   const systemHealth = useSystemHealth()
 
@@ -22,6 +23,14 @@ function App(): React.JSX.Element {
         />
       )}
     </AppShell>
+  )
+}
+
+function App(): React.JSX.Element {
+  return (
+    <AppearanceProvider>
+      <AppContent />
+    </AppearanceProvider>
   )
 }
 

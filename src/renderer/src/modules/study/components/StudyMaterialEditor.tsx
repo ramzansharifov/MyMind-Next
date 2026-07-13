@@ -371,7 +371,7 @@ export function StudyMaterialEditor({
         className={cn(
           'min-h-0 flex-1 overflow-y-auto px-6 py-6',
           'max-[640px]:px-3 max-[640px]:py-4',
-          mode === 'read' && '[scrollbar-gutter:stable] bg-[#0b0c10]'
+          mode === 'read' && '[scrollbar-gutter:stable] bg-[var(--app-reader-surface)]'
         )}
       >
         <div

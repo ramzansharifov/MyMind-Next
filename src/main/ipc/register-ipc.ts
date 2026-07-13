@@ -4,6 +4,7 @@ import { IPC_CHANNELS } from '../../shared/contracts/system'
 import { systemHealthSchema } from '../../shared/validation/system'
 import { getSqlite } from '../database/client'
 import { registerStudyIpcHandlers } from './register-study-ipc'
+import { registerPreferencesIpcHandlers } from './register-preferences-ipc'
 
 interface SQLiteVersionRow {
   version: string
@@ -11,6 +12,7 @@ interface SQLiteVersionRow {
 
 export function registerIpcHandlers(): void {
   registerStudyIpcHandlers()
+  registerPreferencesIpcHandlers()
   ipcMain.removeHandler(IPC_CHANNELS.systemHealth)
 
   ipcMain.handle(IPC_CHANNELS.systemHealth, () => {

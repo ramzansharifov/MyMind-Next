@@ -82,7 +82,7 @@ export function StudyCodeBlock({
     <TooltipProvider delayDuration={250}>
       <section
         data-mode={mode}
-        className="study-code-block overflow-hidden rounded-xl border border-[var(--app-border)] bg-[#090a0c]"
+        className="study-code-block overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-code-surface)]"
       >
         <header className="flex h-10 items-center justify-between border-b border-[var(--app-border)] bg-white/[0.025] px-3">
           <span className="text-[11px] font-semibold tracking-[0.08em] text-[var(--app-muted)] uppercase">

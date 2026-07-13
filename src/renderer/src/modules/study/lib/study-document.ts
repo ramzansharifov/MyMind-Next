@@ -8,9 +8,18 @@ import type {
 
 export const DEFAULT_DIVIDER_THICKNESS = 1
 export const DEFAULT_DIVIDER_COLOR = '#6d5dfc'
+export const DEFAULT_DIVIDER_CSS_COLOR = 'var(--app-accent-500)'
 export const DEFAULT_DIVIDER_VARIANT: StudyDividerVariant = 'solid'
 export const DEFAULT_HEADING_COLOR = '#f2f3f5'
 export const DEFAULT_HEADING_BACKGROUND_COLOR = '#181a20'
+
+export function resolveStudyDividerColor(color?: string): string {
+  if (!color || color.toLowerCase() === DEFAULT_DIVIDER_COLOR) {
+    return DEFAULT_DIVIDER_CSS_COLOR
+  }
+
+  return color
+}
 
 export function createStudyBlock(type: StudyBlockType): StudyBlock {
   const id = crypto.randomUUID()

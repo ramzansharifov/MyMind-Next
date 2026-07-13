@@ -3,14 +3,14 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import {
   ArrowRight,
   BookOpen,
+  ChevronLeft,
+  ChevronRight,
   FilePlus2,
   FileText,
   Folder,
   FolderPlus,
   Palette,
-  Pencil,
-  PanelLeftClose,
-  PanelLeftOpen
+  Pencil
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
@@ -216,12 +216,12 @@ export function StudyPage(): React.JSX.Element {
               'absolute top-8 right-0 z-30',
               'flex size-7 translate-x-1/2 -translate-y-1/2',
               'items-center justify-center rounded-full border',
-              'border-[var(--app-border-strong)] bg-[var(--app-surface-raised)]',
-              'text-[var(--app-muted)] opacity-0 outline-none',
+              'border-violet-500/25 bg-violet-500/12',
+              'text-violet-300 opacity-0 outline-none',
               'transition-[opacity,background-color,color,transform]',
               'group-hover/study-sidebar:opacity-100',
               'group-focus-within/study-sidebar:opacity-100',
-              'hover:scale-105 hover:bg-[var(--app-sidebar-active)] hover:text-violet-300',
+              'hover:scale-105 hover:bg-violet-500/20',
               'focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-violet-500/60'
             )}
             onClick={() => {
@@ -229,9 +229,9 @@ export function StudyPage(): React.JSX.Element {
             }}
           >
             {isSidebarCollapsed ? (
-              <PanelLeftOpen aria-hidden="true" className="size-4" />
+              <ChevronRight aria-hidden="true" className="size-4" />
             ) : (
-              <PanelLeftClose aria-hidden="true" className="size-4" />
+              <ChevronLeft aria-hidden="true" className="size-4" />
             )}
           </button>
         </Tooltip>
