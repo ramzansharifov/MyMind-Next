@@ -1,21 +1,10 @@
 import { z } from 'zod'
 
+import { STUDY_FOLDER_ICON_NAMES } from '../contracts/study'
+
 export const studyNodeTypeSchema = z.enum(['folder', 'material'])
 
-export const studyFolderIconSchema = z.enum([
-  'folder',
-  'book',
-  'graduation',
-  'science',
-  'calculator',
-  'code',
-  'languages',
-  'history',
-  'microscope',
-  'art',
-  'music',
-  'work'
-])
+export const studyFolderIconSchema = z.enum(STUDY_FOLDER_ICON_NAMES)
 
 export const studyTextBlockSchema = z.object({
   id: z.string().min(1),

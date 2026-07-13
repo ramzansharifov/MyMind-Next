@@ -19,7 +19,7 @@ import { Tooltip } from '../../shared/ui/tooltip'
 import { StudyActionButton } from './components/StudyActionButton'
 import { DeleteConfirmationDialog } from './components/DeleteConfirmationDialog'
 import { StudyHome } from './components/StudyHome'
-import { StudyFolderIcon } from './components/StudyFolderIcon'
+import { STUDY_FOLDER_ICON_SIDEBAR_CLASS_NAME, StudyFolderIcon } from './components/StudyFolderIcon'
 import { RenameStudyNodeDialog } from './components/RenameStudyNodeDialog'
 import { STUDY_FOLDER_ICON_OPTIONS } from './components/study-folder-icon-options'
 import { StudyTree } from './components/StudyTree'
@@ -619,7 +619,7 @@ function FolderIconPicker({
             Иконка папки
           </DropdownMenu.Label>
 
-          <div className="grid grid-cols-4 gap-1">
+          <div className="grid grid-cols-5 gap-1">
             {STUDY_FOLDER_ICON_OPTIONS.map((option) => (
               <Tooltip key={option.value} content={option.label} side="top">
                 <DropdownMenu.Item
@@ -636,7 +636,10 @@ function FolderIconPicker({
                     onChange(option.value)
                   }}
                 >
-                  <StudyFolderIcon name={option.value} className="size-5" />
+                  <StudyFolderIcon
+                    name={option.value}
+                    className={STUDY_FOLDER_ICON_SIDEBAR_CLASS_NAME}
+                  />
                 </DropdownMenu.Item>
               </Tooltip>
             ))}

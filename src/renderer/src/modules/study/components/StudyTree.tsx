@@ -30,7 +30,7 @@ import { cn } from '../../../shared/lib/cn'
 import { Tooltip } from '../../../shared/ui/tooltip'
 import { createStudyMoveInput, type StudyDropPlacement } from '../lib/study-dnd'
 import { getVisibleStudyNodes } from '../lib/study-tree'
-import { StudyFolderIcon } from './StudyFolderIcon'
+import { STUDY_FOLDER_ICON_SIDEBAR_CLASS_NAME, StudyFolderIcon } from './StudyFolderIcon'
 
 const ROOT_DROP_ID = 'study-tree-root-drop'
 const NODE_DROP_ID_PREFIX = 'study-tree-node-drop'
@@ -417,7 +417,7 @@ function StudyTreeItem({
             <StudyFolderIcon
               name={node.icon}
               expanded={node.isExpanded}
-              className="size-4 shrink-0"
+              className={STUDY_FOLDER_ICON_SIDEBAR_CLASS_NAME}
             />
           ) : (
             <FileText aria-hidden="true" className="size-4 shrink-0" />

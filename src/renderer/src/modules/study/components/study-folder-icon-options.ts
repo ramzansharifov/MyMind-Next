@@ -5,7 +5,7 @@ export interface StudyFolderIconOption {
   label: string
 }
 
-export const STUDY_FOLDER_ICON_OPTIONS: StudyFolderIconOption[] = [
+export const STUDY_FOLDER_ICON_OPTIONS = [
   {
     value: 'folder',
     label: 'Папка'
@@ -53,5 +53,77 @@ export const STUDY_FOLDER_ICON_OPTIONS: StudyFolderIconOption[] = [
   {
     value: 'work',
     label: 'Работа'
+  },
+  {
+    value: 'archive',
+    label: 'Архив'
+  },
+  {
+    value: 'physics',
+    label: 'Физика'
+  },
+  {
+    value: 'brain',
+    label: 'Мышление'
+  },
+  {
+    value: 'organization',
+    label: 'Организация'
+  },
+  {
+    value: 'photography',
+    label: 'Фотография'
+  },
+  {
+    value: 'finance',
+    label: 'Финансы'
+  },
+  {
+    value: 'biology',
+    label: 'Биология'
+  },
+  {
+    value: 'geography',
+    label: 'География'
+  },
+  {
+    value: 'medicine',
+    label: 'Медицина'
+  },
+  {
+    value: 'ideas',
+    label: 'Идеи'
+  },
+  {
+    value: 'travel',
+    label: 'Путешествия'
+  },
+  {
+    value: 'notes',
+    label: 'Заметки'
+  },
+  {
+    value: 'design',
+    label: 'Дизайн'
+  },
+  {
+    value: 'projects',
+    label: 'Проекты'
+  },
+  {
+    value: 'law',
+    label: 'Право'
+  },
+  {
+    value: 'favorites',
+    label: 'Избранное'
+  },
+  {
+    value: 'goals',
+    label: 'Цели'
+  },
+  {
+    value: 'sport',
+    label: 'Спорт'
   }
-]
+] as const satisfies readonly StudyFolderIconOption[]

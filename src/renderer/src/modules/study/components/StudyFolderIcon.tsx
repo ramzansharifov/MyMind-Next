@@ -1,17 +1,35 @@
 import {
+  Archive,
+  Atom,
   BookOpen,
+  Brain,
   Briefcase,
+  Building2,
   Calculator,
+  Camera,
   Code2,
+  Dna,
+  DollarSign,
+  Dumbbell,
   FlaskConical,
   Folder,
   FolderOpen,
+  Globe,
   GraduationCap,
+  HeartPulse,
   Landmark,
   Languages,
+  Lightbulb,
+  Map,
   Microscope,
   Music2,
+  Notebook,
   Palette,
+  PenTool,
+  Rocket,
+  Scale,
+  Star,
+  Target,
   type LucideIcon
 } from 'lucide-react'
 
@@ -22,6 +40,8 @@ interface StudyFolderIconProps {
   expanded?: boolean
   className?: string
 }
+
+export const STUDY_FOLDER_ICON_SIDEBAR_CLASS_NAME = 'size-4 shrink-0'
 
 const studyFolderIcons: Record<Exclude<StudyFolderIconName, 'folder'>, LucideIcon> = {
   book: BookOpen,
@@ -34,7 +54,25 @@ const studyFolderIcons: Record<Exclude<StudyFolderIconName, 'folder'>, LucideIco
   microscope: Microscope,
   art: Palette,
   music: Music2,
-  work: Briefcase
+  work: Briefcase,
+  archive: Archive,
+  physics: Atom,
+  brain: Brain,
+  organization: Building2,
+  photography: Camera,
+  finance: DollarSign,
+  biology: Dna,
+  geography: Globe,
+  medicine: HeartPulse,
+  ideas: Lightbulb,
+  travel: Map,
+  notes: Notebook,
+  design: PenTool,
+  projects: Rocket,
+  law: Scale,
+  favorites: Star,
+  goals: Target,
+  sport: Dumbbell
 }
 
 export function StudyFolderIcon({

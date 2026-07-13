@@ -1,18 +1,39 @@
 export type StudyNodeType = 'folder' | 'material'
 
-export type StudyFolderIconName =
-  | 'folder'
-  | 'book'
-  | 'graduation'
-  | 'science'
-  | 'calculator'
-  | 'code'
-  | 'languages'
-  | 'history'
-  | 'microscope'
-  | 'art'
-  | 'music'
-  | 'work'
+export const STUDY_FOLDER_ICON_NAMES = [
+  'folder',
+  'book',
+  'graduation',
+  'science',
+  'calculator',
+  'code',
+  'languages',
+  'history',
+  'microscope',
+  'art',
+  'music',
+  'work',
+  'archive',
+  'physics',
+  'brain',
+  'organization',
+  'photography',
+  'finance',
+  'biology',
+  'geography',
+  'medicine',
+  'ideas',
+  'travel',
+  'notes',
+  'design',
+  'projects',
+  'law',
+  'favorites',
+  'goals',
+  'sport'
+] as const
+
+export type StudyFolderIconName = (typeof STUDY_FOLDER_ICON_NAMES)[number]
 
 export type StudyBlockType =
   | 'text'
