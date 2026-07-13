@@ -8,7 +8,11 @@ import { Tooltip } from '../../../shared/ui/tooltip'
 
 import { studyClient } from '../api/study-client'
 import { createEmptyStudyDocument } from '../lib/study-document'
-import { getStudyHeadingElementId, STUDY_REVEAL_HEADING_EVENT } from '../lib/study-read-navigation'
+import {
+  getStudyHeadingElementId,
+  STUDY_REVEAL_BLOCK_EVENT,
+  STUDY_REVEAL_HEADING_EVENT
+} from '../lib/study-read-navigation'
 import type { StudyInternalLinkNavigationRequest } from '../lib/study-internal-link'
 import { StudyBlockEditor } from './StudyBlockEditor'
 import { StudyActionButton } from './StudyActionButton'
@@ -132,14 +136,33 @@ export function StudyMaterialEditor({
           )
         }
 
+        if (navigation.revealSourceBlockId) {
+          window.dispatchEvent(
+            new CustomEvent(STUDY_REVEAL_BLOCK_EVENT, {
+              detail: { blockId: navigation.revealSourceBlockId }
+            })
+          )
+        }
+
         schedule(() => {
           const scrollContainer = readScrollRef.current
 
           if (scrollContainer) {
-            if (navigation.revealSourcePosition !== undefined) {
-              const target = scrollContainer.querySelector<HTMLElement>(
+            if (
+              navigation.revealSourcePosition !== undefined ||
+              navigation.revealSourceBlockId !== undefined
+            ) {
+              const sourceBlock = navigation.revealSourceBlockId
+                ? Array.from(
+                    scrollContainer.querySelectorAll<HTMLElement>('[data-study-block-id]')
+                  ).find(
+                    (element) => element.dataset.studyBlockId === navigation.revealSourceBlockId
+                  )
+                : undefined
+              const exactTarget = (sourceBlock ?? scrollContainer).querySelector<HTMLElement>(
                 `[data-study-internal-link-position="${navigation.revealSourcePosition}"]`
               )
+              const target = exactTarget ?? sourceBlock
 
               if (target) {
                 const containerRect = scrollContainer.getBoundingClientRect()
@@ -147,10 +170,16 @@ export function StudyMaterialEditor({
                 const top = scrollContainer.scrollTop + targetRect.top - containerRect.top - 80
 
                 scrollContainer.scrollTo({ top: Math.max(top, 0), behavior: 'smooth' })
-                target.focus({ preventScroll: true })
+                if (exactTarget) {
+                  exactTarget.focus({ preventScroll: true })
+                }
                 target.animate(
                   [
-                    { boxShadow: '0 0 0 4px rgb(139 92 246 / 35%)' },
+                    {
+                      boxShadow: exactTarget
+                        ? '0 0 0 4px rgb(139 92 246 / 35%)'
+                        : '0 0 0 2px rgb(139 92 246 / 30%)'
+                    },
                     { boxShadow: '0 0 0 0 rgb(139 92 246 / 0%)' }
                   ],
                   { duration: 1400, easing: 'ease-out' }

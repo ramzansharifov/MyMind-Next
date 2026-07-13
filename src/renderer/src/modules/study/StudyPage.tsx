@@ -28,6 +28,7 @@ import { useStudy } from './hooks/use-study'
 import { getStudyAncestorFolders } from './lib/study-tree'
 import {
   STUDY_INTERNAL_LINK_NAVIGATE_EVENT,
+  type StudyInternalLinkHistoryEntry,
   type StudyInternalLinkNavigateDetail,
   type StudyInternalLinkNavigationRequest
 } from './lib/study-internal-link'
@@ -46,12 +47,9 @@ export function StudyPage(): React.JSX.Element {
 
   const [internalNavigation, setInternalNavigation] =
     useState<StudyInternalLinkNavigationRequest | null>(null)
-  const [internalLinkHistory, setInternalLinkHistory] = useState<
-    Array<{
-      materialId: string
-      sourcePosition?: number
-    }>
-  >([])
+  const [internalLinkHistory, setInternalLinkHistory] = useState<StudyInternalLinkHistoryEntry[]>(
+    []
+  )
 
   const internalNavigationSequenceRef = useRef(0)
 
@@ -62,12 +60,19 @@ export function StudyPage(): React.JSX.Element {
 
   const selectedParentId =
     selectedNode?.type === 'folder' ? selectedNode.id : (selectedNode?.parentId ?? null)
+  const internalLinkBackTarget = internalLinkHistory.at(-1)
+  const canNavigateBack =
+    selectedNode?.type === 'material' &&
+    internalLinkBackTarget?.destinationMaterialId === selectedNode.id &&
+    study.nodes.some(
+      (node) => node.type === 'material' && node.id === internalLinkBackTarget.sourceMaterialId
+    )
 
   function openRename(node: StudyNode): void {
     setRenameTarget(node)
     setRenameValue(node.title)
   }
-  const selectStudyNode = useCallback(
+  const openStudyNode = useCallback(
     (nodeId: string): void => {
       const ancestorFolders = getStudyAncestorFolders(studyNodes, nodeId)
 
@@ -82,6 +87,21 @@ export function StudyPage(): React.JSX.Element {
     [selectNode, studyNodes, toggleFolder]
   )
 
+  const selectStudyNode = useCallback(
+    (nodeId: string | null): void => {
+      setInternalLinkHistory([])
+      setInternalNavigation(null)
+
+      if (nodeId === null) {
+        selectNode(null)
+        return
+      }
+
+      openStudyNode(nodeId)
+    },
+    [openStudyNode, selectNode]
+  )
+
   useEffect(() => {
     function handleInternalNavigation(event: Event): void {
       const detail = (event as CustomEvent<StudyInternalLinkNavigateDetail>).detail
@@ -90,12 +110,14 @@ export function StudyPage(): React.JSX.Element {
         return
       }
 
-      if (selectedNode?.type === 'material' && selectedNode.id !== detail.materialId) {
+      if (selectedNode?.type === 'material') {
         setInternalLinkHistory((current) => [
           ...current,
           {
-            materialId: selectedNode.id,
-            sourcePosition: detail.sourcePosition
+            sourceMaterialId: selectedNode.id,
+            destinationMaterialId: detail.materialId,
+            sourcePosition: detail.sourcePosition,
+            sourceBlockId: detail.sourceBlockId
           }
         ])
       }
@@ -109,7 +131,7 @@ export function StudyPage(): React.JSX.Element {
         requestId: internalNavigationSequenceRef.current
       })
 
-      selectStudyNode(detail.materialId)
+      openStudyNode(detail.materialId)
     }
 
     window.addEventListener(STUDY_INTERNAL_LINK_NAVIGATE_EVENT, handleInternalNavigation)
@@ -117,7 +139,7 @@ export function StudyPage(): React.JSX.Element {
     return () => {
       window.removeEventListener(STUDY_INTERNAL_LINK_NAVIGATE_EVENT, handleInternalNavigation)
     }
-  }, [selectStudyNode, selectedNode])
+  }, [openStudyNode, selectedNode])
 
   return (
     <section
@@ -152,7 +174,7 @@ export function StudyPage(): React.JSX.Element {
                   : 'text-[var(--app-muted)] hover:bg-white/[0.04] hover:text-[var(--app-text)]'
               )}
               onClick={() => {
-                study.selectNode(null)
+                selectStudyNode(null)
               }}
             >
               <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-300">
@@ -211,7 +233,7 @@ export function StudyPage(): React.JSX.Element {
               collapsed={isSidebarCollapsed}
               onSelect={selectStudyNode}
               onSelectRoot={() => {
-                study.selectNode(null)
+                selectStudyNode(null)
               }}
               onToggleFolder={(node) => {
                 void study.toggleFolder(node)
@@ -268,9 +290,9 @@ export function StudyPage(): React.JSX.Element {
               openRename(selectedNode)
             }}
             onBack={
-              internalLinkHistory.length > 0
+              canNavigateBack
                 ? () => {
-                    const backTarget = internalLinkHistory.at(-1)
+                    const backTarget = internalLinkBackTarget
 
                     if (!backTarget) {
                       return
@@ -279,12 +301,13 @@ export function StudyPage(): React.JSX.Element {
                     internalNavigationSequenceRef.current += 1
                     setInternalNavigation({
                       kind: 'material',
-                      materialId: backTarget.materialId,
+                      materialId: backTarget.sourceMaterialId,
                       headingId: null,
                       revealSourcePosition: backTarget.sourcePosition,
+                      revealSourceBlockId: backTarget.sourceBlockId,
                       requestId: internalNavigationSequenceRef.current
                     })
-                    selectStudyNode(backTarget.materialId)
+                    openStudyNode(backTarget.sourceMaterialId)
                     setInternalLinkHistory((current) => current.slice(0, -1))
                   }
                 : undefined
@@ -301,7 +324,6 @@ export function StudyPage(): React.JSX.Element {
         ) : selectedNode?.type === 'folder' ? (
           <FolderWorkspace
             node={selectedNode}
-            allNodes={study.nodes}
             items={study.nodes.filter((node) => node.parentId === selectedNode.id)}
             onSelect={selectStudyNode}
             onRename={() => {
@@ -442,7 +464,6 @@ function FolderWorkspace({
   onIconChange
 }: {
   node: StudyNode
-  allNodes: StudyNode[]
   items: StudyNode[]
   onSelect: (nodeId: string) => void
   onCreateFolder: () => void

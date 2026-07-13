@@ -57,7 +57,9 @@ import {
 import { moveStudyBlockByDrop, type StudyBlockDropPlacement } from '../lib/study-block-dnd'
 import {
   getStudyHeadingElementId,
+  STUDY_REVEAL_BLOCK_EVENT,
   STUDY_REVEAL_HEADING_EVENT,
+  type StudyRevealBlockDetail,
   type StudyRevealHeadingDetail
 } from '../lib/study-read-navigation'
 import { BlockSettingsErrorBoundary } from './BlockSettingsErrorBoundary'
@@ -557,7 +559,11 @@ function StudyBlockDragItem({
   })
 
   return (
-    <div ref={setDraggableRef} className={cn('relative', isDragging && 'opacity-35')}>
+    <div
+      ref={setDraggableRef}
+      data-study-block-id={block.id}
+      className={cn('relative', isDragging && 'opacity-35')}
+    >
       <span
         ref={setBeforeDropRef}
         aria-hidden="true"
@@ -1088,10 +1094,22 @@ function StudyReadSection({ section }: { section: StudyReadSectionNode }): React
       setOpen(true)
     }
 
+    function handleRevealBlock(event: Event): void {
+      const detail = (event as CustomEvent<StudyRevealBlockDetail>).detail
+
+      if (!detail?.blockId || !sectionContainsBlock(section, detail.blockId)) {
+        return
+      }
+
+      setOpen(true)
+    }
+
     window.addEventListener(STUDY_REVEAL_HEADING_EVENT, handleRevealHeading)
+    window.addEventListener(STUDY_REVEAL_BLOCK_EVENT, handleRevealBlock)
 
     return () => {
       window.removeEventListener(STUDY_REVEAL_HEADING_EVENT, handleRevealHeading)
+      window.removeEventListener(STUDY_REVEAL_BLOCK_EVENT, handleRevealBlock)
     }
   }, [section])
 
@@ -1153,6 +1171,12 @@ function sectionContainsHeading(section: StudyReadSectionNode, headingId: string
     (child) => child.kind === 'section' && sectionContainsHeading(child, headingId)
   )
 }
+
+function sectionContainsBlock(section: StudyReadSectionNode, blockId: string): boolean {
+  return section.children.some((child) =>
+    child.kind === 'block' ? child.block.id === blockId : sectionContainsBlock(child, blockId)
+  )
+}
 function getStudyReadNodeKey(node: StudyReadNode): string {
   return node.kind === 'section' ? node.heading.id : node.block.id
 }
@@ -1208,7 +1232,11 @@ function StudyReadHeading({ heading }: { heading: StudyHeadingBlock }): React.JS
 
 function StudyBlockReader({ block }: { block: StudyBlock }): React.JSX.Element {
   if (block.type === 'text') {
-    return <RichTextViewer html={getStudyTextBlockHtml(block)} plainText={block.text} />
+    return (
+      <div data-study-block-id={block.id}>
+        <RichTextViewer html={getStudyTextBlockHtml(block)} plainText={block.text} />
+      </div>
+    )
   }
 
   if (block.type === 'heading') {

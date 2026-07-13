@@ -190,12 +190,7 @@ export function StudyHome({
         {isLoading ? (
           <StudyLoadingPanel />
         ) : normalizedSearch ? (
-          <StudySearchResults
-            nodes={searchResults}
-            nodesById={nodesById}
-            search={search.trim()}
-            onOpen={onOpen}
-          />
+          <StudySearchResults nodes={searchResults} nodesById={nodesById} onOpen={onOpen} />
         ) : nodes.length === 0 ? (
           <StudyHomeEmptyState
             onCreateFolder={onCreateFolder}
@@ -402,7 +397,6 @@ function StudySearchResults({
 }: {
   nodes: StudyNode[]
   nodesById: Map<string, StudyNode>
-  search: string
   onOpen: (nodeId: string) => void
 }): React.JSX.Element {
   return (

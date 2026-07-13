@@ -212,8 +212,8 @@ function StudyInternalLinkNodeView({ node, editor, getPos }: NodeViewProps): Rea
     }
   }
 
-  function navigate(): void {
-    if (!attributes.materialId) {
+  function navigate(element: HTMLElement): void {
+    if (!attributes.materialId || resolvedTarget === null) {
       return
     }
 
@@ -222,7 +222,8 @@ function StudyInternalLinkNodeView({ node, editor, getPos }: NodeViewProps): Rea
       kind: attributes.targetKind,
       materialId: attributes.materialId,
       headingId: attributes.headingId,
-      sourcePosition: typeof position === 'number' ? position : undefined
+      sourcePosition: typeof position === 'number' ? position : undefined,
+      sourceBlockId: element.closest<HTMLElement>('[data-study-block-id]')?.dataset.studyBlockId
     }
 
     window.dispatchEvent(
@@ -245,7 +246,7 @@ function StudyInternalLinkNodeView({ node, editor, getPos }: NodeViewProps): Rea
       return
     }
 
-    navigate()
+    navigate(event.currentTarget)
   }
 
   return (
@@ -284,6 +285,7 @@ function StudyInternalLinkNodeView({ node, editor, getPos }: NodeViewProps): Rea
             ? `Недоступная внутренняя ссылка: ${displayLabel || 'без названия'}`
             : `Открыть внутреннюю ссылку: ${displayLabel || 'без названия'}`
         }
+        aria-disabled={isMissing ? true : undefined}
         contentEditable={false}
         data-study-internal-link="true"
         data-target-kind={attributes.targetKind}
@@ -310,7 +312,7 @@ function StudyInternalLinkNodeView({ node, editor, getPos }: NodeViewProps): Rea
             return
           }
 
-          navigate()
+          navigate(event.currentTarget)
         }}
       >
         {targetKind === 'heading' ? (

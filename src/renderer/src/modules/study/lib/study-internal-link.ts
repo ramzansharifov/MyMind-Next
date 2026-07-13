@@ -9,9 +9,18 @@ export interface StudyInternalLinkNavigateDetail {
   materialId: string
   headingId: string | null
   sourcePosition?: number
+  sourceBlockId?: string
+}
+
+export interface StudyInternalLinkHistoryEntry {
+  sourceMaterialId: string
+  destinationMaterialId: string
+  sourcePosition?: number
+  sourceBlockId?: string
 }
 
 export interface StudyInternalLinkNavigationRequest extends StudyInternalLinkNavigateDetail {
   requestId: number
   revealSourcePosition?: number
+  revealSourceBlockId?: string
 }
