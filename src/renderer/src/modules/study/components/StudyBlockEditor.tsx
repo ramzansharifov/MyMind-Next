@@ -35,7 +35,7 @@ import {
   Trash2,
   Type
 } from 'lucide-react'
-import { Fragment, useEffect, useRef, useState } from 'react'
+import { Fragment, lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 
 import type {
   StudyBlock,
@@ -66,12 +66,52 @@ import { BlockSettingsErrorBoundary } from './BlockSettingsErrorBoundary'
 import { BlockSettingsPanel } from './BlockSettingsPanel'
 import { DeleteConfirmationDialog } from './DeleteConfirmationDialog'
 import { StudyDivider } from './StudyDivider'
-import { StudyCodeBlock } from './code/StudyCodeBlock'
 import { StudyFileBlockView } from './file/StudyFileBlockView'
-import { StudyMarkdownBlock } from './markdown/StudyMarkdownBlock'
-import { StudyLatexBlock } from './latex/StudyLatexBlock'
-import { StudyMermaidBlock } from './mermaid/StudyMermaidBlock'
 import { RichTextBlockEditor, RichTextViewer } from './rich-text/RichTextBlockEditor'
+
+const StudyCodeBlock = lazy(() =>
+  import('./code/StudyCodeBlock').then((module) => ({ default: module.StudyCodeBlock }))
+)
+const StudyMarkdownBlock = lazy(() =>
+  import('./markdown/StudyMarkdownBlock').then((module) => ({
+    default: module.StudyMarkdownBlock
+  }))
+)
+const StudyLatexBlock = lazy(() =>
+  import('./latex/StudyLatexBlock').then((module) => ({ default: module.StudyLatexBlock }))
+)
+const StudyMermaidBlock = lazy(() =>
+  import('./mermaid/StudyMermaidBlock').then((module) => ({
+    default: module.StudyMermaidBlock
+  }))
+)
+
+function LazyStudyBlock({
+  label,
+  children
+}: {
+  label: string
+  children: ReactNode
+}): React.JSX.Element {
+  return (
+    <Suspense
+      fallback={
+        <div
+          role="status"
+          aria-label={`Загрузка блока ${label}`}
+          className="flex min-h-24 items-center rounded-xl border border-[var(--app-border)] bg-white/[0.02] px-4"
+        >
+          <div className="grid w-full gap-2">
+            <div className="h-3 w-28 animate-pulse rounded bg-white/[0.08]" />
+            <div className="h-8 animate-pulse rounded-lg bg-white/[0.05]" />
+          </div>
+        </div>
+      }
+    >
+      {children}
+    </Suspense>
+  )
+}
 
 interface StudyBlockEditorProps {
   materialId: string
@@ -856,85 +896,93 @@ function EditableBlock({
 
   if (block.type === 'code') {
     return (
-      <StudyCodeBlock
-        mode="edit"
-        source={block.source}
-        language={block.language}
-        onChange={(source) => {
-          onChange({
-            ...block,
-            source
-          })
-        }}
-      />
+      <LazyStudyBlock label="кода">
+        <StudyCodeBlock
+          mode="edit"
+          source={block.source}
+          language={block.language}
+          onChange={(source) => {
+            onChange({
+              ...block,
+              source
+            })
+          }}
+        />
+      </LazyStudyBlock>
     )
   }
   if (block.type === 'markdown') {
     return (
-      <StudyMarkdownBlock
-        mode="edit"
-        source={block.source}
-        viewMode={block.viewMode ?? 'split'}
-        onChange={(source) => {
-          onChange({
-            ...block,
-            source
-          })
-        }}
-        onViewModeChange={(viewMode) => {
-          onChange({
-            ...block,
-            viewMode
-          })
-        }}
-      />
+      <LazyStudyBlock label="Markdown">
+        <StudyMarkdownBlock
+          mode="edit"
+          source={block.source}
+          viewMode={block.viewMode ?? 'split'}
+          onChange={(source) => {
+            onChange({
+              ...block,
+              source
+            })
+          }}
+          onViewModeChange={(viewMode) => {
+            onChange({
+              ...block,
+              viewMode
+            })
+          }}
+        />
+      </LazyStudyBlock>
     )
   }
   if (block.type === 'latex') {
     return (
-      <StudyLatexBlock
-        mode="edit"
-        source={block.source}
-        viewMode={block.viewMode ?? 'split'}
-        displayMode={block.displayMode ?? 'display'}
-        alignment={block.alignment ?? 'center'}
-        scale={block.scale ?? 100}
-        onChange={(source) => {
-          onChange({
-            ...block,
-            source
-          })
-        }}
-        onViewModeChange={(viewMode) => {
-          onChange({
-            ...block,
-            viewMode
-          })
-        }}
-      />
+      <LazyStudyBlock label="LaTeX">
+        <StudyLatexBlock
+          mode="edit"
+          source={block.source}
+          viewMode={block.viewMode ?? 'split'}
+          displayMode={block.displayMode ?? 'display'}
+          alignment={block.alignment ?? 'center'}
+          scale={block.scale ?? 100}
+          onChange={(source) => {
+            onChange({
+              ...block,
+              source
+            })
+          }}
+          onViewModeChange={(viewMode) => {
+            onChange({
+              ...block,
+              viewMode
+            })
+          }}
+        />
+      </LazyStudyBlock>
     )
   }
   if (block.type === 'mermaid') {
     return (
-      <StudyMermaidBlock
-        mode="edit"
-        source={block.source}
-        viewMode={block.viewMode ?? 'split'}
-        theme={block.theme ?? 'dark'}
-        scale={block.scale ?? 100}
-        onChange={(source) => {
-          onChange({
-            ...block,
-            source
-          })
-        }}
-        onViewModeChange={(viewMode) => {
-          onChange({
-            ...block,
-            viewMode
-          })
-        }}
-      />
+      <LazyStudyBlock label="Mermaid">
+        <StudyMermaidBlock
+          mode="edit"
+          source={block.source}
+          viewMode={block.viewMode ?? 'split'}
+          theme={block.theme ?? 'dark'}
+          scale={block.scale ?? 100}
+          onChange={(source) => {
+            onChange({
+              ...block,
+              source
+            })
+          }}
+          onViewModeChange={(viewMode) => {
+            onChange({
+              ...block,
+              viewMode
+            })
+          }}
+        />
+      </LazyStudyBlock>
     )
   }
   if (
@@ -1244,30 +1292,42 @@ function StudyBlockReader({ block }: { block: StudyBlock }): React.JSX.Element {
   }
 
   if (block.type === 'code') {
-    return <StudyCodeBlock mode="read" source={block.source} language={block.language} />
+    return (
+      <LazyStudyBlock label="кода">
+        <StudyCodeBlock mode="read" source={block.source} language={block.language} />
+      </LazyStudyBlock>
+    )
   }
   if (block.type === 'markdown') {
-    return <StudyMarkdownBlock mode="read" source={block.source} />
+    return (
+      <LazyStudyBlock label="Markdown">
+        <StudyMarkdownBlock mode="read" source={block.source} />
+      </LazyStudyBlock>
+    )
   }
   if (block.type === 'latex') {
     return (
-      <StudyLatexBlock
-        mode="read"
-        source={block.source}
-        displayMode={block.displayMode ?? 'display'}
-        alignment={block.alignment ?? 'center'}
-        scale={block.scale ?? 100}
-      />
+      <LazyStudyBlock label="LaTeX">
+        <StudyLatexBlock
+          mode="read"
+          source={block.source}
+          displayMode={block.displayMode ?? 'display'}
+          alignment={block.alignment ?? 'center'}
+          scale={block.scale ?? 100}
+        />
+      </LazyStudyBlock>
     )
   }
   if (block.type === 'mermaid') {
     return (
-      <StudyMermaidBlock
-        mode="read"
-        source={block.source}
-        theme={block.theme ?? 'dark'}
-        scale={block.scale ?? 100}
-      />
+      <LazyStudyBlock label="Mermaid">
+        <StudyMermaidBlock
+          mode="read"
+          source={block.source}
+          theme={block.theme ?? 'dark'}
+          scale={block.scale ?? 100}
+        />
+      </LazyStudyBlock>
     )
   }
   if (

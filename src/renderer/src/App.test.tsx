@@ -74,7 +74,7 @@ describe('App shell', () => {
     )
 
     expect(
-      screen.getByRole('heading', {
+      await screen.findByRole('heading', {
         name: 'Настройки'
       })
     ).toBeInTheDocument()

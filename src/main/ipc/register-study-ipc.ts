@@ -6,6 +6,7 @@ import {
   duplicateStudyNodeInputSchema,
   importStudyAssetInputSchema,
   moveStudyNodeInputSchema,
+  openStudyAssetInputSchema,
   renameStudyNodeInputSchema,
   resolveStudyInternalLinkTargetInputSchema,
   saveStudyMaterialInputSchema,
@@ -27,7 +28,7 @@ import {
   updateStudyFolderIcon,
   updateStudyNodeExpansion
 } from '../repositories/study.repository'
-import { importStudyAsset } from '../services/study-assets'
+import { importStudyAsset, openStudyAsset } from '../services/study-assets'
 
 export function registerStudyIpcHandlers(): void {
   Object.values(STUDY_IPC_CHANNELS).forEach((channel) => {
@@ -113,5 +114,14 @@ export function registerStudyIpcHandlers(): void {
     const parentWindow = BrowserWindow.fromWebContents(event.sender)
 
     return importStudyAsset(input, parentWindow)
+  })
+  ipcMain.handle(STUDY_IPC_CHANNELS.openAsset, (event, rawInput: unknown) => {
+    if (!event.senderFrame || event.senderFrame !== event.sender.mainFrame) {
+      throw new Error('Untrusted study asset request')
+    }
+
+    const input = openStudyAssetInputSchema.parse(rawInput)
+
+    return openStudyAsset(input)
   })
 }

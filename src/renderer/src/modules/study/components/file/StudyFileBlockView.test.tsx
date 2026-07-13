@@ -1,11 +1,14 @@
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { StudyBlock } from '../../../../../../shared/contracts/study'
 import { formatStudyFileSize } from './file-utils'
 import { StudyFileBlockView } from './StudyFileBlockView'
 
 type ImageBlock = Extract<StudyBlock, { type: 'image' }>
+type VideoBlock = Extract<StudyBlock, { type: 'video' }>
+type FileBlock = Extract<StudyBlock, { type: 'file' }>
 
 describe('StudyFileBlockView', () => {
   it('renders a managed local image', () => {
@@ -58,6 +61,102 @@ describe('StudyFileBlockView', () => {
     render(<StudyFileBlockView block={block} />)
 
     expect(screen.getByText(/прямая HTTPS-ссылка/i)).toBeInTheDocument()
+  })
+
+  it('renders a privacy-enhanced YouTube embed', () => {
+    const block: VideoBlock = {
+      id: 'youtube-video',
+      type: 'video',
+      source: {
+        type: 'url',
+        url: 'https://youtu.be/dQw4w9WgXcQ'
+      },
+      title: 'Учебное видео'
+    }
+
+    render(<StudyFileBlockView block={block} />)
+
+    expect(screen.getByTitle('Учебное видео')).toHaveAttribute(
+      'src',
+      'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?rel=0'
+    )
+  })
+
+  it('rejects non-YouTube video URLs', () => {
+    const block: VideoBlock = {
+      id: 'unsupported-video',
+      type: 'video',
+      source: {
+        type: 'url',
+        url: 'https://example.com/video.mp4'
+      }
+    }
+
+    render(<StudyFileBlockView block={block} />)
+
+    expect(screen.getByText(/ссылка на видео YouTube/i)).toBeInTheDocument()
+    expect(screen.queryByTitle('Видео')).not.toBeInTheDocument()
+  })
+
+  it('opens a managed file with the system default application', async () => {
+    const user = userEvent.setup()
+    const openAsset = vi.fn().mockResolvedValue(undefined)
+    const block: FileBlock = {
+      id: 'file-block',
+      type: 'file',
+      source: {
+        type: 'local',
+        asset: {
+          id: '94a8c6c1-41f5-466d-92c4-5199a0754b17',
+          materialId: 'material-1',
+          name: 'lecture.pdf',
+          mimeType: 'application/pdf',
+          size: 4096,
+          url: 'mymind-asset://local/material-1/94a8c6c1-41f5-466d-92c4-5199a0754b17/lecture.pdf'
+        }
+      }
+    }
+
+    render(<StudyFileBlockView block={block} onOpenFile={openAsset} />)
+
+    await user.click(screen.getByRole('button', { name: 'Открыть файл «lecture.pdf»' }))
+
+    expect(openAsset).toHaveBeenCalledTimes(1)
+    expect(openAsset).toHaveBeenCalledWith({
+      id: '94a8c6c1-41f5-466d-92c4-5199a0754b17',
+      materialId: 'material-1',
+      name: 'lecture.pdf'
+    })
+  })
+
+  it('shows a system error when a managed file cannot be opened', async () => {
+    const user = userEvent.setup()
+    const openAsset = vi
+      .fn()
+      .mockRejectedValue(new Error('Для этого типа файла не назначено приложение'))
+    const block: FileBlock = {
+      id: 'file-error',
+      type: 'file',
+      source: {
+        type: 'local',
+        asset: {
+          id: '94a8c6c1-41f5-466d-92c4-5199a0754b17',
+          materialId: 'material-1',
+          name: 'unknown.data',
+          mimeType: 'application/octet-stream',
+          size: 128,
+          url: 'mymind-asset://local/material-1/94a8c6c1-41f5-466d-92c4-5199a0754b17/unknown.data'
+        }
+      }
+    }
+
+    render(<StudyFileBlockView block={block} onOpenFile={openAsset} />)
+
+    await user.click(screen.getByRole('button', { name: 'Открыть файл «unknown.data»' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Для этого типа файла не назначено приложение'
+    )
   })
 
   it('formats file sizes', () => {

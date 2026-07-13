@@ -1,11 +1,29 @@
-import { CircleAlert, File, FileAudio, FileImage, FileVideo } from 'lucide-react'
+import {
+  CircleAlert,
+  ExternalLink,
+  File,
+  FileAudio,
+  FileImage,
+  FileVideo,
+  LoaderCircle
+} from 'lucide-react'
 import { useState } from 'react'
 
-import type { StudyAssetKind, StudyBlock } from '../../../../../../shared/contracts/study'
+import type {
+  OpenStudyAssetInput,
+  StudyAssetKind,
+  StudyBlock
+} from '../../../../../../shared/contracts/study'
 import { cn } from '../../../../shared/lib/cn'
-import { formatStudyFileSize, normalizeStudyRemoteMediaUrl } from './file-utils'
+import { studyClient } from '../../api/study-client'
+import {
+  formatStudyFileSize,
+  normalizeStudyRemoteMediaUrl,
+  parseStudyYouTubeUrl
+} from './file-utils'
 import { StudyAudioPlayer } from './StudyAudioPlayer'
 import { StudyVideoPlayer } from './StudyVideoPlayer'
+import { StudyYouTubePlayer } from './StudyYouTubePlayer'
 
 type AttachmentBlock = Extract<
   StudyBlock,
@@ -16,16 +34,27 @@ type AttachmentBlock = Extract<
 
 interface StudyFileBlockViewProps {
   block: AttachmentBlock
+  onOpenFile?: (input: OpenStudyAssetInput) => Promise<void>
 }
 
-export function StudyFileBlockView({ block }: StudyFileBlockViewProps): React.JSX.Element {
+export function StudyFileBlockView({
+  block,
+  onOpenFile = studyClient.openAsset
+}: StudyFileBlockViewProps): React.JSX.Element {
   const asset = block.source.type === 'local' ? block.source.asset : undefined
 
   const sourceUrl = getStudyAttachmentSourceUrl(block)
 
+  const youtubeVideo =
+    block.type === 'video' && block.source.type === 'url'
+      ? parseStudyYouTubeUrl(block.source.url)
+      : null
+
   const sourceKey = `${block.type}:${sourceUrl ?? ''}`
 
   const [failedSourceKey, setFailedSourceKey] = useState<string | null>(null)
+  const [isOpeningFile, setIsOpeningFile] = useState(false)
+  const [openFileError, setOpenFileError] = useState<string | null>(null)
 
   const loadError = failedSourceKey === sourceKey
 
@@ -33,14 +62,39 @@ export function StudyFileBlockView({ block }: StudyFileBlockViewProps): React.JS
 
   const accessibleTitle = customTitle || asset?.name || getStudyAssetKindLabel(block.type)
 
+  async function openFile(input: OpenStudyAssetInput): Promise<void> {
+    setIsOpeningFile(true)
+    setOpenFileError(null)
+
+    try {
+      await onOpenFile(input)
+    } catch (reason: unknown) {
+      setOpenFileError(reason instanceof Error ? reason.message : 'Не удалось открыть файл')
+    } finally {
+      setIsOpeningFile(false)
+    }
+  }
+
   if (block.type === 'file') {
     if (!asset) {
       return <EmptyAttachmentBlock kind={block.type} message="Выбери файл в настройках блока" />
     }
 
     return (
-      <section className="rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-4">
-        <div className="flex items-start gap-3">
+      <section className="overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)]">
+        <button
+          type="button"
+          disabled={isOpeningFile}
+          aria-label={`Открыть файл «${customTitle || asset.name}»`}
+          className="group flex w-full items-center gap-3 p-4 text-left transition-colors outline-none hover:bg-white/[0.035] focus-visible:bg-white/[0.035] focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:ring-inset disabled:cursor-wait"
+          onClick={() => {
+            void openFile({
+              id: asset.id,
+              materialId: asset.materialId,
+              name: asset.name
+            })
+          }}
+        >
           <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-300">
             <File aria-hidden="true" className="size-5" />
           </div>
@@ -60,20 +114,55 @@ export function StudyFileBlockView({ block }: StudyFileBlockViewProps): React.JS
               {asset.mimeType}
             </p>
           </div>
-        </div>
 
-        <p className="mt-3 text-xs text-[var(--app-muted)]/70">
-          Открытие файла будет добавлено отдельным действием.
-        </p>
+          <span className="flex shrink-0 items-center gap-2 text-xs font-medium text-[var(--app-muted)] transition-colors group-hover:text-violet-300">
+            {isOpeningFile ? (
+              <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
+            ) : (
+              <ExternalLink aria-hidden="true" className="size-4" />
+            )}
+
+            <span className="max-[620px]:hidden">Открыть</span>
+          </span>
+        </button>
+
+        {openFileError && (
+          <p
+            role="alert"
+            className="border-t border-red-500/15 bg-red-500/[0.05] px-4 py-2.5 text-xs text-red-300"
+          >
+            {openFileError}
+          </p>
+        )}
       </section>
     )
   }
 
   const invalidRemoteUrl =
-    block.source.type === 'url' && Boolean(block.source.url.trim()) && !sourceUrl
+    block.source.type === 'url' &&
+    Boolean(block.source.url.trim()) &&
+    (block.type === 'video' ? !youtubeVideo : !sourceUrl)
 
   if (invalidRemoteUrl) {
-    return <AttachmentBlockError message="Нужна прямая HTTPS-ссылка на изображение или видео" />
+    return (
+      <AttachmentBlockError
+        message={
+          block.type === 'video'
+            ? 'Нужна корректная ссылка на видео YouTube'
+            : 'Нужна прямая HTTPS-ссылка на изображение'
+        }
+      />
+    )
+  }
+
+  if (block.type === 'video' && youtubeVideo) {
+    return (
+      <figure className="overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)]">
+        <MediaTitleBar title={customTitle} />
+
+        <StudyYouTubePlayer embedUrl={youtubeVideo.embedUrl} title={accessibleTitle} />
+      </figure>
+    )
   }
 
   if (!sourceUrl) {
@@ -164,7 +253,7 @@ function getStudyAttachmentSourceUrl(block: AttachmentBlock): string | null {
     return block.source.asset?.url ?? null
   }
 
-  if (block.type !== 'image' && block.type !== 'video') {
+  if (block.type !== 'image') {
     return null
   }
 
@@ -266,7 +355,7 @@ function getEmptyAttachmentMessage(kind: StudyAssetKind): string {
   }
 
   if (kind === 'video') {
-    return 'Выбери видео с компьютера или добавь прямую HTTPS-ссылку'
+    return 'Выбери видео с компьютера или добавь ссылку на YouTube'
   }
 
   if (kind === 'audio') {

@@ -70,7 +70,8 @@ const api: MyMindApi = {
       ) as Promise<StudyInternalLinkTarget | null>,
 
     importAsset: (input) =>
-      ipcRenderer.invoke(STUDY_IPC_CHANNELS.importAsset, input) as Promise<StudyLocalAsset | null>
+      ipcRenderer.invoke(STUDY_IPC_CHANNELS.importAsset, input) as Promise<StudyLocalAsset | null>,
+    openAsset: (input) => ipcRenderer.invoke(STUDY_IPC_CHANNELS.openAsset, input) as Promise<void>
   }
 }
 

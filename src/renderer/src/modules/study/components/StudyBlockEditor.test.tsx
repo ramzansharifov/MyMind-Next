@@ -93,6 +93,28 @@ describe('StudyBlockEditor', () => {
     expect(onChange).toHaveBeenCalledTimes(1)
   })
 
+  it('confirms block deletion with Shift+Enter', () => {
+    const onChange = vi.fn()
+    render(
+      <StudyBlockEditor
+        materialId="material-1"
+        document={studyDocument}
+        mode="edit"
+        onChange={onChange}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Удалить блок' }))
+    const dialog = screen.getByRole('alertdialog')
+
+    fireEvent.keyDown(dialog, { key: 'Enter' })
+    expect(onChange).not.toHaveBeenCalled()
+
+    fireEvent.keyDown(dialog, { key: 'Enter', shiftKey: true })
+    expect(onChange).toHaveBeenCalledTimes(1)
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+  })
+
   it('reveals a text block inside a collapsed heading section', async () => {
     const user = userEvent.setup()
     const document: StudyDocument = {

@@ -77,6 +77,12 @@ export const studyLocalAssetSchema = z.object({
   url: z.string().regex(/^mymind-asset:\/\/local\//)
 })
 
+export const openStudyAssetInputSchema = studyLocalAssetSchema.pick({
+  id: true,
+  materialId: true,
+  name: true
+})
+
 const studyLocalAssetSourceSchema = z.object({
   type: z.literal('local'),
   asset: studyLocalAssetSchema.optional()

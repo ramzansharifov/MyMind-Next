@@ -3,6 +3,7 @@ import type {
   DuplicateStudyNodeResult,
   ImportStudyAssetInput,
   MoveStudyNodeInput,
+  OpenStudyAssetInput,
   ResolveStudyInternalLinkTargetInput,
   SaveStudyMaterialInput,
   SearchStudyInternalLinkTargetsInput,
@@ -89,5 +90,8 @@ export const studyClient = {
   },
   importAsset(input: ImportStudyAssetInput): Promise<StudyLocalAsset | null> {
     return getStudyApi().importAsset(input)
+  },
+  openAsset(input: OpenStudyAssetInput): Promise<void> {
+    return getStudyApi().openAsset(input)
   }
 }

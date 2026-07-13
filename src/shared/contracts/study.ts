@@ -252,6 +252,7 @@ export interface ImportStudyAssetInput {
   nodeId: string
   kind: StudyAssetKind
 }
+export type OpenStudyAssetInput = Pick<StudyLocalAsset, 'id' | 'materialId' | 'name'>
 
 export const STUDY_IPC_CHANNELS = {
   listNodes: 'study:list-nodes',
@@ -266,7 +267,8 @@ export const STUDY_IPC_CHANNELS = {
   saveMaterial: 'study:save-material',
   searchInternalLinkTargets: 'study:search-internal-link-targets',
   resolveInternalLinkTarget: 'study:resolve-internal-link-target',
-  importAsset: 'study:import-asset'
+  importAsset: 'study:import-asset',
+  openAsset: 'study:open-asset'
 } as const
 
 export interface StudyApi {
@@ -287,4 +289,5 @@ export interface StudyApi {
     input: ResolveStudyInternalLinkTargetInput
   ): Promise<StudyInternalLinkTarget | null>
   importAsset(input: ImportStudyAssetInput): Promise<StudyLocalAsset | null>
+  openAsset(input: OpenStudyAssetInput): Promise<void>
 }

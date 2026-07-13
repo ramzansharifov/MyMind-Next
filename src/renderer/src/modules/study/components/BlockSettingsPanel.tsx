@@ -14,6 +14,7 @@ import {
   Minus,
   Settings2,
   Sigma,
+  SquarePlay,
   Trash2,
   Type,
   Upload,
@@ -33,7 +34,11 @@ import {
 import { studyClient } from '../api/study-client'
 import { RichTextSettings } from './rich-text/RichTextSettings'
 import { STUDY_CODE_LANGUAGE_OPTIONS } from './code/code-languages'
-import { formatStudyFileSize, isValidStudyRemoteMediaUrl } from './file/file-utils'
+import {
+  formatStudyFileSize,
+  isValidStudyRemoteMediaUrl,
+  isValidStudyYouTubeUrl
+} from './file/file-utils'
 import { STUDY_MERMAID_TEMPLATES } from './mermaid/mermaid-templates'
 import { ColorPicker } from './settings/ColorPicker'
 import { SegmentedChoice } from './settings/SegmentedChoice'
@@ -185,6 +190,17 @@ const studyFileSources = [
   }
 ]
 
+const studyVideoSources = [
+  {
+    value: 'local',
+    label: 'Компьютер'
+  },
+  {
+    value: 'url',
+    label: 'YouTube'
+  }
+]
+
 const studyImageFits = [
   {
     value: 'contain',
@@ -270,7 +286,12 @@ export function BlockSettingsPanel({
         {block.type === 'mermaid' && <MermaidSettings block={block} onChange={onChange} />}
 
         {isStudyAttachmentBlock(block) && (
-          <AttachmentSettings materialId={materialId} block={block} onChange={onChange} />
+          <AttachmentSettings
+            key={block.id}
+            materialId={materialId}
+            block={block}
+            onChange={onChange}
+          />
         )}
 
         {block.type === 'divider' && <DividerSettings block={block} onChange={onChange} />}
@@ -648,12 +669,22 @@ function AttachmentSettings({
   onChange: (block: StudyBlock) => void
 }): React.JSX.Element {
   const [isPicking, setIsPicking] = useState(false)
-
   const [importError, setImportError] = useState<string | null>(null)
+  const [selectedSourceType, setSelectedSourceType] = useState<'local' | 'url'>(block.source.type)
+  const [remoteUrlDraft, setRemoteUrlDraft] = useState(
+    block.source.type === 'url' ? block.source.url : ''
+  )
 
   const localAsset = block.source.type === 'local' ? block.source.asset : undefined
-
-  const remoteUrl = block.source.type === 'url' ? block.source.url : ''
+  const savedRemoteUrl = block.source.type === 'url' ? block.source.url : ''
+  const normalizedRemoteUrlDraft = remoteUrlDraft.trim()
+  const isRemoteUrlValid =
+    block.type === 'video'
+      ? isValidStudyYouTubeUrl(normalizedRemoteUrlDraft)
+      : block.type === 'image'
+        ? isValidStudyRemoteMediaUrl(normalizedRemoteUrlDraft)
+        : false
+  const canApplyRemoteUrl = isRemoteUrlValid && normalizedRemoteUrlDraft !== savedRemoteUrl.trim()
 
   async function chooseLocalFile(): Promise<void> {
     setIsPicking(true)
@@ -676,6 +707,7 @@ function AttachmentSettings({
           asset
         }
       })
+      setSelectedSourceType('local')
     } catch (reason: unknown) {
       setImportError(getFileImportErrorMessage(reason))
     } finally {
@@ -688,39 +720,27 @@ function AttachmentSettings({
       {(block.type === 'image' || block.type === 'video') && (
         <SettingsField label="Источник">
           <SegmentedChoice
-            value={block.source.type}
-            options={studyFileSources}
+            value={selectedSourceType}
+            options={block.type === 'video' ? studyVideoSources : studyFileSources}
             ariaLabel={`Источник блока «${getAssetKindLabel(block.type)}»`}
             columns={2}
             onValueChange={(value) => {
               setImportError(null)
 
-              if (value === 'local') {
-                onChange({
-                  ...block,
-                  source: {
-                    type: 'local'
-                  }
-                })
-
-                return
-              }
-
-              if (value === 'url' && (block.type === 'image' || block.type === 'video')) {
-                onChange({
-                  ...block,
-                  source: {
-                    type: 'url',
-                    url: ''
-                  }
-                })
+              if (value === 'local' || value === 'url') {
+                setSelectedSourceType(value)
               }
             }}
           />
+
+          <p className="text-[11px] leading-5 text-(--app-muted)">
+            Текущий источник: {block.source.type === 'local' ? 'компьютер' : 'ссылка'}. Переключение
+            вкладки не заменяет сохранённое медиа.
+          </p>
         </SettingsField>
       )}
 
-      {block.source.type === 'local' && (
+      {selectedSourceType === 'local' && (
         <div className="grid min-w-0 gap-2">
           <span className="text-[11px] font-medium text-(--app-muted)">
             {getLocalSourceLabel(block.type)}
@@ -786,40 +806,86 @@ function AttachmentSettings({
         </div>
       )}
 
-      {(block.type === 'image' || block.type === 'video') && block.source.type === 'url' && (
+      {(block.type === 'image' || block.type === 'video') && selectedSourceType === 'url' && (
         <div className="grid min-w-0 gap-2">
-          <span className="text-[11px] font-medium text-(--app-muted)">Прямая HTTPS-ссылка</span>
+          <span className="text-[11px] font-medium text-(--app-muted)">
+            {block.type === 'video' ? 'Ссылка на YouTube' : 'Прямая HTTPS-ссылка'}
+          </span>
 
           <label className="flex min-h-10 w-full max-w-full min-w-0 items-center gap-2 overflow-hidden rounded-lg border border-(--app-border) bg-(--app-workspace) px-3 focus-within:border-violet-500/45">
-            <Link2 aria-hidden="true" className="size-4 shrink-0 text-(--app-muted)" />
+            {block.type === 'video' ? (
+              <SquarePlay aria-hidden="true" className="size-4 shrink-0 text-violet-300" />
+            ) : (
+              <Link2 aria-hidden="true" className="size-4 shrink-0 text-(--app-muted)" />
+            )}
 
             <input
-              value={remoteUrl}
+              value={remoteUrlDraft}
               placeholder={
-                block.type === 'image' ? 'https://site.com/photo.jpg' : 'https://site.com/video.mp4'
+                block.type === 'image'
+                  ? 'https://site.com/photo.jpg'
+                  : 'https://www.youtube.com/watch?v=...'
               }
               className="w-0 min-w-0 flex-1 bg-transparent py-2 text-sm text-(--app-text) outline-none placeholder:text-(--app-muted)/60"
               onChange={(event) => {
-                onChange({
-                  ...block,
-                  source: {
-                    type: 'url',
-                    url: event.target.value
-                  }
-                })
+                setRemoteUrlDraft(event.target.value)
               }}
             />
           </label>
 
-          {remoteUrl.trim() && !isValidStudyRemoteMediaUrl(remoteUrl) && (
-            <p className="text-xs leading-5 text-amber-300">
-              Используй прямую HTTPS-ссылку без логина и пароля.
-            </p>
-          )}
+          {normalizedRemoteUrlDraft &&
+            (block.type === 'video'
+              ? !isValidStudyYouTubeUrl(normalizedRemoteUrlDraft)
+              : !isValidStudyRemoteMediaUrl(normalizedRemoteUrlDraft)) && (
+              <p className="text-xs leading-5 text-amber-300">
+                {block.type === 'video'
+                  ? 'Используй ссылку на видео с youtube.com или youtu.be.'
+                  : 'Используй прямую HTTPS-ссылку без логина и пароля.'}
+              </p>
+            )}
 
-          <p className="text-[11px] leading-5 text-(--app-muted)">
-            Нужна ссылка непосредственно на файл, а не на страницу YouTube или другого сайта.
-          </p>
+          <div className="flex min-w-0 gap-2">
+            <button
+              type="button"
+              disabled={!canApplyRemoteUrl}
+              className="min-h-9 min-w-0 flex-1 rounded-lg bg-violet-500/15 px-3 text-xs font-semibold text-violet-200 transition-colors outline-none hover:bg-violet-500/25 focus-visible:ring-2 focus-visible:ring-violet-500/35 disabled:cursor-not-allowed disabled:opacity-40"
+              onClick={() => {
+                if (!canApplyRemoteUrl) {
+                  return
+                }
+
+                onChange({
+                  ...block,
+                  source: {
+                    type: 'url',
+                    url: normalizedRemoteUrlDraft
+                  }
+                })
+              }}
+            >
+              {block.source.type === 'url' ? 'Применить изменения' : 'Использовать ссылку'}
+            </button>
+
+            {block.source.type === 'url' && savedRemoteUrl && (
+              <button
+                type="button"
+                aria-label="Удалить сохранённую ссылку"
+                className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-(--app-border) text-(--app-muted) transition-colors outline-none hover:border-red-500/30 hover:text-red-300 focus-visible:ring-2 focus-visible:ring-red-500/30"
+                onClick={() => {
+                  setRemoteUrlDraft('')
+                  onChange({
+                    ...block,
+                    source: {
+                      type: 'url',
+                      url: ''
+                    }
+                  })
+                }}
+              >
+                <Trash2 aria-hidden="true" className="size-3.5" />
+              </button>
+            )}
+          </div>
         </div>
       )}
 

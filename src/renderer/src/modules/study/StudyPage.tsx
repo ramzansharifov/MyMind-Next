@@ -1,4 +1,3 @@
-import * as AlertDialog from '@radix-ui/react-alert-dialog'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import {
   ArrowRight,
@@ -12,16 +11,16 @@ import {
   Palette,
   Pencil
 } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type { StudyFolderIconName, StudyNode } from '../../../../shared/contracts/study'
 import { cn } from '../../shared/lib/cn'
 import { Tooltip } from '../../shared/ui/tooltip'
-import { StudyMaterialEditor } from './components/StudyMaterialEditor'
 import { StudyActionButton } from './components/StudyActionButton'
 import { DeleteConfirmationDialog } from './components/DeleteConfirmationDialog'
 import { StudyHome } from './components/StudyHome'
 import { StudyFolderIcon } from './components/StudyFolderIcon'
+import { RenameStudyNodeDialog } from './components/RenameStudyNodeDialog'
 import { STUDY_FOLDER_ICON_OPTIONS } from './components/study-folder-icon-options'
 import { StudyTree } from './components/StudyTree'
 import { useStudy } from './hooks/use-study'
@@ -35,6 +34,12 @@ import {
   type StudyInternalLinkNavigateDetail,
   type StudyInternalLinkNavigationRequest
 } from './lib/study-internal-link'
+
+const StudyMaterialEditor = lazy(() =>
+  import('./components/StudyMaterialEditor').then((module) => ({
+    default: module.StudyMaterialEditor
+  }))
+)
 
 export function StudyPage(): React.JSX.Element {
   const study = useStudy()
@@ -84,6 +89,15 @@ export function StudyPage(): React.JSX.Element {
   function openRename(node: StudyNode): void {
     setRenameTarget(node)
     setRenameValue(node.title)
+  }
+
+  function confirmRename(): void {
+    if (!renameTarget || !renameValue.trim()) {
+      return
+    }
+
+    void study.renameNode(renameTarget.id, renameValue)
+    setRenameTarget(null)
   }
   const openStudyNode = useCallback(
     (nodeId: string): void => {
@@ -303,44 +317,46 @@ export function StudyPage(): React.JSX.Element {
 
       <main className="min-h-0 min-w-0 bg-[var(--app-workspace)]">
         {selectedNode?.type === 'material' ? (
-          <StudyMaterialEditor
-            key={selectedNode.id}
-            node={selectedNode}
-            onRename={() => {
-              openRename(selectedNode)
-            }}
-            onBack={
-              canNavigateBack
-                ? () => {
-                    const backTarget = internalLinkBackTarget
+          <Suspense fallback={<StudyMaterialLoadingFallback />}>
+            <StudyMaterialEditor
+              key={selectedNode.id}
+              node={selectedNode}
+              onRename={() => {
+                openRename(selectedNode)
+              }}
+              onBack={
+                canNavigateBack
+                  ? () => {
+                      const backTarget = internalLinkBackTarget
 
-                    if (!backTarget) {
-                      return
+                      if (!backTarget) {
+                        return
+                      }
+
+                      internalNavigationSequenceRef.current += 1
+                      setInternalNavigation({
+                        kind: 'material',
+                        materialId: backTarget.sourceMaterialId,
+                        headingId: null,
+                        revealSourcePosition: backTarget.sourcePosition,
+                        revealSourceBlockId: backTarget.sourceBlockId,
+                        requestId: internalNavigationSequenceRef.current
+                      })
+                      openStudyNode(backTarget.sourceMaterialId)
+                      setInternalLinkHistory(normalizedInternalLinkHistory.slice(0, -1))
                     }
-
-                    internalNavigationSequenceRef.current += 1
-                    setInternalNavigation({
-                      kind: 'material',
-                      materialId: backTarget.sourceMaterialId,
-                      headingId: null,
-                      revealSourcePosition: backTarget.sourcePosition,
-                      revealSourceBlockId: backTarget.sourceBlockId,
-                      requestId: internalNavigationSequenceRef.current
-                    })
-                    openStudyNode(backTarget.sourceMaterialId)
-                    setInternalLinkHistory(normalizedInternalLinkHistory.slice(0, -1))
-                  }
-                : undefined
-            }
-            navigation={
-              internalNavigation?.materialId === selectedNode.id ? internalNavigation : null
-            }
-            onNavigationHandled={(requestId) => {
-              setInternalNavigation((current) =>
-                current?.requestId === requestId ? null : current
-              )
-            }}
-          />
+                  : undefined
+              }
+              navigation={
+                internalNavigation?.materialId === selectedNode.id ? internalNavigation : null
+              }
+              onNavigationHandled={(requestId) => {
+                setInternalNavigation((current) =>
+                  current?.requestId === requestId ? null : current
+                )
+              }}
+            />
+          </Suspense>
         ) : selectedNode?.type === 'folder' ? (
           <FolderWorkspace
             node={selectedNode}
@@ -392,61 +408,17 @@ export function StudyPage(): React.JSX.Element {
         )}
       </main>
 
-      <AlertDialog.Root
-        open={renameTarget !== null}
+      <RenameStudyNodeDialog
+        target={renameTarget}
+        value={renameValue}
         onOpenChange={(open) => {
           if (!open) {
             setRenameTarget(null)
           }
         }}
-      >
-        <AlertDialog.Portal>
-          <AlertDialog.Overlay className="fixed inset-0 z-50 bg-black/60" />
-
-          <AlertDialog.Content className="fixed top-1/2 left-1/2 z-50 w-[min(420px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-5">
-            <AlertDialog.Title className="text-lg font-semibold text-[var(--app-text)]">
-              {renameTarget?.type === 'folder' ? 'Переименовать папку' : 'Переименовать материал'}
-            </AlertDialog.Title>
-
-            <input
-              autoFocus
-              value={renameValue}
-              className="mt-4 w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 py-2 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/50"
-              onChange={(event) => {
-                setRenameValue(event.target.value)
-              }}
-            />
-
-            <div className="mt-5 flex justify-end gap-2">
-              <AlertDialog.Cancel asChild>
-                <button
-                  type="button"
-                  className="rounded-lg px-3 py-2 text-sm text-[var(--app-muted)] hover:bg-white/[0.06]"
-                >
-                  Отмена
-                </button>
-              </AlertDialog.Cancel>
-
-              <AlertDialog.Action asChild>
-                <button
-                  type="button"
-                  disabled={!renameValue.trim()}
-                  className="rounded-lg bg-violet-500 px-3 py-2 text-sm font-medium text-white hover:bg-violet-400 disabled:opacity-40"
-                  onClick={() => {
-                    if (renameTarget) {
-                      void study.renameNode(renameTarget.id, renameValue)
-                    }
-
-                    setRenameTarget(null)
-                  }}
-                >
-                  Сохранить
-                </button>
-              </AlertDialog.Action>
-            </div>
-          </AlertDialog.Content>
-        </AlertDialog.Portal>
-      </AlertDialog.Root>
+        onValueChange={setRenameValue}
+        onConfirm={confirmRename}
+      />
 
       <DeleteConfirmationDialog
         open={deleteTarget !== null}
@@ -471,6 +443,22 @@ export function StudyPage(): React.JSX.Element {
         }}
       />
     </section>
+  )
+}
+
+function StudyMaterialLoadingFallback(): React.JSX.Element {
+  return (
+    <div
+      role="status"
+      aria-label="Загрузка материала"
+      className="h-full overflow-hidden bg-[var(--app-workspace)] px-7 py-6 max-[720px]:px-4"
+    >
+      <div className="mx-auto grid w-full max-w-5xl gap-4">
+        <div className="h-8 w-1/3 animate-pulse rounded-lg bg-white/[0.07]" />
+        <div className="h-28 animate-pulse rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)]" />
+        <div className="h-52 animate-pulse rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)]" />
+      </div>
+    </div>
   )
 }
 

@@ -1,4 +1,4 @@
-import { app, dialog, protocol, type BrowserWindow, type OpenDialogOptions } from 'electron'
+import { app, dialog, protocol, shell, type BrowserWindow, type OpenDialogOptions } from 'electron'
 import { createReadStream } from 'node:fs'
 import { copyFile, mkdir, readdir, rm, stat } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
@@ -6,6 +6,7 @@ import { basename, extname, isAbsolute, join, relative, resolve } from 'node:pat
 
 import type {
   ImportStudyAssetInput,
+  OpenStudyAssetInput,
   StudyAssetKind,
   StudyBlock,
   StudyDocument,
@@ -262,6 +263,26 @@ export async function importStudyAsset(
   }
 }
 
+export async function openStudyAsset(input: OpenStudyAssetInput): Promise<void> {
+  const filePath = resolveStudyAssetPath(input)
+
+  if (!filePath) {
+    throw new Error('Некорректный путь вложения')
+  }
+
+  const fileStats = await stat(filePath).catch(() => null)
+
+  if (!fileStats?.isFile()) {
+    throw new Error('Файл не найден')
+  }
+
+  const openError = await shell.openPath(filePath)
+
+  if (openError) {
+    throw new Error(openError)
+  }
+}
+
 type StudyAssetBlock = Extract<
   StudyBlock,
   {
@@ -470,20 +491,34 @@ function resolveStudyAssetRequest(requestUrl: string): string | null {
       return null
     }
 
-    const root = resolve(getStudyAssetsRoot())
-
-    const filePath = resolve(root, materialId, assetId, fileName)
-
-    const relativePath = relative(root, filePath)
-
-    if (!relativePath || relativePath.startsWith('..') || isAbsolute(relativePath)) {
-      return null
-    }
-
-    return filePath
+    return resolveStudyAssetPath({
+      materialId,
+      id: assetId,
+      name: fileName
+    })
   } catch {
     return null
   }
+}
+
+function resolveStudyAssetPath(input: OpenStudyAssetInput): string | null {
+  if (
+    !SAFE_ASSET_SEGMENT.test(input.materialId) ||
+    !SAFE_ASSET_SEGMENT.test(input.id) ||
+    !isSafeAssetFileName(input.name)
+  ) {
+    return null
+  }
+
+  const root = resolve(getStudyAssetsRoot())
+  const filePath = resolve(root, input.materialId, input.id, input.name)
+  const relativePath = relative(root, filePath)
+
+  if (!relativePath || relativePath.startsWith('..') || isAbsolute(relativePath)) {
+    return null
+  }
+
+  return filePath
 }
 
 function getPickerTitle(kind: StudyAssetKind): string {
