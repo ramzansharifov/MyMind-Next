@@ -114,11 +114,6 @@ export function StudyHome({
                   <h1 className="mt-1 text-3xl font-semibold tracking-[-0.035em] text-[var(--app-text)]">
                     Обучение
                   </h1>
-
-                  <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--app-muted)]">
-                    Организуй материалы, конспекты, формулы, диаграммы и вложения в едином
-                    пространстве.
-                  </p>
                 </div>
               </div>
 
@@ -211,7 +206,6 @@ export function StudyHome({
             <StudyHomePanel
               icon={<Clock3 aria-hidden="true" className="size-5" />}
               title="Недавние материалы"
-              description="Последние изменённые записи"
               count={recentMaterials.length}
             >
               {recentMaterials.length > 0 ? (
@@ -234,7 +228,6 @@ export function StudyHome({
             <StudyHomePanel
               icon={<Layers3 aria-hidden="true" className="size-5" />}
               title="Структура"
-              description="В корне библиотеки"
               count={rootNodes.length}
             >
               {rootNodes.length > 0 ? (
@@ -301,13 +294,11 @@ function StudyStatCard({
 function StudyHomePanel({
   icon,
   title,
-  description,
   count,
   children
 }: {
   icon: ReactNode
   title: string
-  description: string
   count: number
   children: ReactNode
 }): React.JSX.Element {
@@ -320,8 +311,6 @@ function StudyHomePanel({
 
         <div className="min-w-0 flex-1">
           <h2 className="truncate text-base font-semibold text-[var(--app-text)]">{title}</h2>
-
-          <p className="mt-0.5 truncate text-xs text-[var(--app-muted)]">{description}</p>
         </div>
 
         <span className="flex min-w-7 items-center justify-center rounded-full border border-[var(--app-border)] bg-[var(--app-workspace)] px-2 py-1 text-[11px] font-medium text-[var(--app-muted)] tabular-nums">
@@ -409,7 +398,6 @@ function StudyNodeCard({
 function StudySearchResults({
   nodes,
   nodesById,
-  search,
   onOpen
 }: {
   nodes: StudyNode[]
@@ -421,7 +409,6 @@ function StudySearchResults({
     <StudyHomePanel
       icon={<Search aria-hidden="true" className="size-5" />}
       title="Результаты поиска"
-      description={`Запрос: «${search}»`}
       count={nodes.length}
     >
       {nodes.length > 0 ? (

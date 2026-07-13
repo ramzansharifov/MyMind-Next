@@ -434,7 +434,6 @@ const folderWorkspaceDateFormatter = new Intl.DateTimeFormat('ru-RU', {
 })
 function FolderWorkspace({
   node,
-  allNodes,
   items,
   onSelect,
   onCreateFolder,
@@ -460,8 +459,6 @@ function FolderWorkspace({
     .sort((first, second) => first.position - second.position)
 
   const activeIcon = node.icon ?? 'folder'
-
-  const folderPath = getFolderWorkspacePath(node, allNodes)
 
   return (
     <section className="h-full overflow-y-auto bg-[var(--app-workspace)] px-8 py-7 max-[720px]:px-4 max-[720px]:py-5">
@@ -492,13 +489,6 @@ function FolderWorkspace({
                   <h1 className="mt-1 truncate text-3xl font-semibold tracking-[-0.035em] text-[var(--app-text)]">
                     {node.title}
                   </h1>
-
-                  <p
-                    title={folderPath.join(' / ')}
-                    className="mt-2 max-w-2xl truncate text-sm text-[var(--app-muted)]"
-                  >
-                    {folderPath.join(' / ')}
-                  </p>
                 </div>
               </div>
 
@@ -551,7 +541,6 @@ function FolderWorkspace({
           <FolderItemsSection
             kind="material"
             title="Материалы"
-            description="Конспекты и учебные материалы этой папки"
             items={materials}
             emptyText="В этой папке пока нет материалов"
             onSelect={onSelect}
@@ -560,7 +549,6 @@ function FolderWorkspace({
           <FolderItemsSection
             kind="folder"
             title="Вложенные папки"
-            description="Дополнительные разделы текущей папки"
             items={folders}
             emptyText="Вложенных папок пока нет"
             onSelect={onSelect}
@@ -660,14 +648,12 @@ function FolderStatistic({
 function FolderItemsSection({
   kind,
   title,
-  description,
   items,
   emptyText,
   onSelect
 }: {
   kind: 'folder' | 'material'
   title: string
-  description: string
   items: StudyNode[]
   emptyText: string
   onSelect: (nodeId: string) => void
@@ -687,8 +673,6 @@ function FolderItemsSection({
 
         <div className="min-w-0 flex-1">
           <h2 className="truncate text-base font-semibold text-[var(--app-text)]">{title}</h2>
-
-          <p className="mt-0.5 truncate text-xs text-[var(--app-muted)]">{description}</p>
         </div>
 
         <span className="flex min-w-7 shrink-0 items-center justify-center rounded-full border border-[var(--app-border)] bg-[var(--app-workspace)] px-2 py-1 text-[11px] font-medium text-[var(--app-muted)] tabular-nums">
@@ -769,28 +753,4 @@ function FolderItemsSection({
       )}
     </section>
   )
-}
-
-function getFolderWorkspacePath(node: StudyNode, allNodes: StudyNode[]): string[] {
-  const nodesById = new Map(allNodes.map((item) => [item.id, item]))
-
-  const path = [node.title]
-  const visited = new Set([node.id])
-
-  let parentId = node.parentId
-
-  while (parentId && !visited.has(parentId)) {
-    visited.add(parentId)
-
-    const parent = nodesById.get(parentId)
-
-    if (!parent) {
-      break
-    }
-
-    path.unshift(parent.title)
-    parentId = parent.parentId
-  }
-
-  return ['Обучение', ...path]
 }
