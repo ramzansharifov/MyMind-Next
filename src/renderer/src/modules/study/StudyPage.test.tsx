@@ -28,6 +28,8 @@ describe('StudyPage dialogs', () => {
         onValueChange={onValueChange}
         onOpenChange={vi.fn()}
         onConfirm={onConfirm}
+        isSubmitting={false}
+        error={null}
       />
     )
 

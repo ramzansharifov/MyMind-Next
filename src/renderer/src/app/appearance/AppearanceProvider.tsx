@@ -79,13 +79,14 @@ export function AppearanceProvider({ children }: PropsWithChildren): React.JSX.E
 
   useEffect(() => {
     let active = true
+    const loadRevision = revisionRef.current
 
     mountedRef.current = true
 
     appearanceClient
       .getAppearance()
       .then((loadedPreferences) => {
-        if (!active) {
+        if (!active || revisionRef.current !== loadRevision) {
           return
         }
 

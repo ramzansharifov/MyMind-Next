@@ -1,22 +1,29 @@
 import { z } from 'zod'
 
-import { STUDY_FOLDER_ICON_NAMES } from '../contracts/study'
+import {
+  STUDY_DOCUMENT_LIMITS,
+  STUDY_FOLDER_ICON_NAMES,
+  STUDY_SAFE_ID_PATTERN
+} from '../contracts/study'
+import { createCanonicalStudyAssetUrl, isSafeStudyAssetFileName } from '../study-assets'
+
+const studySafeIdSchema = z.string().regex(STUDY_SAFE_ID_PATTERN, 'Некорректный идентификатор')
 
 export const studyNodeTypeSchema = z.enum(['folder', 'material'])
 
 export const studyFolderIconSchema = z.enum(STUDY_FOLDER_ICON_NAMES)
 
 export const studyTextBlockSchema = z.object({
-  id: z.string().min(1),
+  id: studySafeIdSchema,
   type: z.literal('text'),
-  text: z.string(),
-  html: z.string().optional()
+  text: z.string().max(STUDY_DOCUMENT_LIMITS.maxTextLength),
+  html: z.string().max(STUDY_DOCUMENT_LIMITS.maxHtmlLength).optional()
 })
 
 export const studyHeadingBlockSchema = z.object({
-  id: z.string().min(1),
+  id: studySafeIdSchema,
   type: z.literal('heading'),
-  text: z.string(),
+  text: z.string().max(STUDY_DOCUMENT_LIMITS.maxTitleLength),
   level: z.union([z.literal(1), z.literal(2), z.literal(3)]),
   color: z
     .string()
@@ -29,47 +36,63 @@ export const studyHeadingBlockSchema = z.object({
 })
 
 export const studyCodeBlockSchema = z.object({
-  id: z.string().min(1),
+  id: studySafeIdSchema,
   type: z.literal('code'),
-  source: z.string(),
-  language: z.string()
+  source: z.string().max(STUDY_DOCUMENT_LIMITS.maxSourceLength),
+  language: z.string().max(80)
 })
 export const studyMarkdownBlockSchema = z.object({
-  id: z.string().min(1),
+  id: studySafeIdSchema,
   type: z.literal('markdown'),
-  source: z.string(),
+  source: z.string().max(STUDY_DOCUMENT_LIMITS.maxSourceLength),
   viewMode: z.enum(['write', 'split', 'preview']).optional()
 })
 export const studyLatexBlockSchema = z.object({
-  id: z.string().min(1),
+  id: studySafeIdSchema,
   type: z.literal('latex'),
-  source: z.string(),
+  source: z.string().max(STUDY_DOCUMENT_LIMITS.maxLatexSourceLength),
   viewMode: z.enum(['write', 'split', 'preview']).optional(),
   displayMode: z.enum(['display', 'inline']).optional(),
   alignment: z.enum(['left', 'center', 'right']).optional(),
   scale: z.number().int().min(70).max(180).optional()
 })
 export const studyMermaidBlockSchema = z.object({
-  id: z.string().min(1),
+  id: studySafeIdSchema,
   type: z.literal('mermaid'),
-  source: z.string(),
+  source: z.string().max(STUDY_DOCUMENT_LIMITS.maxMermaidSourceLength),
   viewMode: z.enum(['write', 'split', 'preview']).optional(),
   theme: z.enum(['dark', 'default', 'neutral', 'forest']).optional(),
   scale: z.number().int().min(60).max(180).optional()
 })
-export const studyLocalAssetSchema = z.object({
-  id: z.string().uuid(),
-  materialId: z.string().min(1).max(120),
-  name: z.string().min(1).max(180),
-  mimeType: z.string().min(1).max(120),
-  size: z.number().int().nonnegative(),
-  url: z.string().regex(/^mymind-asset:\/\/local\//)
-})
+export const studyLocalAssetSchema = z
+  .object({
+    id: z.string().uuid(),
+    materialId: studySafeIdSchema,
+    name: z.string().min(1).max(180).refine(isSafeStudyAssetFileName, 'Некорректное имя файла'),
+    mimeType: z.string().min(1).max(120),
+    size: z.number().int().nonnegative(),
+    url: z.string().regex(/^mymind-asset:\/\/local\//)
+  })
+  .superRefine((asset, context) => {
+    const canonicalUrl = createCanonicalStudyAssetUrl({
+      materialId: asset.materialId,
+      assetId: asset.id,
+      fileName: asset.name
+    })
 
-export const openStudyAssetInputSchema = studyLocalAssetSchema.pick({
-  id: true,
-  materialId: true,
-  name: true
+    if (asset.url !== canonicalUrl) {
+      context.addIssue({
+        code: 'custom',
+        path: ['url'],
+        message: 'URL вложения не соответствует его идентификаторам'
+      })
+    }
+  })
+
+export const openStudyAssetInputSchema = z.object({
+  id: z.string().uuid(),
+  materialId: studySafeIdSchema,
+  name: z.string().min(1).max(180).refine(isSafeStudyAssetFileName, 'Некорректное имя файла')
 })
 
 const studyLocalAssetSourceSchema = z.object({
@@ -79,7 +102,7 @@ const studyLocalAssetSourceSchema = z.object({
 
 const studyRemoteAssetSourceSchema = z.object({
   type: z.literal('url'),
-  url: z.string().max(4096)
+  url: z.string().max(STUDY_DOCUMENT_LIMITS.maxRemoteUrlLength)
 })
 
 const studyMediaAssetSourceSchema = z.discriminatedUnion('type', [
@@ -88,8 +111,8 @@ const studyMediaAssetSourceSchema = z.discriminatedUnion('type', [
 ])
 
 const studyAttachmentBaseShape = {
-  id: z.string().min(1),
-  title: z.string().max(240).optional()
+  id: studySafeIdSchema,
+  title: z.string().max(STUDY_DOCUMENT_LIMITS.maxTitleLength).optional()
 }
 
 export const studyImageBlockSchema = z.object({
@@ -119,7 +142,7 @@ export const studyFileBlockSchema = z.object({
 })
 
 export const studyDividerBlockSchema = z.object({
-  id: z.string().min(1),
+  id: studySafeIdSchema,
   type: z.literal('divider'),
   variant: z.enum(['solid', 'tapered', 'dashed', 'dotted']).optional(),
   thickness: z.number().int().min(1).max(12).optional(),
@@ -143,16 +166,42 @@ export const studyBlockSchema = z.discriminatedUnion('type', [
   studyDividerBlockSchema
 ])
 
-export const studyDocumentSchema = z.object({
-  version: z.literal(1),
-  blocks: z.array(studyBlockSchema)
-})
+export const studyDocumentSchema = z
+  .object({
+    version: z.literal(1),
+    blocks: z.array(studyBlockSchema).max(STUDY_DOCUMENT_LIMITS.maxBlocks)
+  })
+  .superRefine((document, context) => {
+    const ids = new Set<string>()
+
+    document.blocks.forEach((block, index) => {
+      if (ids.has(block.id)) {
+        context.addIssue({
+          code: 'custom',
+          path: ['blocks', index, 'id'],
+          message: 'Идентификаторы блоков должны быть уникальными'
+        })
+      }
+
+      ids.add(block.id)
+    })
+
+    const serializedBytes = new TextEncoder().encode(JSON.stringify(document)).byteLength
+
+    if (serializedBytes > STUDY_DOCUMENT_LIMITS.maxSerializedBytes) {
+      context.addIssue({
+        code: 'custom',
+        path: [],
+        message: 'Документ превышает допустимый размер'
+      })
+    }
+  })
 
 export const studyNodeSchema = z.object({
-  id: z.string().min(1),
+  id: studySafeIdSchema,
   type: studyNodeTypeSchema,
-  parentId: z.string().nullable(),
-  title: z.string().min(1),
+  parentId: studySafeIdSchema.nullable(),
+  title: z.string().min(1).max(STUDY_DOCUMENT_LIMITS.maxTitleLength),
   icon: studyFolderIconSchema.optional(),
   position: z.number().int(),
   isExpanded: z.boolean(),
@@ -161,9 +210,9 @@ export const studyNodeSchema = z.object({
 })
 
 export const studyMaterialSchema = z.object({
-  nodeId: z.string().min(1),
+  nodeId: studySafeIdSchema,
   document: studyDocumentSchema,
-  plainText: z.string(),
+  plainText: z.string().max(STUDY_DOCUMENT_LIMITS.maxTextLength),
   createdAt: z.number().int(),
   updatedAt: z.number().int()
 })
@@ -193,38 +242,58 @@ export const resolveStudyInternalLinkTargetInputSchema = z.object({
 
 export const createStudyNodeInputSchema = z.object({
   type: studyNodeTypeSchema,
-  parentId: z.string().nullable(),
-  title: z.string().trim().optional(),
+  parentId: studySafeIdSchema.nullable(),
+  title: z.string().trim().max(STUDY_DOCUMENT_LIMITS.maxTitleLength).optional(),
   icon: studyFolderIconSchema.optional()
 })
 
 export const renameStudyNodeInputSchema = z.object({
-  id: z.string().min(1),
-  title: z.string().trim().min(1).max(120)
+  id: studySafeIdSchema,
+  title: z.string().trim().min(1).max(STUDY_DOCUMENT_LIMITS.maxTitleLength)
 })
 export const duplicateStudyNodeInputSchema = z.object({
-  id: z.string().min(1)
+  id: studySafeIdSchema
 })
 export const updateStudyFolderIconInputSchema = z.object({
-  id: z.string().min(1),
+  id: studySafeIdSchema,
   icon: studyFolderIconSchema
 })
 
 export const updateStudyNodeExpansionInputSchema = z.object({
-  id: z.string().min(1),
+  id: studySafeIdSchema,
   isExpanded: z.boolean()
 })
 export const moveStudyNodeInputSchema = z.object({
-  id: z.string().min(1),
-  parentId: z.string().min(1).nullable(),
+  id: studySafeIdSchema,
+  parentId: studySafeIdSchema.nullable(),
   position: z.number().int().min(0)
 })
 
 export const importStudyAssetInputSchema = z.object({
-  nodeId: z.string().min(1).max(120),
+  nodeId: studySafeIdSchema,
   kind: z.enum(['image', 'video', 'audio', 'file'])
 })
-export const saveStudyMaterialInputSchema = z.object({
-  nodeId: z.string().min(1),
-  document: studyDocumentSchema
-})
+export const saveStudyMaterialInputSchema = z
+  .object({
+    nodeId: studySafeIdSchema,
+    document: studyDocumentSchema
+  })
+  .superRefine((input, context) => {
+    input.document.blocks.forEach((block, index) => {
+      if (
+        (block.type === 'image' ||
+          block.type === 'video' ||
+          block.type === 'audio' ||
+          block.type === 'file') &&
+        block.source.type === 'local' &&
+        block.source.asset &&
+        block.source.asset.materialId !== input.nodeId
+      ) {
+        context.addIssue({
+          code: 'custom',
+          path: ['document', 'blocks', index, 'source', 'asset', 'materialId'],
+          message: 'Вложение принадлежит другому материалу'
+        })
+      }
+    })
+  })

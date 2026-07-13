@@ -22,6 +22,22 @@ Object.defineProperty(globalThis, 'ResizeObserver', {
   value: ResizeObserverMock
 })
 
+Object.defineProperty(globalThis, 'matchMedia', {
+  configurable: true,
+  writable: true,
+  value: (query: string): MediaQueryList =>
+    ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      dispatchEvent: () => false
+    }) as MediaQueryList
+})
+
 afterEach(() => {
   cleanup()
 })

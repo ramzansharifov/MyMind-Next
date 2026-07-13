@@ -1,6 +1,7 @@
-import { BookOpen, Settings, type LucideIcon } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+import { appModules, type AppViewId } from './module-registry'
 
-export type AppViewId = 'study' | 'settings'
+export type { AppViewId } from './module-registry'
 
 export interface AppNavigationItem {
   id: AppViewId
@@ -8,18 +9,10 @@ export interface AppNavigationItem {
   icon: LucideIcon
 }
 
-export const primaryNavigationItems: AppNavigationItem[] = [
-  {
-    id: 'study',
-    label: 'Обучение',
-    icon: BookOpen
-  }
-]
+export const primaryNavigationItems: AppNavigationItem[] = appModules.filter(
+  (module) => module.navigationGroup === 'primary'
+)
 
-export const utilityNavigationItems: AppNavigationItem[] = [
-  {
-    id: 'settings',
-    label: 'Настройки',
-    icon: Settings
-  }
-]
+export const utilityNavigationItems: AppNavigationItem[] = appModules.filter(
+  (module) => module.navigationGroup === 'utility'
+)

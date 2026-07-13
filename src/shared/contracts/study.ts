@@ -68,6 +68,20 @@ export type StudyBlockType =
   | 'file'
   | 'divider'
 
+export const STUDY_DOCUMENT_LIMITS = {
+  maxBlocks: 2_000,
+  maxSerializedBytes: 10 * 1024 * 1024,
+  maxTextLength: 1_000_000,
+  maxHtmlLength: 2_000_000,
+  maxSourceLength: 1_000_000,
+  maxLatexSourceLength: 200_000,
+  maxMermaidSourceLength: 200_000,
+  maxTitleLength: 240,
+  maxRemoteUrlLength: 4_096
+} as const
+
+export const STUDY_SAFE_ID_PATTERN = /^[a-zA-Z0-9_-]{1,120}$/
+
 export interface StudyTextBlock {
   id: string
   type: 'text'

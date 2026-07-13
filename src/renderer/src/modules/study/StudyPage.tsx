@@ -50,6 +50,8 @@ export function StudyPage(): React.JSX.Element {
 
   const [renameTarget, setRenameTarget] = useState<StudyNode | null>(null)
   const [renameValue, setRenameValue] = useState('')
+  const [renameError, setRenameError] = useState<string | null>(null)
+  const [isRenaming, setIsRenaming] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<StudyNode | null>(null)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
 
@@ -89,15 +91,27 @@ export function StudyPage(): React.JSX.Element {
   function openRename(node: StudyNode): void {
     setRenameTarget(node)
     setRenameValue(node.title)
+    setRenameError(null)
   }
 
-  function confirmRename(): void {
-    if (!renameTarget || !renameValue.trim()) {
+  async function confirmRename(): Promise<void> {
+    const title = renameValue.trim()
+
+    if (!renameTarget || !title || isRenaming) {
       return
     }
 
-    void study.renameNode(renameTarget.id, renameValue)
-    setRenameTarget(null)
+    setIsRenaming(true)
+    setRenameError(null)
+
+    try {
+      await study.renameNode(renameTarget.id, title)
+      setRenameTarget(null)
+    } catch (reason: unknown) {
+      setRenameError(reason instanceof Error ? reason.message : 'Не удалось переименовать элемент')
+    } finally {
+      setIsRenaming(false)
+    }
   }
   const openStudyNode = useCallback(
     (nodeId: string): void => {
@@ -418,6 +432,8 @@ export function StudyPage(): React.JSX.Element {
         }}
         onValueChange={setRenameValue}
         onConfirm={confirmRename}
+        isSubmitting={isRenaming}
+        error={renameError}
       />
 
       <DeleteConfirmationDialog

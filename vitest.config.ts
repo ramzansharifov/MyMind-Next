@@ -9,7 +9,7 @@ export default defineConfig({
     include: ['src/renderer/src/**/*.test.{ts,tsx}', 'src/main/**/*.test.ts'],
     exclude: ['node_modules/**', 'dist/**', 'out/**', 'coverage/**', '.filetags/**'],
     pool: 'threads',
-    isolate: false,
+    isolate: true,
     fileParallelism: false,
     maxWorkers: 1,
     clearMocks: true,

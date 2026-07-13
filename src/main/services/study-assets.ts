@@ -12,6 +12,7 @@ import type {
   StudyDocument,
   StudyLocalAsset
 } from '../../shared/contracts/study'
+import { createCanonicalStudyAssetUrl, isSafeStudyAssetFileName } from '../../shared/study-assets'
 import { resolveStudyAssetByteRange } from './study-asset-range'
 
 export const STUDY_ASSET_SCHEME = 'mymind-asset'
@@ -255,7 +256,7 @@ export async function importStudyAsset(
     name: fileName,
     mimeType: getStudyAssetMimeType(extension),
     size: fileStats.size,
-    url: createStudyAssetUrl({
+    url: createCanonicalStudyAssetUrl({
       materialId: input.nodeId,
       assetId,
       fileName
@@ -280,6 +281,46 @@ export async function openStudyAsset(input: OpenStudyAssetInput): Promise<void> 
 
   if (openError) {
     throw new Error(openError)
+  }
+}
+
+export async function validateStudyDocumentAssets(
+  materialId: string,
+  document: StudyDocument
+): Promise<void> {
+  assertSafeAssetSegment(materialId, 'material id')
+
+  for (const block of document.blocks) {
+    if (!isStudyAssetBlock(block) || block.source.type !== 'local' || !block.source.asset) {
+      continue
+    }
+
+    const asset = block.source.asset
+
+    if (asset.materialId !== materialId) {
+      throw new Error(`Вложение «${asset.name}» принадлежит другому материалу`)
+    }
+
+    const expectedUrl = createCanonicalStudyAssetUrl({
+      materialId,
+      assetId: asset.id,
+      fileName: asset.name
+    })
+
+    if (asset.url !== expectedUrl) {
+      throw new Error(`Некорректный URL вложения «${asset.name}»`)
+    }
+
+    const filePath = resolveStudyAssetPath({
+      materialId,
+      id: asset.id,
+      name: asset.name
+    })
+    const fileStats = filePath ? await stat(filePath).catch(() => null) : null
+
+    if (!fileStats?.isFile()) {
+      throw new Error(`Вложение «${asset.name}» не найдено`)
+    }
   }
 }
 
@@ -321,7 +362,7 @@ export async function duplicateStudyAssetsForDocument(
 
       assertSafeAssetSegment(sourceAsset.id, 'source asset id')
 
-      if (!isSafeAssetFileName(sourceAsset.name)) {
+      if (!isSafeStudyAssetFileName(sourceAsset.name)) {
         throw new Error('Некорректное имя вложения')
       }
 
@@ -360,7 +401,7 @@ export async function duplicateStudyAssetsForDocument(
           id: targetAssetId,
           materialId: targetMaterialId,
           size: sourceStats.size,
-          url: createStudyAssetUrl({
+          url: createCanonicalStudyAssetUrl({
             materialId: targetMaterialId,
             assetId: targetAssetId,
             fileName: sourceAsset.name
@@ -450,20 +491,6 @@ function getStudyAssetsRoot(): string {
   return join(app.getPath('documents'), 'MyMind', 'Attachments')
 }
 
-function createStudyAssetUrl({
-  materialId,
-  assetId,
-  fileName
-}: {
-  materialId: string
-  assetId: string
-  fileName: string
-}): string {
-  return `${STUDY_ASSET_SCHEME}://local/${encodeURIComponent(materialId)}/${encodeURIComponent(
-    assetId
-  )}/${encodeURIComponent(fileName)}`
-}
-
 function resolveStudyAssetRequest(requestUrl: string): string | null {
   try {
     const parsedUrl = new URL(requestUrl)
@@ -486,7 +513,7 @@ function resolveStudyAssetRequest(requestUrl: string): string | null {
     if (
       !SAFE_ASSET_SEGMENT.test(materialId) ||
       !SAFE_ASSET_SEGMENT.test(assetId) ||
-      !isSafeAssetFileName(fileName)
+      !isSafeStudyAssetFileName(fileName)
     ) {
       return null
     }
@@ -505,7 +532,7 @@ function resolveStudyAssetPath(input: OpenStudyAssetInput): string | null {
   if (
     !SAFE_ASSET_SEGMENT.test(input.materialId) ||
     !SAFE_ASSET_SEGMENT.test(input.id) ||
-    !isSafeAssetFileName(input.name)
+    !isSafeStudyAssetFileName(input.name)
   ) {
     return null
   }
@@ -608,24 +635,12 @@ function sanitizeStudyAssetFileName(value: string): string {
   return `${stem || 'file'}${extension}`
 }
 
-function isSafeAssetFileName(value: string): boolean {
-  return (
-    Boolean(value) &&
-    value.length <= 180 &&
-    basename(value) === value &&
-    !hasControlCharacters(value)
-  )
-}
-
 function replaceControlCharacters(value: string): string {
   return Array.from(value)
     .map((character) => (character.charCodeAt(0) <= 31 ? '_' : character))
     .join('')
 }
 
-function hasControlCharacters(value: string): boolean {
-  return Array.from(value).some((character) => character.charCodeAt(0) <= 31)
-}
 function assertSafeAssetSegment(value: string, label: string): void {
   if (!SAFE_ASSET_SEGMENT.test(value)) {
     throw new Error(`Invalid study asset ${label}`)

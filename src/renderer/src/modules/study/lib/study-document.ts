@@ -13,6 +13,16 @@ export const DEFAULT_DIVIDER_VARIANT: StudyDividerVariant = 'solid'
 export const DEFAULT_HEADING_COLOR = '#f2f3f5'
 export const DEFAULT_HEADING_BACKGROUND_COLOR = '#181a20'
 
+export function resolveStudyHeadingColor(color?: string): string {
+  return !color || color.toLowerCase() === DEFAULT_HEADING_COLOR ? 'var(--app-text)' : color
+}
+
+export function resolveStudyHeadingBackgroundColor(color?: string): string {
+  return !color || color.toLowerCase() === DEFAULT_HEADING_BACKGROUND_COLOR
+    ? 'var(--app-surface-raised)'
+    : color
+}
+
 export function resolveStudyDividerColor(color?: string): string {
   if (!color || color.toLowerCase() === DEFAULT_DIVIDER_COLOR) {
     return DEFAULT_DIVIDER_CSS_COLOR

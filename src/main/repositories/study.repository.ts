@@ -1,4 +1,4 @@
-import { asc, eq, isNull } from 'drizzle-orm'
+import { asc, eq, inArray, isNull, like, or } from 'drizzle-orm'
 import { randomUUID } from 'node:crypto'
 
 import { studyLinkTargets, studyMaterials, studyNodes } from '../database/schema/study'
@@ -25,8 +25,10 @@ import {
 import {
   cleanupStudyAssetsForDocument,
   duplicateStudyAssetsForDocument,
-  removeStudyAssetsForMaterials
+  removeStudyAssetsForMaterials,
+  validateStudyDocumentAssets
 } from '../services/study-assets'
+import { studyMaterialCoordinator } from '../services/study-material-coordinator'
 
 function createEmptyStudyDocument(): StudyDocument {
   return {
@@ -424,6 +426,18 @@ export function createStudyNode(input: CreateStudyNodeInput): StudyNode {
   const now = new Date()
   const id = randomUUID()
 
+  if (input.parentId !== null) {
+    const parent = database.select().from(studyNodes).where(eq(studyNodes.id, input.parentId)).get()
+
+    if (!parent) {
+      throw new Error('Родительский элемент не найден')
+    }
+
+    if (parent.type !== 'folder') {
+      throw new Error('Создавать элементы можно только внутри папки')
+    }
+  }
+
   const siblings = database
     .select({
       position: studyNodes.position
@@ -497,7 +511,7 @@ export function createStudyNode(input: CreateStudyNodeInput): StudyNode {
 
   return mapStudyNode(created)
 }
-export async function duplicateStudyNode(id: string): Promise<DuplicateStudyNodeResult> {
+async function duplicateStudyNodeNow(id: string): Promise<DuplicateStudyNodeResult> {
   const database = getDatabase()
 
   const rows = database.select().from(studyNodes).all()
@@ -683,8 +697,20 @@ export async function duplicateStudyNode(id: string): Promise<DuplicateStudyNode
   }
 }
 
+export async function duplicateStudyNode(id: string): Promise<DuplicateStudyNodeResult> {
+  const sourceMaterialIds = getMaterialIdsInStudySubtree(id)
+
+  return studyMaterialCoordinator.runForMany(sourceMaterialIds, () => duplicateStudyNodeNow(id))
+}
+
 export function renameStudyNode(id: string, title: string): StudyNode {
   const database = getDatabase()
+
+  const existing = database.select().from(studyNodes).where(eq(studyNodes.id, id)).get()
+
+  if (!existing) {
+    throw new Error('Элемент обучения не найден')
+  }
 
   database
     .update(studyNodes)
@@ -732,6 +758,16 @@ export function updateStudyFolderIcon(id: string, icon: StudyFolderIconName): St
 
 export function updateStudyNodeExpansion(id: string, isExpanded: boolean): StudyNode {
   const database = getDatabase()
+
+  const folder = database.select().from(studyNodes).where(eq(studyNodes.id, id)).get()
+
+  if (!folder) {
+    throw new Error('Элемент обучения не найден')
+  }
+
+  if (folder.type !== 'folder') {
+    throw new Error('Раскрытие доступно только для папок')
+  }
 
   database
     .update(studyNodes)
@@ -887,13 +923,17 @@ function getMaterialIdsInStudySubtree(rootId: string): string[] {
 export async function deleteStudyNode(id: string): Promise<boolean> {
   const materialIds = getMaterialIdsInStudySubtree(id)
 
-  const result = getDatabase().delete(studyNodes).where(eq(studyNodes.id, id)).run()
+  return studyMaterialCoordinator.runForMany(materialIds, async () => {
+    const result = getDatabase().delete(studyNodes).where(eq(studyNodes.id, id)).run()
 
-  if (result.changes > 0) {
-    await removeStudyAssetsForMaterials(materialIds).catch(() => undefined)
-  }
+    if (result.changes > 0) {
+      await removeStudyAssetsForMaterials(materialIds).catch((reason: unknown) => {
+        console.error('Failed to remove study assets after node deletion', reason)
+      })
+    }
 
-  return result.changes > 0
+    return result.changes > 0
+  })
 }
 export function searchStudyInternalLinkTargets(
   input: SearchStudyInternalLinkTargetsInput
@@ -910,9 +950,43 @@ export function searchStudyInternalLinkTargets(
 
   const limit = Math.max(1, Math.min(input.limit ?? 40, 100))
 
+  const matchingFolderIds = normalizedQuery
+    ? nodeRows
+        .filter(
+          (node) =>
+            node.type === 'folder' && normalizeStudyLinkSearch(node.title).includes(normalizedQuery)
+        )
+        .map((node) => node.id)
+    : []
+
+  const matchingPathMaterialIds = matchingFolderIds.length
+    ? nodeRows
+        .filter(
+          (node) =>
+            node.type === 'material' &&
+            getStudyMaterialFolderPath(node, nodesById).some((title) =>
+              normalizeStudyLinkSearch(title).includes(normalizedQuery)
+            )
+        )
+        .map((node) => node.id)
+    : []
+
+  const searchCondition = normalizedQuery
+    ? or(
+        like(studyLinkTargets.searchText, `%${normalizedQuery}%`),
+        ...(matchingPathMaterialIds.length
+          ? [inArray(studyLinkTargets.materialId, matchingPathMaterialIds)]
+          : [])
+      )
+    : undefined
+
+  const candidateLimit = Math.min(Math.max(limit * 10, 100), 1000)
+
   return database
     .select()
     .from(studyLinkTargets)
+    .where(searchCondition)
+    .limit(candidateLimit)
     .all()
     .map((row) => mapStudyInternalLinkTarget(row, nodesById))
     .filter((target): target is StudyInternalLinkTarget => target !== null)
@@ -1026,10 +1100,12 @@ export function getStudyMaterial(nodeId: string): StudyMaterial {
   return mapStudyMaterial(material)
 }
 
-export async function saveStudyMaterial(input: SaveStudyMaterialInput): Promise<StudyMaterial> {
+async function saveStudyMaterialNow(input: SaveStudyMaterialInput): Promise<StudyMaterial> {
   const database = getDatabase()
 
   const document = studyDocumentSchema.parse(input.document)
+
+  await validateStudyDocumentAssets(input.nodeId, document)
 
   const plainText = documentToPlainText(document)
 
@@ -1092,7 +1168,15 @@ export async function saveStudyMaterial(input: SaveStudyMaterialInput): Promise<
 
   const savedMaterial = getStudyMaterial(input.nodeId)
 
-  await cleanupStudyAssetsForDocument(input.nodeId, document).catch(() => undefined)
+  await cleanupStudyAssetsForDocument(input.nodeId, savedMaterial.document).catch(
+    (reason: unknown) => {
+      console.error('Failed to clean up unreferenced study assets', reason)
+    }
+  )
 
   return savedMaterial
+}
+
+export function saveStudyMaterial(input: SaveStudyMaterialInput): Promise<StudyMaterial> {
+  return studyMaterialCoordinator.run(input.nodeId, () => saveStudyMaterialNow(input))
 }

@@ -46,6 +46,8 @@ export function StudyMaterialEditor({
   const saveTimerRef = useRef<number | null>(null)
   const documentRef = useRef<StudyDocument>(document)
   const draftVersionRef = useRef(0)
+  const lastQueuedVersionRef = useRef(0)
+  const saveQueueRef = useRef<Promise<void>>(Promise.resolve())
   const hasUnsavedChangesRef = useRef(false)
   const isMountedRef = useRef(true)
   const readScrollRef = useRef<HTMLDivElement | null>(null)
@@ -59,6 +61,68 @@ export function StudyMaterialEditor({
     window.clearTimeout(saveTimerRef.current)
     saveTimerRef.current = null
   }, [])
+
+  const queueSave = useCallback(
+    (nextDocument: StudyDocument, draftVersion: number): Promise<void> => {
+      clearSaveTimer()
+
+      if (draftVersion <= lastQueuedVersionRef.current) {
+        return saveQueueRef.current
+      }
+
+      lastQueuedVersionRef.current = draftVersion
+
+      if (isMountedRef.current) {
+        setSaveState('saving')
+      }
+
+      const operation = saveQueueRef.current
+        .catch(() => undefined)
+        .then(() =>
+          studyClient.saveMaterial({
+            nodeId: node.id,
+            document: nextDocument
+          })
+        )
+        .then(() => {
+          if (!isMountedRef.current) {
+            return
+          }
+
+          if (draftVersionRef.current === draftVersion) {
+            hasUnsavedChangesRef.current = false
+            setSaveState('saved')
+          } else {
+            setSaveState('dirty')
+          }
+        })
+        .catch((reason: unknown) => {
+          if (isMountedRef.current) {
+            setSaveState('error')
+          }
+
+          throw reason
+        })
+
+      saveQueueRef.current = operation.then(
+        () => undefined,
+        () => undefined
+      )
+
+      return operation
+    },
+    [clearSaveTimer, node.id]
+  )
+
+  const flushLatestDraft = useCallback((): Promise<void> => {
+    clearSaveTimer()
+
+    if (!hasUnsavedChangesRef.current) {
+      return saveQueueRef.current
+    }
+
+    return queueSave(documentRef.current, draftVersionRef.current)
+  }, [clearSaveTimer, queueSave])
 
   useEffect(() => {
     isMountedRef.current = true
@@ -74,6 +138,7 @@ export function StudyMaterialEditor({
 
         documentRef.current = loadedMaterial.document
         draftVersionRef.current = 0
+        lastQueuedVersionRef.current = 0
         hasUnsavedChangesRef.current = false
 
         setDocument(loadedMaterial.document)
@@ -94,18 +159,11 @@ export function StudyMaterialEditor({
       active = false
       isMountedRef.current = false
 
-      clearSaveTimer()
-
-      if (hasUnsavedChangesRef.current) {
-        void studyClient
-          .saveMaterial({
-            nodeId: node.id,
-            document: documentRef.current
-          })
-          .catch(() => undefined)
-      }
+      void flushLatestDraft().catch((reason: unknown) => {
+        console.error('Failed to flush the latest study material draft', reason)
+      })
     }
-  }, [clearSaveTimer, node.id])
+  }, [flushLatestDraft, node.id])
 
   useEffect(() => {
     if (
@@ -234,39 +292,6 @@ export function StudyMaterialEditor({
     }
   }, [isLoading, navigation, node.id, onNavigationHandled])
 
-  async function save(
-    nextDocument: StudyDocument,
-    draftVersion = draftVersionRef.current
-  ): Promise<void> {
-    clearSaveTimer()
-
-    if (isMountedRef.current) {
-      setSaveState('saving')
-    }
-
-    try {
-      await studyClient.saveMaterial({
-        nodeId: node.id,
-        document: nextDocument
-      })
-
-      if (!isMountedRef.current) {
-        return
-      }
-
-      if (draftVersionRef.current === draftVersion) {
-        hasUnsavedChangesRef.current = false
-        setSaveState('saved')
-      } else {
-        setSaveState('dirty')
-      }
-    } catch {
-      if (isMountedRef.current) {
-        setSaveState('error')
-      }
-    }
-  }
-
   function updateDocument(nextDocument: StudyDocument): void {
     const nextDraftVersion = draftVersionRef.current + 1
 
@@ -282,7 +307,7 @@ export function StudyMaterialEditor({
     saveTimerRef.current = window.setTimeout(() => {
       saveTimerRef.current = null
 
-      void save(nextDocument, nextDraftVersion)
+      void queueSave(nextDocument, nextDraftVersion).catch(() => undefined)
     }, 800)
   }
 

@@ -15,7 +15,7 @@ interface UseStudyResult {
   error: string | null
   selectNode: (nodeId: string | null) => void
   createNode: (input: CreateStudyNodeInput) => Promise<StudyNode | null>
-  renameNode: (nodeId: string, title: string) => Promise<void>
+  renameNode: (nodeId: string, title: string) => Promise<StudyNode>
   duplicateNode: (nodeId: string) => Promise<StudyNode | null>
   updateFolderIcon: (nodeId: string, icon: StudyFolderIconName) => Promise<void>
   deleteNode: (nodeId: string) => Promise<void>
@@ -74,13 +74,19 @@ export function useStudy(): UseStudyResult {
     }
   }, [])
 
-  const renameNode = useCallback(async (nodeId: string, title: string): Promise<void> => {
+  const renameNode = useCallback(async (nodeId: string, title: string): Promise<StudyNode> => {
     try {
+      setError(null)
       const updated = await studyClient.renameNode(nodeId, title)
 
       setNodes((current) => current.map((node) => (node.id === updated.id ? updated : node)))
+      return updated
     } catch (reason: unknown) {
-      setError(reason instanceof Error ? reason.message : 'Не удалось переименовать элемент')
+      const renameError =
+        reason instanceof Error ? reason : new Error('Не удалось переименовать элемент')
+
+      setError(renameError.message)
+      throw renameError
     }
   }, [])
   const duplicateNode = useCallback(async (nodeId: string): Promise<StudyNode | null> => {

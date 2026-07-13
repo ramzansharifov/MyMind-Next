@@ -46,11 +46,11 @@ describe('App shell', () => {
     Reflect.deleteProperty(window, 'api')
   })
 
-  it('shows the study module by default', () => {
+  it('shows the study module by default', async () => {
     render(<App />)
 
     expect(
-      screen.getByRole('heading', {
+      await screen.findByRole('heading', {
         name: 'Обучение'
       })
     ).toBeInTheDocument()

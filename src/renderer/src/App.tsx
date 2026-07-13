@@ -1,34 +1,23 @@
-import { lazy, Suspense, useState } from 'react'
+import { Suspense, useState } from 'react'
 
 import { AppShell } from './app/AppShell'
+import { AppErrorBoundary } from './app/AppErrorBoundary'
+import { getAppModule } from './app/module-registry'
 import { type AppViewId } from './app/navigation'
-import { StudyPage } from './modules/study/StudyPage'
-import { useSystemHealth } from './shared/hooks/use-system-health'
 import { AppearanceProvider } from './app/appearance/AppearanceProvider'
-
-const SettingsPage = lazy(() =>
-  import('./modules/settings/SettingsPage').then((module) => ({
-    default: module.SettingsPage
-  }))
-)
 
 function AppContent(): React.JSX.Element {
   const [activeView, setActiveView] = useState<AppViewId>('study')
-  const systemHealth = useSystemHealth()
+  const activeModule = getAppModule(activeView)
+  const ActiveModule = activeModule.component
 
   return (
     <AppShell activeView={activeView} onViewChange={setActiveView}>
-      {activeView === 'study' && <StudyPage />}
-
-      {activeView === 'settings' && (
-        <Suspense fallback={<AppViewLoadingFallback label="Загрузка настроек" />}>
-          <SettingsPage
-            health={systemHealth.health}
-            error={systemHealth.error}
-            isLoading={systemHealth.isLoading}
-          />
+      <AppErrorBoundary scope={activeModule.id} resetKey={activeModule.id}>
+        <Suspense fallback={<AppViewLoadingFallback label={activeModule.loadingLabel} />}>
+          <ActiveModule />
         </Suspense>
-      )}
+      </AppErrorBoundary>
     </AppShell>
   )
 }
@@ -51,7 +40,9 @@ function AppViewLoadingFallback({ label }: { label: string }): React.JSX.Element
 function App(): React.JSX.Element {
   return (
     <AppearanceProvider>
-      <AppContent />
+      <AppErrorBoundary scope="приложение">
+        <AppContent />
+      </AppErrorBoundary>
     </AppearanceProvider>
   )
 }

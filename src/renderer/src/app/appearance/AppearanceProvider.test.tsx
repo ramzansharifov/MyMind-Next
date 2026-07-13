@@ -158,4 +158,39 @@ describe('AppearanceProvider', () => {
     await screen.findByText('ready')
     expect(document.documentElement).toHaveAttribute('data-accent', 'emerald')
   })
+
+  it('does not overwrite an edit with a late initial load', async () => {
+    const user = userEvent.setup()
+    let resolveInitial: ((value: AppearancePreferences) => void) | undefined
+    Object.defineProperty(window, 'api', {
+      configurable: true,
+      value: {
+        preferences: {
+          getAppearance: vi.fn().mockImplementation(
+            () =>
+              new Promise((resolve) => {
+                resolveInitial = resolve
+              })
+          ),
+          updateAppearance: vi.fn().mockResolvedValue({
+            version: 1,
+            theme: 'dark',
+            accent: 'blue'
+          })
+        }
+      }
+    })
+
+    render(
+      <AppearanceProvider>
+        <Harness />
+      </AppearanceProvider>
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Синий' }))
+    expect(document.documentElement).toHaveAttribute('data-accent', 'blue')
+
+    act(() => resolveInitial?.({ version: 1, theme: 'dark', accent: 'violet' }))
+    await waitFor(() => expect(document.documentElement).toHaveAttribute('data-accent', 'blue'))
+  })
 })

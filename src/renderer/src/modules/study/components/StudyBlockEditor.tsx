@@ -47,13 +47,14 @@ import { AutoGrowTextarea } from '../../../shared/ui/AutoGrowTextarea'
 import {
   cloneStudyBlock,
   createStudyBlock,
-  DEFAULT_HEADING_COLOR,
   getStudyTextBlockHtml,
   insertStudyBlock,
   moveStudyBlock,
   removeStudyBlock,
-  replaceStudyBlock
+  replaceStudyBlock,
+  resolveStudyHeadingColor
 } from '../lib/study-document'
+import { studyBlockDefinitions } from '../lib/study-block-registry'
 import { moveStudyBlockByDrop, type StudyBlockDropPlacement } from '../lib/study-block-dnd'
 import {
   getStudyHeadingElementId,
@@ -132,56 +133,7 @@ interface StudyBlockDropData {
 
 const STUDY_BLOCK_DROP_PREFIX = 'study-block-drop'
 
-const blockTypes: Array<{
-  type: StudyBlockType
-  label: string
-}> = [
-  {
-    type: 'text',
-    label: 'Форматированный текст'
-  },
-  {
-    type: 'heading',
-    label: 'Заголовок'
-  },
-  {
-    type: 'code',
-    label: 'Код'
-  },
-  {
-    type: 'markdown',
-    label: 'Markdown'
-  },
-  {
-    type: 'latex',
-    label: 'LaTeX'
-  },
-  {
-    type: 'mermaid',
-    label: 'Mermaid'
-  },
-  {
-    type: 'image',
-    label: 'Фото'
-  },
-  {
-    type: 'video',
-    label: 'Видео'
-  },
-  {
-    type: 'audio',
-    label: 'Аудио'
-  },
-  {
-    type: 'file',
-    label: 'Файл'
-  },
-
-  {
-    type: 'divider',
-    label: 'Разделитель'
-  }
-]
+const blockTypes = studyBlockDefinitions
 
 export function StudyBlockEditor({
   materialId,
@@ -881,7 +833,7 @@ function EditableBlock({
         )}
         style={{
           ...typography,
-          color: block.color ?? DEFAULT_HEADING_COLOR,
+          color: resolveStudyHeadingColor(block.color),
           backgroundColor: block.backgroundColor ?? 'transparent'
         }}
         onChange={(event) => {
@@ -1234,7 +1186,7 @@ function StudyReadHeading({ heading }: { heading: StudyHeadingBlock }): React.JS
 
   const style = {
     ...typography,
-    color: heading.color ?? DEFAULT_HEADING_COLOR,
+    color: resolveStudyHeadingColor(heading.color),
     backgroundColor: heading.backgroundColor ?? 'transparent'
   }
 

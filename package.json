@@ -1,10 +1,10 @@
 {
   "name": "mymind-next",
   "version": "1.0.0",
-  "description": "An Electron application with React and TypeScript",
+  "description": "Local-first desktop workspace for structured study materials",
   "main": "./out/main/index.js",
-  "author": "example.com",
-  "homepage": "https://electron-vite.org",
+  "author": "Ramzan Sharifov",
+  "homepage": "https://github.com/ramzansharifov/MyMind-Next",
   "scripts": {
     "format": "prettier --write .",
     "format:check": "prettier --check .",
