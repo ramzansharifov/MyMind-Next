@@ -8,7 +8,7 @@ import { cn } from '../../../../shared/lib/cn'
 import { Tooltip } from '../../../../shared/ui/tooltip'
 import { studyClient } from '../../api/study-client'
 import {
-  STUDY_INTERNAL_LINK_NAVIGATE_EVENT,
+  dispatchStudyInternalLinkNavigation,
   STUDY_OPEN_INTERNAL_LINK_PICKER_EVENT,
   type StudyInternalLinkNavigateDetail
 } from '../../lib/study-internal-link'
@@ -213,10 +213,6 @@ function StudyInternalLinkNodeView({ node, editor, getPos }: NodeViewProps): Rea
   }
 
   function navigate(element: HTMLElement): void {
-    if (!attributes.materialId || resolvedTarget === null) {
-      return
-    }
-
     const position = getPos()
     const detail: StudyInternalLinkNavigateDetail = {
       kind: attributes.targetKind,
@@ -226,11 +222,7 @@ function StudyInternalLinkNodeView({ node, editor, getPos }: NodeViewProps): Rea
       sourceBlockId: element.closest<HTMLElement>('[data-study-block-id]')?.dataset.studyBlockId
     }
 
-    window.dispatchEvent(
-      new CustomEvent(STUDY_INTERNAL_LINK_NAVIGATE_EVENT, {
-        detail
-      })
-    )
+    dispatchStudyInternalLinkNavigation(detail, resolvedTarget)
   }
 
   function handlePointerDown(event: React.PointerEvent<HTMLSpanElement>): void {

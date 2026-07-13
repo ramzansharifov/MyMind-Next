@@ -27,7 +27,10 @@ import { StudyTree } from './components/StudyTree'
 import { useStudy } from './hooks/use-study'
 import { getStudyAncestorFolders } from './lib/study-tree'
 import {
+  appendStudyInternalLinkHistory,
+  clearStudyInternalLinkHistory,
   STUDY_INTERNAL_LINK_NAVIGATE_EVENT,
+  normalizeStudyInternalLinkHistory,
   type StudyInternalLinkHistoryEntry,
   type StudyInternalLinkNavigateDetail,
   type StudyInternalLinkNavigationRequest
@@ -60,13 +63,23 @@ export function StudyPage(): React.JSX.Element {
 
   const selectedParentId =
     selectedNode?.type === 'folder' ? selectedNode.id : (selectedNode?.parentId ?? null)
-  const internalLinkBackTarget = internalLinkHistory.at(-1)
+  const materialIds = useMemo(
+    () => new Set(study.nodes.filter((node) => node.type === 'material').map((node) => node.id)),
+    [study.nodes]
+  )
+  const normalizedInternalLinkHistory = useMemo(
+    () => normalizeStudyInternalLinkHistory(internalLinkHistory, materialIds),
+    [internalLinkHistory, materialIds]
+  )
+  const internalLinkBackTarget = normalizedInternalLinkHistory.at(-1)
+  const removedInvalidTrailingEntries =
+    normalizedInternalLinkHistory.length < internalLinkHistory.length
   const canNavigateBack =
     selectedNode?.type === 'material' &&
-    internalLinkBackTarget?.destinationMaterialId === selectedNode.id &&
-    study.nodes.some(
-      (node) => node.type === 'material' && node.id === internalLinkBackTarget.sourceMaterialId
-    )
+    internalLinkBackTarget !== undefined &&
+    (internalLinkBackTarget.destinationMaterialId === selectedNode.id ||
+      removedInvalidTrailingEntries) &&
+    materialIds.has(internalLinkBackTarget.sourceMaterialId)
 
   function openRename(node: StudyNode): void {
     setRenameTarget(node)
@@ -89,7 +102,7 @@ export function StudyPage(): React.JSX.Element {
 
   const selectStudyNode = useCallback(
     (nodeId: string | null): void => {
-      setInternalLinkHistory([])
+      setInternalLinkHistory(clearStudyInternalLinkHistory())
       setInternalNavigation(null)
 
       if (nodeId === null) {
@@ -102,6 +115,11 @@ export function StudyPage(): React.JSX.Element {
     [openStudyNode, selectNode]
   )
 
+  const clearInternalLinkNavigation = useCallback((): void => {
+    setInternalLinkHistory(clearStudyInternalLinkHistory())
+    setInternalNavigation(null)
+  }, [])
+
   useEffect(() => {
     function handleInternalNavigation(event: Event): void {
       const detail = (event as CustomEvent<StudyInternalLinkNavigateDetail>).detail
@@ -111,15 +129,14 @@ export function StudyPage(): React.JSX.Element {
       }
 
       if (selectedNode?.type === 'material') {
-        setInternalLinkHistory((current) => [
-          ...current,
-          {
+        setInternalLinkHistory((current) =>
+          appendStudyInternalLinkHistory(current, {
             sourceMaterialId: selectedNode.id,
             destinationMaterialId: detail.materialId,
             sourcePosition: detail.sourcePosition,
             sourceBlockId: detail.sourceBlockId
-          }
-        ])
+          })
+        )
       }
 
       internalNavigationSequenceRef.current += 1
@@ -240,10 +257,12 @@ export function StudyPage(): React.JSX.Element {
               }}
               onRename={openRename}
               onDuplicate={(node) => {
+                clearInternalLinkNavigation()
                 void study.duplicateNode(node.id)
               }}
               onDelete={setDeleteTarget}
               onCreateFolder={(parentId) => {
+                clearInternalLinkNavigation()
                 const parentFolder = study.nodes.find((node) => node.id === parentId)
 
                 if (parentFolder?.type === 'folder' && !parentFolder.isExpanded) {
@@ -256,6 +275,7 @@ export function StudyPage(): React.JSX.Element {
                 })
               }}
               onCreateMaterial={(parentId) => {
+                clearInternalLinkNavigation()
                 const parentFolder = study.nodes.find((node) => node.id === parentId)
 
                 if (parentFolder?.type === 'folder' && !parentFolder.isExpanded) {
@@ -308,7 +328,7 @@ export function StudyPage(): React.JSX.Element {
                       requestId: internalNavigationSequenceRef.current
                     })
                     openStudyNode(backTarget.sourceMaterialId)
-                    setInternalLinkHistory((current) => current.slice(0, -1))
+                    setInternalLinkHistory(normalizedInternalLinkHistory.slice(0, -1))
                   }
                 : undefined
             }
@@ -330,12 +350,14 @@ export function StudyPage(): React.JSX.Element {
               openRename(selectedNode)
             }}
             onCreateFolder={() => {
+              clearInternalLinkNavigation()
               void study.createNode({
                 type: 'folder',
                 parentId: selectedNode.id
               })
             }}
             onCreateMaterial={() => {
+              clearInternalLinkNavigation()
               void study.createNode({
                 type: 'material',
                 parentId: selectedNode.id
@@ -353,12 +375,14 @@ export function StudyPage(): React.JSX.Element {
               selectStudyNode(nodeId)
             }}
             onCreateFolder={() => {
+              clearInternalLinkNavigation()
               void study.createNode({
                 type: 'folder',
                 parentId: null
               })
             }}
             onCreateMaterial={() => {
+              clearInternalLinkNavigation()
               void study.createNode({
                 type: 'material',
                 parentId: null

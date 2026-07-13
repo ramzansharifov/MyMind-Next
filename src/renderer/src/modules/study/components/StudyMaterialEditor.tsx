@@ -13,7 +13,10 @@ import {
   STUDY_REVEAL_BLOCK_EVENT,
   STUDY_REVEAL_HEADING_EVENT
 } from '../lib/study-read-navigation'
-import type { StudyInternalLinkNavigationRequest } from '../lib/study-internal-link'
+import {
+  findStudyInternalLinkReturnTarget,
+  type StudyInternalLinkNavigationRequest
+} from '../lib/study-internal-link'
 import { StudyBlockEditor } from './StudyBlockEditor'
 import { StudyActionButton } from './StudyActionButton'
 import { StudyReadNavigation } from './StudyReadNavigation'
@@ -152,17 +155,11 @@ export function StudyMaterialEditor({
               navigation.revealSourcePosition !== undefined ||
               navigation.revealSourceBlockId !== undefined
             ) {
-              const sourceBlock = navigation.revealSourceBlockId
-                ? Array.from(
-                    scrollContainer.querySelectorAll<HTMLElement>('[data-study-block-id]')
-                  ).find(
-                    (element) => element.dataset.studyBlockId === navigation.revealSourceBlockId
-                  )
-                : undefined
-              const exactTarget = (sourceBlock ?? scrollContainer).querySelector<HTMLElement>(
-                `[data-study-internal-link-position="${navigation.revealSourcePosition}"]`
+              const { target, exact } = findStudyInternalLinkReturnTarget(
+                scrollContainer,
+                navigation.revealSourcePosition,
+                navigation.revealSourceBlockId
               )
-              const target = exactTarget ?? sourceBlock
 
               if (target) {
                 const containerRect = scrollContainer.getBoundingClientRect()
@@ -170,13 +167,13 @@ export function StudyMaterialEditor({
                 const top = scrollContainer.scrollTop + targetRect.top - containerRect.top - 80
 
                 scrollContainer.scrollTo({ top: Math.max(top, 0), behavior: 'smooth' })
-                if (exactTarget) {
-                  exactTarget.focus({ preventScroll: true })
+                if (exact) {
+                  target.focus({ preventScroll: true })
                 }
                 target.animate(
                   [
                     {
-                      boxShadow: exactTarget
+                      boxShadow: exact
                         ? '0 0 0 4px rgb(139 92 246 / 35%)'
                         : '0 0 0 2px rgb(139 92 246 / 30%)'
                     },
