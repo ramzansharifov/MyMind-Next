@@ -985,6 +985,8 @@ button {
 }
 
 .study-media-controller media-control-bar {
+  --media-control-hover-background: transparent;
+
   width: 100%;
   box-sizing: border-box;
 }
@@ -997,6 +999,27 @@ button {
 .study-media-controller media-pip-button,
 .study-media-controller media-fullscreen-button {
   border-radius: 0.5rem;
+
+  transition: color 140ms ease;
+}
+
+.study-media-controller media-control-bar media-play-button:hover,
+.study-media-controller media-control-bar media-mute-button:hover,
+.study-media-controller media-control-bar media-seek-backward-button:hover,
+.study-media-controller media-control-bar media-seek-forward-button:hover,
+.study-media-controller media-control-bar media-playback-rate-button:hover,
+.study-media-controller media-control-bar media-pip-button:hover,
+.study-media-controller media-control-bar media-fullscreen-button:hover,
+.study-media-controller media-control-bar media-play-button:focus-visible,
+.study-media-controller media-control-bar media-mute-button:focus-visible,
+.study-media-controller media-control-bar media-seek-backward-button:focus-visible,
+.study-media-controller media-control-bar media-seek-forward-button:focus-visible,
+.study-media-controller media-control-bar media-playback-rate-button:focus-visible,
+.study-media-controller media-control-bar media-pip-button:focus-visible,
+.study-media-controller media-control-bar media-fullscreen-button:focus-visible {
+  --media-icon-color: var(--app-accent-300);
+  --media-text-color: var(--app-accent-300);
+  --media-primary-color: var(--app-accent-300);
 }
 
 .study-media-controller media-time-display {
