@@ -1,8 +1,10 @@
+type ClipboardSelectionDirection = 'forward' | 'backward' | 'none'
+
 interface TextControlSelection {
   element: HTMLInputElement | HTMLTextAreaElement
   start: number | null
   end: number | null
-  direction: 'forward' | 'backward' | 'none' | null
+  direction: ClipboardSelectionDirection | undefined
 }
 
 interface ClipboardSelectionSnapshot {
@@ -12,11 +14,13 @@ interface ClipboardSelectionSnapshot {
 }
 
 export async function writeClipboard(value: string): Promise<void> {
-  const writeText = navigator.clipboard?.writeText
+  const clipboard = navigator.clipboard
 
-  if (writeText) {
+  const writeText = clipboard?.writeText
+
+  if (writeText && clipboard) {
     try {
-      await writeText.call(navigator.clipboard, value)
+      await writeText.call(clipboard, value)
 
       return
     } catch {
@@ -67,6 +71,7 @@ function writeClipboardWithDomFallback(value: string): void {
     })
 
     textarea.select()
+
     textarea.setSelectionRange(0, textarea.value.length)
 
     if (typeof document.execCommand !== 'function' || !document.execCommand('copy')) {
@@ -88,7 +93,7 @@ function captureClipboardSelection(): ClipboardSelectionSnapshot {
           element: activeElement,
           start: activeElement.selectionStart,
           end: activeElement.selectionEnd,
-          direction: activeElement.selectionDirection
+          direction: activeElement.selectionDirection ?? undefined
         }
       : null
 
@@ -121,7 +126,9 @@ function restoreClipboardSelection(snapshot: ClipboardSelectionSnapshot): void {
       try {
         activeElement.focus()
       } catch {
-        // A removed or non-focusable element cannot be restored.
+        /*
+         * A removed or non-focusable element cannot be restored.
+         */
       }
     }
   }
@@ -139,7 +146,9 @@ function restoreClipboardSelection(snapshot: ClipboardSelectionSnapshot): void {
         textControl.direction
       )
     } catch {
-      // Some input types do not support selection ranges.
+      /*
+       * Some input types do not support selection ranges.
+       */
     }
   }
 
