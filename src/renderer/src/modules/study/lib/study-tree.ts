@@ -4,6 +4,7 @@ export interface VisibleStudyNode {
   node: StudyNode
   depth: number
 }
+
 export function getStudyAncestorFolders(nodes: StudyNode[], nodeId: string): StudyNode[] {
   const nodesById = new Map(nodes.map((node) => [node.id, node]))
 
@@ -29,6 +30,52 @@ export function getStudyAncestorFolders(nodes: StudyNode[], nodeId: string): Stu
   }
 
   return ancestors
+}
+
+export function getStudySubtreeIds(nodes: StudyNode[], rootId: string): Set<string> {
+  const childrenByParent = new Map<string, string[]>()
+
+  nodes.forEach((node) => {
+    if (!node.parentId) {
+      return
+    }
+
+    const children = childrenByParent.get(node.parentId) ?? []
+    children.push(node.id)
+    childrenByParent.set(node.parentId, children)
+  })
+
+  const included = new Set<string>([rootId])
+  const pending = [rootId]
+
+  while (pending.length > 0) {
+    const parentId = pending.pop()
+
+    if (!parentId) {
+      continue
+    }
+
+    const children = childrenByParent.get(parentId) ?? []
+
+    children.forEach((childId) => {
+      if (included.has(childId)) {
+        return
+      }
+
+      included.add(childId)
+      pending.push(childId)
+    })
+  }
+
+  return included
+}
+
+export function isStudyNodeInSubtree(
+  nodes: StudyNode[],
+  rootId: string,
+  candidateId: string
+): boolean {
+  return getStudySubtreeIds(nodes, rootId).has(candidateId)
 }
 
 export function getVisibleStudyNodes(nodes: StudyNode[], search: string): VisibleStudyNode[] {

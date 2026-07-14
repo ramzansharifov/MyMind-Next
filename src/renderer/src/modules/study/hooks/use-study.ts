@@ -7,6 +7,11 @@ import type {
   StudyNode
 } from '../../../../../shared/contracts/study'
 import { studyClient } from '../api/study-client'
+import {
+  getActiveStudyDraftHandle,
+  type StudyDraftDeletionSuspension
+} from '../lib/study-draft-lifecycle'
+import { getStudySubtreeIds, isStudyNodeInSubtree } from '../lib/study-tree'
 
 interface UseStudyResult {
   nodes: StudyNode[]
@@ -18,7 +23,7 @@ interface UseStudyResult {
   renameNode: (nodeId: string, title: string) => Promise<StudyNode>
   duplicateNode: (nodeId: string) => Promise<StudyNode | null>
   updateFolderIcon: (nodeId: string, icon: StudyFolderIconName) => Promise<void>
-  deleteNode: (nodeId: string) => Promise<void>
+  deleteNode: (nodeId: string) => Promise<boolean>
   toggleFolder: (node: StudyNode) => Promise<void>
   moveNode: (input: MoveStudyNodeInput) => Promise<void>
 }
@@ -77,9 +82,11 @@ export function useStudy(): UseStudyResult {
   const renameNode = useCallback(async (nodeId: string, title: string): Promise<StudyNode> => {
     try {
       setError(null)
+
       const updated = await studyClient.renameNode(nodeId, title)
 
       setNodes((current) => current.map((node) => (node.id === updated.id ? updated : node)))
+
       return updated
     } catch (reason: unknown) {
       const renameError =
@@ -89,6 +96,7 @@ export function useStudy(): UseStudyResult {
       throw renameError
     }
   }, [])
+
   const duplicateNode = useCallback(async (nodeId: string): Promise<StudyNode | null> => {
     try {
       setError(null)
@@ -117,6 +125,7 @@ export function useStudy(): UseStudyResult {
       return null
     }
   }, [])
+
   const updateFolderIcon = useCallback(
     async (nodeId: string, icon: StudyFolderIconName): Promise<void> => {
       try {
@@ -132,35 +141,60 @@ export function useStudy(): UseStudyResult {
     []
   )
 
-  const deleteNode = useCallback(async (nodeId: string): Promise<void> => {
-    try {
-      await studyClient.deleteNode(nodeId)
+  const deleteNode = useCallback(
+    async (nodeId: string): Promise<boolean> => {
+      let deletionSuspension: StudyDraftDeletionSuspension | null = null
 
-      setNodes((current) => {
-        const removed = new Set<string>([nodeId])
-        let changed = true
+      try {
+        setError(null)
 
-        while (changed) {
-          changed = false
+        const activeDraft = getActiveStudyDraftHandle()
 
-          current.forEach((node) => {
-            if (node.parentId && removed.has(node.parentId) && !removed.has(node.id)) {
-              removed.add(node.id)
-              changed = true
-            }
-          })
+        if (activeDraft && isStudyNodeInSubtree(nodes, nodeId, activeDraft.materialId)) {
+          deletionSuspension = activeDraft.suspendForDeletion()
         }
 
-        const remaining = current.filter((node) => !removed.has(node.id))
+        const deleted = await studyClient.deleteNode(nodeId)
 
-        setSelectedNodeId((selected) => (selected && removed.has(selected) ? null : selected))
+        if (!deleted) {
+          throw new Error('Элемент уже удалён или не найден')
+        }
 
-        return remaining
-      })
-    } catch (reason: unknown) {
-      setError(reason instanceof Error ? reason.message : 'Не удалось удалить элемент')
-    }
-  }, [])
+        deletionSuspension?.commit()
+
+        setNodes((current) => {
+          const removed = getStudySubtreeIds(current, nodeId)
+          const remaining = current.filter((node) => !removed.has(node.id))
+
+          setSelectedNodeId((selected) => (selected && removed.has(selected) ? null : selected))
+
+          return remaining
+        })
+
+        return true
+      } catch (reason: unknown) {
+        let message = reason instanceof Error ? reason.message : 'Не удалось удалить элемент'
+
+        if (deletionSuspension) {
+          try {
+            await deletionSuspension.rollback()
+          } catch (rollbackReason: unknown) {
+            const rollbackMessage =
+              rollbackReason instanceof Error
+                ? rollbackReason.message
+                : 'неизвестная ошибка сохранения'
+
+            message = `${message}. Черновик остался открыт, но автоматическое сохранение после отмены удаления завершилось ошибкой: ${rollbackMessage}`
+          }
+        }
+
+        setError(message)
+
+        return false
+      }
+    },
+    [nodes]
+  )
 
   const toggleFolder = useCallback(async (node: StudyNode): Promise<void> => {
     if (node.type !== 'folder') {
@@ -200,6 +234,7 @@ export function useStudy(): UseStudyResult {
       setError(reason instanceof Error ? reason.message : 'Не удалось переместить элемент')
     }
   }, [])
+
   return {
     nodes,
     selectedNodeId,

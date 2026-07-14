@@ -1,10 +1,18 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import {
+  createStudyDraftDeletionSuspension,
   flushActiveStudyDraft,
   getActiveStudyDraftHandle,
   registerStudyDraftHandle
 } from './study-draft-lifecycle'
+
+function createSuspendForDeletion(): ReturnType<typeof vi.fn> {
+  return vi.fn(() => ({
+    commit: vi.fn(),
+    rollback: vi.fn().mockResolvedValue(undefined)
+  }))
+}
 
 describe('study draft lifecycle', () => {
   it('flushes the active dirty material and retains its material identity', async () => {
@@ -12,13 +20,15 @@ describe('study draft lifecycle', () => {
     const unregister = registerStudyDraftHandle({
       materialId: 'material-a',
       hasUnsavedChanges: () => true,
-      flush
+      flush,
+      suspendForDeletion: createSuspendForDeletion()
     })
 
     await flushActiveStudyDraft()
 
     expect(flush).toHaveBeenCalledOnce()
     expect(getActiveStudyDraftHandle()?.materialId).toBe('material-a')
+
     unregister()
   })
 
@@ -26,19 +36,69 @@ describe('study draft lifecycle', () => {
     const firstCleanup = registerStudyDraftHandle({
       materialId: 'material-a',
       hasUnsavedChanges: () => false,
-      flush: vi.fn()
+      flush: vi.fn(),
+      suspendForDeletion: createSuspendForDeletion()
     })
     const flushB = vi.fn()
     const secondCleanup = registerStudyDraftHandle({
       materialId: 'material-b',
       hasUnsavedChanges: () => false,
-      flush: flushB
+      flush: flushB,
+      suspendForDeletion: createSuspendForDeletion()
     })
 
     firstCleanup()
+
     await flushActiveStudyDraft()
+
     expect(getActiveStudyDraftHandle()?.materialId).toBe('material-b')
     expect(flushB).not.toHaveBeenCalled()
+
     secondCleanup()
+  })
+
+  it('cancels the scheduled save and permanently disposes after confirmed deletion', () => {
+    const cancelScheduledSave = vi.fn()
+    const pause = vi.fn()
+    const resume = vi.fn().mockResolvedValue(undefined)
+    const dispose = vi.fn()
+
+    const suspension = createStudyDraftDeletionSuspension({
+      cancelScheduledSave,
+      pause,
+      resume,
+      dispose
+    })
+
+    expect(cancelScheduledSave).toHaveBeenCalledOnce()
+    expect(pause).toHaveBeenCalledOnce()
+
+    suspension.commit()
+    suspension.commit()
+
+    expect(cancelScheduledSave).toHaveBeenCalledTimes(2)
+    expect(dispose).toHaveBeenCalledOnce()
+    expect(resume).not.toHaveBeenCalled()
+  })
+
+  it('resumes and saves the retained draft after deletion failure', async () => {
+    const cancelScheduledSave = vi.fn()
+    const pause = vi.fn()
+    const resume = vi.fn().mockResolvedValue(undefined)
+    const dispose = vi.fn()
+
+    const suspension = createStudyDraftDeletionSuspension({
+      cancelScheduledSave,
+      pause,
+      resume,
+      dispose
+    })
+
+    await suspension.rollback()
+    await suspension.rollback()
+    suspension.commit()
+
+    expect(resume).toHaveBeenCalledOnce()
+    expect(dispose).not.toHaveBeenCalled()
   })
 })

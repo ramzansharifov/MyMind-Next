@@ -1,5 +1,5 @@
-import { ArrowLeft, BookOpen, Check, Edit3, LoaderCircle, Pencil } from 'lucide-react'
 import * as Tabs from '@radix-ui/react-tabs'
+import { ArrowLeft, BookOpen, Check, Edit3, LoaderCircle, Pencil } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import type { StudyDocument, StudyNode } from '../../../../../shared/contracts/study'
@@ -7,20 +7,23 @@ import { cn } from '../../../shared/lib/cn'
 import { Tooltip } from '../../../shared/ui/tooltip'
 
 import { studyClient } from '../api/study-client'
-import { createEmptyStudyDocument } from '../lib/study-document'
 import { StudyAutosaveQueue, type StudyAutosaveState } from '../lib/study-autosave-queue'
-import { registerStudyDraftHandle } from '../lib/study-draft-lifecycle'
+import {
+  createStudyDraftDeletionSuspension,
+  registerStudyDraftHandle
+} from '../lib/study-draft-lifecycle'
+import { createEmptyStudyDocument } from '../lib/study-document'
+import {
+  findStudyInternalLinkReturnTarget,
+  type StudyInternalLinkNavigationRequest
+} from '../lib/study-internal-link'
 import {
   getStudyHeadingElementId,
   STUDY_REVEAL_BLOCK_EVENT,
   STUDY_REVEAL_HEADING_EVENT
 } from '../lib/study-read-navigation'
-import {
-  findStudyInternalLinkReturnTarget,
-  type StudyInternalLinkNavigationRequest
-} from '../lib/study-internal-link'
-import { StudyBlockEditor } from './StudyBlockEditor'
 import { StudyActionButton } from './StudyActionButton'
+import { StudyBlockEditor } from './StudyBlockEditor'
 import { StudyReadNavigation } from './StudyReadNavigation'
 
 interface StudyMaterialEditorProps {
@@ -46,10 +49,14 @@ export function StudyMaterialEditor({
   const saveTimerRef = useRef<number | null>(null)
   const readScrollRef = useRef<HTMLDivElement | null>(null)
   const handledNavigationRef = useRef<number | null>(null)
+
   const [autosaveQueue] = useState(
     () =>
       new StudyAutosaveQueue<StudyDocument>(async (nextDocument) => {
-        await studyClient.saveMaterial({ nodeId: node.id, document: nextDocument })
+        await studyClient.saveMaterial({
+          nodeId: node.id,
+          document: nextDocument
+        })
       }, setSaveState)
   )
 
@@ -67,15 +74,42 @@ export function StudyMaterialEditor({
     return autosaveQueue.flushLatestDraft()
   }, [autosaveQueue, clearSaveTimer])
 
-  useEffect(
+  const suspendForDeletion = useCallback(
     () =>
-      registerStudyDraftHandle({
-        materialId: node.id,
-        hasUnsavedChanges: () => autosaveQueue.hasUnsavedChanges(),
-        flush: flushLatestDraft
+      createStudyDraftDeletionSuspension({
+        cancelScheduledSave: clearSaveTimer,
+        pause: () => {
+          autosaveQueue.pause()
+        },
+        resume: () => autosaveQueue.resume(),
+        dispose: () => {
+          autosaveQueue.dispose()
+        }
       }),
-    [autosaveQueue, flushLatestDraft, node.id]
+    [autosaveQueue, clearSaveTimer]
   )
+
+  useEffect(() => {
+    /*
+     * React Strict Mode intentionally runs effect setup and cleanup twice in
+     * development. Deactivation is reversible; permanent disposal happens
+     * only after the backend confirms deletion.
+     */
+    autosaveQueue.activate()
+
+    const unregister = registerStudyDraftHandle({
+      materialId: node.id,
+      hasUnsavedChanges: () => autosaveQueue.hasUnsavedChanges(),
+      flush: flushLatestDraft,
+      suspendForDeletion
+    })
+
+    return () => {
+      clearSaveTimer()
+      autosaveQueue.deactivate()
+      unregister()
+    }
+  }, [autosaveQueue, clearSaveTimer, flushLatestDraft, node.id, suspendForDeletion])
 
   useEffect(() => {
     let active = true
@@ -106,7 +140,7 @@ export function StudyMaterialEditor({
     return () => {
       active = false
     }
-  }, [autosaveQueue, flushLatestDraft, node.id])
+  }, [autosaveQueue, node.id])
 
   useEffect(() => {
     if (
@@ -143,7 +177,9 @@ export function StudyMaterialEditor({
         if (navigation.revealSourceBlockId) {
           window.dispatchEvent(
             new CustomEvent(STUDY_REVEAL_BLOCK_EVENT, {
-              detail: { blockId: navigation.revealSourceBlockId }
+              detail: {
+                blockId: navigation.revealSourceBlockId
+              }
             })
           )
         }
@@ -167,10 +203,17 @@ export function StudyMaterialEditor({
                 const targetRect = target.getBoundingClientRect()
                 const top = scrollContainer.scrollTop + targetRect.top - containerRect.top - 80
 
-                scrollContainer.scrollTo({ top: Math.max(top, 0), behavior: 'smooth' })
+                scrollContainer.scrollTo({
+                  top: Math.max(top, 0),
+                  behavior: 'smooth'
+                })
+
                 if (exact) {
-                  target.focus({ preventScroll: true })
+                  target.focus({
+                    preventScroll: true
+                  })
                 }
+
                 target.animate(
                   [
                     {
@@ -178,9 +221,14 @@ export function StudyMaterialEditor({
                         ? '0 0 0 4px rgb(139 92 246 / 35%)'
                         : '0 0 0 2px rgb(139 92 246 / 30%)'
                     },
-                    { boxShadow: '0 0 0 0 rgb(139 92 246 / 0%)' }
+                    {
+                      boxShadow: '0 0 0 0 rgb(139 92 246 / 0%)'
+                    }
                   ],
-                  { duration: 1400, easing: 'ease-out' }
+                  {
+                    duration: 1400,
+                    easing: 'ease-out'
+                  }
                 )
               }
             } else if (navigation.headingId) {
@@ -190,9 +238,7 @@ export function StudyMaterialEditor({
 
               if (target) {
                 const containerRect = scrollContainer.getBoundingClientRect()
-
                 const targetRect = target.getBoundingClientRect()
-
                 const top = scrollContainer.scrollTop + targetRect.top - containerRect.top - 24
 
                 scrollContainer.scrollTo({
@@ -241,6 +287,15 @@ export function StudyMaterialEditor({
 
     clearSaveTimer()
 
+    /*
+     * While deletion is pending the draft remains editable in memory, but no
+     * new save is scheduled. A failed deletion resumes the queue and persists
+     * the newest retained draft immediately.
+     */
+    if (autosaveQueue.isPaused()) {
+      return
+    }
+
     saveTimerRef.current = window.setTimeout(() => {
       saveTimerRef.current = null
 
@@ -275,6 +330,7 @@ export function StudyMaterialEditor({
             </StudyActionButton>
           </Tooltip>
         )}
+
         <div className="min-w-0 flex-1">
           <p className="text-[11px] font-semibold tracking-[0.08em] text-violet-300 uppercase">
             Материал
@@ -297,6 +353,7 @@ export function StudyMaterialEditor({
             <span className="max-[760px]:hidden">Переименовать</span>
           </StudyActionButton>
         </Tooltip>
+
         <SaveStatus
           state={saveState}
           onRetry={() => {

@@ -158,16 +158,16 @@ npm run native:node
 npm run test:run
 ```
 
-Один тестовый файл:
+Тесты безопасного удаления:
+
+```bash
+npm run test:run -- src/renderer/src/modules/study/lib/study-autosave-queue.test.ts src/renderer/src/modules/study/lib/study-draft-lifecycle.test.ts src/renderer/src/modules/study/lib/study-tree.test.ts src/renderer/src/modules/study/hooks/use-study.test.tsx
+```
+
+Тест shutdown:
 
 ```bash
 npm run test:run -- src/main/services/shutdown-coordinator.test.ts
-```
-
-Несколько файлов:
-
-```bash
-npm run test:run -- src/main/services/main-operation-tracker.test.ts src/main/services/shutdown-coordinator.test.ts
 ```
 
 Coverage:
@@ -179,6 +179,45 @@ npm run test:coverage
 Repository integration tests и migration tests используют временные SQLite-базы и не должны обращаться к пользовательской базе.
 
 Некоторые `AppErrorBoundary` tests намеренно выбрасывают ошибки. Сообщения в `stderr` ожидаемы, когда сам тестовый файл завершился успешно.
+
+## Ручная проверка безопасного удаления
+
+### Активный материал с pending debounce
+
+1. Открой материал.
+2. Измени текст.
+3. Не жди 800 мс.
+4. Сразу удали этот материал.
+5. Подтверди удаление.
+6. Проверь, что материал исчез.
+7. Проверь консоль: после удаления не должно появиться нового autosave-запроса для удалённого material ID.
+
+### Папка с активным материалом
+
+1. Открой материал внутри вложенной папки.
+2. Измени документ.
+3. Удали родительскую папку через дерево.
+4. Подтверди удаление.
+5. Папка, материал и вложения должны исчезнуть без запоздалого save.
+
+### Удаление во время активного save
+
+1. Измени большой материал.
+2. Сразу запусти удаление.
+3. Main process должен последовательно завершить уже начатый save и затем delete.
+4. Материал не должен восстановиться после удаления.
+
+### Ошибка удаления
+
+Для проверки требуется временно смоделировать ошибку `studyClient.deleteNode` либо backend repository.
+
+Ожидаемое поведение:
+
+- материал остаётся открытым;
+- черновик остаётся в памяти;
+- очередь выходит из pause;
+- последняя версия снова сохраняется;
+- ошибка отображается пользователю.
 
 ## Полная проверка
 
