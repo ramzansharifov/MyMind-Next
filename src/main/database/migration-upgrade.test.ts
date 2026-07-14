@@ -38,11 +38,13 @@ describe('study link target migration upgrade', () => {
 
       await executeMigration(sqlite, '0004_typical_deathbird.sql')
       await executeMigration(sqlite, '0005_cooing_roland_deschain.sql')
+      await executeMigration(sqlite, '0006_nasty_the_executioner.sql')
 
       const stored = sqlite
         .prepare('SELECT document, plain_text FROM study_materials WHERE node_id = ?')
         .get('existing-material')
       const columns = sqlite.prepare('PRAGMA table_info(study_link_targets)').all()
+      const indexes = sqlite.prepare('PRAGMA index_list(study_link_targets)').all()
 
       expect(stored).toEqual({ document, plain_text: 'Existing document' })
       expect(columns).toEqual(
@@ -52,6 +54,14 @@ describe('study link target migration upgrade', () => {
           expect.objectContaining({ name: 'material_title_search' }),
           expect.objectContaining({ name: 'folder_path' }),
           expect.objectContaining({ name: 'folder_path_search' })
+        ])
+      )
+      expect(indexes).not.toEqual(
+        expect.arrayContaining([expect.objectContaining({ name: 'study_link_targets_search_idx' })])
+      )
+      expect(indexes).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ name: 'study_link_targets_material_position_idx' })
         ])
       )
     } finally {

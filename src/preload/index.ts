@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
 import { IPC_CHANNELS, type MyMindApi, type SystemHealth } from '../shared/contracts/system'
+import { shutdownRequestSchema } from '../shared/validation/system'
 import {
   PREFERENCES_IPC_CHANNELS,
   type AppearancePreferences
@@ -16,7 +17,19 @@ import {
 
 const api: MyMindApi = {
   system: {
-    getHealth: () => ipcRenderer.invoke(IPC_CHANNELS.systemHealth) as Promise<SystemHealth>
+    getHealth: () => ipcRenderer.invoke(IPC_CHANNELS.systemHealth) as Promise<SystemHealth>,
+    onShutdownRequested: (listener) => {
+      const handler = (_event: Electron.IpcRendererEvent, rawRequest: unknown): void => {
+        listener(shutdownRequestSchema.parse(rawRequest))
+      }
+
+      ipcRenderer.on(IPC_CHANNELS.shutdownRequested, handler)
+      return () => {
+        ipcRenderer.removeListener(IPC_CHANNELS.shutdownRequested, handler)
+      }
+    },
+    respondToShutdown: (response) =>
+      ipcRenderer.invoke(IPC_CHANNELS.respondToShutdown, response) as Promise<void>
   },
 
   preferences: {

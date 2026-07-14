@@ -8,7 +8,7 @@
 
 Приложение считает содержимое материалов, импортированные файлы, Markdown/Mermaid и внешние URL недоверенными. Renderer не получает Node.js API. Все входы IPC валидируются Zod в main process; доступ к файлам остаётся в main. Новые окна запрещены, а допустимые HTTPS/mailto ссылки передаются системному браузеру.
 
-Production CSP не содержит localhost, websocket и `unsafe-eval`. Dev-исключения добавляются только response headers локального dev server. Запросы camera, microphone, geolocation, notifications, MIDI, pointer lock, clipboard-read и fullscreen отклоняются централизованной permission policy.
+Production CSP не содержит localhost, websocket и `unsafe-eval`. Dev-исключения добавляются только response headers локального dev server. Permission policy работает deny-by-default. `clipboard-sanitized-write` разрешён только main frame точного renderer URL в текущем доверенном `WebContents`; `clipboard-read` запрещён. `fullscreen` разрешён только подфрейму точного origin `https://www.youtube-nocookie.com` внутри того же доверенного окна. Camera, microphone, geolocation, notifications, MIDI, pointer lock и неизвестные permissions запрещены.
 
 ## Хранение и резервные копии
 
@@ -17,6 +17,8 @@ Production CSP не содержит localhost, websocket и `unsafe-eval`. Dev-
 MyMind сейчас не шифрует SQLite и вложения на диске. Для защиты выключенного устройства используйте системное полнодисковое шифрование: BitLocker в Windows, FileVault в macOS или аналогичное full-disk encryption в Linux. Это не защищает данные от вредоносной программы, уже получившей доступ к профилю пользователя.
 
 Удаление узла необратимо на уровне UI. Ошибка очистки файлов логируется и не откатывает уже подтверждённую транзакцию БД; такой остаточный файл безопаснее потери данных и может быть очищен позднее.
+
+Сразу после импорта вложение может временно существовать без ссылки в сохранённом документе. Main-process reservation защищает его от конкурентной stale cleanup не более 10 минут. Reservation не расширяет доступ renderer к файловой системе, удаляется при подтверждённом сохранении/удалении материала либо истекает по TTL.
 
 ## Релизы
 

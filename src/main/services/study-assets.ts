@@ -19,6 +19,43 @@ import { studyMaterialCoordinator } from './study-material-coordinator'
 export const STUDY_ASSET_SCHEME = 'mymind-asset'
 
 const SAFE_ASSET_SEGMENT = /^[a-zA-Z0-9_-]{1,120}$/
+const STUDY_ASSET_RESERVATION_TTL_MS = 10 * 60 * 1000
+
+interface StudyAssetReservation {
+  materialId: string
+  assetId: string
+  createdAt: number
+}
+
+const studyAssetReservations = new Map<string, StudyAssetReservation>()
+let reservationClock = (): number => Date.now()
+
+function getReservationKey(materialId: string, assetId: string): string {
+  return `${materialId}:${assetId}`
+}
+
+function reserveStudyAsset(materialId: string, assetId: string): void {
+  studyAssetReservations.set(getReservationKey(materialId, assetId), {
+    materialId,
+    assetId,
+    createdAt: reservationClock()
+  })
+}
+
+function getActiveReservedAssetIds(materialId: string): Set<string> {
+  const now = reservationClock()
+  const result = new Set<string>()
+
+  for (const [key, reservation] of studyAssetReservations) {
+    if (now - reservation.createdAt >= STUDY_ASSET_RESERVATION_TTL_MS) {
+      studyAssetReservations.delete(key)
+    } else if (reservation.materialId === materialId) {
+      result.add(reservation.assetId)
+    }
+  }
+
+  return result
+}
 
 const FILE_KIND_EXTENSIONS = {
   image: new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'avif', 'bmp']),
@@ -284,6 +321,7 @@ export async function persistPreparedStudyAssetImport(
     })
 
     await dependencies.copyFile(prepared.sourcePath, targetPath)
+    reserveStudyAsset(materialId, assetId)
   } catch (reason: unknown) {
     try {
       await dependencies.remove(assetDirectory, {
@@ -410,6 +448,21 @@ function isStudyAssetBlock(block: StudyBlock): block is StudyAssetBlock {
     block.type === 'file'
   )
 }
+
+function replaceStudyBlockAsset(block: StudyAssetBlock, asset: StudyLocalAsset): StudyAssetBlock {
+  const source = { type: 'local' as const, asset }
+
+  switch (block.type) {
+    case 'image':
+      return { ...block, source }
+    case 'video':
+      return { ...block, source }
+    case 'audio':
+      return { ...block, source }
+    case 'file':
+      return { ...block, source }
+  }
+}
 export async function duplicateStudyAssetsForDocument(
   targetMaterialId: string,
   document: StudyDocument
@@ -482,13 +535,7 @@ export async function duplicateStudyAssetsForDocument(
         duplicatedAssets.set(sourceAssetKey, duplicatedAsset)
       }
 
-      blocks.push({
-        ...block,
-        source: {
-          type: 'local',
-          asset: duplicatedAsset
-        }
-      } as StudyBlock)
+      blocks.push(replaceStudyBlockAsset(block, duplicatedAsset))
     }
 
     return {
@@ -524,6 +571,11 @@ export async function cleanupStudyAssetsForDocument(
       return [block.source.asset.id]
     })
   )
+  const reservedAssetIds = getActiveReservedAssetIds(materialId)
+
+  referencedAssetIds.forEach((assetId) => {
+    studyAssetReservations.delete(getReservationKey(materialId, assetId))
+  })
 
   const materialDirectory = join(getStudyAssetsRoot(), materialId)
 
@@ -533,7 +585,11 @@ export async function cleanupStudyAssetsForDocument(
 
   await Promise.all(
     entries
-      .filter((entry) => !entry.isDirectory() || !referencedAssetIds.has(entry.name))
+      .filter(
+        (entry) =>
+          !entry.isDirectory() ||
+          (!referencedAssetIds.has(entry.name) && !reservedAssetIds.has(entry.name))
+      )
       .map((entry) =>
         rm(join(materialDirectory, entry.name), {
           recursive: true,
@@ -547,6 +603,12 @@ export async function removeStudyAssetsForMaterials(materialIds: string[]): Prom
   const uniqueMaterialIds = [...new Set(materialIds)].filter((materialId) =>
     SAFE_ASSET_SEGMENT.test(materialId)
   )
+
+  for (const [key, reservation] of studyAssetReservations) {
+    if (uniqueMaterialIds.includes(reservation.materialId)) {
+      studyAssetReservations.delete(key)
+    }
+  }
 
   await Promise.all(
     uniqueMaterialIds.map((materialId) =>
@@ -566,6 +628,15 @@ export function setStudyAssetsRootForTesting(root: string | null): void {
   }
 
   studyAssetsRootForTesting = root
+}
+
+export function resetStudyAssetReservationsForTesting(now: (() => number) | null = null): void {
+  if (process.env.NODE_ENV !== 'test') {
+    throw new Error('Study asset reservation controls are only available while running tests')
+  }
+
+  studyAssetReservations.clear()
+  reservationClock = now ?? (() => Date.now())
 }
 
 function getStudyAssetsRoot(): string {

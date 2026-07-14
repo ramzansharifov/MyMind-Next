@@ -19,21 +19,10 @@ import {
   ArrowDown,
   ArrowUp,
   ChevronRight,
-  Code2,
   CopyPlus,
-  FileAudio,
-  FileCode2,
-  FileImage,
-  Files,
-  FileVideo,
-  Heading,
   GripVertical,
-  Sigma,
-  Workflow,
-  Minus,
   Plus,
-  Trash2,
-  Type
+  Trash2
 } from 'lucide-react'
 import { Fragment, lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 
@@ -821,7 +810,6 @@ function EditableBlock({
   onChange: (block: StudyBlock) => void
 }): React.JSX.Element {
   const strategy = getStudyBlockDefinition(block.type).editStrategy
-  if (strategy === 'text') throw new Error('Text blocks use the rich text editor strategy')
   const Editor = studyBlockEditors[strategy]
   return <Editor block={block} onChange={onChange} />
 }
@@ -1339,46 +1327,10 @@ function StudyBlockTypeIcon({
   type: StudyBlockType
   className?: string
 }): React.JSX.Element {
-  if (type === 'heading') {
-    return <Heading aria-hidden="true" className={className} />
-  }
-
-  if (type === 'code') {
-    return <Code2 aria-hidden="true" className={className} />
-  }
-  if (type === 'markdown') {
-    return <FileCode2 aria-hidden="true" className={className} />
-  }
-  if (type === 'latex') {
-    return <Sigma aria-hidden="true" className={className} />
-  }
-  if (type === 'mermaid') {
-    return <Workflow aria-hidden="true" className={className} />
-  }
-
-  if (type === 'image') {
-    return <FileImage aria-hidden="true" className={className} />
-  }
-
-  if (type === 'video') {
-    return <FileVideo aria-hidden="true" className={className} />
-  }
-
-  if (type === 'audio') {
-    return <FileAudio aria-hidden="true" className={className} />
-  }
-
-  if (type === 'file') {
-    return <Files aria-hidden="true" className={className} />
-  }
-
-  if (type === 'divider') {
-    return <Minus aria-hidden="true" className={className} />
-  }
-
-  return <Type aria-hidden="true" className={className} />
+  const Icon = getStudyBlockDefinition(type).icon
+  return <Icon aria-hidden="true" className={className} />
 }
 
 function getBlockLabel(type: StudyBlock['type']): string {
-  return blockTypes.find((option) => option.type === type)?.label ?? type
+  return getStudyBlockDefinition(type).label
 }

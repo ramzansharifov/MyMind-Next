@@ -9,6 +9,7 @@ import { Tooltip } from '../../../shared/ui/tooltip'
 import { studyClient } from '../api/study-client'
 import { createEmptyStudyDocument } from '../lib/study-document'
 import { StudyAutosaveQueue, type StudyAutosaveState } from '../lib/study-autosave-queue'
+import { registerStudyDraftHandle } from '../lib/study-draft-lifecycle'
 import {
   getStudyHeadingElementId,
   STUDY_REVEAL_BLOCK_EVENT,
@@ -66,6 +67,16 @@ export function StudyMaterialEditor({
     return autosaveQueue.flushLatestDraft()
   }, [autosaveQueue, clearSaveTimer])
 
+  useEffect(
+    () =>
+      registerStudyDraftHandle({
+        materialId: node.id,
+        hasUnsavedChanges: () => autosaveQueue.hasUnsavedChanges(),
+        flush: flushLatestDraft
+      }),
+    [autosaveQueue, flushLatestDraft, node.id]
+  )
+
   useEffect(() => {
     let active = true
 
@@ -94,12 +105,6 @@ export function StudyMaterialEditor({
 
     return () => {
       active = false
-      void flushLatestDraft().catch((reason: unknown) => {
-        console.error('Failed to flush the latest study material draft', reason)
-        window.alert(
-          'Последние изменения материала не удалось сохранить. Вернитесь и повторите сохранение.'
-        )
-      })
     }
   }, [autosaveQueue, flushLatestDraft, node.id])
 

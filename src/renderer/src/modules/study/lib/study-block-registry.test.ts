@@ -37,6 +37,7 @@ describe('study block registry', () => {
       expect(definition.editStrategy).toBe(definition.type)
       expect(definition.readStrategy).toBe(definition.type)
       expect(definition.settingsStrategy).toBe(definition.type)
+      expect(definition.icon).toBeDefined()
     }
 
     expect(Object.keys(studyBlockRegistry)).toHaveLength(studyBlockDefinitions.length)

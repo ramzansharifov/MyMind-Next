@@ -22,7 +22,9 @@ describe('App shell', () => {
           getHealth: vi.fn().mockResolvedValue({
             database: 'ready',
             sqliteVersion: '3.0.0'
-          })
+          }),
+          onShutdownRequested: vi.fn().mockReturnValue(() => undefined),
+          respondToShutdown: vi.fn().mockResolvedValue(undefined)
         },
 
         study: {

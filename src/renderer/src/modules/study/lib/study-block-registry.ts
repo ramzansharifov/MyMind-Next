@@ -1,3 +1,18 @@
+import {
+  Code2,
+  FileAudio,
+  FileCode2,
+  FileImage,
+  Files,
+  FileVideo,
+  Heading,
+  Minus,
+  Sigma,
+  Type,
+  Workflow,
+  type LucideIcon
+} from 'lucide-react'
+
 import type { StudyBlock, StudyBlockType } from '../../../../../shared/contracts/study'
 
 type StudyBlockFor<Type extends StudyBlockType> = Extract<StudyBlock, { type: Type }>
@@ -8,13 +23,11 @@ export type StudyBlockSettingsStrategy = StudyBlockType
 export interface StudyBlockDefinition<Type extends StudyBlockType> {
   type: Type
   label: string
-  icon: Type
+  icon: LucideIcon
   factory: (id: string) => StudyBlockFor<Type>
-  editStrategy: StudyBlockRenderStrategy
-  readStrategy: StudyBlockRenderStrategy
-  settingsStrategy: StudyBlockSettingsStrategy
-  hasSettings: boolean
-  isHeavy: boolean
+  editStrategy: Type
+  readStrategy: Type
+  settingsStrategy: Type
 }
 
 type StudyBlockRegistry = {
@@ -25,51 +38,43 @@ export const studyBlockRegistry = {
   text: {
     type: 'text',
     label: 'Форматированный текст',
-    icon: 'text',
+    icon: Type,
     factory: (id) => ({ id, type: 'text', text: '', html: '<p></p>' }),
     editStrategy: 'text',
     readStrategy: 'text',
-    settingsStrategy: 'text',
-    hasSettings: true,
-    isHeavy: true
+    settingsStrategy: 'text'
   },
   heading: {
     type: 'heading',
     label: 'Заголовок',
-    icon: 'heading',
+    icon: Heading,
     factory: (id) => ({ id, type: 'heading', text: '', level: 1 }),
     editStrategy: 'heading',
     readStrategy: 'heading',
-    settingsStrategy: 'heading',
-    hasSettings: true,
-    isHeavy: false
+    settingsStrategy: 'heading'
   },
   code: {
     type: 'code',
     label: 'Код',
-    icon: 'code',
+    icon: Code2,
     factory: (id) => ({ id, type: 'code', source: '', language: 'text' }),
     editStrategy: 'code',
     readStrategy: 'code',
-    settingsStrategy: 'code',
-    hasSettings: true,
-    isHeavy: true
+    settingsStrategy: 'code'
   },
   markdown: {
     type: 'markdown',
     label: 'Markdown',
-    icon: 'markdown',
+    icon: FileCode2,
     factory: (id) => ({ id, type: 'markdown', source: '', viewMode: 'write' }),
     editStrategy: 'markdown',
     readStrategy: 'markdown',
-    settingsStrategy: 'markdown',
-    hasSettings: true,
-    isHeavy: true
+    settingsStrategy: 'markdown'
   },
   latex: {
     type: 'latex',
     label: 'LaTeX',
-    icon: 'latex',
+    icon: Sigma,
     factory: (id) => ({
       id,
       type: 'latex',
@@ -81,14 +86,12 @@ export const studyBlockRegistry = {
     }),
     editStrategy: 'latex',
     readStrategy: 'latex',
-    settingsStrategy: 'latex',
-    hasSettings: true,
-    isHeavy: true
+    settingsStrategy: 'latex'
   },
   mermaid: {
     type: 'mermaid',
     label: 'Mermaid',
-    icon: 'mermaid',
+    icon: Workflow,
     factory: (id) => ({
       id,
       type: 'mermaid',
@@ -99,14 +102,12 @@ export const studyBlockRegistry = {
     }),
     editStrategy: 'mermaid',
     readStrategy: 'mermaid',
-    settingsStrategy: 'mermaid',
-    hasSettings: true,
-    isHeavy: true
+    settingsStrategy: 'mermaid'
   },
   image: {
     type: 'image',
     label: 'Фото',
-    icon: 'image',
+    icon: FileImage,
     factory: (id) => ({
       id,
       type: 'image',
@@ -116,47 +117,39 @@ export const studyBlockRegistry = {
     }),
     editStrategy: 'image',
     readStrategy: 'image',
-    settingsStrategy: 'image',
-    hasSettings: true,
-    isHeavy: false
+    settingsStrategy: 'image'
   },
   video: {
     type: 'video',
     label: 'Видео',
-    icon: 'video',
+    icon: FileVideo,
     factory: (id) => ({ id, type: 'video', source: { type: 'local' } }),
     editStrategy: 'video',
     readStrategy: 'video',
-    settingsStrategy: 'video',
-    hasSettings: true,
-    isHeavy: false
+    settingsStrategy: 'video'
   },
   audio: {
     type: 'audio',
     label: 'Аудио',
-    icon: 'audio',
+    icon: FileAudio,
     factory: (id) => ({ id, type: 'audio', source: { type: 'local' } }),
     editStrategy: 'audio',
     readStrategy: 'audio',
-    settingsStrategy: 'audio',
-    hasSettings: true,
-    isHeavy: false
+    settingsStrategy: 'audio'
   },
   file: {
     type: 'file',
     label: 'Файл',
-    icon: 'file',
+    icon: Files,
     factory: (id) => ({ id, type: 'file', source: { type: 'local' } }),
     editStrategy: 'file',
     readStrategy: 'file',
-    settingsStrategy: 'file',
-    hasSettings: true,
-    isHeavy: false
+    settingsStrategy: 'file'
   },
   divider: {
     type: 'divider',
     label: 'Разделитель',
-    icon: 'divider',
+    icon: Minus,
     factory: (id) => ({
       id,
       type: 'divider',
@@ -166,16 +159,14 @@ export const studyBlockRegistry = {
     }),
     editStrategy: 'divider',
     readStrategy: 'divider',
-    settingsStrategy: 'divider',
-    hasSettings: true,
-    isHeavy: false
+    settingsStrategy: 'divider'
   }
 } satisfies StudyBlockRegistry
 
 export const studyBlockDefinitions = Object.values(studyBlockRegistry)
 
-export function getStudyBlockDefinition(
-  type: StudyBlockType
-): (typeof studyBlockRegistry)[StudyBlockType] {
+export function getStudyBlockDefinition<Type extends StudyBlockType>(
+  type: Type
+): (typeof studyBlockRegistry)[Type] {
   return studyBlockRegistry[type]
 }

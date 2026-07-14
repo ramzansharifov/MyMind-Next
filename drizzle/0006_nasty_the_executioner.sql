@@ -1,0 +1,1 @@
+DROP INDEX `study_link_targets_search_idx`;

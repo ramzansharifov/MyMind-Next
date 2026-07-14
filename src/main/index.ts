@@ -12,8 +12,26 @@ import { installContentSecurityPolicy } from './security/content-security-policy
 import { installPermissionPolicy } from './security/permissions'
 import { focusExistingAppWindow } from './security/single-instance'
 import { runStudyLinkTargetsMaintenance } from './repositories/study.repository'
+import { ShutdownCoordinator } from './services/shutdown-coordinator'
+import { runStudyPlainTextMaintenance } from './services/study-plain-text-maintenance'
+import { IPC_CHANNELS } from '../shared/contracts/system'
 
 let mainWindow: BrowserWindow | null = null
+const shutdownCoordinator = new ShutdownCoordinator(closeDatabase)
+
+function requestWindowShutdown(window: BrowserWindow): void {
+  shutdownCoordinator.requestShutdown({
+    sendRequest: (requestId) => {
+      window.webContents.send(IPC_CHANNELS.shutdownRequested, { requestId })
+    },
+    close: () => {
+      if (!window.isDestroyed()) {
+        window.destroy()
+      }
+      app.quit()
+    }
+  })
+}
 
 function createWindow(): void {
   // Create the browser window.
@@ -34,6 +52,18 @@ function createWindow(): void {
 
   window.on('ready-to-show', () => {
     window.show()
+  })
+  window.on('close', (event) => {
+    if (!shutdownCoordinator.isApproved()) {
+      event.preventDefault()
+      requestWindowShutdown(window)
+    }
+  })
+  window.on('query-session-end', (event) => {
+    if (!shutdownCoordinator.isApproved()) {
+      event.preventDefault()
+      requestWindowShutdown(window)
+    }
   })
   window.on('closed', () => {
     if (mainWindow === window) mainWindow = null
@@ -94,11 +124,15 @@ if (!hasSingleInstanceLock) {
       optimizer.watchWindowShortcuts(window)
     })
 
-    installPermissionPolicy(session.defaultSession)
     const rendererUrl =
       is.dev && process.env['ELECTRON_RENDERER_URL']
         ? process.env['ELECTRON_RENDERER_URL']
         : pathToFileURL(join(__dirname, '../renderer/index.html')).href
+
+    installPermissionPolicy(session.defaultSession, {
+      rendererUrl,
+      getTrustedWebContents: () => mainWindow?.webContents ?? null
+    })
 
     installContentSecurityPolicy(session.defaultSession, {
       development: is.dev,
@@ -109,8 +143,17 @@ if (!hasSingleInstanceLock) {
 
     initializeDatabase()
     runDatabaseMigrations()
+    const plainTextMaintenance = runStudyPlainTextMaintenance()
+    if (plainTextMaintenance.applied) {
+      console.info('Study plain-text maintenance completed', plainTextMaintenance)
+    }
     runStudyLinkTargetsMaintenance()
-    registerIpcHandlers()
+    registerIpcHandlers({
+      getTrustedWebContents: () => mainWindow?.webContents ?? null,
+      onShutdownResponse: (response) => {
+        shutdownCoordinator.respond(response)
+      }
+    })
     createWindow()
 
     app.on('activate', function () {
@@ -121,7 +164,17 @@ if (!hasSingleInstanceLock) {
   })
 }
 
-app.on('before-quit', () => {
+app.on('before-quit', (event) => {
+  if (shutdownCoordinator.isApproved()) {
+    return
+  }
+
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    event.preventDefault()
+    requestWindowShutdown(mainWindow)
+    return
+  }
+
   closeDatabase()
 })
 // Quit when all windows are closed, except on macOS. There, it's common

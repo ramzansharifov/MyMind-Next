@@ -1,6 +1,7 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import {
   ArrowRight,
+  AlertTriangle,
   BookOpen,
   ChevronLeft,
   ChevronRight,
@@ -25,6 +26,8 @@ import { STUDY_FOLDER_ICON_OPTIONS } from './components/study-folder-icon-option
 import { StudyTree } from './components/StudyTree'
 import { useStudy } from './hooks/use-study'
 import { getStudyAncestorFolders } from './lib/study-tree'
+import { getActiveStudyDraftHandle } from './lib/study-draft-lifecycle'
+import { StudyMaterialTransitionCoordinator } from './lib/study-material-transition'
 import {
   appendStudyInternalLinkHistory,
   clearStudyInternalLinkHistory,
@@ -41,6 +44,12 @@ const StudyMaterialEditor = lazy(() =>
   }))
 )
 
+interface BlockedStudyTransition {
+  run: () => void | Promise<void>
+  targetMaterialId: string | null
+  message: string
+}
+
 export function StudyPage(): React.JSX.Element {
   const study = useStudy()
 
@@ -54,6 +63,12 @@ export function StudyPage(): React.JSX.Element {
   const [isRenaming, setIsRenaming] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<StudyNode | null>(null)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+  const [isTransitionSaving, setIsTransitionSaving] = useState(false)
+  const [blockedTransition, setBlockedTransition] = useState<BlockedStudyTransition | null>(null)
+  const [forceLeaveArmed, setForceLeaveArmed] = useState(false)
+  const transitionCoordinatorRef = useRef(
+    new StudyMaterialTransitionCoordinator(getActiveStudyDraftHandle)
+  )
 
   const [internalNavigation, setInternalNavigation] =
     useState<StudyInternalLinkNavigationRequest | null>(null)
@@ -128,25 +143,60 @@ export function StudyPage(): React.JSX.Element {
     [selectNode, studyNodes, toggleFolder]
   )
 
-  const selectStudyNode = useCallback(
-    (nodeId: string | null): void => {
-      setInternalLinkHistory(clearStudyInternalLinkHistory())
-      setInternalNavigation(null)
-
-      if (nodeId === null) {
-        selectNode(null)
-        return
-      }
-
-      openStudyNode(nodeId)
-    },
-    [openStudyNode, selectNode]
-  )
-
   const clearInternalLinkNavigation = useCallback((): void => {
     setInternalLinkHistory(clearStudyInternalLinkHistory())
     setInternalNavigation(null)
   }, [])
+
+  const runAfterDraftFlush = useCallback(
+    async (
+      run: () => void | Promise<void>,
+      targetMaterialId: string | null = null
+    ): Promise<boolean> => {
+      setBlockedTransition(null)
+      setForceLeaveArmed(false)
+
+      const result = await transitionCoordinatorRef.current.run({
+        targetMaterialId,
+        transition: run,
+        onSavingChange: setIsTransitionSaving
+      })
+
+      if (result.status === 'failed') {
+        setBlockedTransition({
+          run,
+          targetMaterialId,
+          message:
+            result.reason instanceof Error
+              ? result.reason.message
+              : 'Не удалось сохранить последние изменения материала.'
+        })
+        return false
+      }
+
+      return result.status === 'completed'
+    },
+    []
+  )
+
+  const selectStudyNode = useCallback(
+    (nodeId: string | null): void => {
+      void runAfterDraftFlush(
+        () => {
+          setInternalLinkHistory(clearStudyInternalLinkHistory())
+          setInternalNavigation(null)
+
+          if (nodeId === null) {
+            selectNode(null)
+          } else {
+            openStudyNode(nodeId)
+          }
+        },
+        materialIds.has(nodeId ?? '') ? nodeId : null
+      )
+    },
+    [materialIds, openStudyNode, runAfterDraftFlush, selectNode]
+  )
 
   useEffect(() => {
     function handleInternalNavigation(event: Event): void {
@@ -156,27 +206,27 @@ export function StudyPage(): React.JSX.Element {
         return
       }
 
-      if (selectedNode?.type === 'material') {
-        setInternalLinkHistory((current) =>
-          appendStudyInternalLinkHistory(current, {
-            sourceMaterialId: selectedNode.id,
-            destinationMaterialId: detail.materialId,
-            sourcePosition: detail.sourcePosition,
-            sourceBlockId: detail.sourceBlockId
-          })
-        )
-      }
+      void runAfterDraftFlush(() => {
+        if (selectedNode?.type === 'material') {
+          setInternalLinkHistory((current) =>
+            appendStudyInternalLinkHistory(current, {
+              sourceMaterialId: selectedNode.id,
+              destinationMaterialId: detail.materialId,
+              sourcePosition: detail.sourcePosition,
+              sourceBlockId: detail.sourceBlockId
+            })
+          )
+        }
 
-      internalNavigationSequenceRef.current += 1
-
-      setInternalNavigation({
-        kind: detail.kind,
-        materialId: detail.materialId,
-        headingId: detail.headingId ?? null,
-        requestId: internalNavigationSequenceRef.current
-      })
-
-      openStudyNode(detail.materialId)
+        internalNavigationSequenceRef.current += 1
+        setInternalNavigation({
+          kind: detail.kind,
+          materialId: detail.materialId,
+          headingId: detail.headingId ?? null,
+          requestId: internalNavigationSequenceRef.current
+        })
+        openStudyNode(detail.materialId)
+      }, detail.materialId)
     }
 
     window.addEventListener(STUDY_INTERNAL_LINK_NAVIGATE_EVENT, handleInternalNavigation)
@@ -184,7 +234,7 @@ export function StudyPage(): React.JSX.Element {
     return () => {
       window.removeEventListener(STUDY_INTERNAL_LINK_NAVIGATE_EVENT, handleInternalNavigation)
     }
-  }, [openStudyNode, selectedNode])
+  }, [openStudyNode, runAfterDraftFlush, selectedNode])
 
   return (
     <section
@@ -285,34 +335,34 @@ export function StudyPage(): React.JSX.Element {
               }}
               onRename={openRename}
               onDuplicate={(node) => {
-                clearInternalLinkNavigation()
-                void study.duplicateNode(node.id)
+                void runAfterDraftFlush(async () => {
+                  clearInternalLinkNavigation()
+                  await study.duplicateNode(node.id)
+                })
               }}
               onDelete={setDeleteTarget}
               onCreateFolder={(parentId) => {
-                clearInternalLinkNavigation()
-                const parentFolder = study.nodes.find((node) => node.id === parentId)
+                void runAfterDraftFlush(async () => {
+                  clearInternalLinkNavigation()
+                  const parentFolder = study.nodes.find((node) => node.id === parentId)
 
-                if (parentFolder?.type === 'folder' && !parentFolder.isExpanded) {
-                  void study.toggleFolder(parentFolder)
-                }
+                  if (parentFolder?.type === 'folder' && !parentFolder.isExpanded) {
+                    await study.toggleFolder(parentFolder)
+                  }
 
-                void study.createNode({
-                  type: 'folder',
-                  parentId
+                  await study.createNode({ type: 'folder', parentId })
                 })
               }}
               onCreateMaterial={(parentId) => {
-                clearInternalLinkNavigation()
-                const parentFolder = study.nodes.find((node) => node.id === parentId)
+                void runAfterDraftFlush(async () => {
+                  clearInternalLinkNavigation()
+                  const parentFolder = study.nodes.find((node) => node.id === parentId)
 
-                if (parentFolder?.type === 'folder' && !parentFolder.isExpanded) {
-                  void study.toggleFolder(parentFolder)
-                }
+                  if (parentFolder?.type === 'folder' && !parentFolder.isExpanded) {
+                    await study.toggleFolder(parentFolder)
+                  }
 
-                void study.createNode({
-                  type: 'material',
-                  parentId
+                  await study.createNode({ type: 'material', parentId })
                 })
               }}
               onMove={(input) => {
@@ -347,17 +397,19 @@ export function StudyPage(): React.JSX.Element {
                         return
                       }
 
-                      internalNavigationSequenceRef.current += 1
-                      setInternalNavigation({
-                        kind: 'material',
-                        materialId: backTarget.sourceMaterialId,
-                        headingId: null,
-                        revealSourcePosition: backTarget.sourcePosition,
-                        revealSourceBlockId: backTarget.sourceBlockId,
-                        requestId: internalNavigationSequenceRef.current
-                      })
-                      openStudyNode(backTarget.sourceMaterialId)
-                      setInternalLinkHistory(normalizedInternalLinkHistory.slice(0, -1))
+                      void runAfterDraftFlush(() => {
+                        internalNavigationSequenceRef.current += 1
+                        setInternalNavigation({
+                          kind: 'material',
+                          materialId: backTarget.sourceMaterialId,
+                          headingId: null,
+                          revealSourcePosition: backTarget.sourcePosition,
+                          revealSourceBlockId: backTarget.sourceBlockId,
+                          requestId: internalNavigationSequenceRef.current
+                        })
+                        openStudyNode(backTarget.sourceMaterialId)
+                        setInternalLinkHistory(normalizedInternalLinkHistory.slice(0, -1))
+                      }, backTarget.sourceMaterialId)
                     }
                   : undefined
               }
@@ -380,17 +432,15 @@ export function StudyPage(): React.JSX.Element {
               openRename(selectedNode)
             }}
             onCreateFolder={() => {
-              clearInternalLinkNavigation()
-              void study.createNode({
-                type: 'folder',
-                parentId: selectedNode.id
+              void runAfterDraftFlush(async () => {
+                clearInternalLinkNavigation()
+                await study.createNode({ type: 'folder', parentId: selectedNode.id })
               })
             }}
             onCreateMaterial={() => {
-              clearInternalLinkNavigation()
-              void study.createNode({
-                type: 'material',
-                parentId: selectedNode.id
+              void runAfterDraftFlush(async () => {
+                clearInternalLinkNavigation()
+                await study.createNode({ type: 'material', parentId: selectedNode.id })
               })
             }}
             onIconChange={(icon) => {
@@ -405,22 +455,101 @@ export function StudyPage(): React.JSX.Element {
               selectStudyNode(nodeId)
             }}
             onCreateFolder={() => {
-              clearInternalLinkNavigation()
-              void study.createNode({
-                type: 'folder',
-                parentId: null
+              void runAfterDraftFlush(async () => {
+                clearInternalLinkNavigation()
+                await study.createNode({ type: 'folder', parentId: null })
               })
             }}
             onCreateMaterial={() => {
-              clearInternalLinkNavigation()
-              void study.createNode({
-                type: 'material',
-                parentId: null
+              void runAfterDraftFlush(async () => {
+                clearInternalLinkNavigation()
+                await study.createNode({ type: 'material', parentId: null })
               })
             }}
           />
         )}
       </main>
+
+      {isTransitionSaving && (
+        <div
+          role="status"
+          className="fixed right-5 bottom-5 z-50 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] px-4 py-3 text-sm text-[var(--app-text)] shadow-2xl"
+        >
+          Сохраняем изменения перед переходом…
+        </div>
+      )}
+
+      {blockedTransition && (
+        <div
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="study-transition-error-title"
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/65 p-4"
+        >
+          <div className="w-full max-w-md rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-5 shadow-2xl">
+            <div className="flex items-start gap-3">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-red-300">
+                <AlertTriangle aria-hidden="true" className="size-5" />
+              </span>
+              <div>
+                <h2
+                  id="study-transition-error-title"
+                  className="font-semibold text-[var(--app-text)]"
+                >
+                  Изменения не сохранены
+                </h2>
+                <p className="mt-1 text-sm leading-5 text-[var(--app-muted)]">
+                  {blockedTransition.message} Текущий материал и черновик остаются открытыми.
+                </p>
+                {forceLeaveArmed && (
+                  <p className="mt-3 rounded-lg border border-red-500/20 bg-red-500/[0.06] p-3 text-xs leading-5 text-red-200">
+                    Несохранённые изменения будут безвозвратно потеряны. Нажмите ещё раз, чтобы
+                    подтвердить переход.
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="mt-5 flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                className="rounded-lg px-3 py-2 text-sm text-[var(--app-muted)] hover:text-[var(--app-text)]"
+                onClick={() => {
+                  setBlockedTransition(null)
+                  setForceLeaveArmed(false)
+                }}
+              >
+                Остаться
+              </button>
+              <button
+                type="button"
+                className="rounded-lg border border-[var(--app-border)] px-3 py-2 text-sm text-[var(--app-text)] hover:bg-white/[0.05]"
+                onClick={() => {
+                  void runAfterDraftFlush(blockedTransition.run, blockedTransition.targetMaterialId)
+                }}
+              >
+                Повторить сохранение
+              </button>
+              <button
+                type="button"
+                className="rounded-lg bg-red-500/15 px-3 py-2 text-sm text-red-200 hover:bg-red-500/25"
+                onClick={() => {
+                  if (!forceLeaveArmed) {
+                    setForceLeaveArmed(true)
+                    return
+                  }
+
+                  const transition = blockedTransition.run
+                  setBlockedTransition(null)
+                  setForceLeaveArmed(false)
+                  void transition()
+                }}
+              >
+                {forceLeaveArmed ? 'Подтвердить потерю изменений' : 'Покинуть без сохранения'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <RenameStudyNodeDialog
         target={renameTarget}

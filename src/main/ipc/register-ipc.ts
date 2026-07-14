@@ -1,7 +1,7 @@
-import { ipcMain } from 'electron'
+import { ipcMain, type WebContents } from 'electron'
 
 import { IPC_CHANNELS } from '../../shared/contracts/system'
-import { systemHealthSchema } from '../../shared/validation/system'
+import { shutdownResponseSchema, systemHealthSchema } from '../../shared/validation/system'
 import { getSqlite } from '../database/client'
 import { registerStudyIpcHandlers } from './register-study-ipc'
 import { registerPreferencesIpcHandlers } from './register-preferences-ipc'
@@ -10,10 +10,16 @@ interface SQLiteVersionRow {
   version: string
 }
 
-export function registerIpcHandlers(): void {
+interface RegisterIpcHandlersOptions {
+  getTrustedWebContents(): WebContents | null
+  onShutdownResponse(response: ReturnType<typeof shutdownResponseSchema.parse>): void
+}
+
+export function registerIpcHandlers(options: RegisterIpcHandlersOptions): void {
   registerStudyIpcHandlers()
   registerPreferencesIpcHandlers()
   ipcMain.removeHandler(IPC_CHANNELS.systemHealth)
+  ipcMain.removeHandler(IPC_CHANNELS.respondToShutdown)
 
   ipcMain.handle(IPC_CHANNELS.systemHealth, () => {
     const result = getSqlite()
@@ -24,5 +30,19 @@ export function registerIpcHandlers(): void {
       database: 'ready',
       sqliteVersion: result.version
     })
+  })
+
+  ipcMain.handle(IPC_CHANNELS.respondToShutdown, (event, rawResponse: unknown) => {
+    const trustedWebContents = options.getTrustedWebContents()
+
+    if (
+      trustedWebContents === null ||
+      event.sender !== trustedWebContents ||
+      event.senderFrame !== event.sender.mainFrame
+    ) {
+      throw new Error('Untrusted shutdown response')
+    }
+
+    options.onShutdownResponse(shutdownResponseSchema.parse(rawResponse))
   })
 }

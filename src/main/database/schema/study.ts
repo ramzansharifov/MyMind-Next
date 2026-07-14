@@ -79,7 +79,6 @@ export const studyLinkTargets = sqliteTable(
     }).notNull()
   },
   (table) => [
-    index('study_link_targets_material_position_idx').on(table.materialId, table.position),
-    index('study_link_targets_search_idx').on(table.searchText)
+    index('study_link_targets_material_position_idx').on(table.materialId, table.position)
   ]
 )
