@@ -55,11 +55,6 @@ export function DeleteConfirmationDialog({
               event.preventDefault()
             }
           }}
-          onPointerDownOutside={(event) => {
-            if (isSubmitting) {
-              event.preventDefault()
-            }
-          }}
           onKeyDown={(event) => {
             if (isSubmitting || !isDialogConfirmShortcut(event)) {
               return
