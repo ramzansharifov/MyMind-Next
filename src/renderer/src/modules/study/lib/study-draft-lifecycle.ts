@@ -20,7 +20,8 @@ interface CreateStudyDraftDeletionSuspensionOptions {
 }
 
 interface PendingStudyDraftDeletion {
-  promise: Promise<StudyDraftDeletionOutcome>
+  readonly epoch: number
+  readonly promise: Promise<StudyDraftDeletionOutcome>
   resolve(outcome: StudyDraftDeletionOutcome): void
   reject(reason: unknown): void
 }
@@ -57,7 +58,7 @@ export function createStudyDraftDeletionSuspension(
   }
 }
 
-function createPendingDeletion(): PendingStudyDraftDeletion {
+function createPendingDeletion(epoch: number): PendingStudyDraftDeletion {
   let resolvePromise: ((outcome: StudyDraftDeletionOutcome) => void) | undefined
 
   let rejectPromise: ((reason: unknown) => void) | undefined
@@ -68,13 +69,14 @@ function createPendingDeletion(): PendingStudyDraftDeletion {
   })
 
   /*
-   * A rollback error is also returned to its direct caller. This attached
-   * handler prevents an unhandled-rejection warning when no transition or
-   * shutdown is concurrently waiting for the deletion outcome.
+   * Rollback errors are also returned to their direct caller. This handler
+   * prevents an unhandled-rejection warning when no transition or shutdown is
+   * waiting for the same deletion barrier.
    */
   void promise.catch(() => undefined)
 
   return {
+    epoch,
     promise,
 
     resolve: (outcome) => {
@@ -90,23 +92,76 @@ function createPendingDeletion(): PendingStudyDraftDeletion {
 function createTrackedStudyDraftHandle(source: StudyDraftHandle): StudyDraftHandle {
   let pendingDeletion: PendingStudyDraftDeletion | null = null
 
+  /*
+   * The latest barrier remains available after it settles. A deletion can
+   * begin and finish while source.flush() is awaiting I/O, so checking only the
+   * current pending value after that await would miss the completed deletion.
+   */
+  let latestDeletion: PendingStudyDraftDeletion | null = null
+
+  let deletionEpoch = 0
+
   return {
     materialId: source.materialId,
 
     hasUnsavedChanges: () => pendingDeletion !== null || source.hasUnsavedChanges(),
 
     flush: async () => {
-      const deletion = pendingDeletion
+      let observedDeletionEpoch = deletionEpoch
 
-      if (deletion) {
-        const outcome = await deletion.promise
+      while (true) {
+        const deletionBeforeFlush = pendingDeletion
+
+        if (deletionBeforeFlush) {
+          const outcome = await deletionBeforeFlush.promise
+
+          observedDeletionEpoch = deletionBeforeFlush.epoch
+
+          if (outcome === 'deleted') {
+            return
+          }
+
+          /*
+           * Rollback may have saved the retained draft itself, but invoking the
+           * source flush again is intentional and safe. The autosave queue will
+           * no-op when the latest version is already persisted.
+           */
+          continue
+        }
+
+        await source.flush()
+
+        /*
+         * No deletion started while source.flush() was awaiting. The flush is
+         * complete and the transition can continue.
+         */
+        if (deletionEpoch === observedDeletionEpoch) {
+          return
+        }
+
+        const deletionDuringFlush = latestDeletion
+
+        observedDeletionEpoch = deletionEpoch
+
+        if (!deletionDuringFlush || deletionDuringFlush.epoch !== observedDeletionEpoch) {
+          /*
+           * Defensive retry for an impossible inconsistent snapshot. Keeping
+           * the loop is safer than allowing a transition to bypass deletion.
+           */
+          continue
+        }
+
+        const outcome = await deletionDuringFlush.promise
 
         if (outcome === 'deleted') {
           return
         }
-      }
 
-      await source.flush()
+        /*
+         * The deletion rolled back. Repeat source.flush() so the restored
+         * material is guaranteed to have its newest draft persisted.
+         */
+      }
     },
 
     suspendForDeletion: () => {
@@ -116,9 +171,12 @@ function createTrackedStudyDraftHandle(source: StudyDraftHandle): StudyDraftHand
 
       const sourceSuspension = source.suspendForDeletion()
 
-      const deletion = createPendingDeletion()
+      deletionEpoch += 1
+
+      const deletion = createPendingDeletion(deletionEpoch)
 
       pendingDeletion = deletion
+      latestDeletion = deletion
 
       let settled = false
       let rollbackOperation: Promise<void> | null = null
@@ -198,9 +256,9 @@ export async function flushActiveStudyDraft(): Promise<void> {
   const handle = activeHandle
 
   /*
-   * The tracked handle reports a pending deletion as unsaved work. This makes
-   * module navigation and application shutdown wait for commit or rollback,
-   * even when the document itself was clean before deletion started.
+   * A pending deletion is reported as unsaved work. Module navigation and
+   * application shutdown therefore wait for commit or rollback even when the
+   * document itself was clean before deletion started.
    */
   if (handle?.hasUnsavedChanges()) {
     await handle.flush()

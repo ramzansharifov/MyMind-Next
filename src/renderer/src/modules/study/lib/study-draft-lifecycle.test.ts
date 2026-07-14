@@ -44,6 +44,12 @@ function createSuspendForDeletion(): () => StudyDraftDeletionSuspension {
   })
 }
 
+async function flushPromises(): Promise<void> {
+  await Promise.resolve()
+  await Promise.resolve()
+  await Promise.resolve()
+}
+
 describe('study draft lifecycle', () => {
   it('flushes the active dirty material and retains its material identity', async () => {
     const flush = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
@@ -174,7 +180,7 @@ describe('study draft lifecycle', () => {
 
     const pendingFlush = handle!.flush()
 
-    await Promise.resolve()
+    await flushPromises()
 
     expect(sourceFlush).not.toHaveBeenCalled()
 
@@ -216,7 +222,7 @@ describe('study draft lifecycle', () => {
 
     const pendingFlush = handle!.flush()
 
-    await Promise.resolve()
+    await flushPromises()
 
     expect(sourceFlush).not.toHaveBeenCalled()
 
@@ -228,6 +234,105 @@ describe('study draft lifecycle', () => {
     expect(sourceRollback).toHaveBeenCalledOnce()
 
     expect(sourceFlush).toHaveBeenCalledOnce()
+
+    unregister()
+  })
+
+  it('waits for deletion that starts during an active flush and skips another save after commit', async () => {
+    const sourceFlushControl = createDeferred()
+
+    const sourceFlush = vi
+      .fn<() => Promise<void>>()
+      .mockImplementationOnce(() => sourceFlushControl.promise)
+      .mockResolvedValue(undefined)
+
+    const sourceCommit = vi.fn()
+
+    const unregister = registerStudyDraftHandle({
+      materialId: 'material-a',
+      hasUnsavedChanges: () => true,
+      flush: sourceFlush,
+      suspendForDeletion: () => ({
+        commit: sourceCommit,
+        rollback: async () => undefined
+      })
+    })
+
+    const handle = getActiveStudyDraftHandle()
+
+    const pendingFlush = handle!.flush()
+
+    expect(sourceFlush).toHaveBeenCalledOnce()
+
+    const suspension = handle!.suspendForDeletion()
+
+    let flushSettled = false
+
+    void pendingFlush.then(() => {
+      flushSettled = true
+    })
+
+    sourceFlushControl.resolve()
+    await flushPromises()
+
+    expect(flushSettled).toBe(false)
+
+    suspension.commit()
+    await pendingFlush
+
+    expect(sourceCommit).toHaveBeenCalledOnce()
+
+    expect(sourceFlush).toHaveBeenCalledOnce()
+
+    unregister()
+  })
+
+  it('waits for rollback when deletion starts during an active flush and flushes the restored material again', async () => {
+    const sourceFlushControl = createDeferred()
+    const rollbackControl = createDeferred()
+
+    const sourceFlush = vi
+      .fn<() => Promise<void>>()
+      .mockImplementationOnce(() => sourceFlushControl.promise)
+      .mockResolvedValue(undefined)
+
+    const sourceRollback = vi.fn(() => rollbackControl.promise)
+
+    const unregister = registerStudyDraftHandle({
+      materialId: 'material-a',
+      hasUnsavedChanges: () => true,
+      flush: sourceFlush,
+      suspendForDeletion: () => ({
+        commit: vi.fn(),
+        rollback: sourceRollback
+      })
+    })
+
+    const handle = getActiveStudyDraftHandle()
+
+    const pendingFlush = handle!.flush()
+
+    const suspension = handle!.suspendForDeletion()
+
+    sourceFlushControl.resolve()
+    await flushPromises()
+
+    expect(sourceFlush).toHaveBeenCalledOnce()
+
+    const rollbackPromise = suspension.rollback()
+
+    await flushPromises()
+
+    expect(sourceFlush).toHaveBeenCalledOnce()
+
+    rollbackControl.resolve()
+
+    await rollbackPromise
+    await pendingFlush
+
+    expect(sourceRollback).toHaveBeenCalledOnce()
+
+    expect(sourceFlush).toHaveBeenCalledTimes(2)
 
     unregister()
   })

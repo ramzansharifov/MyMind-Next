@@ -1,7 +1,7 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import {
-  ArrowRight,
   AlertTriangle,
+  ArrowRight,
   BookOpen,
   ChevronLeft,
   ChevronRight,
@@ -25,18 +25,18 @@ import { RenameStudyNodeDialog } from './components/RenameStudyNodeDialog'
 import { STUDY_FOLDER_ICON_OPTIONS } from './components/study-folder-icon-options'
 import { StudyTree } from './components/StudyTree'
 import { useStudy } from './hooks/use-study'
-import { getStudyAncestorFolders } from './lib/study-tree'
 import { getActiveStudyDraftHandle } from './lib/study-draft-lifecycle'
-import { StudyMaterialTransitionCoordinator } from './lib/study-material-transition'
 import {
   appendStudyInternalLinkHistory,
   clearStudyInternalLinkHistory,
-  STUDY_INTERNAL_LINK_NAVIGATE_EVENT,
   normalizeStudyInternalLinkHistory,
+  STUDY_INTERNAL_LINK_NAVIGATE_EVENT,
   type StudyInternalLinkHistoryEntry,
   type StudyInternalLinkNavigateDetail,
   type StudyInternalLinkNavigationRequest
 } from './lib/study-internal-link'
+import { StudyMaterialTransitionCoordinator } from './lib/study-material-transition'
+import { getStudyAncestorFolders } from './lib/study-tree'
 
 const StudyMaterialEditor = lazy(() =>
   import('./components/StudyMaterialEditor').then((module) => ({
@@ -58,20 +58,36 @@ export function StudyPage(): React.JSX.Element {
   const toggleFolder = study.toggleFolder
 
   const [renameTarget, setRenameTarget] = useState<StudyNode | null>(null)
+
   const [renameValue, setRenameValue] = useState('')
+
   const [renameError, setRenameError] = useState<string | null>(null)
+
   const [isRenaming, setIsRenaming] = useState(false)
+
   const [deleteTarget, setDeleteTarget] = useState<StudyNode | null>(null)
+
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  const deletePendingRef = useRef(false)
+
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+
   const [isTransitionSaving, setIsTransitionSaving] = useState(false)
+
   const [blockedTransition, setBlockedTransition] = useState<BlockedStudyTransition | null>(null)
+
   const [forceLeaveArmed, setForceLeaveArmed] = useState(false)
+
   const transitionCoordinatorRef = useRef(
     new StudyMaterialTransitionCoordinator(getActiveStudyDraftHandle)
   )
 
   const [internalNavigation, setInternalNavigation] =
     useState<StudyInternalLinkNavigationRequest | null>(null)
+
   const [internalLinkHistory, setInternalLinkHistory] = useState<StudyInternalLinkHistoryEntry[]>(
     []
   )
@@ -85,17 +101,22 @@ export function StudyPage(): React.JSX.Element {
 
   const selectedParentId =
     selectedNode?.type === 'folder' ? selectedNode.id : (selectedNode?.parentId ?? null)
+
   const materialIds = useMemo(
     () => new Set(study.nodes.filter((node) => node.type === 'material').map((node) => node.id)),
     [study.nodes]
   )
+
   const normalizedInternalLinkHistory = useMemo(
     () => normalizeStudyInternalLinkHistory(internalLinkHistory, materialIds),
     [internalLinkHistory, materialIds]
   )
+
   const internalLinkBackTarget = normalizedInternalLinkHistory.at(-1)
+
   const removedInvalidTrailingEntries =
     normalizedInternalLinkHistory.length < internalLinkHistory.length
+
   const canNavigateBack =
     selectedNode?.type === 'material' &&
     internalLinkBackTarget !== undefined &&
@@ -104,6 +125,10 @@ export function StudyPage(): React.JSX.Element {
     materialIds.has(internalLinkBackTarget.sourceMaterialId)
 
   function openRename(node: StudyNode): void {
+    if (deletePendingRef.current) {
+      return
+    }
+
     setRenameTarget(node)
     setRenameValue(node.title)
     setRenameError(null)
@@ -112,7 +137,7 @@ export function StudyPage(): React.JSX.Element {
   async function confirmRename(): Promise<void> {
     const title = renameValue.trim()
 
-    if (!renameTarget || !title || isRenaming) {
+    if (!renameTarget || !title || isRenaming || deletePendingRef.current) {
       return
     }
 
@@ -121,6 +146,7 @@ export function StudyPage(): React.JSX.Element {
 
     try {
       await study.renameNode(renameTarget.id, title)
+
       setRenameTarget(null)
     } catch (reason: unknown) {
       setRenameError(reason instanceof Error ? reason.message : 'Не удалось переименовать элемент')
@@ -128,8 +154,59 @@ export function StudyPage(): React.JSX.Element {
       setIsRenaming(false)
     }
   }
+
+  function openDelete(node: StudyNode): void {
+    if (deletePendingRef.current) {
+      return
+    }
+
+    setDeleteTarget(node)
+    setDeleteError(null)
+  }
+
+  async function confirmDelete(): Promise<void> {
+    const target = deleteTarget
+
+    if (!target || deletePendingRef.current) {
+      return
+    }
+
+    /*
+     * The ref closes the same-render double-click window before React commits
+     * the isDeleting state update.
+     */
+    deletePendingRef.current = true
+    setIsDeleting(true)
+    setDeleteError(null)
+
+    try {
+      const deleted = await study.deleteNode(target.id)
+
+      if (!deleted) {
+        setDeleteError(
+          target.type === 'folder'
+            ? 'Не удалось удалить папку. Вложенные материалы и черновики оставлены без изменений.'
+            : 'Не удалось удалить материал. Черновик оставлен открытым и восстановлен для сохранения.'
+        )
+
+        return
+      }
+
+      setDeleteTarget((current) => (current?.id === target.id ? null : current))
+    } catch (reason: unknown) {
+      setDeleteError(reason instanceof Error ? reason.message : 'Не удалось удалить элемент.')
+    } finally {
+      deletePendingRef.current = false
+      setIsDeleting(false)
+    }
+  }
+
   const openStudyNode = useCallback(
     (nodeId: string): void => {
+      if (deletePendingRef.current) {
+        return
+      }
+
       const ancestorFolders = getStudyAncestorFolders(studyNodes, nodeId)
 
       ancestorFolders.forEach((folder) => {
@@ -145,14 +222,19 @@ export function StudyPage(): React.JSX.Element {
 
   const clearInternalLinkNavigation = useCallback((): void => {
     setInternalLinkHistory(clearStudyInternalLinkHistory())
+
     setInternalNavigation(null)
   }, [])
 
   const runAfterDraftFlush = useCallback(
     async (
-      run: () => void | Promise<void>,
+      run: (() => void) | (() => Promise<void>),
       targetMaterialId: string | null = null
     ): Promise<boolean> => {
+      if (deletePendingRef.current) {
+        return false
+      }
+
       setBlockedTransition(null)
       setForceLeaveArmed(false)
 
@@ -171,6 +253,7 @@ export function StudyPage(): React.JSX.Element {
               ? result.reason.message
               : 'Не удалось сохранить последние изменения материала.'
         })
+
         return false
       }
 
@@ -181,9 +264,14 @@ export function StudyPage(): React.JSX.Element {
 
   const selectStudyNode = useCallback(
     (nodeId: string | null): void => {
+      if (deletePendingRef.current) {
+        return
+      }
+
       void runAfterDraftFlush(
         () => {
           setInternalLinkHistory(clearStudyInternalLinkHistory())
+
           setInternalNavigation(null)
 
           if (nodeId === null) {
@@ -200,6 +288,10 @@ export function StudyPage(): React.JSX.Element {
 
   useEffect(() => {
     function handleInternalNavigation(event: Event): void {
+      if (deletePendingRef.current) {
+        return
+      }
+
       const detail = (event as CustomEvent<StudyInternalLinkNavigateDetail>).detail
 
       if (!detail?.materialId || (detail.kind !== 'material' && detail.kind !== 'heading')) {
@@ -219,12 +311,14 @@ export function StudyPage(): React.JSX.Element {
         }
 
         internalNavigationSequenceRef.current += 1
+
         setInternalNavigation({
           kind: detail.kind,
           materialId: detail.materialId,
           headingId: detail.headingId ?? null,
           requestId: internalNavigationSequenceRef.current
         })
+
         openStudyNode(detail.materialId)
       }, detail.materialId)
     }
@@ -331,42 +425,55 @@ export function StudyPage(): React.JSX.Element {
                 selectStudyNode(null)
               }}
               onToggleFolder={(node) => {
-                void study.toggleFolder(node)
+                if (!deletePendingRef.current) {
+                  void study.toggleFolder(node)
+                }
               }}
               onRename={openRename}
               onDuplicate={(node) => {
                 void runAfterDraftFlush(async () => {
                   clearInternalLinkNavigation()
+
                   await study.duplicateNode(node.id)
                 })
               }}
-              onDelete={setDeleteTarget}
+              onDelete={openDelete}
               onCreateFolder={(parentId) => {
                 void runAfterDraftFlush(async () => {
                   clearInternalLinkNavigation()
+
                   const parentFolder = study.nodes.find((node) => node.id === parentId)
 
                   if (parentFolder?.type === 'folder' && !parentFolder.isExpanded) {
                     await study.toggleFolder(parentFolder)
                   }
 
-                  await study.createNode({ type: 'folder', parentId })
+                  await study.createNode({
+                    type: 'folder',
+                    parentId
+                  })
                 })
               }}
               onCreateMaterial={(parentId) => {
                 void runAfterDraftFlush(async () => {
                   clearInternalLinkNavigation()
+
                   const parentFolder = study.nodes.find((node) => node.id === parentId)
 
                   if (parentFolder?.type === 'folder' && !parentFolder.isExpanded) {
                     await study.toggleFolder(parentFolder)
                   }
 
-                  await study.createNode({ type: 'material', parentId })
+                  await study.createNode({
+                    type: 'material',
+                    parentId
+                  })
                 })
               }}
               onMove={(input) => {
-                void study.moveNode(input)
+                if (!deletePendingRef.current) {
+                  void study.moveNode(input)
+                }
               }}
             />
           )}
@@ -399,6 +506,7 @@ export function StudyPage(): React.JSX.Element {
 
                       void runAfterDraftFlush(() => {
                         internalNavigationSequenceRef.current += 1
+
                         setInternalNavigation({
                           kind: 'material',
                           materialId: backTarget.sourceMaterialId,
@@ -407,7 +515,9 @@ export function StudyPage(): React.JSX.Element {
                           revealSourceBlockId: backTarget.sourceBlockId,
                           requestId: internalNavigationSequenceRef.current
                         })
+
                         openStudyNode(backTarget.sourceMaterialId)
+
                         setInternalLinkHistory(normalizedInternalLinkHistory.slice(0, -1))
                       }, backTarget.sourceMaterialId)
                     }
@@ -434,17 +544,27 @@ export function StudyPage(): React.JSX.Element {
             onCreateFolder={() => {
               void runAfterDraftFlush(async () => {
                 clearInternalLinkNavigation()
-                await study.createNode({ type: 'folder', parentId: selectedNode.id })
+
+                await study.createNode({
+                  type: 'folder',
+                  parentId: selectedNode.id
+                })
               })
             }}
             onCreateMaterial={() => {
               void runAfterDraftFlush(async () => {
                 clearInternalLinkNavigation()
-                await study.createNode({ type: 'material', parentId: selectedNode.id })
+
+                await study.createNode({
+                  type: 'material',
+                  parentId: selectedNode.id
+                })
               })
             }}
             onIconChange={(icon) => {
-              void study.updateFolderIcon(selectedNode.id, icon)
+              if (!deletePendingRef.current) {
+                void study.updateFolderIcon(selectedNode.id, icon)
+              }
             }}
           />
         ) : (
@@ -457,13 +577,21 @@ export function StudyPage(): React.JSX.Element {
             onCreateFolder={() => {
               void runAfterDraftFlush(async () => {
                 clearInternalLinkNavigation()
-                await study.createNode({ type: 'folder', parentId: null })
+
+                await study.createNode({
+                  type: 'folder',
+                  parentId: null
+                })
               })
             }}
             onCreateMaterial={() => {
               void runAfterDraftFlush(async () => {
                 clearInternalLinkNavigation()
-                await study.createNode({ type: 'material', parentId: null })
+
+                await study.createNode({
+                  type: 'material',
+                  parentId: null
+                })
               })
             }}
           />
@@ -491,6 +619,7 @@ export function StudyPage(): React.JSX.Element {
               <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-red-300">
                 <AlertTriangle aria-hidden="true" className="size-5" />
               </span>
+
               <div>
                 <h2
                   id="study-transition-error-title"
@@ -498,9 +627,11 @@ export function StudyPage(): React.JSX.Element {
                 >
                   Изменения не сохранены
                 </h2>
+
                 <p className="mt-1 text-sm leading-5 text-[var(--app-muted)]">
                   {blockedTransition.message} Текущий материал и черновик остаются открытыми.
                 </p>
+
                 {forceLeaveArmed && (
                   <p className="mt-3 rounded-lg border border-red-500/20 bg-red-500/[0.06] p-3 text-xs leading-5 text-red-200">
                     Несохранённые изменения будут безвозвратно потеряны. Нажмите ещё раз, чтобы
@@ -509,17 +640,20 @@ export function StudyPage(): React.JSX.Element {
                 )}
               </div>
             </div>
+
             <div className="mt-5 flex flex-wrap justify-end gap-2">
               <button
                 type="button"
                 className="rounded-lg px-3 py-2 text-sm text-[var(--app-muted)] hover:text-[var(--app-text)]"
                 onClick={() => {
                   setBlockedTransition(null)
+
                   setForceLeaveArmed(false)
                 }}
               >
                 Остаться
               </button>
+
               <button
                 type="button"
                 className="rounded-lg border border-[var(--app-border)] px-3 py-2 text-sm text-[var(--app-text)] hover:bg-white/[0.05]"
@@ -529,18 +663,23 @@ export function StudyPage(): React.JSX.Element {
               >
                 Повторить сохранение
               </button>
+
               <button
                 type="button"
                 className="rounded-lg bg-red-500/15 px-3 py-2 text-sm text-red-200 hover:bg-red-500/25"
                 onClick={() => {
                   if (!forceLeaveArmed) {
                     setForceLeaveArmed(true)
+
                     return
                   }
 
                   const transition = blockedTransition.run
+
                   setBlockedTransition(null)
+
                   setForceLeaveArmed(false)
+
                   void transition()
                 }}
               >
@@ -555,7 +694,7 @@ export function StudyPage(): React.JSX.Element {
         target={renameTarget}
         value={renameValue}
         onOpenChange={(open) => {
-          if (!open) {
+          if (!open && !deletePendingRef.current) {
             setRenameTarget(null)
           }
         }}
@@ -574,18 +713,15 @@ export function StudyPage(): React.JSX.Element {
             ? 'Папка будет удалена вместе со всеми вложенными папками и материалами.'
             : 'Материал и всё его содержимое будут удалены без возможности восстановления.'
         }
+        isSubmitting={isDeleting}
+        error={deleteError}
         onOpenChange={(open) => {
-          if (!open) {
+          if (!open && !deletePendingRef.current) {
             setDeleteTarget(null)
+            setDeleteError(null)
           }
         }}
-        onConfirm={() => {
-          if (deleteTarget) {
-            void study.deleteNode(deleteTarget.id)
-          }
-
-          setDeleteTarget(null)
-        }}
+        onConfirm={confirmDelete}
       />
     </section>
   )
@@ -611,6 +747,7 @@ const folderWorkspaceDateFormatter = new Intl.DateTimeFormat('ru-RU', {
   day: 'numeric',
   month: 'short'
 })
+
 function FolderWorkspace({
   node,
   items,
@@ -796,6 +933,7 @@ function FolderIconPicker({
     </DropdownMenu.Root>
   )
 }
+
 function FolderStatistic({
   icon,
   value,
@@ -872,7 +1010,9 @@ function FolderItemsSection({
             <button
               key={child.id}
               type="button"
-              aria-label={`Открыть ${child.type === 'folder' ? 'папку' : 'материал'} «${child.title}»`}
+              aria-label={`Открыть ${
+                child.type === 'folder' ? 'папку' : 'материал'
+              } «${child.title}»`}
               className={cn(
                 'group flex w-full min-w-0 items-center gap-3 rounded-xl border text-left outline-none',
                 'border-[var(--app-border)] bg-[var(--app-workspace)]',
