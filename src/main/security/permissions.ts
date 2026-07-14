@@ -10,50 +10,126 @@ export interface PermissionPolicyOptions {
   getTrustedWebContents(): WebContents | null
 }
 
+export type PermissionPolicySource = 'check' | 'request'
+
 export interface PermissionPolicyContext {
+  source: PermissionPolicySource
   permission: string
-  requestingUrl: string
-  topLevelUrl: string
+  requestingUrl?: string
+  requestingOrigin?: string
+  embeddingOrigin?: string
+  topLevelUrl?: string
   isMainFrame: boolean
   isTrustedWebContents: boolean
 }
 
 const YOUTUBE_EMBED_ORIGIN = 'https://www.youtube-nocookie.com'
 
-function sameDocumentUrl(first: string, second: string): boolean {
+function sameDocumentUrl(first: string | undefined, second: string): boolean {
+  if (!first) {
+    return false
+  }
+
   try {
     const firstUrl = new URL(first)
     const secondUrl = new URL(second)
+
     firstUrl.hash = ''
     secondUrl.hash = ''
+
     return firstUrl.href === secondUrl.href
   } catch {
     return false
   }
 }
 
-function hasOrigin(url: string, origin: string): boolean {
+function normalizeOrigin(value: string | undefined): string | null {
+  if (!value) {
+    return null
+  }
+
+  if (value === 'null') {
+    return 'file://'
+  }
+
   try {
-    return new URL(url).origin === origin
+    const parsedUrl = new URL(value)
+
+    if (parsedUrl.protocol === 'file:') {
+      return 'file://'
+    }
+
+    return parsedUrl.origin
   } catch {
+    return null
+  }
+}
+
+function matchesOrigin(
+  expectedUrlOrOrigin: string,
+  ...candidates: Array<string | undefined>
+): boolean {
+  const expectedOrigin = normalizeOrigin(expectedUrlOrOrigin)
+
+  if (!expectedOrigin) {
     return false
   }
+
+  return candidates.some((candidate) => normalizeOrigin(candidate) === expectedOrigin)
+}
+
+function isTrustedRendererDocument(context: PermissionPolicyContext, rendererUrl: string): boolean {
+  return context.isTrustedWebContents && sameDocumentUrl(context.topLevelUrl, rendererUrl)
+}
+
+function isTrustedRendererMainFrame(
+  context: PermissionPolicyContext,
+  rendererUrl: string
+): boolean {
+  if (!context.isMainFrame || !isTrustedRendererDocument(context, rendererUrl)) {
+    return false
+  }
+
+  return (
+    sameDocumentUrl(context.requestingUrl, rendererUrl) ||
+    matchesOrigin(rendererUrl, context.requestingOrigin, context.requestingUrl)
+  )
+}
+
+function isTrustedYouTubeFullscreenRequest(
+  context: PermissionPolicyContext,
+  rendererUrl: string
+): boolean {
+  if (
+    context.isMainFrame ||
+    !matchesOrigin(YOUTUBE_EMBED_ORIGIN, context.requestingOrigin, context.requestingUrl)
+  ) {
+    return false
+  }
+
+  if (context.source === 'check') {
+    return matchesOrigin(rendererUrl, context.embeddingOrigin)
+  }
+
+  if (!isTrustedRendererDocument(context, rendererUrl)) {
+    return false
+  }
+
+  return (
+    context.embeddingOrigin === undefined || matchesOrigin(rendererUrl, context.embeddingOrigin)
+  )
 }
 
 export function isAppPermissionAllowed(
   context: PermissionPolicyContext,
   rendererUrl: string
 ): boolean {
-  if (!context.isTrustedWebContents || !sameDocumentUrl(context.topLevelUrl, rendererUrl)) {
-    return false
-  }
-
   if (context.permission === 'clipboard-sanitized-write') {
-    return context.isMainFrame && sameDocumentUrl(context.requestingUrl, rendererUrl)
+    return isTrustedRendererMainFrame(context, rendererUrl)
   }
 
   if (context.permission === 'fullscreen') {
-    return !context.isMainFrame && hasOrigin(context.requestingUrl, YOUTUBE_EMBED_ORIGIN)
+    return isTrustedYouTubeFullscreenRequest(context, rendererUrl)
   }
 
   return false
@@ -63,27 +139,19 @@ export function installPermissionPolicy(
   targetSession: PermissionPolicySession,
   options: PermissionPolicyOptions
 ): void {
-  const createContext = (
-    webContents: WebContents | null,
-    permission: string,
-    requestingUrl: string,
-    isMainFrame: boolean
-  ): PermissionPolicyContext => ({
-    permission,
-    requestingUrl,
-    topLevelUrl: webContents?.getURL() ?? '',
-    isMainFrame,
-    isTrustedWebContents: webContents !== null && webContents === options.getTrustedWebContents()
-  })
-
   targetSession.setPermissionCheckHandler((webContents, permission, requestingOrigin, details) =>
     isAppPermissionAllowed(
-      createContext(
-        webContents,
+      {
+        source: 'check',
         permission,
-        details.requestingUrl ?? requestingOrigin,
-        details.isMainFrame
-      ),
+        requestingUrl: details.requestingUrl,
+        requestingOrigin,
+        embeddingOrigin: details.embeddingOrigin,
+        topLevelUrl: webContents?.getURL(),
+        isMainFrame: details.isMainFrame,
+        isTrustedWebContents:
+          webContents !== null && webContents === options.getTrustedWebContents()
+      },
       options.rendererUrl
     )
   )
@@ -91,7 +159,15 @@ export function installPermissionPolicy(
   targetSession.setPermissionRequestHandler((webContents, permission, callback, details) => {
     callback(
       isAppPermissionAllowed(
-        createContext(webContents, permission, details.requestingUrl, details.isMainFrame),
+        {
+          source: 'request',
+          permission,
+          requestingUrl: details.requestingUrl,
+          requestingOrigin: details.requestingUrl,
+          topLevelUrl: webContents.getURL(),
+          isMainFrame: details.isMainFrame,
+          isTrustedWebContents: webContents === options.getTrustedWebContents()
+        },
         options.rendererUrl
       )
     )
