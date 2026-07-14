@@ -87,7 +87,7 @@ export class ShutdownCoordinator {
     }
 
     if (this.requestId !== null) {
-      return this.drainPromise ?? Promise.resolve()
+      return this.drainPromise ?? this.fallbackPromise ?? Promise.resolve()
     }
 
     this.requestId = randomUUID()
@@ -118,7 +118,7 @@ export class ShutdownCoordinator {
         this.finishClose()
       }
 
-      return this.drainPromise ?? Promise.resolve()
+      return
     }
 
     this.stateVersion += 1
@@ -228,6 +228,7 @@ export class ShutdownCoordinator {
     const stateVersion = this.stateVersion
 
     this.clearRendererTimeout()
+    this.phase = 'waiting-user'
 
     const fallbackPromise = this.resolveFallbackSafely({
       reason,
@@ -252,13 +253,23 @@ export class ShutdownCoordinator {
           return
         }
 
+        /*
+         * Clear the current fallback before resending. If sendRequest fails,
+         * sendRendererRequest can then open a fresh renderer-gone fallback
+         * instead of being blocked by the old fallback promise.
+         */
+        this.fallbackPromise = null
+
         if (!this.target.isAvailable()) {
-          this.cancelShutdown()
+          void this.resolveRendererFallback('renderer-gone')
           return
         }
 
-        this.phase = 'waiting-renderer'
-        this.scheduleRendererResponseTimeout()
+        /*
+         * A retry must resend the original shutdown request. Merely starting
+         * another timeout would not help when the first IPC message was lost.
+         */
+        this.sendRendererRequest()
       })
       .finally(() => {
         if (this.fallbackPromise === fallbackPromise) {

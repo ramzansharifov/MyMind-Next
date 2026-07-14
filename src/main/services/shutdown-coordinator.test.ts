@@ -92,6 +92,8 @@ function createTarget(): {
 async function flushPromises(): Promise<void> {
   await Promise.resolve()
   await Promise.resolve()
+  await Promise.resolve()
+  await Promise.resolve()
 }
 
 describe('ShutdownCoordinator', () => {
@@ -131,7 +133,7 @@ describe('ShutdownCoordinator', () => {
     expect(coordinator.isApproved()).toBe(true)
   })
 
-  it('shows fallback after a renderer timeout and can continue waiting', async () => {
+  it('resends the same renderer request after a timeout retry', async () => {
     const scheduler = createManualScheduler()
     const resolveFallback = vi.fn(async () => 'retry' as const)
     const target = createTarget()
@@ -146,6 +148,7 @@ describe('ShutdownCoordinator', () => {
     })
 
     coordinator.requestShutdown(target.target)
+
     const requestId = target.sendRequest.mock.calls[0][0]
 
     scheduler.runNext()
@@ -155,6 +158,8 @@ describe('ShutdownCoordinator', () => {
       reason: 'renderer-timeout',
       canRetry: true
     })
+    expect(target.sendRequest).toHaveBeenCalledTimes(2)
+    expect(target.sendRequest).toHaveBeenNthCalledWith(2, requestId)
     expect(scheduler.pendingCount()).toBe(1)
 
     await coordinator.respond({
@@ -178,6 +183,7 @@ describe('ShutdownCoordinator', () => {
       resolveFallback: async ({ reason, canRetry }) => {
         expect(reason).toBe('renderer-gone')
         expect(canRetry).toBe(false)
+
         return 'force'
       },
       scheduleTimeout: scheduler.schedule
@@ -207,14 +213,15 @@ describe('ShutdownCoordinator', () => {
       waitForOperations: () => activeOperations.promise,
       resolveFallback: async ({ reason }) => {
         expect(reason).toBe('operations-timeout')
+
         return 'cancel'
       },
       scheduleTimeout: scheduler.schedule
     })
 
     coordinator.requestShutdown(target.target)
-    const requestId = target.sendRequest.mock.calls[0][0]
 
+    const requestId = target.sendRequest.mock.calls[0][0]
     const responsePromise = coordinator.respond({
       requestId,
       decision: 'success'
@@ -244,6 +251,7 @@ describe('ShutdownCoordinator', () => {
     })
 
     coordinator.requestShutdown(target.target)
+
     const requestId = target.sendRequest.mock.calls[0][0]
 
     await coordinator.respond({
