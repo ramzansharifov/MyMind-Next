@@ -109,11 +109,11 @@ export function registerStudyIpcHandlers(): void {
 
     const input = importStudyAssetInputSchema.parse(rawInput)
 
-    getStudyMaterial(input.nodeId)
-
     const parentWindow = BrowserWindow.fromWebContents(event.sender)
 
-    return importStudyAsset(input, parentWindow)
+    return importStudyAsset(input, parentWindow, () => {
+      getStudyMaterial(input.nodeId)
+    })
   })
   ipcMain.handle(STUDY_IPC_CHANNELS.openAsset, (event, rawInput: unknown) => {
     if (!event.senderFrame || event.senderFrame !== event.sender.mainFrame) {

@@ -1,16 +1,23 @@
 import { lazy, type ComponentType } from 'react'
 import { BookOpen, Settings, type LucideIcon } from 'lucide-react'
 
-export type AppViewId = 'study' | 'settings'
 export type AppNavigationGroup = 'primary' | 'utility'
 
 export interface AppModuleDefinition {
-  id: AppViewId
+  id: string
   label: string
   loadingLabel: string
   icon: LucideIcon
   navigationGroup: AppNavigationGroup
   component: ComponentType
+}
+
+export function defineAppModules<const Definitions extends Record<string, AppModuleDefinition>>(
+  definitions: Definitions & {
+    [Id in keyof Definitions]: AppModuleDefinition & { id: Id }
+  }
+): Definitions {
+  return definitions
 }
 
 const StudyModule = lazy(() =>
@@ -22,8 +29,8 @@ const SettingsModule = lazy(() =>
   }))
 )
 
-export const appModules = [
-  {
+export const appModuleRegistry = defineAppModules({
+  study: {
     id: 'study',
     label: 'Обучение',
     loadingLabel: 'Загрузка обучения',
@@ -31,7 +38,7 @@ export const appModules = [
     navigationGroup: 'primary',
     component: StudyModule
   },
-  {
+  settings: {
     id: 'settings',
     label: 'Настройки',
     loadingLabel: 'Загрузка настроек',
@@ -39,8 +46,12 @@ export const appModules = [
     navigationGroup: 'utility',
     component: SettingsModule
   }
-] as const satisfies readonly AppModuleDefinition[]
+})
 
-export function getAppModule(id: AppViewId): AppModuleDefinition {
-  return appModules.find((module) => module.id === id) ?? appModules[0]
+export type AppViewId = keyof typeof appModuleRegistry
+
+export const appModules = Object.values(appModuleRegistry)
+
+export function getAppModule(id: AppViewId): (typeof appModuleRegistry)[AppViewId] {
+  return appModuleRegistry[id]
 }

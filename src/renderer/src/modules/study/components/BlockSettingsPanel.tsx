@@ -40,6 +40,10 @@ import {
   isValidStudyYouTubeUrl
 } from './file/file-utils'
 import { STUDY_MERMAID_TEMPLATES } from './mermaid/mermaid-templates'
+import {
+  getStudyBlockDefinition,
+  type StudyBlockSettingsStrategy
+} from '../lib/study-block-registry'
 import { ColorPicker } from './settings/ColorPicker'
 import { SegmentedChoice } from './settings/SegmentedChoice'
 import { StudySelect } from './settings/StudySelect'
@@ -51,6 +55,23 @@ interface BlockSettingsPanelProps {
   textEditor: Editor | null
   onChange: (block: StudyBlock) => void
 }
+
+type SettingsRendererProps = Omit<BlockSettingsPanelProps, 'block'> & { block: StudyBlock }
+type SettingsRenderer = (props: SettingsRendererProps) => React.JSX.Element
+
+const settingsRenderers = {
+  text: TextBlockSettings,
+  heading: HeadingBlockSettings,
+  code: CodeBlockSettings,
+  markdown: MarkdownBlockSettings,
+  latex: LatexBlockSettings,
+  mermaid: MermaidBlockSettings,
+  image: AttachmentBlockSettings,
+  video: AttachmentBlockSettings,
+  audio: AttachmentBlockSettings,
+  file: AttachmentBlockSettings,
+  divider: DividerBlockSettings
+} satisfies Record<StudyBlockSettingsStrategy, SettingsRenderer>
 
 const headingLevels = [
   {
@@ -253,6 +274,8 @@ export function BlockSettingsPanel({
     )
   }
 
+  const SettingsRenderer = settingsRenderers[getStudyBlockDefinition(block.type).settingsStrategy]
+
   return (
     <aside className="flex max-h-[calc(100vh-150px)] w-full max-w-full min-w-0 flex-col overflow-hidden rounded-xl border border-(--app-border) bg-(--app-surface) max-[1180px]:max-h-none">
       <header className="flex shrink-0 items-center gap-3 border-b border-(--app-border) px-4 py-3.5">
@@ -273,31 +296,64 @@ export function BlockSettingsPanel({
       </header>
 
       <div className="min-h-0 min-w-0 [scrollbar-gutter:stable] overflow-x-hidden overflow-y-auto overscroll-contain p-4 max-[1180px]:overflow-visible max-[640px]:p-3">
-        {block.type === 'text' && <RichTextSettings key={block.id} editor={textEditor} />}
-
-        {block.type === 'heading' && <HeadingSettings block={block} onChange={onChange} />}
-
-        {block.type === 'code' && <CodeSettings block={block} onChange={onChange} />}
-
-        {block.type === 'markdown' && <MarkdownSettings block={block} onChange={onChange} />}
-
-        {block.type === 'latex' && <LatexSettings block={block} onChange={onChange} />}
-
-        {block.type === 'mermaid' && <MermaidSettings block={block} onChange={onChange} />}
-
-        {isStudyAttachmentBlock(block) && (
-          <AttachmentSettings
-            key={block.id}
-            materialId={materialId}
-            block={block}
-            onChange={onChange}
-          />
-        )}
-
-        {block.type === 'divider' && <DividerSettings block={block} onChange={onChange} />}
+        <SettingsRenderer
+          key={block.id}
+          materialId={materialId}
+          block={block}
+          textEditor={textEditor}
+          onChange={onChange}
+        />
       </div>
     </aside>
   )
+}
+
+function TextBlockSettings({ block, textEditor }: SettingsRendererProps): React.JSX.Element {
+  if (block.type !== 'text') throw new Error('Text settings received an incompatible block')
+  return <RichTextSettings editor={textEditor} />
+}
+
+function HeadingBlockSettings({ block, onChange }: SettingsRendererProps): React.JSX.Element {
+  if (block.type !== 'heading') throw new Error('Heading settings received an incompatible block')
+  return <HeadingSettings block={block} onChange={onChange} />
+}
+
+function CodeBlockSettings({ block, onChange }: SettingsRendererProps): React.JSX.Element {
+  if (block.type !== 'code') throw new Error('Code settings received an incompatible block')
+  return <CodeSettings block={block} onChange={onChange} />
+}
+
+function MarkdownBlockSettings({ block, onChange }: SettingsRendererProps): React.JSX.Element {
+  if (block.type !== 'markdown') {
+    throw new Error('Markdown settings received an incompatible block')
+  }
+  return <MarkdownSettings block={block} onChange={onChange} />
+}
+
+function LatexBlockSettings({ block, onChange }: SettingsRendererProps): React.JSX.Element {
+  if (block.type !== 'latex') throw new Error('LaTeX settings received an incompatible block')
+  return <LatexSettings block={block} onChange={onChange} />
+}
+
+function MermaidBlockSettings({ block, onChange }: SettingsRendererProps): React.JSX.Element {
+  if (block.type !== 'mermaid') throw new Error('Mermaid settings received an incompatible block')
+  return <MermaidSettings block={block} onChange={onChange} />
+}
+
+function AttachmentBlockSettings({
+  block,
+  materialId,
+  onChange
+}: SettingsRendererProps): React.JSX.Element {
+  if (!isStudyAttachmentBlock(block)) {
+    throw new Error('Attachment settings received an incompatible block')
+  }
+  return <AttachmentSettings materialId={materialId} block={block} onChange={onChange} />
+}
+
+function DividerBlockSettings({ block, onChange }: SettingsRendererProps): React.JSX.Element {
+  if (block.type !== 'divider') throw new Error('Divider settings received an incompatible block')
+  return <DividerSettings block={block} onChange={onChange} />
 }
 
 function HeadingSettings({

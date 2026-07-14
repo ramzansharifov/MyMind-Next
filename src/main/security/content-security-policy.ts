@@ -1,5 +1,15 @@
 import type { Session } from 'electron'
 
+export interface AppContentSecurityPolicyRequest {
+  url: string
+  resourceType: string
+}
+
+export interface AppContentSecurityPolicyOptions {
+  development: boolean
+  rendererUrl: string
+}
+
 const directives = [
   "default-src 'self'",
   "style-src 'self' 'unsafe-inline'",
@@ -24,10 +34,40 @@ export function createContentSecurityPolicy(development: boolean): string {
   return [...directives, scriptSources, connectSources].join('; ')
 }
 
-export function installContentSecurityPolicy(targetSession: Session, development: boolean): void {
-  const policy = createContentSecurityPolicy(development)
+function normalizeDocumentUrl(value: string): string | null {
+  try {
+    const url = new URL(value)
+    url.hash = ''
+    return url.href
+  } catch {
+    return null
+  }
+}
+
+export function shouldApplyAppContentSecurityPolicy(
+  request: AppContentSecurityPolicyRequest,
+  options: AppContentSecurityPolicyOptions
+): boolean {
+  if (request.resourceType !== 'mainFrame') return false
+
+  const requestUrl = normalizeDocumentUrl(request.url)
+  const rendererUrl = normalizeDocumentUrl(options.rendererUrl)
+
+  return requestUrl !== null && rendererUrl !== null && requestUrl === rendererUrl
+}
+
+export function installContentSecurityPolicy(
+  targetSession: Session,
+  options: AppContentSecurityPolicyOptions
+): void {
+  const policy = createContentSecurityPolicy(options.development)
 
   targetSession.webRequest.onHeadersReceived((details, callback) => {
+    if (!shouldApplyAppContentSecurityPolicy(details, options)) {
+      callback({ responseHeaders: details.responseHeaders })
+      return
+    }
+
     callback({
       responseHeaders: {
         ...details.responseHeaders,

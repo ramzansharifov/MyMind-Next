@@ -16,7 +16,19 @@ export function initializeDatabase(): void {
     recursive: true
   })
 
-  const databasePath = join(databaseDirectory, 'mymind.sqlite')
+  initializeDatabaseAtPath(join(databaseDirectory, 'mymind.sqlite'))
+}
+
+export function initializeDatabaseForTesting(databasePath: string): void {
+  if (process.env.NODE_ENV !== 'test') {
+    throw new Error('The test database initializer is only available while running tests')
+  }
+
+  initializeDatabaseAtPath(databasePath)
+}
+
+function initializeDatabaseAtPath(databasePath: string): void {
+  closeDatabase()
 
   sqlite = new Database(databasePath)
 

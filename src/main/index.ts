@@ -1,5 +1,6 @@
 import { app, shell, BrowserWindow, session } from 'electron'
 import { join } from 'path'
+import { pathToFileURL } from 'node:url'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 
@@ -10,6 +11,7 @@ import { registerStudyAssetProtocol, registerStudyAssetScheme } from './services
 import { installContentSecurityPolicy } from './security/content-security-policy'
 import { installPermissionPolicy } from './security/permissions'
 import { focusExistingAppWindow } from './security/single-instance'
+import { runStudyLinkTargetsMaintenance } from './repositories/study.repository'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -93,12 +95,21 @@ if (!hasSingleInstanceLock) {
     })
 
     installPermissionPolicy(session.defaultSession)
-    installContentSecurityPolicy(session.defaultSession, is.dev)
+    const rendererUrl =
+      is.dev && process.env['ELECTRON_RENDERER_URL']
+        ? process.env['ELECTRON_RENDERER_URL']
+        : pathToFileURL(join(__dirname, '../renderer/index.html')).href
+
+    installContentSecurityPolicy(session.defaultSession, {
+      development: is.dev,
+      rendererUrl
+    })
 
     registerStudyAssetProtocol()
 
     initializeDatabase()
     runDatabaseMigrations()
+    runStudyLinkTargetsMaintenance()
     registerIpcHandlers()
     createWindow()
 

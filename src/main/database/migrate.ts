@@ -9,7 +9,9 @@ export function runDatabaseMigrations(): void {
     ? join(process.resourcesPath, 'drizzle')
     : join(app.getAppPath(), 'drizzle')
 
-  migrate(getDatabase(), {
-    migrationsFolder
-  })
+  runDatabaseMigrationsFrom(migrationsFolder)
+}
+
+export function runDatabaseMigrationsFrom(migrationsFolder: string): void {
+  migrate(getDatabase(), { migrationsFolder })
 }

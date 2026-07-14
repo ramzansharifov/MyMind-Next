@@ -39,11 +39,11 @@ function AppViewLoadingFallback({ label }: { label: string }): React.JSX.Element
 
 function App(): React.JSX.Element {
   return (
-    <AppearanceProvider>
-      <AppErrorBoundary scope="приложение">
+    <AppErrorBoundary scope="приложение">
+      <AppearanceProvider>
         <AppContent />
-      </AppErrorBoundary>
-    </AppearanceProvider>
+      </AppearanceProvider>
+    </AppErrorBoundary>
   )
 }
 

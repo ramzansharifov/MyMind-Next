@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
 import type { StudyBlockType } from '../../../../../shared/contracts/study'
-import { getStudyBlockDefinition, studyBlockDefinitions } from './study-block-registry'
+import {
+  getStudyBlockDefinition,
+  studyBlockDefinitions,
+  studyBlockRegistry
+} from './study-block-registry'
 
 describe('study block registry', () => {
   it('contains one unique definition for every supported block type', () => {
@@ -25,5 +29,16 @@ describe('study block registry', () => {
       expected.length
     )
     expect(getStudyBlockDefinition('video').label).toBe('Видео')
+  })
+
+  it('declares factories and render/settings strategies for every type', () => {
+    for (const definition of studyBlockDefinitions) {
+      expect(definition.factory(`block-${definition.type}`).type).toBe(definition.type)
+      expect(definition.editStrategy).toBe(definition.type)
+      expect(definition.readStrategy).toBe(definition.type)
+      expect(definition.settingsStrategy).toBe(definition.type)
+    }
+
+    expect(Object.keys(studyBlockRegistry)).toHaveLength(studyBlockDefinitions.length)
   })
 })

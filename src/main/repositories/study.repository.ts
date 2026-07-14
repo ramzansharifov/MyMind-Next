@@ -1,7 +1,7 @@
-import { asc, eq, inArray, isNull, like, or } from 'drizzle-orm'
+import { asc, eq, isNull, or, sql, type SQLWrapper } from 'drizzle-orm'
 import { randomUUID } from 'node:crypto'
 
-import { studyLinkTargets, studyMaterials, studyNodes } from '../database/schema/study'
+import { appMeta, studyLinkTargets, studyMaterials, studyNodes } from '../database/schema'
 import { getDatabase } from '../database/client'
 import type {
   CreateStudyNodeInput,
@@ -10,7 +10,6 @@ import type {
   ResolveStudyInternalLinkTargetInput,
   SaveStudyMaterialInput,
   SearchStudyInternalLinkTargetsInput,
-  StudyBlock,
   StudyDocument,
   StudyFolderIconName,
   StudyInternalLinkTarget,
@@ -29,6 +28,7 @@ import {
   validateStudyDocumentAssets
 } from '../services/study-assets'
 import { studyMaterialCoordinator } from '../services/study-material-coordinator'
+import { documentToPlainText } from '../domain/study-document-index'
 
 function createEmptyStudyDocument(): StudyDocument {
   return {
@@ -41,52 +41,6 @@ function createEmptyStudyDocument(): StudyDocument {
       }
     ]
   }
-}
-
-function documentToPlainText(document: StudyDocument): string {
-  return document.blocks
-    .map((block: StudyBlock) => {
-      if (block.type === 'text') {
-        return block.text
-      }
-
-      if (block.type === 'heading') {
-        return block.text
-      }
-
-      if (block.type === 'code') {
-        return block.source
-      }
-      if (block.type === 'markdown') {
-        return block.source
-      }
-
-      if (block.type === 'latex') {
-        return block.source
-      }
-
-      if (block.type === 'mermaid') {
-        return block.source
-      }
-      if (
-        block.type === 'image' ||
-        block.type === 'video' ||
-        block.type === 'audio' ||
-        block.type === 'file'
-      ) {
-        const sourceName =
-          block.source.type === 'local' ? block.source.asset?.name : block.source.url
-
-        return [block.title, sourceName]
-          .filter((value): value is string => Boolean(value))
-          .join('\n')
-      }
-
-      return ''
-    })
-    .filter(Boolean)
-    .join('\n\n')
-    .trim()
 }
 
 function mapStudyNode(row: typeof studyNodes.$inferSelect): StudyNode {
@@ -109,6 +63,13 @@ function mapStudyMaterial(row: typeof studyMaterials.$inferSelect): StudyMateria
 }
 type StudyNodeRow = typeof studyNodes.$inferSelect
 
+interface StudyPathNode {
+  id: string
+  type: 'folder' | 'material'
+  parentId: string | null
+  title: string
+}
+
 type StudyLinkTargetRow = typeof studyLinkTargets.$inferSelect
 
 function normalizeStudyLinkSearch(...values: string[]): string {
@@ -118,6 +79,7 @@ function normalizeStudyLinkSearch(...values: string[]): string {
 function buildStudyLinkTargetRows(
   materialId: string,
   materialTitle: string,
+  folderPath: string[],
   document: StudyDocument,
   updatedAt: Date
 ): Array<typeof studyLinkTargets.$inferInsert> {
@@ -127,6 +89,11 @@ function buildStudyLinkTargetRows(
     materialId,
     headingId: null,
     title: materialTitle,
+    titleSearch: normalizeStudyLinkSearch(materialTitle),
+    materialTitle,
+    materialTitleSearch: normalizeStudyLinkSearch(materialTitle),
+    folderPath,
+    folderPathSearch: normalizeStudyLinkSearch(...folderPath),
     headingLevel: null,
     position: -1,
     searchText: normalizeStudyLinkSearch(materialTitle),
@@ -147,6 +114,11 @@ function buildStudyLinkTargetRows(
         materialId,
         headingId: block.id,
         title,
+        titleSearch: normalizeStudyLinkSearch(title),
+        materialTitle,
+        materialTitleSearch: normalizeStudyLinkSearch(materialTitle),
+        folderPath,
+        folderPathSearch: normalizeStudyLinkSearch(...folderPath),
         headingLevel: block.level,
         position,
         searchText: normalizeStudyLinkSearch(title, materialTitle),
@@ -158,19 +130,19 @@ function buildStudyLinkTargetRows(
   return [materialTarget, ...headingTargets]
 }
 
-function getStudyMaterialFolderPath(
-  material: StudyNodeRow,
-  nodesById: Map<string, StudyNodeRow>
+function getStudyFolderPath(
+  parentId: string | null,
+  nodesById: ReadonlyMap<string, StudyPathNode>
 ): string[] {
   const path: string[] = []
   const visited = new Set<string>()
 
-  let parentId = material.parentId
+  let currentParentId = parentId
 
-  while (parentId && !visited.has(parentId)) {
-    visited.add(parentId)
+  while (currentParentId && !visited.has(currentParentId)) {
+    visited.add(currentParentId)
 
-    const parent = nodesById.get(parentId)
+    const parent = nodesById.get(currentParentId)
 
     if (!parent) {
       break
@@ -180,22 +152,13 @@ function getStudyMaterialFolderPath(
       path.unshift(parent.title)
     }
 
-    parentId = parent.parentId
+    currentParentId = parent.parentId
   }
 
   return path
 }
 
-function mapStudyInternalLinkTarget(
-  row: StudyLinkTargetRow,
-  nodesById: Map<string, StudyNodeRow>
-): StudyInternalLinkTarget | null {
-  const material = nodesById.get(row.materialId)
-
-  if (!material || material.type !== 'material') {
-    return null
-  }
-
+function mapStudyInternalLinkTarget(row: StudyLinkTargetRow): StudyInternalLinkTarget {
   const headingLevel =
     row.kind === 'heading' &&
     (row.headingLevel === 1 || row.headingLevel === 2 || row.headingLevel === 3)
@@ -206,15 +169,26 @@ function mapStudyInternalLinkTarget(
     kind: row.kind,
     materialId: row.materialId,
     headingId: row.kind === 'heading' ? row.headingId : null,
-    title: row.kind === 'material' ? material.title : row.title,
-    materialTitle: material.title,
-    folderPath: getStudyMaterialFolderPath(material, nodesById),
+    title: row.title,
+    materialTitle: row.materialTitle,
+    folderPath: row.folderPath,
     headingLevel
   }
 }
 
-function ensureStudyLinkTargets(): void {
+const STUDY_LINK_TARGETS_MAINTENANCE_KEY = 'study_link_targets_version'
+const STUDY_LINK_TARGETS_MAINTENANCE_VERSION = '2'
+
+export function runStudyLinkTargetsMaintenance(): void {
   const database = getDatabase()
+
+  const completed = database
+    .select()
+    .from(appMeta)
+    .where(eq(appMeta.key, STUDY_LINK_TARGETS_MAINTENANCE_KEY))
+    .get()
+
+  if (completed?.value === STUDY_LINK_TARGETS_MAINTENANCE_VERSION) return
 
   const materialNodes = database
     .select()
@@ -222,23 +196,9 @@ function ensureStudyLinkTargets(): void {
     .where(eq(studyNodes.type, 'material'))
     .all()
 
-  const existingMaterialTargets = new Set(
-    database
-      .select({
-        materialId: studyLinkTargets.materialId,
-        kind: studyLinkTargets.kind
-      })
-      .from(studyLinkTargets)
-      .all()
-      .filter((target) => target.kind === 'material')
-      .map((target) => target.materialId)
-  )
-
-  materialNodes.forEach((materialNode) => {
-    if (existingMaterialTargets.has(materialNode.id)) {
-      return
-    }
-
+  const nodeRows = database.select().from(studyNodes).all()
+  const nodesById = new Map(nodeRows.map((node) => [node.id, node]))
+  const targetRows = materialNodes.flatMap((materialNode) => {
     const material = database
       .select()
       .from(studyMaterials)
@@ -254,59 +214,31 @@ function ensureStudyLinkTargets(): void {
     const targets = buildStudyLinkTargetRows(
       materialNode.id,
       materialNode.title,
+      getStudyFolderPath(materialNode.parentId, nodesById),
       document,
       updatedAt
     )
 
-    database.transaction((transaction) => {
-      transaction
-        .delete(studyLinkTargets)
-        .where(eq(studyLinkTargets.materialId, materialNode.id))
-        .run()
-
-      transaction.insert(studyLinkTargets).values(targets).run()
-    })
+    return targets
   })
-}
 
-function getStudyLinkTargetScore(
-  target: StudyInternalLinkTarget,
-  normalizedQuery: string,
-  currentMaterialId?: string
-): number | null {
-  let score = 100
-
-  if (normalizedQuery) {
-    const normalizedTitle = target.title.toLocaleLowerCase('ru-RU')
-
-    const normalizedMaterialTitle = target.materialTitle.toLocaleLowerCase('ru-RU')
-
-    const normalizedPath = target.folderPath.join(' ').toLocaleLowerCase('ru-RU')
-
-    if (normalizedTitle === normalizedQuery) {
-      score = 0
-    } else if (normalizedTitle.startsWith(normalizedQuery)) {
-      score = 10
-    } else if (normalizedTitle.includes(normalizedQuery)) {
-      score = 20
-    } else if (normalizedMaterialTitle.includes(normalizedQuery)) {
-      score = 30
-    } else if (normalizedPath.includes(normalizedQuery)) {
-      score = 40
-    } else {
-      return null
-    }
-  }
-
-  if (currentMaterialId && target.materialId === currentMaterialId) {
-    score -= target.kind === 'heading' ? 8 : 4
-  }
-
-  if (target.kind === 'material') {
-    score -= 1
-  }
-
-  return score
+  const now = new Date()
+  database.transaction((transaction) => {
+    transaction.delete(studyLinkTargets).run()
+    if (targetRows.length > 0) transaction.insert(studyLinkTargets).values(targetRows).run()
+    transaction
+      .insert(appMeta)
+      .values({
+        key: STUDY_LINK_TARGETS_MAINTENANCE_KEY,
+        value: STUDY_LINK_TARGETS_MAINTENANCE_VERSION,
+        updatedAt: now
+      })
+      .onConflictDoUpdate({
+        target: appMeta.key,
+        set: { value: STUDY_LINK_TARGETS_MAINTENANCE_VERSION, updatedAt: now }
+      })
+      .run()
+  })
 }
 
 interface PreparedStudyMaterialDuplicate {
@@ -454,6 +386,14 @@ export function createStudyNode(input: CreateStudyNodeInput): StudyNode {
     siblings.reduce((maximum, sibling) => Math.max(maximum, sibling.position), -1) + 1
 
   const title = input.title?.trim() || (input.type === 'folder' ? 'Новая папка' : 'Новый материал')
+  const nodesById = new Map(
+    database
+      .select()
+      .from(studyNodes)
+      .all()
+      .map((node) => [node.id, node])
+  )
+  const folderPath = getStudyFolderPath(input.parentId, nodesById)
 
   database.transaction((transaction) => {
     transaction
@@ -487,7 +427,7 @@ export function createStudyNode(input: CreateStudyNodeInput): StudyNode {
 
       transaction
         .insert(studyLinkTargets)
-        .values(buildStudyLinkTargetRows(id, title, emptyDocument, now))
+        .values(buildStudyLinkTargetRows(id, title, folderPath, emptyDocument, now))
         .run()
     }
 
@@ -638,6 +578,17 @@ async function duplicateStudyNodeNow(id: string): Promise<DuplicateStudyNodeResu
   const followingSiblings = rows.filter(
     (node) => node.parentId === source.parentId && node.position > source.position
   )
+  const pathNodes = new Map<string, StudyPathNode>(
+    [...rows, ...duplicatedNodeRows].map((node) => [
+      node.id,
+      {
+        id: node.id,
+        type: node.type,
+        parentId: node.parentId ?? null,
+        title: node.title
+      }
+    ])
+  )
 
   try {
     database.transaction((transaction) => {
@@ -670,7 +621,15 @@ async function duplicateStudyNodeNow(id: string): Promise<DuplicateStudyNodeResu
 
         transaction
           .insert(studyLinkTargets)
-          .values(buildStudyLinkTargetRows(material.nodeId, material.title, material.document, now))
+          .values(
+            buildStudyLinkTargetRows(
+              material.nodeId,
+              material.title,
+              getStudyFolderPath(pathNodes.get(material.nodeId)?.parentId ?? null, pathNodes),
+              material.document,
+              now
+            )
+          )
           .run()
       })
 
@@ -705,21 +664,69 @@ export async function duplicateStudyNode(id: string): Promise<DuplicateStudyNode
 
 export function renameStudyNode(id: string, title: string): StudyNode {
   const database = getDatabase()
-
-  const existing = database.select().from(studyNodes).where(eq(studyNodes.id, id)).get()
+  const rows = database.select().from(studyNodes).all()
+  const existing = rows.find((node) => node.id === id)
 
   if (!existing) {
     throw new Error('Элемент обучения не найден')
   }
 
-  database
-    .update(studyNodes)
-    .set({
-      title: title.trim(),
-      updatedAt: new Date()
+  const nextTitle = title.trim()
+  const now = new Date()
+  const nextRows = rows.map((node) =>
+    node.id === id ? { ...node, title: nextTitle, updatedAt: now } : node
+  )
+  const nodesById = new Map(nextRows.map((node) => [node.id, node]))
+  const affectedMaterials = new Set(
+    nextRows
+      .filter((node) => {
+        if (node.type !== 'material') return false
+        if (existing.type === 'material') return node.id === existing.id
+
+        let parentId = node.parentId
+        while (parentId) {
+          if (parentId === existing.id) return true
+          parentId = nodesById.get(parentId)?.parentId ?? null
+        }
+        return false
+      })
+      .map((node) => node.id)
+  )
+  const affectedTargets = database
+    .select()
+    .from(studyLinkTargets)
+    .all()
+    .filter((target) => affectedMaterials.has(target.materialId))
+
+  database.transaction((transaction) => {
+    transaction
+      .update(studyNodes)
+      .set({ title: nextTitle, updatedAt: now })
+      .where(eq(studyNodes.id, id))
+      .run()
+
+    affectedTargets.forEach((target) => {
+      const material = nodesById.get(target.materialId)
+      if (!material || material.type !== 'material') return
+
+      const targetTitle = target.kind === 'material' ? material.title : target.title
+      const folderPath = getStudyFolderPath(material.parentId, nodesById)
+      transaction
+        .update(studyLinkTargets)
+        .set({
+          title: targetTitle,
+          titleSearch: normalizeStudyLinkSearch(targetTitle),
+          materialTitle: material.title,
+          materialTitleSearch: normalizeStudyLinkSearch(material.title),
+          folderPath,
+          folderPathSearch: normalizeStudyLinkSearch(...folderPath),
+          searchText: normalizeStudyLinkSearch(targetTitle, material.title),
+          updatedAt: now
+        })
+        .where(eq(studyLinkTargets.id, target.id))
+        .run()
     })
-    .where(eq(studyNodes.id, id))
-    .run()
+  })
 
   const updated = database.select().from(studyNodes).where(eq(studyNodes.id, id)).get()
 
@@ -846,6 +853,30 @@ export function moveStudyNode(input: MoveStudyNodeInput): StudyNode[] {
   }
 
   const now = new Date()
+  const pathRows = rows.map((node) =>
+    node.id === source.id ? { ...node, parentId: input.parentId } : node
+  )
+  const pathNodesById = new Map(pathRows.map((node) => [node.id, node]))
+  const movedMaterialIds = new Set(
+    pathRows
+      .filter((node) => {
+        if (node.type !== 'material') return false
+        if (node.id === source.id) return true
+
+        let parentId = node.parentId
+        while (parentId) {
+          if (parentId === source.id) return true
+          parentId = pathNodesById.get(parentId)?.parentId ?? null
+        }
+        return false
+      })
+      .map((node) => node.id)
+  )
+  const movedTargets = database
+    .select()
+    .from(studyLinkTargets)
+    .all()
+    .filter((target) => movedMaterialIds.has(target.materialId))
 
   database.transaction((transaction) => {
     if (!sameParent) {
@@ -887,6 +918,22 @@ export function moveStudyNode(input: MoveStudyNodeInput): StudyNode[] {
         .where(eq(studyNodes.id, input.parentId))
         .run()
     }
+
+    movedTargets.forEach((target) => {
+      const material = pathNodesById.get(target.materialId)
+      if (!material) return
+      const folderPath = getStudyFolderPath(material.parentId, pathNodesById)
+
+      transaction
+        .update(studyLinkTargets)
+        .set({
+          folderPath,
+          folderPathSearch: normalizeStudyLinkSearch(...folderPath),
+          updatedAt: now
+        })
+        .where(eq(studyLinkTargets.id, target.id))
+        .run()
+    })
   })
 
   return listStudyNodes()
@@ -938,108 +985,61 @@ export async function deleteStudyNode(id: string): Promise<boolean> {
 export function searchStudyInternalLinkTargets(
   input: SearchStudyInternalLinkTargetsInput
 ): StudyInternalLinkTarget[] {
-  ensureStudyLinkTargets()
-
   const database = getDatabase()
-
-  const nodeRows = database.select().from(studyNodes).all()
-
-  const nodesById = new Map(nodeRows.map((node) => [node.id, node]))
-
   const normalizedQuery = normalizeStudyLinkSearch(input.query)
-
   const limit = Math.max(1, Math.min(input.limit ?? 40, 100))
-
-  const matchingFolderIds = normalizedQuery
-    ? nodeRows
-        .filter(
-          (node) =>
-            node.type === 'folder' && normalizeStudyLinkSearch(node.title).includes(normalizedQuery)
-        )
-        .map((node) => node.id)
-    : []
-
-  const matchingPathMaterialIds = matchingFolderIds.length
-    ? nodeRows
-        .filter(
-          (node) =>
-            node.type === 'material' &&
-            getStudyMaterialFolderPath(node, nodesById).some((title) =>
-              normalizeStudyLinkSearch(title).includes(normalizedQuery)
-            )
-        )
-        .map((node) => node.id)
-    : []
-
+  const escapedQuery = normalizedQuery
+    .replaceAll('\\', '\\\\')
+    .replaceAll('%', '\\%')
+    .replaceAll('_', '\\_')
+  const containsPattern = `%${escapedQuery}%`
+  const prefixPattern = `${escapedQuery}%`
+  const matches = (column: SQLWrapper): ReturnType<typeof sql> =>
+    sql`${column} LIKE ${containsPattern} ESCAPE '\\'`
   const searchCondition = normalizedQuery
     ? or(
-        like(studyLinkTargets.searchText, `%${normalizedQuery}%`),
-        ...(matchingPathMaterialIds.length
-          ? [inArray(studyLinkTargets.materialId, matchingPathMaterialIds)]
-          : [])
+        matches(studyLinkTargets.titleSearch),
+        matches(studyLinkTargets.materialTitleSearch),
+        matches(studyLinkTargets.folderPathSearch)
       )
     : undefined
-
-  const candidateLimit = Math.min(Math.max(limit * 10, 100), 1000)
+  const rank = sql<number>`
+    CASE
+      WHEN ${normalizedQuery} <> '' AND ${studyLinkTargets.titleSearch} = ${normalizedQuery} THEN 0
+      WHEN ${normalizedQuery} <> '' AND ${studyLinkTargets.titleSearch} LIKE ${prefixPattern} ESCAPE '\\' THEN 10
+      WHEN ${normalizedQuery} <> '' AND ${studyLinkTargets.titleSearch} LIKE ${containsPattern} ESCAPE '\\' THEN 20
+      WHEN ${normalizedQuery} <> '' AND ${studyLinkTargets.materialTitleSearch} LIKE ${containsPattern} ESCAPE '\\' THEN 30
+      WHEN ${normalizedQuery} <> '' AND ${studyLinkTargets.folderPathSearch} LIKE ${containsPattern} ESCAPE '\\' THEN 40
+      ELSE 100
+    END
+    - CASE
+        WHEN ${input.currentMaterialId ?? ''} <> ''
+          AND ${studyLinkTargets.materialId} = ${input.currentMaterialId ?? ''}
+        THEN CASE WHEN ${studyLinkTargets.kind} = 'heading' THEN 8 ELSE 4 END
+        ELSE 0
+      END
+    - CASE WHEN ${studyLinkTargets.kind} = 'material' THEN 1 ELSE 0 END
+  `
 
   return database
-    .select()
+    .select({ target: studyLinkTargets, rank: rank.as('rank') })
     .from(studyLinkTargets)
     .where(searchCondition)
-    .limit(candidateLimit)
-    .all()
-    .map((row) => mapStudyInternalLinkTarget(row, nodesById))
-    .filter((target): target is StudyInternalLinkTarget => target !== null)
-    .map((target) => ({
-      target,
-      score: getStudyLinkTargetScore(target, normalizedQuery, input.currentMaterialId)
-    }))
-    .filter(
-      (
-        entry
-      ): entry is {
-        target: StudyInternalLinkTarget
-        score: number
-      } => entry.score !== null
+    .orderBy(
+      rank,
+      studyLinkTargets.folderPathSearch,
+      studyLinkTargets.materialTitleSearch,
+      studyLinkTargets.titleSearch
     )
-    .sort((first, second) => {
-      if (first.score !== second.score) {
-        return first.score - second.score
-      }
-
-      const pathComparison = first.target.folderPath
-        .join('/')
-        .localeCompare(second.target.folderPath.join('/'), 'ru-RU')
-
-      if (pathComparison !== 0) {
-        return pathComparison
-      }
-
-      const materialComparison = first.target.materialTitle.localeCompare(
-        second.target.materialTitle,
-        'ru-RU'
-      )
-
-      if (materialComparison !== 0) {
-        return materialComparison
-      }
-
-      return first.target.title.localeCompare(second.target.title, 'ru-RU')
-    })
-    .slice(0, limit)
-    .map((entry) => entry.target)
+    .limit(limit)
+    .all()
+    .map(({ target }) => mapStudyInternalLinkTarget(target))
 }
 
 export function resolveStudyInternalLinkTarget(
   input: ResolveStudyInternalLinkTargetInput
 ): StudyInternalLinkTarget | null {
-  ensureStudyLinkTargets()
-
   const database = getDatabase()
-
-  const nodes = database.select().from(studyNodes).all()
-
-  const nodesById = new Map(nodes.map((node) => [node.id, node]))
 
   const targetRows = database
     .select()
@@ -1058,7 +1058,7 @@ export function resolveStudyInternalLinkTarget(
     return null
   }
 
-  return mapStudyInternalLinkTarget(targetRow, nodesById)
+  return mapStudyInternalLinkTarget(targetRow)
 }
 
 export function getStudyMaterial(nodeId: string): StudyMaterial {
@@ -1127,15 +1127,31 @@ async function saveStudyMaterialNow(input: SaveStudyMaterialInput): Promise<Stud
     .where(eq(studyMaterials.nodeId, input.nodeId))
     .get()
 
-  const linkTargets = buildStudyLinkTargetRows(input.nodeId, materialNode.title, document, now)
+  const nodeRows = database.select().from(studyNodes).all()
+  const nodesById = new Map(nodeRows.map((node) => [node.id, node]))
+  const linkTargets = buildStudyLinkTargetRows(
+    input.nodeId,
+    materialNode.title,
+    getStudyFolderPath(materialNode.parentId, nodesById),
+    document,
+    now
+  )
+
+  const savedMaterial = studyMaterialSchema.parse({
+    nodeId: input.nodeId,
+    document,
+    plainText,
+    createdAt: (existing?.createdAt ?? now).getTime(),
+    updatedAt: now.getTime()
+  })
 
   database.transaction((transaction) => {
     if (existing) {
       transaction
         .update(studyMaterials)
         .set({
-          document,
-          plainText,
+          document: savedMaterial.document,
+          plainText: savedMaterial.plainText,
           updatedAt: now
         })
         .where(eq(studyMaterials.nodeId, input.nodeId))
@@ -1145,8 +1161,8 @@ async function saveStudyMaterialNow(input: SaveStudyMaterialInput): Promise<Stud
         .insert(studyMaterials)
         .values({
           nodeId: input.nodeId,
-          document,
-          plainText,
+          document: savedMaterial.document,
+          plainText: savedMaterial.plainText,
           createdAt: now,
           updatedAt: now
         })
@@ -1165,8 +1181,6 @@ async function saveStudyMaterialNow(input: SaveStudyMaterialInput): Promise<Stud
       .where(eq(studyNodes.id, input.nodeId))
       .run()
   })
-
-  const savedMaterial = getStudyMaterial(input.nodeId)
 
   await cleanupStudyAssetsForDocument(input.nodeId, savedMaterial.document).catch(
     (reason: unknown) => {

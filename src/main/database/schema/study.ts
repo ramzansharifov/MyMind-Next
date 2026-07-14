@@ -51,6 +51,7 @@ export const studyMaterials = sqliteTable('study_materials', {
     mode: 'timestamp_ms'
   }).notNull()
 })
+
 export const studyLinkTargets = sqliteTable(
   'study_link_targets',
   {
@@ -65,6 +66,11 @@ export const studyLinkTargets = sqliteTable(
       }),
     headingId: text('heading_id'),
     title: text('title').notNull(),
+    titleSearch: text('title_search').notNull().default(''),
+    materialTitle: text('material_title').notNull().default(''),
+    materialTitleSearch: text('material_title_search').notNull().default(''),
+    folderPath: text('folder_path', { mode: 'json' }).$type<string[]>().notNull().default([]),
+    folderPathSearch: text('folder_path_search').notNull().default(''),
     headingLevel: integer('heading_level'),
     position: integer('position').notNull(),
     searchText: text('search_text').notNull(),

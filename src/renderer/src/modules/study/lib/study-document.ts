@@ -5,6 +5,7 @@ import type {
   StudyDocument,
   StudyTextBlock
 } from '../../../../../shared/contracts/study'
+import { getStudyBlockDefinition } from './study-block-registry'
 
 export const DEFAULT_DIVIDER_THICKNESS = 1
 export const DEFAULT_DIVIDER_COLOR = '#6d5dfc'
@@ -33,111 +34,7 @@ export function resolveStudyDividerColor(color?: string): string {
 
 export function createStudyBlock(type: StudyBlockType): StudyBlock {
   const id = crypto.randomUUID()
-
-  if (type === 'heading') {
-    return {
-      id,
-      type,
-      text: '',
-      level: 1
-    }
-  }
-
-  if (type === 'code') {
-    return {
-      id,
-      type,
-      source: '',
-      language: 'text'
-    }
-  }
-  if (type === 'markdown') {
-    return {
-      id,
-      type,
-      source: '',
-      viewMode: 'write'
-    }
-  }
-  if (type === 'latex') {
-    return {
-      id,
-      type,
-      source: '',
-      viewMode: 'write',
-      displayMode: 'display',
-      alignment: 'center',
-      scale: 100
-    }
-  }
-  if (type === 'mermaid') {
-    return {
-      id,
-      type,
-      source: '',
-      viewMode: 'write',
-      theme: 'dark',
-      scale: 100
-    }
-  }
-  if (type === 'image') {
-    return {
-      id,
-      type,
-      source: {
-        type: 'local'
-      },
-      imageFit: 'contain',
-      imageHeight: 360
-    }
-  }
-
-  if (type === 'video') {
-    return {
-      id,
-      type,
-      source: {
-        type: 'local'
-      }
-    }
-  }
-
-  if (type === 'audio') {
-    return {
-      id,
-      type,
-      source: {
-        type: 'local'
-      }
-    }
-  }
-
-  if (type === 'file') {
-    return {
-      id,
-      type,
-      source: {
-        type: 'local'
-      }
-    }
-  }
-
-  if (type === 'divider') {
-    return {
-      id,
-      type,
-      variant: DEFAULT_DIVIDER_VARIANT,
-      thickness: DEFAULT_DIVIDER_THICKNESS,
-      color: DEFAULT_DIVIDER_COLOR
-    }
-  }
-
-  return {
-    id,
-    type: 'text',
-    text: '',
-    html: '<p></p>'
-  }
+  return getStudyBlockDefinition(type).factory(id)
 }
 
 export function insertStudyBlock(

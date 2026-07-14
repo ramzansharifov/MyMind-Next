@@ -76,6 +76,7 @@ export const STUDY_DOCUMENT_LIMITS = {
   maxSourceLength: 1_000_000,
   maxLatexSourceLength: 200_000,
   maxMermaidSourceLength: 200_000,
+  maxPlainTextLength: 1_000_000,
   maxTitleLength: 240,
   maxRemoteUrlLength: 4_096
 } as const

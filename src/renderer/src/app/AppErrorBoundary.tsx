@@ -5,6 +5,7 @@ interface AppErrorBoundaryProps {
   children: ReactNode
   scope: string
   resetKey?: string
+  reload?: () => void
 }
 
 interface AppErrorBoundaryState {
@@ -19,7 +20,12 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
   }
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
-    console.error(`Ошибка интерфейса (${this.props.scope})`, error, info.componentStack)
+    if (import.meta.env.DEV) {
+      console.error(`Ошибка интерфейса (${this.props.scope})`, error, info.componentStack)
+      return
+    }
+
+    console.error(`Ошибка интерфейса (${this.props.scope})`)
   }
 
   componentDidUpdate(previousProps: AppErrorBoundaryProps): void {
@@ -30,6 +36,8 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
 
   render(): ReactNode {
     if (!this.state.error) return this.props.children
+
+    const lazyImportFailed = isLazyImportError(this.state.error)
 
     return (
       <section
@@ -45,12 +53,31 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
           <button
             type="button"
             className="mt-5 rounded-lg bg-violet-500 px-4 py-2 text-sm font-medium text-white"
-            onClick={() => this.setState({ error: null })}
+            onClick={() => {
+              if (lazyImportFailed) {
+                const reload = this.props.reload ?? (() => window.location.reload())
+                reload()
+                return
+              }
+
+              this.setState({ error: null })
+            }}
           >
-            Повторить
+            {lazyImportFailed ? 'Перезагрузить приложение' : 'Повторить'}
           </button>
         </div>
       </section>
     )
   }
+}
+
+export function isLazyImportError(error: Error): boolean {
+  const message = `${error.name} ${error.message}`.toLowerCase()
+
+  return (
+    message.includes('chunkloaderror') ||
+    message.includes('failed to fetch dynamically imported module') ||
+    message.includes('error loading dynamically imported module') ||
+    message.includes('importing a module script failed')
+  )
 }

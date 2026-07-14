@@ -8,6 +8,7 @@ import { Tooltip } from '../../../shared/ui/tooltip'
 
 import { studyClient } from '../api/study-client'
 import { createEmptyStudyDocument } from '../lib/study-document'
+import { StudyAutosaveQueue, type StudyAutosaveState } from '../lib/study-autosave-queue'
 import {
   getStudyHeadingElementId,
   STUDY_REVEAL_BLOCK_EVENT,
@@ -29,8 +30,6 @@ interface StudyMaterialEditorProps {
   onNavigationHandled: (requestId: number) => void
 }
 
-type SaveState = 'saved' | 'dirty' | 'saving' | 'error'
-
 export function StudyMaterialEditor({
   node,
   onRename,
@@ -40,18 +39,18 @@ export function StudyMaterialEditor({
 }: StudyMaterialEditorProps): React.JSX.Element {
   const [document, setDocument] = useState<StudyDocument>(createEmptyStudyDocument())
   const [mode, setMode] = useState<'edit' | 'read'>('edit')
-  const [saveState, setSaveState] = useState<SaveState>('saved')
+  const [saveState, setSaveState] = useState<StudyAutosaveState>('saved')
   const [isLoading, setIsLoading] = useState(true)
 
   const saveTimerRef = useRef<number | null>(null)
-  const documentRef = useRef<StudyDocument>(document)
-  const draftVersionRef = useRef(0)
-  const lastQueuedVersionRef = useRef(0)
-  const saveQueueRef = useRef<Promise<void>>(Promise.resolve())
-  const hasUnsavedChangesRef = useRef(false)
-  const isMountedRef = useRef(true)
   const readScrollRef = useRef<HTMLDivElement | null>(null)
   const handledNavigationRef = useRef<number | null>(null)
+  const [autosaveQueue] = useState(
+    () =>
+      new StudyAutosaveQueue<StudyDocument>(async (nextDocument) => {
+        await studyClient.saveMaterial({ nodeId: node.id, document: nextDocument })
+      }, setSaveState)
+  )
 
   const clearSaveTimer = useCallback((): void => {
     if (saveTimerRef.current === null) {
@@ -62,71 +61,12 @@ export function StudyMaterialEditor({
     saveTimerRef.current = null
   }, [])
 
-  const queueSave = useCallback(
-    (nextDocument: StudyDocument, draftVersion: number): Promise<void> => {
-      clearSaveTimer()
-
-      if (draftVersion <= lastQueuedVersionRef.current) {
-        return saveQueueRef.current
-      }
-
-      lastQueuedVersionRef.current = draftVersion
-
-      if (isMountedRef.current) {
-        setSaveState('saving')
-      }
-
-      const operation = saveQueueRef.current
-        .catch(() => undefined)
-        .then(() =>
-          studyClient.saveMaterial({
-            nodeId: node.id,
-            document: nextDocument
-          })
-        )
-        .then(() => {
-          if (!isMountedRef.current) {
-            return
-          }
-
-          if (draftVersionRef.current === draftVersion) {
-            hasUnsavedChangesRef.current = false
-            setSaveState('saved')
-          } else {
-            setSaveState('dirty')
-          }
-        })
-        .catch((reason: unknown) => {
-          if (isMountedRef.current) {
-            setSaveState('error')
-          }
-
-          throw reason
-        })
-
-      saveQueueRef.current = operation.then(
-        () => undefined,
-        () => undefined
-      )
-
-      return operation
-    },
-    [clearSaveTimer, node.id]
-  )
-
   const flushLatestDraft = useCallback((): Promise<void> => {
     clearSaveTimer()
-
-    if (!hasUnsavedChangesRef.current) {
-      return saveQueueRef.current
-    }
-
-    return queueSave(documentRef.current, draftVersionRef.current)
-  }, [clearSaveTimer, queueSave])
+    return autosaveQueue.flushLatestDraft()
+  }, [autosaveQueue, clearSaveTimer])
 
   useEffect(() => {
-    isMountedRef.current = true
-
     let active = true
 
     studyClient
@@ -136,10 +76,7 @@ export function StudyMaterialEditor({
           return
         }
 
-        documentRef.current = loadedMaterial.document
-        draftVersionRef.current = 0
-        lastQueuedVersionRef.current = 0
-        hasUnsavedChangesRef.current = false
+        autosaveQueue.hydrate(loadedMaterial.document)
 
         setDocument(loadedMaterial.document)
         setSaveState('saved')
@@ -157,13 +94,14 @@ export function StudyMaterialEditor({
 
     return () => {
       active = false
-      isMountedRef.current = false
-
       void flushLatestDraft().catch((reason: unknown) => {
         console.error('Failed to flush the latest study material draft', reason)
+        window.alert(
+          'Последние изменения материала не удалось сохранить. Вернитесь и повторите сохранение.'
+        )
       })
     }
-  }, [flushLatestDraft, node.id])
+  }, [autosaveQueue, flushLatestDraft, node.id])
 
   useEffect(() => {
     if (
@@ -293,21 +231,17 @@ export function StudyMaterialEditor({
   }, [isLoading, navigation, node.id, onNavigationHandled])
 
   function updateDocument(nextDocument: StudyDocument): void {
-    const nextDraftVersion = draftVersionRef.current + 1
-
-    draftVersionRef.current = nextDraftVersion
-    hasUnsavedChangesRef.current = true
-    documentRef.current = nextDocument
-
     setDocument(nextDocument)
-    setSaveState('dirty')
+    autosaveQueue.updateDraft(nextDocument)
 
     clearSaveTimer()
 
     saveTimerRef.current = window.setTimeout(() => {
       saveTimerRef.current = null
 
-      void queueSave(nextDocument, nextDraftVersion).catch(() => undefined)
+      void autosaveQueue.saveLatest().catch((reason: unknown) => {
+        console.error('Failed to autosave study material', reason)
+      })
     }, 800)
   }
 
@@ -358,7 +292,14 @@ export function StudyMaterialEditor({
             <span className="max-[760px]:hidden">Переименовать</span>
           </StudyActionButton>
         </Tooltip>
-        <SaveStatus state={saveState} />
+        <SaveStatus
+          state={saveState}
+          onRetry={() => {
+            void autosaveQueue.flushLatestDraft().catch((reason: unknown) => {
+              console.error('Failed to retry study material save', reason)
+            })
+          }}
+        />
 
         <Tabs.Root
           value={mode}
@@ -422,7 +363,13 @@ export function StudyMaterialEditor({
   )
 }
 
-function SaveStatus({ state }: { state: SaveState }): React.JSX.Element {
+function SaveStatus({
+  state,
+  onRetry
+}: {
+  state: StudyAutosaveState
+  onRetry: () => void
+}): React.JSX.Element {
   if (state === 'saving') {
     return (
       <span className="flex items-center gap-2 text-xs text-violet-300">
@@ -437,7 +384,11 @@ function SaveStatus({ state }: { state: SaveState }): React.JSX.Element {
   }
 
   if (state === 'error') {
-    return <span className="text-xs text-red-300">Ошибка сохранения</span>
+    return (
+      <button type="button" className="text-xs text-red-300 underline" onClick={onRetry}>
+        Повторить сохранение
+      </button>
+    )
   }
 
   return (

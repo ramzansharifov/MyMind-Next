@@ -6,6 +6,7 @@ import {
   STUDY_SAFE_ID_PATTERN
 } from '../contracts/study'
 import { createCanonicalStudyAssetUrl, isSafeStudyAssetFileName } from '../study-assets'
+import { normalizeStudyRemoteImageUrl, parseStudyYouTubeUrl } from '../study-remote-media'
 
 const studySafeIdSchema = z.string().regex(STUDY_SAFE_ID_PATTERN, 'Некорректный идентификатор')
 
@@ -100,14 +101,29 @@ const studyLocalAssetSourceSchema = z.object({
   asset: studyLocalAssetSchema.optional()
 })
 
-const studyRemoteAssetSourceSchema = z.object({
+const studyRemoteImageSourceSchema = z.object({
   type: z.literal('url'),
-  url: z.string().max(STUDY_DOCUMENT_LIMITS.maxRemoteUrlLength)
+  url: z
+    .string()
+    .max(STUDY_DOCUMENT_LIMITS.maxRemoteUrlLength)
+    .refine((url) => normalizeStudyRemoteImageUrl(url) !== null, 'Некорректная HTTPS-ссылка')
 })
 
-const studyMediaAssetSourceSchema = z.discriminatedUnion('type', [
+const studyRemoteVideoSourceSchema = z.object({
+  type: z.literal('url'),
+  url: z
+    .string()
+    .max(STUDY_DOCUMENT_LIMITS.maxRemoteUrlLength)
+    .refine((url) => parseStudyYouTubeUrl(url) !== null, 'Некорректная ссылка YouTube')
+})
+
+const studyImageAssetSourceSchema = z.discriminatedUnion('type', [
   studyLocalAssetSourceSchema,
-  studyRemoteAssetSourceSchema
+  studyRemoteImageSourceSchema
+])
+const studyVideoAssetSourceSchema = z.discriminatedUnion('type', [
+  studyLocalAssetSourceSchema,
+  studyRemoteVideoSourceSchema
 ])
 
 const studyAttachmentBaseShape = {
@@ -118,7 +134,7 @@ const studyAttachmentBaseShape = {
 export const studyImageBlockSchema = z.object({
   ...studyAttachmentBaseShape,
   type: z.literal('image'),
-  source: studyMediaAssetSourceSchema,
+  source: studyImageAssetSourceSchema,
   imageFit: z.enum(['contain', 'cover']).optional(),
   imageHeight: z.number().int().min(180).max(720).optional()
 })
@@ -126,7 +142,7 @@ export const studyImageBlockSchema = z.object({
 export const studyVideoBlockSchema = z.object({
   ...studyAttachmentBaseShape,
   type: z.literal('video'),
-  source: studyMediaAssetSourceSchema
+  source: studyVideoAssetSourceSchema
 })
 
 export const studyAudioBlockSchema = z.object({
@@ -212,7 +228,12 @@ export const studyNodeSchema = z.object({
 export const studyMaterialSchema = z.object({
   nodeId: studySafeIdSchema,
   document: studyDocumentSchema,
-  plainText: z.string().max(STUDY_DOCUMENT_LIMITS.maxTextLength),
+  plainText: z
+    .string()
+    .refine(
+      (value) => Array.from(value).length <= STUDY_DOCUMENT_LIMITS.maxPlainTextLength,
+      'Поисковый текст превышает допустимую длину'
+    ),
   createdAt: z.number().int(),
   updatedAt: z.number().int()
 })

@@ -14,6 +14,7 @@ import type {
 } from '../../shared/contracts/study'
 import { createCanonicalStudyAssetUrl, isSafeStudyAssetFileName } from '../../shared/study-assets'
 import { resolveStudyAssetByteRange } from './study-asset-range'
+import { studyMaterialCoordinator } from './study-material-coordinator'
 
 export const STUDY_ASSET_SCHEME = 'mymind-asset'
 
@@ -194,10 +195,36 @@ function createStudyAssetBody(
   })
 }
 
-export async function importStudyAsset(
+export interface PreparedStudyAssetImport {
+  sourcePath: string
+  extension: string
+  fileName: string
+  mimeType: string
+  size: number
+}
+
+export interface StudyAssetImportFileDependencies {
+  assetsRoot: string
+  createAssetId: () => string
+  mkdir: typeof mkdir
+  copyFile: typeof copyFile
+  remove: typeof rm
+}
+
+const defaultImportFileDependencies: StudyAssetImportFileDependencies = {
+  get assetsRoot() {
+    return getStudyAssetsRoot()
+  },
+  createAssetId: randomUUID,
+  mkdir,
+  copyFile,
+  remove: rm
+}
+
+export async function selectStudyAssetForImport(
   input: ImportStudyAssetInput,
   parentWindow: BrowserWindow | null
-): Promise<StudyLocalAsset | null> {
+): Promise<PreparedStudyAssetImport | null> {
   assertSafeAssetSegment(input.nodeId, 'material id')
 
   const options: OpenDialogOptions = {
@@ -227,41 +254,85 @@ export async function importStudyAsset(
 
   validateExtension(input.kind, extension)
 
-  const assetId = randomUUID()
-
   const fileName = sanitizeStudyAssetFileName(basename(sourcePath))
 
-  const assetDirectory = join(getStudyAssetsRoot(), input.nodeId, assetId)
+  return {
+    sourcePath,
+    extension,
+    fileName,
+    mimeType: getStudyAssetMimeType(extension),
+    size: fileStats.size
+  }
+}
 
-  const targetPath = join(assetDirectory, fileName)
+export async function persistPreparedStudyAssetImport(
+  materialId: string,
+  prepared: PreparedStudyAssetImport,
+  dependencies: StudyAssetImportFileDependencies = defaultImportFileDependencies
+): Promise<StudyLocalAsset> {
+  assertSafeAssetSegment(materialId, 'material id')
+
+  const assetId = dependencies.createAssetId()
+
+  const assetDirectory = join(dependencies.assetsRoot, materialId, assetId)
+
+  const targetPath = join(assetDirectory, prepared.fileName)
 
   try {
-    await mkdir(assetDirectory, {
+    await dependencies.mkdir(assetDirectory, {
       recursive: true
     })
 
-    await copyFile(sourcePath, targetPath)
+    await dependencies.copyFile(prepared.sourcePath, targetPath)
   } catch (reason: unknown) {
-    await rm(assetDirectory, {
-      recursive: true,
-      force: true
-    }).catch(() => undefined)
+    try {
+      await dependencies.remove(assetDirectory, {
+        recursive: true,
+        force: true
+      })
+    } catch (cleanupReason: unknown) {
+      console.error('Failed to remove a partial study asset import', cleanupReason)
+    }
 
     throw reason
   }
 
   return {
     id: assetId,
-    materialId: input.nodeId,
-    name: fileName,
-    mimeType: getStudyAssetMimeType(extension),
-    size: fileStats.size,
+    materialId,
+    name: prepared.fileName,
+    mimeType: prepared.mimeType,
+    size: prepared.size,
     url: createCanonicalStudyAssetUrl({
-      materialId: input.nodeId,
+      materialId,
       assetId,
-      fileName
+      fileName: prepared.fileName
     })
   }
+}
+
+export async function importStudyAsset(
+  input: ImportStudyAssetInput,
+  parentWindow: BrowserWindow | null,
+  assertMaterialExists: () => void | Promise<void>
+): Promise<StudyLocalAsset | null> {
+  const prepared = await selectStudyAssetForImport(input, parentWindow)
+
+  if (!prepared) return null
+
+  return commitPreparedStudyAssetImport(input.nodeId, prepared, assertMaterialExists)
+}
+
+export function commitPreparedStudyAssetImport(
+  materialId: string,
+  prepared: PreparedStudyAssetImport,
+  assertMaterialExists: () => void | Promise<void>,
+  dependencies: StudyAssetImportFileDependencies = defaultImportFileDependencies
+): Promise<StudyLocalAsset> {
+  return studyMaterialCoordinator.run(materialId, async () => {
+    await assertMaterialExists()
+    return persistPreparedStudyAssetImport(materialId, prepared, dependencies)
+  })
 }
 
 export async function openStudyAsset(input: OpenStudyAssetInput): Promise<void> {
@@ -487,8 +558,18 @@ export async function removeStudyAssetsForMaterials(materialIds: string[]): Prom
   )
 }
 
+let studyAssetsRootForTesting: string | null = null
+
+export function setStudyAssetsRootForTesting(root: string | null): void {
+  if (process.env.NODE_ENV !== 'test') {
+    throw new Error('The study assets root override is only available while running tests')
+  }
+
+  studyAssetsRootForTesting = root
+}
+
 function getStudyAssetsRoot(): string {
-  return join(app.getPath('documents'), 'MyMind', 'Attachments')
+  return studyAssetsRootForTesting ?? join(app.getPath('documents'), 'MyMind', 'Attachments')
 }
 
 function resolveStudyAssetRequest(requestUrl: string): string | null {

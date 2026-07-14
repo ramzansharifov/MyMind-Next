@@ -54,7 +54,11 @@ import {
   replaceStudyBlock,
   resolveStudyHeadingColor
 } from '../lib/study-document'
-import { studyBlockDefinitions } from '../lib/study-block-registry'
+import {
+  getStudyBlockDefinition,
+  studyBlockDefinitions,
+  type StudyBlockRenderStrategy
+} from '../lib/study-block-registry'
 import { moveStudyBlockByDrop, type StudyBlockDropPlacement } from '../lib/study-block-dnd'
 import {
   getStudyHeadingElementId,
@@ -816,136 +820,134 @@ function EditableBlock({
   block: Exclude<StudyBlock, { type: 'text' }>
   onChange: (block: StudyBlock) => void
 }): React.JSX.Element {
-  if (block.type === 'heading') {
-    const typography = getHeadingTypography(block.level)
+  const strategy = getStudyBlockDefinition(block.type).editStrategy
+  if (strategy === 'text') throw new Error('Text blocks use the rich text editor strategy')
+  const Editor = studyBlockEditors[strategy]
+  return <Editor block={block} onChange={onChange} />
+}
 
-    return (
-      <AutoGrowTextarea
-        value={block.text}
-        resizeKey={block.level}
-        placeholder="Заголовок"
-        aria-label="Текст заголовка"
-        className={cn(
-          'max-h-[24rem] w-full rounded-lg px-2 py-2',
-          'font-semibold outline-none',
-          'placeholder:text-[var(--app-muted)]/60',
-          'transition-[color,background-color,font-size]'
-        )}
-        style={{
-          ...typography,
-          color: resolveStudyHeadingColor(block.color),
-          backgroundColor: block.backgroundColor ?? 'transparent'
-        }}
-        onChange={(event) => {
-          onChange({
-            ...block,
-            text: event.target.value
-          })
-        }}
+type EditableBlockProps = {
+  block: Exclude<StudyBlock, { type: 'text' }>
+  onChange: (block: StudyBlock) => void
+}
+type EditableBlockStrategy = (props: EditableBlockProps) => React.JSX.Element
+
+const studyBlockEditors = {
+  heading: EditHeadingBlock,
+  code: EditCodeBlock,
+  markdown: EditMarkdownBlock,
+  latex: EditLatexBlock,
+  mermaid: EditMermaidBlock,
+  image: EditAttachmentBlock,
+  video: EditAttachmentBlock,
+  audio: EditAttachmentBlock,
+  file: EditAttachmentBlock,
+  divider: EditDividerBlock
+} satisfies Record<Exclude<StudyBlockRenderStrategy, 'text'>, EditableBlockStrategy>
+
+function EditHeadingBlock({ block, onChange }: EditableBlockProps): React.JSX.Element {
+  if (block.type !== 'heading') throw new Error('Heading editor received an incompatible block')
+  const typography = getHeadingTypography(block.level)
+  return (
+    <AutoGrowTextarea
+      value={block.text}
+      resizeKey={block.level}
+      placeholder="Заголовок"
+      aria-label="Текст заголовка"
+      className={cn(
+        'max-h-[24rem] w-full rounded-lg px-2 py-2',
+        'font-semibold outline-none',
+        'placeholder:text-[var(--app-muted)]/60',
+        'transition-[color,background-color,font-size]'
+      )}
+      style={{
+        ...typography,
+        color: resolveStudyHeadingColor(block.color),
+        backgroundColor: block.backgroundColor ?? 'transparent'
+      }}
+      onChange={(event) => onChange({ ...block, text: event.target.value })}
+    />
+  )
+}
+
+function EditCodeBlock({ block, onChange }: EditableBlockProps): React.JSX.Element {
+  if (block.type !== 'code') throw new Error('Code editor received an incompatible block')
+  return (
+    <LazyStudyBlock label="кода">
+      <StudyCodeBlock
+        mode="edit"
+        source={block.source}
+        language={block.language}
+        onChange={(source) => onChange({ ...block, source })}
       />
-    )
-  }
+    </LazyStudyBlock>
+  )
+}
 
-  if (block.type === 'code') {
-    return (
-      <LazyStudyBlock label="кода">
-        <StudyCodeBlock
-          mode="edit"
-          source={block.source}
-          language={block.language}
-          onChange={(source) => {
-            onChange({
-              ...block,
-              source
-            })
-          }}
-        />
-      </LazyStudyBlock>
-    )
-  }
-  if (block.type === 'markdown') {
-    return (
-      <LazyStudyBlock label="Markdown">
-        <StudyMarkdownBlock
-          mode="edit"
-          source={block.source}
-          viewMode={block.viewMode ?? 'split'}
-          onChange={(source) => {
-            onChange({
-              ...block,
-              source
-            })
-          }}
-          onViewModeChange={(viewMode) => {
-            onChange({
-              ...block,
-              viewMode
-            })
-          }}
-        />
-      </LazyStudyBlock>
-    )
-  }
-  if (block.type === 'latex') {
-    return (
-      <LazyStudyBlock label="LaTeX">
-        <StudyLatexBlock
-          mode="edit"
-          source={block.source}
-          viewMode={block.viewMode ?? 'split'}
-          displayMode={block.displayMode ?? 'display'}
-          alignment={block.alignment ?? 'center'}
-          scale={block.scale ?? 100}
-          onChange={(source) => {
-            onChange({
-              ...block,
-              source
-            })
-          }}
-          onViewModeChange={(viewMode) => {
-            onChange({
-              ...block,
-              viewMode
-            })
-          }}
-        />
-      </LazyStudyBlock>
-    )
-  }
-  if (block.type === 'mermaid') {
-    return (
-      <LazyStudyBlock label="Mermaid">
-        <StudyMermaidBlock
-          mode="edit"
-          source={block.source}
-          viewMode={block.viewMode ?? 'split'}
-          theme={block.theme ?? 'dark'}
-          scale={block.scale ?? 100}
-          onChange={(source) => {
-            onChange({
-              ...block,
-              source
-            })
-          }}
-          onViewModeChange={(viewMode) => {
-            onChange({
-              ...block,
-              viewMode
-            })
-          }}
-        />
-      </LazyStudyBlock>
-    )
-  }
+function EditMarkdownBlock({ block, onChange }: EditableBlockProps): React.JSX.Element {
+  if (block.type !== 'markdown') throw new Error('Markdown editor received an incompatible block')
+  return (
+    <LazyStudyBlock label="Markdown">
+      <StudyMarkdownBlock
+        mode="edit"
+        source={block.source}
+        viewMode={block.viewMode ?? 'split'}
+        onChange={(source) => onChange({ ...block, source })}
+        onViewModeChange={(viewMode) => onChange({ ...block, viewMode })}
+      />
+    </LazyStudyBlock>
+  )
+}
+
+function EditLatexBlock({ block, onChange }: EditableBlockProps): React.JSX.Element {
+  if (block.type !== 'latex') throw new Error('LaTeX editor received an incompatible block')
+  return (
+    <LazyStudyBlock label="LaTeX">
+      <StudyLatexBlock
+        mode="edit"
+        source={block.source}
+        viewMode={block.viewMode ?? 'split'}
+        displayMode={block.displayMode ?? 'display'}
+        alignment={block.alignment ?? 'center'}
+        scale={block.scale ?? 100}
+        onChange={(source) => onChange({ ...block, source })}
+        onViewModeChange={(viewMode) => onChange({ ...block, viewMode })}
+      />
+    </LazyStudyBlock>
+  )
+}
+
+function EditMermaidBlock({ block, onChange }: EditableBlockProps): React.JSX.Element {
+  if (block.type !== 'mermaid') throw new Error('Mermaid editor received an incompatible block')
+  return (
+    <LazyStudyBlock label="Mermaid">
+      <StudyMermaidBlock
+        mode="edit"
+        source={block.source}
+        viewMode={block.viewMode ?? 'split'}
+        theme={block.theme ?? 'dark'}
+        scale={block.scale ?? 100}
+        onChange={(source) => onChange({ ...block, source })}
+        onViewModeChange={(viewMode) => onChange({ ...block, viewMode })}
+      />
+    </LazyStudyBlock>
+  )
+}
+
+function EditAttachmentBlock({ block }: EditableBlockProps): React.JSX.Element {
   if (
-    block.type === 'image' ||
-    block.type === 'video' ||
-    block.type === 'audio' ||
-    block.type === 'file'
+    block.type !== 'image' &&
+    block.type !== 'video' &&
+    block.type !== 'audio' &&
+    block.type !== 'file'
   ) {
-    return <StudyFileBlockView block={block} />
+    throw new Error('Attachment editor received an incompatible block')
   }
+  return <StudyFileBlockView block={block} />
+}
 
+function EditDividerBlock({ block }: EditableBlockProps): React.JSX.Element {
+  if (block.type !== 'divider') throw new Error('Divider editor received an incompatible block')
   return <StudyDivider block={block} spacing="edit" />
 }
 
@@ -1231,66 +1233,102 @@ function StudyReadHeading({ heading }: { heading: StudyHeadingBlock }): React.JS
 }
 
 function StudyBlockReader({ block }: { block: StudyBlock }): React.JSX.Element {
-  if (block.type === 'text') {
-    return (
-      <div data-study-block-id={block.id}>
-        <RichTextViewer html={getStudyTextBlockHtml(block)} plainText={block.text} />
-      </div>
-    )
-  }
+  const Reader = studyBlockReaders[getStudyBlockDefinition(block.type).readStrategy]
+  return <Reader block={block} />
+}
 
-  if (block.type === 'heading') {
-    return <StudyReadHeading heading={block} />
-  }
+type StudyBlockReaderProps = { block: StudyBlock }
+type StudyBlockReaderStrategy = (props: StudyBlockReaderProps) => React.JSX.Element
 
-  if (block.type === 'code') {
-    return (
-      <LazyStudyBlock label="кода">
-        <StudyCodeBlock mode="read" source={block.source} language={block.language} />
-      </LazyStudyBlock>
-    )
-  }
-  if (block.type === 'markdown') {
-    return (
-      <LazyStudyBlock label="Markdown">
-        <StudyMarkdownBlock mode="read" source={block.source} />
-      </LazyStudyBlock>
-    )
-  }
-  if (block.type === 'latex') {
-    return (
-      <LazyStudyBlock label="LaTeX">
-        <StudyLatexBlock
-          mode="read"
-          source={block.source}
-          displayMode={block.displayMode ?? 'display'}
-          alignment={block.alignment ?? 'center'}
-          scale={block.scale ?? 100}
-        />
-      </LazyStudyBlock>
-    )
-  }
-  if (block.type === 'mermaid') {
-    return (
-      <LazyStudyBlock label="Mermaid">
-        <StudyMermaidBlock
-          mode="read"
-          source={block.source}
-          theme={block.theme ?? 'dark'}
-          scale={block.scale ?? 100}
-        />
-      </LazyStudyBlock>
-    )
-  }
+const studyBlockReaders = {
+  text: ReadTextBlock,
+  heading: ReadHeadingBlock,
+  code: ReadCodeBlock,
+  markdown: ReadMarkdownBlock,
+  latex: ReadLatexBlock,
+  mermaid: ReadMermaidBlock,
+  image: ReadAttachmentBlock,
+  video: ReadAttachmentBlock,
+  audio: ReadAttachmentBlock,
+  file: ReadAttachmentBlock,
+  divider: ReadDividerBlock
+} satisfies Record<StudyBlockRenderStrategy, StudyBlockReaderStrategy>
+
+function ReadTextBlock({ block }: StudyBlockReaderProps): React.JSX.Element {
+  if (block.type !== 'text') throw new Error('Text reader received an incompatible block')
+  return (
+    <div data-study-block-id={block.id}>
+      <RichTextViewer html={getStudyTextBlockHtml(block)} plainText={block.text} />
+    </div>
+  )
+}
+
+function ReadHeadingBlock({ block }: StudyBlockReaderProps): React.JSX.Element {
+  if (block.type !== 'heading') throw new Error('Heading reader received an incompatible block')
+  return <StudyReadHeading heading={block} />
+}
+
+function ReadCodeBlock({ block }: StudyBlockReaderProps): React.JSX.Element {
+  if (block.type !== 'code') throw new Error('Code reader received an incompatible block')
+  return (
+    <LazyStudyBlock label="кода">
+      <StudyCodeBlock mode="read" source={block.source} language={block.language} />
+    </LazyStudyBlock>
+  )
+}
+
+function ReadMarkdownBlock({ block }: StudyBlockReaderProps): React.JSX.Element {
+  if (block.type !== 'markdown') throw new Error('Markdown reader received an incompatible block')
+  return (
+    <LazyStudyBlock label="Markdown">
+      <StudyMarkdownBlock mode="read" source={block.source} />
+    </LazyStudyBlock>
+  )
+}
+
+function ReadLatexBlock({ block }: StudyBlockReaderProps): React.JSX.Element {
+  if (block.type !== 'latex') throw new Error('LaTeX reader received an incompatible block')
+  return (
+    <LazyStudyBlock label="LaTeX">
+      <StudyLatexBlock
+        mode="read"
+        source={block.source}
+        displayMode={block.displayMode ?? 'display'}
+        alignment={block.alignment ?? 'center'}
+        scale={block.scale ?? 100}
+      />
+    </LazyStudyBlock>
+  )
+}
+
+function ReadMermaidBlock({ block }: StudyBlockReaderProps): React.JSX.Element {
+  if (block.type !== 'mermaid') throw new Error('Mermaid reader received an incompatible block')
+  return (
+    <LazyStudyBlock label="Mermaid">
+      <StudyMermaidBlock
+        mode="read"
+        source={block.source}
+        theme={block.theme ?? 'dark'}
+        scale={block.scale ?? 100}
+      />
+    </LazyStudyBlock>
+  )
+}
+
+function ReadAttachmentBlock({ block }: StudyBlockReaderProps): React.JSX.Element {
   if (
-    block.type === 'image' ||
-    block.type === 'video' ||
-    block.type === 'audio' ||
-    block.type === 'file'
+    block.type !== 'image' &&
+    block.type !== 'video' &&
+    block.type !== 'audio' &&
+    block.type !== 'file'
   ) {
-    return <StudyFileBlockView block={block} />
+    throw new Error('Attachment reader received an incompatible block')
   }
+  return <StudyFileBlockView block={block} />
+}
 
+function ReadDividerBlock({ block }: StudyBlockReaderProps): React.JSX.Element {
+  if (block.type !== 'divider') throw new Error('Divider reader received an incompatible block')
   return <StudyDivider block={block} spacing="read" />
 }
 
