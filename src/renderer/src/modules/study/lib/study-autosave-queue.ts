@@ -17,8 +17,19 @@ export class StudyAutosaveQueue<Document> {
   private lastSuccessfullySavedVersion = 0
   private activeSave: Promise<void> | null = null
   private state: StudyAutosaveState = 'saved'
-  private paused = false
+
+  /**
+   * `active` describes whether the owning editor is currently mounted.
+   * It must never be changed by deletion rollback.
+   */
   private active = true
+
+  /**
+   * `paused` describes only the temporary deletion suspension.
+   * It is intentionally independent from the mounted state.
+   */
+  private paused = false
+
   private disposed = false
 
   constructor(
@@ -55,16 +66,23 @@ export class StudyAutosaveQueue<Document> {
       return
     }
 
+    /*
+     * React Strict Mode can mount the same queue again after a development
+     * cleanup. Activation must not silently cancel a real deletion pause.
+     */
     this.active = true
-    this.paused = false
 
     if (this.activeSave) {
       this.setState('saving')
-    } else if (this.hasUnsavedChanges()) {
-      this.setState('dirty')
-    } else {
-      this.setState('saved')
+      return
     }
+
+    if (this.hasUnsavedChanges()) {
+      this.setState('dirty')
+      return
+    }
+
+    this.setState('saved')
   }
 
   deactivate(): void {
@@ -72,8 +90,11 @@ export class StudyAutosaveQueue<Document> {
       return
     }
 
+    /*
+     * Deactivation represents component unmount only. It must not create or
+     * remove a deletion pause.
+     */
     this.active = false
-    this.paused = true
   }
 
   pause(): void {
@@ -93,8 +114,15 @@ export class StudyAutosaveQueue<Document> {
       return Promise.resolve()
     }
 
-    this.active = true
+    /*
+     * A failed deletion may finish after the editor has already unmounted.
+     * Rollback removes only the deletion pause and never remounts the queue.
+     */
     this.paused = false
+
+    if (!this.active) {
+      return Promise.resolve()
+    }
 
     if (!this.hasUnsavedChanges()) {
       this.setState('saved')
@@ -116,7 +144,7 @@ export class StudyAutosaveQueue<Document> {
   }
 
   hasUnsavedChanges(): boolean {
-    return this.latestDraftVersion > this.lastSuccessfullySavedVersion
+    return !this.disposed && this.latestDraftVersion > this.lastSuccessfullySavedVersion
   }
 
   getSnapshot(): StudyAutosaveSnapshot {
@@ -179,10 +207,9 @@ export class StudyAutosaveQueue<Document> {
         await this.save(document)
       } catch (reason: unknown) {
         /*
-         * When the queue has been paused for deletion or deactivated during
-         * unmount, the failed operation must not update an unmounted component
-         * or schedule a retry. A failed deletion can later resume the queue and
-         * retry the still-unsaved latest draft.
+         * A save that fails after deletion suspension or unmount must not
+         * update an unmounted component. The draft version remains unsaved and
+         * can be retried by rollback while the editor is still mounted.
          */
         if (this.disposed || !this.active || this.paused) {
           return
@@ -201,9 +228,10 @@ export class StudyAutosaveQueue<Document> {
 
     if (this.paused || this.hasUnsavedChanges()) {
       this.setState('dirty')
-    } else {
-      this.setState('saved')
+      return
     }
+
+    this.setState('saved')
   }
 
   private setState(state: StudyAutosaveState): void {
