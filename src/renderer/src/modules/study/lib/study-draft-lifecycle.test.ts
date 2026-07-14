@@ -4,19 +4,21 @@ import {
   createStudyDraftDeletionSuspension,
   flushActiveStudyDraft,
   getActiveStudyDraftHandle,
-  registerStudyDraftHandle
+  registerStudyDraftHandle,
+  type StudyDraftDeletionSuspension
 } from './study-draft-lifecycle'
 
-function createSuspendForDeletion(): ReturnType<typeof vi.fn> {
-  return vi.fn(() => ({
-    commit: vi.fn(),
-    rollback: vi.fn().mockResolvedValue(undefined)
-  }))
+function createSuspendForDeletion(): () => StudyDraftDeletionSuspension {
+  return () => ({
+    commit: () => undefined,
+    rollback: async () => undefined
+  })
 }
 
 describe('study draft lifecycle', () => {
   it('flushes the active dirty material and retains its material identity', async () => {
-    const flush = vi.fn().mockResolvedValue(undefined)
+    const flush = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
+
     const unregister = registerStudyDraftHandle({
       materialId: 'material-a',
       hasUnsavedChanges: () => true,
@@ -33,13 +35,17 @@ describe('study draft lifecycle', () => {
   })
 
   it('does not flush a clean draft and unregisters only the matching handle', async () => {
+    const firstFlush = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
+
     const firstCleanup = registerStudyDraftHandle({
       materialId: 'material-a',
       hasUnsavedChanges: () => false,
-      flush: vi.fn(),
+      flush: firstFlush,
       suspendForDeletion: createSuspendForDeletion()
     })
-    const flushB = vi.fn()
+
+    const flushB = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
+
     const secondCleanup = registerStudyDraftHandle({
       materialId: 'material-b',
       hasUnsavedChanges: () => false,
@@ -52,6 +58,7 @@ describe('study draft lifecycle', () => {
     await flushActiveStudyDraft()
 
     expect(getActiveStudyDraftHandle()?.materialId).toBe('material-b')
+    expect(firstFlush).not.toHaveBeenCalled()
     expect(flushB).not.toHaveBeenCalled()
 
     secondCleanup()
@@ -60,7 +67,7 @@ describe('study draft lifecycle', () => {
   it('cancels the scheduled save and permanently disposes after confirmed deletion', () => {
     const cancelScheduledSave = vi.fn()
     const pause = vi.fn()
-    const resume = vi.fn().mockResolvedValue(undefined)
+    const resume = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
     const dispose = vi.fn()
 
     const suspension = createStudyDraftDeletionSuspension({
@@ -84,7 +91,7 @@ describe('study draft lifecycle', () => {
   it('resumes and saves the retained draft after deletion failure', async () => {
     const cancelScheduledSave = vi.fn()
     const pause = vi.fn()
-    const resume = vi.fn().mockResolvedValue(undefined)
+    const resume = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
     const dispose = vi.fn()
 
     const suspension = createStudyDraftDeletionSuspension({
