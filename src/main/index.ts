@@ -1,40 +1,136 @@
-import { app, shell, BrowserWindow, session } from 'electron'
-import { join } from 'path'
+import { electronApp, is, optimizer } from '@electron-toolkit/utils'
+import { app, BrowserWindow, dialog, session, shell } from 'electron'
+import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import icon from '../../resources/icon.png?asset'
 
+import icon from '../../resources/icon.png?asset'
+import { IPC_CHANNELS } from '../shared/contracts/system'
 import { closeDatabase, initializeDatabase } from './database/client'
 import { runDatabaseMigrations } from './database/migrate'
 import { registerIpcHandlers } from './ipc/register-ipc'
-import { registerStudyAssetProtocol, registerStudyAssetScheme } from './services/study-assets'
+import { runStudyLinkTargetsMaintenance } from './repositories/study.repository'
 import { installContentSecurityPolicy } from './security/content-security-policy'
 import { installPermissionPolicy } from './security/permissions'
 import { focusExistingAppWindow } from './security/single-instance'
-import { runStudyLinkTargetsMaintenance } from './repositories/study.repository'
-import { ShutdownCoordinator } from './services/shutdown-coordinator'
+import { mainOperationTracker } from './services/main-operation-tracker'
+import {
+  ShutdownCoordinator,
+  type ShutdownFallbackContext,
+  type ShutdownFallbackDecision,
+  type ShutdownFallbackReason
+} from './services/shutdown-coordinator'
+import { registerStudyAssetProtocol, registerStudyAssetScheme } from './services/study-assets'
 import { runStudyPlainTextMaintenance } from './services/study-plain-text-maintenance'
-import { IPC_CHANNELS } from '../shared/contracts/system'
 
 let mainWindow: BrowserWindow | null = null
-const shutdownCoordinator = new ShutdownCoordinator(closeDatabase)
+
+const shutdownFallbackCopy: Record<
+  ShutdownFallbackReason,
+  {
+    message: string
+    detail: string
+  }
+> = {
+  'renderer-timeout': {
+    message: 'Интерфейс не подтвердил сохранение изменений.',
+    detail:
+      'Можно подождать ещё, отменить закрытие или закрыть приложение без гарантии сохранения последних изменений.'
+  },
+  'renderer-unresponsive': {
+    message: 'Интерфейс MyMind перестал отвечать.',
+    detail:
+      'Можно подождать восстановления, отменить закрытие или завершить приложение принудительно.'
+  },
+  'renderer-gone': {
+    message: 'Процесс интерфейса MyMind завершился.',
+    detail:
+      'Последние несохранённые изменения могут быть недоступны. Можно отменить закрытие или завершить приложение.'
+  },
+  'operations-timeout': {
+    message: 'Фоновые операции выполняются дольше ожидаемого.',
+    detail:
+      'Возможно, ещё копируется файл или сохраняется материал. Можно подождать, отменить закрытие или завершить приложение принудительно.'
+  }
+}
+
+async function resolveShutdownFallback(
+  context: ShutdownFallbackContext
+): Promise<ShutdownFallbackDecision> {
+  const copy = shutdownFallbackCopy[context.reason]
+
+  const buttons = context.canRetry
+    ? ['Подождать ещё', 'Отменить закрытие', 'Закрыть без сохранения']
+    : ['Отменить закрытие', 'Закрыть без сохранения']
+
+  const options = {
+    type: 'warning' as const,
+    title: 'Завершение MyMind',
+    message: copy.message,
+    detail: copy.detail,
+    buttons,
+    defaultId: 0,
+    cancelId: context.canRetry ? 1 : 0,
+    noLink: true
+  }
+
+  const ownerWindow = mainWindow && !mainWindow.isDestroyed() ? mainWindow : null
+
+  const result = ownerWindow
+    ? await dialog.showMessageBox(ownerWindow, options)
+    : await dialog.showMessageBox(options)
+
+  if (context.canRetry) {
+    if (result.response === 0) {
+      return 'retry'
+    }
+
+    if (result.response === 2) {
+      return 'force'
+    }
+
+    return 'cancel'
+  }
+
+  return result.response === 1 ? 'force' : 'cancel'
+}
+
+const shutdownCoordinator = new ShutdownCoordinator({
+  closeResources: closeDatabase,
+  waitForOperations: () => mainOperationTracker.whenIdle(),
+  pauseOperations: () => mainOperationTracker.pauseNewOperations(),
+  resumeOperations: () => mainOperationTracker.resumeNewOperations(),
+  resolveFallback: resolveShutdownFallback
+})
 
 function requestWindowShutdown(window: BrowserWindow): void {
   shutdownCoordinator.requestShutdown({
     sendRequest: (requestId) => {
-      window.webContents.send(IPC_CHANNELS.shutdownRequested, { requestId })
+      window.webContents.send(IPC_CHANNELS.shutdownRequested, {
+        requestId
+      })
     },
+    isAvailable: () => !window.isDestroyed() && !window.webContents.isDestroyed(),
     close: () => {
       if (!window.isDestroyed()) {
         window.destroy()
       }
+
+      app.quit()
+    }
+  })
+}
+
+function requestHeadlessShutdown(): void {
+  void shutdownCoordinator.requestShutdownWithoutRenderer({
+    sendRequest: () => undefined,
+    isAvailable: () => true,
+    close: () => {
       app.quit()
     }
   })
 }
 
 function createWindow(): void {
-  // Create the browser window.
   const window = new BrowserWindow({
     width: 900,
     height: 670,
@@ -48,25 +144,45 @@ function createWindow(): void {
       sandbox: true
     }
   })
+
   mainWindow = window
 
   window.on('ready-to-show', () => {
     window.show()
   })
+
   window.on('close', (event) => {
     if (!shutdownCoordinator.isApproved()) {
       event.preventDefault()
       requestWindowShutdown(window)
     }
   })
+
   window.on('query-session-end', (event) => {
     if (!shutdownCoordinator.isApproved()) {
       event.preventDefault()
       requestWindowShutdown(window)
     }
   })
+
   window.on('closed', () => {
-    if (mainWindow === window) mainWindow = null
+    if (mainWindow === window) {
+      mainWindow = null
+    }
+  })
+
+  window.webContents.on('unresponsive', () => {
+    shutdownCoordinator.notifyRendererUnavailable('renderer-unresponsive')
+  })
+
+  window.webContents.on('render-process-gone', (_event, details) => {
+    if (details.reason !== 'clean-exit') {
+      shutdownCoordinator.notifyRendererUnavailable('renderer-gone')
+    }
+  })
+
+  window.webContents.on('destroyed', () => {
+    shutdownCoordinator.notifyRendererUnavailable('renderer-gone')
   })
 
   window.webContents.setWindowOpenHandler(({ url }) => {
@@ -77,7 +193,7 @@ function createWindow(): void {
         void shell.openExternal(url)
       }
     } catch {
-      // Invalid URL — do nothing.
+      // Invalid URLs are ignored.
     }
 
     return {
@@ -93,8 +209,6 @@ function createWindow(): void {
     }
   })
 
-  // HMR for renderer base on electron-vite cli.
-  // Load the remote URL for development or the local html file for production.
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     void window.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {
@@ -114,13 +228,9 @@ if (!hasSingleInstanceLock) {
   })
 
   void app.whenReady().then(() => {
-    // Set app user model id for windows
     electronApp.setAppUserModelId('com.mymind.desktop')
 
-    // Default open or close DevTools by F12 in development
-    // and ignore CommandOrControl + R in production.
-    // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils
-    app.on('browser-window-created', (_, window) => {
+    app.on('browser-window-created', (_event, window) => {
       optimizer.watchWindowShortcuts(window)
     })
 
@@ -143,23 +253,26 @@ if (!hasSingleInstanceLock) {
 
     initializeDatabase()
     runDatabaseMigrations()
+
     const plainTextMaintenance = runStudyPlainTextMaintenance()
+
     if (plainTextMaintenance.applied) {
       console.info('Study plain-text maintenance completed', plainTextMaintenance)
     }
+
     runStudyLinkTargetsMaintenance()
+
     registerIpcHandlers({
       getTrustedWebContents: () => mainWindow?.webContents ?? null,
-      onShutdownResponse: (response) => {
-        shutdownCoordinator.respond(response)
-      }
+      onShutdownResponse: (response) => shutdownCoordinator.respond(response)
     })
+
     createWindow()
 
-    app.on('activate', function () {
-      // On macOS it's common to re-create a window in the app when the
-      // dock icon is clicked and there are no other windows open.
-      if (BrowserWindow.getAllWindows().length === 0) createWindow()
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) {
+        createWindow()
+      }
     })
   })
 }
@@ -169,22 +282,18 @@ app.on('before-quit', (event) => {
     return
   }
 
+  event.preventDefault()
+
   if (mainWindow && !mainWindow.isDestroyed()) {
-    event.preventDefault()
     requestWindowShutdown(mainWindow)
     return
   }
 
-  closeDatabase()
+  requestHeadlessShutdown()
 })
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
+
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
   }
 })
-
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and require them here.

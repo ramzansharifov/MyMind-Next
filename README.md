@@ -1,42 +1,28 @@
 # MyMind
 
-Локальное desktop-приложение для учебных материалов: дерево папок, блочный редактор, внутренние ссылки, изображения, аудио, видео/YouTube, файлы, код, Markdown, LaTeX и Mermaid.
+MyMind — локальное desktop-приложение для структурированных учебных материалов.
 
-## Требования
+Приложение поддерживает:
 
-- Node.js 22
-- npm 10+
-- Windows, macOS или Linux с инструментами сборки native-модулей
+- дерево папок и материалов;
+- блочный редактор;
+- внутренние ссылки;
+- изображения, аудио, видео и обычные файлы;
+- YouTube;
+- код;
+- Markdown;
+- LaTeX;
+- Mermaid.
 
-## Запуск
+## Быстрый старт
+
+Требования:
+
+- Node.js 22;
+- npm 10+;
+- инструменты сборки native-модулей для используемой ОС.
 
 ```bash
 npm ci
 npm run dev
 ```
-
-После переключения между Node и Electron ABI используйте `npm run native:node` для CLI/миграций и `npm run native:electron` для приложения.
-
-## Проверки
-
-```bash
-npm run format:check
-npm run lint
-npm run typecheck
-npm run test:run
-npm run test:coverage
-npm run db:check
-npm run build:bundle
-```
-
-Полный локальный набор выполняет `npm run check`; `npm run check:fix` сначала форматирует файлы.
-
-## Сборка
-
-```bash
-npm run build:win
-npm run build:mac
-npm run build:linux
-```
-
-Эти команды создают локальные пакеты, но не гарантируют code signing/notarization. Требования к доверенному релизу и резервному копированию описаны в [SECURITY.md](SECURITY.md), устройство проекта — в [ARCHITECTURE.md](ARCHITECTURE.md).
