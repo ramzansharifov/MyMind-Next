@@ -60,6 +60,7 @@ npm run dev
 
 - [DEVELOPMENT.md](DEVELOPMENT.md) — запуск, тестирование, native ABI, миграции и сборка.
 - [ARCHITECTURE.md](ARCHITECTURE.md) — процессы Electron, IPC, autosave, shutdown и хранение.
+- [BLOCKS.md](BLOCKS.md) — registry блоков, добавление новых типов и clipboard helper.
 - [SECURITY.md](SECURITY.md) — модель угроз, CSP, permissions и резервное копирование.
 
 ## Сборка

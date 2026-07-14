@@ -7,39 +7,108 @@ import {
   studyBlockRegistry
 } from './study-block-registry'
 
-describe('study block registry', () => {
-  it('contains one unique definition for every supported block type', () => {
-    const expected: StudyBlockType[] = [
-      'text',
-      'heading',
-      'code',
-      'markdown',
-      'latex',
-      'mermaid',
-      'image',
-      'video',
-      'audio',
-      'file',
-      'divider'
-    ]
+const expectedBlockTypes = [
+  'text',
+  'heading',
+  'code',
+  'markdown',
+  'latex',
+  'mermaid',
+  'image',
+  'video',
+  'audio',
+  'file',
+  'divider'
+] satisfies StudyBlockType[]
 
-    expect(studyBlockDefinitions.map(({ type }) => type)).toEqual(expected)
-    expect(new Set(studyBlockDefinitions.map(({ type }) => type))).toHaveProperty(
-      'size',
-      expected.length
-    )
-    expect(getStudyBlockDefinition('video').label).toBe('Видео')
+describe('study block registry', () => {
+  it('contains one ordered definition for every supported block type', () => {
+    const actualTypes = studyBlockDefinitions.map(({ type }) => type)
+
+    expect(actualTypes).toEqual(expectedBlockTypes)
+
+    expect(new Set(actualTypes).size).toBe(expectedBlockTypes.length)
+
+    expect(Object.keys(studyBlockRegistry)).toEqual(expectedBlockTypes)
   })
 
-  it('declares factories and render/settings strategies for every type', () => {
-    for (const definition of studyBlockDefinitions) {
-      expect(definition.factory(`block-${definition.type}`).type).toBe(definition.type)
-      expect(definition.editStrategy).toBe(definition.type)
-      expect(definition.readStrategy).toBe(definition.type)
-      expect(definition.settingsStrategy).toBe(definition.type)
-      expect(definition.icon).toBeDefined()
-    }
+  it('is the single source of block labels, icons, factories, and strategies', () => {
+    for (const type of expectedBlockTypes) {
+      const definition = getStudyBlockDefinition(type)
 
-    expect(Object.keys(studyBlockRegistry)).toHaveLength(studyBlockDefinitions.length)
+      expect(definition).toBe(studyBlockRegistry[type])
+
+      expect(definition.type).toBe(type)
+
+      expect(definition.label.trim()).not.toBe('')
+
+      expect(definition.icon).toBeTruthy()
+
+      const id = `block-${type}`
+      const block = definition.factory(id)
+
+      expect(block.id).toBe(id)
+      expect(block.type).toBe(type)
+
+      expect(definition.editStrategy).toBe(type)
+
+      expect(definition.readStrategy).toBe(type)
+
+      expect(definition.settingsStrategy).toBe(type)
+    }
+  })
+
+  it('keeps user-facing labels stable for every registered type', () => {
+    expect(
+      studyBlockDefinitions.map(({ type, label }) => ({
+        type,
+        label
+      }))
+    ).toEqual([
+      {
+        type: 'text',
+        label: 'Форматированный текст'
+      },
+      {
+        type: 'heading',
+        label: 'Заголовок'
+      },
+      {
+        type: 'code',
+        label: 'Код'
+      },
+      {
+        type: 'markdown',
+        label: 'Markdown'
+      },
+      {
+        type: 'latex',
+        label: 'LaTeX'
+      },
+      {
+        type: 'mermaid',
+        label: 'Mermaid'
+      },
+      {
+        type: 'image',
+        label: 'Фото'
+      },
+      {
+        type: 'video',
+        label: 'Видео'
+      },
+      {
+        type: 'audio',
+        label: 'Аудио'
+      },
+      {
+        type: 'file',
+        label: 'Файл'
+      },
+      {
+        type: 'divider',
+        label: 'Разделитель'
+      }
+    ])
   })
 })

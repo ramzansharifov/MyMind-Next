@@ -1,28 +1,15 @@
 import type { Editor } from '@tiptap/core'
 import * as Separator from '@radix-ui/react-separator'
 import * as Slider from '@radix-ui/react-slider'
-import {
-  Code2,
-  FileAudio,
-  FileCode2,
-  FileImage,
-  Files,
-  FileVideo,
-  Heading,
-  Link2,
-  LoaderCircle,
-  Minus,
-  Settings2,
-  Sigma,
-  SquarePlay,
-  Trash2,
-  Type,
-  Upload,
-  Workflow
-} from 'lucide-react'
+import { Link2, LoaderCircle, Settings2, SquarePlay, Trash2, Upload } from 'lucide-react'
 import { useState } from 'react'
 
 import type { StudyAssetKind, StudyBlock } from '../../../../../shared/contracts/study'
+import { studyClient } from '../api/study-client'
+import {
+  getStudyBlockDefinition,
+  type StudyBlockSettingsStrategy
+} from '../lib/study-block-registry'
 import {
   DEFAULT_DIVIDER_COLOR,
   DEFAULT_DIVIDER_CSS_COLOR,
@@ -31,8 +18,6 @@ import {
   DEFAULT_HEADING_BACKGROUND_COLOR,
   DEFAULT_HEADING_COLOR
 } from '../lib/study-document'
-import { studyClient } from '../api/study-client'
-import { RichTextSettings } from './rich-text/RichTextSettings'
 import { STUDY_CODE_LANGUAGE_OPTIONS } from './code/code-languages'
 import {
   formatStudyFileSize,
@@ -40,10 +25,7 @@ import {
   isValidStudyYouTubeUrl
 } from './file/file-utils'
 import { STUDY_MERMAID_TEMPLATES } from './mermaid/mermaid-templates'
-import {
-  getStudyBlockDefinition,
-  type StudyBlockSettingsStrategy
-} from '../lib/study-block-registry'
+import { RichTextSettings } from './rich-text/RichTextSettings'
 import { ColorPicker } from './settings/ColorPicker'
 import { SegmentedChoice } from './settings/SegmentedChoice'
 import { StudySelect } from './settings/StudySelect'
@@ -56,7 +38,10 @@ interface BlockSettingsPanelProps {
   onChange: (block: StudyBlock) => void
 }
 
-type SettingsRendererProps = Omit<BlockSettingsPanelProps, 'block'> & { block: StudyBlock }
+type SettingsRendererProps = Omit<BlockSettingsPanelProps, 'block'> & {
+  block: StudyBlock
+}
+
 type SettingsRenderer = (props: SettingsRendererProps) => React.JSX.Element
 
 const settingsRenderers = {
@@ -101,6 +86,7 @@ const headingBackgroundColors = [
   '#713f12',
   '#7f1d1d'
 ]
+
 const markdownViewModes = [
   {
     value: 'write',
@@ -118,6 +104,7 @@ const markdownViewModes = [
     ariaLabel: 'Только просмотр'
   }
 ]
+
 const latexViewModes = [
   {
     value: 'write',
@@ -163,6 +150,7 @@ const latexAlignments = [
     label: 'Справа'
   }
 ]
+
 const mermaidViewModes = [
   {
     value: 'write',
@@ -232,6 +220,7 @@ const studyImageFits = [
     label: 'Заполнить'
   }
 ]
+
 const studyDividerVariants = [
   {
     value: 'solid',
@@ -274,21 +263,22 @@ export function BlockSettingsPanel({
     )
   }
 
-  const SettingsRenderer = settingsRenderers[getStudyBlockDefinition(block.type).settingsStrategy]
+  const definition = getStudyBlockDefinition(block.type)
+
+  const BlockIcon = definition.icon
+
+  const SettingsRenderer = settingsRenderers[definition.settingsStrategy]
 
   return (
     <aside className="flex max-h-[calc(100vh-150px)] w-full max-w-full min-w-0 flex-col overflow-hidden rounded-xl border border-(--app-border) bg-(--app-surface) max-[1180px]:max-h-none">
       <header className="flex shrink-0 items-center gap-3 border-b border-(--app-border) px-4 py-3.5">
         <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-300">
-          <BlockTypeIcon type={block.type} />
+          <BlockIcon aria-hidden="true" className="size-4" />
         </div>
 
         <div className="min-w-0 flex-1">
-          <p
-            title={getBlockTitle(block)}
-            className="truncate text-sm font-medium text-(--app-text)"
-          >
-            {getBlockTitle(block)}
+          <p title={definition.label} className="truncate text-sm font-medium text-(--app-text)">
+            {definition.label}
           </p>
 
           <p className="mt-0.5 text-[11px] text-(--app-muted)">Настройки блока</p>
@@ -309,17 +299,26 @@ export function BlockSettingsPanel({
 }
 
 function TextBlockSettings({ block, textEditor }: SettingsRendererProps): React.JSX.Element {
-  if (block.type !== 'text') throw new Error('Text settings received an incompatible block')
+  if (block.type !== 'text') {
+    throw new Error('Text settings received an incompatible block')
+  }
+
   return <RichTextSettings editor={textEditor} />
 }
 
 function HeadingBlockSettings({ block, onChange }: SettingsRendererProps): React.JSX.Element {
-  if (block.type !== 'heading') throw new Error('Heading settings received an incompatible block')
+  if (block.type !== 'heading') {
+    throw new Error('Heading settings received an incompatible block')
+  }
+
   return <HeadingSettings block={block} onChange={onChange} />
 }
 
 function CodeBlockSettings({ block, onChange }: SettingsRendererProps): React.JSX.Element {
-  if (block.type !== 'code') throw new Error('Code settings received an incompatible block')
+  if (block.type !== 'code') {
+    throw new Error('Code settings received an incompatible block')
+  }
+
   return <CodeSettings block={block} onChange={onChange} />
 }
 
@@ -327,16 +326,23 @@ function MarkdownBlockSettings({ block, onChange }: SettingsRendererProps): Reac
   if (block.type !== 'markdown') {
     throw new Error('Markdown settings received an incompatible block')
   }
+
   return <MarkdownSettings block={block} onChange={onChange} />
 }
 
 function LatexBlockSettings({ block, onChange }: SettingsRendererProps): React.JSX.Element {
-  if (block.type !== 'latex') throw new Error('LaTeX settings received an incompatible block')
+  if (block.type !== 'latex') {
+    throw new Error('LaTeX settings received an incompatible block')
+  }
+
   return <LatexSettings block={block} onChange={onChange} />
 }
 
 function MermaidBlockSettings({ block, onChange }: SettingsRendererProps): React.JSX.Element {
-  if (block.type !== 'mermaid') throw new Error('Mermaid settings received an incompatible block')
+  if (block.type !== 'mermaid') {
+    throw new Error('Mermaid settings received an incompatible block')
+  }
+
   return <MermaidSettings block={block} onChange={onChange} />
 }
 
@@ -348,11 +354,15 @@ function AttachmentBlockSettings({
   if (!isStudyAttachmentBlock(block)) {
     throw new Error('Attachment settings received an incompatible block')
   }
+
   return <AttachmentSettings materialId={materialId} block={block} onChange={onChange} />
 }
 
 function DividerBlockSettings({ block, onChange }: SettingsRendererProps): React.JSX.Element {
-  if (block.type !== 'divider') throw new Error('Divider settings received an incompatible block')
+  if (block.type !== 'divider') {
+    throw new Error('Divider settings received an incompatible block')
+  }
+
   return <DividerSettings block={block} onChange={onChange} />
 }
 
@@ -360,7 +370,12 @@ function HeadingSettings({
   block,
   onChange
 }: {
-  block: Extract<StudyBlock, { type: 'heading' }>
+  block: Extract<
+    StudyBlock,
+    {
+      type: 'heading'
+    }
+  >
   onChange: (block: StudyBlock) => void
 }): React.JSX.Element {
   return (
@@ -436,7 +451,12 @@ function CodeSettings({
   block,
   onChange
 }: {
-  block: Extract<StudyBlock, { type: 'code' }>
+  block: Extract<
+    StudyBlock,
+    {
+      type: 'code'
+    }
+  >
   onChange: (block: StudyBlock) => void
 }): React.JSX.Element {
   return (
@@ -460,7 +480,12 @@ function MarkdownSettings({
   block,
   onChange
 }: {
-  block: Extract<StudyBlock, { type: 'markdown' }>
+  block: Extract<
+    StudyBlock,
+    {
+      type: 'markdown'
+    }
+  >
   onChange: (block: StudyBlock) => void
 }): React.JSX.Element {
   return (
@@ -490,11 +515,17 @@ function MarkdownSettings({
     </div>
   )
 }
+
 function LatexSettings({
   block,
   onChange
 }: {
-  block: Extract<StudyBlock, { type: 'latex' }>
+  block: Extract<
+    StudyBlock,
+    {
+      type: 'latex'
+    }
+  >
   onChange: (block: StudyBlock) => void
 }): React.JSX.Element {
   const scale = block.scale ?? 100
@@ -593,11 +624,17 @@ function LatexSettings({
     </div>
   )
 }
+
 function MermaidSettings({
   block,
   onChange
 }: {
-  block: Extract<StudyBlock, { type: 'mermaid' }>
+  block: Extract<
+    StudyBlock,
+    {
+      type: 'mermaid'
+    }
+  >
   onChange: (block: StudyBlock) => void
 }): React.JSX.Element {
   const scale = block.scale ?? 100
@@ -708,6 +745,7 @@ function MermaidSettings({
     </div>
   )
 }
+
 type StudyAttachmentBlock = Extract<
   StudyBlock,
   {
@@ -725,21 +763,28 @@ function AttachmentSettings({
   onChange: (block: StudyBlock) => void
 }): React.JSX.Element {
   const [isPicking, setIsPicking] = useState(false)
+
   const [importError, setImportError] = useState<string | null>(null)
+
   const [selectedSourceType, setSelectedSourceType] = useState<'local' | 'url'>(block.source.type)
+
   const [remoteUrlDraft, setRemoteUrlDraft] = useState(
     block.source.type === 'url' ? block.source.url : ''
   )
 
   const localAsset = block.source.type === 'local' ? block.source.asset : undefined
+
   const savedRemoteUrl = block.source.type === 'url' ? block.source.url : ''
+
   const normalizedRemoteUrlDraft = remoteUrlDraft.trim()
+
   const isRemoteUrlValid =
     block.type === 'video'
       ? isValidStudyYouTubeUrl(normalizedRemoteUrlDraft)
       : block.type === 'image'
         ? isValidStudyRemoteMediaUrl(normalizedRemoteUrlDraft)
         : false
+
   const canApplyRemoteUrl = isRemoteUrlValid && normalizedRemoteUrlDraft !== savedRemoteUrl.trim()
 
   async function chooseLocalFile(): Promise<void> {
@@ -763,6 +808,7 @@ function AttachmentSettings({
           asset
         }
       })
+
       setSelectedSourceType('local')
     } catch (reason: unknown) {
       setImportError(getFileImportErrorMessage(reason))
@@ -778,7 +824,7 @@ function AttachmentSettings({
           <SegmentedChoice
             value={selectedSourceType}
             options={block.type === 'video' ? studyVideoSources : studyFileSources}
-            ariaLabel={`Источник блока «${getAssetKindLabel(block.type)}»`}
+            ariaLabel={`Источник блока «${getStudyBlockDefinition(block.type).label}»`}
             columns={2}
             onValueChange={(value) => {
               setImportError(null)
@@ -929,6 +975,7 @@ function AttachmentSettings({
                 className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-(--app-border) text-(--app-muted) transition-colors outline-none hover:border-red-500/30 hover:text-red-300 focus-visible:ring-2 focus-visible:ring-red-500/30"
                 onClick={() => {
                   setRemoteUrlDraft('')
+
                   onChange({
                     ...block,
                     source: {
@@ -1024,37 +1071,9 @@ function isStudyAttachmentBlock(block: StudyBlock): block is StudyAttachmentBloc
 }
 
 function StudyFileSettingsIcon({ kind }: { kind: StudyAssetKind }): React.JSX.Element {
-  const className = 'mt-0.5 size-4 shrink-0 text-violet-300'
+  const Icon = getStudyBlockDefinition(kind).icon
 
-  if (kind === 'image') {
-    return <FileImage aria-hidden="true" className={className} />
-  }
-
-  if (kind === 'video') {
-    return <FileVideo aria-hidden="true" className={className} />
-  }
-
-  if (kind === 'audio') {
-    return <FileAudio aria-hidden="true" className={className} />
-  }
-
-  return <Files aria-hidden="true" className={className} />
-}
-
-function getAssetKindLabel(kind: StudyAssetKind): string {
-  if (kind === 'image') {
-    return 'Фото'
-  }
-
-  if (kind === 'video') {
-    return 'Видео'
-  }
-
-  if (kind === 'audio') {
-    return 'Аудио'
-  }
-
-  return 'Файл'
+  return <Icon aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-violet-300" />
 }
 
 function getLocalSourceLabel(kind: StudyAssetKind): string {
@@ -1098,6 +1117,7 @@ function DividerSettings({
   const thickness = block.thickness ?? DEFAULT_DIVIDER_THICKNESS
 
   const color = block.color ?? DEFAULT_DIVIDER_COLOR
+
   const usesAccentColor = color.toLowerCase() === DEFAULT_DIVIDER_COLOR
 
   return (
@@ -1202,86 +1222,4 @@ function SettingsField({
       {children}
     </label>
   )
-}
-
-function BlockTypeIcon({ type }: { type: StudyBlock['type'] }): React.JSX.Element {
-  if (type === 'heading') {
-    return <Heading aria-hidden="true" className="size-4" />
-  }
-
-  if (type === 'code') {
-    return <Code2 aria-hidden="true" className="size-4" />
-  }
-  if (type === 'markdown') {
-    return <FileCode2 aria-hidden="true" className="size-4" />
-  }
-  if (type === 'latex') {
-    return <Sigma aria-hidden="true" className="size-4" />
-  }
-  if (type === 'mermaid') {
-    return <Workflow aria-hidden="true" className="size-4" />
-  }
-
-  if (type === 'image') {
-    return <FileImage aria-hidden="true" className="size-4" />
-  }
-
-  if (type === 'video') {
-    return <FileVideo aria-hidden="true" className="size-4" />
-  }
-
-  if (type === 'audio') {
-    return <FileAudio aria-hidden="true" className="size-4" />
-  }
-
-  if (type === 'file') {
-    return <Files aria-hidden="true" className="size-4" />
-  }
-
-  if (type === 'divider') {
-    return <Minus aria-hidden="true" className="size-4" />
-  }
-
-  return <Type aria-hidden="true" className="size-4" />
-}
-
-function getBlockTitle(block: StudyBlock): string {
-  if (block.type === 'heading') {
-    return 'Заголовок'
-  }
-
-  if (block.type === 'code') {
-    return 'Код'
-  }
-  if (block.type === 'markdown') {
-    return 'Markdown'
-  }
-  if (block.type === 'latex') {
-    return 'LaTeX'
-  }
-  if (block.type === 'mermaid') {
-    return 'Mermaid'
-  }
-
-  if (block.type === 'image') {
-    return 'Фото'
-  }
-
-  if (block.type === 'video') {
-    return 'Видео'
-  }
-
-  if (block.type === 'audio') {
-    return 'Аудио'
-  }
-
-  if (block.type === 'file') {
-    return 'Файл'
-  }
-
-  if (block.type === 'divider') {
-    return 'Разделитель'
-  }
-
-  return 'Форматированный текст'
 }
