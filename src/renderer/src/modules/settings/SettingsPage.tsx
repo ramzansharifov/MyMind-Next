@@ -1,20 +1,32 @@
 import {
   ArrowLeft,
   ArrowRight,
+  BookOpen,
   CircleCheck,
   Database,
   LoaderCircle,
   Palette,
   Settings,
   Sparkles,
-  TriangleAlert
+  TriangleAlert,
+  type LucideIcon
 } from 'lucide-react'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 
 import type { SystemHealth } from '../../../../shared/contracts/system'
 import { useAppearance } from '../../app/appearance/appearance-context'
 import { APP_ACCENT_OPTIONS, APP_THEME_OPTIONS } from '../../app/appearance/appearance-options'
+import { cn } from '../../shared/lib/cn'
 import { AppearanceSettingsSection } from './AppearanceSettingsSection'
+import {
+  InstructionsOverviewPage,
+  LearningInstructionArticlePage,
+  LearningInstructionsPage
+} from './instructions/LearningInstructions'
+import {
+  learningInstructionArticles,
+  type LearningInstructionTopicId
+} from './instructions/learning-instruction-catalog'
 
 interface SettingsPageProps {
   health: SystemHealth | null
@@ -22,25 +34,56 @@ interface SettingsPageProps {
   isLoading: boolean
 }
 
-type SettingsRoute = 'overview' | 'appearance'
+type SettingsRoute =
+  | { page: 'overview' }
+  | { page: 'appearance' }
+  | { page: 'instructions' }
+  | { page: 'learning' }
+  | { page: 'learning-topic'; topicId: LearningInstructionTopicId }
 
 export function SettingsPage({ health, error, isLoading }: SettingsPageProps): React.JSX.Element {
-  const [route, setRoute] = useState<SettingsRoute>('overview')
+  const [route, setRoute] = useState<SettingsRoute>({ page: 'overview' })
+
+  let content: React.JSX.Element
+
+  if (route.page === 'appearance') {
+    content = <AppearanceSettingsPage onBack={() => setRoute({ page: 'overview' })} />
+  } else if (route.page === 'instructions') {
+    content = (
+      <InstructionsOverviewPage
+        onBack={() => setRoute({ page: 'overview' })}
+        onOpenLearning={() => setRoute({ page: 'learning' })}
+      />
+    )
+  } else if (route.page === 'learning') {
+    content = (
+      <LearningInstructionsPage
+        onBack={() => setRoute({ page: 'instructions' })}
+        onOpenTopic={(topicId) => setRoute({ page: 'learning-topic', topicId })}
+      />
+    )
+  } else if (route.page === 'learning-topic') {
+    content = (
+      <LearningInstructionArticlePage
+        topicId={route.topicId}
+        onBack={() => setRoute({ page: 'learning' })}
+      />
+    )
+  } else {
+    content = (
+      <SettingsOverview
+        health={health}
+        error={error}
+        isLoading={isLoading}
+        onOpenAppearance={() => setRoute({ page: 'appearance' })}
+        onOpenInstructions={() => setRoute({ page: 'instructions' })}
+      />
+    )
+  }
 
   return (
     <section className="h-full overflow-y-auto bg-[var(--app-workspace)] px-8 py-7 max-[720px]:px-4 max-[720px]:py-5">
-      <div className="mx-auto w-full max-w-[1240px]">
-        {route === 'overview' ? (
-          <SettingsOverview
-            health={health}
-            error={error}
-            isLoading={isLoading}
-            onOpenAppearance={() => setRoute('appearance')}
-          />
-        ) : (
-          <AppearanceSettingsPage onBack={() => setRoute('overview')} />
-        )}
-      </div>
+      <div className="mx-auto w-full max-w-[1240px]">{content}</div>
     </section>
   )
 }
@@ -49,8 +92,12 @@ function SettingsOverview({
   health,
   error,
   isLoading,
-  onOpenAppearance
-}: SettingsPageProps & { onOpenAppearance: () => void }): React.JSX.Element {
+  onOpenAppearance,
+  onOpenInstructions
+}: SettingsPageProps & {
+  onOpenAppearance: () => void
+  onOpenInstructions: () => void
+}): React.JSX.Element {
   const { preferences } = useAppearance()
   const theme = APP_THEME_OPTIONS.find((option) => option.value === preferences.theme)
   const accent = APP_ACCENT_OPTIONS.find((option) => option.value === preferences.accent)
@@ -59,59 +106,101 @@ function SettingsOverview({
     <div className="space-y-5">
       <SettingsHero />
 
-      <div className="grid grid-cols-[minmax(0,1.3fr)_minmax(320px,0.7fr)] items-start gap-5 max-[980px]:grid-cols-1">
-        <button
-          type="button"
-          className="group relative isolate min-h-56 overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-5 text-left shadow-[0_12px_40px_rgb(0_0_0/0.1)] transition-[border-color,transform,box-shadow] outline-none hover:-translate-y-px hover:border-violet-500/35 hover:shadow-xl hover:shadow-black/10 focus-visible:ring-2 focus-visible:ring-violet-500/40"
+      <div className="grid grid-cols-2 items-stretch gap-5 max-[980px]:grid-cols-1">
+        <SettingsNavigationCard
+          eyebrow="Персонализация"
+          title="Внешний вид"
+          description="Выберите тему приложения и цвет, который будет использоваться для активных элементов интерфейса."
+          icon={Palette}
           onClick={onOpenAppearance}
         >
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute -top-24 -right-20 -z-10 size-64 rounded-full bg-violet-500/12 blur-3xl"
-          />
+          <SettingsValueBadge>{theme?.label ?? preferences.theme}</SettingsValueBadge>
+          <SettingsValueBadge>
+            <span
+              aria-hidden="true"
+              className="size-2.5 rounded-full"
+              style={{ backgroundColor: accent?.preview }}
+            />
+            {accent?.label ?? preferences.accent}
+          </SettingsValueBadge>
+        </SettingsNavigationCard>
 
-          <div className="flex h-full flex-col">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl border border-violet-500/20 bg-violet-500/12 text-violet-300 shadow-inner shadow-violet-500/5">
-                <Palette aria-hidden="true" className="size-5" />
-              </div>
-
-              <ArrowRight
-                aria-hidden="true"
-                className="size-5 -translate-x-1 text-[var(--app-muted)] transition-[color,transform] group-hover:translate-x-0 group-hover:text-violet-300"
-              />
-            </div>
-
-            <div className="mt-8">
-              <p className="text-[11px] font-semibold tracking-[0.12em] text-violet-300 uppercase">
-                Персонализация
-              </p>
-              <h2 className="mt-1 text-xl font-semibold tracking-tight text-[var(--app-text)]">
-                Внешний вид
-              </h2>
-              <p className="mt-2 max-w-xl text-sm leading-6 text-[var(--app-muted)]">
-                Выберите тему приложения и цвет, который будет использоваться для активных элементов
-                интерфейса.
-              </p>
-            </div>
-
-            <div className="mt-auto flex flex-wrap gap-2 pt-5">
-              <SettingsValueBadge>{theme?.label ?? preferences.theme}</SettingsValueBadge>
-              <SettingsValueBadge>
-                <span
-                  aria-hidden="true"
-                  className="size-2.5 rounded-full"
-                  style={{ backgroundColor: accent?.preview }}
-                />
-                {accent?.label ?? preferences.accent}
-              </SettingsValueBadge>
-            </div>
-          </div>
-        </button>
-
-        <DatabaseStatusCard health={health} error={error} isLoading={isLoading} />
+        <SettingsNavigationCard
+          eyebrow="Справка"
+          title="Инструкции"
+          description="Полные руководства по модулю «Обучение», страницам библиотеки, блокам и горячим клавишам."
+          icon={BookOpen}
+          onClick={onOpenInstructions}
+        >
+          <SettingsValueBadge>Обучение</SettingsValueBadge>
+          <SettingsValueBadge>{learningInstructionArticles.length} инструкций</SettingsValueBadge>
+          <SettingsValueBadge>Горячие клавиши</SettingsValueBadge>
+        </SettingsNavigationCard>
       </div>
+
+      <DatabaseStatusCard health={health} error={error} isLoading={isLoading} />
     </div>
+  )
+}
+
+function SettingsNavigationCard({
+  eyebrow,
+  title,
+  description,
+  icon: Icon,
+  children,
+  onClick
+}: {
+  eyebrow: string
+  title: string
+  description: string
+  icon: LucideIcon
+  children: ReactNode
+  onClick: () => void
+}): React.JSX.Element {
+  return (
+    <button
+      type="button"
+      className={cn(
+        'group relative isolate min-h-56 overflow-hidden rounded-2xl border p-5 text-left outline-none',
+        'border-[var(--app-border)] bg-[var(--app-surface)]',
+        'shadow-[0_12px_40px_rgb(0_0_0/0.1)]',
+        'transition-[border-color,transform,box-shadow]',
+        'hover:-translate-y-px hover:border-violet-500/35 hover:shadow-xl hover:shadow-black/10',
+        'focus-visible:ring-2 focus-visible:ring-violet-500/40'
+      )}
+      onClick={onClick}
+    >
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -top-24 -right-20 -z-10 size-64 rounded-full bg-violet-500/12 blur-3xl"
+      />
+
+      <div className="flex h-full flex-col">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl border border-violet-500/20 bg-violet-500/12 text-violet-300 shadow-inner shadow-violet-500/5">
+            <Icon aria-hidden="true" className="size-5" />
+          </div>
+
+          <ArrowRight
+            aria-hidden="true"
+            className="size-5 -translate-x-1 text-[var(--app-muted)] transition-[color,transform] group-hover:translate-x-0 group-hover:text-violet-300"
+          />
+        </div>
+
+        <div className="mt-8">
+          <p className="text-[11px] font-semibold tracking-[0.12em] text-violet-300 uppercase">
+            {eyebrow}
+          </p>
+          <h2 className="mt-1 text-xl font-semibold tracking-tight text-[var(--app-text)]">
+            {title}
+          </h2>
+          <p className="mt-2 max-w-xl text-sm leading-6 text-[var(--app-muted)]">{description}</p>
+        </div>
+
+        <div className="mt-auto flex flex-wrap gap-2 pt-5">{children}</div>
+      </div>
+    </button>
   )
 }
 
@@ -140,7 +229,8 @@ function SettingsHero(): React.JSX.Element {
             Настройки
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--app-muted)]">
-            Настройте MyMind под себя и проверьте состояние локальных компонентов приложения.
+            Настройте MyMind под себя, изучите возможности приложения и проверьте состояние
+            локальных компонентов.
           </p>
         </div>
       </div>
@@ -190,7 +280,7 @@ function AppearanceSettingsPage({ onBack }: { onBack: () => void }): React.JSX.E
   )
 }
 
-function SettingsValueBadge({ children }: { children: React.ReactNode }): React.JSX.Element {
+function SettingsValueBadge({ children }: { children: ReactNode }): React.JSX.Element {
   return (
     <span className="flex items-center gap-2 rounded-full border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 py-1.5 text-[11px] font-medium text-[var(--app-muted)]">
       {children}
@@ -204,7 +294,7 @@ function DatabaseStatusCard({
   isLoading
 }: Pick<SettingsPageProps, 'health' | 'error' | 'isLoading'>): React.JSX.Element {
   return (
-    <section className="min-h-56 overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[0_12px_40px_rgb(0_0_0/0.1)]">
+    <section className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[0_12px_40px_rgb(0_0_0/0.1)]">
       <header className="flex min-h-20 items-center gap-3 border-b border-[var(--app-border)] px-5 py-4">
         <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
           <Database aria-hidden="true" className="size-5" />
