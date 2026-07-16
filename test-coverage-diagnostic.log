@@ -1,0 +1,164 @@
+
+> mymind-next@1.0.0 test:coverage
+> vitest run --coverage
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90m/home/runner/work/MyMind-Next/MyMind-Next[39m
+      [2mCoverage enabled with [22m[33mv8[39m
+
+ [32m✓[39m src/main/repositories/study.repository.integration.test.ts [2m([22m[2m8 tests[22m[2m)[22m[33m 817[2mms[22m[39m
+     [33m[2m✓[22m[39m truncates derived plain text before persistence without changing the document [33m 508[2mms[22m[39m
+ [32m✓[39m src/renderer/src/modules/study/lib/study-draft-lifecycle.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m src/main/security/permissions.test.ts [2m([22m[2m23 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m src/main/services/shutdown-coordinator.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m src/renderer/src/modules/study/lib/study-autosave-queue.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m src/renderer/src/modules/study/components/file/StudyFileBlockView.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[33m 412[2mms[22m[39m
+ [32m✓[39m src/renderer/src/modules/study/components/StudyBlockEditor.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 963[2mms[22m[39m
+     [33m[2m✓[22m[39m collapses and expands a block in edit mode [33m 343[2mms[22m[39m
+ [32m✓[39m src/renderer/src/app/appearance/AppearanceProvider.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 352[2mms[22m[39m
+ [32m✓[39m src/renderer/src/App.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 2062[2mms[22m[39m
+     [33m[2m✓[22m[39m shows the study module by default [33m 602[2mms[22m[39m
+     [33m[2m✓[22m[39m opens settings from the bottom navigation [33m 468[2mms[22m[39m
+     [33m[2m✓[22m[39m applies theme and accent changes from settings immediately [33m 381[2mms[22m[39m
+ [32m✓[39m src/renderer/src/shared/lib/write-clipboard.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 53[2mms[22m[39m
+ [32m✓[39m src/renderer/src/modules/study/hooks/use-study.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[32m 238[2mms[22m[39m
+ [32m✓[39m src/renderer/src/modules/study/lib/study-material-transition.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m src/renderer/src/modules/study/lib/study-internal-link.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [31m❯[39m src/renderer/src/modules/study/components/rich-text/RichTextSettings.test.tsx [2m([22m[2m3 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 542[2mms[22m[39m
+     [32m✓[39m shows a compact empty state without an active editor[32m 36[2mms[22m[39m
+[31m     [31m×[31m keeps quote formatting in the text section and exposes its active state[39m[33m 350[2mms[22m[39m
+     [32m✓[39m keeps internal and regular link actions in one row[32m 155[2mms[22m[39m
+ [32m✓[39m src/main/services/study-asset-import.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m src/main/services/study-plain-text-maintenance.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 46[2mms[22m[39m
+ [32m✓[39m src/main/database/migration-upgrade.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m src/renderer/src/modules/study/components/BlockSettingsPanel.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[33m 611[2mms[22m[39m
+     [33m[2m✓[22m[39m keeps a saved local video until a YouTube link is explicitly applied [33m 536[2mms[22m[39m
+ [32m✓[39m src/renderer/src/modules/study/lib/study-autosave-queue.lifecycle.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m src/main/security/content-security-policy.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m src/renderer/src/modules/study/components/DeleteConfirmationDialog.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 313[2mms[22m[39m
+ [32m✓[39m src/main/services/study-assets.reservation.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m src/renderer/src/modules/study/lib/study-block-registry.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m src/main/services/main-operation-tracker.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m src/renderer/src/modules/study/components/code/StudyCodeBlock.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 563[2mms[22m[39m
+     [33m[2m✓[22m[39m opens and closes the fullscreen code view [33m 370[2mms[22m[39m
+ [32m✓[39m src/main/services/study-material-coordinator.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m src/renderer/src/modules/study/lib/study-tree.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m src/main/validation/study-validation.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+[90mstderr[2m | src/renderer/src/app/AppErrorBoundary.test.tsx[2m > [22m[2mAppErrorBoundary[2m > [22m[2mreloads after a lazy import failure
+[22m[39mError: Failed to fetch dynamically imported module
+    at [90m/home/runner/work/MyMind-Next/MyMind-Next/[39msrc/renderer/src/app/AppErrorBoundary.test.tsx:13:19
+    at [90mfile:///home/runner/work/MyMind-Next/MyMind-Next/[39mnode_modules/[4m@vitest/runner[24m/dist/chunk-artifact.js:302:11
+    at [90mfile:///home/runner/work/MyMind-Next/MyMind-Next/[39mnode_modules/[4m@vitest/runner[24m/dist/chunk-artifact.js:1903:26
+    at [90mfile:///home/runner/work/MyMind-Next/MyMind-Next/[39mnode_modules/[4m@vitest/runner[24m/dist/chunk-artifact.js:2326:20
+    at new Promise (<anonymous>)
+    at runWithCancel [90m(file:///home/runner/work/MyMind-Next/MyMind-Next/[39mnode_modules/[4m@vitest/runner[24m/dist/chunk-artifact.js:2323:10[90m)[39m
+    at [90mfile:///home/runner/work/MyMind-Next/MyMind-Next/[39mnode_modules/[4m@vitest/runner[24m/dist/chunk-artifact.js:2305:20
+    at new Promise (<anonymous>)
+    at runWithTimeout [90m(file:///home/runner/work/MyMind-Next/MyMind-Next/[39mnode_modules/[4m@vitest/runner[24m/dist/chunk-artifact.js:2272:10[90m)[39m
+    at [90mfile:///home/runner/work/MyMind-Next/MyMind-Next/[39mnode_modules/[4m@vitest/runner[24m/dist/chunk-artifact.js:2955:64 {
+  [stack]: [36m[Getter/Setter][39m,
+  [message]: [32m'Failed to fetch dynamically imported module'[39m
+}
+
+The above error occurred in the <ThrowError> component.
+
+React will try to recreate this component tree from scratch using the error boundary you provided, AppErrorBoundary.
+
+Ошибка интерфейса (test) Error: Failed to fetch dynamically imported module
+    at [90m/home/runner/work/MyMind-Next/MyMind-Next/[39msrc/renderer/src/app/AppErrorBoundary.test.tsx:13:19
+    at [90mfile:///home/runner/work/MyMind-Next/MyMind-Next/[39mnode_modules/[4m@vitest/runner[24m/dist/chunk-artifact.js:302:11
+    at [90mfile:///home/runner/work/MyMind-Next/MyMind-Next/[39mnode_modules/[4m@vitest/runner[24m/dist/chunk-artifact.js:1903:26
+    at [90mfile:///home/runner/work/MyMind-Next/MyMind-Next/[39mnode_modules/[4m@vitest/runner[24m/dist/chunk-artifact.js:2326:20
+    at new Promise (<anonymous>)
+    at runWithCancel [90m(file:///home/runner/work/MyMind-Next/MyMind-Next/[39mnode_modules/[4m@vitest/runner[24m/dist/chunk-artifact.js:2323:10[90m)[39m
+    at [90mfile:///home/runner/work/MyMind-Next/MyMind-Next/[39mnode_modules/[4m@vitest/runner[24m/dist/chunk-artifact.js:2305:20
+    at new Promise (<anonymous>)
+    at runWithTimeout [90m(file:///home/runner/work/MyMind-Next/MyMind-Next/[39mnode_modules/[4m@vitest/runner[24m/dist/chunk-artifact.js:2272:10[90m)[39m
+    at [90mfile:///home/runner/work/MyMind-Next/MyMind-Next/[39mnode_modules/[4m@vitest/runner[24m/dist/chunk-artifact.js:2955:64 
+    at ThrowError (/home/runner/work/MyMind-Next/MyMind-Next/src/renderer/src/app/AppErrorBoundary.test.tsx:9:23)
+    at AppErrorBoundary (/home/runner/work/MyMind-Next/MyMind-Next/src/renderer/src/app/AppErrorBoundary.tsx:10:1)
+
+[90mstderr[2m | src/renderer/src/app/AppErrorBoundary.test.tsx[2m > [22m[2mAppErrorBoundary[2m > [22m[2mretries an ordinary render error without reloading
+[22m[39mError: render failed
+    at FlakyChild [90m(/home/runner/work/MyMind-Next/MyMind-Next/[39msrc/renderer/src/app/AppErrorBoundary.test.tsx:36:30[90m)[39m
+    at Object.react_stack_bottom_frame [90m(/home/runner/work/MyMind-Next/MyMind-Next/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom-client.development.js:25904:20[90m)[39m
+    at renderWithHooks [90m(/home/runner/work/MyMind-Next/MyMind-Next/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom-client.development.js:7662:22[90m)[39m
+    at updateFunctionComponent [90m(/home/runner/work/MyMind-Next/MyMind-Next/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom-client.development.js:10166:19[90m)[39m
+    at beginWork [90m(/home/runner/work/MyMind-Next/MyMind-Next/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom-client.development.js:11778:18[90m)[39m
+    at runWithFiberInDEV [90m(/home/runner/work/MyMind-Next/MyMind-Next/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom-client.development.js:874:13[90m)[39m
+    at performUnitOfWork [90m(/home/runner/work/MyMind-Next/MyMind-Next/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom-client.development.js:17641:22[90m)[39m
+    at workLoopSync [90m(/home/runner/work/MyMind-Next/MyMind-Next/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom-client.development.js:17469:41[90m)[39m
+    at renderRootSync [90m(/home/runner/work/MyMind-Next/MyMind-Next/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom-client.development.js:17450:11[90m)[39m
+    at performWorkOnRoot [90m(/home/runner/work/MyMind-Next/MyMind-Next/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom-client.development.js:16583:35[90m)[39m {
+  [stack]: [36m[Getter/Setter][39m,
+  [message]: [32m'render failed'[39m
+}
+
+The above error occurred in the <FlakyChild> component.
+
+React will try to recreate this component tree from scratch using the error boundary you provided, AppErrorBoundary.
+
+Ошибка интерфейса (test) Error: render failed
+    at FlakyChild [90m(/home/runner/work/MyMind-Next/MyMind-Next/[39msrc/renderer/src/app/AppErrorBoundary.test.tsx:36:30[90m)[39m
+    at Object.react_stack_bottom_frame [90m(/home/runner/work/MyMind-Next/MyMind-Next/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom-client.development.js:25904:20[90m)[39m
+    at renderWithHooks [90m(/home/runner/work/MyMind-Next/MyMind-Next/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom-client.development.js:7662:22[90m)[39m
+    at updateFunctionComponent [90m(/home/runner/work/MyMind-Next/MyMind-Next/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom-client.development.js:10166:19[90m)[39m
+    at beginWork [90m(/home/runner/work/MyMind-Next/MyMind-Next/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom-client.development.js:11778:18[90m)[39m
+    at runWithFiberInDEV [90m(/home/runner/work/MyMind-Next/MyMind-Next/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom-client.development.js:874:13[90m)[39m
+    at performUnitOfWork [90m(/home/runner/work/MyMind-Next/MyMind-Next/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom-client.development.js:17641:22[90m)[39m
+    at workLoopSync [90m(/home/runner/work/MyMind-Next/MyMind-Next/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom-client.development.js:17469:41[90m)[39m
+    at renderRootSync [90m(/home/runner/work/MyMind-Next/MyMind-Next/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom-client.development.js:17450:11[90m)[39m
+    at performWorkOnRoot [90m(/home/runner/work/MyMind-Next/MyMind-Next/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom-client.development.js:16583:35[90m)[39m 
+    at FlakyChild (/home/runner/work/MyMind-Next/MyMind-Next/src/renderer/src/app/AppErrorBoundary.test.tsx:40:30)
+    at AppErrorBoundary (/home/runner/work/MyMind-Next/MyMind-Next/src/renderer/src/app/AppErrorBoundary.tsx:10:1)
+
+ [32m✓[39m src/renderer/src/app/AppErrorBoundary.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[32m 209[2mms[22m[39m
+ [32m✓[39m src/renderer/src/modules/study/lib/study-block-dnd.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m src/main/security/permissions.edge-cases.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m src/main/validation/study-remote-media.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m src/renderer/src/modules/study/lib/study-dnd.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m src/main/domain/study-document-index.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 29[2mms[22m[39m
+ [32m✓[39m src/renderer/src/app/appearance/appearance-dom.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m src/main/services/study-asset-range.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m src/renderer/src/modules/study/StudyPage.test.tsx [2m([22m[2m1 test[22m[2m)[22m[32m 214[2mms[22m[39m
+ [32m✓[39m src/renderer/src/modules/study/components/mermaid/mermaid-renderer.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 28[2mms[22m[39m
+ [32m✓[39m src/preload/shutdown-request.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m src/renderer/src/modules/study/lib/study-document.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m src/renderer/src/app/module-registry.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m src/renderer/src/modules/study/components/markdown/StudyMarkdownBlock.test.tsx [2m([22m[2m1 test[22m[2m)[22m[32m 219[2mms[22m[39m
+ [32m✓[39m src/renderer/src/modules/study/components/file/file-utils.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m src/renderer/src/app/appearance/preferences-validation.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m src/main/security/single-instance.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m src/renderer/src/modules/study/components/latex/latex-renderer.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m src/renderer/src/modules/study/components/study-folder-icon-options.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m src/renderer/src/modules/study/components/code/code-languages.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m src/renderer/src/modules/study/components/rich-text/RichTextSettings.test.tsx[2m > [22mRichTextSettings[2m > [22mkeeps quote formatting in the text section and exposes its active state
+[31m[1mError[22m: [2mexpect([22m[31melement[31m[2m).toHaveAttribute([22m[32m[32m"data-state"[32m[31m[2m, [22m[32m[32m"off"[32m[31m[2m) // element.getAttribute("data-state") === "off"[22m
+
+Expected the element to have attribute:
+[32m  data-state="off"[31m
+Received:
+[31m  data-state="closed"[31m[39m
+[36m [2m❯[22m src/renderer/src/modules/study/components/rich-text/RichTextSettings.test.tsx:[2m48:26[22m[39m
+    [90m 46|[39m
+    [90m 47|[39m     [34mexpect[39m(quoteControl)[33m.[39m[34mtoHaveAttribute[39m([32m'aria-checked'[39m[33m,[39m [32m'false'[39m)
+    [90m 48|[39m     [34mexpect[39m(quoteControl)[33m.[39m[34mtoHaveAttribute[39m([32m'data-state'[39m[33m,[39m [32m'off'[39m)
+    [90m   |[39m                          [31m^[39m
+    [90m 49|[39m     [34mexpect[39m(quoteControl)[33m.[39m[34mtoHaveClass[39m([32m'rich-text-format-control'[39m)
+    [90m 50|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m47 passed[39m[22m[90m (48)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m226 passed[39m[22m[90m (227)[39m
+[2m   Start at [22m 08:41:54
+[2m   Duration [22m 61.96s[2m (transform 1.04s, setup 7.28s, import 4.43s, tests 7.97s, environment 32.03s)[22m
+
+
+::error file=/home/runner/work/MyMind-Next/MyMind-Next/src/renderer/src/modules/study/components/rich-text/RichTextSettings.test.tsx,title=src/renderer/src/modules/study/components/rich-text/RichTextSettings.test.tsx > RichTextSettings > keeps quote formatting in the text section and exposes its active state,line=48,column=26::Error: expect(element).toHaveAttribute("data-state", "off") // element.getAttribute("data-state") === "off"%0A%0AExpected the element to have attribute:%0A  data-state="off"%0AReceived:%0A  data-state="closed"%0A ❯ src/renderer/src/modules/study/components/rich-text/RichTextSettings.test.tsx:48:26%0A%0A
+
+EXIT_CODE=1
