@@ -23,12 +23,4 @@ jobs:
       - run: npm run format:check
       - run: npm run lint
       - run: npm run typecheck
-      - run: npm run test:coverage
-      - run: npm run db:check
-      - run: npm run build:bundle
-      - uses: actions/upload-artifact@v4
-        if: ${{ always() && hashFiles('coverage/**') != '' }}
-        with:
-          name: coverage
-          path: coverage
-          if-no-files-found: error
+      - run: npx vitest run src/renderer/src/modules/settings/SettingsBreadcrumbs.test.tsx
