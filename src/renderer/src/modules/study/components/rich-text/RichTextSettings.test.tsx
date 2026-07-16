@@ -21,7 +21,7 @@ describe('RichTextSettings', () => {
     expect(screen.getByText('Выбери текстовый блок')).toBeInTheDocument()
   })
 
-  it('keeps quote formatting in the text section and toggles the active paragraph', async () => {
+  it('keeps quote formatting in the text section and exposes its active state', async () => {
     const user = userEvent.setup()
 
     editor = new Editor({
