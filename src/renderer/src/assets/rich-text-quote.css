@@ -1,0 +1,55 @@
+.mymind-rich-text-editor blockquote {
+  position: relative;
+  margin-block: 0.25rem;
+  padding: 0.9rem 1.1rem 0.9rem 2.65rem;
+  color: color-mix(in srgb, var(--app-text) 88%, var(--app-muted));
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--app-accent-500) 13%, transparent),
+      transparent 72%
+    ),
+    color-mix(in srgb, var(--app-surface-raised) 88%, var(--app-workspace));
+  border: 1px solid color-mix(in srgb, var(--app-accent-500) 24%, var(--app-border));
+  border-left: 3px solid var(--app-accent-500);
+  border-radius: 0.25rem 0.85rem 0.85rem 0.25rem;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 3%),
+    0 10px 26px rgb(0 0 0 / 12%);
+}
+
+.mymind-rich-text-editor blockquote::before {
+  position: absolute;
+  top: 0.45rem;
+  left: 0.8rem;
+  color: color-mix(in srgb, var(--app-accent-400) 82%, var(--app-text));
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 2.2rem;
+  font-weight: 700;
+  line-height: 1;
+  content: '“';
+  opacity: 0.78;
+  pointer-events: none;
+}
+
+.mymind-rich-text-editor blockquote > * {
+  position: relative;
+}
+
+.mymind-rich-text-editor blockquote > * + * {
+  margin-top: 0.55rem;
+}
+
+.mymind-rich-text-editor blockquote p {
+  min-height: auto;
+}
+
+.mymind-rich-text-editor blockquote blockquote {
+  margin-top: 0.75rem;
+  background: color-mix(in srgb, var(--app-accent-500) 7%, var(--app-surface-raised));
+  box-shadow: none;
+}
+
+.mymind-rich-text-viewer blockquote {
+  padding-block: 1rem;
+}

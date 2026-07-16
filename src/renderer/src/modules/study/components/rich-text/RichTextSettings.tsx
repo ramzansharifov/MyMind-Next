@@ -15,6 +15,7 @@ import {
   Link2,
   List,
   ListOrdered,
+  Quote,
   Redo2,
   RemoveFormatting,
   Strikethrough,
@@ -43,6 +44,7 @@ interface EditorFormattingState {
   underline: boolean
   strike: boolean
   code: boolean
+  blockquote: boolean
   bulletList: boolean
   orderedList: boolean
   canIndentListItem: boolean
@@ -69,6 +71,7 @@ const defaultEditorState: EditorFormattingState = {
   underline: false,
   strike: false,
   code: false,
+  blockquote: false,
   bulletList: false,
   orderedList: false,
   canIndentListItem: false,
@@ -168,6 +171,7 @@ function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.El
           underline: currentEditor.isActive('underline'),
           strike: currentEditor.isActive('strike'),
           code: currentEditor.isActive('code'),
+          blockquote: currentEditor.isActive('blockquote'),
           bulletList: currentEditor.isActive('bulletList'),
           orderedList: currentEditor.isActive('orderedList'),
           canIndentListItem: canRunEditorCommand(currentEditor, (candidate) =>
@@ -453,6 +457,22 @@ function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.El
 
           <ToolbarToggle value="code" label="Код">
             <Code2 className="size-4" />
+          </ToolbarToggle>
+        </ToggleGroup.Root>
+      </SettingsSection>
+
+      <SettingsSection title="Абзац">
+        <ToggleGroup.Root
+          type="single"
+          value={editorState.blockquote ? 'blockquote' : ''}
+          aria-label="Стиль абзаца"
+          className="flex flex-wrap gap-2"
+          onValueChange={() => {
+            createCommandChain()?.toggleBlockquote().run()
+          }}
+        >
+          <ToolbarToggle value="blockquote" label="Цитата">
+            <Quote className="size-4" />
           </ToolbarToggle>
         </ToggleGroup.Root>
       </SettingsSection>
