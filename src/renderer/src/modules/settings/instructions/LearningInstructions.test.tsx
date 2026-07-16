@@ -19,6 +19,9 @@ describe('learning instructions', () => {
       studyBlockDefinitions.map((definition) => `block-${definition.type}`)
     )
     expect(learningInstructionArticles.length).toBe(studyBlockDefinitions.length + 5)
+    expect(new Set(learningInstructionArticles.map((article) => article.id)).size).toBe(
+      learningInstructionArticles.length
+    )
   })
 
   it('opens the learning module from the instructions overview', async () => {
