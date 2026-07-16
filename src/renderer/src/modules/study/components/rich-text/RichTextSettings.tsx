@@ -597,7 +597,7 @@ function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.El
           <button
             type="button"
             aria-label="Создать внутреннюю ссылку"
-            className="flex h-10 min-w-0 items-center justify-center gap-2 rounded-lg border border-(--app-border) bg-(--app-workspace) px-2 text-xs font-medium text-(--app-text) transition-colors outline-none hover:border-violet-500/35 hover:bg-violet-500/10 focus-visible:ring-2 focus-visible:ring-violet-500/35"
+            className="flex h-10 min-w-0 items-center justify-center gap-2 rounded-lg border border-(--app-border) bg-(--app-workspace) px-2 text-xs font-medium text-(--app-text) transition-colors outline-none hover:border-violet-500/35 hover:bg-violet-500/10 focus-visible:ring-2 focus-visible:ring-(--app-accent-500)/40"
             onMouseDown={(event) => {
               event.preventDefault()
             }}
@@ -686,7 +686,7 @@ function ToolbarButton({
           'border-(--app-border) bg-(--app-workspace) text-(--app-muted)',
           'transition-colors outline-none',
           'hover:bg-white/[0.05] hover:text-(--app-text)',
-          'focus-visible:ring-2 focus-visible:ring-violet-500/35',
+          'focus-visible:ring-2 focus-visible:ring-(--app-accent-500)/40',
           'disabled:cursor-not-allowed disabled:opacity-35'
         )}
         onMouseDown={(event) => {
@@ -719,10 +719,11 @@ function ToolbarToggle({
           'border-(--app-border) bg-(--app-workspace) text-(--app-muted)',
           'transition-colors outline-none',
           'hover:bg-white/[0.05] hover:text-(--app-text)',
-          'focus-visible:ring-2 focus-visible:ring-violet-500/35',
-          'data-[state=on]:border-violet-500/45',
-          'data-[state=on]:bg-violet-500/15',
-          'data-[state=on]:text-violet-200'
+          'focus-visible:ring-2 focus-visible:ring-(--app-accent-500)/40',
+          'data-[state=on]:border-[color-mix(in_srgb,var(--app-accent-500)_72%,white_8%)]',
+          'data-[state=on]:bg-[color-mix(in_srgb,var(--app-accent-500)_24%,var(--app-workspace))]',
+          'data-[state=on]:text-[color-mix(in_srgb,var(--app-accent-400)_88%,white)]',
+          'data-[state=on]:shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--app-accent-500)_22%,transparent),0_0_14px_color-mix(in_srgb,var(--app-accent-500)_14%,transparent)]'
         )}
         onMouseDown={(event) => {
           event.preventDefault()
@@ -786,10 +787,10 @@ function LinkPopover({
           className={cn(
             'flex h-10 w-full min-w-0 items-center justify-center gap-2 rounded-lg border px-2 text-xs font-medium',
             active
-              ? 'border-violet-500/45 bg-violet-500/15 text-violet-200'
+              ? 'border-[color-mix(in_srgb,var(--app-accent-500)_72%,white_8%)] bg-[color-mix(in_srgb,var(--app-accent-500)_24%,var(--app-workspace))] text-[color-mix(in_srgb,var(--app-accent-400)_88%,white)] shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--app-accent-500)_22%,transparent),0_0_14px_color-mix(in_srgb,var(--app-accent-500)_14%,transparent)]'
               : 'border-(--app-border) bg-(--app-workspace) text-(--app-muted)',
             'hover:bg-white/[0.05] hover:text-(--app-text)',
-            'focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:outline-none',
+            'focus-visible:ring-2 focus-visible:ring-(--app-accent-500)/40 focus-visible:outline-none',
             'disabled:cursor-not-allowed disabled:opacity-35'
           )}
         >
