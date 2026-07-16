@@ -64,7 +64,7 @@ describe('learning instructions', () => {
   it('navigates to and highlights a section from the contents list', async () => {
     const user = userEvent.setup()
 
-    render(<LearningInstructionArticlePage topicId="folder-page" onBack={vi.fn()} />)
+    render(<LearningInstructionArticlePage topicId="learning-folder" onBack={vi.fn()} />)
 
     const heading = screen.getByRole('heading', { name: 'Основные действия' })
     const section = heading.closest('section')
