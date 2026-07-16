@@ -1,0 +1,38 @@
+name: Apply active formatting controls
+
+on:
+  push:
+    branches: [agent/visible-active-format-controls]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: node scripts/improve-rich-text-active-controls.cjs
+      - run: npm ci
+      - name: Format changed files
+        run: >-
+          npx prettier --write
+          src/renderer/src/assets/main.css
+          src/renderer/src/modules/study/components/rich-text/RichTextSettings.tsx
+          src/renderer/src/modules/study/components/rich-text/RichTextSettings.test.tsx
+      - name: Commit active formatting controls
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/renderer/src/assets/main.css
+          git add src/renderer/src/modules/study/components/rich-text/RichTextSettings.tsx
+          git add src/renderer/src/modules/study/components/rich-text/RichTextSettings.test.tsx
+          git rm scripts/improve-rich-text-active-controls.cjs
+          git rm .github/workflows/apply-active-formatting-controls.yml
+          git commit -m "Make active formatting controls visible"
+          git push
