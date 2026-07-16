@@ -11,7 +11,7 @@ permissions:
 jobs:
   verify:
     runs-on: windows-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -19,11 +19,12 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Capture latest quote test output
+      - run: npm run native:node
+      - name: Capture full coverage output
         shell: bash
-        run: npm run test:run -- src/renderer/src/modules/study/components/rich-text/RichTextSettings.test.tsx > quote-test-latest.log 2>&1 || true
+        run: npm run test:coverage > test-coverage-latest.log 2>&1 || true
       - uses: actions/upload-artifact@v4
         with:
-          name: quote-test-latest-log
-          path: quote-test-latest.log
+          name: test-coverage-latest-log
+          path: test-coverage-latest.log
           if-no-files-found: error
