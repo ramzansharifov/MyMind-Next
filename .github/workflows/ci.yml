@@ -1,43 +1,34 @@
-name: Apply instruction section navigation
+name: CI
 
 on:
   push:
-    branches: [agent/learning-instructions]
+    branches: [main]
+  pull_request:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  apply-navigation:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+  verify:
+    runs-on: windows-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: agent/learning-instructions
-          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Apply navigation patch
-        run: node .github/scripts/add-instruction-section-navigation.mjs
-      - name: Format changed files
-        run: >-
-          npx prettier --write
-          src/renderer/src/modules/settings/instructions/LearningInstructions.tsx
-          src/renderer/src/modules/settings/instructions/LearningInstructions.test.tsx
-      - name: Restore CI and commit result
-        shell: bash
-        run: |
-          git fetch origin main
-          git show origin/main:.github/workflows/ci.yml > .github/workflows/ci.yml
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .github/workflows/ci.yml
-          git add src/renderer/src/modules/settings/instructions/LearningInstructions.tsx
-          git add src/renderer/src/modules/settings/instructions/LearningInstructions.test.tsx
-          git rm .github/scripts/add-instruction-section-navigation.mjs
-          git commit -m "Add instruction section navigation"
-          git push origin HEAD:agent/learning-instructions
+      - run: npm run native:node
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:coverage
+      - run: npm run db:check
+      - run: npm run build:bundle
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() && hashFiles('coverage/**') != '' }}
+        with:
+          name: coverage
+          path: coverage
+          if-no-files-found: error
