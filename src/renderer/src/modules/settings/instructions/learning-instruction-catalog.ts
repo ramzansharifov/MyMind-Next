@@ -23,8 +23,7 @@ export type GeneralLearningInstructionTopicId =
 export type BlockLearningInstructionTopicId = `block-${StudyBlockType}`
 
 export type LearningInstructionTopicId =
-  | GeneralLearningInstructionTopicId
-  | BlockLearningInstructionTopicId
+  GeneralLearningInstructionTopicId | BlockLearningInstructionTopicId
 
 export interface LearningInstructionShortcut {
   keys: string[]
@@ -184,8 +183,7 @@ const generalInstructionArticles: LearningInstructionArticle[] = [
       },
       {
         title: 'Когда создавать материал в корне',
-        note:
-          'Корень удобен для временных записей. Для постоянной библиотеки лучше сначала создать тематическую папку, чтобы структура не стала плоской и перегруженной.'
+        note: 'Корень удобен для временных записей. Для постоянной библиотеки лучше сначала создать тематическую папку, чтобы структура не стала плоской и перегруженной.'
       }
     ],
     shortcuts: []
@@ -329,7 +327,10 @@ const blockInstructionContent = {
       { keys: ['[', '['], description: 'Открыть выбор внутренней ссылки прямо во время ввода.' },
       { keys: ['Tab'], description: 'Увеличить вложенность элемента списка.' },
       { keys: ['Shift', 'Tab'], description: 'Уменьшить вложенность элемента списка.' },
-      { keys: ['↑', '↓', 'Enter', 'Escape'], description: 'Управлять окном выбора внутренней ссылки.' }
+      {
+        keys: ['↑', '↓', 'Enter', 'Escape'],
+        description: 'Управлять окном выбора внутренней ссылки.'
+      }
     ]
   },
   heading: {
@@ -421,7 +422,9 @@ const blockInstructionContent = {
         ]
       }
     ],
-    shortcuts: [{ keys: ['Tab'], description: 'Вставить отступ из двух пробелов в исходном Markdown.' }]
+    shortcuts: [
+      { keys: ['Tab'], description: 'Вставить отступ из двух пробелов в исходном Markdown.' }
+    ]
   },
   latex: {
     summary: 'Формулы KaTeX с исходным кодом, предпросмотром, выравниванием и масштабом.',
@@ -607,8 +610,7 @@ const blockInstructionContent = {
   },
   divider: {
     summary: 'Визуальное разделение частей материала с выбором стиля, толщины и цвета.',
-    intro:
-      'Разделитель помогает отделять крупные смысловые части без добавления текста.',
+    intro: 'Разделитель помогает отделять крупные смысловые части без добавления текста.',
     sections: [
       {
         title: 'Варианты',
@@ -629,8 +631,7 @@ const blockInstructionContent = {
       },
       {
         title: 'Совет',
-        note:
-          'Используйте разделители умеренно. Для структуры документа чаще подходят заголовки, потому что на них можно создавать внутренние ссылки.'
+        note: 'Используйте разделители умеренно. Для структуры документа чаще подходят заголовки, потому что на них можно создавать внутренние ссылки.'
       }
     ],
     shortcuts: []

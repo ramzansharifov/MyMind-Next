@@ -89,8 +89,12 @@ export function InstructionsOverviewPage({
             </p>
 
             <div className="mt-5 flex flex-wrap gap-2">
-              <InstructionBadge>{basicLearningInstructionArticles.length} разделов интерфейса</InstructionBadge>
-              <InstructionBadge>{blockLearningInstructionArticles.length} типов блоков</InstructionBadge>
+              <InstructionBadge>
+                {basicLearningInstructionArticles.length} разделов интерфейса
+              </InstructionBadge>
+              <InstructionBadge>
+                {blockLearningInstructionArticles.length} типов блоков
+              </InstructionBadge>
               <InstructionBadge>Горячие клавиши</InstructionBadge>
             </div>
           </div>
@@ -118,7 +122,12 @@ export function LearningInstructionsPage({
     }
 
     return learningInstructionArticles.filter((article) =>
-      [article.title, article.summary, article.intro, ...article.sections.map((section) => section.title)]
+      [
+        article.title,
+        article.summary,
+        article.intro,
+        ...article.sections.map((section) => section.title)
+      ]
         .join(' ')
         .toLocaleLowerCase('ru-RU')
         .includes(normalizedSearch)
@@ -152,7 +161,7 @@ export function LearningInstructionsPage({
           <button
             type="button"
             aria-label="Очистить поиск инструкций"
-            className="flex size-7 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] outline-none transition-colors hover:bg-white/[0.06] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35"
+            className="flex size-7 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors outline-none hover:bg-white/[0.06] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35"
             onClick={() => setSearch('')}
           >
             <X aria-hidden="true" className="size-4" />
@@ -347,7 +356,9 @@ function InstructionArticleSection({
 }): React.JSX.Element {
   return (
     <section className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-5 shadow-[0_12px_40px_rgb(0_0_0/0.08)]">
-      <h2 className="text-lg font-semibold tracking-tight text-[var(--app-text)]">{section.title}</h2>
+      <h2 className="text-lg font-semibold tracking-tight text-[var(--app-text)]">
+        {section.title}
+      </h2>
 
       {section.paragraphs?.map((paragraph) => (
         <p key={paragraph} className="mt-3 text-sm leading-7 text-[var(--app-muted)]">
@@ -358,7 +369,10 @@ function InstructionArticleSection({
       {section.steps && (
         <ol className="mt-4 grid gap-3">
           {section.steps.map((step, index) => (
-            <li key={step} className="flex items-start gap-3 text-sm leading-6 text-[var(--app-muted)]">
+            <li
+              key={step}
+              className="flex items-start gap-3 text-sm leading-6 text-[var(--app-muted)]"
+            >
               <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full border border-violet-500/20 bg-violet-500/10 text-[11px] font-semibold text-violet-300 tabular-nums">
                 {index + 1}
               </span>
@@ -371,7 +385,10 @@ function InstructionArticleSection({
       {section.bullets && (
         <ul className="mt-4 grid gap-2.5">
           {section.bullets.map((bullet) => (
-            <li key={bullet} className="flex items-start gap-3 text-sm leading-6 text-[var(--app-muted)]">
+            <li
+              key={bullet}
+              className="flex items-start gap-3 text-sm leading-6 text-[var(--app-muted)]"
+            >
               <span
                 aria-hidden="true"
                 className="mt-2 size-1.5 shrink-0 rounded-full bg-violet-400"
@@ -406,7 +423,9 @@ function InstructionShortcuts({
         <div>
           <h2 className="text-sm font-semibold text-[var(--app-text)]">Горячие клавиши</h2>
           <p className="mt-0.5 text-[11px] text-[var(--app-muted)]">
-            {article.shortcuts.length > 0 ? `${article.shortcuts.length} сочетаний` : 'Не назначены'}
+            {article.shortcuts.length > 0
+              ? `${article.shortcuts.length} сочетаний`
+              : 'Не назначены'}
           </p>
         </div>
       </header>
@@ -467,7 +486,7 @@ function InstructionHero({
 
       <button
         type="button"
-        className="mb-6 flex h-9 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-xs font-medium text-[var(--app-muted)] outline-none transition-colors hover:border-violet-500/30 hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/40"
+        className="mb-6 flex h-9 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-xs font-medium text-[var(--app-muted)] transition-colors outline-none hover:border-violet-500/30 hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/40"
         onClick={onBack}
       >
         <ArrowLeft aria-hidden="true" className="size-4" />
@@ -486,9 +505,7 @@ function InstructionHero({
           <h1 className="mt-1 text-3xl font-semibold tracking-[-0.035em] text-[var(--app-text)]">
             {title}
           </h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--app-muted)]">
-            {description}
-          </p>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--app-muted)]">{description}</p>
         </div>
       </div>
     </header>

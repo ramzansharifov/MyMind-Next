@@ -44,7 +44,10 @@ describe('learning instructions', () => {
     expect(screen.getByRole('heading', { name: 'Основы модуля' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Блоки материалов' })).toBeInTheDocument()
 
-    await user.type(screen.getByRole('textbox', { name: 'Поиск по инструкциям обучения' }), 'Mermaid')
+    await user.type(
+      screen.getByRole('textbox', { name: 'Поиск по инструкциям обучения' }),
+      'Mermaid'
+    )
 
     expect(screen.queryByRole('button', { name: /Форматированный текст/ })).not.toBeInTheDocument()
 

@@ -249,7 +249,7 @@ function AppearanceSettingsPage({ onBack }: { onBack: () => void }): React.JSX.E
 
         <button
           type="button"
-          className="mb-6 flex h-9 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-xs font-medium text-[var(--app-muted)] outline-none transition-colors hover:border-violet-500/30 hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/40"
+          className="mb-6 flex h-9 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-xs font-medium text-[var(--app-muted)] transition-colors outline-none hover:border-violet-500/30 hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/40"
           onClick={onBack}
         >
           <ArrowLeft aria-hidden="true" className="size-4" />
