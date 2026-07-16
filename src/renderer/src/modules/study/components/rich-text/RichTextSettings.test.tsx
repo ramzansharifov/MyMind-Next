@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it } from 'vitest'
 
+import { TooltipProvider } from '../../../../shared/ui/tooltip'
 import { createRichTextExtensions } from './extensions'
 import { RichTextSettings } from './RichTextSettings'
 
@@ -28,7 +29,11 @@ describe('RichTextSettings', () => {
       content: '<p>Важная мысль</p>'
     })
 
-    render(<RichTextSettings editor={editor} />)
+    render(
+      <TooltipProvider>
+        <RichTextSettings editor={editor} />
+      </TooltipProvider>
+    )
 
     const quoteButton = screen.getByRole('button', {
       name: 'Цитата'
