@@ -141,6 +141,9 @@ const highlightColors = [
   '#701a75'
 ]
 
+const activeFormattingControlClassName =
+  'border-[color-mix(in_srgb,var(--app-accent-500)_72%,white_8%)] bg-[color-mix(in_srgb,var(--app-accent-500)_24%,var(--app-workspace))] text-[color-mix(in_srgb,var(--app-accent-400)_88%,white)] shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--app-accent-500)_22%,transparent),0_0_14px_color-mix(in_srgb,var(--app-accent-500)_14%,transparent)]'
+
 export function RichTextSettings({ editor }: RichTextSettingsProps): React.JSX.Element {
   if (!editor || editor.isDestroyed) {
     return <UnavailableEditorSettings />
@@ -439,23 +442,23 @@ function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.El
           className="flex flex-wrap gap-2"
           onValueChange={applyMarkValues}
         >
-          <ToolbarToggle value="bold" label="Жирный">
+          <ToolbarToggle value="bold" label="Жирный" active={editorState.bold}>
             <Bold className="size-4" />
           </ToolbarToggle>
 
-          <ToolbarToggle value="italic" label="Курсив">
+          <ToolbarToggle value="italic" label="Курсив" active={editorState.italic}>
             <Italic className="size-4" />
           </ToolbarToggle>
 
-          <ToolbarToggle value="underline" label="Подчёркивание">
+          <ToolbarToggle value="underline" label="Подчёркивание" active={editorState.underline}>
             <Underline className="size-4" />
           </ToolbarToggle>
 
-          <ToolbarToggle value="strike" label="Зачёркивание">
+          <ToolbarToggle value="strike" label="Зачёркивание" active={editorState.strike}>
             <Strikethrough className="size-4" />
           </ToolbarToggle>
 
-          <ToolbarToggle value="code" label="Код">
+          <ToolbarToggle value="code" label="Код" active={editorState.code}>
             <Code2 className="size-4" />
           </ToolbarToggle>
         </ToggleGroup.Root>
@@ -469,7 +472,7 @@ function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.El
             createCommandChain()?.toggleBlockquote().run()
           }}
         >
-          <ToolbarToggle value="blockquote" label="Цитата">
+          <ToolbarToggle value="blockquote" label="Цитата" active={editorState.blockquote}>
             <Quote className="size-4" />
           </ToolbarToggle>
         </ToggleGroup.Root>
@@ -501,11 +504,19 @@ function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.El
             }
           }}
         >
-          <ToolbarToggle value="bullet" label="Маркированный список">
+          <ToolbarToggle
+            value="bullet"
+            label="Маркированный список"
+            active={editorState.bulletList}
+          >
             <List className="size-4" />
           </ToolbarToggle>
 
-          <ToolbarToggle value="ordered" label="Нумерованный список">
+          <ToolbarToggle
+            value="ordered"
+            label="Нумерованный список"
+            active={editorState.orderedList}
+          >
             <ListOrdered className="size-4" />
           </ToolbarToggle>
         </ToggleGroup.Root>
@@ -539,19 +550,27 @@ function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.El
           className="flex flex-wrap gap-2"
           onValueChange={applyAlignment}
         >
-          <ToolbarToggle value="left" label="Слева">
+          <ToolbarToggle value="left" label="Слева" active={editorState.alignment === 'left'}>
             <AlignLeft className="size-4" />
           </ToolbarToggle>
 
-          <ToolbarToggle value="center" label="По центру">
+          <ToolbarToggle
+            value="center"
+            label="По центру"
+            active={editorState.alignment === 'center'}
+          >
             <AlignCenter className="size-4" />
           </ToolbarToggle>
 
-          <ToolbarToggle value="right" label="Справа">
+          <ToolbarToggle value="right" label="Справа" active={editorState.alignment === 'right'}>
             <AlignRight className="size-4" />
           </ToolbarToggle>
 
-          <ToolbarToggle value="justify" label="По ширине">
+          <ToolbarToggle
+            value="justify"
+            label="По ширине"
+            active={editorState.alignment === 'justify'}
+          >
             <AlignJustify className="size-4" />
           </ToolbarToggle>
         </ToggleGroup.Root>
@@ -703,10 +722,12 @@ function ToolbarButton({
 function ToolbarToggle({
   value,
   label,
+  active,
   children
 }: {
   value: string
   label: string
+  active: boolean
   children: ReactNode
 }): React.JSX.Element {
   return (
@@ -714,16 +735,15 @@ function ToolbarToggle({
       <ToggleGroup.Item
         value={value}
         aria-label={label}
+        data-active={active ? 'true' : 'false'}
         className={cn(
           'flex size-9 items-center justify-center rounded-lg border',
-          'border-(--app-border) bg-(--app-workspace) text-(--app-muted)',
+          active
+            ? activeFormattingControlClassName
+            : 'border-(--app-border) bg-(--app-workspace) text-(--app-muted)',
           'transition-colors outline-none',
           'hover:bg-white/[0.05] hover:text-(--app-text)',
-          'focus-visible:ring-2 focus-visible:ring-(--app-accent-500)/40',
-          'data-[state=on]:border-[color-mix(in_srgb,var(--app-accent-500)_72%,white_8%)]',
-          'data-[state=on]:bg-[color-mix(in_srgb,var(--app-accent-500)_24%,var(--app-workspace))]',
-          'data-[state=on]:text-[color-mix(in_srgb,var(--app-accent-400)_88%,white)]',
-          'data-[state=on]:shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--app-accent-500)_22%,transparent),0_0_14px_color-mix(in_srgb,var(--app-accent-500)_14%,transparent)]'
+          'focus-visible:ring-2 focus-visible:ring-(--app-accent-500)/40'
         )}
         onMouseDown={(event) => {
           event.preventDefault()
@@ -787,7 +807,7 @@ function LinkPopover({
           className={cn(
             'flex h-10 w-full min-w-0 items-center justify-center gap-2 rounded-lg border px-2 text-xs font-medium',
             active
-              ? 'border-[color-mix(in_srgb,var(--app-accent-500)_72%,white_8%)] bg-[color-mix(in_srgb,var(--app-accent-500)_24%,var(--app-workspace))] text-[color-mix(in_srgb,var(--app-accent-400)_88%,white)] shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--app-accent-500)_22%,transparent),0_0_14px_color-mix(in_srgb,var(--app-accent-500)_14%,transparent)]'
+              ? activeFormattingControlClassName
               : 'border-(--app-border) bg-(--app-workspace) text-(--app-muted)',
             'hover:bg-white/[0.05] hover:text-(--app-text)',
             'focus-visible:ring-2 focus-visible:ring-(--app-accent-500)/40 focus-visible:outline-none',
