@@ -35,22 +35,22 @@ describe('RichTextSettings', () => {
       </TooltipProvider>
     )
 
-    const quoteButton = screen.getByRole('button', {
+    const quoteControl = screen.getByRole('radio', {
       name: 'Цитата'
     })
 
-    expect(quoteButton).toHaveAttribute('data-state', 'off')
+    expect(quoteControl).toHaveAttribute('aria-checked', 'false')
 
-    await user.click(quoteButton)
+    await user.click(quoteControl)
 
     expect(editor.isActive('blockquote')).toBe(true)
     expect(editor.getHTML()).toBe('<blockquote><p>Важная мысль</p></blockquote>')
-    expect(quoteButton).toHaveAttribute('data-state', 'on')
+    expect(quoteControl).toHaveAttribute('aria-checked', 'true')
 
-    await user.click(quoteButton)
+    await user.click(quoteControl)
 
     expect(editor.isActive('blockquote')).toBe(false)
     expect(editor.getHTML()).toBe('<p>Важная мысль</p>')
-    expect(quoteButton).toHaveAttribute('data-state', 'off')
+    expect(quoteControl).toHaveAttribute('aria-checked', 'false')
   })
 })
