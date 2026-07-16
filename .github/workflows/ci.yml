@@ -23,7 +23,17 @@ jobs:
       - run: npm run format:check
       - run: npm run lint
       - run: npm run typecheck
-      - run: npm run test:coverage
+      - name: Run tests with captured output
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run test:coverage 2>&1 | tee test-coverage.log
+      - uses: actions/upload-artifact@v4
+        if: ${{ failure() }}
+        with:
+          name: test-coverage-log
+          path: test-coverage.log
+          if-no-files-found: error
       - run: npm run db:check
       - run: npm run build:bundle
       - uses: actions/upload-artifact@v4
