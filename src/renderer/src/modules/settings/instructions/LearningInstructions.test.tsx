@@ -61,7 +61,7 @@ describe('learning instructions', () => {
     expect(screen.getByRole('heading', { name: 'Форматированный текст' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Форматирование текста' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Горячие клавиши' })).toBeInTheDocument()
-    expect(screen.getByText('Ctrl / Cmd')).toBeInTheDocument()
+    expect(screen.getAllByText('Ctrl / Cmd').length).toBeGreaterThan(0)
     expect(screen.getByText('Открыть выбор внутренней ссылки.')).toBeInTheDocument()
   })
 })
