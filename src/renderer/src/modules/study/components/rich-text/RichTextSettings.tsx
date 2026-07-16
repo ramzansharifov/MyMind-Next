@@ -459,13 +459,11 @@ function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.El
             <Code2 className="size-4" />
           </ToolbarToggle>
         </ToggleGroup.Root>
-      </SettingsSection>
 
-      <SettingsSection title="Абзац">
         <ToggleGroup.Root
           type="single"
           value={editorState.blockquote ? 'blockquote' : ''}
-          aria-label="Стиль абзаца"
+          aria-label="Стиль цитаты"
           className="flex flex-wrap gap-2"
           onValueChange={() => {
             createCommandChain()?.toggleBlockquote().run()
