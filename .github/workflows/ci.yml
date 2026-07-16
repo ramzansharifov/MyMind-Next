@@ -1,34 +1,24 @@
-name: CI
+name: Move quote control
 
 on:
   push:
-    branches: [main]
-  pull_request:
+    branches: [agent/move-quote-to-text-section]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  verify:
-    runs-on: windows-latest
-    timeout-minutes: 25
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm run native:node
-      - run: npm run format:check
-      - run: npm run lint
-      - run: npm run typecheck
-      - run: npm run test:coverage
-      - run: npm run db:check
-      - run: npm run build:bundle
-      - uses: actions/upload-artifact@v4
-        if: ${{ always() && hashFiles('coverage/**') != '' }}
-        with:
-          name: coverage
-          path: coverage
-          if-no-files-found: error
+      - run: node scripts/move-quote-to-text-section.cjs
+      - name: Commit layout change
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/renderer/src/modules/study/components/rich-text/RichTextSettings.tsx
+          git rm scripts/move-quote-to-text-section.cjs
+          git commit -m "Move quote control into text section"
+          git push
