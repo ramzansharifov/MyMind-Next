@@ -1,5 +1,5 @@
 import { Editor } from '@tiptap/core'
-import { render, screen, within } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it } from 'vitest'
 
@@ -99,6 +99,37 @@ describe('RichTextSettings', () => {
     expect(leftControl).toHaveAttribute('data-active', 'false')
     expect(centerControl).toHaveAttribute('aria-checked', 'true')
     expect(centerControl).toHaveAttribute('data-active', 'true')
+  })
+
+  it('updates active formatting when the selection moves through existing content', async () => {
+    editor = new Editor({
+      extensions: createRichTextExtensions(false),
+      content: '<p><strong>Жирный</strong> обычный</p>'
+    })
+
+    act(() => {
+      editor?.commands.setTextSelection(2)
+    })
+
+    render(
+      <TooltipProvider>
+        <RichTextSettings editor={editor} />
+      </TooltipProvider>
+    )
+
+    const boldControl = screen.getByRole('button', { name: 'Жирный' })
+
+    expect(editor.isActive('bold')).toBe(true)
+    expect(boldControl).toHaveAttribute('data-active', 'true')
+
+    act(() => {
+      editor?.commands.setTextSelection(10)
+    })
+
+    await waitFor(() => {
+      expect(editor?.isActive('bold')).toBe(false)
+      expect(boldControl).toHaveAttribute('data-active', 'false')
+    })
   })
 
   it('keeps internal and regular link actions in one row', () => {
