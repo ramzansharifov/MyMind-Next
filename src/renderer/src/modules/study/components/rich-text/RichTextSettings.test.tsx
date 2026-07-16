@@ -45,14 +45,15 @@ describe('RichTextSettings', () => {
     })
 
     expect(quoteControl).toHaveAttribute('aria-checked', 'false')
+    expect(quoteControl).toHaveAttribute('data-active', 'false')
 
     await user.click(quoteControl)
 
     expect(editor.isActive('blockquote')).toBe(true)
     expect(editor.getHTML()).toContain('<blockquote><p>Важная мысль</p></blockquote>')
     expect(quoteControl).toHaveAttribute('aria-checked', 'true')
+    expect(quoteControl).toHaveAttribute('data-active', 'true')
     expect(quoteControl.className).toContain('var(--app-accent-500)')
-    expect(quoteControl.className).toContain('data-[state=on]:shadow')
 
     await user.click(quoteControl)
 
@@ -60,6 +61,44 @@ describe('RichTextSettings', () => {
     expect(editor.getHTML()).not.toContain('<blockquote>')
     expect(editor.getHTML()).toContain('<p>Важная мысль</p>')
     expect(quoteControl).toHaveAttribute('aria-checked', 'false')
+    expect(quoteControl).toHaveAttribute('data-active', 'false')
+  })
+
+  it('shows active inline formatting and alignment after applying commands', async () => {
+    const user = userEvent.setup()
+
+    editor = new Editor({
+      extensions: createRichTextExtensions(false),
+      content: '<p>Текст</p>'
+    })
+
+    render(
+      <TooltipProvider>
+        <RichTextSettings editor={editor} />
+      </TooltipProvider>
+    )
+
+    const boldControl = screen.getByRole('button', { name: 'Жирный' })
+    const leftControl = screen.getByRole('radio', { name: 'Слева' })
+    const centerControl = screen.getByRole('radio', { name: 'По центру' })
+
+    expect(boldControl).toHaveAttribute('data-active', 'false')
+    expect(leftControl).toHaveAttribute('data-active', 'true')
+    expect(centerControl).toHaveAttribute('data-active', 'false')
+
+    await user.click(boldControl)
+
+    expect(editor.isActive('bold')).toBe(true)
+    expect(boldControl).toHaveAttribute('aria-pressed', 'true')
+    expect(boldControl).toHaveAttribute('data-active', 'true')
+    expect(boldControl.className).toContain('var(--app-accent-500)')
+
+    await user.click(centerControl)
+
+    expect(editor.getAttributes('paragraph').textAlign).toBe('center')
+    expect(leftControl).toHaveAttribute('data-active', 'false')
+    expect(centerControl).toHaveAttribute('aria-checked', 'true')
+    expect(centerControl).toHaveAttribute('data-active', 'true')
   })
 
   it('keeps internal and regular link actions in one row', () => {
