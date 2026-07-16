@@ -715,14 +715,11 @@ function ToolbarToggle({
         value={value}
         aria-label={label}
         className={cn(
-          'flex size-9 items-center justify-center rounded-lg border',
+          'rich-text-format-control flex size-9 items-center justify-center rounded-lg border',
           'border-(--app-border) bg-(--app-workspace) text-(--app-muted)',
           'transition-colors outline-none',
           'hover:bg-white/[0.05] hover:text-(--app-text)',
-          'focus-visible:ring-2 focus-visible:ring-violet-500/35',
-          'data-[state=on]:border-violet-500/45',
-          'data-[state=on]:bg-violet-500/15',
-          'data-[state=on]:text-violet-200'
+          'focus-visible:ring-2 focus-visible:ring-violet-500/35'
         )}
         onMouseDown={(event) => {
           event.preventDefault()
@@ -782,12 +779,11 @@ function LinkPopover({
         <button
           type="button"
           aria-label={active ? `Изменить ${ariaLabel}` : `Добавить ${ariaLabel}`}
+          data-active={active ? 'true' : undefined}
           disabled={disabled}
           className={cn(
-            'flex h-10 w-full min-w-0 items-center justify-center gap-2 rounded-lg border px-2 text-xs font-medium',
-            active
-              ? 'border-violet-500/45 bg-violet-500/15 text-violet-200'
-              : 'border-(--app-border) bg-(--app-workspace) text-(--app-muted)',
+            'rich-text-format-control flex h-10 w-full min-w-0 items-center justify-center gap-2 rounded-lg border px-2 text-xs font-medium',
+            'border-(--app-border) bg-(--app-workspace) text-(--app-muted)',
             'hover:bg-white/[0.05] hover:text-(--app-text)',
             'focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:outline-none',
             'disabled:cursor-not-allowed disabled:opacity-35'

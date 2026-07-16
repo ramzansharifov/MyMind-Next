@@ -31,6 +31,20 @@
   --app-tooltip-border: #343842;
   --app-header-height: 4rem;
 
+  --app-format-active-bg: color-mix(in srgb, var(--app-accent-500) 26%, var(--app-surface-raised));
+  --app-format-active-bg-hover: color-mix(
+    in srgb,
+    var(--app-accent-500) 34%,
+    var(--app-surface-raised)
+  );
+  --app-format-active-border: color-mix(
+    in srgb,
+    var(--app-accent-400) 78%,
+    var(--app-border-strong)
+  );
+  --app-format-active-text: var(--app-accent-100);
+  --app-format-active-ring: color-mix(in srgb, var(--app-accent-400) 38%, transparent);
+
   --app-overlay-soft: rgb(255 255 255 / 4%);
   --app-overlay-faint: rgb(255 255 255 / 2.5%);
   --app-code-surface: #090a0c;
@@ -80,6 +94,15 @@
   --app-overlay-faint: rgb(24 24 27 / 2.5%);
   --app-code-surface: #f1f3f6;
   --app-reader-surface: #eef1f5;
+  --app-format-active-bg: color-mix(in srgb, var(--app-accent-500) 18%, white);
+  --app-format-active-bg-hover: color-mix(in srgb, var(--app-accent-500) 24%, white);
+  --app-format-active-border: color-mix(
+    in srgb,
+    var(--app-accent-500) 68%,
+    var(--app-border-strong)
+  );
+  --app-format-active-text: var(--app-accent-800);
+  --app-format-active-ring: color-mix(in srgb, var(--app-accent-500) 25%, transparent);
 }
 
 :root[data-accent='blue'] {
@@ -218,6 +241,22 @@ select {
 
 button {
   border: 0;
+}
+
+.rich-text-format-control[data-state='on'],
+.rich-text-format-control[data-active='true'] {
+  color: var(--app-format-active-text);
+  background: var(--app-format-active-bg);
+  border-color: var(--app-format-active-border);
+  box-shadow:
+    0 0 0 1px var(--app-format-active-ring),
+    inset 0 1px 0 rgb(255 255 255 / 10%);
+}
+
+.rich-text-format-control[data-state='on']:hover,
+.rich-text-format-control[data-active='true']:hover {
+  color: var(--app-format-active-text);
+  background: var(--app-format-active-bg-hover);
 }
 
 ::selection {

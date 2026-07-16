@@ -45,12 +45,15 @@ describe('RichTextSettings', () => {
     })
 
     expect(quoteControl).toHaveAttribute('aria-checked', 'false')
+    expect(quoteControl).toHaveAttribute('data-state', 'off')
+    expect(quoteControl).toHaveClass('rich-text-format-control')
 
     await user.click(quoteControl)
 
     expect(editor.isActive('blockquote')).toBe(true)
     expect(editor.getHTML()).toContain('<blockquote><p>Важная мысль</p></blockquote>')
     expect(quoteControl).toHaveAttribute('aria-checked', 'true')
+    expect(quoteControl).toHaveAttribute('data-state', 'on')
 
     await user.click(quoteControl)
 
@@ -58,6 +61,29 @@ describe('RichTextSettings', () => {
     expect(editor.getHTML()).not.toContain('<blockquote>')
     expect(editor.getHTML()).toContain('<p>Важная мысль</p>')
     expect(quoteControl).toHaveAttribute('aria-checked', 'false')
+    expect(quoteControl).toHaveAttribute('data-state', 'off')
+  })
+
+  it('marks active text and regular link controls visibly', () => {
+    editor = new Editor({
+      extensions: createRichTextExtensions(false),
+      content: '<p><strong><a href="https://example.com">Активный текст</a></strong></p>'
+    })
+    editor.commands.setTextSelection(2)
+
+    render(
+      <TooltipProvider>
+        <RichTextSettings editor={editor} />
+      </TooltipProvider>
+    )
+
+    const boldControl = screen.getByRole('button', { name: 'Жирный' })
+    const linkControl = screen.getByRole('button', { name: 'Изменить обычную ссылку' })
+
+    expect(boldControl).toHaveAttribute('data-state', 'on')
+    expect(boldControl).toHaveClass('rich-text-format-control')
+    expect(linkControl).toHaveAttribute('data-active', 'true')
+    expect(linkControl).toHaveClass('rich-text-format-control')
   })
 
   it('keeps internal and regular link actions in one row', () => {
