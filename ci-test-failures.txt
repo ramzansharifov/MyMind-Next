@@ -1,0 +1,409 @@
+FILE: D:/a/MyMind-Next/MyMind-Next/src/renderer/src/App.test.tsx
+TEST: App shell opens appearance as a separate settings category and returns to the overview
+TestingLibraryElementError: Unable to find an accessible element with the role "button" and name "Все настройки"
+
+Here are the accessible roles:
+
+  complementary:
+
+  Name "Боковая панель":
+  [36m<aside[39m
+    [33maria-label[39m=[32m"Боковая панель"[39m
+    [33mclass[39m=[32m"group/sidebar relative z-10 flex h-full shrink-0 flex-col border-r border-[var(--app-border)] bg-[var(--app-sidebar)] transition-[width] duration-200 ease-out motion-reduce:transition-none w-[72px]"[39m
+    [33mdata-collapsed[39m=[32m"true"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<aside[39m
+    [33mclass[39m=[32m"sticky top-0 overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-5 shadow-[0_12px_40px_rgb(0_0_0/0.1)] max-[980px]:static"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  banner:
+
+  Name "":
+  [36m<header[39m
+    [33mclass[39m=[32m"flex h-[var(--app-header-height)] shrink-0 items-center border-b border-[var(--app-border)] justify-center px-0"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<header[39m
+    [33mclass[39m=[32m"relative isolate overflow-hidden rounded-3xl border border-[var(--app-border)] bg-[var(--app-surface)] p-6 shadow-[0_20px_70px_rgb(0_0_0/0.16)] max-[720px]:p-4"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<header[39m
+    [33mclass[39m=[32m"flex min-h-20 items-center gap-3 border-b border-[var(--app-border)] px-5 py-4"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<header[39m
+    [33mclass[39m=[32m"flex min-h-20 items-center gap-3 border-b border-[var(--app-border)] px-5 py-4"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  button:
+
+  Name "Развернуть боковую панель":
+  [36m<button[39m
+    [33maria-label[39m=[32m"Развернуть боковую панель"[39m
+    [33mclass[39m=[32m"absolute top-8 right-0 z-20 flex size-7 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-violet-500/25 bg-violet-500/12 text-violet-300 opacity-0 outline-none transition-[opacity,background-color,color,transform] duration-150 group-hover/sidebar:opacity-100 group-focus-within/sidebar:opacity-100 hover:scale-105 hover:bg-violet-500/20 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-violet-500/70 motion-reduce:transition-none"[39m
+    [33mdata-state[39m=[32m"closed"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "Обучение":
+  [36m<button[39m
+    [33maria-label[39m=[32m"Обучение"[39m
+    [33mclass[39m=[32m"group relative flex h-11 w-full items-center rounded-xl text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-violet-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--app-sidebar)] justify-center px-0 text-[var(--app-muted)] hover:bg-white/[0.045] hover:text-[var(--app-text)]"[39m
+    [33mdata-state[39m=[32m"closed"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "Настройки":
+  [36m<button[39m
+    [33maria-current[39m=[32m"page"[39m
+    [33maria-label[39m=[32m"Настройки"[39m
+    [33mclass[39m=[32m"group relative flex h-11 w-full items-center rounded-xl text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-violet-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--app-sidebar)] justify-center px-0 bg-[var(--app-sidebar-active)] text-violet-300"[39m
+    [33mdata-state[39m=[32m"closed"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "Настройки":
+  [36m<button[39m
+    [33mclass[39m=[32m"rounded-md text-[var(--app-muted)] transition-colors outline-none hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)]/45"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  navigation:
+
+  Name "Основная навигация":
+  [36m<nav[39m
+    [33maria-label[39m=[32m"Основная навигация"[39m
+    [33mclass[39m=[32m"flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto p-3"[39m
+  [36m/>[39m
+
+  Name "Навигация по настройкам":
+  [36m<nav[39m
+    [33maria-label[39m=[32m"Навигация по настройкам"[39m
+    [33mclass[39m=[32m"mb-4 min-w-0"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  contentinfo:
+
+  Name "":
+  [36m<footer[39m
+    [33mclass[39m=[32m"shrink-0 border-t border-[var(--app-border)] p-3"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  main:
+
+  Name "":
+  [36m<main[39m
+    [33mclass[39m=[32m"min-w-0 flex-1 overflow-hidden bg-[var(--app-workspace)]"[39m
+    [33mid[39m=[32m"workspace"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  list:
+
+  Name "":
+  [36m<ol[39m
+    [33mclass[39m=[32m"flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs leading-5"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  listitem:
+
+  Name "":
+  [36m<li[39m
+    [33mclass[39m=[32m"flex min-w-0 items-center gap-2"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<li[39m
+    [33mclass[39m=[32m"flex min-w-0 items-center gap-2"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  paragraph:
+
+  Name "":
+  [36m<p[39m
+    [33mclass[39m=[32m"text-[11px] font-semibold tracking-[0.12em] text-violet-300 uppercase"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<p[39m
+    [33mclass[39m=[32m"mt-2 max-w-2xl text-sm leading-6 text-[var(--app-muted)]"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<p[39m
+    [33mclass[39m=[32m"text-sm font-semibold text-[var(--app-text)]"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<p[39m
+    [33mclass[39m=[32m"mt-1 text-xs leading-5 text-[var(--app-muted)]"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<p[39m
+    [33mclass[39m=[32m"mt-0.5 text-xs text-[var(--app-muted)]"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<p[39m
+    [33mclass[39m=[32m"mt-0.5 text-xs text-[var(--app-muted)]"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  heading:
+
+  Name "Внешний вид":
+  [36m<h1[39m
+    [33mclass[39m=[32m"mt-1 text-3xl font-semibold tracking-[-0.035em] text-[var(--app-text)]"[39m
+  [36m/>[39m
+
+  Name "Тема приложения":
+  [36m<h2[39m
+    [33mclass[39m=[32m"text-base font-semibold text-[var(--app-text)]"[39m
+  [36m/>[39m
+
+  Name "Акцентный цвет":
+  [36m<h2[39m
+    [33mclass[39m=[32m"text-base font-semibold text-[var(--app-text)]"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  group:
+
+  Name "Тема":
+  [36m<fieldset[39m
+    [33mclass[39m=[32m"p-4"[39m
+  [36m/>[39m
+
+  Name "Акцентный цвет":
+  [36m<fieldset[39m
+    [33mclass[39m=[32m"p-4"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  radio:
+
+  Name "Как в системеАвтоматически использовать светлую или тёмную тему системы.":
+  [36m<input[39m
+    [33mclass[39m=[32m"sr-only"[39m
+    [33mname[39m=[32m"appearance-theme"[39m
+    [33mtype[39m=[32m"radio"[39m
+    [33mvalue[39m=[32m"system"[39m
+  [36m/>[39m
+
+  Name "СветлаяСветлые поверхности и тёмный текст.":
+  [36m<input[39m
+    [33mclass[39m=[32m"sr-only"[39m
+    [33mname[39m=[32m"appearance-theme"[39m
+    [33mtype[39m=[32m"radio"[39m
+    [33mvalue[39m=[32m"light"[39m
+  [36m/>[39m
+
+  Name "ТёмнаяТёмные поверхности и светлый текст.":
+  [36m<input[39m
+    [33mchecked[39m=[32m""[39m
+    [33mclass[39m=[32m"sr-only"[39m
+    [33mname[39m=[32m"appearance-theme"[39m
+    [33mtype[39m=[32m"radio"[39m
+    [33mvalue[39m=[32m"dark"[39m
+  [36m/>[39m
+
+  Name "Фиолетовый":
+  [36m<input[39m
+    [33maria-label[39m=[32m"Фиолетовый"[39m
+    [33mchecked[39m=[32m""[39m
+    [33mclass[39m=[32m"sr-only"[39m
+    [33mname[39m=[32m"appearance-accent"[39m
+    [33mtype[39m=[32m"radio"[39m
+    [33mvalue[39m=[32m"violet"[39m
+  [36m/>[39m
+
+  Name "Синий":
+  [36m<input[39m
+    [33maria-label[39m=[32m"Синий"[39m
+    [33mclass[39m=[32m"sr-only"[39m
+    [33mname[39m=[32m"appearance-accent"[39m
+    [33mtype[39m=[32m"radio"[39m
+    [33mvalue[39m=[32m"blue"[39m
+  [36m/>[39m
+
+  Name "Изумрудный":
+  [36m<input[39m
+    [33maria-label[39m=[32m"Изумрудный"[39m
+    [33mclass[39m=[32m"sr-only"[39m
+    [33mname[39m=[32m"appearance-accent"[39m
+    [33mtype[39m=[32m"radio"[39m
+    [33mvalue[39m=[32m"emerald"[39m
+  [36m/>[39m
+
+  Name "Янтарный":
+  [36m<input[39m
+    [33maria-label[39m=[32m"Янтарный"[39m
+    [33mclass[39m=[32m"sr-only"[39m
+    [33mname[39m=[32m"appearance-accent"[39m
+    [33mtype[39m=[32m"radio"[39m
+    [33mvalue[39m=[32m"amber"[39m
+  [36m/>[39m
+
+  Name "Розовый":
+  [36m<input[39m
+    [33maria-label[39m=[32m"Розовый"[39m
+    [33mclass[39m=[32m"sr-only"[39m
+    [33mname[39m=[32m"appearance-accent"[39m
+    [33mtype[39m=[32m"radio"[39m
+    [33mvalue[39m=[32m"rose"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"flex h-screen w-screen overflow-hidden bg-[var(--app-workspace)] text-[var(--app-text)]"[39m
+    [36m>[39m
+      [36m<aside[39m
+        [33maria-label[39m=[32m"Боковая панель"[39m
+        [33mclass[39m=[32m"group/sidebar relative z-10 flex h-full shrink-0 flex-col border-r border-[var(--app-border)] bg-[var(--app-sidebar)] transition-[width] duration-200 ease-out motion-reduce:transition-none w-[72px]"[39m
+        [33mdata-collapsed[39m=[32m"true"[39m
+      [36m>[39m
+        [36m<header[39m
+          [33mclass[39m=[32m"flex h-[var(--app-header-height)] shrink-0 items-center border-b border-[var(--app-border)] justify-center px-0"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"flex min-w-0 items-center justify-center"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"flex size-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/15 text-violet-300"[39m
+            [36m>[39m
+              [36m<svg[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"lucide lucide-brain-circuit size-[18px]"[39m
+                [33mfill[39m=[32m"none"[39m
+                [33mheight[39m=[32m"24"[39m
+                [33mstroke[39m=[32m"currentColor"[39m
+                [33mstroke-linecap[39m=[32m"round"[39m
+                [33mstroke-linejoin[39m=[32m"round"[39m
+                [33mstroke-width[39m=[32m"2"[39m
+                [33mviewBox[39m=[32m"0 0 24 24"[39m
+                [33mwidth[39m=[32m"24"[39m
+                [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+              [36m>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"[39m
+                [36m/>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"M9 13a4.5 4.5 0 0 0 3-4"[39m
+                [36m/>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"M6.003 5.125A3 3 0 0 0 6.401 6.5"[39m
+                [36m/>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"M3.477 10.896a4 4 0 0 1 .585-.396"[39m
+                [36m/>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"M6 18a4 4 0 0 1-1.967-.516"[39m
+                [36m/>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"M12 13h4"[39m
+                [36m/>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"M12 18h6a2 2 0 0 1 2 2v1"[39m
+                [36m/>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"M12 8h8"[39m
+                [36m/>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"M16 8V5a2 2 0 0 1 2-2"[39m
+                [36m/>[39m
+                [36m<circle[39m
+                  [33mcx[39m=[32m"16"[39m
+                  [33mcy[39m=[32m"13"[39m
+                  [33mr[39m=[32m".5"[39m
+                [36m/>[39m
+                [36m<circle[39m
+                  [33mcx[39m=[32m"18"[39m
+                  [33mcy[39m=[32m"3"[39m
+                  [33mr[39m=[32m".5"[39m
+                [36m/>[39m
+                [36m<circle[39m
+                  [33mcx[39m=[32m"20"[39m
+                  [33mcy[39m=[32m"21"[39m
+                  [33mr[39m=[32m".5"[39m
+                [36m/>[39m
+                [36m<circle[39m
+                  [33mcx[39m=[32m"20"[39m
+                  [33mcy[39m=[32m"8"[39m
+                  [33mr[39m=[32m".5"[39m
+                [36m/>[39m
+              [36m</svg>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+        [36m</header>[39m
+        [36m<button[39m
+          [33maria-label[39m=[32m"Развернуть боковую панель"[39m
+          [33mclass[39m=[32m"absolute top-8 right-0 z-20 flex size-7 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-violet-500/25 bg-violet-500/12 text-violet-300 opacity-0 outline-none transition-[opacity,background-color,color,transform] duration-150 group-hover/sidebar:opacity-100 group-focus-within/sidebar:opacity-100 hover:scale-105 hover:bg-violet-500/20 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-violet-500/70 motion-reduce:transition-none"[39m
+          [33mdata-state[39m=[32m"closed"[39m
+          [33mtype[39m=[32m"button"[39m
+        [36m>[39m
+          [36m<svg[39m
+            [33maria-hidden[39m=[32m"true"[39m
+            [33mclass[39m=[32m"lucide lucide-chevron-right size-4"[39m
+            [33mfill[39m=[32m"none"[39m
+            [33mheight[39m=[32m"24"[39m
+            [33mstroke[39m=[32m"currentColor"[39m
+            [33mstroke-linecap[39m=[32m"round"[39m
+            [33mstroke-linejoin[39m=[32m"round"[39m
+            [33mstroke-width[39m=[32m"2"[39m
+            [33mviewBox[39m=[32m"0 0 24 24"[39m
+            [33mwidth[39m=[32m"24"[39m
+            [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+          [36m>[39m
+            [36m<path[39m
+              [33md[39m=[32m"m9 18 6-6-6-6"[39m
+            [36m/>[39m
+          [36m</svg>[39m
+        [36m</button>[39m
+        [36m<nav[39m
+          [33maria-label[39m=[32m"Основная навигация"[39m
+          [33mclass[39m=[32m"flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto p-3"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33maria-label[39m=[32m"Обучение"[39m
+            [33mclass[39m=[32m"group relative flex h-11 w-full items-center rounded-xl text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-violet-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--app-sidebar)] justify-center px-0 text-[var(--app-muted)] hover:bg-white/[0.045] hover:text-[var(--app-text)]"[39m
+            [33mdata-state[39m=[32m"closed"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33maria-hidden[39m=[32m"true"[39m
+              [33mclass[39m=[32m"lucide lucide-book-open size-5 shrink-0 transition-colors text-[var(--app-muted)] group-hover:text-[var(--app-text)]"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M12 7v...
+    at Object.getElementError (D:\a\MyMind-Next\MyMind-Next\node_modules\@testing-library\dom\dist\config.js:37:19)
+    at D:\a\MyMind-Next\MyMind-Next\node_modules\@testing-library\dom\dist\query-helpers.js:76:38
+    at D:\a\MyMind-Next\MyMind-Next\node_modules\@testing-library\dom\dist\query-helpers.js:52:17
+    at D:\a\MyMind-Next\MyMind-Next\node_modules\@testing-library\dom\dist\query-helpers.js:95:19
+    at D:/a/MyMind-Next/MyMind-Next/src/renderer/src/App.test.tsx:185:14
+    at file:///D:/a/MyMind-Next/MyMind-Next/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20
