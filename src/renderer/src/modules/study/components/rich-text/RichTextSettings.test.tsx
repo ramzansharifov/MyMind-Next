@@ -59,4 +59,33 @@ describe('RichTextSettings', () => {
     expect(editor.getHTML()).toContain('<p>Важная мысль</p>')
     expect(quoteControl).toHaveAttribute('aria-checked', 'false')
   })
+
+  it('keeps internal and regular link actions in one row', () => {
+    editor = new Editor({
+      extensions: createRichTextExtensions(false),
+      content: '<p>Текст со ссылкой</p>'
+    })
+
+    render(
+      <TooltipProvider>
+        <RichTextSettings editor={editor} />
+      </TooltipProvider>
+    )
+
+    const linksSection = screen.getByRole('heading', { name: 'Ссылки' }).closest('section')
+
+    expect(linksSection).not.toBeNull()
+    expect(screen.queryByRole('heading', { name: 'Внутренняя ссылка' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Ссылка' })).not.toBeInTheDocument()
+
+    const actions = within(linksSection!).getByTestId('link-actions')
+
+    expect(actions).toHaveClass('grid-cols-2')
+    expect(
+      within(actions).getByRole('button', { name: 'Создать внутреннюю ссылку' })
+    ).toBeInTheDocument()
+    expect(
+      within(actions).getByRole('button', { name: 'Добавить обычную ссылку' })
+    ).toBeInTheDocument()
+  })
 })
