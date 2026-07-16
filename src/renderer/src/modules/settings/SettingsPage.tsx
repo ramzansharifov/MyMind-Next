@@ -1,5 +1,4 @@
 import {
-  ArrowLeft,
   ArrowRight,
   BookOpen,
   CircleCheck,
@@ -18,12 +17,14 @@ import { useAppearance } from '../../app/appearance/appearance-context'
 import { APP_ACCENT_OPTIONS, APP_THEME_OPTIONS } from '../../app/appearance/appearance-options'
 import { cn } from '../../shared/lib/cn'
 import { AppearanceSettingsSection } from './AppearanceSettingsSection'
+import { SettingsBreadcrumbs, type SettingsBreadcrumbItem } from './SettingsBreadcrumbs'
 import {
   InstructionsOverviewPage,
   LearningInstructionArticlePage,
   LearningInstructionsPage
 } from './instructions/LearningInstructions'
 import {
+  getLearningInstructionArticle,
   learningInstructionArticles,
   type LearningInstructionTopicId
 } from './instructions/learning-instruction-catalog'
@@ -43,11 +44,12 @@ type SettingsRoute =
 
 export function SettingsPage({ health, error, isLoading }: SettingsPageProps): React.JSX.Element {
   const [route, setRoute] = useState<SettingsRoute>({ page: 'overview' })
+  const breadcrumbItems = getSettingsBreadcrumbItems(route, setRoute)
 
   let content: React.JSX.Element
 
   if (route.page === 'appearance') {
-    content = <AppearanceSettingsPage onBack={() => setRoute({ page: 'overview' })} />
+    content = <AppearanceSettingsPage />
   } else if (route.page === 'instructions') {
     content = (
       <InstructionsOverviewPage
@@ -81,11 +83,63 @@ export function SettingsPage({ health, error, isLoading }: SettingsPageProps): R
     )
   }
 
+  const hidesLegacyBackButton =
+    route.page === 'instructions' || route.page === 'learning' || route.page === 'learning-topic'
+
   return (
     <section className="h-full overflow-y-auto bg-[var(--app-workspace)] px-8 py-7 max-[720px]:px-4 max-[720px]:py-5">
-      <div className="mx-auto w-full max-w-[1240px]">{content}</div>
+      <div className="mx-auto w-full max-w-[1240px]">
+        {breadcrumbItems.length > 0 && <SettingsBreadcrumbs items={breadcrumbItems} />}
+        <div className={cn(hidesLegacyBackButton && '[&>div>header>button]:hidden')}>{content}</div>
+      </div>
     </section>
   )
+}
+
+function getSettingsBreadcrumbItems(
+  route: SettingsRoute,
+  navigate: (route: SettingsRoute) => void
+): SettingsBreadcrumbItem[] {
+  if (route.page === 'overview') {
+    return []
+  }
+
+  const items: SettingsBreadcrumbItem[] = [
+    {
+      label: 'Настройки',
+      onClick: () => navigate({ page: 'overview' })
+    }
+  ]
+
+  if (route.page === 'appearance') {
+    items.push({ label: 'Внешний вид' })
+    return items
+  }
+
+  if (route.page === 'instructions') {
+    items.push({ label: 'Инструкции' })
+    return items
+  }
+
+  items.push({
+    label: 'Инструкции',
+    onClick: () => navigate({ page: 'instructions' })
+  })
+
+  if (route.page === 'learning') {
+    items.push({ label: 'Обучение' })
+    return items
+  }
+
+  items.push({
+    label: 'Обучение',
+    onClick: () => navigate({ page: 'learning' })
+  })
+  items.push({
+    label: getLearningInstructionArticle(route.topicId)?.title ?? 'Инструкция'
+  })
+
+  return items
 }
 
 function SettingsOverview({
@@ -238,7 +292,7 @@ function SettingsHero(): React.JSX.Element {
   )
 }
 
-function AppearanceSettingsPage({ onBack }: { onBack: () => void }): React.JSX.Element {
+function AppearanceSettingsPage(): React.JSX.Element {
   return (
     <div className="space-y-5">
       <header className="relative isolate overflow-hidden rounded-3xl border border-[var(--app-border)] bg-[var(--app-surface)] p-6 shadow-[0_20px_70px_rgb(0_0_0/0.16)] max-[720px]:p-4">
@@ -246,15 +300,6 @@ function AppearanceSettingsPage({ onBack }: { onBack: () => void }): React.JSX.E
           aria-hidden="true"
           className="pointer-events-none absolute -top-28 right-8 -z-10 size-72 rounded-full bg-violet-500/12 blur-3xl"
         />
-
-        <button
-          type="button"
-          className="mb-6 flex h-9 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-xs font-medium text-[var(--app-muted)] transition-colors outline-none hover:border-violet-500/30 hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/40"
-          onClick={onBack}
-        >
-          <ArrowLeft aria-hidden="true" className="size-4" />
-          Все настройки
-        </button>
 
         <div className="flex items-start gap-4">
           <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-violet-500/20 bg-violet-500/12 text-violet-300 shadow-inner shadow-violet-500/5">
