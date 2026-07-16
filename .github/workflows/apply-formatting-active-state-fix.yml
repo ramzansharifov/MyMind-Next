@@ -9,7 +9,6 @@ permissions:
 
 jobs:
   patch:
-    if: ${{ hashFiles('scripts/fix-formatting-active-state.cjs') != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
