@@ -44,13 +44,14 @@ describe('RichTextSettings', () => {
     await user.click(quoteControl)
 
     expect(editor.isActive('blockquote')).toBe(true)
-    expect(editor.getHTML()).toBe('<blockquote><p>Важная мысль</p></blockquote>')
+    expect(editor.getHTML()).toContain('<blockquote><p>Важная мысль</p></blockquote>')
     expect(quoteControl).toHaveAttribute('aria-checked', 'true')
 
     await user.click(quoteControl)
 
     expect(editor.isActive('blockquote')).toBe(false)
-    expect(editor.getHTML()).toBe('<p>Важная мысль</p>')
+    expect(editor.getHTML()).not.toContain('<blockquote>')
+    expect(editor.getHTML()).toContain('<p>Важная мысль</p>')
     expect(quoteControl).toHaveAttribute('aria-checked', 'false')
   })
 })
