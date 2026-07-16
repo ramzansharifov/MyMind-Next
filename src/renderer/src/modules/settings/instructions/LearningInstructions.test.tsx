@@ -61,6 +61,51 @@ describe('learning instructions', () => {
     expect(onOpenTopic).toHaveBeenCalledWith('block-mermaid')
   })
 
+  it('navigates to and highlights a section from the contents list', async () => {
+    const user = userEvent.setup()
+
+    render(<LearningInstructionArticlePage topicId="learning-folder" onBack={vi.fn()} />)
+
+    const heading = screen.getByRole('heading', { name: 'Основные действия' })
+    const section = heading.closest('section')
+
+    expect(section).not.toBeNull()
+
+    const scrollIntoView = vi.fn()
+    const animate = vi.fn()
+    const cancel = vi.fn()
+
+    Object.defineProperties(section as HTMLElement, {
+      scrollIntoView: {
+        configurable: true,
+        value: scrollIntoView
+      },
+      getAnimations: {
+        configurable: true,
+        value: () => [{ cancel }]
+      },
+      animate: {
+        configurable: true,
+        value: animate
+      }
+    })
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Перейти к разделу «Основные действия»'
+      })
+    )
+
+    expect(scrollIntoView).toHaveBeenCalledWith(
+      expect.objectContaining({
+        block: 'start',
+        inline: 'nearest'
+      })
+    )
+    expect(cancel).toHaveBeenCalledTimes(1)
+    expect(animate).toHaveBeenCalledTimes(1)
+  })
+
   it('renders full article sections and confirmed keyboard shortcuts', () => {
     render(<LearningInstructionArticlePage topicId="block-text" onBack={vi.fn()} />)
 
