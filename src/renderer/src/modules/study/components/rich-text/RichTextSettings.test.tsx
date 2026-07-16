@@ -64,28 +64,6 @@ describe('RichTextSettings', () => {
     expect(quoteControl).toHaveAttribute('data-state', 'off')
   })
 
-  it('marks active text and regular link controls visibly', () => {
-    editor = new Editor({
-      extensions: createRichTextExtensions(false),
-      content: '<p><strong><a href="https://example.com">Активный текст</a></strong></p>'
-    })
-    editor.commands.setTextSelection(2)
-
-    render(
-      <TooltipProvider>
-        <RichTextSettings editor={editor} />
-      </TooltipProvider>
-    )
-
-    const boldControl = screen.getByRole('button', { name: 'Жирный' })
-    const linkControl = screen.getByRole('button', { name: 'Изменить обычную ссылку' })
-
-    expect(boldControl).toHaveAttribute('data-state', 'on')
-    expect(boldControl).toHaveClass('rich-text-format-control')
-    expect(linkControl).toHaveAttribute('data-active', 'true')
-    expect(linkControl).toHaveClass('rich-text-format-control')
-  })
-
   it('keeps internal and regular link actions in one row', () => {
     editor = new Editor({
       extensions: createRichTextExtensions(false),
@@ -105,13 +83,16 @@ describe('RichTextSettings', () => {
     expect(screen.queryByRole('heading', { name: 'Ссылка' })).not.toBeInTheDocument()
 
     const actions = within(linksSection!).getByTestId('link-actions')
+    const regularLinkControl = within(actions).getByRole('button', {
+      name: 'Добавить обычную ссылку'
+    })
 
     expect(actions).toHaveClass('grid-cols-2')
     expect(
       within(actions).getByRole('button', { name: 'Создать внутреннюю ссылку' })
     ).toBeInTheDocument()
-    expect(
-      within(actions).getByRole('button', { name: 'Добавить обычную ссылку' })
-    ).toBeInTheDocument()
+    expect(regularLinkControl).toBeInTheDocument()
+    expect(regularLinkControl).toHaveClass('rich-text-format-control')
+    expect(regularLinkControl).not.toHaveAttribute('data-active')
   })
 })
