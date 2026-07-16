@@ -1,5 +1,5 @@
 import { Editor } from '@tiptap/core'
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it } from 'vitest'
 
@@ -21,7 +21,7 @@ describe('RichTextSettings', () => {
     expect(screen.getByText('Выбери текстовый блок')).toBeInTheDocument()
   })
 
-  it('toggles quote formatting for the active paragraph', async () => {
+  it('keeps quote formatting in the text section and toggles the active paragraph', async () => {
     const user = userEvent.setup()
 
     editor = new Editor({
@@ -35,7 +35,12 @@ describe('RichTextSettings', () => {
       </TooltipProvider>
     )
 
-    const quoteControl = screen.getByRole('radio', {
+    const textSection = screen.getByRole('heading', { name: 'Текст' }).closest('section')
+
+    expect(textSection).not.toBeNull()
+    expect(screen.queryByRole('heading', { name: 'Абзац' })).not.toBeInTheDocument()
+
+    const quoteControl = within(textSection!).getByRole('radio', {
       name: 'Цитата'
     })
 
