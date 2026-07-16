@@ -17,7 +17,7 @@ export function SettingsBreadcrumbs({
           return (
             <li key={`${item.label}-${index}`} className="flex min-w-0 items-center gap-2">
               {index > 0 && (
-                <span aria-hidden="true" className="select-none text-[var(--app-muted)]/45">
+                <span aria-hidden="true" className="text-[var(--app-muted)]/45 select-none">
                   /
                 </span>
               )}
@@ -25,14 +25,14 @@ export function SettingsBreadcrumbs({
               {isCurrent || !item.onClick ? (
                 <span
                   aria-current={isCurrent ? 'page' : undefined}
-                  className="min-w-0 break-words font-medium text-[var(--app-text)]"
+                  className="min-w-0 font-medium break-words text-[var(--app-text)]"
                 >
                   {item.label}
                 </span>
               ) : (
                 <button
                   type="button"
-                  className="rounded-md text-[var(--app-muted)] outline-none transition-colors hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)]/45"
+                  className="rounded-md text-[var(--app-muted)] transition-colors outline-none hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)]/45"
                   onClick={item.onClick}
                 >
                   {item.label}
