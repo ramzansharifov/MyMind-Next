@@ -51,6 +51,8 @@ describe('RichTextSettings', () => {
     expect(editor.isActive('blockquote')).toBe(true)
     expect(editor.getHTML()).toContain('<blockquote><p>Важная мысль</p></blockquote>')
     expect(quoteControl).toHaveAttribute('aria-checked', 'true')
+    expect(quoteControl.className).toContain('var(--app-accent-500)')
+    expect(quoteControl.className).toContain('data-[state=on]:shadow')
 
     await user.click(quoteControl)
 
