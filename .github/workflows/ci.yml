@@ -1,24 +1,34 @@
-name: Move quote control
+name: CI
 
 on:
   push:
-    branches: [agent/move-quote-to-text-section]
+    branches: [main]
+  pull_request:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  patch:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
+  verify:
+    runs-on: windows-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
-      - run: node scripts/move-quote-to-text-section.cjs
-      - name: Commit layout change
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/renderer/src/modules/study/components/rich-text/RichTextSettings.tsx
-          git rm scripts/move-quote-to-text-section.cjs
-          git commit -m "Move quote control into text section"
-          git push
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run native:node
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:coverage
+      - run: npm run db:check
+      - run: npm run build:bundle
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() && hashFiles('coverage/**') != '' }}
+        with:
+          name: coverage
+          path: coverage
+          if-no-files-found: error
