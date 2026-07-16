@@ -45,7 +45,6 @@ describe('RichTextSettings', () => {
     })
 
     expect(quoteControl).toHaveAttribute('aria-checked', 'false')
-    expect(quoteControl).toHaveAttribute('data-state', 'off')
     expect(quoteControl).toHaveClass('rich-text-format-control')
 
     await user.click(quoteControl)
@@ -53,7 +52,6 @@ describe('RichTextSettings', () => {
     expect(editor.isActive('blockquote')).toBe(true)
     expect(editor.getHTML()).toContain('<blockquote><p>Важная мысль</p></blockquote>')
     expect(quoteControl).toHaveAttribute('aria-checked', 'true')
-    expect(quoteControl).toHaveAttribute('data-state', 'on')
 
     await user.click(quoteControl)
 
@@ -61,7 +59,6 @@ describe('RichTextSettings', () => {
     expect(editor.getHTML()).not.toContain('<blockquote>')
     expect(editor.getHTML()).toContain('<p>Важная мысль</p>')
     expect(quoteControl).toHaveAttribute('aria-checked', 'false')
-    expect(quoteControl).toHaveAttribute('data-state', 'off')
   })
 
   it('keeps internal and regular link actions in one row', () => {

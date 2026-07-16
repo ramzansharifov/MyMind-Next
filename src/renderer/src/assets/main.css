@@ -243,7 +243,8 @@ button {
   border: 0;
 }
 
-.rich-text-format-control[data-state='on'],
+.rich-text-format-control[aria-pressed='true'],
+.rich-text-format-control[aria-checked='true'],
 .rich-text-format-control[data-active='true'] {
   color: var(--app-format-active-text);
   background: var(--app-format-active-bg);
@@ -253,7 +254,8 @@ button {
     inset 0 1px 0 rgb(255 255 255 / 10%);
 }
 
-.rich-text-format-control[data-state='on']:hover,
+.rich-text-format-control[aria-pressed='true']:hover,
+.rich-text-format-control[aria-checked='true']:hover,
 .rich-text-format-control[data-active='true']:hover {
   color: var(--app-format-active-text);
   background: var(--app-format-active-bg-hover);
