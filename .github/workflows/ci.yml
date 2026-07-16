@@ -11,7 +11,7 @@ permissions:
 jobs:
   verify:
     runs-on: windows-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -20,11 +20,15 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run native:node
-      - name: Capture full coverage output
-        shell: bash
-        run: npm run test:coverage > test-coverage-latest.log 2>&1 || true
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:coverage
+      - run: npm run db:check
+      - run: npm run build:bundle
       - uses: actions/upload-artifact@v4
+        if: ${{ always() && hashFiles('coverage/**') != '' }}
         with:
-          name: test-coverage-latest-log
-          path: test-coverage-latest.log
+          name: coverage
+          path: coverage
           if-no-files-found: error
