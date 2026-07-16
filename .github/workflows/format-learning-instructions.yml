@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   format:
-    if: ${{ hashFiles('.github/workflows/format-learning-instructions.yml') != '' }}
+    if: ${{ hashFiles('.github/format-learning-instructions.trigger') != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -34,6 +34,7 @@ jobs:
           git add src/renderer/src/modules/settings/instructions/LearningInstructions.tsx
           git add src/renderer/src/modules/settings/instructions/LearningInstructions.test.tsx
           git add src/renderer/src/modules/settings/instructions/learning-instruction-catalog.ts
+          git rm .github/format-learning-instructions.trigger
           git rm .github/workflows/format-learning-instructions.yml
           git commit -m "Format learning instructions"
           git push
