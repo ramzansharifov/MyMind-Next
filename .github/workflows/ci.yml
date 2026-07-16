@@ -23,4 +23,4 @@ jobs:
       - run: npm run format:check
       - run: npm run lint
       - run: npm run typecheck
-      - run: npx vitest run src/renderer/src/modules/settings/SettingsBreadcrumbs.test.tsx
+      - run: npm run test:run
