@@ -779,7 +779,7 @@ function LinkPopover({
         <button
           type="button"
           aria-label={active ? `Изменить ${ariaLabel}` : `Добавить ${ariaLabel}`}
-          data-active={active ? 'true' : undefined}
+          data-active={String(active)}
           disabled={disabled}
           className={cn(
             'rich-text-format-control flex h-10 w-full min-w-0 items-center justify-center gap-2 rounded-lg border px-2 text-xs font-medium',

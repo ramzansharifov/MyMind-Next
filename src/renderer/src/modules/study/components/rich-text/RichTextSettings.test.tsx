@@ -93,6 +93,6 @@ describe('RichTextSettings', () => {
     ).toBeInTheDocument()
     expect(regularLinkControl).toBeInTheDocument()
     expect(regularLinkControl).toHaveClass('rich-text-format-control')
-    expect(regularLinkControl).not.toHaveAttribute('data-active')
+    expect(regularLinkControl).toHaveAttribute('data-active', 'false')
   })
 })
