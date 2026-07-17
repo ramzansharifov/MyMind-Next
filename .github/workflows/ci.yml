@@ -15,7 +15,7 @@ jobs:
   finalize:
     if: >-
       github.event_name != 'issue_comment' ||
-      (github.event.issue.pull_request && github.event.issue.number == 14 && github.event.comment.body == '/run-boards-hotfix')
+      (github.event.issue.pull_request && github.event.issue.number == 14 && contains(github.event.comment.body, '/run-boards-hotfix'))
     runs-on: windows-latest
     timeout-minutes: 40
     steps:
@@ -23,6 +23,15 @@ jobs:
         with:
           ref: agent/boards-final-hotfix
           fetch-depth: 0
+      - name: Mark runner started
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          date -u > .boards-runner-started
+          git add .boards-runner-started
+          git commit -m "Start boards hotfix verification" || true
+          git push origin HEAD:agent/boards-final-hotfix
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -80,6 +89,7 @@ jobs:
             boards-transform-error.txt \
             .boards-hotfix-in-progress \
             .boards-ci-trigger \
+            .boards-runner-started \
             .finalize-boards-trigger \
             .repair-boards-trigger
 
