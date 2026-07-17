@@ -1,21 +1,32 @@
 import { AlertTriangle } from 'lucide-react'
-import { Suspense, useEffect, useRef, useState } from 'react'
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
 
 import type { ShutdownRequest } from '../../shared/contracts/system'
 
-import { AppShell } from './app/AppShell'
+import { AppearanceProvider } from './app/appearance/AppearanceProvider'
 import { AppErrorBoundary } from './app/AppErrorBoundary'
+import { AppShell } from './app/AppShell'
+import {
+  APP_MODULE_NAVIGATE_EVENT,
+  type AppModuleNavigationRequest
+} from './app/module-navigation'
 import { getAppModule } from './app/module-registry'
 import { type AppViewId } from './app/navigation'
-import { AppearanceProvider } from './app/appearance/AppearanceProvider'
+import { flushActiveBoardDraft } from './modules/boards/lib/board-draft-lifecycle'
 import { flushActiveStudyDraft } from './modules/study/lib/study-draft-lifecycle'
 
 type AppFlushFailure =
-  | { kind: 'view'; target: AppViewId; message: string }
+  | {
+      kind: 'view'
+      target: AppViewId
+      resourceId: string | null
+      message: string
+    }
   | { kind: 'shutdown'; request: ShutdownRequest; message: string }
 
 function AppContent(): React.JSX.Element {
   const [activeView, setActiveView] = useState<AppViewId>('study')
+  const [activeResourceId, setActiveResourceId] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [flushFailure, setFlushFailure] = useState<AppFlushFailure | null>(null)
   const [forceArmed, setForceArmed] = useState(false)
@@ -23,27 +34,60 @@ function AppContent(): React.JSX.Element {
   const activeModule = getAppModule(activeView)
   const ActiveModule = activeModule.component
 
-  async function changeView(target: AppViewId): Promise<void> {
-    if (target === activeView || transitionPendingRef.current) return
+  const flushActiveDrafts = useCallback(async (): Promise<void> => {
+    await Promise.all([flushActiveStudyDraft(), flushActiveBoardDraft()])
+  }, [])
 
-    transitionPendingRef.current = true
-    setIsSaving(true)
+  const changeView = useCallback(
+    async (target: AppViewId, resourceId: string | null = null): Promise<void> => {
+      if (
+        (target === activeView && resourceId === activeResourceId) ||
+        transitionPendingRef.current
+      ) {
+        return
+      }
 
-    try {
-      await flushActiveStudyDraft()
-      setFlushFailure(null)
-      setActiveView(target)
-    } catch (reason: unknown) {
-      setFlushFailure({
-        kind: 'view',
-        target,
-        message: reason instanceof Error ? reason.message : 'Не удалось сохранить изменения.'
-      })
-    } finally {
-      transitionPendingRef.current = false
-      setIsSaving(false)
+      transitionPendingRef.current = true
+      setIsSaving(true)
+
+      try {
+        await flushActiveDrafts()
+        setFlushFailure(null)
+        setForceArmed(false)
+        setActiveView(target)
+        setActiveResourceId(resourceId)
+      } catch (reason: unknown) {
+        setFlushFailure({
+          kind: 'view',
+          target,
+          resourceId,
+          message: reason instanceof Error ? reason.message : 'Не удалось сохранить изменения.'
+        })
+      } finally {
+        transitionPendingRef.current = false
+        setIsSaving(false)
+      }
+    },
+    [activeResourceId, activeView, flushActiveDrafts]
+  )
+
+  useEffect(() => {
+    function handleModuleNavigation(event: Event): void {
+      const detail = (event as CustomEvent<AppModuleNavigationRequest>).detail
+
+      if (!detail?.view) {
+        return
+      }
+
+      void changeView(detail.view, detail.resourceId ?? null)
     }
-  }
+
+    window.addEventListener(APP_MODULE_NAVIGATE_EVENT, handleModuleNavigation)
+
+    return () => {
+      window.removeEventListener(APP_MODULE_NAVIGATE_EVENT, handleModuleNavigation)
+    }
+  }, [changeView])
 
   useEffect(
     () =>
@@ -51,7 +95,7 @@ function AppContent(): React.JSX.Element {
         transitionPendingRef.current = true
         setIsSaving(true)
 
-        void flushActiveStudyDraft()
+        void flushActiveDrafts()
           .then(async () => {
             await window.api.system.respondToShutdown({ ...request, decision: 'success' })
           })
@@ -68,7 +112,7 @@ function AppContent(): React.JSX.Element {
             setIsSaving(false)
           })
       }),
-    []
+    [flushActiveDrafts]
   )
 
   return (
@@ -78,9 +122,15 @@ function AppContent(): React.JSX.Element {
         void changeView(view)
       }}
     >
-      <AppErrorBoundary scope={activeModule.id} resetKey={activeModule.id}>
+      <AppErrorBoundary
+        scope={activeModule.id}
+        resetKey={`${activeModule.id}:${activeResourceId ?? ''}`}
+      >
         <Suspense fallback={<AppViewLoadingFallback label={activeModule.loadingLabel} />}>
-          <ActiveModule />
+          <ActiveModule
+            resourceId={activeResourceId}
+            onResourceHandled={() => setActiveResourceId(null)}
+          />
         </Suspense>
       </AppErrorBoundary>
       {isSaving && (
@@ -99,7 +149,10 @@ function AppContent(): React.JSX.Element {
         >
           <div className="w-full max-w-md rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-5 shadow-2xl">
             <div className="flex gap-3">
-              <AlertTriangle aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-red-300" />
+              <AlertTriangle
+                aria-hidden="true"
+                className="mt-0.5 size-5 shrink-0 text-red-300"
+              />
               <div>
                 <h2 className="font-semibold">Изменения не сохранены</h2>
                 <p className="mt-1 text-sm text-[var(--app-muted)]">{flushFailure.message}</p>
@@ -133,29 +186,31 @@ function AppContent(): React.JSX.Element {
                 onClick={() => {
                   const failure = flushFailure
                   setFlushFailure(null)
+
                   if (failure.kind === 'view') {
-                    void changeView(failure.target)
-                  } else {
-                    setIsSaving(true)
-                    void flushActiveStudyDraft()
-                      .then(async () => {
-                        await window.api.system.respondToShutdown({
-                          ...failure.request,
-                          decision: 'success'
-                        })
-                      })
-                      .catch(async (reason: unknown) => {
-                        await window.api.system.respondToShutdown({
-                          ...failure.request,
-                          decision: 'failed'
-                        })
-                        setFlushFailure({
-                          ...failure,
-                          message: reason instanceof Error ? reason.message : failure.message
-                        })
-                      })
-                      .finally(() => setIsSaving(false))
+                    void changeView(failure.target, failure.resourceId)
+                    return
                   }
+
+                  setIsSaving(true)
+                  void flushActiveDrafts()
+                    .then(async () => {
+                      await window.api.system.respondToShutdown({
+                        ...failure.request,
+                        decision: 'success'
+                      })
+                    })
+                    .catch(async (reason: unknown) => {
+                      await window.api.system.respondToShutdown({
+                        ...failure.request,
+                        decision: 'failed'
+                      })
+                      setFlushFailure({
+                        ...failure,
+                        message: reason instanceof Error ? reason.message : failure.message
+                      })
+                    })
+                    .finally(() => setIsSaving(false))
                 }}
               >
                 Повторить
@@ -168,15 +223,18 @@ function AppContent(): React.JSX.Element {
                     setForceArmed(true)
                     return
                   }
+
                   if (flushFailure.kind === 'view') {
                     setActiveView(flushFailure.target)
+                    setActiveResourceId(flushFailure.resourceId)
                     setFlushFailure(null)
-                  } else {
-                    void window.api.system.respondToShutdown({
-                      ...flushFailure.request,
-                      decision: 'force'
-                    })
+                    return
                   }
+
+                  void window.api.system.respondToShutdown({
+                    ...flushFailure.request,
+                    decision: 'force'
+                  })
                 }}
               >
                 {forceArmed
