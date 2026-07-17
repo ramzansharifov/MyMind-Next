@@ -1,9 +1,8 @@
-name: Finalize boards UI
+name: Finalize boards hotfix
 
 on:
   push:
-    branches: [agent/finalize-boards-module]
-  pull_request:
+    branches: [agent/boards-final-hotfix]
 
 permissions:
   contents: write
@@ -12,18 +11,18 @@ jobs:
   finalize:
     if: github.actor != 'github-actions[bot]'
     runs-on: windows-latest
-    timeout-minutes: 35
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: agent/finalize-boards-module
+          ref: agent/boards-final-hotfix
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Apply and verify final integration
+      - name: Apply and verify boards hotfix
         shell: bash
         run: |
           set +e
@@ -31,12 +30,13 @@ jobs:
             node scripts/finalize-boards-ui.mjs
             npm run format
             npm run native:node
+            npm run format:check
             npm run lint
             npm run typecheck
             npm run test:coverage
             npm run db:check
             npm run build:bundle
-          } > boards-verification.log 2>&1
+          } > boards-hotfix-verification.log 2>&1
           status=$?
 
           git config user.name "github-actions[bot]"
@@ -44,12 +44,25 @@ jobs:
 
           if [ "$status" -ne 0 ]; then
             git add -A
-            git commit -m "Record final boards verification failure"
-            git push origin HEAD:agent/finalize-boards-module
+            git commit -m "Record boards hotfix verification failure" || true
+            git push origin HEAD:agent/boards-final-hotfix
             exit 0
           fi
 
-          rm -f scripts/finalize-boards-ui.mjs boards-verification.log
+          rm -f \
+            scripts/finalize-boards-ui.mjs \
+            scripts/apply-boards-module.mjs \
+            scripts/fix-boards-transform.mjs \
+            scripts/prepare-boards-repair.mjs \
+            boards-hotfix-verification.log \
+            boards-verification.log \
+            boards-integration-error.txt \
+            boards-transform-error.txt \
+            .boards-hotfix-in-progress \
+            .boards-ci-trigger \
+            .finalize-boards-trigger \
+            .repair-boards-trigger
+
           cat > .github/workflows/ci.yml <<'EOF'
           name: CI
 
@@ -88,5 +101,5 @@ jobs:
           EOF
           npm exec prettier -- --write .github/workflows/ci.yml
           git add -A
-          git commit -m "Complete boards module integration"
-          git push origin HEAD:agent/finalize-boards-module
+          git commit -m "Complete boards module hotfix"
+          git push origin HEAD:agent/boards-final-hotfix
