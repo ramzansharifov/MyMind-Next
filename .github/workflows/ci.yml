@@ -2,6 +2,8 @@ name: Boards hotfix runner
 
 on:
   workflow_dispatch:
+  issue_comment:
+    types: [created]
   schedule:
     - cron: '*/5 * * * *'
 
@@ -11,6 +13,9 @@ permissions:
 
 jobs:
   finalize:
+    if: >-
+      github.event_name != 'issue_comment' ||
+      (github.event.issue.pull_request && github.event.issue.number == 14 && github.event.comment.body == '/run-boards-hotfix')
     runs-on: windows-latest
     timeout-minutes: 40
     steps:
