@@ -338,11 +338,7 @@ export function getBoardDocument(nodeId: string): BoardDocument {
       .insert(boardDocuments)
       .values({ nodeId, snapshot: null, createdAt: now, updatedAt: now })
       .run()
-    document = database
-      .select()
-      .from(boardDocuments)
-      .where(eq(boardDocuments.nodeId, nodeId))
-      .get()
+    document = database.select().from(boardDocuments).where(eq(boardDocuments.nodeId, nodeId)).get()
   }
 
   if (!document) {
@@ -381,11 +377,7 @@ export function saveBoardDocument(nodeId: string, snapshot: BoardSnapshot): Boar
         .run()
     }
 
-    transaction
-      .update(boardNodes)
-      .set({ updatedAt: now })
-      .where(eq(boardNodes.id, nodeId))
-      .run()
+    transaction.update(boardNodes).set({ updatedAt: now }).where(eq(boardNodes.id, nodeId)).run()
   })
 
   const saved = database

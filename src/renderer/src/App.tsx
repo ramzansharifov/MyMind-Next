@@ -6,10 +6,7 @@ import type { ShutdownRequest } from '../../shared/contracts/system'
 import { AppearanceProvider } from './app/appearance/AppearanceProvider'
 import { AppErrorBoundary } from './app/AppErrorBoundary'
 import { AppShell } from './app/AppShell'
-import {
-  APP_MODULE_NAVIGATE_EVENT,
-  type AppModuleNavigationRequest
-} from './app/module-navigation'
+import { APP_MODULE_NAVIGATE_EVENT, type AppModuleNavigationRequest } from './app/module-navigation'
 import { getAppModule } from './app/module-registry'
 import { type AppViewId } from './app/navigation'
 import { flushActiveBoardDraft } from './modules/boards/lib/board-draft-lifecycle'
@@ -149,10 +146,7 @@ function AppContent(): React.JSX.Element {
         >
           <div className="w-full max-w-md rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-5 shadow-2xl">
             <div className="flex gap-3">
-              <AlertTriangle
-                aria-hidden="true"
-                className="mt-0.5 size-5 shrink-0 text-red-300"
-              />
+              <AlertTriangle aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-red-300" />
               <div>
                 <h2 className="font-semibold">Изменения не сохранены</h2>
                 <p className="mt-1 text-sm text-[var(--app-muted)]">{flushFailure.message}</p>

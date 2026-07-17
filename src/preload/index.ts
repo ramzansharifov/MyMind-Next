@@ -1,10 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
-import {
-  BOARD_IPC_CHANNELS,
-  type BoardDocument,
-  type BoardNode
-} from '../shared/contracts/boards'
+import { BOARD_IPC_CHANNELS, type BoardDocument, type BoardNode } from '../shared/contracts/boards'
 import {
   PREFERENCES_IPC_CHANNELS,
   type AppearancePreferences

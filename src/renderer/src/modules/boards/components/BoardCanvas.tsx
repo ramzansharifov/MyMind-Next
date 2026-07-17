@@ -1,11 +1,5 @@
 import { getAssetUrlsByImport } from '@tldraw/assets/imports.vite'
-import {
-  createTLStore,
-  getSnapshot,
-  Tldraw,
-  type TLEditorSnapshot,
-  type TLStore
-} from 'tldraw'
+import { createTLStore, getSnapshot, Tldraw, type TLEditorSnapshot, type TLStore } from 'tldraw'
 import 'tldraw/tldraw.css'
 import { LoaderCircle, TriangleAlert } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
@@ -24,10 +18,7 @@ interface BoardCanvasProps {
   onSaveStateChange?: (state: BoardSaveState) => void
 }
 
-export function BoardCanvas({
-  boardId,
-  onSaveStateChange
-}: BoardCanvasProps): React.JSX.Element {
+export function BoardCanvas({ boardId, onSaveStateChange }: BoardCanvasProps): React.JSX.Element {
   const { resolvedTheme } = useAppearance()
   const [store, setStore] = useState<TLStore | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -122,7 +113,9 @@ export function BoardCanvas({
       <div className="flex h-full min-h-0 items-center justify-center bg-[var(--app-workspace)] p-8">
         <div className="max-w-md rounded-2xl border border-red-500/20 bg-red-500/[0.06] p-5 text-center">
           <TriangleAlert aria-hidden="true" className="mx-auto size-6 text-red-300" />
-          <p className="mt-3 text-sm font-medium text-[var(--app-text)]">Не удалось открыть доску</p>
+          <p className="mt-3 text-sm font-medium text-[var(--app-text)]">
+            Не удалось открыть доску
+          </p>
           <p className="mt-1 text-xs leading-5 text-red-200/75">{loadError}</p>
         </div>
       </div>

@@ -74,13 +74,17 @@ export function StudyBoardBlock({
               ? 'Доска связана с этим блоком и сохраняется в модуле «Доски».'
               : 'При первом открытии будет создана отдельная доска в защищённой папке «Обучение».'}
           </p>
-          {error && <p role="alert" className="mt-2 text-xs text-red-300">{error}</p>}
+          {error && (
+            <p role="alert" className="mt-2 text-xs text-red-300">
+              {error}
+            </p>
+          )}
         </div>
 
         <button
           type="button"
           disabled={isOpening}
-          className="relative flex h-10 shrink-0 items-center gap-2 rounded-xl border border-[var(--app-accent-500)]/25 bg-[var(--app-accent-500)]/10 px-3 text-sm font-medium text-[var(--app-text)] outline-none transition-colors hover:bg-[var(--app-accent-500)]/18 focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)]/45 disabled:opacity-60 max-[640px]:absolute max-[640px]:top-0 max-[640px]:right-0"
+          className="relative flex h-10 shrink-0 items-center gap-2 rounded-xl border border-[var(--app-accent-500)]/25 bg-[var(--app-accent-500)]/10 px-3 text-sm font-medium text-[var(--app-text)] transition-colors outline-none hover:bg-[var(--app-accent-500)]/18 focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)]/45 disabled:opacity-60 max-[640px]:absolute max-[640px]:top-0 max-[640px]:right-0"
           onClick={() => void openBoard()}
         >
           {isOpening ? (
@@ -90,7 +94,9 @@ export function StudyBoardBlock({
           ) : (
             <ArrowRight aria-hidden="true" className="size-4" />
           )}
-          <span className="max-[720px]:hidden">{block.boardId ? 'Открыть доску' : 'Создать доску'}</span>
+          <span className="max-[720px]:hidden">
+            {block.boardId ? 'Открыть доску' : 'Создать доску'}
+          </span>
         </button>
       </div>
     </div>

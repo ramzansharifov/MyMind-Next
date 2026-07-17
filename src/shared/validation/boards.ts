@@ -11,28 +11,30 @@ const boardSafeIdSchema = z.string().regex(STUDY_SAFE_ID_PATTERN, 'Некорр�
 
 export const boardNodeTypeSchema = z.enum(['folder', 'board'])
 
-export const boardSnapshotSchema = z.record(z.string(), z.unknown()).superRefine((snapshot, context) => {
-  let serialized: string
+export const boardSnapshotSchema = z
+  .record(z.string(), z.unknown())
+  .superRefine((snapshot, context) => {
+    let serialized: string
 
-  try {
-    serialized = JSON.stringify(snapshot)
-  } catch {
-    context.addIssue({
-      code: 'custom',
-      message: 'Снимок доски должен быть сериализуемым JSON'
-    })
-    return
-  }
+    try {
+      serialized = JSON.stringify(snapshot)
+    } catch {
+      context.addIssue({
+        code: 'custom',
+        message: 'Снимок доски должен быть сериализуемым JSON'
+      })
+      return
+    }
 
-  const serializedBytes = new TextEncoder().encode(serialized).byteLength
+    const serializedBytes = new TextEncoder().encode(serialized).byteLength
 
-  if (serializedBytes > BOARD_DOCUMENT_LIMITS.maxSerializedBytes) {
-    context.addIssue({
-      code: 'custom',
-      message: 'Доска превышает допустимый размер'
-    })
-  }
-}) as z.ZodType<BoardSnapshot>
+    if (serializedBytes > BOARD_DOCUMENT_LIMITS.maxSerializedBytes) {
+      context.addIssue({
+        code: 'custom',
+        message: 'Доска превышает допустимый размер'
+      })
+    }
+  }) as z.ZodType<BoardSnapshot>
 
 export const boardNodeSchema = z.object({
   id: boardSafeIdSchema,
@@ -63,7 +65,10 @@ export const createBoardNodeInputSchema = z.object({
 })
 
 export const renameBoardNodeInputSchema = z.object({
-  id: boardSafeIdSchema.refine((id) => id !== BOARD_SYSTEM_ROOT_ID, 'Системную папку нельзя переименовать'),
+  id: boardSafeIdSchema.refine(
+    (id) => id !== BOARD_SYSTEM_ROOT_ID,
+    'Системную папку нельзя переименовать'
+  ),
   title: z.string().trim().min(1).max(BOARD_DOCUMENT_LIMITS.maxTitleLength)
 })
 
@@ -73,7 +78,10 @@ export const updateBoardNodeExpansionInputSchema = z.object({
 })
 
 export const moveBoardNodeInputSchema = z.object({
-  id: boardSafeIdSchema.refine((id) => id !== BOARD_SYSTEM_ROOT_ID, 'Системную папку нельзя перемещать'),
+  id: boardSafeIdSchema.refine(
+    (id) => id !== BOARD_SYSTEM_ROOT_ID,
+    'Системную папку нельзя перемещать'
+  ),
   parentId: boardSafeIdSchema.nullable(),
   position: z.number().int().min(0)
 })
