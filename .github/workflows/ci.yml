@@ -21,21 +21,23 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Apply boards integration
+      - name: Capture transform failure
         shell: bash
         run: |
-          node scripts/fix-boards-transform.mjs
-          node scripts/apply-boards-module.mjs
-          npm install --save-exact tldraw@5.2.4 @tldraw/assets@5.2.4
-          npm run format
-          npm run db:generate -- --name boards
-          rm scripts/apply-boards-module.mjs scripts/fix-boards-transform.mjs
-          echo generated > .boards-module-generated
-      - name: Commit generated integration
-        shell: bash
-        run: |
+          set +e
+          node scripts/fix-boards-transform.mjs > boards-transform-error.txt 2>&1
+          fix_status=$?
+          if [ "$fix_status" -eq 0 ]; then
+            node scripts/apply-boards-module.mjs >> boards-transform-error.txt 2>&1
+            transform_status=$?
+          else
+            transform_status=$fix_status
+          fi
+          git reset --hard HEAD
+          printf "\nexit=%s\n" "$transform_status" >> boards-transform-error.txt
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "Integrate boards module and generate migration"
+          git add boards-transform-error.txt
+          git commit -m "[skip ci] Record boards transform failure"
           git push origin HEAD:${{ github.head_ref }}
+          exit 1
