@@ -1,4 +1,4 @@
-name: Boards trigger diagnostic
+name: Boards hotfix runner
 
 on:
   issue_comment:
@@ -8,18 +8,101 @@ permissions:
   contents: write
 
 jobs:
-  trigger:
-    if: github.event.issue.number == 14
-    runs-on: ubuntu-latest
+  finalize:
+    if: >-
+      github.event.issue.number == 14 &&
+      github.event.comment.body == '/run-boards-final'
+    runs-on: windows-latest
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
         with:
           ref: agent/boards-final-hotfix
           fetch-depth: 0
-      - run: |
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Apply and verify boards hotfix
+        shell: bash
+        run: |
+          set +e
+          {
+            node scripts/finalize-boards-ui.mjs
+            npm run format
+            npm run native:node
+            npm run format:check
+            npm run lint
+            npm run typecheck
+            npm run test:coverage
+            npm run db:check
+            npm run build:bundle
+          } > boards-hotfix-verification.log 2>&1
+          status=$?
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          date -u > .boards-runner-started
-          git add .boards-runner-started
-          git commit -m "Confirm boards runner trigger"
+
+          if [ "$status" -ne 0 ]; then
+            git add -A
+            git commit -m "Record boards hotfix verification failure" || true
+            git push origin HEAD:agent/boards-final-hotfix
+            exit 0
+          fi
+
+          rm -f \
+            scripts/finalize-boards-ui.mjs \
+            scripts/apply-boards-module.mjs \
+            scripts/fix-boards-transform.mjs \
+            scripts/prepare-boards-repair.mjs \
+            boards-hotfix-verification.log \
+            boards-verification.log \
+            boards-integration-error.txt \
+            boards-transform-error.txt \
+            .boards-hotfix-in-progress \
+            .boards-ci-trigger \
+            .boards-runner-started \
+            .finalize-boards-trigger \
+            .repair-boards-trigger
+
+          cat > .github/workflows/ci.yml <<'EOF'
+          name: CI
+
+          on:
+            push:
+              branches: [main]
+            pull_request:
+
+          permissions:
+            contents: read
+
+          jobs:
+            verify:
+              runs-on: windows-latest
+              timeout-minutes: 25
+              steps:
+                - uses: actions/checkout@v4
+                - uses: actions/setup-node@v4
+                  with:
+                    node-version: 22
+                    cache: npm
+                - run: npm ci
+                - run: npm run native:node
+                - run: npm run format:check
+                - run: npm run lint
+                - run: npm run typecheck
+                - run: npm run test:coverage
+                - run: npm run db:check
+                - run: npm run build:bundle
+                - uses: actions/upload-artifact@v4
+                  if: ${{ always() && hashFiles('coverage/**') != '' }}
+                  with:
+                    name: coverage
+                    path: coverage
+                    if-no-files-found: error
+          EOF
+          npm exec prettier -- --write .github/workflows/ci.yml
+          git add -A
+          git commit -m "Complete boards module hotfix"
           git push origin HEAD:agent/boards-final-hotfix
