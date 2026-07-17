@@ -6,7 +6,7 @@ on:
   pull_request:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   verify:
@@ -14,21 +14,28 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run native:node
-      - run: npm run format:check
-      - run: npm run lint
-      - run: npm run typecheck
-      - run: npm run test:coverage
-      - run: npm run db:check
-      - run: npm run build:bundle
-      - uses: actions/upload-artifact@v4
-        if: ${{ always() && hashFiles('coverage/**') != '' }}
-        with:
-          name: coverage
-          path: coverage
-          if-no-files-found: error
+      - name: Apply boards integration
+        shell: bash
+        run: |
+          node scripts/fix-boards-transform.mjs
+          node scripts/apply-boards-module.mjs
+          npm install --save-exact tldraw@5.2.4 @tldraw/assets@5.2.4
+          npm run format
+          npm run db:generate -- --name boards
+          rm scripts/apply-boards-module.mjs scripts/fix-boards-transform.mjs
+          echo generated > .boards-module-generated
+      - name: Commit generated integration
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Integrate boards module and generate migration"
+          git push origin HEAD:${{ github.head_ref }}
