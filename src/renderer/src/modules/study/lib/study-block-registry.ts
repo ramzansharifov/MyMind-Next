@@ -7,6 +7,7 @@ import {
   FileVideo,
   Heading,
   Minus,
+  Presentation,
   Sigma,
   Type,
   Workflow,
@@ -160,6 +161,15 @@ export const studyBlockRegistry = {
     editStrategy: 'divider',
     readStrategy: 'divider',
     settingsStrategy: 'divider'
+  },
+  board: {
+    type: 'board',
+    label: 'Доска',
+    icon: Presentation,
+    factory: (id) => ({ id, type: 'board' }),
+    editStrategy: 'board',
+    readStrategy: 'board',
+    settingsStrategy: 'board'
   }
 } satisfies StudyBlockRegistry
 
