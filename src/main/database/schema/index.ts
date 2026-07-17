@@ -1,5 +1,6 @@
 import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
+export { boardDocuments, boardNodes } from './boards'
 export { studyLinkTargets, studyMaterials, studyNodes } from './study'
 
 export const appMeta = sqliteTable('app_meta', {
