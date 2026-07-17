@@ -1,3 +1,5 @@
+export type { StudyBoardBlock } from './study'
+
 export const BOARD_SYSTEM_ROOT_ID = 'boards-study-root'
 
 export const BOARD_DOCUMENT_LIMITS = {
