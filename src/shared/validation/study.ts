@@ -168,6 +168,13 @@ export const studyDividerBlockSchema = z.object({
     .optional()
 })
 
+export const studyBoardBlockSchema = z.object({
+  id: studySafeIdSchema,
+  type: z.literal('board'),
+  boardId: studySafeIdSchema.optional(),
+  title: z.string().max(STUDY_DOCUMENT_LIMITS.maxTitleLength).optional()
+})
+
 export const studyBlockSchema = z.discriminatedUnion('type', [
   studyTextBlockSchema,
   studyHeadingBlockSchema,
@@ -179,7 +186,8 @@ export const studyBlockSchema = z.discriminatedUnion('type', [
   studyVideoBlockSchema,
   studyAudioBlockSchema,
   studyFileBlockSchema,
-  studyDividerBlockSchema
+  studyDividerBlockSchema,
+  studyBoardBlockSchema
 ])
 
 export const studyDocumentSchema = z

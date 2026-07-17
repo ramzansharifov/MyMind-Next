@@ -55,6 +55,13 @@ export function insertStudyBlock(
 }
 
 export function cloneStudyBlock(block: StudyBlock): StudyBlock {
+  if (block.type === 'board') {
+    return {
+      id: crypto.randomUUID(),
+      type: 'board'
+    }
+  }
+
   return {
     ...block,
     id: crypto.randomUUID()

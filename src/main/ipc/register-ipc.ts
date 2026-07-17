@@ -4,6 +4,7 @@ import { IPC_CHANNELS } from '../../shared/contracts/system'
 import { shutdownResponseSchema, systemHealthSchema } from '../../shared/validation/system'
 import { getSqlite } from '../database/client'
 import { mainOperationTracker } from '../services/main-operation-tracker'
+import { registerBoardsIpcHandlers } from './register-boards-ipc'
 import { registerPreferencesIpcHandlers } from './register-preferences-ipc'
 import { registerStudyIpcHandlers } from './register-study-ipc'
 
@@ -20,6 +21,7 @@ interface RegisterIpcHandlersOptions {
 
 export function registerIpcHandlers(options: RegisterIpcHandlersOptions): void {
   registerStudyIpcHandlers()
+  registerBoardsIpcHandlers()
   registerPreferencesIpcHandlers()
 
   ipcMain.removeHandler(IPC_CHANNELS.systemHealth)

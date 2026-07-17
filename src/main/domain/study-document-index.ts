@@ -32,7 +32,8 @@ export const studyBlockPlainTextExtractors = {
   video: getAttachmentText,
   audio: getAttachmentText,
   file: getAttachmentText,
-  divider: () => ''
+  divider: () => '',
+  board: (block) => (block.type === 'board' ? (block.title ?? 'Доска') : '')
 } satisfies Record<StudyBlockType, PlainTextExtractor>
 
 export function truncateStudyPlainText(

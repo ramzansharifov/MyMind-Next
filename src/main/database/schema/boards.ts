@@ -1,4 +1,11 @@
-import { index, integer, sqliteTable, text, uniqueIndex, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core'
+import {
+  index,
+  integer,
+  sqliteTable,
+  text,
+  uniqueIndex,
+  type AnySQLiteColumn
+} from 'drizzle-orm/sqlite-core'
 
 import type { BoardNodeType, BoardSnapshot } from '../../../shared/contracts/boards'
 import { studyNodes } from './study'

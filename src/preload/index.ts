@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
+import { BOARD_IPC_CHANNELS, type BoardDocument, type BoardNode } from '../shared/contracts/boards'
 import {
   PREFERENCES_IPC_CHANNELS,
   type AppearancePreferences
@@ -48,6 +49,34 @@ const api: MyMindApi = {
         PREFERENCES_IPC_CHANNELS.updateAppearance,
         input
       ) as Promise<AppearancePreferences>
+  },
+
+  boards: {
+    listNodes: () => ipcRenderer.invoke(BOARD_IPC_CHANNELS.listNodes) as Promise<BoardNode[]>,
+
+    createNode: (input) =>
+      ipcRenderer.invoke(BOARD_IPC_CHANNELS.createNode, input) as Promise<BoardNode>,
+
+    renameNode: (input) =>
+      ipcRenderer.invoke(BOARD_IPC_CHANNELS.renameNode, input) as Promise<BoardNode>,
+
+    deleteNode: (nodeId) =>
+      ipcRenderer.invoke(BOARD_IPC_CHANNELS.deleteNode, nodeId) as Promise<boolean>,
+
+    updateExpansion: (input) =>
+      ipcRenderer.invoke(BOARD_IPC_CHANNELS.updateExpansion, input) as Promise<BoardNode>,
+
+    moveNode: (input) =>
+      ipcRenderer.invoke(BOARD_IPC_CHANNELS.moveNode, input) as Promise<BoardNode[]>,
+
+    getDocument: (nodeId) =>
+      ipcRenderer.invoke(BOARD_IPC_CHANNELS.getDocument, nodeId) as Promise<BoardDocument>,
+
+    saveDocument: (input) =>
+      ipcRenderer.invoke(BOARD_IPC_CHANNELS.saveDocument, input) as Promise<BoardDocument>,
+
+    ensureStudyBoard: (input) =>
+      ipcRenderer.invoke(BOARD_IPC_CHANNELS.ensureStudyBoard, input) as Promise<BoardNode>
   },
 
   study: {
