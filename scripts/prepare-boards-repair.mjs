@@ -64,4 +64,22 @@ if (!content.includes(original)) {
 }
 
 content = content.replace(original, replacement)
+
+const appPath = 'src/renderer/src/App.tsx'
+const appContent = readFileSync(appPath, 'utf8')
+
+if (appContent.includes('activeResourceId') && appContent.includes('flushActiveBoardDraft')) {
+  const appSectionStart = content.indexOf("replaceOnce(\n  'src/renderer/src/App.tsx',")
+  const appSectionEnd = content.indexOf(
+    "replaceOnce(\n  'src/renderer/src/modules/settings/instructions/learning-instruction-catalog.ts',",
+    appSectionStart
+  )
+
+  if (appSectionStart < 0 || appSectionEnd < 0) {
+    throw new Error('App integration section was not found')
+  }
+
+  content = `${content.slice(0, appSectionStart)}${content.slice(appSectionEnd)}`
+}
+
 writeFileSync(path, content, 'utf8')
