@@ -67,6 +67,7 @@ export type StudyBlockType =
   | 'audio'
   | 'file'
   | 'divider'
+  | 'board'
 
 export const STUDY_DOCUMENT_LIMITS = {
   maxBlocks: 2_000,
@@ -205,6 +206,13 @@ export interface StudyDividerBlock {
   color?: string
 }
 
+export interface StudyBoardBlock {
+  id: string
+  type: 'board'
+  boardId?: string
+  title?: string
+}
+
 export type StudyBlock =
   | StudyTextBlock
   | StudyHeadingBlock
@@ -217,6 +225,7 @@ export type StudyBlock =
   | StudyAudioBlock
   | StudyFileBlock
   | StudyDividerBlock
+  | StudyBoardBlock
 
 export interface StudyDocument {
   version: 1
