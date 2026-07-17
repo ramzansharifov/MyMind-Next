@@ -3,6 +3,7 @@ name: Finalize boards UI
 on:
   push:
     branches: [agent/finalize-boards-module]
+  pull_request:
 
 permissions:
   contents: write
