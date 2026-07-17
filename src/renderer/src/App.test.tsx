@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -158,7 +158,7 @@ describe('App shell', () => {
     expect(window.api.preferences.updateAppearance).toHaveBeenCalled()
   })
 
-  it('opens appearance as a separate settings category and returns to the overview', async () => {
+  it('opens appearance as a separate settings category and returns through breadcrumbs', async () => {
     const user = userEvent.setup()
 
     render(<App />)
@@ -181,9 +181,13 @@ describe('App shell', () => {
       })
     ).toBeInTheDocument()
 
+    const breadcrumbs = screen.getByRole('navigation', {
+      name: 'Навигация по настройкам'
+    })
+
     await user.click(
-      screen.getByRole('button', {
-        name: 'Все настройки'
+      within(breadcrumbs).getByRole('button', {
+        name: 'Настройки'
       })
     )
 
