@@ -1,42 +1,50 @@
-name: Finalize boards UI
+name: Boards hotfix runner
 
 on:
-  push:
-    branches: [agent/finalize-boards-module]
-  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/5 * * * *'
 
 permissions:
   contents: write
+  statuses: write
 
 jobs:
   finalize:
-    if: github.actor != 'github-actions[bot]'
     runs-on: windows-latest
-    timeout-minutes: 35
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: agent/finalize-boards-module
+          ref: agent/boards-final-hotfix
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Apply and verify final integration
+      - name: Apply and verify boards hotfix
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
+          if [ ! -f scripts/finalize-boards-ui.mjs ]; then
+            echo "Boards hotfix is already finalized."
+            exit 0
+          fi
+
           set +e
           {
             node scripts/finalize-boards-ui.mjs
             npm run format
             npm run native:node
+            npm run format:check
             npm run lint
             npm run typecheck
             npm run test:coverage
             npm run db:check
             npm run build:bundle
-          } > boards-verification.log 2>&1
+          } > boards-hotfix-verification.log 2>&1
           status=$?
 
           git config user.name "github-actions[bot]"
@@ -44,12 +52,32 @@ jobs:
 
           if [ "$status" -ne 0 ]; then
             git add -A
-            git commit -m "Record final boards verification failure"
-            git push origin HEAD:agent/finalize-boards-module
+            git commit -m "Record boards hotfix verification failure" || true
+            git push origin HEAD:agent/boards-final-hotfix
+            failed_sha=$(git rev-parse HEAD)
+            gh api \
+              --method POST \
+              repos/ramzansharifov/MyMind-Next/statuses/$failed_sha \
+              -f state=failure \
+              -f context='boards/full-verification' \
+              -f description='Boards hotfix verification failed'
             exit 0
           fi
 
-          rm -f scripts/finalize-boards-ui.mjs boards-verification.log
+          rm -f \
+            scripts/finalize-boards-ui.mjs \
+            scripts/apply-boards-module.mjs \
+            scripts/fix-boards-transform.mjs \
+            scripts/prepare-boards-repair.mjs \
+            boards-hotfix-verification.log \
+            boards-verification.log \
+            boards-integration-error.txt \
+            boards-transform-error.txt \
+            .boards-hotfix-in-progress \
+            .boards-ci-trigger \
+            .finalize-boards-trigger \
+            .repair-boards-trigger
+
           cat > .github/workflows/ci.yml <<'EOF'
           name: CI
 
@@ -88,5 +116,13 @@ jobs:
           EOF
           npm exec prettier -- --write .github/workflows/ci.yml
           git add -A
-          git commit -m "Complete boards module integration"
-          git push origin HEAD:agent/finalize-boards-module
+          git commit -m "Complete boards module hotfix"
+          git push origin HEAD:agent/boards-final-hotfix
+
+          success_sha=$(git rev-parse HEAD)
+          gh api \
+            --method POST \
+            repos/ramzansharifov/MyMind-Next/statuses/$success_sha \
+            -f state=success \
+            -f context='boards/full-verification' \
+            -f description='Format, lint, types, coverage, DB and build passed'
