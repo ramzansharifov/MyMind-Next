@@ -18,7 +18,8 @@ const expectedBlockTypes = [
   'video',
   'audio',
   'file',
-  'divider'
+  'divider',
+  'board'
 ] satisfies StudyBlockType[]
 
 describe('study block registry', () => {
@@ -26,9 +27,7 @@ describe('study block registry', () => {
     const actualTypes = studyBlockDefinitions.map(({ type }) => type)
 
     expect(actualTypes).toEqual(expectedBlockTypes)
-
     expect(new Set(actualTypes).size).toBe(expectedBlockTypes.length)
-
     expect(Object.keys(studyBlockRegistry)).toEqual(expectedBlockTypes)
   })
 
@@ -37,11 +36,8 @@ describe('study block registry', () => {
       const definition = getStudyBlockDefinition(type)
 
       expect(definition).toBe(studyBlockRegistry[type])
-
       expect(definition.type).toBe(type)
-
       expect(definition.label.trim()).not.toBe('')
-
       expect(definition.icon).toBeTruthy()
 
       const id = `block-${type}`
@@ -49,11 +45,8 @@ describe('study block registry', () => {
 
       expect(block.id).toBe(id)
       expect(block.type).toBe(type)
-
       expect(definition.editStrategy).toBe(type)
-
       expect(definition.readStrategy).toBe(type)
-
       expect(definition.settingsStrategy).toBe(type)
     }
   })
@@ -65,50 +58,18 @@ describe('study block registry', () => {
         label
       }))
     ).toEqual([
-      {
-        type: 'text',
-        label: 'Форматированный текст'
-      },
-      {
-        type: 'heading',
-        label: 'Заголовок'
-      },
-      {
-        type: 'code',
-        label: 'Код'
-      },
-      {
-        type: 'markdown',
-        label: 'Markdown'
-      },
-      {
-        type: 'latex',
-        label: 'LaTeX'
-      },
-      {
-        type: 'mermaid',
-        label: 'Mermaid'
-      },
-      {
-        type: 'image',
-        label: 'Фото'
-      },
-      {
-        type: 'video',
-        label: 'Видео'
-      },
-      {
-        type: 'audio',
-        label: 'Аудио'
-      },
-      {
-        type: 'file',
-        label: 'Файл'
-      },
-      {
-        type: 'divider',
-        label: 'Разделитель'
-      }
+      { type: 'text', label: 'Форматированный текст' },
+      { type: 'heading', label: 'Заголовок' },
+      { type: 'code', label: 'Код' },
+      { type: 'markdown', label: 'Markdown' },
+      { type: 'latex', label: 'LaTeX' },
+      { type: 'mermaid', label: 'Mermaid' },
+      { type: 'image', label: 'Фото' },
+      { type: 'video', label: 'Видео' },
+      { type: 'audio', label: 'Аудио' },
+      { type: 'file', label: 'Файл' },
+      { type: 'divider', label: 'Разделитель' },
+      { type: 'board', label: 'Доска' }
     ])
   })
 })
