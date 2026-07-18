@@ -18,37 +18,58 @@ interface BoardCanvasProps {
   onSaveStateChange?: (state: BoardSaveState) => void
 }
 
+type BoardLoadState =
+  | { status: 'loading' }
+  | { status: 'ready'; store: TLStore }
+  | { status: 'error'; message: string }
+
 export function BoardCanvas({ boardId, onSaveStateChange }: BoardCanvasProps): React.JSX.Element {
+  return (
+    <BoardCanvasSession
+      key={boardId}
+      boardId={boardId}
+      onSaveStateChange={onSaveStateChange}
+    />
+  )
+}
+
+function BoardCanvasSession({
+  boardId,
+  onSaveStateChange
+}: BoardCanvasProps): React.JSX.Element {
   const { resolvedTheme } = useAppearance()
-  const [store, setStore] = useState<TLStore | null>(null)
-  const [loadError, setLoadError] = useState<string | null>(null)
+  const [loadState, setLoadState] = useState<BoardLoadState>({ status: 'loading' })
   const saveTimerRef = useRef<number | null>(null)
 
   useEffect(() => {
     let active = true
-    setStore(null)
-    setLoadError(null)
 
-    boardsClient
+    void boardsClient
       .getDocument(boardId)
       .then((document) => {
         if (!active) return
 
-        const nextStore = createTLStore({
+        const store = createTLStore({
           snapshot: (document.snapshot ?? undefined) as TLEditorSnapshot | undefined
         })
 
-        setStore(nextStore)
+        setLoadState({ status: 'ready', store })
       })
       .catch((reason: unknown) => {
         if (!active) return
-        setLoadError(reason instanceof Error ? reason.message : 'Не удалось загрузить доску')
+
+        setLoadState({
+          status: 'error',
+          message: reason instanceof Error ? reason.message : 'Не удалось загрузить доску'
+        })
       })
 
     return () => {
       active = false
     }
   }, [boardId])
+
+  const store = loadState.status === 'ready' ? loadState.store : null
 
   useEffect(() => {
     if (!store) return
@@ -108,7 +129,7 @@ export function BoardCanvas({ boardId, onSaveStateChange }: BoardCanvasProps): R
     }
   }, [boardId, onSaveStateChange, store])
 
-  if (loadError) {
+  if (loadState.status === 'error') {
     return (
       <div className="flex h-full min-h-0 items-center justify-center bg-[var(--app-workspace)] p-8">
         <div className="max-w-md rounded-2xl border border-red-500/20 bg-red-500/[0.06] p-5 text-center">
@@ -116,7 +137,7 @@ export function BoardCanvas({ boardId, onSaveStateChange }: BoardCanvasProps): R
           <p className="mt-3 text-sm font-medium text-[var(--app-text)]">
             Не удалось открыть доску
           </p>
-          <p className="mt-1 text-xs leading-5 text-red-200/75">{loadError}</p>
+          <p className="mt-1 text-xs leading-5 text-red-200/75">{loadState.message}</p>
         </div>
       </div>
     )
