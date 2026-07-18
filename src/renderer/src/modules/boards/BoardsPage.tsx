@@ -63,7 +63,11 @@ export function BoardsPage({ resourceId, onResourceHandled }: BoardsPageProps): 
   useEffect(() => {
     let active = true
 
-    refreshNodes()
+    void boardsClient
+      .listNodes()
+      .then((nextNodes) => {
+        if (active) setNodes(nextNodes)
+      })
       .catch((reason: unknown) => {
         if (active) {
           setError(reason instanceof Error ? reason.message : 'Не удалось загрузить доски')
@@ -76,16 +80,20 @@ export function BoardsPage({ resourceId, onResourceHandled }: BoardsPageProps): 
     return () => {
       active = false
     }
-  }, [refreshNodes])
+  }, [])
 
   useEffect(() => {
     if (!resourceId || nodes.length === 0) return
 
-    if (nodes.some((node) => node.id === resourceId)) {
-      setSelectedId(resourceId)
-    }
+    const frame = window.requestAnimationFrame(() => {
+      if (nodes.some((node) => node.id === resourceId)) {
+        setSelectedId(resourceId)
+      }
 
-    onResourceHandled?.()
+      onResourceHandled?.()
+    })
+
+    return () => window.cancelAnimationFrame(frame)
   }, [nodes, onResourceHandled, resourceId])
 
   const selectedNode = nodes.find((node) => node.id === selectedId) ?? null
@@ -282,7 +290,7 @@ export function BoardsPage({ resourceId, onResourceHandled }: BoardsPageProps): 
         ) : selectedNode?.type === 'folder' ? (
           <BoardFolderPage
             folder={selectedNode}
-            children={nodesByParent.get(selectedNode.id) ?? []}
+            items={nodesByParent.get(selectedNode.id) ?? []}
             onOpen={(id) => void openNode(id)}
             onCreate={startCreate}
             onRename={() => startRename(selectedNode)}
@@ -593,13 +601,13 @@ function BoardsHome({
 
 function BoardFolderPage({
   folder,
-  children,
+  items,
   onOpen,
   onCreate,
   onRename
 }: {
   folder: BoardNode
-  children: BoardNode[]
+  items: BoardNode[]
   onOpen: (id: string) => void
   onCreate: (type: BoardNodeType, parentId: string | null) => void
   onRename: () => void
@@ -644,7 +652,7 @@ function BoardFolderPage({
             </div>
           </div>
         </header>
-        <BoardItemsSection title="Содержимое" items={children} onOpen={onOpen} />
+        <BoardItemsSection title="Содержимое" items={items} onOpen={onOpen} />
       </div>
     </div>
   )
