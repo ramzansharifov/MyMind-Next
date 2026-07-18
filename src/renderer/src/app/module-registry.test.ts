@@ -7,8 +7,9 @@ describe('app module registry', () => {
   it('drives lookup and navigation from the same definitions', () => {
     expect(appModules).toEqual(Object.values(appModuleRegistry))
     expect(getAppModule('study')).toBe(appModuleRegistry.study)
+    expect(getAppModule('boards')).toBe(appModuleRegistry.boards)
     expect(getAppModule('settings')).toBe(appModuleRegistry.settings)
-    expect(primaryNavigationItems.map(({ id }) => id)).toEqual(['study'])
+    expect(primaryNavigationItems.map(({ id }) => id)).toEqual(['study', 'boards'])
     expect(utilityNavigationItems.map(({ id }) => id)).toEqual(['settings'])
   })
 

@@ -13,6 +13,12 @@ import { BoardSaveQueue, type BoardSaveState } from '../lib/board-save-queue'
 const assetUrls = getAssetUrlsByImport()
 const BOARD_AUTOSAVE_DELAY_MS = 800
 
+interface BoardLoadState {
+  boardId: string
+  store: TLStore | null
+  error: string | null
+}
+
 interface BoardCanvasProps {
   boardId: string
   onSaveStateChange?: (state: BoardSaveState) => void
@@ -20,35 +26,48 @@ interface BoardCanvasProps {
 
 export function BoardCanvas({ boardId, onSaveStateChange }: BoardCanvasProps): React.JSX.Element {
   const { resolvedTheme } = useAppearance()
-  const [store, setStore] = useState<TLStore | null>(null)
-  const [loadError, setLoadError] = useState<string | null>(null)
+  const [loadState, setLoadState] = useState<BoardLoadState | null>(null)
   const saveTimerRef = useRef<number | null>(null)
 
   useEffect(() => {
     let active = true
-    setStore(null)
-    setLoadError(null)
 
-    boardsClient
+    void boardsClient
       .getDocument(boardId)
       .then((document) => {
-        if (!active) return
+        if (!active) {
+          return
+        }
 
         const nextStore = createTLStore({
           snapshot: (document.snapshot ?? undefined) as TLEditorSnapshot | undefined
         })
 
-        setStore(nextStore)
+        setLoadState({
+          boardId,
+          store: nextStore,
+          error: null
+        })
       })
       .catch((reason: unknown) => {
-        if (!active) return
-        setLoadError(reason instanceof Error ? reason.message : 'Не удалось загрузить доску')
+        if (!active) {
+          return
+        }
+
+        setLoadState({
+          boardId,
+          store: null,
+          error: reason instanceof Error ? reason.message : 'Не удалось загрузить доску'
+        })
       })
 
     return () => {
       active = false
     }
   }, [boardId])
+
+  const store = loadState?.boardId === boardId ? loadState.store : null
+  const loadError = loadState?.boardId === boardId ? loadState.error : null
 
   useEffect(() => {
     if (!store) return

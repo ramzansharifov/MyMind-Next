@@ -20,7 +20,8 @@ describe('study document search index', () => {
       'video',
       'audio',
       'file',
-      'divider'
+      'divider',
+      'board'
     ])
   })
 

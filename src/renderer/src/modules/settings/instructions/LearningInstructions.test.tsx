@@ -31,7 +31,7 @@ describe('learning instructions', () => {
     render(<InstructionsOverviewPage onBack={vi.fn()} onOpenLearning={onOpenLearning} />)
 
     expect(screen.getByRole('heading', { name: 'Инструкции' })).toBeInTheDocument()
-    expect(screen.getByText('11 типов блоков')).toBeInTheDocument()
+    expect(screen.getByText('12 типов блоков')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /Обучение/ }))
 

@@ -55,7 +55,8 @@ const settingsRenderers = {
   video: AttachmentBlockSettings,
   audio: AttachmentBlockSettings,
   file: AttachmentBlockSettings,
-  divider: DividerBlockSettings
+  divider: DividerBlockSettings,
+  board: BoardBlockSettings
 } satisfies Record<StudyBlockSettingsStrategy, SettingsRenderer>
 
 const headingLevels = [
@@ -1098,6 +1099,30 @@ function getFileImportErrorMessage(reason: unknown): string {
   }
 
   return 'Не удалось импортировать вложение'
+}
+
+function BoardBlockSettings({ block }: SettingsRendererProps): React.JSX.Element {
+  if (block.type !== 'board') {
+    throw new Error('Board settings received an incompatible block')
+  }
+
+  return (
+    <div className="grid gap-3">
+      <div className="rounded-xl border border-(--app-border) bg-(--app-workspace) p-4">
+        <p className="text-sm font-medium text-(--app-text)">{block.title ?? 'Доска материала'}</p>
+
+        <p className="mt-1 text-xs leading-5 text-(--app-muted)">
+          {block.boardId
+            ? 'Связь с доской создана. Используйте кнопку внутри блока, чтобы открыть холст.'
+            : 'Доска будет создана при первом открытии блока.'}
+        </p>
+      </div>
+
+      <p className="text-xs leading-5 text-(--app-muted)">
+        Название, структура и содержимое связанной доски управляются в модуле «Доски».
+      </p>
+    </div>
+  )
 }
 
 function DividerSettings({
