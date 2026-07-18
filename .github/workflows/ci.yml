@@ -1,31 +1,32 @@
-name: Boards hotfix runner
+name: Complete clean boards integration
 
 on:
-  issue_comment:
-    types: [created]
+  push:
+    branches: [agent/boards-clean-integration]
 
 permissions:
   contents: write
+  statuses: write
 
 jobs:
-  finalize:
-    if: >-
-      github.event.issue.number == 14 &&
-      github.event.comment.body == '/run-boards-final'
+  integrate:
+    if: github.actor != 'github-actions[bot]'
     runs-on: windows-latest
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: agent/boards-final-hotfix
+          ref: agent/boards-clean-integration
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Apply and verify boards hotfix
+      - name: Apply, verify and commit integration
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set +e
           {
@@ -38,16 +39,17 @@ jobs:
             npm run test:coverage
             npm run db:check
             npm run build:bundle
-          } > boards-hotfix-verification.log 2>&1
+          } > boards-clean-verification.log 2>&1
           status=$?
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           if [ "$status" -ne 0 ]; then
-            git add -A
-            git commit -m "Record boards hotfix verification failure" || true
-            git push origin HEAD:agent/boards-final-hotfix
+            tail -n 300 boards-clean-verification.log > boards-clean-error.log
+            git add boards-clean-error.log
+            git commit -m "Record clean boards integration failure" || true
+            git push origin HEAD:agent/boards-clean-integration
             exit 0
           fi
 
@@ -56,6 +58,8 @@ jobs:
             scripts/apply-boards-module.mjs \
             scripts/fix-boards-transform.mjs \
             scripts/prepare-boards-repair.mjs \
+            boards-clean-verification.log \
+            boards-clean-error.log \
             boards-hotfix-verification.log \
             boards-verification.log \
             boards-integration-error.txt \
@@ -102,7 +106,8 @@ jobs:
                     path: coverage
                     if-no-files-found: error
           EOF
+
           npm exec prettier -- --write .github/workflows/ci.yml
           git add -A
-          git commit -m "Complete boards module hotfix"
-          git push origin HEAD:agent/boards-final-hotfix
+          git commit -m "Complete clean boards integration"
+          git push origin HEAD:agent/boards-clean-integration
