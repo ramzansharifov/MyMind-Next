@@ -27,30 +27,44 @@ jobs:
       - name: Apply and verify boards integration
         shell: bash
         run: |
-          set -e
+          set +e
 
-          node scripts/complete-boards-integration.mjs
+          {
+            node scripts/complete-boards-integration.mjs
 
-          npm exec prettier -- --write \
-            src/renderer/src/modules/settings/instructions/learning-instruction-catalog.ts \
-            src/renderer/src/modules/study/components/BlockSettingsPanel.tsx \
-            src/renderer/src/modules/study/components/StudyBlockEditor.tsx \
-            src/renderer/src/modules/boards/BoardsPage.tsx \
-            src/renderer/src/modules/boards/components/BoardCanvas.tsx \
-            src/renderer/src/app/module-registry.test.ts \
-            src/main/domain/study-document-index.test.ts \
-            src/renderer/src/modules/study/lib/study-block-registry.test.ts \
-            src/renderer/src/modules/settings/instructions/LearningInstructions.test.tsx
+            npm exec prettier -- --write \
+              src/renderer/src/modules/settings/instructions/learning-instruction-catalog.ts \
+              src/renderer/src/modules/study/components/BlockSettingsPanel.tsx \
+              src/renderer/src/modules/study/components/StudyBlockEditor.tsx \
+              src/renderer/src/modules/boards/BoardsPage.tsx \
+              src/renderer/src/modules/boards/components/BoardCanvas.tsx \
+              src/renderer/src/app/module-registry.test.ts \
+              src/main/domain/study-document-index.test.ts \
+              src/renderer/src/modules/study/lib/study-block-registry.test.ts \
+              src/renderer/src/modules/settings/instructions/LearningInstructions.test.tsx
 
-          npm run native:node
-          npm run format:check
-          npm run lint
-          npm run typecheck
-          npm run test:coverage
-          npm run db:check
-          npm run build:bundle
+            npm run native:node
+            npm run format:check
+            npm run lint
+            npm run typecheck
+            npm run test:coverage
+            npm run db:check
+            npm run build:bundle
+          } > boards-integration-full.log 2>&1
+          status=$?
 
-          rm -f scripts/complete-boards-integration.mjs
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if [ "$status" -ne 0 ]; then
+            tail -n 250 boards-integration-full.log > boards-integration-error.txt
+            git add boards-integration-error.txt
+            git commit -m "Record boards integration failure" || true
+            git push origin HEAD:agent/complete-boards-integration
+            exit 1
+          fi
+
+          rm -f scripts/complete-boards-integration.mjs boards-integration-full.log boards-integration-error.txt
 
           cat > .github/workflows/ci.yml <<'EOF'
           name: CI (manual)
@@ -82,9 +96,6 @@ jobs:
           EOF
 
           npm exec prettier -- --write .github/workflows/ci.yml
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           git commit -m "Complete boards integration"
           git push origin HEAD:agent/complete-boards-integration
