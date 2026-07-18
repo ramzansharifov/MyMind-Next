@@ -1,113 +1,26 @@
-name: Complete clean boards integration
+name: CI (manual)
 
 on:
-  push:
-    branches: [agent/boards-clean-integration]
+  workflow_dispatch:
 
 permissions:
-  contents: write
-  statuses: write
+  contents: read
 
 jobs:
-  integrate:
-    if: github.actor != 'github-actions[bot]'
+  verify:
     runs-on: windows-latest
-    timeout-minutes: 40
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: agent/boards-clean-integration
-          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Apply, verify and commit integration
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set +e
-          {
-            node scripts/finalize-boards-ui.mjs
-            npm run format
-            npm run native:node
-            npm run format:check
-            npm run lint
-            npm run typecheck
-            npm run test:coverage
-            npm run db:check
-            npm run build:bundle
-          } > boards-clean-verification.log 2>&1
-          status=$?
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          if [ "$status" -ne 0 ]; then
-            tail -n 300 boards-clean-verification.log > boards-clean-error.log
-            git add boards-clean-error.log
-            git commit -m "Record clean boards integration failure" || true
-            git push origin HEAD:agent/boards-clean-integration
-            exit 0
-          fi
-
-          rm -f \
-            scripts/finalize-boards-ui.mjs \
-            scripts/apply-boards-module.mjs \
-            scripts/fix-boards-transform.mjs \
-            scripts/prepare-boards-repair.mjs \
-            boards-clean-verification.log \
-            boards-clean-error.log \
-            boards-hotfix-verification.log \
-            boards-verification.log \
-            boards-integration-error.txt \
-            boards-transform-error.txt \
-            .boards-hotfix-in-progress \
-            .boards-ci-trigger \
-            .boards-runner-started \
-            .finalize-boards-trigger \
-            .repair-boards-trigger
-
-          cat > .github/workflows/ci.yml <<'EOF'
-          name: CI
-
-          on:
-            push:
-              branches: [main]
-            pull_request:
-
-          permissions:
-            contents: read
-
-          jobs:
-            verify:
-              runs-on: windows-latest
-              timeout-minutes: 25
-              steps:
-                - uses: actions/checkout@v4
-                - uses: actions/setup-node@v4
-                  with:
-                    node-version: 22
-                    cache: npm
-                - run: npm ci
-                - run: npm run native:node
-                - run: npm run format:check
-                - run: npm run lint
-                - run: npm run typecheck
-                - run: npm run test:coverage
-                - run: npm run db:check
-                - run: npm run build:bundle
-                - uses: actions/upload-artifact@v4
-                  if: ${{ always() && hashFiles('coverage/**') != '' }}
-                  with:
-                    name: coverage
-                    path: coverage
-                    if-no-files-found: error
-          EOF
-
-          npm exec prettier -- --write .github/workflows/ci.yml
-          git add -A
-          git commit -m "Complete clean boards integration"
-          git push origin HEAD:agent/boards-clean-integration
+      - run: npm run native:node
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:coverage
+      - run: npm run db:check
+      - run: npm run build:bundle
