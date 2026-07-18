@@ -63,30 +63,28 @@ export function BoardsPage({ resourceId, onResourceHandled }: BoardsPageProps): 
   useEffect(() => {
     let active = true
 
-    refreshNodes()
+    void boardsClient
+      .listNodes()
+      .then((nextNodes) => {
+        if (active) {
+          setNodes(nextNodes)
+        }
+      })
       .catch((reason: unknown) => {
         if (active) {
           setError(reason instanceof Error ? reason.message : 'Не удалось загрузить доски')
         }
       })
       .finally(() => {
-        if (active) setIsLoading(false)
+        if (active) {
+          setIsLoading(false)
+        }
       })
 
     return () => {
       active = false
     }
-  }, [refreshNodes])
-
-  useEffect(() => {
-    if (!resourceId || nodes.length === 0) return
-
-    if (nodes.some((node) => node.id === resourceId)) {
-      setSelectedId(resourceId)
-    }
-
-    onResourceHandled?.()
-  }, [nodes, onResourceHandled, resourceId])
+  }, [])
 
   const selectedNode = nodes.find((node) => node.id === selectedId) ?? null
   const nodesByParent = useMemo(() => groupBoardNodesByParent(nodes), [nodes])
@@ -100,6 +98,21 @@ export function BoardsPage({ resourceId, onResourceHandled }: BoardsPageProps): 
       setError(reason instanceof Error ? reason.message : 'Не удалось сохранить текущую доску')
     }
   }, [])
+
+  useEffect(() => {
+    if (!resourceId || nodes.length === 0) {
+      return
+    }
+
+    if (!nodes.some((node) => node.id === resourceId)) {
+      onResourceHandled?.()
+      return
+    }
+
+    void openNode(resourceId).finally(() => {
+      onResourceHandled?.()
+    })
+  }, [nodes, onResourceHandled, openNode, resourceId])
 
   async function createNode(): Promise<void> {
     if (!createRequest || !dialogValue.trim()) return
@@ -282,7 +295,7 @@ export function BoardsPage({ resourceId, onResourceHandled }: BoardsPageProps): 
         ) : selectedNode?.type === 'folder' ? (
           <BoardFolderPage
             folder={selectedNode}
-            children={nodesByParent.get(selectedNode.id) ?? []}
+            items={nodesByParent.get(selectedNode.id) ?? []}
             onOpen={(id) => void openNode(id)}
             onCreate={startCreate}
             onRename={() => startRename(selectedNode)}
@@ -593,13 +606,13 @@ function BoardsHome({
 
 function BoardFolderPage({
   folder,
-  children,
+  items,
   onOpen,
   onCreate,
   onRename
 }: {
   folder: BoardNode
-  children: BoardNode[]
+  items: BoardNode[]
   onOpen: (id: string) => void
   onCreate: (type: BoardNodeType, parentId: string | null) => void
   onRename: () => void
@@ -644,7 +657,7 @@ function BoardFolderPage({
             </div>
           </div>
         </header>
-        <BoardItemsSection title="Содержимое" items={children} onOpen={onOpen} />
+        <BoardItemsSection title="Содержимое" items={items} onOpen={onOpen} />
       </div>
     </div>
   )

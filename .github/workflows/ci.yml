@@ -1,101 +1,26 @@
-name: Complete boards integration
+name: CI (manual)
 
 on:
-  push:
-    branches: [agent/complete-boards-integration]
-  pull_request:
-    branches: [main]
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  finalize:
-    if: github.actor != 'github-actions[bot]'
+  verify:
     runs-on: windows-latest
-    timeout-minutes: 35
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: agent/complete-boards-integration
-          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Apply and verify boards integration
-        shell: bash
-        run: |
-          set +e
-
-          {
-            node scripts/complete-boards-integration.mjs
-
-            npm exec prettier -- --write \
-              src/renderer/src/modules/settings/instructions/learning-instruction-catalog.ts \
-              src/renderer/src/modules/study/components/BlockSettingsPanel.tsx \
-              src/renderer/src/modules/study/components/StudyBlockEditor.tsx \
-              src/renderer/src/modules/boards/BoardsPage.tsx \
-              src/renderer/src/modules/boards/components/BoardCanvas.tsx \
-              src/renderer/src/app/module-registry.test.ts \
-              src/main/domain/study-document-index.test.ts \
-              src/renderer/src/modules/study/lib/study-block-registry.test.ts \
-              src/renderer/src/modules/settings/instructions/LearningInstructions.test.tsx
-
-            npm run native:node
-            npm run format:check
-            npm run lint
-            npm run typecheck
-            npm run test:coverage
-            npm run db:check
-            npm run build:bundle
-          } > boards-integration-full.log 2>&1
-          status=$?
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          if [ "$status" -ne 0 ]; then
-            tail -n 250 boards-integration-full.log > boards-integration-error.txt
-            git add boards-integration-error.txt
-            git commit -m "Record boards integration failure" || true
-            git push origin HEAD:agent/complete-boards-integration
-            exit 1
-          fi
-
-          rm -f scripts/complete-boards-integration.mjs boards-integration-full.log boards-integration-error.txt
-
-          cat > .github/workflows/ci.yml <<'EOF'
-          name: CI (manual)
-
-          on:
-            workflow_dispatch:
-
-          permissions:
-            contents: read
-
-          jobs:
-            verify:
-              runs-on: windows-latest
-              timeout-minutes: 25
-              steps:
-                - uses: actions/checkout@v4
-                - uses: actions/setup-node@v4
-                  with:
-                    node-version: 22
-                    cache: npm
-                - run: npm ci
-                - run: npm run native:node
-                - run: npm run format:check
-                - run: npm run lint
-                - run: npm run typecheck
-                - run: npm run test:coverage
-                - run: npm run db:check
-                - run: npm run build:bundle
-          EOF
-
-          npm exec prettier -- --write .github/workflows/ci.yml
-          git add -A
-          git commit -m "Complete boards integration"
-          git push origin HEAD:agent/complete-boards-integration
+      - run: npm run native:node
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:coverage
+      - run: npm run db:check
+      - run: npm run build:bundle

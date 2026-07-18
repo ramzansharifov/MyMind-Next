@@ -56,6 +56,7 @@ import {
   type StudyRevealBlockDetail,
   type StudyRevealHeadingDetail
 } from '../lib/study-read-navigation'
+import { StudyBoardBlock } from './board/StudyBoardBlock'
 import { BlockSettingsErrorBoundary } from './BlockSettingsErrorBoundary'
 import { BlockSettingsPanel } from './BlockSettingsPanel'
 import { DeleteConfirmationDialog } from './DeleteConfirmationDialog'
@@ -159,7 +160,7 @@ export function StudyBlockEditor({
   const draggedBlock = document.blocks.find((block) => block.id === draggedBlockId) ?? null
 
   if (mode === 'read') {
-    return <ReadOnlyStudyDocument document={document} />
+    return <ReadOnlyStudyDocument materialId={materialId} document={document} />
   }
 
   function updateBlock(replacement: StudyBlock): void {
@@ -766,7 +767,7 @@ function StudyBlockCard({
               }}
             />
           ) : (
-            <EditableBlock block={block} onChange={onChange} />
+            <EditableBlock materialId={materialId} block={block} onChange={onChange} />
           )}
         </Collapsible.Content>
       </section>
@@ -803,18 +804,22 @@ function getHeadingTypography(level: 1 | 2 | 3): {
 }
 
 function EditableBlock({
+  materialId,
   block,
   onChange
 }: {
+  materialId: string
   block: Exclude<StudyBlock, { type: 'text' }>
   onChange: (block: StudyBlock) => void
 }): React.JSX.Element {
   const strategy = getStudyBlockDefinition(block.type).editStrategy
   const Editor = studyBlockEditors[strategy]
-  return <Editor block={block} onChange={onChange} />
+
+  return <Editor materialId={materialId} block={block} onChange={onChange} />
 }
 
 type EditableBlockProps = {
+  materialId: string
   block: Exclude<StudyBlock, { type: 'text' }>
   onChange: (block: StudyBlock) => void
 }
@@ -830,7 +835,8 @@ const studyBlockEditors = {
   video: EditAttachmentBlock,
   audio: EditAttachmentBlock,
   file: EditAttachmentBlock,
-  divider: EditDividerBlock
+  divider: EditDividerBlock,
+  board: EditBoardBlock
 } satisfies Record<Exclude<StudyBlockRenderStrategy, 'text'>, EditableBlockStrategy>
 
 function EditHeadingBlock({ block, onChange }: EditableBlockProps): React.JSX.Element {
@@ -939,6 +945,14 @@ function EditDividerBlock({ block }: EditableBlockProps): React.JSX.Element {
   return <StudyDivider block={block} spacing="edit" />
 }
 
+function EditBoardBlock({ materialId, block, onChange }: EditableBlockProps): React.JSX.Element {
+  if (block.type !== 'board') {
+    throw new Error('Board editor received an incompatible block')
+  }
+
+  return <StudyBoardBlock materialId={materialId} block={block} mode="edit" onChange={onChange} />
+}
+
 type StudyHeadingBlock = Extract<StudyBlock, { type: 'heading' }>
 
 interface StudyReadBlockNode {
@@ -954,7 +968,13 @@ interface StudyReadSectionNode {
 
 type StudyReadNode = StudyReadBlockNode | StudyReadSectionNode
 
-function ReadOnlyStudyDocument({ document }: { document: StudyDocument }): React.JSX.Element {
+function ReadOnlyStudyDocument({
+  materialId,
+  document
+}: {
+  materialId: string
+  document: StudyDocument
+}): React.JSX.Element {
   const outline = buildStudyReadOutline(document.blocks)
 
   return (
@@ -964,7 +984,7 @@ function ReadOnlyStudyDocument({ document }: { document: StudyDocument }): React
         className="min-h-64 w-full space-y-7 px-10 py-10 max-[900px]:px-7 max-[640px]:space-y-6 max-[640px]:px-4 max-[640px]:py-6"
       >
         {outline.map((node) => (
-          <StudyReadNodeView key={getStudyReadNodeKey(node)} node={node} />
+          <StudyReadNodeView key={getStudyReadNodeKey(node)} materialId={materialId} node={node} />
         ))}
       </article>
     </div>
@@ -1062,15 +1082,27 @@ function buildStudyReadOutline(blocks: StudyBlock[]): StudyReadNode[] {
   return root
 }
 
-function StudyReadNodeView({ node }: { node: StudyReadNode }): React.JSX.Element {
+function StudyReadNodeView({
+  materialId,
+  node
+}: {
+  materialId: string
+  node: StudyReadNode
+}): React.JSX.Element {
   if (node.kind === 'section') {
-    return <StudyReadSection section={node} />
+    return <StudyReadSection materialId={materialId} section={node} />
   }
 
-  return <StudyBlockReader block={node.block} />
+  return <StudyBlockReader materialId={materialId} block={node.block} />
 }
 
-function StudyReadSection({ section }: { section: StudyReadSectionNode }): React.JSX.Element {
+function StudyReadSection({
+  materialId,
+  section
+}: {
+  materialId: string
+  section: StudyReadSectionNode
+}): React.JSX.Element {
   const [open, setOpen] = useState(true)
 
   useEffect(() => {
@@ -1144,7 +1176,11 @@ function StudyReadSection({ section }: { section: StudyReadSectionNode }): React
       <Collapsible.Content className="study-read-collapsible-content overflow-hidden">
         <div className="mt-3 ml-[14px] space-y-6 border-l border-[var(--app-border)] pl-3">
           {section.children.map((child) => (
-            <StudyReadNodeView key={getStudyReadNodeKey(child)} node={child} />
+            <StudyReadNodeView
+              key={getStudyReadNodeKey(child)}
+              materialId={materialId}
+              node={child}
+            />
           ))}
         </div>
       </Collapsible.Content>
@@ -1220,12 +1256,22 @@ function StudyReadHeading({ heading }: { heading: StudyHeadingBlock }): React.JS
   )
 }
 
-function StudyBlockReader({ block }: { block: StudyBlock }): React.JSX.Element {
+function StudyBlockReader({
+  materialId,
+  block
+}: {
+  materialId: string
+  block: StudyBlock
+}): React.JSX.Element {
   const Reader = studyBlockReaders[getStudyBlockDefinition(block.type).readStrategy]
-  return <Reader block={block} />
+
+  return <Reader materialId={materialId} block={block} />
 }
 
-type StudyBlockReaderProps = { block: StudyBlock }
+type StudyBlockReaderProps = {
+  materialId: string
+  block: StudyBlock
+}
 type StudyBlockReaderStrategy = (props: StudyBlockReaderProps) => React.JSX.Element
 
 const studyBlockReaders = {
@@ -1239,7 +1285,8 @@ const studyBlockReaders = {
   video: ReadAttachmentBlock,
   audio: ReadAttachmentBlock,
   file: ReadAttachmentBlock,
-  divider: ReadDividerBlock
+  divider: ReadDividerBlock,
+  board: ReadBoardBlock
 } satisfies Record<StudyBlockRenderStrategy, StudyBlockReaderStrategy>
 
 function ReadTextBlock({ block }: StudyBlockReaderProps): React.JSX.Element {
@@ -1318,6 +1365,14 @@ function ReadAttachmentBlock({ block }: StudyBlockReaderProps): React.JSX.Elemen
 function ReadDividerBlock({ block }: StudyBlockReaderProps): React.JSX.Element {
   if (block.type !== 'divider') throw new Error('Divider reader received an incompatible block')
   return <StudyDivider block={block} spacing="read" />
+}
+
+function ReadBoardBlock({ materialId, block }: StudyBlockReaderProps): React.JSX.Element {
+  if (block.type !== 'board') {
+    throw new Error('Board reader received an incompatible block')
+  }
+
+  return <StudyBoardBlock materialId={materialId} block={block} mode="read" />
 }
 
 function StudyBlockTypeIcon({

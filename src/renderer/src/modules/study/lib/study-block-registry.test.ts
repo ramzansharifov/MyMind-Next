@@ -18,7 +18,8 @@ const expectedBlockTypes = [
   'video',
   'audio',
   'file',
-  'divider'
+  'divider',
+  'board'
 ] satisfies StudyBlockType[]
 
 describe('study block registry', () => {
@@ -108,6 +109,10 @@ describe('study block registry', () => {
       {
         type: 'divider',
         label: 'Разделитель'
+      },
+      {
+        type: 'board',
+        label: 'Доска'
       }
     ])
   })
