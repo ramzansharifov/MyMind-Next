@@ -8,48 +8,70 @@ import type {
   MoveBoardNodeInput
 } from '../../../../../shared/contracts/boards'
 
+export const BOARDS_API_DEV_MOCK_KEY = 'mymind:boards-api-mode'
+
+function isBoardsApiMockedMissing(): boolean {
+  if (!import.meta.env.DEV) return false
+
+  try {
+    return window.sessionStorage.getItem(BOARDS_API_DEV_MOCK_KEY) === 'missing'
+  } catch {
+    return false
+  }
+}
+
 function getBoardApi(): BoardApi {
-  if (!window.api?.boards) {
-    throw new Error('API досок недоступен. Полностью перезапустите приложение MyMind.')
+  const appApi = window.api
+
+  if (isBoardsApiMockedMissing() || !appApi?.boards) {
+    const developmentDetails = import.meta.env.DEV
+      ? ` Доступные разделы window.api: ${
+          appApi && typeof appApi === 'object' ? Object.keys(appApi).join(', ') || '(нет)' : '(нет)'
+        }.`
+      : ''
+
+    throw new Error(
+      `API досок недоступен. Перезапустите или пересоберите приложение.${developmentDetails}`
+    )
   }
 
-  return window.api.boards
+  return appApi.boards
 }
 
 export const boardsClient = {
-  listNodes(): Promise<BoardNode[]> {
+  async listNodes(): Promise<BoardNode[]> {
     return getBoardApi().listNodes()
   },
 
-  createNode(input: CreateBoardNodeInput): Promise<BoardNode> {
+  async createNode(input: CreateBoardNodeInput): Promise<BoardNode> {
     return getBoardApi().createNode(input)
   },
 
-  renameNode(id: string, title: string): Promise<BoardNode> {
+  async renameNode(id: string, title: string): Promise<BoardNode> {
     return getBoardApi().renameNode({ id, title })
   },
 
-  deleteNode(id: string): Promise<boolean> {
+  async deleteNode(id: string): Promise<boolean> {
     return getBoardApi().deleteNode(id)
   },
 
-  updateExpansion(id: string, isExpanded: boolean): Promise<BoardNode> {
+  async updateExpansion(id: string, isExpanded: boolean): Promise<BoardNode> {
     return getBoardApi().updateExpansion({ id, isExpanded })
   },
 
-  moveNode(input: MoveBoardNodeInput): Promise<BoardNode[]> {
+  async moveNode(input: MoveBoardNodeInput): Promise<BoardNode[]> {
     return getBoardApi().moveNode(input)
   },
 
-  getDocument(nodeId: string): Promise<BoardDocument> {
+  async getDocument(nodeId: string): Promise<BoardDocument> {
     return getBoardApi().getDocument(nodeId)
   },
 
-  saveDocument(nodeId: string, snapshot: BoardSnapshot): Promise<BoardDocument> {
+  async saveDocument(nodeId: string, snapshot: BoardSnapshot): Promise<BoardDocument> {
     return getBoardApi().saveDocument({ nodeId, snapshot })
   },
 
-  ensureStudyBoard(input: EnsureStudyBoardInput): Promise<BoardNode> {
+  async ensureStudyBoard(input: EnsureStudyBoardInput): Promise<BoardNode> {
     return getBoardApi().ensureStudyBoard(input)
   }
 }

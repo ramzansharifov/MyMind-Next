@@ -28,8 +28,8 @@ export function createContentSecurityPolicy(development: boolean): string {
   // Packaged builds keep the stricter self-only script policy.
   const scriptSources = development ? "script-src 'self' 'unsafe-inline'" : "script-src 'self'"
   const connectSources = development
-    ? "connect-src 'self' http://localhost:* ws://localhost:* http://127.0.0.1:* ws://127.0.0.1:*"
-    : "connect-src 'self'"
+    ? "connect-src 'self' data: http://localhost:* ws://localhost:* http://127.0.0.1:* ws://127.0.0.1:*"
+    : "connect-src 'self' data:"
 
   return [...directives, scriptSources, connectSources].join('; ')
 }

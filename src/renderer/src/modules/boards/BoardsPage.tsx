@@ -18,7 +18,7 @@ import {
   Trash2,
   TriangleAlert
 } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 
 import {
   BOARD_SYSTEM_ROOT_ID,
@@ -27,9 +27,12 @@ import {
 } from '../../../../shared/contracts/boards'
 import { cn } from '../../shared/lib/cn'
 import { boardsClient } from './api/boards-client'
-import { BoardCanvas } from './components/BoardCanvas'
+import { BoardCanvasErrorBoundary } from './components/BoardCanvasErrorBoundary'
+import { loadBoardCanvas } from './components/load-board-canvas'
 import { flushActiveBoardDraft } from './lib/board-draft-lifecycle'
 import type { BoardSaveState } from './lib/board-save-queue'
+
+const BoardCanvas = lazy(loadBoardCanvas)
 
 export interface BoardsPageProps {
   resourceId?: string | null
@@ -109,10 +112,28 @@ export function BoardsPage({ resourceId, onResourceHandled }: BoardsPageProps): 
       return
     }
 
-    void openNode(resourceId).finally(() => {
-      onResourceHandled?.()
-    })
-  }, [nodes, onResourceHandled, openNode, resourceId])
+    let active = true
+
+    void flushActiveBoardDraft()
+      .then(() => {
+        if (!active) return
+        setSelectedId(resourceId)
+        setSaveState('saved')
+      })
+      .catch((reason: unknown) => {
+        if (!active) return
+        setError(reason instanceof Error ? reason.message : 'Не удалось сохранить текущую доску')
+      })
+      .finally(() => {
+        if (active) {
+          onResourceHandled?.()
+        }
+      })
+
+    return () => {
+      active = false
+    }
+  }, [nodes, onResourceHandled, resourceId])
 
   async function createNode(): Promise<void> {
     if (!createRequest || !dialogValue.trim()) return
@@ -751,9 +772,25 @@ function BoardWorkspace({
         <BoardSaveStatus state={saveState} />
       </header>
       <div className="min-h-0 flex-1">
-        <BoardCanvas boardId={node.id} onSaveStateChange={onSaveStateChange} />
+        <BoardCanvasErrorBoundary resetKey={node.id}>
+          <Suspense fallback={<BoardCanvasLoadingFallback />}>
+            <BoardCanvas boardId={node.id} onSaveStateChange={onSaveStateChange} />
+          </Suspense>
+        </BoardCanvasErrorBoundary>
       </div>
     </section>
+  )
+}
+
+function BoardCanvasLoadingFallback(): React.JSX.Element {
+  return (
+    <div
+      role="status"
+      className="flex h-full min-h-0 items-center justify-center bg-[var(--app-workspace)] text-sm text-[var(--app-muted)]"
+    >
+      <LoaderCircle aria-hidden="true" className="mr-2 size-4 animate-spin" />
+      Загрузка редактора доски…
+    </div>
   )
 }
 

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
 import { readFileSync, writeFileSync } from 'node:fs'
 
 function read(path) {
@@ -120,8 +121,8 @@ replaceOnce(
 )
 replaceOnce(
   'src/renderer/src/modules/study/components/StudyBlockEditor.tsx',
-  "    return <ReadOnlyStudyDocument document={document} />\n",
-  "    return <ReadOnlyStudyDocument materialId={materialId} document={document} />\n"
+  '    return <ReadOnlyStudyDocument document={document} />\n',
+  '    return <ReadOnlyStudyDocument materialId={materialId} document={document} />\n'
 )
 replaceOnce(
   'src/renderer/src/modules/study/components/StudyBlockEditor.tsx',
@@ -173,7 +174,7 @@ replaceOnce(
 )
 appendBefore(
   'src/renderer/src/modules/study/components/StudyBlockEditor.tsx',
-  "function EditDividerBlock({ block }: EditableBlockProps): React.JSX.Element {",
+  'function EditDividerBlock({ block }: EditableBlockProps): React.JSX.Element {',
   `function EditBoardBlock({ materialId, block, onChange }: EditableBlockProps): React.JSX.Element {
   if (block.type !== 'board') throw new Error('Board editor received an incompatible block')
   return (
@@ -268,7 +269,7 @@ replaceOnce(
 )
 appendBefore(
   'src/renderer/src/modules/study/components/StudyBlockEditor.tsx',
-  "function ReadDividerBlock({ block }: StudyBlockReaderProps): React.JSX.Element {",
+  'function ReadDividerBlock({ block }: StudyBlockReaderProps): React.JSX.Element {',
   `function ReadBoardBlock({ materialId, block }: StudyBlockReaderProps): React.JSX.Element {
   if (block.type !== 'board') throw new Error('Board reader received an incompatible block')
   return <StudyBoardBlock materialId={materialId} block={block} mode="read" />
@@ -371,7 +372,7 @@ replaceOnce(
 replaceOnce(
   'src/renderer/src/modules/settings/instructions/LearningInstructions.test.tsx',
   "    expect(screen.getByText('11 типов блоков')).toBeInTheDocument()\n",
-  "    expect(screen.getByText(`${studyBlockDefinitions.length} типов блоков`)).toBeInTheDocument()\n"
+  '    expect(screen.getByText(`${studyBlockDefinitions.length} типов блоков`)).toBeInTheDocument()\n'
 )
 replaceOnce(
   'src/renderer/src/App.test.tsx',

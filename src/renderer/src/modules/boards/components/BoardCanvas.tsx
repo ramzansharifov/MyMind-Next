@@ -1,5 +1,15 @@
 import { getAssetUrlsByImport } from '@tldraw/assets/imports.vite'
-import { createTLStore, getSnapshot, Tldraw, type TLEditorSnapshot, type TLStore } from 'tldraw'
+import {
+  createTLStore,
+  defaultAssetUtils,
+  defaultBindingUtils,
+  defaultShapeUtils,
+  getSnapshot,
+  react,
+  Tldraw,
+  type TLEditorSnapshot,
+  type TLStore
+} from 'tldraw'
 import 'tldraw/tldraw.css'
 import { LoaderCircle, TriangleAlert } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
@@ -10,7 +20,7 @@ import { boardsClient } from '../api/boards-client'
 import { registerBoardDraftHandle } from '../lib/board-draft-lifecycle'
 import { BoardSaveQueue, type BoardSaveState } from '../lib/board-save-queue'
 
-const assetUrls = getAssetUrlsByImport()
+const assetUrls = getAssetUrlsByImport((assetUrl) => assetUrl)
 const BOARD_AUTOSAVE_DELAY_MS = 800
 
 interface BoardLoadState {
@@ -31,6 +41,7 @@ export function BoardCanvas({ boardId, onSaveStateChange }: BoardCanvasProps): R
 
   useEffect(() => {
     let active = true
+    let loadedStore: TLStore | null = null
 
     void boardsClient
       .getDocument(boardId)
@@ -40,8 +51,12 @@ export function BoardCanvas({ boardId, onSaveStateChange }: BoardCanvasProps): R
         }
 
         const nextStore = createTLStore({
-          snapshot: (document.snapshot ?? undefined) as TLEditorSnapshot | undefined
+          snapshot: (document.snapshot ?? undefined) as TLEditorSnapshot | undefined,
+          assetUtils: defaultAssetUtils,
+          bindingUtils: defaultBindingUtils,
+          shapeUtils: defaultShapeUtils
         })
+        loadedStore = nextStore
 
         setLoadState({
           boardId,
@@ -63,6 +78,7 @@ export function BoardCanvas({ boardId, onSaveStateChange }: BoardCanvasProps): R
 
     return () => {
       active = false
+      loadedStore?.dispose()
     }
   }, [boardId])
 
@@ -101,9 +117,14 @@ export function BoardCanvas({ boardId, onSaveStateChange }: BoardCanvasProps): R
       }, BOARD_AUTOSAVE_DELAY_MS)
     }
 
-    const stopListening = store.listen(saveLatest, {
-      source: 'user',
-      scope: 'all'
+    let observedHistory = store.history.get()
+    // Пробный cleanup редактора в React Strict Mode отменяет внутренний scheduler
+    // store.listen. Независимый history reactor остаётся активным после повторного mount.
+    const stopListening = react(`autosave board ${boardId}`, () => {
+      const nextHistory = store.history.get()
+      if (nextHistory === observedHistory) return
+      observedHistory = nextHistory
+      saveLatest()
     })
 
     const unregisterDraft = registerBoardDraftHandle({

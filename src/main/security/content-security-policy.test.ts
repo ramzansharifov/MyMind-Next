@@ -12,7 +12,7 @@ describe('createContentSecurityPolicy', () => {
     expect(policy).not.toContain('localhost')
     expect(policy).not.toContain('127.0.0.1')
     expect(policy).not.toContain('ws:')
-    expect(policy).toContain("connect-src 'self'")
+    expect(policy).toContain("connect-src 'self' data:")
   })
 
   it('allows Vite endpoints only in development', () => {
