@@ -1,27 +1,28 @@
-name: Add boards instructions
+name: Diagnose boards instructions lint
 
 on:
   pull_request:
     branches: [main]
 
 permissions:
-  contents: write
+  contents: read
+  pull-requests: write
 
 jobs:
-  verify:
+  lint:
     if: github.actor != 'github-actions[bot]'
     runs-on: windows-latest
-    timeout-minutes: 35
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
           ref: agent/boards-instructions
-          fetch-depth: 0
+          fetch-depth: 1
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      - run: npm ci --silent
       - name: Apply source changes
         shell: bash
         run: |
@@ -36,58 +37,23 @@ jobs:
             src/renderer/src/modules/settings/SettingsPage.tsx \
             src/renderer/src/modules/boards/BoardsPage.tsx \
             src/renderer/src/modules/boards/BoardsPage.test.tsx
-      - name: Rebuild native dependencies for Node
-        run: npm run native:node
-      - name: Check formatting
-        run: npm run format:check
-      - name: Lint
-        run: npm run lint
-      - name: Typecheck
-        run: npm run typecheck
-      - name: Test coverage
-        run: npm run test:coverage
-      - name: Check database
-        run: npm run db:check
-      - name: Build renderer and Electron bundles
-        run: npm run build:bundle
-      - name: Commit verified changes
+      - name: Diagnose lint
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          set -e
-          rm -f scripts/add-boards-instructions.mjs
-
-          cat > .github/workflows/ci.yml <<'EOF'
-          name: CI (manual)
-
-          on:
-            workflow_dispatch:
-
-          permissions:
-            contents: read
-
-          jobs:
-            verify:
-              runs-on: windows-latest
-              timeout-minutes: 25
-              steps:
-                - uses: actions/checkout@v4
-                - uses: actions/setup-node@v4
-                  with:
-                    node-version: 22
-                    cache: npm
-                - run: npm ci
-                - run: npm run native:node
-                - run: npm run format:check
-                - run: npm run lint
-                - run: npm run typecheck
-                - run: npm run test:coverage
-                - run: npm run db:check
-                - run: npm run build:bundle
-          EOF
-
-          npm exec prettier -- --write .github/workflows/ci.yml
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "Добавить инструкции модуля досок"
-          git push origin HEAD:agent/boards-instructions
+          set +e
+          npm run lint > lint-output.txt 2>&1
+          status=$?
+          if [ "$status" -ne 0 ]; then
+            {
+              echo "Убрать справочный текст из контекстных меню модуля «Доски» и оставить в них только доступные действия. Добавить в Настройки → Инструкции полноценный каталог «Доски» с поиском, оглавлением и отдельными статьями."
+              echo
+              echo "## Временная диагностика ESLint"
+              echo '```text'
+              tail -n 120 lint-output.txt
+              echo '```'
+            } > pr-body.md
+            gh pr edit 22 --body-file pr-body.md
+            exit "$status"
+          fi
