@@ -56,4 +56,10 @@ replaceOnce(
   `import {\n  BookOpen,`
 )
 
-console.log('Existing UI lint issues fixed')
+replaceOnce(
+  'src/renderer/src/modules/settings/instructions/LearningInstructions.tsx',
+  `  function openSection(sectionIndex: number): void {\n    const sectionId = getInstructionSectionId(scope, article.id, sectionIndex)`,
+  `  const articleId = article.id\n\n  function openSection(sectionIndex: number): void {\n    const sectionId = getInstructionSectionId(scope, articleId, sectionIndex)`
+)
+
+console.log('Existing UI lint and type issues fixed')
