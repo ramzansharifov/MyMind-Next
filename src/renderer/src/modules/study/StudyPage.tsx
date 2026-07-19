@@ -3,8 +3,6 @@ import {
   AlertTriangle,
   ArrowRight,
   BookOpen,
-  ChevronLeft,
-  ChevronRight,
   FilePlus2,
   FileText,
   Folder,
@@ -16,6 +14,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } fro
 
 import type { StudyFolderIconName, StudyNode } from '../../../../shared/contracts/study'
 import { cn } from '../../shared/lib/cn'
+import { getModuleSidebarLayoutClassName, ModuleSidebar } from '../../shared/ui/ModuleSidebar'
 import { Tooltip } from '../../shared/ui/tooltip'
 import { StudyActionButton } from './components/StudyActionButton'
 import { DeleteConfirmationDialog } from './components/DeleteConfirmationDialog'
@@ -331,160 +330,94 @@ export function StudyPage(): React.JSX.Element {
   }, [openStudyNode, runAfterDraftFlush, selectedNode])
 
   return (
-    <section
-      className={cn(
-        'grid h-full min-h-0 overflow-hidden',
-        'transition-[grid-template-columns] duration-200 ease-out',
-        'motion-reduce:transition-none',
-        isSidebarCollapsed ? 'grid-cols-[64px_minmax(0,1fr)]' : 'grid-cols-[280px_minmax(0,1fr)]'
-      )}
-    >
-      <aside
-        data-collapsed={isSidebarCollapsed}
-        className="group/study-sidebar relative flex min-h-0 flex-col border-r border-[var(--app-border)] bg-[var(--app-sidebar)]"
+    <section className={getModuleSidebarLayoutClassName(isSidebarCollapsed)}>
+      <ModuleSidebar
+        navigationLabel="Библиотека обучения"
+        moduleLabel="Обучение"
+        homeLabel="Главная обучения"
+        icon={BookOpen}
+        collapsed={isSidebarCollapsed}
+        homeSelected={selectedNode === null}
+        expandLabel="Показать библиотеку"
+        collapseLabel="Скрыть библиотеку"
+        onHomeSelect={() => {
+          selectStudyNode(null)
+        }}
+        onCollapsedChange={setIsSidebarCollapsed}
       >
-        <header
-          className={cn(
-            'flex h-[var(--app-header-height)] shrink-0 items-center border-b border-[var(--app-border)]',
-            isSidebarCollapsed ? 'px-2' : 'px-3'
-          )}
-        >
-          <Tooltip content="Главная обучения" side="right" disabled={!isSidebarCollapsed}>
-            <button
-              type="button"
-              aria-label={isSidebarCollapsed ? 'Главная обучения' : undefined}
-              aria-current={selectedNode === null ? 'page' : undefined}
-              className={cn(
-                'flex h-11 w-full items-center rounded-xl text-left transition-colors outline-none',
-                'focus-visible:ring-2 focus-visible:ring-violet-500/35',
-                isSidebarCollapsed ? 'justify-center px-0' : 'gap-3 px-3 pr-8',
-                selectedNode === null
-                  ? 'bg-violet-500/10 text-violet-200 ring-1 ring-violet-500/15 ring-inset'
-                  : 'text-[var(--app-muted)] hover:bg-white/[0.04] hover:text-[var(--app-text)]'
-              )}
-              onClick={() => {
-                selectStudyNode(null)
-              }}
-            >
-              <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-300">
-                <BookOpen aria-hidden="true" className="size-4" />
-              </span>
-
-              {!isSidebarCollapsed && (
-                <span className="min-w-0 truncate text-sm font-semibold">Обучение</span>
-              )}
-            </button>
-          </Tooltip>
-        </header>
-
-        <Tooltip
-          content={isSidebarCollapsed ? 'Показать библиотеку' : 'Скрыть библиотеку'}
-          side="right"
-        >
-          <button
-            type="button"
-            aria-label={isSidebarCollapsed ? 'Показать библиотеку' : 'Скрыть библиотеку'}
-            className={cn(
-              'absolute top-8 right-0 z-30',
-              'flex size-7 translate-x-1/2 -translate-y-1/2',
-              'items-center justify-center rounded-full border',
-              'border-violet-500/25 bg-violet-500/12',
-              'text-violet-300 opacity-0 outline-none',
-              'transition-[opacity,background-color,color,transform]',
-              'group-hover/study-sidebar:opacity-100',
-              'group-focus-within/study-sidebar:opacity-100',
-              'hover:scale-105 hover:bg-violet-500/20',
-              'focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-violet-500/60'
-            )}
-            onClick={() => {
-              setIsSidebarCollapsed((current) => !current)
+        {study.isLoading ? (
+          <p className="px-2 py-4 text-sm text-[var(--app-muted)]">Загрузка…</p>
+        ) : (
+          <StudyTree
+            nodes={study.nodes}
+            search=""
+            selectedNodeId={study.selectedNodeId}
+            activeParentId={selectedParentId}
+            collapsed={isSidebarCollapsed}
+            onSelect={selectStudyNode}
+            onSelectRoot={() => {
+              selectStudyNode(null)
             }}
-          >
-            {isSidebarCollapsed ? (
-              <ChevronRight aria-hidden="true" className="size-4" />
-            ) : (
-              <ChevronLeft aria-hidden="true" className="size-4" />
-            )}
-          </button>
-        </Tooltip>
+            onToggleFolder={(node) => {
+              if (!deletePendingRef.current) {
+                void study.toggleFolder(node)
+              }
+            }}
+            onRename={openRename}
+            onDuplicate={(node) => {
+              void runAfterDraftFlush(async () => {
+                clearInternalLinkNavigation()
 
-        <div
-          className={cn('min-h-0 flex-1 overflow-y-auto', isSidebarCollapsed ? 'px-2 py-3' : 'p-3')}
-        >
-          {study.isLoading ? (
-            <p className="px-2 py-4 text-sm text-[var(--app-muted)]">Загрузка…</p>
-          ) : (
-            <StudyTree
-              nodes={study.nodes}
-              search=""
-              selectedNodeId={study.selectedNodeId}
-              activeParentId={selectedParentId}
-              collapsed={isSidebarCollapsed}
-              onSelect={selectStudyNode}
-              onSelectRoot={() => {
-                selectStudyNode(null)
-              }}
-              onToggleFolder={(node) => {
-                if (!deletePendingRef.current) {
-                  void study.toggleFolder(node)
+                await study.duplicateNode(node.id)
+              })
+            }}
+            onDelete={openDelete}
+            onCreateFolder={(parentId) => {
+              void runAfterDraftFlush(async () => {
+                clearInternalLinkNavigation()
+
+                const parentFolder = study.nodes.find((node) => node.id === parentId)
+
+                if (parentFolder?.type === 'folder' && !parentFolder.isExpanded) {
+                  await study.toggleFolder(parentFolder)
                 }
-              }}
-              onRename={openRename}
-              onDuplicate={(node) => {
-                void runAfterDraftFlush(async () => {
-                  clearInternalLinkNavigation()
 
-                  await study.duplicateNode(node.id)
+                await study.createNode({
+                  type: 'folder',
+                  parentId
                 })
-              }}
-              onDelete={openDelete}
-              onCreateFolder={(parentId) => {
-                void runAfterDraftFlush(async () => {
-                  clearInternalLinkNavigation()
+              })
+            }}
+            onCreateMaterial={(parentId) => {
+              void runAfterDraftFlush(async () => {
+                clearInternalLinkNavigation()
 
-                  const parentFolder = study.nodes.find((node) => node.id === parentId)
+                const parentFolder = study.nodes.find((node) => node.id === parentId)
 
-                  if (parentFolder?.type === 'folder' && !parentFolder.isExpanded) {
-                    await study.toggleFolder(parentFolder)
-                  }
-
-                  await study.createNode({
-                    type: 'folder',
-                    parentId
-                  })
-                })
-              }}
-              onCreateMaterial={(parentId) => {
-                void runAfterDraftFlush(async () => {
-                  clearInternalLinkNavigation()
-
-                  const parentFolder = study.nodes.find((node) => node.id === parentId)
-
-                  if (parentFolder?.type === 'folder' && !parentFolder.isExpanded) {
-                    await study.toggleFolder(parentFolder)
-                  }
-
-                  await study.createNode({
-                    type: 'material',
-                    parentId
-                  })
-                })
-              }}
-              onMove={(input) => {
-                if (!deletePendingRef.current) {
-                  void study.moveNode(input)
+                if (parentFolder?.type === 'folder' && !parentFolder.isExpanded) {
+                  await study.toggleFolder(parentFolder)
                 }
-              }}
-            />
-          )}
 
-          {study.error && (
-            <p className="mt-3 rounded-lg border border-red-500/20 bg-red-500/[0.06] p-3 text-xs text-red-300">
-              {study.error}
-            </p>
-          )}
-        </div>
-      </aside>
+                await study.createNode({
+                  type: 'material',
+                  parentId
+                })
+              })
+            }}
+            onMove={(input) => {
+              if (!deletePendingRef.current) {
+                void study.moveNode(input)
+              }
+            }}
+          />
+        )}
+
+        {study.error && (
+          <p className="mt-3 rounded-lg border border-red-500/20 bg-red-500/[0.06] p-3 text-xs text-red-300">
+            {study.error}
+          </p>
+        )}
+      </ModuleSidebar>
 
       <main className="min-h-0 min-w-0 bg-[var(--app-workspace)]">
         {selectedNode?.type === 'material' ? (
