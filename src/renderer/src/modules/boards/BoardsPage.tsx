@@ -2,16 +2,14 @@ import * as AlertDialog from '@radix-ui/react-alert-dialog'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import {
   Check,
+  ChevronDown,
   ChevronRight,
   Folder,
   FolderPlus,
-  Home,
   LayoutDashboard,
   LoaderCircle,
   LockKeyhole,
   MoreHorizontal,
-  PanelLeftClose,
-  PanelLeftOpen,
   Pencil,
   Plus,
   Presentation,
@@ -26,6 +24,8 @@ import {
   type BoardNodeType
 } from '../../../../shared/contracts/boards'
 import { cn } from '../../shared/lib/cn'
+import { getModuleSidebarLayoutClassName, ModuleSidebar } from '../../shared/ui/ModuleSidebar'
+import { Tooltip } from '../../shared/ui/tooltip'
 import { boardsClient } from './api/boards-client'
 import { BoardCanvasErrorBoundary } from './components/BoardCanvasErrorBoundary'
 import { loadBoardCanvas } from './components/load-board-canvas'
@@ -221,58 +221,33 @@ export function BoardsPage({ resourceId, onResourceHandled }: BoardsPageProps): 
   }
 
   return (
-    <section className="flex h-full min-h-0 bg-[var(--app-workspace)]">
-      <aside
-        aria-label="Дерево досок"
-        className={cn(
-          'flex min-h-0 shrink-0 flex-col border-r border-[var(--app-border)] bg-[var(--app-sidebar)] transition-[width] duration-200',
-          sidebarCollapsed ? 'w-16' : 'w-80'
-        )}
+    <section className={getModuleSidebarLayoutClassName(sidebarCollapsed)}>
+      <ModuleSidebar
+        navigationLabel="Дерево досок"
+        moduleLabel="Доски"
+        homeLabel="Главная досок"
+        icon={Presentation}
+        collapsed={sidebarCollapsed}
+        homeSelected={selectedId === null}
+        expandLabel="Показать дерево досок"
+        collapseLabel="Скрыть дерево досок"
+        onHomeSelect={() => {
+          void openNode(null)
+        }}
+        onCollapsedChange={setSidebarCollapsed}
       >
-        <div className="flex h-20 shrink-0 items-center gap-3 border-b border-[var(--app-border)] px-3">
-          <button
-            type="button"
-            aria-label={sidebarCollapsed ? 'Развернуть дерево досок' : 'Свернуть дерево досок'}
-            className="flex size-10 shrink-0 items-center justify-center rounded-xl text-[var(--app-muted)] outline-none hover:bg-white/[0.05] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)]/45"
-            onClick={() => setSidebarCollapsed((collapsed) => !collapsed)}
-          >
-            {sidebarCollapsed ? <PanelLeftOpen aria-hidden /> : <PanelLeftClose aria-hidden />}
-          </button>
-
-          {!sidebarCollapsed && (
-            <div className="min-w-0">
-              <p className="text-[11px] font-semibold tracking-[0.1em] text-[var(--app-accent-400)] uppercase">
-                Модуль
-              </p>
-              <p className="truncate font-semibold text-[var(--app-text)]">Доски</p>
-            </div>
-          )}
-        </div>
-
-        <div className="min-h-0 flex-1 overflow-y-auto p-2">
-          <button
-            type="button"
-            aria-current={selectedId === null ? 'page' : undefined}
-            aria-label="Главная страница досок"
-            className={cn(
-              'flex h-10 w-full items-center rounded-lg text-sm outline-none',
-              sidebarCollapsed ? 'justify-center px-0' : 'gap-2 px-3',
-              selectedId === null
-                ? 'bg-[var(--app-sidebar-active)] text-[var(--app-accent-300)]'
-                : 'text-[var(--app-muted)] hover:bg-white/[0.04] hover:text-[var(--app-text)]'
-            )}
-            onClick={() => void openNode(null)}
-          >
-            <Home aria-hidden="true" className="size-4 shrink-0" />
-            {!sidebarCollapsed && <span>Главная</span>}
-          </button>
-
-          <div className="mt-2 grid gap-0.5">
-            {(nodesByParent.get(null) ?? []).map((node) => (
+        {(nodesByParent.get(null) ?? []).length === 0 ? (
+          <div className="flex min-h-32 items-center justify-center rounded-xl border border-dashed border-[var(--app-border)] px-4 text-center text-sm text-[var(--app-muted)]">
+            Создайте первую папку или доску
+          </div>
+        ) : (
+          <div className={cn('shrink-0', sidebarCollapsed ? 'space-y-1.5' : 'space-y-1')}>
+            {(nodesByParent.get(null) ?? []).map((node, index, rootNodes) => (
               <BoardTreeNode
                 key={node.id}
                 node={node}
                 depth={0}
+                isLastSibling={index === rootNodes.length - 1}
                 selectedId={selectedId}
                 collapsed={sidebarCollapsed}
                 nodesByParent={nodesByParent}
@@ -287,23 +262,8 @@ export function BoardsPage({ resourceId, onResourceHandled }: BoardsPageProps): 
               />
             ))}
           </div>
-        </div>
-
-        {!sidebarCollapsed && (
-          <div className="grid grid-cols-2 gap-2 border-t border-[var(--app-border)] p-3">
-            <SidebarCreateButton
-              label="Папка"
-              icon={FolderPlus}
-              onClick={() => startCreate('folder', null)}
-            />
-            <SidebarCreateButton
-              label="Доска"
-              icon={Plus}
-              onClick={() => startCreate('board', null)}
-            />
-          </div>
         )}
-      </aside>
+      </ModuleSidebar>
 
       <main className="min-w-0 flex-1 overflow-hidden">
         {selectedNode?.type === 'board' ? (
@@ -384,6 +344,7 @@ export function BoardsPage({ resourceId, onResourceHandled }: BoardsPageProps): 
 function BoardTreeNode({
   node,
   depth,
+  isLastSibling,
   selectedId,
   collapsed,
   nodesByParent,
@@ -395,6 +356,7 @@ function BoardTreeNode({
 }: {
   node: BoardNode
   depth: number
+  isLastSibling: boolean
   selectedId: string | null
   collapsed: boolean
   nodesByParent: Map<string | null, BoardNode[]>
@@ -405,77 +367,100 @@ function BoardTreeNode({
   onCreate: (type: BoardNodeType, parentId: string | null) => void
 }): React.JSX.Element {
   const children = nodesByParent.get(node.id) ?? []
-  const Icon = node.type === 'folder' ? Folder : Presentation
+  const isFolder = node.type === 'folder'
+  const hasVisibleChildren = isFolder && node.isExpanded && children.length > 0
+  const Icon = isFolder ? Folder : Presentation
 
   return (
-    <div>
+    <div className={cn(collapsed ? 'space-y-1.5' : 'space-y-1')}>
       <div
         className={cn(
-          'group flex h-9 items-center rounded-lg text-sm',
+          'group relative flex h-9 items-center rounded-lg',
+          collapsed && 'justify-center',
           selectedId === node.id
-            ? 'bg-[var(--app-sidebar-active)] text-[var(--app-accent-300)]'
+            ? 'bg-violet-500/12 text-violet-200'
             : 'text-[var(--app-muted)] hover:bg-white/[0.04] hover:text-[var(--app-text)]'
         )}
-        style={collapsed ? undefined : { paddingLeft: `${8 + depth * 14}px` }}
+        style={collapsed ? undefined : { paddingLeft: `${4 + depth * 16}px` }}
       >
-        {node.type === 'folder' && !collapsed ? (
+        {collapsed && depth > 0 && (
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute top-0 left-1/2 h-1/2 w-px -translate-x-1/2 bg-[var(--app-border-strong)]"
+          />
+        )}
+
+        {collapsed && (hasVisibleChildren || !isLastSibling) && (
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute bottom-0 left-1/2 h-1/2 w-px -translate-x-1/2 bg-[var(--app-border-strong)]"
+          />
+        )}
+
+        {!collapsed &&
+          (isFolder ? (
+            <button
+              type="button"
+              aria-label={node.isExpanded ? 'Свернуть папку' : 'Развернуть папку'}
+              className="z-20 flex size-7 shrink-0 items-center justify-center rounded-md outline-none hover:bg-white/[0.05] focus-visible:ring-2 focus-visible:ring-violet-500/35"
+              onClick={() => void onToggle(node)}
+            >
+              {node.isExpanded ? (
+                <ChevronDown aria-hidden="true" className="size-3.5" />
+              ) : (
+                <ChevronRight aria-hidden="true" className="size-3.5" />
+              )}
+            </button>
+          ) : (
+            <span className="size-7 shrink-0" />
+          ))}
+
+        <Tooltip content={`${node.title} · ${isFolder ? 'Папка' : 'Доска'}`} side="right">
           <button
             type="button"
-            aria-label={
-              node.isExpanded
-                ? `Свернуть папку «${node.title}»`
-                : `Развернуть папку «${node.title}»`
-            }
-            className="flex size-7 shrink-0 items-center justify-center rounded-md outline-none hover:bg-white/[0.06]"
-            onClick={() => void onToggle(node)}
+            aria-label={node.title}
+            className={cn(
+              'relative z-10 flex min-w-0 items-center text-left text-sm outline-none',
+              'focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:ring-inset',
+              collapsed
+                ? 'size-8 shrink-0 justify-center rounded-lg bg-[var(--app-sidebar)] p-0'
+                : 'flex-1 gap-2 py-2'
+            )}
+            onClick={() => onOpen(node.id)}
           >
-            <ChevronRight
-              aria-hidden="true"
-              className={cn('size-3.5 transition-transform', node.isExpanded && 'rotate-90')}
-            />
+            <Icon aria-hidden="true" className="size-4 shrink-0" />
+            {!collapsed && <span className="truncate">{node.title}</span>}
+            {!collapsed && node.isSystem && (
+              <LockKeyhole aria-hidden="true" className="ml-auto size-3.5 shrink-0 opacity-60" />
+            )}
           </button>
-        ) : null}
-
-        <button
-          type="button"
-          title={node.title}
-          aria-label={node.title}
-          className={cn(
-            'flex min-w-0 flex-1 items-center outline-none',
-            collapsed ? 'justify-center' : 'gap-2 px-1'
-          )}
-          onClick={() => onOpen(node.id)}
-        >
-          <Icon aria-hidden="true" className="size-4 shrink-0" />
-          {!collapsed && <span className="truncate">{node.title}</span>}
-          {!collapsed && node.isSystem && (
-            <LockKeyhole aria-hidden="true" className="ml-auto size-3.5 shrink-0 opacity-60" />
-          )}
-        </button>
+        </Tooltip>
 
         {!collapsed && (
           <BoardNodeMenu node={node} onRename={onRename} onDelete={onDelete} onCreate={onCreate} />
         )}
       </div>
 
-      {!collapsed &&
-        node.type === 'folder' &&
-        node.isExpanded &&
-        children.map((child) => (
-          <BoardTreeNode
-            key={child.id}
-            node={child}
-            depth={depth + 1}
-            selectedId={selectedId}
-            collapsed={collapsed}
-            nodesByParent={nodesByParent}
-            onOpen={onOpen}
-            onToggle={onToggle}
-            onRename={onRename}
-            onDelete={onDelete}
-            onCreate={onCreate}
-          />
-        ))}
+      {hasVisibleChildren && (
+        <div className={cn(collapsed ? 'space-y-1.5' : 'space-y-1')}>
+          {children.map((child, index) => (
+            <BoardTreeNode
+              key={child.id}
+              node={child}
+              depth={depth + 1}
+              isLastSibling={index === children.length - 1}
+              selectedId={selectedId}
+              collapsed={collapsed}
+              nodesByParent={nodesByParent}
+              onOpen={onOpen}
+              onToggle={onToggle}
+              onRename={onRename}
+              onDelete={onDelete}
+              onCreate={onCreate}
+            />
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -491,45 +476,56 @@ function BoardNodeMenu({
   onDelete: (node: BoardNode) => void
   onCreate: (type: BoardNodeType, parentId: string | null) => void
 }): React.JSX.Element {
+  const [menuOpen, setMenuOpen] = useState(false)
+
   return (
-    <DropdownMenu.Root>
+    <DropdownMenu.Root open={menuOpen} onOpenChange={setMenuOpen}>
       <DropdownMenu.Trigger asChild>
         <button
           type="button"
-          aria-label={`Действия с элементом «${node.title}»`}
-          className="mr-1 flex size-7 shrink-0 items-center justify-center rounded-md opacity-0 outline-none group-hover:opacity-100 hover:bg-white/[0.07] focus-visible:opacity-100"
+          aria-label={`Действия: ${node.title}`}
+          className={cn(
+            'z-20 mr-1 flex size-7 shrink-0 items-center justify-center rounded-md',
+            'text-[var(--app-muted)] hover:bg-white/[0.07] hover:text-[var(--app-text)]',
+            menuOpen ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'
+          )}
         >
           <MoreHorizontal aria-hidden="true" className="size-4" />
         </button>
       </DropdownMenu.Trigger>
+
       <DropdownMenu.Portal>
         <DropdownMenu.Content
-          className="z-50 min-w-48 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-1.5 shadow-2xl"
           sideOffset={6}
+          align="start"
+          className="z-50 min-w-48 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-1.5 text-sm text-[var(--app-text)] shadow-xl shadow-black/25"
         >
           {node.type === 'folder' && (
             <>
               <BoardMenuItem
                 icon={FolderPlus}
                 label="Новая папка"
+                accent
                 onSelect={() => onCreate('folder', node.id)}
               />
               <BoardMenuItem
                 icon={Presentation}
                 label="Новая доска"
+                accent
                 onSelect={() => onCreate('board', node.id)}
               />
               <DropdownMenu.Separator className="my-1 h-px bg-[var(--app-border)]" />
             </>
           )}
-          {!node.isSystem && (
+
+          {!node.isSystem ? (
             <>
               <BoardMenuItem icon={Pencil} label="Переименовать" onSelect={() => onRename(node)} />
+              <DropdownMenu.Separator className="my-1 h-px bg-[var(--app-border)]" />
               <BoardMenuItem icon={Trash2} label="Удалить" danger onSelect={() => onDelete(node)} />
             </>
-          )}
-          {node.isSystem && (
-            <p className="px-3 py-2 text-xs text-[var(--app-muted)]">Системная папка защищена</p>
+          ) : (
+            <p className="px-2.5 py-2 text-xs text-[var(--app-muted)]">Системная папка защищена</p>
           )}
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
@@ -540,23 +536,27 @@ function BoardNodeMenu({
 function BoardMenuItem({
   icon: Icon,
   label,
+  accent = false,
   danger = false,
   onSelect
 }: {
   icon: typeof Folder
   label: string
+  accent?: boolean
   danger?: boolean
   onSelect: () => void
 }): React.JSX.Element {
   return (
     <DropdownMenu.Item
       className={cn(
-        'flex cursor-default items-center gap-2 rounded-lg px-3 py-2 text-sm outline-none focus:bg-white/[0.06]',
-        danger ? 'text-red-300' : 'text-[var(--app-text)]'
+        'flex cursor-default items-center gap-2 rounded-lg px-2.5 py-2 outline-none',
+        danger
+          ? 'text-red-300 hover:bg-red-500/10 focus:bg-red-500/10'
+          : 'hover:bg-white/[0.06] focus:bg-white/[0.06]'
       )}
       onSelect={onSelect}
     >
-      <Icon aria-hidden="true" className="size-4" />
+      <Icon aria-hidden="true" className={cn('size-4', accent && !danger && 'text-violet-300')} />
       {label}
     </DropdownMenu.Item>
   )
@@ -828,27 +828,6 @@ function PrimaryAction({
       onClick={onClick}
     >
       <Icon aria-hidden className="size-4 text-[var(--app-accent-300)]" />
-      {label}
-    </button>
-  )
-}
-
-function SidebarCreateButton({
-  icon: Icon,
-  label,
-  onClick
-}: {
-  icon: typeof Folder
-  label: string
-  onClick: () => void
-}): React.JSX.Element {
-  return (
-    <button
-      type="button"
-      className="flex h-9 items-center justify-center gap-2 rounded-lg border border-[var(--app-border)] text-xs text-[var(--app-muted)] hover:border-[var(--app-accent-500)]/30 hover:text-[var(--app-text)]"
-      onClick={onClick}
-    >
-      <Icon aria-hidden className="size-3.5" />
       {label}
     </button>
   )

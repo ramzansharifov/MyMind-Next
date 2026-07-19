@@ -95,6 +95,26 @@ describe('BoardsPage', () => {
     expect(screen.getByRole('heading', { name: 'Доски', level: 1 })).toBeInTheDocument()
   })
 
+  it('uses the shared module sidebar dimensions and collapse behavior', async () => {
+    testHarness.listNodes.mockResolvedValueOnce([systemFolder])
+
+    render(<BoardsPage />)
+
+    await screen.findByRole('heading', { name: 'Доски', level: 1 })
+
+    const sidebar = screen.getByRole('complementary', { name: 'Дерево досок' })
+
+    expect(sidebar).toHaveAttribute('data-module-sidebar')
+    expect(sidebar).toHaveAttribute('data-collapsed', 'false')
+    expect(screen.getByRole('button', { name: 'Обучение' })).toHaveClass('text-sm')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Скрыть дерево досок' }))
+
+    expect(sidebar).toHaveAttribute('data-collapsed', 'true')
+    expect(screen.getByRole('button', { name: 'Показать дерево досок' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Главная досок' })).toBeInTheDocument()
+  })
+
   it('loads BoardCanvas only for a board and isolates a lazy import failure in the workspace', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => undefined)
     testHarness.listNodes.mockResolvedValueOnce([systemFolder, boardNode])
