@@ -1,4 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import type { ReactElement } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { BoardNode } from '../../../../shared/contracts/boards'
@@ -21,6 +23,10 @@ vi.mock('./api/boards-client', () => ({
     saveDocument: vi.fn(),
     ensureStudyBoard: vi.fn()
   }
+}))
+
+vi.mock('../../shared/ui/tooltip', () => ({
+  Tooltip: ({ children }: { children: ReactElement }) => children
 }))
 
 vi.mock('./components/load-board-canvas', () => ({
@@ -161,6 +167,7 @@ describe('BoardsPage', () => {
   })
 
   it('does not offer manual deletion for a folder linked to study', async () => {
+    const user = userEvent.setup()
     const linkedFolder: BoardNode = {
       id: 'linked-study-folder',
       type: 'folder',
@@ -184,12 +191,13 @@ describe('BoardsPage', () => {
     render(<BoardsPage />)
 
     await screen.findByRole('heading', { name: 'Доски', level: 1 })
-    fireEvent.click(screen.getByRole('button', { name: 'Действия: Физика' }))
+    await user.click(screen.getByRole('button', { name: 'Действия: Физика' }))
 
-    expect(
-      screen.getByText('Папка удалится автоматически после удаления последней связанной доски')
-    ).toBeInTheDocument()
+    expect(await screen.findByRole('menuitem', { name: 'Переименовать' })).toBeInTheDocument()
     expect(screen.queryByRole('menuitem', { name: 'Удалить' })).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('Папка удалится автоматически после удаления последней связанной доски')
+    ).not.toBeInTheDocument()
   })
 
   it('loads BoardCanvas only for a board and isolates a lazy import failure in the workspace', async () => {

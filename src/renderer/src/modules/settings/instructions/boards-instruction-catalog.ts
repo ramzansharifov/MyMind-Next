@@ -5,7 +5,6 @@ import {
   PanelLeft,
   PencilRuler,
   Presentation,
-  Save,
   Trash2,
   type LucideIcon
 } from 'lucide-react'

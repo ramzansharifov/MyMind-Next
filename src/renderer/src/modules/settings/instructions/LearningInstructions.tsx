@@ -5,8 +5,10 @@ import {
   Keyboard,
   Lightbulb,
   ListChecks,
+  Presentation,
   Search,
-  X
+  X,
+  type LucideIcon
 } from 'lucide-react'
 import { useMemo, useState, type ReactNode } from 'react'
 
@@ -17,19 +19,47 @@ import {
   getLearningInstructionArticle,
   learningInstructionArticles,
   learningInstructionModuleIcon,
-  type LearningInstructionArticle,
   type LearningInstructionSection,
+  type LearningInstructionShortcut,
   type LearningInstructionTopicId
 } from './learning-instruction-catalog'
+import {
+  basicBoardsInstructionArticles,
+  boardsInstructionArticles,
+  getBoardsInstructionArticle,
+  integrationBoardsInstructionArticles,
+  type BoardsInstructionTopicId
+} from './boards-instruction-catalog'
 
 interface InstructionsOverviewPageProps {
   onBack: () => void
   onOpenLearning: () => void
+  onOpenBoards: () => void
 }
 
 interface LearningInstructionsPageProps {
   onBack: () => void
   onOpenTopic: (topicId: LearningInstructionTopicId) => void
+}
+
+interface BoardsInstructionsPageProps {
+  onBack: () => void
+  onOpenTopic: (topicId: BoardsInstructionTopicId) => void
+}
+
+interface BoardsInstructionArticlePageProps {
+  topicId: BoardsInstructionTopicId
+  onBack: () => void
+}
+
+interface InstructionArticleBase<TopicId extends string> {
+  id: TopicId
+  title: string
+  summary: string
+  intro: string
+  icon: LucideIcon
+  sections: LearningInstructionSection[]
+  shortcuts: LearningInstructionShortcut[]
 }
 
 interface LearningInstructionArticlePageProps {
@@ -39,10 +69,9 @@ interface LearningInstructionArticlePageProps {
 
 export function InstructionsOverviewPage({
   onBack,
-  onOpenLearning
+  onOpenLearning,
+  onOpenBoards
 }: InstructionsOverviewPageProps): React.JSX.Element {
-  const LearningIcon = learningInstructionModuleIcon
-
   return (
     <div className="space-y-5">
       <InstructionHero
@@ -54,57 +83,35 @@ export function InstructionsOverviewPage({
         onBack={onBack}
       />
 
-      <button
-        type="button"
-        className={cn(
-          'group relative isolate w-full overflow-hidden rounded-2xl border p-5 text-left outline-none',
-          'border-[var(--app-border)] bg-[var(--app-surface)]',
-          'shadow-[0_12px_40px_rgb(0_0_0/0.1)]',
-          'transition-[border-color,transform,box-shadow]',
-          'hover:-translate-y-px hover:border-violet-500/35 hover:shadow-xl hover:shadow-black/10',
-          'focus-visible:ring-2 focus-visible:ring-violet-500/40'
-        )}
-        onClick={onOpenLearning}
-      >
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -top-28 right-4 -z-10 size-72 rounded-full bg-violet-500/12 blur-3xl"
-        />
+      <div className="grid grid-cols-2 items-stretch gap-5 max-[880px]:grid-cols-1">
+        <InstructionModuleCard
+          title="Обучение"
+          description="Навигация по библиотеке, главная страница, папки, материалы и отдельное руководство для каждого типа блока."
+          icon={learningInstructionModuleIcon}
+          onOpen={onOpenLearning}
+        >
+          <InstructionBadge>
+            {basicLearningInstructionArticles.length} разделов интерфейса
+          </InstructionBadge>
+          <InstructionBadge>
+            {blockLearningInstructionArticles.length} типов блоков
+          </InstructionBadge>
+          <InstructionBadge>Горячие клавиши</InstructionBadge>
+        </InstructionModuleCard>
 
-        <div className="flex items-start gap-4">
-          <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-violet-500/20 bg-violet-500/12 text-violet-300 shadow-inner shadow-violet-500/5">
-            <LearningIcon aria-hidden="true" className="size-6" />
-          </div>
-
-          <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-semibold tracking-[0.12em] text-violet-300 uppercase">
-              Модуль приложения
-            </p>
-            <h2 className="mt-1 text-xl font-semibold tracking-tight text-[var(--app-text)]">
-              Обучение
-            </h2>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--app-muted)]">
-              Навигация по библиотеке, главная страница, папки, материалы и отдельное руководство
-              для каждого типа блока.
-            </p>
-
-            <div className="mt-5 flex flex-wrap gap-2">
-              <InstructionBadge>
-                {basicLearningInstructionArticles.length} разделов интерфейса
-              </InstructionBadge>
-              <InstructionBadge>
-                {blockLearningInstructionArticles.length} типов блоков
-              </InstructionBadge>
-              <InstructionBadge>Горячие клавиши</InstructionBadge>
-            </div>
-          </div>
-
-          <ArrowRight
-            aria-hidden="true"
-            className="mt-1 size-5 shrink-0 -translate-x-1 text-[var(--app-muted)] transition-[color,transform] group-hover:translate-x-0 group-hover:text-violet-300"
-          />
-        </div>
-      </button>
+        <InstructionModuleCard
+          title="Доски"
+          description="Рабочее пространство, папки, холст tldraw, связанные учебные доски и правила синхронного удаления."
+          icon={Presentation}
+          onOpen={onOpenBoards}
+        >
+          <InstructionBadge>{basicBoardsInstructionArticles.length} основ</InstructionBadge>
+          <InstructionBadge>
+            {integrationBoardsInstructionArticles.length} раздела интеграции
+          </InstructionBadge>
+          <InstructionBadge>Автосохранение</InstructionBadge>
+        </InstructionModuleCard>
+      </div>
     </div>
   )
 }
@@ -202,12 +209,152 @@ export function LearningInstructionsPage({
   )
 }
 
+export function BoardsInstructionsPage({
+  onBack,
+  onOpenTopic
+}: BoardsInstructionsPageProps): React.JSX.Element {
+  const [search, setSearch] = useState('')
+  const normalizedSearch = search.trim().toLocaleLowerCase('ru-RU')
+
+  const filteredArticles = useMemo(() => {
+    if (!normalizedSearch) return boardsInstructionArticles
+
+    return boardsInstructionArticles.filter((article) =>
+      [
+        article.title,
+        article.summary,
+        article.intro,
+        ...article.sections.map((section) => section.title),
+        ...article.sections.flatMap((section) => [
+          ...(section.paragraphs ?? []),
+          ...(section.steps ?? []),
+          ...(section.bullets ?? []),
+          section.note ?? ''
+        ])
+      ]
+        .join(' ')
+        .toLocaleLowerCase('ru-RU')
+        .includes(normalizedSearch)
+    )
+  }, [normalizedSearch])
+
+  const filteredBasics = filteredArticles.filter((article) => article.category === 'basics')
+  const filteredIntegration = filteredArticles.filter(
+    (article) => article.category === 'integration'
+  )
+
+  return (
+    <div className="space-y-5">
+      <InstructionHero
+        eyebrow="Инструкции"
+        title="Доски"
+        description="Выберите часть рабочего пространства, чтобы открыть подробное руководство."
+        icon={Presentation}
+        backLabel="Все инструкции"
+        onBack={onBack}
+      />
+
+      <label className="flex h-12 w-full min-w-0 items-center gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] px-4 shadow-inner shadow-black/10 transition-colors focus-within:border-violet-500/45 focus-within:ring-2 focus-within:ring-violet-500/10">
+        <Search aria-hidden="true" className="size-4 shrink-0 text-[var(--app-muted)]" />
+        <input
+          value={search}
+          aria-label="Поиск по инструкциям досок"
+          placeholder="Найти действие, страницу или правило"
+          className="min-w-0 flex-1 bg-transparent text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/65"
+          onChange={(event) => setSearch(event.target.value)}
+        />
+        {search && (
+          <button
+            type="button"
+            aria-label="Очистить поиск инструкций досок"
+            className="flex size-7 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors outline-none hover:bg-white/[0.06] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35"
+            onClick={() => setSearch('')}
+          >
+            <X aria-hidden="true" className="size-4" />
+          </button>
+        )}
+      </label>
+
+      {filteredArticles.length === 0 ? (
+        <section className="rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface)] px-6 py-12 text-center">
+          <Search aria-hidden="true" className="mx-auto size-6 text-[var(--app-muted)]" />
+          <h2 className="mt-3 font-semibold text-[var(--app-text)]">Ничего не найдено</h2>
+          <p className="mt-1 text-sm text-[var(--app-muted)]">
+            Измените запрос или очистите строку поиска.
+          </p>
+        </section>
+      ) : (
+        <>
+          {filteredBasics.length > 0 && (
+            <InstructionTopicGroup
+              title="Рабочее пространство"
+              description="Навигация, страницы, папки, холст и автоматическое сохранение."
+              articles={filteredBasics}
+              onOpenTopic={onOpenTopic}
+            />
+          )}
+
+          {filteredIntegration.length > 0 && (
+            <InstructionTopicGroup
+              title="Связь с обучением"
+              description="Создание связанных досок, защищённые папки и двустороннее удаление."
+              articles={filteredIntegration}
+              onOpenTopic={onOpenTopic}
+            />
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
 export function LearningInstructionArticlePage({
   topicId,
   onBack
 }: LearningInstructionArticlePageProps): React.JSX.Element {
   const article = getLearningInstructionArticle(topicId)
 
+  return (
+    <InstructionArticlePage
+      article={article}
+      eyebrow={article?.category === 'blocks' ? 'Блок материала' : 'Основы обучения'}
+      backLabel="К списку обучения"
+      scope="learning"
+      onBack={onBack}
+    />
+  )
+}
+
+export function BoardsInstructionArticlePage({
+  topicId,
+  onBack
+}: BoardsInstructionArticlePageProps): React.JSX.Element {
+  const article = getBoardsInstructionArticle(topicId)
+
+  return (
+    <InstructionArticlePage
+      article={article}
+      eyebrow={article?.category === 'integration' ? 'Связь с обучением' : 'Основы досок'}
+      backLabel="К списку досок"
+      scope="boards"
+      onBack={onBack}
+    />
+  )
+}
+
+function InstructionArticlePage({
+  article,
+  eyebrow,
+  backLabel,
+  scope,
+  onBack
+}: {
+  article: InstructionArticleBase<string> | null
+  eyebrow: string
+  backLabel: string
+  scope: string
+  onBack: () => void
+}): React.JSX.Element {
   if (!article) {
     return (
       <div className="space-y-5">
@@ -216,20 +363,19 @@ export function LearningInstructionArticlePage({
           title="Инструкция не найдена"
           description="Раздел мог быть удалён или переименован."
           icon={BookOpen}
-          backLabel="К списку обучения"
+          backLabel={backLabel}
           onBack={onBack}
         />
       </div>
     )
   }
 
-  function openSection(sectionIndex: number): void {
-    const sectionId = getInstructionSectionId(topicId, sectionIndex)
-    const target = window.document.getElementById(sectionId)
+  const articleId = article.id
 
-    if (!target) {
-      return
-    }
+  function openSection(sectionIndex: number): void {
+    const sectionId = getInstructionSectionId(scope, articleId, sectionIndex)
+    const target = window.document.getElementById(sectionId)
+    if (!target) return
 
     const prefersReducedMotion =
       typeof window.matchMedia === 'function' &&
@@ -240,15 +386,8 @@ export function LearningInstructionArticlePage({
       block: 'start',
       inline: 'nearest'
     })
-
-    target.focus({
-      preventScroll: true
-    })
-
-    target.getAnimations?.().forEach((animation) => {
-      animation.cancel()
-    })
-
+    target.focus({ preventScroll: true })
+    target.getAnimations?.().forEach((animation) => animation.cancel())
     target.animate?.(
       [
         {
@@ -273,11 +412,11 @@ export function LearningInstructionArticlePage({
   return (
     <div className="space-y-5">
       <InstructionHero
-        eyebrow={article.category === 'blocks' ? 'Блок материала' : 'Основы обучения'}
+        eyebrow={eyebrow}
         title={article.title}
         description={article.summary}
         icon={article.icon}
-        backLabel="К списку обучения"
+        backLabel={backLabel}
         onBack={onBack}
       />
 
@@ -288,8 +427,7 @@ export function LearningInstructionArticlePage({
           </section>
 
           {article.sections.map((section, index) => {
-            const sectionId = getInstructionSectionId(article.id, index)
-
+            const sectionId = getInstructionSectionId(scope, article.id, index)
             return (
               <InstructionArticleSection key={sectionId} section={section} sectionId={sectionId} />
             )
@@ -311,30 +449,26 @@ export function LearningInstructionArticlePage({
             </header>
 
             <ol className="grid gap-1 p-3">
-              {article.sections.map((section, index) => {
-                const sectionId = getInstructionSectionId(article.id, index)
-
-                return (
-                  <li key={sectionId}>
-                    <button
-                      type="button"
-                      aria-label={`Перейти к разделу «${section.title}»`}
-                      className={cn(
-                        'group flex w-full items-start gap-2 rounded-lg px-2 py-2 text-left text-xs leading-5 outline-none',
-                        'text-[var(--app-muted)] transition-[background-color,color,transform]',
-                        'hover:translate-x-0.5 hover:bg-[color-mix(in_srgb,var(--app-accent-500)_10%,transparent)]',
-                        'hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)]/40'
-                      )}
-                      onClick={() => openSection(index)}
-                    >
-                      <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-violet-500/10 text-[10px] font-semibold text-violet-300 tabular-nums transition-colors group-hover:bg-[color-mix(in_srgb,var(--app-accent-500)_18%,transparent)] group-hover:text-[var(--app-text)]">
-                        {index + 1}
-                      </span>
-                      <span>{section.title}</span>
-                    </button>
-                  </li>
-                )
-              })}
+              {article.sections.map((section, index) => (
+                <li key={getInstructionSectionId(scope, article.id, index)}>
+                  <button
+                    type="button"
+                    aria-label={`Перейти к разделу «${section.title}»`}
+                    className={cn(
+                      'group flex w-full items-start gap-2 rounded-lg px-2 py-2 text-left text-xs leading-5 outline-none',
+                      'text-[var(--app-muted)] transition-[background-color,color,transform]',
+                      'hover:translate-x-0.5 hover:bg-[color-mix(in_srgb,var(--app-accent-500)_10%,transparent)]',
+                      'hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)]/40'
+                    )}
+                    onClick={() => openSection(index)}
+                  >
+                    <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-violet-500/10 text-[10px] font-semibold text-violet-300 tabular-nums transition-colors group-hover:bg-[color-mix(in_srgb,var(--app-accent-500)_18%,transparent)] group-hover:text-[var(--app-text)]">
+                      {index + 1}
+                    </span>
+                    <span>{section.title}</span>
+                  </button>
+                </li>
+              ))}
             </ol>
           </section>
 
@@ -345,7 +479,7 @@ export function LearningInstructionArticlePage({
   )
 }
 
-function InstructionTopicGroup({
+function InstructionTopicGroup<TopicId extends string>({
   title,
   description,
   articles,
@@ -353,8 +487,8 @@ function InstructionTopicGroup({
 }: {
   title: string
   description: string
-  articles: LearningInstructionArticle[]
-  onOpenTopic: (topicId: LearningInstructionTopicId) => void
+  articles: Array<InstructionArticleBase<TopicId>>
+  onOpenTopic: (topicId: TopicId) => void
 }): React.JSX.Element {
   return (
     <section className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[0_12px_40px_rgb(0_0_0/0.08)]">
@@ -375,12 +509,12 @@ function InstructionTopicGroup({
   )
 }
 
-function InstructionTopicCard({
+function InstructionTopicCard<TopicId extends string>({
   article,
   onOpen
 }: {
-  article: LearningInstructionArticle
-  onOpen: (topicId: LearningInstructionTopicId) => void
+  article: InstructionArticleBase<TopicId>
+  onOpen: (topicId: TopicId) => void
 }): React.JSX.Element {
   const Icon = article.icon
 
@@ -479,17 +613,14 @@ function InstructionArticleSection({
   )
 }
 
-function getInstructionSectionId(
-  topicId: LearningInstructionTopicId,
-  sectionIndex: number
-): string {
-  return `learning-instruction-${topicId}-section-${sectionIndex + 1}`
+function getInstructionSectionId(scope: string, topicId: string, sectionIndex: number): string {
+  return `${scope}-instruction-${topicId}-section-${sectionIndex + 1}`
 }
 
 function InstructionShortcuts({
   article
 }: {
-  article: LearningInstructionArticle
+  article: Pick<InstructionArticleBase<string>, 'shortcuts'>
 }): React.JSX.Element {
   return (
     <section className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[0_12px_40px_rgb(0_0_0/0.08)]">
@@ -539,6 +670,62 @@ function InstructionShortcuts({
   )
 }
 
+function InstructionModuleCard({
+  title,
+  description,
+  icon: Icon,
+  children,
+  onOpen
+}: {
+  title: string
+  description: string
+  icon: LucideIcon
+  children: ReactNode
+  onOpen: () => void
+}): React.JSX.Element {
+  return (
+    <button
+      type="button"
+      className={cn(
+        'group relative isolate min-h-64 w-full overflow-hidden rounded-2xl border p-5 text-left outline-none',
+        'border-[var(--app-border)] bg-[var(--app-surface)]',
+        'shadow-[0_12px_40px_rgb(0_0_0/0.1)]',
+        'transition-[border-color,transform,box-shadow]',
+        'hover:-translate-y-px hover:border-violet-500/35 hover:shadow-xl hover:shadow-black/10',
+        'focus-visible:ring-2 focus-visible:ring-violet-500/40'
+      )}
+      onClick={onOpen}
+    >
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -top-28 right-4 -z-10 size-72 rounded-full bg-violet-500/12 blur-3xl"
+      />
+
+      <div className="flex h-full items-start gap-4">
+        <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-violet-500/20 bg-violet-500/12 text-violet-300 shadow-inner shadow-violet-500/5">
+          <Icon aria-hidden="true" className="size-6" />
+        </div>
+
+        <div className="flex min-w-0 flex-1 flex-col self-stretch">
+          <p className="text-[11px] font-semibold tracking-[0.12em] text-violet-300 uppercase">
+            Модуль приложения
+          </p>
+          <h2 className="mt-1 text-xl font-semibold tracking-tight text-[var(--app-text)]">
+            {title}
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-[var(--app-muted)]">{description}</p>
+          <div className="mt-auto flex flex-wrap gap-2 pt-5">{children}</div>
+        </div>
+
+        <ArrowRight
+          aria-hidden="true"
+          className="mt-1 size-5 shrink-0 -translate-x-1 text-[var(--app-muted)] transition-[color,transform] group-hover:translate-x-0 group-hover:text-violet-300"
+        />
+      </div>
+    </button>
+  )
+}
+
 function InstructionHero({
   eyebrow,
   title,
@@ -550,7 +737,7 @@ function InstructionHero({
   eyebrow: string
   title: string
   description: string
-  icon: typeof BookOpen
+  icon: LucideIcon
   backLabel: string
   onBack: () => void
 }): React.JSX.Element {

@@ -12,7 +12,6 @@ import {
   LockKeyhole,
   MoreHorizontal,
   Pencil,
-  Plus,
   Presentation,
   Search,
   Trash2,
@@ -27,7 +26,8 @@ import {
   type BoardNodeType
 } from '../../../../shared/contracts/boards'
 import { cn } from '../../shared/lib/cn'
-import { getModuleSidebarLayoutClassName, ModuleSidebar } from '../../shared/ui/ModuleSidebar'
+import { ModuleSidebar } from '../../shared/ui/ModuleSidebar'
+import { getModuleSidebarLayoutClassName } from '../../shared/ui/module-sidebar-layout'
 import {
   WorkspaceActionButton,
   WorkspaceNodeCard,
@@ -524,29 +524,27 @@ function BoardNodeMenu({
                 accent
                 onSelect={() => onCreate('board', node.id)}
               />
-              <DropdownMenu.Separator className="my-1 h-px bg-[var(--app-border)]" />
+              {!node.isSystem && (
+                <DropdownMenu.Separator className="my-1 h-px bg-[var(--app-border)]" />
+              )}
             </>
           )}
 
-          {!node.isSystem ? (
+          {!node.isSystem && (
             <>
               <BoardMenuItem icon={Pencil} label="Переименовать" onSelect={() => onRename(node)} />
-              <DropdownMenu.Separator className="my-1 h-px bg-[var(--app-border)]" />
-              {node.type === 'folder' && node.sourceStudyNodeId ? (
-                <p className="px-2.5 py-2 text-xs leading-5 text-[var(--app-muted)]">
-                  Папка удалится автоматически после удаления последней связанной доски
-                </p>
-              ) : (
-                <BoardMenuItem
-                  icon={Trash2}
-                  label="Удалить"
-                  danger
-                  onSelect={() => onDelete(node)}
-                />
+              {!(node.type === 'folder' && node.sourceStudyNodeId) && (
+                <>
+                  <DropdownMenu.Separator className="my-1 h-px bg-[var(--app-border)]" />
+                  <BoardMenuItem
+                    icon={Trash2}
+                    label="Удалить"
+                    danger
+                    onSelect={() => onDelete(node)}
+                  />
+                </>
               )}
             </>
-          ) : (
-            <p className="px-2.5 py-2 text-xs text-[var(--app-muted)]">Системная папка защищена</p>
           )}
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
