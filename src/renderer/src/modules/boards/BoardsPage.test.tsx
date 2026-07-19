@@ -160,6 +160,38 @@ describe('BoardsPage', () => {
     ).toBeInTheDocument()
   })
 
+  it('does not offer manual deletion for a folder linked to study', async () => {
+    const linkedFolder: BoardNode = {
+      id: 'linked-study-folder',
+      type: 'folder',
+      parentId: systemFolder.id,
+      title: 'Физика',
+      position: 0,
+      isExpanded: true,
+      isSystem: false,
+      sourceStudyNodeId: 'study-folder-1',
+      createdAt: 1,
+      updatedAt: 1
+    }
+    const linkedBoard: BoardNode = {
+      ...boardNode,
+      parentId: linkedFolder.id,
+      sourceMaterialId: 'material-1',
+      sourceBlockId: 'board-block-1'
+    }
+    testHarness.listNodes.mockResolvedValueOnce([systemFolder, linkedFolder, linkedBoard])
+
+    render(<BoardsPage />)
+
+    await screen.findByRole('heading', { name: 'Доски', level: 1 })
+    fireEvent.click(screen.getByRole('button', { name: 'Действия: Физика' }))
+
+    expect(
+      screen.getByText('Папка удалится автоматически после удаления последней связанной доски')
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Удалить' })).not.toBeInTheDocument()
+  })
+
   it('loads BoardCanvas only for a board and isolates a lazy import failure in the workspace', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => undefined)
     testHarness.listNodes.mockResolvedValueOnce([systemFolder, boardNode])

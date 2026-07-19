@@ -1,95 +1,26 @@
-name: Synchronize study board deletion
+name: CI (manual)
 
 on:
-  pull_request:
-    branches: [main]
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   verify:
-    if: github.actor != 'github-actions[bot]'
     runs-on: windows-latest
-    timeout-minutes: 35
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: agent/sync-study-board-deletion
-          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Apply synchronization and verify
-        shell: bash
-        run: |
-          set +e
-
-          {
-            node scripts/sync-study-board-deletion.mjs
-
-            npm exec prettier -- --write \
-              src/main/repositories/boards.repository.ts \
-              src/main/repositories/study.repository.ts \
-              src/main/repositories/study-board-sync.test.ts \
-              src/renderer/src/modules/boards/BoardsPage.tsx \
-              src/renderer/src/modules/boards/BoardsPage.test.tsx
-
-            npm run native:node
-            npm run format:check
-            npm run lint
-            npm run typecheck
-            npm run test:coverage
-            npm run db:check
-            npm run build:bundle
-          } > study-board-sync.log 2>&1
-          status=$?
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          if [ "$status" -ne 0 ]; then
-            tail -n 350 study-board-sync.log > study-board-sync-error.txt
-            git add study-board-sync-error.txt
-            git commit -m "[skip ci] Record study board sync failure" || true
-            git push origin HEAD:agent/sync-study-board-deletion
-            exit 1
-          fi
-
-          rm -f scripts/sync-study-board-deletion.mjs study-board-sync.log study-board-sync-error.txt
-
-          cat > .github/workflows/ci.yml <<'EOF'
-          name: CI (manual)
-
-          on:
-            workflow_dispatch:
-
-          permissions:
-            contents: read
-
-          jobs:
-            verify:
-              runs-on: windows-latest
-              timeout-minutes: 25
-              steps:
-                - uses: actions/checkout@v4
-                - uses: actions/setup-node@v4
-                  with:
-                    node-version: 22
-                    cache: npm
-                - run: npm ci
-                - run: npm run native:node
-                - run: npm run format:check
-                - run: npm run lint
-                - run: npm run typecheck
-                - run: npm run test:coverage
-                - run: npm run db:check
-                - run: npm run build:bundle
-          EOF
-
-          npm exec prettier -- --write .github/workflows/ci.yml
-          git add -A
-          git commit -m "Синхронизировать удаление учебных досок"
-          git push origin HEAD:agent/sync-study-board-deletion
+      - run: npm run native:node
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:coverage
+      - run: npm run db:check
+      - run: npm run build:bundle

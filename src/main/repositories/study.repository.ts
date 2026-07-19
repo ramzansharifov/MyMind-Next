@@ -29,6 +29,7 @@ import {
 } from '../services/study-assets'
 import { studyMaterialCoordinator } from '../services/study-material-coordinator'
 import { documentToPlainText } from '../domain/study-document-index'
+import { cleanupBoardsForStudyDocument } from './boards.repository'
 
 function createEmptyStudyDocument(): StudyDocument {
   return {
@@ -1181,6 +1182,8 @@ async function saveStudyMaterialNow(input: SaveStudyMaterialInput): Promise<Stud
       .where(eq(studyNodes.id, input.nodeId))
       .run()
   })
+
+  cleanupBoardsForStudyDocument(input.nodeId, savedMaterial.document)
 
   await cleanupStudyAssetsForDocument(input.nodeId, savedMaterial.document).catch(
     (reason: unknown) => {
