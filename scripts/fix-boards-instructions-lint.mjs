@@ -64,6 +64,12 @@ replaceOnce(
 
 replaceOnce(
   'src/renderer/src/modules/boards/BoardsPage.test.tsx',
+  `import { fireEvent, render, screen, waitFor } from '@testing-library/react'`,
+  `import { fireEvent, render, screen, waitFor } from '@testing-library/react'\nimport userEvent from '@testing-library/user-event'`
+)
+
+replaceOnce(
+  'src/renderer/src/modules/boards/BoardsPage.test.tsx',
   `import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'\n\nimport type { BoardNode }`,
   `import type { ReactElement } from 'react'\nimport { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'\n\nimport type { BoardNode }`
 )
@@ -72,6 +78,18 @@ replaceOnce(
   'src/renderer/src/modules/boards/BoardsPage.test.tsx',
   `vi.mock('./components/load-board-canvas', () => ({`,
   `vi.mock('../../shared/ui/tooltip', () => ({\n  Tooltip: ({ children }: { children: ReactElement }) => children\n}))\n\nvi.mock('./components/load-board-canvas', () => ({`
+)
+
+replaceOnce(
+  'src/renderer/src/modules/boards/BoardsPage.test.tsx',
+  `  it('does not offer manual deletion for a folder linked to study', async () => {\n    const linkedFolder: BoardNode = {`,
+  `  it('does not offer manual deletion for a folder linked to study', async () => {\n    const user = userEvent.setup()\n    const linkedFolder: BoardNode = {`
+)
+
+replaceOnce(
+  'src/renderer/src/modules/boards/BoardsPage.test.tsx',
+  `    fireEvent.click(screen.getByRole('button', { name: 'Действия: Физика' }))`,
+  `    await user.click(screen.getByRole('button', { name: 'Действия: Физика' }))`
 )
 
 replaceOnce(
