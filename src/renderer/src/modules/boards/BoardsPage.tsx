@@ -532,7 +532,18 @@ function BoardNodeMenu({
             <>
               <BoardMenuItem icon={Pencil} label="Переименовать" onSelect={() => onRename(node)} />
               <DropdownMenu.Separator className="my-1 h-px bg-[var(--app-border)]" />
-              <BoardMenuItem icon={Trash2} label="Удалить" danger onSelect={() => onDelete(node)} />
+              {node.type === 'folder' && node.sourceStudyNodeId ? (
+                <p className="px-2.5 py-2 text-xs leading-5 text-[var(--app-muted)]">
+                  Папка удалится автоматически после удаления последней связанной доски
+                </p>
+              ) : (
+                <BoardMenuItem
+                  icon={Trash2}
+                  label="Удалить"
+                  danger
+                  onSelect={() => onDelete(node)}
+                />
+              )}
             </>
           ) : (
             <p className="px-2.5 py-2 text-xs text-[var(--app-muted)]">Системная папка защищена</p>
@@ -1213,8 +1224,17 @@ function BoardDeleteDialog({
             Удалить {target?.type === 'folder' ? 'папку' : 'доску'}?
           </AlertDialog.Title>
           <AlertDialog.Description className="mt-2 text-sm leading-6 text-[var(--app-muted)]">
-            «{target?.title}» будет удалена без возможности восстановления. Вложенное содержимое
-            папки также будет удалено.
+            {target?.type === 'board' && target.sourceMaterialId ? (
+              <>
+                «{target.title}» и связанный блок в материале обучения будут удалены без возможности
+                восстановления. Пустые учебные папки очистятся автоматически.
+              </>
+            ) : (
+              <>
+                «{target?.title}» будет удалена без возможности восстановления. Вложенное содержимое
+                папки также будет удалено.
+              </>
+            )}
           </AlertDialog.Description>
           <div className="mt-5 flex justify-end gap-2">
             <AlertDialog.Cancel asChild>

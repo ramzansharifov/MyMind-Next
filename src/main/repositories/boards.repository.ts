@@ -16,6 +16,8 @@ import { boardDocumentSchema, boardNodeSchema } from '../../shared/validation/bo
 import { studyDocumentSchema } from '../../shared/validation/study'
 import { getDatabase } from '../database/client'
 import { boardDocuments, boardNodes, studyMaterials, studyNodes } from '../database/schema'
+import { documentToPlainText } from '../domain/study-document-index'
+import { studyMaterialCoordinator } from '../services/study-material-coordinator'
 
 function mapBoardNode(row: typeof boardNodes.$inferSelect): BoardNode {
   return boardNodeSchema.parse({
@@ -210,12 +212,173 @@ export function renameBoardNode(id: string, title: string): BoardNode {
   return mapBoardNode(updated)
 }
 
-export function deleteBoardNode(id: string): boolean {
+function getBoardSubtreeIds(rootId: string): Set<string> {
+  const rows = getDatabase().select().from(boardNodes).all()
+  const includedIds = new Set<string>([rootId])
+  let changed = true
+
+  while (changed) {
+    changed = false
+
+    rows.forEach((row) => {
+      if (row.parentId && includedIds.has(row.parentId) && !includedIds.has(row.id)) {
+        includedIds.add(row.id)
+        changed = true
+      }
+    })
+  }
+
+  return includedIds
+}
+
+function containsLinkedStudyBoard(folderId: string): boolean {
+  const subtreeIds = getBoardSubtreeIds(folderId)
+
+  return getDatabase()
+    .select()
+    .from(boardNodes)
+    .all()
+    .some(
+      (row) =>
+        subtreeIds.has(row.id) &&
+        row.type === 'board' &&
+        Boolean(row.sourceMaterialId && row.sourceBlockId)
+    )
+}
+
+function pruneEmptyLinkedStudyFolders(startParentId: string | null): void {
+  const database = getDatabase()
+  const visited = new Set<string>()
+  let folderId = startParentId
+
+  while (folderId && folderId !== BOARD_SYSTEM_ROOT_ID && !visited.has(folderId)) {
+    visited.add(folderId)
+
+    const folder = database.select().from(boardNodes).where(eq(boardNodes.id, folderId)).get()
+
+    if (!folder || folder.type !== 'folder' || !folder.sourceStudyNodeId) {
+      return
+    }
+
+    const child = database
+      .select({ id: boardNodes.id })
+      .from(boardNodes)
+      .where(eq(boardNodes.parentId, folder.id))
+      .get()
+
+    if (child) {
+      return
+    }
+
+    database.delete(boardNodes).where(eq(boardNodes.id, folder.id)).run()
+    folderId = folder.parentId
+  }
+}
+
+function deleteBoardRowAndPrune(id: string, parentId: string | null): boolean {
+  const deleted = getDatabase().delete(boardNodes).where(eq(boardNodes.id, id)).run().changes > 0
+
+  if (deleted) {
+    pruneEmptyLinkedStudyFolders(parentId)
+  }
+
+  return deleted
+}
+
+async function deleteLinkedStudyBoard(board: typeof boardNodes.$inferSelect): Promise<boolean> {
+  const materialId = board.sourceMaterialId
+
+  if (!materialId) {
+    return deleteBoardRowAndPrune(board.id, board.parentId)
+  }
+
+  return studyMaterialCoordinator.run(materialId, async () => {
+    const database = getDatabase()
+    const currentBoard = database.select().from(boardNodes).where(eq(boardNodes.id, board.id)).get()
+
+    if (!currentBoard) {
+      return false
+    }
+
+    const material = database
+      .select()
+      .from(studyMaterials)
+      .where(eq(studyMaterials.nodeId, materialId))
+      .get()
+    const now = new Date()
+    let nextDocument: StudyDocument | null = null
+
+    if (material && currentBoard.sourceBlockId) {
+      const document = studyDocumentSchema.parse(material.document)
+      const nextBlocks = document.blocks.filter(
+        (block) =>
+          !(
+            block.type === 'board' &&
+            (block.id === currentBoard.sourceBlockId || block.boardId === currentBoard.id)
+          )
+      )
+
+      if (nextBlocks.length !== document.blocks.length) {
+        nextDocument = {
+          ...document,
+          blocks: nextBlocks
+        }
+      }
+    }
+
+    database.transaction((transaction) => {
+      if (nextDocument) {
+        transaction
+          .update(studyMaterials)
+          .set({
+            document: nextDocument,
+            plainText: documentToPlainText(nextDocument),
+            updatedAt: now
+          })
+          .where(eq(studyMaterials.nodeId, materialId))
+          .run()
+
+        transaction
+          .update(studyNodes)
+          .set({ updatedAt: now })
+          .where(eq(studyNodes.id, materialId))
+          .run()
+      }
+
+      transaction.delete(boardNodes).where(eq(boardNodes.id, currentBoard.id)).run()
+    })
+
+    pruneEmptyLinkedStudyFolders(currentBoard.parentId)
+    return true
+  })
+}
+
+export async function deleteBoardNode(id: string): Promise<boolean> {
   if (id === BOARD_SYSTEM_ROOT_ID) {
     throw new Error('Системную папку «Обучение» нельзя удалить')
   }
 
-  return getDatabase().delete(boardNodes).where(eq(boardNodes.id, id)).run().changes > 0
+  const existing = getDatabase().select().from(boardNodes).where(eq(boardNodes.id, id)).get()
+
+  if (!existing) {
+    return false
+  }
+
+  if (existing.type === 'folder') {
+    if (existing.sourceStudyNodeId || containsLinkedStudyBoard(existing.id)) {
+      throw new Error(
+        'Папки раздела «Обучение» удаляются автоматически после удаления последней связанной доски'
+      )
+    }
+
+    return deleteBoardRowAndPrune(existing.id, existing.parentId)
+  }
+
+  if (existing.sourceMaterialId && existing.sourceBlockId) {
+    return deleteLinkedStudyBoard(existing)
+  }
+
+  return deleteBoardRowAndPrune(existing.id, existing.parentId)
 }
 
 export function updateBoardNodeExpansion(id: string, isExpanded: boolean): BoardNode {
@@ -555,12 +718,21 @@ export function cleanupBoardsForStudyDocument(materialId: string, document: Stud
     .from(boardNodes)
     .where(eq(boardNodes.sourceMaterialId, materialId))
     .all()
+  const affectedParentIds: Array<string | null> = []
 
   linkedBoards.forEach((board) => {
     if (!board.sourceBlockId || retainedBlockIds.has(board.sourceBlockId)) {
       return
     }
 
-    getDatabase().delete(boardNodes).where(eq(boardNodes.id, board.id)).run()
+    const deleted = getDatabase().delete(boardNodes).where(eq(boardNodes.id, board.id)).run()
+
+    if (deleted.changes > 0) {
+      affectedParentIds.push(board.parentId)
+    }
+  })
+
+  affectedParentIds.forEach((parentId) => {
+    pruneEmptyLinkedStudyFolders(parentId)
   })
 }
