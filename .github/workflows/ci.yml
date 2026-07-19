@@ -22,13 +22,11 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Apply boards instructions and verify
+      - name: Apply source changes
         shell: bash
         run: |
           set -e
-
           node scripts/add-boards-instructions.mjs
-
           npm exec prettier -- --write \
             src/renderer/src/modules/settings/instructions/boards-instruction-catalog.ts \
             src/renderer/src/modules/settings/instructions/LearningInstructions.tsx \
@@ -36,15 +34,24 @@ jobs:
             src/renderer/src/modules/settings/SettingsPage.tsx \
             src/renderer/src/modules/boards/BoardsPage.tsx \
             src/renderer/src/modules/boards/BoardsPage.test.tsx
-
-          npm run native:node
-          npm run format:check
-          npm run lint
-          npm run typecheck
-          npm run test:coverage
-          npm run db:check
-          npm run build:bundle
-
+      - name: Rebuild native dependencies for Node
+        run: npm run native:node
+      - name: Check formatting
+        run: npm run format:check
+      - name: Lint
+        run: npm run lint
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Test coverage
+        run: npm run test:coverage
+      - name: Check database
+        run: npm run db:check
+      - name: Build renderer and Electron bundles
+        run: npm run build:bundle
+      - name: Commit verified changes
+        shell: bash
+        run: |
+          set -e
           rm -f scripts/add-boards-instructions.mjs
 
           cat > .github/workflows/ci.yml <<'EOF'
@@ -77,7 +84,6 @@ jobs:
           EOF
 
           npm exec prettier -- --write .github/workflows/ci.yml
-
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
