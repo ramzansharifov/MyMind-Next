@@ -10,9 +10,15 @@ import {
   Search,
   X
 } from 'lucide-react'
-import { useMemo, useState, type ReactNode } from 'react'
+import { useMemo, useState } from 'react'
 
 import type { StudyNode } from '../../../../../shared/contracts/study'
+import {
+  WorkspaceNodeCard,
+  WorkspacePanel,
+  WorkspaceSectionEmpty,
+  WorkspaceStatCard
+} from '../../../shared/ui/WorkspacePrimitives'
 import { StudyActionButton } from './StudyActionButton'
 import { StudyFolderIcon } from './StudyFolderIcon'
 
@@ -163,21 +169,21 @@ export function StudyHome({
             </label>
 
             <div className="mt-4 grid grid-cols-3 gap-3 max-[760px]:grid-cols-1">
-              <StudyStatCard
+              <WorkspaceStatCard
                 icon={<FileText aria-hidden="true" className="size-5" />}
                 value={isLoading ? '—' : materials.length}
                 label="Материалов"
                 description="Во всей библиотеке"
               />
 
-              <StudyStatCard
+              <WorkspaceStatCard
                 icon={<Folder aria-hidden="true" className="size-5" />}
                 value={isLoading ? '—' : folders.length}
                 label="Папок"
                 description="Для организации знаний"
               />
 
-              <StudyStatCard
+              <WorkspaceStatCard
                 icon={<Layers3 aria-hidden="true" className="size-5" />}
                 value={isLoading ? '—' : rootNodes.length}
                 label="В корне"
@@ -198,7 +204,7 @@ export function StudyHome({
           />
         ) : (
           <div className="grid grid-cols-[minmax(0,1.45fr)_minmax(320px,0.75fr)] items-start gap-5 max-[1080px]:grid-cols-1">
-            <StudyHomePanel
+            <WorkspacePanel
               icon={<Clock3 aria-hidden="true" className="size-5" />}
               title="Недавние материалы"
               count={recentMaterials.length}
@@ -216,11 +222,13 @@ export function StudyHome({
                   ))}
                 </div>
               ) : (
-                <StudySectionEmpty>Здесь появятся недавно изменённые материалы.</StudySectionEmpty>
+                <WorkspaceSectionEmpty>
+                  Здесь появятся недавно изменённые материалы.
+                </WorkspaceSectionEmpty>
               )}
-            </StudyHomePanel>
+            </WorkspacePanel>
 
-            <StudyHomePanel
+            <WorkspacePanel
               icon={<Layers3 aria-hidden="true" className="size-5" />}
               title="Структура"
               count={rootNodes.length}
@@ -246,74 +254,12 @@ export function StudyHome({
                   )}
                 </>
               ) : (
-                <StudySectionEmpty>Все элементы находятся внутри папок.</StudySectionEmpty>
+                <WorkspaceSectionEmpty>Все элементы находятся внутри папок.</WorkspaceSectionEmpty>
               )}
-            </StudyHomePanel>
+            </WorkspacePanel>
           </div>
         )}
       </div>
-    </section>
-  )
-}
-
-function StudyStatCard({
-  icon,
-  value,
-  label,
-  description
-}: {
-  icon: ReactNode
-  value: number | string
-  label: string
-  description: string
-}): React.JSX.Element {
-  return (
-    <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-[var(--app-border)] bg-black/[0.08] p-3.5 shadow-sm shadow-black/5">
-      <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
-        {icon}
-      </div>
-
-      <div className="min-w-0">
-        <div className="flex items-baseline gap-2">
-          <p className="text-xl font-semibold text-[var(--app-text)] tabular-nums">{value}</p>
-
-          <p className="truncate text-xs font-medium text-[var(--app-text)]">{label}</p>
-        </div>
-
-        <p className="mt-0.5 truncate text-[11px] text-[var(--app-muted)]">{description}</p>
-      </div>
-    </div>
-  )
-}
-
-function StudyHomePanel({
-  icon,
-  title,
-  count,
-  children
-}: {
-  icon: ReactNode
-  title: string
-  count: number
-  children: ReactNode
-}): React.JSX.Element {
-  return (
-    <section className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[0_12px_40px_rgb(0_0_0/0.1)]">
-      <header className="flex min-h-20 items-center gap-3 border-b border-[var(--app-border)] px-5 py-4">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
-          {icon}
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <h2 className="truncate text-base font-semibold text-[var(--app-text)]">{title}</h2>
-        </div>
-
-        <span className="flex min-w-7 items-center justify-center rounded-full border border-[var(--app-border)] bg-[var(--app-workspace)] px-2 py-1 text-[11px] font-medium text-[var(--app-muted)] tabular-nums">
-          {count}
-        </span>
-      </header>
-
-      <div className="p-4">{children}</div>
     </section>
   )
 }
@@ -332,61 +278,36 @@ function StudyNodeCard({
   const compact = variant === 'compact'
 
   return (
-    <button
-      type="button"
-      className={[
-        'group flex w-full min-w-0 items-center gap-3 rounded-xl border text-left outline-none',
-        'border-[var(--app-border)] bg-[var(--app-workspace)]',
-        'transition-[border-color,background-color,transform,box-shadow]',
-        'hover:-translate-y-px hover:border-violet-500/30 hover:bg-[var(--app-surface-raised)]',
-        'hover:shadow-lg hover:shadow-black/10',
-        'focus-visible:ring-2 focus-visible:ring-violet-500/35',
-        compact ? 'p-3' : 'p-3.5'
-      ].join(' ')}
-      onClick={() => {
-        onOpen(node.id)
-      }}
-    >
-      <div
-        className={[
-          'flex shrink-0 items-center justify-center rounded-xl border',
-          'border-white/[0.035] bg-white/[0.025] text-[var(--app-muted)]',
-          'transition-colors',
-          'group-hover:border-violet-500/15 group-hover:bg-violet-500/10 group-hover:text-violet-300',
-          compact ? 'size-9' : 'size-10'
-        ].join(' ')}
-      >
-        {node.type === 'folder' ? (
+    <WorkspaceNodeCard
+      ariaLabel={`Открыть ${node.type === 'folder' ? 'папку' : 'материал'} «${node.title}»`}
+      icon={
+        node.type === 'folder' ? (
           <StudyFolderIcon name={node.icon} expanded={node.isExpanded} className="size-5" />
         ) : (
           <FileText aria-hidden="true" className="size-5" />
-        )}
-      </div>
-
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-[var(--app-text)]">{node.title}</p>
-
-        <p className="mt-1 truncate text-[11px] text-[var(--app-muted)]">
-          {node.type === 'folder' ? 'Папка' : 'Материал'}
-          {' · '}
-          {location}
-        </p>
-      </div>
-
-      {!compact && (
-        <time
-          dateTime={new Date(node.updatedAt).toISOString()}
-          className="shrink-0 rounded-lg bg-white/[0.025] px-2 py-1 text-[10px] text-[var(--app-muted)] max-[520px]:hidden"
-        >
-          {studyDateFormatter.format(new Date(node.updatedAt))}
-        </time>
-      )}
-
-      <ArrowRight
-        aria-hidden="true"
-        className="size-4 shrink-0 -translate-x-1 text-[var(--app-muted)] opacity-0 transition-[opacity,transform,color] group-hover:translate-x-0 group-hover:text-violet-300 group-hover:opacity-100"
-      />
-    </button>
+        )
+      }
+      title={node.title}
+      metadata={
+        <>
+          {node.type === 'folder' ? 'Папка' : 'Материал'} · {location}
+        </>
+      }
+      aside={
+        !compact ? (
+          <time
+            dateTime={new Date(node.updatedAt).toISOString()}
+            className="shrink-0 rounded-lg bg-white/[0.025] px-2 py-1 text-[10px] text-[var(--app-muted)] max-[520px]:hidden"
+          >
+            {studyDateFormatter.format(new Date(node.updatedAt))}
+          </time>
+        ) : undefined
+      }
+      compact={compact}
+      onOpen={() => {
+        onOpen(node.id)
+      }}
+    />
   )
 }
 
@@ -400,7 +321,7 @@ function StudySearchResults({
   onOpen: (nodeId: string) => void
 }): React.JSX.Element {
   return (
-    <StudyHomePanel
+    <WorkspacePanel
       icon={<Search aria-hidden="true" className="size-5" />}
       title="Результаты поиска"
       count={nodes.length}
@@ -418,9 +339,9 @@ function StudySearchResults({
           ))}
         </div>
       ) : (
-        <StudySectionEmpty>По этому запросу ничего не найдено.</StudySectionEmpty>
+        <WorkspaceSectionEmpty>По этому запросу ничего не найдено.</WorkspaceSectionEmpty>
       )}
-    </StudyHomePanel>
+    </WorkspacePanel>
   )
 }
 
@@ -476,14 +397,6 @@ function StudyHomeEmptyState({
         </div>
       </div>
     </section>
-  )
-}
-
-function StudySectionEmpty({ children }: { children: ReactNode }): React.JSX.Element {
-  return (
-    <div className="flex min-h-32 items-center justify-center rounded-xl border border-dashed border-[var(--app-border)] bg-black/[0.04] px-5 py-8 text-center text-sm leading-6 text-[var(--app-muted)]">
-      {children}
-    </div>
   )
 }
 
