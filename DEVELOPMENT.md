@@ -22,19 +22,28 @@ npm ci
 
 ## Запуск приложения
 
-Development:
+Разработка с live reload (main/preload и renderer пересобираются при изменении исходников):
 
 ```bash
 npm run dev
 ```
 
-Production preview:
+Свежая локальная production-сборка и запуск:
 
 ```bash
-npm run start
+npm start
 ```
 
-Обе команды сначала выполняют `npm run native:electron`.
+`npm start` всегда заново создаёт bundle в `out`, а затем пересобирает native-модули для
+Electron. Поэтому команда не может случайно запустить устаревшие main, preload или renderer.
+
+Для осознанного запуска уже существующего `out` без новой сборки:
+
+```bash
+npm run preview:existing
+```
+
+Все три команды запуска подготавливают `better-sqlite3` для Electron.
 
 ## Node.js и Electron ABI
 
