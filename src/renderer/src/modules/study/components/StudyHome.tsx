@@ -1,5 +1,4 @@
 import {
-  ArrowRight,
   BookOpen,
   Clock3,
   FilePlus2,

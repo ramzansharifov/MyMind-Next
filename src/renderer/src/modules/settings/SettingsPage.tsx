@@ -19,10 +19,17 @@ import { cn } from '../../shared/lib/cn'
 import { AppearanceSettingsSection } from './AppearanceSettingsSection'
 import { SettingsBreadcrumbs, type SettingsBreadcrumbItem } from './SettingsBreadcrumbs'
 import {
+  BoardsInstructionArticlePage,
+  BoardsInstructionsPage,
   InstructionsOverviewPage,
   LearningInstructionArticlePage,
   LearningInstructionsPage
 } from './instructions/LearningInstructions'
+import {
+  boardsInstructionArticles,
+  getBoardsInstructionArticle,
+  type BoardsInstructionTopicId
+} from './instructions/boards-instruction-catalog'
 import {
   getLearningInstructionArticle,
   learningInstructionArticles,
@@ -41,6 +48,8 @@ type SettingsRoute =
   | { page: 'instructions' }
   | { page: 'learning' }
   | { page: 'learning-topic'; topicId: LearningInstructionTopicId }
+  | { page: 'boards' }
+  | { page: 'boards-topic'; topicId: BoardsInstructionTopicId }
 
 export function SettingsPage({ health, error, isLoading }: SettingsPageProps): React.JSX.Element {
   const [route, setRoute] = useState<SettingsRoute>({ page: 'overview' })
@@ -55,6 +64,7 @@ export function SettingsPage({ health, error, isLoading }: SettingsPageProps): R
       <InstructionsOverviewPage
         onBack={() => setRoute({ page: 'overview' })}
         onOpenLearning={() => setRoute({ page: 'learning' })}
+        onOpenBoards={() => setRoute({ page: 'boards' })}
       />
     )
   } else if (route.page === 'learning') {
@@ -71,6 +81,20 @@ export function SettingsPage({ health, error, isLoading }: SettingsPageProps): R
         onBack={() => setRoute({ page: 'learning' })}
       />
     )
+  } else if (route.page === 'boards') {
+    content = (
+      <BoardsInstructionsPage
+        onBack={() => setRoute({ page: 'instructions' })}
+        onOpenTopic={(topicId) => setRoute({ page: 'boards-topic', topicId })}
+      />
+    )
+  } else if (route.page === 'boards-topic') {
+    content = (
+      <BoardsInstructionArticlePage
+        topicId={route.topicId}
+        onBack={() => setRoute({ page: 'boards' })}
+      />
+    )
   } else {
     content = (
       <SettingsOverview
@@ -84,7 +108,11 @@ export function SettingsPage({ health, error, isLoading }: SettingsPageProps): R
   }
 
   const hidesLegacyBackButton =
-    route.page === 'instructions' || route.page === 'learning' || route.page === 'learning-topic'
+    route.page === 'instructions' ||
+    route.page === 'learning' ||
+    route.page === 'learning-topic' ||
+    route.page === 'boards' ||
+    route.page === 'boards-topic'
 
   return (
     <section className="h-full overflow-y-auto bg-[var(--app-workspace)] px-8 py-7 max-[720px]:px-4 max-[720px]:py-5">
@@ -131,12 +159,28 @@ function getSettingsBreadcrumbItems(
     return items
   }
 
+  if (route.page === 'learning-topic') {
+    items.push({
+      label: 'Обучение',
+      onClick: () => navigate({ page: 'learning' })
+    })
+    items.push({
+      label: getLearningInstructionArticle(route.topicId)?.title ?? 'Инструкция'
+    })
+    return items
+  }
+
+  if (route.page === 'boards') {
+    items.push({ label: 'Доски' })
+    return items
+  }
+
   items.push({
-    label: 'Обучение',
-    onClick: () => navigate({ page: 'learning' })
+    label: 'Доски',
+    onClick: () => navigate({ page: 'boards' })
   })
   items.push({
-    label: getLearningInstructionArticle(route.topicId)?.title ?? 'Инструкция'
+    label: getBoardsInstructionArticle(route.topicId)?.title ?? 'Инструкция'
   })
 
   return items
@@ -182,13 +226,15 @@ function SettingsOverview({
         <SettingsNavigationCard
           eyebrow="Справка"
           title="Инструкции"
-          description="Полные руководства по модулю «Обучение», страницам библиотеки, блокам и горячим клавишам."
+          description="Полные руководства по модулям «Обучение» и «Доски», рабочим страницам, блокам, связям и правилам удаления."
           icon={BookOpen}
           onClick={onOpenInstructions}
         >
-          <SettingsValueBadge>Обучение</SettingsValueBadge>
-          <SettingsValueBadge>{learningInstructionArticles.length} инструкций</SettingsValueBadge>
-          <SettingsValueBadge>Горячие клавиши</SettingsValueBadge>
+          <SettingsValueBadge>Обучение и Доски</SettingsValueBadge>
+          <SettingsValueBadge>
+            {learningInstructionArticles.length + boardsInstructionArticles.length} инструкций
+          </SettingsValueBadge>
+          <SettingsValueBadge>Поиск по справке</SettingsValueBadge>
         </SettingsNavigationCard>
       </div>
 

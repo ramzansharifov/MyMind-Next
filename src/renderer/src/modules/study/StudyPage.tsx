@@ -1,7 +1,6 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import {
   AlertTriangle,
-  ArrowRight,
   BookOpen,
   FilePlus2,
   FileText,
@@ -14,7 +13,8 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } fro
 
 import type { StudyFolderIconName, StudyNode } from '../../../../shared/contracts/study'
 import { cn } from '../../shared/lib/cn'
-import { getModuleSidebarLayoutClassName, ModuleSidebar } from '../../shared/ui/ModuleSidebar'
+import { ModuleSidebar } from '../../shared/ui/ModuleSidebar'
+import { getModuleSidebarLayoutClassName } from '../../shared/ui/module-sidebar-layout'
 import {
   WorkspaceNodeCard,
   WorkspacePanel,
