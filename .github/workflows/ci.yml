@@ -50,15 +50,36 @@ jobs:
           npm exec vitest -- run \
             src/renderer/src/modules/settings/instructions/LearningInstructions.test.tsx \
             src/renderer/src/modules/boards/BoardsPage.test.tsx \
-            --reporter=verbose > test-output.txt 2>&1
+            --reporter=json --outputFile=test-results.json > /dev/null 2>&1
           status=$?
           if [ "$status" -ne 0 ]; then
+            node <<'NODE' > test-summary.txt
+          const fs = require('node:fs')
+          const report = JSON.parse(fs.readFileSync('test-results.json', 'utf8'))
+          const ansi = /\u001b\[[0-9;]*m/g
+          const lines = []
+
+          for (const suite of report.testResults ?? []) {
+            for (const assertion of suite.assertionResults ?? []) {
+              if (assertion.status !== 'failed') continue
+
+              const raw = (assertion.failureMessages ?? []).join('\n').replace(ansi, '')
+              const compact = raw.split('Ignored nodes:')[0].trim()
+              lines.push(`${suite.name} :: ${assertion.fullName ?? assertion.title ?? 'failed test'}`)
+              lines.push(compact.slice(0, 3500))
+              lines.push('')
+            }
+          }
+
+          process.stdout.write(lines.join('\n') || 'Vitest завершился с ошибкой без детального сообщения.')
+          NODE
             {
               echo "Убрать справочный текст из контекстных меню модуля «Доски» и оставить в них только доступные действия. Добавить в Настройки → Инструкции полноценный каталог «Доски» с поиском, оглавлением и отдельными статьями."
               echo
               echo "## Временная диагностика тестов"
               echo '```text'
-              tail -n 240 test-output.txt
+              cat test-summary.txt
+              echo
               echo '```'
             } > pr-body.md
             gh pr edit 22 --body-file pr-body.md
