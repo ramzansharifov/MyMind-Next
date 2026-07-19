@@ -74,4 +74,10 @@ replaceOnce(
   `vi.mock('../../shared/ui/tooltip', () => ({\n  Tooltip: ({ children }: { children: ReactElement }) => children\n}))\n\nvi.mock('./components/load-board-canvas', () => ({`
 )
 
+replaceOnce(
+  'src/renderer/src/modules/boards/BoardsPage.test.tsx',
+  `    expect(screen.getByRole('menuitem', { name: 'Переименовать' })).toBeInTheDocument()`,
+  `    expect(await screen.findByRole('menuitem', { name: 'Переименовать' })).toBeInTheDocument()`
+)
+
 console.log('Existing UI lint, type, and test isolation issues fixed')
