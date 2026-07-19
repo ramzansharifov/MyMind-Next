@@ -62,4 +62,16 @@ replaceOnce(
   `  const articleId = article.id\n\n  function openSection(sectionIndex: number): void {\n    const sectionId = getInstructionSectionId(scope, articleId, sectionIndex)`
 )
 
-console.log('Existing UI lint and type issues fixed')
+replaceOnce(
+  'src/renderer/src/modules/boards/BoardsPage.test.tsx',
+  `import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'\n\nimport type { BoardNode }`,
+  `import type { ReactElement } from 'react'\nimport { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'\n\nimport type { BoardNode }`
+)
+
+replaceOnce(
+  'src/renderer/src/modules/boards/BoardsPage.test.tsx',
+  `vi.mock('./components/load-board-canvas', () => ({`,
+  `vi.mock('../../shared/ui/tooltip', () => ({\n  Tooltip: ({ children }: { children: ReactElement }) => children\n}))\n\nvi.mock('./components/load-board-canvas', () => ({`
+)
+
+console.log('Existing UI lint, type, and test isolation issues fixed')
