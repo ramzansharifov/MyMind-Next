@@ -28,6 +28,7 @@ jobs:
           set -e
           node scripts/add-boards-instructions.mjs
           npm exec prettier -- --write \
+            scripts/add-boards-instructions.mjs \
             src/renderer/src/modules/settings/instructions/boards-instruction-catalog.ts \
             src/renderer/src/modules/settings/instructions/LearningInstructions.tsx \
             src/renderer/src/modules/settings/instructions/LearningInstructions.test.tsx \
