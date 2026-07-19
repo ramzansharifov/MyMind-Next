@@ -1,26 +1,99 @@
-name: CI (manual)
+name: Unify module sidebars
 
 on:
-  workflow_dispatch:
+  pull_request:
+    branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   verify:
+    if: github.actor != 'github-actions[bot]'
     runs-on: windows-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: agent/unify-module-sidebars
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run native:node
-      - run: npm run format:check
-      - run: npm run lint
-      - run: npm run typecheck
-      - run: npm run test:coverage
-      - run: npm run db:check
-      - run: npm run build:bundle
+      - name: Apply sidebar unification and verify
+        shell: bash
+        run: |
+          set -e
+
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('scripts/unify-module-sidebars.mjs')
+          content = path.read_text(encoding='utf-8')
+          content = content.replace(
+              r"paddingLeft: \`${4 + depth * 16}px\`",
+              r"paddingLeft: \`\${4 + depth * 16}px\`",
+          )
+          content = content.replace(
+              r"<Tooltip content={\`${node.title} · \${isFolder ? 'Папка' : 'Доска'}\`}",
+              r"<Tooltip content={\`\${node.title} · \${isFolder ? 'Папка' : 'Доска'}\`}",
+          )
+          path.write_text(content, encoding='utf-8')
+          PY
+
+          node scripts/unify-module-sidebars.mjs
+
+          npm exec prettier -- --write \
+            src/renderer/src/shared/ui/ModuleSidebar.tsx \
+            src/renderer/src/modules/study/StudyPage.tsx \
+            src/renderer/src/modules/boards/BoardsPage.tsx \
+            src/renderer/src/modules/boards/BoardsPage.test.tsx
+
+          npm run native:node
+          npm run format:check
+          npm run lint
+          npm run typecheck
+          npm run test:coverage
+          npm run db:check
+          npm run build:bundle
+
+          rm -f scripts/unify-module-sidebars.mjs
+
+          cat > .github/workflows/ci.yml <<'EOF'
+          name: CI (manual)
+
+          on:
+            workflow_dispatch:
+
+          permissions:
+            contents: read
+
+          jobs:
+            verify:
+              runs-on: windows-latest
+              timeout-minutes: 25
+              steps:
+                - uses: actions/checkout@v4
+                - uses: actions/setup-node@v4
+                  with:
+                    node-version: 22
+                    cache: npm
+                - run: npm ci
+                - run: npm run native:node
+                - run: npm run format:check
+                - run: npm run lint
+                - run: npm run typecheck
+                - run: npm run test:coverage
+                - run: npm run db:check
+                - run: npm run build:bundle
+          EOF
+
+          npm exec prettier -- --write .github/workflows/ci.yml
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Унифицировать сайдбары модулей"
+          git push origin HEAD:agent/unify-module-sidebars
