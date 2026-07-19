@@ -1,115 +1,26 @@
-name: Unify boards workspaces
+name: CI (manual)
 
 on:
-  pull_request:
-    branches: [main]
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   verify:
-    if: github.actor != 'github-actions[bot]'
     runs-on: windows-latest
-    timeout-minutes: 35
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: agent/unify-boards-workspaces
-          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Apply workspace unification and verify
-        shell: bash
-        run: |
-          set +e
-
-          {
-            python - <<'PY'
-          from pathlib import Path
-
-          path = Path('scripts/unify-boards-workspaces.mjs')
-          content = path.read_text(encoding='utf-8')
-          content = content.replace(
-              "\nfunction BoardWorkspace({`\n)\n\nreplaceOnce(",
-              "\n`\n)\n\nreplaceOnce(",
-          )
-          content = content.replace(
-              "  'function BoardTextDialog({' \n)\n\nconst boardsTestPath",
-              "  ''\n)\n\nconst boardsTestPath",
-          )
-          path.write_text(content, encoding='utf-8')
-          PY
-
-            node scripts/unify-boards-workspaces.mjs
-
-            npm exec prettier -- --write \
-              src/renderer/src/shared/ui/WorkspacePrimitives.tsx \
-              src/renderer/src/modules/study/components/StudyActionButton.tsx \
-              src/renderer/src/modules/study/components/StudyHome.tsx \
-              src/renderer/src/modules/study/StudyPage.tsx \
-              src/renderer/src/modules/boards/BoardsPage.tsx \
-              src/renderer/src/modules/boards/BoardsPage.test.tsx
-
-            npm run native:node
-            npm run format:check
-            npm run lint
-            npm run typecheck
-            npm run test:coverage
-            npm run db:check
-            npm run build:bundle
-          } > workspace-verification.log 2>&1
-          status=$?
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          if [ "$status" -ne 0 ]; then
-            tail -n 350 workspace-verification.log > workspace-verification-error.txt
-            git add workspace-verification-error.txt
-            git commit -m "[skip ci] Record workspace verification failure" || true
-            git push origin HEAD:agent/unify-boards-workspaces
-            exit 1
-          fi
-
-          rm -f \
-            scripts/unify-boards-workspaces.mjs \
-            workspace-verification.log \
-            workspace-verification-error.txt
-
-          cat > .github/workflows/ci.yml <<'EOF'
-          name: CI (manual)
-
-          on:
-            workflow_dispatch:
-
-          permissions:
-            contents: read
-
-          jobs:
-            verify:
-              runs-on: windows-latest
-              timeout-minutes: 25
-              steps:
-                - uses: actions/checkout@v4
-                - uses: actions/setup-node@v4
-                  with:
-                    node-version: 22
-                    cache: npm
-                - run: npm ci
-                - run: npm run native:node
-                - run: npm run format:check
-                - run: npm run lint
-                - run: npm run typecheck
-                - run: npm run test:coverage
-                - run: npm run db:check
-                - run: npm run build:bundle
-          EOF
-
-          npm exec prettier -- --write .github/workflows/ci.yml
-          git add -A
-          git commit -m "Унифицировать рабочие экраны досок и обучения"
-          git push origin HEAD:agent/unify-boards-workspaces
+      - run: npm run native:node
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:coverage
+      - run: npm run db:check
+      - run: npm run build:bundle

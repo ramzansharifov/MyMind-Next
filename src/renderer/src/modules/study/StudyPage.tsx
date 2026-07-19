@@ -15,6 +15,12 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } fro
 import type { StudyFolderIconName, StudyNode } from '../../../../shared/contracts/study'
 import { cn } from '../../shared/lib/cn'
 import { getModuleSidebarLayoutClassName, ModuleSidebar } from '../../shared/ui/ModuleSidebar'
+import {
+  WorkspaceNodeCard,
+  WorkspacePanel,
+  WorkspaceSectionEmpty,
+  WorkspaceStatCard
+} from '../../shared/ui/WorkspacePrimitives'
 import { Tooltip } from '../../shared/ui/tooltip'
 import { StudyActionButton } from './components/StudyActionButton'
 import { DeleteConfirmationDialog } from './components/DeleteConfirmationDialog'
@@ -761,21 +767,21 @@ function FolderWorkspace({
             </header>
 
             <div className="mt-6 grid grid-cols-3 gap-3 max-[760px]:grid-cols-1">
-              <FolderStatistic
+              <WorkspaceStatCard
                 icon={<BookOpen aria-hidden="true" className="size-5" />}
                 value={items.length}
                 label="Всего"
                 description="Элементов в этой папке"
               />
 
-              <FolderStatistic
+              <WorkspaceStatCard
                 icon={<FileText aria-hidden="true" className="size-5" />}
                 value={materials.length}
                 label="Материалов"
                 description="Конспекты и записи"
               />
 
-              <FolderStatistic
+              <WorkspaceStatCard
                 icon={<Folder aria-hidden="true" className="size-5" />}
                 value={folders.length}
                 label="Папок"
@@ -867,36 +873,6 @@ function FolderIconPicker({
   )
 }
 
-function FolderStatistic({
-  icon,
-  value,
-  label,
-  description
-}: {
-  icon: React.ReactNode
-  value: number
-  label: string
-  description: string
-}): React.JSX.Element {
-  return (
-    <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-[var(--app-border)] bg-black/[0.08] p-3.5 shadow-sm shadow-black/5">
-      <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
-        {icon}
-      </div>
-
-      <div className="min-w-0">
-        <div className="flex items-baseline gap-2">
-          <p className="text-xl font-semibold text-[var(--app-text)] tabular-nums">{value}</p>
-
-          <p className="truncate text-xs font-medium text-[var(--app-text)]">{label}</p>
-        </div>
-
-        <p className="mt-0.5 truncate text-[11px] text-[var(--app-muted)]">{description}</p>
-      </div>
-    </div>
-  )
-}
-
 function FolderItemsSection({
   kind,
   title,
@@ -913,98 +889,53 @@ function FolderItemsSection({
   const compact = kind === 'folder'
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[0_12px_40px_rgb(0_0_0/0.1)]">
-      <header className="flex min-h-20 items-center gap-3 border-b border-[var(--app-border)] px-5 py-4">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
-          {kind === 'folder' ? (
-            <Folder aria-hidden="true" className="size-5" />
-          ) : (
-            <FileText aria-hidden="true" className="size-5" />
-          )}
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <h2 className="truncate text-base font-semibold text-[var(--app-text)]">{title}</h2>
-        </div>
-
-        <span className="flex min-w-7 shrink-0 items-center justify-center rounded-full border border-[var(--app-border)] bg-[var(--app-workspace)] px-2 py-1 text-[11px] font-medium text-[var(--app-muted)] tabular-nums">
-          {items.length}
-        </span>
-      </header>
-
+    <WorkspacePanel
+      icon={
+        kind === 'folder' ? (
+          <Folder aria-hidden="true" className="size-5" />
+        ) : (
+          <FileText aria-hidden="true" className="size-5" />
+        )
+      }
+      title={title}
+      count={items.length}
+    >
       {items.length > 0 ? (
         <div
-          className={cn(
-            'p-4',
-            compact ? 'grid gap-2' : 'grid grid-cols-2 gap-3 max-[720px]:grid-cols-1'
-          )}
+          className={cn(compact ? 'grid gap-2' : 'grid grid-cols-2 gap-3 max-[720px]:grid-cols-1')}
         >
           {items.map((child) => (
-            <button
+            <WorkspaceNodeCard
               key={child.id}
-              type="button"
-              aria-label={`Открыть ${
-                child.type === 'folder' ? 'папку' : 'материал'
-              } «${child.title}»`}
-              className={cn(
-                'group flex w-full min-w-0 items-center gap-3 rounded-xl border text-left outline-none',
-                'border-[var(--app-border)] bg-[var(--app-workspace)]',
-                'transition-[border-color,background-color,transform,box-shadow]',
-                'hover:-translate-y-px hover:border-violet-500/30',
-                'hover:bg-[var(--app-surface-raised)] hover:shadow-lg hover:shadow-black/10',
-                'focus-visible:ring-2 focus-visible:ring-violet-500/35',
-                compact ? 'p-3' : 'p-3.5'
-              )}
-              onClick={() => {
-                onSelect(child.id)
-              }}
-            >
-              <span
-                aria-hidden="true"
-                className={cn(
-                  'flex shrink-0 items-center justify-center rounded-xl border',
-                  'border-white/[0.035] bg-white/[0.025] text-[var(--app-muted)]',
-                  'transition-colors',
-                  'group-hover:border-violet-500/15 group-hover:bg-violet-500/10',
-                  'group-hover:text-violet-300',
-                  compact ? 'size-9' : 'size-10'
-                )}
-              >
-                {child.type === 'folder' ? (
+              ariaLabel={`Открыть ${child.type === 'folder' ? 'папку' : 'материал'} «${child.title}»`}
+              icon={
+                child.type === 'folder' ? (
                   <StudyFolderIcon
                     name={child.icon}
                     expanded={child.isExpanded}
                     className="size-5"
                   />
                 ) : (
-                  <FileText className="size-5" />
-                )}
-              </span>
-
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-medium text-[var(--app-text)]">
-                  {child.title}
-                </span>
-
-                <span className="mt-1 block truncate text-[11px] text-[var(--app-muted)]">
-                  {child.type === 'folder' ? 'Папка' : 'Материал'}
-                  {' · '}
+                  <FileText aria-hidden="true" className="size-5" />
+                )
+              }
+              title={child.title}
+              metadata={
+                <>
+                  {child.type === 'folder' ? 'Папка' : 'Материал'} ·{' '}
                   {folderWorkspaceDateFormatter.format(new Date(child.updatedAt))}
-                </span>
-              </span>
-
-              <ArrowRight
-                aria-hidden="true"
-                className="size-4 shrink-0 -translate-x-1 text-[var(--app-muted)] opacity-0 transition-[opacity,transform,color] group-hover:translate-x-0 group-hover:text-violet-300 group-hover:opacity-100"
-              />
-            </button>
+                </>
+              }
+              compact={compact}
+              onOpen={() => {
+                onSelect(child.id)
+              }}
+            />
           ))}
         </div>
       ) : (
-        <div className="m-4 flex min-h-32 items-center justify-center rounded-xl border border-dashed border-[var(--app-border)] bg-black/[0.04] px-5 py-8 text-center text-sm leading-6 text-[var(--app-muted)]">
-          {emptyText}
-        </div>
+        <WorkspaceSectionEmpty>{emptyText}</WorkspaceSectionEmpty>
       )}
-    </section>
+    </WorkspacePanel>
   )
 }

@@ -4,6 +4,7 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
+  Clock3,
   Folder,
   FolderPlus,
   LayoutDashboard,
@@ -13,10 +14,12 @@ import {
   Pencil,
   Plus,
   Presentation,
+  Search,
   Trash2,
-  TriangleAlert
+  TriangleAlert,
+  X
 } from 'lucide-react'
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 
 import {
   BOARD_SYSTEM_ROOT_ID,
@@ -25,6 +28,13 @@ import {
 } from '../../../../shared/contracts/boards'
 import { cn } from '../../shared/lib/cn'
 import { getModuleSidebarLayoutClassName, ModuleSidebar } from '../../shared/ui/ModuleSidebar'
+import {
+  WorkspaceActionButton,
+  WorkspaceNodeCard,
+  WorkspacePanel,
+  WorkspaceSectionEmpty,
+  WorkspaceStatCard
+} from '../../shared/ui/WorkspacePrimitives'
 import { Tooltip } from '../../shared/ui/tooltip'
 import { boardsClient } from './api/boards-client'
 import { BoardCanvasErrorBoundary } from './components/BoardCanvasErrorBoundary'
@@ -562,6 +572,11 @@ function BoardMenuItem({
   )
 }
 
+const boardDateFormatter = new Intl.DateTimeFormat('ru-RU', {
+  day: 'numeric',
+  month: 'short'
+})
+
 function BoardsHome({
   nodes,
   rootNodes,
@@ -573,55 +588,223 @@ function BoardsHome({
   onOpen: (id: string) => void
   onCreate: (type: BoardNodeType, parentId: string | null) => void
 }): React.JSX.Element {
-  const boardCount = nodes.filter((node) => node.type === 'board').length
-  const folderCount = nodes.filter((node) => node.type === 'folder').length
+  const [search, setSearch] = useState('')
+  const nodesById = useMemo(() => new Map(nodes.map((node) => [node.id, node])), [nodes])
+  const folders = useMemo(() => nodes.filter((node) => node.type === 'folder'), [nodes])
+  const boards = useMemo(() => nodes.filter((node) => node.type === 'board'), [nodes])
+  const recentBoards = useMemo(
+    () => [...boards].sort((first, second) => second.updatedAt - first.updatedAt).slice(0, 6),
+    [boards]
+  )
+  const normalizedSearch = search.trim().toLocaleLowerCase('ru-RU')
+  const searchResults = useMemo(() => {
+    if (!normalizedSearch) return []
+
+    return nodes
+      .filter((node) => {
+        const location = getBoardNodeLocation(node, nodesById)
+        return `${node.title} ${location} ${getBoardNodeTypeLabel(node)}`
+          .toLocaleLowerCase('ru-RU')
+          .includes(normalizedSearch)
+      })
+      .sort((first, second) => {
+        const titleComparison = first.title.localeCompare(second.title, 'ru-RU')
+        return titleComparison || second.updatedAt - first.updatedAt
+      })
+  }, [nodes, nodesById, normalizedSearch])
 
   return (
-    <div className="h-full overflow-y-auto px-8 py-7 max-[720px]:px-4">
-      <div className="mx-auto w-full max-w-6xl space-y-5">
-        <header className="relative overflow-hidden rounded-3xl border border-[var(--app-border)] bg-[var(--app-surface)] p-6 shadow-[0_20px_70px_rgb(0_0_0/0.15)]">
-          <div className="absolute -top-28 right-4 size-72 rounded-full bg-[var(--app-accent-500)]/10 blur-3xl" />
-          <div className="relative flex items-start justify-between gap-5 max-[700px]:flex-col">
-            <div>
-              <p className="text-[11px] font-semibold tracking-[0.12em] text-[var(--app-accent-300)] uppercase">
-                Рабочее пространство
-              </p>
-              <h1 className="mt-1 text-3xl font-semibold tracking-tight text-[var(--app-text)]">
-                Доски
-              </h1>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--app-muted)]">
-                Создавайте самостоятельные бесконечные холсты и открывайте доски, связанные с
-                материалами обучения.
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <PrimaryAction
-                icon={FolderPlus}
-                label="Новая папка"
-                onClick={() => onCreate('folder', null)}
+    <section className="h-full overflow-y-auto bg-[var(--app-workspace)] px-8 py-7 max-[720px]:px-4 max-[720px]:py-5">
+      <div className="mx-auto w-full max-w-[1240px] space-y-5">
+        <section className="relative isolate overflow-hidden rounded-3xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[0_20px_70px_rgb(0_0_0/0.16)]">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -top-32 right-8 -z-10 size-80 rounded-full bg-violet-500/10 blur-3xl"
+          />
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -bottom-44 -left-24 -z-10 size-80 rounded-full bg-violet-900/10 blur-3xl"
+          />
+
+          <div className="p-6 max-[720px]:p-4">
+            <header className="flex items-start justify-between gap-6 max-[820px]:flex-col">
+              <div className="flex min-w-0 items-start gap-4">
+                <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-violet-500/20 bg-violet-500/12 text-violet-300 shadow-inner shadow-violet-500/5">
+                  <Presentation aria-hidden="true" className="size-6" />
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold tracking-[0.12em] text-violet-300 uppercase">
+                    Пространство идей
+                  </p>
+                  <h1 className="mt-1 text-3xl font-semibold tracking-[-0.035em] text-[var(--app-text)]">
+                    Доски
+                  </h1>
+                </div>
+              </div>
+
+              <div className="grid w-[22rem] max-w-full shrink-0 grid-cols-2 gap-2 max-[820px]:w-full max-[520px]:grid-cols-1">
+                <WorkspaceActionButton type="button" onClick={() => onCreate('folder', null)}>
+                  <FolderPlus aria-hidden="true" />
+                  Новая папка
+                </WorkspaceActionButton>
+                <WorkspaceActionButton
+                  type="button"
+                  variant="primary"
+                  onClick={() => onCreate('board', null)}
+                >
+                  <Presentation aria-hidden="true" />
+                  Новая доска
+                </WorkspaceActionButton>
+              </div>
+            </header>
+
+            <label className="mt-6 flex h-12 w-full min-w-0 items-center gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 shadow-inner shadow-black/10 transition-colors focus-within:border-violet-500/45 focus-within:ring-2 focus-within:ring-violet-500/10">
+              <Search aria-hidden="true" className="size-4 shrink-0 text-[var(--app-muted)]" />
+              <input
+                value={search}
+                aria-label="Поиск по доскам"
+                placeholder="Найти доску, папку или путь в пространстве"
+                className="min-w-0 flex-1 bg-transparent text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/65"
+                onChange={(event) => setSearch(event.target.value)}
               />
-              <PrimaryAction
-                icon={Presentation}
-                label="Новая доска"
-                onClick={() => onCreate('board', null)}
+              {search && (
+                <button
+                  type="button"
+                  aria-label="Очистить поиск досок"
+                  className="flex size-7 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors outline-none hover:bg-white/[0.06] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35"
+                  onClick={() => setSearch('')}
+                >
+                  <X aria-hidden="true" className="size-4" />
+                </button>
+              )}
+            </label>
+
+            <div className="mt-4 grid grid-cols-3 gap-3 max-[760px]:grid-cols-1">
+              <WorkspaceStatCard
+                icon={<Presentation aria-hidden="true" className="size-5" />}
+                value={boards.length}
+                label="Досок"
+                description="Во всём пространстве"
+              />
+              <WorkspaceStatCard
+                icon={<Folder aria-hidden="true" className="size-5" />}
+                value={folders.length}
+                label="Папок"
+                description="Для организации холстов"
+              />
+              <WorkspaceStatCard
+                icon={<LayoutDashboard aria-hidden="true" className="size-5" />}
+                value={nodes.filter((node) => Boolean(node.sourceMaterialId)).length}
+                label="Из обучения"
+                description="Связанных с материалами"
               />
             </div>
           </div>
-        </header>
+        </section>
 
-        <div className="grid grid-cols-3 gap-4 max-[760px]:grid-cols-1">
-          <MetricCard label="Досок" value={boardCount} icon={Presentation} />
-          <MetricCard label="Папок" value={folderCount} icon={Folder} />
-          <MetricCard
-            label="Связано с обучением"
-            value={nodes.filter((node) => Boolean(node.sourceMaterialId)).length}
-            icon={LayoutDashboard}
-          />
-        </div>
+        {normalizedSearch ? (
+          <BoardSearchResults nodes={searchResults} nodesById={nodesById} onOpen={onOpen} />
+        ) : (
+          <div className="grid grid-cols-[minmax(0,1.45fr)_minmax(320px,0.75fr)] items-start gap-5 max-[1080px]:grid-cols-1">
+            <WorkspacePanel
+              icon={<Clock3 aria-hidden="true" className="size-5" />}
+              title="Недавние доски"
+              count={recentBoards.length}
+            >
+              {recentBoards.length > 0 ? (
+                <div className="grid grid-cols-2 gap-3 max-[760px]:grid-cols-1">
+                  {recentBoards.map((board) => (
+                    <BoardNodeCard
+                      key={board.id}
+                      node={board}
+                      metadata={
+                        <>
+                          {getBoardNodeTypeLabel(board)} · {getBoardNodeLocation(board, nodesById)}
+                        </>
+                      }
+                      showDate
+                      onOpen={onOpen}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <WorkspaceSectionEmpty>
+                  Здесь появятся недавно изменённые доски.
+                </WorkspaceSectionEmpty>
+              )}
+            </WorkspacePanel>
 
-        <BoardItemsSection title="Структура" items={rootNodes} onOpen={onOpen} />
+            <WorkspacePanel
+              icon={<LayoutDashboard aria-hidden="true" className="size-5" />}
+              title="Структура"
+              count={rootNodes.length}
+            >
+              {rootNodes.length > 0 ? (
+                <>
+                  <div className="grid gap-2">
+                    {rootNodes.slice(0, 8).map((node) => (
+                      <BoardNodeCard
+                        key={node.id}
+                        node={node}
+                        metadata={<>{getBoardNodeTypeLabel(node)} · Корень</>}
+                        compact
+                        onOpen={onOpen}
+                      />
+                    ))}
+                  </div>
+                  {rootNodes.length > 8 && (
+                    <div className="mt-3 rounded-xl border border-dashed border-[var(--app-border)] px-3 py-2.5 text-xs leading-5 text-[var(--app-muted)]">
+                      Ещё {rootNodes.length - 8} элементов доступны в дереве досок.
+                    </div>
+                  )}
+                </>
+              ) : (
+                <WorkspaceSectionEmpty>Пространство досок пока пусто.</WorkspaceSectionEmpty>
+              )}
+            </WorkspacePanel>
+          </div>
+        )}
       </div>
-    </div>
+    </section>
+  )
+}
+
+function BoardSearchResults({
+  nodes,
+  nodesById,
+  onOpen
+}: {
+  nodes: BoardNode[]
+  nodesById: Map<string, BoardNode>
+  onOpen: (id: string) => void
+}): React.JSX.Element {
+  return (
+    <WorkspacePanel
+      icon={<Search aria-hidden="true" className="size-5" />}
+      title="Результаты поиска"
+      count={nodes.length}
+    >
+      {nodes.length > 0 ? (
+        <div className="grid grid-cols-2 gap-3 max-[760px]:grid-cols-1">
+          {nodes.map((node) => (
+            <BoardNodeCard
+              key={node.id}
+              node={node}
+              metadata={
+                <>
+                  {getBoardNodeTypeLabel(node)} · {getBoardNodeLocation(node, nodesById)}
+                </>
+              }
+              showDate
+              onOpen={onOpen}
+            />
+          ))}
+        </div>
+      ) : (
+        <WorkspaceSectionEmpty>По этому запросу ничего не найдено.</WorkspaceSectionEmpty>
+      )}
+    </WorkspacePanel>
   )
 }
 
@@ -638,102 +821,236 @@ function BoardFolderPage({
   onCreate: (type: BoardNodeType, parentId: string | null) => void
   onRename: () => void
 }): React.JSX.Element {
+  const folders = items
+    .filter((item) => item.type === 'folder')
+    .sort((first, second) => first.position - second.position)
+  const boards = items
+    .filter((item) => item.type === 'board')
+    .sort((first, second) => first.position - second.position)
+
   return (
-    <div className="h-full overflow-y-auto px-8 py-7 max-[720px]:px-4">
-      <div className="mx-auto w-full max-w-6xl space-y-5">
-        <header className="rounded-3xl border border-[var(--app-border)] bg-[var(--app-surface)] p-6 shadow-[0_20px_70px_rgb(0_0_0/0.14)]">
-          <div className="flex items-start justify-between gap-5 max-[700px]:flex-col">
-            <div className="flex min-w-0 items-start gap-4">
-              <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-[var(--app-accent-500)]/20 bg-[var(--app-accent-500)]/10 text-[var(--app-accent-300)]">
-                {folder.isSystem ? <LockKeyhole aria-hidden /> : <Folder aria-hidden />}
+    <section className="h-full overflow-y-auto bg-[var(--app-workspace)] px-8 py-7 max-[720px]:px-4 max-[720px]:py-5">
+      <div className="mx-auto w-full max-w-[1240px] space-y-5">
+        <section className="relative isolate overflow-hidden rounded-3xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[0_20px_70px_rgb(0_0_0/0.16)]">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -top-32 right-8 -z-10 size-80 rounded-full bg-violet-500/10 blur-3xl"
+          />
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -bottom-44 -left-24 -z-10 size-80 rounded-full bg-violet-900/10 blur-3xl"
+          />
+
+          <div className="p-6 max-[720px]:p-4">
+            <header className="flex items-start justify-between gap-6 max-[920px]:flex-col">
+              <div className="flex min-w-0 items-start gap-4">
+                <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-violet-500/20 bg-violet-500/12 text-violet-300 shadow-inner shadow-violet-500/5">
+                  {folder.isSystem ? (
+                    <LockKeyhole aria-hidden="true" className="size-6" />
+                  ) : (
+                    <Folder aria-hidden="true" className="size-6" />
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold tracking-[0.12em] text-violet-300 uppercase">
+                    {folder.isSystem ? 'Системная папка досок' : 'Папка досок'}
+                  </p>
+                  <h1 className="mt-1 truncate text-3xl font-semibold tracking-[-0.035em] text-[var(--app-text)]">
+                    {folder.title}
+                  </h1>
+                </div>
               </div>
-              <div className="min-w-0">
-                <p className="text-[11px] font-semibold tracking-[0.12em] text-[var(--app-accent-300)] uppercase">
-                  Папка досок
-                </p>
-                <h1 className="mt-1 truncate text-3xl font-semibold text-[var(--app-text)]">
-                  {folder.title}
-                </h1>
-                <p className="mt-2 text-sm text-[var(--app-muted)]">
-                  {folder.isSystem
-                    ? 'Защищённая точка входа для досок из материалов обучения.'
-                    : 'Организуйте связанные папки и доски.'}
-                </p>
+
+              <div
+                className={cn(
+                  'grid max-w-full shrink-0 gap-2 max-[920px]:w-full max-[620px]:grid-cols-1',
+                  folder.isSystem
+                    ? 'w-[22rem] grid-cols-2'
+                    : 'w-[33rem] grid-cols-3 max-[760px]:grid-cols-2'
+                )}
+              >
+                {!folder.isSystem && (
+                  <WorkspaceActionButton type="button" onClick={onRename}>
+                    <Pencil aria-hidden="true" />
+                    Переименовать
+                  </WorkspaceActionButton>
+                )}
+                <WorkspaceActionButton type="button" onClick={() => onCreate('folder', folder.id)}>
+                  <FolderPlus aria-hidden="true" />
+                  Новая папка
+                </WorkspaceActionButton>
+                <WorkspaceActionButton
+                  type="button"
+                  variant="primary"
+                  onClick={() => onCreate('board', folder.id)}
+                >
+                  <Presentation aria-hidden="true" />
+                  Новая доска
+                </WorkspaceActionButton>
               </div>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {!folder.isSystem && (
-                <PrimaryAction icon={Pencil} label="Переименовать" onClick={onRename} />
-              )}
-              <PrimaryAction
-                icon={FolderPlus}
-                label="Новая папка"
-                onClick={() => onCreate('folder', folder.id)}
+            </header>
+
+            <div className="mt-6 grid grid-cols-3 gap-3 max-[760px]:grid-cols-1">
+              <WorkspaceStatCard
+                icon={<LayoutDashboard aria-hidden="true" className="size-5" />}
+                value={items.length}
+                label="Всего"
+                description="Элементов в этой папке"
               />
-              <PrimaryAction
-                icon={Presentation}
-                label="Новая доска"
-                onClick={() => onCreate('board', folder.id)}
+              <WorkspaceStatCard
+                icon={<Presentation aria-hidden="true" className="size-5" />}
+                value={boards.length}
+                label="Досок"
+                description="Холстов и схем"
+              />
+              <WorkspaceStatCard
+                icon={<Folder aria-hidden="true" className="size-5" />}
+                value={folders.length}
+                label="Папок"
+                description="Вложенных разделов"
               />
             </div>
           </div>
-        </header>
-        <BoardItemsSection title="Содержимое" items={items} onOpen={onOpen} />
+        </section>
+
+        <div className="grid grid-cols-[minmax(0,1.35fr)_minmax(300px,0.75fr)] items-start gap-5 max-[1040px]:grid-cols-1">
+          <BoardItemsPanel
+            kind="board"
+            title="Доски"
+            items={boards}
+            emptyText="В этой папке пока нет досок"
+            onOpen={onOpen}
+          />
+          <BoardItemsPanel
+            kind="folder"
+            title="Вложенные папки"
+            items={folders}
+            emptyText="Вложенных папок пока нет"
+            onOpen={onOpen}
+          />
+        </div>
       </div>
-    </div>
+    </section>
   )
 }
 
-function BoardItemsSection({
+function BoardItemsPanel({
+  kind,
   title,
   items,
+  emptyText,
   onOpen
 }: {
+  kind: 'folder' | 'board'
   title: string
   items: BoardNode[]
+  emptyText: string
+  onOpen: (id: string) => void
+}): React.JSX.Element {
+  const compact = kind === 'folder'
+
+  return (
+    <WorkspacePanel
+      icon={
+        kind === 'folder' ? (
+          <Folder aria-hidden="true" className="size-5" />
+        ) : (
+          <Presentation aria-hidden="true" className="size-5" />
+        )
+      }
+      title={title}
+      count={items.length}
+    >
+      {items.length > 0 ? (
+        <div
+          className={cn(compact ? 'grid gap-2' : 'grid grid-cols-2 gap-3 max-[720px]:grid-cols-1')}
+        >
+          {items.map((item) => (
+            <BoardNodeCard
+              key={item.id}
+              node={item}
+              metadata={
+                <>
+                  {getBoardNodeTypeLabel(item)} ·{' '}
+                  {boardDateFormatter.format(new Date(item.updatedAt))}
+                </>
+              }
+              compact={compact}
+              onOpen={onOpen}
+            />
+          ))}
+        </div>
+      ) : (
+        <WorkspaceSectionEmpty>{emptyText}</WorkspaceSectionEmpty>
+      )}
+    </WorkspacePanel>
+  )
+}
+
+function BoardNodeCard({
+  node,
+  metadata,
+  compact = false,
+  showDate = false,
+  onOpen
+}: {
+  node: BoardNode
+  metadata: ReactNode
+  compact?: boolean
+  showDate?: boolean
   onOpen: (id: string) => void
 }): React.JSX.Element {
   return (
-    <section className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)]">
-      <header className="border-b border-[var(--app-border)] px-5 py-4">
-        <h2 className="font-semibold text-[var(--app-text)]">{title}</h2>
-        <p className="mt-1 text-xs text-[var(--app-muted)]">{items.length} элементов</p>
-      </header>
-      {items.length === 0 ? (
-        <div className="px-5 py-12 text-center text-sm text-[var(--app-muted)]">
-          Пока здесь ничего нет
-        </div>
-      ) : (
-        <div className="grid grid-cols-3 gap-3 p-4 max-[980px]:grid-cols-2 max-[640px]:grid-cols-1">
-          {items.map((item) => {
-            const Icon = item.type === 'folder' ? Folder : Presentation
-            return (
-              <button
-                key={item.id}
-                type="button"
-                className="group flex min-h-28 items-start gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-4 text-left transition-[border-color,transform] outline-none hover:-translate-y-px hover:border-[var(--app-accent-500)]/35 focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)]/45"
-                onClick={() => onOpen(item.id)}
-              >
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--app-accent-500)]/10 text-[var(--app-accent-300)]">
-                  <Icon aria-hidden className="size-5" />
-                </div>
-                <div className="min-w-0">
-                  <p className="truncate font-medium text-[var(--app-text)]">{item.title}</p>
-                  <p className="mt-1 text-xs text-[var(--app-muted)]">
-                    {item.type === 'folder'
-                      ? 'Папка'
-                      : item.sourceMaterialId
-                        ? 'Доска из обучения'
-                        : 'Доска'}
-                  </p>
-                </div>
-              </button>
-            )
-          })}
-        </div>
-      )}
-    </section>
+    <WorkspaceNodeCard
+      ariaLabel={`Открыть ${node.type === 'folder' ? 'папку' : 'доску'} «${node.title}»`}
+      icon={
+        node.type === 'folder' ? (
+          node.isSystem ? (
+            <LockKeyhole aria-hidden="true" className="size-5" />
+          ) : (
+            <Folder aria-hidden="true" className="size-5" />
+          )
+        ) : (
+          <Presentation aria-hidden="true" className="size-5" />
+        )
+      }
+      title={node.title}
+      metadata={metadata}
+      aside={
+        showDate && !compact ? (
+          <time
+            dateTime={new Date(node.updatedAt).toISOString()}
+            className="shrink-0 rounded-lg bg-white/[0.025] px-2 py-1 text-[10px] text-[var(--app-muted)] max-[520px]:hidden"
+          >
+            {boardDateFormatter.format(new Date(node.updatedAt))}
+          </time>
+        ) : undefined
+      }
+      compact={compact}
+      onOpen={() => onOpen(node.id)}
+    />
   )
+}
+
+function getBoardNodeTypeLabel(node: BoardNode): string {
+  if (node.type === 'folder') return node.isSystem ? 'Системная папка' : 'Папка'
+  return node.sourceMaterialId ? 'Доска из обучения' : 'Доска'
+}
+
+function getBoardNodeLocation(node: BoardNode, nodesById: Map<string, BoardNode>): string {
+  const parts: string[] = []
+  const visited = new Set<string>()
+  let parentId = node.parentId
+
+  while (parentId && !visited.has(parentId)) {
+    visited.add(parentId)
+    const parent = nodesById.get(parentId)
+    if (!parent) break
+    parts.unshift(parent.title)
+    parentId = parent.parentId
+  }
+
+  return parts.length > 0 ? parts.join(' / ') : 'Корень'
 }
 
 function BoardWorkspace({
@@ -761,14 +1078,14 @@ function BoardWorkspace({
             {node.title}
           </h1>
         </div>
-        <button
+        <WorkspaceActionButton
           type="button"
-          className="flex h-9 items-center gap-2 rounded-lg px-3 text-sm text-[var(--app-muted)] hover:bg-white/[0.05] hover:text-[var(--app-text)]"
+          className="w-auto px-3 max-[720px]:size-10 max-[720px]:px-0"
           onClick={onRename}
         >
-          <Pencil aria-hidden className="size-4" />
+          <Pencil aria-hidden="true" />
           <span className="max-[720px]:hidden">Переименовать</span>
-        </button>
+        </WorkspaceActionButton>
         <BoardSaveStatus state={saveState} />
       </header>
       <div className="min-h-0 flex-1">
@@ -809,47 +1126,6 @@ function BoardSaveStatus({ state }: { state: BoardSaveState }): React.JSX.Elemen
       <Check aria-hidden className="size-3.5" />
       Сохранено
     </span>
-  )
-}
-
-function PrimaryAction({
-  icon: Icon,
-  label,
-  onClick
-}: {
-  icon: typeof Folder
-  label: string
-  onClick: () => void
-}): React.JSX.Element {
-  return (
-    <button
-      type="button"
-      className="flex h-10 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm font-medium text-[var(--app-text)] outline-none hover:border-[var(--app-accent-500)]/35 focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)]/45"
-      onClick={onClick}
-    >
-      <Icon aria-hidden className="size-4 text-[var(--app-accent-300)]" />
-      {label}
-    </button>
-  )
-}
-
-function MetricCard({
-  label,
-  value,
-  icon: Icon
-}: {
-  label: string
-  value: number
-  icon: typeof Folder
-}): React.JSX.Element {
-  return (
-    <div className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-5">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-[var(--app-muted)]">{label}</p>
-        <Icon aria-hidden className="size-4 text-[var(--app-accent-300)]" />
-      </div>
-      <p className="mt-3 text-3xl font-semibold text-[var(--app-text)]">{value}</p>
-    </div>
   )
 }
 

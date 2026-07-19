@@ -115,6 +115,51 @@ describe('BoardsPage', () => {
     expect(screen.getByRole('button', { name: 'Главная досок' })).toBeInTheDocument()
   })
 
+  it('matches the study workspace layout, data cards, and search behavior', async () => {
+    testHarness.listNodes.mockResolvedValueOnce([systemFolder, boardNode])
+
+    render(<BoardsPage />)
+
+    await screen.findByRole('heading', { name: 'Доски', level: 1 })
+
+    expect(screen.getByRole('button', { name: 'Новая папка' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Новая доска' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Недавние доски' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Структура' })).toBeInTheDocument()
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Поиск по доскам' }), {
+      target: { value: 'Тестовая' }
+    })
+
+    expect(screen.getByRole('heading', { name: 'Результаты поиска' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Открыть доску «Тестовая доска»' })
+    ).toBeInTheDocument()
+  })
+
+  it('uses the same folder workspace sections and actions as study', async () => {
+    const linkedBoard = {
+      ...boardNode,
+      parentId: systemFolder.id,
+      sourceMaterialId: 'material-1'
+    }
+    testHarness.listNodes.mockResolvedValueOnce([systemFolder, linkedBoard])
+
+    render(<BoardsPage />)
+
+    await screen.findByRole('heading', { name: 'Доски', level: 1 })
+    fireEvent.click(screen.getByRole('button', { name: 'Обучение' }))
+
+    expect(await screen.findByRole('heading', { name: 'Обучение', level: 1 })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Доски', level: 2 })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Вложенные папки' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Новая папка' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Новая доска' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Открыть доску «Тестовая доска»' })
+    ).toBeInTheDocument()
+  })
+
   it('loads BoardCanvas only for a board and isolates a lazy import failure in the workspace', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => undefined)
     testHarness.listNodes.mockResolvedValueOnce([systemFolder, boardNode])
