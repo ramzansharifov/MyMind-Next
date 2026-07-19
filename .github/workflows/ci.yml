@@ -27,6 +27,7 @@ jobs:
         run: |
           set -e
           node scripts/add-boards-instructions.mjs
+          node -e "const fs=require('node:fs');const p='src/renderer/src/modules/settings/instructions/boards-instruction-catalog.ts';fs.writeFileSync(p,fs.readFileSync(p,'utf8').replace('  Save,\n',''))"
           npm exec prettier -- --write \
             scripts/add-boards-instructions.mjs \
             src/renderer/src/modules/settings/instructions/boards-instruction-catalog.ts \
