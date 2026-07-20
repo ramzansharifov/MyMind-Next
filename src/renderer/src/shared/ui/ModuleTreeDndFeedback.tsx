@@ -72,7 +72,7 @@ export function ModuleTreeRootDropZone({
         'text-xs transition-colors outline-none',
         'focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:ring-inset',
         highlighted
-          ? 'border-dashed border-violet-400 bg-violet-500/10 text-violet-200'
+          ? 'border-dashed border-violet-400 text-violet-200'
           : active
             ? 'border-dashed border-[var(--app-border)] text-[var(--app-muted)]'
             : 'border-transparent text-transparent hover:bg-white/[0.018] hover:text-[var(--app-muted)] focus-visible:bg-white/[0.018] focus-visible:text-[var(--app-muted)]'
