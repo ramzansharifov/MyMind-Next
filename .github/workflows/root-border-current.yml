@@ -22,6 +22,12 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Format changed files
+        run: >-
+          npm exec prettier -- --write
+          src/renderer/src/shared/ui/ModuleTreeDndFeedback.tsx
+          src/renderer/src/shared/ui/ModuleTreeDndFeedback.test.tsx
+          .github/workflows/root-border-current.yml
       - run: npm run native:node
       - run: npm run format:check
       - run: npm run lint
@@ -39,7 +45,11 @@ jobs:
           function collectCssFiles(directory) {
             return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
               const fullPath = path.join(directory, entry.name)
-              return entry.isDirectory() ? collectCssFiles(fullPath) : fullPath.endsWith('.css') ? [fullPath] : []
+              return entry.isDirectory()
+                ? collectCssFiles(fullPath)
+                : fullPath.endsWith('.css')
+                  ? [fullPath]
+                  : []
             })
           }
 
