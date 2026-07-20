@@ -4,8 +4,7 @@ import { cn } from '../lib/cn'
 
 export type ModuleTreeNodeDropPlacement = 'before' | 'inside' | 'after' | 'root' | null
 
-export const MODULE_TREE_NODE_INSIDE_DROP_CLASS_NAME =
-  'bg-violet-500/15 ring-1 ring-violet-500/45'
+export const MODULE_TREE_NODE_INSIDE_DROP_CLASS_NAME = 'bg-violet-500/15 ring-1 ring-violet-500/45'
 
 export function ModuleTreeNodeDropIndicator({
   placement

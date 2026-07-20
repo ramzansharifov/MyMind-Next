@@ -27,6 +27,12 @@ import { useMemo, useState } from 'react'
 
 import type { MoveStudyNodeInput, StudyNode } from '../../../../../shared/contracts/study'
 import { cn } from '../../../shared/lib/cn'
+import {
+  MODULE_TREE_NODE_INSIDE_DROP_CLASS_NAME,
+  ModuleTreeDragOverlay,
+  ModuleTreeNodeDropIndicator,
+  ModuleTreeRootDropZone
+} from '../../../shared/ui/ModuleTreeDndFeedback'
 import { Tooltip } from '../../../shared/ui/tooltip'
 import { createStudyMoveInput, type StudyDropPlacement } from '../lib/study-dnd'
 import { getVisibleStudyNodes } from '../lib/study-tree'
@@ -339,7 +345,7 @@ function StudyTreeItem({
         isCreationContext &&
           !isSelected &&
           'bg-violet-500/[0.045] text-[var(--app-text)] ring-1 ring-violet-500/15 ring-inset',
-        dropPlacement === 'inside' && 'bg-violet-500/15 ring-1 ring-violet-500/45',
+        dropPlacement === 'inside' && MODULE_TREE_NODE_INSIDE_DROP_CLASS_NAME,
         isDragging && 'opacity-35'
       )}
       style={
@@ -366,13 +372,7 @@ function StudyTreeItem({
         />
       )}
 
-      {dropPlacement === 'before' && (
-        <span className="pointer-events-none absolute top-0 right-1 left-1 h-0.5 -translate-y-1/2 rounded-full bg-violet-400" />
-      )}
-
-      {dropPlacement === 'after' && (
-        <span className="pointer-events-none absolute right-1 bottom-0 left-1 h-0.5 translate-y-1/2 rounded-full bg-violet-400" />
-      )}
+      <ModuleTreeNodeDropIndicator placement={dropPlacement} />
 
       {!collapsed &&
         (isFolder ? (
@@ -603,49 +603,31 @@ function StudyRootDropZone({
   })
 
   return (
-    <button
-      ref={setNodeRef}
-      type="button"
-      aria-label="Выбрать корень библиотеки"
-      aria-pressed={isContextActive}
-      className={cn(
-        'group/root mt-2 flex min-h-20 flex-1 items-start justify-center rounded-lg border pt-3',
-        collapsed && 'px-0',
-        'text-xs transition-colors outline-none',
-        'focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:ring-inset',
-        highlighted
-          ? 'border-dashed border-violet-400 bg-violet-500/10 text-violet-200'
-          : active
-            ? 'border-dashed border-[var(--app-border)] text-[var(--app-muted)]'
-            : 'border-transparent text-transparent hover:bg-white/[0.018] hover:text-[var(--app-muted)] focus-visible:bg-white/[0.018] focus-visible:text-[var(--app-muted)]'
-      )}
-      onClick={onSelect}
-    >
-      <span
-        className={cn(
-          'rounded-md px-2 py-1 transition-opacity',
-          collapsed && 'sr-only',
-          active
-            ? 'opacity-100'
-            : 'opacity-0 group-hover/root:opacity-100 group-focus-visible/root:opacity-100'
-        )}
-      >
-        {active ? 'Переместить в корень' : 'Корень библиотеки'}
-      </span>
-    </button>
+    <ModuleTreeRootDropZone
+      dropRef={setNodeRef}
+      active={active}
+      highlighted={highlighted}
+      isContextActive={isContextActive}
+      collapsed={collapsed}
+      ariaLabel="Выбрать корень библиотеки"
+      idleLabel="Корень библиотеки"
+      activeLabel="Переместить в корень"
+      onSelect={onSelect}
+    />
   )
 }
 
 function StudyDragOverlay({ node }: { node: StudyNode }): React.JSX.Element {
   return (
-    <div className="flex h-9 max-w-60 items-center gap-2 rounded-lg border border-violet-500/40 bg-[var(--app-surface-raised)] px-3 text-sm text-[var(--app-text)] shadow-lg shadow-black/25">
-      {node.type === 'folder' ? (
-        <StudyFolderIcon name={node.icon} className="size-4 shrink-0 text-violet-300" />
-      ) : (
-        <FileText aria-hidden="true" className="size-4 shrink-0 text-violet-300" />
-      )}
-
-      <span className="truncate">{node.title}</span>
-    </div>
+    <ModuleTreeDragOverlay
+      icon={
+        node.type === 'folder' ? (
+          <StudyFolderIcon name={node.icon} className="size-4 shrink-0 text-violet-300" />
+        ) : (
+          <FileText aria-hidden="true" className="size-4 shrink-0 text-violet-300" />
+        )
+      }
+      title={node.title}
+    />
   )
 }

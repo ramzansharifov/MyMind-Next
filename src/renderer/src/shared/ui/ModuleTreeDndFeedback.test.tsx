@@ -73,9 +73,7 @@ describe('ModuleTreeDndFeedback', () => {
 
     rerender(<ModuleTreeNodeDropIndicator placement="after" />)
 
-    expect(
-      container.querySelector('[data-module-tree-drop-indicator="after"]')
-    ).toBeInTheDocument()
+    expect(container.querySelector('[data-module-tree-drop-indicator="after"]')).toBeInTheDocument()
 
     rerender(<ModuleTreeNodeDropIndicator placement="inside" />)
 
