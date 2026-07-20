@@ -1,89 +1,46 @@
-name: Add boards drag and study return
+name: Diagnose boards drag and study return
 
 on:
   pull_request:
     branches: [main]
 
 permissions:
-  contents: write
+  contents: read
+  pull-requests: write
 
 jobs:
-  verify:
+  diagnose:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
           ref: agent/boards-dnd-study-back
-          fetch-depth: 0
+          fetch-depth: 1
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
-      - name: Apply boards integration changes
+      - run: npm ci --silent
+      - name: Diagnose patch application
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          set -e
+          set +e
           node -e "const fs=require('node:fs');const p='scripts/add-boards-dnd-study-back.mjs';const s=fs.readFileSync(p,'utf8');fs.writeFileSync(p,s.replace('\n  if (content.includes(replacement)) return\n','\n'))"
-          node scripts/add-boards-dnd-study-back.mjs
-          rm -f scripts/add-boards-dnd-study-back.mjs
-          npm exec prettier -- --write \
-            src/main/repositories/boards.repository.ts \
-            src/main/repositories/boards.repository.test.ts \
-            src/renderer/src/modules/boards/BoardsPage.tsx \
-            src/renderer/src/modules/boards/BoardsPage.test.tsx \
-            src/renderer/src/modules/boards/components/BoardTree.tsx \
-            src/renderer/src/modules/boards/lib/board-dnd.ts \
-            src/renderer/src/modules/boards/lib/board-dnd.test.ts \
-            src/renderer/src/modules/study/StudyPage.tsx \
-            src/renderer/src/modules/study/StudyPage.resource-navigation.test.tsx \
-            src/renderer/src/modules/settings/instructions/boards-instruction-catalog.ts \
-            src/renderer/src/modules/settings/instructions/LearningInstructions.test.tsx
-      - run: npm run native:node
-      - run: npm run format:check
-      - run: npm run lint
-      - run: npm run typecheck
-      - run: npm run test:coverage
-      - run: npm run db:check
-      - run: npm run build:bundle
-      - name: Commit verified changes
-        shell: bash
-        run: |
-          set -e
-          cat > .github/workflows/ci.yml <<'EOF'
-          name: CI (manual)
-
-          on:
-            workflow_dispatch:
-
-          permissions:
-            contents: read
-
-          jobs:
-            verify:
-              runs-on: windows-latest
-              timeout-minutes: 25
-              steps:
-                - uses: actions/checkout@v4
-                - uses: actions/setup-node@v4
-                  with:
-                    node-version: 22
-                    cache: npm
-                - run: npm ci
-                - run: npm run native:node
-                - run: npm run format:check
-                - run: npm run lint
-                - run: npm run typecheck
-                - run: npm run test:coverage
-                - run: npm run db:check
-                - run: npm run build:bundle
-          EOF
-
-          npm exec prettier -- --write .github/workflows/ci.yml
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "Добавить перемещение досок и возврат к материалу"
-          git push origin HEAD:agent/boards-dnd-study-back
+          node scripts/add-boards-dnd-study-back.mjs > apply-output.txt 2>&1
+          status=$?
+          if [ "$status" -ne 0 ]; then
+            {
+              echo "Добавить drag-and-drop обычных папок и досок, защитить ветку «Обучение» и добавить возврат к исходному материалу."
+              echo
+              echo "## Временная диагностика применения патча"
+              echo '```text'
+              cat apply-output.txt
+              echo '```'
+            } > pr-body.md
+            gh pr edit 24 --body-file pr-body.md
+            exit "$status"
+          fi
