@@ -61,7 +61,8 @@ describe('ModuleTreeDndFeedback', () => {
       />
     )
 
-    expect(rootZone).toHaveClass('border-violet-400', 'bg-violet-500/10', 'text-violet-200')
+    expect(rootZone).toHaveClass('border-dashed', 'border-violet-400', 'text-violet-200')
+    expect(rootZone).not.toHaveClass('bg-violet-500/10')
   })
 
   it('shares the study insertion feedback for before, inside, and after placements', () => {
