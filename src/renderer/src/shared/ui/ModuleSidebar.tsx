@@ -14,6 +14,7 @@ interface ModuleSidebarProps {
   expandLabel: string
   collapseLabel: string
   children: ReactNode
+  contentClassName?: string
   onHomeSelect: () => void
   onCollapsedChange: (collapsed: boolean) => void
 }
@@ -28,6 +29,7 @@ export function ModuleSidebar({
   expandLabel,
   collapseLabel,
   children,
+  contentClassName,
   onHomeSelect,
   onCollapsedChange
 }: ModuleSidebarProps): React.JSX.Element {
@@ -100,7 +102,11 @@ export function ModuleSidebar({
 
       <div
         data-module-sidebar-content
-        className={cn('min-h-0 flex-1 overflow-y-auto', collapsed ? 'px-2 py-3' : 'p-3')}
+        className={cn(
+          'min-h-0 flex-1 overflow-y-auto',
+          collapsed ? 'px-2 py-3' : 'p-3',
+          contentClassName
+        )}
       >
         {children}
       </div>
