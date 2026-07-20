@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import type { ReactElement } from 'react'
+import type { ReactElement, ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const testHarness = vi.hoisted(() => ({
@@ -26,20 +26,36 @@ vi.mock('tldraw', () => ({
     },
     dispose: testHarness.disposeStore
   })),
+  DefaultQuickActions: ({ children }: { children: ReactNode }) => (
+    <div data-testid="default-quick-actions">{children}</div>
+  ),
+  DefaultQuickActionsContent: () => <span data-testid="default-quick-actions-content" />,
   defaultAssetUtils: {},
   defaultBindingUtils: [],
   defaultShapeUtils: [],
   getSnapshot: vi.fn(() => ({})),
   react: vi.fn(() => testHarness.stopListening),
-  Tldraw: () => <div data-testid="tldraw-canvas" />
+  Tldraw: ({
+    components
+  }: {
+    components?: { QuickActions?: (props: { children?: ReactNode }) => ReactElement }
+  }) => {
+    const QuickActions = components?.QuickActions
+
+    return <div data-testid="tldraw-canvas">{QuickActions ? <QuickActions /> : null}</div>
+  },
+  TldrawUiButton: ({
+    children,
+    ...props
+  }: React.ButtonHTMLAttributes<HTMLButtonElement> & { children: ReactNode }) => (
+    <button type="button" {...props}>
+      {children}
+    </button>
+  )
 }))
 
 vi.mock('../../../app/appearance/appearance-context', () => ({
   useAppearance: () => ({ resolvedTheme: 'dark' })
-}))
-
-vi.mock('../../../shared/ui/tooltip', () => ({
-  Tooltip: ({ children }: { children: ReactElement }) => children
 }))
 
 vi.mock('../api/boards-client', () => ({
@@ -95,18 +111,26 @@ beforeEach(() => {
 })
 
 describe('BoardCanvas fullscreen mode', () => {
-  it('expands over the application, preserves the canvas instance, and exits by button or Escape', async () => {
+  it('keeps the themed canvas mounted and places fullscreen inside quick actions', async () => {
     const user = userEvent.setup()
 
     render(<BoardCanvas boardId="board-1" />)
 
     const workspace = await screen.findByRole('region', { name: 'Холст доски' })
     const canvas = screen.getByTestId('tldraw-canvas')
+    const quickActions = screen.getByTestId('default-quick-actions')
+    const expandButton = screen.getByRole('button', {
+      name: 'Развернуть доску на весь экран'
+    })
 
+    expect(workspace).toHaveClass('mymind-board-canvas')
     expect(workspace).toHaveAttribute('data-board-fullscreen', 'false')
     expect(workspace).not.toHaveClass('fixed')
+    expect(quickActions).toContainElement(screen.getByTestId('default-quick-actions-content'))
+    expect(quickActions).toContainElement(expandButton)
+    expect(expandButton).toHaveAttribute('data-board-fullscreen-control', 'true')
 
-    await user.click(screen.getByRole('button', { name: 'Развернуть доску на весь экран' }))
+    await user.click(expandButton)
 
     expect(workspace).toHaveAttribute('data-board-fullscreen', 'true')
     expect(workspace).toHaveClass('fixed')

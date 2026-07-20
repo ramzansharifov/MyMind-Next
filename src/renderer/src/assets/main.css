@@ -233,6 +233,64 @@ button {
   border-color: var(--app-accent-500);
 }
 
+.mymind-board-canvas .tl-container {
+  --tl-radius-2: 0.5rem;
+  --tl-radius-3: 0.75rem;
+  --tl-radius-4: 0.875rem;
+
+  --tl-color-background: var(--app-workspace);
+  --tl-color-grid: color-mix(in srgb, var(--app-muted) 46%, transparent);
+  --tl-color-selection-fill: color-mix(in srgb, var(--app-accent-500) 20%, transparent);
+  --tl-color-selection-stroke: var(--app-accent-500);
+
+  --tl-color-low: var(--app-surface);
+  --tl-color-low-border: var(--app-border);
+  --tl-color-muted-none: transparent;
+  --tl-color-muted-0: var(--app-overlay-faint);
+  --tl-color-muted-1: color-mix(in srgb, var(--app-text) 10%, transparent);
+  --tl-color-muted-2: var(--app-overlay-soft);
+  --tl-color-hint: color-mix(in srgb, var(--app-accent-500) 15%, transparent);
+  --tl-color-divider: var(--app-border);
+  --tl-color-panel: var(--app-surface-raised);
+  --tl-color-panel-contrast: var(--app-border-strong);
+  --tl-color-panel-overlay: color-mix(in srgb, var(--app-surface-raised) 88%, transparent);
+  --tl-color-panel-transparent: transparent;
+  --tl-color-selected: var(--app-accent-500);
+  --tl-color-selected-contrast: var(--app-accent-50);
+  --tl-color-focus: var(--app-accent-400);
+  --tl-color-tooltip: var(--app-tooltip);
+
+  --tl-color-text: var(--app-text);
+  --tl-color-text-0: var(--app-text);
+  --tl-color-text-1: color-mix(in srgb, var(--app-text) 88%, var(--app-muted));
+  --tl-color-text-3: var(--app-muted);
+  --tl-color-text-disabled: color-mix(in srgb, var(--app-muted) 68%, transparent);
+  --tl-color-primary: var(--app-accent-500);
+
+  --tl-shadow-1: 0 1px 2px rgb(0 0 0 / 20%), inset 0 0 0 1px var(--app-border);
+  --tl-shadow-2: 0 8px 24px rgb(0 0 0 / 20%), inset 0 0 0 1px var(--app-border);
+  --tl-shadow-3: 0 12px 36px rgb(0 0 0 / 28%), inset 0 0 0 1px var(--app-border);
+  --tl-shadow-4: 0 18px 48px rgb(0 0 0 / 32%), inset 0 0 0 1px var(--app-border);
+}
+
+.mymind-board-canvas .tlui-menu,
+.mymind-board-canvas .tlui-popover__content {
+  border: 1px solid var(--app-border);
+}
+
+.mymind-board-canvas .tlui-menu-zone {
+  background-color: var(--app-surface);
+  border-color: var(--app-workspace);
+}
+
+.mymind-board-canvas .tlui-button__tool[aria-pressed='true'] {
+  color: var(--app-accent-50);
+}
+
+.mymind-board-canvas .tlui-button__tool[aria-pressed='true']::after {
+  background: var(--app-accent-500);
+}
+
 ::selection {
   color: #ffffff;
   background: color-mix(in srgb, var(--app-accent-600) 55%, transparent);
