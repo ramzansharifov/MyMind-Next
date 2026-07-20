@@ -1,17 +1,17 @@
-name: Verify board canvas theme
+name: Diagnose board canvas theme tests
 
 on:
   pull_request:
     branches: [main]
 
 permissions:
-  contents: write
+  contents: read
+  pull-requests: write
 
 jobs:
   verify:
-    if: github.actor != 'github-actions[bot]'
     runs-on: windows-latest
-    timeout-minutes: 35
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -21,7 +21,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      - run: npm ci --silent
       - name: Apply board canvas theme
         shell: bash
         run: |
@@ -33,21 +33,43 @@ jobs:
             src/renderer/src/modules/boards/components/BoardCanvas.tsx \
             src/renderer/src/modules/boards/components/BoardCanvas.test.tsx \
             src/renderer/src/modules/boards/components/BoardCanvasTheme.test.ts \
-            src/renderer/src/modules/settings/instructions/boards-instruction-catalog.ts
-      - run: npm run native:node
-      - run: npm run format:check
-      - run: npm run lint
-      - run: npm run typecheck
-      - run: npm run test:coverage
-      - run: npm run db:check
-      - run: npm run build:bundle
-      - name: Commit verified source
+            src/renderer/src/modules/settings/instructions/boards-instruction-catalog.ts > /dev/null
+      - name: Diagnose affected tests
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          set -e
-          rm -f .github/workflows/board-canvas-theme.yml
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "Адаптировать интерфейс доски к теме MyMind"
-          git push origin HEAD:agent/board-canvas-theme
+          set +e
+          npm exec vitest -- run \
+            src/renderer/src/modules/boards/components/BoardCanvas.test.tsx \
+            src/renderer/src/modules/boards/components/BoardCanvasTheme.test.ts \
+            --reporter=json --outputFile=test-results.json > /dev/null 2>&1
+          status=$?
+          if [ "$status" -ne 0 ]; then
+            node <<'NODE' > test-summary.txt
+          const fs = require('node:fs')
+          const report = JSON.parse(fs.readFileSync('test-results.json', 'utf8'))
+          const ansi = /\u001b\[[0-9;]*m/g
+          const lines = []
+          for (const suite of report.testResults ?? []) {
+            for (const assertion of suite.assertionResults ?? []) {
+              if (assertion.status !== 'failed') continue
+              const raw = (assertion.failureMessages ?? []).join('\n').replace(ansi, '')
+              lines.push(`${suite.name} :: ${assertion.fullName ?? assertion.title ?? 'failed test'}`)
+              lines.push(raw.split('Ignored nodes:')[0].trim().slice(0, 4500))
+              lines.push('')
+            }
+          }
+          process.stdout.write(lines.join('\n') || 'Vitest завершился с ошибкой без подробного сообщения.')
+          NODE
+            {
+              echo "Привязать tldraw к теме MyMind и перенести полноэкранную кнопку в быстрые действия."
+              echo
+              echo "## Временная диагностика тестов"
+              echo '```text'
+              cat test-summary.txt
+              echo '```'
+            } > pr-body.md
+            gh pr edit 30 --body-file pr-body.md
+            exit "$status"
+          fi
