@@ -17,15 +17,7 @@ import {
 } from 'tldraw'
 import 'tldraw/tldraw.css'
 import { LoaderCircle, Maximize2, Minimize2, TriangleAlert } from 'lucide-react'
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState
-} from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 
 import type { BoardSnapshot } from '../../../../../shared/contracts/boards'
 import { useAppearance } from '../../../app/appearance/appearance-context'
@@ -249,14 +241,11 @@ export function BoardCanvas({ boardId, onSaveStateChange }: BoardCanvasProps): R
     ? 'Вернуть обычный вид доски'
     : 'Развернуть доску на весь экран'
 
-  const boardCanvasUi = useMemo<BoardCanvasUiContextValue>(
-    () => ({
-      isFullscreen,
-      fullscreenLabel,
-      toggleFullscreen
-    }),
-    [fullscreenLabel, isFullscreen, toggleFullscreen]
-  )
+  const boardCanvasUi: BoardCanvasUiContextValue = {
+    isFullscreen,
+    fullscreenLabel,
+    toggleFullscreen
+  }
 
   return (
     <BoardCanvasUiContext.Provider value={boardCanvasUi}>

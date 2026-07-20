@@ -42,11 +42,7 @@ vi.mock('tldraw', () => ({
   }) => {
     const QuickActions = components?.QuickActions
 
-    return (
-      <div data-testid="tldraw-canvas">
-        {QuickActions ? <QuickActions /> : null}
-      </div>
-    )
+    return <div data-testid="tldraw-canvas">{QuickActions ? <QuickActions /> : null}</div>
   },
   TldrawUiButton: ({
     children,
