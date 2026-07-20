@@ -1,23 +1,35 @@
 import { getAssetUrlsByImport } from '@tldraw/assets/imports.vite'
 import {
   createTLStore,
+  DefaultQuickActions,
+  DefaultQuickActionsContent,
   defaultAssetUtils,
   defaultBindingUtils,
   defaultShapeUtils,
   getSnapshot,
   react,
   Tldraw,
+  TldrawUiButton,
   type TLEditorSnapshot,
-  type TLStore
+  type TLStore,
+  type TLUiComponents,
+  type TLUiQuickActionsProps
 } from 'tldraw'
 import 'tldraw/tldraw.css'
 import { LoaderCircle, Maximize2, Minimize2, TriangleAlert } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState
+} from 'react'
 
 import type { BoardSnapshot } from '../../../../../shared/contracts/boards'
 import { useAppearance } from '../../../app/appearance/appearance-context'
 import { cn } from '../../../shared/lib/cn'
-import { Tooltip } from '../../../shared/ui/tooltip'
 import { boardsClient } from '../api/boards-client'
 import { registerBoardDraftHandle } from '../lib/board-draft-lifecycle'
 import { BoardSaveQueue, type BoardSaveState } from '../lib/board-save-queue'
@@ -34,6 +46,44 @@ interface BoardLoadState {
 interface BoardCanvasProps {
   boardId: string
   onSaveStateChange?: (state: BoardSaveState) => void
+}
+
+interface BoardCanvasUiContextValue {
+  isFullscreen: boolean
+  fullscreenLabel: string
+  toggleFullscreen: () => void
+}
+
+const BoardCanvasUiContext = createContext<BoardCanvasUiContextValue | null>(null)
+
+const boardCanvasComponents: TLUiComponents = {
+  QuickActions: BoardCanvasQuickActions
+}
+
+function BoardCanvasQuickActions(props: TLUiQuickActionsProps): React.JSX.Element {
+  const controls = useContext(BoardCanvasUiContext)
+
+  return (
+    <DefaultQuickActions {...props}>
+      <DefaultQuickActionsContent />
+      {controls && (
+        <TldrawUiButton
+          type="icon"
+          aria-label={controls.fullscreenLabel}
+          aria-pressed={controls.isFullscreen}
+          data-board-fullscreen-control="true"
+          title={controls.fullscreenLabel}
+          onClick={controls.toggleFullscreen}
+        >
+          {controls.isFullscreen ? (
+            <Minimize2 aria-hidden="true" className="size-4" />
+          ) : (
+            <Maximize2 aria-hidden="true" className="size-4" />
+          )}
+        </TldrawUiButton>
+      )}
+    </DefaultQuickActions>
+  )
 }
 
 export function BoardCanvas({ boardId, onSaveStateChange }: BoardCanvasProps): React.JSX.Element {
@@ -168,6 +218,10 @@ export function BoardCanvas({ boardId, onSaveStateChange }: BoardCanvasProps): R
     }
   }, [isFullscreen])
 
+  const toggleFullscreen = useCallback(() => {
+    setFullscreenBoardId((current) => (current === boardId ? null : boardId))
+  }, [boardId])
+
   if (loadError) {
     return (
       <div className="flex h-full min-h-0 items-center justify-center bg-[var(--app-workspace)] p-8">
@@ -195,40 +249,33 @@ export function BoardCanvas({ boardId, onSaveStateChange }: BoardCanvasProps): R
     ? 'Вернуть обычный вид доски'
     : 'Развернуть доску на весь экран'
 
-  return (
-    <div
-      role="region"
-      aria-label="Холст доски"
-      data-board-fullscreen={isFullscreen}
-      className={cn(
-        'tldraw__editor relative h-full min-h-0 w-full overflow-hidden bg-[var(--app-workspace)]',
-        isFullscreen && 'fixed inset-0 z-40 h-screen w-screen'
-      )}
-    >
-      <Tldraw store={store} assetUrls={assetUrls} colorScheme={resolvedTheme} />
+  const boardCanvasUi = useMemo<BoardCanvasUiContextValue>(
+    () => ({
+      isFullscreen,
+      fullscreenLabel,
+      toggleFullscreen
+    }),
+    [fullscreenLabel, isFullscreen, toggleFullscreen]
+  )
 
-      <Tooltip content={fullscreenLabel} side="left">
-        <button
-          type="button"
-          aria-label={fullscreenLabel}
-          aria-pressed={isFullscreen}
-          className={cn(
-            'absolute top-3 right-3 z-[1000] flex size-10 items-center justify-center rounded-xl border outline-none',
-            'border-[var(--app-border)] bg-[var(--app-surface-raised)]/95 text-[var(--app-muted)] shadow-xl backdrop-blur',
-            'transition-[background-color,color,transform] hover:bg-[var(--app-surface)] hover:text-[var(--app-text)]',
-            'focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)]/50 active:scale-95'
-          )}
-          onClick={() => {
-            setFullscreenBoardId((current) => (current === boardId ? null : boardId))
-          }}
-        >
-          {isFullscreen ? (
-            <Minimize2 aria-hidden="true" className="size-4.5" />
-          ) : (
-            <Maximize2 aria-hidden="true" className="size-4.5" />
-          )}
-        </button>
-      </Tooltip>
-    </div>
+  return (
+    <BoardCanvasUiContext.Provider value={boardCanvasUi}>
+      <div
+        role="region"
+        aria-label="Холст доски"
+        data-board-fullscreen={isFullscreen}
+        className={cn(
+          'mymind-board-canvas tldraw__editor relative h-full min-h-0 w-full overflow-hidden bg-[var(--app-workspace)]',
+          isFullscreen && 'fixed inset-0 z-40 h-screen w-screen'
+        )}
+      >
+        <Tldraw
+          store={store}
+          assetUrls={assetUrls}
+          colorScheme={resolvedTheme}
+          components={boardCanvasComponents}
+        />
+      </div>
+    </BoardCanvasUiContext.Provider>
   )
 }
