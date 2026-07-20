@@ -247,6 +247,7 @@ export function BoardsPage({ resourceId, onResourceHandled }: BoardsPageProps): 
         homeLabel="Главная досок"
         icon={Presentation}
         collapsed={sidebarCollapsed}
+        contentClassName={sidebarCollapsed ? undefined : 'px-0 py-3'}
         homeSelected={selectedId === null}
         expandLabel="Показать дерево досок"
         collapseLabel="Скрыть дерево досок"
