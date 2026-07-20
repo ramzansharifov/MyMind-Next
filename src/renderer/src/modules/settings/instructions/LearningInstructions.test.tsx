@@ -101,6 +101,14 @@ describe('learning instructions', () => {
     expect(screen.getByText(/пустая автоматически созданная папка удаляется/)).toBeInTheDocument()
   })
 
+  it('documents fullscreen board controls and preserved canvas state', () => {
+    render(<BoardsInstructionArticlePage topicId="boards-canvas" onBack={vi.fn()} />)
+
+    expect(screen.getByRole('heading', { name: 'Полноэкранный режим' })).toBeInTheDocument()
+    expect(screen.getByText(/Клавиша Esc также завершает полноэкранный режим/)).toBeInTheDocument()
+    expect(screen.getByText(/не пересоздаёт tldraw/)).toBeInTheDocument()
+  })
+
   it('navigates to and highlights a section from the contents list', async () => {
     const user = userEvent.setup()
 
