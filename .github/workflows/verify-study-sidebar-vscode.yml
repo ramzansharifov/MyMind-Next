@@ -1,0 +1,54 @@
+name: Verify study sidebar
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/study-sidebar-vscode
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Apply study sidebar improvements
+        shell: bash
+        run: |
+          set -e
+          node scripts/apply-study-sidebar-vscode.mjs
+          rm -f scripts/apply-study-sidebar-vscode.mjs
+          rm -f .github/workflows/verify-study-sidebar-vscode.yml
+          npm exec prettier -- --write \
+            src/renderer/src/assets/main.css \
+            src/renderer/src/shared/ui/ModuleSidebar.tsx \
+            src/renderer/src/shared/ui/ModuleSidebar.test.tsx \
+            src/renderer/src/modules/study/StudyPage.tsx \
+            src/renderer/src/modules/study/components/StudyTree.tsx \
+            src/renderer/src/modules/study/components/StudyTree.test.tsx
+      - run: npm run native:node
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:coverage
+      - run: npm run db:check
+      - run: npm run build:bundle
+      - name: Commit verified source
+        shell: bash
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Улучшить сайдбар модуля обучения"
+          git push origin HEAD:agent/study-sidebar-vscode
