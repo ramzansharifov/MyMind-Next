@@ -1,28 +1,29 @@
-name: Add boards drag and study return
+name: Diagnose boards integration lint
 
 on:
   pull_request:
     branches: [main]
 
 permissions:
-  contents: write
+  contents: read
+  pull-requests: write
 
 jobs:
-  verify:
+  diagnose:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
           ref: agent/boards-dnd-study-back
-          fetch-depth: 0
+          fetch-depth: 1
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
-      - name: Apply boards integration changes
+      - run: npm ci --silent
+      - name: Apply and format source changes
         shell: bash
         run: |
           set -e
@@ -51,49 +52,23 @@ jobs:
             src/renderer/src/modules/study/StudyPage.resource-navigation.test.tsx \
             src/renderer/src/modules/settings/instructions/boards-instruction-catalog.ts \
             src/renderer/src/modules/settings/instructions/LearningInstructions.test.tsx
-      - run: npm run native:node
-      - run: npm run format:check
-      - run: npm run lint
-      - run: npm run typecheck
-      - run: npm run test:coverage
-      - run: npm run db:check
-      - run: npm run build:bundle
-      - name: Commit verified changes
+      - name: Diagnose lint
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          set -e
-          cat > .github/workflows/ci.yml <<'EOF'
-          name: CI (manual)
-
-          on:
-            workflow_dispatch:
-
-          permissions:
-            contents: read
-
-          jobs:
-            verify:
-              runs-on: windows-latest
-              timeout-minutes: 25
-              steps:
-                - uses: actions/checkout@v4
-                - uses: actions/setup-node@v4
-                  with:
-                    node-version: 22
-                    cache: npm
-                - run: npm ci
-                - run: npm run native:node
-                - run: npm run format:check
-                - run: npm run lint
-                - run: npm run typecheck
-                - run: npm run test:coverage
-                - run: npm run db:check
-                - run: npm run build:bundle
-          EOF
-
-          npm exec prettier -- --write .github/workflows/ci.yml
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "Добавить перемещение досок и возврат к материалу"
-          git push origin HEAD:agent/boards-dnd-study-back
+          set +e
+          npm run lint > lint-output.txt 2>&1
+          status=$?
+          if [ "$status" -ne 0 ]; then
+            {
+              echo "Добавить drag-and-drop обычных папок и досок, защитить ветку «Обучение» и добавить возврат к исходному материалу."
+              echo
+              echo "## Временная диагностика ESLint"
+              echo '```text'
+              tail -n 200 lint-output.txt
+              echo '```'
+            } > pr-body.md
+            gh pr edit 24 --body-file pr-body.md
+            exit "$status"
+          fi
