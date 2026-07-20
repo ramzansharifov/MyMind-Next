@@ -11,11 +11,13 @@ import {
   type TLStore
 } from 'tldraw'
 import 'tldraw/tldraw.css'
-import { LoaderCircle, TriangleAlert } from 'lucide-react'
+import { LoaderCircle, Maximize2, Minimize2, TriangleAlert } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 import type { BoardSnapshot } from '../../../../../shared/contracts/boards'
 import { useAppearance } from '../../../app/appearance/appearance-context'
+import { cn } from '../../../shared/lib/cn'
+import { Tooltip } from '../../../shared/ui/tooltip'
 import { boardsClient } from '../api/boards-client'
 import { registerBoardDraftHandle } from '../lib/board-draft-lifecycle'
 import { BoardSaveQueue, type BoardSaveState } from '../lib/board-save-queue'
@@ -37,6 +39,7 @@ interface BoardCanvasProps {
 export function BoardCanvas({ boardId, onSaveStateChange }: BoardCanvasProps): React.JSX.Element {
   const { resolvedTheme } = useAppearance()
   const [loadState, setLoadState] = useState<BoardLoadState | null>(null)
+  const [isFullscreen, setIsFullscreen] = useState(false)
   const saveTimerRef = useRef<number | null>(null)
 
   useEffect(() => {
@@ -148,6 +151,22 @@ export function BoardCanvas({ boardId, onSaveStateChange }: BoardCanvasProps): R
     }
   }, [boardId, onSaveStateChange, store])
 
+  useEffect(() => {
+    if (!isFullscreen) return undefined
+
+    function handleKeyDown(event: KeyboardEvent): void {
+      if (event.key !== 'Escape' || event.defaultPrevented) return
+
+      setIsFullscreen(false)
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isFullscreen])
+
   if (loadError) {
     return (
       <div className="flex h-full min-h-0 items-center justify-center bg-[var(--app-workspace)] p-8">
@@ -171,9 +190,42 @@ export function BoardCanvas({ boardId, onSaveStateChange }: BoardCanvasProps): R
     )
   }
 
+  const fullscreenLabel = isFullscreen
+    ? 'Вернуть обычный вид доски'
+    : 'Развернуть доску на весь экран'
+
   return (
-    <div className="tldraw__editor h-full min-h-0 w-full overflow-hidden bg-[var(--app-workspace)]">
+    <div
+      role="region"
+      aria-label="Холст доски"
+      data-board-fullscreen={isFullscreen}
+      className={cn(
+        'tldraw__editor relative h-full min-h-0 w-full overflow-hidden bg-[var(--app-workspace)]',
+        isFullscreen && 'fixed inset-0 z-40 h-screen w-screen'
+      )}
+    >
       <Tldraw store={store} assetUrls={assetUrls} colorScheme={resolvedTheme} />
+
+      <Tooltip content={fullscreenLabel} side="left">
+        <button
+          type="button"
+          aria-label={fullscreenLabel}
+          aria-pressed={isFullscreen}
+          className={cn(
+            'absolute top-3 right-3 z-[1000] flex size-10 items-center justify-center rounded-xl border outline-none',
+            'border-[var(--app-border)] bg-[var(--app-surface-raised)]/95 text-[var(--app-muted)] shadow-xl backdrop-blur',
+            'transition-[background-color,color,transform] hover:bg-[var(--app-surface)] hover:text-[var(--app-text)]',
+            'focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)]/50 active:scale-95'
+          )}
+          onClick={() => setIsFullscreen((current) => !current)}
+        >
+          {isFullscreen ? (
+            <Minimize2 aria-hidden="true" className="size-4.5" />
+          ) : (
+            <Maximize2 aria-hidden="true" className="size-4.5" />
+          )}
+        </button>
+      </Tooltip>
     </div>
   )
 }
