@@ -9,6 +9,9 @@ const testHarness = vi.hoisted(() => ({
   disposeStore: vi.fn(),
   stopListening: vi.fn(),
   unregisterDraft: vi.fn(),
+  updateQueue: vi.fn(),
+  saveLatestQueue: vi.fn(),
+  flushQueue: vi.fn(),
   disposeQueue: vi.fn()
 }))
 
@@ -52,15 +55,23 @@ vi.mock('../lib/board-draft-lifecycle', () => ({
 
 vi.mock('../lib/board-save-queue', () => ({
   BoardSaveQueue: class BoardSaveQueueMock {
-    update(): void {}
+    update(): void {
+      testHarness.updateQueue()
+    }
 
-    async saveLatest(): Promise<void> {}
+    saveLatest(): Promise<void> {
+      testHarness.saveLatestQueue()
+      return Promise.resolve()
+    }
 
     hasUnsavedChanges(): boolean {
       return false
     }
 
-    async flush(): Promise<void> {}
+    flush(): Promise<void> {
+      testHarness.flushQueue()
+      return Promise.resolve()
+    }
 
     dispose(): void {
       testHarness.disposeQueue()
@@ -77,6 +88,9 @@ beforeEach(() => {
   testHarness.disposeStore.mockReset()
   testHarness.stopListening.mockReset()
   testHarness.unregisterDraft.mockReset()
+  testHarness.updateQueue.mockReset()
+  testHarness.saveLatestQueue.mockReset()
+  testHarness.flushQueue.mockReset()
   testHarness.disposeQueue.mockReset()
 })
 
