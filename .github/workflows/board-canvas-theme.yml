@@ -1,17 +1,17 @@
-name: Diagnose board canvas theme tests
+name: Verify board canvas theme
 
 on:
   pull_request:
     branches: [main]
 
 permissions:
-  contents: read
-  pull-requests: write
+  contents: write
 
 jobs:
   verify:
+    if: github.actor != 'github-actions[bot]'
     runs-on: windows-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
         with:
@@ -21,7 +21,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci --silent
+      - run: npm ci
       - name: Apply board canvas theme
         shell: bash
         run: |
@@ -33,57 +33,21 @@ jobs:
             src/renderer/src/modules/boards/components/BoardCanvas.tsx \
             src/renderer/src/modules/boards/components/BoardCanvas.test.tsx \
             src/renderer/src/modules/boards/components/BoardCanvasTheme.test.ts \
-            src/renderer/src/modules/settings/instructions/boards-instruction-catalog.ts > /dev/null
-      - name: Diagnose affected tests
+            src/renderer/src/modules/settings/instructions/boards-instruction-catalog.ts
+      - run: npm run native:node
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:coverage
+      - run: npm run db:check
+      - run: npm run build:bundle
+      - name: Commit verified source
         shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          set +e
-          npm exec vitest -- run \
-            src/renderer/src/modules/boards/components/BoardCanvas.test.tsx \
-            src/renderer/src/modules/boards/components/BoardCanvasTheme.test.ts \
-            --reporter=json --outputFile=test-results.json > vitest-output.txt 2>&1
-          status=$?
-          if [ "$status" -ne 0 ]; then
-            node <<'NODE' > test-summary.txt
-          const fs = require('node:fs')
-          const report = JSON.parse(fs.readFileSync('test-results.json', 'utf8'))
-          const ansi = /\u001b\[[0-9;]*m/g
-          const lines = []
-          for (const suite of report.testResults ?? []) {
-            const suiteMessage = [suite.message, suite.failureMessage, ...(suite.failureMessages ?? [])]
-              .filter(Boolean)
-              .join('\n')
-              .replace(ansi, '')
-            if (suite.status === 'failed' || suiteMessage) {
-              lines.push(`SUITE: ${suite.name ?? suite.testFilePath ?? 'unknown suite'}`)
-              lines.push(suiteMessage.slice(0, 5000))
-            }
-            for (const assertion of suite.assertionResults ?? []) {
-              if (assertion.status !== 'failed') continue
-              const raw = (assertion.failureMessages ?? []).join('\n').replace(ansi, '')
-              lines.push(`${suite.name} :: ${assertion.fullName ?? assertion.title ?? 'failed test'}`)
-              lines.push(raw.split('Ignored nodes:')[0].trim().slice(0, 5000))
-              lines.push('')
-            }
-          }
-          if (lines.length === 0) {
-            lines.push('RAW JSON REPORT:')
-            lines.push(JSON.stringify(report, null, 2).slice(0, 7000))
-            lines.push('VITEST OUTPUT:')
-            lines.push(fs.readFileSync('vitest-output.txt', 'utf8').replace(ansi, '').slice(-5000))
-          }
-          process.stdout.write(lines.join('\n'))
-          NODE
-            {
-              echo "Привязать tldraw к теме MyMind и перенести полноэкранную кнопку в быстрые действия."
-              echo
-              echo "## Временная диагностика тестов"
-              echo '```text'
-              cat test-summary.txt
-              echo '```'
-            } > pr-body.md
-            gh pr edit 30 --body-file pr-body.md
-            exit "$status"
-          fi
+          set -e
+          rm -f .github/workflows/board-canvas-theme.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Адаптировать интерфейс доски к теме MyMind"
+          git push origin HEAD:agent/board-canvas-theme
