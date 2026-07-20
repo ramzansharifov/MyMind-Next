@@ -5,18 +5,10 @@ import {
   MODULE_TREE_NODE_INSIDE_DROP_CLASS_NAME,
   ModuleTreeDragOverlay,
   ModuleTreeNodeDropIndicator,
-  ModuleTreeRootDropZone,
-  isModuleTreeRootDropHighlighted
+  ModuleTreeRootDropZone
 } from './ModuleTreeDndFeedback'
 
 describe('ModuleTreeDndFeedback', () => {
-  it('uses direct droppable hover state for root highlighting', () => {
-    expect(isModuleTreeRootDropHighlighted(false, false)).toBe(false)
-    expect(isModuleTreeRootDropHighlighted(false, true)).toBe(false)
-    expect(isModuleTreeRootDropHighlighted(true, false)).toBe(false)
-    expect(isModuleTreeRootDropHighlighted(true, true)).toBe(true)
-  })
-
   it('uses a visible accent dashed border without a background fill', () => {
     const { rerender } = render(
       <ModuleTreeRootDropZone
