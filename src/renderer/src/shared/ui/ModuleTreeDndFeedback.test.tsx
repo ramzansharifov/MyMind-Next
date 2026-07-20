@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 import {
-  getModuleTreeNodeDropContainerClassName,
+  MODULE_TREE_NODE_INSIDE_DROP_CLASS_NAME,
   ModuleTreeDragOverlay,
   ModuleTreeNodeDropIndicator,
   ModuleTreeRootDropZone
@@ -80,10 +80,9 @@ describe('ModuleTreeDndFeedback', () => {
     rerender(<ModuleTreeNodeDropIndicator placement="inside" />)
 
     expect(container.querySelector('[data-module-tree-drop-indicator]')).not.toBeInTheDocument()
-    expect(getModuleTreeNodeDropContainerClassName('inside')).toBe(
+    expect(MODULE_TREE_NODE_INSIDE_DROP_CLASS_NAME).toBe(
       'bg-violet-500/15 ring-1 ring-violet-500/45'
     )
-    expect(getModuleTreeNodeDropContainerClassName('before')).toBeUndefined()
   })
 
   it('renders identical drag overlay shells for both module trees', () => {
