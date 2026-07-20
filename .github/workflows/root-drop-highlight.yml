@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write
 
 jobs:
   verify:
@@ -31,11 +32,28 @@ jobs:
             src/renderer/src/shared/ui/ModuleTreeDndFeedback.tsx \
             src/renderer/src/shared/ui/ModuleTreeDndFeedback.test.tsx \
             scripts/fix-root-drop-highlight.mjs > /dev/null
-      - name: Lint changed files
-        run: >-
-          npm exec eslint --
-          src/renderer/src/modules/boards/components/BoardTree.tsx
-          src/renderer/src/modules/study/components/StudyTree.tsx
-          src/renderer/src/shared/ui/ModuleTreeDndFeedback.tsx
-          src/renderer/src/shared/ui/ModuleTreeDndFeedback.test.tsx
-          scripts/fix-root-drop-highlight.mjs
+      - name: Diagnose lint
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          npm exec eslint -- \
+            src/renderer/src/modules/boards/components/BoardTree.tsx \
+            src/renderer/src/modules/study/components/StudyTree.tsx \
+            src/renderer/src/shared/ui/ModuleTreeDndFeedback.tsx \
+            src/renderer/src/shared/ui/ModuleTreeDndFeedback.test.tsx \
+            scripts/fix-root-drop-highlight.mjs > lint-output.txt 2>&1
+          status=$?
+          if [ "$status" -ne 0 ]; then
+            {
+              echo "Подсветка корневой области теперь зависит напрямую от isOver dnd-kit. Рамка двухпиксельная, пунктирная и использует текущий акцентный цвет без фоновой заливки."
+              echo
+              echo "## Временная диагностика ESLint"
+              echo '```text'
+              cat lint-output.txt
+              echo '```'
+            } > pr-body.md
+            gh pr edit 27 --body-file pr-body.md
+            exit "$status"
+          fi
