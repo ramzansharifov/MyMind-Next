@@ -9,7 +9,7 @@ import {
 } from './ModuleTreeDndFeedback'
 
 describe('ModuleTreeDndFeedback', () => {
-  it('uses the rendered text color as the dashed border color', () => {
+  it('uses the shared root drop-zone class independently from text color', () => {
     const { rerender } = render(
       <ModuleTreeRootDropZone
         dropRef={vi.fn()}
@@ -28,12 +28,11 @@ describe('ModuleTreeDndFeedback', () => {
 
     expect(rootZone).toHaveTextContent('Корень библиотеки')
     expect(rootZone).toHaveClass(
-      'border-2',
-      'border-dashed',
-      'border-current',
+      'module-tree-root-drop-zone',
       'text-transparent',
       'hover:text-[var(--app-accent-500)]'
     )
+    expect(rootZone).not.toHaveClass('border-2', 'border-dashed', 'border-current')
     expect(rootZone).not.toHaveClass('hover:bg-white/[0.018]')
     expect(rootZone).not.toHaveClass('hover:border-[var(--app-accent-500)]')
     expect(rootZone).toHaveAttribute('aria-pressed', 'true')
@@ -54,9 +53,7 @@ describe('ModuleTreeDndFeedback', () => {
 
     expect(rootZone).toHaveTextContent('Переместить в корень')
     expect(rootZone).toHaveClass(
-      'border-2',
-      'border-dashed',
-      'border-current',
+      'module-tree-root-drop-zone',
       'text-[var(--app-muted)]',
       'hover:text-[var(--app-accent-500)]'
     )
@@ -75,12 +72,7 @@ describe('ModuleTreeDndFeedback', () => {
       />
     )
 
-    expect(rootZone).toHaveClass(
-      'border-2',
-      'border-dashed',
-      'border-current',
-      'text-[var(--app-accent-500)]'
-    )
+    expect(rootZone).toHaveClass('module-tree-root-drop-zone', 'text-[var(--app-accent-500)]')
     expect(rootZone).not.toHaveClass('border-[var(--app-accent-500)]')
     expect(rootZone).not.toHaveClass('bg-violet-500/10')
   })

@@ -67,7 +67,7 @@ export function ModuleTreeRootDropZone({
       data-active={active}
       data-highlighted={highlighted}
       className={cn(
-        'group/root mt-2 flex min-h-20 flex-1 items-start justify-center rounded-lg border-2 border-dashed border-current pt-3',
+        'module-tree-root-drop-zone group/root mt-2 flex min-h-20 flex-1 items-start justify-center rounded-lg pt-3',
         collapsed && 'px-0',
         'text-xs transition-colors outline-none',
         'focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:ring-inset',

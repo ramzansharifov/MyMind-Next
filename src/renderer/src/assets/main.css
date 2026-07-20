@@ -220,6 +220,19 @@ button {
   border: 0;
 }
 
+.module-tree-root-drop-zone {
+  border-color: transparent;
+  border-style: dashed;
+  border-width: 2px;
+  background: transparent;
+}
+
+.module-tree-root-drop-zone:hover,
+.module-tree-root-drop-zone:focus-visible,
+.module-tree-root-drop-zone[data-highlighted='true'] {
+  border-color: var(--app-accent-500);
+}
+
 ::selection {
   color: #ffffff;
   background: color-mix(in srgb, var(--app-accent-600) 55%, transparent);
