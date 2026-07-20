@@ -39,8 +39,9 @@ interface BoardCanvasProps {
 export function BoardCanvas({ boardId, onSaveStateChange }: BoardCanvasProps): React.JSX.Element {
   const { resolvedTheme } = useAppearance()
   const [loadState, setLoadState] = useState<BoardLoadState | null>(null)
-  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [fullscreenBoardId, setFullscreenBoardId] = useState<string | null>(null)
   const saveTimerRef = useRef<number | null>(null)
+  const isFullscreen = fullscreenBoardId === boardId
 
   useEffect(() => {
     let active = true
@@ -157,7 +158,7 @@ export function BoardCanvas({ boardId, onSaveStateChange }: BoardCanvasProps): R
     function handleKeyDown(event: KeyboardEvent): void {
       if (event.key !== 'Escape' || event.defaultPrevented) return
 
-      setIsFullscreen(false)
+      setFullscreenBoardId(null)
     }
 
     window.addEventListener('keydown', handleKeyDown)
@@ -217,7 +218,9 @@ export function BoardCanvas({ boardId, onSaveStateChange }: BoardCanvasProps): R
             'transition-[background-color,color,transform] hover:bg-[var(--app-surface)] hover:text-[var(--app-text)]',
             'focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)]/50 active:scale-95'
           )}
-          onClick={() => setIsFullscreen((current) => !current)}
+          onClick={() => {
+            setFullscreenBoardId((current) => (current === boardId ? null : boardId))
+          }}
         >
           {isFullscreen ? (
             <Minimize2 aria-hidden="true" className="size-4.5" />
