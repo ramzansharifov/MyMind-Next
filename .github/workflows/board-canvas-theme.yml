@@ -43,7 +43,7 @@ jobs:
           npm exec vitest -- run \
             src/renderer/src/modules/boards/components/BoardCanvas.test.tsx \
             src/renderer/src/modules/boards/components/BoardCanvasTheme.test.ts \
-            --reporter=json --outputFile=test-results.json > /dev/null 2>&1
+            --reporter=json --outputFile=test-results.json > vitest-output.txt 2>&1
           status=$?
           if [ "$status" -ne 0 ]; then
             node <<'NODE' > test-summary.txt
@@ -52,15 +52,29 @@ jobs:
           const ansi = /\u001b\[[0-9;]*m/g
           const lines = []
           for (const suite of report.testResults ?? []) {
+            const suiteMessage = [suite.message, suite.failureMessage, ...(suite.failureMessages ?? [])]
+              .filter(Boolean)
+              .join('\n')
+              .replace(ansi, '')
+            if (suite.status === 'failed' || suiteMessage) {
+              lines.push(`SUITE: ${suite.name ?? suite.testFilePath ?? 'unknown suite'}`)
+              lines.push(suiteMessage.slice(0, 5000))
+            }
             for (const assertion of suite.assertionResults ?? []) {
               if (assertion.status !== 'failed') continue
               const raw = (assertion.failureMessages ?? []).join('\n').replace(ansi, '')
               lines.push(`${suite.name} :: ${assertion.fullName ?? assertion.title ?? 'failed test'}`)
-              lines.push(raw.split('Ignored nodes:')[0].trim().slice(0, 4500))
+              lines.push(raw.split('Ignored nodes:')[0].trim().slice(0, 5000))
               lines.push('')
             }
           }
-          process.stdout.write(lines.join('\n') || 'Vitest завершился с ошибкой без подробного сообщения.')
+          if (lines.length === 0) {
+            lines.push('RAW JSON REPORT:')
+            lines.push(JSON.stringify(report, null, 2).slice(0, 7000))
+            lines.push('VITEST OUTPUT:')
+            lines.push(fs.readFileSync('vitest-output.txt', 'utf8').replace(ansi, '').slice(-5000))
+          }
+          process.stdout.write(lines.join('\n'))
           NODE
             {
               echo "Привязать tldraw к теме MyMind и перенести полноэкранную кнопку в быстрые действия."
