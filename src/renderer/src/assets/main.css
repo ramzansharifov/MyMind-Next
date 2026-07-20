@@ -233,6 +233,20 @@ button {
   border-color: var(--app-accent-500);
 }
 
+.study-tree-guide {
+  position: absolute;
+  z-index: 0;
+  width: 1px;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--app-border-strong) 82%, transparent);
+  opacity: 0;
+  transition: opacity 140ms ease;
+}
+
+[data-module-sidebar]:hover .study-tree-guide {
+  opacity: 0.82;
+}
+
 .mymind-board-canvas .tl-container {
   --tl-radius-2: 0.5rem;
   --tl-radius-3: 0.75rem;

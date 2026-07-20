@@ -379,6 +379,7 @@ export function StudyPage({ resourceId, onResourceHandled }: AppModuleProps): Re
         homeLabel="Главная обучения"
         icon={BookOpen}
         collapsed={isSidebarCollapsed}
+        contentClassName={isSidebarCollapsed ? undefined : 'px-0 py-3'}
         homeSelected={selectedNode === null}
         expandLabel="Показать библиотеку"
         collapseLabel="Скрыть библиотеку"

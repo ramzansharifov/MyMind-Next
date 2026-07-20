@@ -11,6 +11,7 @@ import {
   type DragOverEvent,
   type DragStartEvent
 } from '@dnd-kit/core'
+import * as ContextMenu from '@radix-ui/react-context-menu'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import {
   ChevronDown,
@@ -182,7 +183,7 @@ export function StudyTree({
             {search ? 'Ничего не найдено' : 'Создай первую папку или материал'}
           </div>
         ) : (
-          <div className={cn('shrink-0', collapsed ? 'space-y-1.5' : 'space-y-1')}>
+          <div className={cn('shrink-0', collapsed ? 'space-y-1.5' : 'space-y-0')}>
             {visibleNodes.map(({ node, depth }) => (
               <StudyTreeItem
                 key={node.id}
@@ -319,8 +320,22 @@ function StudyTreeItem({
   onCreateMaterial
 }: StudyTreeItemProps): React.JSX.Element {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [contextMenuOpen, setContextMenuOpen] = useState(false)
 
   const isFolder = node.type === 'folder'
+  const anyMenuOpen = menuOpen || contextMenuOpen
+  const guideOrigin = 12
+  const guideStep = 16
+
+  const menuEntries = createStudyTreeMenuEntries({
+    node,
+    isFolder,
+    onRename,
+    onDuplicate,
+    onDelete,
+    onCreateFolder,
+    onCreateMaterial
+  })
 
   const {
     attributes,
@@ -333,185 +348,317 @@ function StudyTreeItem({
   })
 
   return (
-    <div
-      ref={setDraggableRef}
-      className={cn(
-        'group relative flex h-9 items-center rounded-lg',
-        collapsed && 'justify-center',
-        isSelected
-          ? 'bg-violet-500/12 text-violet-200'
-          : 'text-[var(--app-muted)] hover:bg-white/[0.04] hover:text-[var(--app-text)]',
-        isCreationContext &&
-          !isSelected &&
-          'bg-violet-500/[0.045] text-[var(--app-text)] ring-1 ring-violet-500/15 ring-inset',
-        dropPlacement === 'inside' && MODULE_TREE_NODE_INSIDE_DROP_CLASS_NAME,
-        isDragging && 'opacity-35'
-      )}
-      style={
-        collapsed
-          ? undefined
-          : {
-              paddingLeft: `${4 + depth * 16}px`
-            }
-      }
-    >
-      <StudyTreeDropZones node={node} dragDisabled={dragDisabled} />
-
-      {collapsed && depth > 0 && (
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute top-0 left-1/2 h-1/2 w-px -translate-x-1/2 bg-[var(--app-border-strong)]"
-        />
-      )}
-
-      {collapsed && (hasVisibleChildren || !isLastSibling) && (
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute bottom-0 left-1/2 h-1/2 w-px -translate-x-1/2 bg-[var(--app-border-strong)]"
-        />
-      )}
-
-      <ModuleTreeNodeDropIndicator placement={dropPlacement} />
-
-      {!collapsed &&
-        (isFolder ? (
-          <button
-            type="button"
-            aria-label={node.isExpanded ? 'Свернуть папку' : 'Развернуть папку'}
-            className="z-20 flex size-7 shrink-0 items-center justify-center rounded-md hover:bg-white/[0.05]"
-            onClick={() => {
-              onToggleFolder(node)
-            }}
-          >
-            {node.isExpanded ? (
-              <ChevronDown aria-hidden="true" className="size-3.5" />
-            ) : (
-              <ChevronRight aria-hidden="true" className="size-3.5" />
-            )}
-          </button>
-        ) : (
-          <span className="size-7 shrink-0" />
-        ))}
-
-      <Tooltip content={`${node.title} · ${isFolder ? 'Папка' : 'Материал'}`} side="right">
-        <button
-          type="button"
-          aria-label={`Открыть: ${node.title}`}
+    <ContextMenu.Root open={contextMenuOpen} onOpenChange={setContextMenuOpen}>
+      <ContextMenu.Trigger asChild>
+        <div
+          ref={setDraggableRef}
+          data-study-tree-node-id={node.id}
           className={cn(
-            'relative z-10 flex min-w-0 touch-none items-center text-left text-sm',
-            'outline-none select-none',
-            'focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:ring-inset',
+            'group relative flex h-8 items-center',
+            collapsed ? 'justify-center rounded-lg' : 'w-full rounded-none',
+            isSelected
+              ? 'bg-violet-500/12 text-violet-200'
+              : 'text-[var(--app-muted)] hover:bg-white/[0.04] hover:text-[var(--app-text)]',
+            isCreationContext &&
+              !isSelected &&
+              'bg-violet-500/[0.045] text-[var(--app-text)] ring-1 ring-violet-500/15 ring-inset',
+            dropPlacement === 'inside' && MODULE_TREE_NODE_INSIDE_DROP_CLASS_NAME,
+            isDragging && 'opacity-35'
+          )}
+          style={
             collapsed
-              ? 'size-8 shrink-0 justify-center rounded-lg bg-[var(--app-sidebar)] p-0'
-              : 'flex-1 gap-2 py-2',
-            dragDisabled ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'
-          )}
-          {...attributes}
-          {...listeners}
-          onClick={() => {
-            onSelect(node.id)
-          }}
+              ? undefined
+              : {
+                  paddingLeft: `${2 + depth * guideStep}px`
+                }
+          }
         >
-          {isFolder ? (
-            <StudyFolderIcon
-              name={node.icon}
-              expanded={node.isExpanded}
-              className={STUDY_FOLDER_ICON_SIDEBAR_CLASS_NAME}
+          <StudyTreeDropZones node={node} dragDisabled={dragDisabled} />
+
+          {!collapsed &&
+            Array.from({ length: depth }, (_, guideDepth) => (
+              <span
+                key={guideDepth}
+                aria-hidden="true"
+                data-study-tree-guide="ancestor"
+                data-guide-depth={guideDepth}
+                className="study-tree-guide inset-y-0"
+                style={{ left: `${guideOrigin + guideDepth * guideStep}px` }}
+              />
+            ))}
+
+          {!collapsed && isFolder && hasVisibleChildren && (
+            <span
+              aria-hidden="true"
+              data-study-tree-guide="folder"
+              data-guide-depth={depth}
+              className="study-tree-guide top-1/2 bottom-0"
+              style={{ left: `${guideOrigin + depth * guideStep}px` }}
             />
-          ) : (
-            <FileText aria-hidden="true" className="size-4 shrink-0" />
           )}
 
-          {!collapsed && <span className="truncate">{node.title}</span>}
-        </button>
-      </Tooltip>
+          {collapsed && depth > 0 && (
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute top-0 left-1/2 h-1/2 w-px -translate-x-1/2 bg-[var(--app-border-strong)]"
+            />
+          )}
 
-      {!collapsed && (
-        <DropdownMenu.Root open={menuOpen} onOpenChange={setMenuOpen}>
-          <DropdownMenu.Trigger asChild>
+          {collapsed && (hasVisibleChildren || !isLastSibling) && (
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute bottom-0 left-1/2 h-1/2 w-px -translate-x-1/2 bg-[var(--app-border-strong)]"
+            />
+          )}
+
+          <ModuleTreeNodeDropIndicator placement={dropPlacement} />
+
+          {!collapsed &&
+            (isFolder ? (
+              <button
+                type="button"
+                aria-label={node.isExpanded ? 'Свернуть папку' : 'Развернуть папку'}
+                className="z-20 flex size-5 shrink-0 items-center justify-center rounded-sm p-0 hover:bg-white/[0.05]"
+                onClick={() => {
+                  onToggleFolder(node)
+                }}
+              >
+                {node.isExpanded ? (
+                  <ChevronDown aria-hidden="true" className="size-3.5" />
+                ) : (
+                  <ChevronRight aria-hidden="true" className="size-3.5" />
+                )}
+              </button>
+            ) : (
+              <span className="size-5 shrink-0" />
+            ))}
+
+          <Tooltip content={`${node.title} · ${isFolder ? 'Папка' : 'Материал'}`} side="right">
             <button
               type="button"
-              aria-label={`Действия: ${node.title}`}
+              aria-label={`Открыть: ${node.title}`}
               className={cn(
-                'z-20 mr-1 flex size-7 shrink-0 items-center justify-center rounded-md',
-                'text-[var(--app-muted)] hover:bg-white/[0.07] hover:text-[var(--app-text)]',
-                menuOpen
-                  ? 'opacity-100'
-                  : 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'
+                'relative z-10 flex min-w-0 touch-none items-center text-left text-sm',
+                'outline-none select-none',
+                'focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:ring-inset',
+                collapsed
+                  ? 'size-8 shrink-0 justify-center rounded-lg bg-[var(--app-sidebar)] p-0'
+                  : 'flex-1 gap-1.5 py-1.5 pr-1',
+                dragDisabled ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'
               )}
+              {...attributes}
+              {...listeners}
+              onClick={() => {
+                onSelect(node.id)
+              }}
             >
-              <MoreHorizontal aria-hidden="true" className="size-4" />
+              {isFolder ? (
+                <StudyFolderIcon
+                  name={node.icon}
+                  expanded={node.isExpanded}
+                  className={STUDY_FOLDER_ICON_SIDEBAR_CLASS_NAME}
+                />
+              ) : (
+                <FileText aria-hidden="true" className="size-4 shrink-0" />
+              )}
+
+              {!collapsed && <span className="truncate">{node.title}</span>}
             </button>
-          </DropdownMenu.Trigger>
+          </Tooltip>
 
-          <DropdownMenu.Portal>
-            <DropdownMenu.Content
-              sideOffset={6}
-              align="start"
-              className="z-50 min-w-48 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-1.5 text-sm text-[var(--app-text)] shadow-xl shadow-black/25"
-            >
-              {isFolder && (
-                <>
-                  <DropdownMenu.Item
-                    className="flex cursor-default items-center gap-2 rounded-lg px-2.5 py-2 outline-none hover:bg-white/[0.06] focus:bg-white/[0.06]"
-                    onSelect={() => {
-                      onCreateFolder(node.id)
-                    }}
-                  >
-                    <FolderPlus aria-hidden="true" className="size-4 text-violet-300" />
-                    Новая папка
-                  </DropdownMenu.Item>
+          {!collapsed && (
+            <DropdownMenu.Root open={menuOpen} onOpenChange={setMenuOpen}>
+              <DropdownMenu.Trigger asChild>
+                <button
+                  type="button"
+                  aria-label={`Действия: ${node.title}`}
+                  className={cn(
+                    'z-20 flex size-6 shrink-0 items-center justify-center rounded-sm p-0',
+                    'text-[var(--app-muted)] hover:bg-white/[0.07] hover:text-[var(--app-text)]',
+                    anyMenuOpen
+                      ? 'opacity-100'
+                      : 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'
+                  )}
+                  onPointerDown={(event) => {
+                    event.stopPropagation()
+                  }}
+                  onClick={(event) => {
+                    event.stopPropagation()
+                  }}
+                >
+                  <MoreHorizontal aria-hidden="true" className="size-4" />
+                </button>
+              </DropdownMenu.Trigger>
 
-                  <DropdownMenu.Item
-                    className="flex cursor-default items-center gap-2 rounded-lg px-2.5 py-2 outline-none hover:bg-white/[0.06] focus:bg-white/[0.06]"
-                    onSelect={() => {
-                      onCreateMaterial(node.id)
-                    }}
-                  >
-                    <FilePlus2 aria-hidden="true" className="size-4 text-violet-300" />
-                    Новый материал
-                  </DropdownMenu.Item>
+              <StudyTreeDropdownMenuContent entries={menuEntries} />
+            </DropdownMenu.Root>
+          )}
+        </div>
+      </ContextMenu.Trigger>
 
-                  <DropdownMenu.Separator className="my-1 h-px bg-[var(--app-border)]" />
-                </>
+      {!collapsed && <StudyTreeContextMenuContent entries={menuEntries} />}
+    </ContextMenu.Root>
+  )
+}
+
+type StudyTreeMenuEntry =
+  | {
+      kind: 'item'
+      key: string
+      label: string
+      icon: React.JSX.Element
+      danger?: boolean
+      onSelect: () => void
+    }
+  | {
+      kind: 'separator'
+      key: string
+    }
+
+function createStudyTreeMenuEntries({
+  node,
+  isFolder,
+  onRename,
+  onDuplicate,
+  onDelete,
+  onCreateFolder,
+  onCreateMaterial
+}: {
+  node: StudyNode
+  isFolder: boolean
+  onRename: (node: StudyNode) => void
+  onDuplicate: (node: StudyNode) => void
+  onDelete: (node: StudyNode) => void
+  onCreateFolder: (parentId: string) => void
+  onCreateMaterial: (parentId: string) => void
+}): StudyTreeMenuEntry[] {
+  const entries: StudyTreeMenuEntry[] = []
+
+  if (isFolder) {
+    entries.push(
+      {
+        kind: 'item',
+        key: 'create-folder',
+        label: 'Новая папка',
+        icon: <FolderPlus aria-hidden="true" className="size-4 text-violet-300" />,
+        onSelect: () => onCreateFolder(node.id)
+      },
+      {
+        kind: 'item',
+        key: 'create-material',
+        label: 'Новый материал',
+        icon: <FilePlus2 aria-hidden="true" className="size-4 text-violet-300" />,
+        onSelect: () => onCreateMaterial(node.id)
+      },
+      {
+        kind: 'separator',
+        key: 'create-separator'
+      }
+    )
+  }
+
+  entries.push(
+    {
+      kind: 'item',
+      key: 'rename',
+      label: 'Переименовать',
+      icon: <Pencil aria-hidden="true" className="size-4 text-violet-300" />,
+      onSelect: () => onRename(node)
+    },
+    {
+      kind: 'item',
+      key: 'duplicate',
+      label: isFolder ? 'Дублировать папку' : 'Дублировать материал',
+      icon: <CopyPlus aria-hidden="true" className="size-4 text-violet-300" />,
+      onSelect: () => onDuplicate(node)
+    },
+    {
+      kind: 'separator',
+      key: 'delete-separator'
+    },
+    {
+      kind: 'item',
+      key: 'delete',
+      label: 'Удалить',
+      icon: <Trash2 aria-hidden="true" className="size-4" />,
+      danger: true,
+      onSelect: () => onDelete(node)
+    }
+  )
+
+  return entries
+}
+
+function StudyTreeDropdownMenuContent({
+  entries
+}: {
+  entries: StudyTreeMenuEntry[]
+}): React.JSX.Element {
+  return (
+    <DropdownMenu.Portal>
+      <DropdownMenu.Content
+        sideOffset={6}
+        align="start"
+        className="z-50 min-w-48 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-1.5 text-sm text-[var(--app-text)] shadow-xl shadow-black/25"
+      >
+        {entries.map((entry) =>
+          entry.kind === 'separator' ? (
+            <DropdownMenu.Separator key={entry.key} className="my-1 h-px bg-[var(--app-border)]" />
+          ) : (
+            <DropdownMenu.Item
+              key={entry.key}
+              data-study-tree-action={entry.key}
+              className={cn(
+                'flex cursor-default items-center gap-2 rounded-lg px-2.5 py-2 outline-none',
+                entry.danger
+                  ? 'text-red-300 hover:bg-red-500/10 focus:bg-red-500/10'
+                  : 'hover:bg-white/[0.06] focus:bg-white/[0.06]'
               )}
+              onSelect={entry.onSelect}
+            >
+              {entry.icon}
+              {entry.label}
+            </DropdownMenu.Item>
+          )
+        )}
+      </DropdownMenu.Content>
+    </DropdownMenu.Portal>
+  )
+}
 
-              <DropdownMenu.Item
-                className="flex cursor-default items-center gap-2 rounded-lg px-2.5 py-2 outline-none hover:bg-white/[0.06] focus:bg-white/[0.06]"
-                onSelect={() => {
-                  onRename(node)
-                }}
-              >
-                <Pencil aria-hidden="true" className="size-4" />
-                Переименовать
-              </DropdownMenu.Item>
-              <DropdownMenu.Item
-                className="flex cursor-default items-center gap-2 rounded-lg px-2.5 py-2 outline-none hover:bg-white/[0.06] focus:bg-white/[0.06]"
-                onSelect={() => {
-                  onDuplicate(node)
-                }}
-              >
-                <CopyPlus aria-hidden="true" className="size-4 text-violet-300" />
-
-                {isFolder ? 'Дублировать папку' : 'Дублировать материал'}
-              </DropdownMenu.Item>
-
-              <DropdownMenu.Separator className="my-1 h-px bg-[var(--app-border)]" />
-
-              <DropdownMenu.Item
-                className="flex cursor-default items-center gap-2 rounded-lg px-2.5 py-2 text-red-300 outline-none hover:bg-red-500/10 focus:bg-red-500/10"
-                onSelect={() => {
-                  onDelete(node)
-                }}
-              >
-                <Trash2 aria-hidden="true" className="size-4" />
-                Удалить
-              </DropdownMenu.Item>
-            </DropdownMenu.Content>
-          </DropdownMenu.Portal>
-        </DropdownMenu.Root>
-      )}
-    </div>
+function StudyTreeContextMenuContent({
+  entries
+}: {
+  entries: StudyTreeMenuEntry[]
+}): React.JSX.Element {
+  return (
+    <ContextMenu.Portal>
+      <ContextMenu.Content
+        collisionPadding={8}
+        className="z-50 min-w-48 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-1.5 text-sm text-[var(--app-text)] shadow-xl shadow-black/25"
+      >
+        {entries.map((entry) =>
+          entry.kind === 'separator' ? (
+            <ContextMenu.Separator key={entry.key} className="my-1 h-px bg-[var(--app-border)]" />
+          ) : (
+            <ContextMenu.Item
+              key={entry.key}
+              data-study-tree-action={entry.key}
+              className={cn(
+                'flex cursor-default items-center gap-2 rounded-lg px-2.5 py-2 outline-none',
+                entry.danger
+                  ? 'text-red-300 hover:bg-red-500/10 focus:bg-red-500/10'
+                  : 'hover:bg-white/[0.06] focus:bg-white/[0.06]'
+              )}
+              onSelect={entry.onSelect}
+            >
+              {entry.icon}
+              {entry.label}
+            </ContextMenu.Item>
+          )
+        )}
+      </ContextMenu.Content>
+    </ContextMenu.Portal>
   )
 }
 
