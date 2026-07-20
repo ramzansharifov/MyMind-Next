@@ -33,6 +33,12 @@ import {
   type MoveBoardNodeInput
 } from '../../../../../shared/contracts/boards'
 import { cn } from '../../../shared/lib/cn'
+import {
+  MODULE_TREE_NODE_INSIDE_DROP_CLASS_NAME,
+  ModuleTreeDragOverlay,
+  ModuleTreeNodeDropIndicator,
+  ModuleTreeRootDropZone
+} from '../../../shared/ui/ModuleTreeDndFeedback'
 import { Tooltip } from '../../../shared/ui/tooltip'
 import {
   createBoardMoveInput,
@@ -52,6 +58,7 @@ interface BoardTreeProps {
   onRename: (node: BoardNode) => void
   onDelete: (node: BoardNode) => void
   onCreate: (type: BoardNodeType, parentId: string | null) => void
+  onSelectRoot: () => void
   onMove: (input: MoveBoardNodeInput) => void
 }
 
@@ -76,6 +83,7 @@ export function BoardTree({
   onRename,
   onDelete,
   onCreate,
+  onSelectRoot,
   onMove
 }: BoardTreeProps): React.JSX.Element {
   const nodesByParent = useMemo(() => groupBoardNodesByParent(nodes), [nodes])
@@ -156,7 +164,9 @@ export function BoardTree({
         <BoardRootDropZone
           active={activeNode !== null}
           highlighted={dropPreview?.placement === 'root'}
+          isContextActive={selectedNodeId === null}
           collapsed={collapsed}
+          onSelect={onSelectRoot}
         />
       </div>
 
@@ -284,7 +294,7 @@ function BoardTreeNode({
           selectedNodeId === node.id
             ? 'bg-violet-500/12 text-violet-200'
             : 'text-[var(--app-muted)] hover:bg-white/[0.04] hover:text-[var(--app-text)]',
-          dropPlacement === 'inside' && 'bg-violet-500/15 ring-1 ring-violet-500/45',
+          dropPlacement === 'inside' && MODULE_TREE_NODE_INSIDE_DROP_CLASS_NAME,
           isDragging && 'opacity-35'
         )}
         style={collapsed ? undefined : { paddingLeft: `${4 + depth * 16}px` }}
@@ -305,13 +315,7 @@ function BoardTreeNode({
           />
         )}
 
-        {dropPlacement === 'before' && (
-          <span className="pointer-events-none absolute top-0 right-1 left-1 h-0.5 -translate-y-1/2 rounded-full bg-violet-400" />
-        )}
-
-        {dropPlacement === 'after' && (
-          <span className="pointer-events-none absolute right-1 bottom-0 left-1 h-0.5 translate-y-1/2 rounded-full bg-violet-400" />
-        )}
+        <ModuleTreeNodeDropIndicator placement={dropPlacement} />
 
         {!collapsed &&
           (isFolder ? (
@@ -453,11 +457,15 @@ function BoardTreeDropZones({
 function BoardRootDropZone({
   active,
   highlighted,
-  collapsed
+  isContextActive,
+  collapsed,
+  onSelect
 }: {
   active: boolean
   highlighted: boolean
+  isContextActive: boolean
   collapsed: boolean
+  onSelect: () => void
 }): React.JSX.Element {
   const { setNodeRef } = useDroppable({
     id: ROOT_DROP_ID,
@@ -465,21 +473,17 @@ function BoardRootDropZone({
   })
 
   return (
-    <div
-      ref={setNodeRef}
-      aria-hidden={!active}
-      className={cn(
-        'mt-2 flex min-h-20 flex-1 items-start justify-center rounded-lg border pt-3 text-xs transition-colors',
-        collapsed && 'px-0',
-        highlighted
-          ? 'border-dashed border-violet-400 bg-violet-500/10 text-violet-200'
-          : active
-            ? 'border-dashed border-[var(--app-border)] text-[var(--app-muted)]'
-            : 'border-transparent text-transparent'
-      )}
-    >
-      {!collapsed && active ? 'Переместить в корень' : null}
-    </div>
+    <ModuleTreeRootDropZone
+      dropRef={setNodeRef}
+      active={active}
+      highlighted={highlighted}
+      isContextActive={isContextActive}
+      collapsed={collapsed}
+      ariaLabel="Выбрать корень досок"
+      idleLabel="Корень досок"
+      activeLabel="Переместить в корень"
+      onSelect={onSelect}
+    />
   )
 }
 
@@ -487,10 +491,10 @@ function BoardDragOverlay({ node }: { node: BoardNode }): React.JSX.Element {
   const Icon = node.type === 'folder' ? Folder : Presentation
 
   return (
-    <div className="flex max-w-64 items-center gap-2 rounded-lg border border-violet-500/35 bg-[var(--app-surface-raised)] px-3 py-2 text-sm text-[var(--app-text)] shadow-2xl shadow-black/30">
-      <Icon aria-hidden="true" className="size-4 shrink-0 text-violet-300" />
-      <span className="truncate">{node.title}</span>
-    </div>
+    <ModuleTreeDragOverlay
+      icon={<Icon aria-hidden="true" className="size-4 shrink-0 text-violet-300" />}
+      title={node.title}
+    />
   )
 }
 

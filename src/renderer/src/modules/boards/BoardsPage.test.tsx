@@ -122,6 +122,9 @@ describe('BoardsPage', () => {
     expect(sidebar).toHaveAttribute('data-module-sidebar')
     expect(sidebar).toHaveAttribute('data-collapsed', 'false')
     expect(screen.getByRole('button', { name: 'Обучение' })).toHaveClass('text-sm')
+    expect(screen.getByRole('button', { name: 'Выбрать корень досок' })).toHaveTextContent(
+      'Корень досок'
+    )
 
     fireEvent.click(screen.getByRole('button', { name: 'Скрыть дерево досок' }))
 

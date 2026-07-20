@@ -267,6 +267,7 @@ export function BoardsPage({ resourceId, onResourceHandled }: BoardsPageProps): 
           onRename={startRename}
           onDelete={setDeleteTarget}
           onCreate={startCreate}
+          onSelectRoot={() => void openNode(null)}
           onMove={(input) => void moveNode(input)}
         />
       </ModuleSidebar>
