@@ -15,17 +15,6 @@ function replaceOnce(path, before, after) {
   writeFileSync(path, content.slice(0, index) + after + content.slice(index + before.length), 'utf8')
 }
 
-for (const path of [
-  'src/renderer/src/modules/boards/components/BoardTree.tsx',
-  'src/renderer/src/modules/study/components/StudyTree.tsx'
-]) {
-  replaceOnce(
-    path,
-    `  ModuleTreeDragOverlay,\n  ModuleTreeNodeDropIndicator,\n  ModuleTreeRootDropZone\n} from '../../../shared/ui/ModuleTreeDndFeedback'`,
-    `  ModuleTreeDragOverlay,\n  ModuleTreeNodeDropIndicator,\n  ModuleTreeRootDropZone,\n  isModuleTreeRootDropHighlighted\n} from '../../../shared/ui/ModuleTreeDndFeedback'`
-  )
-}
-
 replaceOnce(
   'src/renderer/src/modules/boards/components/BoardTree.tsx',
   `        <BoardRootDropZone\n          active={activeNode !== null}\n          highlighted={dropPreview?.placement === 'root'}\n          isContextActive={selectedNodeId === null}`,
@@ -53,7 +42,7 @@ replaceOnce(
 replaceOnce(
   'src/renderer/src/modules/boards/components/BoardTree.tsx',
   `      active={active}\n      highlighted={highlighted}\n      isContextActive={isContextActive}`,
-  `      active={active}\n      highlighted={isModuleTreeRootDropHighlighted(active, isOver)}\n      isContextActive={isContextActive}`
+  `      active={active}\n      highlighted={active && isOver}\n      isContextActive={isContextActive}`
 )
 
 replaceOnce(
@@ -83,7 +72,7 @@ replaceOnce(
 replaceOnce(
   'src/renderer/src/modules/study/components/StudyTree.tsx',
   `      active={active}\n      highlighted={highlighted}\n      isContextActive={isContextActive}`,
-  `      active={active}\n      highlighted={isModuleTreeRootDropHighlighted(active, isOver)}\n      isContextActive={isContextActive}`
+  `      active={active}\n      highlighted={active && isOver}\n      isContextActive={isContextActive}`
 )
 
 console.log('Root drop highlight now follows direct droppable hover state')
