@@ -91,6 +91,22 @@ describe('learning instructions', () => {
     expect(onOpenTopic).toHaveBeenCalledWith('boards-deletion-sync')
   })
 
+  it('documents boards drag restrictions and returning to the source material', () => {
+    const { rerender } = render(
+      <BoardsInstructionArticlePage topicId="boards-sidebar" onBack={vi.fn()} />
+    )
+
+    expect(
+      screen.getByRole('heading', { name: 'Перетаскивание папок и досок' })
+    ).toBeInTheDocument()
+    expect(screen.getByText(/вся её ветка зафиксированы/)).toBeInTheDocument()
+
+    rerender(<BoardsInstructionArticlePage topicId="boards-study-links" onBack={vi.fn()} />)
+
+    expect(screen.getByRole('heading', { name: 'Возврат к материалу' })).toBeInTheDocument()
+    expect(screen.getByText(/кнопка «Назад к материалу»/)).toBeInTheDocument()
+  })
+
   it('documents the complete bidirectional deletion behavior for study boards', () => {
     render(<BoardsInstructionArticlePage topicId="boards-deletion-sync" onBack={vi.fn()} />)
 

@@ -404,13 +404,57 @@ export function updateBoardNodeExpansion(id: string, isExpanded: boolean): Board
   return mapBoardNode(updated)
 }
 
+type BoardNodeRow = typeof boardNodes.$inferSelect
+
+function getStudyManagedBoardRowIds(rows: BoardNodeRow[]): Set<string> {
+  const rowsById = new Map(rows.map((row) => [row.id, row]))
+  const protectedIds = new Set<string>()
+
+  rows.forEach((row) => {
+    const visited = new Set<string>()
+    let current: BoardNodeRow | undefined = row
+
+    while (current && !visited.has(current.id)) {
+      visited.add(current.id)
+
+      if (isStudyManagedBoardRowAnchor(current)) {
+        protectedIds.add(row.id)
+        break
+      }
+
+      current = current.parentId ? rowsById.get(current.parentId) : undefined
+    }
+  })
+
+  for (const protectedId of [...protectedIds]) {
+    const visited = new Set<string>()
+    let current = rowsById.get(protectedId)
+
+    while (current?.parentId && !visited.has(current.parentId)) {
+      visited.add(current.parentId)
+      protectedIds.add(current.parentId)
+      current = rowsById.get(current.parentId)
+    }
+  }
+
+  return protectedIds
+}
+
+function isStudyManagedBoardRowAnchor(row: BoardNodeRow): boolean {
+  return Boolean(
+    row.id === BOARD_SYSTEM_ROOT_ID ||
+    row.sourceStudyNodeId ||
+    row.sourceMaterialId ||
+    row.sourceBlockId
+  )
+}
+
 export function moveBoardNode(input: MoveBoardNodeInput): BoardNode[] {
   if (input.id === BOARD_SYSTEM_ROOT_ID) {
     throw new Error('Системную папку «Обучение» нельзя перемещать')
   }
 
   ensureBoardsSystemRoot()
-  assertBoardFolder(input.parentId)
 
   const database = getDatabase()
   const rows = database.select().from(boardNodes).all()
@@ -419,6 +463,18 @@ export function moveBoardNode(input: MoveBoardNodeInput): BoardNode[] {
   if (!source) {
     throw new Error('Элемент досок не найден')
   }
+
+  const studyManagedIds = getStudyManagedBoardRowIds(rows)
+
+  if (studyManagedIds.has(source.id)) {
+    throw new Error('Папки и доски раздела «Обучение» нельзя перемещать')
+  }
+
+  if (input.parentId && studyManagedIds.has(input.parentId)) {
+    throw new Error('Нельзя перемещать элементы внутрь раздела «Обучение»')
+  }
+
+  assertBoardFolder(input.parentId)
 
   if (source.id === input.parentId) {
     throw new Error('Элемент нельзя переместить внутрь самого себя')

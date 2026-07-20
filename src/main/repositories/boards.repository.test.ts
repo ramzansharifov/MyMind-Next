@@ -2,11 +2,13 @@ import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
+import { BOARD_SYSTEM_ROOT_ID } from '../../shared/contracts/boards'
 import { closeDatabase, getSqlite, initializeDatabaseForTesting } from '../database/client'
 import {
   createBoardNode,
   getBoardDocument,
   listBoardNodes,
+  moveBoardNode,
   saveBoardDocument
 } from './boards.repository'
 
@@ -34,6 +36,38 @@ afterEach(() => {
 })
 
 describe('boards repository documents', () => {
+  it('moves only ordinary board nodes and protects the study section', () => {
+    const targetFolder = createBoardNode({
+      type: 'folder',
+      parentId: null,
+      title: 'Целевая папка'
+    })
+    const ordinaryBoard = createBoardNode({
+      type: 'board',
+      parentId: null,
+      title: 'Обычная доска'
+    })
+    const protectedBoard = createBoardNode({
+      type: 'board',
+      parentId: BOARD_SYSTEM_ROOT_ID,
+      title: 'Доска внутри обучения'
+    })
+
+    expect(moveBoardNode({ id: ordinaryBoard.id, parentId: targetFolder.id, position: 0 })).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: ordinaryBoard.id, parentId: targetFolder.id, position: 0 })
+      ])
+    )
+
+    expect(() => moveBoardNode({ id: protectedBoard.id, parentId: null, position: 1 })).toThrow(
+      'Папки и доски раздела «Обучение» нельзя перемещать'
+    )
+
+    expect(() =>
+      moveBoardNode({ id: ordinaryBoard.id, parentId: BOARD_SYSTEM_ROOT_ID, position: 0 })
+    ).toThrow('Нельзя перемещать элементы внутрь раздела «Обучение»')
+  })
+
   it('creates, reads and saves a compatible BoardDocument snapshot', () => {
     const created = createBoardNode({
       type: 'board',
