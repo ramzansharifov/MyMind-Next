@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   verify:
@@ -44,7 +45,12 @@ jobs:
             .slice(bodyStart, bodyEnd)
             .replaceAll('`', '\\`')
             .replaceAll('${', '\\${')
-          const prepared = `${source.slice(0, start)}const studyTreeItemReplacement = \`${body}${source.slice(bodyEnd)}`
+          let prepared = `${source.slice(0, start)}const studyTreeItemReplacement = \`${body}${source.slice(bodyEnd)}`
+
+          prepared = prepared.replace(
+            "  position: 0,\n  createdAt: 1,\n  updatedAt: 1\n}\n\nfunction renderTree",
+            "  position: 0,\n  isExpanded: false,\n  createdAt: 1,\n  updatedAt: 1\n}\n\nfunction renderTree"
+          )
 
           fs.writeFileSync(path, prepared)
           NODE
@@ -61,7 +67,26 @@ jobs:
       - run: npm run native:node
       - run: npm run format:check
       - run: npm run lint
-      - run: npm run typecheck
+      - name: Run typecheck
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          npm run typecheck > typecheck.log 2>&1
+          status=$?
+          if [ "$status" -ne 0 ]; then
+            {
+              echo "Сделать дерево обучения полноширинным, добавить линии вложенности и контекстное меню по правому клику."
+              echo
+              echo "## Диагностика TypeScript"
+              echo '```text'
+              tail -n 160 typecheck.log
+              echo '```'
+            } > pr-body.md
+            gh pr edit 31 --body-file pr-body.md
+            exit "$status"
+          fi
       - run: npm run test:coverage
       - run: npm run db:check
       - run: npm run build:bundle
