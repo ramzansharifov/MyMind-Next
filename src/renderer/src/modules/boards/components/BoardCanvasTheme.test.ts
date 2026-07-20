@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-const mainCss = readFileSync(new URL('../../../assets/main.css', import.meta.url), 'utf8')
+const mainCss = readFileSync(join(process.cwd(), 'src/renderer/src/assets/main.css'), 'utf8')
 
 describe('board canvas theme bridge', () => {
   it('maps tldraw panels and selected controls to MyMind theme variables', () => {
