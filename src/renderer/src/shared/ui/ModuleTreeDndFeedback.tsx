@@ -67,15 +67,15 @@ export function ModuleTreeRootDropZone({
       data-active={active}
       data-highlighted={highlighted}
       className={cn(
-        'group/root mt-2 flex min-h-20 flex-1 items-start justify-center rounded-lg border-2 pt-3',
+        'group/root mt-2 flex min-h-20 flex-1 items-start justify-center rounded-lg border-2 border-dashed pt-3',
         collapsed && 'px-0',
         'text-xs transition-colors outline-none',
         'focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:ring-inset',
         highlighted
-          ? 'border-dashed border-[var(--app-accent-500)] text-[var(--app-accent-500)]'
+          ? 'border-[var(--app-accent-500)] text-[var(--app-accent-500)]'
           : active
-            ? 'border-dashed border-[var(--app-border)] text-[var(--app-muted)]'
-            : 'border-transparent text-transparent hover:bg-white/[0.018] hover:text-[var(--app-muted)] focus-visible:bg-white/[0.018] focus-visible:text-[var(--app-muted)]'
+            ? 'border-[var(--app-border)] text-[var(--app-muted)] hover:border-[var(--app-accent-500)] hover:text-[var(--app-accent-500)]'
+            : 'border-transparent text-transparent hover:border-[var(--app-accent-500)] hover:text-[var(--app-accent-500)] focus-visible:border-[var(--app-accent-500)] focus-visible:text-[var(--app-accent-500)]'
       )}
       onClick={onSelect}
     >
