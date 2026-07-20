@@ -26,6 +26,18 @@ jobs:
         shell: bash
         run: |
           set -e
+          node <<'NODE'
+          const fs = require('node:fs')
+          const path = 'scripts/apply-study-sidebar-vscode.mjs'
+          const source = fs.readFileSync(path, 'utf8')
+          const start = source.indexOf('const studyTreeItemReplacement = String.raw`')
+          const end = source.indexOf('\n\nreplaceBetween(', start)
+          if (start < 0 || end < 0) throw new Error('Unable to prepare StudyTree replacement')
+          const prepared = `${source.slice(0, start)}${source
+            .slice(start, end)
+            .replaceAll('${', '\\${')}${source.slice(end)}`
+          fs.writeFileSync(path, prepared)
+          NODE
           node scripts/apply-study-sidebar-vscode.mjs
           rm -f scripts/apply-study-sidebar-vscode.mjs
           rm -f .github/workflows/verify-study-sidebar-vscode.yml
@@ -48,7 +60,7 @@ jobs:
         run: |
           set -e
           git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.email "4189822+github-actions[bot]@users.noreply.github.com"
           git add -A
           git commit -m "Улучшить сайдбар модуля обучения"
           git push origin HEAD:agent/study-sidebar-vscode
