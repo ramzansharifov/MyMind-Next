@@ -9,7 +9,7 @@ import {
 } from './ModuleTreeDndFeedback'
 
 describe('ModuleTreeDndFeedback', () => {
-  it('uses an accent dashed border for hover and drag states without a background fill', () => {
+  it('uses the rendered text color as the dashed border color', () => {
     const { rerender } = render(
       <ModuleTreeRootDropZone
         dropRef={vi.fn()}
@@ -30,12 +30,12 @@ describe('ModuleTreeDndFeedback', () => {
     expect(rootZone).toHaveClass(
       'border-2',
       'border-dashed',
-      'border-transparent',
+      'border-current',
       'text-transparent',
-      'hover:border-[var(--app-accent-500)]',
       'hover:text-[var(--app-accent-500)]'
     )
     expect(rootZone).not.toHaveClass('hover:bg-white/[0.018]')
+    expect(rootZone).not.toHaveClass('hover:border-[var(--app-accent-500)]')
     expect(rootZone).toHaveAttribute('aria-pressed', 'true')
 
     rerender(
@@ -56,8 +56,9 @@ describe('ModuleTreeDndFeedback', () => {
     expect(rootZone).toHaveClass(
       'border-2',
       'border-dashed',
-      'border-[var(--app-border)]',
-      'hover:border-[var(--app-accent-500)]'
+      'border-current',
+      'text-[var(--app-muted)]',
+      'hover:text-[var(--app-accent-500)]'
     )
 
     rerender(
@@ -77,9 +78,10 @@ describe('ModuleTreeDndFeedback', () => {
     expect(rootZone).toHaveClass(
       'border-2',
       'border-dashed',
-      'border-[var(--app-accent-500)]',
+      'border-current',
       'text-[var(--app-accent-500)]'
     )
+    expect(rootZone).not.toHaveClass('border-[var(--app-accent-500)]')
     expect(rootZone).not.toHaveClass('bg-violet-500/10')
   })
 
