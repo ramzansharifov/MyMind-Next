@@ -172,9 +172,9 @@ function canMoveIntoParent(
 function isStudyManagedAnchor(node: BoardNode): boolean {
   return Boolean(
     node.id === BOARD_SYSTEM_ROOT_ID ||
-      node.sourceStudyNodeId ||
-      node.sourceMaterialId ||
-      node.sourceBlockId
+    node.sourceStudyNodeId ||
+    node.sourceMaterialId ||
+    node.sourceBlockId
   )
 }
 

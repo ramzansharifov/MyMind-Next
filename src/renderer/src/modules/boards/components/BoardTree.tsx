@@ -289,10 +289,7 @@ function BoardTreeNode({
         )}
         style={collapsed ? undefined : { paddingLeft: `${4 + depth * 16}px` }}
       >
-        <BoardTreeDropZones
-          node={node}
-          disabled={isStudyManaged}
-        />
+        <BoardTreeDropZones node={node} disabled={isStudyManaged} />
 
         {collapsed && depth > 0 && (
           <span
@@ -546,7 +543,9 @@ function BoardNodeMenu({
                 accent
                 onSelect={() => onCreate('board', node.id)}
               />
-              {!node.isSystem && <DropdownMenu.Separator className="my-1 h-px bg-[var(--app-border)]" />}
+              {!node.isSystem && (
+                <DropdownMenu.Separator className="my-1 h-px bg-[var(--app-border)]" />
+              )}
             </>
           )}
 

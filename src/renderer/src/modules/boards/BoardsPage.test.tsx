@@ -8,7 +8,9 @@ import { AppErrorBoundary } from '../../app/AppErrorBoundary'
 
 const testHarness = vi.hoisted(() => ({
   listNodes: vi.fn(),
-  loadBoardCanvas: vi.fn()
+  moveNode: vi.fn(),
+  loadBoardCanvas: vi.fn(),
+  requestAppModuleNavigation: vi.fn()
 }))
 
 vi.mock('./api/boards-client', () => ({
@@ -18,11 +20,15 @@ vi.mock('./api/boards-client', () => ({
     renameNode: vi.fn(),
     deleteNode: vi.fn(),
     updateExpansion: vi.fn(),
-    moveNode: vi.fn(),
+    moveNode: testHarness.moveNode,
     getDocument: vi.fn(),
     saveDocument: vi.fn(),
     ensureStudyBoard: vi.fn()
   }
+}))
+
+vi.mock('../../app/module-navigation', () => ({
+  requestAppModuleNavigation: testHarness.requestAppModuleNavigation
 }))
 
 vi.mock('../../shared/ui/tooltip', () => ({
@@ -60,6 +66,9 @@ const boardNode: BoardNode = {
 }
 
 beforeEach(() => {
+  testHarness.listNodes.mockReset()
+  testHarness.moveNode.mockReset()
+  testHarness.requestAppModuleNavigation.mockReset()
   testHarness.loadBoardCanvas.mockReset()
   testHarness.loadBoardCanvas.mockRejectedValue(
     new Error('Failed to fetch dynamically imported module: BoardCanvas')
@@ -219,6 +228,35 @@ describe('BoardsPage', () => {
     await waitFor(() => expect(testHarness.loadBoardCanvas).toHaveBeenCalledOnce())
     expect(screen.getByRole('button', { name: 'Тестовая доска' })).toBeInTheDocument()
     expect(screen.queryByText('Не удалось открыть раздел')).not.toBeInTheDocument()
+  })
+  it('locks the study tree and returns a linked board to its source material', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const linkedBoard: BoardNode = {
+      ...boardNode,
+      parentId: systemFolder.id,
+      sourceMaterialId: 'material-1',
+      sourceBlockId: 'board-block-1'
+    }
+    testHarness.listNodes.mockResolvedValueOnce([systemFolder, linkedBoard])
+
+    render(<BoardsPage />)
+
+    await screen.findByRole('heading', { name: 'Доски', level: 1 })
+
+    const linkedBoardButton = screen.getAllByRole('button', { name: 'Тестовая доска' })[0]
+    expect(linkedBoardButton.closest('[data-board-tree-node]')).toHaveAttribute(
+      'data-study-managed',
+      'true'
+    )
+
+    await user.click(linkedBoardButton)
+    await user.click(await screen.findByRole('button', { name: 'Назад к материалу' }))
+
+    expect(testHarness.requestAppModuleNavigation).toHaveBeenCalledWith({
+      view: 'study',
+      resourceId: 'material-1'
+    })
   })
 })
 

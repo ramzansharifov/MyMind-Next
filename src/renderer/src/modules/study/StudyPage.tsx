@@ -12,6 +12,7 @@ import {
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type { StudyFolderIconName, StudyNode } from '../../../../shared/contracts/study'
+import type { AppModuleProps } from '../../app/module-registry'
 import { cn } from '../../shared/lib/cn'
 import { ModuleSidebar } from '../../shared/ui/ModuleSidebar'
 import { getModuleSidebarLayoutClassName } from '../../shared/ui/module-sidebar-layout'
@@ -55,7 +56,7 @@ interface BlockedStudyTransition {
   message: string
 }
 
-export function StudyPage(): React.JSX.Element {
+export function StudyPage({ resourceId, onResourceHandled }: AppModuleProps): React.JSX.Element {
   const study = useStudy()
 
   const studyNodes = study.nodes
@@ -98,6 +99,7 @@ export function StudyPage(): React.JSX.Element {
   )
 
   const internalNavigationSequenceRef = useRef(0)
+  const handledResourceIdRef = useRef<string | null>(null)
 
   const selectedNode = useMemo(
     () => study.nodes.find((node) => node.id === study.selectedNodeId) ?? null,
@@ -224,6 +226,40 @@ export function StudyPage(): React.JSX.Element {
     },
     [selectNode, studyNodes, toggleFolder]
   )
+
+  useEffect(() => {
+    if (!resourceId) {
+      handledResourceIdRef.current = null
+      return undefined
+    }
+
+    if (study.isLoading || handledResourceIdRef.current === resourceId) {
+      return undefined
+    }
+
+    let active = true
+    const target = studyNodes.find((node) => node.id === resourceId && node.type === 'material')
+
+    void Promise.resolve().then(() => {
+      if (!active || handledResourceIdRef.current === resourceId) {
+        return
+      }
+
+      handledResourceIdRef.current = resourceId
+
+      if (target) {
+        setInternalLinkHistory(clearStudyInternalLinkHistory())
+        setInternalNavigation(null)
+        openStudyNode(target.id)
+      }
+
+      onResourceHandled?.()
+    })
+
+    return () => {
+      active = false
+    }
+  }, [onResourceHandled, openStudyNode, resourceId, study.isLoading, studyNodes])
 
   const clearInternalLinkNavigation = useCallback((): void => {
     setInternalLinkHistory(clearStudyInternalLinkHistory())
