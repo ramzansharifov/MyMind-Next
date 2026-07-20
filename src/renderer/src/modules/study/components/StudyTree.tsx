@@ -210,7 +210,6 @@ export function StudyTree({
         <StudyRootDropZone
           dragDisabled={dragDisabled}
           active={activeNode !== null}
-          highlighted={dropPreview?.placement === 'root'}
           isContextActive={activeParentId === null}
           collapsed={collapsed}
           onSelect={onSelectRoot}
@@ -585,19 +584,17 @@ function StudyTreeDropZones({
 function StudyRootDropZone({
   dragDisabled,
   active,
-  highlighted,
   isContextActive,
   collapsed,
   onSelect
 }: {
   dragDisabled: boolean
   active: boolean
-  highlighted: boolean
   isContextActive: boolean
   collapsed: boolean
   onSelect: () => void
 }): React.JSX.Element {
-  const { setNodeRef } = useDroppable({
+  const { isOver, setNodeRef } = useDroppable({
     id: ROOT_DROP_ID,
     disabled: dragDisabled
   })
@@ -606,7 +603,7 @@ function StudyRootDropZone({
     <ModuleTreeRootDropZone
       dropRef={setNodeRef}
       active={active}
-      highlighted={highlighted}
+      highlighted={active && isOver}
       isContextActive={isContextActive}
       collapsed={collapsed}
       ariaLabel="Выбрать корень библиотеки"
