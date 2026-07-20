@@ -27,6 +27,28 @@ jobs:
         run: |
           set -e
           node scripts/unify-study-boards-dnd.mjs
+          node <<'NODE'
+          const fs = require('node:fs')
+          const paths = [
+            'src/renderer/src/modules/study/components/StudyTree.tsx',
+            'src/renderer/src/modules/boards/components/BoardTree.tsx'
+          ]
+
+          for (const path of paths) {
+            const source = fs
+              .readFileSync(path, 'utf8')
+              .replace(
+                '  getModuleTreeNodeDropContainerClassName,',
+                '  MODULE_TREE_NODE_INSIDE_DROP_CLASS_NAME,'
+              )
+              .replace(
+                'getModuleTreeNodeDropContainerClassName(dropPlacement)',
+                "dropPlacement === 'inside' && MODULE_TREE_NODE_INSIDE_DROP_CLASS_NAME"
+              )
+
+            fs.writeFileSync(path, source)
+          }
+          NODE
           rm -f scripts/unify-study-boards-dnd.mjs
           npm exec prettier -- --write \
             src/renderer/src/shared/ui/ModuleTreeDndFeedback.tsx \
