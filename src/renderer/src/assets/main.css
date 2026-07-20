@@ -233,7 +233,8 @@ button {
   border-color: var(--app-accent-500);
 }
 
-.study-tree-guide {
+.study-tree-guide,
+.board-tree-guide {
   position: absolute;
   z-index: 0;
   width: 1px;
@@ -243,7 +244,8 @@ button {
   transition: opacity 140ms ease;
 }
 
-[data-module-sidebar]:hover .study-tree-guide {
+[data-module-sidebar]:hover .study-tree-guide,
+[data-module-sidebar]:hover .board-tree-guide {
   opacity: 0.82;
 }
 
