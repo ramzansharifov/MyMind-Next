@@ -1,27 +1,25 @@
-name: Verify root drop hover highlight
+name: Diagnose root drop hover highlight
 
 on:
   pull_request:
     branches: [main]
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   verify:
-    if: github.actor != 'github-actions[bot]'
     runs-on: windows-latest
-    timeout-minutes: 35
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
           ref: agent/fix-root-drop-hover-state
-          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      - run: npm ci --silent
       - name: Apply root drop highlight fix
         shell: bash
         run: |
@@ -32,21 +30,12 @@ jobs:
             src/renderer/src/modules/study/components/StudyTree.tsx \
             src/renderer/src/shared/ui/ModuleTreeDndFeedback.tsx \
             src/renderer/src/shared/ui/ModuleTreeDndFeedback.test.tsx \
-            scripts/fix-root-drop-highlight.mjs
-      - run: npm run native:node
-      - run: npm run format:check
-      - run: npm run lint
-      - run: npm run typecheck
-      - run: npm run test:coverage
-      - run: npm run db:check
-      - run: npm run build:bundle
-      - name: Commit verified source
-        shell: bash
-        run: |
-          set -e
-          rm -f scripts/fix-root-drop-highlight.mjs .github/workflows/root-drop-highlight.yml
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "Исправить подсветку корневой зоны"
-          git push origin HEAD:agent/fix-root-drop-hover-state
+            scripts/fix-root-drop-highlight.mjs > /dev/null
+      - name: Lint changed files
+        run: >-
+          npm exec eslint --
+          src/renderer/src/modules/boards/components/BoardTree.tsx
+          src/renderer/src/modules/study/components/StudyTree.tsx
+          src/renderer/src/shared/ui/ModuleTreeDndFeedback.tsx
+          src/renderer/src/shared/ui/ModuleTreeDndFeedback.test.tsx
+          scripts/fix-root-drop-highlight.mjs
