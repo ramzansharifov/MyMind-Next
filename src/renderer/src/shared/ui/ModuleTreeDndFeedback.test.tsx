@@ -65,9 +65,25 @@ describe('ModuleTreeDndFeedback', () => {
   })
 
   it('shares the study insertion feedback for before, inside, and after placements', () => {
-    const { rerender } = render(<ModuleTreeNodeDropIndicator placement="before" />)
+    const { container, rerender } = render(<ModuleTreeNodeDropIndicator placement="before" />)
 
-    expect(screen.getByTestId('drop-feedback-host').querySelector('[data-module-tree-drop-indicator]'))
+    expect(
+      container.querySelector('[data-module-tree-drop-indicator="before"]')
+    ).toBeInTheDocument()
+
+    rerender(<ModuleTreeNodeDropIndicator placement="after" />)
+
+    expect(
+      container.querySelector('[data-module-tree-drop-indicator="after"]')
+    ).toBeInTheDocument()
+
+    rerender(<ModuleTreeNodeDropIndicator placement="inside" />)
+
+    expect(container.querySelector('[data-module-tree-drop-indicator]')).not.toBeInTheDocument()
+    expect(getModuleTreeNodeDropContainerClassName('inside')).toBe(
+      'bg-violet-500/15 ring-1 ring-violet-500/45'
+    )
+    expect(getModuleTreeNodeDropContainerClassName('before')).toBeUndefined()
   })
 
   it('renders identical drag overlay shells for both module trees', () => {
@@ -77,9 +93,5 @@ describe('ModuleTreeDndFeedback', () => {
       'data-module-tree-drag-overlay',
       'true'
     )
-    expect(getModuleTreeNodeDropContainerClassName('inside')).toBe(
-      'bg-violet-500/15 ring-1 ring-violet-500/45'
-    )
-    expect(getModuleTreeNodeDropContainerClassName('before')).toBeUndefined()
   })
 })
