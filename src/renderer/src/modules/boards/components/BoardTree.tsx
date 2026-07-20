@@ -163,7 +163,6 @@ export function BoardTree({
 
         <BoardRootDropZone
           active={activeNode !== null}
-          highlighted={dropPreview?.placement === 'root'}
           isContextActive={selectedNodeId === null}
           collapsed={collapsed}
           onSelect={onSelectRoot}
@@ -456,18 +455,16 @@ function BoardTreeDropZones({
 
 function BoardRootDropZone({
   active,
-  highlighted,
   isContextActive,
   collapsed,
   onSelect
 }: {
   active: boolean
-  highlighted: boolean
   isContextActive: boolean
   collapsed: boolean
   onSelect: () => void
 }): React.JSX.Element {
-  const { setNodeRef } = useDroppable({
+  const { isOver, setNodeRef } = useDroppable({
     id: ROOT_DROP_ID,
     disabled: !active
   })
@@ -476,7 +473,7 @@ function BoardRootDropZone({
     <ModuleTreeRootDropZone
       dropRef={setNodeRef}
       active={active}
-      highlighted={highlighted}
+      highlighted={active && isOver}
       isContextActive={isContextActive}
       collapsed={collapsed}
       ariaLabel="Выбрать корень досок"

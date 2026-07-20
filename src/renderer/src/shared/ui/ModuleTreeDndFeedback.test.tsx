@@ -9,7 +9,7 @@ import {
 } from './ModuleTreeDndFeedback'
 
 describe('ModuleTreeDndFeedback', () => {
-  it('uses the boards root-zone design while preserving the contextual hover label', () => {
+  it('uses a visible accent dashed border without a background fill', () => {
     const { rerender } = render(
       <ModuleTreeRootDropZone
         dropRef={vi.fn()}
@@ -27,7 +27,7 @@ describe('ModuleTreeDndFeedback', () => {
     const rootZone = screen.getByRole('button', { name: 'Выбрать корень библиотеки' })
 
     expect(rootZone).toHaveTextContent('Корень библиотеки')
-    expect(rootZone).toHaveClass('border-transparent', 'text-transparent')
+    expect(rootZone).toHaveClass('border-2', 'border-transparent', 'text-transparent')
     expect(rootZone).toHaveAttribute('aria-pressed', 'true')
 
     rerender(
@@ -45,7 +45,7 @@ describe('ModuleTreeDndFeedback', () => {
     )
 
     expect(rootZone).toHaveTextContent('Переместить в корень')
-    expect(rootZone).toHaveClass('border-dashed', 'border-[var(--app-border)]')
+    expect(rootZone).toHaveClass('border-2', 'border-dashed', 'border-[var(--app-border)]')
 
     rerender(
       <ModuleTreeRootDropZone
@@ -61,7 +61,12 @@ describe('ModuleTreeDndFeedback', () => {
       />
     )
 
-    expect(rootZone).toHaveClass('border-dashed', 'border-violet-400', 'text-violet-200')
+    expect(rootZone).toHaveClass(
+      'border-2',
+      'border-dashed',
+      'border-[var(--app-accent-500)]',
+      'text-[var(--app-accent-500)]'
+    )
     expect(rootZone).not.toHaveClass('bg-violet-500/10')
   })
 
