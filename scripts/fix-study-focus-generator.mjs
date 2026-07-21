@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
 import { readFileSync, writeFileSync } from 'node:fs'
 
 const path = 'scripts/add-study-focus-mode.mjs'
@@ -11,6 +12,10 @@ function replaceRequired(before, after) {
   source = source.replace(before, after)
 }
 
+replaceRequired(
+  `import { readFileSync, writeFileSync } from 'node:fs'`,
+  `/* eslint-disable @typescript-eslint/explicit-function-return-type */\nimport { readFileSync, writeFileSync } from 'node:fs'`
+)
 replaceRequired(
   `  useEffect(() => {\n    if (focusMode) {\n      setMode('read')\n    }\n  }, [focusMode])\n\n`,
   ''
