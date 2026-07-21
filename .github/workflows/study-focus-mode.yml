@@ -1,47 +1,51 @@
-name: Diagnose current study focus generator
+name: Verify study focus mode
 
 on:
   pull_request:
     branches: [main]
 
 permissions:
-  contents: read
-  pull-requests: write
+  contents: write
 
 jobs:
   verify:
+    if: github.actor != 'github-actions[bot]'
     runs-on: windows-latest
-    timeout-minutes: 20
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with:
           ref: agent/study-focus-mode
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - run: npm ci --silent
-      - name: Diagnose generator and formatting
+      - run: npm ci
+      - name: Apply focus mode implementation
         shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          set +e
-          {
-            node scripts/fix-study-focus-generator.mjs
-            node scripts/add-study-focus-mode.mjs
-            npm run format
-          } > implementation-output.txt 2>&1
-          status=$?
-          if [ "$status" -ne 0 ]; then
-            {
-              echo "Добавить полноэкранный режим чтения материала, сохранить его при переходе на связанную доску и обратно, предоставить возврат к материалу и выход из фокуса на доске. Унифицировать подсказки модуля досок через общий Radix Tooltip."
-              echo
-              echo "## Временная диагностика текущего генератора"
-              echo '```text'
-              tail -n 180 implementation-output.txt
-              echo '```'
-            } > pr-body.md
-            gh pr edit 34 --body-file pr-body.md
-            exit "$status"
-          fi
+          set -e
+          node scripts/fix-study-focus-generator.mjs
+          node scripts/add-study-focus-mode.mjs
+          npm run format
+      - run: npm run native:node
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:coverage
+      - run: npm run db:check
+      - run: npm run build:bundle
+      - name: Commit verified source
+        shell: bash
+        run: |
+          set -e
+          rm -f \
+            scripts/add-study-focus-mode.mjs \
+            scripts/fix-study-focus-generator.mjs \
+            .github/workflows/study-focus-mode.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Добавить режим фокуса обучения"
+          git push origin HEAD:agent/study-focus-mode
