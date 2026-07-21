@@ -15,6 +15,7 @@ interface StudySourceBlockRenderContext {
 
 interface StudySourceBlockShellProps {
   source: string
+  copyDisabled?: boolean
   copyLabel: string
   copiedLabel?: string
   copyErrorLabel?: string
@@ -37,6 +38,7 @@ const actionButtonClassName = [
 
 export function StudySourceBlockShell({
   source,
+  copyDisabled = !source,
   copyLabel,
   copiedLabel = 'Скопировано',
   copyErrorLabel = 'Не удалось скопировать',
@@ -96,7 +98,7 @@ export function StudySourceBlockShell({
           <button
             type="button"
             aria-label={currentCopyLabel}
-            disabled={!source}
+            disabled={copyDisabled}
             className={cn(
               actionButtonClassName,
               'disabled:cursor-not-allowed disabled:opacity-30',
