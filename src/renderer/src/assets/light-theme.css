@@ -1,0 +1,206 @@
+:root {
+  --app-control: rgb(0 0 0 / 8%);
+  --app-control-hover: rgb(255 255 255 / 5%);
+  --app-card: var(--app-workspace);
+  --app-card-hover: var(--app-surface-raised);
+  --app-icon-surface: rgb(255 255 255 / 3%);
+  --app-empty-surface: rgb(0 0 0 / 4%);
+  --app-shadow-card: 0 1px 2px rgb(0 0 0 / 10%);
+  --app-shadow-panel: 0 20px 70px rgb(0 0 0 / 16%);
+  --app-shadow-hover: 0 12px 30px rgb(0 0 0 / 18%);
+  --app-shadow-sidebar: none;
+  --app-shadow-input: inset 0 1px 2px rgb(0 0 0 / 18%);
+}
+
+:root[data-theme='light'] {
+  color: #182230;
+  background: #eef2f6;
+
+  --app-workspace: #eef2f6;
+  --app-sidebar: #fbfcfe;
+  --app-sidebar-active: color-mix(in srgb, var(--app-accent-600) 12%, #ffffff);
+  --app-surface: #ffffff;
+  --app-surface-raised: #f7f9fc;
+  --app-border: #dce3eb;
+  --app-border-strong: #c8d2de;
+  --app-text: #182230;
+  --app-muted: #667386;
+  --app-tooltip: #ffffff;
+  --app-tooltip-border: #cdd6e1;
+  --app-overlay-soft: rgb(24 34 48 / 6%);
+  --app-overlay-faint: rgb(24 34 48 / 3.5%);
+  --app-code-surface: #f3f5f8;
+  --app-reader-surface: #e9eef4;
+
+  --app-control: #edf1f5;
+  --app-control-hover: #e4eaf1;
+  --app-card: #f7f9fc;
+  --app-card-hover: #ffffff;
+  --app-icon-surface: #edf2f7;
+  --app-empty-surface: #f7f9fc;
+  --app-shadow-card: 0 1px 2px rgb(35 48 67 / 8%), 0 6px 18px rgb(35 48 67 / 4%);
+  --app-shadow-panel: 0 18px 50px rgb(35 48 67 / 10%);
+  --app-shadow-hover: 0 12px 28px rgb(35 48 67 / 13%);
+  --app-shadow-sidebar: 8px 0 28px rgb(35 48 67 / 6%);
+  --app-shadow-input: inset 0 1px 2px rgb(35 48 67 / 8%);
+
+  --app-scrollbar-thumb: color-mix(in srgb, var(--app-accent-600) 34%, #aeb8c6);
+  --app-scrollbar-thumb-hover: color-mix(in srgb, var(--app-accent-600) 58%, #8794a5);
+
+  /* Pale 200–400 accents work in dark mode but lose contrast on white surfaces. */
+  --color-violet-200: var(--app-accent-700);
+  --color-violet-300: var(--app-accent-700);
+  --color-violet-400: var(--app-accent-600);
+  --color-violet-500: var(--app-accent-600);
+  --color-violet-600: var(--app-accent-700);
+}
+
+:root[data-theme='light'] body,
+:root[data-theme='light'] #root {
+  background: var(--app-workspace);
+}
+
+:root[data-theme='light'] #workspace {
+  background:
+    radial-gradient(
+      circle at 88% 0%,
+      color-mix(in srgb, var(--app-accent-500) 5%, transparent),
+      transparent 32rem
+    ),
+    var(--app-workspace);
+}
+
+:root[data-theme='light'] aside[aria-label='Боковая панель'],
+:root[data-theme='light'] [data-module-sidebar] {
+  box-shadow: var(--app-shadow-sidebar);
+}
+
+:root[data-theme='light'] #workspace .blur-3xl {
+  opacity: 0.48;
+}
+
+/* Compatibility layer for legacy dark-mode utility classes. */
+:root[data-theme='light'] [class~='bg-black/[0.08]'] {
+  background-color: var(--app-control) !important;
+}
+
+:root[data-theme='light'] [class~='bg-black/[0.04]'] {
+  background-color: var(--app-empty-surface) !important;
+}
+
+:root[data-theme='light'] [class~='bg-white/[0.025]'],
+:root[data-theme='light'] [class~='bg-white/[0.035]'],
+:root[data-theme='light'] [class~='bg-white/[0.04]'],
+:root[data-theme='light'] [class~='bg-white/[0.05]'],
+:root[data-theme='light'] [class~='bg-white/[0.06]'],
+:root[data-theme='light'] [class~='bg-white/[0.07]'],
+:root[data-theme='light'] [class~='bg-white/[0.08]'] {
+  background-color: var(--app-icon-surface) !important;
+}
+
+:root[data-theme='light'] [class*='hover:bg-white/']:hover {
+  background-color: var(--app-control-hover) !important;
+}
+
+:root[data-theme='light'] [class*='shadow-[0_20px_70px_rgb(0_0_0/0.16)]'],
+:root[data-theme='light'] [class*='shadow-[0_12px_40px_rgb(0_0_0/0.1)]'] {
+  box-shadow: var(--app-shadow-panel) !important;
+}
+
+:root[data-theme='light'] [class*='shadow-inner'][class*='shadow-black/'] {
+  box-shadow: var(--app-shadow-input) !important;
+}
+
+:root[data-theme='light'] [class*='hover:shadow-black/']:hover {
+  box-shadow: var(--app-shadow-hover) !important;
+}
+
+:root[data-theme='light'] .mymind-rich-text-editor code,
+:root[data-theme='light'] .study-markdown-preview p > code,
+:root[data-theme='light'] .study-markdown-preview li > code,
+:root[data-theme='light'] .study-markdown-preview td > code,
+:root[data-theme='light'] .study-markdown-preview th > code {
+  color: var(--app-accent-700);
+  background: color-mix(in srgb, var(--app-accent-500) 7%, var(--app-code-surface));
+  border-color: color-mix(in srgb, var(--app-accent-500) 18%, var(--app-border));
+}
+
+:root[data-theme='light'] .study-markdown-preview th {
+  background: var(--app-surface-raised);
+}
+
+:root[data-theme='light'] .study-code-block__line-numbers {
+  color: #7b8797;
+  background: #e9edf3;
+  box-shadow: 0.5rem 0 1rem rgb(35 48 67 / 7%);
+}
+
+:root[data-theme='light'] .study-code-block .token.comment,
+:root[data-theme='light'] .study-code-block .token.prolog,
+:root[data-theme='light'] .study-code-block .token.doctype,
+:root[data-theme='light'] .study-code-block .token.cdata,
+:root[data-theme='light'] .study-mermaid-source .token.comment,
+:root[data-theme='light'] .study-latex-source .token.comment,
+:root[data-theme='light'] .study-markdown-source .token.punctuation {
+  color: #6b7280;
+}
+
+:root[data-theme='light'] .study-code-block .token.property,
+:root[data-theme='light'] .study-code-block .token.tag,
+:root[data-theme='light'] .study-code-block .token.boolean,
+:root[data-theme='light'] .study-code-block .token.number,
+:root[data-theme='light'] .study-code-block .token.constant,
+:root[data-theme='light'] .study-code-block .token.symbol,
+:root[data-theme='light'] .study-markdown-source .token.list {
+  color: #be185d;
+}
+
+:root[data-theme='light'] .study-code-block .token.selector,
+:root[data-theme='light'] .study-code-block .token.attr-name,
+:root[data-theme='light'] .study-code-block .token.string,
+:root[data-theme='light'] .study-code-block .token.char,
+:root[data-theme='light'] .study-code-block .token.builtin,
+:root[data-theme='light'] .study-mermaid-source .token.string,
+:root[data-theme='light'] .study-markdown-source .token.blockquote,
+:root[data-theme='light'] .study-markdown-source .token.italic {
+  color: #15803d;
+}
+
+:root[data-theme='light'] .study-code-block .token.operator,
+:root[data-theme='light'] .study-code-block .token.entity,
+:root[data-theme='light'] .study-code-block .token.url,
+:root[data-theme='light'] .study-mermaid-source .token.arrow,
+:root[data-theme='light'] .study-mermaid-source .token.operator,
+:root[data-theme='light'] .study-latex-source .token.url,
+:root[data-theme='light'] .study-latex-source .token.variable,
+:root[data-theme='light'] .study-markdown-source .token.url,
+:root[data-theme='light'] .study-markdown-source .token.string {
+  color: #1d4ed8;
+}
+
+:root[data-theme='light'] .study-code-block .token.atrule,
+:root[data-theme='light'] .study-code-block .token.attr-value,
+:root[data-theme='light'] .study-code-block .token.keyword,
+:root[data-theme='light'] .study-mermaid-source .token.directive,
+:root[data-theme='light'] .study-mermaid-source .token.keyword,
+:root[data-theme='light'] .study-latex-source .token.keyword,
+:root[data-theme='light'] .study-latex-source .token.function,
+:root[data-theme='light'] .study-latex-source .token.selector,
+:root[data-theme='light'] .study-markdown-source .token.title,
+:root[data-theme='light'] .study-markdown-source .token.important,
+:root[data-theme='light'] .study-markdown-source .token.bold {
+  color: var(--app-accent-700);
+}
+
+:root[data-theme='light'] .study-code-block .token.function,
+:root[data-theme='light'] .study-code-block .token.class-name,
+:root[data-theme='light'] .study-markdown-source .token.code {
+  color: #a16207;
+}
+
+:root[data-theme='light'] .mymind-board-canvas .tl-container {
+  --tl-shadow-1: 0 1px 2px rgb(35 48 67 / 8%), inset 0 0 0 1px var(--app-border);
+  --tl-shadow-2: 0 8px 24px rgb(35 48 67 / 10%), inset 0 0 0 1px var(--app-border);
+  --tl-shadow-3: 0 12px 36px rgb(35 48 67 / 13%), inset 0 0 0 1px var(--app-border);
+  --tl-shadow-4: 0 18px 48px rgb(35 48 67 / 16%), inset 0 0 0 1px var(--app-border);
+}
