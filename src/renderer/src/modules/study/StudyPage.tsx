@@ -56,7 +56,12 @@ interface BlockedStudyTransition {
   message: string
 }
 
-export function StudyPage({ resourceId, onResourceHandled }: AppModuleProps): React.JSX.Element {
+export function StudyPage({
+  resourceId,
+  onResourceHandled,
+  focusMode = false,
+  onFocusModeChange
+}: AppModuleProps): React.JSX.Element {
   const study = useStudy()
 
   const studyNodes = study.nodes
@@ -372,95 +377,104 @@ export function StudyPage({ resourceId, onResourceHandled }: AppModuleProps): Re
   }, [openStudyNode, runAfterDraftFlush, selectedNode])
 
   return (
-    <section className={getModuleSidebarLayoutClassName(isSidebarCollapsed)}>
-      <ModuleSidebar
-        navigationLabel="Библиотека обучения"
-        moduleLabel="Обучение"
-        homeLabel="Главная обучения"
-        icon={BookOpen}
-        collapsed={isSidebarCollapsed}
-        contentClassName={isSidebarCollapsed ? undefined : 'px-0 py-3'}
-        homeSelected={selectedNode === null}
-        expandLabel="Показать библиотеку"
-        collapseLabel="Скрыть библиотеку"
-        onHomeSelect={() => {
-          selectStudyNode(null)
-        }}
-        onCollapsedChange={setIsSidebarCollapsed}
-      >
-        {study.isLoading ? (
-          <p className="px-2 py-4 text-sm text-[var(--app-muted)]">Загрузка…</p>
-        ) : (
-          <StudyTree
-            nodes={study.nodes}
-            search=""
-            selectedNodeId={study.selectedNodeId}
-            activeParentId={selectedParentId}
-            collapsed={isSidebarCollapsed}
-            onSelect={selectStudyNode}
-            onSelectRoot={() => {
-              selectStudyNode(null)
-            }}
-            onToggleFolder={(node) => {
-              if (!deletePendingRef.current) {
-                void study.toggleFolder(node)
-              }
-            }}
-            onRename={openRename}
-            onDuplicate={(node) => {
-              void runAfterDraftFlush(async () => {
-                clearInternalLinkNavigation()
-
-                await study.duplicateNode(node.id)
-              })
-            }}
-            onDelete={openDelete}
-            onCreateFolder={(parentId) => {
-              void runAfterDraftFlush(async () => {
-                clearInternalLinkNavigation()
-
-                const parentFolder = study.nodes.find((node) => node.id === parentId)
-
-                if (parentFolder?.type === 'folder' && !parentFolder.isExpanded) {
-                  await study.toggleFolder(parentFolder)
+    <section
+      data-study-focus-mode={focusMode}
+      className={
+        focusMode
+          ? 'h-full min-h-0 w-full bg-[var(--app-workspace)]'
+          : getModuleSidebarLayoutClassName(isSidebarCollapsed)
+      }
+    >
+      {!focusMode && (
+        <ModuleSidebar
+          navigationLabel="Библиотека обучения"
+          moduleLabel="Обучение"
+          homeLabel="Главная обучения"
+          icon={BookOpen}
+          collapsed={isSidebarCollapsed}
+          contentClassName={isSidebarCollapsed ? undefined : 'px-0 py-3'}
+          homeSelected={selectedNode === null}
+          expandLabel="Показать библиотеку"
+          collapseLabel="Скрыть библиотеку"
+          onHomeSelect={() => {
+            selectStudyNode(null)
+          }}
+          onCollapsedChange={setIsSidebarCollapsed}
+        >
+          {study.isLoading ? (
+            <p className="px-2 py-4 text-sm text-[var(--app-muted)]">Загрузка…</p>
+          ) : (
+            <StudyTree
+              nodes={study.nodes}
+              search=""
+              selectedNodeId={study.selectedNodeId}
+              activeParentId={selectedParentId}
+              collapsed={isSidebarCollapsed}
+              onSelect={selectStudyNode}
+              onSelectRoot={() => {
+                selectStudyNode(null)
+              }}
+              onToggleFolder={(node) => {
+                if (!deletePendingRef.current) {
+                  void study.toggleFolder(node)
                 }
+              }}
+              onRename={openRename}
+              onDuplicate={(node) => {
+                void runAfterDraftFlush(async () => {
+                  clearInternalLinkNavigation()
 
-                await study.createNode({
-                  type: 'folder',
-                  parentId
+                  await study.duplicateNode(node.id)
                 })
-              })
-            }}
-            onCreateMaterial={(parentId) => {
-              void runAfterDraftFlush(async () => {
-                clearInternalLinkNavigation()
+              }}
+              onDelete={openDelete}
+              onCreateFolder={(parentId) => {
+                void runAfterDraftFlush(async () => {
+                  clearInternalLinkNavigation()
 
-                const parentFolder = study.nodes.find((node) => node.id === parentId)
+                  const parentFolder = study.nodes.find((node) => node.id === parentId)
 
-                if (parentFolder?.type === 'folder' && !parentFolder.isExpanded) {
-                  await study.toggleFolder(parentFolder)
+                  if (parentFolder?.type === 'folder' && !parentFolder.isExpanded) {
+                    await study.toggleFolder(parentFolder)
+                  }
+
+                  await study.createNode({
+                    type: 'folder',
+                    parentId
+                  })
+                })
+              }}
+              onCreateMaterial={(parentId) => {
+                void runAfterDraftFlush(async () => {
+                  clearInternalLinkNavigation()
+
+                  const parentFolder = study.nodes.find((node) => node.id === parentId)
+
+                  if (parentFolder?.type === 'folder' && !parentFolder.isExpanded) {
+                    await study.toggleFolder(parentFolder)
+                  }
+
+                  await study.createNode({
+                    type: 'material',
+                    parentId
+                  })
+                })
+              }}
+              onMove={(input) => {
+                if (!deletePendingRef.current) {
+                  void study.moveNode(input)
                 }
+              }}
+            />
+          )}
 
-                await study.createNode({
-                  type: 'material',
-                  parentId
-                })
-              })
-            }}
-            onMove={(input) => {
-              if (!deletePendingRef.current) {
-                void study.moveNode(input)
-              }
-            }}
-          />
-        )}
-
-        {study.error && (
-          <p className="mt-3 rounded-lg border border-red-500/20 bg-red-500/[0.06] p-3 text-xs text-red-300">
-            {study.error}
-          </p>
-        )}
-      </ModuleSidebar>
+          {study.error && (
+            <p className="mt-3 rounded-lg border border-red-500/20 bg-red-500/[0.06] p-3 text-xs text-red-300">
+              {study.error}
+            </p>
+          )}
+        </ModuleSidebar>
+      )}
 
       <main className="min-h-0 min-w-0 bg-[var(--app-workspace)]">
         {selectedNode?.type === 'material' ? (
@@ -468,6 +482,8 @@ export function StudyPage({ resourceId, onResourceHandled }: AppModuleProps): Re
             <StudyMaterialEditor
               key={selectedNode.id}
               node={selectedNode}
+              focusMode={focusMode}
+              onFocusModeChange={onFocusModeChange}
               onRename={() => {
                 openRename(selectedNode)
               }}

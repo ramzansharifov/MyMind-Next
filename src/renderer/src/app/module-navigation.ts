@@ -5,6 +5,7 @@ export const APP_MODULE_NAVIGATE_EVENT = 'mymind:module-navigate'
 export interface AppModuleNavigationRequest {
   view: AppViewId
   resourceId?: string | null
+  focusMode?: boolean
 }
 
 export function requestAppModuleNavigation(request: AppModuleNavigationRequest): void {

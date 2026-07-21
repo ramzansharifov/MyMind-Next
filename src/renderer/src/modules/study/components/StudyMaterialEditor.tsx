@@ -1,5 +1,14 @@
 import * as Tabs from '@radix-ui/react-tabs'
-import { ArrowLeft, BookOpen, Check, Edit3, LoaderCircle, Pencil } from 'lucide-react'
+import {
+  ArrowLeft,
+  BookOpen,
+  Check,
+  Edit3,
+  LoaderCircle,
+  Maximize2,
+  Minimize2,
+  Pencil
+} from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import type { StudyDocument, StudyNode } from '../../../../../shared/contracts/study'
@@ -28,6 +37,8 @@ import { StudyReadNavigation } from './StudyReadNavigation'
 
 interface StudyMaterialEditorProps {
   node: StudyNode
+  focusMode?: boolean
+  onFocusModeChange?: (active: boolean) => void
   onRename: () => void
   onBack?: () => void
   navigation: StudyInternalLinkNavigationRequest | null
@@ -36,15 +47,29 @@ interface StudyMaterialEditorProps {
 
 export function StudyMaterialEditor({
   node,
+  focusMode = false,
+  onFocusModeChange,
   onRename,
   onBack,
   navigation,
   onNavigationHandled
 }: StudyMaterialEditorProps): React.JSX.Element {
   const [document, setDocument] = useState<StudyDocument>(createEmptyStudyDocument())
-  const [mode, setMode] = useState<'edit' | 'read'>('edit')
+  const [mode, setMode] = useState<'edit' | 'read'>(() => (focusMode ? 'read' : 'edit'))
   const [saveState, setSaveState] = useState<StudyAutosaveState>('saved')
   const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    if (!focusMode) return undefined
+
+    function handleKeyDown(event: KeyboardEvent): void {
+      if (event.key !== 'Escape' || event.defaultPrevented) return
+      onFocusModeChange?.(false)
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [focusMode, onFocusModeChange])
 
   const saveTimerRef = useRef<number | null>(null)
   const readScrollRef = useRef<HTMLDivElement | null>(null)
@@ -315,9 +340,19 @@ export function StudyMaterialEditor({
   }
 
   return (
-    <section className="flex h-full min-h-0 flex-col">
-      <header className="flex min-h-20 shrink-0 items-center gap-4 border-b border-[var(--app-border)] px-6">
-        {onBack && (
+    <section
+      data-study-material-focus={focusMode}
+      className="flex h-full min-h-0 flex-col bg-[var(--app-workspace)]"
+    >
+      <header
+        className={cn(
+          'flex shrink-0 items-center gap-4 border-b border-[var(--app-border)]',
+          focusMode
+            ? 'min-h-14 bg-[var(--app-surface)] px-5'
+            : 'min-h-20 bg-[var(--app-workspace)] px-6'
+        )}
+      >
+        {!focusMode && onBack && (
           <Tooltip content="Вернуться к внутренней ссылке" side="bottom">
             <StudyActionButton
               type="button"
@@ -333,7 +368,7 @@ export function StudyMaterialEditor({
 
         <div className="min-w-0 flex-1">
           <p className="text-[11px] font-semibold tracking-[0.08em] text-violet-300 uppercase">
-            Материал
+            {focusMode ? 'Режим фокуса' : 'Материал'}
           </p>
 
           <h1 className="mt-1 truncate text-xl font-semibold tracking-tight text-[var(--app-text)]">
@@ -341,57 +376,89 @@ export function StudyMaterialEditor({
           </h1>
         </div>
 
-        <Tooltip content="Переименовать материал" side="bottom">
-          <StudyActionButton
-            type="button"
-            aria-label="Переименовать материал"
-            className="w-auto shrink-0 px-3 max-[760px]:w-10 max-[760px]:px-0"
-            onClick={onRename}
-          >
-            <Pencil aria-hidden="true" />
-
-            <span className="max-[760px]:hidden">Переименовать</span>
-          </StudyActionButton>
-        </Tooltip>
-
-        <SaveStatus
-          state={saveState}
-          onRetry={() => {
-            void autosaveQueue.flushLatestDraft().catch((reason: unknown) => {
-              console.error('Failed to retry study material save', reason)
-            })
-          }}
-        />
-
-        <Tabs.Root
-          value={mode}
-          onValueChange={(value) => {
-            if (value === 'edit' || value === 'read') {
-              setMode(value)
-            }
-          }}
-        >
-          <Tabs.List
-            aria-label="Режим просмотра материала"
-            className="inline-flex rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] p-1"
-          >
-            <Tabs.Trigger
-              value="edit"
-              className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-[var(--app-muted)] transition-colors outline-none hover:text-[var(--app-text)] data-[state=active]:bg-[var(--app-surface-raised)] data-[state=active]:text-[var(--app-text)]"
+        {!focusMode && (
+          <Tooltip content="Переименовать материал" side="bottom">
+            <StudyActionButton
+              type="button"
+              aria-label="Переименовать материал"
+              className="w-auto shrink-0 px-3 max-[760px]:w-10 max-[760px]:px-0"
+              onClick={onRename}
             >
-              <Edit3 aria-hidden="true" className="size-4" />
-              Правка
-            </Tabs.Trigger>
+              <Pencil aria-hidden="true" />
 
-            <Tabs.Trigger
-              value="read"
-              className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-[var(--app-muted)] transition-colors outline-none hover:text-[var(--app-text)] data-[state=active]:bg-[var(--app-surface-raised)] data-[state=active]:text-[var(--app-text)]"
+              <span className="max-[760px]:hidden">Переименовать</span>
+            </StudyActionButton>
+          </Tooltip>
+        )}
+
+        {!focusMode && (
+          <SaveStatus
+            state={saveState}
+            onRetry={() => {
+              void autosaveQueue.flushLatestDraft().catch((reason: unknown) => {
+                console.error('Failed to retry study material save', reason)
+              })
+            }}
+          />
+        )}
+
+        {!focusMode && (
+          <Tabs.Root
+            value={mode}
+            onValueChange={(value) => {
+              if (value === 'edit' || value === 'read') {
+                setMode(value)
+              }
+            }}
+          >
+            <Tabs.List
+              aria-label="Режим просмотра материала"
+              className="inline-flex rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] p-1"
             >
-              <BookOpen aria-hidden="true" className="size-4" />
-              Чтение
-            </Tabs.Trigger>
-          </Tabs.List>
-        </Tabs.Root>
+              <Tabs.Trigger
+                value="edit"
+                className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-[var(--app-muted)] transition-colors outline-none hover:text-[var(--app-text)] data-[state=active]:bg-[var(--app-surface-raised)] data-[state=active]:text-[var(--app-text)]"
+              >
+                <Edit3 aria-hidden="true" className="size-4" />
+                Правка
+              </Tabs.Trigger>
+
+              <Tabs.Trigger
+                value="read"
+                className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-[var(--app-muted)] transition-colors outline-none hover:text-[var(--app-text)] data-[state=active]:bg-[var(--app-surface-raised)] data-[state=active]:text-[var(--app-text)]"
+              >
+                <BookOpen aria-hidden="true" className="size-4" />
+                Чтение
+              </Tabs.Trigger>
+            </Tabs.List>
+          </Tabs.Root>
+        )}
+
+        {focusMode ? (
+          <Tooltip content="Выйти из режима фокуса" side="bottom">
+            <StudyActionButton
+              type="button"
+              aria-label="Выйти из режима фокуса"
+              className="w-auto shrink-0 px-3"
+              onClick={() => onFocusModeChange?.(false)}
+            >
+              <Minimize2 aria-hidden="true" />
+              <span className="max-[640px]:hidden">Выйти из фокуса</span>
+            </StudyActionButton>
+          </Tooltip>
+        ) : mode === 'read' ? (
+          <Tooltip content="Открыть режим фокуса" side="bottom">
+            <StudyActionButton
+              type="button"
+              aria-label="Открыть режим фокуса"
+              className="w-auto shrink-0 px-3 max-[760px]:w-10 max-[760px]:px-0"
+              onClick={() => onFocusModeChange?.(true)}
+            >
+              <Maximize2 aria-hidden="true" />
+              <span className="max-[760px]:hidden">Фокус</span>
+            </StudyActionButton>
+          </Tooltip>
+        ) : null}
       </header>
 
       <div
@@ -405,7 +472,9 @@ export function StudyMaterialEditor({
         <div
           className={
             mode === 'read'
-              ? 'mx-auto grid w-full max-w-[1400px] grid-cols-[minmax(0,1fr)_280px] items-start gap-5 max-[1180px]:grid-cols-1'
+              ? focusMode
+                ? 'mx-auto w-full max-w-5xl'
+                : 'mx-auto grid w-full max-w-[1400px] grid-cols-[minmax(0,1fr)_280px] items-start gap-5 max-[1180px]:grid-cols-1'
               : undefined
           }
         >
@@ -413,10 +482,11 @@ export function StudyMaterialEditor({
             materialId={node.id}
             document={document}
             mode={mode}
+            focusMode={focusMode}
             onChange={updateDocument}
           />
 
-          {mode === 'read' && (
+          {mode === 'read' && !focusMode && (
             <StudyReadNavigation blocks={document.blocks} scrollContainerRef={readScrollRef} />
           )}
         </div>

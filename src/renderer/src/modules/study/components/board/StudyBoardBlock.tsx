@@ -9,6 +9,7 @@ interface StudyBoardBlockProps {
   materialId: string
   block: Extract<StudyBlock, { type: 'board' }>
   mode: 'edit' | 'read'
+  focusMode?: boolean
   onChange?: (block: StudyBlock) => void
 }
 
@@ -16,6 +17,7 @@ export function StudyBoardBlock({
   materialId,
   block,
   mode,
+  focusMode = false,
   onChange
 }: StudyBoardBlockProps): React.JSX.Element {
   const [isOpening, setIsOpening] = useState(false)
@@ -41,7 +43,8 @@ export function StudyBoardBlock({
 
       requestAppModuleNavigation({
         view: 'boards',
-        resourceId: board.id
+        resourceId: board.id,
+        ...(mode === 'read' && focusMode ? { focusMode: true } : {})
       })
     } catch (reason: unknown) {
       setError(reason instanceof Error ? reason.message : 'Не удалось открыть доску')

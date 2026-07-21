@@ -112,6 +112,7 @@ interface StudyBlockEditorProps {
   materialId: string
   document: StudyDocument
   mode: 'edit' | 'read'
+  focusMode?: boolean
   onChange: (document: StudyDocument) => void
 }
 interface StudyBlockDropPreview {
@@ -133,6 +134,7 @@ export function StudyBlockEditor({
   materialId,
   document,
   mode,
+  focusMode = false,
   onChange
 }: StudyBlockEditorProps): React.JSX.Element {
   const [activeBlockId, setActiveBlockId] = useState<string | null>(document.blocks[0]?.id ?? null)
@@ -160,7 +162,9 @@ export function StudyBlockEditor({
   const draggedBlock = document.blocks.find((block) => block.id === draggedBlockId) ?? null
 
   if (mode === 'read') {
-    return <ReadOnlyStudyDocument materialId={materialId} document={document} />
+    return (
+      <ReadOnlyStudyDocument materialId={materialId} document={document} focusMode={focusMode} />
+    )
   }
 
   function updateBlock(replacement: StudyBlock): void {
@@ -970,21 +974,33 @@ type StudyReadNode = StudyReadBlockNode | StudyReadSectionNode
 
 function ReadOnlyStudyDocument({
   materialId,
-  document
+  document,
+  focusMode
 }: {
   materialId: string
   document: StudyDocument
+  focusMode: boolean
 }): React.JSX.Element {
   const outline = buildStudyReadOutline(document.blocks)
 
   return (
-    <div className="mx-auto min-h-[85vh] w-full max-w-5xl rounded-2xl border border-(--app-border) bg-(--app-surface)">
+    <div
+      className={cn(
+        'mx-auto min-h-[85vh] w-full max-w-5xl',
+        !focusMode && 'rounded-2xl border border-(--app-border) bg-(--app-surface)'
+      )}
+    >
       <article
         aria-label="Содержимое материала"
         className="min-h-64 w-full space-y-7 px-10 py-10 max-[900px]:px-7 max-[640px]:space-y-6 max-[640px]:px-4 max-[640px]:py-6"
       >
         {outline.map((node) => (
-          <StudyReadNodeView key={getStudyReadNodeKey(node)} materialId={materialId} node={node} />
+          <StudyReadNodeView
+            key={getStudyReadNodeKey(node)}
+            materialId={materialId}
+            node={node}
+            focusMode={focusMode}
+          />
         ))}
       </article>
     </div>
@@ -1084,24 +1100,28 @@ function buildStudyReadOutline(blocks: StudyBlock[]): StudyReadNode[] {
 
 function StudyReadNodeView({
   materialId,
-  node
+  node,
+  focusMode
 }: {
   materialId: string
   node: StudyReadNode
+  focusMode: boolean
 }): React.JSX.Element {
   if (node.kind === 'section') {
-    return <StudyReadSection materialId={materialId} section={node} />
+    return <StudyReadSection materialId={materialId} section={node} focusMode={focusMode} />
   }
 
-  return <StudyBlockReader materialId={materialId} block={node.block} />
+  return <StudyBlockReader materialId={materialId} block={node.block} focusMode={focusMode} />
 }
 
 function StudyReadSection({
   materialId,
-  section
+  section,
+  focusMode
 }: {
   materialId: string
   section: StudyReadSectionNode
+  focusMode: boolean
 }): React.JSX.Element {
   const [open, setOpen] = useState(true)
 
@@ -1180,6 +1200,7 @@ function StudyReadSection({
               key={getStudyReadNodeKey(child)}
               materialId={materialId}
               node={child}
+              focusMode={focusMode}
             />
           ))}
         </div>
@@ -1258,19 +1279,22 @@ function StudyReadHeading({ heading }: { heading: StudyHeadingBlock }): React.JS
 
 function StudyBlockReader({
   materialId,
-  block
+  block,
+  focusMode
 }: {
   materialId: string
   block: StudyBlock
+  focusMode: boolean
 }): React.JSX.Element {
   const Reader = studyBlockReaders[getStudyBlockDefinition(block.type).readStrategy]
 
-  return <Reader materialId={materialId} block={block} />
+  return <Reader materialId={materialId} block={block} focusMode={focusMode} />
 }
 
 type StudyBlockReaderProps = {
   materialId: string
   block: StudyBlock
+  focusMode?: boolean
 }
 type StudyBlockReaderStrategy = (props: StudyBlockReaderProps) => React.JSX.Element
 
@@ -1367,12 +1391,16 @@ function ReadDividerBlock({ block }: StudyBlockReaderProps): React.JSX.Element {
   return <StudyDivider block={block} spacing="read" />
 }
 
-function ReadBoardBlock({ materialId, block }: StudyBlockReaderProps): React.JSX.Element {
+function ReadBoardBlock({
+  materialId,
+  block,
+  focusMode
+}: StudyBlockReaderProps): React.JSX.Element {
   if (block.type !== 'board') {
     throw new Error('Board reader received an incompatible block')
   }
 
-  return <StudyBoardBlock materialId={materialId} block={block} mode="read" />
+  return <StudyBoardBlock materialId={materialId} block={block} mode="read" focusMode={focusMode} />
 }
 
 function StudyBlockTypeIcon({
