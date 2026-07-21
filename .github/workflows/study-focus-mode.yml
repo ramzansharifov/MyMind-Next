@@ -1,8 +1,8 @@
 name: Verify study focus mode
 
 on:
-  push:
-    branches: [agent/study-focus-mode]
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: write
