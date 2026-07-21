@@ -41,7 +41,11 @@ const navigationButtonVariants = cva(
       },
       active: {
         true: 'bg-[var(--app-sidebar-active)] text-violet-300',
-        false: ['text-[var(--app-muted)]', 'hover:bg-white/[0.045]', 'hover:text-[var(--app-text)]']
+        false: [
+          'text-[var(--app-muted)]',
+          'hover:bg-[var(--app-control-hover)]',
+          'hover:text-[var(--app-text)]'
+        ]
       }
     },
     defaultVariants: {
@@ -127,6 +131,7 @@ export function AppShell({
             className={cn(
               'group/sidebar relative z-10 flex h-full shrink-0 flex-col',
               'border-r border-[var(--app-border)] bg-[var(--app-sidebar)]',
+              'shadow-[var(--app-shadow-sidebar)]',
               'transition-[width] duration-200 ease-out',
               'motion-reduce:transition-none',
               isCollapsed ? 'w-[72px]' : 'w-64'
@@ -145,7 +150,7 @@ export function AppShell({
                   isCollapsed ? 'justify-center' : 'w-full gap-3'
                 )}
               >
-                <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/15 text-violet-300">
+                <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-violet-500/15 bg-violet-500/10 text-violet-300">
                   <BrainCircuit aria-hidden="true" className="size-[18px]" />
                 </div>
 
@@ -170,15 +175,16 @@ export function AppShell({
                   'flex size-7 translate-x-1/2 -translate-y-1/2',
                   'items-center justify-center rounded-full border',
                   'border-violet-500/25',
-                  'bg-violet-500/12',
+                  'bg-[var(--app-surface)]',
                   'text-violet-300',
+                  'shadow-[var(--app-shadow-card)]',
                   'opacity-0 outline-none',
                   'transition-[opacity,background-color,color,transform]',
                   'duration-150',
                   'group-hover/sidebar:opacity-100',
                   'group-focus-within/sidebar:opacity-100',
                   'hover:scale-105',
-                  'hover:bg-violet-500/20',
+                  'hover:bg-violet-500/10',
                   'focus-visible:opacity-100',
                   'focus-visible:ring-2',
                   'focus-visible:ring-violet-500/70',
