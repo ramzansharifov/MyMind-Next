@@ -1,12 +1,48 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 
 const path = 'scripts/add-study-focus-mode.mjs'
-const source = readFileSync(path, 'utf8')
-const generatedEffect = `  useEffect(() => {\\n    if (focusMode) {\\n      setMode('read')\\n    }\\n  }, [focusMode])\\n\\n`
+let source = readFileSync(path, 'utf8')
 
-if (!source.includes(generatedEffect)) {
-  throw new Error('Focus mode synchronization effect was not found in the generator')
+function replaceRequired(before, after) {
+  if (!source.includes(before)) {
+    throw new Error(`Generator fragment was not found: ${before.slice(0, 160)}`)
+  }
+
+  source = source.replace(before, after)
 }
 
-writeFileSync(path, source.replace(generatedEffect, ''), 'utf8')
-console.log('Removed unnecessary focus mode state synchronization effect')
+replaceRequired(
+  `  useEffect(() => {\n    if (focusMode) {\n      setMode('read')\n    }\n  }, [focusMode])\n\n`,
+  ''
+)
+
+replaceRequired('aria-label="Вернуться к материалу"', 'aria-label="Назад к материалу"')
+replaceRequired(
+  `import { Tooltip } from '../../../shared/ui/tooltip'`,
+  `import { Tooltip, TooltipProvider } from '../../../shared/ui/tooltip'`
+)
+
+const boardTreeMarker = `const boardTreePath = 'src/renderer/src/modules/boards/components/BoardTree.tsx'`
+replaceRequired(
+  boardTreeMarker,
+  `replaceOnce(
+  boardCanvasPath,
+  \`    <BoardCanvasUiContext.Provider value={boardCanvasUi}>\`,
+  \`    <TooltipProvider>\\n      <BoardCanvasUiContext.Provider value={boardCanvasUi}>\`
+)
+replaceOnce(
+  boardCanvasPath,
+  \`    </BoardCanvasUiContext.Provider>\\n  )\`,
+  \`      </BoardCanvasUiContext.Provider>\\n    </TooltipProvider>\\n  )\`
+)
+
+${boardTreeMarker}`
+)
+
+replaceRequired(
+  `await user.click(screen.getByRole('tab', { name: 'Чтение' }))`,
+  `await user.click(await screen.findByRole('tab', { name: 'Чтение' }))`
+)
+
+writeFileSync(path, source, 'utf8')
+console.log('Patched study focus mode generator')
