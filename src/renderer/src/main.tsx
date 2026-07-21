@@ -5,6 +5,7 @@ import './assets/light-theme.css'
 import './assets/light-theme-components.css'
 import './assets/light-theme-final-details.css'
 import './assets/board-visual-polish.css'
+import './assets/board-toolbar-design.css'
 
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
