@@ -1,10 +1,10 @@
 import * as ToggleGroup from '@radix-ui/react-toggle-group'
-import { Check, CircleAlert, Columns2, Copy, Eye, PencilLine, Sigma } from 'lucide-react'
+import { CircleAlert, Columns2, Eye, PencilLine, Sigma } from 'lucide-react'
 import Prism from 'prismjs'
 import 'prismjs/components/prism-markup'
 import 'prismjs/components/prism-latex'
 import Editor from 'react-simple-code-editor'
-import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useId, useMemo } from 'react'
 import 'katex/dist/katex.min.css'
 
 import type {
@@ -13,7 +13,7 @@ import type {
   StudyLatexViewMode
 } from '../../../../../../shared/contracts/study'
 import { cn } from '../../../../shared/lib/cn'
-import { Tooltip, TooltipProvider } from '../../../../shared/ui/tooltip'
+import { StudySourceBlockShell } from '../source/StudySourceBlockShell'
 import { renderStudyLatex } from './latex-renderer'
 
 interface StudyLatexBlockProps {
@@ -27,24 +27,10 @@ interface StudyLatexBlockProps {
   onViewModeChange?: (viewMode: StudyLatexViewMode) => void
 }
 
-type CopyState = 'idle' | 'copied' | 'error'
-
 const latexViewModes = [
-  {
-    value: 'write',
-    label: 'Код',
-    Icon: PencilLine
-  },
-  {
-    value: 'split',
-    label: '2 окна',
-    Icon: Columns2
-  },
-  {
-    value: 'preview',
-    label: 'Просмотр',
-    Icon: Eye
-  }
+  { value: 'write', label: 'Код', Icon: PencilLine },
+  { value: 'split', label: '2 окна', Icon: Columns2 },
+  { value: 'preview', label: 'Просмотр', Icon: Eye }
 ] satisfies Array<{
   value: StudyLatexViewMode
   label: string
@@ -63,18 +49,6 @@ export function StudyLatexBlock({
 }: StudyLatexBlockProps): React.JSX.Element {
   const editorId = useId()
 
-  const [copyState, setCopyState] = useState<CopyState>('idle')
-
-  const resetTimerRef = useRef<number | null>(null)
-
-  useEffect(() => {
-    return () => {
-      if (resetTimerRef.current !== null) {
-        window.clearTimeout(resetTimerRef.current)
-      }
-    }
-  }, [])
-
   if (mode === 'read') {
     return (
       <StudyLatexPreview
@@ -89,134 +63,84 @@ export function StudyLatexBlock({
 
   const activeViewMode = isLatexViewMode(viewMode) ? viewMode : 'split'
 
-  async function handleCopy(): Promise<void> {
-    try {
-      await writeClipboard(source)
-      setCopyState('copied')
-    } catch {
-      setCopyState('error')
-    }
-
-    if (resetTimerRef.current !== null) {
-      window.clearTimeout(resetTimerRef.current)
-    }
-
-    resetTimerRef.current = window.setTimeout(() => {
-      setCopyState('idle')
-    }, 1600)
-  }
-
-  const copyLabel =
-    copyState === 'copied'
-      ? 'Скопировано'
-      : copyState === 'error'
-        ? 'Не удалось скопировать'
-        : 'Копировать LaTeX'
-
   return (
-    <TooltipProvider delayDuration={250}>
-      <section className="overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-code-surface)]">
-        <header className="flex min-h-11 items-center justify-between gap-3 border-b border-[var(--app-border)] bg-white/[0.025] px-3">
-          <div className="flex min-w-0 items-center gap-2">
-            <Sigma aria-hidden="true" className="size-4 shrink-0 text-violet-300" />
-
-            <span className="text-[11px] font-semibold tracking-[0.08em] text-[var(--app-muted)] uppercase">
-              LaTeX
-            </span>
-          </div>
-
-          <div className="flex items-center gap-1">
-            <ToggleGroup.Root
-              type="single"
-              value={activeViewMode}
-              aria-label="Режим LaTeX-блока"
-              className="flex items-center gap-1"
-              onValueChange={(value) => {
-                if (isLatexViewMode(value)) {
-                  onViewModeChange?.(value)
-                }
-              }}
-            >
-              {latexViewModes.map(({ value, label, Icon }) => (
-                <ToggleGroup.Item
-                  key={value}
-                  value={value}
-                  aria-label={label}
-                  title={label}
-                  className={cn(
-                    'flex h-7 items-center gap-1.5 rounded-md px-2',
-                    'text-xs text-[var(--app-muted)] outline-none',
-                    'transition-colors',
-                    'hover:bg-white/[0.06] hover:text-[var(--app-text)]',
-                    'focus-visible:ring-2 focus-visible:ring-violet-500/35',
-                    'data-[state=on]:bg-violet-500/15',
-                    'data-[state=on]:text-violet-200'
-                  )}
-                >
-                  <Icon aria-hidden="true" className="size-3.5" />
-
-                  <span className="max-[780px]:hidden">{label}</span>
-                </ToggleGroup.Item>
-              ))}
-            </ToggleGroup.Root>
-
-            <Tooltip content={copyLabel} side="top">
-              <button
-                type="button"
-                aria-label={copyLabel}
-                disabled={!source.trim()}
-                className={cn(
-                  'flex size-7 items-center justify-center rounded-md',
-                  'text-[var(--app-muted)] outline-none',
-                  'transition-colors',
-                  'hover:bg-white/[0.06] hover:text-[var(--app-text)]',
-                  'focus-visible:ring-2 focus-visible:ring-violet-500/35',
-                  'disabled:cursor-not-allowed disabled:opacity-30',
-                  copyState === 'copied' && 'text-emerald-300',
-                  copyState === 'error' && 'text-red-300'
-                )}
-                onClick={() => {
-                  void handleCopy()
-                }}
-              >
-                {copyState === 'copied' ? (
-                  <Check aria-hidden="true" className="size-4" />
-                ) : (
-                  <Copy aria-hidden="true" className="size-4" />
-                )}
-              </button>
-            </Tooltip>
-
-            <span aria-live="polite" className="sr-only">
-              {copyState === 'copied' ? 'LaTeX скопирован' : ''}
-            </span>
-          </div>
-        </header>
-
-        {activeViewMode === 'write' && (
-          <LatexSourceEditor id={editorId} source={source} onChange={onChange} />
-        )}
-
-        {activeViewMode === 'preview' && (
-          <StudyLatexPreview
-            source={source}
-            displayMode={displayMode}
-            alignment={alignment}
-            scale={scale}
-          />
-        )}
-
-        {activeViewMode === 'split' && (
-          <div className="grid grid-cols-2 divide-x divide-[var(--app-border)] max-[900px]:grid-cols-1 max-[900px]:divide-x-0 max-[900px]:divide-y">
-            <div className="min-w-0">
-              <LatexPanelLabel>LaTeX</LatexPanelLabel>
-
-              <LatexSourceEditor id={editorId} source={source} onChange={onChange} />
+    <StudySourceBlockShell
+      source={source}
+      copyDisabled={!source.trim()}
+      copyLabel="Копировать LaTeX"
+      copiedAnnouncement="LaTeX скопирован"
+      copyErrorAnnouncement="Не удалось скопировать LaTeX"
+      expandLabel="Развернуть LaTeX-блок"
+      collapseLabel="Свернуть LaTeX-блок"
+      dialogTitle="LaTeX-блок на весь экран"
+      dialogDescription="Полноэкранное редактирование и предпросмотр LaTeX. Нажмите Escape или кнопку сворачивания, чтобы вернуться к материалу."
+    >
+      {({ fullscreen, actions }) => (
+        <section
+          data-study-latex-block
+          data-fullscreen={fullscreen ? 'true' : 'false'}
+          className={cn(
+            'overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-code-surface)]',
+            fullscreen && 'flex h-full min-h-0 flex-col rounded-2xl shadow-2xl shadow-black/40'
+          )}
+        >
+          <header className="flex min-h-11 shrink-0 items-center justify-between gap-3 border-b border-[var(--app-border)] bg-white/[0.025] px-3">
+            <div className="flex min-w-0 items-center gap-2">
+              <Sigma aria-hidden="true" className="size-4 shrink-0 text-violet-300" />
+              <span className="text-[11px] font-semibold tracking-[0.08em] text-[var(--app-muted)] uppercase">
+                LaTeX
+              </span>
             </div>
 
-            <div className="min-w-0">
-              <LatexPanelLabel>Формула</LatexPanelLabel>
+            <div className="flex shrink-0 items-center gap-1">
+              <ToggleGroup.Root
+                type="single"
+                value={activeViewMode}
+                aria-label="Режим LaTeX-блока"
+                className="flex items-center gap-1"
+                onValueChange={(value) => {
+                  if (isLatexViewMode(value)) {
+                    onViewModeChange?.(value)
+                  }
+                }}
+              >
+                {latexViewModes.map(({ value, label, Icon }) => (
+                  <ToggleGroup.Item
+                    key={value}
+                    value={value}
+                    aria-label={label}
+                    title={label}
+                    className={cn(
+                      'flex h-7 items-center gap-1.5 rounded-md px-2',
+                      'text-xs text-[var(--app-muted)] outline-none',
+                      'transition-colors',
+                      'hover:bg-white/[0.06] hover:text-[var(--app-text)]',
+                      'focus-visible:ring-2 focus-visible:ring-violet-500/35',
+                      'data-[state=on]:bg-violet-500/15',
+                      'data-[state=on]:text-violet-200'
+                    )}
+                  >
+                    <Icon aria-hidden="true" className="size-3.5" />
+                    <span className="max-[780px]:hidden">{label}</span>
+                  </ToggleGroup.Item>
+                ))}
+              </ToggleGroup.Root>
 
+              {actions}
+            </div>
+          </header>
+
+          {activeViewMode === 'write' && (
+            <LatexSourceEditor
+              id={`${editorId}-${fullscreen ? 'fullscreen' : 'inline'}`}
+              source={source}
+              fullscreen={fullscreen}
+              onChange={onChange}
+            />
+          )}
+
+          {activeViewMode === 'preview' && (
+            <div className={cn(fullscreen && 'min-h-0 flex-1 overflow-auto')}>
               <StudyLatexPreview
                 source={source}
                 displayMode={displayMode}
@@ -224,20 +148,53 @@ export function StudyLatexBlock({
                 scale={scale}
               />
             </div>
-          </div>
-        )}
-      </section>
-    </TooltipProvider>
+          )}
+
+          {activeViewMode === 'split' && (
+            <div
+              className={cn(
+                'grid grid-cols-2 divide-x divide-[var(--app-border)] max-[900px]:grid-cols-1 max-[900px]:divide-x-0 max-[900px]:divide-y',
+                fullscreen && 'min-h-0 flex-1 overflow-auto min-[901px]:overflow-hidden'
+              )}
+            >
+              <div className={cn('min-w-0', fullscreen && 'flex min-h-0 flex-col')}>
+                <LatexPanelLabel>LaTeX</LatexPanelLabel>
+                <LatexSourceEditor
+                  id={`${editorId}-${fullscreen ? 'fullscreen' : 'inline'}`}
+                  source={source}
+                  fullscreen={fullscreen}
+                  onChange={onChange}
+                />
+              </div>
+
+              <div className={cn('min-w-0', fullscreen && 'flex min-h-0 flex-col')}>
+                <LatexPanelLabel>Формула</LatexPanelLabel>
+                <div className={cn(fullscreen && 'min-h-0 flex-1 overflow-auto')}>
+                  <StudyLatexPreview
+                    source={source}
+                    displayMode={displayMode}
+                    alignment={alignment}
+                    scale={scale}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
+      )}
+    </StudySourceBlockShell>
   )
 }
 
 function LatexSourceEditor({
   id,
   source,
+  fullscreen = false,
   onChange
 }: {
   id: string
   source: string
+  fullscreen?: boolean
   onChange?: (source: string) => void
 }): React.JSX.Element {
   return (
@@ -246,7 +203,7 @@ function LatexSourceEditor({
         Исходный LaTeX
       </label>
 
-      <div className="max-h-[36rem] overflow-auto">
+      <div className={cn(fullscreen ? 'min-h-0 flex-1 overflow-auto' : 'max-h-[36rem] overflow-auto')}>
         <Editor
           value={source}
           textareaId={id}
@@ -259,7 +216,7 @@ function LatexSourceEditor({
           preClassName="study-latex-source__pre"
           highlight={highlightLatex}
           style={{
-            minHeight: '3.45rem',
+            minHeight: fullscreen ? '100%' : '3.45rem',
             fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
             fontSize: '0.875rem',
             lineHeight: '1.65'
@@ -287,7 +244,6 @@ function StudyLatexPreview({
   framed?: boolean
 }): React.JSX.Element {
   const result = useMemo(() => renderStudyLatex(source, displayMode), [source, displayMode])
-
   const normalizedScale = clampLatexScale(scale)
 
   return (
@@ -310,7 +266,6 @@ function StudyLatexPreview({
 
           <div className="min-w-0">
             <p className="text-sm font-medium text-red-200">Ошибка в формуле</p>
-
             <p className="mt-1 font-mono text-xs leading-5 break-words text-red-300/80">
               {result.error}
             </p>
@@ -335,7 +290,7 @@ function StudyLatexPreview({
 
 function LatexPanelLabel({ children }: { children: React.ReactNode }): React.JSX.Element {
   return (
-    <div className="border-b border-[var(--app-border)] px-4 py-2 text-[10px] font-semibold tracking-[0.08em] text-[var(--app-muted)] uppercase">
+    <div className="shrink-0 border-b border-[var(--app-border)] px-4 py-2 text-[10px] font-semibold tracking-[0.08em] text-[var(--app-muted)] uppercase">
       {children}
     </div>
   )
@@ -366,38 +321,4 @@ function escapeHtml(value: string): string {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#039;')
-}
-
-async function writeClipboard(value: string): Promise<void> {
-  if (navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(value)
-    return
-  }
-
-  const textarea = document.createElement('textarea')
-
-  textarea.value = value
-  textarea.setAttribute('aria-hidden', 'true')
-
-  Object.assign(textarea.style, {
-    position: 'fixed',
-    top: '0',
-    left: '0',
-    width: '1px',
-    height: '1px',
-    opacity: '0',
-    pointerEvents: 'none'
-  })
-
-  document.body.appendChild(textarea)
-  textarea.focus()
-  textarea.select()
-
-  const copied = document.execCommand('copy')
-
-  textarea.remove()
-
-  if (!copied) {
-    throw new Error('Clipboard is unavailable')
-  }
 }
