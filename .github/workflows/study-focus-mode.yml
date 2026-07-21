@@ -24,10 +24,17 @@ jobs:
       - name: Apply focus mode implementation
         shell: bash
         run: |
-          set -e
-          node scripts/fix-study-focus-generator.mjs
-          node scripts/add-study-focus-mode.mjs
-          npm run format > /dev/null
+          set +e
+          {
+            node scripts/fix-study-focus-generator.mjs
+            node scripts/add-study-focus-mode.mjs
+            npm run format
+          } > apply-output.txt 2>&1
+          status=$?
+          if [ "$status" -ne 0 ]; then
+            cat apply-output.txt
+            exit "$status"
+          fi
       - name: Diagnose lint
         shell: bash
         env:
