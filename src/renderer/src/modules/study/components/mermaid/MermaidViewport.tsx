@@ -95,7 +95,7 @@ export function MermaidViewportControls({
 
       <span
         aria-live="polite"
-        className="min-w-12 text-center text-[11px] font-medium tabular-nums text-[var(--app-muted)]"
+        className="min-w-12 text-center text-[11px] font-medium text-[var(--app-muted)] tabular-nums"
       >
         {scale}%
       </span>
@@ -277,9 +277,7 @@ export function StudyMermaidPreview({
             className="study-mermaid-svg"
             style={{
               width: `${normalizedScale}%`,
-              transform: interactive
-                ? `translate3d(${offset.x}px, ${offset.y}px, 0)`
-                : undefined,
+              transform: interactive ? `translate3d(${offset.x}px, ${offset.y}px, 0)` : undefined,
               transition: dragging ? 'none' : 'width 160ms ease-out, transform 120ms ease-out',
               willChange: interactive ? 'width, transform' : undefined
             }}
@@ -293,10 +291,10 @@ export function StudyMermaidPreview({
   )
 }
 
-export function clampMermaidScale(value: number): number {
+function clampMermaidScale(value: number): number {
   return Math.max(60, Math.min(180, value))
 }
 
-export function clampMermaidViewportScale(value: number): number {
+function clampMermaidViewportScale(value: number): number {
   return Math.max(MERMAID_VIEWPORT_MIN_SCALE, Math.min(MERMAID_VIEWPORT_MAX_SCALE, value))
 }
