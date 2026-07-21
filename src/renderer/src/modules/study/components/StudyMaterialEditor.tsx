@@ -60,6 +60,12 @@ export function StudyMaterialEditor({
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
+    if (focusMode) {
+      setMode('read')
+    }
+  }, [focusMode])
+
+  useEffect(() => {
     if (!focusMode) return undefined
 
     function handleKeyDown(event: KeyboardEvent): void {
@@ -147,7 +153,6 @@ export function StudyMaterialEditor({
         }
 
         autosaveQueue.hydrate(loadedMaterial.document)
-
         setDocument(loadedMaterial.document)
         setSaveState('saved')
       })
@@ -352,7 +357,7 @@ export function StudyMaterialEditor({
             : 'min-h-20 bg-[var(--app-workspace)] px-6'
         )}
       >
-        {!focusMode && onBack && (
+        {onBack && (
           <Tooltip content="Вернуться к внутренней ссылке" side="bottom">
             <StudyActionButton
               type="button"
@@ -463,6 +468,7 @@ export function StudyMaterialEditor({
 
       <div
         ref={mode === 'read' ? readScrollRef : undefined}
+        data-study-scroll-container={mode === 'read'}
         className={cn(
           'min-h-0 flex-1 overflow-y-auto px-6 py-6',
           'max-[640px]:px-3 max-[640px]:py-4',
@@ -472,9 +478,7 @@ export function StudyMaterialEditor({
         <div
           className={
             mode === 'read'
-              ? focusMode
-                ? 'mx-auto w-full max-w-5xl'
-                : 'mx-auto grid w-full max-w-[1400px] grid-cols-[minmax(0,1fr)_280px] items-start gap-5 max-[1180px]:grid-cols-1'
+              ? 'mx-auto grid w-full max-w-[1500px] grid-cols-[minmax(0,1fr)_280px] items-start gap-5 max-[1180px]:grid-cols-1'
               : undefined
           }
         >
@@ -486,7 +490,7 @@ export function StudyMaterialEditor({
             onChange={updateDocument}
           />
 
-          {mode === 'read' && !focusMode && (
+          {mode === 'read' && (
             <StudyReadNavigation blocks={document.blocks} scrollContainerRef={readScrollRef} />
           )}
         </div>
