@@ -1,0 +1,65 @@
+/* High-contrast tooltips for shared Radix controls and the tldraw UI. */
+:root {
+  --app-tooltip: #181b22;
+  --app-tooltip-border: #3a404c;
+}
+
+:root[data-theme='light'] {
+  --app-tooltip: #172131;
+  --app-tooltip-border: #344154;
+}
+
+[data-mymind-tooltip='true'],
+.tlui-tooltip,
+.tlui-tooltip__content,
+.tlui-tooltip__label {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+[data-mymind-tooltip='true'],
+.tlui-tooltip,
+.tlui-tooltip__content {
+  border: 1px solid var(--app-tooltip-border) !important;
+  border-radius: 0.75rem !important;
+  background: var(--app-tooltip) !important;
+  box-shadow:
+    0 14px 36px rgb(0 0 0 / 42%),
+    inset 0 1px 0 rgb(255 255 255 / 7%) !important;
+  backdrop-filter: blur(14px) saturate(1.12);
+}
+
+.tlui-tooltip__content,
+.tlui-tooltip {
+  min-height: 1.75rem;
+  padding: 0.4rem 0.65rem !important;
+  font-size: 0.75rem !important;
+  line-height: 1rem !important;
+  font-weight: 650 !important;
+  letter-spacing: 0.005em;
+}
+
+.tlui-tooltip__content *,
+.tlui-tooltip * {
+  color: inherit !important;
+  opacity: 1 !important;
+}
+
+.tlui-tooltip kbd,
+.tlui-tooltip__content kbd,
+.tlui-kbd {
+  margin-left: 0.4rem;
+  border: 1px solid rgb(255 255 255 / 18%) !important;
+  border-radius: 0.35rem;
+  color: rgb(255 255 255 / 78%) !important;
+  background: rgb(255 255 255 / 8%) !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme='light'] [data-mymind-tooltip='true'],
+:root[data-theme='light'] .tlui-tooltip,
+:root[data-theme='light'] .tlui-tooltip__content {
+  box-shadow:
+    0 14px 36px rgb(23 33 49 / 28%),
+    inset 0 1px 0 rgb(255 255 255 / 10%) !important;
+}
