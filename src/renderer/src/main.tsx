@@ -1,6 +1,7 @@
 import './assets/main.css'
 import './assets/rich-text-quote.css'
 import './assets/focus-mode.css'
+import './assets/light-theme.css'
 
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
