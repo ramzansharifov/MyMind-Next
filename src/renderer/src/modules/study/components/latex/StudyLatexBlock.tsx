@@ -28,21 +28,9 @@ interface StudyLatexBlockProps {
 }
 
 const latexViewModes = [
-  {
-    value: 'write',
-    label: 'Код',
-    Icon: PencilLine
-  },
-  {
-    value: 'split',
-    label: '2 окна',
-    Icon: Columns2
-  },
-  {
-    value: 'preview',
-    label: 'Просмотр',
-    Icon: Eye
-  }
+  { value: 'write', label: 'Код', Icon: PencilLine },
+  { value: 'split', label: '2 окна', Icon: Columns2 },
+  { value: 'preview', label: 'Просмотр', Icon: Eye }
 ] satisfies Array<{
   value: StudyLatexViewMode
   label: string
@@ -78,6 +66,7 @@ export function StudyLatexBlock({
   return (
     <StudySourceBlockShell
       source={source}
+      copyDisabled={!source.trim()}
       copyLabel="Копировать LaTeX"
       copiedAnnouncement="LaTeX скопирован"
       copyErrorAnnouncement="Не удалось скопировать LaTeX"
@@ -165,7 +154,7 @@ export function StudyLatexBlock({
             <div
               className={cn(
                 'grid grid-cols-2 divide-x divide-[var(--app-border)] max-[900px]:grid-cols-1 max-[900px]:divide-x-0 max-[900px]:divide-y',
-                fullscreen && 'min-h-0 flex-1 overflow-hidden'
+                fullscreen && 'min-h-0 flex-1 overflow-auto min-[901px]:overflow-hidden'
               )}
             >
               <div className={cn('min-w-0', fullscreen && 'flex min-h-0 flex-col')}>
