@@ -1,4 +1,6 @@
-export type { StudyBoardBlock } from './study'
+import type { StudyFolderIconName } from './study'
+
+export type { StudyBoardBlock, StudyFolderIconName } from './study'
 
 export const BOARD_SYSTEM_ROOT_ID = 'boards-study-root'
 
@@ -14,6 +16,7 @@ export interface BoardNode {
   type: BoardNodeType
   parentId: string | null
   title: string
+  icon?: StudyFolderIconName
   position: number
   isExpanded: boolean
   isSystem: boolean
@@ -37,11 +40,17 @@ export interface CreateBoardNodeInput {
   type: BoardNodeType
   parentId: string | null
   title?: string
+  icon?: StudyFolderIconName
 }
 
 export interface RenameBoardNodeInput {
   id: string
   title: string
+}
+
+export interface UpdateBoardFolderIconInput {
+  id: string
+  icon: StudyFolderIconName
 }
 
 export interface UpdateBoardNodeExpansionInput {
@@ -69,6 +78,7 @@ export const BOARD_IPC_CHANNELS = {
   listNodes: 'boards:list-nodes',
   createNode: 'boards:create-node',
   renameNode: 'boards:rename-node',
+  updateFolderIcon: 'boards:update-folder-icon',
   deleteNode: 'boards:delete-node',
   updateExpansion: 'boards:update-expansion',
   moveNode: 'boards:move-node',
@@ -81,6 +91,7 @@ export interface BoardApi {
   listNodes(): Promise<BoardNode[]>
   createNode(input: CreateBoardNodeInput): Promise<BoardNode>
   renameNode(input: RenameBoardNodeInput): Promise<BoardNode>
+  updateFolderIcon(input: UpdateBoardFolderIconInput): Promise<BoardNode>
   deleteNode(nodeId: string): Promise<boolean>
   updateExpansion(input: UpdateBoardNodeExpansionInput): Promise<BoardNode>
   moveNode(input: MoveBoardNodeInput): Promise<BoardNode[]>

@@ -7,6 +7,7 @@ import type {
   EnsureStudyBoardInput,
   MoveBoardNodeInput
 } from '../../../../../shared/contracts/boards'
+import type { StudyFolderIconName } from '../../../../../shared/contracts/study'
 
 export const BOARDS_API_DEV_MOCK_KEY = 'mymind:boards-api-mode'
 
@@ -49,6 +50,10 @@ export const boardsClient = {
 
   async renameNode(id: string, title: string): Promise<BoardNode> {
     return getBoardApi().renameNode({ id, title })
+  },
+
+  async updateFolderIcon(id: string, icon: StudyFolderIconName): Promise<BoardNode> {
+    return getBoardApi().updateFolderIcon({ id, icon })
   },
 
   async deleteNode(id: string): Promise<boolean> {

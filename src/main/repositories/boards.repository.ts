@@ -9,7 +9,8 @@ import {
   type CreateBoardNodeInput,
   type EnsureStudyBoardInput,
   type MoveBoardNodeInput,
-  type StudyBoardBlock
+  type StudyBoardBlock,
+  type UpdateBoardFolderIconInput
 } from '../../shared/contracts/boards'
 import type { StudyDocument } from '../../shared/contracts/study'
 import { boardDocumentSchema, boardNodeSchema } from '../../shared/validation/boards'
@@ -22,6 +23,7 @@ import { studyMaterialCoordinator } from '../services/study-material-coordinator
 function mapBoardNode(row: typeof boardNodes.$inferSelect): BoardNode {
   return boardNodeSchema.parse({
     ...row,
+    icon: row.icon ?? undefined,
     sourceStudyNodeId: row.sourceStudyNodeId ?? undefined,
     sourceMaterialId: row.sourceMaterialId ?? undefined,
     sourceBlockId: row.sourceBlockId ?? undefined,
@@ -79,6 +81,7 @@ export function ensureBoardsSystemRoot(): BoardNode {
         type: 'folder',
         parentId: null,
         title: 'Обучение',
+        icon: 'folder',
         position: 0,
         isExpanded: true,
         isSystem: true,
@@ -98,6 +101,7 @@ export function ensureBoardsSystemRoot(): BoardNode {
         type: 'folder',
         parentId: null,
         title: 'Обучение',
+        icon: 'folder',
         position: 0,
         isSystem: true,
         updatedAt: now
@@ -147,6 +151,7 @@ export function createBoardNode(input: CreateBoardNodeInput): BoardNode {
         type: input.type,
         parentId: input.parentId,
         title,
+        icon: input.type === 'folder' ? (input.icon ?? 'folder') : null,
         position: getNextBoardPosition(input.parentId),
         isExpanded: true,
         isSystem: false,
@@ -379,6 +384,33 @@ export async function deleteBoardNode(id: string): Promise<boolean> {
   }
 
   return deleteBoardRowAndPrune(existing.id, existing.parentId)
+}
+
+export function updateBoardFolderIcon(input: UpdateBoardFolderIconInput): BoardNode {
+  const database = getDatabase()
+  const folder = database.select().from(boardNodes).where(eq(boardNodes.id, input.id)).get()
+
+  if (!folder || folder.type !== 'folder') {
+    throw new Error('Папка досок не найдена')
+  }
+
+  if (folder.isSystem || folder.sourceStudyNodeId) {
+    throw new Error('Иконка этой папки управляется модулем обучения')
+  }
+
+  database
+    .update(boardNodes)
+    .set({ icon: input.icon, updatedAt: new Date() })
+    .where(eq(boardNodes.id, input.id))
+    .run()
+
+  const updated = database.select().from(boardNodes).where(eq(boardNodes.id, input.id)).get()
+
+  if (!updated) {
+    throw new Error('Папка досок не найдена')
+  }
+
+  return mapBoardNode(updated)
 }
 
 export function updateBoardNodeExpansion(id: string, isExpanded: boolean): BoardNode {
@@ -649,7 +681,29 @@ function ensureLinkedStudyFolder(
     .where(eq(boardNodes.sourceStudyNodeId, sourceFolder.id))
     .get()
 
+  const icon = sourceFolder.icon ?? 'folder'
+
   if (existing) {
+    if (
+      existing.parentId !== parentId ||
+      existing.title !== sourceFolder.title ||
+      existing.icon !== icon
+    ) {
+      database
+        .update(boardNodes)
+        .set({ parentId, title: sourceFolder.title, icon, updatedAt: new Date() })
+        .where(eq(boardNodes.id, existing.id))
+        .run()
+
+      const synchronized = database
+        .select()
+        .from(boardNodes)
+        .where(eq(boardNodes.id, existing.id))
+        .get()
+
+      if (synchronized) return synchronized
+    }
+
     return existing
   }
 
@@ -663,6 +717,7 @@ function ensureLinkedStudyFolder(
       type: 'folder',
       parentId,
       title: sourceFolder.title,
+      icon,
       position: getNextBoardPosition(parentId),
       isExpanded: true,
       isSystem: false,

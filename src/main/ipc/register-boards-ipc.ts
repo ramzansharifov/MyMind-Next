@@ -7,6 +7,7 @@ import {
   moveBoardNodeInputSchema,
   renameBoardNodeInputSchema,
   saveBoardDocumentInputSchema,
+  updateBoardFolderIconInputSchema,
   updateBoardNodeExpansionInputSchema
 } from '../../shared/validation/boards'
 import {
@@ -18,6 +19,7 @@ import {
   moveBoardNode,
   renameBoardNode,
   saveBoardDocument,
+  updateBoardFolderIcon,
   updateBoardNodeExpansion
 } from '../repositories/boards.repository'
 import { mainOperationTracker } from '../services/main-operation-tracker'
@@ -40,6 +42,12 @@ export function registerBoardsIpcHandlers(): void {
       const input = renameBoardNodeInputSchema.parse(rawInput)
       return renameBoardNode(input.id, input.title)
     })
+  )
+
+  ipcMain.handle(BOARD_IPC_CHANNELS.updateFolderIcon, (_event, rawInput: unknown) =>
+    mainOperationTracker.run(() =>
+      updateBoardFolderIcon(updateBoardFolderIconInputSchema.parse(rawInput))
+    )
   )
 
   ipcMain.handle(BOARD_IPC_CHANNELS.deleteNode, (_event, nodeId: unknown) =>

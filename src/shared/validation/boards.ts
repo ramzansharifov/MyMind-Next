@@ -6,6 +6,7 @@ import {
   type BoardSnapshot
 } from '../contracts/boards'
 import { STUDY_SAFE_ID_PATTERN } from '../contracts/study'
+import { studyFolderIconSchema } from './study'
 
 const boardSafeIdSchema = z.string().regex(STUDY_SAFE_ID_PATTERN, 'Некорректный идентификатор')
 
@@ -41,6 +42,7 @@ export const boardNodeSchema = z.object({
   type: boardNodeTypeSchema,
   parentId: boardSafeIdSchema.nullable(),
   title: z.string().trim().min(1).max(BOARD_DOCUMENT_LIMITS.maxTitleLength),
+  icon: studyFolderIconSchema.optional(),
   position: z.number().int(),
   isExpanded: z.boolean(),
   isSystem: z.boolean(),
@@ -61,7 +63,8 @@ export const boardDocumentSchema = z.object({
 export const createBoardNodeInputSchema = z.object({
   type: boardNodeTypeSchema,
   parentId: boardSafeIdSchema.nullable(),
-  title: z.string().trim().max(BOARD_DOCUMENT_LIMITS.maxTitleLength).optional()
+  title: z.string().trim().max(BOARD_DOCUMENT_LIMITS.maxTitleLength).optional(),
+  icon: studyFolderIconSchema.optional()
 })
 
 export const renameBoardNodeInputSchema = z.object({
@@ -70,6 +73,14 @@ export const renameBoardNodeInputSchema = z.object({
     'Системную папку нельзя переименовать'
   ),
   title: z.string().trim().min(1).max(BOARD_DOCUMENT_LIMITS.maxTitleLength)
+})
+
+export const updateBoardFolderIconInputSchema = z.object({
+  id: boardSafeIdSchema.refine(
+    (id) => id !== BOARD_SYSTEM_ROOT_ID,
+    'Системную папку нельзя изменять'
+  ),
+  icon: studyFolderIconSchema
 })
 
 export const updateBoardNodeExpansionInputSchema = z.object({

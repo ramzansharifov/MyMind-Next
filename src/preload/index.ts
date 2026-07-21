@@ -60,6 +60,9 @@ const api: MyMindApi = {
     renameNode: (input) =>
       ipcRenderer.invoke(BOARD_IPC_CHANNELS.renameNode, input) as Promise<BoardNode>,
 
+    updateFolderIcon: (input) =>
+      ipcRenderer.invoke(BOARD_IPC_CHANNELS.updateFolderIcon, input) as Promise<BoardNode>,
+
     deleteNode: (nodeId) =>
       ipcRenderer.invoke(BOARD_IPC_CHANNELS.deleteNode, nodeId) as Promise<boolean>,
 

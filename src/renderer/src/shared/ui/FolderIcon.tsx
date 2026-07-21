@@ -123,7 +123,13 @@ export function FolderIcon({
   if (name === 'folder') {
     const Icon = expanded ? FolderOpen : Folder
 
-    return <Icon aria-hidden="true" data-folder-icon-state={expanded ? 'open' : 'closed'} className={className} />
+    return (
+      <Icon
+        aria-hidden="true"
+        data-folder-icon-state={expanded ? 'open' : 'closed'}
+        className={className}
+      />
+    )
   }
 
   const Icon = folderIcons[name]

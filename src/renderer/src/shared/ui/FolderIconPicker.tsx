@@ -51,10 +51,7 @@ export function FolderIconPicker({
                   )}
                   onSelect={() => onChange(option.value)}
                 >
-                  <FolderIcon
-                    name={option.value}
-                    className={FOLDER_ICON_SIDEBAR_CLASS_NAME}
-                  />
+                  <FolderIcon name={option.value} className={FOLDER_ICON_SIDEBAR_CLASS_NAME} />
                 </DropdownMenu.Item>
               </Tooltip>
             ))}

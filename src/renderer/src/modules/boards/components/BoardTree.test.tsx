@@ -35,6 +35,7 @@ const folder: BoardNode = {
   type: 'folder',
   parentId: null,
   title: 'Папка',
+  icon: 'science',
   position: 0,
   isExpanded: true,
   isSystem: false,
@@ -84,6 +85,33 @@ describe('BoardTree sidebar interactions', () => {
     expect(screen.getByRole('button', { name: 'Свернуть папку' })).toHaveClass('size-5', 'p-0')
     expect(folderRow?.querySelector('[data-board-tree-guide="folder"]')).toBeInTheDocument()
     expect(boardRow?.querySelector('[data-board-tree-guide="ancestor"]')).toBeInTheDocument()
+    expect(folderRow?.querySelector('[data-folder-icon-name="science"]')).toBeInTheDocument()
+  })
+
+  it('uses open and closed states for the default folder icon', () => {
+    const closedFolder = {
+      ...folder,
+      id: 'closed-folder',
+      icon: 'folder' as const,
+      isExpanded: false
+    }
+
+    render(
+      <BoardTree
+        nodes={[closedFolder]}
+        selectedNodeId={null}
+        collapsed={false}
+        onOpen={vi.fn()}
+        onToggle={vi.fn()}
+        onRename={vi.fn()}
+        onDelete={vi.fn()}
+        onCreate={vi.fn()}
+        onSelectRoot={vi.fn()}
+        onMove={vi.fn()}
+      />
+    )
+
+    expect(document.querySelector('[data-folder-icon-state="closed"]')).toBeInTheDocument()
   })
 
   it('opens the same actions by right click and colors the rename icon with the accent palette', async () => {
