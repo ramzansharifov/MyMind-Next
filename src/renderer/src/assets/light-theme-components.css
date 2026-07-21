@@ -1,0 +1,204 @@
+:root[data-theme='light'] {
+  --app-tooltip: #ffffff;
+  --app-tooltip-border: #cbd5e1;
+}
+
+/* Общая рабочая область всех модулей. */
+:root[data-theme='light'] #workspace > section[class*='bg-[var(--app-workspace)]'],
+:root[data-theme='light'] #workspace > div > section[class*='bg-[var(--app-workspace)]'] {
+  background:
+    radial-gradient(
+      circle at 86% -8rem,
+      color-mix(in srgb, var(--app-accent-500) 4%, transparent),
+      transparent 34rem
+    ),
+    var(--app-workspace);
+}
+
+:root[data-theme='light'] [role='tooltip'] {
+  color: var(--app-text) !important;
+  background: var(--app-tooltip) !important;
+  border-color: var(--app-tooltip-border) !important;
+  box-shadow: var(--app-shadow-menu);
+}
+
+/* Универсальные поля, селекты и вторичные кнопки. */
+:root[data-theme='light'] [role='dialog'] input:not([type='color']),
+:root[data-theme='light'] [role='dialog'] textarea,
+:root[data-theme='light'] [role='alertdialog'] input:not([type='color']),
+:root[data-theme='light'] [role='alertdialog'] textarea,
+:root[data-theme='light'] [data-study-material-focus] aside input:not([type='color']),
+:root[data-theme='light'] [data-study-material-focus] aside textarea,
+:root[data-theme='light'] [data-study-material-focus] aside button[role='combobox'] {
+  color: var(--app-text);
+  background: var(--app-field) !important;
+  border-color: var(--app-border);
+  box-shadow: var(--app-shadow-input);
+}
+
+:root[data-theme='light'] [role='dialog'] input:not([type='color']):hover,
+:root[data-theme='light'] [role='dialog'] textarea:hover,
+:root[data-theme='light'] [role='alertdialog'] input:not([type='color']):hover,
+:root[data-theme='light'] [role='alertdialog'] textarea:hover,
+:root[data-theme='light'] [data-study-material-focus] aside input:not([type='color']):hover,
+:root[data-theme='light'] [data-study-material-focus] aside textarea:hover,
+:root[data-theme='light'] [data-study-material-focus] aside button[role='combobox']:hover {
+  background: var(--app-field-hover) !important;
+  border-color: var(--app-border-strong);
+}
+
+:root[data-theme='light'] [data-study-material-focus] aside button[class~='bg-(--app-workspace)'],
+:root[data-theme='light'] [data-study-material-focus] aside [class~='bg-(--app-workspace)'],
+:root[data-theme='light'] [data-study-material-focus] aside [class~='bg-[var(--app-workspace)]'] {
+  background-color: var(--app-card) !important;
+}
+
+:root[data-theme='light'] [data-study-material-focus] aside button[class~='bg-(--app-workspace)']:hover {
+  background-color: var(--app-control-hover) !important;
+}
+
+/* Редактор материала: блоки, панель настроек и чтение. */
+:root[data-theme='light'] [data-study-material-focus='false'] > header {
+  border-bottom-color: var(--app-border);
+}
+
+:root[data-theme='light'] [data-study-block-id] > section {
+  border-color: var(--app-border);
+}
+
+:root[data-theme='light'] [data-study-block-id] > section[class*='border-2'] {
+  border-color: color-mix(in srgb, var(--app-accent-500) 48%, var(--app-border));
+}
+
+:root[data-theme='light'] [data-study-block-id] button:hover {
+  color: var(--app-text);
+}
+
+:root[data-theme='light'] [data-study-block-id] button[aria-label='Удалить блок']:hover {
+  color: var(--color-red-300);
+  background: color-mix(in srgb, #ef4444 9%, transparent) !important;
+}
+
+:root[data-theme='light'] [data-study-material-focus] aside > header {
+  background: color-mix(in srgb, var(--app-surface) 94%, var(--app-accent-50));
+}
+
+:root[data-theme='light'] [data-study-material-focus] aside [class*='bg-white/[0.08]'] {
+  background: var(--app-control-active) !important;
+}
+
+:root[data-theme='light'] [data-study-scroll-container='true'] article[aria-label='Содержимое материала'] {
+  background: var(--app-surface);
+  border-color: var(--app-border);
+  box-shadow: var(--app-shadow-panel);
+}
+
+:root[data-theme='light'] [data-study-scroll-container='true'] aside {
+  background: color-mix(in srgb, var(--app-surface) 97%, var(--app-accent-50));
+  box-shadow: var(--app-shadow-card);
+}
+
+:root[data-theme='light'] [data-study-board-block] {
+  border-color: color-mix(in srgb, var(--app-accent-500) 16%, var(--app-border));
+}
+
+:root[data-theme='light'] [data-study-board-block] button {
+  color: var(--app-accent-700);
+  background: color-mix(in srgb, var(--app-accent-500) 9%, #ffffff);
+}
+
+:root[data-theme='light'] [data-study-board-block] button:hover {
+  background: color-mix(in srgb, var(--app-accent-500) 15%, #ffffff);
+}
+
+/* Исходники кода должны оставаться редакторами, а не обычными белыми полями. */
+:root[data-theme='light'] [data-study-material-focus] .study-code-block__body,
+:root[data-theme='light'] [data-study-material-focus] .study-code-block__editor,
+:root[data-theme='light'] [data-study-material-focus] .study-code-block__textarea,
+:root[data-theme='light'] [data-study-material-focus] .study-mermaid-source,
+:root[data-theme='light'] [data-study-material-focus] .study-mermaid-source__textarea,
+:root[data-theme='light'] [data-study-material-focus] .study-latex-source,
+:root[data-theme='light'] [data-study-material-focus] .study-latex-source__textarea,
+:root[data-theme='light'] [data-study-material-focus] .study-markdown-source,
+:root[data-theme='light'] [data-study-material-focus] .study-markdown-source__textarea {
+  background: var(--app-code-surface) !important;
+  box-shadow: none;
+}
+
+:root[data-theme='light'] [data-study-material-focus] .study-code-block__textarea,
+:root[data-theme='light'] [data-study-material-focus] .study-mermaid-source__textarea,
+:root[data-theme='light'] [data-study-material-focus] .study-latex-source__textarea,
+:root[data-theme='light'] [data-study-material-focus] .study-markdown-source__textarea {
+  border-color: transparent;
+}
+
+/* Доски: дерево, заголовок рабочего пространства и tldraw. */
+:root[data-theme='light'] [data-boards-focus-mode='false'] [data-module-sidebar] {
+  background: var(--app-sidebar);
+}
+
+:root[data-theme='light'] [data-board-tree-node] {
+  border-radius: 0.4rem;
+}
+
+:root[data-theme='light'] [data-board-tree-node][class*='bg-violet'] {
+  color: var(--app-accent-700);
+}
+
+:root[data-theme='light'] [data-board-tree-node] [data-board-tree-guide] {
+  background: color-mix(in srgb, var(--app-border-strong) 76%, transparent);
+}
+
+:root[data-theme='light'] [data-board-workspace-focus] > header {
+  background: color-mix(in srgb, var(--app-surface) 94%, transparent);
+  box-shadow: 0 1px 0 var(--app-border), 0 8px 24px rgb(35 48 67 / 4%);
+  backdrop-filter: blur(12px);
+}
+
+:root[data-theme='light'] [aria-label='Холст доски'] {
+  background: var(--app-canvas);
+}
+
+:root[data-theme='light'] .mymind-board-canvas .tlui-button:hover,
+:root[data-theme='light'] .mymind-board-canvas .tlui-button[data-state='open'] {
+  background: var(--app-control-hover);
+}
+
+:root[data-theme='light'] .mymind-board-canvas .tlui-button__tool[aria-pressed='true'] {
+  color: #ffffff;
+}
+
+/* Radix-меню, поповеры и диалоги во всех модулях. */
+:root[data-theme='light'] [role='menu'],
+:root[data-theme='light'] [role='listbox'],
+:root[data-theme='light'] [role='dialog'],
+:root[data-theme='light'] [role='alertdialog'] {
+  background: var(--app-menu);
+  border-color: var(--app-border);
+}
+
+:root[data-theme='light'] [role='menuitem']:hover,
+:root[data-theme='light'] [role='menuitem'][data-highlighted],
+:root[data-theme='light'] [role='option'][data-highlighted] {
+  background: var(--app-control-hover);
+}
+
+:root[data-theme='light'] [role='dialog'] button:not([class*='bg-violet']):not([class*='bg-red']),
+:root[data-theme='light'] [role='alertdialog'] button:not([class*='bg-violet']):not([class*='bg-red']) {
+  border-color: var(--app-border);
+}
+
+/* Статусы должны оставаться читаемыми на белых поверхностях. */
+:root[data-theme='light'] [role='status'] {
+  color: var(--app-muted);
+}
+
+:root[data-theme='light'] [role='alert'] {
+  color: var(--color-red-300);
+}
+
+/* Медиа остаётся тёмным намеренно, но карточка вокруг него соответствует теме. */
+:root[data-theme='light'] .study-media-controller {
+  border-color: var(--app-border);
+  box-shadow: var(--app-shadow-card);
+}
