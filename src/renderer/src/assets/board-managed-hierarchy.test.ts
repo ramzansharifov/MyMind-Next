@@ -3,8 +3,13 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 const styles = readFileSync(new URL('./board-managed-hierarchy.css', import.meta.url), 'utf8')
+const focusModeStyles = readFileSync(new URL('./focus-mode.css', import.meta.url), 'utf8')
 
 describe('managed board hierarchy styles', () => {
+  it('loads the managed hierarchy rules through the renderer stylesheet entry', () => {
+    expect(focusModeStyles).toContain("@import './board-managed-hierarchy.css';")
+  })
+
   it('removes managed folder actions without hiding managed board actions', () => {
     expect(styles).toContain('[data-boards-focus-mode]')
     expect(styles).toContain("[data-study-managed='true']")
