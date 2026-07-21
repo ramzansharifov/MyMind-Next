@@ -46,9 +46,10 @@ export function ColorPicker({
           aria-label={ariaLabel}
           className={cn(
             'flex h-10 w-full min-w-0 items-center gap-3 rounded-lg',
-            'border border-(--app-border) bg-(--app-workspace) px-3',
+            'border border-(--app-border) bg-(--app-field) px-3',
             'text-sm text-(--app-text)',
-            'hover:border-(--app-border-strong)',
+            'transition-[background-color,border-color,box-shadow]',
+            'hover:border-(--app-border-strong) hover:bg-(--app-field-hover)',
             'focus-visible:ring-2 focus-visible:ring-violet-500/25',
             'focus-visible:outline-none',
             'disabled:cursor-not-allowed disabled:opacity-45'
@@ -56,7 +57,7 @@ export function ColorPicker({
         >
           <span
             aria-hidden="true"
-            className="size-5 shrink-0 rounded-md border border-white/15"
+            className="size-5 shrink-0 rounded-md border border-(--app-border-strong) shadow-sm"
             style={{
               backgroundColor: displayColor
             }}
@@ -76,8 +77,8 @@ export function ColorPicker({
           sideOffset={8}
           className={cn(
             'z-[90] w-60 rounded-xl border border-(--app-border)',
-            'bg-(--app-surface-raised) p-3 text-(--app-text)',
-            'outline-none'
+            'bg-(--app-menu) p-3 text-(--app-text)',
+            'shadow-[var(--app-shadow-menu)] outline-none'
           )}
         >
           <div className="flex items-center justify-between">
@@ -87,7 +88,7 @@ export function ColorPicker({
               <button
                 type="button"
                 aria-label="Закрыть выбор цвета"
-                className="flex size-7 items-center justify-center rounded-md text-(--app-muted) hover:bg-white/[0.06] hover:text-(--app-text)"
+                className="flex size-7 items-center justify-center rounded-md text-(--app-muted) hover:bg-(--app-control-hover) hover:text-(--app-text)"
               >
                 <X aria-hidden="true" className="size-4" />
               </button>
@@ -102,8 +103,8 @@ export function ColorPicker({
                   aria-label={`Цвет ${color}`}
                   className={cn(
                     'relative flex aspect-square items-center justify-center',
-                    'rounded-lg border border-white/10 outline-none',
-                    'transition-transform hover:scale-105',
+                    'rounded-lg border border-(--app-border) outline-none',
+                    'shadow-sm transition-transform hover:scale-105',
                     'focus-visible:ring-2 focus-visible:ring-violet-400'
                   )}
                   style={{
@@ -124,7 +125,7 @@ export function ColorPicker({
           <label className="mt-4 grid gap-2">
             <span className="text-xs font-medium text-(--app-muted)">Произвольный цвет</span>
 
-            <div className="flex h-10 items-center gap-3 rounded-lg border border-(--app-border) bg-(--app-workspace) px-2">
+            <div className="flex h-10 items-center gap-3 rounded-lg border border-(--app-border) bg-(--app-field) px-2">
               <input
                 type="color"
                 value={value}
@@ -145,9 +146,9 @@ export function ColorPicker({
                 type="button"
                 className={cn(
                   'mt-3 flex h-9 w-full items-center justify-center gap-2',
-                  'rounded-lg border border-(--app-border)',
+                  'rounded-lg border border-(--app-border) bg-(--app-control)',
                   'text-xs font-medium text-(--app-muted)',
-                  'hover:bg-white/[0.05] hover:text-(--app-text)'
+                  'hover:bg-(--app-control-hover) hover:text-(--app-text)'
                 )}
                 onClick={onClear}
               >
@@ -158,7 +159,7 @@ export function ColorPicker({
             </Popover.Close>
           )}
 
-          <Popover.Arrow className="fill-(--app-border)" />
+          <Popover.Arrow className="fill-(--app-menu)" />
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>

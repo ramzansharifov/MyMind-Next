@@ -29,7 +29,7 @@ export function FolderIconPicker({
           sideOffset={8}
           align={align}
           collisionPadding={12}
-          className="z-50 w-72 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-2 shadow-2xl shadow-black/35"
+          className="z-50 w-72 rounded-2xl border border-[var(--app-border)] bg-[var(--app-menu)] p-2 shadow-[var(--app-shadow-menu)]"
         >
           <DropdownMenu.Label className="px-2 py-2 text-xs font-medium text-[var(--app-muted)]">
             Иконка папки
@@ -44,10 +44,10 @@ export function FolderIconPicker({
                   className={cn(
                     'flex aspect-square cursor-default items-center justify-center rounded-xl border outline-none',
                     'border-transparent text-[var(--app-muted)] transition-colors',
-                    'hover:bg-white/[0.06] hover:text-[var(--app-text)]',
-                    'focus:bg-white/[0.06] focus:text-[var(--app-text)]',
+                    'hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]',
+                    'focus:bg-[var(--app-control-hover)] focus:text-[var(--app-text)]',
                     option.value === value &&
-                      'border-violet-500/25 bg-violet-500/15 text-violet-200'
+                      'border-violet-500/25 bg-violet-500/15 text-violet-200 shadow-sm'
                   )}
                   onSelect={() => onChange(option.value)}
                 >
@@ -57,7 +57,7 @@ export function FolderIconPicker({
             ))}
           </div>
 
-          <DropdownMenu.Arrow className="fill-[var(--app-surface-raised)]" />
+          <DropdownMenu.Arrow className="fill-[var(--app-menu)]" />
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
     </DropdownMenu.Root>

@@ -1,58 +1,92 @@
 :root {
   --app-control: rgb(0 0 0 / 8%);
   --app-control-hover: rgb(255 255 255 / 5%);
+  --app-control-active: rgb(255 255 255 / 8%);
   --app-card: var(--app-workspace);
   --app-card-hover: var(--app-surface-raised);
   --app-icon-surface: rgb(255 255 255 / 3%);
   --app-empty-surface: rgb(0 0 0 / 4%);
+  --app-field: var(--app-workspace);
+  --app-field-hover: var(--app-surface-raised);
+  --app-menu: var(--app-surface-raised);
+  --app-canvas: var(--app-workspace);
   --app-shadow-card: 0 1px 2px rgb(0 0 0 / 10%);
   --app-shadow-panel: 0 20px 70px rgb(0 0 0 / 16%);
   --app-shadow-hover: 0 12px 30px rgb(0 0 0 / 18%);
   --app-shadow-sidebar: none;
   --app-shadow-input: inset 0 1px 2px rgb(0 0 0 / 18%);
+  --app-shadow-menu: 0 18px 48px rgb(0 0 0 / 28%);
+  --app-shadow-dialog: 0 28px 80px rgb(0 0 0 / 35%);
 }
 
 :root[data-theme='light'] {
-  color: #182230;
+  color: #172131;
   background: #eef2f6;
 
   --app-workspace: #eef2f6;
   --app-sidebar: #fbfcfe;
   --app-sidebar-active: color-mix(in srgb, var(--app-accent-600) 12%, #ffffff);
   --app-surface: #ffffff;
-  --app-surface-raised: #f7f9fc;
-  --app-border: #dce3eb;
-  --app-border-strong: #c8d2de;
-  --app-text: #182230;
-  --app-muted: #667386;
-  --app-tooltip: #ffffff;
-  --app-tooltip-border: #cdd6e1;
-  --app-overlay-soft: rgb(24 34 48 / 6%);
-  --app-overlay-faint: rgb(24 34 48 / 3.5%);
-  --app-code-surface: #f3f5f8;
+  --app-surface-raised: #f8fafc;
+  --app-border: #dbe3ec;
+  --app-border-strong: #c4cfdb;
+  --app-text: #172131;
+  --app-muted: #657286;
+  --app-tooltip: #172131;
+  --app-tooltip-border: #172131;
+  --app-overlay-soft: rgb(23 33 49 / 6%);
+  --app-overlay-faint: rgb(23 33 49 / 3.5%);
+  --app-code-surface: #f3f6f9;
   --app-reader-surface: #e9eef4;
 
-  --app-control: #edf1f5;
-  --app-control-hover: #e4eaf1;
-  --app-card: #f7f9fc;
+  --app-control: #edf2f7;
+  --app-control-hover: #e3eaf2;
+  --app-control-active: #d8e2ec;
+  --app-card: #f8fafc;
   --app-card-hover: #ffffff;
-  --app-icon-surface: #edf2f7;
-  --app-empty-surface: #f7f9fc;
-  --app-shadow-card: 0 1px 2px rgb(35 48 67 / 8%), 0 6px 18px rgb(35 48 67 / 4%);
+  --app-icon-surface: #edf3f8;
+  --app-empty-surface: #f6f8fb;
+  --app-field: #ffffff;
+  --app-field-hover: #fbfdff;
+  --app-menu: #ffffff;
+  --app-canvas: #fbfcfe;
+
+  --app-shadow-card: 0 1px 2px rgb(35 48 67 / 7%), 0 7px 20px rgb(35 48 67 / 5%);
   --app-shadow-panel: 0 18px 50px rgb(35 48 67 / 10%);
   --app-shadow-hover: 0 12px 28px rgb(35 48 67 / 13%);
   --app-shadow-sidebar: 8px 0 28px rgb(35 48 67 / 6%);
   --app-shadow-input: inset 0 1px 2px rgb(35 48 67 / 8%);
+  --app-shadow-menu: 0 18px 46px rgb(35 48 67 / 16%);
+  --app-shadow-dialog: 0 28px 80px rgb(35 48 67 / 20%);
 
   --app-scrollbar-thumb: color-mix(in srgb, var(--app-accent-600) 34%, #aeb8c6);
   --app-scrollbar-thumb-hover: color-mix(in srgb, var(--app-accent-600) 58%, #8794a5);
 
-  /* Pale 200–400 accents work in dark mode but lose contrast on white surfaces. */
+  /* Светлые 200–400 оттенки рассчитаны на тёмный фон. */
   --color-violet-200: var(--app-accent-700);
   --color-violet-300: var(--app-accent-700);
   --color-violet-400: var(--app-accent-600);
   --color-violet-500: var(--app-accent-600);
   --color-violet-600: var(--app-accent-700);
+
+  --color-emerald-200: #047857;
+  --color-emerald-300: #047857;
+  --color-emerald-400: #059669;
+  --color-green-200: #15803d;
+  --color-green-300: #15803d;
+  --color-green-400: #16a34a;
+  --color-blue-200: #1d4ed8;
+  --color-blue-300: #1d4ed8;
+  --color-blue-400: #2563eb;
+  --color-amber-200: #a16207;
+  --color-amber-300: #a16207;
+  --color-amber-400: #d97706;
+  --color-red-200: #b91c1c;
+  --color-red-300: #b91c1c;
+  --color-red-400: #dc2626;
+  --color-rose-200: #be123c;
+  --color-rose-300: #be123c;
+  --color-rose-400: #e11d48;
 }
 
 :root[data-theme='light'] body,
@@ -70,36 +104,74 @@
     var(--app-workspace);
 }
 
+:root[data-theme='light'] [data-study-focus-mode='false'] > main,
+:root[data-theme='light'] [data-boards-focus-mode='false'] > main {
+  background:
+    radial-gradient(
+      circle at 52% -12rem,
+      color-mix(in srgb, var(--app-accent-500) 4.5%, transparent),
+      transparent 38rem
+    ),
+    var(--app-workspace);
+}
+
 :root[data-theme='light'] aside[aria-label='Боковая панель'],
 :root[data-theme='light'] [data-module-sidebar] {
   box-shadow: var(--app-shadow-sidebar);
 }
 
+:root[data-theme='light'] [data-module-sidebar] > header,
+:root[data-theme='light'] aside[aria-label='Боковая панель'] > header,
+:root[data-theme='light'] aside[aria-label='Боковая панель'] > footer {
+  background: color-mix(in srgb, var(--app-sidebar) 94%, var(--app-accent-50));
+}
+
 :root[data-theme='light'] #workspace .blur-3xl {
-  opacity: 0.48;
+  opacity: 0.38;
 }
 
-/* Compatibility layer for legacy dark-mode utility classes. */
-:root[data-theme='light'] [class~='bg-black/[0.08]'] {
-  background-color: var(--app-control) !important;
-}
-
+/* Совместимость с utility-классами, изначально подобранными только для тёмной темы. */
+:root[data-theme='light'] [class~='bg-black/[0.02]'],
+:root[data-theme='light'] [class~='bg-black/[0.025]'],
+:root[data-theme='light'] [class~='bg-black/[0.03]'],
+:root[data-theme='light'] [class~='bg-black/[0.035]'],
 :root[data-theme='light'] [class~='bg-black/[0.04]'] {
   background-color: var(--app-empty-surface) !important;
 }
 
+:root[data-theme='light'] [class~='bg-black/[0.05]'],
+:root[data-theme='light'] [class~='bg-black/[0.06]'],
+:root[data-theme='light'] [class~='bg-black/[0.07]'],
+:root[data-theme='light'] [class~='bg-black/[0.08]'],
+:root[data-theme='light'] [class~='bg-black/[0.1]'],
+:root[data-theme='light'] [class~='bg-black/[0.12]'] {
+  background-color: var(--app-control) !important;
+}
+
+:root[data-theme='light'] [class~='bg-white/[0.01]'],
+:root[data-theme='light'] [class~='bg-white/[0.02]'],
 :root[data-theme='light'] [class~='bg-white/[0.025]'],
+:root[data-theme='light'] [class~='bg-white/[0.03]'],
 :root[data-theme='light'] [class~='bg-white/[0.035]'],
 :root[data-theme='light'] [class~='bg-white/[0.04]'],
+:root[data-theme='light'] [class~='bg-white/[0.045]'],
 :root[data-theme='light'] [class~='bg-white/[0.05]'],
 :root[data-theme='light'] [class~='bg-white/[0.06]'],
 :root[data-theme='light'] [class~='bg-white/[0.07]'],
-:root[data-theme='light'] [class~='bg-white/[0.08]'] {
+:root[data-theme='light'] [class~='bg-white/[0.08]'],
+:root[data-theme='light'] [class~='bg-white/[0.1]'],
+:root[data-theme='light'] [class~='bg-white/[0.12]'] {
   background-color: var(--app-icon-surface) !important;
 }
 
-:root[data-theme='light'] [class*='hover:bg-white/']:hover {
+:root[data-theme='light'] [class*='hover:bg-white/']:hover,
+:root[data-theme='light'] [class*='focus:bg-white/']:focus,
+:root[data-theme='light'] [class*='data-[highlighted]:bg-white/'][data-highlighted] {
   background-color: var(--app-control-hover) !important;
+}
+
+:root[data-theme='light'] [class*='border-white/'] {
+  border-color: color-mix(in srgb, var(--app-border-strong) 72%, transparent) !important;
 }
 
 :root[data-theme='light'] [class*='shadow-[0_20px_70px_rgb(0_0_0/0.16)]'],
@@ -115,6 +187,136 @@
   box-shadow: var(--app-shadow-hover) !important;
 }
 
+:root[data-theme='light'] [class*='shadow-2xl'][class*='shadow-black/'],
+:root[data-theme='light'] [role='menu'],
+:root[data-theme='light'] [role='listbox'] {
+  box-shadow: var(--app-shadow-menu) !important;
+}
+
+:root[data-theme='light'] [role='dialog'],
+:root[data-theme='light'] [role='alertdialog'] {
+  box-shadow: var(--app-shadow-dialog);
+}
+
+:root[data-theme='light'] [role='menu'],
+:root[data-theme='light'] [role='listbox'],
+:root[data-theme='light'] [data-radix-popper-content-wrapper] > div {
+  background-color: var(--app-menu);
+}
+
+:root[data-theme='light'] [role='menuitem'][data-highlighted],
+:root[data-theme='light'] [role='option'][data-highlighted] {
+  background: var(--app-control-hover);
+  color: var(--app-text);
+}
+
+/* Редактор материала и инспектор блоков. */
+:root[data-theme='light'] [data-study-material-focus='false'] {
+  background: transparent;
+}
+
+:root[data-theme='light'] [data-study-material-focus='false'] > header,
+:root[data-theme='light'] [data-board-workspace-focus='false'] > header {
+  background: color-mix(in srgb, var(--app-surface) 92%, transparent);
+  box-shadow: 0 1px 0 var(--app-border), 0 8px 24px rgb(35 48 67 / 4%);
+  backdrop-filter: blur(12px);
+}
+
+:root[data-theme='light'] [data-study-block-id] > section {
+  background: var(--app-surface);
+  box-shadow: var(--app-shadow-card);
+}
+
+:root[data-theme='light'] [data-study-block-id] > section:hover {
+  box-shadow: 0 9px 26px rgb(35 48 67 / 8%);
+}
+
+:root[data-theme='light'] [data-study-block-id] > section[class*='border-2'] {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--app-accent-500) 18%, transparent),
+    0 10px 28px rgb(35 48 67 / 8%);
+}
+
+:root[data-theme='light'] [data-study-material-focus='false'] aside {
+  background: var(--app-surface);
+  box-shadow: var(--app-shadow-card);
+}
+
+:root[data-theme='light'] [data-study-board-block] {
+  background:
+    radial-gradient(
+      circle at 92% 0%,
+      color-mix(in srgb, var(--app-accent-500) 9%, transparent),
+      transparent 18rem
+    ),
+    var(--app-card);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 72%);
+}
+
+:root[data-theme='light'] [data-study-board-block] > div[aria-hidden='true'] {
+  opacity: 0.35;
+}
+
+:root[data-theme='light'] [data-study-material-focus] input:not([type='color']),
+:root[data-theme='light'] [data-study-material-focus] textarea,
+:root[data-theme='light'] [data-study-material-focus] button[role='combobox'] {
+  background-color: var(--app-field);
+}
+
+:root[data-theme='light'] [data-study-material-focus] input:not([type='color']):hover,
+:root[data-theme='light'] [data-study-material-focus] textarea:hover,
+:root[data-theme='light'] [data-study-material-focus] button[role='combobox']:hover {
+  background-color: var(--app-field-hover);
+}
+
+/* Модуль досок, дерево и холст. */
+:root[data-theme='light'] [data-boards-focus-mode='false'] [data-board-tree-node]:hover {
+  background: var(--app-control-hover);
+}
+
+:root[data-theme='light'] [data-boards-focus-mode='false'] [data-board-tree-node][class*='bg-violet'] {
+  background: color-mix(in srgb, var(--app-accent-500) 12%, #ffffff);
+  box-shadow: inset 3px 0 0 var(--app-accent-500);
+}
+
+:root[data-theme='light'] [data-board-workspace-focus] {
+  background: var(--app-canvas);
+}
+
+:root[data-theme='light'] .mymind-board-canvas {
+  background: var(--app-canvas);
+}
+
+:root[data-theme='light'] .mymind-board-canvas .tl-container {
+  --tl-color-background: var(--app-canvas);
+  --tl-color-grid: color-mix(in srgb, var(--app-muted) 24%, transparent);
+  --tl-color-low: #ffffff;
+  --tl-color-low-border: var(--app-border);
+  --tl-color-panel: #ffffff;
+  --tl-color-panel-contrast: var(--app-border-strong);
+  --tl-color-panel-overlay: rgb(255 255 255 / 94%);
+  --tl-color-tooltip: var(--app-tooltip);
+  --tl-shadow-1: 0 1px 2px rgb(35 48 67 / 8%), inset 0 0 0 1px var(--app-border);
+  --tl-shadow-2: 0 8px 24px rgb(35 48 67 / 10%), inset 0 0 0 1px var(--app-border);
+  --tl-shadow-3: 0 12px 36px rgb(35 48 67 / 13%), inset 0 0 0 1px var(--app-border);
+  --tl-shadow-4: 0 18px 48px rgb(35 48 67 / 16%), inset 0 0 0 1px var(--app-border);
+}
+
+:root[data-theme='light'] .mymind-board-canvas .tlui-menu,
+:root[data-theme='light'] .mymind-board-canvas .tlui-popover__content,
+:root[data-theme='light'] .mymind-board-canvas .tlui-toolbar,
+:root[data-theme='light'] .mymind-board-canvas .tlui-navigation-panel {
+  background: #ffffff;
+  border-color: var(--app-border);
+  box-shadow: var(--app-shadow-menu);
+}
+
+:root[data-theme='light'] .mymind-board-canvas .tlui-menu-zone {
+  background: #ffffff;
+  border-color: var(--app-border);
+}
+
+/* Текст, Markdown и исходники блоков. */
 :root[data-theme='light'] .mymind-rich-text-editor code,
 :root[data-theme='light'] .study-markdown-preview p > code,
 :root[data-theme='light'] .study-markdown-preview li > code,
@@ -129,10 +331,32 @@
   background: var(--app-surface-raised);
 }
 
+:root[data-theme='light'] .study-code-block__body,
+:root[data-theme='light'] .study-code-block__editor,
+:root[data-theme='light'] .study-mermaid-source,
+:root[data-theme='light'] .study-latex-source,
+:root[data-theme='light'] .study-markdown-source {
+  background: var(--app-code-surface);
+}
+
 :root[data-theme='light'] .study-code-block__line-numbers {
   color: #7b8797;
-  background: #e9edf3;
+  background: #e8edf3;
   box-shadow: 0.5rem 0 1rem rgb(35 48 67 / 7%);
+}
+
+:root[data-theme='light'] .study-code-block__pre,
+:root[data-theme='light'] .study-mermaid-source__pre,
+:root[data-theme='light'] .study-latex-source__pre,
+:root[data-theme='light'] .study-markdown-source__pre {
+  color: #263244;
+}
+
+:root[data-theme='light'] .study-code-block__textarea,
+:root[data-theme='light'] .study-mermaid-source__textarea,
+:root[data-theme='light'] .study-latex-source__textarea,
+:root[data-theme='light'] .study-markdown-source__textarea {
+  caret-color: var(--app-text) !important;
 }
 
 :root[data-theme='light'] .study-code-block .token.comment,
@@ -196,11 +420,4 @@
 :root[data-theme='light'] .study-code-block .token.class-name,
 :root[data-theme='light'] .study-markdown-source .token.code {
   color: #a16207;
-}
-
-:root[data-theme='light'] .mymind-board-canvas .tl-container {
-  --tl-shadow-1: 0 1px 2px rgb(35 48 67 / 8%), inset 0 0 0 1px var(--app-border);
-  --tl-shadow-2: 0 8px 24px rgb(35 48 67 / 10%), inset 0 0 0 1px var(--app-border);
-  --tl-shadow-3: 0 12px 36px rgb(35 48 67 / 13%), inset 0 0 0 1px var(--app-border);
-  --tl-shadow-4: 0 18px 48px rgb(35 48 67 / 16%), inset 0 0 0 1px var(--app-border);
 }
