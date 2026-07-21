@@ -1,4 +1,4 @@
-name: Diagnose study focus implementation
+name: Diagnose study focus formatting
 
 on:
   pull_request:
@@ -21,7 +21,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --silent
-      - name: Diagnose implementation
+      - name: Diagnose implementation formatting
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -30,15 +30,16 @@ jobs:
           {
             node scripts/fix-study-focus-generator.mjs
             node scripts/add-study-focus-mode.mjs
+            npm run format
           } > implementation-output.txt 2>&1
           status=$?
           if [ "$status" -ne 0 ]; then
             {
               echo "Добавить полноэкранный режим чтения материала, сохранить его при переходе на связанную доску и обратно, предоставить возврат к материалу и выход из фокуса на доске. Унифицировать подсказки модуля досок через общий Radix Tooltip."
               echo
-              echo "## Временная диагностика реализации"
+              echo "## Временная диагностика форматирования"
               echo '```text'
-              tail -n 120 implementation-output.txt
+              tail -n 160 implementation-output.txt
               echo '```'
             } > pr-body.md
             gh pr edit 34 --body-file pr-body.md
