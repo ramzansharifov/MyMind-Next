@@ -8,6 +8,7 @@ import {
 } from 'drizzle-orm/sqlite-core'
 
 import type { BoardNodeType, BoardSnapshot } from '../../../shared/contracts/boards'
+import type { StudyFolderIconName } from '../../../shared/contracts/study'
 import { studyNodes } from './study'
 
 export const boardNodes = sqliteTable(
@@ -19,6 +20,7 @@ export const boardNodes = sqliteTable(
       onDelete: 'cascade'
     }),
     title: text('title').notNull(),
+    icon: text('icon').$type<StudyFolderIconName>(),
     position: integer('position').notNull().default(0),
     isExpanded: integer('is_expanded', { mode: 'boolean' }).notNull().default(true),
     isSystem: integer('is_system', { mode: 'boolean' }).notNull().default(false),

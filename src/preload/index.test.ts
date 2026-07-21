@@ -45,6 +45,7 @@ describe('preload API contract', () => {
       'listNodes',
       'createNode',
       'renameNode',
+      'updateFolderIcon',
       'deleteNode',
       'updateExpansion',
       'moveNode',

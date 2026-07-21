@@ -1,7 +1,13 @@
 import { asc, eq, isNull, or, sql, type SQLWrapper } from 'drizzle-orm'
 import { randomUUID } from 'node:crypto'
 
-import { appMeta, studyLinkTargets, studyMaterials, studyNodes } from '../database/schema'
+import {
+  appMeta,
+  boardNodes,
+  studyLinkTargets,
+  studyMaterials,
+  studyNodes
+} from '../database/schema'
 import { getDatabase } from '../database/client'
 import type {
   CreateStudyNodeInput,
@@ -746,14 +752,17 @@ export function updateStudyFolderIcon(id: string, icon: StudyFolderIconName): St
     throw new Error('Study folder was not found')
   }
 
-  database
-    .update(studyNodes)
-    .set({
-      icon,
-      updatedAt: new Date()
-    })
-    .where(eq(studyNodes.id, id))
-    .run()
+  const now = new Date()
+
+  database.transaction((transaction) => {
+    transaction.update(studyNodes).set({ icon, updatedAt: now }).where(eq(studyNodes.id, id)).run()
+
+    transaction
+      .update(boardNodes)
+      .set({ icon, updatedAt: now })
+      .where(eq(boardNodes.sourceStudyNodeId, id))
+      .run()
+  })
 
   const updated = database.select().from(studyNodes).where(eq(studyNodes.id, id)).get()
 

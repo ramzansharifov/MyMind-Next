@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   LoaderCircle,
   LockKeyhole,
+  Palette,
   Pencil,
   Presentation,
   Search,
@@ -16,6 +17,7 @@ import {
 } from 'lucide-react'
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 
+import type { StudyFolderIconName } from '../../../../shared/contracts/study'
 import {
   BOARD_SYSTEM_ROOT_ID,
   type BoardNode,
@@ -24,6 +26,8 @@ import {
 } from '../../../../shared/contracts/boards'
 import { requestAppModuleNavigation } from '../../app/module-navigation'
 import { cn } from '../../shared/lib/cn'
+import { FolderIcon } from '../../shared/ui/FolderIcon'
+import { FolderIconPicker } from '../../shared/ui/FolderIconPicker'
 import { ModuleSidebar } from '../../shared/ui/ModuleSidebar'
 import { getModuleSidebarLayoutClassName } from '../../shared/ui/module-sidebar-layout'
 import {
@@ -184,6 +188,17 @@ export function BoardsPage({ resourceId, onResourceHandled }: BoardsPageProps): 
     }
   }
 
+  async function updateFolderIcon(folder: BoardNode, icon: StudyFolderIconName): Promise<void> {
+    setError(null)
+
+    try {
+      const updated = await boardsClient.updateFolderIcon(folder.id, icon)
+      setNodes((current) => current.map((node) => (node.id === updated.id ? updated : node)))
+    } catch (reason: unknown) {
+      setError(reason instanceof Error ? reason.message : 'Не удалось изменить иконку папки')
+    }
+  }
+
   async function deleteNode(): Promise<void> {
     if (!deleteTarget) return
 
@@ -298,6 +313,7 @@ export function BoardsPage({ resourceId, onResourceHandled }: BoardsPageProps): 
             onOpen={(id) => void openNode(id)}
             onCreate={startCreate}
             onRename={() => startRename(selectedNode)}
+            onIconChange={(icon) => void updateFolderIcon(selectedNode, icon)}
           />
         ) : (
           <BoardsHome
@@ -600,13 +616,15 @@ function BoardFolderPage({
   items,
   onOpen,
   onCreate,
-  onRename
+  onRename,
+  onIconChange
 }: {
   folder: BoardNode
   items: BoardNode[]
   onOpen: (id: string) => void
   onCreate: (type: BoardNodeType, parentId: string | null) => void
   onRename: () => void
+  onIconChange: (icon: StudyFolderIconName) => void
 }): React.JSX.Element {
   const folders = items
     .filter((item) => item.type === 'folder')
@@ -614,6 +632,8 @@ function BoardFolderPage({
   const boards = items
     .filter((item) => item.type === 'board')
     .sort((first, second) => first.position - second.position)
+  const canChangeIcon = !folder.isSystem && !folder.sourceStudyNodeId
+  const activeIcon = folder.icon ?? 'folder'
 
   return (
     <section className="h-full overflow-y-auto bg-[var(--app-workspace)] px-8 py-7 max-[720px]:px-4 max-[720px]:py-5">
@@ -635,7 +655,7 @@ function BoardFolderPage({
                   {folder.isSystem ? (
                     <LockKeyhole aria-hidden="true" className="size-6" />
                   ) : (
-                    <Folder aria-hidden="true" className="size-6" />
+                    <FolderIcon name={activeIcon} expanded className="size-6" />
                   )}
                 </div>
                 <div className="min-w-0">
@@ -653,7 +673,9 @@ function BoardFolderPage({
                   'grid max-w-full shrink-0 gap-2 max-[920px]:w-full max-[620px]:grid-cols-1',
                   folder.isSystem
                     ? 'w-[22rem] grid-cols-2'
-                    : 'w-[33rem] grid-cols-3 max-[760px]:grid-cols-2'
+                    : canChangeIcon
+                      ? 'w-[44rem] grid-cols-4 max-[760px]:grid-cols-2'
+                      : 'w-[33rem] grid-cols-3 max-[760px]:grid-cols-2'
                 )}
               >
                 {!folder.isSystem && (
@@ -661,6 +683,18 @@ function BoardFolderPage({
                     <Pencil aria-hidden="true" />
                     Переименовать
                   </WorkspaceActionButton>
+                )}
+                {canChangeIcon && (
+                  <FolderIconPicker
+                    value={activeIcon}
+                    onChange={onIconChange}
+                    trigger={
+                      <WorkspaceActionButton type="button">
+                        <Palette aria-hidden="true" className="text-violet-300" />
+                        Иконка
+                      </WorkspaceActionButton>
+                    }
+                  />
                 )}
                 <WorkspaceActionButton type="button" onClick={() => onCreate('folder', folder.id)}>
                   <FolderPlus aria-hidden="true" />
@@ -795,7 +829,7 @@ function BoardNodeCard({
           node.isSystem ? (
             <LockKeyhole aria-hidden="true" className="size-5" />
           ) : (
-            <Folder aria-hidden="true" className="size-5" />
+            <FolderIcon name={node.icon} expanded={node.isExpanded} className="size-5" />
           )
         ) : (
           <Presentation aria-hidden="true" className="size-5" />

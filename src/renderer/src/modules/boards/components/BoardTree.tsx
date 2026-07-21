@@ -16,7 +16,6 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import {
   ChevronDown,
   ChevronRight,
-  Folder,
   FolderPlus,
   LockKeyhole,
   MoreHorizontal,
@@ -40,6 +39,7 @@ import {
   ModuleTreeNodeDropIndicator,
   ModuleTreeRootDropZone
 } from '../../../shared/ui/ModuleTreeDndFeedback'
+import { FolderIcon, FOLDER_ICON_SIDEBAR_CLASS_NAME } from '../../../shared/ui/FolderIcon'
 import { Tooltip } from '../../../shared/ui/tooltip'
 import {
   createBoardMoveInput,
@@ -271,7 +271,6 @@ function BoardTreeNode({
   const hasVisibleChildren = isFolder && node.isExpanded && children.length > 0
   const isStudyManaged = studyManagedIds.has(node.id)
   const dropPlacement = dropPreview?.overId === node.id ? dropPreview.placement : null
-  const Icon = isFolder ? Folder : Presentation
   const [contextMenuOpen, setContextMenuOpen] = useState(false)
   const guideOrigin = 12
   const guideStep = 16
@@ -390,7 +389,15 @@ function BoardTreeNode({
                 {...listeners}
                 onClick={() => onOpen(node.id)}
               >
-                <Icon aria-hidden="true" className="size-4 shrink-0" />
+                {isFolder ? (
+                  <FolderIcon
+                    name={node.icon}
+                    expanded={node.isExpanded}
+                    className={FOLDER_ICON_SIDEBAR_CLASS_NAME}
+                  />
+                ) : (
+                  <Presentation aria-hidden="true" className="size-4 shrink-0" />
+                )}
                 {!collapsed && <span className="truncate">{node.title}</span>}
                 {!collapsed && node.isSystem && (
                   <LockKeyhole
@@ -538,11 +545,19 @@ function BoardRootDropZone({
 }
 
 function BoardDragOverlay({ node }: { node: BoardNode }): React.JSX.Element {
-  const Icon = node.type === 'folder' ? Folder : Presentation
-
   return (
     <ModuleTreeDragOverlay
-      icon={<Icon aria-hidden="true" className="size-4 shrink-0 text-violet-300" />}
+      icon={
+        node.type === 'folder' ? (
+          <FolderIcon
+            name={node.icon}
+            expanded={node.isExpanded}
+            className="size-4 shrink-0 text-violet-300"
+          />
+        ) : (
+          <Presentation aria-hidden="true" className="size-4 shrink-0 text-violet-300" />
+        )
+      }
       title={node.title}
     />
   )
