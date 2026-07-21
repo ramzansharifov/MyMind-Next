@@ -31,7 +31,7 @@ replaceOnce(
 )
 
 const migrations = readdirSync('drizzle')
-  .filter((fileName) => /^\\d{4}_.+\\.sql$/.test(fileName) && !fileName.startsWith('0007_'))
+  .filter((fileName) => /^\d{4}_.+\.sql$/.test(fileName) && !fileName.startsWith('0007_'))
   .sort()
 
 const latestMigration = migrations.at(-1)
