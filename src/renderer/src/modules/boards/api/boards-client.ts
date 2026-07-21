@@ -1,11 +1,12 @@
-import type {
-  BoardApi,
-  BoardDocument,
-  BoardNode,
-  BoardSnapshot,
-  CreateBoardNodeInput,
-  EnsureStudyBoardInput,
-  MoveBoardNodeInput
+import {
+  BOARD_SYSTEM_ROOT_ID,
+  type BoardApi,
+  type BoardDocument,
+  type BoardNode,
+  type BoardSnapshot,
+  type CreateBoardNodeInput,
+  type EnsureStudyBoardInput,
+  type MoveBoardNodeInput
 } from '../../../../../shared/contracts/boards'
 import type { StudyFolderIconName } from '../../../../../shared/contracts/study'
 
@@ -39,13 +40,43 @@ function getBoardApi(): BoardApi {
   return appApi.boards
 }
 
-function isManagedBoardFolder(node: BoardNode | undefined): boolean {
-  return Boolean(node?.type === 'folder' && (node.isSystem || node.sourceStudyNodeId))
+function findBoardNode(nodes: BoardNode[], nodeId: string): BoardNode | undefined {
+  return nodes.find((node) => node.id === nodeId)
 }
 
-async function findBoardNode(api: BoardApi, nodeId: string): Promise<BoardNode | undefined> {
+function isManagedBoardFolder(nodes: BoardNode[], node: BoardNode | undefined): boolean {
+  if (node?.type !== 'folder') {
+    return false
+  }
+
+  const nodesById = new Map(nodes.map((item) => [item.id, item]))
+  const visited = new Set<string>()
+  let current: BoardNode | undefined = node
+
+  while (current && !visited.has(current.id)) {
+    if (
+      current.id === BOARD_SYSTEM_ROOT_ID ||
+      current.isSystem ||
+      current.sourceStudyNodeId ||
+      current.sourceMaterialId ||
+      current.sourceBlockId
+    ) {
+      return true
+    }
+
+    visited.add(current.id)
+    current = current.parentId ? nodesById.get(current.parentId) : undefined
+  }
+
+  return false
+}
+
+async function getNodesAndTarget(
+  api: BoardApi,
+  nodeId: string
+): Promise<{ nodes: BoardNode[]; target: BoardNode | undefined }> {
   const nodes = await api.listNodes()
-  return nodes.find((node) => node.id === nodeId)
+  return { nodes, target: findBoardNode(nodes, nodeId) }
 }
 
 export const boardsClient = {
@@ -57,9 +88,9 @@ export const boardsClient = {
     const api = getBoardApi()
 
     if (input.parentId) {
-      const parent = await findBoardNode(api, input.parentId)
+      const { nodes, target: parent } = await getNodesAndTarget(api, input.parentId)
 
-      if (isManagedBoardFolder(parent)) {
+      if (isManagedBoardFolder(nodes, parent)) {
         throw new Error('В зафиксированной папке нельзя создавать папки или доски')
       }
     }
@@ -69,9 +100,9 @@ export const boardsClient = {
 
   async renameNode(id: string, title: string): Promise<BoardNode> {
     const api = getBoardApi()
-    const target = await findBoardNode(api, id)
+    const { nodes, target } = await getNodesAndTarget(api, id)
 
-    if (isManagedBoardFolder(target)) {
+    if (isManagedBoardFolder(nodes, target)) {
       throw new Error('Зафиксированную папку нельзя переименовать')
     }
 
@@ -80,9 +111,9 @@ export const boardsClient = {
 
   async updateFolderIcon(id: string, icon: StudyFolderIconName): Promise<BoardNode> {
     const api = getBoardApi()
-    const target = await findBoardNode(api, id)
+    const { nodes, target } = await getNodesAndTarget(api, id)
 
-    if (isManagedBoardFolder(target)) {
+    if (isManagedBoardFolder(nodes, target)) {
       throw new Error('У зафиксированной папки нельзя изменить иконку')
     }
 
@@ -91,9 +122,9 @@ export const boardsClient = {
 
   async deleteNode(id: string): Promise<boolean> {
     const api = getBoardApi()
-    const target = await findBoardNode(api, id)
+    const { nodes, target } = await getNodesAndTarget(api, id)
 
-    if (isManagedBoardFolder(target)) {
+    if (isManagedBoardFolder(nodes, target)) {
       throw new Error('Зафиксированную папку нельзя удалить')
     }
 
@@ -108,9 +139,9 @@ export const boardsClient = {
     const api = getBoardApi()
 
     if (input.parentId) {
-      const parent = await findBoardNode(api, input.parentId)
+      const { nodes, target: parent } = await getNodesAndTarget(api, input.parentId)
 
-      if (isManagedBoardFolder(parent)) {
+      if (isManagedBoardFolder(nodes, parent)) {
         throw new Error('В зафиксированную папку нельзя перемещать элементы')
       }
     }
