@@ -12,6 +12,7 @@ import type { StudyMarkdownViewMode } from '../../../../../../shared/contracts/s
 import { cn } from '../../../../shared/lib/cn'
 import { normalizeStudyCodeLanguage } from '../code/code-languages'
 import { StudyCodeBlock } from '../code/StudyCodeBlock'
+import { StudySourceBlockShell } from '../source/StudySourceBlockShell'
 
 interface StudyMarkdownBlockProps {
   source: string
@@ -64,9 +65,7 @@ const markdownComponents = {
 
   code({ children, className }) {
     const rawSource = String(children)
-
     const languageMatch = /language-([\w+-]+)/i.exec(className ?? '')
-
     const blockCode = Boolean(languageMatch) || rawSource.includes('\n') || rawSource.endsWith('\n')
 
     if (!blockCode) {
@@ -74,7 +73,6 @@ const markdownComponents = {
     }
 
     const source = rawSource.replace(/\n$/, '')
-
     const language = normalizeStudyCodeLanguage(languageMatch?.[1])
 
     return <StudyCodeBlock mode="read" source={source} language={language} />
@@ -125,85 +123,123 @@ export function StudyMarkdownBlock({
   const activeMode = isMarkdownViewMode(viewMode) ? viewMode : 'split'
 
   return (
-    <section className="overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-code-surface)]">
-      <header className="flex min-h-11 items-center justify-between gap-3 border-b border-[var(--app-border)] bg-white/[0.025] px-3">
-        <span className="text-[11px] font-semibold tracking-[0.08em] text-[var(--app-muted)] uppercase">
-          Markdown
-        </span>
-
-        <ToggleGroup.Root
-          type="single"
-          value={activeMode}
-          aria-label="Режим Markdown-блока"
-          className="flex items-center gap-1"
-          onValueChange={(value) => {
-            if (isMarkdownViewMode(value)) {
-              onViewModeChange?.(value)
-            }
-          }}
+    <StudySourceBlockShell
+      source={source}
+      copyLabel="Копировать Markdown"
+      copiedAnnouncement="Markdown скопирован"
+      copyErrorAnnouncement="Не удалось скопировать Markdown"
+      expandLabel="Развернуть Markdown-блок"
+      collapseLabel="Свернуть Markdown-блок"
+      dialogTitle="Markdown-блок на весь экран"
+      dialogDescription="Полноэкранное редактирование и предпросмотр Markdown. Нажмите Escape или кнопку сворачивания, чтобы вернуться к материалу."
+    >
+      {({ fullscreen, actions }) => (
+        <section
+          data-study-markdown-block
+          data-fullscreen={fullscreen ? 'true' : 'false'}
+          className={cn(
+            'overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-code-surface)]',
+            fullscreen && 'flex h-full min-h-0 flex-col rounded-2xl shadow-2xl shadow-black/40'
+          )}
         >
-          {markdownModes.map(({ value, label, Icon }) => (
-            <ToggleGroup.Item
-              key={value}
-              value={value}
-              aria-label={label}
-              title={label}
-              className={cn(
-                'flex h-7 items-center gap-1.5 rounded-md px-2',
-                'text-xs text-[var(--app-muted)] outline-none',
-                'transition-colors',
-                'hover:bg-white/[0.06] hover:text-[var(--app-text)]',
-                'focus-visible:ring-2 focus-visible:ring-violet-500/35',
-                'data-[state=on]:bg-violet-500/15',
-                'data-[state=on]:text-violet-200'
-              )}
-            >
-              <Icon aria-hidden="true" className="size-3.5" />
+          <header className="flex min-h-11 shrink-0 items-center justify-between gap-3 border-b border-[var(--app-border)] bg-white/[0.025] px-3">
+            <span className="text-[11px] font-semibold tracking-[0.08em] text-[var(--app-muted)] uppercase">
+              Markdown
+            </span>
 
-              <span className="max-[780px]:hidden">{label}</span>
-            </ToggleGroup.Item>
-          ))}
-        </ToggleGroup.Root>
-      </header>
+            <div className="flex shrink-0 items-center gap-1">
+              <ToggleGroup.Root
+                type="single"
+                value={activeMode}
+                aria-label="Режим Markdown-блока"
+                className="flex items-center gap-1"
+                onValueChange={(value) => {
+                  if (isMarkdownViewMode(value)) {
+                    onViewModeChange?.(value)
+                  }
+                }}
+              >
+                {markdownModes.map(({ value, label, Icon }) => (
+                  <ToggleGroup.Item
+                    key={value}
+                    value={value}
+                    aria-label={label}
+                    title={label}
+                    className={cn(
+                      'flex h-7 items-center gap-1.5 rounded-md px-2',
+                      'text-xs text-[var(--app-muted)] outline-none',
+                      'transition-colors',
+                      'hover:bg-white/[0.06] hover:text-[var(--app-text)]',
+                      'focus-visible:ring-2 focus-visible:ring-violet-500/35',
+                      'data-[state=on]:bg-violet-500/15',
+                      'data-[state=on]:text-violet-200'
+                    )}
+                  >
+                    <Icon aria-hidden="true" className="size-3.5" />
+                    <span className="max-[780px]:hidden">{label}</span>
+                  </ToggleGroup.Item>
+                ))}
+              </ToggleGroup.Root>
 
-      {activeMode === 'write' && (
-        <MarkdownSourceEditor id={editorId} source={source} onChange={onChange} />
-      )}
+              {actions}
+            </div>
+          </header>
 
-      {activeMode === 'preview' && (
-        <div className="p-5">
-          <StudyMarkdownPreview source={source} />
-        </div>
-      )}
+          {activeMode === 'write' && (
+            <MarkdownSourceEditor
+              id={`${editorId}-${fullscreen ? 'fullscreen' : 'inline'}`}
+              source={source}
+              fullscreen={fullscreen}
+              onChange={onChange}
+            />
+          )}
 
-      {activeMode === 'split' && (
-        <div className="grid grid-cols-2 divide-x divide-[var(--app-border)] max-[900px]:grid-cols-1 max-[900px]:divide-x-0 max-[900px]:divide-y">
-          <div className="min-w-0">
-            <MarkdownPanelLabel>Markdown</MarkdownPanelLabel>
-
-            <MarkdownSourceEditor id={editorId} source={source} onChange={onChange} />
-          </div>
-
-          <div className="min-w-0">
-            <MarkdownPanelLabel>Просмотр</MarkdownPanelLabel>
-
-            <div className="p-5">
+          {activeMode === 'preview' && (
+            <div className={cn('p-5', fullscreen && 'min-h-0 flex-1 overflow-auto')}>
               <StudyMarkdownPreview source={source} />
             </div>
-          </div>
-        </div>
+          )}
+
+          {activeMode === 'split' && (
+            <div
+              className={cn(
+                'grid grid-cols-2 divide-x divide-[var(--app-border)] max-[900px]:grid-cols-1 max-[900px]:divide-x-0 max-[900px]:divide-y',
+                fullscreen && 'min-h-0 flex-1 overflow-hidden'
+              )}
+            >
+              <div className={cn('min-w-0', fullscreen && 'flex min-h-0 flex-col')}>
+                <MarkdownPanelLabel>Markdown</MarkdownPanelLabel>
+                <MarkdownSourceEditor
+                  id={`${editorId}-${fullscreen ? 'fullscreen' : 'inline'}`}
+                  source={source}
+                  fullscreen={fullscreen}
+                  onChange={onChange}
+                />
+              </div>
+
+              <div className={cn('min-w-0', fullscreen && 'flex min-h-0 flex-col')}>
+                <MarkdownPanelLabel>Просмотр</MarkdownPanelLabel>
+                <div className={cn('p-5', fullscreen && 'min-h-0 flex-1 overflow-auto')}>
+                  <StudyMarkdownPreview source={source} />
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
       )}
-    </section>
+    </StudySourceBlockShell>
   )
 }
 
 function MarkdownSourceEditor({
   id,
   source,
+  fullscreen = false,
   onChange
 }: {
   id: string
   source: string
+  fullscreen?: boolean
   onChange?: (source: string) => void
 }): React.JSX.Element {
   return (
@@ -212,7 +248,7 @@ function MarkdownSourceEditor({
         Исходный текст Markdown
       </label>
 
-      <div className="max-h-[36rem] overflow-auto">
+      <div className={cn(fullscreen ? 'min-h-0 flex-1 overflow-auto' : 'max-h-[36rem] overflow-auto')}>
         <Editor
           value={source}
           textareaId={id}
@@ -225,7 +261,7 @@ function MarkdownSourceEditor({
           preClassName="study-markdown-source__pre"
           highlight={highlightMarkdown}
           style={{
-            minHeight: '3.45rem',
+            minHeight: fullscreen ? '100%' : '3.45rem',
             fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
             fontSize: '0.875rem',
             lineHeight: '1.65'
@@ -241,7 +277,7 @@ function MarkdownSourceEditor({
 
 function MarkdownPanelLabel({ children }: { children: ReactNode }): React.JSX.Element {
   return (
-    <div className="border-b border-[var(--app-border)] px-4 py-2 text-[10px] font-semibold tracking-[0.08em] text-[var(--app-muted)] uppercase">
+    <div className="shrink-0 border-b border-[var(--app-border)] px-4 py-2 text-[10px] font-semibold tracking-[0.08em] text-[var(--app-muted)] uppercase">
       {children}
     </div>
   )
