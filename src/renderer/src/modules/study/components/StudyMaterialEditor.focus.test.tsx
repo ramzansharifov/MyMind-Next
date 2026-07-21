@@ -51,12 +51,14 @@ beforeEach(() => {
 })
 
 describe('StudyMaterialEditor focus mode', () => {
-  it('enters focus only from reading, hides editing chrome and exits by Escape', async () => {
+  it('keeps reading tools and scrolling available while hiding editing chrome', async () => {
     const user = userEvent.setup()
     const onFocusModeChange = vi.fn()
+    const onBack = vi.fn()
     const props = {
       node: materialNode,
       onRename: vi.fn(),
+      onBack,
       navigation: null,
       onNavigationHandled: vi.fn(),
       onFocusModeChange
@@ -77,8 +79,13 @@ describe('StudyMaterialEditor focus mode', () => {
     expect(screen.getByTestId('study-block-editor')).toHaveTextContent('read:true')
     expect(screen.queryByRole('tab', { name: 'Правка' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Переименовать материал' })).not.toBeInTheDocument()
-    expect(screen.queryByText('Навигация чтения')).not.toBeInTheDocument()
+    expect(screen.getByText('Навигация чтения')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Вернуться к внутренней ссылке' })).toBeInTheDocument()
+    expect(document.querySelector('[data-study-scroll-container="true"]')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Выйти из режима фокуса' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Вернуться к внутренней ссылке' }))
+    expect(onBack).toHaveBeenCalledTimes(1)
 
     fireEvent.keyDown(window, { key: 'Escape' })
     expect(onFocusModeChange).toHaveBeenLastCalledWith(false)
