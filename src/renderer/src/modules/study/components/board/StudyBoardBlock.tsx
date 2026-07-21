@@ -54,7 +54,10 @@ export function StudyBoardBlock({
   }
 
   return (
-    <div className="relative overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-5">
+    <div
+      data-study-board-block
+      className="relative overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-card)] p-5"
+    >
       <div
         aria-hidden="true"
         className="pointer-events-none absolute -top-20 right-0 size-52 rounded-full bg-[var(--app-accent-500)]/12 blur-3xl"
