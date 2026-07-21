@@ -6,6 +6,8 @@ export type AppNavigationGroup = 'primary' | 'utility'
 export interface AppModuleProps {
   resourceId?: string | null
   onResourceHandled?: () => void
+  focusMode?: boolean
+  onFocusModeChange?: (active: boolean) => void
 }
 
 export interface AppModuleDefinition {

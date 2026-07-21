@@ -14,6 +14,7 @@ import {
 interface AppShellProps {
   activeView: AppViewId
   onViewChange: (view: AppViewId) => void
+  focusMode?: boolean
   children: ReactNode
 }
 
@@ -98,7 +99,12 @@ function NavigationButton({
   )
 }
 
-export function AppShell({ activeView, onViewChange, children }: AppShellProps): React.JSX.Element {
+export function AppShell({
+  activeView,
+  onViewChange,
+  focusMode = false,
+  children
+}: AppShellProps): React.JSX.Element {
   const [isCollapsed, setIsCollapsed] = useState(() => activeView === 'study')
 
   function handleViewChange(view: AppViewId): void {
@@ -114,110 +120,116 @@ export function AppShell({ activeView, onViewChange, children }: AppShellProps):
   return (
     <TooltipProvider>
       <div className="flex h-screen w-screen overflow-hidden bg-[var(--app-workspace)] text-[var(--app-text)]">
-        <aside
-          aria-label="Боковая панель"
-          data-collapsed={isCollapsed}
-          className={cn(
-            'group/sidebar relative z-10 flex h-full shrink-0 flex-col',
-            'border-r border-[var(--app-border)] bg-[var(--app-sidebar)]',
-            'transition-[width] duration-200 ease-out',
-            'motion-reduce:transition-none',
-            isCollapsed ? 'w-[72px]' : 'w-64'
-          )}
-        >
-          <header
+        {!focusMode && (
+          <aside
+            aria-label="Боковая панель"
+            data-collapsed={isCollapsed}
             className={cn(
-              'flex h-[var(--app-header-height)] shrink-0 items-center border-b',
-              'border-[var(--app-border)]',
-              isCollapsed ? 'justify-center px-0' : 'px-3'
+              'group/sidebar relative z-10 flex h-full shrink-0 flex-col',
+              'border-r border-[var(--app-border)] bg-[var(--app-sidebar)]',
+              'transition-[width] duration-200 ease-out',
+              'motion-reduce:transition-none',
+              isCollapsed ? 'w-[72px]' : 'w-64'
             )}
           >
-            <div
+            <header
               className={cn(
-                'flex min-w-0 items-center',
-                isCollapsed ? 'justify-center' : 'w-full gap-3'
+                'flex h-[var(--app-header-height)] shrink-0 items-center border-b',
+                'border-[var(--app-border)]',
+                isCollapsed ? 'justify-center px-0' : 'px-3'
               )}
             >
-              <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/15 text-violet-300">
-                <BrainCircuit aria-hidden="true" className="size-[18px]" />
-              </div>
-
-              {!isCollapsed && (
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold tracking-tight text-[var(--app-text)]">
-                    MyMind
-                  </p>
-
-                  <p className="truncate text-[11px] text-[var(--app-muted)]">Личная система</p>
+              <div
+                className={cn(
+                  'flex min-w-0 items-center',
+                  isCollapsed ? 'justify-center' : 'w-full gap-3'
+                )}
+              >
+                <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/15 text-violet-300">
+                  <BrainCircuit aria-hidden="true" className="size-[18px]" />
                 </div>
-              )}
-            </div>
-          </header>
 
-          <Tooltip content={toggleLabel} side="right">
-            <button
-              type="button"
-              aria-label={toggleLabel}
-              className={cn(
-                'absolute top-8 right-0 z-20',
-                'flex size-7 translate-x-1/2 -translate-y-1/2',
-                'items-center justify-center rounded-full border',
-                'border-violet-500/25',
-                'bg-violet-500/12',
-                'text-violet-300',
-                'opacity-0 outline-none',
-                'transition-[opacity,background-color,color,transform]',
-                'duration-150',
-                'group-hover/sidebar:opacity-100',
-                'group-focus-within/sidebar:opacity-100',
-                'hover:scale-105',
-                'hover:bg-violet-500/20',
-                'focus-visible:opacity-100',
-                'focus-visible:ring-2',
-                'focus-visible:ring-violet-500/70',
-                'motion-reduce:transition-none'
-              )}
-              onClick={() => {
-                setIsCollapsed((current) => !current)
-              }}
+                {!isCollapsed && (
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold tracking-tight text-[var(--app-text)]">
+                      MyMind
+                    </p>
+
+                    <p className="truncate text-[11px] text-[var(--app-muted)]">Личная система</p>
+                  </div>
+                )}
+              </div>
+            </header>
+
+            <Tooltip content={toggleLabel} side="right">
+              <button
+                type="button"
+                aria-label={toggleLabel}
+                className={cn(
+                  'absolute top-8 right-0 z-20',
+                  'flex size-7 translate-x-1/2 -translate-y-1/2',
+                  'items-center justify-center rounded-full border',
+                  'border-violet-500/25',
+                  'bg-violet-500/12',
+                  'text-violet-300',
+                  'opacity-0 outline-none',
+                  'transition-[opacity,background-color,color,transform]',
+                  'duration-150',
+                  'group-hover/sidebar:opacity-100',
+                  'group-focus-within/sidebar:opacity-100',
+                  'hover:scale-105',
+                  'hover:bg-violet-500/20',
+                  'focus-visible:opacity-100',
+                  'focus-visible:ring-2',
+                  'focus-visible:ring-violet-500/70',
+                  'motion-reduce:transition-none'
+                )}
+                onClick={() => {
+                  setIsCollapsed((current) => !current)
+                }}
+              >
+                {isCollapsed ? (
+                  <ChevronRight aria-hidden="true" className="size-4" />
+                ) : (
+                  <ChevronLeft aria-hidden="true" className="size-4" />
+                )}
+              </button>
+            </Tooltip>
+
+            <nav
+              aria-label="Основная навигация"
+              className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto p-3"
             >
-              {isCollapsed ? (
-                <ChevronRight aria-hidden="true" className="size-4" />
-              ) : (
-                <ChevronLeft aria-hidden="true" className="size-4" />
-              )}
-            </button>
-          </Tooltip>
+              {primaryNavigationItems.map((item) => (
+                <NavigationButton
+                  key={item.id}
+                  item={item}
+                  activeView={activeView}
+                  isCollapsed={isCollapsed}
+                  onSelect={handleViewChange}
+                />
+              ))}
+            </nav>
 
-          <nav
-            aria-label="Основная навигация"
-            className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto p-3"
-          >
-            {primaryNavigationItems.map((item) => (
-              <NavigationButton
-                key={item.id}
-                item={item}
-                activeView={activeView}
-                isCollapsed={isCollapsed}
-                onSelect={handleViewChange}
-              />
-            ))}
-          </nav>
+            <footer className="shrink-0 border-t border-[var(--app-border)] p-3">
+              {utilityNavigationItems.map((item) => (
+                <NavigationButton
+                  key={item.id}
+                  item={item}
+                  activeView={activeView}
+                  isCollapsed={isCollapsed}
+                  onSelect={handleViewChange}
+                />
+              ))}
+            </footer>
+          </aside>
+        )}
 
-          <footer className="shrink-0 border-t border-[var(--app-border)] p-3">
-            {utilityNavigationItems.map((item) => (
-              <NavigationButton
-                key={item.id}
-                item={item}
-                activeView={activeView}
-                isCollapsed={isCollapsed}
-                onSelect={handleViewChange}
-              />
-            ))}
-          </footer>
-        </aside>
-
-        <main id="workspace" className="min-w-0 flex-1 overflow-hidden bg-[var(--app-workspace)]">
+        <main
+          id="workspace"
+          data-focus-mode={focusMode}
+          className="min-w-0 flex-1 overflow-hidden bg-[var(--app-workspace)]"
+        >
           {children}
         </main>
       </div>

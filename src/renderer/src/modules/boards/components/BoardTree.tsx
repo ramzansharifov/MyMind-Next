@@ -357,18 +357,23 @@ function BoardTreeNode({
 
             {!collapsed &&
               (isFolder ? (
-                <button
-                  type="button"
-                  aria-label={node.isExpanded ? 'Свернуть папку' : 'Развернуть папку'}
-                  className="z-20 flex size-5 shrink-0 items-center justify-center rounded-sm p-0 outline-none hover:bg-white/[0.05] focus-visible:ring-2 focus-visible:ring-violet-500/35"
-                  onClick={() => void onToggle(node)}
+                <Tooltip
+                  content={node.isExpanded ? 'Свернуть папку' : 'Развернуть папку'}
+                  side="right"
                 >
-                  {node.isExpanded ? (
-                    <ChevronDown aria-hidden="true" className="size-3.5" />
-                  ) : (
-                    <ChevronRight aria-hidden="true" className="size-3.5" />
-                  )}
-                </button>
+                  <button
+                    type="button"
+                    aria-label={node.isExpanded ? 'Свернуть папку' : 'Развернуть папку'}
+                    className="z-20 flex size-5 shrink-0 items-center justify-center rounded-sm p-0 outline-none hover:bg-white/[0.05] focus-visible:ring-2 focus-visible:ring-violet-500/35"
+                    onClick={() => void onToggle(node)}
+                  >
+                    {node.isExpanded ? (
+                      <ChevronDown aria-hidden="true" className="size-3.5" />
+                    ) : (
+                      <ChevronRight aria-hidden="true" className="size-3.5" />
+                    )}
+                  </button>
+                </Tooltip>
               ) : (
                 <span className="size-5 shrink-0" />
               ))}
@@ -658,27 +663,29 @@ function BoardNodeMenu({
 
   return (
     <DropdownMenu.Root open={menuOpen} onOpenChange={setMenuOpen}>
-      <DropdownMenu.Trigger asChild>
-        <button
-          type="button"
-          aria-label={`Действия: ${nodeTitle}`}
-          className={cn(
-            'z-20 flex size-6 shrink-0 items-center justify-center rounded-sm p-0',
-            'text-[var(--app-muted)] hover:bg-white/[0.07] hover:text-[var(--app-text)]',
-            anyMenuOpen
-              ? 'opacity-100'
-              : 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'
-          )}
-          onPointerDown={(event) => {
-            event.stopPropagation()
-          }}
-          onClick={(event) => {
-            event.stopPropagation()
-          }}
-        >
-          <MoreHorizontal aria-hidden="true" className="size-4" />
-        </button>
-      </DropdownMenu.Trigger>
+      <Tooltip content={`Действия: ${nodeTitle}`} side="right">
+        <DropdownMenu.Trigger asChild>
+          <button
+            type="button"
+            aria-label={`Действия: ${nodeTitle}`}
+            className={cn(
+              'z-20 flex size-6 shrink-0 items-center justify-center rounded-sm p-0',
+              'text-[var(--app-muted)] hover:bg-white/[0.07] hover:text-[var(--app-text)]',
+              anyMenuOpen
+                ? 'opacity-100'
+                : 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'
+            )}
+            onPointerDown={(event) => {
+              event.stopPropagation()
+            }}
+            onClick={(event) => {
+              event.stopPropagation()
+            }}
+          >
+            <MoreHorizontal aria-hidden="true" className="size-4" />
+          </button>
+        </DropdownMenu.Trigger>
+      </Tooltip>
 
       <BoardNodeDropdownMenuContent entries={entries} />
     </DropdownMenu.Root>

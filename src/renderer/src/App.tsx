@@ -17,6 +17,7 @@ type AppFlushFailure =
       kind: 'view'
       target: AppViewId
       resourceId: string | null
+      focusMode: boolean
       message: string
     }
   | { kind: 'shutdown'; request: ShutdownRequest; message: string }
@@ -24,6 +25,7 @@ type AppFlushFailure =
 function AppContent(): React.JSX.Element {
   const [activeView, setActiveView] = useState<AppViewId>('study')
   const [activeResourceId, setActiveResourceId] = useState<string | null>(null)
+  const [focusMode, setFocusMode] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [flushFailure, setFlushFailure] = useState<AppFlushFailure | null>(null)
   const [forceArmed, setForceArmed] = useState(false)
@@ -36,9 +38,13 @@ function AppContent(): React.JSX.Element {
   }, [])
 
   const changeView = useCallback(
-    async (target: AppViewId, resourceId: string | null = null): Promise<void> => {
+    async (
+      target: AppViewId,
+      resourceId: string | null = null,
+      nextFocusMode = false
+    ): Promise<void> => {
       if (
-        (target === activeView && resourceId === activeResourceId) ||
+        (target === activeView && resourceId === activeResourceId && nextFocusMode === focusMode) ||
         transitionPendingRef.current
       ) {
         return
@@ -53,11 +59,13 @@ function AppContent(): React.JSX.Element {
         setForceArmed(false)
         setActiveView(target)
         setActiveResourceId(resourceId)
+        setFocusMode(nextFocusMode)
       } catch (reason: unknown) {
         setFlushFailure({
           kind: 'view',
           target,
           resourceId,
+          focusMode: nextFocusMode,
           message: reason instanceof Error ? reason.message : 'Не удалось сохранить изменения.'
         })
       } finally {
@@ -65,7 +73,7 @@ function AppContent(): React.JSX.Element {
         setIsSaving(false)
       }
     },
-    [activeResourceId, activeView, flushActiveDrafts]
+    [activeResourceId, activeView, flushActiveDrafts, focusMode]
   )
 
   useEffect(() => {
@@ -76,7 +84,7 @@ function AppContent(): React.JSX.Element {
         return
       }
 
-      void changeView(detail.view, detail.resourceId ?? null)
+      void changeView(detail.view, detail.resourceId ?? null, detail.focusMode ?? false)
     }
 
     window.addEventListener(APP_MODULE_NAVIGATE_EVENT, handleModuleNavigation)
@@ -115,8 +123,9 @@ function AppContent(): React.JSX.Element {
   return (
     <AppShell
       activeView={activeView}
+      focusMode={focusMode}
       onViewChange={(view) => {
-        void changeView(view)
+        void changeView(view, null, false)
       }}
     >
       <AppErrorBoundary
@@ -127,6 +136,8 @@ function AppContent(): React.JSX.Element {
           <ActiveModule
             resourceId={activeResourceId}
             onResourceHandled={() => setActiveResourceId(null)}
+            focusMode={focusMode}
+            onFocusModeChange={setFocusMode}
           />
         </Suspense>
       </AppErrorBoundary>
@@ -182,7 +193,7 @@ function AppContent(): React.JSX.Element {
                   setFlushFailure(null)
 
                   if (failure.kind === 'view') {
-                    void changeView(failure.target, failure.resourceId)
+                    void changeView(failure.target, failure.resourceId, failure.focusMode)
                     return
                   }
 
@@ -221,6 +232,7 @@ function AppContent(): React.JSX.Element {
                   if (flushFailure.kind === 'view') {
                     setActiveView(flushFailure.target)
                     setActiveResourceId(flushFailure.resourceId)
+                    setFocusMode(flushFailure.focusMode)
                     setFlushFailure(null)
                     return
                   }

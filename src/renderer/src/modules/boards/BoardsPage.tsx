@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   LoaderCircle,
   LockKeyhole,
+  Minimize2,
   Palette,
   Pencil,
   Presentation,
@@ -25,11 +26,13 @@ import {
   type MoveBoardNodeInput
 } from '../../../../shared/contracts/boards'
 import { requestAppModuleNavigation } from '../../app/module-navigation'
+import type { AppModuleProps } from '../../app/module-registry'
 import { cn } from '../../shared/lib/cn'
 import { FolderIcon } from '../../shared/ui/FolderIcon'
 import { FolderIconPicker } from '../../shared/ui/FolderIconPicker'
 import { ModuleSidebar } from '../../shared/ui/ModuleSidebar'
 import { getModuleSidebarLayoutClassName } from '../../shared/ui/module-sidebar-layout'
+import { Tooltip } from '../../shared/ui/tooltip'
 import {
   WorkspaceActionButton,
   WorkspaceNodeCard,
@@ -46,17 +49,19 @@ import type { BoardSaveState } from './lib/board-save-queue'
 
 const BoardCanvas = lazy(loadBoardCanvas)
 
-export interface BoardsPageProps {
-  resourceId?: string | null
-  onResourceHandled?: () => void
-}
+export type BoardsPageProps = AppModuleProps
 
 interface BoardCreateRequest {
   type: BoardNodeType
   parentId: string | null
 }
 
-export function BoardsPage({ resourceId, onResourceHandled }: BoardsPageProps): React.JSX.Element {
+export function BoardsPage({
+  resourceId,
+  onResourceHandled,
+  focusMode = false,
+  onFocusModeChange
+}: BoardsPageProps): React.JSX.Element {
   const [nodes, setNodes] = useState<BoardNode[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -255,38 +260,47 @@ export function BoardsPage({ resourceId, onResourceHandled }: BoardsPageProps): 
   }
 
   return (
-    <section className={getModuleSidebarLayoutClassName(sidebarCollapsed)}>
-      <ModuleSidebar
-        navigationLabel="Дерево досок"
-        moduleLabel="Доски"
-        homeLabel="Главная досок"
-        icon={Presentation}
-        collapsed={sidebarCollapsed}
-        contentClassName={sidebarCollapsed ? undefined : 'px-0 py-3'}
-        homeSelected={selectedId === null}
-        expandLabel="Показать дерево досок"
-        collapseLabel="Скрыть дерево досок"
-        onHomeSelect={() => {
-          void openNode(null)
-        }}
-        onCollapsedChange={setSidebarCollapsed}
-      >
-        <BoardTree
-          nodes={nodes}
-          selectedNodeId={selectedId}
+    <section
+      data-boards-focus-mode={focusMode}
+      className={
+        focusMode
+          ? 'h-full min-h-0 w-full bg-[var(--app-workspace)]'
+          : getModuleSidebarLayoutClassName(sidebarCollapsed)
+      }
+    >
+      {!focusMode && (
+        <ModuleSidebar
+          navigationLabel="Дерево досок"
+          moduleLabel="Доски"
+          homeLabel="Главная досок"
+          icon={Presentation}
           collapsed={sidebarCollapsed}
-          onOpen={(id) => void openNode(id)}
-          onToggle={async (folder) => {
-            await boardsClient.updateExpansion(folder.id, !folder.isExpanded)
-            await refreshNodes()
+          contentClassName={sidebarCollapsed ? undefined : 'px-0 py-3'}
+          homeSelected={selectedId === null}
+          expandLabel="Показать дерево досок"
+          collapseLabel="Скрыть дерево досок"
+          onHomeSelect={() => {
+            void openNode(null)
           }}
-          onRename={startRename}
-          onDelete={setDeleteTarget}
-          onCreate={startCreate}
-          onSelectRoot={() => void openNode(null)}
-          onMove={(input) => void moveNode(input)}
-        />
-      </ModuleSidebar>
+          onCollapsedChange={setSidebarCollapsed}
+        >
+          <BoardTree
+            nodes={nodes}
+            selectedNodeId={selectedId}
+            collapsed={sidebarCollapsed}
+            onOpen={(id) => void openNode(id)}
+            onToggle={async (folder) => {
+              await boardsClient.updateExpansion(folder.id, !folder.isExpanded)
+              await refreshNodes()
+            }}
+            onRename={startRename}
+            onDelete={setDeleteTarget}
+            onCreate={startCreate}
+            onSelectRoot={() => void openNode(null)}
+            onMove={(input) => void moveNode(input)}
+          />
+        </ModuleSidebar>
+      )}
 
       <main className="min-w-0 flex-1 overflow-hidden">
         {selectedNode?.type === 'board' ? (
@@ -294,13 +308,16 @@ export function BoardsPage({ resourceId, onResourceHandled }: BoardsPageProps): 
             node={selectedNode}
             saveState={saveState}
             onSaveStateChange={setSaveState}
+            focusMode={focusMode}
+            onFocusModeChange={onFocusModeChange}
             onRename={() => startRename(selectedNode)}
             onBackToMaterial={
               selectedNode.sourceMaterialId
                 ? () => {
                     requestAppModuleNavigation({
                       view: 'study',
-                      resourceId: selectedNode.sourceMaterialId
+                      resourceId: selectedNode.sourceMaterialId,
+                      ...(focusMode ? { focusMode: true } : {})
                     })
                   }
                 : undefined
@@ -326,15 +343,17 @@ export function BoardsPage({ resourceId, onResourceHandled }: BoardsPageProps): 
       </main>
 
       {error && (
-        <button
-          type="button"
-          aria-label="Закрыть сообщение об ошибке"
-          className="fixed right-5 bottom-5 z-50 flex max-w-md items-start gap-3 rounded-xl border border-red-500/25 bg-[var(--app-surface-raised)] p-4 text-left shadow-2xl"
-          onClick={() => setError(null)}
-        >
-          <TriangleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-red-300" />
-          <span className="text-sm text-red-200">{error}</span>
-        </button>
+        <Tooltip content="Закрыть сообщение об ошибке" side="left">
+          <button
+            type="button"
+            aria-label="Закрыть сообщение об ошибке"
+            className="fixed right-5 bottom-5 z-50 flex max-w-md items-start gap-3 rounded-xl border border-red-500/25 bg-[var(--app-surface-raised)] p-4 text-left shadow-2xl"
+            onClick={() => setError(null)}
+          >
+            <TriangleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-red-300" />
+            <span className="text-sm text-red-200">{error}</span>
+          </button>
+        </Tooltip>
       )}
 
       <BoardTextDialog
@@ -878,27 +897,42 @@ function BoardWorkspace({
   node,
   saveState,
   onSaveStateChange,
+  focusMode,
+  onFocusModeChange,
   onRename,
   onBackToMaterial
 }: {
   node: BoardNode
   saveState: BoardSaveState
   onSaveStateChange: (state: BoardSaveState) => void
+  focusMode: boolean
+  onFocusModeChange?: (active: boolean) => void
   onRename: () => void
   onBackToMaterial?: () => void
 }): React.JSX.Element {
   return (
-    <section className="flex h-full min-h-0 flex-col">
-      <header className="flex h-20 shrink-0 items-center gap-4 border-b border-[var(--app-border)] bg-[var(--app-workspace)] px-5">
+    <section
+      data-board-workspace-focus={focusMode}
+      className="flex h-full min-h-0 flex-col bg-[var(--app-workspace)]"
+    >
+      <header
+        className={cn(
+          'flex shrink-0 items-center gap-4 border-b border-[var(--app-border)]',
+          focusMode ? 'h-14 bg-[var(--app-surface)] px-4' : 'h-20 bg-[var(--app-workspace)] px-5'
+        )}
+      >
         {onBackToMaterial && (
-          <WorkspaceActionButton
-            type="button"
-            className="w-auto px-3 max-[720px]:size-10 max-[720px]:px-0"
-            onClick={onBackToMaterial}
-          >
-            <ArrowLeft aria-hidden="true" />
-            <span className="max-[720px]:hidden">Назад к материалу</span>
-          </WorkspaceActionButton>
+          <Tooltip content="Вернуться к материалу" side="bottom">
+            <WorkspaceActionButton
+              type="button"
+              aria-label="Назад к материалу"
+              className="w-auto px-3 max-[720px]:size-10 max-[720px]:px-0"
+              onClick={onBackToMaterial}
+            >
+              <ArrowLeft aria-hidden="true" />
+              <span className="max-[720px]:hidden">Назад к материалу</span>
+            </WorkspaceActionButton>
+          </Tooltip>
         )}
         <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--app-accent-500)]/10 text-[var(--app-accent-300)]">
           <Presentation aria-hidden className="size-5" />
@@ -911,20 +945,43 @@ function BoardWorkspace({
             {node.title}
           </h1>
         </div>
-        <WorkspaceActionButton
-          type="button"
-          className="w-auto px-3 max-[720px]:size-10 max-[720px]:px-0"
-          onClick={onRename}
-        >
-          <Pencil aria-hidden="true" />
-          <span className="max-[720px]:hidden">Переименовать</span>
-        </WorkspaceActionButton>
-        <BoardSaveStatus state={saveState} />
+        {!focusMode && (
+          <Tooltip content="Переименовать доску" side="bottom">
+            <WorkspaceActionButton
+              type="button"
+              aria-label="Переименовать доску"
+              className="w-auto px-3 max-[720px]:size-10 max-[720px]:px-0"
+              onClick={onRename}
+            >
+              <Pencil aria-hidden="true" />
+              <span className="max-[720px]:hidden">Переименовать</span>
+            </WorkspaceActionButton>
+          </Tooltip>
+        )}
+        {!focusMode && <BoardSaveStatus state={saveState} />}
+        {focusMode && (
+          <Tooltip content="Выйти из режима фокуса" side="bottom">
+            <WorkspaceActionButton
+              type="button"
+              aria-label="Выйти из режима фокуса"
+              className="w-auto px-3 max-[720px]:size-10 max-[720px]:px-0"
+              onClick={() => onFocusModeChange?.(false)}
+            >
+              <Minimize2 aria-hidden="true" />
+              <span className="max-[720px]:hidden">Выйти из фокуса</span>
+            </WorkspaceActionButton>
+          </Tooltip>
+        )}
       </header>
       <div className="min-h-0 flex-1">
         <BoardCanvasErrorBoundary resetKey={node.id}>
           <Suspense fallback={<BoardCanvasLoadingFallback />}>
-            <BoardCanvas boardId={node.id} onSaveStateChange={onSaveStateChange} />
+            <BoardCanvas
+              boardId={node.id}
+              focusMode={focusMode}
+              onFocusModeChange={onFocusModeChange}
+              onSaveStateChange={onSaveStateChange}
+            />
           </Suspense>
         </BoardCanvasErrorBoundary>
       </div>
