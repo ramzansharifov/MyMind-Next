@@ -1,49 +1,47 @@
-name: Verify board folder icons
+name: Diagnose board folder icons
 
 on:
   pull_request:
     branches: [main]
 
 permissions:
-  contents: write
+  contents: read
+  pull-requests: write
 
 jobs:
   verify:
-    if: github.actor != 'github-actions[bot]'
     runs-on: windows-latest
-    timeout-minutes: 40
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
           ref: agent/board-folder-icons
-          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
-      - name: Apply folder icon implementation
+      - run: npm ci --silent
+      - name: Diagnose implementation
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          set -e
-          node scripts/add-board-folder-icons.mjs
-          npm run db:generate -- --name board_folder_icons
-          node scripts/finalize-board-folder-icons.mjs
-          npm run format
-      - run: npm run native:node
-      - run: npm run format:check
-      - run: npm run lint
-      - run: npm run typecheck
-      - run: npm run test:coverage
-      - run: npm run db:check
-      - run: npm run build:bundle
-      - name: Commit verified source
-        shell: bash
-        run: |
-          set -e
-          rm -f scripts/add-board-folder-icons.mjs scripts/finalize-board-folder-icons.mjs .github/workflows/board-folder-icons.yml
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "Добавить иконки папок досок"
-          git push origin HEAD:agent/board-folder-icons
+          set +e
+          {
+            node scripts/add-board-folder-icons.mjs
+            npm run db:generate -- --name board_folder_icons
+            node scripts/finalize-board-folder-icons.mjs
+          } > implementation-output.txt 2>&1
+          status=$?
+          if [ "$status" -ne 0 ]; then
+            {
+              echo "Добавить хранение и выбор иконок для обычных папок досок, наследование и синхронизацию иконок учебных папок, а также открытое и закрытое состояния стандартной папки."
+              echo
+              echo "## Временная диагностика"
+              echo '```text'
+              tail -n 120 implementation-output.txt
+              echo '```'
+            } > pr-body.md
+            gh pr edit 33 --body-file pr-body.md
+            exit "$status"
+          fi
