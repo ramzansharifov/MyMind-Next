@@ -50,6 +50,10 @@ export function StudyLatexBlock({
   const editorId = useId()
 
   if (mode === 'read') {
+    if (!source.trim()) {
+      return <p className="text-sm text-[var(--app-muted)]">Пустой LaTeX-блок</p>
+    }
+
     return (
       <StudyLatexPreview
         source={source}
@@ -203,7 +207,9 @@ function LatexSourceEditor({
         Исходный LaTeX
       </label>
 
-      <div className={cn(fullscreen ? 'min-h-0 flex-1 overflow-auto' : 'max-h-[36rem] overflow-auto')}>
+      <div
+        className={cn(fullscreen ? 'min-h-0 flex-1 overflow-auto' : 'max-h-[36rem] overflow-auto')}
+      >
         <Editor
           value={source}
           textareaId={id}

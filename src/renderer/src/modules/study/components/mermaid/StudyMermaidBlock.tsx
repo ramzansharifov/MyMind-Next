@@ -1,13 +1,5 @@
 import * as ToggleGroup from '@radix-ui/react-toggle-group'
-import {
-  CircleAlert,
-  Columns2,
-  Download,
-  Eye,
-  LoaderCircle,
-  PencilLine,
-  Workflow
-} from 'lucide-react'
+import { Columns2, Download, Eye, PencilLine, Workflow } from 'lucide-react'
 import Prism from 'prismjs'
 import Editor from 'react-simple-code-editor'
 import { useEffect, useId, useState } from 'react'
@@ -19,6 +11,15 @@ import type {
 import { cn } from '../../../../shared/lib/cn'
 import { Tooltip } from '../../../../shared/ui/tooltip'
 import { StudySourceBlockShell } from '../source/StudySourceBlockShell'
+import {
+  MERMAID_VIEWPORT_MAX_SCALE,
+  MERMAID_VIEWPORT_MIN_SCALE,
+  MERMAID_VIEWPORT_SCALE_STEP,
+  MermaidViewportControls,
+  StudyMermaidPreview,
+  type MermaidRenderState,
+  type MermaidViewportOffset
+} from './MermaidViewport'
 import { getStudyMermaidErrorMessage, renderStudyMermaid } from './mermaid-renderer'
 
 interface StudyMermaidBlockProps {
@@ -30,26 +31,6 @@ interface StudyMermaidBlockProps {
   onChange?: (source: string) => void
   onViewModeChange?: (viewMode: StudyMermaidViewMode) => void
 }
-
-type MermaidRenderState =
-  | {
-      status: 'idle' | 'loading'
-      svg: null
-      diagramType: null
-      error: null
-    }
-  | {
-      status: 'success'
-      svg: string
-      diagramType: string
-      error: null
-    }
-  | {
-      status: 'error'
-      svg: null
-      diagramType: null
-      error: string
-    }
 
 const emptyRenderState: MermaidRenderState = {
   status: 'idle',
@@ -90,12 +71,33 @@ export function StudyMermaidBlock({
 }: StudyMermaidBlockProps): React.JSX.Element {
   const editorId = useId()
   const renderState = useMermaidRender(source, theme)
+  const [viewportScaleDelta, setViewportScaleDelta] = useState(0)
+  const [viewportOffset, setViewportOffset] = useState<MermaidViewportOffset>({
+    x: 0,
+    y: 0
+  })
 
-  if (mode === 'read') {
-    return <StudyMermaidPreview source={source} state={renderState} scale={scale} framed />
+  const viewportScale = clampMermaidViewportScale(scale + viewportScaleDelta)
+
+  const activeViewMode =
+    mode === 'read' ? 'preview' : isMermaidViewMode(viewMode) ? viewMode : 'split'
+
+  function adjustViewportScale(delta: number): void {
+    setViewportScaleDelta((currentDelta) => {
+      const nextScale = clampMermaidViewportScale(scale + currentDelta + delta)
+
+      return nextScale - scale
+    })
   }
 
-  const activeViewMode = isMermaidViewMode(viewMode) ? viewMode : 'split'
+  function resetViewport(): void {
+    setViewportScaleDelta(0)
+    setViewportOffset({ x: 0, y: 0 })
+  }
+
+  function handleViewportScaleChange(nextScale: number): void {
+    setViewportScaleDelta(clampMermaidViewportScale(nextScale) - scale)
+  }
 
   return (
     <StudySourceBlockShell
@@ -107,121 +109,167 @@ export function StudyMermaidBlock({
       expandLabel="Развернуть Mermaid-блок"
       collapseLabel="Свернуть Mermaid-блок"
       dialogTitle="Mermaid-блок на весь экран"
-      dialogDescription="Полноэкранное редактирование и предпросмотр Mermaid-диаграммы. Нажмите Escape или кнопку сворачивания, чтобы вернуться к материалу."
+      dialogDescription={
+        mode === 'read'
+          ? 'Полноэкранный просмотр Mermaid-диаграммы. Изменяйте масштаб, перетаскивайте диаграмму и нажмите Escape или кнопку сворачивания, чтобы вернуться к материалу.'
+          : 'Полноэкранное редактирование и предпросмотр Mermaid-диаграммы. Изменяйте масштаб, перетаскивайте диаграмму и нажмите Escape или кнопку сворачивания, чтобы вернуться к материалу.'
+      }
     >
-      {({ fullscreen, actions }) => (
-        <section
-          data-study-mermaid-block
-          data-fullscreen={fullscreen ? 'true' : 'false'}
-          className={cn(
-            'overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-code-surface)]',
-            fullscreen && 'flex h-full min-h-0 flex-col rounded-2xl shadow-2xl shadow-black/40'
-          )}
-        >
-          <header className="flex min-h-11 shrink-0 items-center justify-between gap-3 border-b border-[var(--app-border)] bg-white/[0.025] px-3">
-            <div className="flex min-w-0 items-center gap-2">
-              <Workflow aria-hidden="true" className="size-4 shrink-0 text-violet-300" />
-              <span className="text-[11px] font-semibold tracking-[0.08em] text-[var(--app-muted)] uppercase">
-                Mermaid
-              </span>
-            </div>
+      {({ fullscreen, actions }) => {
+        const interactivePreview = fullscreen && activeViewMode !== 'write'
 
-            <div className="flex shrink-0 items-center gap-1">
-              <ToggleGroup.Root
-                type="single"
-                value={activeViewMode}
-                aria-label="Режим Mermaid-блока"
-                className="flex items-center gap-1"
-                onValueChange={(value) => {
-                  if (isMermaidViewMode(value)) {
-                    onViewModeChange?.(value)
-                  }
-                }}
-              >
-                {mermaidViewModes.map(({ value, label, Icon }) => (
-                  <ToggleGroup.Item
-                    key={value}
-                    value={value}
-                    aria-label={label}
-                    title={label}
-                    className={cn(
-                      'flex h-7 items-center gap-1.5 rounded-md px-2',
-                      'text-xs text-[var(--app-muted)] outline-none',
-                      'transition-colors',
-                      'hover:bg-white/[0.06] hover:text-[var(--app-text)]',
-                      'focus-visible:ring-2 focus-visible:ring-violet-500/35',
-                      'data-[state=on]:bg-violet-500/15',
-                      'data-[state=on]:text-violet-200'
-                    )}
+        return (
+          <section
+            data-study-mermaid-block
+            data-mode={mode}
+            data-fullscreen={fullscreen ? 'true' : 'false'}
+            className={cn(
+              'overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-code-surface)]',
+              fullscreen && 'flex h-full min-h-0 flex-col rounded-2xl shadow-2xl shadow-black/40'
+            )}
+          >
+            <header className="flex min-h-11 shrink-0 items-center justify-between gap-3 border-b border-[var(--app-border)] bg-white/[0.025] px-3">
+              <div className="flex min-w-0 items-center gap-2">
+                <Workflow aria-hidden="true" className="size-4 shrink-0 text-violet-300" />
+                <span className="text-[11px] font-semibold tracking-[0.08em] text-[var(--app-muted)] uppercase">
+                  Mermaid
+                </span>
+              </div>
+
+              <div className="flex shrink-0 items-center gap-1">
+                {mode === 'edit' && (
+                  <ToggleGroup.Root
+                    type="single"
+                    value={activeViewMode}
+                    aria-label="Режим Mermaid-блока"
+                    className="flex items-center gap-1"
+                    onValueChange={(value) => {
+                      if (isMermaidViewMode(value)) {
+                        onViewModeChange?.(value)
+                      }
+                    }}
                   >
-                    <Icon aria-hidden="true" className="size-3.5" />
-                    <span className="max-[780px]:hidden">{label}</span>
-                  </ToggleGroup.Item>
-                ))}
-              </ToggleGroup.Root>
+                    {mermaidViewModes.map(({ value, label, Icon }) => (
+                      <ToggleGroup.Item
+                        key={value}
+                        value={value}
+                        aria-label={label}
+                        title={label}
+                        className={cn(
+                          'flex h-7 items-center gap-1.5 rounded-md px-2',
+                          'text-xs text-[var(--app-muted)] outline-none',
+                          'transition-colors',
+                          'hover:bg-white/[0.06] hover:text-[var(--app-text)]',
+                          'focus-visible:ring-2 focus-visible:ring-violet-500/35',
+                          'data-[state=on]:bg-violet-500/15',
+                          'data-[state=on]:text-violet-200'
+                        )}
+                      >
+                        <Icon aria-hidden="true" className="size-3.5" />
+                        <span className="max-[780px]:hidden">{label}</span>
+                      </ToggleGroup.Item>
+                    ))}
+                  </ToggleGroup.Root>
+                )}
 
-              <Tooltip content="Скачать SVG" side="top">
-                <button
-                  type="button"
-                  aria-label="Скачать Mermaid как SVG"
-                  disabled={renderState.status !== 'success'}
-                  className={headerButtonClassName}
-                  onClick={() => {
-                    if (renderState.status === 'success') {
-                      downloadMermaidSvg(renderState.svg, renderState.diagramType)
-                    }
-                  }}
-                >
-                  <Download aria-hidden="true" className="size-4" />
-                </button>
-              </Tooltip>
+                {interactivePreview && (
+                  <MermaidViewportControls
+                    scale={viewportScale}
+                    disabled={!source.trim() || renderState.status !== 'success'}
+                    onZoomOut={() => {
+                      adjustViewportScale(-MERMAID_VIEWPORT_SCALE_STEP)
+                    }}
+                    onZoomIn={() => {
+                      adjustViewportScale(MERMAID_VIEWPORT_SCALE_STEP)
+                    }}
+                    onReset={resetViewport}
+                  />
+                )}
 
-              {actions}
-            </div>
-          </header>
+                <Tooltip content="Скачать SVG" side="top">
+                  <button
+                    type="button"
+                    aria-label="Скачать Mermaid как SVG"
+                    disabled={renderState.status !== 'success'}
+                    className={headerButtonClassName}
+                    onClick={() => {
+                      if (renderState.status === 'success') {
+                        downloadMermaidSvg(renderState.svg, renderState.diagramType)
+                      }
+                    }}
+                  >
+                    <Download aria-hidden="true" className="size-4" />
+                  </button>
+                </Tooltip>
 
-          {activeViewMode === 'write' && (
-            <MermaidSourceEditor
-              id={`${editorId}-${fullscreen ? 'fullscreen' : 'inline'}`}
-              source={source}
-              fullscreen={fullscreen}
-              onChange={onChange}
-            />
-          )}
+                {actions}
+              </div>
+            </header>
 
-          {activeViewMode === 'preview' && (
-            <div className={cn(fullscreen && 'min-h-0 flex-1 overflow-auto')}>
-              <StudyMermaidPreview source={source} state={renderState} scale={scale} />
-            </div>
-          )}
+            {activeViewMode === 'write' && (
+              <MermaidSourceEditor
+                id={`${editorId}-${fullscreen ? 'fullscreen' : 'inline'}`}
+                source={source}
+                fullscreen={fullscreen}
+                onChange={onChange}
+              />
+            )}
 
-          {activeViewMode === 'split' && (
-            <div
-              className={cn(
-                'grid grid-cols-2 divide-x divide-[var(--app-border)] max-[900px]:grid-cols-1 max-[900px]:divide-x-0 max-[900px]:divide-y',
-                fullscreen && 'min-h-0 flex-1 overflow-auto min-[901px]:overflow-hidden'
-              )}
-            >
-              <div className={cn('min-w-0', fullscreen && 'flex min-h-0 flex-col')}>
-                <MermaidPanelLabel>Mermaid</MermaidPanelLabel>
-                <MermaidSourceEditor
-                  id={`${editorId}-${fullscreen ? 'fullscreen' : 'inline'}`}
+            {activeViewMode === 'preview' && (
+              <div
+                className={cn(
+                  mode === 'read' && !fullscreen && 'min-h-40',
+                  fullscreen && 'min-h-0 flex-1 overflow-hidden'
+                )}
+              >
+                <StudyMermaidPreview
                   source={source}
-                  fullscreen={fullscreen}
-                  onChange={onChange}
+                  state={renderState}
+                  scale={interactivePreview ? viewportScale : scale}
+                  interactive={interactivePreview}
+                  offset={interactivePreview ? viewportOffset : undefined}
+                  onOffsetChange={setViewportOffset}
+                  onScaleChange={handleViewportScaleChange}
                 />
               </div>
+            )}
 
-              <div className={cn('min-w-0', fullscreen && 'flex min-h-0 flex-col')}>
-                <MermaidPanelLabel>Диаграмма</MermaidPanelLabel>
-                <div className={cn(fullscreen && 'min-h-0 flex-1 overflow-auto')}>
-                  <StudyMermaidPreview source={source} state={renderState} scale={scale} />
+            {activeViewMode === 'split' && (
+              <div
+                className={cn(
+                  'grid grid-cols-2 divide-x divide-[var(--app-border)] max-[900px]:grid-cols-1 max-[900px]:divide-x-0 max-[900px]:divide-y',
+                  fullscreen && 'min-h-0 flex-1 overflow-auto min-[901px]:overflow-hidden'
+                )}
+              >
+                <div className={cn('min-w-0', fullscreen && 'flex min-h-0 flex-col')}>
+                  <MermaidPanelLabel>Mermaid</MermaidPanelLabel>
+                  <MermaidSourceEditor
+                    id={`${editorId}-${fullscreen ? 'fullscreen' : 'inline'}`}
+                    source={source}
+                    fullscreen={fullscreen}
+                    onChange={onChange}
+                  />
+                </div>
+
+                <div className={cn('min-w-0', fullscreen && 'flex min-h-0 flex-col')}>
+                  <MermaidPanelLabel>Диаграмма</MermaidPanelLabel>
+                  <div className={cn(fullscreen && 'min-h-0 flex-1 overflow-hidden')}>
+                    <StudyMermaidPreview
+                      source={source}
+                      state={renderState}
+                      scale={interactivePreview ? viewportScale : scale}
+                      interactive={interactivePreview}
+                      offset={interactivePreview ? viewportOffset : undefined}
+                      onOffsetChange={setViewportOffset}
+                      onScaleChange={handleViewportScaleChange}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-        </section>
-      )}
+            )}
+          </section>
+        )
+      }}
     </StudySourceBlockShell>
   )
 }
@@ -243,7 +291,9 @@ function MermaidSourceEditor({
         Исходный Mermaid-код
       </label>
 
-      <div className={cn(fullscreen ? 'min-h-0 flex-1 overflow-auto' : 'max-h-[40rem] overflow-auto')}>
+      <div
+        className={cn(fullscreen ? 'min-h-0 flex-1 overflow-auto' : 'max-h-[40rem] overflow-auto')}
+      >
         <Editor
           value={source}
           textareaId={id}
@@ -268,70 +318,6 @@ function MermaidSourceEditor({
         />
       </div>
     </>
-  )
-}
-
-function StudyMermaidPreview({
-  source,
-  state,
-  scale,
-  framed = false
-}: {
-  source: string
-  state: MermaidRenderState
-  scale: number
-  framed?: boolean
-}): React.JSX.Element {
-  const normalizedScale = clampMermaidScale(scale)
-
-  return (
-    <div
-      data-framed={framed}
-      aria-busy={state.status === 'loading'}
-      className={cn(
-        'study-mermaid-preview',
-        framed && 'rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)]'
-      )}
-    >
-      {!source.trim() && <p className="text-sm text-[var(--app-muted)]">Пустой Mermaid-блок</p>}
-
-      {source.trim() && (state.status === 'idle' || state.status === 'loading') && (
-        <div className="flex items-center gap-2 text-sm text-[var(--app-muted)]">
-          <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
-          Построение диаграммы…
-        </div>
-      )}
-
-      {state.status === 'error' && (
-        <div
-          role="alert"
-          className="flex max-w-xl items-start gap-3 rounded-xl border border-red-500/20 bg-red-500/[0.06] p-4 text-left"
-        >
-          <CircleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-red-300" />
-
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-red-200">Ошибка в диаграмме</p>
-            <pre className="mt-1 max-h-44 overflow-auto font-mono text-xs leading-5 whitespace-pre-wrap text-red-300/80">
-              {state.error}
-            </pre>
-          </div>
-        </div>
-      )}
-
-      {state.status === 'success' && (
-        <div className="study-mermaid-viewport">
-          <div
-            className="study-mermaid-svg"
-            style={{
-              width: `${normalizedScale}%`
-            }}
-            dangerouslySetInnerHTML={{
-              __html: state.svg
-            }}
-          />
-        </div>
-      )}
-    </div>
   )
 }
 
@@ -432,8 +418,8 @@ function isMermaidViewMode(value: string): value is StudyMermaidViewMode {
   return value === 'write' || value === 'split' || value === 'preview'
 }
 
-function clampMermaidScale(value: number): number {
-  return Math.max(60, Math.min(180, value))
+function clampMermaidViewportScale(value: number): number {
+  return Math.max(MERMAID_VIEWPORT_MIN_SCALE, Math.min(MERMAID_VIEWPORT_MAX_SCALE, value))
 }
 
 function downloadMermaidSvg(svg: string, diagramType: string): void {
