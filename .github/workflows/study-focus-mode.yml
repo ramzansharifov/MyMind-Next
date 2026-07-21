@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   verify:
@@ -24,11 +25,30 @@ jobs:
       - run: npm ci
       - name: Apply focus mode implementation
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          set -e
-          node scripts/fix-study-focus-generator.mjs
-          node scripts/add-study-focus-mode.mjs
-          npm run format
+          set +e
+          {
+            node scripts/fix-study-focus-generator.mjs
+            node scripts/add-study-focus-mode.mjs
+            npm run format
+          } > apply-output.txt 2>&1
+          status=$?
+          if [ "$status" -ne 0 ]; then
+            cat apply-output.txt
+            {
+              echo "Добавить полноэкранный режим чтения материала, сохранить его при переходе на связанную доску и обратно, предоставить возврат к материалу и выход из фокуса на доске. Унифицировать подсказки модуля досок через общий Radix Tooltip."
+              echo
+              echo "## Временная диагностика применения"
+              echo '```text'
+              tail -n 180 apply-output.txt
+              echo '```'
+            } > pr-body.md
+            gh pr edit 34 --body-file pr-body.md
+            exit "$status"
+          fi
+          cat apply-output.txt
       - run: npm run native:node
       - run: npm run format:check
       - run: npm run lint
