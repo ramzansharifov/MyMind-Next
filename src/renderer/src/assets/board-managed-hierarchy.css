@@ -1,0 +1,36 @@
+/*
+ * Study-managed folders are structural mirrors of the learning library. Their
+ * hierarchy is controlled by study synchronization, so only their board children
+ * keep a user action menu (rename and delete).
+ */
+[data-board-tree-node][data-study-managed='true']:has(
+    > button[aria-label='Свернуть папку']
+  )
+  > button[aria-label^='Действия:'],
+[data-board-tree-node][data-study-managed='true']:has(
+    > button[aria-label='Развернуть папку']
+  )
+  > button[aria-label^='Действия:'] {
+  display: none;
+}
+
+/*
+ * The fixed root has a lock icon. Synchronized study folders have rename and
+ * create controls but no icon picker. In both cases the whole folder action group
+ * is removed, while the generated folder contents remain visible.
+ */
+main
+  header:has(.lucide-lock-keyhole):has(.lucide-folder-plus)
+  > div:has(> button .lucide-folder-plus),
+main
+  header:has(.lucide-pencil):has(.lucide-folder-plus):not(:has(.lucide-palette))
+  > div:has(> button .lucide-folder-plus) {
+  display: none;
+}
+
+/* Prevent a managed-folder context menu from appearing on right click. */
+[role='menu']:has(> [data-board-tree-action='create-folder']):not(
+    :has(> [data-board-tree-action='delete'])
+  ) {
+  display: none;
+}
