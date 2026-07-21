@@ -64,13 +64,13 @@ export function StudyBoardBlock({
       />
 
       <div className="relative flex items-center gap-4 max-[640px]:items-start">
-        <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-[var(--app-accent-500)]/20 bg-[var(--app-accent-500)]/10 text-[var(--app-accent-300)]">
-          <Presentation aria-hidden="true" className="size-6" />
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--app-accent-500)]/10 text-[var(--app-accent-300)]">
+          <Presentation aria-hidden="true" className="size-5" />
         </div>
 
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-semibold tracking-[0.1em] text-[var(--app-accent-300)] uppercase">
-            Доска tldraw
+          <p className="text-[10px] font-semibold tracking-[0.12em] text-[var(--app-accent-300)] uppercase">
+            Доска
           </p>
           <h3 className="mt-1 truncate text-lg font-semibold text-[var(--app-text)]">
             {block.title ?? 'Доска материала'}

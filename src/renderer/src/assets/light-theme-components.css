@@ -89,40 +89,32 @@
 
 :root[data-theme='light'] [data-study-scroll-container='true'] article[aria-label='Содержимое материала'] {
   overflow: hidden;
-  border-radius: 1rem;
+  border-radius: 0.75rem;
   background: var(--app-surface);
   border-color: var(--app-border);
   box-shadow: var(--app-shadow-panel);
 }
 
+:root[data-theme='light'] [aria-label='Навигация по заголовкам материала'] {
+  border-radius: 0.75rem;
+}
+
 :root[data-theme='light'] [data-study-scroll-container='true'] aside {
-  overflow: hidden;
-  border-radius: 1rem;
   background: color-mix(in srgb, var(--app-surface) 97%, var(--app-accent-50));
   box-shadow: var(--app-shadow-card);
 }
 
 :root[data-theme='light'] [data-study-board-block] {
-  border-color: color-mix(in srgb, var(--app-accent-500) 22%, var(--app-border));
-}
-
-:root[data-theme='light'] [data-study-board-block] > div > div:first-child {
-  color: var(--app-accent-700) !important;
-  background: color-mix(in srgb, var(--app-accent-500) 14%, #ffffff) !important;
-  border-color: color-mix(in srgb, var(--app-accent-500) 28%, var(--app-border)) !important;
-}
-
-:root[data-theme='light'] [data-study-board-block] p[class*='uppercase'] {
-  color: var(--app-accent-700) !important;
+  border-color: color-mix(in srgb, var(--app-accent-500) 16%, var(--app-border));
 }
 
 :root[data-theme='light'] [data-study-board-block] button {
   color: var(--app-accent-700);
-  background: color-mix(in srgb, var(--app-accent-500) 11%, #ffffff);
+  background: color-mix(in srgb, var(--app-accent-500) 9%, #ffffff);
 }
 
 :root[data-theme='light'] [data-study-board-block] button:hover {
-  background: color-mix(in srgb, var(--app-accent-500) 17%, #ffffff);
+  background: color-mix(in srgb, var(--app-accent-500) 15%, #ffffff);
 }
 
 /* Исходники кода должны оставаться редакторами, а не обычными белыми полями. */
@@ -169,18 +161,32 @@
   backdrop-filter: blur(12px);
 }
 
-:root[data-theme='light'] [data-board-workspace-focus] > header > div[class*='size-10'] {
-  color: var(--app-accent-700) !important;
-  background: color-mix(in srgb, var(--app-accent-500) 14%, #ffffff) !important;
-  border: 1px solid color-mix(in srgb, var(--app-accent-500) 24%, var(--app-border));
+:root[data-theme='light'] [data-board-workspace-focus] > header > div[class*='size-10'][class*='rounded-xl'] {
+  color: var(--app-accent-700);
+  background: color-mix(in srgb, var(--app-accent-500) 11%, #ffffff);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--app-accent-500) 12%, transparent);
 }
 
 :root[data-theme='light'] [data-board-workspace-focus] > header p[class*='uppercase'] {
-  color: var(--app-accent-700) !important;
+  color: var(--app-accent-700);
 }
 
 :root[data-theme='light'] [aria-label='Холст доски'] {
   background: var(--app-canvas);
+}
+
+:root[data-theme='light'] .mymind-board-canvas .tlui-menu-zone {
+  overflow: hidden;
+  border-radius: 0 0 0.75rem 0;
+  box-shadow: var(--app-shadow-card);
+}
+
+:root[data-theme='light'] .mymind-board-canvas .tlui-navigation-panel,
+:root[data-theme='light'] .mymind-board-canvas .tlui-style-panel,
+:root[data-theme='light'] .mymind-board-canvas .tlui-toolbar {
+  overflow: hidden;
+  border-radius: 0.75rem;
+  box-shadow: var(--app-shadow-card);
 }
 
 :root[data-theme='light'] .mymind-board-canvas .tlui-button:hover,
@@ -190,16 +196,6 @@
 
 :root[data-theme='light'] .mymind-board-canvas .tlui-button__tool[aria-pressed='true'] {
   color: #ffffff;
-}
-
-:root[data-theme='light'] .mymind-board-canvas .tlui-layout__top__left {
-  overflow: hidden;
-  border-radius: 0 0 0.875rem 0;
-  box-shadow: 0 1px 0 var(--app-border), 8px 8px 24px rgb(35 48 67 / 7%);
-}
-
-:root[data-theme='light'] .mymind-board-canvas .tlui-layout__top__left > * {
-  border-bottom-right-radius: 0.875rem;
 }
 
 /* Radix-меню, поповеры и диалоги во всех модулях. */
