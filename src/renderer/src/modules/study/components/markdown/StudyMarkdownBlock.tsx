@@ -23,21 +23,9 @@ interface StudyMarkdownBlockProps {
 }
 
 const markdownModes = [
-  {
-    value: 'write',
-    label: 'Код',
-    Icon: PencilLine
-  },
-  {
-    value: 'split',
-    label: 'Разделить',
-    Icon: Columns2
-  },
-  {
-    value: 'preview',
-    label: 'Просмотр',
-    Icon: Eye
-  }
+  { value: 'write', label: 'Код', Icon: PencilLine },
+  { value: 'split', label: 'Разделить', Icon: Columns2 },
+  { value: 'preview', label: 'Просмотр', Icon: Eye }
 ] satisfies Array<{
   value: StudyMarkdownViewMode
   label: string
@@ -58,11 +46,9 @@ const markdownComponents = {
       </a>
     )
   },
-
   blockquote({ children }) {
     return <blockquote>{children}</blockquote>
   },
-
   code({ children, className }) {
     const rawSource = String(children)
     const languageMatch = /language-([\w+-]+)/i.exec(className ?? '')
@@ -77,7 +63,6 @@ const markdownComponents = {
 
     return <StudyCodeBlock mode="read" source={source} language={language} />
   },
-
   img({ src, alt }) {
     if (!src) {
       return <span className="text-[var(--app-muted)]">{alt || 'Изображение'}</span>
@@ -85,7 +70,6 @@ const markdownComponents = {
 
     return <img src={src} alt={alt ?? ''} loading="lazy" referrerPolicy="no-referrer" />
   },
-
   input({ type, checked }) {
     if (type !== 'checkbox') {
       return null
@@ -93,11 +77,9 @@ const markdownComponents = {
 
     return <input type="checkbox" checked={checked} disabled readOnly />
   },
-
   pre({ children }) {
     return <>{children}</>
   },
-
   table({ children }) {
     return (
       <div className="study-markdown-table-wrap">
@@ -125,6 +107,7 @@ export function StudyMarkdownBlock({
   return (
     <StudySourceBlockShell
       source={source}
+      copyDisabled={!source.trim()}
       copyLabel="Копировать Markdown"
       copiedAnnouncement="Markdown скопирован"
       copyErrorAnnouncement="Не удалось скопировать Markdown"
@@ -204,7 +187,7 @@ export function StudyMarkdownBlock({
             <div
               className={cn(
                 'grid grid-cols-2 divide-x divide-[var(--app-border)] max-[900px]:grid-cols-1 max-[900px]:divide-x-0 max-[900px]:divide-y',
-                fullscreen && 'min-h-0 flex-1 overflow-hidden'
+                fullscreen && 'min-h-0 flex-1 overflow-auto min-[901px]:overflow-hidden'
               )}
             >
               <div className={cn('min-w-0', fullscreen && 'flex min-h-0 flex-col')}>
