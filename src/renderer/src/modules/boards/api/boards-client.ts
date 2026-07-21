@@ -39,25 +39,65 @@ function getBoardApi(): BoardApi {
   return appApi.boards
 }
 
+function isManagedBoardFolder(node: BoardNode | undefined): boolean {
+  return Boolean(node?.type === 'folder' && (node.isSystem || node.sourceStudyNodeId))
+}
+
+async function findBoardNode(api: BoardApi, nodeId: string): Promise<BoardNode | undefined> {
+  const nodes = await api.listNodes()
+  return nodes.find((node) => node.id === nodeId)
+}
+
 export const boardsClient = {
   async listNodes(): Promise<BoardNode[]> {
     return getBoardApi().listNodes()
   },
 
   async createNode(input: CreateBoardNodeInput): Promise<BoardNode> {
-    return getBoardApi().createNode(input)
+    const api = getBoardApi()
+
+    if (input.parentId) {
+      const parent = await findBoardNode(api, input.parentId)
+
+      if (isManagedBoardFolder(parent)) {
+        throw new Error('В зафиксированной папке нельзя создавать папки или доски')
+      }
+    }
+
+    return api.createNode(input)
   },
 
   async renameNode(id: string, title: string): Promise<BoardNode> {
-    return getBoardApi().renameNode({ id, title })
+    const api = getBoardApi()
+    const target = await findBoardNode(api, id)
+
+    if (isManagedBoardFolder(target)) {
+      throw new Error('Зафиксированную папку нельзя переименовать')
+    }
+
+    return api.renameNode({ id, title })
   },
 
   async updateFolderIcon(id: string, icon: StudyFolderIconName): Promise<BoardNode> {
-    return getBoardApi().updateFolderIcon({ id, icon })
+    const api = getBoardApi()
+    const target = await findBoardNode(api, id)
+
+    if (isManagedBoardFolder(target)) {
+      throw new Error('У зафиксированной папки нельзя изменить иконку')
+    }
+
+    return api.updateFolderIcon({ id, icon })
   },
 
   async deleteNode(id: string): Promise<boolean> {
-    return getBoardApi().deleteNode(id)
+    const api = getBoardApi()
+    const target = await findBoardNode(api, id)
+
+    if (isManagedBoardFolder(target)) {
+      throw new Error('Зафиксированную папку нельзя удалить')
+    }
+
+    return api.deleteNode(id)
   },
 
   async updateExpansion(id: string, isExpanded: boolean): Promise<BoardNode> {
@@ -65,7 +105,17 @@ export const boardsClient = {
   },
 
   async moveNode(input: MoveBoardNodeInput): Promise<BoardNode[]> {
-    return getBoardApi().moveNode(input)
+    const api = getBoardApi()
+
+    if (input.parentId) {
+      const parent = await findBoardNode(api, input.parentId)
+
+      if (isManagedBoardFolder(parent)) {
+        throw new Error('В зафиксированную папку нельзя перемещать элементы')
+      }
+    }
+
+    return api.moveNode(input)
   },
 
   async getDocument(nodeId: string): Promise<BoardDocument> {
