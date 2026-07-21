@@ -50,12 +50,44 @@
   box-shadow: 0 20px 70px rgb(0 0 0 / 16%);
 }
 
-[data-board-workspace-focus='true']
+/*
+ * Return actions belong to the right-side header controls. Explicit ordering keeps
+ * the material/board identity on the left and places Back immediately before
+ * Rename in the regular layout or immediately before Exit focus in focus mode.
+ */
+[data-study-material-focus]
+  > header:has(> button[aria-label='Вернуться к внутренней ссылке'])
+  > *,
+[data-board-workspace-focus] > header:has(> button[aria-label='Назад к материалу']) > * {
+  order: 3;
+}
+
+[data-study-material-focus]
+  > header:has(> button[aria-label='Вернуться к внутренней ссылке'])
+  > [class~='flex-1'],
+[data-board-workspace-focus]
+  > header:has(> button[aria-label='Назад к материалу'])
+  > [class~='flex-1'],
+[data-board-workspace-focus]
+  > header:has(> button[aria-label='Назад к материалу'])
+  > [class~='size-10'] {
+  order: 0;
+}
+
+[data-study-material-focus]
   > header
-  > button[aria-label='Назад к материалу'] {
+  > button[aria-label='Вернуться к внутренней ссылке'],
+[data-board-workspace-focus] > header > button[aria-label='Назад к материалу'] {
   order: 1;
 }
 
+[data-study-material-focus='false']
+  > header
+  > button[aria-label='Переименовать материал'],
+[data-board-workspace-focus='false'] > header > button[aria-label='Переименовать доску'],
+[data-study-material-focus='true']
+  > header
+  > button[aria-label='Выйти из режима фокуса'],
 [data-board-workspace-focus='true']
   > header
   > button[aria-label='Выйти из режима фокуса'] {
