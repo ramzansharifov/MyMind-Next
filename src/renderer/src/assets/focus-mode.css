@@ -30,9 +30,41 @@
   overscroll-behavior: contain;
 }
 
+[data-study-material-focus='true'] [data-study-scroll-container='true'] > div {
+  max-width: 1720px;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 1.75rem;
+}
+
+[data-study-material-focus='true']
+  [data-study-scroll-container='true']
+  div:has(> article[aria-label='Содержимое материала']) {
+  max-width: none;
+}
+
 [data-study-material-focus='true'] article[aria-label='Содержимое материала'] {
+  min-height: 85vh;
   border: 1px solid var(--app-border);
   border-radius: 1rem;
   background: var(--app-surface);
   box-shadow: 0 20px 70px rgb(0 0 0 / 16%);
+}
+
+[data-board-workspace-focus='true']
+  > header
+  > button[aria-label='Назад к материалу'] {
+  order: 1;
+}
+
+[data-board-workspace-focus='true']
+  > header
+  > button[aria-label='Выйти из режима фокуса'] {
+  order: 2;
+}
+
+@media (max-width: 1180px) {
+  [data-study-material-focus='true'] [data-study-scroll-container='true'] > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.25rem;
+  }
 }
