@@ -12,5 +12,9 @@ if (!content.includes(ambiguous)) {
 }
 
 content = content.replace(ambiguous, precise)
+content = content.replace(
+  `const matches = [...content.matchAll(pattern)]`,
+  `const globalPattern = new RegExp(pattern.source, pattern.flags.includes('g') ? pattern.flags : \`${'${pattern.flags}'}g\`)\n  const matches = [...content.matchAll(globalPattern)]`
+)
 writeFileSync(path, content, 'utf8')
 console.log('Board icon transformation boundaries fixed')
