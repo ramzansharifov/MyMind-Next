@@ -1,84 +1,54 @@
-name: Diagnose board folder icon tests
+name: Verify board folder icons
 
 on:
   pull_request:
     branches: [main]
 
 permissions:
-  contents: read
-  pull-requests: write
+  contents: write
 
 jobs:
   verify:
+    if: github.actor != 'github-actions[bot]'
     runs-on: windows-latest
-    timeout-minutes: 25
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
         with:
           ref: agent/board-folder-icons
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - run: npm ci --silent
+      - run: npm ci
       - name: Apply folder icon implementation
         shell: bash
         run: |
           set -e
           node scripts/patch-board-folder-icon-scripts.mjs
           node scripts/add-board-folder-icons.mjs
-          npm run db:generate -- --name board_folder_icons > /dev/null
+          npm run db:generate -- --name board_folder_icons
           node scripts/finalize-board-folder-icons.mjs
           rm -f \
             scripts/add-board-folder-icons.mjs \
             scripts/finalize-board-folder-icons.mjs \
             scripts/patch-board-folder-icon-scripts.mjs \
             .github/workflows/board-folder-icons.yml
-          npm run format > /dev/null
+          npm run format
       - run: npm run native:node
-      - name: Diagnose tests
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:coverage
+      - run: npm run db:check
+      - run: npm run build:bundle
+      - name: Commit verified source
         shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          set +e
-          npm exec vitest -- run --reporter=json --outputFile=test-results.json > /dev/null 2>&1
-          status=$?
-          if [ "$status" -ne 0 ]; then
-            node <<'NODE' > test-summary.txt
-          const fs = require('node:fs')
-          const report = JSON.parse(fs.readFileSync('test-results.json', 'utf8'))
-          const ansi = /\u001b\[[0-9;]*m/g
-          const lines = []
-
-          for (const suite of report.testResults ?? []) {
-            const suiteMessages = suite.message ? [suite.message] : []
-            if (suite.status === 'failed' && (suite.assertionResults?.length ?? 0) === 0) {
-              lines.push(`${suite.name} :: suite failure`)
-              lines.push(suiteMessages.join('\n').replace(ansi, '').slice(0, 4000))
-              lines.push('')
-            }
-
-            for (const assertion of suite.assertionResults ?? []) {
-              if (assertion.status !== 'failed') continue
-              const raw = (assertion.failureMessages ?? []).join('\n').replace(ansi, '')
-              const compact = raw.split('Ignored nodes:')[0].trim()
-              lines.push(`${suite.name} :: ${assertion.fullName ?? assertion.title ?? 'failed test'}`)
-              lines.push(compact.slice(0, 4000))
-              lines.push('')
-            }
-          }
-
-          process.stdout.write(lines.join('\n') || 'Vitest завершился с ошибкой без детального сообщения.')
-          NODE
-            {
-              echo "Добавить хранение и выбор иконок для обычных папок досок, наследование и синхронизацию иконок учебных папок, а также открытое и закрытое состояния стандартной папки."
-              echo
-              echo "## Временная диагностика тестов"
-              echo '```text'
-              cat test-summary.txt
-              echo '```'
-            } > pr-body.md
-            gh pr edit 33 --body-file pr-body.md
-            exit "$status"
-          fi
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Добавить иконки папок досок"
+          git push origin HEAD:agent/board-folder-icons
