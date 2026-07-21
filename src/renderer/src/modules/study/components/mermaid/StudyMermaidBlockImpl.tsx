@@ -12,7 +12,8 @@ import { cn } from '../../../../shared/lib/cn'
 import { Tooltip } from '../../../../shared/ui/tooltip'
 import { StudySourceBlockShell } from '../source/StudySourceBlockShell'
 import {
-  clampMermaidViewportScale,
+  MERMAID_VIEWPORT_MAX_SCALE,
+  MERMAID_VIEWPORT_MIN_SCALE,
   MERMAID_VIEWPORT_SCALE_STEP,
   MermaidViewportControls,
   StudyMermaidPreview,
@@ -70,24 +71,32 @@ export function StudyMermaidBlock({
 }: StudyMermaidBlockProps): React.JSX.Element {
   const editorId = useId()
   const renderState = useMermaidRender(source, theme)
-  const [viewportScale, setViewportScale] = useState(() => clampMermaidViewportScale(scale))
-  const [viewportOffset, setViewportOffset] = useState<MermaidViewportOffset>({ x: 0, y: 0 })
+  const [viewportScaleDelta, setViewportScaleDelta] = useState(0)
+  const [viewportOffset, setViewportOffset] = useState<MermaidViewportOffset>({
+    x: 0,
+    y: 0
+  })
 
-  useEffect(() => {
-    setViewportScale(clampMermaidViewportScale(scale))
-    setViewportOffset({ x: 0, y: 0 })
-  }, [scale])
+  const viewportScale = clampMermaidViewportScale(scale + viewportScaleDelta)
 
   const activeViewMode =
     mode === 'read' ? 'preview' : isMermaidViewMode(viewMode) ? viewMode : 'split'
 
   function adjustViewportScale(delta: number): void {
-    setViewportScale((currentScale) => clampMermaidViewportScale(currentScale + delta))
+    setViewportScaleDelta((currentDelta) => {
+      const nextScale = clampMermaidViewportScale(scale + currentDelta + delta)
+
+      return nextScale - scale
+    })
   }
 
   function resetViewport(): void {
-    setViewportScale(clampMermaidViewportScale(scale))
+    setViewportScaleDelta(0)
     setViewportOffset({ x: 0, y: 0 })
+  }
+
+  function handleViewportScaleChange(nextScale: number): void {
+    setViewportScaleDelta(clampMermaidViewportScale(nextScale) - scale)
   }
 
   return (
@@ -220,7 +229,7 @@ export function StudyMermaidBlock({
                   interactive={interactivePreview}
                   offset={interactivePreview ? viewportOffset : undefined}
                   onOffsetChange={setViewportOffset}
-                  onScaleChange={setViewportScale}
+                  onScaleChange={handleViewportScaleChange}
                 />
               </div>
             )}
@@ -252,7 +261,7 @@ export function StudyMermaidBlock({
                       interactive={interactivePreview}
                       offset={interactivePreview ? viewportOffset : undefined}
                       onOffsetChange={setViewportOffset}
-                      onScaleChange={setViewportScale}
+                      onScaleChange={handleViewportScaleChange}
                     />
                   </div>
                 </div>
@@ -282,7 +291,9 @@ function MermaidSourceEditor({
         Исходный Mermaid-код
       </label>
 
-      <div className={cn(fullscreen ? 'min-h-0 flex-1 overflow-auto' : 'max-h-[40rem] overflow-auto')}>
+      <div
+        className={cn(fullscreen ? 'min-h-0 flex-1 overflow-auto' : 'max-h-[40rem] overflow-auto')}
+      >
         <Editor
           value={source}
           textareaId={id}
@@ -405,6 +416,10 @@ function highlightMermaid(value: string): string {
 
 function isMermaidViewMode(value: string): value is StudyMermaidViewMode {
   return value === 'write' || value === 'split' || value === 'preview'
+}
+
+function clampMermaidViewportScale(value: number): number {
+  return Math.max(MERMAID_VIEWPORT_MIN_SCALE, Math.min(MERMAID_VIEWPORT_MAX_SCALE, value))
 }
 
 function downloadMermaidSvg(svg: string, diagramType: string): void {
