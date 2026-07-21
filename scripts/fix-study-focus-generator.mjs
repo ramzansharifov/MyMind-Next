@@ -17,7 +17,7 @@ replaceRequired(
   `/* eslint-disable @typescript-eslint/explicit-function-return-type */\nimport { readFileSync, writeFileSync } from 'node:fs'`
 )
 replaceRequired(
-  `  useEffect(() => {\n    if (focusMode) {\n      setMode('read')\n    }\n  }, [focusMode])\n\n`,
+  String.raw`  useEffect(() => {\n    if (focusMode) {\n      setMode('read')\n    }\n  }, [focusMode])\n\n`,
   ''
 )
 
