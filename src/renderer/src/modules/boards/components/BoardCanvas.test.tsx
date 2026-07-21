@@ -153,4 +153,24 @@ describe('BoardCanvas fullscreen mode', () => {
     expect(workspace).not.toHaveClass('fixed')
     expect(screen.getByTestId('tldraw-canvas')).toBe(canvas)
   })
+
+  it('keeps tldraw mounted in application focus mode and exits through quick actions', async () => {
+    const user = userEvent.setup()
+    const onFocusModeChange = vi.fn()
+
+    render(
+      <BoardCanvas boardId="board-focus" focusMode onFocusModeChange={onFocusModeChange} />
+    )
+
+    const workspace = await screen.findByRole('region', { name: 'Холст доски' })
+
+    expect(screen.getByTestId('tldraw-canvas')).toBeInTheDocument()
+    expect(workspace).toHaveAttribute('data-board-focus-mode', 'true')
+    expect(workspace).toHaveAttribute('data-board-fullscreen', 'true')
+    expect(workspace).not.toHaveClass('fixed')
+
+    await user.click(screen.getByRole('button', { name: 'Выйти из режима фокуса' }))
+
+    expect(onFocusModeChange).toHaveBeenCalledWith(false)
+  })
 })
