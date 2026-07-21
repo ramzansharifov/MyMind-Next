@@ -1,0 +1,105 @@
+:root[data-theme='light'] {
+  --board-accent-surface: color-mix(in srgb, var(--app-accent-500) 9%, #ffffff);
+  --board-accent-border: color-mix(in srgb, var(--app-accent-500) 18%, var(--app-border));
+  --board-panel-radius: 1rem;
+}
+
+/* Открытая доска: тот же визуальный язык, что и у материалов. */
+:root[data-theme='light'] [data-board-workspace-focus] > header > div[class*='size-10'] {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid var(--board-accent-border);
+  border-radius: 0.875rem;
+  color: var(--app-accent-700);
+  background: var(--board-accent-surface);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 55%);
+}
+
+:root[data-theme='light'] [data-board-workspace-focus] > header > div[class*='min-w-0'] > p {
+  color: var(--app-accent-700);
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
+}
+
+:root[data-theme='light'] [data-board-workspace-focus] > header > div[class*='min-w-0'] > h1 {
+  margin-top: 0.125rem;
+  color: var(--app-text);
+  font-size: 1.125rem;
+  line-height: 1.4;
+}
+
+/* Связанная доска выглядит одинаково в правке и чтении. */
+:root[data-theme='light'] [data-study-board-block] {
+  border-radius: var(--board-panel-radius);
+  background:
+    radial-gradient(
+      circle at 88% 10%,
+      color-mix(in srgb, var(--app-accent-500) 10%, transparent),
+      transparent 18rem
+    ),
+    color-mix(in srgb, var(--app-surface) 97%, var(--app-accent-50));
+  box-shadow: 0 1px 2px rgb(35 48 67 / 5%);
+}
+
+:root[data-theme='light'] [data-study-board-block] > div[class*='relative'] > div[class*='size-12'] {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-color: var(--board-accent-border);
+  border-radius: 0.875rem;
+  color: var(--app-accent-700);
+  background: var(--board-accent-surface);
+}
+
+:root[data-theme='light'] [data-study-board-block] p[class*='uppercase'] {
+  color: var(--app-accent-700);
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
+}
+
+:root[data-theme='light'] [data-study-board-block] h3 {
+  color: var(--app-text);
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+/* Лист чтения и содержание имеют одинаковые скругления и границы. */
+:root[data-theme='light'] [data-study-scroll-container='true'] article[aria-label='Содержимое материала'] {
+  border: 1px solid var(--app-border);
+  border-radius: var(--board-panel-radius);
+  overflow: hidden;
+}
+
+:root[data-theme='light'] [data-study-scroll-container='true'] aside > nav[aria-label='Навигация по заголовкам материала'] {
+  border-radius: var(--board-panel-radius);
+  box-shadow: var(--app-shadow-card);
+}
+
+:root[data-theme='light'] [data-study-scroll-container='true'] aside > nav[aria-label='Навигация по заголовкам материала'] > header {
+  border-radius: var(--board-panel-radius) var(--board-panel-radius) 0 0;
+}
+
+/* Панели tldraw не должны прилипать к краям холста острыми углами. */
+:root[data-theme='light'] .mymind-board-canvas .tlui-layout__top__left,
+:root[data-theme='light'] .mymind-board-canvas .tlui-layout__top__right {
+  margin: 0.75rem;
+}
+
+:root[data-theme='light'] .mymind-board-canvas .tlui-layout__top__left > *,
+:root[data-theme='light'] .mymind-board-canvas .tlui-layout__top__right > *,
+:root[data-theme='light'] .mymind-board-canvas .tlui-menu-zone,
+:root[data-theme='light'] .mymind-board-canvas .tlui-toolbar {
+  border: 1px solid var(--app-border);
+  border-radius: 0.875rem;
+  overflow: hidden;
+  background: rgb(255 255 255 / 94%);
+  box-shadow: var(--app-shadow-menu);
+  backdrop-filter: blur(14px);
+}
+
+:root[data-theme='light'] .mymind-board-canvas .tlui-style-panel {
+  border: 1px solid var(--app-border);
+  border-radius: var(--board-panel-radius);
+  overflow: hidden;
+  background: rgb(255 255 255 / 96%);
+  box-shadow: var(--app-shadow-menu);
+}
