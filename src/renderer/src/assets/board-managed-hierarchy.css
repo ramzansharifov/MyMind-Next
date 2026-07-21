@@ -3,11 +3,13 @@
  * hierarchy is controlled by study synchronization, so only their board children
  * keep a user action menu (rename and delete).
  */
-[data-board-tree-node][data-study-managed='true']:has(
+[data-boards-focus-mode]
+  [data-board-tree-node][data-study-managed='true']:has(
     > button[aria-label='Свернуть папку']
   )
   > button[aria-label^='Действия:'],
-[data-board-tree-node][data-study-managed='true']:has(
+[data-boards-focus-mode]
+  [data-board-tree-node][data-study-managed='true']:has(
     > button[aria-label='Развернуть папку']
   )
   > button[aria-label^='Действия:'] {
@@ -19,10 +21,12 @@
  * create controls but no icon picker. In both cases the whole folder action group
  * is removed, while the generated folder contents remain visible.
  */
-main
+[data-boards-focus-mode]
+  main
   header:has(.lucide-lock-keyhole):has(.lucide-folder-plus)
   > div:has(> button .lucide-folder-plus),
-main
+[data-boards-focus-mode]
+  main
   header:has(.lucide-pencil):has(.lucide-folder-plus):not(:has(.lucide-palette))
   > div:has(> button .lucide-folder-plus) {
   display: none;
