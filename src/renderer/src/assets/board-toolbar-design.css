@@ -1,1 +1,142 @@
-placeholder
+/*
+ * MyMind visual treatment for the primary tldraw tool selector.
+ * Native tldraw behaviour and accessibility stay intact; only the surface and
+ * interaction states are aligned with the rest of the application.
+ */
+.mymind-board-canvas .tlui-toolbar {
+  padding: 0.3rem;
+  gap: 0.125rem;
+  border: 1px solid color-mix(in srgb, var(--app-border-strong) 72%, transparent);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--app-surface-raised) 94%, transparent);
+  box-shadow:
+    0 18px 44px rgb(0 0 0 / 28%),
+    inset 0 1px 0 rgb(255 255 255 / 4%);
+  backdrop-filter: blur(16px) saturate(1.15);
+}
+
+.mymind-board-canvas .tlui-toolbar__inner,
+.mymind-board-canvas .tlui-toolbar__tools,
+.mymind-board-canvas .tlui-toolbar__extras {
+  gap: 0.125rem;
+}
+
+.mymind-board-canvas .tlui-toolbar .tlui-button,
+.mymind-board-canvas .tlui-toolbar .tlui-button__tool {
+  width: 2.35rem;
+  min-width: 2.35rem;
+  height: 2.35rem;
+  min-height: 2.35rem;
+  border-radius: 0.75rem;
+  color: color-mix(in srgb, var(--app-text) 76%, var(--app-muted));
+  transition:
+    color 140ms ease,
+    transform 140ms ease;
+}
+
+.mymind-board-canvas .tlui-toolbar .tlui-button::after,
+.mymind-board-canvas .tlui-toolbar .tlui-button__tool::after {
+  inset: 0.125rem;
+  border: 1px solid transparent;
+  border-radius: 0.625rem;
+  background: transparent;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.mymind-board-canvas .tlui-toolbar .tlui-button:hover,
+.mymind-board-canvas .tlui-toolbar .tlui-button__tool:hover {
+  color: var(--app-text);
+}
+
+.mymind-board-canvas .tlui-toolbar .tlui-button:hover::after,
+.mymind-board-canvas .tlui-toolbar .tlui-button__tool:hover::after,
+.mymind-board-canvas .tlui-toolbar .tlui-button[data-highlighted]::after,
+.mymind-board-canvas .tlui-toolbar .tlui-button__tool[data-highlighted]::after {
+  border-color: color-mix(in srgb, var(--app-border-strong) 70%, transparent);
+  background: var(--app-control-hover);
+}
+
+.mymind-board-canvas .tlui-toolbar .tlui-button:active,
+.mymind-board-canvas .tlui-toolbar .tlui-button__tool:active {
+  transform: translateY(1px);
+}
+
+.mymind-board-canvas .tlui-toolbar .tlui-button[aria-pressed='true'],
+.mymind-board-canvas .tlui-toolbar .tlui-button[data-isactive='true'],
+.mymind-board-canvas .tlui-toolbar .tlui-button__tool[aria-pressed='true'],
+.mymind-board-canvas .tlui-toolbar .tlui-button__tool[data-isactive='true'] {
+  color: var(--app-accent-300);
+}
+
+.mymind-board-canvas .tlui-toolbar .tlui-button[aria-pressed='true']::after,
+.mymind-board-canvas .tlui-toolbar .tlui-button[data-isactive='true']::after,
+.mymind-board-canvas .tlui-toolbar .tlui-button__tool[aria-pressed='true']::after,
+.mymind-board-canvas .tlui-toolbar .tlui-button__tool[data-isactive='true']::after {
+  border-color: color-mix(in srgb, var(--app-accent-500) 42%, transparent);
+  background: color-mix(in srgb, var(--app-accent-500) 18%, var(--app-surface-raised));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--app-accent-500) 10%, transparent),
+    0 5px 14px color-mix(in srgb, var(--app-accent-500) 16%, transparent);
+}
+
+.mymind-board-canvas .tlui-toolbar .tlui-icon {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.mymind-board-canvas .tlui-toolbar [role='separator'] {
+  margin-inline: 0.125rem;
+  background: var(--app-border);
+}
+
+:root[data-theme='light'] .mymind-board-canvas .tlui-toolbar {
+  border-color: var(--app-border);
+  background: color-mix(in srgb, var(--app-surface) 94%, transparent);
+  box-shadow:
+    0 16px 40px rgb(35 48 67 / 15%),
+    inset 0 1px 0 rgb(255 255 255 / 82%);
+}
+
+:root[data-theme='light']
+  .mymind-board-canvas
+  .tlui-toolbar
+  :is(.tlui-button, .tlui-button__tool)[aria-pressed='true'],
+:root[data-theme='light']
+  .mymind-board-canvas
+  .tlui-toolbar
+  :is(.tlui-button, .tlui-button__tool)[data-isactive='true'] {
+  color: var(--app-accent-700);
+}
+
+:root[data-theme='light']
+  .mymind-board-canvas
+  .tlui-toolbar
+  :is(.tlui-button, .tlui-button__tool)[aria-pressed='true']::after,
+:root[data-theme='light']
+  .mymind-board-canvas
+  .tlui-toolbar
+  :is(.tlui-button, .tlui-button__tool)[data-isactive='true']::after {
+  border-color: color-mix(in srgb, var(--app-accent-600) 30%, var(--app-border));
+  background: color-mix(in srgb, var(--app-accent-500) 12%, #ffffff);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--app-accent-500) 8%, transparent),
+    0 5px 14px color-mix(in srgb, var(--app-accent-500) 12%, transparent);
+}
+
+@media (max-width: 720px) {
+  .mymind-board-canvas .tlui-toolbar {
+    padding: 0.25rem;
+    border-radius: 0.875rem;
+  }
+
+  .mymind-board-canvas .tlui-toolbar .tlui-button,
+  .mymind-board-canvas .tlui-toolbar .tlui-button__tool {
+    width: 2.2rem;
+    min-width: 2.2rem;
+    height: 2.2rem;
+    min-height: 2.2rem;
+  }
+}
