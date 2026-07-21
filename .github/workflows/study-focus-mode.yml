@@ -1,0 +1,47 @@
+name: Verify study focus mode
+
+on:
+  push:
+    branches: [agent/study-focus-mode]
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/study-focus-mode
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Apply focus mode implementation
+        shell: bash
+        run: |
+          set -e
+          node scripts/add-study-focus-mode.mjs
+          rm -f scripts/add-study-focus-mode.mjs .github/workflows/study-focus-mode.yml
+          npm run format
+      - run: npm run native:node
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:coverage
+      - run: npm run db:check
+      - run: npm run build:bundle
+      - name: Commit verified source
+        shell: bash
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Добавить режим фокуса обучения"
+          git push origin HEAD:agent/study-focus-mode
