@@ -1,9 +1,7 @@
 import * as ToggleGroup from '@radix-ui/react-toggle-group'
 import {
-  Check,
   CircleAlert,
   Columns2,
-  Copy,
   Download,
   Eye,
   LoaderCircle,
@@ -12,14 +10,15 @@ import {
 } from 'lucide-react'
 import Prism from 'prismjs'
 import Editor from 'react-simple-code-editor'
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 
 import type {
   StudyMermaidTheme,
   StudyMermaidViewMode
 } from '../../../../../../shared/contracts/study'
 import { cn } from '../../../../shared/lib/cn'
-import { Tooltip, TooltipProvider } from '../../../../shared/ui/tooltip'
+import { Tooltip } from '../../../../shared/ui/tooltip'
+import { StudySourceBlockShell } from '../source/StudySourceBlockShell'
 import { getStudyMermaidErrorMessage, renderStudyMermaid } from './mermaid-renderer'
 
 interface StudyMermaidBlockProps {
@@ -31,8 +30,6 @@ interface StudyMermaidBlockProps {
   onChange?: (source: string) => void
   onViewModeChange?: (viewMode: StudyMermaidViewMode) => void
 }
-
-type CopyState = 'idle' | 'copied' | 'error'
 
 type MermaidRenderState =
   | {
@@ -83,6 +80,15 @@ const mermaidViewModes = [
   Icon: typeof PencilLine
 }>
 
+const headerButtonClassName = [
+  'flex size-7 shrink-0 items-center justify-center rounded-md',
+  'text-[var(--app-muted)] outline-none',
+  'transition-colors',
+  'hover:bg-white/[0.06] hover:text-[var(--app-text)]',
+  'focus-visible:ring-2 focus-visible:ring-violet-500/35',
+  'disabled:cursor-not-allowed disabled:opacity-30'
+].join(' ')
+
 registerMermaidGrammar()
 
 export function StudyMermaidBlock({
@@ -95,20 +101,7 @@ export function StudyMermaidBlock({
   onViewModeChange
 }: StudyMermaidBlockProps): React.JSX.Element {
   const editorId = useId()
-
   const renderState = useMermaidRender(source, theme)
-
-  const [copyState, setCopyState] = useState<CopyState>('idle')
-
-  const resetTimerRef = useRef<number | null>(null)
-
-  useEffect(() => {
-    return () => {
-      if (resetTimerRef.current !== null) {
-        window.clearTimeout(resetTimerRef.current)
-      }
-    }
-  }, [])
 
   if (mode === 'read') {
     return <StudyMermaidPreview source={source} state={renderState} scale={scale} framed />
@@ -116,164 +109,143 @@ export function StudyMermaidBlock({
 
   const activeViewMode = isMermaidViewMode(viewMode) ? viewMode : 'split'
 
-  async function handleCopy(): Promise<void> {
-    try {
-      await writeClipboard(source)
-      setCopyState('copied')
-    } catch {
-      setCopyState('error')
-    }
-
-    if (resetTimerRef.current !== null) {
-      window.clearTimeout(resetTimerRef.current)
-    }
-
-    resetTimerRef.current = window.setTimeout(() => {
-      setCopyState('idle')
-    }, 1600)
-  }
-
-  const copyLabel =
-    copyState === 'copied'
-      ? 'Скопировано'
-      : copyState === 'error'
-        ? 'Не удалось скопировать'
-        : 'Копировать Mermaid-код'
-
   return (
-    <TooltipProvider delayDuration={250}>
-      <section className="overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-code-surface)]">
-        <header className="flex min-h-11 items-center justify-between gap-3 border-b border-[var(--app-border)] bg-white/[0.025] px-3">
-          <div className="flex min-w-0 items-center gap-2">
-            <Workflow aria-hidden="true" className="size-4 shrink-0 text-violet-300" />
+    <StudySourceBlockShell
+      source={source}
+      copyLabel="Копировать Mermaid-код"
+      copiedAnnouncement="Mermaid-код скопирован"
+      copyErrorAnnouncement="Не удалось скопировать Mermaid-код"
+      expandLabel="Развернуть Mermaid-блок"
+      collapseLabel="Свернуть Mermaid-блок"
+      dialogTitle="Mermaid-блок на весь экран"
+      dialogDescription="Полноэкранное редактирование и предпросмотр Mermaid-диаграммы. Нажмите Escape или кнопку сворачивания, чтобы вернуться к материалу."
+    >
+      {({ fullscreen, actions }) => (
+        <section
+          data-study-mermaid-block
+          data-fullscreen={fullscreen ? 'true' : 'false'}
+          className={cn(
+            'overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-code-surface)]',
+            fullscreen && 'flex h-full min-h-0 flex-col rounded-2xl shadow-2xl shadow-black/40'
+          )}
+        >
+          <header className="flex min-h-11 shrink-0 items-center justify-between gap-3 border-b border-[var(--app-border)] bg-white/[0.025] px-3">
+            <div className="flex min-w-0 items-center gap-2">
+              <Workflow aria-hidden="true" className="size-4 shrink-0 text-violet-300" />
+              <span className="text-[11px] font-semibold tracking-[0.08em] text-[var(--app-muted)] uppercase">
+                Mermaid
+              </span>
+            </div>
 
-            <span className="text-[11px] font-semibold tracking-[0.08em] text-[var(--app-muted)] uppercase">
-              Mermaid
-            </span>
-          </div>
-
-          <div className="flex items-center gap-1">
-            <ToggleGroup.Root
-              type="single"
-              value={activeViewMode}
-              aria-label="Режим Mermaid-блока"
-              className="flex items-center gap-1"
-              onValueChange={(value) => {
-                if (isMermaidViewMode(value)) {
-                  onViewModeChange?.(value)
-                }
-              }}
-            >
-              {mermaidViewModes.map(({ value, label, Icon }) => (
-                <ToggleGroup.Item
-                  key={value}
-                  value={value}
-                  aria-label={label}
-                  title={label}
-                  className={cn(
-                    'flex h-7 items-center gap-1.5 rounded-md px-2',
-                    'text-xs text-[var(--app-muted)] outline-none',
-                    'transition-colors',
-                    'hover:bg-white/[0.06] hover:text-[var(--app-text)]',
-                    'focus-visible:ring-2 focus-visible:ring-violet-500/35',
-                    'data-[state=on]:bg-violet-500/15',
-                    'data-[state=on]:text-violet-200'
-                  )}
-                >
-                  <Icon aria-hidden="true" className="size-3.5" />
-
-                  <span className="max-[780px]:hidden">{label}</span>
-                </ToggleGroup.Item>
-              ))}
-            </ToggleGroup.Root>
-
-            <Tooltip content={copyLabel} side="top">
-              <button
-                type="button"
-                aria-label={copyLabel}
-                disabled={!source.trim()}
-                className={cn(
-                  'flex size-7 items-center justify-center rounded-md',
-                  'text-[var(--app-muted)] outline-none',
-                  'transition-colors',
-                  'hover:bg-white/[0.06] hover:text-[var(--app-text)]',
-                  'focus-visible:ring-2 focus-visible:ring-violet-500/35',
-                  'disabled:cursor-not-allowed disabled:opacity-30',
-                  copyState === 'copied' && 'text-emerald-300',
-                  copyState === 'error' && 'text-red-300'
-                )}
-                onClick={() => {
-                  void handleCopy()
-                }}
-              >
-                {copyState === 'copied' ? (
-                  <Check aria-hidden="true" className="size-4" />
-                ) : (
-                  <Copy aria-hidden="true" className="size-4" />
-                )}
-              </button>
-            </Tooltip>
-
-            <Tooltip content="Скачать SVG" side="top">
-              <button
-                type="button"
-                aria-label="Скачать Mermaid как SVG"
-                disabled={renderState.status !== 'success'}
-                className={cn(
-                  'flex size-7 items-center justify-center rounded-md',
-                  'text-[var(--app-muted)] outline-none',
-                  'transition-colors',
-                  'hover:bg-white/[0.06] hover:text-[var(--app-text)]',
-                  'focus-visible:ring-2 focus-visible:ring-violet-500/35',
-                  'disabled:cursor-not-allowed disabled:opacity-30'
-                )}
-                onClick={() => {
-                  if (renderState.status === 'success') {
-                    downloadMermaidSvg(renderState.svg, renderState.diagramType)
+            <div className="flex shrink-0 items-center gap-1">
+              <ToggleGroup.Root
+                type="single"
+                value={activeViewMode}
+                aria-label="Режим Mermaid-блока"
+                className="flex items-center gap-1"
+                onValueChange={(value) => {
+                  if (isMermaidViewMode(value)) {
+                    onViewModeChange?.(value)
                   }
                 }}
               >
-                <Download aria-hidden="true" className="size-4" />
-              </button>
-            </Tooltip>
-          </div>
-        </header>
+                {mermaidViewModes.map(({ value, label, Icon }) => (
+                  <ToggleGroup.Item
+                    key={value}
+                    value={value}
+                    aria-label={label}
+                    title={label}
+                    className={cn(
+                      'flex h-7 items-center gap-1.5 rounded-md px-2',
+                      'text-xs text-[var(--app-muted)] outline-none',
+                      'transition-colors',
+                      'hover:bg-white/[0.06] hover:text-[var(--app-text)]',
+                      'focus-visible:ring-2 focus-visible:ring-violet-500/35',
+                      'data-[state=on]:bg-violet-500/15',
+                      'data-[state=on]:text-violet-200'
+                    )}
+                  >
+                    <Icon aria-hidden="true" className="size-3.5" />
+                    <span className="max-[780px]:hidden">{label}</span>
+                  </ToggleGroup.Item>
+                ))}
+              </ToggleGroup.Root>
 
-        {activeViewMode === 'write' && (
-          <MermaidSourceEditor id={editorId} source={source} onChange={onChange} />
-        )}
+              <Tooltip content="Скачать SVG" side="top">
+                <button
+                  type="button"
+                  aria-label="Скачать Mermaid как SVG"
+                  disabled={renderState.status !== 'success'}
+                  className={headerButtonClassName}
+                  onClick={() => {
+                    if (renderState.status === 'success') {
+                      downloadMermaidSvg(renderState.svg, renderState.diagramType)
+                    }
+                  }}
+                >
+                  <Download aria-hidden="true" className="size-4" />
+                </button>
+              </Tooltip>
 
-        {activeViewMode === 'preview' && (
-          <StudyMermaidPreview source={source} state={renderState} scale={scale} />
-        )}
-
-        {activeViewMode === 'split' && (
-          <div className="grid grid-cols-2 divide-x divide-[var(--app-border)] max-[900px]:grid-cols-1 max-[900px]:divide-x-0 max-[900px]:divide-y">
-            <div className="min-w-0">
-              <MermaidPanelLabel>Mermaid</MermaidPanelLabel>
-
-              <MermaidSourceEditor id={editorId} source={source} onChange={onChange} />
+              {actions}
             </div>
+          </header>
 
-            <div className="min-w-0">
-              <MermaidPanelLabel>Диаграмма</MermaidPanelLabel>
+          {activeViewMode === 'write' && (
+            <MermaidSourceEditor
+              id={`${editorId}-${fullscreen ? 'fullscreen' : 'inline'}`}
+              source={source}
+              fullscreen={fullscreen}
+              onChange={onChange}
+            />
+          )}
 
+          {activeViewMode === 'preview' && (
+            <div className={cn(fullscreen && 'min-h-0 flex-1 overflow-auto')}>
               <StudyMermaidPreview source={source} state={renderState} scale={scale} />
             </div>
-          </div>
-        )}
-      </section>
-    </TooltipProvider>
+          )}
+
+          {activeViewMode === 'split' && (
+            <div
+              className={cn(
+                'grid grid-cols-2 divide-x divide-[var(--app-border)] max-[900px]:grid-cols-1 max-[900px]:divide-x-0 max-[900px]:divide-y',
+                fullscreen && 'min-h-0 flex-1 overflow-hidden'
+              )}
+            >
+              <div className={cn('min-w-0', fullscreen && 'flex min-h-0 flex-col')}>
+                <MermaidPanelLabel>Mermaid</MermaidPanelLabel>
+                <MermaidSourceEditor
+                  id={`${editorId}-${fullscreen ? 'fullscreen' : 'inline'}`}
+                  source={source}
+                  fullscreen={fullscreen}
+                  onChange={onChange}
+                />
+              </div>
+
+              <div className={cn('min-w-0', fullscreen && 'flex min-h-0 flex-col')}>
+                <MermaidPanelLabel>Диаграмма</MermaidPanelLabel>
+                <div className={cn(fullscreen && 'min-h-0 flex-1 overflow-auto')}>
+                  <StudyMermaidPreview source={source} state={renderState} scale={scale} />
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
+      )}
+    </StudySourceBlockShell>
   )
 }
 
 function MermaidSourceEditor({
   id,
   source,
+  fullscreen = false,
   onChange
 }: {
   id: string
   source: string
+  fullscreen?: boolean
   onChange?: (source: string) => void
 }): React.JSX.Element {
   return (
@@ -282,7 +254,7 @@ function MermaidSourceEditor({
         Исходный Mermaid-код
       </label>
 
-      <div className="max-h-[40rem] overflow-auto">
+      <div className={cn(fullscreen ? 'min-h-0 flex-1 overflow-auto' : 'max-h-[40rem] overflow-auto')}>
         <Editor
           value={source}
           textareaId={id}
@@ -296,7 +268,7 @@ function MermaidSourceEditor({
           preClassName="study-mermaid-source__pre"
           highlight={highlightMermaid}
           style={{
-            minHeight: '3.45rem',
+            minHeight: fullscreen ? '100%' : '3.45rem',
             fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
             fontSize: '0.875rem',
             lineHeight: '1.65'
@@ -350,7 +322,6 @@ function StudyMermaidPreview({
 
           <div className="min-w-0">
             <p className="text-sm font-medium text-red-200">Ошибка в диаграмме</p>
-
             <pre className="mt-1 max-h-44 overflow-auto font-mono text-xs leading-5 whitespace-pre-wrap text-red-300/80">
               {state.error}
             </pre>
@@ -377,7 +348,7 @@ function StudyMermaidPreview({
 
 function MermaidPanelLabel({ children }: { children: React.ReactNode }): React.JSX.Element {
   return (
-    <div className="border-b border-[var(--app-border)] px-4 py-2 text-[10px] font-semibold tracking-[0.08em] text-[var(--app-muted)] uppercase">
+    <div className="shrink-0 border-b border-[var(--app-border)] px-4 py-2 text-[10px] font-semibold tracking-[0.08em] text-[var(--app-muted)] uppercase">
       {children}
     </div>
   )
@@ -480,11 +451,8 @@ function downloadMermaidSvg(svg: string, diagramType: string): void {
   const blob = new Blob([svg], {
     type: 'image/svg+xml;charset=utf-8'
   })
-
   const url = URL.createObjectURL(blob)
-
   const anchor = document.createElement('a')
-
   const safeType = diagramType
     .replace(/[^a-z0-9_-]+/gi, '-')
     .replace(/^-+|-+$/g, '')
@@ -500,38 +468,4 @@ function downloadMermaidSvg(svg: string, diagramType: string): void {
   window.setTimeout(() => {
     URL.revokeObjectURL(url)
   }, 0)
-}
-
-async function writeClipboard(value: string): Promise<void> {
-  if (navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(value)
-    return
-  }
-
-  const textarea = document.createElement('textarea')
-
-  textarea.value = value
-  textarea.setAttribute('aria-hidden', 'true')
-
-  Object.assign(textarea.style, {
-    position: 'fixed',
-    top: '0',
-    left: '0',
-    width: '1px',
-    height: '1px',
-    opacity: '0',
-    pointerEvents: 'none'
-  })
-
-  document.body.appendChild(textarea)
-  textarea.focus()
-  textarea.select()
-
-  const copied = document.execCommand('copy')
-
-  textarea.remove()
-
-  if (!copied) {
-    throw new Error('Clipboard is unavailable')
-  }
 }
