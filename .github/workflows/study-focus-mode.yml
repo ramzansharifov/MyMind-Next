@@ -1,77 +1,51 @@
-name: Diagnose study focus mode tests
+name: Verify study focus mode
 
 on:
   pull_request:
     branches: [main]
 
 permissions:
-  contents: read
-  pull-requests: write
+  contents: write
 
 jobs:
   verify:
+    if: github.actor != 'github-actions[bot]'
     runs-on: windows-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with:
           ref: agent/study-focus-mode
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - run: npm ci --silent
+      - run: npm ci
       - name: Apply focus mode implementation
         shell: bash
         run: |
           set -e
           node scripts/fix-study-focus-generator.mjs
           node scripts/add-study-focus-mode.mjs
-          rm -f scripts/add-study-focus-mode.mjs scripts/fix-study-focus-generator.mjs
-          npm run format > /dev/null
+          rm -f \
+            scripts/add-study-focus-mode.mjs \
+            scripts/fix-study-focus-generator.mjs \
+            .github/workflows/study-focus-mode.yml
+          npm run format
       - run: npm run native:node
-      - name: Diagnose tests
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:coverage
+      - run: npm run db:check
+      - run: npm run build:bundle
+      - name: Commit verified source
         shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          set +e
-          npm exec vitest -- run --reporter=json --outputFile=test-results.json > /dev/null 2>&1
-          status=$?
-          if [ "$status" -ne 0 ]; then
-            node <<'NODE' > test-summary.txt
-          const fs = require('node:fs')
-          const report = JSON.parse(fs.readFileSync('test-results.json', 'utf8'))
-          const ansi = /\u001b\[[0-9;]*m/g
-          const lines = []
-
-          for (const suite of report.testResults ?? []) {
-            if (suite.status === 'failed' && (suite.assertionResults?.length ?? 0) === 0) {
-              lines.push(`${suite.name} :: suite failure`)
-              lines.push(String(suite.message ?? '').replace(ansi, '').slice(0, 5000))
-              lines.push('')
-            }
-
-            for (const assertion of suite.assertionResults ?? []) {
-              if (assertion.status !== 'failed') continue
-              const raw = (assertion.failureMessages ?? []).join('\n').replace(ansi, '')
-              const compact = raw.split('Ignored nodes:')[0].trim()
-              lines.push(`${suite.name} :: ${assertion.fullName ?? assertion.title ?? 'failed test'}`)
-              lines.push(compact.slice(0, 5000))
-              lines.push('')
-            }
-          }
-
-          process.stdout.write(lines.join('\n') || 'Vitest завершился с ошибкой без детального сообщения.')
-          NODE
-            {
-              echo "Добавить полноэкранный режим чтения материала, сохранить его при переходе на связанную доску и обратно, предоставить возврат к материалу и выход из фокуса на доске. Унифицировать подсказки модуля досок через общий Radix Tooltip."
-              echo
-              echo "## Временная диагностика тестов"
-              echo '```text'
-              cat test-summary.txt
-              echo '```'
-            } > pr-body.md
-            gh pr edit 34 --body-file pr-body.md
-            exit "$status"
-          fi
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Добавить режим фокуса обучения"
+          git push origin HEAD:agent/study-focus-mode
