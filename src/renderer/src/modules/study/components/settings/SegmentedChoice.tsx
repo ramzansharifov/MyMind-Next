@@ -48,14 +48,15 @@ export function SegmentedChoice({
           aria-label={option.ariaLabel ?? option.label}
           className={cn(
             'flex h-9 min-w-0 items-center justify-center overflow-hidden rounded-lg border px-2',
-            'border-(--app-border) bg-(--app-workspace)',
+            'border-(--app-border) bg-(--app-control)',
             'text-xs font-semibold text-(--app-muted)',
-            'transition-colors outline-none',
-            'hover:border-(--app-border-strong) hover:text-(--app-text)',
+            'transition-[background-color,border-color,color,box-shadow] outline-none',
+            'hover:border-(--app-border-strong) hover:bg-(--app-control-hover) hover:text-(--app-text)',
             'focus-visible:ring-2 focus-visible:ring-violet-500/35',
             'data-[state=on]:border-violet-500/45',
             'data-[state=on]:bg-violet-500/15',
             'data-[state=on]:text-violet-200',
+            'data-[state=on]:shadow-sm',
             'disabled:cursor-not-allowed disabled:opacity-40'
           )}
         >
