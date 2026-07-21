@@ -20,10 +20,11 @@ const workspaceActionButtonVariants = cva(
       variant: {
         secondary: [
           'border-[var(--app-border-strong)]',
-          'bg-black/[0.08]',
+          'bg-[var(--app-control)]',
           'text-[var(--app-text)]',
+          'shadow-[var(--app-shadow-card)]',
           'hover:border-violet-500/35',
-          'hover:bg-white/[0.045]'
+          'hover:bg-[var(--app-control-hover)]'
         ],
         primary: [
           'border-violet-400/20',
@@ -70,7 +71,7 @@ export function WorkspaceStatCard({
   description: string
 }): React.JSX.Element {
   return (
-    <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-[var(--app-border)] bg-black/[0.08] p-3.5 shadow-sm shadow-black/5">
+    <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-card)] p-3.5 shadow-[var(--app-shadow-card)]">
       <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
         {icon}
       </div>
@@ -99,7 +100,7 @@ export function WorkspacePanel({
   children: ReactNode
 }): React.JSX.Element {
   return (
-    <section className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[0_12px_40px_rgb(0_0_0/0.1)]">
+    <section className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--app-shadow-panel)]">
       <header className="flex min-h-20 items-center gap-3 border-b border-[var(--app-border)] px-5 py-4">
         <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
           {icon}
@@ -109,7 +110,7 @@ export function WorkspacePanel({
           <h2 className="truncate text-base font-semibold text-[var(--app-text)]">{title}</h2>
         </div>
 
-        <span className="flex min-w-7 shrink-0 items-center justify-center rounded-full border border-[var(--app-border)] bg-[var(--app-workspace)] px-2 py-1 text-[11px] font-medium text-[var(--app-muted)] tabular-nums">
+        <span className="flex min-w-7 shrink-0 items-center justify-center rounded-full border border-[var(--app-border)] bg-[var(--app-card)] px-2 py-1 text-[11px] font-medium text-[var(--app-muted)] tabular-nums">
           {count}
         </span>
       </header>
@@ -142,10 +143,10 @@ export function WorkspaceNodeCard({
       aria-label={ariaLabel}
       className={cn(
         'group flex w-full min-w-0 items-center gap-3 rounded-xl border text-left outline-none',
-        'border-[var(--app-border)] bg-[var(--app-workspace)]',
+        'border-[var(--app-border)] bg-[var(--app-card)]',
         'transition-[border-color,background-color,transform,box-shadow]',
-        'hover:-translate-y-px hover:border-violet-500/30 hover:bg-[var(--app-surface-raised)]',
-        'hover:shadow-lg hover:shadow-black/10',
+        'hover:-translate-y-px hover:border-violet-500/30 hover:bg-[var(--app-card-hover)]',
+        'hover:shadow-[var(--app-shadow-hover)]',
         'focus-visible:ring-2 focus-visible:ring-violet-500/35',
         compact ? 'p-3' : 'p-3.5'
       )}
@@ -155,9 +156,9 @@ export function WorkspaceNodeCard({
         aria-hidden="true"
         className={cn(
           'flex shrink-0 items-center justify-center rounded-xl border',
-          'border-white/[0.035] bg-white/[0.025] text-[var(--app-muted)]',
+          'border-[var(--app-border)] bg-[var(--app-icon-surface)] text-[var(--app-muted)]',
           'transition-colors',
-          'group-hover:border-violet-500/15 group-hover:bg-violet-500/10',
+          'group-hover:border-violet-500/20 group-hover:bg-violet-500/10',
           'group-hover:text-violet-300',
           compact ? 'size-9' : 'size-10'
         )}
@@ -191,7 +192,7 @@ export function WorkspaceSectionEmpty({
     <div
       className={cn(
         'flex min-h-32 items-center justify-center rounded-xl border border-dashed',
-        'border-[var(--app-border)] bg-black/[0.04] px-5 py-8',
+        'border-[var(--app-border)] bg-[var(--app-empty-surface)] px-5 py-8',
         'text-center text-sm leading-6 text-[var(--app-muted)]',
         className
       )}
