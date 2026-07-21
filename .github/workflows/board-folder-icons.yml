@@ -28,6 +28,7 @@ jobs:
         run: |
           set +e
           {
+            node scripts/patch-board-folder-icon-scripts.mjs
             node scripts/add-board-folder-icons.mjs
             npm run db:generate -- --name board_folder_icons
             node scripts/finalize-board-folder-icons.mjs
