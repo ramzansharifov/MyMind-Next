@@ -50,21 +50,27 @@ export function Tooltip({
 
       <TooltipPrimitive.Portal>
         <TooltipPrimitive.Content
+          data-mymind-tooltip="true"
           side={side}
           align={align}
           sideOffset={9}
           collisionPadding={12}
           className={cn(
-            'z-[160] max-w-64 rounded-lg border select-none',
+            'z-[160] max-w-72 select-none rounded-xl border',
             'border-[var(--app-tooltip-border)] bg-[var(--app-tooltip)]',
-            'px-2.5 py-1.5 text-xs font-medium text-[var(--app-text)]',
+            'px-3 py-2 text-xs leading-4 font-semibold text-white',
+            'shadow-[0_14px_36px_rgb(0_0_0/0.42)] backdrop-blur-xl',
             'will-change-transform',
             contentClassName
           )}
         >
           {content}
 
-          <TooltipPrimitive.Arrow width={8} height={4} className="fill-[var(--app-tooltip)]" />
+          <TooltipPrimitive.Arrow
+            width={10}
+            height={5}
+            className="fill-[var(--app-tooltip)]"
+          />
         </TooltipPrimitive.Content>
       </TooltipPrimitive.Portal>
     </TooltipPrimitive.Root>
