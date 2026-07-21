@@ -389,6 +389,7 @@ function useMermaidRender(source: string, theme: StudyMermaidTheme): MermaidRend
             diagramType: null,
             error: getStudyMermaidErrorMessage(reason)
           })
+        })
     }, 320)
 
     return () => {
