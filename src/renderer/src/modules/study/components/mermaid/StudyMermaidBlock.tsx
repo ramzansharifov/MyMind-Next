@@ -59,21 +59,9 @@ const emptyRenderState: MermaidRenderState = {
 }
 
 const mermaidViewModes = [
-  {
-    value: 'write',
-    label: 'Код',
-    Icon: PencilLine
-  },
-  {
-    value: 'split',
-    label: '2 окна',
-    Icon: Columns2
-  },
-  {
-    value: 'preview',
-    label: 'Просмотр',
-    Icon: Eye
-  }
+  { value: 'write', label: 'Код', Icon: PencilLine },
+  { value: 'split', label: '2 окна', Icon: Columns2 },
+  { value: 'preview', label: 'Просмотр', Icon: Eye }
 ] satisfies Array<{
   value: StudyMermaidViewMode
   label: string
@@ -112,6 +100,7 @@ export function StudyMermaidBlock({
   return (
     <StudySourceBlockShell
       source={source}
+      copyDisabled={!source.trim()}
       copyLabel="Копировать Mermaid-код"
       copiedAnnouncement="Mermaid-код скопирован"
       copyErrorAnnouncement="Не удалось скопировать Mermaid-код"
@@ -210,7 +199,7 @@ export function StudyMermaidBlock({
             <div
               className={cn(
                 'grid grid-cols-2 divide-x divide-[var(--app-border)] max-[900px]:grid-cols-1 max-[900px]:divide-x-0 max-[900px]:divide-y',
-                fullscreen && 'min-h-0 flex-1 overflow-hidden'
+                fullscreen && 'min-h-0 flex-1 overflow-auto min-[901px]:overflow-hidden'
               )}
             >
               <div className={cn('min-w-0', fullscreen && 'flex min-h-0 flex-col')}>
@@ -400,7 +389,6 @@ function useMermaidRender(source: string, theme: StudyMermaidTheme): MermaidRend
             diagramType: null,
             error: getStudyMermaidErrorMessage(reason)
           })
-        })
     }, 320)
 
     return () => {
