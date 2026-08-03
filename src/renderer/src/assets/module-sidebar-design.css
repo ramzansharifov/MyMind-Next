@@ -1,6 +1,6 @@
 /*
- * One geometry for the Study and Boards module trees.
- * Themes only provide color tokens; row size, shape and spacing are shared.
+ * Shared geometry and state styling for the Study and Boards module trees.
+ * React components expose semantic data attributes; themes only replace tokens.
  */
 [data-module-sidebar] {
   --module-tree-active-bg: color-mix(
@@ -14,6 +14,11 @@
     var(--app-sidebar)
   );
   --module-tree-active-text: var(--app-accent-300);
+  --module-tree-context-bg: color-mix(
+    in srgb,
+    var(--app-accent-500) 4.5%,
+    var(--app-sidebar)
+  );
 
   border-right: 1px solid var(--app-border) !important;
 }
@@ -22,14 +27,10 @@
   --module-tree-active-bg: color-mix(in srgb, var(--app-accent-500) 12%, #ffffff);
   --module-tree-active-bg-hover: color-mix(in srgb, var(--app-accent-500) 16%, #ffffff);
   --module-tree-active-text: var(--app-accent-700);
+  --module-tree-context-bg: color-mix(in srgb, var(--app-accent-500) 5%, #ffffff);
 }
 
-/*
- * Keep geometry stronger than legacy board-only light-theme selectors.
- * This guarantees that changing theme can never change row shape.
- */
-[data-module-sidebar]
-  :is([data-study-tree-node-id], [data-board-tree-node]) {
+[data-module-sidebar] [data-module-tree-node] {
   width: 100%;
   min-height: 2rem;
   margin: 0;
@@ -40,30 +41,32 @@
     box-shadow 140ms ease;
 }
 
-/* The compact icon-only sidebar keeps its original button geometry. */
-[data-module-sidebar][data-collapsed='true']
-  :is([data-study-tree-node-id], [data-board-tree-node]) {
+/* The compact icon-only sidebar keeps its button geometry. */
+[data-module-sidebar][data-collapsed='true'] [data-module-tree-node] {
   width: auto;
   border-radius: 0.75rem !important;
 }
 
 [data-module-sidebar]
-  :is([data-study-tree-node-id], [data-board-tree-node]):not(
-    [class*='text-violet-200']
-  ):hover {
+  [data-module-tree-node]:not([data-selected='true']):hover {
   color: var(--app-text) !important;
   background: var(--app-control-hover) !important;
 }
 
 [data-module-sidebar]
-  :is([data-study-tree-node-id], [data-board-tree-node])[class*='bg-violet'][class*='text-violet-200'] {
+  [data-module-tree-node][data-context-active='true'][data-selected='false'] {
+  color: var(--app-text) !important;
+  background: var(--module-tree-context-bg) !important;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--app-accent-500) 15%, transparent) !important;
+}
+
+[data-module-sidebar] [data-module-tree-node][data-selected='true'] {
   color: var(--module-tree-active-text) !important;
   background: var(--module-tree-active-bg) !important;
   box-shadow: inset 3px 0 0 var(--app-accent-500) !important;
 }
 
-[data-module-sidebar]
-  :is([data-study-tree-node-id], [data-board-tree-node])[class*='bg-violet'][class*='text-violet-200']:hover {
+[data-module-sidebar] [data-module-tree-node][data-selected='true']:hover {
   color: var(--module-tree-active-text) !important;
   background: var(--module-tree-active-bg-hover) !important;
 }
