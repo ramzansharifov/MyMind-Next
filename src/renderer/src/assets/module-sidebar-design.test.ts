@@ -12,20 +12,23 @@ describe('module sidebar design', () => {
     expect(styles).toContain("[class*='text-violet-200']")
   })
 
-  it('keeps expanded rows rectangular in both modules', () => {
-    expect(styles).toContain('border-radius: 0')
+  it('locks expanded-row geometry across themes and legacy selectors', () => {
+    expect(styles).toContain('width: 100%')
+    expect(styles).toContain('min-height: 2rem')
+    expect(styles).toContain('margin: 0')
+    expect(styles).toContain('border-radius: 0 !important')
     expect(styles).toContain('inset 3px 0 0 var(--app-accent-500) !important')
-    expect(styles).toContain('var(--module-tree-active-bg) !important')
   })
 
   it('retains compact button rounding only for the collapsed sidebar', () => {
     expect(styles).toContain("[data-module-sidebar][data-collapsed='true']")
-    expect(styles).toContain('border-radius: 0.75rem')
+    expect(styles).toContain('width: auto')
+    expect(styles).toContain('border-radius: 0.75rem !important')
   })
 
-  it('removes the hard divider beside the module sidebar', () => {
+  it('shows one real divider on the right edge of both module sidebars', () => {
     expect(styles).toContain('[data-module-sidebar]')
-    expect(styles).toContain('border-right: 0 !important')
+    expect(styles).toContain('border-right: 1px solid var(--app-border) !important')
   })
 
   it('changes only color tokens in the light theme', () => {
