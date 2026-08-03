@@ -1,16 +1,10 @@
-import { readFileSync } from 'node:fs'
-
 import { describe, expect, it } from 'vitest'
 
-const sharedRow = readFileSync(new URL('./ModuleTreeNodeRow.tsx', import.meta.url), 'utf8')
-const studyTree = readFileSync(
-  new URL('../../modules/study/components/StudyTree.tsx', import.meta.url),
-  'utf8'
-)
-const boardTree = readFileSync(
-  new URL('../../modules/boards/components/BoardTree.tsx', import.meta.url),
-  'utf8'
-)
+import { readRepoText } from '../../test/read-repo-text'
+
+const sharedRow = readRepoText('src/renderer/src/shared/ui/ModuleTreeNodeRow.tsx')
+const studyTree = readRepoText('src/renderer/src/modules/study/components/StudyTree.tsx')
+const boardTree = readRepoText('src/renderer/src/modules/boards/components/BoardTree.tsx')
 
 describe('module tree architecture', () => {
   it('composes both module trees from the same row component', () => {
