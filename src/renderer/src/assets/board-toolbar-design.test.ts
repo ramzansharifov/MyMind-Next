@@ -1,8 +1,8 @@
-import { readFileSync } from 'node:fs'
-
 import { describe, expect, it } from 'vitest'
 
-const styles = readFileSync(new URL('./board-toolbar-design.css', import.meta.url), 'utf8')
+import { readRepoText } from '../test/read-repo-text'
+
+const styles = readRepoText('src/renderer/src/assets/board-toolbar-design.css')
 
 describe('board toolbar design', () => {
   it('scopes the treatment to the primary tldraw tool selector', () => {
