@@ -34,8 +34,13 @@ describe('module sidebar design', () => {
   })
 
   it('changes only color tokens in the light theme', () => {
-    expect(styles).toContain(":root[data-theme='light'] [data-module-sidebar]")
-    expect(styles).toContain('--module-tree-active-text: var(--app-accent-700)')
-    expect(styles).not.toMatch(/:root\[data-theme='light'\][\s\S]*border-radius:/)
+    const lightThemeBlock = styles.match(
+      /:root\[data-theme='light'\] \[data-module-sidebar\] \{([\s\S]*?)\}/
+    )?.[1]
+
+    expect(lightThemeBlock).toContain('--module-tree-active-text: var(--app-accent-700)')
+    expect(lightThemeBlock).not.toContain('border-radius:')
+    expect(lightThemeBlock).not.toContain('width:')
+    expect(lightThemeBlock).not.toContain('margin:')
   })
 })
