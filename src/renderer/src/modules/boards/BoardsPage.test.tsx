@@ -178,7 +178,7 @@ describe('BoardsPage', () => {
     ).toBeInTheDocument()
   })
 
-  it('does not offer manual deletion for a folder linked to study', async () => {
+  it('hides linked-folder actions while preserving linked-board rename and deletion', async () => {
     const user = userEvent.setup()
     const linkedFolder: BoardNode = {
       id: 'linked-study-folder',
@@ -203,13 +203,15 @@ describe('BoardsPage', () => {
     render(<BoardsPage />)
 
     await screen.findByRole('heading', { name: 'Доски', level: 1 })
-    await user.click(screen.getByRole('button', { name: 'Действия: Физика' }))
+
+    expect(screen.queryByRole('button', { name: 'Действия: Физика' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Действия: Тестовая доска' }))
 
     expect(await screen.findByRole('menuitem', { name: 'Переименовать' })).toBeInTheDocument()
-    expect(screen.queryByRole('menuitem', { name: 'Удалить' })).not.toBeInTheDocument()
-    expect(
-      screen.queryByText('Папка удалится автоматически после удаления последней связанной доски')
-    ).not.toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Удалить' })).toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Новая папка' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Новая доска' })).not.toBeInTheDocument()
   })
 
   it('loads BoardCanvas only for a board and isolates a lazy import failure in the workspace', async () => {
@@ -232,6 +234,7 @@ describe('BoardsPage', () => {
     expect(screen.getByRole('button', { name: 'Тестовая доска' })).toBeInTheDocument()
     expect(screen.queryByText('Не удалось открыть раздел')).not.toBeInTheDocument()
   })
+
   it('locks the study tree and returns a linked board to its source material', async () => {
     const user = userEvent.setup()
     vi.spyOn(console, 'error').mockImplementation(() => undefined)
