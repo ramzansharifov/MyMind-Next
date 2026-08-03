@@ -11,20 +11,14 @@ import {
   type DragOverEvent,
   type DragStartEvent
 } from '@dnd-kit/core'
-import * as ContextMenu from '@radix-ui/react-context-menu'
-import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import {
-  ChevronDown,
-  ChevronRight,
   FolderPlus,
   LockKeyhole,
-  MoreHorizontal,
   Pencil,
   Presentation,
-  Trash2,
-  type LucideIcon
+  Trash2
 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ButtonHTMLAttributes } from 'react'
 
 import {
   BOARD_SYSTEM_ROOT_ID,
@@ -34,13 +28,15 @@ import {
 } from '../../../../../shared/contracts/boards'
 import { cn } from '../../../shared/lib/cn'
 import {
-  MODULE_TREE_NODE_INSIDE_DROP_CLASS_NAME,
   ModuleTreeDragOverlay,
-  ModuleTreeNodeDropIndicator,
   ModuleTreeRootDropZone
 } from '../../../shared/ui/ModuleTreeDndFeedback'
+import {
+  ModuleTreeNodeDropZones,
+  ModuleTreeNodeRow,
+  type ModuleTreeActionEntry
+} from '../../../shared/ui/ModuleTreeNodeRow'
 import { FolderIcon, FOLDER_ICON_SIDEBAR_CLASS_NAME } from '../../../shared/ui/FolderIcon'
-import { Tooltip } from '../../../shared/ui/tooltip'
 import {
   createBoardMoveInput,
   getStudyManagedBoardNodeIds,
@@ -271,11 +267,9 @@ function BoardTreeNode({
   const hasVisibleChildren = isFolder && node.isExpanded && children.length > 0
   const isStudyManaged = studyManagedIds.has(node.id)
   const dropPlacement = dropPreview?.overId === node.id ? dropPreview.placement : null
-  const [contextMenuOpen, setContextMenuOpen] = useState(false)
-  const guideOrigin = 12
-  const guideStep = 16
-  const menuEntries = createBoardMenuEntries({
+  const actions = createBoardMenuEntries({
     node,
+    isStudyManaged,
     onRename,
     onDelete,
     onCreate
@@ -292,141 +286,45 @@ function BoardTreeNode({
 
   return (
     <div className={cn(collapsed ? 'space-y-1.5' : 'space-y-0')}>
-      <ContextMenu.Root open={contextMenuOpen} onOpenChange={setContextMenuOpen}>
-        <ContextMenu.Trigger asChild>
-          <div
-            ref={setDraggableRef}
-            data-board-tree-node={node.id}
-            data-study-managed={isStudyManaged}
-            className={cn(
-              'group relative flex h-8 items-center',
-              collapsed ? 'justify-center rounded-lg' : 'w-full rounded-none',
-              selectedNodeId === node.id
-                ? 'bg-violet-500/12 text-violet-200'
-                : 'text-[var(--app-muted)] hover:bg-white/[0.04] hover:text-[var(--app-text)]',
-              dropPlacement === 'inside' && MODULE_TREE_NODE_INSIDE_DROP_CLASS_NAME,
-              isDragging && 'opacity-35'
-            )}
-            style={
-              collapsed
-                ? undefined
-                : {
-                    paddingLeft: `${2 + depth * guideStep}px`
-                  }
-            }
-          >
-            <BoardTreeDropZones node={node} disabled={isStudyManaged} />
-
-            {!collapsed &&
-              Array.from({ length: depth }, (_, guideDepth) => (
-                <span
-                  key={guideDepth}
-                  aria-hidden="true"
-                  data-board-tree-guide="ancestor"
-                  data-guide-depth={guideDepth}
-                  className="board-tree-guide inset-y-0"
-                  style={{ left: `${guideOrigin + guideDepth * guideStep}px` }}
-                />
-              ))}
-
-            {!collapsed && isFolder && hasVisibleChildren && (
-              <span
-                aria-hidden="true"
-                data-board-tree-guide="folder"
-                data-guide-depth={depth}
-                className="board-tree-guide top-1/2 bottom-0"
-                style={{ left: `${guideOrigin + depth * guideStep}px` }}
-              />
-            )}
-
-            {collapsed && depth > 0 && (
-              <span
-                aria-hidden="true"
-                className="pointer-events-none absolute top-0 left-1/2 h-1/2 w-px -translate-x-1/2 bg-[var(--app-border-strong)]"
-              />
-            )}
-
-            {collapsed && (hasVisibleChildren || !isLastSibling) && (
-              <span
-                aria-hidden="true"
-                className="pointer-events-none absolute bottom-0 left-1/2 h-1/2 w-px -translate-x-1/2 bg-[var(--app-border-strong)]"
-              />
-            )}
-
-            <ModuleTreeNodeDropIndicator placement={dropPlacement} />
-
-            {!collapsed &&
-              (isFolder ? (
-                <Tooltip
-                  content={node.isExpanded ? 'Свернуть папку' : 'Развернуть папку'}
-                  side="right"
-                >
-                  <button
-                    type="button"
-                    aria-label={node.isExpanded ? 'Свернуть папку' : 'Развернуть папку'}
-                    className="z-20 flex size-5 shrink-0 items-center justify-center rounded-sm p-0 outline-none hover:bg-white/[0.05] focus-visible:ring-2 focus-visible:ring-violet-500/35"
-                    onClick={() => void onToggle(node)}
-                  >
-                    {node.isExpanded ? (
-                      <ChevronDown aria-hidden="true" className="size-3.5" />
-                    ) : (
-                      <ChevronRight aria-hidden="true" className="size-3.5" />
-                    )}
-                  </button>
-                </Tooltip>
-              ) : (
-                <span className="size-5 shrink-0" />
-              ))}
-
-            <Tooltip content={`${node.title} · ${isFolder ? 'Папка' : 'Доска'}`} side="right">
-              <button
-                type="button"
-                aria-label={node.title}
-                className={cn(
-                  'relative z-10 flex min-w-0 touch-none items-center text-left text-sm outline-none select-none',
-                  'focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:ring-inset',
-                  collapsed
-                    ? 'size-8 shrink-0 justify-center rounded-lg bg-[var(--app-sidebar)] p-0'
-                    : 'flex-1 gap-1.5 py-1.5 pr-1',
-                  isStudyManaged ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'
-                )}
-                {...attributes}
-                {...listeners}
-                onClick={() => onOpen(node.id)}
-              >
-                {isFolder ? (
-                  <FolderIcon
-                    name={node.icon}
-                    expanded={node.isExpanded}
-                    className={FOLDER_ICON_SIDEBAR_CLASS_NAME}
-                  />
-                ) : (
-                  <Presentation aria-hidden="true" className="size-4 shrink-0" />
-                )}
-                {!collapsed && <span className="truncate">{node.title}</span>}
-                {!collapsed && node.isSystem && (
-                  <LockKeyhole
-                    aria-hidden="true"
-                    className="ml-auto size-3.5 shrink-0 opacity-60"
-                  />
-                )}
-              </button>
-            </Tooltip>
-
-            {!collapsed && menuEntries.length > 0 && (
-              <BoardNodeMenu
-                nodeTitle={node.title}
-                entries={menuEntries}
-                contextMenuOpen={contextMenuOpen}
-              />
-            )}
-          </div>
-        </ContextMenu.Trigger>
-
-        {!collapsed && menuEntries.length > 0 && (
-          <BoardNodeContextMenuContent entries={menuEntries} />
-        )}
-      </ContextMenu.Root>
+      <ModuleTreeNodeRow
+        moduleKind="board"
+        nodeId={node.id}
+        title={node.title}
+        nodeTypeLabel={isFolder ? 'Папка' : 'Доска'}
+        depth={depth}
+        collapsed={collapsed}
+        isLastSibling={isLastSibling}
+        isFolder={isFolder}
+        isExpanded={node.isExpanded}
+        hasVisibleChildren={hasVisibleChildren}
+        isSelected={selectedNodeId === node.id}
+        isDragging={isDragging}
+        isDragDisabled={isStudyManaged}
+        dropPlacement={dropPlacement}
+        rowRef={setDraggableRef}
+        dragHandleProps={{ ...attributes, ...listeners } as ButtonHTMLAttributes<HTMLButtonElement>}
+        extraRowDataAttributes={{ 'data-study-managed': isStudyManaged }}
+        icon={
+          isFolder ? (
+            <FolderIcon
+              name={node.icon}
+              expanded={node.isExpanded}
+              className={FOLDER_ICON_SIDEBAR_CLASS_NAME}
+            />
+          ) : (
+            <Presentation aria-hidden="true" className="size-4 shrink-0" />
+          )
+        }
+        trailing={
+          node.isSystem ? (
+            <LockKeyhole aria-hidden="true" className="ml-auto size-3.5 shrink-0 opacity-60" />
+          ) : undefined
+        }
+        actions={actions}
+        dropZones={<BoardTreeDropZones node={node} disabled={isStudyManaged} />}
+        onOpen={() => onOpen(node.id)}
+        onToggle={() => onToggle(node)}
+      />
 
       {hasVisibleChildren && (
         <div className={cn(collapsed ? 'space-y-1.5' : 'space-y-0')}>
@@ -491,30 +389,12 @@ function BoardTreeDropZones({
   })
 
   return (
-    <>
-      <span
-        ref={setBeforeDropRef}
-        aria-hidden="true"
-        className={cn('pointer-events-none absolute inset-x-0 top-0', isFolder ? 'h-1/4' : 'h-1/2')}
-      />
-
-      {isFolder && (
-        <span
-          ref={setInsideDropRef}
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 top-1/4 h-1/2"
-        />
-      )}
-
-      <span
-        ref={setAfterDropRef}
-        aria-hidden="true"
-        className={cn(
-          'pointer-events-none absolute inset-x-0 bottom-0',
-          isFolder ? 'h-1/4' : 'h-1/2'
-        )}
-      />
-    </>
+    <ModuleTreeNodeDropZones
+      isFolder={isFolder}
+      beforeRef={setBeforeDropRef}
+      insideRef={setInsideDropRef}
+      afterRef={setAfterDropRef}
+    />
   )
 }
 
@@ -568,33 +448,24 @@ function BoardDragOverlay({ node }: { node: BoardNode }): React.JSX.Element {
   )
 }
 
-type BoardMenuEntry =
-  | {
-      kind: 'item'
-      key: string
-      label: string
-      icon: LucideIcon
-      accent?: boolean
-      danger?: boolean
-      onSelect: () => void
-    }
-  | {
-      kind: 'separator'
-      key: string
-    }
-
 function createBoardMenuEntries({
   node,
+  isStudyManaged,
   onRename,
   onDelete,
   onCreate
 }: {
   node: BoardNode
+  isStudyManaged: boolean
   onRename: (node: BoardNode) => void
   onDelete: (node: BoardNode) => void
   onCreate: (type: BoardNodeType, parentId: string | null) => void
-}): BoardMenuEntry[] {
-  const entries: BoardMenuEntry[] = []
+}): ModuleTreeActionEntry[] {
+  if (isStudyManaged && node.type === 'folder') {
+    return []
+  }
+
+  const entries: ModuleTreeActionEntry[] = []
 
   if (node.type === 'folder') {
     entries.push(
@@ -602,16 +473,14 @@ function createBoardMenuEntries({
         kind: 'item',
         key: 'create-folder',
         label: 'Новая папка',
-        icon: FolderPlus,
-        accent: true,
+        icon: <FolderPlus aria-hidden="true" className="size-4 text-violet-300" />,
         onSelect: () => onCreate('folder', node.id)
       },
       {
         kind: 'item',
         key: 'create-board',
         label: 'Новая доска',
-        icon: Presentation,
-        accent: true,
+        icon: <Presentation aria-hidden="true" className="size-4 text-violet-300" />,
         onSelect: () => onCreate('board', node.id)
       }
     )
@@ -626,8 +495,7 @@ function createBoardMenuEntries({
       kind: 'item',
       key: 'rename',
       label: 'Переименовать',
-      icon: Pencil,
-      accent: true,
+      icon: <Pencil aria-hidden="true" className="size-4 text-violet-300" />,
       onSelect: () => onRename(node)
     })
 
@@ -638,7 +506,7 @@ function createBoardMenuEntries({
           kind: 'item',
           key: 'delete',
           label: 'Удалить',
-          icon: Trash2,
+          icon: <Trash2 aria-hidden="true" className="size-4" />,
           danger: true,
           onSelect: () => onDelete(node)
         }
@@ -647,128 +515,6 @@ function createBoardMenuEntries({
   }
 
   return entries
-}
-
-function BoardNodeMenu({
-  nodeTitle,
-  entries,
-  contextMenuOpen
-}: {
-  nodeTitle: string
-  entries: BoardMenuEntry[]
-  contextMenuOpen: boolean
-}): React.JSX.Element {
-  const [menuOpen, setMenuOpen] = useState(false)
-  const anyMenuOpen = menuOpen || contextMenuOpen
-
-  return (
-    <DropdownMenu.Root open={menuOpen} onOpenChange={setMenuOpen}>
-      <Tooltip content={`Действия: ${nodeTitle}`} side="right">
-        <DropdownMenu.Trigger asChild>
-          <button
-            type="button"
-            aria-label={`Действия: ${nodeTitle}`}
-            className={cn(
-              'z-20 flex size-6 shrink-0 items-center justify-center rounded-sm p-0',
-              'text-[var(--app-muted)] hover:bg-white/[0.07] hover:text-[var(--app-text)]',
-              anyMenuOpen
-                ? 'opacity-100'
-                : 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'
-            )}
-            onPointerDown={(event) => {
-              event.stopPropagation()
-            }}
-            onClick={(event) => {
-              event.stopPropagation()
-            }}
-          >
-            <MoreHorizontal aria-hidden="true" className="size-4" />
-          </button>
-        </DropdownMenu.Trigger>
-      </Tooltip>
-
-      <BoardNodeDropdownMenuContent entries={entries} />
-    </DropdownMenu.Root>
-  )
-}
-
-function BoardNodeDropdownMenuContent({
-  entries
-}: {
-  entries: BoardMenuEntry[]
-}): React.JSX.Element {
-  return (
-    <DropdownMenu.Portal>
-      <DropdownMenu.Content
-        sideOffset={6}
-        align="start"
-        className="z-50 min-w-48 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-1.5 text-sm text-[var(--app-text)] shadow-xl shadow-black/25"
-      >
-        {entries.map((entry) =>
-          entry.kind === 'separator' ? (
-            <DropdownMenu.Separator key={entry.key} className="my-1 h-px bg-[var(--app-border)]" />
-          ) : (
-            <DropdownMenu.Item
-              key={entry.key}
-              data-board-tree-action={entry.key}
-              className={cn(
-                'flex cursor-default items-center gap-2 rounded-lg px-2.5 py-2 outline-none',
-                entry.danger
-                  ? 'text-red-300 hover:bg-red-500/10 focus:bg-red-500/10'
-                  : 'hover:bg-white/[0.06] focus:bg-white/[0.06]'
-              )}
-              onSelect={entry.onSelect}
-            >
-              <entry.icon
-                aria-hidden="true"
-                className={cn('size-4', entry.accent && !entry.danger && 'text-violet-300')}
-              />
-              {entry.label}
-            </DropdownMenu.Item>
-          )
-        )}
-      </DropdownMenu.Content>
-    </DropdownMenu.Portal>
-  )
-}
-
-function BoardNodeContextMenuContent({
-  entries
-}: {
-  entries: BoardMenuEntry[]
-}): React.JSX.Element {
-  return (
-    <ContextMenu.Portal>
-      <ContextMenu.Content
-        collisionPadding={8}
-        className="z-50 min-w-48 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-1.5 text-sm text-[var(--app-text)] shadow-xl shadow-black/25"
-      >
-        {entries.map((entry) =>
-          entry.kind === 'separator' ? (
-            <ContextMenu.Separator key={entry.key} className="my-1 h-px bg-[var(--app-border)]" />
-          ) : (
-            <ContextMenu.Item
-              key={entry.key}
-              data-board-tree-action={entry.key}
-              className={cn(
-                'flex cursor-default items-center gap-2 rounded-lg px-2.5 py-2 outline-none',
-                entry.danger
-                  ? 'text-red-300 hover:bg-red-500/10 focus:bg-red-500/10'
-                  : 'hover:bg-white/[0.06] focus:bg-white/[0.06]'
-              )}
-              onSelect={entry.onSelect}
-            >
-              <entry.icon
-                aria-hidden="true"
-                className={cn('size-4', entry.accent && !entry.danger && 'text-violet-300')}
-              />
-              {entry.label}
-            </ContextMenu.Item>
-          )
-        )}
-      </ContextMenu.Content>
-    </ContextMenu.Portal>
-  )
 }
 
 function groupBoardNodesByParent(nodes: BoardNode[]): Map<string | null, BoardNode[]> {
