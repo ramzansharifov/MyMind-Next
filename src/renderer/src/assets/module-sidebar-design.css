@@ -15,7 +15,7 @@
   );
   --module-tree-active-text: var(--app-accent-300);
 
-  border-right: 0 !important;
+  border-right: 1px solid var(--app-border) !important;
 }
 
 :root[data-theme='light'] [data-module-sidebar] {
@@ -24,9 +24,16 @@
   --module-tree-active-text: var(--app-accent-700);
 }
 
+/*
+ * Keep geometry stronger than legacy board-only light-theme selectors.
+ * This guarantees that changing theme can never change row shape.
+ */
 [data-module-sidebar]
   :is([data-study-tree-node-id], [data-board-tree-node]) {
-  border-radius: 0;
+  width: 100%;
+  min-height: 2rem;
+  margin: 0;
+  border-radius: 0 !important;
   transition:
     color 140ms ease,
     background-color 140ms ease,
@@ -36,7 +43,8 @@
 /* The compact icon-only sidebar keeps its original button geometry. */
 [data-module-sidebar][data-collapsed='true']
   :is([data-study-tree-node-id], [data-board-tree-node]) {
-  border-radius: 0.75rem;
+  width: auto;
+  border-radius: 0.75rem !important;
 }
 
 [data-module-sidebar]
