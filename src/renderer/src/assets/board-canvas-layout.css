@@ -1,10 +1,25 @@
 /*
- * tldraw's .tlui-layout__top__left is a full-height layout rail that positions
- * the menu and helper controls. It is not a visual panel. Giving the rail a
- * margin, border, surface, or shadow draws a full-height vertical line inside
- * the board canvas.
+ * Shared tldraw panel geometry. Theme-specific rules only replace color tokens;
+ * spacing, radii and panel hierarchy stay identical.
  */
-:root[data-theme='light'] .mymind-board-canvas .tlui-layout__top__left {
+.mymind-board-canvas {
+  --board-ui-panel-bg: color-mix(in srgb, var(--app-surface-raised) 96%, transparent);
+  --board-ui-panel-border: color-mix(in srgb, var(--app-border-strong) 72%, transparent);
+  --board-ui-panel-shadow: 0 16px 42px rgb(0 0 0 / 24%);
+  --board-ui-panel-radius: 0.75rem;
+}
+
+:root[data-theme='light'] .mymind-board-canvas {
+  --board-ui-panel-bg: rgb(255 255 255 / 96%);
+  --board-ui-panel-border: var(--app-border);
+  --board-ui-panel-shadow: 0 14px 38px rgb(35 48 67 / 14%);
+}
+
+/*
+ * This is a full-height layout rail, not a visible panel. Styling it produced
+ * the false vertical divider beside the module sidebar.
+ */
+.mymind-board-canvas .tlui-layout__top__left {
   margin: 0;
   overflow: visible;
   border: 0;
@@ -13,7 +28,64 @@
   box-shadow: none;
 }
 
-/* Only the actual controls inside the rail may have panel styling. */
-:root[data-theme='light'] .mymind-board-canvas .tlui-layout__top__left > * {
-  border-radius: 0.875rem;
+.mymind-board-canvas .tlui-layout__top__left > :not(.tlui-menu-zone) {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+/* Top-left menu: one surface around all actions, without a toolbar inside a card. */
+.mymind-board-canvas .tlui-menu-zone {
+  margin: 0.5rem 0 0 0.5rem;
+  overflow: hidden;
+  border: 1px solid var(--board-ui-panel-border);
+  border-radius: var(--board-ui-panel-radius);
+  background: var(--board-ui-panel-bg);
+  box-shadow: var(--board-ui-panel-shadow);
+  backdrop-filter: blur(14px);
+}
+
+.mymind-board-canvas
+  :is(.tlui-menu-zone, .tlui-style-panel, .tlui-navigation-panel)
+  .tlui-toolbar {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+/* Right style controls: one continuous panel, not a stack of nested cards. */
+.mymind-board-canvas .tlui-style-panel {
+  margin: 0.5rem 0.5rem 0 0;
+  overflow: hidden;
+  border: 1px solid var(--board-ui-panel-border);
+  border-radius: var(--board-ui-panel-radius);
+  background: var(--board-ui-panel-bg);
+  box-shadow: var(--board-ui-panel-shadow);
+  backdrop-filter: blur(14px);
+}
+
+.mymind-board-canvas .tlui-style-panel__section,
+.mymind-board-canvas .tlui-style-panel__section__common {
+  margin-inline: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Bottom-left zoom controls: remove tldraw's extra pseudo-background. */
+.mymind-board-canvas .tlui-navigation-panel {
+  margin: 0 0 0.5rem 0.5rem;
+  overflow: hidden;
+  border: 1px solid var(--board-ui-panel-border);
+  border-radius: var(--board-ui-panel-radius);
+  background: var(--board-ui-panel-bg);
+  box-shadow: var(--board-ui-panel-shadow);
+  backdrop-filter: blur(14px);
+}
+
+.mymind-board-canvas .tlui-navigation-panel::before {
+  display: none;
 }
