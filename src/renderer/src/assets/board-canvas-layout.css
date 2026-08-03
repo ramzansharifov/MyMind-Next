@@ -1,0 +1,19 @@
+/*
+ * tldraw's .tlui-layout__top__left is a full-height layout rail that positions
+ * the menu and helper controls. It is not a visual panel. Giving the rail a
+ * margin, border, surface, or shadow draws a full-height vertical line inside
+ * the board canvas.
+ */
+:root[data-theme='light'] .mymind-board-canvas .tlui-layout__top__left {
+  margin: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Only the actual controls inside the rail may have panel styling. */
+:root[data-theme='light'] .mymind-board-canvas .tlui-layout__top__left > * {
+  border-radius: 0.875rem;
+}
