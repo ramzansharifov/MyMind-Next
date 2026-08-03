@@ -74,12 +74,15 @@ function renderTree(onRename = vi.fn()): void {
 }
 
 describe('StudyTree sidebar interactions', () => {
-  it('uses full-width compact rows and hover-only nesting guides', () => {
+  it('uses the shared compact row and nesting guide geometry', () => {
     renderTree()
 
     const folderRow = document.querySelector('[data-study-tree-node-id="folder-1"]')
     const materialRow = document.querySelector('[data-study-tree-node-id="material-1"]')
 
+    expect(folderRow).toHaveAttribute('data-module-tree-node', 'study')
+    expect(folderRow).toHaveAttribute('data-context-active', 'true')
+    expect(materialRow).toHaveAttribute('data-selected', 'true')
     expect(folderRow).toHaveClass('h-8', 'w-full', 'rounded-none')
     expect(folderRow).toHaveStyle({ paddingLeft: '2px' })
     expect(materialRow).toHaveStyle({ paddingLeft: '18px' })
@@ -88,7 +91,7 @@ describe('StudyTree sidebar interactions', () => {
     expect(materialRow?.querySelector('[data-study-tree-guide="ancestor"]')).toBeInTheDocument()
   })
 
-  it('opens the same actions by right click and colors the rename icon with the accent palette', async () => {
+  it('opens the shared actions by right click and keeps module action metadata', async () => {
     const user = userEvent.setup()
     const onRename = vi.fn()
     renderTree(onRename)
@@ -98,6 +101,7 @@ describe('StudyTree sidebar interactions', () => {
     const renameItem = await screen.findByRole('menuitem', { name: 'Переименовать' })
     const renameIcon = renameItem.querySelector('svg')
 
+    expect(renameItem).toHaveAttribute('data-module-tree-action', 'rename')
     expect(renameItem).toHaveAttribute('data-study-tree-action', 'rename')
     expect(renameIcon).toHaveClass('text-violet-300')
 
