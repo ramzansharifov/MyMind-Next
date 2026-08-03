@@ -28,7 +28,9 @@ describe('board canvas layout', () => {
   })
 
   it('keeps geometry shared while light theme changes only panel tokens', () => {
-    const lightThemeBlock = styles.slice(styles.indexOf(":root[data-theme='light']"))
+    const lightThemeBlock = styles.match(
+      /:root\[data-theme='light'\] \.mymind-board-canvas \{([\s\S]*?)\}/
+    )?.[1]
 
     expect(lightThemeBlock).toContain('--board-ui-panel-bg:')
     expect(lightThemeBlock).toContain('--board-ui-panel-border:')
