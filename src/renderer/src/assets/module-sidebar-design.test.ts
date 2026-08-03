@@ -12,10 +12,15 @@ describe('module sidebar design', () => {
     expect(styles).toContain("[class*='text-violet-200']")
   })
 
-  it('keeps selected rows geometrically identical', () => {
-    expect(styles).toContain('border-radius: 0.4rem')
+  it('keeps expanded rows rectangular in both modules', () => {
+    expect(styles).toContain('border-radius: 0')
     expect(styles).toContain('inset 3px 0 0 var(--app-accent-500) !important')
     expect(styles).toContain('var(--module-tree-active-bg) !important')
+  })
+
+  it('retains compact button rounding only for the collapsed sidebar', () => {
+    expect(styles).toContain("[data-module-sidebar][data-collapsed='true']")
+    expect(styles).toContain('border-radius: 0.75rem')
   })
 
   it('removes the hard divider beside the module sidebar', () => {
@@ -23,9 +28,9 @@ describe('module sidebar design', () => {
     expect(styles).toContain('border-right: 0 !important')
   })
 
-  it('keeps dedicated active-state contrast for the light theme', () => {
+  it('changes only color tokens in the light theme', () => {
     expect(styles).toContain(":root[data-theme='light'] [data-module-sidebar]")
     expect(styles).toContain('--module-tree-active-text: var(--app-accent-700)')
-    expect(styles).toContain('--module-tree-active-bg-hover:')
+    expect(styles).not.toMatch(/:root\[data-theme='light'\][\s\S]*border-radius:/)
   })
 })
