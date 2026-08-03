@@ -1,17 +1,13 @@
-import { readFileSync } from 'node:fs'
-
 import { describe, expect, it } from 'vitest'
 
-const styles = readFileSync(new URL('./board-canvas-layout.css', import.meta.url), 'utf8')
-const lightThemeComponents = readFileSync(
-  new URL('./light-theme-components.css', import.meta.url),
-  'utf8'
+import { readRepoText } from '../test/read-repo-text'
+
+const styles = readRepoText('src/renderer/src/assets/board-canvas-layout.css')
+const lightThemeComponents = readRepoText('src/renderer/src/assets/light-theme-components.css')
+const lightThemeFinalDetails = readRepoText(
+  'src/renderer/src/assets/light-theme-final-details.css'
 )
-const lightThemeFinalDetails = readFileSync(
-  new URL('./light-theme-final-details.css', import.meta.url),
-  'utf8'
-)
-const entrypoint = readFileSync(new URL('../main.tsx', import.meta.url), 'utf8')
+const entrypoint = readRepoText('src/renderer/src/main.tsx')
 
 describe('board canvas layout', () => {
   it('does not turn the full-height tldraw layout rail into a visual panel', () => {
