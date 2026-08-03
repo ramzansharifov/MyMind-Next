@@ -7,6 +7,7 @@ import './assets/light-theme-final-details.css'
 import './assets/board-visual-polish.css'
 import './assets/board-toolbar-design.css'
 import './assets/tooltip-design.css'
+import './assets/module-sidebar-design.css'
 
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
