@@ -1,8 +1,8 @@
-import { readFileSync } from 'node:fs'
-
 import { describe, expect, it } from 'vitest'
 
-const styles = readFileSync(new URL('./module-sidebar-design.css', import.meta.url), 'utf8')
+import { readRepoText } from '../test/read-repo-text'
+
+const styles = readRepoText('src/renderer/src/assets/module-sidebar-design.css')
 
 describe('module sidebar design', () => {
   it('styles semantic tree state instead of module-specific utility classes', () => {
