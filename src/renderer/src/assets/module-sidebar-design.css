@@ -1,8 +1,6 @@
 /*
- * One visual language for the Study and Boards module trees.
- * Selection is identified by the pair of utility classes emitted by both tree
- * components; requiring both avoids treating Study's creation-context row as
- * the selected row.
+ * One geometry for the Study and Boards module trees.
+ * Themes only provide color tokens; row size, shape and spacing are shared.
  */
 [data-module-sidebar] {
   --module-tree-active-bg: color-mix(
@@ -28,13 +26,14 @@
 
 [data-module-sidebar]
   :is([data-study-tree-node-id], [data-board-tree-node]) {
-  border-radius: 0.4rem;
+  border-radius: 0;
   transition:
     color 140ms ease,
     background-color 140ms ease,
     box-shadow 140ms ease;
 }
 
+/* The compact icon-only sidebar keeps its original button geometry. */
 [data-module-sidebar][data-collapsed='true']
   :is([data-study-tree-node-id], [data-board-tree-node]) {
   border-radius: 0.75rem;
