@@ -20,72 +20,72 @@
  * the false vertical divider beside the module sidebar.
  */
 .mymind-board-canvas .tlui-layout__top__left {
-  margin: 0;
-  overflow: visible;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
+  margin: 0 !important;
+  overflow: visible !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 .mymind-board-canvas .tlui-layout__top__left > :not(.tlui-menu-zone) {
-  border: 0;
-  background: transparent;
-  box-shadow: none;
-  backdrop-filter: none;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
 }
 
 /* Top-left menu: one surface around all actions, without a toolbar inside a card. */
 .mymind-board-canvas .tlui-menu-zone {
-  margin: 0.5rem 0 0 0.5rem;
-  overflow: hidden;
-  border: 1px solid var(--board-ui-panel-border);
-  border-radius: var(--board-ui-panel-radius);
-  background: var(--board-ui-panel-bg);
-  box-shadow: var(--board-ui-panel-shadow);
-  backdrop-filter: blur(14px);
+  margin: 0.5rem 0 0 0.5rem !important;
+  overflow: hidden !important;
+  border: 1px solid var(--board-ui-panel-border) !important;
+  border-radius: var(--board-ui-panel-radius) !important;
+  background: var(--board-ui-panel-bg) !important;
+  box-shadow: var(--board-ui-panel-shadow) !important;
+  backdrop-filter: blur(14px) !important;
 }
 
 .mymind-board-canvas
   :is(.tlui-menu-zone, .tlui-style-panel, .tlui-navigation-panel)
   .tlui-toolbar {
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  backdrop-filter: none;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
 }
 
 /* Right style controls: one continuous panel, not a stack of nested cards. */
 .mymind-board-canvas .tlui-style-panel {
-  margin: 0.5rem 0.5rem 0 0;
-  overflow: hidden;
-  border: 1px solid var(--board-ui-panel-border);
-  border-radius: var(--board-ui-panel-radius);
-  background: var(--board-ui-panel-bg);
-  box-shadow: var(--board-ui-panel-shadow);
-  backdrop-filter: blur(14px);
+  margin: 0.5rem 0.5rem 0 0 !important;
+  overflow: hidden !important;
+  border: 1px solid var(--board-ui-panel-border) !important;
+  border-radius: var(--board-ui-panel-radius) !important;
+  background: var(--board-ui-panel-bg) !important;
+  box-shadow: var(--board-ui-panel-shadow) !important;
+  backdrop-filter: blur(14px) !important;
 }
 
 .mymind-board-canvas .tlui-style-panel__section,
 .mymind-board-canvas .tlui-style-panel__section__common {
-  margin-inline: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
+  margin-inline: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 /* Bottom-left zoom controls: remove tldraw's extra pseudo-background. */
 .mymind-board-canvas .tlui-navigation-panel {
-  margin: 0 0 0.5rem 0.5rem;
-  overflow: hidden;
-  border: 1px solid var(--board-ui-panel-border);
-  border-radius: var(--board-ui-panel-radius);
-  background: var(--board-ui-panel-bg);
-  box-shadow: var(--board-ui-panel-shadow);
-  backdrop-filter: blur(14px);
+  margin: 0 0 0.5rem 0.5rem !important;
+  overflow: hidden !important;
+  border: 1px solid var(--board-ui-panel-border) !important;
+  border-radius: var(--board-ui-panel-radius) !important;
+  background: var(--board-ui-panel-bg) !important;
+  box-shadow: var(--board-ui-panel-shadow) !important;
+  backdrop-filter: blur(14px) !important;
 }
 
 .mymind-board-canvas .tlui-navigation-panel::before {
-  display: none;
+  display: none !important;
 }
