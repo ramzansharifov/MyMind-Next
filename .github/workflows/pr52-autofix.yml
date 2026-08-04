@@ -1,0 +1,95 @@
+name: PR 52 one-off autofix
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  autofix:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies without native rebuilds
+        run: npm ci --ignore-scripts
+
+      - name: Resolve lint errors
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs')
+
+          const editorPath = 'src/renderer/src/modules/study/components/StudyMaterialEditor.tsx'
+          let editor = fs.readFileSync(editorPath, 'utf8')
+          const effect = `  useEffect(() => {
+            if (focusMode) {
+              setMode('read')
+            }
+          }, [focusMode])
+
+          `
+
+          if (!editor.includes(effect)) {
+            throw new Error('Expected focus-mode state effect was not found')
+          }
+
+          editor = editor.replace(effect, `  const activeMode = focusMode ? 'read' : mode
+
+          `)
+          editor = editor.replaceAll("mode === 'read'", "activeMode === 'read'")
+          editor = editor.replace('mode={mode}', 'mode={activeMode}')
+          fs.writeFileSync(editorPath, editor)
+
+          const rowTestPath = 'src/renderer/src/shared/ui/ModuleTreeNodeRow.test.tsx'
+          let rowTest = fs.readFileSync(rowTestPath, 'utf8')
+          const untypedEnd = '} = {}) {'
+          const typedEnd = `} = {}): {
+            onOpen: ReturnType<typeof vi.fn>
+            onToggle: ReturnType<typeof vi.fn>
+          } {`
+
+          if (!rowTest.includes(untypedEnd)) {
+            throw new Error('Expected untyped renderRow helper was not found')
+          }
+
+          rowTest = rowTest.replace(untypedEnd, typedEnd)
+          fs.writeFileSync(rowTestPath, rowTest)
+          NODE
+
+      - name: Format repository
+        run: npm run format
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Commit autofixes
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo 'No changes to commit.'
+            exit 0
+          fi
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .
+          git commit -m 'style: format sidebar refactor and resolve lint'
+          git push origin HEAD:${{ github.head_ref }}
