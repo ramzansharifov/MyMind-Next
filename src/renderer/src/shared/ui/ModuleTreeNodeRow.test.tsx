@@ -23,7 +23,10 @@ function renderRow({
   isContextActive?: boolean
   collapsed?: boolean
   actions?: ModuleTreeActionEntry[]
-} = {}) {
+} = {}): {
+  onOpen: ReturnType<typeof vi.fn>
+  onToggle: ReturnType<typeof vi.fn>
+} {
   const onOpen = vi.fn()
   const onToggle = vi.fn()
 
@@ -113,6 +116,8 @@ describe('ModuleTreeNodeRow', () => {
   it('does not render action controls when the adapter provides no actions', () => {
     renderRow({ actions: [] })
 
-    expect(screen.queryByRole('button', { name: 'Действия: Тестовый узел' })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Действия: Тестовый узел' })
+    ).not.toBeInTheDocument()
   })
 })

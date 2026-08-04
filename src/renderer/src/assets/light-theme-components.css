@@ -53,7 +53,10 @@
   background-color: var(--app-card) !important;
 }
 
-:root[data-theme='light'] [data-study-material-focus] aside button[class~='bg-(--app-workspace)']:hover {
+:root[data-theme='light']
+  [data-study-material-focus]
+  aside
+  button[class~='bg-(--app-workspace)']:hover {
   background-color: var(--app-control-hover) !important;
 }
 
@@ -87,7 +90,9 @@
   background: var(--app-control-active) !important;
 }
 
-:root[data-theme='light'] [data-study-scroll-container='true'] article[aria-label='Содержимое материала'] {
+:root[data-theme='light']
+  [data-study-scroll-container='true']
+  article[aria-label='Содержимое материала'] {
   overflow: hidden;
   border-radius: 1rem;
   background: var(--app-surface);
@@ -161,7 +166,9 @@
 
 :root[data-theme='light'] [data-board-workspace-focus] > header {
   background: color-mix(in srgb, var(--app-surface) 94%, transparent);
-  box-shadow: 0 1px 0 var(--app-border), 0 8px 24px rgb(35 48 67 / 4%);
+  box-shadow:
+    0 1px 0 var(--app-border),
+    0 8px 24px rgb(35 48 67 / 4%);
   backdrop-filter: blur(12px);
 }
 
@@ -204,7 +211,9 @@
 }
 
 :root[data-theme='light'] [role='dialog'] button:not([class*='bg-violet']):not([class*='bg-red']),
-:root[data-theme='light'] [role='alertdialog'] button:not([class*='bg-violet']):not([class*='bg-red']) {
+:root[data-theme='light']
+  [role='alertdialog']
+  button:not([class*='bg-violet']):not([class*='bg-red']) {
   border-color: var(--app-border);
 }
 

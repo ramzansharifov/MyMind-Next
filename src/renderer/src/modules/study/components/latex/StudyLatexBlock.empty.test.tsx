@@ -7,10 +7,7 @@ describe('StudyLatexBlock empty reader', () => {
   it('renders the same compact empty state as Markdown', () => {
     const { container } = render(<StudyLatexBlock mode="read" source="" />)
 
-    expect(screen.getByText('Пустой LaTeX-блок')).toHaveClass(
-      'text-sm',
-      'text-[var(--app-muted)]'
-    )
+    expect(screen.getByText('Пустой LaTeX-блок')).toHaveClass('text-sm', 'text-[var(--app-muted)]')
     expect(container.querySelector('.study-latex-preview')).not.toBeInTheDocument()
     expect(container.querySelector('[data-framed="true"]')).not.toBeInTheDocument()
   })

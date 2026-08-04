@@ -59,11 +59,7 @@ export function StudyMaterialEditor({
   const [saveState, setSaveState] = useState<StudyAutosaveState>('saved')
   const [isLoading, setIsLoading] = useState(true)
 
-  useEffect(() => {
-    if (focusMode) {
-      setMode('read')
-    }
-  }, [focusMode])
+  const activeMode = focusMode ? 'read' : mode
 
   useEffect(() => {
     if (!focusMode) return undefined
@@ -451,7 +447,7 @@ export function StudyMaterialEditor({
               <span className="max-[640px]:hidden">Выйти из фокуса</span>
             </StudyActionButton>
           </Tooltip>
-        ) : mode === 'read' ? (
+        ) : activeMode === 'read' ? (
           <Tooltip content="Открыть режим фокуса" side="bottom">
             <StudyActionButton
               type="button"
@@ -467,17 +463,17 @@ export function StudyMaterialEditor({
       </header>
 
       <div
-        ref={mode === 'read' ? readScrollRef : undefined}
-        data-study-scroll-container={mode === 'read'}
+        ref={activeMode === 'read' ? readScrollRef : undefined}
+        data-study-scroll-container={activeMode === 'read'}
         className={cn(
           'min-h-0 flex-1 overflow-y-auto px-6 py-6',
           'max-[640px]:px-3 max-[640px]:py-4',
-          mode === 'read' && '[scrollbar-gutter:stable] bg-[var(--app-reader-surface)]'
+          activeMode === 'read' && '[scrollbar-gutter:stable] bg-[var(--app-reader-surface)]'
         )}
       >
         <div
           className={
-            mode === 'read'
+            activeMode === 'read'
               ? 'mx-auto grid w-full max-w-[1500px] grid-cols-[minmax(0,1fr)_280px] items-start gap-5 max-[1180px]:grid-cols-1'
               : undefined
           }
@@ -485,12 +481,12 @@ export function StudyMaterialEditor({
           <StudyBlockEditor
             materialId={node.id}
             document={document}
-            mode={mode}
+            mode={activeMode}
             focusMode={focusMode}
             onChange={updateDocument}
           />
 
-          {mode === 'read' && (
+          {activeMode === 'read' && (
             <StudyReadNavigation blocks={document.blocks} scrollContainerRef={readScrollRef} />
           )}
         </div>

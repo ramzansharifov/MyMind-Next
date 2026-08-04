@@ -11,13 +11,7 @@ import {
   type DragOverEvent,
   type DragStartEvent
 } from '@dnd-kit/core'
-import {
-  FolderPlus,
-  LockKeyhole,
-  Pencil,
-  Presentation,
-  Trash2
-} from 'lucide-react'
+import { FolderPlus, LockKeyhole, Pencil, Presentation, Trash2 } from 'lucide-react'
 import { useMemo, useState, type ButtonHTMLAttributes } from 'react'
 
 import {

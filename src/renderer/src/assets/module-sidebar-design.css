@@ -3,22 +3,10 @@
  * React components expose semantic data attributes; themes only replace tokens.
  */
 [data-module-sidebar] {
-  --module-tree-active-bg: color-mix(
-    in srgb,
-    var(--app-accent-500) 14%,
-    var(--app-sidebar)
-  );
-  --module-tree-active-bg-hover: color-mix(
-    in srgb,
-    var(--app-accent-500) 18%,
-    var(--app-sidebar)
-  );
+  --module-tree-active-bg: color-mix(in srgb, var(--app-accent-500) 14%, var(--app-sidebar));
+  --module-tree-active-bg-hover: color-mix(in srgb, var(--app-accent-500) 18%, var(--app-sidebar));
   --module-tree-active-text: var(--app-accent-300);
-  --module-tree-context-bg: color-mix(
-    in srgb,
-    var(--app-accent-500) 4.5%,
-    var(--app-sidebar)
-  );
+  --module-tree-context-bg: color-mix(in srgb, var(--app-accent-500) 4.5%, var(--app-sidebar));
 
   border-right: 1px solid var(--app-border) !important;
 }
@@ -47,14 +35,12 @@
   border-radius: 0.75rem !important;
 }
 
-[data-module-sidebar]
-  [data-module-tree-node]:not([data-selected='true']):hover {
+[data-module-sidebar] [data-module-tree-node]:not([data-selected='true']):hover {
   color: var(--app-text) !important;
   background: var(--app-control-hover) !important;
 }
 
-[data-module-sidebar]
-  [data-module-tree-node][data-context-active='true'][data-selected='false'] {
+[data-module-sidebar] [data-module-tree-node][data-context-active='true'][data-selected='false'] {
   color: var(--app-text) !important;
   background: var(--module-tree-context-bg) !important;
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--app-accent-500) 15%, transparent) !important;

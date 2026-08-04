@@ -78,10 +78,7 @@
 
 .mymind-board-canvas
   .tlui-main-toolbar
-  :is(.tlui-button, .tlui-button__tool):is(
-    [aria-pressed='true'],
-    [data-isactive='true']
-  )::after {
+  :is(.tlui-button, .tlui-button__tool):is([aria-pressed='true'], [data-isactive='true'])::after {
   border-color: color-mix(in srgb, var(--app-accent-500) 42%, transparent);
   background: color-mix(in srgb, var(--app-accent-500) 18%, var(--app-surface-raised));
   box-shadow:
@@ -110,20 +107,14 @@
 :root[data-theme='light']
   .mymind-board-canvas
   .tlui-main-toolbar
-  :is(.tlui-button, .tlui-button__tool):is(
-    [aria-pressed='true'],
-    [data-isactive='true']
-  ) {
+  :is(.tlui-button, .tlui-button__tool):is([aria-pressed='true'], [data-isactive='true']) {
   color: var(--app-accent-700);
 }
 
 :root[data-theme='light']
   .mymind-board-canvas
   .tlui-main-toolbar
-  :is(.tlui-button, .tlui-button__tool):is(
-    [aria-pressed='true'],
-    [data-isactive='true']
-  )::after {
+  :is(.tlui-button, .tlui-button__tool):is([aria-pressed='true'], [data-isactive='true'])::after {
   border-color: color-mix(in srgb, var(--app-accent-600) 30%, var(--app-border));
   background: color-mix(in srgb, var(--app-accent-500) 12%, #ffffff);
   box-shadow:

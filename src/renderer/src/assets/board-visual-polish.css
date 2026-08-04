@@ -41,7 +41,10 @@
   box-shadow: 0 1px 2px rgb(35 48 67 / 5%);
 }
 
-:root[data-theme='light'] [data-study-board-block] > div[class*='relative'] > div[class*='size-12'] {
+:root[data-theme='light']
+  [data-study-board-block]
+  > div[class*='relative']
+  > div[class*='size-12'] {
   width: 2.75rem;
   height: 2.75rem;
   border-color: var(--board-accent-border);
@@ -63,18 +66,27 @@
 }
 
 /* Лист чтения и содержание имеют одинаковые скругления и границы. */
-:root[data-theme='light'] [data-study-scroll-container='true'] article[aria-label='Содержимое материала'] {
+:root[data-theme='light']
+  [data-study-scroll-container='true']
+  article[aria-label='Содержимое материала'] {
   border: 1px solid var(--app-border);
   border-radius: var(--board-panel-radius);
   overflow: hidden;
 }
 
-:root[data-theme='light'] [data-study-scroll-container='true'] aside > nav[aria-label='Навигация по заголовкам материала'] {
+:root[data-theme='light']
+  [data-study-scroll-container='true']
+  aside
+  > nav[aria-label='Навигация по заголовкам материала'] {
   border-radius: var(--board-panel-radius);
   box-shadow: var(--app-shadow-card);
 }
 
-:root[data-theme='light'] [data-study-scroll-container='true'] aside > nav[aria-label='Навигация по заголовкам материала'] > header {
+:root[data-theme='light']
+  [data-study-scroll-container='true']
+  aside
+  > nav[aria-label='Навигация по заголовкам материала']
+  > header {
   border-radius: var(--board-panel-radius) var(--board-panel-radius) 0 0;
 }
 

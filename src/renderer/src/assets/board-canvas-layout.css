@@ -46,9 +46,7 @@
   backdrop-filter: blur(14px) !important;
 }
 
-.mymind-board-canvas
-  :is(.tlui-menu-zone, .tlui-style-panel, .tlui-navigation-panel)
-  .tlui-toolbar {
+.mymind-board-canvas :is(.tlui-menu-zone, .tlui-style-panel, .tlui-navigation-panel) .tlui-toolbar {
   border: 0 !important;
   border-radius: 0 !important;
   background: transparent !important;

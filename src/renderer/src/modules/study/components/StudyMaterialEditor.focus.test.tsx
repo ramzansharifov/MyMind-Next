@@ -80,7 +80,9 @@ describe('StudyMaterialEditor focus mode', () => {
     expect(screen.queryByRole('tab', { name: 'Правка' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Переименовать материал' })).not.toBeInTheDocument()
     expect(screen.getByText('Навигация чтения')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Вернуться к внутренней ссылке' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Вернуться к внутренней ссылке' })
+    ).toBeInTheDocument()
     expect(document.querySelector('[data-study-scroll-container="true"]')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Выйти из режима фокуса' })).toBeInTheDocument()
 

@@ -56,9 +56,7 @@
  * Reorder header actions only when a return action is actually present. Regular
  * material and board headers must retain their original DOM order.
  */
-[data-study-material-focus]
-  > header:has(> button[aria-label='Вернуться к внутренней ссылке'])
-  > *,
+[data-study-material-focus] > header:has(> button[aria-label='Вернуться к внутренней ссылке']) > *,
 [data-board-workspace-focus] > header:has(> button[aria-label='Назад к материалу']) > * {
   order: 3;
 }

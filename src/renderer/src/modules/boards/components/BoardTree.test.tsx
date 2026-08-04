@@ -3,10 +3,7 @@ import userEvent from '@testing-library/user-event'
 import type { ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 
-import {
-  BOARD_SYSTEM_ROOT_ID,
-  type BoardNode
-} from '../../../../../shared/contracts/boards'
+import { BOARD_SYSTEM_ROOT_ID, type BoardNode } from '../../../../../shared/contracts/boards'
 
 vi.mock('@dnd-kit/core', () => ({
   DndContext: ({ children }: { children: ReactNode }) => children,

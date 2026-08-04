@@ -83,11 +83,7 @@ export function StudySourceBlockShell({
     copyState === 'copied' ? copiedLabel : copyState === 'error' ? copyErrorLabel : copyLabel
 
   const announcement =
-    copyState === 'copied'
-      ? copiedAnnouncement
-      : copyState === 'error'
-        ? copyErrorAnnouncement
-        : ''
+    copyState === 'copied' ? copiedAnnouncement : copyState === 'error' ? copyErrorAnnouncement : ''
 
   function renderActions(fullscreen: boolean): React.JSX.Element {
     const fullscreenLabel = fullscreen ? collapseLabel : expandLabel

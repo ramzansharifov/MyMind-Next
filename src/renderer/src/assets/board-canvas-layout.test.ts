@@ -4,9 +4,7 @@ import { readRepoText } from '../test/read-repo-text'
 
 const styles = readRepoText('src/renderer/src/assets/board-canvas-layout.css')
 const lightThemeComponents = readRepoText('src/renderer/src/assets/light-theme-components.css')
-const lightThemeFinalDetails = readRepoText(
-  'src/renderer/src/assets/light-theme-final-details.css'
-)
+const lightThemeFinalDetails = readRepoText('src/renderer/src/assets/light-theme-final-details.css')
 const entrypoint = readRepoText('src/renderer/src/main.tsx')
 
 describe('board canvas layout', () => {
@@ -46,14 +44,12 @@ describe('board canvas layout', () => {
   it('forbids board layout geometry in light-theme component layers', () => {
     expect(lightThemeComponents).not.toContain('.tlui-layout__top__left')
     expect(lightThemeFinalDetails).not.toContain('.tlui-layout__top__left')
-    expect(lightThemeComponents).not.toMatch(
-      /\[data-board-tree-node\][^{]*\{[^}]*border-radius:/
-    )
+    expect(lightThemeComponents).not.toMatch(/\[data-board-tree-node\][^{]*\{[^}]*border-radius:/)
   })
 
   it('loads the corrective layout layer after the other visual styles', () => {
-    const sidebarStyles = entrypoint.indexOf("./assets/module-sidebar-design.css")
-    const canvasLayoutStyles = entrypoint.indexOf("./assets/board-canvas-layout.css")
+    const sidebarStyles = entrypoint.indexOf('./assets/module-sidebar-design.css')
+    const canvasLayoutStyles = entrypoint.indexOf('./assets/board-canvas-layout.css')
 
     expect(sidebarStyles).toBeGreaterThanOrEqual(0)
     expect(canvasLayoutStyles).toBeGreaterThan(sidebarStyles)

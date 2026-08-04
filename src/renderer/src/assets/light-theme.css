@@ -218,7 +218,9 @@
 :root[data-theme='light'] [data-study-material-focus='false'] > header,
 :root[data-theme='light'] [data-board-workspace-focus='false'] > header {
   background: color-mix(in srgb, var(--app-surface) 92%, transparent);
-  box-shadow: 0 1px 0 var(--app-border), 0 8px 24px rgb(35 48 67 / 4%);
+  box-shadow:
+    0 1px 0 var(--app-border),
+    0 8px 24px rgb(35 48 67 / 4%);
   backdrop-filter: blur(12px);
 }
 
@@ -274,7 +276,9 @@
   background: var(--app-control-hover);
 }
 
-:root[data-theme='light'] [data-boards-focus-mode='false'] [data-board-tree-node][class*='bg-violet'] {
+:root[data-theme='light']
+  [data-boards-focus-mode='false']
+  [data-board-tree-node][class*='bg-violet'] {
   background: color-mix(in srgb, var(--app-accent-500) 12%, #ffffff);
   box-shadow: inset 3px 0 0 var(--app-accent-500);
 }

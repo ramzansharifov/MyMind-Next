@@ -231,7 +231,9 @@ function MarkdownSourceEditor({
         Исходный текст Markdown
       </label>
 
-      <div className={cn(fullscreen ? 'min-h-0 flex-1 overflow-auto' : 'max-h-[36rem] overflow-auto')}>
+      <div
+        className={cn(fullscreen ? 'min-h-0 flex-1 overflow-auto' : 'max-h-[36rem] overflow-auto')}
+      >
         <Editor
           value={source}
           textareaId={id}

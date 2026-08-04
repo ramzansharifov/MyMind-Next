@@ -129,9 +129,9 @@ describe('boardsClient', () => {
     await expect(
       boardsClient.createNode({ type: 'folder', parentId: nestedManagedFolder.id })
     ).rejects.toThrow('В зафиксированной папке нельзя создавать папки или доски')
-    await expect(
-      boardsClient.renameNode(nestedManagedFolder.id, 'Новое название')
-    ).rejects.toThrow('Зафиксированную папку нельзя переименовать')
+    await expect(boardsClient.renameNode(nestedManagedFolder.id, 'Новое название')).rejects.toThrow(
+      'Зафиксированную папку нельзя переименовать'
+    )
     await expect(boardsClient.updateFolderIcon(nestedManagedFolder.id, 'folder')).rejects.toThrow(
       'У зафиксированной папки нельзя изменить иконку'
     )

@@ -1,12 +1,7 @@
 import * as ContextMenu from '@radix-ui/react-context-menu'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { ChevronDown, ChevronRight, MoreHorizontal } from 'lucide-react'
-import {
-  useState,
-  type ButtonHTMLAttributes,
-  type ReactNode,
-  type RefCallback
-} from 'react'
+import { useState, type ButtonHTMLAttributes, type ReactNode, type RefCallback } from 'react'
 
 import { cn } from '../lib/cn'
 import {
@@ -32,10 +27,7 @@ export type ModuleTreeActionEntry =
       key: string
     }
 
-type ModuleTreeDataAttributes = Record<
-  `data-${string}`,
-  string | number | boolean | undefined
->
+type ModuleTreeDataAttributes = Record<`data-${string}`, string | number | boolean | undefined>
 
 interface ModuleTreeNodeRowProps {
   moduleKind: ModuleTreeKind

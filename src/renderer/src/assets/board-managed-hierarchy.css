@@ -4,14 +4,10 @@
  * keep a user action menu (rename and delete).
  */
 [data-boards-focus-mode]
-  [data-board-tree-node][data-study-managed='true']:has(
-    > button[aria-label='Свернуть папку']
-  )
+  [data-board-tree-node][data-study-managed='true']:has(> button[aria-label='Свернуть папку'])
   > button[aria-label^='Действия:'],
 [data-boards-focus-mode]
-  [data-board-tree-node][data-study-managed='true']:has(
-    > button[aria-label='Развернуть папку']
-  )
+  [data-board-tree-node][data-study-managed='true']:has(> button[aria-label='Развернуть папку'])
   > button[aria-label^='Действия:'] {
   display: none;
 }
