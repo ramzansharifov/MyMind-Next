@@ -361,11 +361,6 @@ export function NotesHome({
               </Tabs.Content>
 
               <Tabs.Content value="recent" className="mt-5 outline-none">
-                <NotesPageHeader
-                  eyebrow="Недавние"
-                  title="Недавние заметки"
-                  description="Заметки в порядке последних изменений."
-                />
                 <DashboardSection
                   title="Недавние заметки"
                   icon={<Clock3 aria-hidden="true" className="size-5" />}
@@ -385,6 +380,12 @@ export function NotesHome({
                     groupsById={groupsById}
                     groups={overview.groups}
                     emptyText="Недавних заметок пока нет."
+                    createAction={{
+                      label: 'Создать новую заметку',
+                      title: 'Новая заметка',
+                      description: 'Добавьте новую запись в раздел заметок.',
+                      onCreate: () => onCreateNote(null)
+                    }}
                     onOpenNote={onOpenNote}
                     onRenameNote={onRenameNote}
                     onMoveNote={onMoveNote}
@@ -404,8 +405,6 @@ export function NotesHome({
                     groups={overview.groups}
                     onBack={() => setSelectedGroupId(null)}
                     onCreateNote={() => onCreateNote(selectedGroup.id)}
-                    onRenameGroup={() => onRenameGroup(selectedGroup)}
-                    onDeleteGroup={() => onDeleteGroup(selectedGroup)}
                     onLayoutChange={setLayout}
                     onSortChange={setSort}
                     onOpenNote={onOpenNote}
@@ -429,17 +428,6 @@ export function NotesHome({
               </Tabs.Content>
 
               <Tabs.Content value="ungrouped" className="mt-5 outline-none">
-                <NotesPageHeader
-                  eyebrow="Без группы"
-                  title="Заметки без группы"
-                  description="Записи, которые ещё не распределены по группам."
-                  action={
-                    <ActionButton primary onClick={() => onCreateNote(null)}>
-                      <FilePlus2 aria-hidden="true" className="size-4" />
-                      Новая заметка
-                    </ActionButton>
-                  }
-                />
                 <DashboardSection
                   title="Без группы"
                   icon={<CircleSlash2 aria-hidden="true" className="size-5" />}
@@ -459,6 +447,12 @@ export function NotesHome({
                     groupsById={groupsById}
                     groups={overview.groups}
                     emptyText="Все заметки уже распределены по группам."
+                    createAction={{
+                      label: 'Создать новую заметку',
+                      title: 'Новая заметка без группы',
+                      description: 'Создайте запись, которую можно распределить позже.',
+                      onCreate: () => onCreateNote(null)
+                    }}
                     onOpenNote={onOpenNote}
                     onRenameNote={onRenameNote}
                     onMoveNote={onMoveNote}
@@ -496,19 +490,7 @@ function GroupsDirectoryPage({
   onDeleteGroup: (group: NoteGroup) => void
 }): React.JSX.Element {
   return (
-    <div className="space-y-4">
-      <NotesPageHeader
-        eyebrow="По группам"
-        title="Все группы"
-        description="Откройте группу, чтобы увидеть собранные в ней заметки."
-        action={
-          <ActionButton onClick={onCreateGroup}>
-            <FolderPlus aria-hidden="true" className="size-4" />
-            Новая группа
-          </ActionButton>
-        }
-      />
-
+    <div>
       <DashboardSection
         title="Группы"
         icon={<Folder aria-hidden="true" className="size-5" />}
@@ -526,22 +508,15 @@ function GroupsDirectoryPage({
           </div>
         }
       >
-        {groups.length > 0 ? (
-          <GroupsGrid
-            groups={groups}
-            notesByGroup={notesByGroup}
-            onOpenGroup={onOpenGroup}
-            onCreateNote={onCreateNote}
-            onRenameGroup={onRenameGroup}
-            onDeleteGroup={onDeleteGroup}
-          />
-        ) : (
-          <SectionEmpty>
-            {hideEmptyGroups
-              ? 'Нет непустых групп. Отключите фильтр или создайте заметку в группе.'
-              : 'Групп пока нет.'}
-          </SectionEmpty>
-        )}
+        <GroupsGrid
+          groups={groups}
+          notesByGroup={notesByGroup}
+          onCreateGroup={onCreateGroup}
+          onOpenGroup={onOpenGroup}
+          onCreateNote={onCreateNote}
+          onRenameGroup={onRenameGroup}
+          onDeleteGroup={onDeleteGroup}
+        />
       </DashboardSection>
     </div>
   )
@@ -556,8 +531,6 @@ function GroupNotesPage({
   groups,
   onBack,
   onCreateNote,
-  onRenameGroup,
-  onDeleteGroup,
   onLayoutChange,
   onSortChange,
   onOpenNote,
@@ -573,8 +546,6 @@ function GroupNotesPage({
   groups: NoteGroup[]
   onBack: () => void
   onCreateNote: () => void
-  onRenameGroup: () => void
-  onDeleteGroup: () => void
   onLayoutChange: (layout: NotesLayout) => void
   onSortChange: (sort: NotesSort) => void
   onOpenNote: (noteId: string) => void
@@ -583,47 +554,14 @@ function GroupNotesPage({
   onDeleteNote: (note: NoteSummary) => void
 }): React.JSX.Element {
   return (
-    <div className="space-y-4">
-      <div className="flex items-start justify-between gap-4 max-[720px]:flex-col">
-        <div className="flex min-w-0 items-start gap-3">
-          <button
-            type="button"
-            aria-label="Вернуться ко всем группам"
-            className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-muted)] hover:text-[var(--app-text)]"
-            onClick={onBack}
-          >
-            <ArrowLeft aria-hidden="true" className="size-4" />
-          </button>
-          <div className="min-w-0">
-            <p className="text-[11px] font-semibold tracking-[0.12em] text-violet-300 uppercase">
-              Группа заметок
-            </p>
-            <h2 className="mt-1 truncate text-2xl font-semibold text-[var(--app-text)]">
-              {group.title}
-            </h2>
-            <p className="mt-1 text-sm text-[var(--app-muted)]">{notes.length} заметок</p>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          <ActionButton onClick={onRenameGroup}>
-            <Pencil aria-hidden="true" className="size-4" />
-            Переименовать
-          </ActionButton>
-          <ActionButton onClick={onDeleteGroup}>
-            <Trash2 aria-hidden="true" className="size-4" />
-            Удалить
-          </ActionButton>
-          <ActionButton primary onClick={onCreateNote}>
-            <FilePlus2 aria-hidden="true" className="size-4" />
-            Новая заметка
-          </ActionButton>
-        </div>
-      </div>
-
+    <div>
       <DashboardSection
         title={group.title}
         icon={<Folder aria-hidden="true" className="size-5" />}
+        backAction={{
+          label: 'Вернуться ко всем группам',
+          onBack
+        }}
         toolbar={
           <NotesCollectionControls
             layout={layout}
@@ -640,6 +578,12 @@ function GroupNotesPage({
           groupsById={groupsById}
           groups={groups}
           emptyText="В этой группе пока нет заметок."
+          createAction={{
+            label: `Создать заметку в группе «${group.title}»`,
+            title: 'Новая заметка',
+            description: `Добавьте новую запись в группу «${group.title}».`,
+            onCreate: onCreateNote
+          }}
           onOpenNote={onOpenNote}
           onRenameNote={onRenameNote}
           onMoveNote={onMoveNote}
@@ -650,36 +594,10 @@ function GroupNotesPage({
   )
 }
 
-function NotesPageHeader({
-  eyebrow,
-  title,
-  description,
-  action
-}: {
-  eyebrow: string
-  title: string
-  description: string
-  action?: React.ReactNode
-}): React.JSX.Element {
-  return (
-    <div className="mb-4 flex items-start justify-between gap-4 max-[720px]:flex-col">
-      <div className="min-w-0">
-        <p className="text-[11px] font-semibold tracking-[0.12em] text-violet-300 uppercase">
-          {eyebrow}
-        </p>
-        <h2 className="mt-1 text-2xl font-semibold tracking-tight text-[var(--app-text)]">
-          {title}
-        </h2>
-        <p className="mt-1 text-sm leading-6 text-[var(--app-muted)]">{description}</p>
-      </div>
-      {action}
-    </div>
-  )
-}
-
 function DashboardSection({
   title,
   icon,
+  backAction,
   actionLabel,
   onAction,
   toolbar,
@@ -687,6 +605,10 @@ function DashboardSection({
 }: {
   title: string
   icon: React.ReactNode
+  backAction?: {
+    label: string
+    onBack: () => void
+  }
   actionLabel?: string
   onAction?: () => void
   toolbar?: React.ReactNode
@@ -695,6 +617,16 @@ function DashboardSection({
   return (
     <section className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)]">
       <header className="flex min-h-12 items-center gap-3 border-b border-[var(--app-border)] px-5 py-3 max-[620px]:flex-wrap">
+        {backAction && (
+          <button
+            type="button"
+            aria-label={backAction.label}
+            className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] outline-none hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35"
+            onClick={backAction.onBack}
+          >
+            <ArrowLeft aria-hidden="true" className="size-4" />
+          </button>
+        )}
         <span className="text-violet-300">{icon}</span>
         <h2 className="text-base font-semibold text-[var(--app-text)]">{title}</h2>
         <div className="ml-auto flex items-center gap-3">
@@ -811,6 +743,7 @@ function NotesGrid({
   groupsById,
   groups,
   emptyText = 'Заметок пока нет.',
+  createAction,
   onOpenNote,
   onRenameNote,
   onMoveNote,
@@ -822,12 +755,18 @@ function NotesGrid({
   groupsById: Map<string, NoteGroup>
   groups: NoteGroup[]
   emptyText?: string
+  createAction?: {
+    label: string
+    title: string
+    description: string
+    onCreate: () => void
+  }
   onOpenNote: (noteId: string) => void
   onRenameNote: (note: NoteSummary) => void
   onMoveNote: (note: NoteSummary, groupId: string | null) => void
   onDeleteNote: (note: NoteSummary) => void
 }): React.JSX.Element {
-  if (notes.length === 0) {
+  if (notes.length === 0 && !createAction) {
     return <SectionEmpty>{emptyText}</SectionEmpty>
   }
 
@@ -839,6 +778,16 @@ function NotesGrid({
         layout === 'grid' ? 'grid grid-cols-2 gap-3 max-[760px]:grid-cols-1' : 'flex flex-col gap-2'
       )}
     >
+      {createAction && (
+        <CollectionCreateCard
+          kind="note"
+          layout={layout}
+          label={createAction.label}
+          title={createAction.title}
+          description={createAction.description}
+          onCreate={createAction.onCreate}
+        />
+      )}
       {notes.map((note) => (
         <NoteCard
           key={note.id}
@@ -859,6 +808,7 @@ function NotesGrid({
 function GroupsGrid({
   groups,
   notesByGroup,
+  onCreateGroup,
   onOpenGroup,
   onCreateNote,
   onRenameGroup,
@@ -866,6 +816,7 @@ function GroupsGrid({
 }: {
   groups: NoteGroup[]
   notesByGroup: Map<string | null, NoteSummary[]>
+  onCreateGroup?: () => void
   onOpenGroup: (groupId: string) => void
   onCreateNote: (groupId: string | null) => void
   onRenameGroup: (group: NoteGroup) => void
@@ -873,6 +824,15 @@ function GroupsGrid({
 }): React.JSX.Element {
   return (
     <div className="grid grid-cols-3 gap-3 max-[960px]:grid-cols-2 max-[620px]:grid-cols-1">
+      {onCreateGroup && (
+        <CollectionCreateCard
+          kind="group"
+          label="Создать новую группу"
+          title="Новая группа"
+          description="Создайте отдельное пространство для связанных заметок."
+          onCreate={onCreateGroup}
+        />
+      )}
       {groups.map((group) => {
         const groupNotes = notesByGroup.get(group.id) ?? []
 
@@ -890,6 +850,52 @@ function GroupsGrid({
         )
       })}
     </div>
+  )
+}
+
+function CollectionCreateCard({
+  kind,
+  layout = 'grid',
+  label,
+  title,
+  description,
+  onCreate
+}: {
+  kind: 'note' | 'group'
+  layout?: NotesLayout
+  label: string
+  title: string
+  description: string
+  onCreate: () => void
+}): React.JSX.Element {
+  const Icon = kind === 'group' ? FolderPlus : FilePlus2
+
+  return (
+    <button
+      type="button"
+      data-notes-create-card={kind}
+      aria-label={label}
+      className={cn(
+        'group flex w-full items-center justify-center gap-3 rounded-2xl border border-dashed border-[var(--app-border-strong)] bg-[var(--app-empty-surface)] p-4 text-center outline-none',
+        'transition-[background-color,border-color,transform,box-shadow]',
+        'hover:-translate-y-px hover:border-[var(--app-accent-500)] hover:bg-[var(--app-card-hover)] hover:shadow-[var(--app-shadow-hover)]',
+        'focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)]/35',
+        kind === 'group'
+          ? 'min-h-44 flex-col'
+          : layout === 'list'
+            ? 'min-h-28'
+            : 'min-h-40 flex-col'
+      )}
+      onClick={onCreate}
+    >
+      <span className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-control)] text-[var(--app-accent-500)] transition-transform group-hover:scale-105">
+        <Icon aria-hidden="true" className="size-5" />
+      </span>
+      <span className={cn('min-w-0', layout === 'list' && kind === 'note' && 'text-left')}>
+        <span className="block text-sm font-semibold text-[var(--app-text)]">{title}</span>
+        <span className="mt-1 block text-xs leading-5 text-[var(--app-muted)]">{description}</span>
+      </span>
+    </button>
   )
 }
 
