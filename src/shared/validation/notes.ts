@@ -7,6 +7,7 @@ import {
   studyAudioBlockSchema,
   studyDividerBlockSchema,
   studyFileBlockSchema,
+  studyFolderIconSchema,
   studyImageBlockSchema,
   studyTextBlockSchema,
   studyVideoBlockSchema
@@ -61,6 +62,7 @@ export const noteDocumentSchema = z
 export const noteGroupSchema = z.object({
   id: noteSafeIdSchema,
   title: z.string().trim().min(1).max(STUDY_DOCUMENT_LIMITS.maxTitleLength),
+  icon: studyFolderIconSchema,
   createdAt: z.number().int(),
   updatedAt: z.number().int()
 })
@@ -95,6 +97,11 @@ export const createNoteGroupInputSchema = z.object({
 export const renameNoteGroupInputSchema = z.object({
   id: noteSafeIdSchema,
   title: z.string().trim().min(1).max(STUDY_DOCUMENT_LIMITS.maxTitleLength)
+})
+
+export const updateNoteGroupIconInputSchema = z.object({
+  id: noteSafeIdSchema,
+  icon: studyFolderIconSchema
 })
 
 export const createNoteInputSchema = z.object({
