@@ -35,6 +35,19 @@ jobs:
           src/renderer/src/modules/notes/components/NotesHome.tsx
           src/renderer/src/modules/notes/NotesPage.test.tsx
 
+      - name: Commit formatted Notes files
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo 'No formatting changes to commit.'
+          else
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add src/renderer/src/modules/notes/components/NotesHome.tsx src/renderer/src/modules/notes/NotesPage.test.tsx
+            git commit -m 'style: format Radix notes refactor'
+            git push origin HEAD:${{ github.head_ref }}
+          fi
+
       - name: Check formatting
         run: npm run format:check
 
@@ -52,17 +65,3 @@ jobs:
 
       - name: Build production bundle
         run: npm run build:bundle
-
-      - name: Commit formatted Notes files
-        shell: bash
-        run: |
-          if git diff --quiet; then
-            echo 'No formatting changes to commit.'
-            exit 0
-          fi
-
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add src/renderer/src/modules/notes/components/NotesHome.tsx src/renderer/src/modules/notes/NotesPage.test.tsx
-          git commit -m 'style: format Radix notes refactor'
-          git push origin HEAD:${{ github.head_ref }}
