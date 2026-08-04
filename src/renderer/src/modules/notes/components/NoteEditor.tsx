@@ -78,9 +78,6 @@ export function NoteEditor({
   useEffect(() => {
     let active = true
 
-    setIsLoading(true)
-    setLoadError(null)
-
     void notesClient
       .getNote(noteId)
       .then((loaded) => {
@@ -188,7 +185,10 @@ export function NoteEditor({
       </header>
 
       {backError && (
-        <div role="alert" className="border-b border-red-500/15 bg-red-500/[0.05] px-6 py-2 text-xs text-red-300">
+        <div
+          role="alert"
+          className="border-b border-red-500/15 bg-red-500/[0.05] px-6 py-2 text-xs text-red-300"
+        >
           {backError}
         </div>
       )}
@@ -199,7 +199,7 @@ export function NoteEditor({
           document={note.document as StudyDocument}
           mode="edit"
           allowedBlockTypes={NOTE_BLOCK_TYPES}
-          importAsset={notesBlockAssetClient.importAsset}
+          assetClient={notesBlockAssetClient}
           documentLabel="заметки"
           onChange={(document) => updateDocument(document as NoteDocument)}
         />
