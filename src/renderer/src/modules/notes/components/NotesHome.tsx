@@ -1,5 +1,11 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
+import * as Select from '@radix-ui/react-select'
+import * as Switch from '@radix-ui/react-switch'
+import * as Tabs from '@radix-ui/react-tabs'
+import * as ToggleGroup from '@radix-ui/react-toggle-group'
 import {
+  ArrowLeft,
+  Check,
   ChevronDown,
   ChevronRight,
   CircleSlash2,
@@ -35,7 +41,7 @@ interface NotesHomeProps {
   onDeleteNote: (note: NoteSummary) => void
 }
 
-type NotesScope = 'all' | 'recent' | 'grouped' | 'ungrouped'
+type NotesView = 'all' | 'recent' | 'groups' | 'ungrouped'
 type NotesLayout = 'grid' | 'list'
 type NotesSort = 'updated' | 'title'
 
@@ -59,7 +65,7 @@ export function NotesHome({
   onDeleteNote
 }: NotesHomeProps): React.JSX.Element {
   const [search, setSearch] = useState('')
-  const [scope, setScope] = useState<NotesScope>('all')
+  const [view, setView] = useState<NotesView>('all')
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
   const [layout, setLayout] = useState<NotesLayout>('grid')
   const [sort, setSort] = useState<NotesSort>('updated')
@@ -76,9 +82,9 @@ export function NotesHome({
     const result = new Map<string | null, NoteSummary[]>()
 
     overview.notes.forEach((note) => {
-      const notes = result.get(note.groupId) ?? []
-      notes.push(note)
-      result.set(note.groupId, notes)
+      const groupNotes = result.get(note.groupId) ?? []
+      groupNotes.push(note)
+      result.set(note.groupId, groupNotes)
     })
 
     return result
@@ -99,68 +105,83 @@ export function NotesHome({
     )
   }, [normalizedSearch, notesByRecency])
 
-  const scopedNotes = useMemo(() => {
-    if (scope === 'recent') {
-      return searchedNotes.slice(0, 6)
-    }
+  const sortedNotes = useMemo(
+    () => sortNotes(searchedNotes, sort),
+    [searchedNotes, sort]
+  )
 
-    if (scope === 'ungrouped') {
-      return searchedNotes.filter((note) => note.groupId === null)
-    }
+  const recentNotes = searchedNotes.slice(0, 4)
+  const ungroupedNotes = useMemo(
+    () => sortNotes(searchedNotes.filter((note) => note.groupId === null), sort),
+    [searchedNotes, sort]
+  )
 
-    if (scope === 'grouped') {
-      if (selectedGroupId) {
-        return searchedNotes.filter((note) => note.groupId === selectedGroupId)
+  const selectedGroup = selectedGroupId ? groupsById.get(selectedGroupId) ?? null : null
+  const selectedGroupNotes = useMemo(
+    () =>
+      selectedGroupId
+        ? sortNotes(
+            searchedNotes.filter((note) => note.groupId === selectedGroupId),
+            sort
+          )
+        : [],
+    [searchedNotes, selectedGroupId, sort]
+  )
+
+  const visibleGroups = useMemo(() => {
+    return overview.groups.filter((group) => {
+      const groupNotes = notesByGroup.get(group.id) ?? []
+
+      if (hideEmptyGroups && groupNotes.length === 0) {
+        return false
       }
 
-      return searchedNotes.filter((note) => note.groupId !== null)
+      if (!normalizedSearch) {
+        return true
+      }
+
+      const groupMatches = group.title.toLocaleLowerCase('ru-RU').includes(normalizedSearch)
+      const noteMatches = groupNotes.some((note) =>
+        `${note.title} ${note.plainText}`.toLocaleLowerCase('ru-RU').includes(normalizedSearch)
+      )
+
+      return groupMatches || noteMatches
+    })
+  }, [hideEmptyGroups, normalizedSearch, notesByGroup, overview.groups])
+
+  function handleViewChange(value: string): void {
+    if (!isNotesView(value)) {
+      return
     }
 
-    return searchedNotes
-  }, [scope, searchedNotes, selectedGroupId])
+    setView(value)
 
-  const visibleNotes = useMemo(() => {
-    if (sort === 'title') {
-      return [...scopedNotes].sort((left, right) => left.title.localeCompare(right.title, 'ru-RU'))
-    }
-
-    return [...scopedNotes].sort((left, right) => right.updatedAt - left.updatedAt)
-  }, [scope, scopedNotes, sort])
-
-  const recentNotes = searchedNotes.slice(0, 3)
-  const ungroupedNotes = notesByGroup.get(null) ?? []
-  const visibleGroups = hideEmptyGroups
-    ? overview.groups.filter((group) => (notesByGroup.get(group.id) ?? []).length > 0)
-    : overview.groups
-
-  const allNotesTitle = normalizedSearch
-    ? 'Результаты поиска'
-    : scope === 'recent'
-      ? 'Недавние заметки'
-      : scope === 'ungrouped'
-        ? 'Заметки без группы'
-        : scope === 'grouped'
-          ? selectedGroupId
-            ? (groupsById.get(selectedGroupId)?.title ?? 'Заметки группы')
-            : 'Заметки в группах'
-          : 'Все заметки'
-
-  function selectScope(nextScope: NotesScope): void {
-    setScope(nextScope)
-
-    if (nextScope !== 'grouped') {
+    if (value === 'groups') {
       setSelectedGroupId(null)
     }
   }
 
-  function selectGroup(groupId: string | null): void {
-    setScope('grouped')
-    setSelectedGroupId(groupId)
+  function openGroupsPage(): void {
+    setSelectedGroupId(null)
+    setView('groups')
   }
+
+  function openGroup(groupId: string): void {
+    setSelectedGroupId(groupId)
+    setView('groups')
+  }
+
+  const searchPlaceholder =
+    view === 'groups' && selectedGroupId === null
+      ? 'Найти группу или заметку внутри группы'
+      : 'Найти заметку по названию или содержимому'
 
   return (
     <section className="h-full overflow-y-auto bg-[var(--app-workspace)] px-8 py-7 max-[720px]:px-4 max-[720px]:py-5">
-      <div className="mx-auto w-full max-w-[1440px] space-y-4">
+      <div
+        data-notes-home-container
+        className="mx-auto w-full max-w-[1240px] space-y-5"
+      >
         <header className="flex items-start justify-between gap-6 px-1 max-[820px]:flex-col">
           <div className="min-w-0">
             <p className="text-[11px] font-semibold tracking-[0.12em] text-violet-300 uppercase">
@@ -186,277 +207,468 @@ export function NotesHome({
           </div>
         </header>
 
-        <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 max-[980px]:grid-cols-1">
-          <label className="flex h-12 min-w-0 items-center gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] px-4 focus-within:border-violet-500/45 focus-within:ring-2 focus-within:ring-violet-500/10">
-            <Search aria-hidden="true" className="size-4 shrink-0 text-[var(--app-muted)]" />
-            <input
-              value={search}
-              aria-label="Поиск по заметкам"
-              placeholder="Найти заметку по названию или содержимому"
-              className="min-w-0 flex-1 bg-transparent text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/65"
-              onChange={(event) => setSearch(event.target.value)}
-            />
-            {search && (
-              <button
-                type="button"
-                aria-label="Очистить поиск"
-                className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-white/[0.06] hover:text-[var(--app-text)]"
-                onClick={() => setSearch('')}
-              >
-                <X aria-hidden="true" className="size-4" />
-              </button>
-            )}
-          </label>
-
-          <div className="flex min-h-12 items-center gap-1 overflow-x-auto rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-1.5">
-            <ScopeButton active={scope === 'all'} onClick={() => selectScope('all')}>
-              Все
-            </ScopeButton>
-            <ScopeButton active={scope === 'recent'} onClick={() => selectScope('recent')}>
-              <Clock3 aria-hidden="true" className="size-4" />
-              Недавние
-            </ScopeButton>
-
-            <DropdownMenu.Root>
-              <DropdownMenu.Trigger asChild>
+        <Tabs.Root value={view} onValueChange={handleViewChange}>
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 max-[980px]:grid-cols-1">
+            <label className="flex h-12 min-w-0 items-center gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] px-4 focus-within:border-violet-500/45 focus-within:ring-2 focus-within:ring-violet-500/10">
+              <Search aria-hidden="true" className="size-4 shrink-0 text-[var(--app-muted)]" />
+              <input
+                value={search}
+                aria-label="Поиск по заметкам"
+                placeholder={searchPlaceholder}
+                className="min-w-0 flex-1 bg-transparent text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/65"
+                onChange={(event) => setSearch(event.target.value)}
+              />
+              {search && (
                 <button
                   type="button"
-                  aria-label="Фильтр по группам"
-                  data-active={scope === 'grouped'}
-                  className="flex h-9 shrink-0 items-center gap-2 rounded-xl px-3 text-sm text-[var(--app-muted)] transition-colors outline-none hover:text-[var(--app-text)] data-[active=true]:bg-violet-500 data-[active=true]:text-white"
+                  aria-label="Очистить поиск"
+                  className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-white/[0.06] hover:text-[var(--app-text)]"
+                  onClick={() => setSearch('')}
                 >
-                  <Folder aria-hidden="true" className="size-4" />
-                  <span>
-                    {selectedGroupId ? groupsById.get(selectedGroupId)?.title : 'По группам'}
-                  </span>
-                  <ChevronDown aria-hidden="true" className="size-3.5" />
+                  <X aria-hidden="true" className="size-4" />
                 </button>
-              </DropdownMenu.Trigger>
-              <MenuContent align="end">
-                <DropdownMenu.Item
-                  className="cursor-default rounded-lg px-3 py-2 text-sm text-[var(--app-text)] outline-none focus:bg-white/[0.06]"
-                  onSelect={() => selectGroup(null)}
-                >
-                  Все группы
-                </DropdownMenu.Item>
-                {overview.groups.map((group) => (
-                  <DropdownMenu.Item
-                    key={group.id}
-                    className="cursor-default rounded-lg px-3 py-2 text-sm text-[var(--app-text)] outline-none focus:bg-white/[0.06]"
-                    onSelect={() => selectGroup(group.id)}
-                  >
-                    {group.title}
-                  </DropdownMenu.Item>
-                ))}
-              </MenuContent>
-            </DropdownMenu.Root>
+              )}
+            </label>
 
-            <ScopeButton active={scope === 'ungrouped'} onClick={() => selectScope('ungrouped')}>
-              <CircleSlash2 aria-hidden="true" className="size-4" />
-              Без группы
-            </ScopeButton>
+            <Tabs.List
+              aria-label="Разделы заметок"
+              className="flex min-h-12 items-center gap-1 overflow-x-auto rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-1.5"
+            >
+              <NotesTab value="all">Все</NotesTab>
+              <NotesTab value="recent">
+                <Clock3 aria-hidden="true" className="size-4" />
+                Недавние
+              </NotesTab>
+              <NotesTab value="groups">
+                <Folder aria-hidden="true" className="size-4" />
+                По группам
+              </NotesTab>
+              <NotesTab value="ungrouped">
+                <CircleSlash2 aria-hidden="true" className="size-4" />
+                Без группы
+              </NotesTab>
+            </Tabs.List>
+          </div>
+
+          {isLoading ? (
+            <div className="mt-5">
+              <LoadingState />
+            </div>
+          ) : overview.notes.length === 0 && overview.groups.length === 0 ? (
+            <div className="mt-5">
+              <EmptyState onCreateGroup={onCreateGroup} onCreateNote={() => onCreateNote(null)} />
+            </div>
+          ) : (
+            <>
+              <Tabs.Content value="all" className="mt-5 space-y-4 outline-none">
+                <div className="grid grid-cols-3 gap-3 max-[900px]:grid-cols-1">
+                  <StatCard
+                    icon={<StickyNote aria-hidden="true" className="size-5" />}
+                    value={overview.notes.length}
+                    label="Всего заметок"
+                    caption="Все записи в одном месте"
+                    onClick={() => setView('all')}
+                  />
+                  <StatCard
+                    icon={<Folder aria-hidden="true" className="size-5" />}
+                    value={overview.groups.length}
+                    label="Групп"
+                    caption="Структура для ваших записей"
+                    onClick={openGroupsPage}
+                  />
+                  <StatCard
+                    icon={<CircleSlash2 aria-hidden="true" className="size-5" />}
+                    value={(notesByGroup.get(null) ?? []).length}
+                    label="Без группы"
+                    caption="Заметки, которые можно разобрать"
+                    onClick={() => setView('ungrouped')}
+                  />
+                </div>
+
+                {recentNotes.length > 0 && (
+                  <DashboardSection
+                    title="Недавние заметки"
+                    icon={<Clock3 aria-hidden="true" className="size-5" />}
+                    actionLabel="Смотреть все"
+                    onAction={() => setView('recent')}
+                  >
+                    <NotesGrid
+                      collection="recent"
+                      notes={recentNotes}
+                      layout={layout}
+                      groupsById={groupsById}
+                      groups={overview.groups}
+                      onOpenNote={onOpenNote}
+                      onRenameNote={onRenameNote}
+                      onMoveNote={onMoveNote}
+                      onDeleteNote={onDeleteNote}
+                    />
+                  </DashboardSection>
+                )}
+
+                {overview.groups.length > 0 && (
+                  <DashboardSection
+                    title="Группы"
+                    icon={<Folder aria-hidden="true" className="size-5" />}
+                    actionLabel="Смотреть все"
+                    onAction={openGroupsPage}
+                  >
+                    <GroupsGrid
+                      groups={visibleGroups.slice(0, 3)}
+                      notesByGroup={notesByGroup}
+                      onOpenGroup={openGroup}
+                      onCreateNote={onCreateNote}
+                      onRenameGroup={onRenameGroup}
+                      onDeleteGroup={onDeleteGroup}
+                    />
+                  </DashboardSection>
+                )}
+
+                <DashboardSection
+                  title={normalizedSearch ? 'Результаты поиска' : 'Все заметки'}
+                  icon={<StickyNote aria-hidden="true" className="size-5" />}
+                  toolbar={
+                    <NotesCollectionControls
+                      layout={layout}
+                      sort={sort}
+                      onLayoutChange={setLayout}
+                      onSortChange={setSort}
+                    />
+                  }
+                >
+                  <NotesGrid
+                    collection="all"
+                    notes={sortedNotes}
+                    layout={layout}
+                    groupsById={groupsById}
+                    groups={overview.groups}
+                    emptyText={
+                      normalizedSearch
+                        ? 'По этому запросу ничего не найдено.'
+                        : 'Заметок пока нет.'
+                    }
+                    onOpenNote={onOpenNote}
+                    onRenameNote={onRenameNote}
+                    onMoveNote={onMoveNote}
+                    onDeleteNote={onDeleteNote}
+                  />
+                </DashboardSection>
+              </Tabs.Content>
+
+              <Tabs.Content value="recent" className="mt-5 outline-none">
+                <NotesPageHeader
+                  eyebrow="Недавние"
+                  title="Недавние заметки"
+                  description="Заметки в порядке последних изменений."
+                />
+                <DashboardSection
+                  title="Недавние заметки"
+                  icon={<Clock3 aria-hidden="true" className="size-5" />}
+                  toolbar={
+                    <NotesCollectionControls
+                      layout={layout}
+                      sort={sort}
+                      onLayoutChange={setLayout}
+                      onSortChange={setSort}
+                    />
+                  }
+                >
+                  <NotesGrid
+                    collection="recent-page"
+                    notes={sortedNotes}
+                    layout={layout}
+                    groupsById={groupsById}
+                    groups={overview.groups}
+                    emptyText="Недавних заметок пока нет."
+                    onOpenNote={onOpenNote}
+                    onRenameNote={onRenameNote}
+                    onMoveNote={onMoveNote}
+                    onDeleteNote={onDeleteNote}
+                  />
+                </DashboardSection>
+              </Tabs.Content>
+
+              <Tabs.Content value="groups" className="mt-5 outline-none">
+                {selectedGroup ? (
+                  <GroupNotesPage
+                    group={selectedGroup}
+                    notes={selectedGroupNotes}
+                    layout={layout}
+                    sort={sort}
+                    groupsById={groupsById}
+                    groups={overview.groups}
+                    onBack={() => setSelectedGroupId(null)}
+                    onCreateNote={() => onCreateNote(selectedGroup.id)}
+                    onRenameGroup={() => onRenameGroup(selectedGroup)}
+                    onDeleteGroup={() => onDeleteGroup(selectedGroup)}
+                    onLayoutChange={setLayout}
+                    onSortChange={setSort}
+                    onOpenNote={onOpenNote}
+                    onRenameNote={onRenameNote}
+                    onMoveNote={onMoveNote}
+                    onDeleteNote={onDeleteNote}
+                  />
+                ) : (
+                  <GroupsDirectoryPage
+                    groups={visibleGroups}
+                    notesByGroup={notesByGroup}
+                    hideEmptyGroups={hideEmptyGroups}
+                    onHideEmptyGroupsChange={setHideEmptyGroups}
+                    onCreateGroup={onCreateGroup}
+                    onCreateNote={onCreateNote}
+                    onOpenGroup={openGroup}
+                    onRenameGroup={onRenameGroup}
+                    onDeleteGroup={onDeleteGroup}
+                  />
+                )}
+              </Tabs.Content>
+
+              <Tabs.Content value="ungrouped" className="mt-5 outline-none">
+                <NotesPageHeader
+                  eyebrow="Без группы"
+                  title="Заметки без группы"
+                  description="Записи, которые ещё не распределены по группам."
+                  action={
+                    <ActionButton primary onClick={() => onCreateNote(null)}>
+                      <FilePlus2 aria-hidden="true" className="size-4" />
+                      Новая заметка
+                    </ActionButton>
+                  }
+                />
+                <DashboardSection
+                  title="Без группы"
+                  icon={<CircleSlash2 aria-hidden="true" className="size-5" />}
+                  toolbar={
+                    <NotesCollectionControls
+                      layout={layout}
+                      sort={sort}
+                      onLayoutChange={setLayout}
+                      onSortChange={setSort}
+                    />
+                  }
+                >
+                  <NotesGrid
+                    collection="ungrouped"
+                    notes={ungroupedNotes}
+                    layout={layout}
+                    groupsById={groupsById}
+                    groups={overview.groups}
+                    emptyText="Все заметки уже распределены по группам."
+                    onOpenNote={onOpenNote}
+                    onRenameNote={onRenameNote}
+                    onMoveNote={onMoveNote}
+                    onDeleteNote={onDeleteNote}
+                  />
+                </DashboardSection>
+              </Tabs.Content>
+            </>
+          )}
+        </Tabs.Root>
+      </div>
+    </section>
+  )
+}
+
+function GroupsDirectoryPage({
+  groups,
+  notesByGroup,
+  hideEmptyGroups,
+  onHideEmptyGroupsChange,
+  onCreateGroup,
+  onCreateNote,
+  onOpenGroup,
+  onRenameGroup,
+  onDeleteGroup
+}: {
+  groups: NoteGroup[]
+  notesByGroup: Map<string | null, NoteSummary[]>
+  hideEmptyGroups: boolean
+  onHideEmptyGroupsChange: (checked: boolean) => void
+  onCreateGroup: () => void
+  onCreateNote: (groupId: string | null) => void
+  onOpenGroup: (groupId: string) => void
+  onRenameGroup: (group: NoteGroup) => void
+  onDeleteGroup: (group: NoteGroup) => void
+}): React.JSX.Element {
+  return (
+    <div className="space-y-4">
+      <NotesPageHeader
+        eyebrow="По группам"
+        title="Все группы"
+        description="Откройте группу, чтобы увидеть собранные в ней заметки."
+        action={
+          <ActionButton onClick={onCreateGroup}>
+            <FolderPlus aria-hidden="true" className="size-4" />
+            Новая группа
+          </ActionButton>
+        }
+      />
+
+      <DashboardSection
+        title="Группы"
+        icon={<Folder aria-hidden="true" className="size-5" />}
+        toolbar={
+          <div className="flex items-center gap-2 text-xs text-[var(--app-muted)]">
+            <span>Скрыть пустые</span>
+            <Switch.Root
+              checked={hideEmptyGroups}
+              aria-label="Скрыть пустые группы"
+              className="relative h-5 w-9 rounded-full border border-[var(--app-border)] bg-[var(--app-workspace)] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-violet-500/35 data-[state=checked]:bg-violet-500"
+              onCheckedChange={onHideEmptyGroupsChange}
+            >
+              <Switch.Thumb className="block size-3.5 translate-x-0.5 rounded-full bg-white transition-transform data-[state=checked]:translate-x-[17px]" />
+            </Switch.Root>
+          </div>
+        }
+      >
+        {groups.length > 0 ? (
+          <GroupsGrid
+            groups={groups}
+            notesByGroup={notesByGroup}
+            onOpenGroup={onOpenGroup}
+            onCreateNote={onCreateNote}
+            onRenameGroup={onRenameGroup}
+            onDeleteGroup={onDeleteGroup}
+          />
+        ) : (
+          <SectionEmpty>
+            {hideEmptyGroups
+              ? 'Нет непустых групп. Отключите фильтр или создайте заметку в группе.'
+              : 'Групп пока нет.'}
+          </SectionEmpty>
+        )}
+      </DashboardSection>
+    </div>
+  )
+}
+
+function GroupNotesPage({
+  group,
+  notes,
+  layout,
+  sort,
+  groupsById,
+  groups,
+  onBack,
+  onCreateNote,
+  onRenameGroup,
+  onDeleteGroup,
+  onLayoutChange,
+  onSortChange,
+  onOpenNote,
+  onRenameNote,
+  onMoveNote,
+  onDeleteNote
+}: {
+  group: NoteGroup
+  notes: NoteSummary[]
+  layout: NotesLayout
+  sort: NotesSort
+  groupsById: Map<string, NoteGroup>
+  groups: NoteGroup[]
+  onBack: () => void
+  onCreateNote: () => void
+  onRenameGroup: () => void
+  onDeleteGroup: () => void
+  onLayoutChange: (layout: NotesLayout) => void
+  onSortChange: (sort: NotesSort) => void
+  onOpenNote: (noteId: string) => void
+  onRenameNote: (note: NoteSummary) => void
+  onMoveNote: (note: NoteSummary, groupId: string | null) => void
+  onDeleteNote: (note: NoteSummary) => void
+}): React.JSX.Element {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-start justify-between gap-4 max-[720px]:flex-col">
+        <div className="flex min-w-0 items-start gap-3">
+          <button
+            type="button"
+            aria-label="Вернуться ко всем группам"
+            className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-muted)] hover:text-[var(--app-text)]"
+            onClick={onBack}
+          >
+            <ArrowLeft aria-hidden="true" className="size-4" />
+          </button>
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold tracking-[0.12em] text-violet-300 uppercase">
+              Группа заметок
+            </p>
+            <h2 className="mt-1 truncate text-2xl font-semibold text-[var(--app-text)]">
+              {group.title}
+            </h2>
+            <p className="mt-1 text-sm text-[var(--app-muted)]">{notes.length} заметок</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-3 max-[900px]:grid-cols-1">
-          <StatCard
-            icon={<StickyNote aria-hidden="true" className="size-5" />}
-            value={isLoading ? '—' : overview.notes.length}
-            label="Всего заметок"
-            caption="Все записи в одном месте"
-            onClick={() => selectScope('all')}
-          />
-          <StatCard
-            icon={<Folder aria-hidden="true" className="size-5" />}
-            value={isLoading ? '—' : overview.groups.length}
-            label="Групп"
-            caption="Структура для ваших записей"
-            onClick={() => selectGroup(null)}
-          />
-          <StatCard
-            icon={<CircleSlash2 aria-hidden="true" className="size-5" />}
-            value={isLoading ? '—' : ungroupedNotes.length}
-            label="Без группы"
-            caption="Заметки, которые можно разобрать"
-            onClick={() => selectScope('ungrouped')}
-          />
+        <div className="flex flex-wrap gap-2">
+          <ActionButton onClick={onRenameGroup}>
+            <Pencil aria-hidden="true" className="size-4" />
+            Переименовать
+          </ActionButton>
+          <ActionButton onClick={onDeleteGroup}>
+            <Trash2 aria-hidden="true" className="size-4" />
+            Удалить
+          </ActionButton>
+          <ActionButton primary onClick={onCreateNote}>
+            <FilePlus2 aria-hidden="true" className="size-4" />
+            Новая заметка
+          </ActionButton>
         </div>
-
-        {isLoading ? (
-          <LoadingState />
-        ) : overview.notes.length === 0 && overview.groups.length === 0 ? (
-          <EmptyState onCreateGroup={onCreateGroup} onCreateNote={() => onCreateNote(null)} />
-        ) : (
-          <>
-            {recentNotes.length > 0 && (
-              <DashboardSection
-                title="Недавние заметки"
-                icon={<Clock3 aria-hidden="true" className="size-5" />}
-                actionLabel="Смотреть все"
-                onAction={() => selectScope('recent')}
-              >
-                <div className="grid grid-cols-3 gap-3 max-[1050px]:grid-cols-2 max-[680px]:grid-cols-1">
-                  {recentNotes.map((note) => (
-                    <NoteCard
-                      key={note.id}
-                      note={note}
-                      groupTitle={note.groupId ? groupsById.get(note.groupId)?.title : null}
-                      groups={overview.groups}
-                      onOpen={() => onOpenNote(note.id)}
-                      onRename={() => onRenameNote(note)}
-                      onMove={(groupId) => onMoveNote(note, groupId)}
-                      onDelete={() => onDeleteNote(note)}
-                    />
-                  ))}
-                </div>
-              </DashboardSection>
-            )}
-
-            <DashboardSection
-              title="Группы"
-              icon={<Folder aria-hidden="true" className="size-5" />}
-              actionLabel="Смотреть все"
-              onAction={() => selectGroup(null)}
-              toolbar={
-                <label className="flex items-center gap-2 text-xs text-[var(--app-muted)]">
-                  <span>Скрыть пустые</span>
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={hideEmptyGroups}
-                    aria-label="Скрыть пустые группы"
-                    className={cn(
-                      'relative h-5 w-9 rounded-full border border-[var(--app-border)] transition-colors',
-                      hideEmptyGroups ? 'bg-violet-500' : 'bg-[var(--app-workspace)]'
-                    )}
-                    onClick={() => setHideEmptyGroups((current) => !current)}
-                  >
-                    <span
-                      aria-hidden="true"
-                      className={cn(
-                        'absolute top-0.5 size-3.5 rounded-full bg-white transition-transform',
-                        hideEmptyGroups ? 'translate-x-[17px]' : 'translate-x-0.5'
-                      )}
-                    />
-                  </button>
-                </label>
-              }
-            >
-              <div className="grid grid-cols-4 gap-3 max-[1180px]:grid-cols-3 max-[900px]:grid-cols-2 max-[580px]:grid-cols-1">
-                {visibleGroups.map((group) => {
-                  const groupNotes = notesByGroup.get(group.id) ?? []
-
-                  return (
-                    <GroupCard
-                      key={group.id}
-                      title={group.title}
-                      noteCount={groupNotes.length}
-                      description={groupNotes[0]?.plainText.trim() || 'Заметки этой группы.'}
-                      icon={<Folder aria-hidden="true" className="size-5" />}
-                      onOpen={() => selectGroup(group.id)}
-                      onCreateNote={() => onCreateNote(group.id)}
-                      onRename={() => onRenameGroup(group)}
-                      onDelete={() => onDeleteGroup(group)}
-                    />
-                  )
-                })}
-
-                <GroupCard
-                  title="Без группы"
-                  noteCount={ungroupedNotes.length}
-                  description="Заметки, которые пока не относятся к группе."
-                  icon={<CircleSlash2 aria-hidden="true" className="size-5" />}
-                  onOpen={() => selectScope('ungrouped')}
-                  onCreateNote={() => onCreateNote(null)}
-                />
-              </div>
-            </DashboardSection>
-
-            <DashboardSection
-              title={allNotesTitle}
-              icon={<StickyNote aria-hidden="true" className="size-5" />}
-              toolbar={
-                <div className="flex items-center gap-2">
-                  <DropdownMenu.Root>
-                    <DropdownMenu.Trigger asChild>
-                      <button
-                        type="button"
-                        aria-label="Сортировка заметок"
-                        className="flex h-9 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-xs text-[var(--app-muted)] hover:text-[var(--app-text)]"
-                      >
-                        Сортировка: {sort === 'updated' ? 'Недавние' : 'По названию'}
-                        <ChevronDown aria-hidden="true" className="size-3.5" />
-                      </button>
-                    </DropdownMenu.Trigger>
-                    <MenuContent align="end">
-                      <DropdownMenu.Item
-                        className="cursor-default rounded-lg px-3 py-2 text-sm text-[var(--app-text)] outline-none focus:bg-white/[0.06]"
-                        onSelect={() => setSort('updated')}
-                      >
-                        Недавние
-                      </DropdownMenu.Item>
-                      <DropdownMenu.Item
-                        className="cursor-default rounded-lg px-3 py-2 text-sm text-[var(--app-text)] outline-none focus:bg-white/[0.06]"
-                        onSelect={() => setSort('title')}
-                      >
-                        По названию
-                      </DropdownMenu.Item>
-                    </MenuContent>
-                  </DropdownMenu.Root>
-
-                  <div className="flex rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-1">
-                    <LayoutButton
-                      active={layout === 'grid'}
-                      label="Показать заметки сеткой"
-                      onClick={() => setLayout('grid')}
-                    >
-                      <LayoutGrid aria-hidden="true" className="size-4" />
-                    </LayoutButton>
-                    <LayoutButton
-                      active={layout === 'list'}
-                      label="Показать заметки списком"
-                      onClick={() => setLayout('list')}
-                    >
-                      <List aria-hidden="true" className="size-4" />
-                    </LayoutButton>
-                  </div>
-                </div>
-              }
-            >
-              {visibleNotes.length > 0 ? (
-                <div
-                  className={cn(
-                    layout === 'grid'
-                      ? 'grid grid-cols-2 gap-3 max-[820px]:grid-cols-1'
-                      : 'flex flex-col gap-2'
-                  )}
-                >
-                  {visibleNotes.map((note) => (
-                    <NoteCard
-                      key={note.id}
-                      note={note}
-                      layout={layout}
-                      groupTitle={note.groupId ? groupsById.get(note.groupId)?.title : null}
-                      groups={overview.groups}
-                      onOpen={() => onOpenNote(note.id)}
-                      onRename={() => onRenameNote(note)}
-                      onMove={(groupId) => onMoveNote(note, groupId)}
-                      onDelete={() => onDeleteNote(note)}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <p className="rounded-xl border border-dashed border-[var(--app-border)] px-4 py-8 text-center text-sm text-[var(--app-muted)]">
-                  {normalizedSearch
-                    ? 'По этому запросу ничего не найдено.'
-                    : 'В выбранном разделе пока нет заметок.'}
-                </p>
-              )}
-            </DashboardSection>
-          </>
-        )}
       </div>
-    </section>
+
+      <DashboardSection
+        title={group.title}
+        icon={<Folder aria-hidden="true" className="size-5" />}
+        toolbar={
+          <NotesCollectionControls
+            layout={layout}
+            sort={sort}
+            onLayoutChange={onLayoutChange}
+            onSortChange={onSortChange}
+          />
+        }
+      >
+        <NotesGrid
+          collection="group"
+          notes={notes}
+          layout={layout}
+          groupsById={groupsById}
+          groups={groups}
+          emptyText="В этой группе пока нет заметок."
+          onOpenNote={onOpenNote}
+          onRenameNote={onRenameNote}
+          onMoveNote={onMoveNote}
+          onDeleteNote={onDeleteNote}
+        />
+      </DashboardSection>
+    </div>
+  )
+}
+
+function NotesPageHeader({
+  eyebrow,
+  title,
+  description,
+  action
+}: {
+  eyebrow: string
+  title: string
+  description: string
+  action?: React.ReactNode
+}): React.JSX.Element {
+  return (
+    <div className="mb-4 flex items-start justify-between gap-4 max-[720px]:flex-col">
+      <div className="min-w-0">
+        <p className="text-[11px] font-semibold tracking-[0.12em] text-violet-300 uppercase">
+          {eyebrow}
+        </p>
+        <h2 className="mt-1 text-2xl font-semibold tracking-tight text-[var(--app-text)]">
+          {title}
+        </h2>
+        <p className="mt-1 text-sm leading-6 text-[var(--app-muted)]">{description}</p>
+      </div>
+      {action}
+    </div>
   )
 }
 
@@ -499,33 +711,207 @@ function DashboardSection({
   )
 }
 
+function NotesCollectionControls({
+  layout,
+  sort,
+  onLayoutChange,
+  onSortChange
+}: {
+  layout: NotesLayout
+  sort: NotesSort
+  onLayoutChange: (layout: NotesLayout) => void
+  onSortChange: (sort: NotesSort) => void
+}): React.JSX.Element {
+  return (
+    <div className="flex items-center gap-2">
+      <Select.Root value={sort} onValueChange={(value) => isNotesSort(value) && onSortChange(value)}>
+        <Select.Trigger
+          aria-label="Сортировка заметок"
+          className="flex h-9 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-xs text-[var(--app-muted)] outline-none hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35"
+        >
+          <span>Сортировка:</span>
+          <Select.Value />
+          <Select.Icon asChild>
+            <ChevronDown aria-hidden="true" className="size-3.5" />
+          </Select.Icon>
+        </Select.Trigger>
+        <Select.Portal>
+          <Select.Content
+            position="popper"
+            sideOffset={6}
+            align="end"
+            className="z-[70] min-w-44 overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] shadow-2xl"
+          >
+            <Select.Viewport className="p-1.5">
+              <SortItem value="updated">Недавние</SortItem>
+              <SortItem value="title">По названию</SortItem>
+            </Select.Viewport>
+          </Select.Content>
+        </Select.Portal>
+      </Select.Root>
+
+      <ToggleGroup.Root
+        type="single"
+        value={layout}
+        aria-label="Вид заметок"
+        className="flex rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-1"
+        onValueChange={(value) => isNotesLayout(value) && onLayoutChange(value)}
+      >
+        <ToggleGroup.Item
+          value="grid"
+          aria-label="Показать заметки сеткой"
+          className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] outline-none hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 data-[state=on]:bg-violet-500 data-[state=on]:text-white"
+        >
+          <LayoutGrid aria-hidden="true" className="size-4" />
+        </ToggleGroup.Item>
+        <ToggleGroup.Item
+          value="list"
+          aria-label="Показать заметки списком"
+          className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] outline-none hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 data-[state=on]:bg-violet-500 data-[state=on]:text-white"
+        >
+          <List aria-hidden="true" className="size-4" />
+        </ToggleGroup.Item>
+      </ToggleGroup.Root>
+    </div>
+  )
+}
+
+function SortItem({
+  value,
+  children
+}: {
+  value: NotesSort
+  children: React.ReactNode
+}): React.JSX.Element {
+  return (
+    <Select.Item
+      value={value}
+      className="relative flex cursor-default items-center rounded-lg py-2 pr-8 pl-3 text-sm text-[var(--app-text)] outline-none data-[highlighted]:bg-white/[0.06]"
+    >
+      <Select.ItemText>{children}</Select.ItemText>
+      <Select.ItemIndicator className="absolute right-3">
+        <Check aria-hidden="true" className="size-4 text-violet-300" />
+      </Select.ItemIndicator>
+    </Select.Item>
+  )
+}
+
+function NotesGrid({
+  collection,
+  notes,
+  layout,
+  groupsById,
+  groups,
+  emptyText = 'Заметок пока нет.',
+  onOpenNote,
+  onRenameNote,
+  onMoveNote,
+  onDeleteNote
+}: {
+  collection: string
+  notes: NoteSummary[]
+  layout: NotesLayout
+  groupsById: Map<string, NoteGroup>
+  groups: NoteGroup[]
+  emptyText?: string
+  onOpenNote: (noteId: string) => void
+  onRenameNote: (note: NoteSummary) => void
+  onMoveNote: (note: NoteSummary, groupId: string | null) => void
+  onDeleteNote: (note: NoteSummary) => void
+}): React.JSX.Element {
+  if (notes.length === 0) {
+    return <SectionEmpty>{emptyText}</SectionEmpty>
+  }
+
+  return (
+    <div
+      data-notes-collection={collection}
+      data-notes-layout={layout}
+      className={cn(
+        layout === 'grid'
+          ? 'grid grid-cols-2 gap-3 max-[760px]:grid-cols-1'
+          : 'flex flex-col gap-2'
+      )}
+    >
+      {notes.map((note) => (
+        <NoteCard
+          key={note.id}
+          note={note}
+          layout={layout}
+          groupTitle={note.groupId ? groupsById.get(note.groupId)?.title : null}
+          groups={groups}
+          onOpen={() => onOpenNote(note.id)}
+          onRename={() => onRenameNote(note)}
+          onMove={(groupId) => onMoveNote(note, groupId)}
+          onDelete={() => onDeleteNote(note)}
+        />
+      ))}
+    </div>
+  )
+}
+
+function GroupsGrid({
+  groups,
+  notesByGroup,
+  onOpenGroup,
+  onCreateNote,
+  onRenameGroup,
+  onDeleteGroup
+}: {
+  groups: NoteGroup[]
+  notesByGroup: Map<string | null, NoteSummary[]>
+  onOpenGroup: (groupId: string) => void
+  onCreateNote: (groupId: string | null) => void
+  onRenameGroup: (group: NoteGroup) => void
+  onDeleteGroup: (group: NoteGroup) => void
+}): React.JSX.Element {
+  return (
+    <div className="grid grid-cols-3 gap-3 max-[960px]:grid-cols-2 max-[620px]:grid-cols-1">
+      {groups.map((group) => {
+        const groupNotes = notesByGroup.get(group.id) ?? []
+
+        return (
+          <GroupCard
+            key={group.id}
+            group={group}
+            noteCount={groupNotes.length}
+            description={groupNotes[0]?.plainText.trim() || 'Заметки этой группы.'}
+            onOpen={() => onOpenGroup(group.id)}
+            onCreateNote={() => onCreateNote(group.id)}
+            onRename={() => onRenameGroup(group)}
+            onDelete={() => onDeleteGroup(group)}
+          />
+        )
+      })}
+    </div>
+  )
+}
+
 function GroupCard({
-  title,
+  group,
   noteCount,
   description,
-  icon,
   onOpen,
   onCreateNote,
   onRename,
   onDelete
 }: {
-  title: string
+  group: NoteGroup
   noteCount: number
   description: string
-  icon: React.ReactNode
   onOpen: () => void
   onCreateNote: () => void
-  onRename?: () => void
-  onDelete?: () => void
+  onRename: () => void
+  onDelete: () => void
 }): React.JSX.Element {
   return (
     <article className="group relative min-h-44 rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-4">
       <div className="flex items-start gap-3 pr-7">
         <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-300">
-          {icon}
+          <Folder aria-hidden="true" className="size-5" />
         </div>
         <div className="min-w-0">
-          <h3 className="truncate font-semibold text-[var(--app-text)]">{title}</h3>
+          <h3 className="truncate font-semibold text-[var(--app-text)]">{group.title}</h3>
           <p className="mt-0.5 text-xs text-[var(--app-muted)]">{noteCount} заметок</p>
         </div>
       </div>
@@ -535,6 +921,7 @@ function GroupCard({
       <div className="mt-4 flex items-center gap-2">
         <button
           type="button"
+          aria-label={`Открыть группу «${group.title}»`}
           className="flex h-9 flex-1 items-center justify-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 text-sm text-[var(--app-text)] hover:border-violet-500/30"
           onClick={onOpen}
         >
@@ -543,7 +930,7 @@ function GroupCard({
         </button>
         <button
           type="button"
-          aria-label={`Создать заметку в разделе «${title}»`}
+          aria-label={`Создать заметку в группе «${group.title}»`}
           className="flex size-9 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-muted)] hover:text-[var(--app-text)]"
           onClick={onCreateNote}
         >
@@ -551,31 +938,25 @@ function GroupCard({
         </button>
       </div>
 
-      {(onRename || onDelete) && (
-        <DropdownMenu.Root>
-          <DropdownMenu.Trigger asChild>
-            <button
-              type="button"
-              aria-label={`Действия группы «${title}»`}
-              className="absolute top-3 right-3 flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100"
-            >
-              <MoreHorizontal aria-hidden="true" className="size-4" />
-            </button>
-          </DropdownMenu.Trigger>
-          <MenuContent>
-            {onRename && (
-              <MenuItem icon={<Pencil />} onSelect={onRename}>
-                Переименовать
-              </MenuItem>
-            )}
-            {onDelete && (
-              <MenuItem danger icon={<Trash2 />} onSelect={onDelete}>
-                Удалить группу
-              </MenuItem>
-            )}
-          </MenuContent>
-        </DropdownMenu.Root>
-      )}
+      <DropdownMenu.Root>
+        <DropdownMenu.Trigger asChild>
+          <button
+            type="button"
+            aria-label={`Действия группы «${group.title}»`}
+            className="absolute top-3 right-3 flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100"
+          >
+            <MoreHorizontal aria-hidden="true" className="size-4" />
+          </button>
+        </DropdownMenu.Trigger>
+        <MenuContent>
+          <MenuItem icon={<Pencil />} onSelect={onRename}>
+            Переименовать
+          </MenuItem>
+          <MenuItem danger icon={<Trash2 />} onSelect={onDelete}>
+            Удалить группу
+          </MenuItem>
+        </MenuContent>
+      </DropdownMenu.Root>
     </article>
   )
 }
@@ -728,48 +1109,20 @@ function NoteGroupBadge({ title }: { title?: string | null }): React.JSX.Element
   )
 }
 
-function ScopeButton({
-  active,
-  children,
-  onClick
+function NotesTab({
+  value,
+  children
 }: {
-  active: boolean
+  value: NotesView
   children: React.ReactNode
-  onClick: () => void
 }): React.JSX.Element {
   return (
-    <button
-      type="button"
-      data-active={active}
-      className="flex h-9 shrink-0 items-center gap-2 rounded-xl px-3 text-sm text-[var(--app-muted)] transition-colors hover:text-[var(--app-text)] data-[active=true]:bg-violet-500 data-[active=true]:text-white"
-      onClick={onClick}
+    <Tabs.Trigger
+      value={value}
+      className="flex h-9 shrink-0 items-center gap-2 rounded-xl px-3 text-sm text-[var(--app-muted)] outline-none transition-colors hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 data-[state=active]:bg-violet-500 data-[state=active]:text-white"
     >
       {children}
-    </button>
-  )
-}
-
-function LayoutButton({
-  active,
-  label,
-  children,
-  onClick
-}: {
-  active: boolean
-  label: string
-  children: React.ReactNode
-  onClick: () => void
-}): React.JSX.Element {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      data-active={active}
-      className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] hover:text-[var(--app-text)] data-[active=true]:bg-violet-500 data-[active=true]:text-white"
-      onClick={onClick}
-    >
-      {children}
-    </button>
+    </Tabs.Trigger>
   )
 }
 
@@ -803,6 +1156,14 @@ function StatCard({
         <span className="mt-1 block truncate text-xs text-[var(--app-muted)]">{caption}</span>
       </span>
     </button>
+  )
+}
+
+function SectionEmpty({ children }: { children: React.ReactNode }): React.JSX.Element {
+  return (
+    <p className="rounded-xl border border-dashed border-[var(--app-border)] px-4 py-8 text-center text-sm text-[var(--app-muted)]">
+      {children}
+    </p>
   )
 }
 
@@ -915,4 +1276,24 @@ function EmptyState({
       </div>
     </section>
   )
+}
+
+function sortNotes(notes: NoteSummary[], sort: NotesSort): NoteSummary[] {
+  if (sort === 'title') {
+    return [...notes].sort((left, right) => left.title.localeCompare(right.title, 'ru-RU'))
+  }
+
+  return [...notes].sort((left, right) => right.updatedAt - left.updatedAt)
+}
+
+function isNotesView(value: string): value is NotesView {
+  return value === 'all' || value === 'recent' || value === 'groups' || value === 'ungrouped'
+}
+
+function isNotesLayout(value: string): value is NotesLayout {
+  return value === 'grid' || value === 'list'
+}
+
+function isNotesSort(value: string): value is NotesSort {
+  return value === 'updated' || value === 'title'
 }
