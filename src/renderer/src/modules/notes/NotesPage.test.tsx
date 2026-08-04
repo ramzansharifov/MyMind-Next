@@ -78,23 +78,55 @@ describe('NotesPage', () => {
     expect(document.querySelector('[data-module-sidebar]')).not.toBeInTheDocument()
   })
 
-  it('uses the dashboard structure from overview to recent notes, groups and all notes', async () => {
+  it('matches the shared home width and uses one card grid for recent and all notes', async () => {
+    render(<NotesPage />)
+
+    await screen.findByRole('heading', { name: 'Заметки' })
+
+    expect(document.querySelector('[data-notes-home-container]')).toHaveClass('max-w-[1240px]')
+
+    const recentGrid = document.querySelector('[data-notes-collection="recent"]')
+    const allGrid = document.querySelector('[data-notes-collection="all"]')
+
+    expect(recentGrid).not.toBeNull()
+    expect(allGrid).not.toBeNull()
+    expect(recentGrid?.className).toBe(allGrid?.className)
+  })
+
+  it('uses Radix tabs, switch and toggle group for dashboard navigation', async () => {
     const user = userEvent.setup()
     render(<NotesPage />)
 
     await screen.findByRole('heading', { name: 'Заметки' })
 
-    expect(screen.getByText('Всего заметок')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Недавние заметки' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Группы' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Все заметки' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Фильтр по группам' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Все' })).toHaveAttribute('data-state', 'active')
+    expect(screen.getByRole('tab', { name: 'По группам' })).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Показать заметки списком' }))
-    expect(screen.getByRole('button', { name: 'Показать заметки списком' })).toHaveAttribute(
-      'data-active',
-      'true'
-    )
+    const listToggle = screen.getByRole('button', { name: 'Показать заметки списком' })
+    await user.click(listToggle)
+    expect(listToggle).toHaveAttribute('data-state', 'on')
+
+    await user.click(screen.getByRole('tab', { name: 'По группам' }))
+
+    expect(await screen.findByRole('heading', { name: 'Все группы' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Открыть группу «Работа»' })).toBeInTheDocument()
+
+    const hideEmptySwitch = screen.getByRole('switch', { name: 'Скрыть пустые группы' })
+    await user.click(hideEmptySwitch)
+    expect(hideEmptySwitch).toHaveAttribute('aria-checked', 'true')
+  })
+
+  it('opens a group as a dedicated notes page', async () => {
+    const user = userEvent.setup()
+    render(<NotesPage />)
+
+    await screen.findByRole('heading', { name: 'Заметки' })
+    await user.click(screen.getByRole('tab', { name: 'По группам' }))
+    await user.click(screen.getByRole('button', { name: 'Открыть группу «Работа»' }))
+
+    expect(screen.getByRole('button', { name: 'Вернуться ко всем группам' })).toBeInTheDocument()
+    expect(screen.getAllByRole('heading', { name: 'Работа' }).length).toBeGreaterThan(0)
+    expect(screen.getByRole('button', { name: 'Открыть заметку «План проекта»' })).toBeInTheDocument()
   })
 
   it('creates a group from the home page', async () => {
