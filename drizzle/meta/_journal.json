@@ -71,6 +71,13 @@
       "when": 1785821116088,
       "tag": "0009_giant_misty_knight",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1785857638418,
+      "tag": "0010_romantic_bloodaxe",
+      "breakpoints": true
     }
   ]
 }

@@ -150,6 +150,9 @@ const api: MyMindApi = {
     renameGroup: (input) =>
       ipcRenderer.invoke(NOTES_IPC_CHANNELS.renameGroup, input) as Promise<NoteGroup>,
 
+    updateGroupIcon: (input) =>
+      ipcRenderer.invoke(NOTES_IPC_CHANNELS.updateGroupIcon, input) as Promise<NoteGroup>,
+
     deleteGroup: (groupId) =>
       ipcRenderer.invoke(NOTES_IPC_CHANNELS.deleteGroup, groupId) as Promise<boolean>,
 

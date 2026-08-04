@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 
 import type { NoteGroup, NoteSummary, NotesOverview } from '../../../../shared/contracts/notes'
+import type { StudyFolderIconName } from '../../../../shared/contracts/study'
 import { DeleteConfirmationDialog } from '../study/components/DeleteConfirmationDialog'
 import { notesClient } from './api/notes-client'
 import { NoteEditor } from './components/NoteEditor'
@@ -94,6 +95,23 @@ export function NotesPage({
     }))
   }, [])
 
+  const handleGroupIconChange = useCallback(
+    async (group: NoteGroup, icon: StudyFolderIconName): Promise<void> => {
+      setError(null)
+
+      try {
+        const updated = await notesClient.updateGroupIcon(group.id, icon)
+        setOverview((current) => ({
+          ...current,
+          groups: current.groups.map((item) => (item.id === updated.id ? updated : item))
+        }))
+      } catch (reason: unknown) {
+        setError(reason instanceof Error ? reason.message : 'Не удалось изменить иконку группы')
+      }
+    },
+    []
+  )
+
   if (selectedNoteId) {
     return (
       <NoteEditor
@@ -117,6 +135,7 @@ export function NotesPage({
           setCreateNoteOpen(true)
         }}
         onRenameGroup={setRenameGroupTarget}
+        onGroupIconChange={(group, icon) => void handleGroupIconChange(group, icon)}
         onDeleteGroup={setDeleteGroupTarget}
         onRenameNote={setRenameNoteTarget}
         onDeleteNote={setDeleteNoteTarget}

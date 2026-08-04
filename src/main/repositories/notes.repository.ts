@@ -10,6 +10,7 @@ import type {
   NotesOverview,
   SaveNoteInput
 } from '../../shared/contracts/notes'
+import type { StudyFolderIconName } from '../../shared/contracts/study'
 import {
   noteDocumentSchema,
   noteGroupSchema,
@@ -107,6 +108,7 @@ export function createNoteGroup(title?: string): NoteGroup {
     .values({
       id,
       title: title?.trim() || 'Новая группа',
+      icon: 'folder',
       createdAt: now,
       updatedAt: now
     })
@@ -128,6 +130,28 @@ export function renameNoteGroup(id: string, title: string): NoteGroup {
   const result = database
     .update(noteGroups)
     .set({ title: title.trim(), updatedAt: now })
+    .where(eq(noteGroups.id, id))
+    .run()
+
+  if (result.changes === 0) {
+    throw new Error('Группа заметок не найдена')
+  }
+
+  const updated = database.select().from(noteGroups).where(eq(noteGroups.id, id)).get()
+
+  if (!updated) {
+    throw new Error('Группа заметок не найдена')
+  }
+
+  return mapNoteGroup(updated)
+}
+
+export function updateNoteGroupIcon(id: string, icon: StudyFolderIconName): NoteGroup {
+  const database = getDatabase()
+  const now = new Date()
+  const result = database
+    .update(noteGroups)
+    .set({ icon, updatedAt: now })
     .where(eq(noteGroups.id, id))
     .run()
 

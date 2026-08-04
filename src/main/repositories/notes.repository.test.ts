@@ -17,7 +17,8 @@ import {
   listNotesOverview,
   moveNote,
   renameNote,
-  saveNote
+  saveNote,
+  updateNoteGroupIcon
 } from './notes.repository'
 
 let testRoot = ''
@@ -48,6 +49,9 @@ describe('notes repository', () => {
   it('creates groups and notes and moves notes between groups', () => {
     const first = createNoteGroup('Работа')
     const second = createNoteGroup('Личное')
+
+    expect(first.icon).toBe('folder')
+    expect(updateNoteGroupIcon(first.id, 'science').icon).toBe('science')
     const note = createNote({ groupId: first.id, title: 'План' })
 
     expect(note.groupId).toBe(first.id)

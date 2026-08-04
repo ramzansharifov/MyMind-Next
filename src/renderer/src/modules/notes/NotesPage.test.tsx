@@ -3,12 +3,14 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { NoteGroup, NotesOverview } from '../../../../shared/contracts/notes'
+import { TooltipProvider } from '../../shared/ui/tooltip'
 
 const notesMocks = vi.hoisted(() => ({
   listOverview: vi.fn(),
   createGroup: vi.fn(),
   createNote: vi.fn(),
   renameGroup: vi.fn(),
+  updateGroupIcon: vi.fn(),
   renameNote: vi.fn(),
   moveNote: vi.fn(),
   deleteGroup: vi.fn(),
@@ -30,6 +32,7 @@ import { NotesPage } from './NotesPage'
 const group: NoteGroup = {
   id: 'group-work',
   title: 'Работа',
+  icon: 'work',
   createdAt: 1,
   updatedAt: 1
 }
@@ -59,9 +62,11 @@ const overview: NotesOverview = {
 beforeEach(() => {
   vi.clearAllMocks()
   notesMocks.listOverview.mockResolvedValue(overview)
+  notesMocks.updateGroupIcon.mockImplementation(async (id, icon) => ({ ...group, id, icon }))
   notesMocks.createGroup.mockResolvedValue({
     id: 'group-new',
     title: 'Проекты',
+    icon: 'folder',
     createdAt: 4,
     updatedAt: 4
   })
@@ -138,6 +143,23 @@ describe('NotesPage', () => {
     expect(screen.queryByRole('heading', { name: 'Заметки без группы' })).not.toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Без группы' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Создать новую заметку' })).toBeInTheDocument()
+  })
+
+  it('updates a group icon through the shared folder icon picker', async () => {
+    const user = userEvent.setup()
+    render(
+      <TooltipProvider>
+        <NotesPage />
+      </TooltipProvider>
+    )
+
+    await screen.findByRole('heading', { name: 'Заметки' })
+    await user.click(screen.getByRole('button', { name: 'Изменить иконку группы «Работа»' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Наука' }))
+
+    await waitFor(() =>
+      expect(notesMocks.updateGroupIcon).toHaveBeenCalledWith('group-work', 'science')
+    )
   })
 
   it('opens a group as a block-only page with an internal back action and create card', async () => {

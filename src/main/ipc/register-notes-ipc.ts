@@ -10,7 +10,8 @@ import {
   openNoteAssetInputSchema,
   renameNoteGroupInputSchema,
   renameNoteInputSchema,
-  saveNoteInputSchema
+  saveNoteInputSchema,
+  updateNoteGroupIconInputSchema
 } from '../../shared/validation/notes'
 import {
   createNote,
@@ -22,7 +23,8 @@ import {
   moveNote,
   renameNote,
   renameNoteGroup,
-  saveNote
+  saveNote,
+  updateNoteGroupIcon
 } from '../repositories/notes.repository'
 import { importStudyAsset, openStudyAsset } from '../services/study-assets'
 import { mainOperationTracker } from '../services/main-operation-tracker'
@@ -47,6 +49,13 @@ export function registerNotesIpcHandlers(): void {
     mainOperationTracker.run(() => {
       const input = renameNoteGroupInputSchema.parse(rawInput)
       return renameNoteGroup(input.id, input.title)
+    })
+  )
+
+  ipcMain.handle(NOTES_IPC_CHANNELS.updateGroupIcon, (_event, rawInput: unknown) =>
+    mainOperationTracker.run(() => {
+      const input = updateNoteGroupIconInputSchema.parse(rawInput)
+      return updateNoteGroupIcon(input.id, input.icon)
     })
   )
 

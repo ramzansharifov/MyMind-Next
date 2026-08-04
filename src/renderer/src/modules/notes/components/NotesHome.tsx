@@ -26,7 +26,10 @@ import {
 import { useMemo, useState } from 'react'
 
 import type { NoteGroup, NoteSummary, NotesOverview } from '../../../../../shared/contracts/notes'
+import type { StudyFolderIconName } from '../../../../../shared/contracts/study'
 import { cn } from '../../../shared/lib/cn'
+import { FolderIcon } from '../../../shared/ui/FolderIcon'
+import { FolderIconPicker } from '../../../shared/ui/FolderIconPicker'
 
 interface NotesHomeProps {
   overview: NotesOverview
@@ -35,6 +38,7 @@ interface NotesHomeProps {
   onCreateGroup: () => void
   onCreateNote: (groupId: string | null) => void
   onRenameGroup: (group: NoteGroup) => void
+  onGroupIconChange: (group: NoteGroup, icon: StudyFolderIconName) => void
   onDeleteGroup: (group: NoteGroup) => void
   onRenameNote: (note: NoteSummary) => void
   onMoveNote: (note: NoteSummary, groupId: string | null) => void
@@ -59,6 +63,7 @@ export function NotesHome({
   onCreateGroup,
   onCreateNote,
   onRenameGroup,
+  onGroupIconChange,
   onDeleteGroup,
   onRenameNote,
   onMoveNote,
@@ -326,6 +331,7 @@ export function NotesHome({
                       onOpenGroup={openGroup}
                       onCreateNote={onCreateNote}
                       onRenameGroup={onRenameGroup}
+                      onGroupIconChange={onGroupIconChange}
                       onDeleteGroup={onDeleteGroup}
                     />
                   </DashboardSection>
@@ -405,6 +411,7 @@ export function NotesHome({
                     groups={overview.groups}
                     onBack={() => setSelectedGroupId(null)}
                     onCreateNote={() => onCreateNote(selectedGroup.id)}
+                    onGroupIconChange={onGroupIconChange}
                     onLayoutChange={setLayout}
                     onSortChange={setSort}
                     onOpenNote={onOpenNote}
@@ -422,6 +429,7 @@ export function NotesHome({
                     onCreateNote={onCreateNote}
                     onOpenGroup={openGroup}
                     onRenameGroup={onRenameGroup}
+                    onGroupIconChange={onGroupIconChange}
                     onDeleteGroup={onDeleteGroup}
                   />
                 )}
@@ -477,6 +485,7 @@ function GroupsDirectoryPage({
   onCreateNote,
   onOpenGroup,
   onRenameGroup,
+  onGroupIconChange,
   onDeleteGroup
 }: {
   groups: NoteGroup[]
@@ -487,6 +496,7 @@ function GroupsDirectoryPage({
   onCreateNote: (groupId: string | null) => void
   onOpenGroup: (groupId: string) => void
   onRenameGroup: (group: NoteGroup) => void
+  onGroupIconChange: (group: NoteGroup, icon: StudyFolderIconName) => void
   onDeleteGroup: (group: NoteGroup) => void
 }): React.JSX.Element {
   return (
@@ -515,6 +525,7 @@ function GroupsDirectoryPage({
           onOpenGroup={onOpenGroup}
           onCreateNote={onCreateNote}
           onRenameGroup={onRenameGroup}
+          onGroupIconChange={onGroupIconChange}
           onDeleteGroup={onDeleteGroup}
         />
       </DashboardSection>
@@ -531,6 +542,7 @@ function GroupNotesPage({
   groups,
   onBack,
   onCreateNote,
+  onGroupIconChange,
   onLayoutChange,
   onSortChange,
   onOpenNote,
@@ -546,6 +558,7 @@ function GroupNotesPage({
   groups: NoteGroup[]
   onBack: () => void
   onCreateNote: () => void
+  onGroupIconChange: (group: NoteGroup, icon: StudyFolderIconName) => void
   onLayoutChange: (layout: NotesLayout) => void
   onSortChange: (sort: NotesSort) => void
   onOpenNote: (noteId: string) => void
@@ -557,7 +570,7 @@ function GroupNotesPage({
     <div>
       <DashboardSection
         title={group.title}
-        icon={<Folder aria-hidden="true" className="size-5" />}
+        icon={<NoteGroupIconPicker group={group} onChange={onGroupIconChange} className="size-5" />}
         backAction={{
           label: 'Вернуться ко всем группам',
           onBack
@@ -814,6 +827,7 @@ function GroupsGrid({
   onOpenGroup,
   onCreateNote,
   onRenameGroup,
+  onGroupIconChange,
   onDeleteGroup
 }: {
   groups: NoteGroup[]
@@ -822,6 +836,7 @@ function GroupsGrid({
   onOpenGroup: (groupId: string) => void
   onCreateNote: (groupId: string | null) => void
   onRenameGroup: (group: NoteGroup) => void
+  onGroupIconChange: (group: NoteGroup, icon: StudyFolderIconName) => void
   onDeleteGroup: (group: NoteGroup) => void
 }): React.JSX.Element {
   return (
@@ -847,6 +862,7 @@ function GroupsGrid({
             onOpen={() => onOpenGroup(group.id)}
             onCreateNote={() => onCreateNote(group.id)}
             onRename={() => onRenameGroup(group)}
+            onIconChange={(icon) => onGroupIconChange(group, icon)}
             onDelete={() => onDeleteGroup(group)}
           />
         )
@@ -908,6 +924,7 @@ function GroupCard({
   onOpen,
   onCreateNote,
   onRename,
+  onIconChange,
   onDelete
 }: {
   group: NoteGroup
@@ -916,14 +933,17 @@ function GroupCard({
   onOpen: () => void
   onCreateNote: () => void
   onRename: () => void
+  onIconChange: (icon: StudyFolderIconName) => void
   onDelete: () => void
 }): React.JSX.Element {
   return (
     <article className="group relative min-h-44 rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-4">
       <div className="flex items-start gap-3 pr-7">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-300">
-          <Folder aria-hidden="true" className="size-5" />
-        </div>
+        <NoteGroupIconPicker
+          group={group}
+          onChange={(_group, icon) => onIconChange(icon)}
+          className="size-5"
+        />
         <div className="min-w-0">
           <h3 className="truncate font-semibold text-[var(--app-text)]">{group.title}</h3>
           <p className="mt-0.5 text-xs text-[var(--app-muted)]">{noteCount} заметок</p>
@@ -972,6 +992,34 @@ function GroupCard({
         </MenuContent>
       </DropdownMenu.Root>
     </article>
+  )
+}
+
+function NoteGroupIconPicker({
+  group,
+  onChange,
+  className
+}: {
+  group: NoteGroup
+  onChange: (group: NoteGroup, icon: StudyFolderIconName) => void
+  className: string
+}): React.JSX.Element {
+  return (
+    <FolderIconPicker
+      value={group.icon}
+      label="Иконка группы"
+      align="start"
+      onChange={(icon) => onChange(group, icon)}
+      trigger={
+        <button
+          type="button"
+          aria-label={`Изменить иконку группы «${group.title}»`}
+          className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[color-mix(in_srgb,var(--app-accent-500)_15%,transparent)] bg-[color-mix(in_srgb,var(--app-accent-500)_10%,transparent)] text-[var(--app-accent-500)] transition-colors outline-none hover:border-[color-mix(in_srgb,var(--app-accent-500)_35%,transparent)] hover:bg-[color-mix(in_srgb,var(--app-accent-500)_15%,transparent)] focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)]/35"
+        >
+          <FolderIcon name={group.icon} expanded className={className} />
+        </button>
+      }
+    />
   )
 }
 

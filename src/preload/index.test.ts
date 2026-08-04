@@ -57,6 +57,7 @@ describe('preload API contract', () => {
       'listOverview',
       'createGroup',
       'renameGroup',
+      'updateGroupIcon',
       'deleteGroup',
       'createNote',
       'renameNote',

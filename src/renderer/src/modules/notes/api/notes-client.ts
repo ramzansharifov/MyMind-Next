@@ -14,6 +14,7 @@ import type {
 import type {
   ImportStudyAssetInput,
   OpenStudyAssetInput,
+  StudyFolderIconName,
   StudyLocalAsset
 } from '../../../../../shared/contracts/study'
 
@@ -36,6 +37,10 @@ export const notesClient = {
 
   renameGroup(id: string, title: string): Promise<NoteGroup> {
     return getNotesApi().renameGroup({ id, title })
+  },
+
+  updateGroupIcon(id: string, icon: StudyFolderIconName): Promise<NoteGroup> {
+    return getNotesApi().updateGroupIcon({ id, icon })
   },
 
   deleteGroup(groupId: string): Promise<boolean> {
