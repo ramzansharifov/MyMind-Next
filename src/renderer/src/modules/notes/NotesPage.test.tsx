@@ -113,7 +113,9 @@ describe('NotesPage', () => {
 
     await user.click(screen.getByRole('tab', { name: 'По группам' }))
 
-    expect(await screen.findByRole('heading', { name: 'Все группы' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Все группы' })).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Группы' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Создать новую группу' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Открыть группу «Работа»' })).toBeInTheDocument()
 
     const hideEmptySwitch = screen.getByRole('switch', { name: 'Скрыть пустые группы' })
@@ -121,7 +123,23 @@ describe('NotesPage', () => {
     expect(hideEmptySwitch).toHaveAttribute('aria-checked', 'true')
   })
 
-  it('opens a group as a dedicated notes page', async () => {
+  it('removes secondary page headers and keeps creation inside each content block', async () => {
+    const user = userEvent.setup()
+    render(<NotesPage />)
+
+    await screen.findByRole('heading', { name: 'Заметки' })
+
+    await user.click(screen.getByRole('tab', { name: 'Недавние' }))
+    expect(screen.getAllByRole('heading', { name: 'Недавние заметки' })).toHaveLength(1)
+    expect(screen.getByRole('button', { name: 'Создать новую заметку' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('tab', { name: 'Без группы' }))
+    expect(screen.queryByRole('heading', { name: 'Заметки без группы' })).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Без группы' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Создать новую заметку' })).toBeInTheDocument()
+  })
+
+  it('opens a group as a block-only page with an internal back action and create card', async () => {
     const user = userEvent.setup()
     render(<NotesPage />)
 
@@ -130,10 +148,24 @@ describe('NotesPage', () => {
     await user.click(screen.getByRole('button', { name: 'Открыть группу «Работа»' }))
 
     expect(screen.getByRole('button', { name: 'Вернуться ко всем группам' })).toBeInTheDocument()
-    expect(screen.getAllByRole('heading', { name: 'Работа' }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('heading', { name: 'Работа' })).toHaveLength(1)
+    expect(
+      screen.getByRole('button', { name: 'Создать заметку в группе «Работа»' })
+    ).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: 'Открыть заметку «План проекта»' })
     ).toBeInTheDocument()
+  })
+
+  it('opens the group creation dialog from the placeholder card', async () => {
+    const user = userEvent.setup()
+    render(<NotesPage />)
+
+    await screen.findByRole('heading', { name: 'Заметки' })
+    await user.click(screen.getByRole('tab', { name: 'По группам' }))
+    await user.click(screen.getByRole('button', { name: 'Создать новую группу' }))
+
+    expect(screen.getByRole('textbox', { name: 'Название группы' })).toBeInTheDocument()
   })
 
   it('creates a group from the home page', async () => {
