@@ -45,7 +45,7 @@ describe('StudyBlockEditor insert menu', () => {
       'media'
     ])
     expect(getColumnItems(menu, 'primary')).toEqual([
-      'Форматированный текст',
+      'Текст',
       'Заголовок',
       'Доска',
       'Разделитель'
@@ -77,7 +77,7 @@ describe('StudyBlockEditor insert menu', () => {
       'primary',
       'media'
     ])
-    expect(getColumnItems(menu, 'primary')).toEqual(['Форматированный текст', 'Разделитель'])
+    expect(getColumnItems(menu, 'primary')).toEqual(['Текст', 'Разделитель'])
     expect(getColumnItems(menu, 'media')).toEqual(['Фото', 'Видео', 'Аудио', 'Файл'])
     expect(menu.querySelector('[data-study-block-menu-column="technical"]')).toBeNull()
   })
