@@ -5,6 +5,7 @@ import { shutdownResponseSchema, systemHealthSchema } from '../../shared/validat
 import { getSqlite } from '../database/client'
 import { mainOperationTracker } from '../services/main-operation-tracker'
 import { registerBoardsIpcHandlers } from './register-boards-ipc'
+import { registerNotesIpcHandlers } from './register-notes-ipc'
 import { registerPreferencesIpcHandlers } from './register-preferences-ipc'
 import { registerStudyIpcHandlers } from './register-study-ipc'
 
@@ -22,6 +23,7 @@ interface RegisterIpcHandlersOptions {
 export function registerIpcHandlers(options: RegisterIpcHandlersOptions): void {
   registerStudyIpcHandlers()
   registerBoardsIpcHandlers()
+  registerNotesIpcHandlers()
   registerPreferencesIpcHandlers()
 
   ipcMain.removeHandler(IPC_CHANNELS.systemHealth)
