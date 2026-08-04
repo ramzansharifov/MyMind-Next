@@ -1,12 +1,14 @@
 import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
 import type { NoteDocument } from '../../../shared/contracts/notes'
+import type { StudyFolderIconName } from '../../../shared/contracts/study'
 
 export const noteGroups = sqliteTable(
   'note_groups',
   {
     id: text('id').primaryKey(),
     title: text('title').notNull(),
+    icon: text('icon').$type<StudyFolderIconName>().notNull().default('folder'),
     createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
     updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull()
   },
