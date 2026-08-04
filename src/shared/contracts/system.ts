@@ -1,4 +1,5 @@
 import type { BoardApi } from './boards'
+import type { NotesApi } from './notes'
 import type { PreferencesApi } from './preferences'
 import type { StudyApi } from './study'
 
@@ -30,5 +31,6 @@ export interface MyMindApi {
 
   study: StudyApi
   boards: BoardApi
+  notes: NotesApi
   preferences: PreferencesApi
 }
