@@ -144,9 +144,7 @@ export function NoteEditor({ noteId, onBack, onNoteUpdated }: NoteEditorProps): 
       })
       .catch((reason: unknown) => {
         setModeError(
-          reason instanceof Error
-            ? reason.message
-            : 'Не удалось сохранить заметку перед чтением'
+          reason instanceof Error ? reason.message : 'Не удалось сохранить заметку перед чтением'
         )
       })
       .finally(() => {
