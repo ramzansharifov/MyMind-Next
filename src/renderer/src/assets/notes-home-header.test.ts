@@ -6,19 +6,23 @@ const styles = readRepoText('src/renderer/src/assets/notes-home-header.css')
 const entrypoint = readRepoText('src/renderer/src/main.tsx')
 
 describe('Notes home header', () => {
-  it('uses the same raised module-home panel geometry as Study and Boards', () => {
-    expect(styles).toContain('[data-notes-home-container] > header')
+  it('uses one raised panel for the full module hero', () => {
+    expect(styles).toContain('[data-notes-hero]')
     expect(styles).toContain('border: 1px solid var(--app-border)')
     expect(styles).toContain('border-radius: 1.5rem')
     expect(styles).toContain('background: var(--app-surface)')
     expect(styles).toContain('box-shadow: 0 20px 70px')
+    expect(styles).toContain('[data-notes-hero-stats]')
   })
 
-  it('adds module decoration without introducing theme-specific geometry', () => {
-    expect(styles).toContain('[data-notes-home-container] > header::before')
-    expect(styles).toContain('[data-notes-home-container] > header::after')
-    expect(styles).toContain('[data-notes-home-container] > header > :first-child::before')
-    expect(styles).toContain('background-image: url(')
+  it('uses the selected accent for the module icon without theme-specific geometry', () => {
+    expect(styles).toContain('[data-notes-hero]::before')
+    expect(styles).toContain('[data-notes-hero]::after')
+    expect(styles).toContain('[data-notes-hero] > header > :first-child::before')
+    expect(styles).toContain('[data-notes-hero] > header > :first-child::after')
+    expect(styles).toContain('mask: url(')
+    expect(styles).toContain('background: var(--app-accent-500)')
+    expect(styles).not.toContain('%23a78bfa')
     expect(styles).not.toContain('[data-theme=')
   })
 
