@@ -102,7 +102,7 @@ describe('NotesPage', () => {
     expect(screen.getByRole('tab', { name: 'Все' })).toHaveAttribute('data-state', 'active')
     expect(screen.getByRole('tab', { name: 'По группам' })).toBeInTheDocument()
 
-    const listToggle = screen.getByRole('button', { name: 'Показать заметки списком' })
+    const listToggle = screen.getByRole('radio', { name: 'Показать заметки списком' })
     await user.click(listToggle)
     expect(listToggle).toHaveAttribute('data-state', 'on')
 
