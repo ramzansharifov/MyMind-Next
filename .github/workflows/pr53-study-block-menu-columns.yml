@@ -1,3 +1,4 @@
+# Trigger the one-off verification after the workflow exists on the PR branch.
 name: PR 53 study block menu columns
 
 on:
