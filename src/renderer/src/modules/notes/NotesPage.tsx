@@ -51,13 +51,40 @@ export function NotesPage({
   }, [])
 
   useEffect(() => {
-    void loadOverview()
-  }, [loadOverview])
+    let active = true
+
+    void notesClient
+      .listOverview()
+      .then((loadedOverview) => {
+        if (active) {
+          setOverview(loadedOverview)
+        }
+      })
+      .catch((reason: unknown) => {
+        if (active) {
+          setError(reason instanceof Error ? reason.message : 'Не удалось загрузить заметки')
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setIsLoading(false)
+        }
+      })
+
+    return () => {
+      active = false
+    }
+  }, [])
 
   useEffect(() => {
-    if (!resourceId) return
-    setSelectedNoteId(resourceId)
-    onResourceHandled?.()
+    if (!resourceId) return undefined
+
+    const frame = window.requestAnimationFrame(() => {
+      setSelectedNoteId(resourceId)
+      onResourceHandled?.()
+    })
+
+    return () => window.cancelAnimationFrame(frame)
   }, [onResourceHandled, resourceId])
 
   const handleNoteUpdated = useCallback((updated: NoteSummary): void => {
