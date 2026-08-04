@@ -1,4 +1,4 @@
-import { ArrowLeft, Check, FilePenLine, LoaderCircle, Pencil } from 'lucide-react'
+import { ArrowLeft, Check, LoaderCircle, Pencil } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import {
@@ -8,6 +8,7 @@ import {
   type NoteSummary
 } from '../../../../../shared/contracts/notes'
 import type { StudyDocument } from '../../../../../shared/contracts/study'
+import { StudyBlockAssetProvider } from '../../study/components/StudyBlockAssetProvider'
 import { StudyBlockEditor } from '../../study/components/StudyBlockEditor'
 import {
   StudyAutosaveQueue,
@@ -194,15 +195,16 @@ export function NoteEditor({
       )}
 
       <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6 max-[640px]:px-3 max-[640px]:py-4">
-        <StudyBlockEditor
-          materialId={note.id}
-          document={note.document as StudyDocument}
-          mode="edit"
-          allowedBlockTypes={NOTE_BLOCK_TYPES}
-          assetClient={notesBlockAssetClient}
-          documentLabel="заметки"
-          onChange={(document) => updateDocument(document as NoteDocument)}
-        />
+        <StudyBlockAssetProvider client={notesBlockAssetClient}>
+          <StudyBlockEditor
+            materialId={note.id}
+            document={note.document as StudyDocument}
+            mode="edit"
+            allowedBlockTypes={NOTE_BLOCK_TYPES}
+            documentLabel="заметки"
+            onChange={(document) => updateDocument(document as NoteDocument)}
+          />
+        </StudyBlockAssetProvider>
       </div>
 
       <NoteNameDialog
@@ -246,8 +248,4 @@ function SaveStatus({ state }: { state: StudyAutosaveState }): React.JSX.Element
       <span className="max-[760px]:hidden">Сохранено</span>
     </span>
   )
-}
-
-export function NoteEditorEmptyIllustration(): React.JSX.Element {
-  return <FilePenLine aria-hidden="true" className="size-5" />
 }
