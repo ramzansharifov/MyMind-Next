@@ -44,12 +44,7 @@ describe('StudyBlockEditor insert menu', () => {
       'technical',
       'media'
     ])
-    expect(getColumnItems(menu, 'primary')).toEqual([
-      'Текст',
-      'Заголовок',
-      'Доска',
-      'Разделитель'
-    ])
+    expect(getColumnItems(menu, 'primary')).toEqual(['Текст', 'Заголовок', 'Доска', 'Разделитель'])
     expect(getColumnItems(menu, 'technical')).toEqual(['Код', 'Markdown', 'LaTeX', 'Mermaid'])
     expect(getColumnItems(menu, 'media')).toEqual(['Фото', 'Видео', 'Аудио', 'Файл'])
   })
