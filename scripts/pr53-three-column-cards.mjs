@@ -26,35 +26,40 @@ let styles = fs.readFileSync(notesStylesPath, 'utf8')
 styles = replaceOnce(
   styles,
   `[data-notes-create-card] {
-  border: 2px dashed color-mix(in srgb, var(--app-accent-500) 62%, transparent) !important;
+  border-color: color-mix(in srgb, var(--app-accent-500) 42%, transparent) !important;
   background: transparent !important;
-  box-shadow: 0 0 0 color-mix(in srgb, var(--app-accent-500) 0%, transparent);
+  box-shadow: none;
   animation: notes-create-card-pulse 2.4s ease-in-out infinite;
-}
-
-[data-notes-create-card] > span:first-child {
-  border-color: color-mix(in srgb, var(--app-accent-500) 34%, transparent) !important;
-  background: transparent !important;
 }
 
 [data-notes-create-card]:hover,
 [data-notes-create-card]:focus-visible {
   border-color: var(--app-accent-500) !important;
   background: transparent !important;
-  box-shadow: 0 0 24px color-mix(in srgb, var(--app-accent-500) 22%, transparent) !important;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--app-accent-500) 22%, transparent),
+    0 0 20px color-mix(in srgb, var(--app-accent-500) 14%, transparent);
   animation-play-state: paused;
+}
+
+[data-notes-create-card] > span:first-child {
+  border-color: color-mix(in srgb, var(--app-accent-500) 28%, transparent) !important;
+  background: transparent !important;
+  box-shadow: none;
 }
 
 @keyframes notes-create-card-pulse {
   0%,
   100% {
-    border-color: color-mix(in srgb, var(--app-accent-500) 42%, transparent);
-    box-shadow: 0 0 0 color-mix(in srgb, var(--app-accent-500) 0%, transparent);
+    border-color: color-mix(in srgb, var(--app-accent-500) 32%, transparent);
+    box-shadow: 0 0 0 0 transparent;
   }
 
   50% {
-    border-color: color-mix(in srgb, var(--app-accent-500) 88%, transparent);
-    box-shadow: 0 0 18px color-mix(in srgb, var(--app-accent-500) 18%, transparent);
+    border-color: color-mix(in srgb, var(--app-accent-500) 82%, transparent);
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--app-accent-500) 14%, transparent),
+      0 0 16px color-mix(in srgb, var(--app-accent-500) 10%, transparent);
   }
 }
 `,
@@ -67,11 +72,6 @@ styles = replaceOnce(
   animation: notes-create-card-pulse 1.8s ease-in-out infinite;
 }
 
-[data-notes-create-card] > span:first-child {
-  border-color: color-mix(in srgb, var(--app-accent-500) 42%, transparent) !important;
-  background: transparent !important;
-}
-
 [data-notes-create-card]:hover,
 [data-notes-create-card]:focus-visible {
   border-color: var(--app-accent-500) !important;
@@ -80,6 +80,12 @@ styles = replaceOnce(
     0 0 28px color-mix(in srgb, var(--app-accent-500) 38%, transparent),
     inset 0 0 14px color-mix(in srgb, var(--app-accent-500) 12%, transparent) !important;
   animation-play-state: paused;
+}
+
+[data-notes-create-card] > span:first-child {
+  border-color: color-mix(in srgb, var(--app-accent-500) 42%, transparent) !important;
+  background: transparent !important;
+  box-shadow: none;
 }
 
 @keyframes notes-create-card-pulse {
@@ -106,15 +112,9 @@ fs.writeFileSync(notesStylesPath, styles)
 let styleTest = fs.readFileSync(notesStyleTestPath, 'utf8')
 styleTest = replaceOnce(
   styleTest,
-  "expect(styles).toContain('border: 2px dashed')",
-  "expect(styles).toContain('border: 3px dashed')",
-  '3px border test'
-)
-styleTest = replaceOnce(
-  styleTest,
-  "expect(styles).toContain('0 0 18px')",
-  "expect(styles).toContain('0 0 24px')",
-  'glow strength test'
+  "expect(styles).toContain('animation: notes-create-card-pulse 2.4s ease-in-out infinite')",
+  "expect(styles).toContain('border: 3px dashed')\n    expect(styles).toContain('animation: notes-create-card-pulse 1.8s ease-in-out infinite')\n    expect(styles).toContain('0 0 24px')",
+  'create card visual test'
 )
 fs.writeFileSync(notesStyleTestPath, styleTest)
 
