@@ -6,7 +6,15 @@ import type {
   StudyLocalAsset
 } from './study'
 
-export const NOTE_BLOCK_TYPES = ['text', 'image', 'audio', 'video', 'file', 'divider'] as const
+export const NOTE_BLOCK_TYPES = [
+  'text',
+  'heading',
+  'image',
+  'audio',
+  'video',
+  'file',
+  'divider'
+] as const
 
 export type NoteBlockType = (typeof NOTE_BLOCK_TYPES)[number]
 export type NoteBlock = Extract<StudyBlock, { type: NoteBlockType }>
