@@ -38,8 +38,9 @@ interface BlockSettingsPanelProps {
   onChange: (block: StudyBlock) => void
 }
 
-type SettingsRendererProps = Omit<BlockSettingsPanelProps, 'block'> & {
+type SettingsRendererProps = Omit<BlockSettingsPanelProps, 'block' | 'importAsset'> & {
   block: StudyBlock
+  importAsset: NonNullable<BlockSettingsPanelProps['importAsset']>
 }
 
 type SettingsRenderer = (props: SettingsRendererProps) => React.JSX.Element
@@ -452,28 +453,25 @@ function CodeSettings({
   block,
   onChange
 }: {
-  block: Extract<
-    StudyBlock,
-    {
-      type: 'code'
-    }
-  >
+  block: Extract<StudyBlock, { type: 'code' }>
   onChange: (block: StudyBlock) => void
 }): React.JSX.Element {
   return (
-    <SettingsField label="Язык">
-      <StudySelect
-        value={block.language || 'text'}
-        options={STUDY_CODE_LANGUAGE_OPTIONS}
-        ariaLabel="Язык блока кода"
-        onValueChange={(language) => {
-          onChange({
-            ...block,
-            language
-          })
-        }}
-      />
-    </SettingsField>
+    <div className="grid gap-4">
+      <SettingsField label="Язык">
+        <StudySelect
+          value={block.language}
+          options={STUDY_CODE_LANGUAGE_OPTIONS}
+          ariaLabel="Язык кода"
+          onValueChange={(language) => {
+            onChange({
+              ...block,
+              language
+            })
+          }}
+        />
+      </SettingsField>
+    </div>
   )
 }
 
@@ -481,19 +479,14 @@ function MarkdownSettings({
   block,
   onChange
 }: {
-  block: Extract<
-    StudyBlock,
-    {
-      type: 'markdown'
-    }
-  >
+  block: Extract<StudyBlock, { type: 'markdown' }>
   onChange: (block: StudyBlock) => void
 }): React.JSX.Element {
   return (
     <div className="grid gap-4">
       <SettingsField label="Режим">
         <SegmentedChoice
-          value={block.viewMode ?? 'split'}
+          value={block.viewMode}
           options={markdownViewModes}
           ariaLabel="Режим Markdown-блока"
           columns={3}
@@ -509,10 +502,6 @@ function MarkdownSettings({
           }}
         />
       </SettingsField>
-
-      <p className="text-xs leading-5 text-[var(--app-muted)]">
-        GFM: таблицы, списки задач, ссылки и блоки кода.
-      </p>
     </div>
   )
 }
@@ -521,21 +510,14 @@ function LatexSettings({
   block,
   onChange
 }: {
-  block: Extract<
-    StudyBlock,
-    {
-      type: 'latex'
-    }
-  >
+  block: Extract<StudyBlock, { type: 'latex' }>
   onChange: (block: StudyBlock) => void
 }): React.JSX.Element {
-  const scale = block.scale ?? 100
-
   return (
     <div className="grid gap-4">
-      <SettingsField label="Режим редактора">
+      <SettingsField label="Режим">
         <SegmentedChoice
-          value={block.viewMode ?? 'split'}
+          value={block.viewMode}
           options={latexViewModes}
           ariaLabel="Режим LaTeX-блока"
           columns={3}
@@ -552,11 +534,11 @@ function LatexSettings({
         />
       </SettingsField>
 
-      <SettingsField label="Тип формулы">
+      <SettingsField label="Формула">
         <SegmentedChoice
-          value={block.displayMode ?? 'display'}
+          value={block.displayMode}
           options={latexDisplayModes}
-          ariaLabel="Тип LaTeX-формулы"
+          ariaLabel="Тип отображения формулы"
           columns={2}
           onValueChange={(displayMode) => {
             if (displayMode !== 'display' && displayMode !== 'inline') {
@@ -573,7 +555,7 @@ function LatexSettings({
 
       <SettingsField label="Выравнивание">
         <SegmentedChoice
-          value={block.alignment ?? 'center'}
+          value={block.alignment}
           options={latexAlignments}
           ariaLabel="Выравнивание формулы"
           columns={3}
@@ -589,39 +571,6 @@ function LatexSettings({
           }}
         />
       </SettingsField>
-
-      <SettingsField label={`Размер: ${scale}%`}>
-        <Slider.Root
-          min={70}
-          max={180}
-          step={5}
-          value={[scale]}
-          aria-label="Размер LaTeX-формулы"
-          className="relative flex h-5 w-full touch-none items-center select-none"
-          onValueChange={(values) => {
-            const nextScale = values[0]
-
-            if (typeof nextScale !== 'number') {
-              return
-            }
-
-            onChange({
-              ...block,
-              scale: nextScale
-            })
-          }}
-        >
-          <Slider.Track className="relative h-1.5 grow overflow-hidden rounded-full bg-white/[0.08]">
-            <Slider.Range className="absolute h-full bg-violet-500" />
-          </Slider.Track>
-
-          <Slider.Thumb className="block size-4 rounded-full border-2 border-violet-400 bg-(--app-surface-raised) outline-none hover:scale-110 focus-visible:ring-4 focus-visible:ring-violet-500/20" />
-        </Slider.Root>
-      </SettingsField>
-
-      <p className="text-xs leading-5 text-[var(--app-muted)]">
-        Поддерживаются формулы, матрицы, системы уравнений, суммы и интегралы.
-      </p>
     </div>
   )
 }
@@ -630,21 +579,16 @@ function MermaidSettings({
   block,
   onChange
 }: {
-  block: Extract<
-    StudyBlock,
-    {
-      type: 'mermaid'
-    }
-  >
+  block: Extract<StudyBlock, { type: 'mermaid' }>
   onChange: (block: StudyBlock) => void
 }): React.JSX.Element {
-  const scale = block.scale ?? 100
+  const [template, setTemplate] = useState('')
 
   return (
     <div className="grid gap-4">
-      <SettingsField label="Режим редактора">
+      <SettingsField label="Режим">
         <SegmentedChoice
-          value={block.viewMode ?? 'split'}
+          value={block.viewMode}
           options={mermaidViewModes}
           ariaLabel="Режим Mermaid-блока"
           columns={3}
@@ -662,18 +606,12 @@ function MermaidSettings({
       </SettingsField>
 
       <SettingsField label="Тема">
-        <SegmentedChoice
-          value={block.theme ?? 'dark'}
+        <StudySelect
+          value={block.theme}
           options={mermaidThemes}
           ariaLabel="Тема Mermaid-диаграммы"
-          columns={2}
           onValueChange={(theme) => {
-            if (
-              theme !== 'dark' &&
-              theme !== 'default' &&
-              theme !== 'neutral' &&
-              theme !== 'forest'
-            ) {
+            if (theme !== 'dark' && theme !== 'default' && theme !== 'neutral' && theme !== 'forest') {
               return
             }
 
@@ -685,64 +623,36 @@ function MermaidSettings({
         />
       </SettingsField>
 
-      <SettingsField label={`Размер: ${scale}%`}>
-        <Slider.Root
-          min={60}
-          max={180}
-          step={10}
-          value={[scale]}
-          aria-label="Размер Mermaid-диаграммы"
-          className="relative flex h-5 w-full touch-none items-center select-none"
-          onValueChange={(values) => {
-            const nextScale = values[0]
-
-            if (typeof nextScale !== 'number') {
-              return
-            }
-
-            onChange({
-              ...block,
-              scale: nextScale
-            })
-          }}
-        >
-          <Slider.Track className="relative h-1.5 grow overflow-hidden rounded-full bg-white/[0.08]">
-            <Slider.Range className="absolute h-full bg-violet-500" />
-          </Slider.Track>
-
-          <Slider.Thumb className="block size-4 rounded-full border-2 border-violet-400 bg-(--app-surface-raised) outline-none hover:scale-110 focus-visible:ring-4 focus-visible:ring-violet-500/20" />
-        </Slider.Root>
-      </SettingsField>
-
-      {!block.source.trim() && (
+      <SettingsField label="Шаблон">
         <div className="grid gap-2">
-          <span className="text-[11px] font-medium text-(--app-muted)">Быстрый старт</span>
+          <StudySelect
+            value={template}
+            options={STUDY_MERMAID_TEMPLATES.map(({ id, label }) => ({
+              value: id,
+              label
+            }))}
+            placeholder="Выберите шаблон"
+            ariaLabel="Шаблон Mermaid-диаграммы"
+            onValueChange={(templateId) => {
+              const nextTemplate = STUDY_MERMAID_TEMPLATES.find(({ id }) => id === templateId)
+              setTemplate(templateId)
 
-          <div className="grid grid-cols-2 gap-2">
-            {STUDY_MERMAID_TEMPLATES.map((template) => (
-              <button
-                key={template.id}
-                type="button"
-                className="rounded-lg border border-(--app-border) bg-(--app-workspace) px-2.5 py-2 text-xs font-medium text-(--app-muted) transition-colors outline-none hover:border-(--app-border-strong) hover:text-(--app-text) focus-visible:ring-2 focus-visible:ring-violet-500/35"
-                onClick={() => {
-                  onChange({
-                    ...block,
-                    source: template.source,
-                    viewMode: 'split'
-                  })
-                }}
-              >
-                {template.label}
-              </button>
-            ))}
-          </div>
+              if (!nextTemplate) {
+                return
+              }
+
+              onChange({
+                ...block,
+                source: nextTemplate.source
+              })
+            }}
+          />
+
+          <p className="text-xs leading-5 text-(--app-muted)">
+            Шаблон заменит текущий код диаграммы.
+          </p>
         </div>
-      )}
-
-      <p className="text-xs leading-5 text-[var(--app-muted)]">
-        Поддерживаются блок-схемы, последовательности, классы, состояния, ER, Gantt, mindmap и
-        другие диаграммы.
-      </p>
+      </SettingsField>
     </div>
   )
 }
@@ -750,7 +660,7 @@ function MermaidSettings({
 type StudyAttachmentBlock = Extract<
   StudyBlock,
   {
-    type: StudyAssetKind
+    type: 'image' | 'video' | 'audio' | 'file'
   }
 >
 
@@ -763,39 +673,32 @@ function AttachmentSettings({
   block: StudyAttachmentBlock
   onChange: (block: StudyBlock) => void
 }): React.JSX.Element {
-  const [isPicking, setIsPicking] = useState(false)
-
+  const [isImporting, setIsImporting] = useState(false)
   const [importError, setImportError] = useState<string | null>(null)
+  const isVideo = block.type === 'video'
+  const isImage = block.type === 'image'
+  const sourceOptions = isVideo ? studyVideoSources : studyFileSources
 
-  const [selectedSourceType, setSelectedSourceType] = useState<'local' | 'url'>(block.source.type)
-
-  const [remoteUrlDraft, setRemoteUrlDraft] = useState(
-    block.source.type === 'url' ? block.source.url : ''
-  )
-
-  const localAsset = block.source.type === 'local' ? block.source.asset : undefined
-
-  const savedRemoteUrl = block.source.type === 'url' ? block.source.url : ''
-
-  const normalizedRemoteUrlDraft = remoteUrlDraft.trim()
-
-  const isRemoteUrlValid =
-    block.type === 'video'
-      ? isValidStudyYouTubeUrl(normalizedRemoteUrlDraft)
-      : block.type === 'image'
-        ? isValidStudyRemoteMediaUrl(normalizedRemoteUrlDraft)
-        : false
-
-  const canApplyRemoteUrl = isRemoteUrlValid && normalizedRemoteUrlDraft !== savedRemoteUrl.trim()
+  function updateSourceType(type: 'local' | 'url'): void {
+    onChange({
+      ...block,
+      source: {
+        type,
+        asset: type === 'local' ? block.source.asset : undefined,
+        url: type === 'url' ? block.source.url : undefined
+      }
+    })
+    setImportError(null)
+  }
 
   async function chooseLocalFile(): Promise<void> {
-    setIsPicking(true)
+    setIsImporting(true)
     setImportError(null)
 
     try {
       const asset = await studyClient.importAsset({
         nodeId: materialId,
-        kind: block.type
+        kind: getStudyAssetKind(block.type)
       })
 
       if (!asset) {
@@ -809,255 +712,283 @@ function AttachmentSettings({
           asset
         }
       })
-
-      setSelectedSourceType('local')
     } catch (reason: unknown) {
-      setImportError(getFileImportErrorMessage(reason))
+      setImportError(reason instanceof Error ? reason.message : 'Не удалось импортировать файл')
     } finally {
-      setIsPicking(false)
+      setIsImporting(false)
     }
   }
 
+  function updateRemoteUrl(url: string): void {
+    onChange({
+      ...block,
+      source: {
+        type: 'url',
+        url
+      }
+    })
+  }
+
   return (
-    <div className="grid min-w-0 gap-5">
-      {(block.type === 'image' || block.type === 'video') && (
-        <SettingsField label="Источник">
-          <SegmentedChoice
-            value={selectedSourceType}
-            options={block.type === 'video' ? studyVideoSources : studyFileSources}
-            ariaLabel={`Источник блока «${getStudyBlockDefinition(block.type).label}»`}
-            columns={2}
-            onValueChange={(value) => {
-              setImportError(null)
+    <div className="grid gap-5">
+      <SettingsField label="Источник">
+        <SegmentedChoice
+          value={block.source.type}
+          options={sourceOptions}
+          ariaLabel="Источник файла"
+          columns={2}
+          onValueChange={(value) => {
+            if (value !== 'local' && value !== 'url') {
+              return
+            }
 
-              if (value === 'local' || value === 'url') {
-                setSelectedSourceType(value)
-              }
-            }}
-          />
+            updateSourceType(value)
+          }}
+        />
+      </SettingsField>
 
-          <p className="text-[11px] leading-5 text-(--app-muted)">
-            Текущий источник: {block.source.type === 'local' ? 'компьютер' : 'ссылка'}. Переключение
-            вкладки не заменяет сохранённое медиа.
-          </p>
-        </SettingsField>
-      )}
+      {block.source.type === 'local' ? (
+        <div className="grid gap-3">
+          {block.source.asset && (
+            <div className="rounded-xl border border-(--app-border) bg-(--app-workspace) p-3">
+              <p className="truncate text-sm font-medium text-(--app-text)">
+                {block.source.asset.name}
+              </p>
 
-      {selectedSourceType === 'local' && (
-        <div className="grid min-w-0 gap-2">
-          <span className="text-[11px] font-medium text-(--app-muted)">
-            {getLocalSourceLabel(block.type)}
-          </span>
+              <p className="mt-1 text-xs text-(--app-muted)">
+                {formatStudyFileSize(block.source.asset.size)}
+              </p>
+            </div>
+          )}
 
           <button
             type="button"
-            disabled={isPicking}
-            className="flex min-h-10 items-center justify-center gap-2 rounded-lg border border-(--app-border) bg-(--app-workspace) px-3 py-2 text-sm font-medium text-(--app-text) transition-colors outline-none hover:border-violet-500/35 hover:bg-violet-500/[0.06] focus-visible:ring-2 focus-visible:ring-violet-500/35 disabled:cursor-wait disabled:opacity-60"
+            disabled={isImporting}
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-violet-500/20 bg-violet-500/10 px-3 py-2.5 text-sm font-medium text-violet-200 transition-colors outline-none hover:border-violet-400/35 hover:bg-violet-500/15 focus-visible:ring-2 focus-visible:ring-violet-500/35 disabled:cursor-wait disabled:opacity-60"
             onClick={() => {
               void chooseLocalFile()
             }}
           >
-            {isPicking ? (
+            {isImporting ? (
               <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
             ) : (
-              <Upload aria-hidden="true" className="size-4 text-violet-300" />
+              <Upload aria-hidden="true" className="size-4" />
             )}
 
-            {localAsset ? 'Заменить' : 'Выбрать'}
+            {block.source.asset ? 'Заменить файл' : 'Выбрать файл'}
           </button>
-
-          {localAsset && (
-            <div className="flex w-full min-w-0 items-start gap-2 overflow-hidden rounded-lg border border-(--app-border) bg-white/[0.025] p-3">
-              <StudyFileSettingsIcon kind={block.type} />
-
-              <div className="min-w-0 flex-1 overflow-hidden">
-                <p
-                  title={localAsset.name}
-                  className="block w-full truncate text-xs font-medium text-(--app-text)"
-                >
-                  {localAsset.name}
-                </p>
-
-                <p className="mt-1 truncate text-[11px] text-(--app-muted)">
-                  {formatStudyFileSize(localAsset.size)}
-                </p>
-              </div>
-
-              <button
-                type="button"
-                aria-label="Удалить выбранное вложение"
-                className="flex size-7 shrink-0 items-center justify-center rounded-md text-(--app-muted) outline-none hover:bg-red-500/10 hover:text-red-300 focus-visible:ring-2 focus-visible:ring-red-500/30"
-                onClick={() => {
-                  onChange({
-                    ...block,
-                    source: {
-                      type: 'local'
-                    }
-                  })
-                }}
-              >
-                <Trash2 aria-hidden="true" className="size-3.5" />
-              </button>
-            </div>
-          )}
-
-          {importError && (
-            <p className="rounded-lg border border-red-500/20 bg-red-500/[0.06] px-3 py-2 text-xs leading-5 text-red-300">
-              {importError}
-            </p>
-          )}
         </div>
-      )}
+      ) : (
+        <div className="grid gap-2">
+          <label className="grid gap-2">
+            <span className="text-xs font-medium text-(--app-muted)">
+              {isVideo ? 'YouTube-ссылка' : 'URL файла'}
+            </span>
 
-      {(block.type === 'image' || block.type === 'video') && selectedSourceType === 'url' && (
-        <div className="grid min-w-0 gap-2">
-          <span className="text-[11px] font-medium text-(--app-muted)">
-            {block.type === 'video' ? 'Ссылка на YouTube' : 'Прямая HTTPS-ссылка'}
-          </span>
+            <div className="relative">
+              {isVideo ? (
+                <SquarePlay
+                  aria-hidden="true"
+                  className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-red-300"
+                />
+              ) : (
+                <Link2
+                  aria-hidden="true"
+                  className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-(--app-muted)"
+                />
+              )}
 
-          <label className="flex min-h-10 w-full max-w-full min-w-0 items-center gap-2 overflow-hidden rounded-lg border border-(--app-border) bg-(--app-workspace) px-3 focus-within:border-violet-500/45">
-            {block.type === 'video' ? (
-              <SquarePlay aria-hidden="true" className="size-4 shrink-0 text-violet-300" />
-            ) : (
-              <Link2 aria-hidden="true" className="size-4 shrink-0 text-(--app-muted)" />
-            )}
-
-            <input
-              value={remoteUrlDraft}
-              placeholder={
-                block.type === 'image'
-                  ? 'https://site.com/photo.jpg'
-                  : 'https://www.youtube.com/watch?v=...'
-              }
-              className="w-0 min-w-0 flex-1 bg-transparent py-2 text-sm text-(--app-text) outline-none placeholder:text-(--app-muted)/60"
-              onChange={(event) => {
-                setRemoteUrlDraft(event.target.value)
-              }}
-            />
+              <input
+                type="url"
+                value={block.source.url ?? ''}
+                placeholder={
+                  isVideo ? 'https://www.youtube.com/watch?v=...' : 'https://example.com/file'
+                }
+                spellCheck={false}
+                aria-label={isVideo ? 'YouTube-ссылка' : 'URL файла'}
+                className="h-10 w-full rounded-lg border border-(--app-border) bg-(--app-workspace) pr-3 pl-9 text-sm text-(--app-text) outline-none transition-colors placeholder:text-(--app-muted) focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20"
+                onChange={(event) => updateRemoteUrl(event.target.value)}
+              />
+            </div>
           </label>
 
-          {normalizedRemoteUrlDraft &&
-            (block.type === 'video'
-              ? !isValidStudyYouTubeUrl(normalizedRemoteUrlDraft)
-              : !isValidStudyRemoteMediaUrl(normalizedRemoteUrlDraft)) && (
-              <p className="text-xs leading-5 text-amber-300">
-                {block.type === 'video'
-                  ? 'Используй ссылку на видео с youtube.com или youtu.be.'
-                  : 'Используй прямую HTTPS-ссылку без логина и пароля.'}
-              </p>
+          {block.source.url && !isValidStudyRemoteMediaUrl(block.source.url) && (
+            <p className="text-xs text-amber-300">Укажите корректную http/https-ссылку.</p>
+          )}
+
+          {isVideo &&
+            block.source.url &&
+            isValidStudyRemoteMediaUrl(block.source.url) &&
+            !isValidStudyYouTubeUrl(block.source.url) && (
+              <p className="text-xs text-amber-300">Для видео поддерживаются ссылки YouTube.</p>
             )}
-
-          <div className="flex min-w-0 gap-2">
-            <button
-              type="button"
-              disabled={!canApplyRemoteUrl}
-              className="min-h-9 min-w-0 flex-1 rounded-lg bg-violet-500/15 px-3 text-xs font-semibold text-violet-200 transition-colors outline-none hover:bg-violet-500/25 focus-visible:ring-2 focus-visible:ring-violet-500/35 disabled:cursor-not-allowed disabled:opacity-40"
-              onClick={() => {
-                if (!canApplyRemoteUrl) {
-                  return
-                }
-
-                onChange({
-                  ...block,
-                  source: {
-                    type: 'url',
-                    url: normalizedRemoteUrlDraft
-                  }
-                })
-              }}
-            >
-              {block.source.type === 'url' ? 'Применить изменения' : 'Использовать ссылку'}
-            </button>
-
-            {block.source.type === 'url' && savedRemoteUrl && (
-              <button
-                type="button"
-                aria-label="Удалить сохранённую ссылку"
-                className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-(--app-border) text-(--app-muted) transition-colors outline-none hover:border-red-500/30 hover:text-red-300 focus-visible:ring-2 focus-visible:ring-red-500/30"
-                onClick={() => {
-                  setRemoteUrlDraft('')
-
-                  onChange({
-                    ...block,
-                    source: {
-                      type: 'url',
-                      url: ''
-                    }
-                  })
-                }}
-              >
-                <Trash2 aria-hidden="true" className="size-3.5" />
-              </button>
-            )}
-          </div>
         </div>
       )}
 
-      <SettingsField label="Название">
-        <input
-          value={block.title ?? ''}
-          placeholder="Необязательное название"
-          className="w-full max-w-full min-w-0 rounded-lg border border-(--app-border) bg-(--app-workspace) px-3 py-2 text-sm text-(--app-text) outline-none placeholder:text-(--app-muted)/60 focus:border-violet-500/45"
-          onChange={(event) => {
+      {importError && (
+        <div className="rounded-lg border border-red-500/20 bg-red-500/8 px-3 py-2 text-xs text-red-300">
+          {importError}
+        </div>
+      )}
+
+      {isImage && (
+        <SettingsField label="Вписывание">
+          <SegmentedChoice
+            value={block.fit}
+            options={studyImageFits}
+            ariaLabel="Вписывание изображения"
+            columns={2}
+            onValueChange={(fit) => {
+              if (fit !== 'contain' && fit !== 'cover') {
+                return
+              }
+
+              onChange({
+                ...block,
+                fit
+              })
+            }}
+          />
+        </SettingsField>
+      )}
+    </div>
+  )
+}
+
+function DividerBlockSettings({ block, onChange }: SettingsRendererProps): React.JSX.Element {
+  if (block.type !== 'divider') {
+    throw new Error('Divider settings received an incompatible block')
+  }
+
+  return <DividerSettings block={block} onChange={onChange} />
+}
+
+function DividerSettings({
+  block,
+  onChange
+}: {
+  block: Extract<StudyBlock, { type: 'divider' }>
+  onChange: (block: StudyBlock) => void
+}): React.JSX.Element {
+  const color = block.color ?? DEFAULT_DIVIDER_COLOR
+  const thickness = block.thickness ?? DEFAULT_DIVIDER_THICKNESS
+  const variant = block.variant ?? DEFAULT_DIVIDER_VARIANT
+
+  return (
+    <div className="grid gap-5">
+      <SettingsField label="Вид">
+        <SegmentedChoice
+          value={variant}
+          options={studyDividerVariants}
+          ariaLabel="Вид разделителя"
+          columns={2}
+          onValueChange={(value) => {
+            if (value !== 'solid' && value !== 'tapered' && value !== 'dashed' && value !== 'dotted') {
+              return
+            }
+
             onChange({
               ...block,
-              title: event.target.value
+              variant: value
             })
           }}
         />
       </SettingsField>
 
-      {block.type === 'image' && (
-        <>
-          <SettingsField label="Заполнение">
-            <SegmentedChoice
-              value={block.imageFit ?? 'contain'}
-              options={studyImageFits}
-              ariaLabel="Способ отображения фотографии"
-              columns={2}
-              onValueChange={(imageFit) => {
-                if (imageFit !== 'contain' && imageFit !== 'cover') {
-                  return
-                }
+      <SettingsField label="Цвет">
+        <ColorPicker
+          value={color}
+          ariaLabel="Цвет разделителя"
+          clearLabel="Сбросить"
+          onChange={(nextColor) => {
+            onChange({
+              ...block,
+              color: nextColor
+            })
+          }}
+          onClear={() => {
+            onChange({
+              ...block,
+              color: undefined
+            })
+          }}
+        />
+      </SettingsField>
 
+      <SettingsField label="Толщина">
+        <div className="grid gap-3">
+          <Slider.Root
+            min={1}
+            max={12}
+            step={1}
+            value={[thickness]}
+            aria-label="Толщина разделителя"
+            className="relative flex h-5 touch-none items-center select-none"
+            onValueChange={([nextThickness]) => {
+              if (nextThickness === undefined) {
+                return
+              }
+
+              onChange({
+                ...block,
+                thickness: nextThickness
+              })
+            }}
+          >
+            <Slider.Track className="relative h-1.5 grow rounded-full bg-(--app-border)">
+              <Slider.Range className="absolute h-full rounded-full bg-violet-500" />
+            </Slider.Track>
+
+            <Slider.Thumb className="block size-4 rounded-full border border-violet-300/50 bg-violet-400 shadow outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40" />
+          </Slider.Root>
+
+          <div className="flex items-center justify-between gap-3 text-xs text-(--app-muted)">
+            <span>{thickness}px</span>
+
+            <button
+              type="button"
+              className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-(--app-muted) transition-colors outline-none hover:bg-white/5 hover:text-(--app-text) focus-visible:ring-2 focus-visible:ring-violet-500/30"
+              onClick={() => {
                 onChange({
                   ...block,
-                  imageFit
-                })
-              }}
-            />
-          </SettingsField>
-
-          <SettingsField label={`Высота: ${block.imageHeight ?? 360}px`}>
-            <Slider.Root
-              min={180}
-              max={720}
-              step={20}
-              value={[block.imageHeight ?? 360]}
-              aria-label="Высота фотографии"
-              className="relative flex h-5 w-full touch-none items-center select-none"
-              onValueChange={(values) => {
-                const imageHeight = values[0]
-
-                if (typeof imageHeight !== 'number') {
-                  return
-                }
-
-                onChange({
-                  ...block,
-                  imageHeight
+                  color: undefined,
+                  thickness: undefined,
+                  variant: undefined
                 })
               }}
             >
-              <Slider.Track className="relative h-1.5 grow overflow-hidden rounded-full bg-white/[0.08]">
-                <Slider.Range className="absolute h-full bg-violet-500" />
-              </Slider.Track>
+              <Trash2 aria-hidden="true" className="size-3.5" />
+              Сбросить оформление
+            </button>
+          </div>
+        </div>
+      </SettingsField>
 
-              <Slider.Thumb className="block size-4 rounded-full border-2 border-violet-400 bg-(--app-surface-raised) outline-none hover:scale-110 focus-visible:ring-4 focus-visible:ring-violet-500/20" />
-            </Slider.Root>
-          </SettingsField>
-        </>
-      )}
+      <SettingsField label="Предпросмотр">
+        <div className="rounded-xl border border-(--app-border) bg-(--app-workspace) p-4">
+          <StudyDivider
+            color={block.color ?? DEFAULT_DIVIDER_CSS_COLOR}
+            thickness={thickness}
+            variant={variant}
+          />
+        </div>
+      </SettingsField>
+    </div>
+  )
+}
+
+function BoardBlockSettings({ block }: SettingsRendererProps): React.JSX.Element {
+  if (block.type !== 'board') {
+    throw new Error('Board settings received an incompatible block')
+  }
+
+  return (
+    <div className="grid gap-3 rounded-xl border border-(--app-border) bg-(--app-workspace) p-3">
+      <p className="text-sm font-medium text-(--app-text)">Доска</p>
+      <p className="text-xs leading-5 text-(--app-muted)">
+        Доска хранится в общей ветке «Обучение» модуля досок и доступна только из этого
+        материала.
+      </p>
     </div>
   )
 }
@@ -1071,166 +1002,12 @@ function isStudyAttachmentBlock(block: StudyBlock): block is StudyAttachmentBloc
   )
 }
 
-function StudyFileSettingsIcon({ kind }: { kind: StudyAssetKind }): React.JSX.Element {
-  const Icon = getStudyBlockDefinition(kind).icon
-
-  return <Icon aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-violet-300" />
-}
-
-function getLocalSourceLabel(kind: StudyAssetKind): string {
-  if (kind === 'image') {
-    return 'Фотография с компьютера'
+function getStudyAssetKind(type: StudyAttachmentBlock['type']): StudyAssetKind {
+  if (type === 'image' || type === 'video' || type === 'audio') {
+    return type
   }
 
-  if (kind === 'video') {
-    return 'Видео с компьютера'
-  }
-
-  if (kind === 'audio') {
-    return 'Аудио с компьютера'
-  }
-
-  return 'Файл с компьютера'
-}
-
-function getFileImportErrorMessage(reason: unknown): string {
-  if (reason instanceof Error && reason.message) {
-    return reason.message
-  }
-
-  return 'Не удалось импортировать вложение'
-}
-
-function BoardBlockSettings({ block }: SettingsRendererProps): React.JSX.Element {
-  if (block.type !== 'board') {
-    throw new Error('Board settings received an incompatible block')
-  }
-
-  return (
-    <div className="grid gap-3">
-      <div className="rounded-xl border border-(--app-border) bg-(--app-workspace) p-4">
-        <p className="text-sm font-medium text-(--app-text)">{block.title ?? 'Доска материала'}</p>
-
-        <p className="mt-1 text-xs leading-5 text-(--app-muted)">
-          {block.boardId
-            ? 'Связь с доской создана. Используйте кнопку внутри блока, чтобы открыть холст.'
-            : 'Доска будет создана при первом открытии блока.'}
-        </p>
-      </div>
-
-      <p className="text-xs leading-5 text-(--app-muted)">
-        Название, структура и содержимое связанной доски управляются в модуле «Доски».
-      </p>
-    </div>
-  )
-}
-
-function DividerSettings({
-  block,
-  onChange
-}: {
-  block: Extract<
-    StudyBlock,
-    {
-      type: 'divider'
-    }
-  >
-  onChange: (block: StudyBlock) => void
-}): React.JSX.Element {
-  const variant = block.variant ?? DEFAULT_DIVIDER_VARIANT
-
-  const thickness = block.thickness ?? DEFAULT_DIVIDER_THICKNESS
-
-  const color = block.color ?? DEFAULT_DIVIDER_COLOR
-
-  const usesAccentColor = color.toLowerCase() === DEFAULT_DIVIDER_COLOR
-
-  return (
-    <div className="grid gap-4">
-      <SettingsField label="Стиль">
-        <SegmentedChoice
-          value={variant}
-          options={studyDividerVariants}
-          ariaLabel="Стиль разделителя"
-          columns={2}
-          onValueChange={(nextVariant) => {
-            if (
-              nextVariant !== 'solid' &&
-              nextVariant !== 'tapered' &&
-              nextVariant !== 'dashed' &&
-              nextVariant !== 'dotted'
-            ) {
-              return
-            }
-
-            onChange({
-              ...block,
-              variant: nextVariant
-            })
-          }}
-        />
-      </SettingsField>
-
-      <SettingsField label={`Толщина: ${thickness}px`}>
-        <Slider.Root
-          min={1}
-          max={12}
-          step={1}
-          value={[thickness]}
-          aria-label="Толщина разделителя"
-          className="relative flex h-5 w-full touch-none items-center select-none"
-          onValueChange={(values) => {
-            const nextThickness = values[0]
-
-            if (typeof nextThickness !== 'number') {
-              return
-            }
-
-            onChange({
-              ...block,
-              thickness: nextThickness
-            })
-          }}
-        >
-          <Slider.Track className="relative h-1.5 grow overflow-hidden rounded-full bg-white/[0.08]">
-            <Slider.Range className="absolute h-full bg-violet-500" />
-          </Slider.Track>
-
-          <Slider.Thumb className="block size-4 rounded-full border-2 border-violet-400 bg-(--app-surface-raised) outline-none hover:scale-110 focus-visible:ring-4 focus-visible:ring-violet-500/20" />
-        </Slider.Root>
-      </SettingsField>
-
-      <SettingsField label="Цвет">
-        <ColorPicker
-          value={color}
-          displayColor={usesAccentColor ? DEFAULT_DIVIDER_CSS_COLOR : color}
-          displayLabel={usesAccentColor ? 'Акцент приложения' : color.toUpperCase()}
-          ariaLabel="Цвет разделителя"
-          onChange={(nextColor) => {
-            onChange({
-              ...block,
-              color: nextColor
-            })
-          }}
-          clearLabel="Использовать акцент приложения"
-          onClear={() => {
-            onChange({
-              ...block,
-              color: DEFAULT_DIVIDER_COLOR
-            })
-          }}
-        />
-      </SettingsField>
-
-      <Separator.Root className="h-px bg-(--app-border)" />
-
-      <SettingsField label="Предпросмотр">
-        <div className="rounded-xl border border-(--app-border) bg-(--app-workspace) px-4 py-6">
-          <StudyDivider block={block} spacing="none" />
-        </div>
-      </SettingsField>
-    </div>
-  )
+  return 'file'
 }
 
 function SettingsField({
@@ -1241,10 +1018,20 @@ function SettingsField({
   children: React.ReactNode
 }): React.JSX.Element {
   return (
-    <label className="grid min-w-0 gap-2">
-      <span className="text-[11px] font-medium text-(--app-muted)">{label}</span>
+    <div className="grid min-w-0 gap-2.5">
+      <div className="flex items-center gap-3">
+        <span className="shrink-0 text-[11px] font-semibold tracking-[0.08em] text-(--app-muted) uppercase">
+          {label}
+        </span>
 
-      {children}
-    </label>
+        <Separator.Root
+          decorative
+          orientation="horizontal"
+          className="h-px flex-1 bg-(--app-border)"
+        />
+      </div>
+
+      <div className="min-w-0">{children}</div>
+    </div>
   )
 }
