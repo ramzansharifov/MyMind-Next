@@ -78,6 +78,25 @@ describe('NotesPage', () => {
     expect(document.querySelector('[data-module-sidebar]')).not.toBeInTheDocument()
   })
 
+  it('uses the dashboard structure from overview to recent notes, groups and all notes', async () => {
+    const user = userEvent.setup()
+    render(<NotesPage />)
+
+    await screen.findByRole('heading', { name: 'Заметки' })
+
+    expect(screen.getByText('Всего заметок')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Недавние заметки' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Группы' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Все заметки' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Фильтр по группам' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Показать заметки списком' }))
+    expect(screen.getByRole('button', { name: 'Показать заметки списком' })).toHaveAttribute(
+      'data-active',
+      'true'
+    )
+  })
+
   it('creates a group from the home page', async () => {
     const user = userEvent.setup()
     render(<NotesPage />)
