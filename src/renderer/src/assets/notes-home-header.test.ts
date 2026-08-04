@@ -43,7 +43,9 @@ describe('Notes home header', () => {
   it('keeps create cards transparent and pulses only their accent border', () => {
     expect(styles).toContain('[data-notes-create-card]')
     expect(styles).toContain('background: transparent !important')
-    expect(styles).toContain('animation: notes-create-card-pulse 2.4s ease-in-out infinite')
+    expect(styles).toContain('border: 3px dashed')
+    expect(styles).toContain('animation: notes-create-card-pulse 1.8s ease-in-out infinite')
+    expect(styles).toContain('0 0 24px')
     expect(styles).toContain('@keyframes notes-create-card-pulse')
     expect(styles).toContain('@media (prefers-reduced-motion: reduce)')
     expect(styles).toContain('animation: none')

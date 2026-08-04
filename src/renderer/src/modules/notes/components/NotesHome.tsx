@@ -775,7 +775,9 @@ function NotesGrid({
       data-notes-collection={collection}
       data-notes-layout={layout}
       className={cn(
-        layout === 'grid' ? 'grid grid-cols-2 gap-3 max-[760px]:grid-cols-1' : 'flex flex-col gap-2'
+        layout === 'grid'
+          ? 'grid grid-cols-3 gap-3 max-[960px]:grid-cols-2 max-[620px]:grid-cols-1'
+          : 'flex flex-col gap-2'
       )}
     >
       {createAction && (

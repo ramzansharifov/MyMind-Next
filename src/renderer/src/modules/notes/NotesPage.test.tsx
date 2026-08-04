@@ -96,6 +96,7 @@ describe('NotesPage', () => {
     expect(recentGrid).not.toBeNull()
     expect(allGrid).not.toBeNull()
     expect(recentGrid?.className).toBe(allGrid?.className)
+    expect(recentGrid).toHaveClass('grid-cols-3')
   })
 
   it('uses Radix tabs, switch and toggle group for dashboard navigation', async () => {

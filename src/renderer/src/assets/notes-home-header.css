@@ -116,10 +116,12 @@
 }
 
 [data-notes-create-card] {
-  border-color: color-mix(in srgb, var(--app-accent-500) 42%, transparent) !important;
+  border: 3px dashed color-mix(in srgb, var(--app-accent-500) 78%, transparent) !important;
   background: transparent !important;
-  box-shadow: none;
-  animation: notes-create-card-pulse 2.4s ease-in-out infinite;
+  box-shadow:
+    0 0 12px color-mix(in srgb, var(--app-accent-500) 24%, transparent),
+    inset 0 0 10px color-mix(in srgb, var(--app-accent-500) 8%, transparent);
+  animation: notes-create-card-pulse 1.8s ease-in-out infinite;
 }
 
 [data-notes-create-card]:hover,
@@ -127,13 +129,13 @@
   border-color: var(--app-accent-500) !important;
   background: transparent !important;
   box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--app-accent-500) 22%, transparent),
-    0 0 20px color-mix(in srgb, var(--app-accent-500) 14%, transparent);
+    0 0 28px color-mix(in srgb, var(--app-accent-500) 38%, transparent),
+    inset 0 0 14px color-mix(in srgb, var(--app-accent-500) 12%, transparent) !important;
   animation-play-state: paused;
 }
 
 [data-notes-create-card] > span:first-child {
-  border-color: color-mix(in srgb, var(--app-accent-500) 28%, transparent) !important;
+  border-color: color-mix(in srgb, var(--app-accent-500) 42%, transparent) !important;
   background: transparent !important;
   box-shadow: none;
 }
@@ -141,15 +143,17 @@
 @keyframes notes-create-card-pulse {
   0%,
   100% {
-    border-color: color-mix(in srgb, var(--app-accent-500) 32%, transparent);
-    box-shadow: 0 0 0 0 transparent;
+    border-color: color-mix(in srgb, var(--app-accent-500) 48%, transparent);
+    box-shadow:
+      0 0 8px color-mix(in srgb, var(--app-accent-500) 16%, transparent),
+      inset 0 0 8px color-mix(in srgb, var(--app-accent-500) 5%, transparent);
   }
 
   50% {
-    border-color: color-mix(in srgb, var(--app-accent-500) 82%, transparent);
+    border-color: var(--app-accent-500);
     box-shadow:
-      0 0 0 1px color-mix(in srgb, var(--app-accent-500) 14%, transparent),
-      0 0 16px color-mix(in srgb, var(--app-accent-500) 10%, transparent);
+      0 0 24px color-mix(in srgb, var(--app-accent-500) 38%, transparent),
+      inset 0 0 14px color-mix(in srgb, var(--app-accent-500) 12%, transparent);
   }
 }
 
