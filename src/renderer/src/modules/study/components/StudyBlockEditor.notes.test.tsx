@@ -28,14 +28,7 @@ describe('StudyBlockEditor note configuration', () => {
 
     await user.click(screen.getByRole('button', { name: 'Добавить блок здесь' }))
 
-    for (const label of [
-      'Форматированный текст',
-      'Фото',
-      'Аудио',
-      'Видео',
-      'Файл',
-      'Разделитель'
-    ]) {
+    for (const label of ['Текст', 'Фото', 'Аудио', 'Видео', 'Файл', 'Разделитель']) {
       expect(screen.getByRole('menuitem', { name: label })).toBeInTheDocument()
     }
 
