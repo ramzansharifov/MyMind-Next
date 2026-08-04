@@ -40,6 +40,16 @@ describe('Notes home header', () => {
     expect(styles).not.toContain('[data-theme=')
   })
 
+  it('keeps create cards transparent and pulses only their accent border', () => {
+    expect(styles).toContain('[data-notes-create-card]')
+    expect(styles).toContain('background: transparent !important')
+    expect(styles).toContain('animation: notes-create-card-pulse 2.4s ease-in-out infinite')
+    expect(styles).toContain('@keyframes notes-create-card-pulse')
+    expect(styles).toContain('@media (prefers-reduced-motion: reduce)')
+    expect(styles).toContain('animation: none')
+    expect(styles).not.toContain('[data-notes-create-card] {\n  background: var(--app-empty-surface)')
+  })
+
   it('loads the Notes header layer after shared module visual styles', () => {
     const sharedStyles = entrypoint.indexOf('./assets/module-sidebar-design.css')
     const notesHeaderStyles = entrypoint.indexOf('./assets/notes-home-header.css')
