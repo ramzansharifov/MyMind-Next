@@ -36,34 +36,29 @@ jobs:
 
           const editorPath = 'src/renderer/src/modules/study/components/StudyMaterialEditor.tsx'
           let editor = fs.readFileSync(editorPath, 'utf8')
-          const effect = `  useEffect(() => {
-            if (focusMode) {
-              setMode('read')
-            }
-          }, [focusMode])
+          const focusModeEffect = /\s{2}useEffect\(\(\) => \{\s+if \(focusMode\) \{\s+setMode\('read'\)\s+\}\s+\}, \[focusMode\]\)\s*/
 
-          `
-
-          if (!editor.includes(effect)) {
+          if (!focusModeEffect.test(editor)) {
             throw new Error('Expected focus-mode state effect was not found')
           }
 
-          editor = editor.replace(effect, `  const activeMode = focusMode ? 'read' : mode
-
-          `)
+          editor = editor.replace(
+            focusModeEffect,
+            "  const activeMode = focusMode ? 'read' : mode\n\n"
+          )
           editor = editor.replaceAll("mode === 'read'", "activeMode === 'read'")
           editor = editor.replace('mode={mode}', 'mode={activeMode}')
           fs.writeFileSync(editorPath, editor)
 
           const rowTestPath = 'src/renderer/src/shared/ui/ModuleTreeNodeRow.test.tsx'
           let rowTest = fs.readFileSync(rowTestPath, 'utf8')
-          const untypedEnd = '} = {}) {'
+          const untypedEnd = /\} = \{\}\) \{/
           const typedEnd = `} = {}): {
             onOpen: ReturnType<typeof vi.fn>
             onToggle: ReturnType<typeof vi.fn>
           } {`
 
-          if (!rowTest.includes(untypedEnd)) {
+          if (!untypedEnd.test(rowTest)) {
             throw new Error('Expected untyped renderRow helper was not found')
           }
 
