@@ -1,0 +1,44 @@
+name: PR 52 final verification
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install verification dependencies
+        run: |
+          npm ci --ignore-scripts
+          npm install --ignore-scripts --no-save @vitejs/plugin-react@5.1.1
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Run affected renderer tests
+        run: >-
+          npx vitest run
+          src/renderer/src/modules/study/components/StudyMaterialEditor.focus.test.tsx
+          src/renderer/src/shared/ui/ModuleTreeNodeRow.test.tsx
