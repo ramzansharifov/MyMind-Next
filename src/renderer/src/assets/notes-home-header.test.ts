@@ -4,6 +4,8 @@ import { readRepoText } from '../test/read-repo-text'
 
 const styles = readRepoText('src/renderer/src/assets/notes-home-header.css')
 const entrypoint = readRepoText('src/renderer/src/main.tsx')
+const studyHome = readRepoText('src/renderer/src/modules/study/components/StudyHome.tsx')
+const workspacePrimitives = readRepoText('src/renderer/src/shared/ui/WorkspacePrimitives.tsx')
 
 describe('Notes home header', () => {
   it('uses one raised panel for the full module hero', () => {
@@ -13,6 +15,18 @@ describe('Notes home header', () => {
     expect(styles).toContain('background: var(--app-surface)')
     expect(styles).toContain('box-shadow: 0 20px 70px')
     expect(styles).toContain('[data-notes-hero-stats]')
+  })
+
+  it('uses the same nested surface hierarchy as the Study home header', () => {
+    expect(studyHome).toContain('bg-[var(--app-workspace)]')
+    expect(workspacePrimitives).toContain('bg-[var(--app-card)]')
+    expect(workspacePrimitives).toContain('shadow-[var(--app-shadow-card)]')
+
+    expect(styles).toContain('background: var(--app-workspace)')
+    expect(styles).toContain('background: var(--app-card)')
+    expect(styles).toContain('box-shadow: var(--app-shadow-card)')
+    expect(styles).toContain('background: var(--app-card-hover)')
+    expect(styles).toContain('box-shadow: var(--app-shadow-hover)')
   })
 
   it('uses the selected accent for the module icon without theme-specific geometry', () => {
