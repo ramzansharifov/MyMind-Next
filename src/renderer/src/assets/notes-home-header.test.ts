@@ -47,7 +47,9 @@ describe('Notes home header', () => {
     expect(styles).toContain('@keyframes notes-create-card-pulse')
     expect(styles).toContain('@media (prefers-reduced-motion: reduce)')
     expect(styles).toContain('animation: none')
-    expect(styles).not.toContain('[data-notes-create-card] {\n  background: var(--app-empty-surface)')
+    expect(styles).not.toContain(
+      '[data-notes-create-card] {\n  background: var(--app-empty-surface)'
+    )
   })
 
   it('loads the Notes header layer after shared module visual styles', () => {
