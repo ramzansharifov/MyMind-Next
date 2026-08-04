@@ -180,86 +180,82 @@ export function NotesHome({
   return (
     <section className="h-full overflow-y-auto bg-[var(--app-workspace)] px-8 py-7 max-[720px]:px-4 max-[720px]:py-5">
       <div data-notes-home-container className="mx-auto w-full max-w-[1240px] space-y-5">
-        <header className="flex items-start justify-between gap-6 px-1 max-[820px]:flex-col">
-          <div className="min-w-0">
-            <p className="text-[11px] font-semibold tracking-[0.12em] text-violet-300 uppercase">
-              Заметки
-            </p>
-            <h1 className="mt-1 text-3xl font-semibold tracking-[-0.035em] text-[var(--app-text)]">
-              Заметки
-            </h1>
-            <p className="mt-1 max-w-xl text-sm leading-6 text-[var(--app-muted)]">
-              Организуйте мысли, идеи, файлы и медиа в одном месте.
-            </p>
-          </div>
-
-          <div className="grid w-[22rem] max-w-full shrink-0 grid-cols-2 gap-2 max-[820px]:w-full max-[520px]:grid-cols-1">
-            <ActionButton disabled={isLoading} onClick={onCreateGroup}>
-              <FolderPlus aria-hidden="true" className="size-4" />
-              Новая группа
-            </ActionButton>
-            <ActionButton primary disabled={isLoading} onClick={() => onCreateNote(null)}>
-              <FilePlus2 aria-hidden="true" className="size-4" />
-              Новая заметка
-            </ActionButton>
-          </div>
-        </header>
-
         <Tabs.Root value={view} onValueChange={handleViewChange}>
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 max-[980px]:grid-cols-1">
-            <label className="flex h-12 min-w-0 items-center gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] px-4 focus-within:border-violet-500/45 focus-within:ring-2 focus-within:ring-violet-500/10">
-              <Search aria-hidden="true" className="size-4 shrink-0 text-[var(--app-muted)]" />
-              <input
-                value={search}
-                aria-label="Поиск по заметкам"
-                placeholder={searchPlaceholder}
-                className="min-w-0 flex-1 bg-transparent text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/65"
-                onChange={(event) => setSearch(event.target.value)}
-              />
-              {search && (
-                <button
-                  type="button"
-                  aria-label="Очистить поиск"
-                  className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-white/[0.06] hover:text-[var(--app-text)]"
-                  onClick={() => setSearch('')}
+          <section data-notes-hero>
+            <header className="flex items-start justify-between gap-6 px-1 max-[820px]:flex-col">
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold tracking-[0.12em] text-violet-300 uppercase">
+                  Заметки
+                </p>
+                <h1 className="mt-1 text-3xl font-semibold tracking-[-0.035em] text-[var(--app-text)]">
+                  Заметки
+                </h1>
+                <p className="mt-1 max-w-xl text-sm leading-6 text-[var(--app-muted)]">
+                  Организуйте мысли, идеи, файлы и медиа в одном месте.
+                </p>
+              </div>
+
+              <div className="grid w-[22rem] max-w-full shrink-0 grid-cols-2 gap-2 max-[820px]:w-full max-[520px]:grid-cols-1">
+                <ActionButton disabled={isLoading} onClick={onCreateGroup}>
+                  <FolderPlus aria-hidden="true" className="size-4" />
+                  Новая группа
+                </ActionButton>
+                <ActionButton primary disabled={isLoading} onClick={() => onCreateNote(null)}>
+                  <FilePlus2 aria-hidden="true" className="size-4" />
+                  Новая заметка
+                </ActionButton>
+              </div>
+            </header>
+
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 max-[980px]:grid-cols-1">
+              <label className="flex h-12 min-w-0 items-center gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] px-4 focus-within:border-violet-500/45 focus-within:ring-2 focus-within:ring-violet-500/10">
+                <Search aria-hidden="true" className="size-4 shrink-0 text-[var(--app-muted)]" />
+                <input
+                  value={search}
+                  aria-label="Поиск по заметкам"
+                  placeholder={searchPlaceholder}
+                  className="min-w-0 flex-1 bg-transparent text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/65"
+                  onChange={(event) => setSearch(event.target.value)}
+                />
+                {search && (
+                  <button
+                    type="button"
+                    aria-label="Очистить поиск"
+                    className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-white/[0.06] hover:text-[var(--app-text)]"
+                    onClick={() => setSearch('')}
+                  >
+                    <X aria-hidden="true" className="size-4" />
+                  </button>
+                )}
+              </label>
+
+              <Tabs.List
+                aria-label="Разделы заметок"
+                className="flex min-h-12 items-center gap-1 overflow-x-auto rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-1.5"
+              >
+                <NotesTab value="all">Все</NotesTab>
+                <NotesTab value="recent">
+                  <Clock3 aria-hidden="true" className="size-4" />
+                  Недавние
+                </NotesTab>
+                <NotesTab value="groups">
+                  <Folder aria-hidden="true" className="size-4" />
+                  По группам
+                </NotesTab>
+                <NotesTab value="ungrouped">
+                  <CircleSlash2 aria-hidden="true" className="size-4" />
+                  Без группы
+                </NotesTab>
+              </Tabs.List>
+            </div>
+
+            {!isLoading &&
+              (overview.notes.length > 0 || overview.groups.length > 0) &&
+              view === 'all' && (
+                <div
+                  data-notes-hero-stats
+                  className="grid grid-cols-3 gap-3 max-[900px]:grid-cols-1"
                 >
-                  <X aria-hidden="true" className="size-4" />
-                </button>
-              )}
-            </label>
-
-            <Tabs.List
-              aria-label="Разделы заметок"
-              className="flex min-h-12 items-center gap-1 overflow-x-auto rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-1.5"
-            >
-              <NotesTab value="all">Все</NotesTab>
-              <NotesTab value="recent">
-                <Clock3 aria-hidden="true" className="size-4" />
-                Недавние
-              </NotesTab>
-              <NotesTab value="groups">
-                <Folder aria-hidden="true" className="size-4" />
-                По группам
-              </NotesTab>
-              <NotesTab value="ungrouped">
-                <CircleSlash2 aria-hidden="true" className="size-4" />
-                Без группы
-              </NotesTab>
-            </Tabs.List>
-          </div>
-
-          {isLoading ? (
-            <div className="mt-5">
-              <LoadingState />
-            </div>
-          ) : overview.notes.length === 0 && overview.groups.length === 0 ? (
-            <div className="mt-5">
-              <EmptyState onCreateGroup={onCreateGroup} onCreateNote={() => onCreateNote(null)} />
-            </div>
-          ) : (
-            <>
-              <Tabs.Content value="all" className="mt-5 space-y-4 outline-none">
-                <div className="grid grid-cols-3 gap-3 max-[900px]:grid-cols-1">
                   <StatCard
                     icon={<StickyNote aria-hidden="true" className="size-5" />}
                     value={overview.notes.length}
@@ -282,7 +278,20 @@ export function NotesHome({
                     onClick={() => setView('ungrouped')}
                   />
                 </div>
+              )}
+          </section>
 
+          {isLoading ? (
+            <div className="mt-5">
+              <LoadingState />
+            </div>
+          ) : overview.notes.length === 0 && overview.groups.length === 0 ? (
+            <div className="mt-5">
+              <EmptyState onCreateGroup={onCreateGroup} onCreateNote={() => onCreateNote(null)} />
+            </div>
+          ) : (
+            <>
+              <Tabs.Content value="all" className="mt-5 space-y-4 outline-none">
                 {recentNotes.length > 0 && (
                   <DashboardSection
                     title="Недавние заметки"

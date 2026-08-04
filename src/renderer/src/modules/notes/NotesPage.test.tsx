@@ -85,6 +85,11 @@ describe('NotesPage', () => {
 
     expect(document.querySelector('[data-notes-home-container]')).toHaveClass('max-w-[1240px]')
 
+    const hero = document.querySelector('[data-notes-hero]')
+    expect(hero).not.toBeNull()
+    expect(hero).toContainElement(screen.getByRole('tab', { name: 'Все' }))
+    expect(hero).toContainElement(screen.getByText('Всего заметок').closest('button'))
+
     const recentGrid = document.querySelector('[data-notes-collection="recent"]')
     const allGrid = document.querySelector('[data-notes-collection="all"]')
 
