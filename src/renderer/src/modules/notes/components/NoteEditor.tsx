@@ -10,10 +10,7 @@ import {
 import type { StudyDocument } from '../../../../../shared/contracts/study'
 import { StudyBlockAssetProvider } from '../../study/components/StudyBlockAssetProvider'
 import { StudyBlockEditor } from '../../study/components/StudyBlockEditor'
-import {
-  StudyAutosaveQueue,
-  type StudyAutosaveState
-} from '../../study/lib/study-autosave-queue'
+import { StudyAutosaveQueue, type StudyAutosaveState } from '../../study/lib/study-autosave-queue'
 import { notesBlockAssetClient, notesClient } from '../api/notes-client'
 import { registerNotesDraftHandle } from '../lib/notes-draft-lifecycle'
 import { NoteNameDialog } from './NoteNameDialog'
@@ -24,11 +21,7 @@ interface NoteEditorProps {
   onNoteUpdated: (note: NoteSummary) => void
 }
 
-export function NoteEditor({
-  noteId,
-  onBack,
-  onNoteUpdated
-}: NoteEditorProps): React.JSX.Element {
+export function NoteEditor({ noteId, onBack, onNoteUpdated }: NoteEditorProps): React.JSX.Element {
   const [note, setNote] = useState<NoteRecord | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -158,7 +151,7 @@ export function NoteEditor({
         <button
           type="button"
           aria-label="Вернуться к списку заметок"
-          className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-muted)] outline-none transition-colors hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35"
+          className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-muted)] transition-colors outline-none hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35"
           onClick={() => void handleBack()}
         >
           <ArrowLeft aria-hidden="true" className="size-4" />

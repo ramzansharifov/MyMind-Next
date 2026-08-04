@@ -10,6 +10,7 @@ import { APP_MODULE_NAVIGATE_EVENT, type AppModuleNavigationRequest } from './ap
 import { getAppModule } from './app/module-registry'
 import { type AppViewId } from './app/navigation'
 import { flushActiveBoardDraft } from './modules/boards/lib/board-draft-lifecycle'
+import { flushActiveNotesDraft } from './modules/notes/lib/notes-draft-lifecycle'
 import { flushActiveStudyDraft } from './modules/study/lib/study-draft-lifecycle'
 
 type AppFlushFailure =
@@ -34,7 +35,7 @@ function AppContent(): React.JSX.Element {
   const ActiveModule = activeModule.component
 
   const flushActiveDrafts = useCallback(async (): Promise<void> => {
-    await Promise.all([flushActiveStudyDraft(), flushActiveBoardDraft()])
+    await Promise.all([flushActiveStudyDraft(), flushActiveBoardDraft(), flushActiveNotesDraft()])
   }, [])
 
   const changeView = useCallback(

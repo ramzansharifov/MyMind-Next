@@ -1,10 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 
-import type {
-  NoteGroup,
-  NoteSummary,
-  NotesOverview
-} from '../../../../shared/contracts/notes'
+import type { NoteGroup, NoteSummary, NotesOverview } from '../../../../shared/contracts/notes'
 import { DeleteConfirmationDialog } from '../study/components/DeleteConfirmationDialog'
 import { notesClient } from './api/notes-client'
 import { NoteEditor } from './components/NoteEditor'

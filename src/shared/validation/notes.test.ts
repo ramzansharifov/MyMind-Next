@@ -5,17 +5,19 @@ import { noteDocumentSchema, saveNoteInputSchema } from './notes'
 describe('notes validation', () => {
   it('accepts only the six simple note block types', () => {
     expect(
-      noteDocumentSchema.parse({
-        version: 1,
-        blocks: [
-          { id: 'text-one', type: 'text', text: '' },
-          { id: 'image-one', type: 'image', source: { type: 'local' } },
-          { id: 'audio-one', type: 'audio', source: { type: 'local' } },
-          { id: 'video-one', type: 'video', source: { type: 'local' } },
-          { id: 'file-one', type: 'file', source: { type: 'local' } },
-          { id: 'divider-one', type: 'divider' }
-        ]
-      }).blocks.map((block) => block.type)
+      noteDocumentSchema
+        .parse({
+          version: 1,
+          blocks: [
+            { id: 'text-one', type: 'text', text: '' },
+            { id: 'image-one', type: 'image', source: { type: 'local' } },
+            { id: 'audio-one', type: 'audio', source: { type: 'local' } },
+            { id: 'video-one', type: 'video', source: { type: 'local' } },
+            { id: 'file-one', type: 'file', source: { type: 'local' } },
+            { id: 'divider-one', type: 'divider' }
+          ]
+        })
+        .blocks.map((block) => block.type)
     ).toEqual(['text', 'image', 'audio', 'video', 'file', 'divider'])
 
     expect(() =>

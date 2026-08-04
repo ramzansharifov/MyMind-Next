@@ -379,7 +379,9 @@ function NoteCard({
           <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-300">
             <StickyNote aria-hidden="true" className="size-4" />
           </div>
-          <h3 className="line-clamp-2 font-semibold leading-5 text-[var(--app-text)]">{note.title}</h3>
+          <h3 className="line-clamp-2 leading-5 font-semibold text-[var(--app-text)]">
+            {note.title}
+          </h3>
         </div>
         <p className="mt-4 line-clamp-3 text-xs leading-5 text-[var(--app-muted)]">{snippet}</p>
         <time
@@ -410,7 +412,10 @@ function NoteCard({
               Переместить
             </DropdownMenu.SubTrigger>
             <DropdownMenu.Portal>
-              <DropdownMenu.SubContent sideOffset={6} className="z-[70] min-w-48 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-1.5 shadow-2xl">
+              <DropdownMenu.SubContent
+                sideOffset={6}
+                className="z-[70] min-w-48 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-1.5 shadow-2xl"
+              >
                 <DropdownMenu.Item
                   className="cursor-default rounded-lg px-3 py-2 text-sm text-[var(--app-text)] outline-none focus:bg-white/[0.06]"
                   onSelect={() => onMove(null)}
@@ -442,7 +447,11 @@ function NoteCard({
 function MenuContent({ children }: { children: React.ReactNode }): React.JSX.Element {
   return (
     <DropdownMenu.Portal>
-      <DropdownMenu.Content sideOffset={6} align="end" className="z-[70] min-w-48 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-1.5 shadow-2xl">
+      <DropdownMenu.Content
+        sideOffset={6}
+        align="end"
+        className="z-[70] min-w-48 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-1.5 shadow-2xl"
+      >
         {children}
       </DropdownMenu.Content>
     </DropdownMenu.Portal>
@@ -464,9 +473,7 @@ function MenuItem({
     <DropdownMenu.Item
       className={cn(
         'flex cursor-default items-center gap-2 rounded-lg px-3 py-2 text-sm outline-none',
-        danger
-          ? 'text-red-300 focus:bg-red-500/10'
-          : 'text-[var(--app-text)] focus:bg-white/[0.06]'
+        danger ? 'text-red-300 focus:bg-red-500/10' : 'text-[var(--app-text)] focus:bg-white/[0.06]'
       )}
       onSelect={onSelect}
     >

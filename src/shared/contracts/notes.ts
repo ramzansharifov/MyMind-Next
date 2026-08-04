@@ -1,9 +1,4 @@
-import type {
-  OpenStudyAssetInput,
-  StudyAssetKind,
-  StudyBlock,
-  StudyLocalAsset
-} from './study'
+import type { OpenStudyAssetInput, StudyAssetKind, StudyBlock, StudyLocalAsset } from './study'
 
 export const NOTE_BLOCK_TYPES = ['text', 'image', 'audio', 'video', 'file', 'divider'] as const
 

@@ -12,7 +12,9 @@ import {
   studyVideoBlockSchema
 } from './study'
 
-export const noteSafeIdSchema = z.string().regex(STUDY_SAFE_ID_PATTERN, 'Некорректный идентификатор')
+export const noteSafeIdSchema = z
+  .string()
+  .regex(STUDY_SAFE_ID_PATTERN, 'Некорректный идентификатор')
 
 export const noteBlockTypeSchema = z.enum(NOTE_BLOCK_TYPES)
 

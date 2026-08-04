@@ -60,6 +60,7 @@ import { StudyBoardBlock } from './board/StudyBoardBlock'
 import { BlockSettingsErrorBoundary } from './BlockSettingsErrorBoundary'
 import { BlockSettingsPanel } from './BlockSettingsPanel'
 import { DeleteConfirmationDialog } from './DeleteConfirmationDialog'
+import { useStudyBlockAssetClient } from './study-block-asset-context'
 import { StudyDivider } from './StudyDivider'
 import { StudyFileBlockView } from './file/StudyFileBlockView'
 import { RichTextBlockEditor, RichTextViewer } from './rich-text/RichTextBlockEditor'
@@ -113,6 +114,8 @@ interface StudyBlockEditorProps {
   document: StudyDocument
   mode: 'edit' | 'read'
   focusMode?: boolean
+  allowedBlockTypes?: readonly StudyBlockType[]
+  documentLabel?: string
   onChange: (document: StudyDocument) => void
 }
 interface StudyBlockDropPreview {
@@ -127,16 +130,19 @@ interface StudyBlockDropData {
 }
 
 const STUDY_BLOCK_DROP_PREFIX = 'study-block-drop'
-
-const blockTypes = studyBlockDefinitions
+const allStudyBlockTypes = studyBlockDefinitions.map(({ type }) => type)
 
 export function StudyBlockEditor({
   materialId,
   document,
   mode,
   focusMode = false,
+  allowedBlockTypes = allStudyBlockTypes,
+  documentLabel = 'материала',
   onChange
 }: StudyBlockEditorProps): React.JSX.Element {
+  const allowedBlockTypeSet = new Set<StudyBlockType>(allowedBlockTypes)
+  const blockTypes = studyBlockDefinitions.filter(({ type }) => allowedBlockTypeSet.has(type))
   const [activeBlockId, setActiveBlockId] = useState<string | null>(document.blocks[0]?.id ?? null)
 
   const [activeTextEditor, setActiveTextEditor] = useState<Editor | null>(null)
@@ -193,6 +199,10 @@ export function StudyBlockEditor({
   }
 
   function insertBlock(type: StudyBlockType, index: number): void {
+    if (!allowedBlockTypeSet.has(type)) {
+      return
+    }
+
     const block = createStudyBlock(type)
 
     onChange(insertStudyBlock(document, index, block))
@@ -292,6 +302,7 @@ export function StudyBlockEditor({
         <div className="min-w-0">
           <div className="relative">
             <BlockInsertMenu
+              blockTypes={blockTypes}
               overlay={document.blocks.length > 0}
               persistent={document.blocks.length === 0}
               onInsert={(type) => {
@@ -340,6 +351,7 @@ export function StudyBlockEditor({
                 />
 
                 <BlockInsertMenu
+                  blockTypes={blockTypes}
                   persistent={index === document.blocks.length - 1}
                   onInsert={(type) => {
                     insertBlock(type, index + 1)
@@ -368,7 +380,7 @@ export function StudyBlockEditor({
           open={deleteTarget !== null}
           title="Удалить блок?"
           subject={deleteTarget ? getBlockLabel(deleteTarget.type) : undefined}
-          description="Блок и всё его содержимое будут удалены из материала."
+          description={`Блок и всё его содержимое будут удалены из ${documentLabel}.`}
           onOpenChange={(open) => {
             if (!open) {
               setDeleteTarget(null)
@@ -420,10 +432,12 @@ function isStudyBlockDropData(value: unknown): value is StudyBlockDropData {
   )
 }
 function BlockInsertMenu({
+  blockTypes,
   onInsert,
   persistent = false,
   overlay = false
 }: {
+  blockTypes: readonly (typeof studyBlockDefinitions)[number][]
   onInsert: (type: StudyBlockType) => void
   persistent?: boolean
   overlay?: boolean
@@ -933,6 +947,8 @@ function EditMermaidBlock({ block, onChange }: EditableBlockProps): React.JSX.El
 }
 
 function EditAttachmentBlock({ block }: EditableBlockProps): React.JSX.Element {
+  const assetClient = useStudyBlockAssetClient()
+
   if (
     block.type !== 'image' &&
     block.type !== 'video' &&
@@ -941,7 +957,8 @@ function EditAttachmentBlock({ block }: EditableBlockProps): React.JSX.Element {
   ) {
     throw new Error('Attachment editor received an incompatible block')
   }
-  return <StudyFileBlockView block={block} />
+
+  return <StudyFileBlockView block={block} onOpenFile={assetClient.openAsset} />
 }
 
 function EditDividerBlock({ block }: EditableBlockProps): React.JSX.Element {

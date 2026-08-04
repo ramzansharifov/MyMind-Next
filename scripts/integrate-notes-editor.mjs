@@ -181,7 +181,7 @@ let settings = read(settingsPath)
 settings = replaceOnce(
   settings,
   "import { studyClient } from '../api/study-client'\nimport {",
-  "import {",
+  'import {',
   'BlockSettingsPanel remove direct study client'
 )
 settings = replaceOnce(

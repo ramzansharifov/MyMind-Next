@@ -184,7 +184,11 @@ export function createNote(input: CreateNoteInput): NoteRecord {
     .run()
 
   if (input.groupId) {
-    database.update(noteGroups).set({ updatedAt: now }).where(eq(noteGroups.id, input.groupId)).run()
+    database
+      .update(noteGroups)
+      .set({ updatedAt: now })
+      .where(eq(noteGroups.id, input.groupId))
+      .run()
   }
 
   return getNote(id)
