@@ -1,4 +1,10 @@
-import type { OpenStudyAssetInput, StudyAssetKind, StudyBlock, StudyLocalAsset } from './study'
+import type {
+  OpenStudyAssetInput,
+  StudyAssetKind,
+  StudyBlock,
+  StudyFolderIconName,
+  StudyLocalAsset
+} from './study'
 
 export const NOTE_BLOCK_TYPES = ['text', 'image', 'audio', 'video', 'file', 'divider'] as const
 
@@ -16,6 +22,7 @@ export interface NoteDocument {
 export interface NoteGroup {
   id: string
   title: string
+  icon: StudyFolderIconName
   createdAt: number
   updatedAt: number
 }
@@ -47,6 +54,11 @@ export interface RenameNoteGroupInput {
   title: string
 }
 
+export interface UpdateNoteGroupIconInput {
+  id: string
+  icon: StudyFolderIconName
+}
+
 export interface CreateNoteInput {
   groupId: string | null
   title?: string
@@ -76,6 +88,7 @@ export const NOTES_IPC_CHANNELS = {
   listOverview: 'notes:list-overview',
   createGroup: 'notes:create-group',
   renameGroup: 'notes:rename-group',
+  updateGroupIcon: 'notes:update-group-icon',
   deleteGroup: 'notes:delete-group',
   createNote: 'notes:create-note',
   renameNote: 'notes:rename-note',
@@ -91,6 +104,7 @@ export interface NotesApi {
   listOverview(): Promise<NotesOverview>
   createGroup(input: CreateNoteGroupInput): Promise<NoteGroup>
   renameGroup(input: RenameNoteGroupInput): Promise<NoteGroup>
+  updateGroupIcon(input: UpdateNoteGroupIconInput): Promise<NoteGroup>
   deleteGroup(groupId: string): Promise<boolean>
   createNote(input: CreateNoteInput): Promise<NoteRecord>
   renameNote(input: RenameNoteInput): Promise<NoteSummary>
