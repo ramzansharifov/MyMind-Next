@@ -115,6 +115,50 @@
   color: var(--app-accent-500);
 }
 
+[data-notes-create-card] {
+  border-color: color-mix(in srgb, var(--app-accent-500) 42%, transparent) !important;
+  background: transparent !important;
+  box-shadow: none;
+  animation: notes-create-card-pulse 2.4s ease-in-out infinite;
+}
+
+[data-notes-create-card]:hover,
+[data-notes-create-card]:focus-visible {
+  border-color: var(--app-accent-500) !important;
+  background: transparent !important;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--app-accent-500) 22%, transparent),
+    0 0 20px color-mix(in srgb, var(--app-accent-500) 14%, transparent);
+  animation-play-state: paused;
+}
+
+[data-notes-create-card] > span:first-child {
+  border-color: color-mix(in srgb, var(--app-accent-500) 28%, transparent) !important;
+  background: transparent !important;
+  box-shadow: none;
+}
+
+@keyframes notes-create-card-pulse {
+  0%,
+  100% {
+    border-color: color-mix(in srgb, var(--app-accent-500) 32%, transparent);
+    box-shadow: 0 0 0 0 transparent;
+  }
+
+  50% {
+    border-color: color-mix(in srgb, var(--app-accent-500) 82%, transparent);
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--app-accent-500) 14%, transparent),
+      0 0 16px color-mix(in srgb, var(--app-accent-500) 10%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-notes-create-card] {
+    animation: none;
+  }
+}
+
 @media (max-width: 820px) {
   [data-notes-hero] > header {
     flex-direction: column;
