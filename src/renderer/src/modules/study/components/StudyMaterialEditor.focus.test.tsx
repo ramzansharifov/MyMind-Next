@@ -91,5 +91,8 @@ describe('StudyMaterialEditor focus mode', () => {
 
     fireEvent.keyDown(window, { key: 'Escape' })
     expect(onFocusModeChange).toHaveBeenLastCalledWith(false)
+
+    view.rerender(<StudyMaterialEditor {...props} focusMode={false} />)
+    expect(screen.getByTestId('study-block-editor')).toHaveTextContent('read:false')
   })
 })
