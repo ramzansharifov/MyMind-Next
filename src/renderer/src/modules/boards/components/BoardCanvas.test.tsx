@@ -158,9 +158,7 @@ describe('BoardCanvas fullscreen mode', () => {
     const user = userEvent.setup()
     const onFocusModeChange = vi.fn()
 
-    render(
-      <BoardCanvas boardId="board-focus" focusMode onFocusModeChange={onFocusModeChange} />
-    )
+    render(<BoardCanvas boardId="board-focus" focusMode onFocusModeChange={onFocusModeChange} />)
 
     const workspace = await screen.findByRole('region', { name: 'Холст доски' })
 

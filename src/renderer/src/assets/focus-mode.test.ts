@@ -1,8 +1,8 @@
-import { readFileSync } from 'node:fs'
-
 import { describe, expect, it } from 'vitest'
 
-const focusModeStyles = readFileSync(new URL('./focus-mode.css', import.meta.url), 'utf8')
+import { readRepoText } from '../test/read-repo-text'
+
+const focusModeStyles = readRepoText('src/renderer/src/assets/focus-mode.css')
 
 describe('focus-mode header action ordering', () => {
   it('places the internal-link return action before material rename or focus exit', () => {

@@ -53,7 +53,10 @@
   background-color: var(--app-card) !important;
 }
 
-:root[data-theme='light'] [data-study-material-focus] aside button[class~='bg-(--app-workspace)']:hover {
+:root[data-theme='light']
+  [data-study-material-focus]
+  aside
+  button[class~='bg-(--app-workspace)']:hover {
   background-color: var(--app-control-hover) !important;
 }
 
@@ -87,7 +90,9 @@
   background: var(--app-control-active) !important;
 }
 
-:root[data-theme='light'] [data-study-scroll-container='true'] article[aria-label='Содержимое материала'] {
+:root[data-theme='light']
+  [data-study-scroll-container='true']
+  article[aria-label='Содержимое материала'] {
   overflow: hidden;
   border-radius: 1rem;
   background: var(--app-surface);
@@ -146,13 +151,9 @@
   border-color: transparent;
 }
 
-/* Доски: дерево, заголовок рабочего пространства и tldraw. */
+/* Доски: только цвета. Геометрия находится в общих файлах board-*.css. */
 :root[data-theme='light'] [data-boards-focus-mode='false'] [data-module-sidebar] {
   background: var(--app-sidebar);
-}
-
-:root[data-theme='light'] [data-board-tree-node] {
-  border-radius: 0.4rem;
 }
 
 :root[data-theme='light'] [data-board-tree-node][class*='bg-violet'] {
@@ -165,14 +166,16 @@
 
 :root[data-theme='light'] [data-board-workspace-focus] > header {
   background: color-mix(in srgb, var(--app-surface) 94%, transparent);
-  box-shadow: 0 1px 0 var(--app-border), 0 8px 24px rgb(35 48 67 / 4%);
+  box-shadow:
+    0 1px 0 var(--app-border),
+    0 8px 24px rgb(35 48 67 / 4%);
   backdrop-filter: blur(12px);
 }
 
 :root[data-theme='light'] [data-board-workspace-focus] > header > div[class*='size-10'] {
   color: var(--app-accent-700) !important;
   background: color-mix(in srgb, var(--app-accent-500) 14%, #ffffff) !important;
-  border: 1px solid color-mix(in srgb, var(--app-accent-500) 24%, var(--app-border));
+  border-color: color-mix(in srgb, var(--app-accent-500) 24%, var(--app-border));
 }
 
 :root[data-theme='light'] [data-board-workspace-focus] > header p[class*='uppercase'] {
@@ -192,16 +195,6 @@
   color: #ffffff;
 }
 
-:root[data-theme='light'] .mymind-board-canvas .tlui-layout__top__left {
-  overflow: hidden;
-  border-radius: 0 0 0.875rem 0;
-  box-shadow: 0 1px 0 var(--app-border), 8px 8px 24px rgb(35 48 67 / 7%);
-}
-
-:root[data-theme='light'] .mymind-board-canvas .tlui-layout__top__left > * {
-  border-bottom-right-radius: 0.875rem;
-}
-
 /* Radix-меню, поповеры и диалоги во всех модулях. */
 :root[data-theme='light'] [role='menu'],
 :root[data-theme='light'] [role='listbox'],
@@ -218,7 +211,9 @@
 }
 
 :root[data-theme='light'] [role='dialog'] button:not([class*='bg-violet']):not([class*='bg-red']),
-:root[data-theme='light'] [role='alertdialog'] button:not([class*='bg-violet']):not([class*='bg-red']) {
+:root[data-theme='light']
+  [role='alertdialog']
+  button:not([class*='bg-violet']):not([class*='bg-red']) {
   border-color: var(--app-border);
 }
 

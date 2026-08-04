@@ -1,8 +1,8 @@
-import { readFileSync } from 'node:fs'
-
 import { describe, expect, it } from 'vitest'
 
-const styles = readFileSync(new URL('./tooltip-design.css', import.meta.url), 'utf8')
+import { readRepoText } from '../test/read-repo-text'
+
+const styles = readRepoText('src/renderer/src/assets/tooltip-design.css')
 
 describe('tooltip design', () => {
   it('provides high-contrast shared and tldraw tooltip surfaces', () => {

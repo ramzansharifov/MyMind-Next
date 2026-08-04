@@ -1,9 +1,9 @@
-import { readFileSync } from 'node:fs'
-
 import { describe, expect, it } from 'vitest'
 
-const styles = readFileSync(new URL('./board-managed-hierarchy.css', import.meta.url), 'utf8')
-const focusModeStyles = readFileSync(new URL('./focus-mode.css', import.meta.url), 'utf8')
+import { readRepoText } from '../test/read-repo-text'
+
+const styles = readRepoText('src/renderer/src/assets/board-managed-hierarchy.css')
+const focusModeStyles = readRepoText('src/renderer/src/assets/focus-mode.css')
 
 describe('managed board hierarchy styles', () => {
   it('loads the managed hierarchy rules through the renderer stylesheet entry', () => {

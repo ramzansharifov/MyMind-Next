@@ -1,67 +1,58 @@
 /*
- * Shared visual language for the Study and Boards module sidebars.
- * Both trees already expose stable data attributes, so the same states can be
- * styled without coupling either module to the other's component structure.
+ * Shared geometry and state styling for the Study and Boards module trees.
+ * React components expose semantic data attributes; themes only replace tokens.
  */
 [data-module-sidebar] {
-  /* The old hard divider looked like a stray line against the board canvas. */
-  border-right: 0 !important;
+  --module-tree-active-bg: color-mix(in srgb, var(--app-accent-500) 14%, var(--app-sidebar));
+  --module-tree-active-bg-hover: color-mix(in srgb, var(--app-accent-500) 18%, var(--app-sidebar));
+  --module-tree-active-text: var(--app-accent-300);
+  --module-tree-context-bg: color-mix(in srgb, var(--app-accent-500) 4.5%, var(--app-sidebar));
+
+  border-right: 1px solid var(--app-border) !important;
 }
 
-[data-module-sidebar]
-  :is([data-study-tree-node-id], [data-board-tree-node]) {
+:root[data-theme='light'] [data-module-sidebar] {
+  --module-tree-active-bg: color-mix(in srgb, var(--app-accent-500) 12%, #ffffff);
+  --module-tree-active-bg-hover: color-mix(in srgb, var(--app-accent-500) 16%, #ffffff);
+  --module-tree-active-text: var(--app-accent-700);
+  --module-tree-context-bg: color-mix(in srgb, var(--app-accent-500) 5%, #ffffff);
+}
+
+[data-module-sidebar] [data-module-tree-node] {
+  width: 100%;
+  min-height: 2rem;
+  margin: 0;
+  border-radius: 0 !important;
   transition:
     color 140ms ease,
     background-color 140ms ease,
     box-shadow 140ms ease;
 }
 
-[data-module-sidebar][data-collapsed='false']
-  :is([data-study-tree-node-id], [data-board-tree-node]) {
-  border-radius: 0.5rem;
+/* The compact icon-only sidebar keeps its button geometry. */
+[data-module-sidebar][data-collapsed='true'] [data-module-tree-node] {
+  width: auto;
+  border-radius: 0.75rem !important;
 }
 
-[data-module-sidebar][data-collapsed='true']
-  :is([data-study-tree-node-id], [data-board-tree-node]) {
-  border-radius: 0.75rem;
-}
-
-[data-module-sidebar]
-  :is([data-study-tree-node-id], [data-board-tree-node]):not(
-    [class~='bg-violet-500/12']
-  ):hover {
+[data-module-sidebar] [data-module-tree-node]:not([data-selected='true']):hover {
   color: var(--app-text) !important;
   background: var(--app-control-hover) !important;
 }
 
-[data-module-sidebar]
-  :is([data-study-tree-node-id], [data-board-tree-node])[class~='bg-violet-500/12'] {
-  color: var(--app-accent-300) !important;
-  background: color-mix(in srgb, var(--app-accent-500) 14%, var(--app-sidebar)) !important;
-  box-shadow:
-    inset 3px 0 0 var(--app-accent-500),
-    inset 0 0 0 1px color-mix(in srgb, var(--app-accent-500) 10%, transparent);
+[data-module-sidebar] [data-module-tree-node][data-context-active='true'][data-selected='false'] {
+  color: var(--app-text) !important;
+  background: var(--module-tree-context-bg) !important;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--app-accent-500) 15%, transparent) !important;
 }
 
-[data-module-sidebar]
-  :is([data-study-tree-node-id], [data-board-tree-node])[class~='bg-violet-500/12']:hover {
-  color: var(--app-accent-200) !important;
-  background: color-mix(in srgb, var(--app-accent-500) 18%, var(--app-sidebar)) !important;
+[data-module-sidebar] [data-module-tree-node][data-selected='true'] {
+  color: var(--module-tree-active-text) !important;
+  background: var(--module-tree-active-bg) !important;
+  box-shadow: inset 3px 0 0 var(--app-accent-500) !important;
 }
 
-:root[data-theme='light']
-  [data-module-sidebar]
-  :is([data-study-tree-node-id], [data-board-tree-node])[class~='bg-violet-500/12'] {
-  color: var(--app-accent-700) !important;
-  background: color-mix(in srgb, var(--app-accent-500) 11%, var(--app-sidebar)) !important;
-  box-shadow:
-    inset 3px 0 0 var(--app-accent-600),
-    inset 0 0 0 1px color-mix(in srgb, var(--app-accent-500) 8%, transparent);
-}
-
-:root[data-theme='light']
-  [data-module-sidebar]
-  :is([data-study-tree-node-id], [data-board-tree-node])[class~='bg-violet-500/12']:hover {
-  color: var(--app-accent-700) !important;
-  background: color-mix(in srgb, var(--app-accent-500) 15%, var(--app-sidebar)) !important;
+[data-module-sidebar] [data-module-tree-node][data-selected='true']:hover {
+  color: var(--module-tree-active-text) !important;
+  background: var(--module-tree-active-bg-hover) !important;
 }

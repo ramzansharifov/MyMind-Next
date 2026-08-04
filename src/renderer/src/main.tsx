@@ -8,6 +8,7 @@ import './assets/board-visual-polish.css'
 import './assets/board-toolbar-design.css'
 import './assets/tooltip-design.css'
 import './assets/module-sidebar-design.css'
+import './assets/board-canvas-layout.css'
 
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
