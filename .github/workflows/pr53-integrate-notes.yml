@@ -1,0 +1,74 @@
+name: PR 53 integrate notes
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout notes branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Restore shared editor files from main
+        run: |
+          git fetch origin main
+          git checkout origin/main -- \
+            src/renderer/src/App.tsx \
+            src/renderer/src/modules/study/components/StudyBlockEditor.tsx \
+            src/renderer/src/modules/study/components/BlockSettingsPanel.tsx
+
+      - name: Apply deterministic notes integration
+        run: node scripts/integrate-notes-editor.mjs
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: |
+          npm ci --ignore-scripts
+          npm install --ignore-scripts --no-save @vitejs/plugin-react@5.1.1
+
+      - name: Generate notes migration
+        run: npm run db:generate
+
+      - name: Format repository
+        run: npm run format
+
+      - name: Rebuild native module for Node
+        run: npm run native:node
+
+      - name: Verify implementation
+        run: |
+          npm run format:check
+          npm run lint
+          npm run typecheck
+          npm run db:check
+          npx vitest run \
+            src/shared/validation/notes.test.ts \
+            src/main/repositories/notes.repository.test.ts \
+            src/preload/index.test.ts \
+            src/renderer/src/app/module-registry.test.ts \
+            src/renderer/src/modules/study/components/StudyBlockEditor.test.tsx \
+            src/renderer/src/modules/study/components/BlockSettingsPanel.test.tsx
+
+      - name: Commit integrated module
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .
+          git commit -m 'feat(notes): integrate shared editor and database migration'
+          git push origin HEAD:${{ github.head_ref }}
