@@ -1,0 +1,70 @@
+name: PR 53 final full verification
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies from lockfile
+        run: npm ci
+
+      - name: Check diff whitespace
+        run: git diff --check origin/main...HEAD
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Run complete test suite with coverage
+        run: npm run test:coverage
+
+      - name: Check database schema and migrations
+        run: npm run db:check
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Build production bundle
+        run: npm run build:bundle
+
+      - name: Remove temporary verification files
+        if: success()
+        run: |
+          rm -f .github/workflows/pr53-final-full-check.yml
+          rm -f .github/pr53-final-full-check.trigger
+
+      - name: Commit cleanup
+        if: success()
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'chore: remove final PR 53 verification files'
+          git push origin HEAD:${{ github.head_ref }}
