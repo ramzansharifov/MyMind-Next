@@ -8,6 +8,7 @@ import {
   studyDividerBlockSchema,
   studyFileBlockSchema,
   studyFolderIconSchema,
+  studyHeadingBlockSchema,
   studyImageBlockSchema,
   studyTextBlockSchema,
   studyVideoBlockSchema
@@ -21,6 +22,7 @@ export const noteBlockTypeSchema = z.enum(NOTE_BLOCK_TYPES)
 
 export const noteBlockSchema = z.discriminatedUnion('type', [
   studyTextBlockSchema,
+  studyHeadingBlockSchema,
   studyImageBlockSchema,
   studyAudioBlockSchema,
   studyVideoBlockSchema,
