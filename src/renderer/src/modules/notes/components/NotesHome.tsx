@@ -105,18 +105,19 @@ export function NotesHome({
     )
   }, [normalizedSearch, notesByRecency])
 
-  const sortedNotes = useMemo(
-    () => sortNotes(searchedNotes, sort),
-    [searchedNotes, sort]
-  )
+  const sortedNotes = useMemo(() => sortNotes(searchedNotes, sort), [searchedNotes, sort])
 
   const recentNotes = searchedNotes.slice(0, 4)
   const ungroupedNotes = useMemo(
-    () => sortNotes(searchedNotes.filter((note) => note.groupId === null), sort),
+    () =>
+      sortNotes(
+        searchedNotes.filter((note) => note.groupId === null),
+        sort
+      ),
     [searchedNotes, sort]
   )
 
-  const selectedGroup = selectedGroupId ? groupsById.get(selectedGroupId) ?? null : null
+  const selectedGroup = selectedGroupId ? (groupsById.get(selectedGroupId) ?? null) : null
   const selectedGroupNotes = useMemo(
     () =>
       selectedGroupId
@@ -178,10 +179,7 @@ export function NotesHome({
 
   return (
     <section className="h-full overflow-y-auto bg-[var(--app-workspace)] px-8 py-7 max-[720px]:px-4 max-[720px]:py-5">
-      <div
-        data-notes-home-container
-        className="mx-auto w-full max-w-[1240px] space-y-5"
-      >
+      <div data-notes-home-container className="mx-auto w-full max-w-[1240px] space-y-5">
         <header className="flex items-start justify-between gap-6 px-1 max-[820px]:flex-col">
           <div className="min-w-0">
             <p className="text-[11px] font-semibold tracking-[0.12em] text-violet-300 uppercase">
@@ -343,9 +341,7 @@ export function NotesHome({
                     groupsById={groupsById}
                     groups={overview.groups}
                     emptyText={
-                      normalizedSearch
-                        ? 'По этому запросу ничего не найдено.'
-                        : 'Заметок пока нет.'
+                      normalizedSearch ? 'По этому запросу ничего не найдено.' : 'Заметок пока нет.'
                     }
                     onOpenNote={onOpenNote}
                     onRenameNote={onRenameNote}
@@ -513,7 +509,7 @@ function GroupsDirectoryPage({
             <Switch.Root
               checked={hideEmptyGroups}
               aria-label="Скрыть пустые группы"
-              className="relative h-5 w-9 rounded-full border border-[var(--app-border)] bg-[var(--app-workspace)] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-violet-500/35 data-[state=checked]:bg-violet-500"
+              className="relative h-5 w-9 rounded-full border border-[var(--app-border)] bg-[var(--app-workspace)] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-violet-500/35 data-[state=checked]:bg-violet-500"
               onCheckedChange={onHideEmptyGroupsChange}
             >
               <Switch.Thumb className="block size-3.5 translate-x-0.5 rounded-full bg-white transition-transform data-[state=checked]:translate-x-[17px]" />
@@ -724,7 +720,10 @@ function NotesCollectionControls({
 }): React.JSX.Element {
   return (
     <div className="flex items-center gap-2">
-      <Select.Root value={sort} onValueChange={(value) => isNotesSort(value) && onSortChange(value)}>
+      <Select.Root
+        value={sort}
+        onValueChange={(value) => isNotesSort(value) && onSortChange(value)}
+      >
         <Select.Trigger
           aria-label="Сортировка заметок"
           className="flex h-9 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-xs text-[var(--app-muted)] outline-none hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35"
@@ -828,9 +827,7 @@ function NotesGrid({
       data-notes-collection={collection}
       data-notes-layout={layout}
       className={cn(
-        layout === 'grid'
-          ? 'grid grid-cols-2 gap-3 max-[760px]:grid-cols-1'
-          : 'flex flex-col gap-2'
+        layout === 'grid' ? 'grid grid-cols-2 gap-3 max-[760px]:grid-cols-1' : 'flex flex-col gap-2'
       )}
     >
       {notes.map((note) => (
@@ -1119,7 +1116,7 @@ function NotesTab({
   return (
     <Tabs.Trigger
       value={value}
-      className="flex h-9 shrink-0 items-center gap-2 rounded-xl px-3 text-sm text-[var(--app-muted)] outline-none transition-colors hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 data-[state=active]:bg-violet-500 data-[state=active]:text-white"
+      className="flex h-9 shrink-0 items-center gap-2 rounded-xl px-3 text-sm text-[var(--app-muted)] transition-colors outline-none hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 data-[state=active]:bg-violet-500 data-[state=active]:text-white"
     >
       {children}
     </Tabs.Trigger>

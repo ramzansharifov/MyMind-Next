@@ -126,7 +126,9 @@ describe('NotesPage', () => {
 
     expect(screen.getByRole('button', { name: 'Вернуться ко всем группам' })).toBeInTheDocument()
     expect(screen.getAllByRole('heading', { name: 'Работа' }).length).toBeGreaterThan(0)
-    expect(screen.getByRole('button', { name: 'Открыть заметку «План проекта»' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Открыть заметку «План проекта»' })
+    ).toBeInTheDocument()
   })
 
   it('creates a group from the home page', async () => {
