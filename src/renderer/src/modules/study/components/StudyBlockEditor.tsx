@@ -132,6 +132,30 @@ interface StudyBlockDropData {
 const STUDY_BLOCK_DROP_PREFIX = 'study-block-drop'
 const allStudyBlockTypes = studyBlockDefinitions.map(({ type }) => type)
 
+interface StudyBlockMenuGroup {
+  id: 'primary' | 'technical' | 'media'
+  label: string
+  types: readonly StudyBlockType[]
+}
+
+const STUDY_BLOCK_MENU_GROUPS = [
+  {
+    id: 'primary',
+    label: 'Основное',
+    types: ['text', 'heading', 'board', 'divider']
+  },
+  {
+    id: 'technical',
+    label: 'Код и разметка',
+    types: ['code', 'markdown', 'latex', 'mermaid']
+  },
+  {
+    id: 'media',
+    label: 'Медиа и файлы',
+    types: ['image', 'video', 'audio', 'file']
+  }
+] as const satisfies readonly StudyBlockMenuGroup[]
+
 export function StudyBlockEditor({
   materialId,
   document,
@@ -443,6 +467,22 @@ function BlockInsertMenu({
   overlay?: boolean
 }): React.JSX.Element {
   const [open, setOpen] = useState(false)
+  const menuGroups = STUDY_BLOCK_MENU_GROUPS.map((group) => ({
+    ...group,
+    options: group.types.flatMap((type) => {
+      const option = blockTypes.find((candidate) => candidate.type === type)
+
+      return option ? [option] : []
+    })
+  })).filter((group) => group.options.length > 0)
+  const menuWidthClassName =
+    menuGroups.length === 3 ? 'w-[660px]' : menuGroups.length === 2 ? 'w-[440px]' : 'w-60'
+  const menuColumnsClassName =
+    menuGroups.length === 3
+      ? 'grid-cols-3'
+      : menuGroups.length === 2
+        ? 'grid-cols-2'
+        : 'grid-cols-1'
 
   return (
     <DropdownMenu.Root open={open} onOpenChange={setOpen}>
@@ -496,20 +536,47 @@ function BlockInsertMenu({
         <DropdownMenu.Content
           sideOffset={6}
           align="center"
-          className="z-50 grid min-w-60 gap-1 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-1.5"
+          data-study-block-insert-menu="true"
+          className={cn(
+            'z-50 grid max-w-[calc(100vw-24px)] gap-0 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-2 shadow-[var(--app-shadow-menu)]',
+            menuWidthClassName,
+            menuColumnsClassName,
+            'max-[760px]:w-72 max-[760px]:grid-cols-1'
+          )}
         >
-          {blockTypes.map((option) => (
-            <DropdownMenu.Item
-              key={option.type}
-              className="flex cursor-default items-center gap-2 rounded-lg px-3 py-2 text-sm text-[var(--app-text)] outline-none hover:bg-white/[0.06] focus:bg-white/[0.06]"
-              onSelect={() => {
-                onInsert(option.type)
-              }}
+          {menuGroups.map((group, groupIndex) => (
+            <DropdownMenu.Group
+              key={group.id}
+              data-study-block-menu-column={group.id}
+              className={cn(
+                'min-w-0 px-1.5',
+                groupIndex > 0 &&
+                  'border-l border-[var(--app-border)] pl-2.5 max-[760px]:mt-1.5 max-[760px]:border-t max-[760px]:border-l-0 max-[760px]:pt-1.5 max-[760px]:pl-1.5'
+              )}
             >
-              <StudyBlockTypeIcon type={option.type} className="size-4 text-[var(--app-muted)]" />
+              <DropdownMenu.Label className="px-2.5 pt-1 pb-1.5 text-[10px] font-semibold tracking-[0.08em] text-[var(--app-muted)] uppercase">
+                {group.label}
+              </DropdownMenu.Label>
 
-              {option.label}
-            </DropdownMenu.Item>
+              <div className="grid gap-1">
+                {group.options.map((option) => (
+                  <DropdownMenu.Item
+                    key={option.type}
+                    className="flex cursor-default items-center gap-2 rounded-lg px-3 py-2 text-sm text-[var(--app-text)] outline-none hover:bg-white/[0.06] focus:bg-white/[0.06]"
+                    onSelect={() => {
+                      onInsert(option.type)
+                    }}
+                  >
+                    <StudyBlockTypeIcon
+                      type={option.type}
+                      className="size-4 text-[var(--app-muted)]"
+                    />
+
+                    {option.label}
+                  </DropdownMenu.Item>
+                ))}
+              </div>
+            </DropdownMenu.Group>
           ))}
         </DropdownMenu.Content>
       </DropdownMenu.Portal>

@@ -12,13 +12,13 @@ const emptyDocument: StudyDocument = {
 }
 
 function getColumnItems(menu: HTMLElement, columnId: string): string[] {
-  const column = menu.querySelector<HTMLElement>(
-    `[data-study-block-menu-column="${columnId}"]`
-  )
+  const column = menu.querySelector<HTMLElement>(`[data-study-block-menu-column="${columnId}"]`)
 
   expect(column).not.toBeNull()
 
-  return within(column!).getAllByRole('menuitem').map((item) => item.textContent?.trim() ?? '')
+  return within(column!)
+    .getAllByRole('menuitem')
+    .map((item) => item.textContent?.trim() ?? '')
 }
 
 describe('StudyBlockEditor insert menu', () => {
