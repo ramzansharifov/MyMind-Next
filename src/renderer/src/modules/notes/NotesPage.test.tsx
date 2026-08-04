@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { NoteGroup, NoteRecord, NotesOverview } from '../../../../shared/contracts/notes'
+import type { NoteGroup, NotesOverview } from '../../../../shared/contracts/notes'
 
 const notesMocks = vi.hoisted(() => ({
   listOverview: vi.fn(),
@@ -57,6 +57,7 @@ const overview: NotesOverview = {
 }
 
 beforeEach(() => {
+  vi.clearAllMocks()
   notesMocks.listOverview.mockResolvedValue(overview)
   notesMocks.createGroup.mockResolvedValue({
     id: 'group-new',
