@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
 import { readFileSync, writeFileSync } from 'node:fs'
 
 function read(path) {
@@ -43,7 +44,7 @@ let editor = read(editorPath)
 editor = replaceOnce(
   editor,
   "import { BlockSettingsPanel } from './BlockSettingsPanel'\nimport { DeleteConfirmationDialog } from './DeleteConfirmationDialog'",
-  "import { BlockSettingsPanel } from './BlockSettingsPanel'\nimport { DeleteConfirmationDialog } from './DeleteConfirmationDialog'\nimport { useStudyBlockAssetClient } from './StudyBlockAssetProvider'",
+  "import { BlockSettingsPanel } from './BlockSettingsPanel'\nimport { DeleteConfirmationDialog } from './DeleteConfirmationDialog'\nimport { useStudyBlockAssetClient } from './study-block-asset-context'",
   'StudyBlockEditor asset hook import'
 )
 editor = replaceOnce(
@@ -186,7 +187,7 @@ settings = replaceOnce(
 settings = replaceOnce(
   settings,
   "import { StudyDivider } from './StudyDivider'",
-  "import { StudyDivider } from './StudyDivider'\nimport { useStudyBlockAssetClient } from './StudyBlockAssetProvider'",
+  "import { StudyDivider } from './StudyDivider'\nimport { useStudyBlockAssetClient } from './study-block-asset-context'",
   'BlockSettingsPanel asset hook import'
 )
 settings = replaceOnce(
