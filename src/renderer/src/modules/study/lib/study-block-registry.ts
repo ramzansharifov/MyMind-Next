@@ -38,7 +38,7 @@ type StudyBlockRegistry = {
 export const studyBlockRegistry = {
   text: {
     type: 'text',
-    label: 'Форматированный текст',
+    label: 'Текст',
     icon: Type,
     factory: (id) => ({ id, type: 'text', text: '', html: '<p></p>' }),
     editStrategy: 'text',
