@@ -65,7 +65,7 @@ describe('learning instructions', () => {
       'Mermaid'
     )
 
-    expect(screen.queryByRole('button', { name: /Форматированный текст/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Текст/ })).not.toBeInTheDocument()
 
     const mermaidTopic = screen.getByRole('button', { name: /Mermaid/ })
 
@@ -173,7 +173,7 @@ describe('learning instructions', () => {
   it('renders full article sections and confirmed keyboard shortcuts', () => {
     render(<LearningInstructionArticlePage topicId="block-text" onBack={vi.fn()} />)
 
-    expect(screen.getByRole('heading', { name: 'Форматированный текст' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Текст' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Форматирование текста' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Горячие клавиши' })).toBeInTheDocument()
     expect(screen.getAllByText('Ctrl / Cmd').length).toBeGreaterThan(0)
