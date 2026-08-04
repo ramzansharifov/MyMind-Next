@@ -1,5 +1,5 @@
 import { lazy, type ComponentType } from 'react'
-import { BookOpen, Presentation, Settings, type LucideIcon } from 'lucide-react'
+import { BookOpen, Presentation, Settings, StickyNote, type LucideIcon } from 'lucide-react'
 
 export type AppNavigationGroup = 'primary' | 'utility'
 
@@ -33,6 +33,9 @@ const StudyModule = lazy(() =>
 const BoardsModule = lazy(() =>
   import('../modules/boards/BoardsPage').then(({ BoardsPage }) => ({ default: BoardsPage }))
 ) as ComponentType<AppModuleProps>
+const NotesModule = lazy(() =>
+  import('../modules/notes/NotesPage').then(({ NotesPage }) => ({ default: NotesPage }))
+) as ComponentType<AppModuleProps>
 const SettingsModule = lazy(() =>
   import('../modules/settings/SettingsModule').then(({ SettingsModule }) => ({
     default: SettingsModule
@@ -55,6 +58,14 @@ export const appModuleRegistry = defineAppModules({
     icon: Presentation,
     navigationGroup: 'primary',
     component: BoardsModule
+  },
+  notes: {
+    id: 'notes',
+    label: 'Заметки',
+    loadingLabel: 'Загрузка заметок',
+    icon: StickyNote,
+    navigationGroup: 'primary',
+    component: NotesModule
   },
   settings: {
     id: 'settings',
