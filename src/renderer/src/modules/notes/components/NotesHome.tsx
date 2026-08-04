@@ -141,7 +141,7 @@ export function NotesHome({
         ? 'Заметки без группы'
         : scope === 'grouped'
           ? selectedGroupId
-            ? groupsById.get(selectedGroupId)?.title ?? 'Заметки группы'
+            ? (groupsById.get(selectedGroupId)?.title ?? 'Заметки группы')
             : 'Заметки в группах'
           : 'Все заметки'
 
@@ -226,7 +226,9 @@ export function NotesHome({
                   className="flex h-9 shrink-0 items-center gap-2 rounded-xl px-3 text-sm text-[var(--app-muted)] transition-colors outline-none hover:text-[var(--app-text)] data-[active=true]:bg-violet-500 data-[active=true]:text-white"
                 >
                   <Folder aria-hidden="true" className="size-4" />
-                  <span>{selectedGroupId ? groupsById.get(selectedGroupId)?.title : 'По группам'}</span>
+                  <span>
+                    {selectedGroupId ? groupsById.get(selectedGroupId)?.title : 'По группам'}
+                  </span>
                   <ChevronDown aria-hidden="true" className="size-3.5" />
                 </button>
               </DropdownMenu.Trigger>
