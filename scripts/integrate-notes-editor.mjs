@@ -147,18 +147,31 @@ editor = replaceOnce(
 editor = replaceOnce(
   editor,
   `function EditAttachmentBlock({ block }: EditableBlockProps): React.JSX.Element {
-  if (`,
+  if (
+    block.type !== 'image' &&
+    block.type !== 'video' &&
+    block.type !== 'audio' &&
+    block.type !== 'file'
+  ) {
+    throw new Error('Attachment editor received an incompatible block')
+  }
+  return <StudyFileBlockView block={block} />
+}`,
   `function EditAttachmentBlock({ block }: EditableBlockProps): React.JSX.Element {
   const assetClient = useStudyBlockAssetClient()
 
-  if (`,
-  'EditAttachmentBlock asset client'
-)
-editor = replaceOnce(
-  editor,
-  'return <StudyFileBlockView block={block} />',
-  'return <StudyFileBlockView block={block} onOpenFile={assetClient.openAsset} />',
-  'EditAttachmentBlock open handler'
+  if (
+    block.type !== 'image' &&
+    block.type !== 'video' &&
+    block.type !== 'audio' &&
+    block.type !== 'file'
+  ) {
+    throw new Error('Attachment editor received an incompatible block')
+  }
+
+  return <StudyFileBlockView block={block} onOpenFile={assetClient.openAsset} />
+}`,
+  'EditAttachmentBlock asset integration'
 )
 write(editorPath, editor)
 
