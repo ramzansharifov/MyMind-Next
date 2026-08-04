@@ -12,13 +12,15 @@ interface FolderIconPickerProps {
   onChange: (icon: StudyFolderIconName) => void
   trigger: ReactElement
   align?: 'start' | 'center' | 'end'
+  label?: string
 }
 
 export function FolderIconPicker({
   value,
   onChange,
   trigger,
-  align = 'end'
+  align = 'end',
+  label = 'Иконка папки'
 }: FolderIconPickerProps): React.JSX.Element {
   return (
     <DropdownMenu.Root>
@@ -32,7 +34,7 @@ export function FolderIconPicker({
           className="z-50 w-72 rounded-2xl border border-[var(--app-border)] bg-[var(--app-menu)] p-2 shadow-[var(--app-shadow-menu)]"
         >
           <DropdownMenu.Label className="px-2 py-2 text-xs font-medium text-[var(--app-muted)]">
-            Иконка папки
+            {label}
           </DropdownMenu.Label>
 
           <div className="grid max-h-[28rem] grid-cols-5 gap-1 overflow-y-auto pr-1">
@@ -47,7 +49,7 @@ export function FolderIconPicker({
                     'hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]',
                     'focus:bg-[var(--app-control-hover)] focus:text-[var(--app-text)]',
                     option.value === value &&
-                      'border-violet-500/25 bg-violet-500/15 text-violet-200 shadow-sm'
+                      '[border-color:color-mix(in_srgb,var(--app-accent-500)_25%,transparent)] text-[var(--app-accent-500)] shadow-sm [background:color-mix(in_srgb,var(--app-accent-500)_15%,transparent)]'
                   )}
                   onSelect={() => onChange(option.value)}
                 >

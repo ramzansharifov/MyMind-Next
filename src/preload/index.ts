@@ -2,6 +2,14 @@ import { contextBridge, ipcRenderer } from 'electron'
 
 import { BOARD_IPC_CHANNELS, type BoardDocument, type BoardNode } from '../shared/contracts/boards'
 import {
+  NOTES_IPC_CHANNELS,
+  type NoteGroup,
+  type NoteLocalAsset,
+  type NoteRecord,
+  type NoteSummary,
+  type NotesOverview
+} from '../shared/contracts/notes'
+import {
   PREFERENCES_IPC_CHANNELS,
   type AppearancePreferences
 } from '../shared/contracts/preferences'
@@ -130,6 +138,46 @@ const api: MyMindApi = {
       ipcRenderer.invoke(STUDY_IPC_CHANNELS.importAsset, input) as Promise<StudyLocalAsset | null>,
 
     openAsset: (input) => ipcRenderer.invoke(STUDY_IPC_CHANNELS.openAsset, input) as Promise<void>
+  },
+
+  notes: {
+    listOverview: () =>
+      ipcRenderer.invoke(NOTES_IPC_CHANNELS.listOverview) as Promise<NotesOverview>,
+
+    createGroup: (input) =>
+      ipcRenderer.invoke(NOTES_IPC_CHANNELS.createGroup, input) as Promise<NoteGroup>,
+
+    renameGroup: (input) =>
+      ipcRenderer.invoke(NOTES_IPC_CHANNELS.renameGroup, input) as Promise<NoteGroup>,
+
+    updateGroupIcon: (input) =>
+      ipcRenderer.invoke(NOTES_IPC_CHANNELS.updateGroupIcon, input) as Promise<NoteGroup>,
+
+    deleteGroup: (groupId) =>
+      ipcRenderer.invoke(NOTES_IPC_CHANNELS.deleteGroup, groupId) as Promise<boolean>,
+
+    createNote: (input) =>
+      ipcRenderer.invoke(NOTES_IPC_CHANNELS.createNote, input) as Promise<NoteRecord>,
+
+    renameNote: (input) =>
+      ipcRenderer.invoke(NOTES_IPC_CHANNELS.renameNote, input) as Promise<NoteSummary>,
+
+    moveNote: (input) =>
+      ipcRenderer.invoke(NOTES_IPC_CHANNELS.moveNote, input) as Promise<NoteSummary>,
+
+    deleteNote: (noteId) =>
+      ipcRenderer.invoke(NOTES_IPC_CHANNELS.deleteNote, noteId) as Promise<boolean>,
+
+    getNote: (noteId) =>
+      ipcRenderer.invoke(NOTES_IPC_CHANNELS.getNote, noteId) as Promise<NoteRecord>,
+
+    saveNote: (input) =>
+      ipcRenderer.invoke(NOTES_IPC_CHANNELS.saveNote, input) as Promise<NoteRecord>,
+
+    importAsset: (input) =>
+      ipcRenderer.invoke(NOTES_IPC_CHANNELS.importAsset, input) as Promise<NoteLocalAsset | null>,
+
+    openAsset: (input) => ipcRenderer.invoke(NOTES_IPC_CHANNELS.openAsset, input) as Promise<void>
   }
 }
 

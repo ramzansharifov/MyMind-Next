@@ -5,7 +5,6 @@ import { Link2, LoaderCircle, Settings2, SquarePlay, Trash2, Upload } from 'luci
 import { useState } from 'react'
 
 import type { StudyAssetKind, StudyBlock } from '../../../../../shared/contracts/study'
-import { studyClient } from '../api/study-client'
 import {
   getStudyBlockDefinition,
   type StudyBlockSettingsStrategy
@@ -30,6 +29,7 @@ import { ColorPicker } from './settings/ColorPicker'
 import { SegmentedChoice } from './settings/SegmentedChoice'
 import { StudySelect } from './settings/StudySelect'
 import { StudyDivider } from './StudyDivider'
+import { useStudyBlockAssetClient } from './study-block-asset-context'
 
 interface BlockSettingsPanelProps {
   materialId: string
@@ -763,6 +763,7 @@ function AttachmentSettings({
   block: StudyAttachmentBlock
   onChange: (block: StudyBlock) => void
 }): React.JSX.Element {
+  const assetClient = useStudyBlockAssetClient()
   const [isPicking, setIsPicking] = useState(false)
 
   const [importError, setImportError] = useState<string | null>(null)
@@ -793,7 +794,7 @@ function AttachmentSettings({
     setImportError(null)
 
     try {
-      const asset = await studyClient.importAsset({
+      const asset = await assetClient.importAsset({
         nodeId: materialId,
         kind: block.type
       })

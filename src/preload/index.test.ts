@@ -29,7 +29,7 @@ afterEach(() => {
 })
 
 describe('preload API contract', () => {
-  it('exposes the complete boards contract in the renderer', async () => {
+  it('exposes the complete boards and notes contracts in the renderer', async () => {
     Object.defineProperty(process, 'contextIsolated', {
       configurable: true,
       value: true
@@ -53,8 +53,26 @@ describe('preload API contract', () => {
       'saveDocument',
       'ensureStudyBoard'
     ])
+    expect(Object.keys(api.notes)).toEqual([
+      'listOverview',
+      'createGroup',
+      'renameGroup',
+      'updateGroupIcon',
+      'deleteGroup',
+      'createNote',
+      'renameNote',
+      'moveNote',
+      'deleteNote',
+      'getNote',
+      'saveNote',
+      'importAsset',
+      'openAsset'
+    ])
 
     await api.boards.listNodes()
     expect(electronMocks.invoke).toHaveBeenCalledWith('boards:list-nodes')
+
+    await api.notes.listOverview()
+    expect(electronMocks.invoke).toHaveBeenCalledWith('notes:list-overview')
   })
 })

@@ -68,7 +68,7 @@ describe('study block registry', () => {
     ).toEqual([
       {
         type: 'text',
-        label: 'Форматированный текст'
+        label: 'Текст'
       },
       {
         type: 'heading',

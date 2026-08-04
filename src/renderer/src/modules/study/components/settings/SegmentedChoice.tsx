@@ -48,15 +48,15 @@ export function SegmentedChoice({
           aria-label={option.ariaLabel ?? option.label}
           className={cn(
             'flex h-9 min-w-0 items-center justify-center overflow-hidden rounded-lg border px-2',
-            'border-(--app-border) bg-(--app-control)',
-            'text-xs font-semibold text-(--app-muted)',
+            'border-(--app-border) bg-(--app-workspace) text-(--app-muted)',
+            'text-xs font-semibold',
             'transition-[background-color,border-color,color,box-shadow] outline-none',
-            'hover:border-(--app-border-strong) hover:bg-(--app-control-hover) hover:text-(--app-text)',
-            'focus-visible:ring-2 focus-visible:ring-violet-500/35',
-            'data-[state=on]:border-violet-500/45',
-            'data-[state=on]:bg-violet-500/15',
-            'data-[state=on]:text-violet-200',
-            'data-[state=on]:shadow-sm',
+            'hover:border-(--app-border-strong) hover:bg-white/[0.05] hover:text-(--app-text)',
+            'focus-visible:ring-2 focus-visible:ring-(--app-accent-500)/40',
+            'data-[state=on]:border-[color-mix(in_srgb,var(--app-accent-500)_72%,white_8%)]',
+            'data-[state=on]:bg-[color-mix(in_srgb,var(--app-accent-500)_24%,var(--app-workspace))]',
+            'data-[state=on]:text-[color-mix(in_srgb,var(--app-accent-400)_88%,white)]',
+            'data-[state=on]:shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--app-accent-500)_22%,transparent),0_0_14px_color-mix(in_srgb,var(--app-accent-500)_14%,transparent)]',
             'disabled:cursor-not-allowed disabled:opacity-40'
           )}
         >

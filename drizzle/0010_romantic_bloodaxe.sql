@@ -1,0 +1,1 @@
+ALTER TABLE `note_groups` ADD `icon` text DEFAULT 'folder' NOT NULL;
