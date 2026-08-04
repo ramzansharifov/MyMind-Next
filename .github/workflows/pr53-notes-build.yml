@@ -37,11 +37,24 @@ jobs:
           node <<'NODE'
           const fs = require('node:fs')
 
+          function escapeRegExp(value) {
+            return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+          }
+
           function replaceOnce(source, search, replacement, label) {
-            if (!source.includes(search)) {
+            const pattern = new RegExp(
+              search
+                .trim()
+                .split(/\s+/)
+                .map(escapeRegExp)
+                .join('\\s+')
+            )
+
+            if (!pattern.test(source)) {
               throw new Error(`Missing patch target: ${label}`)
             }
-            return source.replace(search, replacement)
+
+            return source.replace(pattern, () => replacement.trim())
           }
 
           const appPath = 'src/renderer/src/App.tsx'
@@ -155,19 +168,19 @@ jobs:
           )
           editor = replaceOnce(
             editor,
-            `                  block={block}
-                  materialId={materialId}`,
-            `                  block={block}
-                  materialId={materialId}
-                  assetClient={assetClient}`,
+            `block={block}
+            materialId={materialId}`,
+            `block={block}
+            materialId={materialId}
+            assetClient={assetClient}`,
             'StudyBlockEditor card asset client'
           )
           editor = replaceOnce(
             editor,
-            `            <BlockSettingsPanel
+            `<BlockSettingsPanel
               block={activeBlock}
               materialId={materialId}`,
-            `            <BlockSettingsPanel
+            `<BlockSettingsPanel
               block={activeBlock}
               materialId={materialId}
               importAsset={assetClient.importAsset}`,
@@ -216,10 +229,10 @@ jobs:
           )
           editor = replaceOnce(
             editor,
-            `  block,
+            `block,
               materialId,
               isActive,`,
-            `  block,
+            `block,
               materialId,
               assetClient,
               isActive,`,
@@ -280,8 +293,8 @@ jobs:
           )
           editor = replaceOnce(
             editor,
-            '  return <StudyFileBlockView block={block} />',
-            '  return <StudyFileBlockView block={block} onOpenFile={assetClient.openAsset} />',
+            'return <StudyFileBlockView block={block} />',
+            'return <StudyFileBlockView block={block} onOpenFile={assetClient.openAsset} />',
             'EditAttachmentBlock opener'
           )
           fs.writeFileSync(editorPath, editor)
@@ -327,9 +340,9 @@ jobs:
           )
           settings = replaceOnce(
             settings,
-            `          materialId={materialId}
+            `materialId={materialId}
               block={block}`,
-            `          materialId={materialId}
+            `materialId={materialId}
               importAsset={importAsset}
               block={block}`,
             'BlockSettingsPanel renderer importer'
@@ -349,8 +362,8 @@ jobs:
           )
           settings = replaceOnce(
             settings,
-            '  return <AttachmentSettings materialId={materialId} block={block} onChange={onChange} />',
-            '  return <AttachmentSettings materialId={materialId} importAsset={importAsset} block={block} onChange={onChange} />',
+            'return <AttachmentSettings materialId={materialId} block={block} onChange={onChange} />',
+            'return <AttachmentSettings materialId={materialId} importAsset={importAsset} block={block} onChange={onChange} />',
             'AttachmentSettings importer use'
           )
           settings = replaceOnce(
@@ -379,8 +392,8 @@ jobs:
           )
           settings = replaceOnce(
             settings,
-            '      const asset = await studyClient.importAsset({',
-            '      const asset = await importAsset({',
+            'const asset = await studyClient.importAsset({',
+            'const asset = await importAsset({',
             'AttachmentSettings importer call'
           )
           fs.writeFileSync(settingsPath, settings)
