@@ -13,27 +13,51 @@ function replaceOnce(source, before, after, label) {
   if (count !== 1) {
     throw new Error(`${label}: expected 1 match, found ${count}`)
   }
+
   return source.replace(before, after)
 }
 
-function replaceRegexOnce(source, pattern, after, label) {
-  const matches = source.match(new RegExp(pattern.source, pattern.flags.includes('g') ? pattern.flags : `${pattern.flags}g`))
-  if ((matches?.length ?? 0) !== 1) {
-    throw new Error(`${label}: expected 1 match, found ${matches?.length ?? 0}`)
+function updateInlineSignature(source, functionName, transform) {
+  const pattern = new RegExp(
+    `function ${functionName}\\(\\{[\\s\\S]*?\\n\\}: \\{[\\s\\S]*?\\n\\}\\): React\\.JSX\\.Element \\{`
+  )
+  const match = source.match(pattern)
+
+  if (!match) {
+    throw new Error(`${functionName}: signature was not found`)
   }
-  return source.replace(pattern, after)
+
+  const updated = transform(match[0])
+
+  if (updated === match[0]) {
+    throw new Error(`${functionName}: signature was not changed`)
+  }
+
+  return source.replace(match[0], updated)
+}
+
+function updateNotesHomeSignature(source, transform) {
+  const pattern = /export function NotesHome\(\{[\s\S]*?\}: NotesHomeProps\): React\.JSX\.Element \{/
+  const match = source.match(pattern)
+
+  if (!match) {
+    throw new Error('NotesHome: signature was not found')
+  }
+
+  const updated = transform(match[0])
+
+  if (updated === match[0]) {
+    throw new Error('NotesHome: signature was not changed')
+  }
+
+  return source.replace(match[0], updated)
 }
 
 // Repository persistence.
 {
   const path = 'src/main/repositories/notes.repository.ts'
   let source = read(path)
-  source = replaceOnce(
-    source,
-    "import type {\n  CreateNoteInput,\n  NoteDocument,",
-    "import type {\n  CreateNoteInput,\n  NoteDocument,",
-    'repository import anchor'
-  )
+
   source = replaceOnce(
     source,
     "} from '../../shared/contracts/notes'\n",
@@ -48,7 +72,7 @@ function replaceRegexOnce(source, pattern, after, label) {
   )
   source = replaceOnce(
     source,
-    "export function deleteNoteGroup(id: string): boolean {",
+    'export function deleteNoteGroup(id: string): boolean {',
     `export function updateNoteGroupIcon(id: string, icon: StudyFolderIconName): NoteGroup {
   const database = getDatabase()
   const now = new Date()
@@ -74,6 +98,7 @@ function replaceRegexOnce(source, pattern, after, label) {
 export function deleteNoteGroup(id: string): boolean {`,
     'repository update icon function'
   )
+
   write(path, source)
 }
 
@@ -81,21 +106,22 @@ export function deleteNoteGroup(id: string): boolean {`,
 {
   const path = 'src/main/ipc/register-notes-ipc.ts'
   let source = read(path)
+
   source = replaceOnce(
     source,
-    '  saveNoteInputSchema\n',
-    '  saveNoteInputSchema,\n  updateNoteGroupIconInputSchema\n',
+    '  renameNoteInputSchema,\n  saveNoteInputSchema\n',
+    '  renameNoteInputSchema,\n  saveNoteInputSchema,\n  updateNoteGroupIconInputSchema\n',
     'IPC validation import'
   )
   source = replaceOnce(
     source,
-    '  saveNote\n',
-    '  saveNote,\n  updateNoteGroupIcon\n',
+    '  renameNoteGroup,\n  saveNote\n',
+    '  renameNoteGroup,\n  saveNote,\n  updateNoteGroupIcon\n',
     'IPC repository import'
   )
   source = replaceOnce(
     source,
-    "  ipcMain.handle(NOTES_IPC_CHANNELS.deleteGroup, (_event, rawId: unknown) =>",
+    '  ipcMain.handle(NOTES_IPC_CHANNELS.deleteGroup, (_event, rawId: unknown) =>',
     `  ipcMain.handle(NOTES_IPC_CHANNELS.updateGroupIcon, (_event, rawInput: unknown) =>
     mainOperationTracker.run(() => {
       const input = updateNoteGroupIconInputSchema.parse(rawInput)
@@ -106,6 +132,7 @@ export function deleteNoteGroup(id: string): boolean {`,
   ipcMain.handle(NOTES_IPC_CHANNELS.deleteGroup, (_event, rawId: unknown) =>`,
     'IPC update icon handler'
   )
+
   write(path, source)
 }
 
@@ -113,12 +140,23 @@ export function deleteNoteGroup(id: string): boolean {`,
 {
   const path = 'src/preload/index.ts'
   let source = read(path)
+
   source = replaceOnce(
     source,
-    "    renameGroup: (input) =>\n      ipcRenderer.invoke(NOTES_IPC_CHANNELS.renameGroup, input) as Promise<NoteGroup>,\n\n    deleteGroup:",
-    "    renameGroup: (input) =>\n      ipcRenderer.invoke(NOTES_IPC_CHANNELS.renameGroup, input) as Promise<NoteGroup>,\n\n    updateGroupIcon: (input) =>\n      ipcRenderer.invoke(NOTES_IPC_CHANNELS.updateGroupIcon, input) as Promise<NoteGroup>,\n\n    deleteGroup:",
+    `    renameGroup: (input) =>
+      ipcRenderer.invoke(NOTES_IPC_CHANNELS.renameGroup, input) as Promise<NoteGroup>,
+
+    deleteGroup:`,
+    `    renameGroup: (input) =>
+      ipcRenderer.invoke(NOTES_IPC_CHANNELS.renameGroup, input) as Promise<NoteGroup>,
+
+    updateGroupIcon: (input) =>
+      ipcRenderer.invoke(NOTES_IPC_CHANNELS.updateGroupIcon, input) as Promise<NoteGroup>,
+
+    deleteGroup:`,
     'preload update icon method'
   )
+
   write(path, source)
 }
 
@@ -126,25 +164,40 @@ export function deleteNoteGroup(id: string): boolean {`,
 {
   const path = 'src/renderer/src/modules/notes/api/notes-client.ts'
   let source = read(path)
+
   source = replaceOnce(
     source,
-    '  StudyLocalAsset\n',
-    '  StudyFolderIconName,\n  StudyLocalAsset\n',
+    '  OpenStudyAssetInput,\n  StudyLocalAsset\n',
+    '  OpenStudyAssetInput,\n  StudyFolderIconName,\n  StudyLocalAsset\n',
     'client icon type import'
   )
   source = replaceOnce(
     source,
-    "  renameGroup(id: string, title: string): Promise<NoteGroup> {\n    return getNotesApi().renameGroup({ id, title })\n  },\n\n  deleteGroup",
-    "  renameGroup(id: string, title: string): Promise<NoteGroup> {\n    return getNotesApi().renameGroup({ id, title })\n  },\n\n  updateGroupIcon(id: string, icon: StudyFolderIconName): Promise<NoteGroup> {\n    return getNotesApi().updateGroupIcon({ id, icon })\n  },\n\n  deleteGroup",
+    `  renameGroup(id: string, title: string): Promise<NoteGroup> {
+    return getNotesApi().renameGroup({ id, title })
+  },
+
+  deleteGroup`,
+    `  renameGroup(id: string, title: string): Promise<NoteGroup> {
+    return getNotesApi().renameGroup({ id, title })
+  },
+
+  updateGroupIcon(id: string, icon: StudyFolderIconName): Promise<NoteGroup> {
+    return getNotesApi().updateGroupIcon({ id, icon })
+  },
+
+  deleteGroup`,
     'client update icon method'
   )
+
   write(path, source)
 }
 
-// Make the shared picker reusable for groups and respect the selected accent.
+// Make the shared picker reusable for groups and use the selected accent.
 {
   const path = 'src/renderer/src/shared/ui/FolderIconPicker.tsx'
   let source = read(path)
+
   source = replaceOnce(
     source,
     "  align?: 'start' | 'center' | 'end'\n}",
@@ -167,8 +220,9 @@ export function deleteNoteGroup(id: string): boolean {`,
     source,
     "                      'border-violet-500/25 bg-violet-500/15 text-violet-200 shadow-sm'",
     "                      '[border-color:color-mix(in_srgb,var(--app-accent-500)_25%,transparent)] [background:color-mix(in_srgb,var(--app-accent-500)_15%,transparent)] text-[var(--app-accent-500)] shadow-sm'",
-    'picker accent state'
+    'picker active accent'
   )
+
   write(path, source)
 }
 
@@ -176,6 +230,7 @@ export function deleteNoteGroup(id: string): boolean {`,
 {
   const path = 'src/renderer/src/modules/notes/NotesPage.tsx'
   let source = read(path)
+
   source = replaceOnce(
     source,
     "import type { NoteGroup, NoteSummary, NotesOverview } from '../../../../shared/contracts/notes'\n",
@@ -184,7 +239,7 @@ export function deleteNoteGroup(id: string): boolean {`,
   )
   source = replaceOnce(
     source,
-    "  if (selectedNoteId) {",
+    '  if (selectedNoteId) {',
     `  const handleGroupIconChange = useCallback(
     async (group: NoteGroup, icon: StudyFolderIconName): Promise<void> => {
       setError(null)
@@ -207,17 +262,19 @@ export function deleteNoteGroup(id: string): boolean {`,
   )
   source = replaceOnce(
     source,
-    '        onRenameGroup={setRenameGroupTarget}\n',
-    '        onRenameGroup={setRenameGroupTarget}\n        onGroupIconChange={(group, icon) => void handleGroupIconChange(group, icon)}\n',
+    '        onRenameGroup={setRenameGroupTarget}\n        onDeleteGroup={setDeleteGroupTarget}',
+    '        onRenameGroup={setRenameGroupTarget}\n        onGroupIconChange={(group, icon) => void handleGroupIconChange(group, icon)}\n        onDeleteGroup={setDeleteGroupTarget}',
     'NotesPage home callback'
   )
+
   write(path, source)
 }
 
-// Notes home: shared picker on group cards and selected group header.
+// Notes home: display and edit the persisted group icon everywhere a group is represented.
 {
   const path = 'src/renderer/src/modules/notes/components/NotesHome.tsx'
   let source = read(path)
+
   source = replaceOnce(
     source,
     "import type { NoteGroup, NoteSummary, NotesOverview } from '../../../../../shared/contracts/notes'\n",
@@ -232,111 +289,160 @@ export function deleteNoteGroup(id: string): boolean {`,
   )
   source = replaceOnce(
     source,
-    '  onRenameGroup: (group: NoteGroup) => void\n',
-    '  onRenameGroup: (group: NoteGroup) => void\n  onGroupIconChange: (group: NoteGroup, icon: StudyFolderIconName) => void\n',
+    `interface NotesHomeProps {
+  overview: NotesOverview
+  isLoading: boolean
+  onOpenNote: (noteId: string) => void
+  onCreateGroup: () => void
+  onCreateNote: (groupId: string | null) => void
+  onRenameGroup: (group: NoteGroup) => void
+  onDeleteGroup: (group: NoteGroup) => void`,
+    `interface NotesHomeProps {
+  overview: NotesOverview
+  isLoading: boolean
+  onOpenNote: (noteId: string) => void
+  onCreateGroup: () => void
+  onCreateNote: (groupId: string | null) => void
+  onRenameGroup: (group: NoteGroup) => void
+  onGroupIconChange: (group: NoteGroup, icon: StudyFolderIconName) => void
+  onDeleteGroup: (group: NoteGroup) => void`,
     'NotesHome prop type'
   )
-  source = replaceOnce(
-    source,
-    '  onRenameGroup,\n  onDeleteGroup,',
-    '  onRenameGroup,\n  onGroupIconChange,\n  onDeleteGroup,',
-    'NotesHome prop destructure'
+  source = updateNotesHomeSignature(source, (signature) =>
+    replaceOnce(
+      signature,
+      '  onRenameGroup,\n  onDeleteGroup,',
+      '  onRenameGroup,\n  onGroupIconChange,\n  onDeleteGroup,',
+      'NotesHome prop destructure'
+    )
   )
+
   source = replaceOnce(
     source,
-    '                      onRenameGroup={onRenameGroup}\n                      onDeleteGroup={onDeleteGroup}',
-    '                      onRenameGroup={onRenameGroup}\n                      onGroupIconChange={onGroupIconChange}\n                      onDeleteGroup={onDeleteGroup}',
+    `                      onCreateNote={onCreateNote}
+                      onRenameGroup={onRenameGroup}
+                      onDeleteGroup={onDeleteGroup}`,
+    `                      onCreateNote={onCreateNote}
+                      onRenameGroup={onRenameGroup}
+                      onGroupIconChange={onGroupIconChange}
+                      onDeleteGroup={onDeleteGroup}`,
     'home preview GroupsGrid callback'
   )
   source = replaceOnce(
     source,
-    '                    onRenameNote={onRenameNote}\n                    onMoveNote={onMoveNote}',
-    '                    onGroupIconChange={onGroupIconChange}\n                    onRenameNote={onRenameNote}\n                    onMoveNote={onMoveNote}',
+    `                    onCreateNote={() => onCreateNote(selectedGroup.id)}
+                    onLayoutChange={setLayout}`,
+    `                    onCreateNote={() => onCreateNote(selectedGroup.id)}
+                    onGroupIconChange={onGroupIconChange}
+                    onLayoutChange={setLayout}`,
     'selected group page callback'
   )
   source = replaceOnce(
     source,
-    '                    onRenameGroup={onRenameGroup}\n                    onDeleteGroup={onDeleteGroup}',
-    '                    onRenameGroup={onRenameGroup}\n                    onGroupIconChange={onGroupIconChange}\n                    onDeleteGroup={onDeleteGroup}',
+    `                    onOpenGroup={openGroup}
+                    onRenameGroup={onRenameGroup}
+                    onDeleteGroup={onDeleteGroup}`,
+    `                    onOpenGroup={openGroup}
+                    onRenameGroup={onRenameGroup}
+                    onGroupIconChange={onGroupIconChange}
+                    onDeleteGroup={onDeleteGroup}`,
     'groups directory callback'
   )
 
+  source = updateInlineSignature(source, 'GroupsDirectoryPage', (signature) => {
+    let updated = replaceOnce(
+      signature,
+      '  onRenameGroup,\n  onDeleteGroup',
+      '  onRenameGroup,\n  onGroupIconChange,\n  onDeleteGroup',
+      'GroupsDirectory destructure'
+    )
+    updated = replaceOnce(
+      updated,
+      '  onRenameGroup: (group: NoteGroup) => void\n  onDeleteGroup: (group: NoteGroup) => void',
+      '  onRenameGroup: (group: NoteGroup) => void\n  onGroupIconChange: (group: NoteGroup, icon: StudyFolderIconName) => void\n  onDeleteGroup: (group: NoteGroup) => void',
+      'GroupsDirectory callback type'
+    )
+    return updated
+  })
   source = replaceOnce(
     source,
-    '  onRenameGroup,\n  onDeleteGroup\n}: {\n  groups: NoteGroup[]',
-    '  onRenameGroup,\n  onGroupIconChange,\n  onDeleteGroup\n}: {\n  groups: NoteGroup[]',
-    'GroupsDirectory destructure'
-  )
-  source = replaceOnce(
-    source,
-    '  onRenameGroup: (group: NoteGroup) => void\n  onDeleteGroup: (group: NoteGroup) => void\n}): React.JSX.Element {',
-    '  onRenameGroup: (group: NoteGroup) => void\n  onGroupIconChange: (group: NoteGroup, icon: StudyFolderIconName) => void\n  onDeleteGroup: (group: NoteGroup) => void\n}): React.JSX.Element {',
-    'GroupsDirectory callback type'
-  )
-  source = replaceOnce(
-    source,
-    '          onRenameGroup={onRenameGroup}\n          onDeleteGroup={onDeleteGroup}',
-    '          onRenameGroup={onRenameGroup}\n          onGroupIconChange={onGroupIconChange}\n          onDeleteGroup={onDeleteGroup}',
+    `          onCreateNote={onCreateNote}
+          onRenameGroup={onRenameGroup}
+          onDeleteGroup={onDeleteGroup}`,
+    `          onCreateNote={onCreateNote}
+          onRenameGroup={onRenameGroup}
+          onGroupIconChange={onGroupIconChange}
+          onDeleteGroup={onDeleteGroup}`,
     'GroupsDirectory grid callback'
   )
 
-  source = replaceOnce(
-    source,
-    '  onRenameNote,\n  onMoveNote,',
-    '  onGroupIconChange,\n  onRenameNote,\n  onMoveNote,',
-    'GroupNotesPage destructure'
-  )
-  source = replaceOnce(
-    source,
-    '  onCreateNote: () => void\n  onLayoutChange:',
-    '  onCreateNote: () => void\n  onGroupIconChange: (group: NoteGroup, icon: StudyFolderIconName) => void\n  onLayoutChange:',
-    'GroupNotesPage callback type'
-  )
+  source = updateInlineSignature(source, 'GroupNotesPage', (signature) => {
+    let updated = replaceOnce(
+      signature,
+      '  onCreateNote,\n  onLayoutChange,',
+      '  onCreateNote,\n  onGroupIconChange,\n  onLayoutChange,',
+      'GroupNotesPage destructure'
+    )
+    updated = replaceOnce(
+      updated,
+      '  onCreateNote: () => void\n  onLayoutChange:',
+      '  onCreateNote: () => void\n  onGroupIconChange: (group: NoteGroup, icon: StudyFolderIconName) => void\n  onLayoutChange:',
+      'GroupNotesPage callback type'
+    )
+    return updated
+  })
   source = replaceOnce(
     source,
     '        icon={<Folder aria-hidden="true" className="size-5" />}\n        backAction={{',
     `        icon={
-          <NoteGroupIconPicker
-            group={group}
-            onChange={onGroupIconChange}
-            className="size-5"
-          />
+          <NoteGroupIconPicker group={group} onChange={onGroupIconChange} className="size-5" />
         }
         backAction={{`,
     'selected group header icon'
   )
 
+  source = updateInlineSignature(source, 'GroupsGrid', (signature) => {
+    let updated = replaceOnce(
+      signature,
+      '  onRenameGroup,\n  onDeleteGroup',
+      '  onRenameGroup,\n  onGroupIconChange,\n  onDeleteGroup',
+      'GroupsGrid destructure'
+    )
+    updated = replaceOnce(
+      updated,
+      '  onRenameGroup: (group: NoteGroup) => void\n  onDeleteGroup: (group: NoteGroup) => void',
+      '  onRenameGroup: (group: NoteGroup) => void\n  onGroupIconChange: (group: NoteGroup, icon: StudyFolderIconName) => void\n  onDeleteGroup: (group: NoteGroup) => void',
+      'GroupsGrid callback type'
+    )
+    return updated
+  })
   source = replaceOnce(
     source,
-    '  onRenameGroup,\n  onDeleteGroup\n}: {\n  groups: NoteGroup[]\n  notesByGroup:',
-    '  onRenameGroup,\n  onGroupIconChange,\n  onDeleteGroup\n}: {\n  groups: NoteGroup[]\n  notesByGroup:',
-    'GroupsGrid destructure'
-  )
-  source = replaceOnce(
-    source,
-    '  onRenameGroup: (group: NoteGroup) => void\n  onDeleteGroup: (group: NoteGroup) => void\n}): React.JSX.Element {\n  return (\n    <div className="grid grid-cols-3',
-    '  onRenameGroup: (group: NoteGroup) => void\n  onGroupIconChange: (group: NoteGroup, icon: StudyFolderIconName) => void\n  onDeleteGroup: (group: NoteGroup) => void\n}): React.JSX.Element {\n  return (\n    <div className="grid grid-cols-3',
-    'GroupsGrid callback type'
-  )
-  source = replaceOnce(
-    source,
-    '            onRename={() => onRenameGroup(group)}\n            onDelete={() => onDeleteGroup(group)}',
-    '            onRename={() => onRenameGroup(group)}\n            onIconChange={(icon) => onGroupIconChange(group, icon)}\n            onDelete={() => onDeleteGroup(group)}',
+    `            onCreateNote={() => onCreateNote(group.id)}
+            onRename={() => onRenameGroup(group)}
+            onDelete={() => onDeleteGroup(group)}`,
+    `            onCreateNote={() => onCreateNote(group.id)}
+            onRename={() => onRenameGroup(group)}
+            onIconChange={(icon) => onGroupIconChange(group, icon)}
+            onDelete={() => onDeleteGroup(group)}`,
     'GroupCard icon callback'
   )
 
-  source = replaceOnce(
-    source,
-    '  onRename,\n  onDelete\n}: {\n  group: NoteGroup',
-    '  onRename,\n  onIconChange,\n  onDelete\n}: {\n  group: NoteGroup',
-    'GroupCard destructure'
-  )
-  source = replaceOnce(
-    source,
-    '  onRename: () => void\n  onDelete: () => void\n}): React.JSX.Element {',
-    '  onRename: () => void\n  onIconChange: (icon: StudyFolderIconName) => void\n  onDelete: () => void\n}): React.JSX.Element {',
-    'GroupCard callback type'
-  )
+  source = updateInlineSignature(source, 'GroupCard', (signature) => {
+    let updated = replaceOnce(
+      signature,
+      '  onRename,\n  onDelete',
+      '  onRename,\n  onIconChange,\n  onDelete',
+      'GroupCard destructure'
+    )
+    updated = replaceOnce(
+      updated,
+      '  onRename: () => void\n  onDelete: () => void',
+      '  onRename: () => void\n  onIconChange: (icon: StudyFolderIconName) => void\n  onDelete: () => void',
+      'GroupCard callback type'
+    )
+    return updated
+  })
   source = replaceOnce(
     source,
     `        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-300">
@@ -349,7 +455,6 @@ export function deleteNoteGroup(id: string): boolean {`,
         />`,
     'GroupCard icon picker'
   )
-
   source = replaceOnce(
     source,
     '\nfunction NoteCard({',
@@ -385,51 +490,55 @@ function NoteGroupIconPicker({
 function NoteCard({`,
     'NoteGroupIconPicker helper'
   )
+
   write(path, source)
 }
 
-// Preload contract test expects the new API method.
+// Preload contract test.
 {
   const path = 'src/preload/index.test.ts'
   let source = read(path)
-  if (!source.includes("'updateGroupIcon'")) {
-    source = replaceOnce(
-      source,
-      "      'renameGroup',\n",
-      "      'renameGroup',\n      'updateGroupIcon',\n",
-      'preload test method list'
-    )
-  }
+
+  source = replaceOnce(
+    source,
+    "      'renameGroup',\n      'deleteGroup',",
+    "      'renameGroup',\n      'updateGroupIcon',\n      'deleteGroup',",
+    'preload test method list'
+  )
+
   write(path, source)
 }
 
-// Repository test: default and persisted group icon.
+// Repository behavior.
 {
   const path = 'src/main/repositories/notes.repository.test.ts'
   let source = read(path)
+
   source = replaceOnce(
     source,
-    '  renameNoteGroup,\n',
-    '  renameNoteGroup,\n  updateNoteGroupIcon,\n',
+    '  renameNote,\n  saveNote\n',
+    '  renameNote,\n  saveNote,\n  updateNoteGroupIcon\n',
     'repository test import'
   )
-  source = replaceRegexOnce(
+  source = replaceOnce(
     source,
-    /const group = createNoteGroup\('Проекты'\)/,
-    "const group = createNoteGroup('Проекты')\n    expect(group.icon).toBe('folder')\n    expect(updateNoteGroupIcon(group.id, 'science').icon).toBe('science')",
-    'repository icon assertion'
+    "    const first = createNoteGroup('Работа')\n    const second = createNoteGroup('Личное')",
+    "    const first = createNoteGroup('Работа')\n    const second = createNoteGroup('Личное')\n\n    expect(first.icon).toBe('folder')\n    expect(updateNoteGroupIcon(first.id, 'science').icon).toBe('science')",
+    'repository icon assertions'
   )
+
   write(path, source)
 }
 
-// Renderer fixtures and icon-picker behavior.
+// Renderer fixtures and picker behavior.
 {
   const path = 'src/renderer/src/modules/notes/NotesPage.test.tsx'
   let source = read(path)
+
   source = replaceOnce(
     source,
-    '  renameGroup: vi.fn(),\n',
-    '  renameGroup: vi.fn(),\n  updateGroupIcon: vi.fn(),\n',
+    '  renameGroup: vi.fn(),\n  renameNote:',
+    '  renameGroup: vi.fn(),\n  updateGroupIcon: vi.fn(),\n  renameNote:',
     'NotesPage test mock'
   )
   source = replaceOnce(
@@ -440,8 +549,8 @@ function NoteCard({`,
   )
   source = replaceOnce(
     source,
-    '  notesMocks.createGroup.mockResolvedValue({\n    id:',
-    "  notesMocks.updateGroupIcon.mockImplementation(async ({ id, icon }) => ({\n    ...group,\n    id,\n    icon\n  }))\n  notesMocks.createGroup.mockResolvedValue({\n    id:",
+    "  notesMocks.createGroup.mockResolvedValue({\n    id: 'group-new',",
+    "  notesMocks.updateGroupIcon.mockImplementation(async (id, icon) => ({ ...group, id, icon }))\n  notesMocks.createGroup.mockResolvedValue({\n    id: 'group-new',",
     'NotesPage icon mock implementation'
   )
   source = replaceOnce(
@@ -469,5 +578,6 @@ function NoteCard({`,
   it('opens a group as a dedicated notes page', async () => {`,
     'NotesPage icon test'
   )
+
   write(path, source)
 }
