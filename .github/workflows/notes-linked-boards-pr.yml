@@ -51,6 +51,30 @@ jobs:
               'src/renderer/src/modules/boards/components/BoardTree.tsx'
           )
           exec(script, {'__name__': '__main__'})
+
+          def replace_file_once(path: str, old: str, new: str) -> None:
+              file_path = Path(path)
+              source = file_path.read_text(encoding='utf-8')
+              count = source.count(old)
+              if count != 1:
+                  raise RuntimeError(f'{path}: expected one test match, found {count}')
+              file_path.write_text(source.replace(old, new, 1), encoding='utf-8')
+
+          replace_file_once(
+              'src/main/repositories/boards.repository.test.ts',
+              "'Иконка этой папки управляется модулем обучения'",
+              "'Иконка этой папки управляется исходным модулем'"
+          )
+          replace_file_once(
+              'src/renderer/src/modules/boards/lib/board-dnd.test.ts',
+              "expect(createBoardMoveInput(nodes, 'board-b', 'folder-a', 'before')).toEqual({\n      id: 'board-b',\n      parentId: null,\n      position: 1\n    })",
+              "expect(createBoardMoveInput(nodes, 'board-b', 'folder-a', 'before')).toEqual({\n      id: 'board-b',\n      parentId: null,\n      position: 2\n    })"
+          )
+          replace_file_once(
+              'src/renderer/src/modules/study/components/StudyBlockEditor.insert-menu.test.tsx',
+              "expect(getColumnItems(menu, 'primary')).toEqual(['Текст', 'Заголовок', 'Разделитель'])",
+              "expect(getColumnItems(menu, 'primary')).toEqual([\n      'Текст',\n      'Заголовок',\n      'Доска',\n      'Разделитель'\n    ])"
+          )
           PY
 
       - name: Install dependencies
