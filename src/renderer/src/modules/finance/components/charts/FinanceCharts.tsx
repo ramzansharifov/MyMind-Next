@@ -9,6 +9,18 @@ interface ChartDatum {
   secondaryValue?: number
 }
 
+interface ChartPoint {
+  x: number
+  y: number
+}
+
+interface DonutSegment {
+  item: ChartDatum & { color?: string | null }
+  part: number
+  offset: number
+  end: number
+}
+
 export function FinanceLineChart({
   data,
   currencyCode,
@@ -26,7 +38,7 @@ export function FinanceLineChart({
     const minimum = Math.min(0, ...values)
     const maximum = Math.max(1, ...values)
     const range = maximum - minimum || 1
-    const point = (value: number, index: number) => ({
+    const point = (value: number, index: number): ChartPoint => ({
       x: padding + (index * (width - padding * 2)) / Math.max(1, data.length - 1),
       y: height - padding - ((value - minimum) / range) * (height - padding * 2)
     })
@@ -188,7 +200,11 @@ export function FinanceDonutChart({
   ariaLabel: string
 }): React.JSX.Element {
   const total = data.reduce((sum, item) => sum + Math.max(0, item.value), 0)
-  let offset = 0
+  const segments = data.reduce<DonutSegment[]>((result, item) => {
+    const offset = result.at(-1)?.end ?? 0
+    const part = (item.value / Math.max(1, total)) * 100
+    return [...result, { item, part, offset, end: offset + part }]
+  }, [])
   if (total <= 0) return <ChartEmpty label="Нет данных для распределения" />
   return (
     <figure
@@ -205,29 +221,24 @@ export function FinanceDonutChart({
           stroke="var(--app-overlay-subtle)"
           strokeWidth="18"
         />
-        {data.map((item) => {
-          const part = (item.value / total) * 100
-          const current = offset
-          offset += part
-          return (
-            <circle
-              key={item.label}
-              cx="60"
-              cy="60"
-              r="44"
-              fill="none"
-              stroke={item.color ?? 'var(--app-accent-500)'}
-              strokeWidth="18"
-              pathLength="100"
-              strokeDasharray={`${part} ${100 - part}`}
-              strokeDashoffset={-current}
-            >
-              <title>
-                {item.label}: {formatMoneyMinor(item.value, currencyCode)}
-              </title>
-            </circle>
-          )
-        })}
+        {segments.map(({ item, part, offset }) => (
+          <circle
+            key={item.label}
+            cx="60"
+            cy="60"
+            r="44"
+            fill="none"
+            stroke={item.color ?? 'var(--app-accent-500)'}
+            strokeWidth="18"
+            pathLength="100"
+            strokeDasharray={`${part} ${100 - part}`}
+            strokeDashoffset={-offset}
+          >
+            <title>
+              {item.label}: {formatMoneyMinor(item.value, currencyCode)}
+            </title>
+          </circle>
+        ))}
       </svg>
       <div className="space-y-2">
         {data.map((item) => (
