@@ -1,19 +1,16 @@
 import {
-  ArrowDownLeft,
-  ArrowRightLeft,
-  ArrowUpRight,
   CalendarClock,
   ChevronRight,
   Gauge,
   Landmark,
-  Plus
+  Plus,
+  ReceiptText
 } from 'lucide-react'
 
 import type {
   FinanceDashboard,
   FinanceTemplate,
-  FinanceTransaction,
-  FinanceUserTransactionType
+  FinanceTransaction
 } from '../../../../../shared/contracts/finance'
 import { formatMoneyMinor } from '../../../../../shared/finance-money'
 import { FinanceIcon, financeAccountTypeLabels } from '../lib/finance-ui'
@@ -23,7 +20,6 @@ import { FinanceTransactionList } from './FinanceTransactionList'
 
 interface Props {
   dashboard: FinanceDashboard
-  onCreateTransaction: (type: FinanceUserTransactionType) => void
   onOpenPage: (page: 'accounts' | 'transactions') => void
   onOpenAccount: (accountId: string) => void
   onUseTemplate: (template: FinanceTemplate) => void
@@ -34,7 +30,6 @@ interface Props {
 
 export function FinanceHome({
   dashboard,
-  onCreateTransaction,
   onOpenPage,
   onOpenAccount,
   onUseTemplate,
@@ -43,7 +38,7 @@ export function FinanceHome({
   onEditTransaction
 }: Props): React.JSX.Element {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="grid grid-cols-4 gap-3 max-[1050px]:grid-cols-2 max-[580px]:grid-cols-1">
         <Metric
           label="Общий баланс"
@@ -53,134 +48,122 @@ export function FinanceHome({
           detail={
             !dashboard.totalBalanceComplete
               ? `Не включены: ${dashboard.missingRateCurrencies.join(', ')}`
-              : `В ${dashboard.settings.baseCurrencyCode}`
+              : undefined
           }
         />
         <Metric
           label="Доходы за период"
           value={`+${formatMoneyMinor(dashboard.incomeMinor, dashboard.settings.baseCurrencyCode)}`}
           tone="positive"
-          detail={`${dashboard.operationCount} операций`}
         />
         <Metric
           label="Расходы за период"
           value={`−${formatMoneyMinor(dashboard.expenseMinor, dashboard.settings.baseCurrencyCode)}`}
           tone="negative"
-          detail="Без переводов и корректировок"
         />
         <Metric
           label="Чистый результат"
           value={formatMoneyMinor(dashboard.netMinor, dashboard.settings.baseCurrencyCode)}
           tone={dashboard.netMinor >= 0 ? 'positive' : 'negative'}
-          detail="Доходы минус расходы"
         />
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        <FinanceButton tone="positive" onClick={() => onCreateTransaction('income')}>
-          <ArrowDownLeft className="size-4" />
-          Доход
-        </FinanceButton>
-        <FinanceButton tone="danger" onClick={() => onCreateTransaction('expense')}>
-          <ArrowUpRight className="size-4" />
-          Расход
-        </FinanceButton>
-        <FinanceButton tone="primary" onClick={() => onCreateTransaction('transfer')}>
-          <ArrowRightLeft className="size-4" />
-          Перевод
-        </FinanceButton>
-      </div>
-
-      <section>
-        <SectionHeader
-          title="Счета"
-          description="Текущие остатки по местам хранения денег"
-          actionLabel="Все счета"
-          onAction={() => onOpenPage('accounts')}
-        />
-        {dashboard.accounts.length === 0 ? (
-          <FinanceEmptyState
-            icon={<Landmark className="size-6" />}
-            title="Пока нет счетов"
-            description="Создайте первый счёт, чтобы начать вести доходы, расходы и переводы."
-            action={
-              <FinanceButton tone="primary" onClick={() => onOpenPage('accounts')}>
-                <Plus className="size-4" />
-                Создать счёт
-              </FinanceButton>
-            }
+      <FinanceSurface className="overflow-hidden">
+        <div className="border-b border-[var(--app-border)] px-5 py-3">
+          <SectionHeader
+            title="Счета"
+            icon={<Landmark aria-hidden="true" className="size-5" />}
+            actionLabel="Все счета"
+            onAction={() => onOpenPage('accounts')}
           />
-        ) : (
-          <div className="grid grid-cols-3 gap-3 max-[1000px]:grid-cols-2 max-[620px]:grid-cols-1">
-            {dashboard.accounts.map((account) => (
-              <button
-                key={account.id}
-                type="button"
-                className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 text-left shadow-[var(--app-shadow-card)] transition hover:-translate-y-0.5 hover:border-[var(--app-border-strong)]"
-                onClick={() => onOpenAccount(account.id)}
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className="flex size-10 items-center justify-center rounded-xl"
-                    style={{ background: `${account.color}22`, color: account.color }}
-                  >
-                    <FinanceIcon name={account.icon} className="size-5" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="truncate font-medium text-[var(--app-text)]">
-                      {account.name}
+        </div>
+        <div className="p-3">
+          {dashboard.accounts.length === 0 ? (
+            <FinanceEmptyState
+              icon={<Landmark className="size-6" />}
+              title="Пока нет счетов"
+              description="Создайте первый счёт, чтобы начать вести доходы, расходы и переводы."
+              action={
+                <FinanceButton tone="primary" onClick={() => onOpenPage('accounts')}>
+                  <Plus className="size-4" />
+                  Создать счёт
+                </FinanceButton>
+              }
+            />
+          ) : (
+            <div className="grid grid-cols-3 gap-3 max-[1000px]:grid-cols-2 max-[620px]:grid-cols-1">
+              {dashboard.accounts.map((account) => (
+                <button
+                  key={account.id}
+                  type="button"
+                  className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-card)] p-4 text-left shadow-[var(--app-shadow-card)] transition hover:-translate-y-0.5 hover:border-[var(--app-border-strong)] hover:bg-[var(--app-card-hover)] hover:shadow-[var(--app-shadow-hover)]"
+                  onClick={() => onOpenAccount(account.id)}
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="flex size-10 items-center justify-center rounded-xl"
+                      style={{ background: `${account.color}22`, color: account.color }}
+                    >
+                      <FinanceIcon name={account.icon} className="size-5" />
                     </div>
-                    <div className="text-xs text-[var(--app-muted)]">
-                      {financeAccountTypeLabels[account.type]}
+                    <div className="min-w-0">
+                      <div className="truncate font-medium text-[var(--app-text)]">
+                        {account.name}
+                      </div>
+                      <div className="text-xs text-[var(--app-muted)]">
+                        {financeAccountTypeLabels[account.type]}
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="mt-5 text-xl font-semibold text-[var(--app-text)] tabular-nums">
-                  {formatMoneyMinor(account.balanceMinor, account.currencyCode)}
-                </div>
-                <div className="mt-2 flex items-center justify-between text-xs text-[var(--app-muted)]">
-                  <span>
-                    {account.lastTransactionAt
-                      ? `Последняя: ${new Date(account.lastTransactionAt).toLocaleDateString('ru-RU')}`
-                      : 'Нет операций'}
-                  </span>
-                  <span
-                    className={account.periodChangeMinor >= 0 ? 'text-emerald-300' : 'text-red-300'}
-                  >
-                    {account.periodChangeMinor >= 0 ? '+' : ''}
-                    {formatMoneyMinor(account.periodChangeMinor, account.currencyCode)}
-                  </span>
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
-        {dashboard.balancesByCurrency.length > 1 && (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {dashboard.balancesByCurrency.map((item) => (
-              <span
-                key={item.currencyCode}
-                className="rounded-lg border border-[var(--app-border)] bg-[var(--app-overlay-faint)] px-3 py-1.5 text-xs text-[var(--app-muted)]"
-              >
-                {item.currencyCode}:{' '}
-                <strong className="text-[var(--app-text)]">
-                  {formatMoneyMinor(item.balanceMinor, item.currencyCode)}
-                </strong>
-                {!item.hasRate && item.currencyCode !== dashboard.settings.baseCurrencyCode
-                  ? ' · курс не задан'
-                  : ''}
-              </span>
-            ))}
-          </div>
-        )}
-      </section>
+                  <div className="mt-5 text-xl font-semibold text-[var(--app-text)] tabular-nums">
+                    {formatMoneyMinor(account.balanceMinor, account.currencyCode)}
+                  </div>
+                  <div className="mt-2 flex items-center justify-between text-xs text-[var(--app-muted)]">
+                    <span>
+                      {account.lastTransactionAt
+                        ? `Последняя: ${new Date(account.lastTransactionAt).toLocaleDateString('ru-RU')}`
+                        : 'Нет операций'}
+                    </span>
+                    <span
+                      className={
+                        account.periodChangeMinor >= 0 ? 'text-emerald-300' : 'text-red-300'
+                      }
+                    >
+                      {account.periodChangeMinor >= 0 ? '+' : ''}
+                      {formatMoneyMinor(account.periodChangeMinor, account.currencyCode)}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+          {dashboard.balancesByCurrency.length > 1 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {dashboard.balancesByCurrency.map((item) => (
+                <span
+                  key={item.currencyCode}
+                  className="rounded-lg border border-[var(--app-border)] bg-[var(--app-overlay-faint)] px-3 py-1.5 text-xs text-[var(--app-muted)]"
+                >
+                  {item.currencyCode}:{' '}
+                  <strong className="text-[var(--app-text)]">
+                    {formatMoneyMinor(item.balanceMinor, item.currencyCode)}
+                  </strong>
+                  {!item.hasRate && item.currencyCode !== dashboard.settings.baseCurrencyCode
+                    ? ' · курс не задан'
+                    : ''}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </FinanceSurface>
 
-      <div className="grid grid-cols-2 gap-5 max-[900px]:grid-cols-1">
+      <div className="grid grid-cols-2 gap-4 max-[900px]:grid-cols-1">
         <FinanceSurface className="overflow-hidden">
-          <div className="border-b border-[var(--app-border)] p-4">
+          <div className="border-b border-[var(--app-border)] px-5 py-3">
             <SectionHeader
               title="Действующие лимиты"
-              description="Сначала превышенные и достигшие порога"
+              icon={<Gauge aria-hidden="true" className="size-5" />}
               actionLabel="Управлять"
               onAction={() => onOpenPage('transactions')}
             />
@@ -226,10 +209,10 @@ export function FinanceHome({
         </FinanceSurface>
 
         <FinanceSurface className="overflow-hidden">
-          <div className="border-b border-[var(--app-border)] p-4">
+          <div className="border-b border-[var(--app-border)] px-5 py-3">
             <SectionHeader
               title="Предстоящие операции"
-              description="Только после вашего подтверждения"
+              icon={<CalendarClock aria-hidden="true" className="size-5" />}
               actionLabel="Шаблоны"
               onAction={() => onOpenPage('transactions')}
             />
@@ -261,7 +244,11 @@ export function FinanceHome({
                     </div>
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2">
-                    <FinanceButton size="sm" tone="primary" onClick={() => onUseTemplate(template)}>
+                    <FinanceButton
+                      size="sm"
+                      tone="primary"
+                      onClick={() => onUseTemplate(template)}
+                    >
                       Создать
                     </FinanceButton>
                     <FinanceButton size="sm" onClick={() => onSnoozeTemplate(template)}>
@@ -279,10 +266,10 @@ export function FinanceHome({
       </div>
 
       <FinanceSurface className="overflow-hidden">
-        <div className="border-b border-[var(--app-border)] p-4">
+        <div className="border-b border-[var(--app-border)] px-5 py-3">
           <SectionHeader
             title="Последние операции"
-            description="Системные корректировки скрыты"
+            icon={<ReceiptText aria-hidden="true" className="size-5" />}
             actionLabel="Все операции"
             onAction={() => onOpenPage('transactions')}
           />
@@ -310,7 +297,7 @@ function Metric({
 }: {
   label: string
   value: string
-  detail: string
+  detail?: string
   tone?: 'positive' | 'negative'
   accent?: boolean
   incomplete?: boolean
@@ -328,37 +315,37 @@ function Metric({
       >
         {value}
       </div>
-      <p className={`mt-1 text-xs ${incomplete ? 'text-amber-200' : 'text-[var(--app-muted)]'}`}>
-        {detail}
-      </p>
+      {detail && (
+        <p className={`mt-1 text-xs ${incomplete ? 'text-amber-200' : 'text-[var(--app-muted)]'}`}>
+          {detail}
+        </p>
+      )}
     </FinanceSurface>
   )
 }
 
 function SectionHeader({
   title,
-  description,
+  icon,
   actionLabel,
   onAction
 }: {
   title: string
-  description: string
+  icon: React.ReactNode
   actionLabel: string
   onAction: () => void
 }): React.JSX.Element {
   return (
-    <div className="mb-3 flex items-end justify-between gap-3">
-      <div>
-        <h2 className="text-base font-semibold text-[var(--app-text)]">{title}</h2>
-        <p className="mt-0.5 text-sm text-[var(--app-muted)]">{description}</p>
-      </div>
+    <div className="flex min-h-6 items-center gap-3">
+      <span className="text-violet-300">{icon}</span>
+      <h2 className="text-base font-semibold text-[var(--app-text)]">{title}</h2>
       <button
         type="button"
-        className="inline-flex shrink-0 items-center gap-1 text-sm font-medium text-violet-300 hover:text-violet-200"
+        className="ml-auto inline-flex shrink-0 items-center gap-1.5 text-xs text-[var(--app-muted)] hover:text-[var(--app-text)]"
         onClick={onAction}
       >
         {actionLabel}
-        <ChevronRight className="size-4" />
+        <ChevronRight aria-hidden="true" className="size-3.5" />
       </button>
     </div>
   )
