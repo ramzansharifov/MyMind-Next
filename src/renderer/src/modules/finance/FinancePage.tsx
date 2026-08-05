@@ -1,11 +1,11 @@
 import {
+  ArrowDownLeft,
+  ArrowRightLeft,
+  ArrowUpRight,
   BarChart3,
-  CircleDollarSign,
   Home,
   Landmark,
-  LoaderCircle,
   ReceiptText,
-  RefreshCw,
   Tags
 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
@@ -19,7 +19,7 @@ import type {
   FinanceTransaction,
   FinanceUserTransactionType
 } from '../../../../shared/contracts/finance'
-import { currentMonthPeriod, getFinanceErrorMessage } from './lib/finance-ui'
+import '../../assets/finance-home-header.css'
 import { financeClient } from './api/finance-client'
 import { FinanceAccounts } from './components/FinanceAccounts'
 import { FinanceHome } from './components/FinanceHome'
@@ -33,6 +33,7 @@ import { FinanceTags } from './components/FinanceTags'
 import { FinanceTransactions } from './components/FinanceTransactions'
 import { FinanceTagDialog } from './components/dialogs/FinanceTagDialog'
 import { FinanceTransactionDialog } from './components/dialogs/FinanceTransactionDialog'
+import { currentMonthPeriod, getFinanceErrorMessage } from './lib/finance-ui'
 
 interface FinancePageProps {
   resourceId?: string | null
@@ -143,31 +144,41 @@ export function FinancePage({
   return (
     <main className="h-full overflow-y-auto bg-[var(--app-workspace)]">
       <div className="mx-auto max-w-[1240px] px-8 py-7 max-[700px]:px-4 max-[700px]:py-5">
-        <header className="mb-6">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2 text-xs font-semibold tracking-[0.2em] text-violet-300 uppercase">
-                <CircleDollarSign className="size-4" />
+        <header data-finance-hero className="mb-5">
+          <div className="flex items-start justify-between gap-6 max-[820px]:flex-col">
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold tracking-[0.12em] text-violet-300 uppercase">
                 Финансы
-              </div>
-              <h1 className="mt-2 text-2xl font-semibold tracking-tight text-[var(--app-text)]">
-                Личные финансы
+              </p>
+              <h1 className="mt-1 text-3xl font-semibold tracking-[-0.035em] text-[var(--app-text)]">
+                Финансы
               </h1>
-              <p className="mt-1 max-w-2xl text-sm leading-6 text-[var(--app-muted)]">
-                Счета, доходы, расходы, переводы, лимиты и отчёты — локально, без внешних сервисов.
+              <p className="mt-1 max-w-xl text-sm leading-6 text-[var(--app-muted)]">
+                Управляйте счетами, операциями и бюджетом в одном месте.
               </p>
             </div>
-            <FinanceButton size="sm" onClick={() => void load()} disabled={isLoading}>
-              {isLoading ? (
-                <LoaderCircle className="size-4 animate-spin" />
-              ) : (
-                <RefreshCw className="size-4" />
-              )}
-              Обновить
-            </FinanceButton>
+
+            {activePage === 'home' && (
+              <div className="grid w-[27rem] max-w-full shrink-0 grid-cols-3 gap-2 max-[820px]:w-full max-[560px]:grid-cols-1">
+                <FinanceButton tone="positive" onClick={() => openQuick('income')}>
+                  <ArrowDownLeft aria-hidden="true" className="size-4" />
+                  Доход
+                </FinanceButton>
+                <FinanceButton tone="danger" onClick={() => openQuick('expense')}>
+                  <ArrowUpRight aria-hidden="true" className="size-4" />
+                  Расход
+                </FinanceButton>
+                <FinanceButton tone="primary" onClick={() => openQuick('transfer')}>
+                  <ArrowRightLeft aria-hidden="true" className="size-4" />
+                  Перевод
+                </FinanceButton>
+              </div>
+            )}
           </div>
+
           <nav
-            className="mt-5 flex gap-1 overflow-x-auto rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-1.5"
+            data-finance-navigation
+            className="flex gap-1 overflow-x-auto rounded-2xl border border-[var(--app-border)] p-1.5"
             aria-label="Навигация финансового модуля"
           >
             {tabs.map(({ id, label, icon: Icon }) => (
@@ -175,13 +186,13 @@ export function FinancePage({
                 key={id}
                 type="button"
                 aria-current={activePage === id ? 'page' : undefined}
-                className={`inline-flex h-10 shrink-0 items-center gap-2 rounded-xl px-4 text-sm font-medium transition-colors ${activePage === id ? 'bg-violet-500 text-white shadow-sm' : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'}`}
+                className={`inline-flex h-10 shrink-0 items-center gap-2 rounded-xl px-4 text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-violet-500/35 ${activePage === id ? 'bg-violet-500 text-white shadow-sm' : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'}`}
                 onClick={() => {
                   setActivePage(id)
                   if (id !== 'accounts') setSelectedAccountId(null)
                 }}
               >
-                <Icon className="size-4" />
+                <Icon aria-hidden="true" className="size-4" />
                 {label}
               </button>
             ))}
@@ -210,7 +221,6 @@ export function FinancePage({
         {activePage === 'home' && (
           <FinanceHome
             dashboard={dashboard}
-            onCreateTransaction={openQuick}
             onOpenPage={(page) => setActivePage(page)}
             onOpenAccount={(id) => {
               setSelectedAccountId(id)
