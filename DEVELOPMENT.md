@@ -424,3 +424,26 @@ git status --short
 ```bash
 npm run dev
 ```
+
+## Проверка финансового модуля
+
+Finance repository tests используют временную SQLite-базу и штатные Drizzle-миграции. При изменении finance schema сначала сгенерируй миграцию, затем выполни полный цикл:
+
+```bash
+npm run db:generate
+npm run format
+npm run lint
+npm run typecheck
+npm run test:run
+npm run db:check
+npm run build:bundle
+npm run check
+git diff --check
+npm audit --omit=dev --audit-level=high
+```
+
+Для точечной проверки:
+
+```bash
+npm run test:run -- src/shared/finance-money.test.ts src/shared/validation/finance.test.ts src/main/repositories/finance.repository.test.ts src/main/ipc/register-finance-ipc.test.ts src/renderer/src/modules/finance/FinancePage.test.tsx
+```

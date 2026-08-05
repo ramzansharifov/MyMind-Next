@@ -29,7 +29,7 @@ afterEach(() => {
 })
 
 describe('preload API contract', () => {
-  it('exposes the complete boards and notes contracts in the renderer', async () => {
+  it('exposes the complete boards, notes and finance contracts in the renderer', async () => {
     Object.defineProperty(process, 'contextIsolated', {
       configurable: true,
       value: true
@@ -70,10 +70,67 @@ describe('preload API contract', () => {
       'openAsset'
     ])
 
+    expect(Object.keys(api.finance)).toEqual([
+      'getSettings',
+      'setBaseCurrency',
+      'listExchangeRates',
+      'upsertExchangeRate',
+      'deleteExchangeRate',
+      'listAccounts',
+      'getAccount',
+      'createAccount',
+      'updateAccount',
+      'deleteAccount',
+      'clearAccountHistory',
+      'listTransactions',
+      'getTransaction',
+      'createTransaction',
+      'updateTransaction',
+      'deleteTransaction',
+      'listTags',
+      'getTag',
+      'createTag',
+      'updateTag',
+      'deleteTag',
+      'listLimits',
+      'createLimit',
+      'updateLimit',
+      'setLimitState',
+      'deleteLimit',
+      'previewExpenseImpact',
+      'listTemplates',
+      'createTemplate',
+      'updateTemplate',
+      'setTemplateState',
+      'deleteTemplate',
+      'useTemplate',
+      'snoozeTemplate',
+      'skipTemplate',
+      'getDashboard',
+      'getReport'
+    ])
+
     await api.boards.listNodes()
     expect(electronMocks.invoke).toHaveBeenCalledWith('boards:list-nodes')
 
     await api.notes.listOverview()
     expect(electronMocks.invoke).toHaveBeenCalledWith('notes:list-overview')
+
+    await api.finance.createAccount({
+      name: 'Карта',
+      type: 'card',
+      currencyCode: 'TJS',
+      initialBalanceMinor: 0,
+      icon: 'credit-card',
+      color: '#8b5cf6'
+    })
+    expect(electronMocks.invoke).toHaveBeenCalledWith('finance:create-account', {
+      name: 'Карта',
+      type: 'card',
+      currencyCode: 'TJS',
+      initialBalanceMinor: 0,
+      icon: 'credit-card',
+      color: '#8b5cf6'
+    })
   })
 })
