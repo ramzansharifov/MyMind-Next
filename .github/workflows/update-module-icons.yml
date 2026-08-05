@@ -1,0 +1,107 @@
+name: Update module icons
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  update-icons:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/notes-linked-boards
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Update icons directly in source files
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+
+          def replace_once(path: str, old: str, new: str) -> None:
+              file_path = Path(path)
+              source = file_path.read_text(encoding='utf-8')
+              count = source.count(old)
+              if count != 1:
+                  raise RuntimeError(f'{path}: expected one match, found {count}')
+              file_path.write_text(source.replace(old, new, 1), encoding='utf-8')
+
+          replace_once(
+              'src/renderer/src/app/module-registry.ts',
+              "import { BookOpen, Presentation, Settings, StickyNote, type LucideIcon } from 'lucide-react'",
+              "import { GraduationCap, Notebook, Presentation, Settings, type LucideIcon } from 'lucide-react'"
+          )
+          replace_once(
+              'src/renderer/src/app/module-registry.ts',
+              '    icon: BookOpen,',
+              '    icon: GraduationCap,'
+          )
+          replace_once(
+              'src/renderer/src/app/module-registry.ts',
+              '    icon: StickyNote,',
+              '    icon: Notebook,'
+          )
+
+          replace_once(
+              'src/renderer/src/app/module-registry.test.ts',
+              "import { describe, expect, it } from 'vitest'",
+              "import { GraduationCap, Notebook } from 'lucide-react'\nimport { describe, expect, it } from 'vitest'"
+          )
+          replace_once(
+              'src/renderer/src/app/module-registry.test.ts',
+              "    expect(getAppModule('settings')).toBe(appModuleRegistry.settings)\n",
+              "    expect(getAppModule('settings')).toBe(appModuleRegistry.settings)\n    expect(appModuleRegistry.study.icon).toBe(GraduationCap)\n    expect(appModuleRegistry.notes.icon).toBe(Notebook)\n"
+          )
+
+          replace_once(
+              'src/main/repositories/boards.repository.ts',
+              "  icon: 'folder' | 'notes'",
+              "  icon: 'graduation' | 'notes'"
+          )
+          replace_once(
+              'src/main/repositories/boards.repository.ts',
+              "const STUDY_BOARD_SYSTEM_ROOT: BoardSystemRootDefinition = {\n  id: BOARD_SYSTEM_ROOT_ID,\n  title: 'Обучение',\n  icon: 'folder',\n  position: 0\n}",
+              "const STUDY_BOARD_SYSTEM_ROOT: BoardSystemRootDefinition = {\n  id: BOARD_SYSTEM_ROOT_ID,\n  title: 'Обучение',\n  icon: 'graduation',\n  position: 0\n}"
+          )
+
+          replace_once(
+              'src/main/repositories/boards.repository.test.ts',
+              "import { BOARD_SYSTEM_ROOT_ID } from '../../shared/contracts/boards'",
+              "import {\n  BOARD_NOTES_SYSTEM_ROOT_ID,\n  BOARD_SYSTEM_ROOT_ID\n} from '../../shared/contracts/boards'"
+          )
+          replace_once(
+              'src/main/repositories/boards.repository.test.ts',
+              "        expect.objectContaining({ id: 'boards-study-root', type: 'folder', title: 'Обучение' }),\n        expect.objectContaining({ id: created.id, type: 'board', title: 'Repository board' })",
+              "        expect.objectContaining({\n          id: BOARD_SYSTEM_ROOT_ID,\n          type: 'folder',\n          title: 'Обучение',\n          icon: 'graduation'\n        }),\n        expect.objectContaining({\n          id: BOARD_NOTES_SYSTEM_ROOT_ID,\n          type: 'folder',\n          title: 'Заметки',\n          icon: 'notes'\n        }),\n        expect.objectContaining({ id: created.id, type: 'board', title: 'Repository board' })"
+          )
+          PY
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Format source
+        run: npm run format
+
+      - name: Run complete verification
+        run: npm run check
+
+      - name: Commit verified source changes
+        shell: bash
+        run: |
+          rm .github/workflows/update-module-icons.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Обновить иконки обучения и заметок"
+          git push origin HEAD:agent/notes-linked-boards
