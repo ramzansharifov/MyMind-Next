@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { AlertCircle, LoaderCircle, RefreshCw } from 'lucide-react'
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 
@@ -61,7 +62,11 @@ export function FinanceButton({
   )
 }
 
-export function FinanceLoadingState({ label = 'Загрузка финансов…' }: { label?: string }) {
+export function FinanceLoadingState({
+  label = 'Загрузка финансов…'
+}: {
+  label?: string
+}): React.JSX.Element {
   return (
     <div className="flex min-h-48 items-center justify-center rounded-2xl border border-dashed border-[var(--app-border)] text-sm text-[var(--app-muted)]">
       <LoaderCircle aria-hidden="true" className="mr-2 size-5 animate-spin text-violet-300" />
