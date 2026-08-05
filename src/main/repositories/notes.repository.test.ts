@@ -3,11 +3,13 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
+import { BOARD_NOTES_SYSTEM_ROOT_ID } from '../../shared/contracts/boards'
 import type { NoteDocument } from '../../shared/contracts/notes'
 import { closeDatabase, getDatabase, initializeDatabaseForTesting } from '../database/client'
 import { runDatabaseMigrationsFrom } from '../database/migrate'
 import { noteGroups, notes } from '../database/schema'
 import { setStudyAssetsRootForTesting } from '../services/study-assets'
+import { deleteBoardNode, ensureNoteBoard, listBoardNodes } from './boards.repository'
 import {
   createNote,
   createNoteGroup,
@@ -88,6 +90,44 @@ describe('notes repository', () => {
     expect(saved.document).toEqual(document)
     expect(saved.plainText).toContain('Содержимое заметки')
     expect(getNote(note.id).document).toEqual(document)
+  })
+
+  it('creates note boards in the protected Notes folder and keeps both sides synchronized', async () => {
+    const note = createNote({ groupId: null, title: 'Идеи' })
+    const boardDocument: NoteDocument = {
+      version: 1,
+      blocks: [{ id: 'board-one', type: 'board' }]
+    }
+
+    await saveNote({ id: note.id, document: boardDocument })
+    const board = ensureNoteBoard({ noteId: note.id, blockId: 'board-one' })
+
+    expect(board).toMatchObject({
+      parentId: BOARD_NOTES_SYSTEM_ROOT_ID,
+      sourceNoteId: note.id,
+      sourceBlockId: 'board-one',
+      title: 'Идеи — доска'
+    })
+    expect(listBoardNodes()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: BOARD_NOTES_SYSTEM_ROOT_ID,
+          title: 'Заметки',
+          isSystem: true
+        })
+      ])
+    )
+
+    await saveNote({
+      id: note.id,
+      document: { version: 1, blocks: [{ id: 'text-one', type: 'text', text: 'Готово' }] }
+    })
+    expect(listBoardNodes().some((node) => node.id === board.id)).toBe(false)
+
+    await saveNote({ id: note.id, document: boardDocument })
+    const recreated = ensureNoteBoard({ noteId: note.id, blockId: 'board-one' })
+    await expect(deleteBoardNode(recreated.id)).resolves.toBe(true)
+    expect(getNote(note.id).document.blocks).toEqual([])
   })
 
   it('validates and removes local assets with the note', async () => {

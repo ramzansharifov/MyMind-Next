@@ -9,6 +9,7 @@ import {
 
 import type { BoardNodeType, BoardSnapshot } from '../../../shared/contracts/boards'
 import type { StudyFolderIconName } from '../../../shared/contracts/study'
+import { notes } from './notes'
 import { studyNodes } from './study'
 
 export const boardNodes = sqliteTable(
@@ -30,6 +31,9 @@ export const boardNodes = sqliteTable(
     sourceMaterialId: text('source_material_id').references(() => studyNodes.id, {
       onDelete: 'cascade'
     }),
+    sourceNoteId: text('source_note_id').references(() => notes.id, {
+      onDelete: 'cascade'
+    }),
     sourceBlockId: text('source_block_id'),
     createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
     updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull()
@@ -40,7 +44,8 @@ export const boardNodes = sqliteTable(
     uniqueIndex('board_nodes_source_material_block_unique').on(
       table.sourceMaterialId,
       table.sourceBlockId
-    )
+    ),
+    uniqueIndex('board_nodes_source_note_block_unique').on(table.sourceNoteId, table.sourceBlockId)
   ]
 )
 

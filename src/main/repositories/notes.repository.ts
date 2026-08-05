@@ -26,6 +26,7 @@ import {
   validateStudyDocumentAssets
 } from '../services/study-assets'
 import { studyMaterialCoordinator } from '../services/study-material-coordinator'
+import { cleanupBoardsForNoteDocument } from './boards.repository'
 
 function createEmptyNoteDocument(): NoteDocument {
   return {
@@ -310,6 +311,8 @@ async function saveNoteNow(input: SaveNoteInput): Promise<NoteRecord> {
     })
     .where(eq(notes.id, input.id))
     .run()
+
+  cleanupBoardsForNoteDocument(input.id, saved.document)
 
   await cleanupStudyAssetsForDocument(input.id, saved.document).catch((reason: unknown) => {
     console.error('Failed to clean up unreferenced note assets', reason)

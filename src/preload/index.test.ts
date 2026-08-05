@@ -51,7 +51,8 @@ describe('preload API contract', () => {
       'moveNode',
       'getDocument',
       'saveDocument',
-      'ensureStudyBoard'
+      'ensureStudyBoard',
+      'ensureNoteBoard'
     ])
     expect(Object.keys(api.notes)).toEqual([
       'listOverview',

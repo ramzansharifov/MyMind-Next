@@ -1,4 +1,5 @@
 import {
+  BOARD_NOTES_SYSTEM_ROOT_ID,
   BOARD_SYSTEM_ROOT_ID,
   type BoardNode,
   type MoveBoardNodeInput
@@ -172,8 +173,10 @@ function canMoveIntoParent(
 function isStudyManagedAnchor(node: BoardNode): boolean {
   return Boolean(
     node.id === BOARD_SYSTEM_ROOT_ID ||
+    node.id === BOARD_NOTES_SYSTEM_ROOT_ID ||
     node.sourceStudyNodeId ||
     node.sourceMaterialId ||
+    node.sourceNoteId ||
     node.sourceBlockId
   )
 }
@@ -188,6 +191,8 @@ function compareBoardNodes(first: BoardNode, second: BoardNode): number {
   if (first.parentId === null && second.parentId === null) {
     if (first.id === BOARD_SYSTEM_ROOT_ID) return -1
     if (second.id === BOARD_SYSTEM_ROOT_ID) return 1
+    if (first.id === BOARD_NOTES_SYSTEM_ROOT_ID) return -1
+    if (second.id === BOARD_NOTES_SYSTEM_ROOT_ID) return 1
   }
 
   return first.position - second.position || first.title.localeCompare(second.title, 'ru')

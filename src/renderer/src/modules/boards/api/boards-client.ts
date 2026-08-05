@@ -1,10 +1,12 @@
 import {
+  BOARD_NOTES_SYSTEM_ROOT_ID,
   BOARD_SYSTEM_ROOT_ID,
   type BoardApi,
   type BoardDocument,
   type BoardNode,
   type BoardSnapshot,
   type CreateBoardNodeInput,
+  type EnsureNoteBoardInput,
   type EnsureStudyBoardInput,
   type MoveBoardNodeInput
 } from '../../../../../shared/contracts/boards'
@@ -56,9 +58,11 @@ function isManagedBoardFolder(nodes: BoardNode[], node: BoardNode | undefined): 
   while (current && !visited.has(current.id)) {
     if (
       current.id === BOARD_SYSTEM_ROOT_ID ||
+      current.id === BOARD_NOTES_SYSTEM_ROOT_ID ||
       current.isSystem ||
       current.sourceStudyNodeId ||
       current.sourceMaterialId ||
+      current.sourceNoteId ||
       current.sourceBlockId
     ) {
       return true
@@ -159,5 +163,9 @@ export const boardsClient = {
 
   async ensureStudyBoard(input: EnsureStudyBoardInput): Promise<BoardNode> {
     return getBoardApi().ensureStudyBoard(input)
+  },
+
+  async ensureNoteBoard(input: EnsureNoteBoardInput): Promise<BoardNode> {
+    return getBoardApi().ensureNoteBoard(input)
   }
 }

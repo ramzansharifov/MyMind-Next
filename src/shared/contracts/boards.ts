@@ -3,6 +3,12 @@ import type { StudyFolderIconName } from './study'
 export type { StudyBoardBlock, StudyFolderIconName } from './study'
 
 export const BOARD_SYSTEM_ROOT_ID = 'boards-study-root'
+export const BOARD_NOTES_SYSTEM_ROOT_ID = 'boards-notes-root'
+export const BOARD_SYSTEM_ROOT_IDS = [BOARD_SYSTEM_ROOT_ID, BOARD_NOTES_SYSTEM_ROOT_ID] as const
+
+export function isBoardSystemRootId(id: string): boolean {
+  return BOARD_SYSTEM_ROOT_IDS.some((rootId) => rootId === id)
+}
 
 export const BOARD_DOCUMENT_LIMITS = {
   maxTitleLength: 240,
@@ -22,6 +28,7 @@ export interface BoardNode {
   isSystem: boolean
   sourceStudyNodeId?: string
   sourceMaterialId?: string
+  sourceNoteId?: string
   sourceBlockId?: string
   createdAt: number
   updatedAt: number
@@ -74,6 +81,11 @@ export interface EnsureStudyBoardInput {
   blockId: string
 }
 
+export interface EnsureNoteBoardInput {
+  noteId: string
+  blockId: string
+}
+
 export const BOARD_IPC_CHANNELS = {
   listNodes: 'boards:list-nodes',
   createNode: 'boards:create-node',
@@ -84,7 +96,8 @@ export const BOARD_IPC_CHANNELS = {
   moveNode: 'boards:move-node',
   getDocument: 'boards:get-document',
   saveDocument: 'boards:save-document',
-  ensureStudyBoard: 'boards:ensure-study-board'
+  ensureStudyBoard: 'boards:ensure-study-board',
+  ensureNoteBoard: 'boards:ensure-note-board'
 } as const
 
 export interface BoardApi {
@@ -98,4 +111,5 @@ export interface BoardApi {
   getDocument(nodeId: string): Promise<BoardDocument>
   saveDocument(input: SaveBoardDocumentInput): Promise<BoardDocument>
   ensureStudyBoard(input: EnsureStudyBoardInput): Promise<BoardNode>
+  ensureNoteBoard(input: EnsureNoteBoardInput): Promise<BoardNode>
 }

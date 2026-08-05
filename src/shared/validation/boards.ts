@@ -1,10 +1,6 @@
 import { z } from 'zod'
 
-import {
-  BOARD_DOCUMENT_LIMITS,
-  BOARD_SYSTEM_ROOT_ID,
-  type BoardSnapshot
-} from '../contracts/boards'
+import { BOARD_DOCUMENT_LIMITS, isBoardSystemRootId, type BoardSnapshot } from '../contracts/boards'
 import { STUDY_SAFE_ID_PATTERN } from '../contracts/study'
 import { studyFolderIconSchema } from './study'
 
@@ -48,6 +44,7 @@ export const boardNodeSchema = z.object({
   isSystem: z.boolean(),
   sourceStudyNodeId: boardSafeIdSchema.optional(),
   sourceMaterialId: boardSafeIdSchema.optional(),
+  sourceNoteId: boardSafeIdSchema.optional(),
   sourceBlockId: boardSafeIdSchema.optional(),
   createdAt: z.number().int(),
   updatedAt: z.number().int()
@@ -69,17 +66,14 @@ export const createBoardNodeInputSchema = z.object({
 
 export const renameBoardNodeInputSchema = z.object({
   id: boardSafeIdSchema.refine(
-    (id) => id !== BOARD_SYSTEM_ROOT_ID,
+    (id) => !isBoardSystemRootId(id),
     'Системную папку нельзя переименовать'
   ),
   title: z.string().trim().min(1).max(BOARD_DOCUMENT_LIMITS.maxTitleLength)
 })
 
 export const updateBoardFolderIconInputSchema = z.object({
-  id: boardSafeIdSchema.refine(
-    (id) => id !== BOARD_SYSTEM_ROOT_ID,
-    'Системную папку нельзя изменять'
-  ),
+  id: boardSafeIdSchema.refine((id) => !isBoardSystemRootId(id), 'Системную папку нельзя изменять'),
   icon: studyFolderIconSchema
 })
 
@@ -90,7 +84,7 @@ export const updateBoardNodeExpansionInputSchema = z.object({
 
 export const moveBoardNodeInputSchema = z.object({
   id: boardSafeIdSchema.refine(
-    (id) => id !== BOARD_SYSTEM_ROOT_ID,
+    (id) => !isBoardSystemRootId(id),
     'Системную папку нельзя перемещать'
   ),
   parentId: boardSafeIdSchema.nullable(),
@@ -104,5 +98,10 @@ export const saveBoardDocumentInputSchema = z.object({
 
 export const ensureStudyBoardInputSchema = z.object({
   materialId: boardSafeIdSchema,
+  blockId: boardSafeIdSchema
+})
+
+export const ensureNoteBoardInputSchema = z.object({
+  noteId: boardSafeIdSchema,
   blockId: boardSafeIdSchema
 })

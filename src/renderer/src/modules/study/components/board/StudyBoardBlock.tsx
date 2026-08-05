@@ -9,6 +9,7 @@ interface StudyBoardBlockProps {
   materialId: string
   block: Extract<StudyBlock, { type: 'board' }>
   mode: 'edit' | 'read'
+  source?: 'study' | 'notes'
   focusMode?: boolean
   onChange?: (block: StudyBlock) => void
 }
@@ -17,6 +18,7 @@ export function StudyBoardBlock({
   materialId,
   block,
   mode,
+  source = 'study',
   focusMode = false,
   onChange
 }: StudyBoardBlockProps): React.JSX.Element {
@@ -28,10 +30,10 @@ export function StudyBoardBlock({
     setError(null)
 
     try {
-      const board = await boardsClient.ensureStudyBoard({
-        materialId,
-        blockId: block.id
-      })
+      const board =
+        source === 'notes'
+          ? await boardsClient.ensureNoteBoard({ noteId: materialId, blockId: block.id })
+          : await boardsClient.ensureStudyBoard({ materialId, blockId: block.id })
 
       if (board.id !== block.boardId || board.title !== block.title) {
         onChange?.({
@@ -73,12 +75,14 @@ export function StudyBoardBlock({
             Доска
           </p>
           <h3 className="mt-1 truncate text-lg font-semibold text-[var(--app-text)]">
-            {block.title ?? 'Доска материала'}
+            {block.title ?? (source === 'notes' ? 'Доска заметки' : 'Доска материала')}
           </h3>
           <p className="mt-1 text-xs leading-5 text-[var(--app-muted)]">
             {block.boardId
               ? 'Доска связана с этим блоком и сохраняется в модуле «Доски».'
-              : 'При первом открытии будет создана отдельная доска в защищённой папке «Обучение».'}
+              : `При первом открытии будет создана отдельная доска в защищённой папке «${
+                  source === 'notes' ? 'Заметки' : 'Обучение'
+                }».`}
           </p>
           {error && (
             <p role="alert" className="mt-2 text-xs text-red-300">

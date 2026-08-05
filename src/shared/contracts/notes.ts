@@ -13,7 +13,8 @@ export const NOTE_BLOCK_TYPES = [
   'audio',
   'video',
   'file',
-  'divider'
+  'divider',
+  'board'
 ] as const
 
 export type NoteBlockType = (typeof NOTE_BLOCK_TYPES)[number]

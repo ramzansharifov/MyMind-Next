@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { BOARD_SYSTEM_ROOT_ID, type BoardNode } from '../../../../../shared/contracts/boards'
+import {
+  BOARD_NOTES_SYSTEM_ROOT_ID,
+  BOARD_SYSTEM_ROOT_ID,
+  type BoardNode
+} from '../../../../../shared/contracts/boards'
 import { createBoardMoveInput, getStudyManagedBoardNodeIds } from './board-dnd'
 
 const nodes: BoardNode[] = [
@@ -28,6 +32,23 @@ const nodes: BoardNode[] = [
     position: 0,
     sourceMaterialId: 'material-1',
     sourceBlockId: 'block-1'
+  }),
+  boardNode({
+    id: BOARD_NOTES_SYSTEM_ROOT_ID,
+    type: 'folder',
+    parentId: null,
+    title: 'Заметки',
+    position: 1,
+    isSystem: true
+  }),
+  boardNode({
+    id: 'note-board',
+    type: 'board',
+    parentId: BOARD_NOTES_SYSTEM_ROOT_ID,
+    title: 'Доска заметки',
+    position: 0,
+    sourceNoteId: 'note-1',
+    sourceBlockId: 'note-block-1'
   }),
   boardNode({
     id: 'folder-a',
@@ -72,17 +93,19 @@ describe('board drag and drop rules', () => {
     expect(createBoardMoveInput(nodes, 'board-b', 'folder-a', 'before')).toEqual({
       id: 'board-b',
       parentId: null,
-      position: 1
+      position: 2
     })
   })
 
   it('rejects moving a board or folder managed by study', () => {
     expect(createBoardMoveInput(nodes, 'study-board', null, 'root')).toBeNull()
     expect(createBoardMoveInput(nodes, 'study-folder', null, 'root')).toBeNull()
+    expect(createBoardMoveInput(nodes, 'note-board', null, 'root')).toBeNull()
   })
 
   it('rejects dropping ordinary nodes into or around the study tree', () => {
     expect(createBoardMoveInput(nodes, 'board-b', BOARD_SYSTEM_ROOT_ID, 'inside')).toBeNull()
+    expect(createBoardMoveInput(nodes, 'board-b', BOARD_NOTES_SYSTEM_ROOT_ID, 'inside')).toBeNull()
     expect(createBoardMoveInput(nodes, 'board-b', 'study-folder', 'inside')).toBeNull()
     expect(createBoardMoveInput(nodes, 'board-b', 'study-board', 'before')).toBeNull()
   })

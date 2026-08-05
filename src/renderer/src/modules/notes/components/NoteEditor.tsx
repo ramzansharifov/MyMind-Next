@@ -261,6 +261,7 @@ export function NoteEditor({ noteId, onBack, onNoteUpdated }: NoteEditorProps): 
             materialId={note.id}
             document={note.document as StudyDocument}
             mode={mode}
+            boardSource="notes"
             allowedBlockTypes={NOTE_BLOCK_TYPES}
             documentLabel="заметки"
             onChange={(document) => updateDocument(document as NoteDocument)}
