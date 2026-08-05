@@ -58,19 +58,62 @@ export function FinanceAccounts({
       (type === 'all' || account.type === type)
   )
   const selected = accounts.find((account) => account.id === selectedAccountId) ?? null
+  const accountDialogs = (
+    <>
+      <FinanceAccountDialog
+        open={accountDialogOpen}
+        account={editAccount}
+        onOpenChange={(open) => {
+          setAccountDialogOpen(open)
+          if (!open) setEditAccount(null)
+        }}
+        onSaved={async () => onChanged()}
+      />
+      <FinanceClearAccountDialog
+        open={clearAccount !== null}
+        account={clearAccount}
+        onOpenChange={(open) => !open && setClearAccount(null)}
+        onCleared={async () => {
+          setClearAccount(null)
+          await onChanged()
+        }}
+      />
+      <FinanceConfirmDialog
+        open={deleteAccount !== null}
+        title="Удалить счёт?"
+        subject={deleteAccount?.name}
+        description="Удалить можно только пустой счёт. Финансовые операции никогда не удаляются каскадно вместе со счётом."
+        disabledReason={
+          deleteAccount && deleteAccount.transactionCount > 0
+            ? 'Чтобы удалить счёт, сначала очистите его историю.'
+            : null
+        }
+        onOpenChange={(open) => !open && setDeleteAccount(null)}
+        onConfirm={async () => {
+          if (!deleteAccount) return
+          await financeClient.deleteAccount({ id: deleteAccount.id })
+          setDeleteAccount(null)
+          await onChanged()
+        }}
+      />
+    </>
+  )
 
   if (selected)
     return (
-      <AccountDetail
-        account={selected}
-        onBack={() => onSelectedAccountChange(null)}
-        onEdit={() => {
-          setEditAccount(selected)
-          setAccountDialogOpen(true)
-        }}
-        onDelete={() => setDeleteAccount(selected)}
-        onClear={() => setClearAccount(selected)}
-      />
+      <>
+        <AccountDetail
+          account={selected}
+          onBack={() => onSelectedAccountChange(null)}
+          onEdit={() => {
+            setEditAccount(selected)
+            setAccountDialogOpen(true)
+          }}
+          onDelete={() => setDeleteAccount(selected)}
+          onClear={() => setClearAccount(selected)}
+        />
+        {accountDialogs}
+      </>
     )
 
   return (
@@ -229,15 +272,6 @@ export function FinanceAccounts({
         </div>
       )}
 
-      <FinanceAccountDialog
-        open={accountDialogOpen}
-        account={editAccount}
-        onOpenChange={(open) => {
-          setAccountDialogOpen(open)
-          if (!open) setEditAccount(null)
-        }}
-        onSaved={async () => onChanged()}
-      />
       <FinanceCurrencyDialog
         open={currencyDialogOpen}
         settings={settings}
@@ -245,33 +279,7 @@ export function FinanceAccounts({
         onOpenChange={setCurrencyDialogOpen}
         onChanged={onChanged}
       />
-      <FinanceClearAccountDialog
-        open={clearAccount !== null}
-        account={clearAccount}
-        onOpenChange={(open) => !open && setClearAccount(null)}
-        onCleared={async () => {
-          setClearAccount(null)
-          await onChanged()
-        }}
-      />
-      <FinanceConfirmDialog
-        open={deleteAccount !== null}
-        title="Удалить счёт?"
-        subject={deleteAccount?.name}
-        description="Удалить можно только пустой счёт. Финансовые операции никогда не удаляются каскадно вместе со счётом."
-        disabledReason={
-          deleteAccount && deleteAccount.transactionCount > 0
-            ? 'Чтобы удалить счёт, сначала очистите его историю.'
-            : null
-        }
-        onOpenChange={(open) => !open && setDeleteAccount(null)}
-        onConfirm={async () => {
-          if (!deleteAccount) return
-          await financeClient.deleteAccount({ id: deleteAccount.id })
-          setDeleteAccount(null)
-          await onChanged()
-        }}
-      />
+      {accountDialogs}
     </div>
   )
 }
@@ -308,7 +316,13 @@ function AccountDetail({
     }
   }, [account.id])
   useEffect(() => {
-    void load()
+    let cancelled = false
+    queueMicrotask(() => {
+      if (!cancelled) void load()
+    })
+    return () => {
+      cancelled = true
+    }
   }, [load])
   const transactions = page?.items ?? []
   const income = transactions
