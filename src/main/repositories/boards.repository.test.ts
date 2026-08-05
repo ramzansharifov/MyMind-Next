@@ -2,7 +2,7 @@ import { readFile, readdir } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { BOARD_SYSTEM_ROOT_ID } from '../../shared/contracts/boards'
+import { BOARD_NOTES_SYSTEM_ROOT_ID, BOARD_SYSTEM_ROOT_ID } from '../../shared/contracts/boards'
 import { closeDatabase, getSqlite, initializeDatabaseForTesting } from '../database/client'
 import {
   createBoardNode,
@@ -118,7 +118,18 @@ describe('boards repository documents', () => {
 
     expect(listBoardNodes()).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ id: 'boards-study-root', type: 'folder', title: 'Обучение' }),
+        expect.objectContaining({
+          id: BOARD_SYSTEM_ROOT_ID,
+          type: 'folder',
+          title: 'Обучение',
+          icon: 'graduation'
+        }),
+        expect.objectContaining({
+          id: BOARD_NOTES_SYSTEM_ROOT_ID,
+          type: 'folder',
+          title: 'Заметки',
+          icon: 'notes'
+        }),
         expect.objectContaining({ id: created.id, type: 'board', title: 'Repository board' })
       ])
     )

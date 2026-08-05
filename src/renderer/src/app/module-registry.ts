@@ -1,5 +1,5 @@
 import { lazy, type ComponentType } from 'react'
-import { BookOpen, Presentation, Settings, StickyNote, type LucideIcon } from 'lucide-react'
+import { GraduationCap, Notebook, Presentation, Settings, type LucideIcon } from 'lucide-react'
 
 export type AppNavigationGroup = 'primary' | 'utility'
 
@@ -47,7 +47,7 @@ export const appModuleRegistry = defineAppModules({
     id: 'study',
     label: 'Обучение',
     loadingLabel: 'Загрузка обучения',
-    icon: BookOpen,
+    icon: GraduationCap,
     navigationGroup: 'primary',
     component: StudyModule
   },
@@ -63,7 +63,7 @@ export const appModuleRegistry = defineAppModules({
     id: 'notes',
     label: 'Заметки',
     loadingLabel: 'Загрузка заметок',
-    icon: StickyNote,
+    icon: Notebook,
     navigationGroup: 'primary',
     component: NotesModule
   },

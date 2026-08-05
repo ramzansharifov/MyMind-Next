@@ -73,14 +73,14 @@ function assertBoardFolder(parentId: string | null): void {
 interface BoardSystemRootDefinition {
   id: string
   title: string
-  icon: 'folder' | 'notes'
+  icon: 'graduation' | 'notes'
   position: number
 }
 
 const STUDY_BOARD_SYSTEM_ROOT: BoardSystemRootDefinition = {
   id: BOARD_SYSTEM_ROOT_ID,
   title: 'Обучение',
-  icon: 'folder',
+  icon: 'graduation',
   position: 0
 }
 
