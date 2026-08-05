@@ -30,13 +30,14 @@ export function FinanceClearAccountDialog({
   if (!account) return <></>
 
   async function clear(): Promise<void> {
-    if (isClearing || confirmation !== 'ОЧИСТИТЬ') return
+    const currentAccount = account
+    if (!currentAccount || isClearing || confirmation !== 'ОЧИСТИТЬ') return
     setIsClearing(true)
     setError(null)
     try {
       const result = await financeClient.clearAccountHistory({
-        accountId: account.id,
-        expectedBalanceMinor: account.balanceMinor,
+        accountId: currentAccount.id,
+        expectedBalanceMinor: currentAccount.balanceMinor,
         confirmation
       })
       await onCleared(result)
