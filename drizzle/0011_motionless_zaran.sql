@@ -1,0 +1,2 @@
+ALTER TABLE `board_nodes` ADD `source_note_id` text REFERENCES notes(id);--> statement-breakpoint
+CREATE UNIQUE INDEX `board_nodes_source_note_block_unique` ON `board_nodes` (`source_note_id`,`source_block_id`);

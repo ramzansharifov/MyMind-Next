@@ -24,7 +24,17 @@ import {
   Plus,
   Trash2
 } from 'lucide-react'
-import { Fragment, lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
+import {
+  createContext,
+  Fragment,
+  lazy,
+  Suspense,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode
+} from 'react'
 
 import type {
   StudyBlock,
@@ -114,6 +124,7 @@ interface StudyBlockEditorProps {
   document: StudyDocument
   mode: 'edit' | 'read'
   focusMode?: boolean
+  boardSource?: 'study' | 'notes'
   allowedBlockTypes?: readonly StudyBlockType[]
   documentLabel?: string
   onChange: (document: StudyDocument) => void
@@ -130,6 +141,7 @@ interface StudyBlockDropData {
 }
 
 const STUDY_BLOCK_DROP_PREFIX = 'study-block-drop'
+const StudyBoardSourceContext = createContext<'study' | 'notes'>('study')
 const allStudyBlockTypes = studyBlockDefinitions.map(({ type }) => type)
 
 interface StudyBlockMenuGroup {
@@ -156,7 +168,15 @@ const STUDY_BLOCK_MENU_GROUPS = [
   }
 ] as const satisfies readonly StudyBlockMenuGroup[]
 
-export function StudyBlockEditor({
+export function StudyBlockEditor(props: StudyBlockEditorProps): React.JSX.Element {
+  return (
+    <StudyBoardSourceContext.Provider value={props.boardSource ?? 'study'}>
+      <StudyBlockEditorContent {...props} />
+    </StudyBoardSourceContext.Provider>
+  )
+}
+
+function StudyBlockEditorContent({
   materialId,
   document,
   mode,
@@ -1034,11 +1054,21 @@ function EditDividerBlock({ block }: EditableBlockProps): React.JSX.Element {
 }
 
 function EditBoardBlock({ materialId, block, onChange }: EditableBlockProps): React.JSX.Element {
+  const source = useContext(StudyBoardSourceContext)
+
   if (block.type !== 'board') {
     throw new Error('Board editor received an incompatible block')
   }
 
-  return <StudyBoardBlock materialId={materialId} block={block} mode="edit" onChange={onChange} />
+  return (
+    <StudyBoardBlock
+      materialId={materialId}
+      block={block}
+      mode="edit"
+      source={source}
+      onChange={onChange}
+    />
+  )
 }
 
 type StudyHeadingBlock = Extract<StudyBlock, { type: 'heading' }>
@@ -1480,11 +1510,21 @@ function ReadBoardBlock({
   block,
   focusMode
 }: StudyBlockReaderProps): React.JSX.Element {
+  const source = useContext(StudyBoardSourceContext)
+
   if (block.type !== 'board') {
     throw new Error('Board reader received an incompatible block')
   }
 
-  return <StudyBoardBlock materialId={materialId} block={block} mode="read" focusMode={focusMode} />
+  return (
+    <StudyBoardBlock
+      materialId={materialId}
+      block={block}
+      mode="read"
+      source={source}
+      focusMode={focusMode}
+    />
+  )
 }
 
 function StudyBlockTypeIcon({

@@ -5,6 +5,7 @@ import { STUDY_DOCUMENT_LIMITS, STUDY_SAFE_ID_PATTERN } from '../contracts/study
 import {
   openStudyAssetInputSchema,
   studyAudioBlockSchema,
+  studyBoardBlockSchema,
   studyDividerBlockSchema,
   studyFileBlockSchema,
   studyFolderIconSchema,
@@ -27,7 +28,8 @@ export const noteBlockSchema = z.discriminatedUnion('type', [
   studyAudioBlockSchema,
   studyVideoBlockSchema,
   studyFileBlockSchema,
-  studyDividerBlockSchema
+  studyDividerBlockSchema,
+  studyBoardBlockSchema
 ])
 
 export const noteDocumentSchema = z

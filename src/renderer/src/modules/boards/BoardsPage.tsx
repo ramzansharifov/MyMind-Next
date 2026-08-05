@@ -311,16 +311,24 @@ export function BoardsPage({
             focusMode={focusMode}
             onFocusModeChange={onFocusModeChange}
             onRename={() => startRename(selectedNode)}
+            backLabel={selectedNode.sourceNoteId ? 'Назад к заметке' : 'Назад к материалу'}
             onBackToMaterial={
-              selectedNode.sourceMaterialId
+              selectedNode.sourceNoteId
                 ? () => {
                     requestAppModuleNavigation({
-                      view: 'study',
-                      resourceId: selectedNode.sourceMaterialId,
-                      ...(focusMode ? { focusMode: true } : {})
+                      view: 'notes',
+                      resourceId: selectedNode.sourceNoteId
                     })
                   }
-                : undefined
+                : selectedNode.sourceMaterialId
+                  ? () => {
+                      requestAppModuleNavigation({
+                        view: 'study',
+                        resourceId: selectedNode.sourceMaterialId,
+                        ...(focusMode ? { focusMode: true } : {})
+                      })
+                    }
+                  : undefined
             }
           />
         ) : selectedNode?.type === 'folder' ? (
@@ -651,7 +659,8 @@ function BoardFolderPage({
   const boards = items
     .filter((item) => item.type === 'board')
     .sort((first, second) => first.position - second.position)
-  const canChangeIcon = !folder.isSystem && !folder.sourceStudyNodeId
+  const canManageFolder = !folder.isSystem && !folder.sourceStudyNodeId
+  const canChangeIcon = canManageFolder
   const activeIcon = folder.icon ?? 'folder'
 
   return (
@@ -687,47 +696,43 @@ function BoardFolderPage({
                 </div>
               </div>
 
-              <div
-                className={cn(
-                  'grid max-w-full shrink-0 gap-2 max-[920px]:w-full max-[620px]:grid-cols-1',
-                  folder.isSystem
-                    ? 'w-[22rem] grid-cols-2'
-                    : canChangeIcon
-                      ? 'w-[44rem] grid-cols-4 max-[760px]:grid-cols-2'
-                      : 'w-[33rem] grid-cols-3 max-[760px]:grid-cols-2'
-                )}
-              >
-                {!folder.isSystem && (
-                  <WorkspaceActionButton type="button" onClick={onRename}>
-                    <Pencil aria-hidden="true" />
-                    Переименовать
+              {canManageFolder && (
+                <div className="grid w-[44rem] max-w-full shrink-0 grid-cols-4 gap-2 max-[920px]:w-full max-[760px]:grid-cols-2 max-[620px]:grid-cols-1">
+                  {canManageFolder && (
+                    <WorkspaceActionButton type="button" onClick={onRename}>
+                      <Pencil aria-hidden="true" />
+                      Переименовать
+                    </WorkspaceActionButton>
+                  )}
+                  {canChangeIcon && (
+                    <FolderIconPicker
+                      value={activeIcon}
+                      onChange={onIconChange}
+                      trigger={
+                        <WorkspaceActionButton type="button">
+                          <Palette aria-hidden="true" className="text-violet-300" />
+                          Иконка
+                        </WorkspaceActionButton>
+                      }
+                    />
+                  )}
+                  <WorkspaceActionButton
+                    type="button"
+                    onClick={() => onCreate('folder', folder.id)}
+                  >
+                    <FolderPlus aria-hidden="true" />
+                    Новая папка
                   </WorkspaceActionButton>
-                )}
-                {canChangeIcon && (
-                  <FolderIconPicker
-                    value={activeIcon}
-                    onChange={onIconChange}
-                    trigger={
-                      <WorkspaceActionButton type="button">
-                        <Palette aria-hidden="true" className="text-violet-300" />
-                        Иконка
-                      </WorkspaceActionButton>
-                    }
-                  />
-                )}
-                <WorkspaceActionButton type="button" onClick={() => onCreate('folder', folder.id)}>
-                  <FolderPlus aria-hidden="true" />
-                  Новая папка
-                </WorkspaceActionButton>
-                <WorkspaceActionButton
-                  type="button"
-                  variant="primary"
-                  onClick={() => onCreate('board', folder.id)}
-                >
-                  <Presentation aria-hidden="true" />
-                  Новая доска
-                </WorkspaceActionButton>
-              </div>
+                  <WorkspaceActionButton
+                    type="button"
+                    variant="primary"
+                    onClick={() => onCreate('board', folder.id)}
+                  >
+                    <Presentation aria-hidden="true" />
+                    Новая доска
+                  </WorkspaceActionButton>
+                </div>
+              )}
             </header>
 
             <div className="mt-6 grid grid-cols-3 gap-3 max-[760px]:grid-cols-1">
@@ -874,6 +879,7 @@ function BoardNodeCard({
 
 function getBoardNodeTypeLabel(node: BoardNode): string {
   if (node.type === 'folder') return node.isSystem ? 'Системная папка' : 'Папка'
+  if (node.sourceNoteId) return 'Доска из заметок'
   return node.sourceMaterialId ? 'Доска из обучения' : 'Доска'
 }
 
@@ -900,6 +906,7 @@ function BoardWorkspace({
   focusMode,
   onFocusModeChange,
   onRename,
+  backLabel = 'Назад к материалу',
   onBackToMaterial
 }: {
   node: BoardNode
@@ -908,6 +915,7 @@ function BoardWorkspace({
   focusMode: boolean
   onFocusModeChange?: (active: boolean) => void
   onRename: () => void
+  backLabel?: string
   onBackToMaterial?: () => void
 }): React.JSX.Element {
   return (
@@ -922,15 +930,15 @@ function BoardWorkspace({
         )}
       >
         {onBackToMaterial && (
-          <Tooltip content="Вернуться к материалу" side="bottom">
+          <Tooltip content={backLabel} side="bottom">
             <WorkspaceActionButton
               type="button"
-              aria-label="Назад к материалу"
+              aria-label={backLabel}
               className="w-auto px-3 max-[720px]:size-10 max-[720px]:px-0"
               onClick={onBackToMaterial}
             >
               <ArrowLeft aria-hidden="true" />
-              <span className="max-[720px]:hidden">Назад к материалу</span>
+              <span className="max-[720px]:hidden">{backLabel}</span>
             </WorkspaceActionButton>
           </Tooltip>
         )}
@@ -1103,7 +1111,12 @@ function BoardDeleteDialog({
             Удалить {target?.type === 'folder' ? 'папку' : 'доску'}?
           </AlertDialog.Title>
           <AlertDialog.Description className="mt-2 text-sm leading-6 text-[var(--app-muted)]">
-            {target?.type === 'board' && target.sourceMaterialId ? (
+            {target?.type === 'board' && target.sourceNoteId ? (
+              <>
+                «{target.title}» и связанный блок в заметке будут удалены без возможности
+                восстановления.
+              </>
+            ) : target?.type === 'board' && target.sourceMaterialId ? (
               <>
                 «{target.title}» и связанный блок в материале обучения будут удалены без возможности
                 восстановления. Пустые учебные папки очистятся автоматически.
@@ -1160,7 +1173,11 @@ function groupBoardNodesByParent(nodes: BoardNode[]): Map<string | null, BoardNo
         ? -1
         : second.id === BOARD_SYSTEM_ROOT_ID
           ? 1
-          : first.position - second.position
+          : first.id === 'boards-notes-root'
+            ? -1
+            : second.id === 'boards-notes-root'
+              ? 1
+              : first.position - second.position
     )
   return grouped
 }

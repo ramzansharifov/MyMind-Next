@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { noteDocumentSchema, saveNoteInputSchema } from './notes'
 
 describe('notes validation', () => {
-  it('accepts the seven block types supported by notes', () => {
+  it('accepts the eight block types supported by notes', () => {
     expect(
       noteDocumentSchema
         .parse({
@@ -15,11 +15,12 @@ describe('notes validation', () => {
             { id: 'audio-one', type: 'audio', source: { type: 'local' } },
             { id: 'video-one', type: 'video', source: { type: 'local' } },
             { id: 'file-one', type: 'file', source: { type: 'local' } },
-            { id: 'divider-one', type: 'divider' }
+            { id: 'divider-one', type: 'divider' },
+            { id: 'board-one', type: 'board' }
           ]
         })
         .blocks.map((block) => block.type)
-    ).toEqual(['text', 'heading', 'image', 'audio', 'video', 'file', 'divider'])
+    ).toEqual(['text', 'heading', 'image', 'audio', 'video', 'file', 'divider', 'board'])
 
     expect(() =>
       noteDocumentSchema.parse({

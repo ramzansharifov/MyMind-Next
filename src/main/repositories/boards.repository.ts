@@ -2,21 +2,26 @@ import { and, asc, eq, isNull } from 'drizzle-orm'
 import { randomUUID } from 'node:crypto'
 
 import {
+  BOARD_NOTES_SYSTEM_ROOT_ID,
   BOARD_SYSTEM_ROOT_ID,
+  isBoardSystemRootId,
   type BoardDocument,
   type BoardNode,
   type BoardSnapshot,
   type CreateBoardNodeInput,
+  type EnsureNoteBoardInput,
   type EnsureStudyBoardInput,
   type MoveBoardNodeInput,
   type StudyBoardBlock,
   type UpdateBoardFolderIconInput
 } from '../../shared/contracts/boards'
+import type { NoteDocument } from '../../shared/contracts/notes'
 import type { StudyDocument } from '../../shared/contracts/study'
 import { boardDocumentSchema, boardNodeSchema } from '../../shared/validation/boards'
+import { noteDocumentSchema } from '../../shared/validation/notes'
 import { studyDocumentSchema } from '../../shared/validation/study'
 import { getDatabase } from '../database/client'
-import { boardDocuments, boardNodes, studyMaterials, studyNodes } from '../database/schema'
+import { boardDocuments, boardNodes, notes, studyMaterials, studyNodes } from '../database/schema'
 import { documentToPlainText } from '../domain/study-document-index'
 import { studyMaterialCoordinator } from '../services/study-material-coordinator'
 
@@ -26,6 +31,7 @@ function mapBoardNode(row: typeof boardNodes.$inferSelect): BoardNode {
     icon: row.icon ?? undefined,
     sourceStudyNodeId: row.sourceStudyNodeId ?? undefined,
     sourceMaterialId: row.sourceMaterialId ?? undefined,
+    sourceNoteId: row.sourceNoteId ?? undefined,
     sourceBlockId: row.sourceBlockId ?? undefined,
     createdAt: row.createdAt.getTime(),
     updatedAt: row.updatedAt.getTime()
@@ -64,25 +70,42 @@ function assertBoardFolder(parentId: string | null): void {
   }
 }
 
-export function ensureBoardsSystemRoot(): BoardNode {
+interface BoardSystemRootDefinition {
+  id: string
+  title: string
+  icon: 'folder' | 'notes'
+  position: number
+}
+
+const STUDY_BOARD_SYSTEM_ROOT: BoardSystemRootDefinition = {
+  id: BOARD_SYSTEM_ROOT_ID,
+  title: 'Обучение',
+  icon: 'folder',
+  position: 0
+}
+
+const NOTES_BOARD_SYSTEM_ROOT: BoardSystemRootDefinition = {
+  id: BOARD_NOTES_SYSTEM_ROOT_ID,
+  title: 'Заметки',
+  icon: 'notes',
+  position: 1
+}
+
+function ensureBoardSystemRoot(definition: BoardSystemRootDefinition): BoardNode {
   const database = getDatabase()
   const now = new Date()
-  const existing = database
-    .select()
-    .from(boardNodes)
-    .where(eq(boardNodes.id, BOARD_SYSTEM_ROOT_ID))
-    .get()
+  const existing = database.select().from(boardNodes).where(eq(boardNodes.id, definition.id)).get()
 
   if (!existing) {
     database
       .insert(boardNodes)
       .values({
-        id: BOARD_SYSTEM_ROOT_ID,
+        id: definition.id,
         type: 'folder',
         parentId: null,
-        title: 'Обучение',
-        icon: 'folder',
-        position: 0,
+        title: definition.title,
+        icon: definition.icon,
+        position: definition.position,
         isExpanded: true,
         isSystem: true,
         createdAt: now,
@@ -92,7 +115,9 @@ export function ensureBoardsSystemRoot(): BoardNode {
   } else if (
     existing.type !== 'folder' ||
     existing.parentId !== null ||
-    existing.title !== 'Обучение' ||
+    existing.title !== definition.title ||
+    existing.icon !== definition.icon ||
+    existing.position !== definition.position ||
     !existing.isSystem
   ) {
     database
@@ -100,31 +125,40 @@ export function ensureBoardsSystemRoot(): BoardNode {
       .set({
         type: 'folder',
         parentId: null,
-        title: 'Обучение',
-        icon: 'folder',
-        position: 0,
+        title: definition.title,
+        icon: definition.icon,
+        position: definition.position,
         isSystem: true,
         updatedAt: now
       })
-      .where(eq(boardNodes.id, BOARD_SYSTEM_ROOT_ID))
+      .where(eq(boardNodes.id, definition.id))
       .run()
   }
 
-  const root = database
-    .select()
-    .from(boardNodes)
-    .where(eq(boardNodes.id, BOARD_SYSTEM_ROOT_ID))
-    .get()
+  const root = database.select().from(boardNodes).where(eq(boardNodes.id, definition.id)).get()
 
   if (!root) {
-    throw new Error('Не удалось создать системную папку досок')
+    throw new Error(`Не удалось создать системную папку досок «${definition.title}»`)
   }
 
   return mapBoardNode(root)
 }
 
-export function listBoardNodes(): BoardNode[] {
+export function ensureBoardsSystemRoot(): BoardNode {
+  return ensureBoardSystemRoot(STUDY_BOARD_SYSTEM_ROOT)
+}
+
+export function ensureBoardsNotesRoot(): BoardNode {
+  return ensureBoardSystemRoot(NOTES_BOARD_SYSTEM_ROOT)
+}
+
+function ensureAllBoardSystemRoots(): void {
   ensureBoardsSystemRoot()
+  ensureBoardsNotesRoot()
+}
+
+export function listBoardNodes(): BoardNode[] {
+  ensureAllBoardSystemRoots()
 
   return getDatabase()
     .select()
@@ -135,10 +169,17 @@ export function listBoardNodes(): BoardNode[] {
 }
 
 export function createBoardNode(input: CreateBoardNodeInput): BoardNode {
-  ensureBoardsSystemRoot()
+  ensureAllBoardSystemRoots()
   assertBoardFolder(input.parentId)
 
   const database = getDatabase()
+
+  if (
+    input.parentId &&
+    getManagedBoardRowIds(database.select().from(boardNodes).all()).has(input.parentId)
+  ) {
+    throw new Error('В управляемых разделах нельзя создавать папки или доски вручную')
+  }
   const now = new Date()
   const id = randomUUID()
   const title = input.title?.trim() || (input.type === 'folder' ? 'Новая папка' : 'Новая доска')
@@ -191,8 +232,8 @@ export function createBoardNode(input: CreateBoardNodeInput): BoardNode {
 }
 
 export function renameBoardNode(id: string, title: string): BoardNode {
-  if (id === BOARD_SYSTEM_ROOT_ID) {
-    throw new Error('Системную папку «Обучение» нельзя переименовать')
+  if (isBoardSystemRootId(id)) {
+    throw new Error('Системную папку нельзя переименовать')
   }
 
   const database = getDatabase()
@@ -200,6 +241,13 @@ export function renameBoardNode(id: string, title: string): BoardNode {
 
   if (!existing) {
     throw new Error('Элемент досок не найден')
+  }
+
+  if (
+    existing.type === 'folder' &&
+    getManagedBoardRowIds(database.select().from(boardNodes).all()).has(existing.id)
+  ) {
+    throw new Error('Управляемую папку нельзя переименовать')
   }
 
   database
@@ -358,9 +406,66 @@ async function deleteLinkedStudyBoard(board: typeof boardNodes.$inferSelect): Pr
   })
 }
 
+async function deleteLinkedNoteBoard(board: typeof boardNodes.$inferSelect): Promise<boolean> {
+  const noteId = board.sourceNoteId
+
+  if (!noteId) {
+    return deleteBoardRowAndPrune(board.id, board.parentId)
+  }
+
+  return studyMaterialCoordinator.run(noteId, async () => {
+    const database = getDatabase()
+    const currentBoard = database.select().from(boardNodes).where(eq(boardNodes.id, board.id)).get()
+
+    if (!currentBoard) {
+      return false
+    }
+
+    const note = database.select().from(notes).where(eq(notes.id, noteId)).get()
+    const now = new Date()
+    let nextDocument: NoteDocument | null = null
+
+    if (note && currentBoard.sourceBlockId) {
+      const document = noteDocumentSchema.parse(note.document)
+      const nextBlocks = document.blocks.filter(
+        (block) =>
+          !(
+            block.type === 'board' &&
+            (block.id === currentBoard.sourceBlockId || block.boardId === currentBoard.id)
+          )
+      )
+
+      if (nextBlocks.length !== document.blocks.length) {
+        nextDocument = {
+          ...document,
+          blocks: nextBlocks
+        }
+      }
+    }
+
+    database.transaction((transaction) => {
+      if (nextDocument) {
+        transaction
+          .update(notes)
+          .set({
+            document: nextDocument,
+            plainText: documentToPlainText(nextDocument),
+            updatedAt: now
+          })
+          .where(eq(notes.id, noteId))
+          .run()
+      }
+
+      transaction.delete(boardNodes).where(eq(boardNodes.id, currentBoard.id)).run()
+    })
+
+    return true
+  })
+}
+
 export async function deleteBoardNode(id: string): Promise<boolean> {
-  if (id === BOARD_SYSTEM_ROOT_ID) {
-    throw new Error('Системную папку «Обучение» нельзя удалить')
+  if (isBoardSystemRootId(id)) {
+    throw new Error('Системную папку нельзя удалить')
   }
 
   const existing = getDatabase().select().from(boardNodes).where(eq(boardNodes.id, id)).get()
@@ -383,6 +488,10 @@ export async function deleteBoardNode(id: string): Promise<boolean> {
     return deleteLinkedStudyBoard(existing)
   }
 
+  if (existing.sourceNoteId && existing.sourceBlockId) {
+    return deleteLinkedNoteBoard(existing)
+  }
+
   return deleteBoardRowAndPrune(existing.id, existing.parentId)
 }
 
@@ -395,7 +504,7 @@ export function updateBoardFolderIcon(input: UpdateBoardFolderIconInput): BoardN
   }
 
   if (folder.isSystem || folder.sourceStudyNodeId) {
-    throw new Error('Иконка этой папки управляется модулем обучения')
+    throw new Error('Иконка этой папки управляется исходным модулем')
   }
 
   database
@@ -438,7 +547,7 @@ export function updateBoardNodeExpansion(id: string, isExpanded: boolean): Board
 
 type BoardNodeRow = typeof boardNodes.$inferSelect
 
-function getStudyManagedBoardRowIds(rows: BoardNodeRow[]): Set<string> {
+function getManagedBoardRowIds(rows: BoardNodeRow[]): Set<string> {
   const rowsById = new Map(rows.map((row) => [row.id, row]))
   const protectedIds = new Set<string>()
 
@@ -449,7 +558,7 @@ function getStudyManagedBoardRowIds(rows: BoardNodeRow[]): Set<string> {
     while (current && !visited.has(current.id)) {
       visited.add(current.id)
 
-      if (isStudyManagedBoardRowAnchor(current)) {
+      if (isManagedBoardRowAnchor(current)) {
         protectedIds.add(row.id)
         break
       }
@@ -472,21 +581,22 @@ function getStudyManagedBoardRowIds(rows: BoardNodeRow[]): Set<string> {
   return protectedIds
 }
 
-function isStudyManagedBoardRowAnchor(row: BoardNodeRow): boolean {
+function isManagedBoardRowAnchor(row: BoardNodeRow): boolean {
   return Boolean(
-    row.id === BOARD_SYSTEM_ROOT_ID ||
+    isBoardSystemRootId(row.id) ||
     row.sourceStudyNodeId ||
     row.sourceMaterialId ||
+    row.sourceNoteId ||
     row.sourceBlockId
   )
 }
 
 export function moveBoardNode(input: MoveBoardNodeInput): BoardNode[] {
-  if (input.id === BOARD_SYSTEM_ROOT_ID) {
-    throw new Error('Системную папку «Обучение» нельзя перемещать')
+  if (isBoardSystemRootId(input.id)) {
+    throw new Error('Системную папку нельзя перемещать')
   }
 
-  ensureBoardsSystemRoot()
+  ensureAllBoardSystemRoots()
 
   const database = getDatabase()
   const rows = database.select().from(boardNodes).all()
@@ -496,14 +606,14 @@ export function moveBoardNode(input: MoveBoardNodeInput): BoardNode[] {
     throw new Error('Элемент досок не найден')
   }
 
-  const studyManagedIds = getStudyManagedBoardRowIds(rows)
+  const managedIds = getManagedBoardRowIds(rows)
 
-  if (studyManagedIds.has(source.id)) {
-    throw new Error('Папки и доски раздела «Обучение» нельзя перемещать')
+  if (managedIds.has(source.id)) {
+    throw new Error('Папки и доски управляемых разделов нельзя перемещать')
   }
 
-  if (input.parentId && studyManagedIds.has(input.parentId)) {
-    throw new Error('Нельзя перемещать элементы внутрь раздела «Обучение»')
+  if (input.parentId && managedIds.has(input.parentId)) {
+    throw new Error('Нельзя перемещать элементы внутрь управляемого раздела')
   }
 
   assertBoardFolder(input.parentId)
@@ -845,5 +955,90 @@ export function cleanupBoardsForStudyDocument(materialId: string, document: Stud
 
   affectedParentIds.forEach((parentId) => {
     pruneEmptyLinkedStudyFolders(parentId)
+  })
+}
+
+export function ensureNoteBoard(input: EnsureNoteBoardInput): BoardNode {
+  const database = getDatabase()
+  const existing = database
+    .select()
+    .from(boardNodes)
+    .where(
+      and(eq(boardNodes.sourceNoteId, input.noteId), eq(boardNodes.sourceBlockId, input.blockId))
+    )
+    .get()
+
+  if (existing) {
+    return mapBoardNode(existing)
+  }
+
+  const note = database.select().from(notes).where(eq(notes.id, input.noteId)).get()
+
+  if (!note) {
+    throw new Error('Заметка для связанной доски не найдена')
+  }
+
+  const parsedDocument = noteDocumentSchema.parse(note.document)
+  const boardBlock = parsedDocument.blocks.find(
+    (block): block is StudyBoardBlock => block.type === 'board' && block.id === input.blockId
+  )
+
+  if (!boardBlock) {
+    throw new Error('Блок доски не найден в заметке')
+  }
+
+  const root = ensureBoardsNotesRoot()
+  const now = new Date()
+  const id = randomUUID()
+
+  database.transaction((transaction) => {
+    transaction
+      .insert(boardNodes)
+      .values({
+        id,
+        type: 'board',
+        parentId: root.id,
+        title: `${note.title} — доска`,
+        position: getNextBoardPosition(root.id),
+        isExpanded: true,
+        isSystem: false,
+        sourceNoteId: input.noteId,
+        sourceBlockId: input.blockId,
+        createdAt: now,
+        updatedAt: now
+      })
+      .run()
+
+    transaction
+      .insert(boardDocuments)
+      .values({ nodeId: id, snapshot: null, createdAt: now, updatedAt: now })
+      .run()
+  })
+
+  const created = database.select().from(boardNodes).where(eq(boardNodes.id, id)).get()
+
+  if (!created) {
+    throw new Error('Не удалось создать связанную доску заметки')
+  }
+
+  return mapBoardNode(created)
+}
+
+export function cleanupBoardsForNoteDocument(noteId: string, document: NoteDocument): void {
+  const retainedBlockIds = new Set(
+    document.blocks.filter((block) => block.type === 'board').map((block) => block.id)
+  )
+  const linkedBoards = getDatabase()
+    .select()
+    .from(boardNodes)
+    .where(eq(boardNodes.sourceNoteId, noteId))
+    .all()
+
+  linkedBoards.forEach((board) => {
+    if (!board.sourceBlockId || retainedBlockIds.has(board.sourceBlockId)) {
+      return
+    }
+
+    getDatabase().delete(boardNodes).where(eq(boardNodes.id, board.id)).run()
   })
 }

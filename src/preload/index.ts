@@ -87,7 +87,10 @@ const api: MyMindApi = {
       ipcRenderer.invoke(BOARD_IPC_CHANNELS.saveDocument, input) as Promise<BoardDocument>,
 
     ensureStudyBoard: (input) =>
-      ipcRenderer.invoke(BOARD_IPC_CHANNELS.ensureStudyBoard, input) as Promise<BoardNode>
+      ipcRenderer.invoke(BOARD_IPC_CHANNELS.ensureStudyBoard, input) as Promise<BoardNode>,
+
+    ensureNoteBoard: (input) =>
+      ipcRenderer.invoke(BOARD_IPC_CHANNELS.ensureNoteBoard, input) as Promise<BoardNode>
   },
 
   study: {

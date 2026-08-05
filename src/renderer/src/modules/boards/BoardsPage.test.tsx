@@ -171,8 +171,8 @@ describe('BoardsPage', () => {
     expect(await screen.findByRole('heading', { name: 'Обучение', level: 1 })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Доски', level: 2 })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Вложенные папки' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Новая папка' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Новая доска' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Новая папка' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Новая доска' })).not.toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: 'Открыть доску «Тестовая доска»' })
     ).toBeInTheDocument()

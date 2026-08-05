@@ -42,11 +42,12 @@ describe('boards repository documents', () => {
       parentId: null,
       title: 'Обычная доска'
     })
-    const protectedBoard = createBoardNode({
-      type: 'board',
-      parentId: BOARD_SYSTEM_ROOT_ID,
-      title: 'Доска внутри обучения'
-    })
+    getSqlite()
+      .prepare(
+        'INSERT INTO board_nodes (id, type, parent_id, title, position, is_expanded, is_system, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+      )
+      .run('protected-board', 'board', BOARD_SYSTEM_ROOT_ID, 'Доска внутри обучения', 0, 1, 0, 1, 1)
+    const protectedBoard = { id: 'protected-board' }
 
     expect(moveBoardNode({ id: ordinaryBoard.id, parentId: targetFolder.id, position: 0 })).toEqual(
       expect.arrayContaining([
@@ -55,12 +56,12 @@ describe('boards repository documents', () => {
     )
 
     expect(() => moveBoardNode({ id: protectedBoard.id, parentId: null, position: 1 })).toThrow(
-      'Папки и доски раздела «Обучение» нельзя перемещать'
+      'Папки и доски управляемых разделов нельзя перемещать'
     )
 
     expect(() =>
       moveBoardNode({ id: ordinaryBoard.id, parentId: BOARD_SYSTEM_ROOT_ID, position: 0 })
-    ).toThrow('Нельзя перемещать элементы внутрь раздела «Обучение»')
+    ).toThrow('Нельзя перемещать элементы внутрь управляемого раздела')
   })
 
   it('persists ordinary folder icons and synchronizes study-managed folder icons', () => {
@@ -104,7 +105,7 @@ describe('boards repository documents', () => {
       expect.arrayContaining([expect.objectContaining({ id: 'linked-folder', icon: 'calculator' })])
     )
     expect(() => updateBoardFolderIcon({ id: 'linked-folder', icon: 'science' })).toThrow(
-      'Иконка этой папки управляется модулем обучения'
+      'Иконка этой папки управляется исходным модулем'
     )
   })
 

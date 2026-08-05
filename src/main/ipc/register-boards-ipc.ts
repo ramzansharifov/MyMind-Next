@@ -3,6 +3,7 @@ import { ipcMain } from 'electron'
 import { BOARD_IPC_CHANNELS } from '../../shared/contracts/boards'
 import {
   createBoardNodeInputSchema,
+  ensureNoteBoardInputSchema,
   ensureStudyBoardInputSchema,
   moveBoardNodeInputSchema,
   renameBoardNodeInputSchema,
@@ -13,6 +14,7 @@ import {
 import {
   createBoardNode,
   deleteBoardNode,
+  ensureNoteBoard,
   ensureStudyBoard,
   getBoardDocument,
   listBoardNodes,
@@ -90,5 +92,9 @@ export function registerBoardsIpcHandlers(): void {
 
   ipcMain.handle(BOARD_IPC_CHANNELS.ensureStudyBoard, (_event, rawInput: unknown) =>
     mainOperationTracker.run(() => ensureStudyBoard(ensureStudyBoardInputSchema.parse(rawInput)))
+  )
+
+  ipcMain.handle(BOARD_IPC_CHANNELS.ensureNoteBoard, (_event, rawInput: unknown) =>
+    mainOperationTracker.run(() => ensureNoteBoard(ensureNoteBoardInputSchema.parse(rawInput)))
   )
 }
