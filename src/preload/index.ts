@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
 import { BOARD_IPC_CHANNELS, type BoardDocument, type BoardNode } from '../shared/contracts/boards'
+import { FINANCE_IPC_CHANNELS } from '../shared/contracts/finance'
 import {
   NOTES_IPC_CHANNELS,
   type NoteGroup,
@@ -181,6 +182,51 @@ const api: MyMindApi = {
       ipcRenderer.invoke(NOTES_IPC_CHANNELS.importAsset, input) as Promise<NoteLocalAsset | null>,
 
     openAsset: (input) => ipcRenderer.invoke(NOTES_IPC_CHANNELS.openAsset, input) as Promise<void>
+  },
+
+  finance: {
+    getSettings: () => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.getSettings),
+    setBaseCurrency: (input) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.setBaseCurrency, input),
+    listExchangeRates: () => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.listExchangeRates),
+    upsertExchangeRate: (input) =>
+      ipcRenderer.invoke(FINANCE_IPC_CHANNELS.upsertExchangeRate, input),
+    deleteExchangeRate: (input) =>
+      ipcRenderer.invoke(FINANCE_IPC_CHANNELS.deleteExchangeRate, input),
+    listAccounts: (period) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.listAccounts, period),
+    getAccount: (id, period) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.getAccount, id, period),
+    createAccount: (input) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.createAccount, input),
+    updateAccount: (input) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.updateAccount, input),
+    deleteAccount: (input) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.deleteAccount, input),
+    clearAccountHistory: (input) =>
+      ipcRenderer.invoke(FINANCE_IPC_CHANNELS.clearAccountHistory, input),
+    listTransactions: (filters) =>
+      ipcRenderer.invoke(FINANCE_IPC_CHANNELS.listTransactions, filters),
+    getTransaction: (id) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.getTransaction, id),
+    createTransaction: (input) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.createTransaction, input),
+    updateTransaction: (input) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.updateTransaction, input),
+    deleteTransaction: (input) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.deleteTransaction, input),
+    listTags: () => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.listTags),
+    getTag: (id) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.getTag, id),
+    createTag: (input) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.createTag, input),
+    updateTag: (input) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.updateTag, input),
+    deleteTag: (input) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.deleteTag, input),
+    listLimits: (at) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.listLimits, at),
+    createLimit: (input) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.createLimit, input),
+    updateLimit: (input) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.updateLimit, input),
+    setLimitState: (input) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.setLimitState, input),
+    deleteLimit: (input) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.deleteLimit, input),
+    previewExpenseImpact: (input) =>
+      ipcRenderer.invoke(FINANCE_IPC_CHANNELS.previewExpenseImpact, input),
+    listTemplates: () => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.listTemplates),
+    createTemplate: (input) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.createTemplate, input),
+    updateTemplate: (input) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.updateTemplate, input),
+    setTemplateState: (input) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.setTemplateState, input),
+    deleteTemplate: (input) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.deleteTemplate, input),
+    useTemplate: (input) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.useTemplate, input),
+    snoozeTemplate: (input) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.snoozeTemplate, input),
+    skipTemplate: (input) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.skipTemplate, input),
+    getDashboard: (period) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.getDashboard, period),
+    getReport: (filters) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.getReport, filters)
   }
 }
 

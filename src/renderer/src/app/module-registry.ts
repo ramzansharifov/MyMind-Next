@@ -1,5 +1,12 @@
 import { lazy, type ComponentType } from 'react'
-import { GraduationCap, Notebook, Presentation, Settings, type LucideIcon } from 'lucide-react'
+import {
+  GraduationCap,
+  Notebook,
+  Presentation,
+  Settings,
+  WalletCards,
+  type LucideIcon
+} from 'lucide-react'
 
 export type AppNavigationGroup = 'primary' | 'utility'
 
@@ -36,6 +43,9 @@ const BoardsModule = lazy(() =>
 const NotesModule = lazy(() =>
   import('../modules/notes/NotesPage').then(({ NotesPage }) => ({ default: NotesPage }))
 ) as ComponentType<AppModuleProps>
+const FinanceModule = lazy(() =>
+  import('../modules/finance/FinancePage').then(({ FinancePage }) => ({ default: FinancePage }))
+) as ComponentType<AppModuleProps>
 const SettingsModule = lazy(() =>
   import('../modules/settings/SettingsModule').then(({ SettingsModule }) => ({
     default: SettingsModule
@@ -66,6 +76,14 @@ export const appModuleRegistry = defineAppModules({
     icon: Notebook,
     navigationGroup: 'primary',
     component: NotesModule
+  },
+  finance: {
+    id: 'finance',
+    label: 'Финансы',
+    loadingLabel: 'Загрузка финансов',
+    icon: WalletCards,
+    navigationGroup: 'primary',
+    component: FinanceModule
   },
   settings: {
     id: 'settings',
