@@ -92,14 +92,27 @@ export function FinancePage({
   }, [])
 
   useEffect(() => {
-    void load()
+    let cancelled = false
+    queueMicrotask(() => {
+      if (!cancelled) void load()
+    })
+    return () => {
+      cancelled = true
+    }
   }, [load])
 
   useEffect(() => {
     if (!resourceId) return
     const page = tabs.some((item) => item.id === resourceId) ? (resourceId as FinancePageId) : null
-    if (page) setActivePage(page)
-    onResourceHandled?.()
+    let cancelled = false
+    queueMicrotask(() => {
+      if (cancelled) return
+      if (page) setActivePage(page)
+      onResourceHandled?.()
+    })
+    return () => {
+      cancelled = true
+    }
   }, [onResourceHandled, resourceId])
 
   function openQuick(type: FinanceUserTransactionType): void {
