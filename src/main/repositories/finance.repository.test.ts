@@ -3,6 +3,8 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
+import type { FinanceAccountSummary, FinanceTagSummary } from '../../shared/contracts/finance'
+
 import { closeDatabase, getSqlite, initializeDatabaseForTesting } from '../database/client'
 import { runDatabaseMigrationsFrom } from '../database/migrate'
 import { financeService } from '../services/finance.service'
@@ -34,7 +36,14 @@ afterAll(async () => {
   await rm(root, { recursive: true, force: true })
 })
 
-function createFixture() {
+function createFixture(): {
+  cash: FinanceAccountSummary
+  card: FinanceAccountSummary
+  usd: FinanceAccountSummary
+  incomeTag: FinanceTagSummary
+  expenseTag: FinanceTagSummary
+  bothTag: FinanceTagSummary
+} {
   const cash = financeService.createAccount({
     name: 'Наличные',
     type: 'cash',
