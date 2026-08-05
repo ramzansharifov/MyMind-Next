@@ -107,12 +107,19 @@ beforeEach(() => {
 })
 
 describe('FinancePage', () => {
-  it('renders the horizontal five-page workspace without a nested sidebar', async () => {
+  it('renders the shared module hero and horizontal five-page workspace', async () => {
     render(<FinancePage />)
-    expect(await screen.findByRole('heading', { name: 'Личные финансы' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Финансы' })).toBeInTheDocument()
+    expect(document.querySelector('[data-finance-hero]')).toBeInTheDocument()
+    expect(document.querySelector('[data-finance-navigation]')).toBeInTheDocument()
     for (const label of ['Главная', 'Транзакции', 'Счета', 'Теги', 'Отчёты']) {
       expect(screen.getByRole('button', { name: label })).toBeInTheDocument()
     }
+    for (const label of ['Доход', 'Расход', 'Перевод']) {
+      expect(screen.getByRole('button', { name: label })).toBeInTheDocument()
+    }
+    expect(screen.queryByRole('button', { name: 'Обновить' })).not.toBeInTheDocument()
+    expect(screen.queryByText('Текущие остатки по местам хранения денег')).not.toBeInTheDocument()
     expect(document.querySelector('[data-module-sidebar]')).not.toBeInTheDocument()
   })
 
@@ -129,7 +136,7 @@ describe('FinancePage', () => {
   it('creates an account through the real form and refreshes the overview', async () => {
     const user = userEvent.setup()
     render(<FinancePage />)
-    await screen.findByRole('heading', { name: 'Личные финансы' })
+    await screen.findByRole('heading', { name: 'Финансы' })
     await user.click(screen.getByRole('button', { name: 'Счета' }))
     await user.click(screen.getByRole('button', { name: 'Новый счёт' }))
     await user.type(screen.getByRole('textbox', { name: 'Название' }), 'Карта')
@@ -157,7 +164,7 @@ describe('FinancePage', () => {
       accounts: [account]
     })
     render(<FinancePage />)
-    await screen.findByRole('heading', { name: 'Личные финансы' })
+    await screen.findByRole('heading', { name: 'Финансы' })
     await user.click(screen.getByRole('button', { name: 'Счета' }))
     await user.click(screen.getByRole('button', { name: /Карта/ }))
     expect(screen.getByRole('button', { name: 'Удалить' })).toBeDisabled()
