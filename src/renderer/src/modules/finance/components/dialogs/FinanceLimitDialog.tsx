@@ -53,7 +53,8 @@ const limitFormSchema = z
     }
   })
 
-type LimitFormValues = z.infer<typeof limitFormSchema>
+type LimitFormInput = z.input<typeof limitFormSchema>
+type LimitFormValues = z.output<typeof limitFormSchema>
 
 interface FinanceLimitDialogProps {
   open: boolean
@@ -85,13 +86,14 @@ function FinanceLimitDialogContent({
 }: FinanceLimitDialogProps): React.JSX.Element {
   const [isSaving, setIsSaving] = useState(false)
   const [backendError, setBackendError] = useState<string | null>(null)
+  const [defaultStartsAt] = useState(() => Date.now())
   const {
     register,
     control,
     handleSubmit,
     setError,
     formState: { errors }
-  } = useForm<LimitFormValues>({
+  } = useForm<LimitFormInput, unknown, LimitFormValues>({
     resolver: zodResolver(limitFormSchema),
     defaultValues: {
       name: limit?.name ?? '',
@@ -101,7 +103,7 @@ function FinanceLimitDialogContent({
       accountId: limit?.accountId ?? '',
       tagId: limit?.tagId ?? initialTagId ?? '',
       periodType: limit?.periodType ?? 'month',
-      startsAt: toDateInputValue(limit?.startsAt ?? Date.now()),
+      startsAt: toDateInputValue(limit?.startsAt ?? defaultStartsAt),
       endsAt: limit?.endsAt ? toDateInputValue(limit.endsAt) : '',
       warningPercent: limit?.warningPercent ?? 80
     }
