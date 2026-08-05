@@ -4,6 +4,8 @@ import type {
   FinanceTransactionType
 } from '../../../../../shared/contracts/finance'
 
+export { FinanceIcon } from './FinanceIcon'
+
 export const financeAccountTypeLabels: Record<FinanceAccountType, string> = {
   cash: 'Наличные',
   card: 'Карта',
