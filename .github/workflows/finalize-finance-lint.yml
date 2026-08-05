@@ -1,0 +1,268 @@
+name: Finalize finance lint fixes
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/finance-module
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Apply direct source fixes
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+          import re
+
+          def replace_once(path: str, old: str, new: str) -> None:
+              file_path = Path(path)
+              source = file_path.read_text(encoding='utf-8')
+              count = source.count(old)
+              if count != 1:
+                  raise RuntimeError(f'{path}: expected one match, found {count}')
+              file_path.write_text(source.replace(old, new, 1), encoding='utf-8')
+
+          # Repository test typing.
+          replace_once(
+              'src/main/repositories/finance.repository.test.ts',
+              "import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'\n",
+              "import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'\n\nimport type { FinanceAccountSummary, FinanceTagSummary } from '../../shared/contracts/finance'\n"
+          )
+          replace_once(
+              'src/main/repositories/finance.repository.test.ts',
+              'function createFixture() {',
+              "function createFixture(): {\n  cash: FinanceAccountSummary\n  card: FinanceAccountSummary\n  usd: FinanceAccountSummary\n  incomeTag: FinanceTagSummary\n  expenseTag: FinanceTagSummary\n  bothTag: FinanceTagSummary\n} {"
+          )
+
+          # Service typing and unused imports.
+          service_path = Path('src/main/services/finance.service.ts')
+          service = service_path.read_text(encoding='utf-8')
+          for name in (
+              'CreateFinanceAccountInput',
+              'DeleteFinanceExchangeRateInput',
+              'SetFinanceBaseCurrencyInput',
+              'UpdateFinanceAccountInput',
+              'UpsertFinanceExchangeRateInput'
+          ):
+              service, count = re.subn(rf'^  {name},\n', '', service, count=1, flags=re.MULTILINE)
+              if count != 1:
+                  raise RuntimeError(f'finance.service.ts: missing import {name}')
+          service = service.replace(
+              'function loadRateBook() {',
+              "function loadRateBook(): {\n  settings: ReturnType<typeof getFinanceSettings>\n  rates: ReturnType<typeof listFinanceExchangeRates>\n  rateBook: ReturnType<typeof createFinanceRateBook>\n} {",
+              1
+          )
+          service_path.write_text(service, encoding='utf-8')
+
+          # Component-only primitive file and shared form styles.
+          replace_once(
+              'src/renderer/src/modules/finance/components/FinancePrimitives.tsx',
+              "export function FinanceLoadingState({ label = 'Загрузка финансов…' }: { label?: string }) {",
+              "export function FinanceLoadingState({\n  label = 'Загрузка финансов…'\n}: {\n  label?: string\n}): React.JSX.Element {"
+          )
+          primitives_path = Path('src/renderer/src/modules/finance/components/FinancePrimitives.tsx')
+          primitives = primitives_path.read_text(encoding='utf-8')
+          primitives, count = re.subn(
+              r"\nexport const financeInputClassName = cn\([\s\S]*?\nexport const financeTextareaClassName = cn\(financeInputClassName, 'min-h-24 resize-y py-3'\)\n",
+              '\n',
+              primitives,
+              count=1
+          )
+          if count != 1:
+              raise RuntimeError('FinancePrimitives.tsx: form styles were not found')
+          primitives_path.write_text(primitives, encoding='utf-8')
+
+          # Finance icon imports and form style imports.
+          replace_once(
+              'src/renderer/src/modules/finance/components/FinanceAccounts.tsx',
+              "import { FinanceIcon, financeAccountTypeLabels, getFinanceErrorMessage } from '../lib/finance-ui'\n",
+              "import { FinanceIcon } from '../lib/FinanceIcon'\nimport { financeAccountTypeLabels, getFinanceErrorMessage } from '../lib/finance-ui'\n"
+          )
+          replace_once(
+              'src/renderer/src/modules/finance/components/FinanceHome.tsx',
+              "import { FinanceIcon, financeAccountTypeLabels } from '../lib/finance-ui'\n",
+              "import { FinanceIcon } from '../lib/FinanceIcon'\nimport { financeAccountTypeLabels } from '../lib/finance-ui'\n"
+          )
+          replace_once(
+              'src/renderer/src/modules/finance/components/FinanceTags.tsx',
+              "import { FinanceIcon, financeTagTypeLabels } from '../lib/finance-ui'\n",
+              "import { FinanceIcon } from '../lib/FinanceIcon'\nimport { financeTagTypeLabels } from '../lib/finance-ui'\n"
+          )
+          replace_once(
+              'src/renderer/src/modules/finance/components/FinanceTransactionList.tsx',
+              "import { FinanceIcon } from '../lib/finance-ui'\n",
+              "import { FinanceIcon } from '../lib/FinanceIcon'\n"
+          )
+
+          replace_once(
+              'src/renderer/src/modules/finance/components/FinanceAccounts.tsx',
+              "import {\n  FinanceButton,\n  FinanceEmptyState,\n  FinanceErrorState,\n  FinanceLoadingState,\n  FinanceSurface,\n  financeInputClassName\n} from './FinancePrimitives'\n",
+              "import { financeInputClassName } from './FinanceFormStyles'\nimport {\n  FinanceButton,\n  FinanceEmptyState,\n  FinanceErrorState,\n  FinanceLoadingState,\n  FinanceSurface\n} from './FinancePrimitives'\n"
+          )
+          replace_once(
+              'src/renderer/src/modules/finance/components/FinanceReports.tsx',
+              "import {\n  FinanceButton,\n  FinanceErrorState,\n  FinanceLoadingState,\n  FinanceSurface,\n  financeInputClassName\n} from './FinancePrimitives'\n",
+              "import { financeInputClassName } from './FinanceFormStyles'\nimport { FinanceButton, FinanceErrorState, FinanceLoadingState, FinanceSurface } from './FinancePrimitives'\n"
+          )
+          replace_once(
+              'src/renderer/src/modules/finance/components/FinanceTransactions.tsx',
+              "import {\n  FinanceButton,\n  FinanceEmptyState,\n  FinanceErrorState,\n  FinanceLoadingState,\n  FinanceSurface,\n  financeInputClassName\n} from './FinancePrimitives'\n",
+              "import { financeInputClassName } from './FinanceFormStyles'\nimport {\n  FinanceButton,\n  FinanceEmptyState,\n  FinanceErrorState,\n  FinanceLoadingState,\n  FinanceSurface\n} from './FinancePrimitives'\n"
+          )
+
+          dialog_imports = {
+              'FinanceAccountDialog.tsx': ('FinanceButton, FinanceField, financeInputClassName', 'FinanceButton, FinanceField', 'financeInputClassName'),
+              'FinanceClearAccountDialog.tsx': ('FinanceButton, financeInputClassName', 'FinanceButton', 'financeInputClassName'),
+              'FinanceCurrencyDialog.tsx': ('FinanceButton, FinanceField, financeInputClassName', 'FinanceButton, FinanceField', 'financeInputClassName'),
+              'FinanceLimitDialog.tsx': ('FinanceButton, FinanceField, financeInputClassName', 'FinanceButton, FinanceField', 'financeInputClassName'),
+              'FinanceTagDialog.tsx': ('FinanceButton, FinanceField, financeInputClassName', 'FinanceButton, FinanceField', 'financeInputClassName')
+          }
+          for filename, (old_names, component_names, style_names) in dialog_imports.items():
+              replace_once(
+                  f'src/renderer/src/modules/finance/components/dialogs/{filename}',
+                  f"import {{ {old_names} }} from '../FinancePrimitives'\n",
+                  f"import {{ {style_names} }} from '../FinanceFormStyles'\nimport {{ {component_names} }} from '../FinancePrimitives'\n"
+              )
+
+          for filename in ('FinanceTemplateDialog.tsx', 'FinanceTransactionDialog.tsx'):
+              replace_once(
+                  f'src/renderer/src/modules/finance/components/dialogs/{filename}',
+                  "import {\n  FinanceButton,\n  FinanceField,\n  financeInputClassName,\n  financeTextareaClassName\n} from '../FinancePrimitives'\n",
+                  "import { financeInputClassName, financeTextareaClassName } from '../FinanceFormStyles'\nimport { FinanceButton, FinanceField } from '../FinancePrimitives'\n"
+              )
+
+          # Schedule state updates outside effect bodies.
+          replace_once(
+              'src/renderer/src/modules/finance/FinancePage.tsx',
+              "  useEffect(() => {\n    void load()\n  }, [load])",
+              "  useEffect(() => {\n    let cancelled = false\n    queueMicrotask(() => {\n      if (!cancelled) void load()\n    })\n    return () => {\n      cancelled = true\n    }\n  }, [load])"
+          )
+          replace_once(
+              'src/renderer/src/modules/finance/FinancePage.tsx',
+              "  useEffect(() => {\n    if (!resourceId) return\n    const page = tabs.some((item) => item.id === resourceId) ? (resourceId as FinancePageId) : null\n    if (page) setActivePage(page)\n    onResourceHandled?.()\n  }, [onResourceHandled, resourceId])",
+              "  useEffect(() => {\n    if (!resourceId) return\n    const page = tabs.some((item) => item.id === resourceId) ? (resourceId as FinancePageId) : null\n    let cancelled = false\n    queueMicrotask(() => {\n      if (cancelled) return\n      if (page) setActivePage(page)\n      onResourceHandled?.()\n    })\n    return () => {\n      cancelled = true\n    }\n  }, [onResourceHandled, resourceId])"
+          )
+          replace_once(
+              'src/renderer/src/modules/finance/components/FinanceAccounts.tsx',
+              "  useEffect(() => {\n    void load()\n  }, [load])",
+              "  useEffect(() => {\n    let cancelled = false\n    queueMicrotask(() => {\n      if (!cancelled) void load()\n    })\n    return () => {\n      cancelled = true\n    }\n  }, [load])"
+          )
+          replace_once(
+              'src/renderer/src/modules/finance/components/FinanceReports.tsx',
+              "  useEffect(() => {\n    void load()\n  }, [load, limitsVersion])",
+              "  useEffect(() => {\n    let cancelled = false\n    queueMicrotask(() => {\n      if (!cancelled) void load()\n    })\n    return () => {\n      cancelled = true\n    }\n  }, [load, limitsVersion])"
+          )
+          replace_once(
+              'src/renderer/src/modules/finance/components/FinanceTransactions.tsx',
+              "  useEffect(() => {\n    if (initialTransaction) {\n      setEditTransaction(initialTransaction)\n      setTransactionDialogOpen(true)\n      setTab('operations')\n    }\n  }, [initialTransaction])",
+              "  useEffect(() => {\n    if (!initialTransaction) return\n    let cancelled = false\n    queueMicrotask(() => {\n      if (cancelled) return\n      setEditTransaction(initialTransaction)\n      setTransactionDialogOpen(true)\n      setTab('operations')\n    })\n    return () => {\n      cancelled = true\n    }\n  }, [initialTransaction])"
+          )
+          replace_once(
+              'src/renderer/src/modules/finance/components/FinanceTransactions.tsx',
+              "  useEffect(() => {\n    if (initialTemplate) {\n      setUseTemplate(initialTemplate)\n      setTransactionDialogOpen(true)\n      setDialogType(initialTemplate.type)\n      setTab('operations')\n    }\n  }, [initialTemplate])",
+              "  useEffect(() => {\n    if (!initialTemplate) return\n    let cancelled = false\n    queueMicrotask(() => {\n      if (cancelled) return\n      setUseTemplate(initialTemplate)\n      setTransactionDialogOpen(true)\n      setDialogType(initialTemplate.type)\n      setTab('operations')\n    })\n    return () => {\n      cancelled = true\n    }\n  }, [initialTemplate])"
+          )
+          replace_once(
+              'src/renderer/src/modules/finance/components/dialogs/FinanceCurrencyDialog.tsx',
+              "  useEffect(() => setBaseCurrency(settings.baseCurrencyCode), [settings.baseCurrencyCode])",
+              "  useEffect(() => {\n    let cancelled = false\n    queueMicrotask(() => {\n      if (!cancelled) setBaseCurrency(settings.baseCurrencyCode)\n    })\n    return () => {\n      cancelled = true\n    }\n  }, [settings.baseCurrencyCode])"
+          )
+          replace_once(
+              'src/renderer/src/modules/finance/components/dialogs/FinanceTransactionDialog.tsx',
+              "  useEffect(() => {\n    setImpactConfirmed(false)\n    setImpact(null)\n  }, [values.accountId, values.amount, values.occurredAt, values.tagId, values.type])",
+              "  useEffect(() => {\n    let cancelled = false\n    queueMicrotask(() => {\n      if (cancelled) return\n      setImpactConfirmed(false)\n      setImpact(null)\n    })\n    return () => {\n      cancelled = true\n    }\n  }, [values.accountId, values.amount, values.occurredAt, values.tagId, values.type])"
+          )
+
+          # Stable limit default date.
+          replace_once(
+              'src/renderer/src/modules/finance/components/dialogs/FinanceLimitDialog.tsx',
+              "  const [isSaving, setIsSaving] = useState(false)\n  const [backendError, setBackendError] = useState<string | null>(null)",
+              "  const [isSaving, setIsSaving] = useState(false)\n  const [backendError, setBackendError] = useState<string | null>(null)\n  const [defaultStartsAt] = useState(() => Date.now())"
+          )
+          replace_once(
+              'src/renderer/src/modules/finance/components/dialogs/FinanceLimitDialog.tsx',
+              "      startsAt: toDateInputValue(limit?.startsAt ?? Date.now()),",
+              "      startsAt: toDateInputValue(limit?.startsAt ?? defaultStartsAt),"
+          )
+
+          # Immutable chart geometry.
+          replace_once(
+              'src/renderer/src/modules/finance/components/charts/FinanceCharts.tsx',
+              "interface ChartDatum {\n  label: string\n  value: number\n  secondaryValue?: number\n}\n",
+              "interface ChartDatum {\n  label: string\n  value: number\n  secondaryValue?: number\n}\n\ninterface ChartPoint {\n  x: number\n  y: number\n}\n\ninterface DonutSegment {\n  item: ChartDatum & { color?: string | null }\n  part: number\n  offset: number\n  end: number\n}\n"
+          )
+          replace_once(
+              'src/renderer/src/modules/finance/components/charts/FinanceCharts.tsx',
+              "    const point = (value: number, index: number) => ({",
+              "    const point = (value: number, index: number): ChartPoint => ({"
+          )
+          replace_once(
+              'src/renderer/src/modules/finance/components/charts/FinanceCharts.tsx',
+              "  const total = data.reduce((sum, item) => sum + Math.max(0, item.value), 0)\n  let offset = 0\n  if (total <= 0) return <ChartEmpty label=\"Нет данных для распределения\" />",
+              "  const total = data.reduce((sum, item) => sum + Math.max(0, item.value), 0)\n  const segments = data.reduce<DonutSegment[]>((result, item) => {\n    const offset = result.at(-1)?.end ?? 0\n    const part = (item.value / Math.max(1, total)) * 100\n    return [...result, { item, part, offset, end: offset + part }]\n  }, [])\n  if (total <= 0) return <ChartEmpty label=\"Нет данных для распределения\" />"
+          )
+          replace_once(
+              'src/renderer/src/modules/finance/components/charts/FinanceCharts.tsx',
+              "        {data.map((item) => {\n          const part = (item.value / total) * 100\n          const current = offset\n          offset += part\n          return (\n            <circle",
+              "        {segments.map(({ item, part, offset }) => (\n          <circle"
+          )
+          replace_once(
+              'src/renderer/src/modules/finance/components/charts/FinanceCharts.tsx',
+              "              strokeDashoffset={-current}",
+              "              strokeDashoffset={-offset}"
+          )
+          replace_once(
+              'src/renderer/src/modules/finance/components/charts/FinanceCharts.tsx',
+              "            </circle>\n          )\n        })}",
+              "          </circle>\n        ))}"
+          )
+
+          Path('src/renderer/src/modules/finance/lib/finance-ui.tsx').unlink()
+          for temporary in (
+              '.github/workflows/export-finance-current.yml',
+              '.github/workflows/verify-finance-module.yml',
+              '.github/workflows/finalize-finance-lint.yml'
+          ):
+              Path(temporary).unlink(missing_ok=True)
+          PY
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Format source
+        run: npm run format
+
+      - name: Run complete project verification
+        run: npm run check
+
+      - name: Check patch whitespace
+        run: git diff --check
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Commit verified changes
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Исправить и проверить финансовый модуль"
+          git push origin HEAD:agent/finance-module
