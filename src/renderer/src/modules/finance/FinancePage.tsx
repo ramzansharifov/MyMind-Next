@@ -19,7 +19,6 @@ import type {
   FinanceTransaction,
   FinanceUserTransactionType
 } from '../../../../shared/contracts/finance'
-import '../../assets/finance-home-header.css'
 import { financeClient } from './api/finance-client'
 import { FinanceAccounts } from './components/FinanceAccounts'
 import { FinanceHome } from './components/FinanceHome'
