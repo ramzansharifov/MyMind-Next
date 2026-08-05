@@ -1,0 +1,26 @@
+name: Export finance source
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/finance-module
+          fetch-depth: 0
+      - name: Remove git metadata
+        run: rm -rf .git
+      - uses: actions/upload-artifact@v4
+        with:
+          name: finance-source
+          path: .
+          include-hidden-files: true
+          retention-days: 1
