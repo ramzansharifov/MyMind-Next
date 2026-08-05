@@ -27,7 +27,7 @@ jobs:
       - name: Apply prepared source fixes
         shell: bash
         run: |
-          cat .github/finance-fix/chunk-* | base64 --decode | tar -xzf -
+          base64 --decode .github/finance-fix/chunk-00 | tar -xzf -
           rm -rf .github/finance-fix
           rm .github/workflows/apply-finance-fixes.yml
 
