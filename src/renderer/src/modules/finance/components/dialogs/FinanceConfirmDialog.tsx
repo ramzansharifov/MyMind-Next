@@ -59,9 +59,6 @@ export function FinanceConfirmDialog({
           onEscapeKeyDown={(event) => {
             if (isSubmitting) event.preventDefault()
           }}
-          onPointerDownOutside={(event) => {
-            if (isSubmitting) event.preventDefault()
-          }}
         >
           <div className="flex items-start gap-4 border-b border-[var(--app-border)] p-5">
             <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-red-300 ring-1 ring-red-500/15 ring-inset">
