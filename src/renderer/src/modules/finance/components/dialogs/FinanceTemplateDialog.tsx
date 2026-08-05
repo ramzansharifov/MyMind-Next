@@ -72,7 +72,8 @@ const schema = z
     }
   })
 
-type Values = z.infer<typeof schema>
+type FormInput = z.input<typeof schema>
+type Values = z.output<typeof schema>
 
 interface Props {
   open: boolean
@@ -104,7 +105,7 @@ function Content({ template, accounts, tags, onOpenChange, onSaved }: Props): Re
     handleSubmit,
     setError,
     formState: { errors }
-  } = useForm<Values>({
+  } = useForm<FormInput, unknown, Values>({
     resolver: zodResolver(schema),
     defaultValues: {
       name: template?.name ?? '',
