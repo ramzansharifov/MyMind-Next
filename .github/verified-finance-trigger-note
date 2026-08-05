@@ -1,0 +1,1 @@
+The verification workflow removes its own workflow file; this trigger note will be removed after the verified commit is moved back to PR 56.
