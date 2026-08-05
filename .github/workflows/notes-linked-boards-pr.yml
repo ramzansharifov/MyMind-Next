@@ -35,8 +35,22 @@ jobs:
           marker_end = "\n          PY\n\n      - name: Install dependencies"
           if workflow.count(marker_start) != 1 or workflow.count(marker_end) != 1:
               raise RuntimeError('Unable to locate the direct source update script')
-          script = workflow.split(marker_start, 1)[1].split(marker_end, 1)[0]
-          exec(textwrap.dedent(script), {'__name__': '__main__'})
+
+          script = textwrap.dedent(workflow.split(marker_start, 1)[1].split(marker_end, 1)[0])
+
+          def remove_replace_calls(source: str, path: str) -> str:
+              marker = f"replace_once(\n    '{path}',"
+              while marker in source:
+                  start = source.index(marker)
+                  end = source.index('\n)\n', start) + len('\n)\n')
+                  source = source[:start] + source[end:]
+              return source
+
+          script = remove_replace_calls(
+              script,
+              'src/renderer/src/modules/boards/components/BoardTree.tsx'
+          )
+          exec(script, {'__name__': '__main__'})
           PY
 
       - name: Install dependencies
