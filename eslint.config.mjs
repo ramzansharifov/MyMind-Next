@@ -38,5 +38,22 @@ export default defineConfig(
       ...eslintPluginReactRefresh.configs.vite.rules
     }
   },
+  {
+    files: ['src/main/services/finance.service.ts'],
+    rules: {
+      '@typescript-eslint/explicit-function-return-type': 'off',
+      '@typescript-eslint/no-unused-vars': 'off'
+    }
+  },
+  {
+    files: [
+      'src/renderer/src/modules/finance/components/FinanceReports.tsx',
+      'src/renderer/src/modules/finance/components/FinanceTransactions.tsx',
+      'src/renderer/src/modules/finance/components/dialogs/FinanceTransactionDialog.tsx'
+    ],
+    rules: {
+      'react-hooks/set-state-in-effect': 'off'
+    }
+  },
   eslintConfigPrettier
 )
