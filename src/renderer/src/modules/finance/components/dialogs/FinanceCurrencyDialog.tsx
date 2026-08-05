@@ -32,7 +32,15 @@ export function FinanceCurrencyDialog({
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => setBaseCurrency(settings.baseCurrencyCode), [settings.baseCurrencyCode])
+  useEffect(() => {
+    let cancelled = false
+    queueMicrotask(() => {
+      if (!cancelled) setBaseCurrency(settings.baseCurrencyCode)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [settings.baseCurrencyCode])
 
   async function saveBaseCurrency(): Promise<void> {
     setIsSaving(true)
