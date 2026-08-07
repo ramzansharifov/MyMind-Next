@@ -71,7 +71,7 @@ function FinanceLimitDialogContent({
     [accounts]
   )
   const canUseAllAccounts = accounts.length > 0 && accountCurrencies.length === 1
-  const existingAccountIds = limit?.accountIds ?? (limit?.accountId ? [limit.accountId] : [])
+  const existingAccountIds = limit?.accountIds ?? []
   const defaultAllAccounts = limit
     ? existingAccountIds.length === 0 && canUseAllAccounts
     : canUseAllAccounts
@@ -99,8 +99,7 @@ function FinanceLimitDialogContent({
       accountIds: defaultAccountIds,
       allAccounts: defaultAllAccounts,
       tagId: limit?.tagId ?? initialTagId ?? '',
-      periodType:
-        limit?.periodType && limit.periodType !== 'custom' ? limit.periodType : ('month' as const),
+      periodType: limit?.periodType ?? 'month',
       warningPercent: limit?.warningPercent ?? 80
     }
   })
@@ -151,20 +150,12 @@ function FinanceLimitDialogContent({
     setIsSaving(true)
     setBackendError(null)
     try {
-      const accountIds = values.allAccounts ? [] : values.accountIds
       const common = {
-        // The legacy database column is kept only for migration compatibility.
-        // The limit has no independent user-facing name: tag is its identity.
-        name: tag.name,
         amountMinor,
         currencyCode,
-        scopeType: values.allAccounts ? ('tag' as const) : ('account-tag' as const),
-        accountId: accountIds[0] ?? null,
-        accountIds,
+        accountIds: values.allAccounts ? [] : values.accountIds,
         tagId: values.tagId,
         periodType: values.periodType,
-        startsAt: 0,
-        endsAt: null,
         warningPercent: values.warningPercent
       }
       const saved = limit
