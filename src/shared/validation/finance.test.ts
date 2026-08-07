@@ -73,32 +73,23 @@ describe('finance validation', () => {
     ).toThrow('отличаться')
   })
 
-  it('validates limit scope, custom ranges and warning percent', () => {
+  it('requires a tag for limits and only accepts calendar periods', () => {
     const common = {
-      name: 'Еда',
       amountMinor: 100_00,
       currencyCode: 'TJS',
-      scopeType: 'tag' as const,
-      accountId: null,
-      tagId: null,
-      periodType: 'custom' as const,
-      startsAt: 100,
-      endsAt: 50,
-      warningPercent: 101
+      accountIds: ['card'],
+      tagId: 'food',
+      periodType: 'month' as const,
+      warningPercent: 80
     }
-    expect(() => createFinanceLimitInputSchema.parse(common)).toThrow()
-    expect(
-      createFinanceLimitInputSchema.parse({
-        ...common,
-        tagId: 'food',
-        endsAt: 200,
-        warningPercent: 80
-      }).tagId
-    ).toBe('food')
+    expect(createFinanceLimitInputSchema.parse(common)).toEqual(common)
+    expect(() => createFinanceLimitInputSchema.parse({ ...common, tagId: '' })).toThrow()
+    expect(() => createFinanceLimitInputSchema.parse({ ...common, periodType: 'custom' })).toThrow()
+    expect(() => createFinanceLimitInputSchema.parse({ ...common, warningPercent: 101 })).toThrow()
   })
 
-  it('validates template schedules and transfer references', () => {
-    expect(() =>
+  it('validates passive template references without schedule or reminder fields', () => {
+    expect(
       createFinanceTemplateInputSchema.parse({
         name: 'Аренда',
         type: 'expense',
@@ -107,13 +98,22 @@ describe('finance validation', () => {
         tagId: 'home',
         sourceAmountMinor: 100,
         destinationAmountMinor: null,
-        comment: '',
-        scheduleType: 'monthly',
-        scheduleInterval: 1,
-        nextOccurrenceAt: null,
-        reminderEnabled: true
+        comment: ''
       })
-    ).toThrow('дата')
+    ).toMatchObject({ name: 'Аренда', type: 'expense', tagId: 'home' })
+
+    expect(() =>
+      createFinanceTemplateInputSchema.parse({
+        name: 'Перевод',
+        type: 'transfer',
+        sourceAccountId: 'card',
+        destinationAccountId: 'card',
+        tagId: null,
+        sourceAmountMinor: 100,
+        destinationAmountMinor: 100,
+        comment: ''
+      })
+    ).toThrow('отличаться')
   })
 
   it('keeps internal adjustments behind a separate schema and protects clear confirmation', () => {
