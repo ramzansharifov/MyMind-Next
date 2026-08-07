@@ -1,5 +1,5 @@
 import { CalendarClock, Pause, Pencil, Play, Plus, Trash2 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import type {
   FinanceAccountSummary,
@@ -36,18 +36,12 @@ export function FinanceTemplates({
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false)
   const [editTemplate, setEditTemplate] = useState<FinanceTemplate | null>(null)
   const [deleteTemplate, setDeleteTemplate] = useState<FinanceTemplate | null>(null)
-  const [useTemplate, setUseTemplate] = useState<FinanceTemplate | null>(null)
-  const [dialogType, setDialogType] = useState<FinanceUserTransactionType>('expense')
-  const [transactionDialogOpen, setTransactionDialogOpen] = useState(false)
+  const [useTemplate, setUseTemplate] = useState<FinanceTemplate | null>(initialTemplate ?? null)
+  const [dialogType, setDialogType] = useState<FinanceUserTransactionType>(
+    initialTemplate?.type ?? 'expense'
+  )
+  const [transactionDialogOpen, setTransactionDialogOpen] = useState(Boolean(initialTemplate))
   const [quickTagType, setQuickTagType] = useState<'income' | 'expense' | null>(null)
-
-  useEffect(() => {
-    if (!initialTemplate) return
-    setUseTemplate(initialTemplate)
-    setDialogType(initialTemplate.type)
-    setTransactionDialogOpen(true)
-    onInitialTemplateHandled?.()
-  }, [initialTemplate, onInitialTemplateHandled])
 
   return (
     <div className="space-y-4">
@@ -206,7 +200,10 @@ export function FinanceTemplates({
         template={useTemplate}
         onOpenChange={(open) => {
           setTransactionDialogOpen(open)
-          if (!open) setUseTemplate(null)
+          if (!open) {
+            setUseTemplate(null)
+            onInitialTemplateHandled?.()
+          }
         }}
         onSaved={async () => onChanged()}
         onCreateTagRequested={setQuickTagType}
