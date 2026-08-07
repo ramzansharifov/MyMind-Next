@@ -1,4 +1,4 @@
-import { Gauge, Pause, Play, Plus, Trash2 } from 'lucide-react'
+import { Gauge, Pause, Play, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
 import type {
@@ -35,40 +35,12 @@ export function FinanceLimits({
 
   return (
     <div className="space-y-4">
-      <FinanceSection
-        title="Лимиты"
-        icon={<Gauge aria-hidden="true" className="size-5" />}
-        actions={
-          <FinanceButton
-            size="sm"
-            tone="primary"
-            onClick={() => {
-              setEditLimit(null)
-              setLimitDialogOpen(true)
-            }}
-          >
-            <Plus aria-hidden="true" className="size-4" />
-            Новый лимит
-          </FinanceButton>
-        }
-      >
+      <FinanceSection title="Лимиты" icon={<Gauge aria-hidden="true" className="size-5" />}>
         {limits.length === 0 ? (
           <FinanceEmptyState
             icon={<Gauge className="size-6" />}
             title="Лимитов пока нет"
             description="Создайте контроль расходов для всех операций, конкретного счёта или тега."
-            action={
-              <FinanceButton
-                tone="primary"
-                onClick={() => {
-                  setEditLimit(null)
-                  setLimitDialogOpen(true)
-                }}
-              >
-                <Plus className="size-4" />
-                Создать лимит
-              </FinanceButton>
-            }
           />
         ) : (
           <div className="grid grid-cols-2 gap-3 max-[780px]:grid-cols-1">
