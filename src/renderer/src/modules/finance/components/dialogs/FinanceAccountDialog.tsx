@@ -11,6 +11,7 @@ import { ColorPicker } from '../../../../shared/ui/ColorPicker'
 import { financeClient } from '../../api/finance-client'
 import { getFinanceErrorMessage } from '../../lib/finance-ui'
 import { FinanceButton, FinanceField, financeInputClassName } from '../FinancePrimitives'
+import { FinanceIconPicker } from '../FinanceIconPicker'
 
 const accountFormSchema = z.object({
   name: z.string().trim().min(1, 'Введите название').max(120),
@@ -151,15 +152,23 @@ function FinanceAccountDialogContent({
         )}
 
         <div className="grid grid-cols-2 gap-4 max-[520px]:grid-cols-1">
-          <FinanceField label="Иконка" error={errors.icon?.message}>
-            <select {...register('icon')} className={financeInputClassName}>
-              {FINANCE_ICON_NAMES.map((icon) => (
-                <option key={icon} value={icon}>
-                  {icon}
-                </option>
-              ))}
-            </select>
-          </FinanceField>
+          <div className="text-sm text-[var(--app-text)]">
+            <span className="mb-1.5 block font-medium">Иконка</span>
+            <Controller
+              control={control}
+              name="icon"
+              render={({ field }) => (
+                <FinanceIconPicker
+                  value={field.value}
+                  disabled={isSaving}
+                  onChange={field.onChange}
+                />
+              )}
+            />
+            {errors.icon?.message && (
+              <span className="mt-1.5 block text-xs text-red-300">{errors.icon.message}</span>
+            )}
+          </div>
           <div className="text-sm text-[var(--app-text)]">
             <span className="mb-1.5 block font-medium">Цвет</span>
             <Controller
