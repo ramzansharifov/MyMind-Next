@@ -19,8 +19,6 @@ interface Props {
   accounts: FinanceAccountSummary[]
   tags: FinanceTagSummary[]
   templates: FinanceTemplate[]
-  initialTemplate?: FinanceTemplate | null
-  onInitialTemplateHandled?: () => void
   onChanged: () => void | Promise<void>
 }
 
@@ -28,18 +26,14 @@ export function FinanceTemplates({
   accounts,
   tags,
   templates,
-  initialTemplate,
-  onInitialTemplateHandled,
   onChanged
 }: Props): React.JSX.Element {
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false)
   const [editTemplate, setEditTemplate] = useState<FinanceTemplate | null>(null)
   const [deleteTemplate, setDeleteTemplate] = useState<FinanceTemplate | null>(null)
-  const [useTemplate, setUseTemplate] = useState<FinanceTemplate | null>(initialTemplate ?? null)
-  const [dialogType, setDialogType] = useState<FinanceUserTransactionType>(
-    initialTemplate?.type ?? 'expense'
-  )
-  const [transactionDialogOpen, setTransactionDialogOpen] = useState(Boolean(initialTemplate))
+  const [useTemplate, setUseTemplate] = useState<FinanceTemplate | null>(null)
+  const [dialogType, setDialogType] = useState<FinanceUserTransactionType>('expense')
+  const [transactionDialogOpen, setTransactionDialogOpen] = useState(false)
 
   return (
     <div className="space-y-4">
@@ -152,10 +146,7 @@ export function FinanceTemplates({
         template={useTemplate}
         onOpenChange={(open) => {
           setTransactionDialogOpen(open)
-          if (!open) {
-            setUseTemplate(null)
-            onInitialTemplateHandled?.()
-          }
+          if (!open) setUseTemplate(null)
         }}
         onSaved={async () => onChanged()}
       />
