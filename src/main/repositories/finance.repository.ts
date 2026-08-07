@@ -55,7 +55,6 @@ interface ExchangeRateRow {
 interface AccountRow {
   id: string
   name: string
-  type: FinanceAccount['type']
   currency_code: string
   initial_balance_minor: number
   icon: FinanceAccount['icon']
@@ -177,7 +176,6 @@ function mapAccount(row: AccountRow): FinanceAccount {
   return {
     id: row.id,
     name: row.name,
-    type: row.type,
     currencyCode: row.currency_code,
     initialBalanceMinor: assertSafeMinor(row.initial_balance_minor),
     icon: row.icon,
@@ -633,13 +631,12 @@ export function createFinanceAccount(input: CreateFinanceAccountInput): FinanceA
   getSqlite()
     .prepare(
       `INSERT INTO finance_accounts (
-        id, name, type, currency_code, initial_balance_minor, icon, color, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        id, name, currency_code, initial_balance_minor, icon, color, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
       id,
       input.name,
-      input.type,
       input.currencyCode,
       input.initialBalanceMinor,
       input.icon,
@@ -667,10 +664,10 @@ export function updateFinanceAccount(input: UpdateFinanceAccountInput): FinanceA
   getSqlite()
     .prepare(
       `UPDATE finance_accounts SET
-        name = ?, type = ?, currency_code = ?, icon = ?, color = ?, updated_at = ?
+        name = ?, currency_code = ?, icon = ?, color = ?, updated_at = ?
        WHERE id = ?`
     )
-    .run(input.name, input.type, nextCurrency, input.icon, input.color, Date.now(), input.id)
+    .run(input.name, nextCurrency, input.icon, input.color, Date.now(), input.id)
 
   return getFinanceAccount(input.id)
 }
