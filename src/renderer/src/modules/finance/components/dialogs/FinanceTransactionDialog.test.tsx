@@ -146,7 +146,7 @@ describe('FinanceTransactionDialog', () => {
     expect(within(tagGroup).getAllByRole('radio', { checked: true })).toHaveLength(1)
     expect(screen.queryByRole('button', { name: /Создать тег для/ })).not.toBeInTheDocument()
 
-    const amount = screen.getByRole('spinbutton', { name: 'Сумма' })
+    const amount = screen.getByRole('spinbutton', { name: /Сумма/ })
     expect(amount).toHaveAttribute('type', 'number')
     await user.type(amount, '12.50')
     await user.click(screen.getByRole('button', { name: 'Создать операцию' }))
