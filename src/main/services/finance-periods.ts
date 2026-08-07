@@ -21,14 +21,7 @@ import type {
 } from '../../shared/contracts/finance'
 
 export function resolveFinanceLimitPeriod(limit: FinanceLimit, at: number): FinancePeriod {
-  if (limit.periodType === 'custom') {
-    return {
-      from: limit.startsAt,
-      to: limit.endsAt ?? limit.startsAt
-    }
-  }
-
-  const date = new Date(Math.max(at, limit.startsAt))
+  const date = new Date(at)
   let from: Date
   let to: Date
 
@@ -41,18 +34,19 @@ export function resolveFinanceLimitPeriod(limit: FinanceLimit, at: number): Fina
       from = startOfWeek(date, { weekStartsOn: 1 })
       to = endOfWeek(date, { weekStartsOn: 1 })
       break
-    case 'month':
-      from = startOfMonth(date)
-      to = endOfMonth(date)
-      break
     case 'year':
       from = startOfYear(date)
       to = endOfYear(date)
       break
+    case 'custom':
+    case 'month':
+      from = startOfMonth(date)
+      to = endOfMonth(date)
+      break
   }
 
   return {
-    from: Math.max(from.getTime(), limit.startsAt),
+    from: from.getTime(),
     to: to.getTime()
   }
 }
