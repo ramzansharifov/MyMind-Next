@@ -1,9 +1,9 @@
-import * as Dialog from '@radix-ui/react-dialog'
 import { Check, Copy, Maximize2, Minimize2 } from 'lucide-react'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 
 import { cn } from '../../../../shared/lib/cn'
 import { writeClipboard } from '../../../../shared/lib/write-clipboard'
+import { AppDialog } from '../../../../shared/ui/AppDialog'
 import { Tooltip, TooltipProvider } from '../../../../shared/ui/tooltip'
 
 type CopyState = 'idle' | 'copied' | 'error'
@@ -136,27 +136,26 @@ export function StudySourceBlockShell({
 
   return (
     <TooltipProvider delayDuration={250}>
-      <Dialog.Root open={fullscreenOpen} onOpenChange={setFullscreenOpen}>
+      {children({
+        fullscreen: false,
+        actions: renderActions(false)
+      })}
+
+      <AppDialog
+        open={fullscreenOpen}
+        onOpenChange={setFullscreenOpen}
+        title={dialogTitle}
+        description={dialogDescription}
+        size="fullscreen"
+        showHeader={false}
+        showClose={false}
+        bodyClassName="h-full min-h-0 overflow-hidden"
+      >
         {children({
-          fullscreen: false,
-          actions: renderActions(false)
+          fullscreen: true,
+          actions: renderActions(true)
         })}
-
-        <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 z-[69] bg-black/75 backdrop-blur-[3px]" />
-
-          <Dialog.Content className="fixed inset-0 z-[70] min-h-0 min-w-0 overflow-hidden bg-[var(--app-workspace)] p-3 outline-none">
-            <Dialog.Title className="sr-only">{dialogTitle}</Dialog.Title>
-
-            <Dialog.Description className="sr-only">{dialogDescription}</Dialog.Description>
-
-            {children({
-              fullscreen: true,
-              actions: renderActions(true)
-            })}
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
+      </AppDialog>
 
       <span aria-live="polite" className="sr-only">
         {announcement}
