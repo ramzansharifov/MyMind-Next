@@ -349,7 +349,9 @@ export function FinanceReports({
                     report.limits.map((limit) => (
                       <div key={limit.id}>
                         <div className="mb-2 flex justify-between text-sm">
-                          <span className="text-[var(--app-text)]">{limit.name}</span>
+                          <span className="text-[var(--app-text)]">
+                            {tags.find((tag) => tag.id === limit.tagId)?.name ?? 'Тег не найден'}
+                          </span>
                           <span className="text-[var(--app-muted)]">
                             {Math.round(limit.usagePercent)}%
                           </span>
