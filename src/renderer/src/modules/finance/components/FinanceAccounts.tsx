@@ -160,7 +160,9 @@ export function FinanceAccounts({
                       <FinanceIcon name={account.icon} className="size-5" />
                     </div>
                     <div className="min-w-0">
-                      <h3 className="truncate font-medium text-[var(--app-text)]">{account.name}</h3>
+                      <h3 className="truncate font-medium text-[var(--app-text)]">
+                        {account.name}
+                      </h3>
                       <p className="text-xs text-[var(--app-muted)]">{account.currencyCode}</p>
                     </div>
                   </div>
