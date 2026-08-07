@@ -107,28 +107,66 @@ beforeEach(() => {
 })
 
 describe('FinancePage', () => {
-  it('renders the shared module hero and horizontal five-page workspace', async () => {
+  it('renders the shared module hero and separate finance workspace pages', async () => {
     render(<FinancePage />)
     expect(await screen.findByRole('heading', { name: 'Финансы' })).toBeInTheDocument()
     expect(document.querySelector('[data-finance-hero]')).toBeInTheDocument()
     expect(document.querySelector('[data-finance-navigation]')).toBeInTheDocument()
-    for (const label of ['Главная', 'Транзакции', 'Счета', 'Теги', 'Отчёты']) {
+    for (const label of [
+      'Главная',
+      'Транзакции',
+      'Шаблоны',
+      'Лимиты',
+      'Счета',
+      'Теги',
+      'Отчёты'
+    ]) {
       expect(screen.getByRole('button', { name: label })).toBeInTheDocument()
     }
     for (const label of ['Доход', 'Расход', 'Перевод']) {
       expect(screen.getByRole('button', { name: label })).toBeInTheDocument()
     }
     expect(screen.queryByRole('button', { name: 'Обновить' })).not.toBeInTheDocument()
-    expect(screen.queryByText('Текущие остатки по местам хранения денег')).not.toBeInTheDocument()
     expect(document.querySelector('[data-module-sidebar]')).not.toBeInTheDocument()
   })
 
-  it('shows the dashboard empty state and switches internal pages', async () => {
+  it('keeps transactions, templates and limits on separate top-level pages', async () => {
     const user = userEvent.setup()
     render(<FinancePage />)
-    expect(await screen.findByText('Пока нет счетов')).toBeInTheDocument()
+    await screen.findByText('Пока нет счетов')
+
     await user.click(screen.getByRole('button', { name: 'Транзакции' }))
-    expect(screen.getByRole('tab', { name: 'Операции' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Фильтры' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Операции' })).toBeInTheDocument()
+    expect(screen.queryByRole('tab', { name: /Шаблоны/ })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Шаблоны' }))
+    expect(screen.getByRole('heading', { name: 'Шаблоны' })).toBeInTheDocument()
+    expect(screen.getByText('Шаблонов пока нет')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Лимиты' }))
+    expect(screen.getByRole('heading', { name: 'Лимиты' })).toBeInTheDocument()
+    expect(screen.getByText('Лимитов пока нет')).toBeInTheDocument()
+  })
+
+  it('renders accounts and tags inside standard section blocks', async () => {
+    const user = userEvent.setup()
+    render(<FinancePage />)
+    await screen.findByText('Пока нет счетов')
+
+    await user.click(screen.getByRole('button', { name: 'Счета' }))
+    expect(screen.getByRole('heading', { name: 'Счета' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Новый счёт' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Теги' }))
+    expect(screen.getByRole('heading', { name: 'Теги' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Новый тег' })).toBeInTheDocument()
+  })
+
+  it('switches to reports', async () => {
+    const user = userEvent.setup()
+    render(<FinancePage />)
+    await screen.findByText('Пока нет счетов')
     await user.click(screen.getByRole('button', { name: 'Отчёты' }))
     expect(await screen.findByText('Доходы и расходы по времени')).toBeInTheDocument()
   })
