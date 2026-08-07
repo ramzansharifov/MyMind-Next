@@ -118,7 +118,6 @@ describe('preload API contract', () => {
 
     await api.finance.createAccount({
       name: 'Карта',
-      type: 'card',
       currencyCode: 'TJS',
       initialBalanceMinor: 0,
       icon: 'credit-card',
@@ -126,7 +125,6 @@ describe('preload API contract', () => {
     })
     expect(electronMocks.invoke).toHaveBeenCalledWith('finance:create-account', {
       name: 'Карта',
-      type: 'card',
       currencyCode: 'TJS',
       initialBalanceMinor: 0,
       icon: 'credit-card',
