@@ -1,18 +1,8 @@
 export const FINANCE_TRANSACTION_TYPES = ['income', 'expense', 'transfer', 'adjustment'] as const
 export const FINANCE_USER_TRANSACTION_TYPES = ['income', 'expense', 'transfer'] as const
 export const FINANCE_TAG_TYPES = ['income', 'expense', 'both'] as const
-export const FINANCE_LIMIT_SCOPE_TYPES = ['all', 'account', 'tag', 'account-tag'] as const
-export const FINANCE_LIMIT_PERIOD_TYPES = ['day', 'week', 'month', 'year', 'custom'] as const
+export const FINANCE_LIMIT_PERIOD_TYPES = ['day', 'week', 'month', 'year'] as const
 export const FINANCE_LIMIT_STATES = ['active', 'paused'] as const
-export const FINANCE_TEMPLATE_SCHEDULE_TYPES = [
-  'none',
-  'daily',
-  'weekly',
-  'monthly',
-  'yearly',
-  'custom'
-] as const
-export const FINANCE_TEMPLATE_STATES = ['active', 'paused'] as const
 export const FINANCE_TRANSACTION_SORTS = [
   'date-desc',
   'date-asc',
@@ -46,11 +36,8 @@ export const FINANCE_ICON_NAMES = [
 export type FinanceTransactionType = (typeof FINANCE_TRANSACTION_TYPES)[number]
 export type FinanceUserTransactionType = (typeof FINANCE_USER_TRANSACTION_TYPES)[number]
 export type FinanceTagType = (typeof FINANCE_TAG_TYPES)[number]
-export type FinanceLimitScopeType = (typeof FINANCE_LIMIT_SCOPE_TYPES)[number]
 export type FinanceLimitPeriodType = (typeof FINANCE_LIMIT_PERIOD_TYPES)[number]
 export type FinanceLimitState = (typeof FINANCE_LIMIT_STATES)[number]
-export type FinanceTemplateScheduleType = (typeof FINANCE_TEMPLATE_SCHEDULE_TYPES)[number]
-export type FinanceTemplateState = (typeof FINANCE_TEMPLATE_STATES)[number]
 export type FinanceTransactionSort = (typeof FINANCE_TRANSACTION_SORTS)[number]
 export type FinancePageId = (typeof FINANCE_PAGES)[number]
 export type FinanceIconName = (typeof FINANCE_ICON_NAMES)[number]
@@ -135,16 +122,11 @@ export interface FinanceTransaction {
 
 export interface FinanceLimit {
   id: string
-  name: string
   amountMinor: number
   currencyCode: string
-  scopeType: FinanceLimitScopeType
-  accountId: string | null
   accountIds?: string[]
-  tagId: string | null
+  tagId: string
   periodType: FinanceLimitPeriodType
-  startsAt: number
-  endsAt: number | null
   warningPercent: number
   state: FinanceLimitState
   createdAt: number
@@ -175,12 +157,6 @@ export interface FinanceTemplate {
   sourceAmountMinor: number
   destinationAmountMinor: number | null
   comment: string
-  scheduleType: FinanceTemplateScheduleType
-  scheduleInterval: number
-  nextOccurrenceAt: number | null
-  reminderEnabled: boolean
-  state: FinanceTemplateState
-  lastUsedAt: number | null
   createdAt: number
   updatedAt: number
 }
@@ -211,7 +187,6 @@ export interface FinanceDashboard {
   accounts: FinanceAccountSummary[]
   limits: FinanceLimitStatus[]
   recentTransactions: FinanceTransaction[]
-  upcomingTemplates: FinanceTemplate[]
 }
 
 export interface FinanceReportPoint {
@@ -371,16 +346,11 @@ export interface FinanceTransactionPage {
 }
 
 export interface CreateFinanceLimitInput {
-  name: string
   amountMinor: number
   currencyCode: string
-  scopeType: FinanceLimitScopeType
-  accountId: string | null
-  accountIds?: string[]
-  tagId: string | null
+  accountIds: string[]
+  tagId: string
   periodType: FinanceLimitPeriodType
-  startsAt: number
-  endsAt: number | null
   warningPercent: number
   state?: FinanceLimitState
 }
@@ -430,38 +400,13 @@ export interface CreateFinanceTemplateInput {
   sourceAmountMinor: number
   destinationAmountMinor: number | null
   comment: string
-  scheduleType: FinanceTemplateScheduleType
-  scheduleInterval: number
-  nextOccurrenceAt: number | null
-  reminderEnabled: boolean
-  state?: FinanceTemplateState
 }
 
 export interface UpdateFinanceTemplateInput extends CreateFinanceTemplateInput {
   id: string
-  state: FinanceTemplateState
-}
-
-export interface SetFinanceTemplateStateInput {
-  id: string
-  state: FinanceTemplateState
 }
 
 export interface DeleteFinanceTemplateInput {
-  id: string
-}
-
-export interface UseFinanceTemplateInput {
-  templateId: string
-  transaction: CreateFinanceTransactionInput
-}
-
-export interface SnoozeFinanceTemplateInput {
-  id: string
-  nextOccurrenceAt: number
-}
-
-export interface SkipFinanceTemplateInput {
   id: string
 }
 
@@ -521,11 +466,7 @@ export const FINANCE_IPC_CHANNELS = {
   listTemplates: 'finance:list-templates',
   createTemplate: 'finance:create-template',
   updateTemplate: 'finance:update-template',
-  setTemplateState: 'finance:set-template-state',
   deleteTemplate: 'finance:delete-template',
-  useTemplate: 'finance:use-template',
-  snoozeTemplate: 'finance:snooze-template',
-  skipTemplate: 'finance:skip-template',
   getDashboard: 'finance:get-dashboard',
   getReport: 'finance:get-report'
 } as const
@@ -563,11 +504,7 @@ export interface FinanceApi {
   listTemplates(): Promise<FinanceTemplate[]>
   createTemplate(input: CreateFinanceTemplateInput): Promise<FinanceTemplate>
   updateTemplate(input: UpdateFinanceTemplateInput): Promise<FinanceTemplate>
-  setTemplateState(input: SetFinanceTemplateStateInput): Promise<FinanceTemplate>
   deleteTemplate(input: DeleteFinanceTemplateInput): Promise<boolean>
-  useTemplate(input: UseFinanceTemplateInput): Promise<FinanceTransaction>
-  snoozeTemplate(input: SnoozeFinanceTemplateInput): Promise<FinanceTemplate>
-  skipTemplate(input: SkipFinanceTemplateInput): Promise<FinanceTemplate>
   getDashboard(period?: FinancePeriod): Promise<FinanceDashboard>
   getReport(filters: FinanceReportFilters): Promise<FinanceReport>
 }
