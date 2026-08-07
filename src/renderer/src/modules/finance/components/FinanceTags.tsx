@@ -10,6 +10,7 @@ import { formatMoneyMinor } from '../../../../../shared/finance-money'
 import { financeClient } from '../api/finance-client'
 import { FinanceIcon, financeTagTypeLabels } from '../lib/finance-ui'
 import { FinanceButton, FinanceEmptyState, FinanceSurface } from './FinancePrimitives'
+import { FinanceSection } from './FinanceSection'
 import { FinanceConfirmDialog } from './dialogs/FinanceConfirmDialog'
 import { FinanceLimitDialog } from './dialogs/FinanceLimitDialog'
 import { FinanceTagDialog } from './dialogs/FinanceTagDialog'
@@ -43,52 +44,62 @@ export function FinanceTags({
     setDialogOpen(true)
   }
   const groups = [
-    { type: 'income' as const, title: 'Доходы', description: 'Теги только для поступлений' },
-    { type: 'expense' as const, title: 'Расходы', description: 'Теги только для списаний' },
-    {
-      type: 'both' as const,
-      title: 'Универсальные',
-      description: 'Можно использовать и для доходов, и для расходов'
-    }
+    { type: 'income' as const, title: 'Доходы' },
+    { type: 'expense' as const, title: 'Расходы' },
+    { type: 'both' as const, title: 'Универсальные' }
   ]
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h2 className="text-base font-semibold text-[var(--app-text)]">
-            Категории доходов и расходов
-          </h2>
-          <p className="mt-1 text-sm text-[var(--app-muted)]">
-            Иконки выбираются из контролируемого набора Lucide.
-          </p>
-        </div>
-        <FinanceButton tone="primary" onClick={openNew}>
-          <Plus className="size-4" />
-          Новый тег
-        </FinanceButton>
-      </div>
-      {tags.length === 0 ? (
-        <FinanceEmptyState
-          icon={<Tag className="size-6" />}
-          title="Пока нет тегов"
-          description="Доход и расход требуют подходящего тега. Создайте первый, чтобы продолжить добавление операций."
-          action={
-            <FinanceButton tone="primary" onClick={openNew}>
-              <Plus className="size-4" />
-              Создать тег
-            </FinanceButton>
-          }
-        />
-      ) : (
+    <div className="space-y-4">
+      <FinanceSection
+        title="Теги"
+        icon={<Tag aria-hidden="true" className="size-5" />}
+        actions={
+          <FinanceButton size="sm" tone="primary" onClick={openNew}>
+            <Plus aria-hidden="true" className="size-4" />
+            Новый тег
+          </FinanceButton>
+        }
+      >
+        {tags.length === 0 ? (
+          <FinanceEmptyState
+            icon={<Tag className="size-6" />}
+            title="Пока нет тегов"
+            description="Создайте первый тег для категоризации доходов и расходов."
+            action={
+              <FinanceButton tone="primary" onClick={openNew}>
+                <Plus className="size-4" />
+                Создать тег
+              </FinanceButton>
+            }
+          />
+        ) : (
+          <div className="grid grid-cols-3 gap-3 max-[760px]:grid-cols-1">
+            {groups.map((group) => (
+              <FinanceSurface
+                key={group.type}
+                as="article"
+                className="bg-[var(--app-card)] p-4 shadow-none"
+              >
+                <div className="text-xs text-[var(--app-muted)]">{group.title}</div>
+                <div className="mt-2 text-2xl font-semibold text-[var(--app-text)] tabular-nums">
+                  {tags.filter((tag) => tag.type === group.type).length}
+                </div>
+              </FinanceSurface>
+            ))}
+          </div>
+        )}
+      </FinanceSection>
+
+      {tags.length > 0 &&
         groups.map((group) => {
           const items = tags.filter((tag) => tag.type === group.type)
           return (
-            <section key={group.type}>
-              <div className="mb-3">
-                <h3 className="font-semibold text-[var(--app-text)]">{group.title}</h3>
-                <p className="mt-0.5 text-sm text-[var(--app-muted)]">{group.description}</p>
-              </div>
+            <FinanceSection
+              key={group.type}
+              title={group.title}
+              icon={<Tag aria-hidden="true" className="size-5" />}
+            >
               {items.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-[var(--app-border)] p-5 text-sm text-[var(--app-muted)]">
                   В этом разделе тегов пока нет.
@@ -98,7 +109,11 @@ export function FinanceTags({
                   {items.map((tag) => {
                     const linkedLimit = limits.find((limit) => limit.tagId === tag.id)
                     return (
-                      <FinanceSurface key={tag.id} className="p-4">
+                      <FinanceSurface
+                        key={tag.id}
+                        as="article"
+                        className="bg-[var(--app-card)] p-4 shadow-none"
+                      >
                         <div className="flex items-center gap-3">
                           <div
                             className="flex size-11 items-center justify-center rounded-xl"
@@ -107,9 +122,9 @@ export function FinanceTags({
                             <FinanceIcon name={tag.icon} className="size-5" />
                           </div>
                           <div className="min-w-0">
-                            <h4 className="truncate font-medium text-[var(--app-text)]">
+                            <h3 className="truncate font-medium text-[var(--app-text)]">
                               {tag.name}
-                            </h4>
+                            </h3>
                             <p className="text-xs text-[var(--app-muted)]">
                               {financeTagTypeLabels[tag.type]}
                             </p>
@@ -142,7 +157,7 @@ export function FinanceTags({
                           </div>
                         </dl>
                         {linkedLimit && (
-                          <div className="mt-3 rounded-lg bg-amber-500/[0.07] px-3 py-2 text-xs text-amber-100">
+                          <div className="mt-3 rounded-lg border border-[var(--app-border)] bg-[var(--app-overlay-faint)] px-3 py-2 text-xs text-[var(--app-muted)]">
                             Лимит: {linkedLimit.name} · {Math.round(linkedLimit.usagePercent)}%
                           </div>
                         )}
@@ -182,10 +197,9 @@ export function FinanceTags({
                   })}
                 </div>
               )}
-            </section>
+            </FinanceSection>
           )
-        })
-      )}
+        })}
 
       <FinanceTagDialog
         open={dialogOpen || Boolean(createType)}
