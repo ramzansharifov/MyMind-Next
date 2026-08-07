@@ -41,10 +41,14 @@ const financeIconOptions = FINANCE_ICON_NAMES.map(
 export function FinanceIconPicker({
   value,
   disabled = false,
+  pickerLabel = 'Иконка счёта',
+  ariaLabel = 'Выбрать иконку счёта',
   onChange
 }: {
   value: FinanceIconName
   disabled?: boolean
+  pickerLabel?: string
+  ariaLabel?: string
   onChange: (value: FinanceIconName) => void
 }): React.JSX.Element {
   return (
@@ -53,14 +57,14 @@ export function FinanceIconPicker({
       onChange={onChange}
       options={financeIconOptions}
       align="start"
-      label="Иконка счёта"
+      label={pickerLabel}
       optionDataAttribute="data-finance-icon-option"
       renderIcon={(icon) => <FinanceIcon name={icon} className="size-5" />}
       trigger={
         <button
           type="button"
           disabled={disabled}
-          aria-label="Выбрать иконку счёта"
+          aria-label={ariaLabel}
           className={`${financeInputClassName} flex items-center gap-3 text-left`}
         >
           <span className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-[var(--app-border)] bg-[var(--app-control)] text-[var(--app-accent-500)]">
