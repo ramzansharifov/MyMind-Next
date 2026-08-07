@@ -1,4 +1,4 @@
-import { GraduationCap, Notebook, WalletCards } from 'lucide-react'
+import { GraduationCap, Notebook, Wallet } from 'lucide-react'
 import { describe, expect, it } from 'vitest'
 
 import { appModuleRegistry, appModules, defineAppModules, getAppModule } from './module-registry'
@@ -14,7 +14,7 @@ describe('app module registry', () => {
     expect(getAppModule('settings')).toBe(appModuleRegistry.settings)
     expect(appModuleRegistry.study.icon).toBe(GraduationCap)
     expect(appModuleRegistry.notes.icon).toBe(Notebook)
-    expect(appModuleRegistry.finance.icon).toBe(WalletCards)
+    expect(appModuleRegistry.finance.icon).toBe(Wallet)
     expect(primaryNavigationItems.map(({ id }) => id)).toEqual([
       'study',
       'boards',

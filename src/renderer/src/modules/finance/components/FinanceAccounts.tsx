@@ -1,4 +1,4 @@
-import { ArrowLeft, Coins, Edit3, Trash2, WalletCards } from 'lucide-react'
+import { ArrowLeft, Coins, Edit3, Trash2, Wallet } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import type {
@@ -7,7 +7,7 @@ import type {
 } from '../../../../../shared/contracts/finance'
 import { formatMoneyMinor } from '../../../../../shared/finance-money'
 import { financeClient } from '../api/finance-client'
-import { FinanceIcon, financeAccountTypeLabels, getFinanceErrorMessage } from '../lib/finance-ui'
+import { FinanceIcon, getFinanceErrorMessage } from '../lib/finance-ui'
 import {
   FinanceButton,
   FinanceEmptyState,
@@ -36,7 +36,6 @@ export function FinanceAccounts({
   onChanged
 }: Props): React.JSX.Element {
   const [currency, setCurrency] = useState('all')
-  const [type, setType] = useState('all')
   const [accountDialogOpen, setAccountDialogOpen] = useState(false)
   const [editAccount, setEditAccount] = useState<FinanceAccountSummary | null>(null)
   const [deleteAccount, setDeleteAccount] = useState<FinanceAccountSummary | null>(null)
@@ -46,9 +45,7 @@ export function FinanceAccounts({
     [accounts]
   )
   const filtered = accounts.filter(
-    (account) =>
-      (currency === 'all' || account.currencyCode === currency) &&
-      (type === 'all' || account.type === type)
+    (account) => currency === 'all' || account.currencyCode === currency
   )
   const selected = accounts.find((account) => account.id === selectedAccountId) ?? null
   const accountDialogs = (
@@ -140,7 +137,7 @@ export function FinanceAccounts({
         </FinanceSection>
       )}
 
-      <FinanceSection title="Счета" icon={<WalletCards aria-hidden="true" className="size-5" />}>
+      <FinanceSection title="Счета" icon={<Wallet aria-hidden="true" className="size-5" />}>
         <div className="flex flex-wrap gap-2">
           <select
             aria-label="Фильтр валюты"
@@ -155,31 +152,17 @@ export function FinanceAccounts({
               </option>
             ))}
           </select>
-          <select
-            aria-label="Фильтр типа счёта"
-            value={type}
-            onChange={(event) => setType(event.target.value)}
-            className={`${financeInputClassName} w-52 max-w-full`}
-          >
-            <option value="all">Все типы</option>
-            <option value="cash">Наличные</option>
-            <option value="card">Карта</option>
-            <option value="bank">Банковский счёт</option>
-            <option value="wallet">Кошелёк</option>
-            <option value="savings">Накопительный</option>
-            <option value="other">Другой</option>
-          </select>
         </div>
 
         <div className="mt-3">
           {filtered.length === 0 ? (
             <FinanceEmptyState
-              icon={<WalletCards className="size-6" />}
+              icon={<Wallet className="size-6" />}
               title={accounts.length === 0 ? 'Пока нет счетов' : 'Счета не найдены'}
               description={
                 accounts.length === 0
-                  ? 'Создайте карту, наличные, банковский счёт или электронный кошелёк.'
-                  : 'Измените фильтры, чтобы увидеть другие счета.'
+                  ? 'Создайте первый счёт и укажите валюту, в которой хранится его баланс.'
+                  : 'Измените фильтр валюты, чтобы увидеть другие счета.'
               }
             />
           ) : (
@@ -206,9 +189,7 @@ export function FinanceAccounts({
                         <h3 className="truncate font-medium text-[var(--app-text)]">
                           {account.name}
                         </h3>
-                        <p className="text-xs text-[var(--app-muted)]">
-                          {financeAccountTypeLabels[account.type]} · {account.currencyCode}
-                        </p>
+                        <p className="text-xs text-[var(--app-muted)]">{account.currencyCode}</p>
                       </div>
                     </div>
                     <div
@@ -369,9 +350,7 @@ function AccountDetail({
             </div>
             <div>
               <h2 className="text-xl font-semibold text-[var(--app-text)]">{account.name}</h2>
-              <p className="mt-1 text-sm text-[var(--app-muted)]">
-                {financeAccountTypeLabels[account.type]} · {account.currencyCode}
-              </p>
+              <p className="mt-1 text-sm text-[var(--app-muted)]">{account.currencyCode}</p>
             </div>
           </div>
           <div className="text-right">

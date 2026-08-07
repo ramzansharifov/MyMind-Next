@@ -1,7 +1,6 @@
 import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 
 import type {
-  FinanceAccountType,
   FinanceIconName,
   FinanceLimitPeriodType,
   FinanceLimitScopeType,
@@ -42,7 +41,6 @@ export const financeAccounts = sqliteTable(
   {
     id: text('id').primaryKey(),
     name: text('name').notNull(),
-    type: text('type').$type<FinanceAccountType>().notNull(),
     currencyCode: text('currency_code').notNull(),
     initialBalanceMinor: integer('initial_balance_minor').notNull().default(0),
     icon: text('icon').$type<FinanceIconName>().notNull(),
@@ -50,10 +48,7 @@ export const financeAccounts = sqliteTable(
     createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
     updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull()
   },
-  (table) => [
-    index('finance_accounts_currency_idx').on(table.currencyCode),
-    index('finance_accounts_type_idx').on(table.type)
-  ]
+  (table) => [index('finance_accounts_currency_idx').on(table.currencyCode)]
 )
 
 export const financeTags = sqliteTable(

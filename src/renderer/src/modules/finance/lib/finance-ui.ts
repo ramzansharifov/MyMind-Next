@@ -1,19 +1,6 @@
-import type {
-  FinanceAccountType,
-  FinanceTagType,
-  FinanceTransactionType
-} from '../../../../../shared/contracts/finance'
+import type { FinanceTagType, FinanceTransactionType } from '../../../../../shared/contracts/finance'
 
 export { FinanceIcon } from './FinanceIcon'
-
-export const financeAccountTypeLabels: Record<FinanceAccountType, string> = {
-  cash: 'Наличные',
-  card: 'Карта',
-  bank: 'Банковский счёт',
-  wallet: 'Электронный кошелёк',
-  savings: 'Накопительный счёт',
-  other: 'Другой'
-}
 
 export const financeTagTypeLabels: Record<FinanceTagType, string> = {
   income: 'Доходы',

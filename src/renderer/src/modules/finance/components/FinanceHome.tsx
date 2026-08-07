@@ -13,7 +13,7 @@ import type {
   FinanceTransaction
 } from '../../../../../shared/contracts/finance'
 import { formatMoneyMinor } from '../../../../../shared/finance-money'
-import { FinanceIcon, financeAccountTypeLabels } from '../lib/finance-ui'
+import { FinanceIcon } from '../lib/finance-ui'
 import { FinanceProgress } from './charts/FinanceCharts'
 import { FinanceButton, FinanceEmptyState, FinanceSurface } from './FinancePrimitives'
 import { FinanceTransactionList } from './FinanceTransactionList'
@@ -110,9 +110,7 @@ export function FinanceHome({
                       <div className="truncate font-medium text-[var(--app-text)]">
                         {account.name}
                       </div>
-                      <div className="text-xs text-[var(--app-muted)]">
-                        {financeAccountTypeLabels[account.type]}
-                      </div>
+                      <div className="text-xs text-[var(--app-muted)]">{account.currencyCode}</div>
                     </div>
                   </div>
                   <div className="mt-5 text-xl font-semibold text-[var(--app-text)] tabular-nums">

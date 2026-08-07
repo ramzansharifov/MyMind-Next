@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   clearFinanceAccountHistoryInputSchema,
+  createFinanceAccountInputSchema,
   createFinanceLimitInputSchema,
   createFinanceTemplateInputSchema,
   createFinanceTransactionInputSchema,
@@ -14,6 +15,24 @@ describe('finance validation', () => {
   it('normalizes currencies and rejects unsafe codes', () => {
     expect(financeCurrencyCodeSchema.parse('tjs')).toBe('TJS')
     expect(() => financeCurrencyCodeSchema.parse('TJ')).toThrow()
+  })
+
+  it('validates accounts without an account type and normalizes manual currency input', () => {
+    expect(
+      createFinanceAccountInputSchema.parse({
+        name: 'Кошелёк',
+        currencyCode: 'usd',
+        initialBalanceMinor: 0,
+        icon: 'wallet',
+        color: '#60a5fa'
+      })
+    ).toEqual({
+      name: 'Кошелёк',
+      currencyCode: 'USD',
+      initialBalanceMinor: 0,
+      icon: 'wallet',
+      color: '#60a5fa'
+    })
   })
 
   it('accepts income and rejects public adjustments or non-positive amounts', () => {

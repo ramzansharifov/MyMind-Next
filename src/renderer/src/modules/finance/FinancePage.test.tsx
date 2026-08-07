@@ -44,7 +44,6 @@ import { FinancePage } from './FinancePage'
 const account = {
   id: 'account-card',
   name: 'Карта',
-  type: 'card' as const,
   currencyCode: 'TJS',
   initialBalanceMinor: 100_00,
   balanceMinor: 80_00,
@@ -212,18 +211,31 @@ describe('FinancePage', () => {
     expect(await screen.findByText('Доходы и расходы по времени')).toBeInTheDocument()
   })
 
-  it('creates an account through the real form and refreshes the overview', async () => {
+  it('creates an account with manual currency and the shared color picker', async () => {
     const user = userEvent.setup()
     render(<FinancePage />)
     await screen.findByRole('heading', { name: 'Финансы' })
     await user.click(screen.getByRole('button', { name: 'Счета' }))
     await user.click(screen.getByRole('button', { name: 'Новый счёт' }))
+
+    expect(screen.queryByText('Тип')).not.toBeInTheDocument()
+    const currencyInput = screen.getByRole('textbox', { name: 'Валюта' })
+    expect(currencyInput).toHaveValue('')
+
     await user.type(screen.getByRole('textbox', { name: 'Название' }), 'Карта')
+    await user.type(currencyInput, 'tjs')
+    await user.click(screen.getByRole('button', { name: 'Цвет счёта' }))
+    await user.click(screen.getByRole('button', { name: 'Цвет #60a5fa' }))
     await user.click(screen.getByRole('button', { name: 'Создать счёт' }))
+
     await waitFor(() =>
-      expect(mocks.createAccount).toHaveBeenCalledWith(
-        expect.objectContaining({ name: 'Карта', currencyCode: 'TJS', initialBalanceMinor: 0 })
-      )
+      expect(mocks.createAccount).toHaveBeenCalledWith({
+        name: 'Карта',
+        currencyCode: 'TJS',
+        initialBalanceMinor: 0,
+        icon: 'wallet',
+        color: '#60a5fa'
+      })
     )
   })
 
