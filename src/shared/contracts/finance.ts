@@ -1,4 +1,3 @@
-export const FINANCE_ACCOUNT_TYPES = ['cash', 'card', 'bank', 'wallet', 'savings', 'other'] as const
 export const FINANCE_TRANSACTION_TYPES = ['income', 'expense', 'transfer', 'adjustment'] as const
 export const FINANCE_USER_TRANSACTION_TYPES = ['income', 'expense', 'transfer'] as const
 export const FINANCE_TAG_TYPES = ['income', 'expense', 'both'] as const
@@ -44,7 +43,6 @@ export const FINANCE_ICON_NAMES = [
   'tag'
 ] as const
 
-export type FinanceAccountType = (typeof FINANCE_ACCOUNT_TYPES)[number]
 export type FinanceTransactionType = (typeof FINANCE_TRANSACTION_TYPES)[number]
 export type FinanceUserTransactionType = (typeof FINANCE_USER_TRANSACTION_TYPES)[number]
 export type FinanceTagType = (typeof FINANCE_TAG_TYPES)[number]
@@ -74,7 +72,6 @@ export interface FinanceExchangeRate {
 export interface FinanceAccount {
   id: string
   name: string
-  type: FinanceAccountType
   currencyCode: string
   initialBalanceMinor: number
   icon: FinanceIconName
@@ -266,7 +263,6 @@ export interface FinanceReport {
 
 export interface CreateFinanceAccountInput {
   name: string
-  type: FinanceAccountType
   currencyCode: string
   initialBalanceMinor: number
   icon: FinanceIconName
@@ -276,7 +272,6 @@ export interface CreateFinanceAccountInput {
 export interface UpdateFinanceAccountInput {
   id: string
   name: string
-  type: FinanceAccountType
   icon: FinanceIconName
   color: string
   currencyCode?: string
