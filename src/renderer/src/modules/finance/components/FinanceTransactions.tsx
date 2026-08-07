@@ -1,4 +1,4 @@
-import { ArrowDownLeft, ArrowRightLeft, ArrowUpRight, Filter, ReceiptText, Search, Trash2 } from 'lucide-react'
+import { Filter, ReceiptText, Search, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import type {
@@ -94,12 +94,6 @@ export function FinanceTransactions({
     const timer = window.setTimeout(() => void load(), 150)
     return () => window.clearTimeout(timer)
   }, [load])
-
-  function openCreate(nextType: FinanceUserTransactionType): void {
-    setDialogType(nextType)
-    setEditTransaction(null)
-    setTransactionDialogOpen(true)
-  }
 
   async function refreshAll(): Promise<void> {
     await Promise.all([load(), onChanged()])
@@ -203,22 +197,6 @@ export function FinanceTransactions({
         title="Операции"
         icon={<ReceiptText aria-hidden="true" className="size-5" />}
         bodyClassName="p-0"
-        actions={
-          <>
-            <FinanceButton size="sm" tone="positive" onClick={() => openCreate('income')}>
-              <ArrowDownLeft aria-hidden="true" className="size-4" />
-              Доход
-            </FinanceButton>
-            <FinanceButton size="sm" tone="danger" onClick={() => openCreate('expense')}>
-              <ArrowUpRight aria-hidden="true" className="size-4" />
-              Расход
-            </FinanceButton>
-            <FinanceButton size="sm" tone="primary" onClick={() => openCreate('transfer')}>
-              <ArrowRightLeft aria-hidden="true" className="size-4" />
-              Перевод
-            </FinanceButton>
-          </>
-        }
       >
         {isLoading ? (
           <div className="p-4">
