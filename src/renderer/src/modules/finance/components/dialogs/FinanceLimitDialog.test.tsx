@@ -75,16 +75,11 @@ const incomeTag: FinanceTagSummary = {
 
 const savedLimit: FinanceLimitStatus = {
   id: 'limit-food',
-  name: 'Еда',
   amountMinor: 100_000,
   currencyCode: 'TJS',
-  scopeType: 'account-tag',
-  accountId: cash.id,
   accountIds: [cash.id, card.id],
   tagId: expenseTag.id,
   periodType: 'month',
-  startsAt: 0,
-  endsAt: null,
   warningPercent: 80,
   state: 'active',
   createdAt: 1,
@@ -171,16 +166,11 @@ describe('FinanceLimitDialog', () => {
 
     await waitFor(() =>
       expect(mocks.createLimit).toHaveBeenCalledWith({
-        name: 'Еда',
         amountMinor: 100_000,
         currencyCode: 'TJS',
-        scopeType: 'tag',
-        accountId: null,
         accountIds: [],
         tagId: 'food',
         periodType: 'month',
-        startsAt: 0,
-        endsAt: null,
         warningPercent: 80
       })
     )
