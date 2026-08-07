@@ -1,5 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowDownLeft, ArrowRightLeft, ArrowUpRight, LoaderCircle } from 'lucide-react'
+import {
+  ArrowDownLeft,
+  ArrowRightLeft,
+  ArrowUpRight,
+  LoaderCircle,
+  type LucideIcon
+} from 'lucide-react'
 import { useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -56,7 +62,7 @@ const tagTypeOptions = [
   value: FinanceTagType
   label: string
   description: string
-  icon: typeof ArrowUpRight
+  icon: LucideIcon
   activeClassName: string
   iconClassName: string
 }>
@@ -135,7 +141,9 @@ function FinanceTagDialogContent({
         </FinanceField>
 
         <fieldset>
-          <legend className="mb-1.5 text-sm font-medium text-[var(--app-text)]">Назначение</legend>
+          <legend className="mb-1.5 text-sm font-medium text-[var(--app-text)]">
+            Назначение
+          </legend>
           <Controller
             control={control}
             name="type"
@@ -168,7 +176,9 @@ function FinanceTagDialogContent({
                       <span
                         className={cn(
                           'flex size-8 items-center justify-center rounded-lg',
-                          selected ? option.iconClassName : 'bg-[var(--app-control)] text-[var(--app-muted)]'
+                          selected
+                            ? option.iconClassName
+                            : 'bg-[var(--app-control)] text-[var(--app-muted)]'
                         )}
                       >
                         <Icon aria-hidden="true" className="size-4" />
