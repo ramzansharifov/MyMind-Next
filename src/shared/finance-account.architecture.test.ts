@@ -31,4 +31,20 @@ describe('finance account architecture', () => {
 
     expect(offenders).toEqual([])
   })
+
+  it('removes type from the latest finance account database snapshot', () => {
+    const snapshot = JSON.parse(
+      readFileSync(resolve(process.cwd(), 'drizzle/meta/0013_snapshot.json'), 'utf8')
+    ) as {
+      tables: Record<
+        string,
+        { columns: Record<string, unknown>; indexes: Record<string, unknown> }
+      >
+    }
+    const accounts = snapshot.tables.finance_accounts
+
+    expect(accounts).toBeDefined()
+    expect(accounts.columns).not.toHaveProperty('type')
+    expect(accounts.indexes).not.toHaveProperty('finance_accounts_type_idx')
+  })
 })
