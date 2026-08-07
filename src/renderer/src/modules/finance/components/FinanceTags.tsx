@@ -193,7 +193,6 @@ export function FinanceTags({
         initialTagId={limitTag?.id}
         accounts={accounts}
         tags={tags}
-        baseCurrencyCode={baseCurrencyCode}
         onOpenChange={(open) => !open && setLimitTag(null)}
         onSaved={async () => {
           setLimitTag(null)
