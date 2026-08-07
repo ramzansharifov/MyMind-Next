@@ -1,6 +1,5 @@
-import * as Dialog from '@radix-ui/react-dialog'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowDownLeft, ArrowRightLeft, ArrowUpRight, LoaderCircle, Plus, X } from 'lucide-react'
+import { ArrowDownLeft, ArrowRightLeft, ArrowUpRight, LoaderCircle, Plus } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
@@ -18,6 +17,7 @@ import {
   formatMinorPlain,
   parseMoneyToMinor
 } from '../../../../../../shared/finance-money'
+import { AppDialog } from '../../../../shared/ui/AppDialog'
 import { financeClient } from '../../api/finance-client'
 import {
   fromDateTimeLocalValue,
@@ -157,14 +157,11 @@ function getDefaultValues(
 }
 
 export function FinanceTransactionDialog(props: FinanceTransactionDialogProps): React.JSX.Element {
-  return (
-    <Dialog.Root open={props.open} onOpenChange={props.onOpenChange}>
-      {props.open && <FinanceTransactionDialogContent {...props} />}
-    </Dialog.Root>
-  )
+  return props.open ? <FinanceTransactionDialogContent {...props} /> : <></>
 }
 
 function FinanceTransactionDialogContent({
+  open,
   initialType,
   accounts,
   tags,
@@ -361,180 +358,146 @@ function FinanceTransactionDialogContent({
           : 'Новый перевод'
 
   return (
-    <Dialog.Portal>
-      <Dialog.Overlay className="fixed inset-0 z-[80] bg-black/65 backdrop-blur-[2px]" />
-      <Dialog.Content
-        aria-busy={isSaving}
-        className="fixed top-1/2 left-1/2 z-[81] max-h-[calc(100vh-32px)] w-[min(94vw,38rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] shadow-2xl outline-none"
-        onEscapeKeyDown={(event) => {
-          if (isSaving) event.preventDefault()
-        }}
-        onPointerDownOutside={(event) => {
-          if (isSaving) event.preventDefault()
+    <AppDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={dialogTitle}
+      description="Все суммы сохраняются точно в минимальных единицах выбранной валюты."
+      size="lg"
+      busy={isSaving}
+      closeLabel="Закрыть форму операции"
+    >
+      <form
+        className="space-y-5"
+        onSubmit={(event) => {
+          void handleSubmit(submit)(event)
         }}
       >
-        <div className="flex items-start justify-between border-b border-[var(--app-border)] p-5">
-          <div>
-            <Dialog.Title className="text-lg font-semibold text-[var(--app-text)]">
-              {dialogTitle}
-            </Dialog.Title>
-            <Dialog.Description className="mt-1 text-sm text-[var(--app-muted)]">
-              Все суммы сохраняются точно в минимальных единицах выбранной валюты.
-            </Dialog.Description>
-          </div>
-          <Dialog.Close asChild disabled={isSaving}>
-            <button
-              type="button"
-              aria-label="Закрыть форму операции"
-              className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:opacity-40"
+        {!transaction && !template && (
+          <div className="grid grid-cols-3 gap-2" aria-label="Тип операции">
+            <FinanceButton
+              tone={values.type === 'income' ? 'positive' : 'neutral'}
+              onClick={() => chooseType('income')}
             >
-              <X aria-hidden="true" className="size-4" />
-            </button>
-          </Dialog.Close>
-        </div>
+              <ArrowDownLeft aria-hidden="true" className="size-4" />
+              Доход
+            </FinanceButton>
+            <FinanceButton
+              tone={values.type === 'expense' ? 'danger' : 'neutral'}
+              onClick={() => chooseType('expense')}
+            >
+              <ArrowUpRight aria-hidden="true" className="size-4" />
+              Расход
+            </FinanceButton>
+            <FinanceButton
+              tone={values.type === 'transfer' ? 'primary' : 'neutral'}
+              onClick={() => chooseType('transfer')}
+            >
+              <ArrowRightLeft aria-hidden="true" className="size-4" />
+              Перевод
+            </FinanceButton>
+          </div>
+        )}
 
-        <form
-          className="space-y-5 p-5"
-          onSubmit={(event) => {
-            void handleSubmit(submit)(event)
-          }}
-        >
-          {!transaction && !template && (
-            <div className="grid grid-cols-3 gap-2" aria-label="Тип операции">
-              <FinanceButton
-                tone={values.type === 'income' ? 'positive' : 'neutral'}
-                onClick={() => chooseType('income')}
-              >
-                <ArrowDownLeft aria-hidden="true" className="size-4" />
-                Доход
-              </FinanceButton>
-              <FinanceButton
-                tone={values.type === 'expense' ? 'danger' : 'neutral'}
-                onClick={() => chooseType('expense')}
-              >
-                <ArrowUpRight aria-hidden="true" className="size-4" />
-                Расход
-              </FinanceButton>
-              <FinanceButton
-                tone={values.type === 'transfer' ? 'primary' : 'neutral'}
-                onClick={() => chooseType('transfer')}
-              >
-                <ArrowRightLeft aria-hidden="true" className="size-4" />
-                Перевод
-              </FinanceButton>
-            </div>
-          )}
-
-          {accounts.length === 0 ? (
-            <div className="rounded-xl border border-amber-500/20 bg-amber-500/[0.06] p-4 text-sm text-amber-100">
-              Сначала создайте хотя бы один счёт. Для перевода нужны два счёта.
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-4 max-[560px]:grid-cols-1">
-              <FinanceField
-                label={values.type === 'transfer' ? 'Счёт списания' : 'Счёт'}
-                error={errors.accountId?.message}
-              >
-                <select {...register('accountId')} className={financeInputClassName}>
-                  <option value="">Выберите счёт</option>
-                  {accounts.map((account) => (
-                    <option key={account.id} value={account.id}>
-                      {account.name} · {account.currencyCode}
-                    </option>
-                  ))}
-                </select>
-              </FinanceField>
-
-              {values.type === 'transfer' ? (
-                <FinanceField label="Счёт зачисления" error={errors.destinationAccountId?.message}>
-                  <select {...register('destinationAccountId')} className={financeInputClassName}>
-                    <option value="">Выберите счёт</option>
-                    {accounts
-                      .filter((account) => account.id !== values.accountId)
-                      .map((account) => (
-                        <option key={account.id} value={account.id}>
-                          {account.name} · {account.currencyCode}
-                        </option>
-                      ))}
-                  </select>
-                </FinanceField>
-              ) : (
-                <FinanceField label="Тег" error={errors.tagId?.message}>
-                  <div className="flex gap-2">
-                    <select {...register('tagId')} className={financeInputClassName}>
-                      <option value="">Выберите тег</option>
-                      {compatibleTags.map((tag) => (
-                        <option key={tag.id} value={tag.id}>
-                          {tag.name}
-                        </option>
-                      ))}
-                    </select>
-                    {onCreateTagRequested && (
-                      <button
-                        type="button"
-                        aria-label={`Создать тег для ${values.type === 'income' ? 'дохода' : 'расхода'}`}
-                        className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] hover:text-violet-300"
-                        onClick={() =>
-                          onCreateTagRequested(values.type === 'income' ? 'income' : 'expense')
-                        }
-                      >
-                        <Plus aria-hidden="true" className="size-4" />
-                      </button>
-                    )}
-                  </div>
-                  {compatibleTags.length === 0 && (
-                    <span className="mt-2 block text-xs text-amber-300">
-                      Подходящих тегов пока нет. Введённые данные останутся в форме.
-                    </span>
-                  )}
-                </FinanceField>
-              )}
-            </div>
-          )}
-
+        {accounts.length === 0 ? (
+          <div className="rounded-xl border border-amber-500/20 bg-amber-500/[0.06] p-4 text-sm text-amber-100">
+            Сначала создайте хотя бы один счёт. Для перевода нужны два счёта.
+          </div>
+        ) : (
           <div className="grid grid-cols-2 gap-4 max-[560px]:grid-cols-1">
             <FinanceField
-              label={values.type === 'transfer' ? 'Сумма списания' : 'Сумма'}
-              error={errors.amount?.message}
-              hint={selectedAccount ? `Валюта: ${selectedAccount.currencyCode}` : undefined}
+              label={values.type === 'transfer' ? 'Счёт списания' : 'Счёт'}
+              error={errors.accountId?.message}
+            >
+              <select {...register('accountId')} className={financeInputClassName}>
+                <option value="">Выберите счёт</option>
+                {accounts.map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {account.name} · {account.currencyCode}
+                  </option>
+                ))}
+              </select>
+            </FinanceField>
+
+            {values.type === 'transfer' ? (
+              <FinanceField label="Счёт зачисления" error={errors.destinationAccountId?.message}>
+                <select {...register('destinationAccountId')} className={financeInputClassName}>
+                  <option value="">Выберите счёт</option>
+                  {accounts
+                    .filter((account) => account.id !== values.accountId)
+                    .map((account) => (
+                      <option key={account.id} value={account.id}>
+                        {account.name} · {account.currencyCode}
+                      </option>
+                    ))}
+                </select>
+              </FinanceField>
+            ) : (
+              <FinanceField label="Тег" error={errors.tagId?.message}>
+                <div className="flex gap-2">
+                  <select {...register('tagId')} className={financeInputClassName}>
+                    <option value="">Выберите тег</option>
+                    {compatibleTags.map((tag) => (
+                      <option key={tag.id} value={tag.id}>
+                        {tag.name}
+                      </option>
+                    ))}
+                  </select>
+                  {onCreateTagRequested && (
+                    <button
+                      type="button"
+                      aria-label={`Создать тег для ${values.type === 'income' ? 'дохода' : 'расхода'}`}
+                      className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] hover:text-[var(--app-accent-300)]"
+                      onClick={() =>
+                        onCreateTagRequested(values.type === 'income' ? 'income' : 'expense')
+                      }
+                    >
+                      <Plus aria-hidden="true" className="size-4" />
+                    </button>
+                  )}
+                </div>
+                {compatibleTags.length === 0 && (
+                  <span className="mt-2 block text-xs text-amber-300">
+                    Подходящих тегов пока нет. Введённые данные останутся в форме.
+                  </span>
+                )}
+              </FinanceField>
+            )}
+          </div>
+        )}
+
+        <div className="grid grid-cols-2 gap-4 max-[560px]:grid-cols-1">
+          <FinanceField
+            label={values.type === 'transfer' ? 'Сумма списания' : 'Сумма'}
+            error={errors.amount?.message}
+            hint={selectedAccount ? `Валюта: ${selectedAccount.currencyCode}` : undefined}
+          >
+            <input
+              {...register('amount')}
+              inputMode="decimal"
+              placeholder="0,00"
+              className={financeInputClassName}
+            />
+          </FinanceField>
+
+          {values.type === 'transfer' ? (
+            <FinanceField
+              label="Сумма зачисления"
+              error={errors.destinationAmount?.message}
+              hint={
+                destinationAccount
+                  ? `${destinationAccount.currencyCode}${exchangeRateLabel ? ` · ${exchangeRateLabel}` : ''}`
+                  : (exchangeRateLabel ?? undefined)
+              }
             >
               <input
-                {...register('amount')}
+                {...register('destinationAmount')}
                 inputMode="decimal"
                 placeholder="0,00"
                 className={financeInputClassName}
               />
             </FinanceField>
-
-            {values.type === 'transfer' ? (
-              <FinanceField
-                label="Сумма зачисления"
-                error={errors.destinationAmount?.message}
-                hint={
-                  destinationAccount
-                    ? `${destinationAccount.currencyCode}${exchangeRateLabel ? ` · ${exchangeRateLabel}` : ''}`
-                    : (exchangeRateLabel ?? undefined)
-                }
-              >
-                <input
-                  {...register('destinationAmount')}
-                  inputMode="decimal"
-                  placeholder="0,00"
-                  className={financeInputClassName}
-                />
-              </FinanceField>
-            ) : (
-              <FinanceField label="Дата и время" error={errors.occurredAt?.message}>
-                <input
-                  {...register('occurredAt')}
-                  type="datetime-local"
-                  className={financeInputClassName}
-                />
-              </FinanceField>
-            )}
-          </div>
-
-          {values.type === 'transfer' && (
+          ) : (
             <FinanceField label="Дата и время" error={errors.occurredAt?.message}>
               <input
                 {...register('occurredAt')}
@@ -543,82 +506,92 @@ function FinanceTransactionDialogContent({
               />
             </FinanceField>
           )}
+        </div>
 
-          <FinanceField label="Комментарий" error={errors.comment?.message}>
-            <textarea
-              {...register('comment')}
-              placeholder="Необязательное пояснение"
-              className={financeTextareaClassName}
+        {values.type === 'transfer' && (
+          <FinanceField label="Дата и время" error={errors.occurredAt?.message}>
+            <input
+              {...register('occurredAt')}
+              type="datetime-local"
+              className={financeInputClassName}
             />
           </FinanceField>
+        )}
 
-          {impact && impact.items.length > 0 && (
-            <div className="space-y-2 rounded-xl border border-amber-500/20 bg-amber-500/[0.06] p-4">
-              <p className="text-sm font-semibold text-amber-100">Влияние на лимиты</p>
-              {impact.items.map((item) => (
-                <div key={item.limit.id} className="text-xs leading-5 text-amber-100/85">
-                  <span className="font-medium">{item.limit.name}:</span>{' '}
-                  {item.convertedExpenseMinor === null
-                    ? 'невозможно рассчитать без курса валюты'
-                    : `${item.limit.usagePercent.toFixed(0)}% → ${(
-                        (item.spentAfterMinor / item.limit.amountMinor) *
-                        100
-                      ).toFixed(0)}%`}
-                  {item.exceededAfterMinor > 0 && ' · лимит будет превышен'}
-                </div>
-              ))}
-              <p className="text-xs text-amber-200/75">
-                Превышение не блокирует расход. Повторное подтверждение сохранит операцию.
-              </p>
-            </div>
-          )}
+        <FinanceField label="Комментарий" error={errors.comment?.message}>
+          <textarea
+            {...register('comment')}
+            placeholder="Необязательное пояснение"
+            className={financeTextareaClassName}
+          />
+        </FinanceField>
 
-          {backendError && (
-            <div
-              role="alert"
-              className="rounded-xl border border-red-500/20 bg-red-500/[0.07] p-3 text-sm text-red-200"
-            >
-              {backendError}
-            </div>
-          )}
-
-          <div className="flex justify-end gap-2 border-t border-[var(--app-border)] pt-4">
-            <Dialog.Close asChild disabled={isSaving}>
-              <FinanceButton disabled={isSaving}>Отмена</FinanceButton>
-            </Dialog.Close>
-            <FinanceButton
-              type="submit"
-              tone={
-                values.type === 'expense'
-                  ? 'danger'
-                  : values.type === 'income'
-                    ? 'positive'
-                    : 'primary'
-              }
-              disabled={isSaving || impactLoading || accounts.length === 0}
-            >
-              {isSaving || impactLoading ? (
-                <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
-              ) : values.type === 'income' ? (
-                <ArrowDownLeft aria-hidden="true" className="size-4" />
-              ) : values.type === 'expense' ? (
-                <ArrowUpRight aria-hidden="true" className="size-4" />
-              ) : (
-                <ArrowRightLeft aria-hidden="true" className="size-4" />
-              )}
-              {impactLoading
-                ? 'Проверяем лимиты…'
-                : isSaving
-                  ? 'Сохраняем…'
-                  : impactConfirmed && values.type === 'expense'
-                    ? 'Подтвердить расход'
-                    : transaction
-                      ? 'Сохранить изменения'
-                      : 'Создать операцию'}
-            </FinanceButton>
+        {impact && impact.items.length > 0 && (
+          <div className="space-y-2 rounded-xl border border-amber-500/20 bg-amber-500/[0.06] p-4">
+            <p className="text-sm font-semibold text-amber-100">Влияние на лимиты</p>
+            {impact.items.map((item) => (
+              <div key={item.limit.id} className="text-xs leading-5 text-amber-100/85">
+                <span className="font-medium">{item.limit.name}:</span>{' '}
+                {item.convertedExpenseMinor === null
+                  ? 'невозможно рассчитать без курса валюты'
+                  : `${item.limit.usagePercent.toFixed(0)}% → ${(
+                      (item.spentAfterMinor / item.limit.amountMinor) *
+                      100
+                    ).toFixed(0)}%`}
+                {item.exceededAfterMinor > 0 && ' · лимит будет превышен'}
+              </div>
+            ))}
+            <p className="text-xs text-amber-200/75">
+              Превышение не блокирует расход. Повторное подтверждение сохранит операцию.
+            </p>
           </div>
-        </form>
-      </Dialog.Content>
-    </Dialog.Portal>
+        )}
+
+        {backendError && (
+          <div
+            role="alert"
+            className="rounded-xl border border-red-500/20 bg-red-500/[0.07] p-3 text-sm text-red-200"
+          >
+            {backendError}
+          </div>
+        )}
+
+        <div className="flex justify-end gap-2 border-t border-[var(--app-border)] pt-4">
+          <FinanceButton type="button" disabled={isSaving} onClick={() => onOpenChange(false)}>
+            Отмена
+          </FinanceButton>
+          <FinanceButton
+            type="submit"
+            tone={
+              values.type === 'expense'
+                ? 'danger'
+                : values.type === 'income'
+                  ? 'positive'
+                  : 'primary'
+            }
+            disabled={isSaving || impactLoading || accounts.length === 0}
+          >
+            {isSaving || impactLoading ? (
+              <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
+            ) : values.type === 'income' ? (
+              <ArrowDownLeft aria-hidden="true" className="size-4" />
+            ) : values.type === 'expense' ? (
+              <ArrowUpRight aria-hidden="true" className="size-4" />
+            ) : (
+              <ArrowRightLeft aria-hidden="true" className="size-4" />
+            )}
+            {impactLoading
+              ? 'Проверяем лимиты…'
+              : isSaving
+                ? 'Сохраняем…'
+                : impactConfirmed && values.type === 'expense'
+                  ? 'Подтвердить расход'
+                  : transaction
+                    ? 'Сохранить изменения'
+                    : 'Создать операцию'}
+          </FinanceButton>
+        </div>
+      </form>
+    </AppDialog>
   )
 }

@@ -1,14 +1,5 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
-import {
-  AlertTriangle,
-  BookOpen,
-  FilePlus2,
-  FileText,
-  Folder,
-  FolderPlus,
-  Palette,
-  Pencil
-} from 'lucide-react'
+import { BookOpen, FilePlus2, FileText, Folder, FolderPlus, Palette, Pencil } from 'lucide-react'
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type { StudyFolderIconName, StudyNode } from '../../../../shared/contracts/study'
@@ -24,6 +15,7 @@ import {
 } from '../../shared/ui/WorkspacePrimitives'
 import { Tooltip } from '../../shared/ui/tooltip'
 import { StudyActionButton } from './components/StudyActionButton'
+import { StudyBlockedTransitionDialog } from './components/StudyBlockedTransitionDialog'
 import { DeleteConfirmationDialog } from './components/DeleteConfirmationDialog'
 import { StudyHome } from './components/StudyHome'
 import { STUDY_FOLDER_ICON_SIDEBAR_CLASS_NAME, StudyFolderIcon } from './components/StudyFolderIcon'
@@ -600,86 +592,29 @@ export function StudyPage({
       )}
 
       {blockedTransition && (
-        <div
-          role="alertdialog"
-          aria-modal="true"
-          aria-labelledby="study-transition-error-title"
-          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/65 p-4"
-        >
-          <div className="w-full max-w-md rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-5 shadow-2xl">
-            <div className="flex items-start gap-3">
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-red-300">
-                <AlertTriangle aria-hidden="true" className="size-5" />
-              </span>
+        <StudyBlockedTransitionDialog
+          open
+          message={blockedTransition.message}
+          forceLeaveArmed={forceLeaveArmed}
+          onStay={() => {
+            setBlockedTransition(null)
+            setForceLeaveArmed(false)
+          }}
+          onRetry={() => {
+            void runAfterDraftFlush(blockedTransition.run, blockedTransition.targetMaterialId)
+          }}
+          onForceLeave={() => {
+            if (!forceLeaveArmed) {
+              setForceLeaveArmed(true)
+              return
+            }
 
-              <div>
-                <h2
-                  id="study-transition-error-title"
-                  className="font-semibold text-[var(--app-text)]"
-                >
-                  Изменения не сохранены
-                </h2>
-
-                <p className="mt-1 text-sm leading-5 text-[var(--app-muted)]">
-                  {blockedTransition.message} Текущий материал и черновик остаются открытыми.
-                </p>
-
-                {forceLeaveArmed && (
-                  <p className="mt-3 rounded-lg border border-red-500/20 bg-red-500/[0.06] p-3 text-xs leading-5 text-red-200">
-                    Несохранённые изменения будут безвозвратно потеряны. Нажмите ещё раз, чтобы
-                    подтвердить переход.
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="mt-5 flex flex-wrap justify-end gap-2">
-              <button
-                type="button"
-                className="rounded-lg px-3 py-2 text-sm text-[var(--app-muted)] hover:text-[var(--app-text)]"
-                onClick={() => {
-                  setBlockedTransition(null)
-
-                  setForceLeaveArmed(false)
-                }}
-              >
-                Остаться
-              </button>
-
-              <button
-                type="button"
-                className="rounded-lg border border-[var(--app-border)] px-3 py-2 text-sm text-[var(--app-text)] hover:bg-white/[0.05]"
-                onClick={() => {
-                  void runAfterDraftFlush(blockedTransition.run, blockedTransition.targetMaterialId)
-                }}
-              >
-                Повторить сохранение
-              </button>
-
-              <button
-                type="button"
-                className="rounded-lg bg-red-500/15 px-3 py-2 text-sm text-red-200 hover:bg-red-500/25"
-                onClick={() => {
-                  if (!forceLeaveArmed) {
-                    setForceLeaveArmed(true)
-
-                    return
-                  }
-
-                  const transition = blockedTransition.run
-
-                  setBlockedTransition(null)
-
-                  setForceLeaveArmed(false)
-
-                  void transition()
-                }}
-              >
-                {forceLeaveArmed ? 'Подтвердить потерю изменений' : 'Покинуть без сохранения'}
-              </button>
-            </div>
-          </div>
-        </div>
+            const transition = blockedTransition.run
+            setBlockedTransition(null)
+            setForceLeaveArmed(false)
+            void transition()
+          }}
+        />
       )}
 
       <RenameStudyNodeDialog

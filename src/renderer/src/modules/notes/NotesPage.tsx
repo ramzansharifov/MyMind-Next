@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 
 import type { NoteGroup, NoteSummary, NotesOverview } from '../../../../shared/contracts/notes'
 import type { StudyFolderIconName } from '../../../../shared/contracts/study'
-import { DeleteConfirmationDialog } from '../study/components/DeleteConfirmationDialog'
+import { DeleteConfirmationDialog } from '../../shared/ui/DeleteConfirmationDialog'
 import { notesClient } from './api/notes-client'
 import { NoteEditor } from './components/NoteEditor'
 import { NoteNameDialog } from './components/NoteNameDialog'
