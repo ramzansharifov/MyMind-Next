@@ -3,6 +3,8 @@ import {
   ArrowRightLeft,
   ArrowUpRight,
   BarChart3,
+  CalendarClock,
+  Gauge,
   Home,
   Landmark,
   ReceiptText,
@@ -22,6 +24,7 @@ import type {
 import { financeClient } from './api/finance-client'
 import { FinanceAccounts } from './components/FinanceAccounts'
 import { FinanceHome } from './components/FinanceHome'
+import { FinanceLimits } from './components/FinanceLimits'
 import {
   FinanceButton,
   FinanceErrorState,
@@ -29,6 +32,7 @@ import {
 } from './components/FinancePrimitives'
 import { FinanceReports } from './components/FinanceReports'
 import { FinanceTags } from './components/FinanceTags'
+import { FinanceTemplates } from './components/FinanceTemplates'
 import { FinanceTransactions } from './components/FinanceTransactions'
 import { FinanceTagDialog } from './components/dialogs/FinanceTagDialog'
 import { FinanceTransactionDialog } from './components/dialogs/FinanceTransactionDialog'
@@ -39,9 +43,13 @@ interface FinancePageProps {
   onResourceHandled?: () => void
 }
 
-const tabs: Array<{ id: FinancePageId; label: string; icon: typeof Home }> = [
+type FinanceWorkspacePage = FinancePageId | 'templates' | 'limits'
+
+const tabs: Array<{ id: FinanceWorkspacePage; label: string; icon: typeof Home }> = [
   { id: 'home', label: 'Главная', icon: Home },
   { id: 'transactions', label: 'Транзакции', icon: ReceiptText },
+  { id: 'templates', label: 'Шаблоны', icon: CalendarClock },
+  { id: 'limits', label: 'Лимиты', icon: Gauge },
   { id: 'accounts', label: 'Счета', icon: Landmark },
   { id: 'tags', label: 'Теги', icon: Tags },
   { id: 'reports', label: 'Отчёты', icon: BarChart3 }
@@ -51,7 +59,7 @@ export function FinancePage({
   resourceId,
   onResourceHandled
 }: FinancePageProps): React.JSX.Element {
-  const [activePage, setActivePage] = useState<FinancePageId>('home')
+  const [activePage, setActivePage] = useState<FinanceWorkspacePage>('home')
   const [dashboard, setDashboard] = useState<FinanceDashboard | null>(null)
   const [tags, setTags] = useState<FinanceTagSummary[]>([])
   const [templates, setTemplates] = useState<FinanceTemplate[]>([])
@@ -103,7 +111,9 @@ export function FinancePage({
 
   useEffect(() => {
     if (!resourceId) return
-    const page = tabs.some((item) => item.id === resourceId) ? (resourceId as FinancePageId) : null
+    const page = tabs.some((item) => item.id === resourceId)
+      ? (resourceId as FinanceWorkspacePage)
+      : null
     let cancelled = false
     queueMicrotask(() => {
       if (cancelled) return
@@ -220,14 +230,14 @@ export function FinancePage({
         {activePage === 'home' && (
           <FinanceHome
             dashboard={dashboard}
-            onOpenPage={(page) => setActivePage(page)}
+            onOpenPage={setActivePage}
             onOpenAccount={(id) => {
               setSelectedAccountId(id)
               setActivePage('accounts')
             }}
             onUseTemplate={(template) => {
               setTemplateInitial(template)
-              setActivePage('transactions')
+              setActivePage('templates')
             }}
             onSnoozeTemplate={(template) =>
               void (async () => {
@@ -254,16 +264,30 @@ export function FinancePage({
           <FinanceTransactions
             accounts={dashboard.accounts}
             tags={tags}
-            limits={dashboard.limits}
-            templates={templates}
-            baseCurrencyCode={dashboard.settings.baseCurrencyCode}
             initialTransaction={transactionsInitial}
-            initialTemplate={templateInitial}
             onChanged={async () => {
               setTransactionsInitial(null)
-              setTemplateInitial(null)
               await load()
             }}
+          />
+        )}
+        {activePage === 'templates' && (
+          <FinanceTemplates
+            accounts={dashboard.accounts}
+            tags={tags}
+            templates={templates}
+            initialTemplate={templateInitial}
+            onInitialTemplateHandled={() => setTemplateInitial(null)}
+            onChanged={load}
+          />
+        )}
+        {activePage === 'limits' && (
+          <FinanceLimits
+            accounts={dashboard.accounts}
+            tags={tags}
+            limits={dashboard.limits}
+            baseCurrencyCode={dashboard.settings.baseCurrencyCode}
+            onChanged={load}
           />
         )}
         {activePage === 'accounts' && (
