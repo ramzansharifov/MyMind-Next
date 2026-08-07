@@ -49,6 +49,23 @@ describe('AppDialog', () => {
     expect(screen.getByRole('dialog', { name: 'Общий диалог' })).toBeInTheDocument()
   })
 
+  it('supports a nested layer for dialogs opened from another modal', () => {
+    render(
+      <AppDialog
+        open
+        onOpenChange={vi.fn()}
+        title="Вложенный диалог"
+        description="Поверх основной формы"
+        layer="nested"
+      >
+        <div>Вложенное содержимое</div>
+      </AppDialog>
+    )
+
+    expect(document.querySelector('[data-app-dialog-overlay]')).toHaveClass('z-[90]')
+    expect(screen.getByRole('dialog', { name: 'Вложенный диалог' })).toHaveClass('z-[91]')
+  })
+
   it('supports fullscreen content with accessible hidden title and description', () => {
     const onOpenChange = vi.fn()
     render(
