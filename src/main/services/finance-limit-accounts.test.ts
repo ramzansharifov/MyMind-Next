@@ -62,25 +62,18 @@ describe('finance multi-account limits', () => {
     const tag = createExpenseTag()
 
     const limit = financeService.createLimit({
-      name: 'Еда',
       amountMinor: 10_000,
       currencyCode: 'USD',
-      scopeType: 'account-tag',
-      accountId: cash.id,
       accountIds: [cash.id, card.id],
       tagId: tag.id,
       periodType: 'month',
-      startsAt: now,
-      endsAt: null,
       warningPercent: 80
     })
 
     expect(limit).toMatchObject({
       currencyCode: 'TJS',
-      accountId: cash.id,
       accountIds: expect.arrayContaining([cash.id, card.id]),
-      tagId: tag.id,
-      startsAt: 0
+      tagId: tag.id
     })
 
     financeService.createTransaction({
@@ -134,16 +127,11 @@ describe('finance multi-account limits', () => {
 
     expect(() =>
       financeService.createLimit({
-        name: 'Еда',
         amountMinor: 10_000,
         currencyCode: 'TJS',
-        scopeType: 'account-tag',
-        accountId: cash.id,
         accountIds: [cash.id, usd.id],
         tagId: tag.id,
         periodType: 'month',
-        startsAt: 0,
-        endsAt: null,
         warningPercent: 80
       })
     ).toThrow('одинаковой валютой')
@@ -156,23 +144,16 @@ describe('finance multi-account limits', () => {
     const tag = createExpenseTag()
 
     const limit = financeService.createLimit({
-      name: 'Еда',
       amountMinor: 10_000,
       currencyCode: 'USD',
-      scopeType: 'tag',
-      accountId: null,
       accountIds: [],
       tagId: tag.id,
       periodType: 'month',
-      startsAt: now,
-      endsAt: null,
       warningPercent: 80
     })
 
     expect(limit).toMatchObject({
       currencyCode: 'TJS',
-      scopeType: 'tag',
-      accountId: null,
       accountIds: []
     })
 
@@ -197,16 +178,11 @@ describe('finance multi-account limits', () => {
     createAccount('USD', 'USD')
     expect(() =>
       financeService.createLimit({
-        name: 'Ещё один',
         amountMinor: 10_000,
         currencyCode: 'TJS',
-        scopeType: 'tag',
-        accountId: null,
         accountIds: [],
         tagId: tag.id,
         periodType: 'month',
-        startsAt: 0,
-        endsAt: null,
         warningPercent: 80
       })
     ).toThrow('разные валюты')
