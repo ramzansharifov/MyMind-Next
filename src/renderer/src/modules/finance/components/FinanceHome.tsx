@@ -20,7 +20,7 @@ import { FinanceTransactionList } from './FinanceTransactionList'
 
 interface Props {
   dashboard: FinanceDashboard
-  onOpenPage: (page: 'accounts' | 'transactions') => void
+  onOpenPage: (page: 'accounts' | 'transactions' | 'templates' | 'limits') => void
   onOpenAccount: (accountId: string) => void
   onUseTemplate: (template: FinanceTemplate) => void
   onSnoozeTemplate: (template: FinanceTemplate) => void
@@ -165,7 +165,7 @@ export function FinanceHome({
               title="Действующие лимиты"
               icon={<Gauge aria-hidden="true" className="size-5" />}
               actionLabel="Управлять"
-              onAction={() => onOpenPage('transactions')}
+              onAction={() => onOpenPage('limits')}
             />
           </div>
           {dashboard.limits.length === 0 ? (
@@ -214,7 +214,7 @@ export function FinanceHome({
               title="Предстоящие операции"
               icon={<CalendarClock aria-hidden="true" className="size-5" />}
               actionLabel="Шаблоны"
-              onAction={() => onOpenPage('transactions')}
+              onAction={() => onOpenPage('templates')}
             />
           </div>
           {dashboard.upcomingTemplates.length === 0 ? (

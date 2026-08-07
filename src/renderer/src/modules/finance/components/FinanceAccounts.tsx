@@ -1,4 +1,4 @@
-import { ArrowLeft, Edit3, Plus, Settings2, Trash2, WalletCards } from 'lucide-react'
+import { ArrowLeft, Coins, Edit3, Plus, Settings2, Trash2, WalletCards } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import type {
@@ -18,6 +18,7 @@ import {
   FinanceSurface,
   financeInputClassName
 } from './FinancePrimitives'
+import { FinanceSection } from './FinanceSection'
 import { FinanceTransactionList } from './FinanceTransactionList'
 import { FinanceAccountDialog } from './dialogs/FinanceAccountDialog'
 import { FinanceClearAccountDialog } from './dialogs/FinanceClearAccountDialog'
@@ -117,14 +118,65 @@ export function FinanceAccounts({
     )
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="space-y-4">
+      {currencies.length > 0 && (
+        <FinanceSection
+          title="Баланс по валютам"
+          icon={<Coins aria-hidden="true" className="size-5" />}
+        >
+          <div className="grid grid-cols-4 gap-3 max-[900px]:grid-cols-2 max-[520px]:grid-cols-1">
+            {currencies.map((code) => (
+              <FinanceSurface
+                key={code}
+                as="article"
+                className="bg-[var(--app-card)] p-4 shadow-none"
+              >
+                <div className="text-xs tracking-wider text-[var(--app-muted)] uppercase">
+                  {code}
+                </div>
+                <div className="mt-2 text-xl font-semibold text-[var(--app-text)] tabular-nums">
+                  {formatMoneyMinor(
+                    accounts
+                      .filter((account) => account.currencyCode === code)
+                      .reduce((sum, account) => sum + account.balanceMinor, 0),
+                    code
+                  )}
+                </div>
+              </FinanceSurface>
+            ))}
+          </div>
+        </FinanceSection>
+      )}
+
+      <FinanceSection
+        title="Счета"
+        icon={<WalletCards aria-hidden="true" className="size-5" />}
+        actions={
+          <>
+            <FinanceButton size="sm" onClick={() => setCurrencyDialogOpen(true)}>
+              <Settings2 aria-hidden="true" className="size-4" />
+              Валюты и курсы
+            </FinanceButton>
+            <FinanceButton
+              size="sm"
+              tone="primary"
+              onClick={() => {
+                setEditAccount(null)
+                setAccountDialogOpen(true)
+              }}
+            >
+              <Plus aria-hidden="true" className="size-4" />
+              Новый счёт
+            </FinanceButton>
+          </>
+        }
+      >
         <div className="flex flex-wrap gap-2">
           <select
             aria-label="Фильтр валюты"
             value={currency}
             onChange={(event) => setCurrency(event.target.value)}
-            className={`${financeInputClassName} w-40`}
+            className={`${financeInputClassName} w-44 max-w-full`}
           >
             <option value="all">Все валюты</option>
             {currencies.map((item) => (
@@ -137,7 +189,7 @@ export function FinanceAccounts({
             aria-label="Фильтр типа счёта"
             value={type}
             onChange={(event) => setType(event.target.value)}
-            className={`${financeInputClassName} w-52`}
+            className={`${financeInputClassName} w-52 max-w-full`}
           >
             <option value="all">Все типы</option>
             <option value="cash">Наличные</option>
@@ -148,129 +200,101 @@ export function FinanceAccounts({
             <option value="other">Другой</option>
           </select>
         </div>
-        <div className="flex gap-2">
-          <FinanceButton onClick={() => setCurrencyDialogOpen(true)}>
-            <Settings2 className="size-4" />
-            Валюты и курсы
-          </FinanceButton>
-          <FinanceButton
-            tone="primary"
-            onClick={() => {
-              setEditAccount(null)
-              setAccountDialogOpen(true)
-            }}
-          >
-            <Plus className="size-4" />
-            Новый счёт
-          </FinanceButton>
-        </div>
-      </div>
 
-      {currencies.length > 0 && (
-        <div className="grid grid-cols-4 gap-3 max-[900px]:grid-cols-2 max-[520px]:grid-cols-1">
-          {currencies.map((code) => (
-            <FinanceSurface key={code} className="p-4">
-              <div className="text-xs tracking-wider text-[var(--app-muted)] uppercase">
-                Общий баланс · {code}
-              </div>
-              <div className="mt-2 text-xl font-semibold text-[var(--app-text)] tabular-nums">
-                {formatMoneyMinor(
-                  accounts
-                    .filter((a) => a.currencyCode === code)
-                    .reduce((sum, a) => sum + a.balanceMinor, 0),
-                  code
-                )}
-              </div>
-            </FinanceSurface>
-          ))}
-        </div>
-      )}
-
-      {filtered.length === 0 ? (
-        <FinanceEmptyState
-          icon={<WalletCards className="size-6" />}
-          title={accounts.length === 0 ? 'Пока нет счетов' : 'Счета не найдены'}
-          description={
-            accounts.length === 0
-              ? 'Создайте карту, наличные, банковский счёт или электронный кошелёк.'
-              : 'Измените фильтры, чтобы увидеть другие счета.'
-          }
-          action={
-            accounts.length === 0 ? (
-              <FinanceButton tone="primary" onClick={() => setAccountDialogOpen(true)}>
-                <Plus className="size-4" />
-                Создать счёт
-              </FinanceButton>
-            ) : undefined
-          }
-        />
-      ) : (
-        <div className="grid grid-cols-3 gap-3 max-[1000px]:grid-cols-2 max-[620px]:grid-cols-1">
-          {filtered.map((account) => (
-            <FinanceSurface key={account.id} className="group p-4">
-              <button
-                type="button"
-                className="w-full text-left"
-                onClick={() => onSelectedAccountChange(account.id)}
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className="flex size-11 items-center justify-center rounded-xl"
-                    style={{ background: `${account.color}22`, color: account.color }}
+        <div className="mt-3">
+          {filtered.length === 0 ? (
+            <FinanceEmptyState
+              icon={<WalletCards className="size-6" />}
+              title={accounts.length === 0 ? 'Пока нет счетов' : 'Счета не найдены'}
+              description={
+                accounts.length === 0
+                  ? 'Создайте карту, наличные, банковский счёт или электронный кошелёк.'
+                  : 'Измените фильтры, чтобы увидеть другие счета.'
+              }
+              action={
+                accounts.length === 0 ? (
+                  <FinanceButton tone="primary" onClick={() => setAccountDialogOpen(true)}>
+                    <Plus className="size-4" />
+                    Создать счёт
+                  </FinanceButton>
+                ) : undefined
+              }
+            />
+          ) : (
+            <div className="grid grid-cols-3 gap-3 max-[1000px]:grid-cols-2 max-[620px]:grid-cols-1">
+              {filtered.map((account) => (
+                <FinanceSurface
+                  key={account.id}
+                  as="article"
+                  className="group bg-[var(--app-card)] p-4 shadow-none transition hover:border-[var(--app-border-strong)] hover:bg-[var(--app-card-hover)]"
+                >
+                  <button
+                    type="button"
+                    className="w-full text-left"
+                    onClick={() => onSelectedAccountChange(account.id)}
                   >
-                    <FinanceIcon name={account.icon} className="size-5" />
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="flex size-11 items-center justify-center rounded-xl"
+                        style={{ background: `${account.color}22`, color: account.color }}
+                      >
+                        <FinanceIcon name={account.icon} className="size-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="truncate font-medium text-[var(--app-text)]">
+                          {account.name}
+                        </h3>
+                        <p className="text-xs text-[var(--app-muted)]">
+                          {financeAccountTypeLabels[account.type]} · {account.currencyCode}
+                        </p>
+                      </div>
+                    </div>
+                    <div
+                      className={`mt-5 text-xl font-semibold tabular-nums ${account.balanceMinor < 0 ? 'text-red-300' : 'text-[var(--app-text)]'}`}
+                    >
+                      {formatMoneyMinor(account.balanceMinor, account.currencyCode)}
+                    </div>
+                    <div className="mt-2 flex justify-between text-xs text-[var(--app-muted)]">
+                      <span>{account.transactionCount} операций</span>
+                      <span>
+                        {account.lastTransactionAt
+                          ? new Date(account.lastTransactionAt).toLocaleDateString('ru-RU')
+                          : 'Без истории'}
+                      </span>
+                    </div>
+                  </button>
+                  <div className="mt-4 flex gap-2 border-t border-[var(--app-border)] pt-3">
+                    <FinanceButton
+                      size="sm"
+                      onClick={() => {
+                        setEditAccount(account)
+                        setAccountDialogOpen(true)
+                      }}
+                    >
+                      <Edit3 className="size-4" />
+                      Изменить
+                    </FinanceButton>
+                    <FinanceButton
+                      size="sm"
+                      tone="danger"
+                      disabled={account.transactionCount > 0}
+                      title={
+                        account.transactionCount > 0
+                          ? 'Чтобы удалить счёт, сначала очистите его историю.'
+                          : 'Удалить пустой счёт'
+                      }
+                      onClick={() => setDeleteAccount(account)}
+                    >
+                      <Trash2 className="size-4" />
+                      Удалить
+                    </FinanceButton>
                   </div>
-                  <div className="min-w-0">
-                    <h3 className="truncate font-medium text-[var(--app-text)]">{account.name}</h3>
-                    <p className="text-xs text-[var(--app-muted)]">
-                      {financeAccountTypeLabels[account.type]} · {account.currencyCode}
-                    </p>
-                  </div>
-                </div>
-                <div
-                  className={`mt-5 text-xl font-semibold tabular-nums ${account.balanceMinor < 0 ? 'text-red-300' : 'text-[var(--app-text)]'}`}
-                >
-                  {formatMoneyMinor(account.balanceMinor, account.currencyCode)}
-                </div>
-                <div className="mt-2 flex justify-between text-xs text-[var(--app-muted)]">
-                  <span>{account.transactionCount} операций</span>
-                  <span>
-                    {account.lastTransactionAt
-                      ? new Date(account.lastTransactionAt).toLocaleDateString('ru-RU')
-                      : 'Без истории'}
-                  </span>
-                </div>
-              </button>
-              <div className="mt-4 flex gap-2 border-t border-[var(--app-border)] pt-3">
-                <FinanceButton
-                  size="sm"
-                  onClick={() => {
-                    setEditAccount(account)
-                    setAccountDialogOpen(true)
-                  }}
-                >
-                  <Edit3 className="size-4" />
-                  Изменить
-                </FinanceButton>
-                <FinanceButton
-                  size="sm"
-                  tone="danger"
-                  disabled={account.transactionCount > 0}
-                  title={
-                    account.transactionCount > 0
-                      ? 'Чтобы удалить счёт, сначала очистите его историю.'
-                      : 'Удалить пустой счёт'
-                  }
-                  onClick={() => setDeleteAccount(account)}
-                >
-                  <Trash2 className="size-4" />
-                  Удалить
-                </FinanceButton>
-              </div>
-            </FinanceSurface>
-          ))}
+                </FinanceSurface>
+              ))}
+            </div>
+          )}
         </div>
-      )}
+      </FinanceSection>
 
       <FinanceCurrencyDialog
         open={currencyDialogOpen}
