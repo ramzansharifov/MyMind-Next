@@ -18,15 +18,21 @@ interface Props {
   accounts: FinanceAccountSummary[]
   tags: FinanceTagSummary[]
   limits: FinanceLimitStatus[]
-  baseCurrencyCode: string
   onChanged: () => void | Promise<void>
 }
+
+const periodLabels = {
+  day: 'День',
+  week: 'Неделя',
+  month: 'Месяц',
+  year: 'Год',
+  custom: 'Период'
+} as const
 
 export function FinanceLimits({
   accounts,
   tags,
   limits,
-  baseCurrencyCode,
   onChanged
 }: Props): React.JSX.Element {
   const [limitDialogOpen, setLimitDialogOpen] = useState(false)
@@ -40,87 +46,103 @@ export function FinanceLimits({
           <FinanceEmptyState
             icon={<Gauge className="size-6" />}
             title="Лимитов пока нет"
-            description="Создайте контроль расходов для всех операций, конкретного счёта или тега."
+            description="Создайте лимит для нужного тега и выберите счета, расходы которых он должен учитывать."
           />
         ) : (
           <div className="grid grid-cols-2 gap-3 max-[780px]:grid-cols-1">
-            {limits.map((limit) => (
-              <FinanceSurface
-                key={limit.id}
-                as="article"
-                className="bg-[var(--app-card)] p-4 shadow-none"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <h3 className="truncate font-medium text-[var(--app-text)]">{limit.name}</h3>
-                    <p className="mt-1 text-xs text-[var(--app-muted)]">
-                      {limit.state === 'active' ? 'Активен' : 'Приостановлен'} · до{' '}
-                      {new Date(limit.periodEnd).toLocaleDateString('ru-RU')}
-                    </p>
+            {limits.map((limit) => {
+              const tag = tags.find((item) => item.id === limit.tagId)
+              const selectedAccounts = accounts.filter((account) =>
+                limit.accountIds.includes(account.id)
+              )
+              const accountsLabel =
+                limit.accountIds.length === 0
+                  ? `Все счета · ${limit.currencyCode}`
+                  : selectedAccounts.length <= 2
+                    ? selectedAccounts.map((account) => account.name).join(', ')
+                    : `${selectedAccounts.slice(0, 2).map((account) => account.name).join(', ')} +${selectedAccounts.length - 2}`
+
+              return (
+                <FinanceSurface
+                  key={limit.id}
+                  as="article"
+                  className="bg-[var(--app-card)] p-4 shadow-none"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h3 className="truncate font-medium text-[var(--app-text)]">{limit.name}</h3>
+                      <p className="mt-1 truncate text-xs text-[var(--app-muted)]">
+                        {tag?.name ?? 'Тег не найден'} · {accountsLabel}
+                      </p>
+                      <p className="mt-1 text-xs text-[var(--app-muted)]">
+                        {periodLabels[limit.periodType]} ·{' '}
+                        {limit.state === 'active' ? 'Активен' : 'Приостановлен'}
+                      </p>
+                    </div>
+                    <span
+                      className={
+                        limit.exceededMinor > 0
+                          ? 'text-red-300'
+                          : limit.warningReached
+                            ? 'text-amber-300'
+                            : 'text-[var(--app-text)]'
+                      }
+                    >
+                      {Math.round(limit.usagePercent)}%
+                    </span>
                   </div>
-                  <span
-                    className={
-                      limit.exceededMinor > 0
-                        ? 'text-red-300'
-                        : limit.warningReached
-                          ? 'text-amber-300'
-                          : 'text-[var(--app-text)]'
-                    }
-                  >
-                    {Math.round(limit.usagePercent)}%
-                  </span>
-                </div>
-                <FinanceProgress
-                  className="mt-3"
-                  value={limit.usagePercent}
-                  warning={limit.warningReached}
-                  exceeded={limit.exceededMinor > 0}
-                />
-                <div className="mt-2 text-sm text-[var(--app-muted)]">
-                  {formatMoneyMinor(limit.spentMinor, limit.currencyCode)} из{' '}
-                  {formatMoneyMinor(limit.amountMinor, limit.currencyCode)}
-                </div>
-                {limit.missingRateCurrencies.length > 0 && (
-                  <p className="mt-2 text-xs text-amber-200">
-                    Не учтены валюты без курса: {limit.missingRateCurrencies.join(', ')}
-                  </p>
-                )}
-                <div className="mt-4 flex flex-wrap gap-2 border-t border-[var(--app-border)] pt-3">
-                  <FinanceButton
-                    size="sm"
-                    onClick={() => {
-                      setEditLimit(limit)
-                      setLimitDialogOpen(true)
-                    }}
-                  >
-                    Изменить
-                  </FinanceButton>
-                  <FinanceButton
-                    size="sm"
-                    onClick={() =>
-                      void (async () => {
-                        await financeClient.setLimitState({
-                          id: limit.id,
-                          state: limit.state === 'active' ? 'paused' : 'active'
-                        })
-                        await onChanged()
-                      })()
-                    }
-                  >
-                    {limit.state === 'active' ? (
-                      <Pause aria-hidden="true" className="size-4" />
-                    ) : (
-                      <Play aria-hidden="true" className="size-4" />
-                    )}
-                    {limit.state === 'active' ? 'Приостановить' : 'Возобновить'}
-                  </FinanceButton>
-                  <FinanceButton size="sm" tone="danger" onClick={() => setDeleteLimit(limit)}>
-                    <Trash2 aria-hidden="true" className="size-4" />
-                    Удалить
-                  </FinanceButton>
-                </div>
-              </FinanceSurface>
-            ))}
+                  <FinanceProgress
+                    className="mt-3"
+                    value={limit.usagePercent}
+                    warning={limit.warningReached}
+                    exceeded={limit.exceededMinor > 0}
+                  />
+                  <div className="mt-2 text-sm text-[var(--app-muted)]">
+                    {formatMoneyMinor(limit.spentMinor, limit.currencyCode)} из{' '}
+                    {formatMoneyMinor(limit.amountMinor, limit.currencyCode)}
+                  </div>
+                  {limit.missingRateCurrencies.length > 0 && (
+                    <p className="mt-2 text-xs text-amber-200">
+                      Не учтены валюты без курса: {limit.missingRateCurrencies.join(', ')}
+                    </p>
+                  )}
+                  <div className="mt-4 flex flex-wrap gap-2 border-t border-[var(--app-border)] pt-3">
+                    <FinanceButton
+                      size="sm"
+                      onClick={() => {
+                        setEditLimit(limit)
+                        setLimitDialogOpen(true)
+                      }}
+                    >
+                      Изменить
+                    </FinanceButton>
+                    <FinanceButton
+                      size="sm"
+                      onClick={() =>
+                        void (async () => {
+                          await financeClient.setLimitState({
+                            id: limit.id,
+                            state: limit.state === 'active' ? 'paused' : 'active'
+                          })
+                          await onChanged()
+                        })()
+                      }
+                    >
+                      {limit.state === 'active' ? (
+                        <Pause aria-hidden="true" className="size-4" />
+                      ) : (
+                        <Play aria-hidden="true" className="size-4" />
+                      )}
+                      {limit.state === 'active' ? 'Приостановить' : 'Возобновить'}
+                    </FinanceButton>
+                    <FinanceButton size="sm" tone="danger" onClick={() => setDeleteLimit(limit)}>
+                      <Trash2 aria-hidden="true" className="size-4" />
+                      Удалить
+                    </FinanceButton>
+                  </div>
+                </FinanceSurface>
+              )
+            })}
           </div>
         )}
       </FinanceSection>
@@ -130,7 +152,6 @@ export function FinanceLimits({
         limit={editLimit}
         accounts={accounts}
         tags={tags}
-        baseCurrencyCode={baseCurrencyCode}
         onOpenChange={(open) => {
           setLimitDialogOpen(open)
           if (!open) setEditLimit(null)
