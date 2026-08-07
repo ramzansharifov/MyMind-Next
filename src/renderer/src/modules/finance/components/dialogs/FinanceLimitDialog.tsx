@@ -21,7 +21,6 @@ const limitPeriodTypes = ['day', 'week', 'month', 'year'] as const
 
 const limitFormSchema = z
   .object({
-    name: z.string().trim().min(1, 'Введите название').max(120),
     amount: z.string().trim().min(1, 'Введите сумму лимита'),
     accountIds: z.array(z.string()),
     allAccounts: z.boolean(),
@@ -96,7 +95,6 @@ function FinanceLimitDialogContent({
   } = useForm<LimitFormInput, unknown, LimitFormValues>({
     resolver: zodResolver(limitFormSchema),
     defaultValues: {
-      name: limit?.name ?? '',
       amount: limit ? formatMinorPlain(limit.amountMinor, limit.currencyCode) : '',
       accountIds: defaultAccountIds,
       allAccounts: defaultAllAccounts,
@@ -109,19 +107,26 @@ function FinanceLimitDialogContent({
 
   const selectedAccountIds = useWatch({ control, name: 'accountIds' }) ?? []
   const allAccounts = useWatch({ control, name: 'allAccounts' }) ?? false
+  const selectedTagId = useWatch({ control, name: 'tagId' }) ?? ''
   const expenseTags = tags.filter((tag) => tag.type !== 'income')
   const selectedAccounts = allAccounts
     ? accounts
     : accounts.filter((account) => selectedAccountIds.includes(account.id))
   const selectedCurrencies = [...new Set(selectedAccounts.map((account) => account.currencyCode))]
   const derivedCurrency = selectedCurrencies.length === 1 ? selectedCurrencies[0] : null
+  const selectedTag = expenseTags.find((tag) => tag.id === selectedTagId)
 
   async function submit(values: LimitFormValues): Promise<void> {
     const selected = values.allAccounts
       ? accounts
       : accounts.filter((account) => values.accountIds.includes(account.id))
     const currencies = [...new Set(selected.map((account) => account.currencyCode))]
+    const tag = expenseTags.find((item) => item.id === values.tagId)
 
+    if (!tag) {
+      setError('tagId', { message: 'Выберите тег расходов' })
+      return
+    }
     if (selected.length === 0) {
       setError('accountIds', { message: 'Выберите хотя бы один счёт' })
       return
@@ -148,7 +153,9 @@ function FinanceLimitDialogContent({
     try {
       const accountIds = values.allAccounts ? [] : values.accountIds
       const common = {
-        name: values.name,
+        // The legacy database column is kept only for migration compatibility.
+        // The limit has no independent user-facing name: tag is its identity.
+        name: tag.name,
         amountMinor,
         currencyCode,
         scopeType: values.allAccounts ? ('tag' as const) : ('account-tag' as const),
@@ -177,7 +184,7 @@ function FinanceLimitDialogContent({
       open={open}
       onOpenChange={onOpenChange}
       title={limit ? 'Изменить лимит' : 'Новый лимит расходов'}
-      description="Лимит отслеживает расходы выбранного тега и предупреждает при достижении порога."
+      description="Лимит относится к выбранному тегу и предупреждает при достижении заданной суммы."
       size="lg"
       busy={isSaving}
       closeLabel="Закрыть форму лимита"
@@ -188,10 +195,6 @@ function FinanceLimitDialogContent({
           void handleSubmit(submit)(event)
         }}
       >
-        <FinanceField label="Название" error={errors.name?.message}>
-          <input {...register('name')} autoFocus className={financeInputClassName} />
-        </FinanceField>
-
         <fieldset>
           <legend className="mb-1.5 text-sm font-medium text-[var(--app-text)]">
             Тег расходов
@@ -211,6 +214,11 @@ function FinanceLimitDialogContent({
           />
           {errors.tagId?.message && (
             <span className="mt-1.5 block text-xs text-red-300">{errors.tagId.message}</span>
+          )}
+          {selectedTag && (
+            <p className="mt-2 text-xs text-[var(--app-muted)]">
+              Лимит будет отображаться как лимит тега «{selectedTag.name}».
+            </p>
           )}
         </fieldset>
 
