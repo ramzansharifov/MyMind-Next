@@ -74,12 +74,6 @@ const savedTemplate: FinanceTemplate = {
   sourceAmountMinor: 5000,
   destinationAmountMinor: null,
   comment: '',
-  scheduleType: 'none',
-  scheduleInterval: 1,
-  nextOccurrenceAt: null,
-  reminderEnabled: false,
-  state: 'active',
-  lastUsedAt: null,
   createdAt: 1,
   updatedAt: 1
 }
@@ -125,11 +119,7 @@ describe('FinanceTemplateDialog', () => {
         tagId: 'food',
         sourceAmountMinor: 5000,
         destinationAmountMinor: null,
-        comment: '',
-        scheduleType: 'none',
-        scheduleInterval: 1,
-        nextOccurrenceAt: null,
-        reminderEnabled: false
+        comment: ''
       })
     )
   })
