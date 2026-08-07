@@ -82,6 +82,7 @@ function FinanceTagDialogContent({
       title={tag ? 'Изменить тег' : 'Новый тег'}
       description="Теги классифицируют доходы и расходы и используются в отчётах и лимитах."
       size="md"
+      layer="nested"
       busy={isSaving}
       closeLabel="Закрыть форму тега"
     >
