@@ -81,7 +81,6 @@ describe('registerFinanceIpcHandlers', () => {
     )?.[1]
     const input = {
       name: 'Карта',
-      type: 'card',
       currencyCode: 'tjs',
       initialBalanceMinor: 0,
       icon: 'credit-card',
