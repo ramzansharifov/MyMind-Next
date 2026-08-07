@@ -3,11 +3,8 @@ import { z } from 'zod'
 import {
   FINANCE_ICON_NAMES,
   FINANCE_LIMIT_PERIOD_TYPES,
-  FINANCE_LIMIT_SCOPE_TYPES,
   FINANCE_LIMIT_STATES,
   FINANCE_TAG_TYPES,
-  FINANCE_TEMPLATE_SCHEDULE_TYPES,
-  FINANCE_TEMPLATE_STATES,
   FINANCE_TRANSACTION_SORTS,
   FINANCE_TRANSACTION_TYPES,
   FINANCE_USER_TRANSACTION_TYPES
@@ -34,11 +31,8 @@ export const financeIconNameSchema = z.enum(FINANCE_ICON_NAMES)
 export const financeTransactionTypeSchema = z.enum(FINANCE_TRANSACTION_TYPES)
 export const financeUserTransactionTypeSchema = z.enum(FINANCE_USER_TRANSACTION_TYPES)
 export const financeTagTypeSchema = z.enum(FINANCE_TAG_TYPES)
-export const financeLimitScopeTypeSchema = z.enum(FINANCE_LIMIT_SCOPE_TYPES)
 export const financeLimitPeriodTypeSchema = z.enum(FINANCE_LIMIT_PERIOD_TYPES)
 export const financeLimitStateSchema = z.enum(FINANCE_LIMIT_STATES)
-export const financeTemplateScheduleTypeSchema = z.enum(FINANCE_TEMPLATE_SCHEDULE_TYPES)
-export const financeTemplateStateSchema = z.enum(FINANCE_TEMPLATE_STATES)
 export const financeTransactionSortSchema = z.enum(FINANCE_TRANSACTION_SORTS)
 
 export const financeMinorAmountSchema = z
@@ -233,70 +227,20 @@ export const financeTransactionFiltersSchema = z
 
 const financeLimitBaseSchema = z
   .object({
-    name: financeNameSchema,
     amountMinor: financePositiveMinorAmountSchema,
     currencyCode: financeCurrencyCodeSchema,
-    scopeType: financeLimitScopeTypeSchema,
-    accountId: financeSafeIdSchema.nullable(),
-    accountIds: z.array(financeSafeIdSchema).max(100).optional(),
-    tagId: financeSafeIdSchema.nullable(),
+    accountIds: z.array(financeSafeIdSchema).max(100),
+    tagId: financeSafeIdSchema,
     periodType: financeLimitPeriodTypeSchema,
-    startsAt: financeTimestampSchema,
-    endsAt: financeTimestampSchema.nullable(),
     warningPercent: z.number().int().min(1).max(100),
     state: financeLimitStateSchema.optional()
   })
   .superRefine((input, context) => {
-    const requiresAccount = input.scopeType === 'account' || input.scopeType === 'account-tag'
-    const requiresTag = input.scopeType === 'tag' || input.scopeType === 'account-tag'
-
-    if (requiresAccount !== (input.accountId !== null)) {
-      context.addIssue({
-        code: 'custom',
-        path: ['accountId'],
-        message: requiresAccount
-          ? 'Для этой области действия требуется счёт'
-          : 'Счёт не должен быть выбран для этой области действия'
-      })
-    }
-
-    if (requiresTag !== (input.tagId !== null)) {
-      context.addIssue({
-        code: 'custom',
-        path: ['tagId'],
-        message: requiresTag
-          ? 'Для этой области действия требуется тег'
-          : 'Тег не должен быть выбран для этой области действия'
-      })
-    }
-
-    if (input.accountIds && new Set(input.accountIds).size !== input.accountIds.length) {
+    if (new Set(input.accountIds).size !== input.accountIds.length) {
       context.addIssue({
         code: 'custom',
         path: ['accountIds'],
         message: 'Счета лимита не должны повторяться'
-      })
-    }
-
-    if (input.periodType === 'custom') {
-      if (input.endsAt === null) {
-        context.addIssue({
-          code: 'custom',
-          path: ['endsAt'],
-          message: 'Для собственного периода требуется дата окончания'
-        })
-      } else if (input.endsAt < input.startsAt) {
-        context.addIssue({
-          code: 'custom',
-          path: ['endsAt'],
-          message: 'Дата окончания должна быть не раньше даты начала'
-        })
-      }
-    } else if (input.endsAt !== null) {
-      context.addIssue({
-        code: 'custom',
-        path: ['endsAt'],
-        message: 'Дата окончания задаётся только для собственного периода'
       })
     }
   })
@@ -333,12 +277,7 @@ const financeTemplateBaseSchema = z
     tagId: financeSafeIdSchema.nullable(),
     sourceAmountMinor: financePositiveMinorAmountSchema,
     destinationAmountMinor: financePositiveMinorAmountSchema.nullable(),
-    comment: financeCommentSchema,
-    scheduleType: financeTemplateScheduleTypeSchema,
-    scheduleInterval: z.number().int().min(1).max(3650),
-    nextOccurrenceAt: financeTimestampSchema.nullable(),
-    reminderEnabled: z.boolean(),
-    state: financeTemplateStateSchema.optional()
+    comment: financeCommentSchema
   })
   .superRefine((input, context) => {
     if (input.type === 'transfer') {
@@ -393,50 +332,14 @@ const financeTemplateBaseSchema = z
         })
       }
     }
-
-    if (input.scheduleType === 'none' && input.nextOccurrenceAt !== null) {
-      context.addIssue({
-        code: 'custom',
-        path: ['nextOccurrenceAt'],
-        message: 'Дата следующей операции не задаётся без расписания'
-      })
-    }
-
-    if (input.scheduleType !== 'none' && input.nextOccurrenceAt === null) {
-      context.addIssue({
-        code: 'custom',
-        path: ['nextOccurrenceAt'],
-        message: 'Для расписания требуется дата следующей операции'
-      })
-    }
   })
 
 export const createFinanceTemplateInputSchema = financeTemplateBaseSchema
 export const updateFinanceTemplateInputSchema = financeTemplateBaseSchema.safeExtend({
-  id: financeSafeIdSchema,
-  state: financeTemplateStateSchema
-})
-
-export const setFinanceTemplateStateInputSchema = z.object({
-  id: financeSafeIdSchema,
-  state: financeTemplateStateSchema
-})
-
-export const deleteFinanceTemplateInputSchema = z.object({
   id: financeSafeIdSchema
 })
 
-export const useFinanceTemplateInputSchema = z.object({
-  templateId: financeSafeIdSchema,
-  transaction: createFinanceTransactionInputSchema
-})
-
-export const snoozeFinanceTemplateInputSchema = z.object({
-  id: financeSafeIdSchema,
-  nextOccurrenceAt: financeTimestampSchema
-})
-
-export const skipFinanceTemplateInputSchema = z.object({
+export const deleteFinanceTemplateInputSchema = z.object({
   id: financeSafeIdSchema
 })
 
