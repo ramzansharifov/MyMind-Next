@@ -11,6 +11,7 @@ import {
 } from '../repositories/finance.repository'
 
 type FinanceLimitWriteInput = CreateFinanceLimitInput | UpdateFinanceLimitInput
+export type FinanceLimitWithAccounts = FinanceLimit & { accountIds: string[] }
 
 function uniqueAccountIds(input: FinanceLimitWriteInput): string[] {
   const requested = input.accountIds ?? (input.accountId ? [input.accountId] : [])
@@ -98,7 +99,9 @@ export function getFinanceLimitAccountIds(limitId: string, fallbackAccountId: st
   return fallbackAccountId ? [fallbackAccountId] : []
 }
 
-export function withFinanceLimitAccounts<T extends FinanceLimit>(limit: T): T {
+export function withFinanceLimitAccounts<T extends FinanceLimit>(
+  limit: T
+): T & FinanceLimitWithAccounts {
   return {
     ...limit,
     accountIds: getFinanceLimitAccountIds(limit.id, limit.accountId)
