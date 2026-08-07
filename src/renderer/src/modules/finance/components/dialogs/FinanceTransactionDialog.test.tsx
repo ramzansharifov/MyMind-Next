@@ -118,6 +118,8 @@ describe('FinanceTransactionDialog', () => {
       />
     )
 
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
+
     const typeGroup = screen.getByRole('radiogroup', { name: 'Тип операции' })
     const expenseType = within(typeGroup).getByRole('radio', { name: 'Расход' })
     const incomeType = within(typeGroup).getByRole('radio', { name: 'Доход' })
