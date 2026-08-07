@@ -30,7 +30,7 @@ const savedTag: FinanceTagSummary = {
 }
 
 describe('FinanceTagDialog', () => {
-  it('uses visibly distinct purpose cards and shared icon/color pickers', async () => {
+  it('keeps only the selected purpose card colored and uses shared icon/color pickers', async () => {
     const user = userEvent.setup()
     const onSaved = vi.fn()
     const onOpenChange = vi.fn()
@@ -53,13 +53,16 @@ describe('FinanceTagDialog', () => {
     const incomeCard = screen.getByRole('radio', { name: /Доходы/ })
     const universalCard = screen.getByRole('radio', { name: /Универсальный/ })
     expect(expenseCard).toHaveAttribute('aria-checked', 'true')
+    expect(expenseCard).toHaveClass('border-red-500/45')
     expect(incomeCard).toHaveAttribute('aria-checked', 'false')
+    expect(incomeCard).toHaveClass('bg-[var(--app-workspace)]')
     expect(universalCard).toHaveAttribute('aria-checked', 'false')
-    expect(incomeCard).toHaveClass('border-emerald-500/18')
-    expect(universalCard).toHaveClass('border-violet-500/18')
+    expect(universalCard).toHaveClass('bg-[var(--app-workspace)]')
 
     await user.click(incomeCard)
     expect(incomeCard).toHaveAttribute('aria-checked', 'true')
+    expect(incomeCard).toHaveClass('border-emerald-500/45')
+    expect(expenseCard).toHaveClass('bg-[var(--app-workspace)]')
 
     await user.click(screen.getByRole('button', { name: 'Выбрать иконку тега' }))
     expect(document.querySelector('[data-icon-picker-content]')).toHaveClass('z-[120]')
