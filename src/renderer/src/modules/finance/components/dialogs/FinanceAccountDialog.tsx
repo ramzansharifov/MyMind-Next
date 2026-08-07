@@ -4,7 +4,10 @@ import { useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 
-import { FINANCE_ICON_NAMES, type FinanceAccountSummary } from '../../../../../../shared/contracts/finance'
+import {
+  FINANCE_ICON_NAMES,
+  type FinanceAccountSummary
+} from '../../../../../../shared/contracts/finance'
 import { formatMinorPlain, parseMoneyToMinor } from '../../../../../../shared/finance-money'
 import { AppDialog } from '../../../../shared/ui/AppDialog'
 import { ColorPicker } from '../../../../shared/ui/ColorPicker'
@@ -59,7 +62,7 @@ function FinanceAccountDialogContent({
       currencyCode: account?.currencyCode ?? '',
       initialBalance: account
         ? formatMinorPlain(account.initialBalanceMinor, account.currencyCode)
-        : '0,00',
+        : '0.00',
       icon: account?.icon ?? 'wallet',
       color: account?.color ?? '#a78bfa'
     }
@@ -145,6 +148,8 @@ function FinanceAccountDialogContent({
           <FinanceField label="Начальный баланс" error={errors.initialBalance?.message}>
             <input
               {...register('initialBalance')}
+              type="number"
+              step="any"
               inputMode="decimal"
               className={financeInputClassName}
             />
