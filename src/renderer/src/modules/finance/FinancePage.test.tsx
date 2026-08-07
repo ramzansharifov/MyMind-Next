@@ -128,6 +128,7 @@ describe('FinancePage', () => {
     }
     expect(screen.queryByRole('button', { name: 'Обновить' })).not.toBeInTheDocument()
     expect(document.querySelector('[data-module-sidebar]')).not.toBeInTheDocument()
+    expect(mocks.listExchangeRates).not.toHaveBeenCalled()
   })
 
   it('keeps transactions, templates and limits on separate top-level pages', async () => {
@@ -177,7 +178,7 @@ describe('FinancePage', () => {
     await user.click(screen.getByRole('button', { name: 'Счета' }))
     expect(screen.getAllByRole('button', { name: 'Новый счёт' })).toHaveLength(1)
     expect(headerActions()).toContainElement(screen.getByRole('button', { name: 'Новый счёт' }))
-    expect(headerActions()).toContainElement(screen.getByRole('button', { name: 'Валюты и курсы' }))
+    expect(screen.queryByRole('button', { name: 'Валюты и курсы' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Создать счёт' })).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Теги' }))
@@ -197,6 +198,8 @@ describe('FinancePage', () => {
     await user.click(screen.getByRole('button', { name: 'Счета' }))
     expect(screen.getByRole('heading', { name: 'Счета' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Новый счёт' })).toBeInTheDocument()
+    expect(screen.queryByRole('combobox', { name: 'Фильтр валюты' })).not.toBeInTheDocument()
+    expect(screen.queryByText('Все валюты')).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Теги' }))
     expect(screen.getByRole('heading', { name: 'Теги' })).toBeInTheDocument()

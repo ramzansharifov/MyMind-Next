@@ -9,14 +9,12 @@ import {
   Landmark,
   Plus,
   ReceiptText,
-  Settings2,
   Tags
 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 
 import type {
   FinanceDashboard,
-  FinanceExchangeRate,
   FinancePageId,
   FinanceTagSummary,
   FinanceTemplate,
@@ -37,7 +35,6 @@ import { FinanceTags } from './components/FinanceTags'
 import { FinanceTemplates } from './components/FinanceTemplates'
 import { FinanceTransactions } from './components/FinanceTransactions'
 import { FinanceAccountDialog } from './components/dialogs/FinanceAccountDialog'
-import { FinanceCurrencyDialog } from './components/dialogs/FinanceCurrencyDialog'
 import { FinanceLimitDialog } from './components/dialogs/FinanceLimitDialog'
 import { FinanceTagDialog } from './components/dialogs/FinanceTagDialog'
 import { FinanceTemplateDialog } from './components/dialogs/FinanceTemplateDialog'
@@ -69,7 +66,6 @@ export function FinancePage({
   const [dashboard, setDashboard] = useState<FinanceDashboard | null>(null)
   const [tags, setTags] = useState<FinanceTagSummary[]>([])
   const [templates, setTemplates] = useState<FinanceTemplate[]>([])
-  const [rates, setRates] = useState<FinanceExchangeRate[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [refreshVersion, setRefreshVersion] = useState(0)
@@ -83,23 +79,20 @@ export function FinancePage({
   const [createTemplateOpen, setCreateTemplateOpen] = useState(false)
   const [createLimitOpen, setCreateLimitOpen] = useState(false)
   const [createAccountOpen, setCreateAccountOpen] = useState(false)
-  const [currencyDialogOpen, setCurrencyDialogOpen] = useState(false)
 
   const load = useCallback(async (): Promise<void> => {
     setIsLoading(true)
     setError(null)
     try {
       const period = currentMonthPeriod()
-      const [nextDashboard, nextTags, nextTemplates, nextRates] = await Promise.all([
+      const [nextDashboard, nextTags, nextTemplates] = await Promise.all([
         financeClient.getDashboard(period),
         financeClient.listTags(),
-        financeClient.listTemplates(),
-        financeClient.listExchangeRates()
+        financeClient.listTemplates()
       ])
       setDashboard(nextDashboard)
       setTags(nextTags)
       setTemplates(nextTemplates)
-      setRates(nextRates)
       setRefreshVersion((current) => current + 1)
     } catch (reason) {
       setError(getFinanceErrorMessage(reason))
@@ -210,16 +203,10 @@ export function FinancePage({
                   </FinanceButton>
                 )}
                 {activePage === 'accounts' && (
-                  <>
-                    <FinanceButton onClick={() => setCurrencyDialogOpen(true)}>
-                      <Settings2 aria-hidden="true" className="size-4" />
-                      Валюты и курсы
-                    </FinanceButton>
-                    <FinanceButton tone="primary" onClick={() => setCreateAccountOpen(true)}>
-                      <Plus aria-hidden="true" className="size-4" />
-                      Новый счёт
-                    </FinanceButton>
-                  </>
+                  <FinanceButton tone="primary" onClick={() => setCreateAccountOpen(true)}>
+                    <Plus aria-hidden="true" className="size-4" />
+                    Новый счёт
+                  </FinanceButton>
                 )}
                 {activePage === 'tags' && (
                   <FinanceButton tone="primary" onClick={() => setQuickTagType('expense')}>
@@ -368,13 +355,6 @@ export function FinancePage({
         account={null}
         onOpenChange={setCreateAccountOpen}
         onSaved={async () => load()}
-      />
-      <FinanceCurrencyDialog
-        open={currencyDialogOpen}
-        settings={dashboard.settings}
-        rates={rates}
-        onOpenChange={setCurrencyDialogOpen}
-        onChanged={load}
       />
       <FinanceTemplateDialog
         open={createTemplateOpen}

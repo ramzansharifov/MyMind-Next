@@ -36,10 +36,11 @@ export function IconPicker<Value extends string>({
 
       <DropdownMenu.Portal>
         <DropdownMenu.Content
+          data-icon-picker-content
           sideOffset={8}
           align={align}
           collisionPadding={12}
-          className="z-50 w-72 rounded-2xl border border-[var(--app-border)] bg-[var(--app-menu)] p-2 shadow-[var(--app-shadow-menu)]"
+          className="z-[120] w-72 rounded-2xl border border-[var(--app-border)] bg-[var(--app-menu)] p-2 shadow-[var(--app-shadow-menu)]"
         >
           <DropdownMenu.Label className="px-2 py-2 text-xs font-medium text-[var(--app-muted)]">
             {label}
