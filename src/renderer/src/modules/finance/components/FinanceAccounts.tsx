@@ -1,10 +1,8 @@
-import { ArrowLeft, Coins, Edit3, Plus, Settings2, Trash2, WalletCards } from 'lucide-react'
+import { ArrowLeft, Coins, Edit3, Trash2, WalletCards } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import type {
   FinanceAccountSummary,
-  FinanceExchangeRate,
-  FinanceSettings,
   FinanceTransactionPage
 } from '../../../../../shared/contracts/finance'
 import { formatMoneyMinor } from '../../../../../shared/finance-money'
@@ -23,12 +21,9 @@ import { FinanceTransactionList } from './FinanceTransactionList'
 import { FinanceAccountDialog } from './dialogs/FinanceAccountDialog'
 import { FinanceClearAccountDialog } from './dialogs/FinanceClearAccountDialog'
 import { FinanceConfirmDialog } from './dialogs/FinanceConfirmDialog'
-import { FinanceCurrencyDialog } from './dialogs/FinanceCurrencyDialog'
 
 interface Props {
   accounts: FinanceAccountSummary[]
-  settings: FinanceSettings
-  rates: FinanceExchangeRate[]
   selectedAccountId?: string | null
   onSelectedAccountChange: (id: string | null) => void
   onChanged: () => void | Promise<void>
@@ -36,8 +31,6 @@ interface Props {
 
 export function FinanceAccounts({
   accounts,
-  settings,
-  rates,
   selectedAccountId,
   onSelectedAccountChange,
   onChanged
@@ -48,7 +41,6 @@ export function FinanceAccounts({
   const [editAccount, setEditAccount] = useState<FinanceAccountSummary | null>(null)
   const [deleteAccount, setDeleteAccount] = useState<FinanceAccountSummary | null>(null)
   const [clearAccount, setClearAccount] = useState<FinanceAccountSummary | null>(null)
-  const [currencyDialogOpen, setCurrencyDialogOpen] = useState(false)
   const currencies = useMemo(
     () => [...new Set(accounts.map((account) => account.currencyCode))].sort(),
     [accounts]
@@ -148,29 +140,7 @@ export function FinanceAccounts({
         </FinanceSection>
       )}
 
-      <FinanceSection
-        title="Счета"
-        icon={<WalletCards aria-hidden="true" className="size-5" />}
-        actions={
-          <>
-            <FinanceButton size="sm" onClick={() => setCurrencyDialogOpen(true)}>
-              <Settings2 aria-hidden="true" className="size-4" />
-              Валюты и курсы
-            </FinanceButton>
-            <FinanceButton
-              size="sm"
-              tone="primary"
-              onClick={() => {
-                setEditAccount(null)
-                setAccountDialogOpen(true)
-              }}
-            >
-              <Plus aria-hidden="true" className="size-4" />
-              Новый счёт
-            </FinanceButton>
-          </>
-        }
-      >
+      <FinanceSection title="Счета" icon={<WalletCards aria-hidden="true" className="size-5" />}>
         <div className="flex flex-wrap gap-2">
           <select
             aria-label="Фильтр валюты"
@@ -210,14 +180,6 @@ export function FinanceAccounts({
                 accounts.length === 0
                   ? 'Создайте карту, наличные, банковский счёт или электронный кошелёк.'
                   : 'Измените фильтры, чтобы увидеть другие счета.'
-              }
-              action={
-                accounts.length === 0 ? (
-                  <FinanceButton tone="primary" onClick={() => setAccountDialogOpen(true)}>
-                    <Plus className="size-4" />
-                    Создать счёт
-                  </FinanceButton>
-                ) : undefined
               }
             />
           ) : (
@@ -296,13 +258,6 @@ export function FinanceAccounts({
         </div>
       </FinanceSection>
 
-      <FinanceCurrencyDialog
-        open={currencyDialogOpen}
-        settings={settings}
-        rates={rates}
-        onOpenChange={setCurrencyDialogOpen}
-        onChanged={onChanged}
-      />
       {accountDialogs}
     </div>
   )
