@@ -42,7 +42,9 @@ export function DeleteConfirmationDialog({
       title={title}
       description={
         <>
-          {subject && <span className="mb-1 block font-medium break-words text-red-200">{subject}</span>}
+          {subject && (
+            <span className="mb-1 block font-medium break-words text-red-200">{subject}</span>
+          )}
           {description}
         </>
       }
@@ -51,6 +53,7 @@ export function DeleteConfirmationDialog({
       role="alertdialog"
       size="sm"
       busy={isSubmitting}
+      dismissible={false}
       showClose={false}
       bodyClassName="p-0"
       onKeyDown={(event) => {
@@ -78,7 +81,7 @@ export function DeleteConfirmationDialog({
         <button
           type="button"
           disabled={isSubmitting}
-          className="rounded-lg border border-[var(--app-border)] px-4 py-2 text-sm font-medium text-[var(--app-muted)] transition-colors outline-none hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)]/35 disabled:cursor-not-allowed disabled:opacity-45"
+          className="rounded-lg border border-[var(--app-border)] px-4 py-2 text-sm font-medium text-[var(--app-muted)] transition-colors outline-none hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 disabled:cursor-not-allowed disabled:opacity-45"
           onClick={() => onOpenChange(false)}
         >
           Отмена
