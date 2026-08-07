@@ -1,7 +1,13 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { LoaderCircle } from 'lucide-react'
+import {
+  ArrowDownLeft,
+  ArrowRightLeft,
+  ArrowUpRight,
+  LoaderCircle,
+  type LucideIcon
+} from 'lucide-react'
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 
 import {
@@ -10,10 +16,13 @@ import {
   type FinanceTagSummary,
   type FinanceTagType
 } from '../../../../../../shared/contracts/finance'
+import { cn } from '../../../../shared/lib/cn'
 import { AppDialog } from '../../../../shared/ui/AppDialog'
+import { ColorPicker } from '../../../../shared/ui/ColorPicker'
 import { financeClient } from '../../api/finance-client'
 import { financeTagTypeLabels, getFinanceErrorMessage } from '../../lib/finance-ui'
 import { FinanceButton, FinanceField, financeInputClassName } from '../FinancePrimitives'
+import { FinanceIconPicker } from '../FinanceIconPicker'
 
 const tagFormSchema = z.object({
   name: z.string().trim().min(1, 'Введите название').max(120),
@@ -23,6 +32,40 @@ const tagFormSchema = z.object({
 })
 
 type TagFormValues = z.infer<typeof tagFormSchema>
+
+const tagTypeOptions = [
+  {
+    value: 'expense',
+    label: financeTagTypeLabels.expense,
+    description: 'Категории расходов',
+    icon: ArrowUpRight,
+    activeClassName: 'border-red-500/35 bg-red-500/10 text-red-100',
+    iconClassName: 'bg-red-500/12 text-red-300'
+  },
+  {
+    value: 'income',
+    label: financeTagTypeLabels.income,
+    description: 'Категории доходов',
+    icon: ArrowDownLeft,
+    activeClassName: 'border-emerald-500/35 bg-emerald-500/10 text-emerald-100',
+    iconClassName: 'bg-emerald-500/12 text-emerald-300'
+  },
+  {
+    value: 'both',
+    label: financeTagTypeLabels.both,
+    description: 'Доходы и расходы',
+    icon: ArrowRightLeft,
+    activeClassName: 'border-violet-500/35 bg-violet-500/10 text-violet-100',
+    iconClassName: 'bg-violet-500/12 text-violet-300'
+  }
+] as const satisfies ReadonlyArray<{
+  value: FinanceTagType
+  label: string
+  description: string
+  icon: LucideIcon
+  activeClassName: string
+  iconClassName: string
+}>
 
 interface FinanceTagDialogProps {
   open: boolean
@@ -47,6 +90,7 @@ function FinanceTagDialogContent({
   const [backendError, setBackendError] = useState<string | null>(null)
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors }
   } = useForm<TagFormValues>({
@@ -55,7 +99,7 @@ function FinanceTagDialogContent({
       name: tag?.name ?? '',
       type: tag?.type ?? initialType,
       icon: tag?.icon ?? 'tag',
-      color: tag?.color ?? '#8b5cf6'
+      color: tag?.color ?? '#a78bfa'
     }
   })
 
@@ -96,41 +140,107 @@ function FinanceTagDialogContent({
           <input {...register('name')} autoFocus className={financeInputClassName} />
         </FinanceField>
 
-        <FinanceField
-          label="Назначение"
-          error={errors.type?.message}
-          hint={
-            tag && tag.transactionCount > 0
-              ? 'Тип можно изменить только при совместимости со всей существующей историей.'
-              : undefined
-          }
-        >
-          <select {...register('type')} className={financeInputClassName}>
-            {FINANCE_TAG_TYPES.map((type) => (
-              <option key={type} value={type}>
-                {financeTagTypeLabels[type]}
-              </option>
-            ))}
-          </select>
-        </FinanceField>
+        <fieldset>
+          <legend className="mb-1.5 text-sm font-medium text-[var(--app-text)]">
+            Назначение
+          </legend>
+          <Controller
+            control={control}
+            name="type"
+            render={({ field }) => (
+              <div
+                role="radiogroup"
+                aria-label="Назначение тега"
+                className="grid grid-cols-3 gap-2 max-[520px]:grid-cols-1"
+              >
+                {tagTypeOptions.map((option) => {
+                  const Icon = option.icon
+                  const selected = field.value === option.value
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      disabled={isSaving}
+                      className={cn(
+                        'min-h-24 rounded-xl border p-3 text-left outline-none transition-[background-color,border-color,box-shadow,transform]',
+                        'focus-visible:ring-2 focus-visible:ring-violet-500/35',
+                        'disabled:cursor-not-allowed disabled:opacity-45',
+                        selected
+                          ? `${option.activeClassName} shadow-sm`
+                          : 'border-[var(--app-border)] bg-[var(--app-field)] text-[var(--app-text)] hover:border-[var(--app-border-strong)] hover:bg-[var(--app-field-hover)]'
+                      )}
+                      onClick={() => field.onChange(option.value)}
+                    >
+                      <span
+                        className={cn(
+                          'flex size-8 items-center justify-center rounded-lg',
+                          selected
+                            ? option.iconClassName
+                            : 'bg-[var(--app-control)] text-[var(--app-muted)]'
+                        )}
+                      >
+                        <Icon aria-hidden="true" className="size-4" />
+                      </span>
+                      <span className="mt-2 block text-sm font-semibold">{option.label}</span>
+                      <span className="mt-0.5 block text-xs leading-4 text-[var(--app-muted)]">
+                        {option.description}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          />
+          {errors.type?.message ? (
+            <span className="mt-1.5 block text-xs text-red-300">{errors.type.message}</span>
+          ) : tag && tag.transactionCount > 0 ? (
+            <span className="mt-1.5 block text-xs leading-5 text-[var(--app-muted)]">
+              Тип можно изменить только при совместимости со всей существующей историей.
+            </span>
+          ) : null}
+        </fieldset>
 
-        <div className="grid grid-cols-[minmax(0,1fr)_7rem] gap-4">
-          <FinanceField label="Иконка" error={errors.icon?.message}>
-            <select {...register('icon')} className={financeInputClassName}>
-              {FINANCE_ICON_NAMES.map((icon) => (
-                <option key={icon} value={icon}>
-                  {icon}
-                </option>
-              ))}
-            </select>
-          </FinanceField>
-          <FinanceField label="Цвет" error={errors.color?.message}>
-            <input
-              {...register('color')}
-              type="color"
-              className={`${financeInputClassName} p-1`}
+        <div className="grid grid-cols-2 gap-4 max-[520px]:grid-cols-1">
+          <div className="text-sm text-[var(--app-text)]">
+            <span className="mb-1.5 block font-medium">Иконка</span>
+            <Controller
+              control={control}
+              name="icon"
+              render={({ field }) => (
+                <FinanceIconPicker
+                  value={field.value}
+                  disabled={isSaving}
+                  pickerLabel="Иконка тега"
+                  ariaLabel="Выбрать иконку тега"
+                  onChange={field.onChange}
+                />
+              )}
             />
-          </FinanceField>
+            {errors.icon?.message && (
+              <span className="mt-1.5 block text-xs text-red-300">{errors.icon.message}</span>
+            )}
+          </div>
+
+          <div className="text-sm text-[var(--app-text)]">
+            <span className="mb-1.5 block font-medium">Цвет</span>
+            <Controller
+              control={control}
+              name="color"
+              render={({ field }) => (
+                <ColorPicker
+                  value={field.value}
+                  ariaLabel="Цвет тега"
+                  disabled={isSaving}
+                  onChange={field.onChange}
+                />
+              )}
+            />
+            {errors.color?.message && (
+              <span className="mt-1.5 block text-xs text-red-300">{errors.color.message}</span>
+            )}
+          </div>
         </div>
 
         {backendError && (

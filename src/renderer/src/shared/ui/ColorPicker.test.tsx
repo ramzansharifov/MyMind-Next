@@ -12,6 +12,7 @@ describe('ColorPicker', () => {
 
     await user.click(screen.getByRole('button', { name: 'Цвет счёта' }))
     expect(screen.getByText('Выбор цвета')).toBeInTheDocument()
+    expect(document.querySelector('[data-color-picker-content]')).toHaveClass('z-[120]')
     await user.click(screen.getByRole('button', { name: 'Цвет #60a5fa' }))
 
     expect(onChange).toHaveBeenCalledWith('#60a5fa')
