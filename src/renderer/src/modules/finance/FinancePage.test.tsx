@@ -112,6 +112,7 @@ describe('FinancePage', () => {
     expect(await screen.findByRole('heading', { name: 'Финансы' })).toBeInTheDocument()
     expect(document.querySelector('[data-finance-hero]')).toBeInTheDocument()
     expect(document.querySelector('[data-finance-navigation]')).toBeInTheDocument()
+    expect(document.querySelector('[data-finance-header-actions]')).toBeInTheDocument()
     for (const label of [
       'Главная',
       'Транзакции',
@@ -147,6 +148,46 @@ describe('FinancePage', () => {
     await user.click(screen.getByRole('button', { name: 'Лимиты' }))
     expect(screen.getByRole('heading', { name: 'Лимиты' })).toBeInTheDocument()
     expect(screen.getByText('Лимитов пока нет')).toBeInTheDocument()
+  })
+
+  it('moves page-level create actions into the finance header and swaps them by tab', async () => {
+    const user = userEvent.setup()
+    render(<FinancePage />)
+    await screen.findByText('Пока нет счетов')
+
+    const headerActions = (): HTMLElement => {
+      const element = document.querySelector('[data-finance-header-actions]')
+      expect(element).not.toBeNull()
+      return element as HTMLElement
+    }
+
+    for (const label of ['Доход', 'Расход', 'Перевод']) {
+      expect(headerActions()).toContainElement(screen.getByRole('button', { name: label }))
+    }
+
+    await user.click(screen.getByRole('button', { name: 'Шаблоны' }))
+    expect(screen.getAllByRole('button', { name: 'Новый шаблон' })).toHaveLength(1)
+    expect(headerActions()).toContainElement(screen.getByRole('button', { name: 'Новый шаблон' }))
+    expect(screen.queryByRole('button', { name: 'Создать шаблон' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Лимиты' }))
+    expect(screen.getAllByRole('button', { name: 'Новый лимит' })).toHaveLength(1)
+    expect(headerActions()).toContainElement(screen.getByRole('button', { name: 'Новый лимит' }))
+    expect(screen.queryByRole('button', { name: 'Создать лимит' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Счета' }))
+    expect(screen.getAllByRole('button', { name: 'Новый счёт' })).toHaveLength(1)
+    expect(headerActions()).toContainElement(screen.getByRole('button', { name: 'Новый счёт' }))
+    expect(headerActions()).toContainElement(screen.getByRole('button', { name: 'Валюты и курсы' }))
+    expect(screen.queryByRole('button', { name: 'Создать счёт' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Теги' }))
+    expect(screen.getAllByRole('button', { name: 'Новый тег' })).toHaveLength(1)
+    expect(headerActions()).toContainElement(screen.getByRole('button', { name: 'Новый тег' }))
+    expect(screen.queryByRole('button', { name: 'Создать тег' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Отчёты' }))
+    expect(document.querySelector('[data-finance-header-actions]')).not.toBeInTheDocument()
   })
 
   it('renders accounts and tags inside standard section blocks', async () => {
