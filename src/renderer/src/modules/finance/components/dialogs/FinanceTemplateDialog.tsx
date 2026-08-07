@@ -269,6 +269,9 @@ function Content({ open, template, accounts, tags, onOpenChange, onSaved }: Prop
           >
             <input
               {...register('sourceAmount')}
+              type="number"
+              step="any"
+              min={0}
               inputMode="decimal"
               className={financeInputClassName}
             />
@@ -280,6 +283,9 @@ function Content({ open, template, accounts, tags, onOpenChange, onSaved }: Prop
             >
               <input
                 {...register('destinationAmount')}
+                type="number"
+                step="any"
+                min={0}
                 inputMode="decimal"
                 className={financeInputClassName}
               />
