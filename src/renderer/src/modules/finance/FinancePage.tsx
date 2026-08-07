@@ -141,8 +141,8 @@ export function FinancePage({
 
   if (isLoading && !dashboard) {
     return (
-      <main className="h-full overflow-y-auto bg-[var(--app-workspace)]">
-        <div className="mx-auto max-w-[1240px] px-8 py-7 max-[700px]:px-4">
+      <main className="h-full overflow-y-auto bg-[var(--app-workspace)] px-8 py-7 max-[700px]:px-4 max-[700px]:py-5">
+        <div className="mx-auto w-full max-w-[1240px]">
           <FinanceLoadingState />
         </div>
       </main>
@@ -150,8 +150,8 @@ export function FinancePage({
   }
   if (error && !dashboard) {
     return (
-      <main className="h-full overflow-y-auto bg-[var(--app-workspace)]">
-        <div className="mx-auto max-w-[1240px] px-8 py-7 max-[700px]:px-4">
+      <main className="h-full overflow-y-auto bg-[var(--app-workspace)] px-8 py-7 max-[700px]:px-4 max-[700px]:py-5">
+        <div className="mx-auto w-full max-w-[1240px]">
           <FinanceErrorState message={error} onRetry={() => void load()} />
         </div>
       </main>
@@ -160,8 +160,8 @@ export function FinancePage({
   if (!dashboard) return <></>
 
   return (
-    <main className="h-full overflow-y-auto bg-[var(--app-workspace)]">
-      <div className="mx-auto max-w-[1240px] px-8 py-7 max-[700px]:px-4 max-[700px]:py-5">
+    <main className="h-full overflow-y-auto bg-[var(--app-workspace)] px-8 py-7 max-[700px]:px-4 max-[700px]:py-5">
+      <div data-finance-workspace-container className="mx-auto w-full max-w-[1240px]">
         <header data-finance-hero className="mb-5">
           <div className="flex items-start justify-between gap-6 max-[820px]:flex-col">
             <div className="min-w-0">
