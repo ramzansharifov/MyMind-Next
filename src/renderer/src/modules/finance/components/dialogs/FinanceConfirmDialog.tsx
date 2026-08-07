@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { DeleteConfirmationDialog } from '../../../../shared/ui/DeleteConfirmationDialog'
 import { getFinanceErrorMessage } from '../../lib/finance-ui'
@@ -27,9 +27,12 @@ export function FinanceConfirmDialog({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  useEffect(() => {
+    if (open) setError(null)
+  }, [open])
+
   function requestOpenChange(nextOpen: boolean): void {
     if (isSubmitting && !nextOpen) return
-    if (nextOpen) setError(null)
     onOpenChange(nextOpen)
   }
 
