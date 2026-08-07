@@ -42,7 +42,6 @@ const transactionFormSchema = z
     accountId: z.string().min(1, 'Выберите счёт'),
     destinationAccountId: z.string(),
     amount: z.string().trim().min(1, 'Введите сумму'),
-    destinationAmount: z.string().trim(),
     tagId: z.string(),
     occurredAt: z.string().min(1, 'Укажите дату и время'),
     comment: z.string().trim().max(1_000, 'Комментарий слишком длинный')
@@ -61,13 +60,6 @@ const transactionFormSchema = z
           code: 'custom',
           path: ['destinationAccountId'],
           message: 'Счета перевода должны отличаться'
-        })
-      }
-      if (!values.destinationAmount) {
-        context.addIssue({
-          code: 'custom',
-          path: ['destinationAmount'],
-          message: 'Введите сумму зачисления'
         })
       }
     } else if (!values.tagId) {
@@ -109,13 +101,6 @@ function getDefaultValues(
       amount: source
         ? formatMinorPlain(Math.abs(source.signedAmountMinor), source.accountCurrencyCode)
         : '',
-      destinationAmount:
-        transaction.type === 'transfer' && destination
-          ? formatMinorPlain(
-              Math.abs(destination.signedAmountMinor),
-              destination.accountCurrencyCode
-            )
-          : '',
       tagId: transaction.tagId ?? '',
       occurredAt: toDateTimeLocalValue(transaction.occurredAt),
       comment: transaction.comment
@@ -134,14 +119,6 @@ function getDefaultValues(
               'TJS'
           )
         : '',
-      destinationAmount:
-        template.destinationAmountMinor === null
-          ? ''
-          : formatMinorPlain(
-              template.destinationAmountMinor,
-              accounts.find((account) => account.id === template.destinationAccountId)
-                ?.currencyCode ?? 'TJS'
-            ),
       tagId: template.tagId ?? '',
       occurredAt: toDateTimeLocalValue(template.nextOccurrenceAt ?? Date.now()),
       comment: template.comment
@@ -153,7 +130,6 @@ function getDefaultValues(
     accountId: accounts[0]?.id ?? '',
     destinationAccountId: '',
     amount: '',
-    destinationAmount: '',
     tagId: '',
     occurredAt: toDateTimeLocalValue(Date.now()),
     comment: ''
@@ -196,40 +172,15 @@ function FinanceTransactionDialogContent({
   })
   const values = useWatch({ control })
   const selectedAccount = accounts.find((account) => account.id === values.accountId)
-  const destinationAccount = accounts.find((account) => account.id === values.destinationAccountId)
+  const selectedDestination = accounts.find(
+    (account) => account.id === values.destinationAccountId
+  )
   const compatibleTags = tags.filter((tag) => tag.type === 'both' || tag.type === values.type)
 
   useEffect(() => {
     setImpactConfirmed(false)
     setImpact(null)
   }, [values.accountId, values.amount, values.occurredAt, values.tagId, values.type])
-
-  const exchangeRateLabel = useMemo(() => {
-    if (
-      values.type !== 'transfer' ||
-      !selectedAccount ||
-      !destinationAccount ||
-      !values.amount ||
-      !values.destinationAmount
-    ) {
-      return null
-    }
-
-    try {
-      const sourceMinor = parseMoneyToMinor(values.amount, selectedAccount.currencyCode)
-      const destinationMinor = parseMoneyToMinor(
-        values.destinationAmount,
-        destinationAccount.currencyCode
-      )
-      if (sourceMinor <= 0 || destinationMinor <= 0) return null
-      const scaled = Math.round((destinationMinor / sourceMinor) * FINANCE_RATE_SCALE)
-      return `Расчётный курс: ${(scaled / FINANCE_RATE_SCALE).toLocaleString('ru-RU', {
-        maximumFractionDigits: 6
-      })}`
-    } catch {
-      return null
-    }
-  }, [destinationAccount, selectedAccount, values.amount, values.destinationAmount, values.type])
 
   function chooseType(type: FinanceUserTransactionType): void {
     setValue('type', type, { shouldValidate: true, shouldDirty: true })
@@ -239,7 +190,6 @@ function FinanceTransactionDialogContent({
     }
 
     setValue('destinationAccountId', '')
-    setValue('destinationAmount', '')
     const selectedTag = tags.find((tag) => tag.id === values.tagId)
     if (selectedTag && selectedTag.type !== 'both' && selectedTag.type !== type) {
       setValue('tagId', '', { shouldValidate: true })
@@ -299,32 +249,23 @@ function FinanceTransactionDialogContent({
           setError('destinationAccountId', { message: 'Счёт зачисления не найден' })
           return
         }
+
         let destinationAmountMinor: number
         try {
-          destinationAmountMinor = parseMoneyToMinor(
-            formValues.destinationAmount,
-            destination.currencyCode
-          )
+          destinationAmountMinor = parseMoneyToMinor(formValues.amount, destination.currencyCode)
           if (destinationAmountMinor <= 0) throw new Error('Сумма должна быть больше нуля')
         } catch (reason) {
-          setError('destinationAmount', { message: getFinanceErrorMessage(reason) })
+          setError('amount', { message: getFinanceErrorMessage(reason) })
           return
         }
-        if (
-          account.currencyCode === destination.currencyCode &&
-          amountMinor !== destinationAmountMinor
-        ) {
-          setError('destinationAmount', {
-            message: 'Для одной валюты суммы списания и зачисления должны совпадать'
-          })
-          return
-        }
+
         input = {
           type: 'transfer' as const,
           sourceAccountId: account.id,
           destinationAccountId: destination.id,
           sourceAmountMinor: amountMinor,
           destinationAmountMinor,
+          exchangeRateScaled: FINANCE_RATE_SCALE,
           occurredAt,
           comment: formValues.comment,
           templateId: template?.id ?? transaction?.templateId ?? null
@@ -364,6 +305,13 @@ function FinanceTransactionDialogContent({
         : values.type === 'expense'
           ? 'Новый расход'
           : 'Новый перевод'
+
+  const amountHint =
+    values.type === 'transfer' && selectedAccount && selectedDestination
+      ? `${selectedAccount.currencyCode} → ${selectedDestination.currencyCode} · одна и та же сумма`
+      : selectedAccount
+        ? `Валюта: ${selectedAccount.currencyCode}`
+        : undefined
 
   return (
     <AppDialog
@@ -462,11 +410,7 @@ function FinanceTransactionDialogContent({
         )}
 
         <div className="grid grid-cols-2 gap-4 max-[560px]:grid-cols-1">
-          <FinanceField
-            label={values.type === 'transfer' ? 'Сумма списания' : 'Сумма'}
-            error={errors.amount?.message}
-            hint={selectedAccount ? `Валюта: ${selectedAccount.currencyCode}` : undefined}
-          >
+          <FinanceField label="Сумма" error={errors.amount?.message} hint={amountHint}>
             <input
               {...register('amount')}
               type="number"
@@ -478,38 +422,6 @@ function FinanceTransactionDialogContent({
             />
           </FinanceField>
 
-          {values.type === 'transfer' ? (
-            <FinanceField
-              label="Сумма зачисления"
-              error={errors.destinationAmount?.message}
-              hint={
-                destinationAccount
-                  ? `${destinationAccount.currencyCode}${exchangeRateLabel ? ` · ${exchangeRateLabel}` : ''}`
-                  : (exchangeRateLabel ?? undefined)
-              }
-            >
-              <input
-                {...register('destinationAmount')}
-                type="number"
-                step="any"
-                min={0}
-                inputMode="decimal"
-                placeholder="0.00"
-                className={financeInputClassName}
-              />
-            </FinanceField>
-          ) : (
-            <FinanceField label="Дата и время" error={errors.occurredAt?.message}>
-              <input
-                {...register('occurredAt')}
-                type="datetime-local"
-                className={financeInputClassName}
-              />
-            </FinanceField>
-          )}
-        </div>
-
-        {values.type === 'transfer' && (
           <FinanceField label="Дата и время" error={errors.occurredAt?.message}>
             <input
               {...register('occurredAt')}
@@ -517,7 +429,7 @@ function FinanceTransactionDialogContent({
               className={financeInputClassName}
             />
           </FinanceField>
-        )}
+        </div>
 
         <FinanceField label="Комментарий" error={errors.comment?.message}>
           <textarea
