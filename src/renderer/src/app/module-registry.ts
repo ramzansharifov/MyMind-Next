@@ -4,7 +4,7 @@ import {
   Notebook,
   Presentation,
   Settings,
-  WalletCards,
+  Wallet,
   type LucideIcon
 } from 'lucide-react'
 
@@ -81,7 +81,7 @@ export const appModuleRegistry = defineAppModules({
     id: 'finance',
     label: 'Финансы',
     loadingLabel: 'Загрузка финансов',
-    icon: WalletCards,
+    icon: Wallet,
     navigationGroup: 'primary',
     component: FinanceModule
   },
