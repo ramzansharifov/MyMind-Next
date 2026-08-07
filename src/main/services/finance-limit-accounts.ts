@@ -104,6 +104,7 @@ export function withFinanceLimitAccounts<T extends FinanceLimit>(
 ): T & FinanceLimitWithAccounts {
   return {
     ...limit,
+    periodType: limit.periodType === 'custom' ? 'month' : limit.periodType,
     accountIds: getFinanceLimitAccountIds(limit.id, limit.accountId)
   }
 }
