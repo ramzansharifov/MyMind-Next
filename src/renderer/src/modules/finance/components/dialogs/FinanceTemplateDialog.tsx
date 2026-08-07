@@ -5,26 +5,27 @@ import { useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 
 import {
-  FINANCE_TEMPLATE_SCHEDULE_TYPES,
   FINANCE_USER_TRANSACTION_TYPES,
   type FinanceAccountSummary,
   type FinanceTagSummary,
-  type FinanceTemplate
+  type FinanceTemplate,
+  type FinanceUserTransactionType
 } from '../../../../../../shared/contracts/finance'
 import { formatMinorPlain, parseMoneyToMinor } from '../../../../../../shared/finance-money'
 import { AppDialog } from '../../../../shared/ui/AppDialog'
 import { financeClient } from '../../api/finance-client'
-import {
-  fromDateTimeLocalValue,
-  getFinanceErrorMessage,
-  toDateTimeLocalValue
-} from '../../lib/finance-ui'
+import { getFinanceErrorMessage } from '../../lib/finance-ui'
+import { FinanceOperationTypePicker } from '../FinanceOperationTypePicker'
 import {
   FinanceButton,
   FinanceField,
   financeInputClassName,
   financeTextareaClassName
 } from '../FinancePrimitives'
+import {
+  FinanceAccountCardPicker,
+  FinanceTagCardPicker
+} from '../FinanceSelectionCards'
 
 const schema = z
   .object({
@@ -34,11 +35,7 @@ const schema = z
     destinationAccountId: z.string(),
     tagId: z.string(),
     sourceAmount: z.string().trim().min(1, 'Введите сумму'),
-    comment: z.string().max(1000),
-    scheduleType: z.enum(FINANCE_TEMPLATE_SCHEDULE_TYPES),
-    scheduleInterval: z.coerce.number().int().min(1).max(365),
-    nextOccurrenceAt: z.string(),
-    reminderEnabled: z.boolean()
+    comment: z.string().max(1000)
   })
   .superRefine((values, context) => {
     if (!values.sourceAccountId) {
@@ -61,13 +58,6 @@ const schema = z
       }
     } else if (!values.tagId) {
       context.addIssue({ code: 'custom', path: ['tagId'], message: 'Выберите тег' })
-    }
-    if (values.scheduleType !== 'none' && !values.nextOccurrenceAt) {
-      context.addIssue({
-        code: 'custom',
-        path: ['nextOccurrenceAt'],
-        message: 'Укажите следующую дату'
-      })
     }
   })
 
@@ -95,6 +85,7 @@ function Content({ open, template, accounts, tags, onOpenChange, onSaved }: Prop
     control,
     handleSubmit,
     setError,
+    setValue,
     formState: { errors }
   } = useForm<Values>({
     resolver: zodResolver(schema),
@@ -108,42 +99,56 @@ function Content({ open, template, accounts, tags, onOpenChange, onSaved }: Prop
         template && sourceAccount
           ? formatMinorPlain(template.sourceAmountMinor, sourceAccount.currencyCode)
           : '',
-      comment: template?.comment ?? '',
-      scheduleType: template?.scheduleType ?? 'none',
-      scheduleInterval: template?.scheduleInterval ?? 1,
-      nextOccurrenceAt: template?.nextOccurrenceAt
-        ? toDateTimeLocalValue(template.nextOccurrenceAt)
-        : '',
-      reminderEnabled: template?.reminderEnabled ?? false
+      comment: template?.comment ?? ''
     }
   })
-  const type = useWatch({ control, name: 'type' })
-  const sourceAccountId = useWatch({ control, name: 'sourceAccountId' })
-  const destinationAccountId = useWatch({ control, name: 'destinationAccountId' })
-  const scheduleType = useWatch({ control, name: 'scheduleType' })
+  const values = useWatch({ control })
+  const type = values.type ?? 'expense'
+  const sourceAccountId = values.sourceAccountId ?? ''
+  const destinationAccountId = values.destinationAccountId ?? ''
   const selectedSource = accounts.find((account) => account.id === sourceAccountId)
   const selectedDestination = accounts.find((account) => account.id === destinationAccountId)
   const compatibleTags = tags.filter((tag) => tag.type === 'both' || tag.type === type)
 
-  async function submit(values: Values): Promise<void> {
-    const source = accounts.find((account) => account.id === values.sourceAccountId)
-    const destination = accounts.find((account) => account.id === values.destinationAccountId)
-    if (!source) return
+  function chooseType(nextType: FinanceUserTransactionType): void {
+    setValue('type', nextType, { shouldValidate: true, shouldDirty: true })
+    if (nextType === 'transfer') {
+      setValue('tagId', '', { shouldValidate: true })
+      return
+    }
+
+    setValue('destinationAccountId', '', { shouldValidate: true })
+    const selectedTag = tags.find((tag) => tag.id === values.tagId)
+    if (selectedTag && selectedTag.type !== 'both' && selectedTag.type !== nextType) {
+      setValue('tagId', '', { shouldValidate: true })
+    }
+  }
+
+  async function submit(formValues: Values): Promise<void> {
+    const source = accounts.find((account) => account.id === formValues.sourceAccountId)
+    const destination = accounts.find((account) => account.id === formValues.destinationAccountId)
+    if (!source) {
+      setError('sourceAccountId', { message: 'Счёт не найден' })
+      return
+    }
 
     let sourceAmountMinor: number
     let destinationAmountMinor: number | null = null
     try {
-      sourceAmountMinor = parseMoneyToMinor(values.sourceAmount, source.currencyCode)
+      sourceAmountMinor = parseMoneyToMinor(formValues.sourceAmount, source.currencyCode)
       if (sourceAmountMinor <= 0) throw new Error('Сумма должна быть больше нуля')
     } catch (reason) {
       setError('sourceAmount', { message: getFinanceErrorMessage(reason) })
       return
     }
 
-    if (values.type === 'transfer') {
-      if (!destination) return
+    if (formValues.type === 'transfer') {
+      if (!destination) {
+        setError('destinationAccountId', { message: 'Счёт зачисления не найден' })
+        return
+      }
       try {
-        destinationAmountMinor = parseMoneyToMinor(values.sourceAmount, destination.currencyCode)
+        destinationAmountMinor = parseMoneyToMinor(formValues.sourceAmount, destination.currencyCode)
         if (destinationAmountMinor <= 0) throw new Error('Сумма должна быть больше нуля')
       } catch (reason) {
         setError('sourceAmount', { message: getFinanceErrorMessage(reason) })
@@ -155,19 +160,19 @@ function Content({ open, template, accounts, tags, onOpenChange, onSaved }: Prop
     setBackendError(null)
     try {
       const input = {
-        name: values.name,
-        type: values.type,
-        sourceAccountId: values.sourceAccountId,
-        destinationAccountId: values.type === 'transfer' ? values.destinationAccountId : null,
-        tagId: values.type === 'transfer' ? null : values.tagId,
+        name: formValues.name,
+        type: formValues.type,
+        sourceAccountId: formValues.sourceAccountId,
+        destinationAccountId: formValues.type === 'transfer' ? formValues.destinationAccountId : null,
+        tagId: formValues.type === 'transfer' ? null : formValues.tagId,
         sourceAmountMinor,
         destinationAmountMinor,
-        comment: values.comment,
-        scheduleType: values.scheduleType,
-        scheduleInterval: values.scheduleInterval,
-        nextOccurrenceAt:
-          values.scheduleType === 'none' ? null : fromDateTimeLocalValue(values.nextOccurrenceAt),
-        reminderEnabled: values.reminderEnabled
+        comment: formValues.comment,
+        // Legacy storage fields stay neutral. Scheduling/reminders are no longer part of template UX.
+        scheduleType: 'none' as const,
+        scheduleInterval: 1,
+        nextOccurrenceAt: null,
+        reminderEnabled: false
       }
       const saved = template
         ? await financeClient.updateTemplate({ ...input, id: template.id, state: template.state })
@@ -193,63 +198,85 @@ function Content({ open, template, accounts, tags, onOpenChange, onSaved }: Prop
       open={open}
       onOpenChange={onOpenChange}
       title={template ? 'Изменить шаблон' : 'Новый шаблон операции'}
-      description="Шаблон только заполняет форму и никогда не меняет баланс без подтверждения."
+      description="Шаблон только заполняет форму операции и никогда не меняет баланс без подтверждения."
       size="lg"
       busy={isSaving}
       closeLabel="Закрыть форму шаблона"
     >
-      <form className="space-y-4" onSubmit={(event) => void handleSubmit(submit)(event)}>
+      <form className="space-y-5" onSubmit={(event) => void handleSubmit(submit)(event)}>
         <FinanceField label="Название" error={errors.name?.message}>
           <input {...register('name')} autoFocus className={financeInputClassName} />
         </FinanceField>
-        <FinanceField label="Тип операции" error={errors.type?.message}>
-          <select {...register('type')} className={financeInputClassName}>
-            <option value="income">Доход</option>
-            <option value="expense">Расход</option>
-            <option value="transfer">Перевод</option>
-          </select>
-        </FinanceField>
-        <div className="grid grid-cols-2 gap-4 max-[600px]:grid-cols-1">
-          <FinanceField
-            label={type === 'transfer' ? 'Счёт списания' : 'Счёт'}
-            error={errors.sourceAccountId?.message}
-          >
-            <select {...register('sourceAccountId')} className={financeInputClassName}>
-              <option value="">Выберите счёт</option>
-              {accounts.map((account) => (
-                <option key={account.id} value={account.id}>
-                  {account.name} · {account.currencyCode}
-                </option>
-              ))}
-            </select>
-          </FinanceField>
-          {type === 'transfer' && (
-            <FinanceField label="Счёт зачисления" error={errors.destinationAccountId?.message}>
-              <select {...register('destinationAccountId')} className={financeInputClassName}>
-                <option value="">Выберите счёт</option>
-                {accounts
-                  .filter((account) => account.id !== sourceAccountId)
-                  .map((account) => (
-                    <option key={account.id} value={account.id}>
-                      {account.name} · {account.currencyCode}
-                    </option>
-                  ))}
-              </select>
-            </FinanceField>
+
+        <fieldset>
+          <legend className="mb-1.5 text-sm font-medium text-[var(--app-text)]">Тип операции</legend>
+          <FinanceOperationTypePicker value={type} disabled={isSaving} onChange={chooseType} />
+        </fieldset>
+
+        <fieldset>
+          <legend className="mb-1.5 text-sm font-medium text-[var(--app-text)]">
+            {type === 'transfer' ? 'Счёт списания' : 'Счёт'}
+          </legend>
+          <FinanceAccountCardPicker
+            accounts={accounts}
+            value={sourceAccountId}
+            ariaLabel={type === 'transfer' ? 'Счёт списания шаблона' : 'Счёт шаблона'}
+            disabled={isSaving}
+            onChange={(accountId) => {
+              setValue('sourceAccountId', accountId, { shouldValidate: true, shouldDirty: true })
+              if (destinationAccountId === accountId) {
+                setValue('destinationAccountId', '', { shouldValidate: true })
+              }
+            }}
+          />
+          {errors.sourceAccountId?.message && (
+            <span className="mt-1.5 block text-xs text-red-300">
+              {errors.sourceAccountId.message}
+            </span>
           )}
-        </div>
-        {type !== 'transfer' && (
-          <FinanceField label="Тег" error={errors.tagId?.message}>
-            <select {...register('tagId')} className={financeInputClassName}>
-              <option value="">Выберите тег</option>
-              {compatibleTags.map((tag) => (
-                <option key={tag.id} value={tag.id}>
-                  {tag.name}
-                </option>
-              ))}
-            </select>
-          </FinanceField>
+        </fieldset>
+
+        {type === 'transfer' ? (
+          <fieldset>
+            <legend className="mb-1.5 text-sm font-medium text-[var(--app-text)]">
+              Счёт зачисления
+            </legend>
+            <FinanceAccountCardPicker
+              accounts={accounts.filter((account) => account.id !== sourceAccountId)}
+              value={destinationAccountId}
+              ariaLabel="Счёт зачисления шаблона"
+              disabled={isSaving}
+              onChange={(accountId) =>
+                setValue('destinationAccountId', accountId, {
+                  shouldValidate: true,
+                  shouldDirty: true
+                })
+              }
+            />
+            {errors.destinationAccountId?.message && (
+              <span className="mt-1.5 block text-xs text-red-300">
+                {errors.destinationAccountId.message}
+              </span>
+            )}
+          </fieldset>
+        ) : (
+          <fieldset>
+            <legend className="mb-1.5 text-sm font-medium text-[var(--app-text)]">Тег</legend>
+            <FinanceTagCardPicker
+              tags={compatibleTags}
+              value={values.tagId ?? ''}
+              ariaLabel="Тег шаблона"
+              disabled={isSaving}
+              onChange={(tagId) =>
+                setValue('tagId', tagId, { shouldValidate: true, shouldDirty: true })
+              }
+            />
+            {errors.tagId?.message && (
+              <span className="mt-1.5 block text-xs text-red-300">{errors.tagId.message}</span>
+            )}
+          </fieldset>
         )}
+
         <FinanceField label="Сумма" error={errors.sourceAmount?.message} hint={amountHint}>
           <input
             {...register('sourceAmount')}
@@ -257,55 +284,19 @@ function Content({ open, template, accounts, tags, onOpenChange, onSaved }: Prop
             step="any"
             min={0}
             inputMode="decimal"
+            placeholder="0.00"
             className={financeInputClassName}
           />
         </FinanceField>
+
         <FinanceField label="Комментарий" error={errors.comment?.message}>
-          <textarea {...register('comment')} className={financeTextareaClassName} />
-        </FinanceField>
-        <div className="grid grid-cols-2 gap-4 max-[600px]:grid-cols-1">
-          <FinanceField label="Расписание" error={errors.scheduleType?.message}>
-            <select {...register('scheduleType')} className={financeInputClassName}>
-              <option value="none">Без расписания</option>
-              <option value="daily">Ежедневно</option>
-              <option value="weekly">Еженедельно</option>
-              <option value="monthly">Ежемесячно</option>
-              <option value="yearly">Ежегодно</option>
-              <option value="custom">Собственный интервал</option>
-            </select>
-          </FinanceField>
-          {scheduleType === 'custom' && (
-            <FinanceField label="Интервал, дней" error={errors.scheduleInterval?.message}>
-              <input
-                {...register('scheduleInterval')}
-                type="number"
-                min={1}
-                max={365}
-                className={financeInputClassName}
-              />
-            </FinanceField>
-          )}
-        </div>
-        {scheduleType !== 'none' && (
-          <FinanceField
-            label="Следующая предполагаемая дата"
-            error={errors.nextOccurrenceAt?.message}
-          >
-            <input
-              {...register('nextOccurrenceAt')}
-              type="datetime-local"
-              className={financeInputClassName}
-            />
-          </FinanceField>
-        )}
-        <label className="flex items-center gap-3 rounded-xl border border-[var(--app-border)] p-3 text-sm text-[var(--app-text)]">
-          <input
-            {...register('reminderEnabled')}
-            type="checkbox"
-            className="size-4 accent-violet-500"
+          <textarea
+            {...register('comment')}
+            placeholder="Необязательное пояснение"
+            className={financeTextareaClassName}
           />
-          Напоминать о приближении операции
-        </label>
+        </FinanceField>
+
         {backendError && (
           <div
             role="alert"
@@ -314,12 +305,13 @@ function Content({ open, template, accounts, tags, onOpenChange, onSaved }: Prop
             {backendError}
           </div>
         )}
+
         <footer className="flex justify-end gap-2 border-t border-[var(--app-border)] pt-4">
           <FinanceButton type="button" disabled={isSaving} onClick={() => onOpenChange(false)}>
             Отмена
           </FinanceButton>
-          <FinanceButton type="submit" tone="primary" disabled={isSaving}>
-            {isSaving && <LoaderCircle className="size-4 animate-spin" />}
+          <FinanceButton type="submit" tone="primary" disabled={isSaving || accounts.length === 0}>
+            {isSaving && <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />}
             {isSaving ? 'Сохраняем…' : template ? 'Сохранить' : 'Создать шаблон'}
           </FinanceButton>
         </footer>
