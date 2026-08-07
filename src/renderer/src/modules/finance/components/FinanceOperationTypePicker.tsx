@@ -8,19 +8,22 @@ const options = [
     value: 'income',
     label: 'Доход',
     icon: ArrowDownLeft,
-    activeClassName: 'border-emerald-500/45 bg-emerald-500/18 text-emerald-100 shadow-sm'
+    activeClassName:
+      'border-emerald-400/60 bg-emerald-500/22 text-emerald-100 shadow-sm ring-1 ring-emerald-400/15'
   },
   {
     value: 'expense',
     label: 'Расход',
     icon: ArrowUpRight,
-    activeClassName: 'border-red-500/45 bg-red-500/18 text-red-100 shadow-sm'
+    activeClassName:
+      'border-red-400/60 bg-red-500/22 text-red-100 shadow-sm ring-1 ring-red-400/15'
   },
   {
     value: 'transfer',
     label: 'Перевод',
     icon: ArrowRightLeft,
-    activeClassName: 'border-violet-500/45 bg-violet-500/18 text-violet-100 shadow-sm'
+    activeClassName:
+      'border-violet-400/60 bg-violet-500/22 text-violet-100 shadow-sm ring-1 ring-violet-400/15'
   }
 ] as const satisfies ReadonlyArray<{
   value: FinanceUserTransactionType
