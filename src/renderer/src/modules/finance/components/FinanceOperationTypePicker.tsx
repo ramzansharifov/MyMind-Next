@@ -8,30 +8,29 @@ const options = [
     value: 'income',
     label: 'Доход',
     icon: ArrowDownLeft,
-    activeClassName: 'border-emerald-500/40 bg-emerald-500/16 text-emerald-100 shadow-sm',
-    idleClassName: 'border-emerald-500/20 bg-emerald-500/[0.05] text-emerald-300/85 hover:bg-emerald-500/10'
+    activeClassName: 'border-emerald-500/45 bg-emerald-500/18 text-emerald-100 shadow-sm'
   },
   {
     value: 'expense',
     label: 'Расход',
     icon: ArrowUpRight,
-    activeClassName: 'border-red-500/40 bg-red-500/16 text-red-100 shadow-sm',
-    idleClassName: 'border-red-500/20 bg-red-500/[0.05] text-red-300/85 hover:bg-red-500/10'
+    activeClassName: 'border-red-500/45 bg-red-500/18 text-red-100 shadow-sm'
   },
   {
     value: 'transfer',
     label: 'Перевод',
     icon: ArrowRightLeft,
-    activeClassName: 'border-violet-500/40 bg-violet-500/16 text-violet-100 shadow-sm',
-    idleClassName: 'border-violet-500/20 bg-violet-500/[0.05] text-violet-300/85 hover:bg-violet-500/10'
+    activeClassName: 'border-violet-500/45 bg-violet-500/18 text-violet-100 shadow-sm'
   }
 ] as const satisfies ReadonlyArray<{
   value: FinanceUserTransactionType
   label: string
   icon: LucideIcon
   activeClassName: string
-  idleClassName: string
 }>
+
+const idleClassName =
+  'border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] hover:border-[var(--app-border-strong)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
 
 export function FinanceOperationTypePicker({
   value,
@@ -56,9 +55,9 @@ export function FinanceOperationTypePicker({
             disabled={disabled}
             className={cn(
               'flex h-11 items-center justify-center gap-2 rounded-xl border px-3 text-sm font-semibold outline-none',
-              'transition-[background-color,border-color,box-shadow] focus-visible:ring-2 focus-visible:ring-violet-500/35',
+              'transition-[background-color,border-color,box-shadow,color] focus-visible:ring-2 focus-visible:ring-violet-500/35',
               'disabled:cursor-not-allowed disabled:opacity-45',
-              selected ? option.activeClassName : option.idleClassName
+              selected ? option.activeClassName : idleClassName
             )}
             onClick={() => onChange(option.value)}
           >
