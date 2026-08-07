@@ -167,15 +167,10 @@ function Content({ open, template, accounts, tags, onOpenChange, onSaved }: Prop
         tagId: formValues.type === 'transfer' ? null : formValues.tagId,
         sourceAmountMinor,
         destinationAmountMinor,
-        comment: formValues.comment,
-        // Legacy storage fields stay neutral. Scheduling/reminders are no longer part of template UX.
-        scheduleType: 'none' as const,
-        scheduleInterval: 1,
-        nextOccurrenceAt: null,
-        reminderEnabled: false
+        comment: formValues.comment
       }
       const saved = template
-        ? await financeClient.updateTemplate({ ...input, id: template.id, state: template.state })
+        ? await financeClient.updateTemplate({ ...input, id: template.id })
         : await financeClient.createTemplate(input)
       await onSaved(saved)
       onOpenChange(false)
