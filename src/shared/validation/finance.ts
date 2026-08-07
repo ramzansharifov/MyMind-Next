@@ -1,7 +1,6 @@
 import { z } from 'zod'
 
 import {
-  FINANCE_ACCOUNT_TYPES,
   FINANCE_ICON_NAMES,
   FINANCE_LIMIT_PERIOD_TYPES,
   FINANCE_LIMIT_SCOPE_TYPES,
@@ -32,7 +31,6 @@ export const financeColorSchema = z
   .string()
   .regex(FINANCE_COLOR_PATTERN, 'Цвет должен быть указан в формате #RRGGBB')
 export const financeIconNameSchema = z.enum(FINANCE_ICON_NAMES)
-export const financeAccountTypeSchema = z.enum(FINANCE_ACCOUNT_TYPES)
 export const financeTransactionTypeSchema = z.enum(FINANCE_TRANSACTION_TYPES)
 export const financeUserTransactionTypeSchema = z.enum(FINANCE_USER_TRANSACTION_TYPES)
 export const financeTagTypeSchema = z.enum(FINANCE_TAG_TYPES)
@@ -94,7 +92,6 @@ export const deleteFinanceExchangeRateInputSchema = z.object({
 
 export const createFinanceAccountInputSchema = z.object({
   name: financeNameSchema,
-  type: financeAccountTypeSchema,
   currencyCode: financeCurrencyCodeSchema,
   initialBalanceMinor: financeMinorAmountSchema,
   icon: financeIconNameSchema,
@@ -104,7 +101,6 @@ export const createFinanceAccountInputSchema = z.object({
 export const updateFinanceAccountInputSchema = z.object({
   id: financeSafeIdSchema,
   name: financeNameSchema,
-  type: financeAccountTypeSchema,
   icon: financeIconNameSchema,
   color: financeColorSchema,
   currencyCode: financeCurrencyCodeSchema.optional()
