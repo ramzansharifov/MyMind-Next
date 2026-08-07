@@ -1,12 +1,13 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
   FinanceAccountSummary,
   FinanceTagSummary,
   FinanceTransaction
 } from '../../../../../../shared/contracts/finance'
+import { FINANCE_RATE_SCALE } from '../../../../../../shared/finance-money'
 
 const mocks = vi.hoisted(() => ({
   previewExpenseImpact: vi.fn(),
@@ -100,11 +101,26 @@ const savedTransaction: FinanceTransaction = {
   entries: []
 }
 
+const savedTransfer: FinanceTransaction = {
+  ...savedTransaction,
+  id: 'transfer-1',
+  type: 'transfer',
+  tagId: null,
+  tagNameSnapshot: null,
+  tagIconSnapshot: null,
+  tagColorSnapshot: null,
+  exchangeRateScaled: FINANCE_RATE_SCALE
+}
+
 describe('FinanceTransactionDialog', () => {
-  it('uses semantic type buttons, single-select account/tag cards and a numeric amount input', async () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mocks.previewExpenseImpact.mockResolvedValue({ items: [], missingRateCurrencies: [] })
+  })
+
+  it('uses neutral inactive type buttons, single-select account/tag cards and a numeric amount input', async () => {
     const user = userEvent.setup()
     const onSaved = vi.fn()
-    mocks.previewExpenseImpact.mockResolvedValue({ items: [], missingRateCurrencies: [] })
     mocks.createTransaction.mockResolvedValue(savedTransaction)
 
     render(
@@ -125,8 +141,9 @@ describe('FinanceTransactionDialog', () => {
     const incomeType = within(typeGroup).getByRole('radio', { name: 'Доход' })
     const transferType = within(typeGroup).getByRole('radio', { name: 'Перевод' })
     expect(expenseType).toHaveAttribute('aria-checked', 'true')
-    expect(incomeType).toHaveClass('border-emerald-500/20')
-    expect(transferType).toHaveClass('border-violet-500/20')
+    expect(expenseType).toHaveClass('border-red-500/45')
+    expect(incomeType).toHaveClass('bg-[var(--app-workspace)]')
+    expect(transferType).toHaveClass('bg-[var(--app-workspace)]')
 
     const accountGroup = screen.getByRole('radiogroup', { name: 'Счёт операции' })
     expect(within(accountGroup).getByRole('radio', { name: 'Наличные, TJS' })).toHaveAttribute(
@@ -148,7 +165,7 @@ describe('FinanceTransactionDialog', () => {
     expect(within(tagGroup).getAllByRole('radio', { checked: true })).toHaveLength(1)
     expect(screen.queryByRole('button', { name: /Создать тег для/ })).not.toBeInTheDocument()
 
-    const amount = screen.getByRole('spinbutton', { name: /Сумма/ })
+    const amount = screen.getByRole('spinbutton', { name: 'Сумма' })
     expect(amount).toHaveAttribute('type', 'number')
     await user.type(amount, '12.50')
     await user.click(screen.getByRole('button', { name: 'Создать операцию' }))
@@ -164,5 +181,54 @@ describe('FinanceTransactionDialog', () => {
       )
     )
     expect(onSaved).toHaveBeenCalledWith(savedTransaction)
+  })
+
+  it('uses one amount for both sides of a transfer and records it as a 1:1 transfer', async () => {
+    const user = userEvent.setup()
+    mocks.createTransaction.mockResolvedValue(savedTransfer)
+
+    render(
+      <FinanceTransactionDialog
+        open
+        initialType="expense"
+        accounts={accounts}
+        tags={tags}
+        onOpenChange={() => undefined}
+        onSaved={() => undefined}
+      />
+    )
+
+    await user.click(screen.getByRole('radio', { name: 'Перевод' }))
+    expect(screen.getByRole('radio', { name: 'Перевод' })).toHaveClass('border-violet-500/45')
+    expect(screen.getByRole('radio', { name: 'Доход' })).toHaveClass(
+      'bg-[var(--app-workspace)]'
+    )
+    expect(screen.getByRole('radio', { name: 'Расход' })).toHaveClass(
+      'bg-[var(--app-workspace)]'
+    )
+
+    const destinationGroup = screen.getByRole('radiogroup', { name: 'Счёт зачисления' })
+    await user.click(within(destinationGroup).getByRole('radio', { name: 'Карта, TJS' }))
+
+    expect(screen.queryByText('Сумма списания')).not.toBeInTheDocument()
+    expect(screen.queryByText('Сумма зачисления')).not.toBeInTheDocument()
+    expect(screen.getAllByRole('spinbutton')).toHaveLength(1)
+
+    await user.type(screen.getByRole('spinbutton', { name: 'Сумма' }), '10')
+    await user.click(screen.getByRole('button', { name: 'Создать операцию' }))
+
+    await waitFor(() =>
+      expect(mocks.createTransaction).toHaveBeenCalledWith({
+        type: 'transfer',
+        sourceAccountId: 'cash',
+        destinationAccountId: 'card',
+        sourceAmountMinor: 1000,
+        destinationAmountMinor: 1000,
+        exchangeRateScaled: FINANCE_RATE_SCALE,
+        occurredAt: expect.any(Number),
+        comment: '',
+        templateId: null
+      })
+    )
   })
 })
