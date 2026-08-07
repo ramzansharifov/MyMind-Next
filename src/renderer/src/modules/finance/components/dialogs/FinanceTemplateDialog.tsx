@@ -34,7 +34,6 @@ const schema = z
     destinationAccountId: z.string(),
     tagId: z.string(),
     sourceAmount: z.string().trim().min(1, 'Введите сумму'),
-    destinationAmount: z.string(),
     comment: z.string().max(1000),
     scheduleType: z.enum(FINANCE_TEMPLATE_SCHEDULE_TYPES),
     scheduleInterval: z.coerce.number().int().min(1).max(365),
@@ -91,9 +90,6 @@ function Content({ open, template, accounts, tags, onOpenChange, onSaved }: Prop
   const [isSaving, setIsSaving] = useState(false)
   const [backendError, setBackendError] = useState<string | null>(null)
   const sourceAccount = accounts.find((account) => account.id === template?.sourceAccountId)
-  const destinationAccount = accounts.find(
-    (account) => account.id === template?.destinationAccountId
-  )
   const {
     register,
     control,
@@ -111,10 +107,6 @@ function Content({ open, template, accounts, tags, onOpenChange, onSaved }: Prop
       sourceAmount:
         template && sourceAccount
           ? formatMinorPlain(template.sourceAmountMinor, sourceAccount.currencyCode)
-          : '',
-      destinationAmount:
-        template?.destinationAmountMinor != null && destinationAccount
-          ? formatMinorPlain(template.destinationAmountMinor, destinationAccount.currencyCode)
           : '',
       comment: template?.comment ?? '',
       scheduleType: template?.scheduleType ?? 'none',
@@ -137,6 +129,7 @@ function Content({ open, template, accounts, tags, onOpenChange, onSaved }: Prop
     const source = accounts.find((account) => account.id === values.sourceAccountId)
     const destination = accounts.find((account) => account.id === values.destinationAccountId)
     if (!source) return
+
     let sourceAmountMinor: number
     let destinationAmountMinor: number | null = null
     try {
@@ -146,22 +139,14 @@ function Content({ open, template, accounts, tags, onOpenChange, onSaved }: Prop
       setError('sourceAmount', { message: getFinanceErrorMessage(reason) })
       return
     }
+
     if (values.type === 'transfer') {
       if (!destination) return
       try {
-        destinationAmountMinor = parseMoneyToMinor(
-          values.destinationAmount || values.sourceAmount,
-          destination.currencyCode
-        )
+        destinationAmountMinor = parseMoneyToMinor(values.sourceAmount, destination.currencyCode)
         if (destinationAmountMinor <= 0) throw new Error('Сумма должна быть больше нуля')
-        if (
-          source.currencyCode === destination.currencyCode &&
-          destinationAmountMinor !== sourceAmountMinor
-        ) {
-          throw new Error('Для одинаковой валюты суммы должны совпадать')
-        }
       } catch (reason) {
-        setError('destinationAmount', { message: getFinanceErrorMessage(reason) })
+        setError('sourceAmount', { message: getFinanceErrorMessage(reason) })
         return
       }
     }
@@ -195,6 +180,13 @@ function Content({ open, template, accounts, tags, onOpenChange, onSaved }: Prop
       setIsSaving(false)
     }
   }
+
+  const amountHint =
+    type === 'transfer' && selectedSource && selectedDestination
+      ? `${selectedSource.currencyCode} → ${selectedDestination.currencyCode} · одна и та же сумма`
+      : selectedSource
+        ? `Валюта: ${selectedSource.currencyCode}`
+        : undefined
 
   return (
     <AppDialog
@@ -258,40 +250,16 @@ function Content({ open, template, accounts, tags, onOpenChange, onSaved }: Prop
             </select>
           </FinanceField>
         )}
-        <div className="grid grid-cols-2 gap-4 max-[600px]:grid-cols-1">
-          <FinanceField
-            label={
-              type === 'transfer'
-                ? `Сумма списания${selectedSource ? `, ${selectedSource.currencyCode}` : ''}`
-                : 'Сумма'
-            }
-            error={errors.sourceAmount?.message}
-          >
-            <input
-              {...register('sourceAmount')}
-              type="number"
-              step="any"
-              min={0}
-              inputMode="decimal"
-              className={financeInputClassName}
-            />
-          </FinanceField>
-          {type === 'transfer' && (
-            <FinanceField
-              label={`Сумма зачисления${selectedDestination ? `, ${selectedDestination.currencyCode}` : ''}`}
-              error={errors.destinationAmount?.message}
-            >
-              <input
-                {...register('destinationAmount')}
-                type="number"
-                step="any"
-                min={0}
-                inputMode="decimal"
-                className={financeInputClassName}
-              />
-            </FinanceField>
-          )}
-        </div>
+        <FinanceField label="Сумма" error={errors.sourceAmount?.message} hint={amountHint}>
+          <input
+            {...register('sourceAmount')}
+            type="number"
+            step="any"
+            min={0}
+            inputMode="decimal"
+            className={financeInputClassName}
+          />
+        </FinanceField>
         <FinanceField label="Комментарий" error={errors.comment?.message}>
           <textarea {...register('comment')} className={financeTextareaClassName} />
         </FinanceField>

@@ -5,9 +5,7 @@ import { describe, expect, it } from 'vitest'
 const moneyFields = [
   ['components/dialogs/FinanceAccountDialog.tsx', 'initialBalance'],
   ['components/dialogs/FinanceTransactionDialog.tsx', 'amount'],
-  ['components/dialogs/FinanceTransactionDialog.tsx', 'destinationAmount'],
   ['components/dialogs/FinanceTemplateDialog.tsx', 'sourceAmount'],
-  ['components/dialogs/FinanceTemplateDialog.tsx', 'destinationAmount'],
   ['components/dialogs/FinanceLimitDialog.tsx', 'amount']
 ] as const
 
@@ -29,5 +27,24 @@ describe('finance money inputs', () => {
       expect(input, `${relativePath}: ${field}`).toContain('type="number"')
       expect(input, `${relativePath}: ${field}`).toContain('inputMode="decimal"')
     }
+  })
+
+  it('keeps transfers on a single editable amount in transactions and templates', () => {
+    const financeRoot = resolve(process.cwd(), 'src/renderer/src/modules/finance')
+    const transactionDialog = readFileSync(
+      resolve(financeRoot, 'components/dialogs/FinanceTransactionDialog.tsx'),
+      'utf8'
+    )
+    const templateDialog = readFileSync(
+      resolve(financeRoot, 'components/dialogs/FinanceTemplateDialog.tsx'),
+      'utf8'
+    )
+
+    expect(transactionDialog).not.toContain("register('destinationAmount')")
+    expect(transactionDialog).not.toContain('Сумма зачисления')
+    expect(transactionDialog).not.toContain('Сумма списания')
+    expect(templateDialog).not.toContain("register('destinationAmount')")
+    expect(templateDialog).not.toContain('Сумма зачисления')
+    expect(templateDialog).not.toContain('Сумма списания')
   })
 })
