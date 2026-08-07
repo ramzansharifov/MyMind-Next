@@ -46,7 +46,6 @@ function createFixture(): {
 } {
   const cash = financeService.createAccount({
     name: 'Наличные',
-    type: 'cash',
     currencyCode: 'TJS',
     initialBalanceMinor: 10_000,
     icon: 'banknote',
@@ -54,7 +53,6 @@ function createFixture(): {
   })
   const card = financeService.createAccount({
     name: 'Карта',
-    type: 'card',
     currencyCode: 'TJS',
     initialBalanceMinor: 0,
     icon: 'credit-card',
@@ -62,7 +60,6 @@ function createFixture(): {
   })
   const usd = financeService.createAccount({
     name: 'USD',
-    type: 'wallet',
     currencyCode: 'USD',
     initialBalanceMinor: 0,
     icon: 'wallet',
@@ -113,7 +110,6 @@ describe('finance repository and service', () => {
     expect(() => financeService.deleteAccount({ id: fixture.cash.id })).toThrow('очистите')
     const empty = financeService.createAccount({
       name: 'Пустой',
-      type: 'other',
       currencyCode: 'TJS',
       initialBalanceMinor: 0,
       icon: 'wallet',
