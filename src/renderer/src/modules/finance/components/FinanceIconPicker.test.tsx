@@ -3,20 +3,29 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
 import { FINANCE_ICON_NAMES } from '../../../../../shared/contracts/finance'
+import { AppDialog } from '../../../shared/ui/AppDialog'
 import { TooltipProvider } from '../../../shared/ui/tooltip'
 import { FinanceIconPicker } from './FinanceIconPicker'
 
 describe('FinanceIconPicker', () => {
-  it('uses the same visual icon grid above app dialogs', async () => {
+  it('renders its visual grid above the account app dialog', async () => {
     const user = userEvent.setup()
     const onChange = vi.fn()
 
     render(
       <TooltipProvider>
-        <FinanceIconPicker value="wallet" onChange={onChange} />
+        <AppDialog
+          open
+          title="Новый счёт"
+          description="Форма счёта"
+          onOpenChange={() => undefined}
+        >
+          <FinanceIconPicker value="wallet" onChange={onChange} />
+        </AppDialog>
       </TooltipProvider>
     )
 
+    expect(document.querySelector('[data-app-dialog-content]')).toHaveClass('z-[81]')
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Выбрать иконку счёта' }))
 
