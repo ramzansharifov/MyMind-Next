@@ -160,7 +160,8 @@ function FinanceAccountDialogContent({
               ))}
             </select>
           </FinanceField>
-          <FinanceField label="Цвет" error={errors.color?.message}>
+          <div className="text-sm text-[var(--app-text)]">
+            <span className="mb-1.5 block font-medium">Цвет</span>
             <Controller
               control={control}
               name="color"
@@ -173,7 +174,10 @@ function FinanceAccountDialogContent({
                 />
               )}
             />
-          </FinanceField>
+            {errors.color?.message && (
+              <span className="mt-1.5 block text-xs text-red-300">{errors.color.message}</span>
+            )}
+          </div>
         </div>
 
         {backendError && (
