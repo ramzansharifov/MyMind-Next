@@ -1,4 +1,3 @@
-import * as AlertDialog from '@radix-ui/react-alert-dialog'
 import {
   ArrowLeft,
   Check,
@@ -28,6 +27,8 @@ import {
 import { requestAppModuleNavigation } from '../../app/module-navigation'
 import type { AppModuleProps } from '../../app/module-registry'
 import { cn } from '../../shared/lib/cn'
+import { AppDialog } from '../../shared/ui/AppDialog'
+import { DeleteConfirmationDialog } from '../../shared/ui/DeleteConfirmationDialog'
 import { FolderIcon } from '../../shared/ui/FolderIcon'
 import { FolderIconPicker } from '../../shared/ui/FolderIconPicker'
 import { ModuleSidebar } from '../../shared/ui/ModuleSidebar'
@@ -1048,46 +1049,45 @@ function BoardTextDialog({
 }): React.JSX.Element {
   const canConfirm = Boolean(value.trim()) && !isSubmitting
   return (
-    <AlertDialog.Root open={open} onOpenChange={onOpenChange}>
-      <AlertDialog.Portal>
-        <AlertDialog.Overlay className="fixed inset-0 z-50 bg-black/60" />
-        <AlertDialog.Content className="fixed top-1/2 left-1/2 z-50 w-[min(420px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-5">
-          <AlertDialog.Title className="text-lg font-semibold text-[var(--app-text)]">
-            {title}
-          </AlertDialog.Title>
-          <input
-            autoFocus
-            value={value}
-            disabled={isSubmitting}
-            className="mt-4 w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 py-2 text-sm text-[var(--app-text)] outline-none focus:border-[var(--app-accent-500)]/50"
-            onChange={(event) => onValueChange(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' && canConfirm) onConfirm()
-            }}
-          />
-          <div className="mt-5 flex justify-end gap-2">
-            <AlertDialog.Cancel asChild>
-              <button
-                type="button"
-                disabled={isSubmitting}
-                className="rounded-lg px-3 py-2 text-sm text-[var(--app-muted)] hover:bg-white/[0.06]"
-              >
-                Отмена
-              </button>
-            </AlertDialog.Cancel>
-            <button
-              type="button"
-              disabled={!canConfirm}
-              className="flex items-center gap-2 rounded-lg bg-[var(--app-accent-500)] px-3 py-2 text-sm font-medium text-white disabled:opacity-40"
-              onClick={onConfirm}
-            >
-              {isSubmitting && <LoaderCircle aria-hidden className="size-4 animate-spin" />}
-              {confirmLabel}
-            </button>
-          </div>
-        </AlertDialog.Content>
-      </AlertDialog.Portal>
-    </AlertDialog.Root>
+    <AppDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={title}
+      description="Введите название элемента."
+      size="sm"
+      busy={isSubmitting}
+      showClose={false}
+    >
+      <input
+        autoFocus
+        value={value}
+        disabled={isSubmitting}
+        className="w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 py-2.5 text-sm text-[var(--app-text)] outline-none focus:border-[var(--app-accent-500)]/50"
+        onChange={(event) => onValueChange(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' && canConfirm) onConfirm()
+        }}
+      />
+      <div className="mt-5 flex justify-end gap-2 border-t border-[var(--app-border)] pt-4">
+        <button
+          type="button"
+          disabled={isSubmitting}
+          className="rounded-lg px-3 py-2 text-sm text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:opacity-40"
+          onClick={() => onOpenChange(false)}
+        >
+          Отмена
+        </button>
+        <button
+          type="button"
+          disabled={!canConfirm}
+          className="flex items-center gap-2 rounded-lg bg-[var(--app-accent-500)] px-3 py-2 text-sm font-medium text-white disabled:opacity-40"
+          onClick={onConfirm}
+        >
+          {isSubmitting && <LoaderCircle aria-hidden className="size-4 animate-spin" />}
+          {confirmLabel}
+        </button>
+      </div>
+    </AppDialog>
   )
 }
 
@@ -1102,54 +1102,23 @@ function BoardDeleteDialog({
   onOpenChange: (open: boolean) => void
   onConfirm: () => void
 }): React.JSX.Element {
+  const description =
+    target?.type === 'board' && target.sourceNoteId
+      ? 'Доска и связанный блок в заметке будут удалены без возможности восстановления.'
+      : target?.type === 'board' && target.sourceMaterialId
+        ? 'Доска и связанный блок в материале обучения будут удалены без возможности восстановления. Пустые учебные папки очистятся автоматически.'
+        : 'Элемент будет удалён без возможности восстановления. Вложенное содержимое папки также будет удалено.'
+
   return (
-    <AlertDialog.Root open={target !== null} onOpenChange={onOpenChange}>
-      <AlertDialog.Portal>
-        <AlertDialog.Overlay className="fixed inset-0 z-50 bg-black/60" />
-        <AlertDialog.Content className="fixed top-1/2 left-1/2 z-50 w-[min(440px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-5">
-          <AlertDialog.Title className="text-lg font-semibold text-[var(--app-text)]">
-            Удалить {target?.type === 'folder' ? 'папку' : 'доску'}?
-          </AlertDialog.Title>
-          <AlertDialog.Description className="mt-2 text-sm leading-6 text-[var(--app-muted)]">
-            {target?.type === 'board' && target.sourceNoteId ? (
-              <>
-                «{target.title}» и связанный блок в заметке будут удалены без возможности
-                восстановления.
-              </>
-            ) : target?.type === 'board' && target.sourceMaterialId ? (
-              <>
-                «{target.title}» и связанный блок в материале обучения будут удалены без возможности
-                восстановления. Пустые учебные папки очистятся автоматически.
-              </>
-            ) : (
-              <>
-                «{target?.title}» будет удалена без возможности восстановления. Вложенное содержимое
-                папки также будет удалено.
-              </>
-            )}
-          </AlertDialog.Description>
-          <div className="mt-5 flex justify-end gap-2">
-            <AlertDialog.Cancel asChild>
-              <button
-                type="button"
-                disabled={isSubmitting}
-                className="rounded-lg px-3 py-2 text-sm text-[var(--app-muted)]"
-              >
-                Отмена
-              </button>
-            </AlertDialog.Cancel>
-            <button
-              type="button"
-              disabled={isSubmitting}
-              className="flex items-center gap-2 rounded-lg bg-red-500 px-3 py-2 text-sm font-medium text-white disabled:opacity-40"
-              onClick={onConfirm}
-            >
-              {isSubmitting && <LoaderCircle aria-hidden className="size-4 animate-spin" />}Удалить
-            </button>
-          </div>
-        </AlertDialog.Content>
-      </AlertDialog.Portal>
-    </AlertDialog.Root>
+    <DeleteConfirmationDialog
+      open={target !== null}
+      title={`Удалить ${target?.type === 'folder' ? 'папку' : 'доску'}?`}
+      subject={target?.title}
+      description={description}
+      isSubmitting={isSubmitting}
+      onOpenChange={onOpenChange}
+      onConfirm={onConfirm}
+    />
   )
 }
 
