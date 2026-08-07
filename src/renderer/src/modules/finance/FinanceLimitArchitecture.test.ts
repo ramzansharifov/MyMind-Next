@@ -3,7 +3,7 @@ import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 describe('finance limit architecture', () => {
-  it('keeps legacy date fields out of the user-facing limit form', () => {
+  it('keeps legacy fields and independent names out of the user-facing limit form', () => {
     const dialog = readFileSync(
       resolve(
         process.cwd(),
@@ -12,6 +12,8 @@ describe('finance limit architecture', () => {
       'utf8'
     )
 
+    expect(dialog).not.toContain('label="Название"')
+    expect(dialog).not.toContain("register('name')")
     expect(dialog).not.toContain('Дата начала')
     expect(dialog).not.toContain('Область действия')
     expect(dialog).not.toContain('Собственный диапазон')
