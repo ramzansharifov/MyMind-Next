@@ -1,54 +1,40 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { LoaderCircle } from 'lucide-react'
-import { useState } from 'react'
-import { useForm, useWatch } from 'react-hook-form'
+import { useMemo, useState } from 'react'
+import { Controller, useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 
-import {
-  FINANCE_LIMIT_PERIOD_TYPES,
-  FINANCE_LIMIT_SCOPE_TYPES,
-  type FinanceAccountSummary,
-  type FinanceLimitStatus,
-  type FinanceTagSummary
+import type {
+  FinanceAccountSummary,
+  FinanceLimitStatus,
+  FinanceTagSummary
 } from '../../../../../../shared/contracts/finance'
 import { formatMinorPlain, parseMoneyToMinor } from '../../../../../../shared/finance-money'
 import { AppDialog } from '../../../../shared/ui/AppDialog'
 import { financeClient } from '../../api/finance-client'
-import { fromDateInputValue, getFinanceErrorMessage, toDateInputValue } from '../../lib/finance-ui'
+import { getFinanceErrorMessage } from '../../lib/finance-ui'
+import { FinanceLimitAccountPicker } from '../FinanceLimitAccountPicker'
 import { FinanceButton, FinanceField, financeInputClassName } from '../FinancePrimitives'
+import { FinanceTagCardPicker } from '../FinanceSelectionCards'
+
+const limitPeriodTypes = ['day', 'week', 'month', 'year'] as const
 
 const limitFormSchema = z
   .object({
     name: z.string().trim().min(1, 'Введите название').max(120),
     amount: z.string().trim().min(1, 'Введите сумму лимита'),
-    currencyCode: z
-      .string()
-      .trim()
-      .toUpperCase()
-      .regex(/^[A-Z]{3}$/, 'Некорректная валюта'),
-    scopeType: z.enum(FINANCE_LIMIT_SCOPE_TYPES),
-    accountId: z.string(),
-    tagId: z.string(),
-    periodType: z.enum(FINANCE_LIMIT_PERIOD_TYPES),
-    startsAt: z.string().min(1, 'Укажите дату начала'),
-    endsAt: z.string(),
+    accountIds: z.array(z.string()),
+    allAccounts: z.boolean(),
+    tagId: z.string().min(1, 'Выберите тег расходов'),
+    periodType: z.enum(limitPeriodTypes),
     warningPercent: z.coerce.number().int().min(1).max(100)
   })
   .superRefine((values, context) => {
-    if (
-      (values.scopeType === 'account' || values.scopeType === 'account-tag') &&
-      !values.accountId
-    ) {
-      context.addIssue({ code: 'custom', path: ['accountId'], message: 'Выберите счёт' })
-    }
-    if ((values.scopeType === 'tag' || values.scopeType === 'account-tag') && !values.tagId) {
-      context.addIssue({ code: 'custom', path: ['tagId'], message: 'Выберите тег' })
-    }
-    if (values.periodType === 'custom' && !values.endsAt) {
+    if (!values.allAccounts && values.accountIds.length === 0) {
       context.addIssue({
         code: 'custom',
-        path: ['endsAt'],
-        message: 'Укажите дату окончания'
+        path: ['accountIds'],
+        message: 'Выберите хотя бы один счёт'
       })
     }
   })
@@ -61,7 +47,6 @@ interface FinanceLimitDialogProps {
   limit?: FinanceLimitStatus | null
   accounts: FinanceAccountSummary[]
   tags: FinanceTagSummary[]
-  baseCurrencyCode: string
   initialTagId?: string | null
   onOpenChange: (open: boolean) => void
   onSaved: (limit: FinanceLimitStatus) => void | Promise<void>
@@ -76,43 +61,82 @@ function FinanceLimitDialogContent({
   limit,
   accounts,
   tags,
-  baseCurrencyCode,
   initialTagId,
   onOpenChange,
   onSaved
 }: FinanceLimitDialogProps): React.JSX.Element {
   const [isSaving, setIsSaving] = useState(false)
   const [backendError, setBackendError] = useState<string | null>(null)
-  const [defaultStartsAt] = useState(() => Date.now())
+  const accountCurrencies = useMemo(
+    () => [...new Set(accounts.map((account) => account.currencyCode))],
+    [accounts]
+  )
+  const canUseAllAccounts = accounts.length > 0 && accountCurrencies.length === 1
+  const existingAccountIds = limit?.accountIds ?? (limit?.accountId ? [limit.accountId] : [])
+  const defaultAllAccounts = limit
+    ? existingAccountIds.length === 0 && canUseAllAccounts
+    : canUseAllAccounts
+  const defaultAccountIds = defaultAllAccounts
+    ? []
+    : existingAccountIds.length > 0
+      ? existingAccountIds
+      : limit
+        ? accounts
+            .filter((account) => account.currencyCode === limit.currencyCode)
+            .map((account) => account.id)
+        : []
+
   const {
     register,
     control,
     handleSubmit,
     setError,
+    setValue,
     formState: { errors }
   } = useForm<LimitFormInput, unknown, LimitFormValues>({
     resolver: zodResolver(limitFormSchema),
     defaultValues: {
       name: limit?.name ?? '',
       amount: limit ? formatMinorPlain(limit.amountMinor, limit.currencyCode) : '',
-      currencyCode: limit?.currencyCode ?? baseCurrencyCode,
-      scopeType: limit?.scopeType ?? (initialTagId ? 'tag' : 'all'),
-      accountId: limit?.accountId ?? '',
+      accountIds: defaultAccountIds,
+      allAccounts: defaultAllAccounts,
       tagId: limit?.tagId ?? initialTagId ?? '',
-      periodType: limit?.periodType ?? 'month',
-      startsAt: toDateInputValue(limit?.startsAt ?? defaultStartsAt),
-      endsAt: limit?.endsAt ? toDateInputValue(limit.endsAt) : '',
+      periodType:
+        limit?.periodType && limit.periodType !== 'custom' ? limit.periodType : ('month' as const),
       warningPercent: limit?.warningPercent ?? 80
     }
   })
-  const scopeType = useWatch({ control, name: 'scopeType' })
-  const periodType = useWatch({ control, name: 'periodType' })
+
+  const selectedAccountIds = useWatch({ control, name: 'accountIds' }) ?? []
+  const allAccounts = useWatch({ control, name: 'allAccounts' }) ?? false
   const expenseTags = tags.filter((tag) => tag.type !== 'income')
+  const selectedAccounts = allAccounts
+    ? accounts
+    : accounts.filter((account) => selectedAccountIds.includes(account.id))
+  const selectedCurrencies = [...new Set(selectedAccounts.map((account) => account.currencyCode))]
+  const derivedCurrency = selectedCurrencies.length === 1 ? selectedCurrencies[0] : null
 
   async function submit(values: LimitFormValues): Promise<void> {
+    const selected = values.allAccounts
+      ? accounts
+      : accounts.filter((account) => values.accountIds.includes(account.id))
+    const currencies = [...new Set(selected.map((account) => account.currencyCode))]
+
+    if (selected.length === 0) {
+      setError('accountIds', { message: 'Выберите хотя бы один счёт' })
+      return
+    }
+    if (currencies.length !== 1) {
+      setError('accountIds', {
+        message: 'В одном лимите можно выбрать только счета с одинаковой валютой'
+      })
+      return
+    }
+
+    const currencyCode = currencies[0]
     let amountMinor: number
     try {
-      amountMinor = parseMoneyToMinor(values.amount, values.currencyCode)
+      amountMinor = parseMoneyToMinor(values.amount, currencyCode)
       if (amountMinor <= 0) throw new Error('Сумма должна быть больше нуля')
     } catch (reason) {
       setError('amount', { message: getFinanceErrorMessage(reason) })
@@ -122,20 +146,18 @@ function FinanceLimitDialogContent({
     setIsSaving(true)
     setBackendError(null)
     try {
+      const accountIds = values.allAccounts ? [] : values.accountIds
       const common = {
         name: values.name,
         amountMinor,
-        currencyCode: values.currencyCode,
-        scopeType: values.scopeType,
-        accountId:
-          values.scopeType === 'account' || values.scopeType === 'account-tag'
-            ? values.accountId
-            : null,
-        tagId:
-          values.scopeType === 'tag' || values.scopeType === 'account-tag' ? values.tagId : null,
+        currencyCode,
+        scopeType: values.allAccounts ? ('tag' as const) : ('account-tag' as const),
+        accountId: accountIds[0] ?? null,
+        accountIds,
+        tagId: values.tagId,
         periodType: values.periodType,
-        startsAt: fromDateInputValue(values.startsAt),
-        endsAt: values.periodType === 'custom' ? fromDateInputValue(values.endsAt, true) : null,
+        startsAt: 0,
+        endsAt: null,
         warningPercent: values.warningPercent
       }
       const saved = limit
@@ -155,13 +177,13 @@ function FinanceLimitDialogContent({
       open={open}
       onOpenChange={onOpenChange}
       title={limit ? 'Изменить лимит' : 'Новый лимит расходов'}
-      description="Лимит предупреждает о расходах, но никогда не блокирует операцию."
+      description="Лимит отслеживает расходы выбранного тега и предупреждает при достижении порога."
       size="lg"
       busy={isSaving}
       closeLabel="Закрыть форму лимита"
     >
       <form
-        className="space-y-4"
+        className="space-y-5"
         onSubmit={(event) => {
           void handleSubmit(submit)(event)
         }}
@@ -170,7 +192,54 @@ function FinanceLimitDialogContent({
           <input {...register('name')} autoFocus className={financeInputClassName} />
         </FinanceField>
 
-        <div className="grid grid-cols-[minmax(0,1fr)_8rem] gap-4">
+        <fieldset>
+          <legend className="mb-1.5 text-sm font-medium text-[var(--app-text)]">
+            Тег расходов
+          </legend>
+          <Controller
+            control={control}
+            name="tagId"
+            render={({ field }) => (
+              <FinanceTagCardPicker
+                tags={expenseTags}
+                value={field.value}
+                ariaLabel="Тег лимита"
+                disabled={isSaving}
+                onChange={field.onChange}
+              />
+            )}
+          />
+          {errors.tagId?.message && (
+            <span className="mt-1.5 block text-xs text-red-300">{errors.tagId.message}</span>
+          )}
+        </fieldset>
+
+        <fieldset>
+          <legend className="mb-1.5 text-sm font-medium text-[var(--app-text)]">Счета</legend>
+          <FinanceLimitAccountPicker
+            accounts={accounts}
+            accountIds={selectedAccountIds}
+            allAccounts={allAccounts}
+            disabled={isSaving}
+            onChange={(selection) => {
+              setValue('accountIds', selection.accountIds, {
+                shouldValidate: true,
+                shouldDirty: true
+              })
+              setValue('allAccounts', selection.allAccounts, {
+                shouldValidate: true,
+                shouldDirty: true
+              })
+            }}
+          />
+          {errors.accountIds?.message && (
+            <span className="mt-1.5 block text-xs text-red-300">
+              {errors.accountIds.message}
+            </span>
+          )}
+        </fieldset>
+
+        <div className="grid grid-cols-[minmax(0,1fr)_8rem] gap-4 max-[520px]:grid-cols-1">
           <FinanceField label="Сумма" error={errors.amount?.message}>
             <input
               {...register('amount')}
@@ -182,45 +251,16 @@ function FinanceLimitDialogContent({
               className={financeInputClassName}
             />
           </FinanceField>
-          <FinanceField label="Валюта" error={errors.currencyCode?.message}>
-            <input {...register('currencyCode')} maxLength={3} className={financeInputClassName} />
+          <FinanceField label="Валюта">
+            <div
+              aria-label="Валюта лимита"
+              aria-readonly="true"
+              className={`${financeInputClassName} flex items-center font-medium`}
+            >
+              {derivedCurrency ?? '—'}
+            </div>
           </FinanceField>
         </div>
-
-        <FinanceField label="Область действия" error={errors.scopeType?.message}>
-          <select {...register('scopeType')} className={financeInputClassName}>
-            <option value="all">Все расходы</option>
-            <option value="account">Конкретный счёт</option>
-            <option value="tag">Конкретный тег</option>
-            <option value="account-tag">Счёт и тег</option>
-          </select>
-        </FinanceField>
-
-        {(scopeType === 'account' || scopeType === 'account-tag') && (
-          <FinanceField label="Счёт" error={errors.accountId?.message}>
-            <select {...register('accountId')} className={financeInputClassName}>
-              <option value="">Выберите счёт</option>
-              {accounts.map((account) => (
-                <option key={account.id} value={account.id}>
-                  {account.name} · {account.currencyCode}
-                </option>
-              ))}
-            </select>
-          </FinanceField>
-        )}
-
-        {(scopeType === 'tag' || scopeType === 'account-tag') && (
-          <FinanceField label="Тег расходов" error={errors.tagId?.message}>
-            <select {...register('tagId')} className={financeInputClassName}>
-              <option value="">Выберите тег</option>
-              {expenseTags.map((tag) => (
-                <option key={tag.id} value={tag.id}>
-                  {tag.name}
-                </option>
-              ))}
-            </select>
-          </FinanceField>
-        )}
 
         <div className="grid grid-cols-2 gap-4 max-[520px]:grid-cols-1">
           <FinanceField label="Период" error={errors.periodType?.message}>
@@ -229,7 +269,6 @@ function FinanceLimitDialogContent({
               <option value="week">Неделя</option>
               <option value="month">Месяц</option>
               <option value="year">Год</option>
-              <option value="custom">Собственный диапазон</option>
             </select>
           </FinanceField>
           <FinanceField label="Предупреждение, %" error={errors.warningPercent?.message}>
@@ -241,17 +280,6 @@ function FinanceLimitDialogContent({
               className={financeInputClassName}
             />
           </FinanceField>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4 max-[520px]:grid-cols-1">
-          <FinanceField label="Дата начала" error={errors.startsAt?.message}>
-            <input {...register('startsAt')} type="date" className={financeInputClassName} />
-          </FinanceField>
-          {periodType === 'custom' && (
-            <FinanceField label="Дата окончания" error={errors.endsAt?.message}>
-              <input {...register('endsAt')} type="date" className={financeInputClassName} />
-            </FinanceField>
-          )}
         </div>
 
         {backendError && (

@@ -140,6 +140,7 @@ export interface FinanceLimit {
   currencyCode: string
   scopeType: FinanceLimitScopeType
   accountId: string | null
+  accountIds?: string[]
   tagId: string | null
   periodType: FinanceLimitPeriodType
   startsAt: number
@@ -151,6 +152,7 @@ export interface FinanceLimit {
 }
 
 export interface FinanceLimitStatus extends FinanceLimit {
+  accountIds: string[]
   periodStart: number
   periodEnd: number
   spentMinor: number
@@ -374,6 +376,7 @@ export interface CreateFinanceLimitInput {
   currencyCode: string
   scopeType: FinanceLimitScopeType
   accountId: string | null
+  accountIds?: string[]
   tagId: string | null
   periodType: FinanceLimitPeriodType
   startsAt: number

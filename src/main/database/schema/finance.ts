@@ -174,3 +174,19 @@ export const financeLimits = sqliteTable(
     index('finance_limits_tag_state_idx').on(table.tagId, table.state)
   ]
 )
+
+export const financeLimitAccounts = sqliteTable(
+  'finance_limit_accounts',
+  {
+    limitId: text('limit_id')
+      .notNull()
+      .references(() => financeLimits.id, { onDelete: 'cascade' }),
+    accountId: text('account_id')
+      .notNull()
+      .references(() => financeAccounts.id, { onDelete: 'cascade' })
+  },
+  (table) => [
+    uniqueIndex('finance_limit_accounts_limit_account_unique').on(table.limitId, table.accountId),
+    index('finance_limit_accounts_account_idx').on(table.accountId)
+  ]
+)

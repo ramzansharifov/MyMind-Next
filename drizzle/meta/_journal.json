@@ -99,6 +99,13 @@
       "when": 1786117020000,
       "tag": "0013_finance_account_without_type",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1786139700000,
+      "tag": "0014_finance_limit_accounts",
+      "breakpoints": true
     }
   ]
 }

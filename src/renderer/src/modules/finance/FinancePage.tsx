@@ -319,7 +319,6 @@ export function FinancePage({
             accounts={dashboard.accounts}
             tags={tags}
             limits={dashboard.limits}
-            baseCurrencyCode={dashboard.settings.baseCurrencyCode}
             onChanged={load}
           />
         )}
@@ -369,7 +368,6 @@ export function FinancePage({
         limit={null}
         accounts={dashboard.accounts}
         tags={tags}
-        baseCurrencyCode={dashboard.settings.baseCurrencyCode}
         onOpenChange={setCreateLimitOpen}
         onSaved={async () => load()}
       />
