@@ -74,7 +74,6 @@ export function FinancePage({
     useState<FinanceUserTransactionType>('expense')
   const [quickTransactionOpen, setQuickTransactionOpen] = useState(false)
   const [transactionsInitial, setTransactionsInitial] = useState<FinanceTransaction | null>(null)
-  const [templateInitial, setTemplateInitial] = useState<FinanceTemplate | null>(null)
   const [quickTagType, setQuickTagType] = useState<'income' | 'expense' | null>(null)
   const [createTemplateOpen, setCreateTemplateOpen] = useState(false)
   const [createLimitOpen, setCreateLimitOpen] = useState(false)
@@ -291,8 +290,6 @@ export function FinancePage({
             accounts={dashboard.accounts}
             tags={tags}
             templates={templates}
-            initialTemplate={templateInitial}
-            onInitialTemplateHandled={() => setTemplateInitial(null)}
             onChanged={load}
           />
         )}
