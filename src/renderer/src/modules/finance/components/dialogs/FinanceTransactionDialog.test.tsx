@@ -141,7 +141,7 @@ describe('FinanceTransactionDialog', () => {
     const incomeType = within(typeGroup).getByRole('radio', { name: 'Доход' })
     const transferType = within(typeGroup).getByRole('radio', { name: 'Перевод' })
     expect(expenseType).toHaveAttribute('aria-checked', 'true')
-    expect(expenseType).toHaveClass('border-red-500/45')
+    expect(expenseType).toHaveClass('border-red-400/60')
     expect(incomeType).toHaveClass('bg-[var(--app-workspace)]')
     expect(transferType).toHaveClass('bg-[var(--app-workspace)]')
 
@@ -199,7 +199,7 @@ describe('FinanceTransactionDialog', () => {
     )
 
     await user.click(screen.getByRole('radio', { name: 'Перевод' }))
-    expect(screen.getByRole('radio', { name: 'Перевод' })).toHaveClass('border-violet-500/45')
+    expect(screen.getByRole('radio', { name: 'Перевод' })).toHaveClass('border-violet-400/60')
     expect(screen.getByRole('radio', { name: 'Доход' })).toHaveClass(
       'bg-[var(--app-workspace)]'
     )
