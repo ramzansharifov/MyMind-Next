@@ -81,6 +81,11 @@ import {
   useFinanceTemplate
 } from '../repositories/finance.repository'
 import { convertFinanceMinor, createFinanceRateBook } from './finance-conversion'
+import {
+  normalizeFinanceLimitInput,
+  syncFinanceLimitAccounts,
+  withFinanceLimitAccounts
+} from './finance-limit-accounts'
 import { previousComparablePeriod, resolveFinanceLimitPeriod } from './finance-periods'
 
 interface ExpenseAmountRow {
@@ -126,10 +131,14 @@ function getLimitExpenseRows(
 ): ExpenseAmountRow[] {
   const clauses = ["t.type = 'expense'", 't.is_system = 0', 't.occurred_at BETWEEN ? AND ?']
   const params: unknown[] = [period.from, period.to]
+  const accountIds = limit.accountIds ?? []
 
-  if (limit.accountId) {
-    clauses.push('e.account_id = ?')
-    params.push(limit.accountId)
+  if (accountIds.length > 0) {
+    clauses.push(`e.account_id IN (${accountIds.map(() => '?').join(', ')})`)
+    params.push(...accountIds)
+  } else {
+    clauses.push('a.currency_code = ?')
+    params.push(limit.currencyCode)
   }
   if (limit.tagId) {
     clauses.push('t.tag_id = ?')
@@ -151,7 +160,8 @@ function getLimitExpenseRows(
     .all(...params) as ExpenseAmountRow[]
 }
 
-function calculateLimitStatus(limit: FinanceLimit, at: number): FinanceLimitStatus {
+function calculateLimitStatus(rawLimit: FinanceLimit, at: number): FinanceLimitStatus {
+  const limit = withFinanceLimitAccounts(rawLimit)
   const period = resolveFinanceLimitPeriod(limit, at)
   const { rateBook } = loadRateBook()
   const missing = new Set<string>()
@@ -211,11 +221,17 @@ export function getFinanceLimitStatus(id: string, at = Date.now()): FinanceLimit
 }
 
 export function createFinanceLimit(input: CreateFinanceLimitInput): FinanceLimitStatus {
-  return calculateLimitStatus(createFinanceLimitRaw(input), Date.now())
+  const normalized = normalizeFinanceLimitInput(input)
+  const limit = createFinanceLimitRaw(normalized)
+  syncFinanceLimitAccounts(limit.id, normalized.accountIds ?? [])
+  return calculateLimitStatus(limit, Date.now())
 }
 
 export function updateFinanceLimit(input: UpdateFinanceLimitInput): FinanceLimitStatus {
-  return calculateLimitStatus(updateFinanceLimitRaw(input), Date.now())
+  const normalized = normalizeFinanceLimitInput(input)
+  const limit = updateFinanceLimitRaw(normalized)
+  syncFinanceLimitAccounts(limit.id, normalized.accountIds ?? [])
+  return calculateLimitStatus(limit, Date.now())
 }
 
 export function setFinanceLimitState(input: SetFinanceLimitStateInput): FinanceLimitStatus {
@@ -231,8 +247,14 @@ export function previewFinanceExpenseImpact(input: PreviewFinanceExpenseInput): 
 
   const { rateBook } = loadRateBook()
   const items = listFinanceLimitsRaw()
+    .map(withFinanceLimitAccounts)
     .filter((limit) => limit.state === 'active')
-    .filter((limit) => !limit.accountId || limit.accountId === input.accountId)
+    .filter((limit) => {
+      const accountIds = limit.accountIds ?? []
+      return accountIds.length > 0
+        ? accountIds.includes(input.accountId)
+        : account.currencyCode === limit.currencyCode
+    })
     .filter((limit) => !limit.tagId || limit.tagId === input.tagId)
     .map((limit) => {
       const status = calculateLimitStatus(limit, input.occurredAt)
