@@ -20,6 +20,14 @@ export function FinanceAccountCardPicker({
   disabled = false,
   onChange
 }: AccountPickerProps): React.JSX.Element {
+  if (accounts.length === 0) {
+    return (
+      <div className="rounded-xl border border-dashed border-amber-500/25 bg-amber-500/[0.04] px-4 py-5 text-center text-xs text-amber-200">
+        Нет доступных счетов для выбора.
+      </div>
+    )
+  }
+
   return (
     <div
       role="radiogroup"
