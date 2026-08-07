@@ -125,7 +125,7 @@ export interface FinanceLimit {
   amountMinor: number
   currencyCode: string
   accountIds?: string[]
-  tagId: string
+  tagId: string | null
   periodType: FinanceLimitPeriodType
   warningPercent: number
   state: FinanceLimitState
