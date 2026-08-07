@@ -1,4 +1,4 @@
-import { Filter, ReceiptText, Search, Trash2 } from 'lucide-react'
+import { Filter, ReceiptText, Search } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import type {
