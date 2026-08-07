@@ -8,6 +8,7 @@ import type {
   FinanceUserTransactionType
 } from '../../../../../shared/contracts/finance'
 import { formatMoneyMinor } from '../../../../../shared/finance-money'
+import { financeClient } from '../api/finance-client'
 import { FinanceButton, FinanceEmptyState, FinanceSurface } from './FinancePrimitives'
 import { FinanceSection } from './FinanceSection'
 import { FinanceConfirmDialog } from './dialogs/FinanceConfirmDialog'
@@ -166,7 +167,7 @@ export function FinanceTemplates({
         onOpenChange={(open) => !open && setDeleteTemplate(null)}
         onConfirm={async () => {
           if (!deleteTemplate) return
-          await window.api.finance.deleteTemplate({ id: deleteTemplate.id })
+          await financeClient.deleteTemplate({ id: deleteTemplate.id })
           setDeleteTemplate(null)
           await onChanged()
         }}
