@@ -12,8 +12,7 @@ import { FINANCE_RATE_SCALE } from '../../../../../../shared/finance-money'
 const mocks = vi.hoisted(() => ({
   previewExpenseImpact: vi.fn(),
   createTransaction: vi.fn(),
-  updateTransaction: vi.fn(),
-  useTemplate: vi.fn()
+  updateTransaction: vi.fn()
 }))
 
 vi.mock('../../api/finance-client', () => ({ financeClient: mocks }))
