@@ -1,4 +1,4 @@
-import { CalendarClock, Pause, Pencil, Play, Plus, Trash2 } from 'lucide-react'
+import { CalendarClock, Pause, Pencil, Play, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
 import type {
@@ -45,40 +45,12 @@ export function FinanceTemplates({
 
   return (
     <div className="space-y-4">
-      <FinanceSection
-        title="Шаблоны"
-        icon={<CalendarClock aria-hidden="true" className="size-5" />}
-        actions={
-          <FinanceButton
-            size="sm"
-            tone="primary"
-            onClick={() => {
-              setEditTemplate(null)
-              setTemplateDialogOpen(true)
-            }}
-          >
-            <Plus aria-hidden="true" className="size-4" />
-            Новый шаблон
-          </FinanceButton>
-        }
-      >
+      <FinanceSection title="Шаблоны" icon={<CalendarClock aria-hidden="true" className="size-5" />}>
         {templates.length === 0 ? (
           <FinanceEmptyState
             icon={<CalendarClock className="size-6" />}
             title="Шаблонов пока нет"
             description="Сохраните часто повторяющиеся доходы, расходы или переводы."
-            action={
-              <FinanceButton
-                tone="primary"
-                onClick={() => {
-                  setEditTemplate(null)
-                  setTemplateDialogOpen(true)
-                }}
-              >
-                <Plus className="size-4" />
-                Создать шаблон
-              </FinanceButton>
-            }
           />
         ) : (
           <div className="grid grid-cols-2 gap-3 max-[780px]:grid-cols-1">

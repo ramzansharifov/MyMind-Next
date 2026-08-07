@@ -7,7 +7,9 @@ import {
   Gauge,
   Home,
   Landmark,
+  Plus,
   ReceiptText,
+  Settings2,
   Tags
 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
@@ -34,7 +36,11 @@ import { FinanceReports } from './components/FinanceReports'
 import { FinanceTags } from './components/FinanceTags'
 import { FinanceTemplates } from './components/FinanceTemplates'
 import { FinanceTransactions } from './components/FinanceTransactions'
+import { FinanceAccountDialog } from './components/dialogs/FinanceAccountDialog'
+import { FinanceCurrencyDialog } from './components/dialogs/FinanceCurrencyDialog'
+import { FinanceLimitDialog } from './components/dialogs/FinanceLimitDialog'
 import { FinanceTagDialog } from './components/dialogs/FinanceTagDialog'
+import { FinanceTemplateDialog } from './components/dialogs/FinanceTemplateDialog'
 import { FinanceTransactionDialog } from './components/dialogs/FinanceTransactionDialog'
 import { currentMonthPeriod, getFinanceErrorMessage } from './lib/finance-ui'
 
@@ -73,8 +79,11 @@ export function FinancePage({
   const [quickTransactionOpen, setQuickTransactionOpen] = useState(false)
   const [transactionsInitial, setTransactionsInitial] = useState<FinanceTransaction | null>(null)
   const [templateInitial, setTemplateInitial] = useState<FinanceTemplate | null>(null)
-  const [createTagType, setCreateTagType] = useState<'income' | 'expense' | null>(null)
   const [quickTagType, setQuickTagType] = useState<'income' | 'expense' | null>(null)
+  const [createTemplateOpen, setCreateTemplateOpen] = useState(false)
+  const [createLimitOpen, setCreateLimitOpen] = useState(false)
+  const [createAccountOpen, setCreateAccountOpen] = useState(false)
+  const [currencyDialogOpen, setCurrencyDialogOpen] = useState(false)
 
   const load = useCallback(async (): Promise<void> => {
     setIsLoading(true)
@@ -167,20 +176,57 @@ export function FinancePage({
               </p>
             </div>
 
-            {activePage === 'home' && (
-              <div className="grid w-[27rem] max-w-full shrink-0 grid-cols-3 gap-2 max-[820px]:w-full max-[560px]:grid-cols-1">
-                <FinanceButton tone="positive" onClick={() => openQuick('income')}>
-                  <ArrowDownLeft aria-hidden="true" className="size-4" />
-                  Доход
-                </FinanceButton>
-                <FinanceButton tone="danger" onClick={() => openQuick('expense')}>
-                  <ArrowUpRight aria-hidden="true" className="size-4" />
-                  Расход
-                </FinanceButton>
-                <FinanceButton tone="primary" onClick={() => openQuick('transfer')}>
-                  <ArrowRightLeft aria-hidden="true" className="size-4" />
-                  Перевод
-                </FinanceButton>
+            {activePage !== 'reports' && (
+              <div
+                data-finance-header-actions
+                className="flex max-w-full shrink-0 flex-wrap justify-end gap-2 max-[820px]:w-full max-[820px]:justify-start"
+              >
+                {(activePage === 'home' || activePage === 'transactions') && (
+                  <>
+                    <FinanceButton tone="positive" onClick={() => openQuick('income')}>
+                      <ArrowDownLeft aria-hidden="true" className="size-4" />
+                      Доход
+                    </FinanceButton>
+                    <FinanceButton tone="danger" onClick={() => openQuick('expense')}>
+                      <ArrowUpRight aria-hidden="true" className="size-4" />
+                      Расход
+                    </FinanceButton>
+                    <FinanceButton tone="primary" onClick={() => openQuick('transfer')}>
+                      <ArrowRightLeft aria-hidden="true" className="size-4" />
+                      Перевод
+                    </FinanceButton>
+                  </>
+                )}
+                {activePage === 'templates' && (
+                  <FinanceButton tone="primary" onClick={() => setCreateTemplateOpen(true)}>
+                    <Plus aria-hidden="true" className="size-4" />
+                    Новый шаблон
+                  </FinanceButton>
+                )}
+                {activePage === 'limits' && (
+                  <FinanceButton tone="primary" onClick={() => setCreateLimitOpen(true)}>
+                    <Plus aria-hidden="true" className="size-4" />
+                    Новый лимит
+                  </FinanceButton>
+                )}
+                {activePage === 'accounts' && (
+                  <>
+                    <FinanceButton onClick={() => setCurrencyDialogOpen(true)}>
+                      <Settings2 aria-hidden="true" className="size-4" />
+                      Валюты и курсы
+                    </FinanceButton>
+                    <FinanceButton tone="primary" onClick={() => setCreateAccountOpen(true)}>
+                      <Plus aria-hidden="true" className="size-4" />
+                      Новый счёт
+                    </FinanceButton>
+                  </>
+                )}
+                {activePage === 'tags' && (
+                  <FinanceButton tone="primary" onClick={() => setQuickTagType('expense')}>
+                    <Plus aria-hidden="true" className="size-4" />
+                    Новый тег
+                  </FinanceButton>
+                )}
               </div>
             )}
           </div>
@@ -293,8 +339,6 @@ export function FinancePage({
         {activePage === 'accounts' && (
           <FinanceAccounts
             accounts={dashboard.accounts}
-            settings={dashboard.settings}
-            rates={rates}
             selectedAccountId={selectedAccountId}
             onSelectedAccountChange={setSelectedAccountId}
             onChanged={load}
@@ -306,8 +350,6 @@ export function FinancePage({
             accounts={dashboard.accounts}
             limits={dashboard.limits}
             baseCurrencyCode={dashboard.settings.baseCurrencyCode}
-            createType={createTagType}
-            onCreateTypeHandled={() => setCreateTagType(null)}
             onChanged={load}
           />
         )}
@@ -321,6 +363,36 @@ export function FinancePage({
         )}
       </div>
 
+      <FinanceAccountDialog
+        open={createAccountOpen}
+        account={null}
+        onOpenChange={setCreateAccountOpen}
+        onSaved={async () => load()}
+      />
+      <FinanceCurrencyDialog
+        open={currencyDialogOpen}
+        settings={dashboard.settings}
+        rates={rates}
+        onOpenChange={setCurrencyDialogOpen}
+        onChanged={load}
+      />
+      <FinanceTemplateDialog
+        open={createTemplateOpen}
+        template={null}
+        accounts={dashboard.accounts}
+        tags={tags}
+        onOpenChange={setCreateTemplateOpen}
+        onSaved={async () => load()}
+      />
+      <FinanceLimitDialog
+        open={createLimitOpen}
+        limit={null}
+        accounts={dashboard.accounts}
+        tags={tags}
+        baseCurrencyCode={dashboard.settings.baseCurrencyCode}
+        onOpenChange={setCreateLimitOpen}
+        onSaved={async () => load()}
+      />
       <FinanceTagDialog
         open={quickTagType !== null}
         initialType={quickTagType ?? 'expense'}

@@ -1,4 +1,4 @@
-import { Gauge, Plus, Tag, Trash2 } from 'lucide-react'
+import { Gauge, Tag, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
 import type {
@@ -20,8 +20,6 @@ interface Props {
   accounts: FinanceAccountSummary[]
   limits: FinanceLimitStatus[]
   baseCurrencyCode: string
-  createType?: 'income' | 'expense' | null
-  onCreateTypeHandled: () => void
   onChanged: () => void | Promise<void>
 }
 
@@ -30,19 +28,13 @@ export function FinanceTags({
   accounts,
   limits,
   baseCurrencyCode,
-  createType,
-  onCreateTypeHandled,
   onChanged
 }: Props): React.JSX.Element {
-  const [dialogOpen, setDialogOpen] = useState(Boolean(createType))
+  const [dialogOpen, setDialogOpen] = useState(false)
   const [editTag, setEditTag] = useState<FinanceTagSummary | null>(null)
   const [deleteTag, setDeleteTag] = useState<FinanceTagSummary | null>(null)
   const [limitTag, setLimitTag] = useState<FinanceTagSummary | null>(null)
 
-  const openNew = (): void => {
-    setEditTag(null)
-    setDialogOpen(true)
-  }
   const groups = [
     { type: 'income' as const, title: 'Доходы' },
     { type: 'expense' as const, title: 'Расходы' },
@@ -51,27 +43,12 @@ export function FinanceTags({
 
   return (
     <div className="space-y-4">
-      <FinanceSection
-        title="Теги"
-        icon={<Tag aria-hidden="true" className="size-5" />}
-        actions={
-          <FinanceButton size="sm" tone="primary" onClick={openNew}>
-            <Plus aria-hidden="true" className="size-4" />
-            Новый тег
-          </FinanceButton>
-        }
-      >
+      <FinanceSection title="Теги" icon={<Tag aria-hidden="true" className="size-5" />}>
         {tags.length === 0 ? (
           <FinanceEmptyState
             icon={<Tag className="size-6" />}
             title="Пока нет тегов"
             description="Создайте первый тег для категоризации доходов и расходов."
-            action={
-              <FinanceButton tone="primary" onClick={openNew}>
-                <Plus className="size-4" />
-                Создать тег
-              </FinanceButton>
-            }
           />
         ) : (
           <div className="grid grid-cols-3 gap-3 max-[760px]:grid-cols-1">
@@ -202,20 +179,14 @@ export function FinanceTags({
         })}
 
       <FinanceTagDialog
-        open={dialogOpen || Boolean(createType)}
+        open={dialogOpen}
         tag={editTag}
-        initialType={createType ?? 'expense'}
+        initialType="expense"
         onOpenChange={(open) => {
           setDialogOpen(open)
-          if (!open) {
-            setEditTag(null)
-            onCreateTypeHandled()
-          }
+          if (!open) setEditTag(null)
         }}
-        onSaved={async () => {
-          onCreateTypeHandled()
-          await onChanged()
-        }}
+        onSaved={async () => onChanged()}
       />
       <FinanceLimitDialog
         open={limitTag !== null}
