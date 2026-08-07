@@ -1,23 +1,19 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { LoaderCircle } from 'lucide-react'
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 
-import {
-  FINANCE_ACCOUNT_TYPES,
-  FINANCE_ICON_NAMES,
-  type FinanceAccountSummary
-} from '../../../../../../shared/contracts/finance'
+import { FINANCE_ICON_NAMES, type FinanceAccountSummary } from '../../../../../../shared/contracts/finance'
 import { formatMinorPlain, parseMoneyToMinor } from '../../../../../../shared/finance-money'
 import { AppDialog } from '../../../../shared/ui/AppDialog'
+import { ColorPicker } from '../../../../shared/ui/ColorPicker'
 import { financeClient } from '../../api/finance-client'
-import { financeAccountTypeLabels, getFinanceErrorMessage } from '../../lib/finance-ui'
+import { getFinanceErrorMessage } from '../../lib/finance-ui'
 import { FinanceButton, FinanceField, financeInputClassName } from '../FinancePrimitives'
 
 const accountFormSchema = z.object({
   name: z.string().trim().min(1, 'Введите название').max(120),
-  type: z.enum(FINANCE_ACCOUNT_TYPES),
   currencyCode: z
     .string()
     .trim()
@@ -51,6 +47,7 @@ function FinanceAccountDialogContent({
   const [backendError, setBackendError] = useState<string | null>(null)
   const {
     register,
+    control,
     handleSubmit,
     setError,
     formState: { errors }
@@ -58,13 +55,12 @@ function FinanceAccountDialogContent({
     resolver: zodResolver(accountFormSchema),
     defaultValues: {
       name: account?.name ?? '',
-      type: account?.type ?? 'card',
-      currencyCode: account?.currencyCode ?? 'TJS',
+      currencyCode: account?.currencyCode ?? '',
       initialBalance: account
         ? formatMinorPlain(account.initialBalanceMinor, account.currencyCode)
         : '0,00',
-      icon: account?.icon ?? 'credit-card',
-      color: account?.color ?? '#8b5cf6'
+      icon: account?.icon ?? 'wallet',
+      color: account?.color ?? '#a78bfa'
     }
   })
 
@@ -84,14 +80,12 @@ function FinanceAccountDialogContent({
         ? await financeClient.updateAccount({
             id: account.id,
             name: values.name,
-            type: values.type,
             icon: values.icon,
             color: values.color,
             currencyCode: values.currencyCode
           })
         : await financeClient.createAccount({
             name: values.name,
-            type: values.type,
             currencyCode: values.currencyCode,
             initialBalanceMinor,
             icon: values.icon,
@@ -126,33 +120,25 @@ function FinanceAccountDialogContent({
           <input {...register('name')} autoFocus className={financeInputClassName} />
         </FinanceField>
 
-        <div className="grid grid-cols-2 gap-4 max-[520px]:grid-cols-1">
-          <FinanceField label="Тип" error={errors.type?.message}>
-            <select {...register('type')} className={financeInputClassName}>
-              {FINANCE_ACCOUNT_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {financeAccountTypeLabels[type]}
-                </option>
-              ))}
-            </select>
-          </FinanceField>
-          <FinanceField
-            label="Валюта"
-            error={errors.currencyCode?.message}
-            hint={
-              account && account.transactionCount > 0
-                ? 'После появления операций валюту изменить нельзя.'
-                : 'Код ISO 4217, например TJS, USD или RUB.'
-            }
-          >
-            <input
-              {...register('currencyCode')}
-              maxLength={3}
-              disabled={Boolean(account && account.transactionCount > 0)}
-              className={financeInputClassName}
-            />
-          </FinanceField>
-        </div>
+        <FinanceField
+          label="Валюта"
+          error={errors.currencyCode?.message}
+          hint={
+            account && account.transactionCount > 0
+              ? 'После появления операций валюту изменить нельзя.'
+              : 'Введите трёхбуквенный код, например TJS, USD или RUB.'
+          }
+        >
+          <input
+            {...register('currencyCode')}
+            maxLength={3}
+            placeholder="TJS"
+            autoCapitalize="characters"
+            autoComplete="off"
+            disabled={Boolean(account && account.transactionCount > 0)}
+            className={`${financeInputClassName} uppercase`}
+          />
+        </FinanceField>
 
         {!account && (
           <FinanceField label="Начальный баланс" error={errors.initialBalance?.message}>
@@ -164,7 +150,7 @@ function FinanceAccountDialogContent({
           </FinanceField>
         )}
 
-        <div className="grid grid-cols-[minmax(0,1fr)_7rem] gap-4">
+        <div className="grid grid-cols-2 gap-4 max-[520px]:grid-cols-1">
           <FinanceField label="Иконка" error={errors.icon?.message}>
             <select {...register('icon')} className={financeInputClassName}>
               {FINANCE_ICON_NAMES.map((icon) => (
@@ -175,10 +161,17 @@ function FinanceAccountDialogContent({
             </select>
           </FinanceField>
           <FinanceField label="Цвет" error={errors.color?.message}>
-            <input
-              {...register('color')}
-              type="color"
-              className={`${financeInputClassName} p-1`}
+            <Controller
+              control={control}
+              name="color"
+              render={({ field }) => (
+                <ColorPicker
+                  value={field.value}
+                  ariaLabel="Цвет счёта"
+                  disabled={isSaving}
+                  onChange={field.onChange}
+                />
+              )}
             />
           </FinanceField>
         </div>
