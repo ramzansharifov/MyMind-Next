@@ -174,8 +174,11 @@ function FinanceLimitDialogContent({
           <FinanceField label="Сумма" error={errors.amount?.message}>
             <input
               {...register('amount')}
+              type="number"
+              step="any"
+              min={0}
               inputMode="decimal"
-              placeholder="0,00"
+              placeholder="0.00"
               className={financeInputClassName}
             />
           </FinanceField>

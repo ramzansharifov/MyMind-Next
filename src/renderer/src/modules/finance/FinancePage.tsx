@@ -390,7 +390,6 @@ export function FinancePage({
         tags={tags}
         onOpenChange={setQuickTransactionOpen}
         onSaved={async () => load()}
-        onCreateTagRequested={setQuickTagType}
       />
     </main>
   )

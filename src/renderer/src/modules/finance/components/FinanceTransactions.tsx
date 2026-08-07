@@ -1,4 +1,4 @@
-import { Filter, ReceiptText, Search, Trash2 } from 'lucide-react'
+import { Filter, ReceiptText, Search } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import type {
@@ -22,7 +22,6 @@ import {
 import { FinanceSection } from './FinanceSection'
 import { FinancePagination, FinanceTransactionList } from './FinanceTransactionList'
 import { FinanceConfirmDialog } from './dialogs/FinanceConfirmDialog'
-import { FinanceTagDialog } from './dialogs/FinanceTagDialog'
 import { FinanceTransactionDialog } from './dialogs/FinanceTransactionDialog'
 
 interface Props {
@@ -55,7 +54,6 @@ export function FinanceTransactions({
     initialTransaction ?? null
   )
   const [deleteTransaction, setDeleteTransaction] = useState<FinanceTransaction | null>(null)
-  const [quickTagType, setQuickTagType] = useState<'income' | 'expense' | null>(null)
 
   useEffect(() => {
     if (!initialTransaction) return
@@ -246,15 +244,6 @@ export function FinanceTransactions({
           if (!open) setEditTransaction(null)
         }}
         onSaved={async () => refreshAll()}
-        onCreateTagRequested={setQuickTagType}
-      />
-      <FinanceTagDialog
-        open={quickTagType !== null}
-        initialType={quickTagType ?? 'expense'}
-        onOpenChange={(open) => {
-          if (!open) setQuickTagType(null)
-        }}
-        onSaved={async () => onChanged()}
       />
       <FinanceConfirmDialog
         open={deleteTransaction !== null}

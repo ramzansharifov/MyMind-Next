@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowDownLeft, ArrowRightLeft, ArrowUpRight, LoaderCircle, Plus } from 'lucide-react'
+import { ArrowDownLeft, ArrowRightLeft, ArrowUpRight, LoaderCircle } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
@@ -24,12 +24,17 @@ import {
   getFinanceErrorMessage,
   toDateTimeLocalValue
 } from '../../lib/finance-ui'
+import { FinanceOperationTypePicker } from '../FinanceOperationTypePicker'
 import {
   FinanceButton,
   FinanceField,
   financeInputClassName,
   financeTextareaClassName
 } from '../FinancePrimitives'
+import {
+  FinanceAccountCardPicker,
+  FinanceTagCardPicker
+} from '../FinanceSelectionCards'
 
 const transactionFormSchema = z
   .object({
@@ -85,7 +90,6 @@ interface FinanceTransactionDialogProps {
   template?: FinanceTemplate | null
   onOpenChange: (open: boolean) => void
   onSaved: (transaction: FinanceTransaction) => void | Promise<void>
-  onCreateTagRequested?: (type: 'income' | 'expense') => void
 }
 
 function getDefaultValues(
@@ -168,8 +172,7 @@ function FinanceTransactionDialogContent({
   transaction,
   template,
   onOpenChange,
-  onSaved,
-  onCreateTagRequested
+  onSaved
 }: FinanceTransactionDialogProps): React.JSX.Element {
   const [isSaving, setIsSaving] = useState(false)
   const [backendError, setBackendError] = useState<string | null>(null)
@@ -229,12 +232,17 @@ function FinanceTransactionDialogContent({
   }, [destinationAccount, selectedAccount, values.amount, values.destinationAmount, values.type])
 
   function chooseType(type: FinanceUserTransactionType): void {
-    setValue('type', type, { shouldValidate: true })
-    if (type !== 'transfer') {
-      setValue('destinationAccountId', '')
-      setValue('destinationAmount', '')
-    } else {
-      setValue('tagId', '')
+    setValue('type', type, { shouldValidate: true, shouldDirty: true })
+    if (type === 'transfer') {
+      setValue('tagId', '', { shouldValidate: true })
+      return
+    }
+
+    setValue('destinationAccountId', '')
+    setValue('destinationAmount', '')
+    const selectedTag = tags.find((tag) => tag.id === values.tagId)
+    if (selectedTag && selectedTag.type !== 'both' && selectedTag.type !== type) {
+      setValue('tagId', '', { shouldValidate: true })
     }
   }
 
@@ -374,29 +382,11 @@ function FinanceTransactionDialogContent({
         }}
       >
         {!transaction && !template && (
-          <div className="grid grid-cols-3 gap-2" aria-label="Тип операции">
-            <FinanceButton
-              tone={values.type === 'income' ? 'positive' : 'neutral'}
-              onClick={() => chooseType('income')}
-            >
-              <ArrowDownLeft aria-hidden="true" className="size-4" />
-              Доход
-            </FinanceButton>
-            <FinanceButton
-              tone={values.type === 'expense' ? 'danger' : 'neutral'}
-              onClick={() => chooseType('expense')}
-            >
-              <ArrowUpRight aria-hidden="true" className="size-4" />
-              Расход
-            </FinanceButton>
-            <FinanceButton
-              tone={values.type === 'transfer' ? 'primary' : 'neutral'}
-              onClick={() => chooseType('transfer')}
-            >
-              <ArrowRightLeft aria-hidden="true" className="size-4" />
-              Перевод
-            </FinanceButton>
-          </div>
+          <FinanceOperationTypePicker
+            value={values.type ?? initialType}
+            disabled={isSaving}
+            onChange={chooseType}
+          />
         )}
 
         {accounts.length === 0 ? (
@@ -404,64 +394,69 @@ function FinanceTransactionDialogContent({
             Сначала создайте хотя бы один счёт. Для перевода нужны два счёта.
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-4 max-[560px]:grid-cols-1">
-            <FinanceField
-              label={values.type === 'transfer' ? 'Счёт списания' : 'Счёт'}
-              error={errors.accountId?.message}
-            >
-              <select {...register('accountId')} className={financeInputClassName}>
-                <option value="">Выберите счёт</option>
-                {accounts.map((account) => (
-                  <option key={account.id} value={account.id}>
-                    {account.name} · {account.currencyCode}
-                  </option>
-                ))}
-              </select>
-            </FinanceField>
+          <div className="space-y-4">
+            <fieldset>
+              <legend className="mb-1.5 text-sm font-medium text-[var(--app-text)]">
+                {values.type === 'transfer' ? 'Счёт списания' : 'Счёт'}
+              </legend>
+              <FinanceAccountCardPicker
+                accounts={accounts}
+                value={values.accountId ?? ''}
+                ariaLabel={values.type === 'transfer' ? 'Счёт списания' : 'Счёт операции'}
+                disabled={isSaving}
+                onChange={(accountId) => {
+                  setValue('accountId', accountId, { shouldValidate: true, shouldDirty: true })
+                  if (values.destinationAccountId === accountId) {
+                    setValue('destinationAccountId', '', { shouldValidate: true })
+                  }
+                }}
+              />
+              {errors.accountId?.message && (
+                <span className="mt-1.5 block text-xs text-red-300">
+                  {errors.accountId.message}
+                </span>
+              )}
+            </fieldset>
 
             {values.type === 'transfer' ? (
-              <FinanceField label="Счёт зачисления" error={errors.destinationAccountId?.message}>
-                <select {...register('destinationAccountId')} className={financeInputClassName}>
-                  <option value="">Выберите счёт</option>
-                  {accounts
-                    .filter((account) => account.id !== values.accountId)
-                    .map((account) => (
-                      <option key={account.id} value={account.id}>
-                        {account.name} · {account.currencyCode}
-                      </option>
-                    ))}
-                </select>
-              </FinanceField>
-            ) : (
-              <FinanceField label="Тег" error={errors.tagId?.message}>
-                <div className="flex gap-2">
-                  <select {...register('tagId')} className={financeInputClassName}>
-                    <option value="">Выберите тег</option>
-                    {compatibleTags.map((tag) => (
-                      <option key={tag.id} value={tag.id}>
-                        {tag.name}
-                      </option>
-                    ))}
-                  </select>
-                  {onCreateTagRequested && (
-                    <button
-                      type="button"
-                      aria-label={`Создать тег для ${values.type === 'income' ? 'дохода' : 'расхода'}`}
-                      className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] hover:text-[var(--app-accent-300)]"
-                      onClick={() =>
-                        onCreateTagRequested(values.type === 'income' ? 'income' : 'expense')
-                      }
-                    >
-                      <Plus aria-hidden="true" className="size-4" />
-                    </button>
-                  )}
-                </div>
-                {compatibleTags.length === 0 && (
-                  <span className="mt-2 block text-xs text-amber-300">
-                    Подходящих тегов пока нет. Введённые данные останутся в форме.
+              <fieldset>
+                <legend className="mb-1.5 text-sm font-medium text-[var(--app-text)]">
+                  Счёт зачисления
+                </legend>
+                <FinanceAccountCardPicker
+                  accounts={accounts.filter((account) => account.id !== values.accountId)}
+                  value={values.destinationAccountId ?? ''}
+                  ariaLabel="Счёт зачисления"
+                  disabled={isSaving}
+                  onChange={(accountId) =>
+                    setValue('destinationAccountId', accountId, {
+                      shouldValidate: true,
+                      shouldDirty: true
+                    })
+                  }
+                />
+                {errors.destinationAccountId?.message && (
+                  <span className="mt-1.5 block text-xs text-red-300">
+                    {errors.destinationAccountId.message}
                   </span>
                 )}
-              </FinanceField>
+              </fieldset>
+            ) : (
+              <fieldset>
+                <legend className="mb-1.5 text-sm font-medium text-[var(--app-text)]">Тег</legend>
+                <FinanceTagCardPicker
+                  tags={compatibleTags}
+                  value={values.tagId ?? ''}
+                  ariaLabel="Тег операции"
+                  disabled={isSaving}
+                  onChange={(tagId) =>
+                    setValue('tagId', tagId, { shouldValidate: true, shouldDirty: true })
+                  }
+                />
+                {errors.tagId?.message && (
+                  <span className="mt-1.5 block text-xs text-red-300">{errors.tagId.message}</span>
+                )}
+              </fieldset>
             )}
           </div>
         )}
@@ -474,8 +469,11 @@ function FinanceTransactionDialogContent({
           >
             <input
               {...register('amount')}
+              type="number"
+              step="any"
+              min={0}
               inputMode="decimal"
-              placeholder="0,00"
+              placeholder="0.00"
               className={financeInputClassName}
             />
           </FinanceField>
@@ -492,8 +490,11 @@ function FinanceTransactionDialogContent({
             >
               <input
                 {...register('destinationAmount')}
+                type="number"
+                step="any"
+                min={0}
                 inputMode="decimal"
-                placeholder="0,00"
+                placeholder="0.00"
                 className={financeInputClassName}
               />
             </FinanceField>

@@ -30,7 +30,7 @@ const savedTag: FinanceTagSummary = {
 }
 
 describe('FinanceTagDialog', () => {
-  it('uses cards for tag purpose and shared icon/color pickers', async () => {
+  it('uses visibly distinct purpose cards and shared icon/color pickers', async () => {
     const user = userEvent.setup()
     const onSaved = vi.fn()
     const onOpenChange = vi.fn()
@@ -55,6 +55,8 @@ describe('FinanceTagDialog', () => {
     expect(expenseCard).toHaveAttribute('aria-checked', 'true')
     expect(incomeCard).toHaveAttribute('aria-checked', 'false')
     expect(universalCard).toHaveAttribute('aria-checked', 'false')
+    expect(incomeCard).toHaveClass('border-emerald-500/18')
+    expect(universalCard).toHaveClass('border-violet-500/18')
 
     await user.click(incomeCard)
     expect(incomeCard).toHaveAttribute('aria-checked', 'true')

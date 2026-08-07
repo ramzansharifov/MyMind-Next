@@ -39,24 +39,32 @@ const tagTypeOptions = [
     label: financeTagTypeLabels.expense,
     description: 'Категории расходов',
     icon: ArrowUpRight,
-    activeClassName: 'border-red-500/35 bg-red-500/10 text-red-100',
-    iconClassName: 'bg-red-500/12 text-red-300'
+    activeClassName: 'border-red-500/40 bg-red-500/15 text-red-100 shadow-sm',
+    idleClassName: 'border-red-500/18 bg-red-500/[0.045] text-red-200/85 hover:bg-red-500/[0.08]',
+    activeIconClassName: 'bg-red-500/16 text-red-200',
+    idleIconClassName: 'bg-red-500/[0.08] text-red-300/80'
   },
   {
     value: 'income',
     label: financeTagTypeLabels.income,
     description: 'Категории доходов',
     icon: ArrowDownLeft,
-    activeClassName: 'border-emerald-500/35 bg-emerald-500/10 text-emerald-100',
-    iconClassName: 'bg-emerald-500/12 text-emerald-300'
+    activeClassName: 'border-emerald-500/40 bg-emerald-500/15 text-emerald-100 shadow-sm',
+    idleClassName:
+      'border-emerald-500/18 bg-emerald-500/[0.045] text-emerald-200/85 hover:bg-emerald-500/[0.08]',
+    activeIconClassName: 'bg-emerald-500/16 text-emerald-200',
+    idleIconClassName: 'bg-emerald-500/[0.08] text-emerald-300/80'
   },
   {
     value: 'both',
     label: financeTagTypeLabels.both,
     description: 'Доходы и расходы',
     icon: ArrowRightLeft,
-    activeClassName: 'border-violet-500/35 bg-violet-500/10 text-violet-100',
-    iconClassName: 'bg-violet-500/12 text-violet-300'
+    activeClassName: 'border-violet-500/40 bg-violet-500/15 text-violet-100 shadow-sm',
+    idleClassName:
+      'border-violet-500/18 bg-violet-500/[0.045] text-violet-200/85 hover:bg-violet-500/[0.08]',
+    activeIconClassName: 'bg-violet-500/16 text-violet-200',
+    idleIconClassName: 'bg-violet-500/[0.08] text-violet-300/80'
   }
 ] as const satisfies ReadonlyArray<{
   value: FinanceTagType
@@ -64,7 +72,9 @@ const tagTypeOptions = [
   description: string
   icon: LucideIcon
   activeClassName: string
-  iconClassName: string
+  idleClassName: string
+  activeIconClassName: string
+  idleIconClassName: string
 }>
 
 interface FinanceTagDialogProps {
@@ -164,21 +174,17 @@ function FinanceTagDialogContent({
                       aria-checked={selected}
                       disabled={isSaving}
                       className={cn(
-                        'min-h-24 rounded-xl border p-3 text-left outline-none transition-[background-color,border-color,box-shadow,transform]',
+                        'min-h-24 rounded-xl border p-3 text-left outline-none transition-[background-color,border-color,box-shadow]',
                         'focus-visible:ring-2 focus-visible:ring-violet-500/35',
                         'disabled:cursor-not-allowed disabled:opacity-45',
-                        selected
-                          ? `${option.activeClassName} shadow-sm`
-                          : 'border-[var(--app-border)] bg-[var(--app-field)] text-[var(--app-text)] hover:border-[var(--app-border-strong)] hover:bg-[var(--app-field-hover)]'
+                        selected ? option.activeClassName : option.idleClassName
                       )}
                       onClick={() => field.onChange(option.value)}
                     >
                       <span
                         className={cn(
                           'flex size-8 items-center justify-center rounded-lg',
-                          selected
-                            ? option.iconClassName
-                            : 'bg-[var(--app-control)] text-[var(--app-muted)]'
+                          selected ? option.activeIconClassName : option.idleIconClassName
                         )}
                       >
                         <Icon aria-hidden="true" className="size-4" />
