@@ -3,7 +3,7 @@ import {
   ArrowRightLeft,
   ArrowUpRight,
   BarChart3,
-  CalendarClock,
+  Copy,
   Gauge,
   Home,
   Landmark,
@@ -51,7 +51,7 @@ type FinanceWorkspacePage = FinancePageId | 'templates' | 'limits'
 const tabs: Array<{ id: FinanceWorkspacePage; label: string; icon: typeof Home }> = [
   { id: 'home', label: 'Главная', icon: Home },
   { id: 'transactions', label: 'Транзакции', icon: ReceiptText },
-  { id: 'templates', label: 'Шаблоны', icon: CalendarClock },
+  { id: 'templates', label: 'Шаблоны', icon: Copy },
   { id: 'limits', label: 'Лимиты', icon: Gauge },
   { id: 'accounts', label: 'Счета', icon: Landmark },
   { id: 'tags', label: 'Теги', icon: Tags },
@@ -263,30 +263,12 @@ export function FinancePage({
         {activePage === 'home' && (
           <FinanceHome
             dashboard={dashboard}
+            tags={tags}
             onOpenPage={setActivePage}
             onOpenAccount={(id) => {
               setSelectedAccountId(id)
               setActivePage('accounts')
             }}
-            onUseTemplate={(template) => {
-              setTemplateInitial(template)
-              setActivePage('templates')
-            }}
-            onSnoozeTemplate={(template) =>
-              void (async () => {
-                await financeClient.snoozeTemplate({
-                  id: template.id,
-                  nextOccurrenceAt: Date.now() + 86_400_000
-                })
-                await load()
-              })()
-            }
-            onSkipTemplate={(template) =>
-              void (async () => {
-                await financeClient.skipTemplate({ id: template.id })
-                await load()
-              })()
-            }
             onEditTransaction={(transaction) => {
               setTransactionsInitial(transaction)
               setActivePage('transactions')
