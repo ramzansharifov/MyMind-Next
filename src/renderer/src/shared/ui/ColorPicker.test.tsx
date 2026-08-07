@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -24,9 +24,8 @@ describe('ColorPicker', () => {
 
     await user.click(screen.getByRole('button', { name: 'Цвет счёта' }))
     const customColor = screen.getByLabelText('Цвет счёта', { selector: 'input[type="color"]' })
-    await user.clear(customColor)
-    await user.type(customColor, '#123456')
+    fireEvent.change(customColor, { target: { value: '#123456' } })
 
-    expect(onChange).toHaveBeenCalled()
+    expect(onChange).toHaveBeenCalledWith('#123456')
   })
 })
