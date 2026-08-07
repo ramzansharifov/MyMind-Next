@@ -238,6 +238,7 @@ const financeLimitBaseSchema = z
     currencyCode: financeCurrencyCodeSchema,
     scopeType: financeLimitScopeTypeSchema,
     accountId: financeSafeIdSchema.nullable(),
+    accountIds: z.array(financeSafeIdSchema).max(100).optional(),
     tagId: financeSafeIdSchema.nullable(),
     periodType: financeLimitPeriodTypeSchema,
     startsAt: financeTimestampSchema,
@@ -266,6 +267,14 @@ const financeLimitBaseSchema = z
         message: requiresTag
           ? 'Для этой области действия требуется тег'
           : 'Тег не должен быть выбран для этой области действия'
+      })
+    }
+
+    if (input.accountIds && new Set(input.accountIds).size !== input.accountIds.length) {
+      context.addIssue({
+        code: 'custom',
+        path: ['accountIds'],
+        message: 'Счета лимита не должны повторяться'
       })
     }
 
