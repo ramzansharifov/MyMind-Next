@@ -71,10 +71,11 @@ export function ColorPicker({
 
       <Popover.Portal>
         <Popover.Content
+          data-color-picker-content
           align="end"
           sideOffset={8}
           className={cn(
-            'z-[90] w-60 rounded-xl border border-(--app-border)',
+            'z-[120] w-60 rounded-xl border border-(--app-border)',
             'bg-(--app-menu) p-3 text-(--app-text)',
             'shadow-[var(--app-shadow-menu)] outline-none'
           )}
