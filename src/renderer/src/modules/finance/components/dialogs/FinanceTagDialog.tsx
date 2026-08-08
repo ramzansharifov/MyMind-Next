@@ -24,6 +24,12 @@ import { financeTagTypeLabels, getFinanceErrorMessage } from '../../lib/finance-
 import { FinanceButton, FinanceField, financeInputClassName } from '../FinancePrimitives'
 import { FinanceIconPicker } from '../FinanceIconPicker'
 
+const DEFAULT_TAG_COLORS: Record<FinanceTagType, string> = {
+  expense: '#f87171',
+  income: '#34d399',
+  both: '#a78bfa'
+}
+
 const tagFormSchema = z.object({
   name: z.string().trim().min(1, 'Введите название').max(120),
   type: z.enum(FINANCE_TAG_TYPES),
@@ -102,7 +108,7 @@ function FinanceTagDialogContent({
       name: tag?.name ?? '',
       type: tag?.type ?? initialType,
       icon: tag?.icon ?? 'tag',
-      color: tag?.color ?? '#a78bfa'
+      color: tag?.color ?? DEFAULT_TAG_COLORS[initialType]
     }
   })
 
@@ -112,7 +118,12 @@ function FinanceTagDialogContent({
     try {
       const saved = tag
         ? await financeClient.updateTag({ id: tag.id, ...values })
-        : await financeClient.createTag(values)
+        : await financeClient.createTag({
+            name: values.name,
+            type: values.type,
+            icon: values.icon,
+            color: DEFAULT_TAG_COLORS[values.type]
+          })
       await onSaved(saved)
       onOpenChange(false)
     } catch (reason) {
@@ -203,7 +214,7 @@ function FinanceTagDialogContent({
           ) : null}
         </fieldset>
 
-        <div className="grid grid-cols-2 gap-4 max-[520px]:grid-cols-1">
+        <div className={tag ? 'grid grid-cols-2 gap-4 max-[520px]:grid-cols-1' : ''}>
           <div className="text-sm text-[var(--app-text)]">
             <span className="mb-1.5 block font-medium">Иконка</span>
             <Controller
@@ -224,24 +235,26 @@ function FinanceTagDialogContent({
             )}
           </div>
 
-          <div className="text-sm text-[var(--app-text)]">
-            <span className="mb-1.5 block font-medium">Цвет</span>
-            <Controller
-              control={control}
-              name="color"
-              render={({ field }) => (
-                <ColorPicker
-                  value={field.value}
-                  ariaLabel="Цвет тега"
-                  disabled={isSaving}
-                  onChange={field.onChange}
-                />
+          {tag && (
+            <div className="text-sm text-[var(--app-text)]">
+              <span className="mb-1.5 block font-medium">Цвет</span>
+              <Controller
+                control={control}
+                name="color"
+                render={({ field }) => (
+                  <ColorPicker
+                    value={field.value}
+                    ariaLabel="Цвет тега"
+                    disabled={isSaving}
+                    onChange={field.onChange}
+                  />
+                )}
+              />
+              {errors.color?.message && (
+                <span className="mt-1.5 block text-xs text-red-300">{errors.color.message}</span>
               )}
-            />
-            {errors.color?.message && (
-              <span className="mt-1.5 block text-xs text-red-300">{errors.color.message}</span>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {backendError && (
