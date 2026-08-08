@@ -49,40 +49,34 @@ function createFixture(): {
     name: 'Наличные',
     currencyCode: 'TJS',
     initialBalanceMinor: 10_000,
-    icon: 'banknote',
-    color: '#22c55e'
+    icon: 'banknote'
   })
   const card = financeService.createAccount({
     name: 'Карта',
     currencyCode: 'TJS',
     initialBalanceMinor: 0,
-    icon: 'credit-card',
-    color: '#8b5cf6'
+    icon: 'credit-card'
   })
   const usd = financeService.createAccount({
     name: 'USD',
     currencyCode: 'USD',
     initialBalanceMinor: 0,
-    icon: 'wallet',
-    color: '#3b82f6'
+    icon: 'wallet'
   })
   const incomeTag = financeService.createTag({
     name: 'Зарплата',
     type: 'income',
-    icon: 'briefcase',
-    color: '#22c55e'
+    icon: 'briefcase'
   })
   const expenseTag = financeService.createTag({
     name: 'Еда',
     type: 'expense',
-    icon: 'utensils',
-    color: '#ef4444'
+    icon: 'utensils'
   })
   const bothTag = financeService.createTag({
     name: 'Другое',
     type: 'both',
-    icon: 'tag',
-    color: '#f59e0b'
+    icon: 'tag'
   })
   return { cash, card, usd, incomeTag, expenseTag, bothTag }
 }
@@ -113,10 +107,26 @@ describe('finance repository and service', () => {
       name: 'Пустой',
       currencyCode: 'TJS',
       initialBalanceMinor: 0,
-      icon: 'wallet',
-      color: '#64748b'
+      icon: 'wallet'
     })
     expect(financeService.deleteAccount({ id: empty.id })).toBe(true)
+  })
+
+  it('derives tag colors from their purpose and snapshots the same system color', () => {
+    const fixture = createFixture()
+    expect(fixture.incomeTag.color).toBe('#34d399')
+    expect(fixture.expenseTag.color).toBe('#f87171')
+    expect(fixture.bothTag.color).toBe('#fbbf24')
+
+    const transaction = financeService.createTransaction({
+      type: 'expense',
+      accountId: fixture.cash.id,
+      amountMinor: 100,
+      tagId: fixture.bothTag.id,
+      occurredAt: 100,
+      comment: ''
+    })
+    expect(transaction.tagColorSnapshot).toBe('#fbbf24')
   })
 
   it('creates, changes and deletes an atomic same-currency transfer', () => {
@@ -208,8 +218,7 @@ describe('finance repository and service', () => {
     const unused = financeService.createTag({
       name: 'Временный',
       type: 'expense',
-      icon: 'tag',
-      color: '#64748b'
+      icon: 'tag'
     })
     financeService.createLimit({
       amountMinor: 1_000,
