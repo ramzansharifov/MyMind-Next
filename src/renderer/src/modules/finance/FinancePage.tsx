@@ -9,7 +9,8 @@ import {
   Landmark,
   Plus,
   ReceiptText,
-  Tags
+  Tags,
+  Wallet
 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 
@@ -156,9 +157,17 @@ export function FinancePage({
       <div data-finance-workspace-container className="mx-auto w-full max-w-[1240px]">
         <header data-finance-hero className="mb-5">
           <div className="flex items-center justify-between gap-6 max-[820px]:flex-col max-[820px]:items-start">
-            <h1 className="text-3xl font-semibold tracking-[-0.035em] text-[var(--app-text)]">
-              Финансы
-            </h1>
+            <div className="flex min-w-0 items-center gap-3">
+              <span
+                data-finance-module-icon
+                className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-violet-300"
+              >
+                <Wallet aria-hidden="true" className="size-5" />
+              </span>
+              <h1 className="text-3xl font-semibold tracking-[-0.035em] text-[var(--app-text)]">
+                Финансы
+              </h1>
+            </div>
 
             {activePage !== 'reports' && (
               <div
