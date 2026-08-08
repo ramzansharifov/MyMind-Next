@@ -1,0 +1,9 @@
+[data-app-titlebar] {
+  -webkit-app-region: drag;
+  user-select: none;
+}
+
+[data-app-titlebar] button,
+[data-app-titlebar] [data-titlebar-controls] {
+  -webkit-app-region: no-drag;
+}

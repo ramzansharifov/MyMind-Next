@@ -134,9 +134,14 @@ function createWindow(): void {
   const window = new BrowserWindow({
     width: 900,
     height: 670,
+    minWidth: 760,
+    minHeight: 560,
     show: false,
+    frame: false,
+    title: 'MyMind',
+    backgroundColor: '#0b0d10',
     autoHideMenuBar: true,
-    ...(process.platform === 'linux' ? { icon } : {}),
+    icon,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,
@@ -147,9 +152,20 @@ function createWindow(): void {
 
   mainWindow = window
 
+  const sendWindowState = (): void => {
+    if (!window.isDestroyed() && !window.webContents.isDestroyed()) {
+      window.webContents.send(IPC_CHANNELS.windowStateChanged, {
+        maximized: window.isMaximized()
+      })
+    }
+  }
+
   window.on('ready-to-show', () => {
     window.show()
   })
+
+  window.on('maximize', sendWindowState)
+  window.on('unmaximize', sendWindowState)
 
   window.on('close', (event) => {
     if (!shutdownCoordinator.isApproved()) {

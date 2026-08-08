@@ -22,12 +22,39 @@ import {
   type StudyMaterial,
   type StudyNode
 } from '../shared/contracts/study'
-import { IPC_CHANNELS, type MyMindApi, type SystemHealth } from '../shared/contracts/system'
+import {
+  IPC_CHANNELS,
+  type MyMindApi,
+  type SystemHealth,
+  type SystemWindowState
+} from '../shared/contracts/system'
 import { parseShutdownRequest } from './shutdown-request'
 
 const api: MyMindApi = {
   system: {
     getHealth: () => ipcRenderer.invoke(IPC_CHANNELS.systemHealth) as Promise<SystemHealth>,
+
+    getWindowState: () =>
+      ipcRenderer.invoke(IPC_CHANNELS.windowGetState) as Promise<SystemWindowState>,
+
+    onWindowStateChanged: (listener) => {
+      const handler = (_event: Electron.IpcRendererEvent, state: SystemWindowState): void => {
+        listener(state)
+      }
+
+      ipcRenderer.on(IPC_CHANNELS.windowStateChanged, handler)
+
+      return () => {
+        ipcRenderer.removeListener(IPC_CHANNELS.windowStateChanged, handler)
+      }
+    },
+
+    minimizeWindow: () => ipcRenderer.invoke(IPC_CHANNELS.windowMinimize) as Promise<void>,
+
+    toggleMaximizeWindow: () =>
+      ipcRenderer.invoke(IPC_CHANNELS.windowToggleMaximize) as Promise<SystemWindowState>,
+
+    closeWindow: () => ipcRenderer.invoke(IPC_CHANNELS.windowClose) as Promise<void>,
 
     onShutdownRequested: (listener) => {
       const handler = (_event: Electron.IpcRendererEvent, rawRequest: unknown): void => {

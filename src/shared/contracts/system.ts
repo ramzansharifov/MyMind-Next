@@ -7,12 +7,21 @@ import type { StudyApi } from './study'
 export const IPC_CHANNELS = {
   systemHealth: 'system:health',
   shutdownRequested: 'system:shutdown-requested',
-  respondToShutdown: 'system:respond-to-shutdown'
+  respondToShutdown: 'system:respond-to-shutdown',
+  windowGetState: 'system:window-get-state',
+  windowStateChanged: 'system:window-state-changed',
+  windowMinimize: 'system:window-minimize',
+  windowToggleMaximize: 'system:window-toggle-maximize',
+  windowClose: 'system:window-close'
 } as const
 
 export interface SystemHealth {
   database: 'ready'
   sqliteVersion: string
+}
+
+export interface SystemWindowState {
+  maximized: boolean
 }
 
 export interface ShutdownRequest {
@@ -26,6 +35,11 @@ export interface ShutdownResponse extends ShutdownRequest {
 export interface MyMindApi {
   system: {
     getHealth(): Promise<SystemHealth>
+    getWindowState(): Promise<SystemWindowState>
+    onWindowStateChanged(listener: (state: SystemWindowState) => void): () => void
+    minimizeWindow(): Promise<void>
+    toggleMaximizeWindow(): Promise<SystemWindowState>
+    closeWindow(): Promise<void>
     onShutdownRequested(listener: (request: ShutdownRequest) => void): () => void
     respondToShutdown(response: ShutdownResponse): Promise<void>
   }
