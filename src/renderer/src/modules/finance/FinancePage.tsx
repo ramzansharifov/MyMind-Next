@@ -155,18 +155,10 @@ export function FinancePage({
     <main className="h-full overflow-y-auto bg-[var(--app-workspace)] px-8 py-7 max-[700px]:px-4 max-[700px]:py-5">
       <div data-finance-workspace-container className="mx-auto w-full max-w-[1240px]">
         <header data-finance-hero className="mb-5">
-          <div className="flex items-start justify-between gap-6 max-[820px]:flex-col">
-            <div className="min-w-0">
-              <p className="text-[11px] font-semibold tracking-[0.12em] text-violet-300 uppercase">
-                Финансы
-              </p>
-              <h1 className="mt-1 text-3xl font-semibold tracking-[-0.035em] text-[var(--app-text)]">
-                Финансы
-              </h1>
-              <p className="mt-1 max-w-xl text-sm leading-6 text-[var(--app-muted)]">
-                Управляйте счетами, операциями и бюджетом в одном месте.
-              </p>
-            </div>
+          <div className="flex items-center justify-between gap-6 max-[820px]:flex-col max-[820px]:items-start">
+            <h1 className="text-3xl font-semibold tracking-[-0.035em] text-[var(--app-text)]">
+              Финансы
+            </h1>
 
             {activePage !== 'reports' && (
               <div
@@ -219,7 +211,7 @@ export function FinancePage({
 
           <nav
             data-finance-navigation
-            className="flex gap-1 overflow-x-auto rounded-2xl border border-[var(--app-border)] p-1.5"
+            className="mt-4 flex gap-1 overflow-x-auto rounded-2xl border border-[var(--app-border)] p-1.5"
             aria-label="Навигация финансового модуля"
           >
             {tabs.map(({ id, label, icon: Icon }) => (
