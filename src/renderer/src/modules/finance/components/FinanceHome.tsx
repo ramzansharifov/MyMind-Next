@@ -1,15 +1,8 @@
-import {
-  CalendarClock,
-  ChevronRight,
-  Gauge,
-  Landmark,
-  Plus,
-  ReceiptText
-} from 'lucide-react'
+import { ChevronRight, Gauge, Landmark, Plus, ReceiptText } from 'lucide-react'
 
 import type {
   FinanceDashboard,
-  FinanceTemplate,
+  FinanceTagSummary,
   FinanceTransaction
 } from '../../../../../shared/contracts/finance'
 import { formatMoneyMinor } from '../../../../../shared/finance-money'
@@ -20,21 +13,17 @@ import { FinanceTransactionList } from './FinanceTransactionList'
 
 interface Props {
   dashboard: FinanceDashboard
+  tags: FinanceTagSummary[]
   onOpenPage: (page: 'accounts' | 'transactions' | 'templates' | 'limits') => void
   onOpenAccount: (accountId: string) => void
-  onUseTemplate: (template: FinanceTemplate) => void
-  onSnoozeTemplate: (template: FinanceTemplate) => void
-  onSkipTemplate: (template: FinanceTemplate) => void
   onEditTransaction: (transaction: FinanceTransaction) => void
 }
 
 export function FinanceHome({
   dashboard,
+  tags,
   onOpenPage,
   onOpenAccount,
-  onUseTemplate,
-  onSnoozeTemplate,
-  onSkipTemplate,
   onEditTransaction
 }: Props): React.JSX.Element {
   return (
@@ -156,25 +145,28 @@ export function FinanceHome({
         </div>
       </FinanceSurface>
 
-      <div className="grid grid-cols-2 gap-4 max-[900px]:grid-cols-1">
-        <FinanceSurface className="overflow-hidden">
-          <div className="border-b border-[var(--app-border)] px-5 py-3">
-            <SectionHeader
-              title="Действующие лимиты"
-              icon={<Gauge aria-hidden="true" className="size-5" />}
-              actionLabel="Управлять"
-              onAction={() => onOpenPage('limits')}
-            />
-          </div>
-          {dashboard.limits.length === 0 ? (
-            <div className="p-5 text-sm text-[var(--app-muted)]">Активных лимитов пока нет.</div>
-          ) : (
-            <div className="divide-y divide-[var(--app-border)]">
-              {dashboard.limits.slice(0, 5).map((limit) => (
-                <div key={limit.id} className="p-4">
+      <FinanceSurface className="overflow-hidden">
+        <div className="border-b border-[var(--app-border)] px-5 py-3">
+          <SectionHeader
+            title="Действующие лимиты"
+            icon={<Gauge aria-hidden="true" className="size-5" />}
+            actionLabel="Управлять"
+            onAction={() => onOpenPage('limits')}
+          />
+        </div>
+        {dashboard.limits.length === 0 ? (
+          <div className="p-5 text-sm text-[var(--app-muted)]">Активных лимитов пока нет.</div>
+        ) : (
+          <div className="grid grid-cols-2 gap-px bg-[var(--app-border)] max-[760px]:grid-cols-1">
+            {dashboard.limits.slice(0, 6).map((limit) => {
+              const tag = tags.find((item) => item.id === limit.tagId)
+              return (
+                <div key={limit.id} className="bg-[var(--app-card)] p-4">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <div className="font-medium text-[var(--app-text)]">{limit.name}</div>
+                      <div className="font-medium text-[var(--app-text)]">
+                        {tag?.name ?? 'Тег не найден'}
+                      </div>
                       <div className="mt-0.5 text-xs text-[var(--app-muted)]">
                         Потрачено {formatMoneyMinor(limit.spentMinor, limit.currencyCode)} из{' '}
                         {formatMoneyMinor(limit.amountMinor, limit.currencyCode)}
@@ -201,67 +193,11 @@ export function FinanceHome({
                     <span>{limit.daysRemaining} дн.</span>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </FinanceSurface>
-
-        <FinanceSurface className="overflow-hidden">
-          <div className="border-b border-[var(--app-border)] px-5 py-3">
-            <SectionHeader
-              title="Предстоящие операции"
-              icon={<CalendarClock aria-hidden="true" className="size-5" />}
-              actionLabel="Шаблоны"
-              onAction={() => onOpenPage('templates')}
-            />
+              )
+            })}
           </div>
-          {dashboard.upcomingTemplates.length === 0 ? (
-            <div className="p-5 text-sm text-[var(--app-muted)]">
-              Нет ближайших регулярных операций.
-            </div>
-          ) : (
-            <div className="divide-y divide-[var(--app-border)]">
-              {dashboard.upcomingTemplates.slice(0, 5).map((template) => (
-                <div key={template.id} className="p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-300">
-                      <CalendarClock className="size-4" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate font-medium text-[var(--app-text)]">
-                        {template.name}
-                      </div>
-                      <div className="mt-0.5 text-xs text-[var(--app-muted)]">
-                        {template.nextOccurrenceAt
-                          ? new Date(template.nextOccurrenceAt).toLocaleString('ru-RU', {
-                              dateStyle: 'medium',
-                              timeStyle: 'short'
-                            })
-                          : 'Без даты'}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <FinanceButton
-                      size="sm"
-                      tone="primary"
-                      onClick={() => onUseTemplate(template)}
-                    >
-                      Создать
-                    </FinanceButton>
-                    <FinanceButton size="sm" onClick={() => onSnoozeTemplate(template)}>
-                      Отложить
-                    </FinanceButton>
-                    <FinanceButton size="sm" onClick={() => onSkipTemplate(template)}>
-                      Пропустить
-                    </FinanceButton>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </FinanceSurface>
-      </div>
+        )}
+      </FinanceSurface>
 
       <FinanceSurface className="overflow-hidden">
         <div className="border-b border-[var(--app-border)] px-5 py-3">

@@ -75,16 +75,11 @@ const incomeTag: FinanceTagSummary = {
 
 const savedLimit: FinanceLimitStatus = {
   id: 'limit-food',
-  name: 'Еда на месяц',
   amountMinor: 100_000,
   currencyCode: 'TJS',
-  scopeType: 'account-tag',
-  accountId: cash.id,
   accountIds: [cash.id, card.id],
   tagId: expenseTag.id,
   periodType: 'month',
-  startsAt: 0,
-  endsAt: null,
   warningPercent: 80,
   state: 'active',
   createdAt: 1,
@@ -120,6 +115,7 @@ describe('FinanceLimitDialog', () => {
       />
     )
 
+    expect(screen.queryByText('Название')).not.toBeInTheDocument()
     expect(screen.queryByText('Дата начала')).not.toBeInTheDocument()
     expect(screen.queryByText('Область действия')).not.toBeInTheDocument()
     expect(screen.queryByText('Собственный диапазон')).not.toBeInTheDocument()
@@ -146,7 +142,7 @@ describe('FinanceLimitDialog', () => {
     expect(screen.getByLabelText('Валюта лимита')).toHaveTextContent('USD')
   })
 
-  it('shows All accounts only when every account uses one currency and derives currency automatically', async () => {
+  it('uses the selected tag as the only limit identity and derives currency automatically', async () => {
     const user = userEvent.setup()
 
     render(
@@ -162,24 +158,19 @@ describe('FinanceLimitDialog', () => {
     const allAccounts = screen.getByRole('checkbox', { name: 'Все счета, TJS' })
     expect(allAccounts).toHaveAttribute('aria-checked', 'true')
     expect(screen.getByLabelText('Валюта лимита')).toHaveTextContent('TJS')
+    expect(screen.queryByRole('textbox', { name: 'Название' })).not.toBeInTheDocument()
 
-    await user.type(screen.getByRole('textbox', { name: 'Название' }), 'Еда на месяц')
     await user.click(screen.getByRole('radio', { name: 'Еда' }))
     await user.type(screen.getByRole('spinbutton', { name: 'Сумма' }), '1000')
     await user.click(screen.getByRole('button', { name: 'Создать лимит' }))
 
     await waitFor(() =>
       expect(mocks.createLimit).toHaveBeenCalledWith({
-        name: 'Еда на месяц',
         amountMinor: 100_000,
         currencyCode: 'TJS',
-        scopeType: 'tag',
-        accountId: null,
         accountIds: [],
         tagId: 'food',
         periodType: 'month',
-        startsAt: 0,
-        endsAt: null,
         warningPercent: 80
       })
     )

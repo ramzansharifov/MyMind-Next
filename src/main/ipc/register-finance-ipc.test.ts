@@ -47,11 +47,7 @@ vi.mock('../services/finance.service', () => ({
     listTemplates: vi.fn(),
     createTemplate: vi.fn(),
     updateTemplate: vi.fn(),
-    setTemplateState: vi.fn(),
     deleteTemplate: vi.fn(),
-    useTemplate: vi.fn(),
-    snoozeTemplate: vi.fn(),
-    skipTemplate: vi.fn(),
     getDashboard: mocks.getDashboard,
     getReport: vi.fn()
   }

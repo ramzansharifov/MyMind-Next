@@ -3,11 +3,8 @@ import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqli
 import type {
   FinanceIconName,
   FinanceLimitPeriodType,
-  FinanceLimitScopeType,
   FinanceLimitState,
   FinanceTagType,
-  FinanceTemplateScheduleType,
-  FinanceTemplateState,
   FinanceTransactionType,
   FinanceUserTransactionType
 } from '../../../shared/contracts/finance'
@@ -84,17 +81,10 @@ export const financeTransactionTemplates = sqliteTable(
     sourceAmountMinor: integer('source_amount_minor').notNull(),
     destinationAmountMinor: integer('destination_amount_minor'),
     comment: text('comment').notNull().default(''),
-    scheduleType: text('schedule_type').$type<FinanceTemplateScheduleType>().notNull(),
-    scheduleInterval: integer('schedule_interval').notNull().default(1),
-    nextOccurrenceAt: integer('next_occurrence_at', { mode: 'timestamp_ms' }),
-    reminderEnabled: integer('reminder_enabled', { mode: 'boolean' }).notNull().default(false),
-    state: text('state').$type<FinanceTemplateState>().notNull().default('active'),
-    lastUsedAt: integer('last_used_at', { mode: 'timestamp_ms' }),
     createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
     updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull()
   },
   (table) => [
-    index('finance_templates_state_next_idx').on(table.state, table.nextOccurrenceAt),
     index('finance_templates_type_idx').on(table.type),
     index('finance_templates_source_account_idx').on(table.sourceAccountId),
     index('finance_templates_destination_account_idx').on(table.destinationAccountId),
@@ -154,10 +144,10 @@ export const financeLimits = sqliteTable(
   'finance_limits',
   {
     id: text('id').primaryKey(),
-    name: text('name').notNull(),
     amountMinor: integer('amount_minor').notNull(),
     currencyCode: text('currency_code').notNull(),
-    scopeType: text('scope_type').$type<FinanceLimitScopeType>().notNull(),
+    // Legacy columns are retained only so existing databases can migrate without rebuilding FKs.
+    scopeType: text('scope_type').notNull(),
     accountId: text('account_id').references(() => financeAccounts.id, { onDelete: 'cascade' }),
     tagId: text('tag_id').references(() => financeTags.id, { onDelete: 'cascade' }),
     periodType: text('period_type').$type<FinanceLimitPeriodType>().notNull(),

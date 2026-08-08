@@ -13,23 +13,13 @@ import {
 type FinanceLimitWriteInput = CreateFinanceLimitInput | UpdateFinanceLimitInput
 export type FinanceLimitWithAccounts = FinanceLimit & { accountIds: string[] }
 
-function uniqueAccountIds(input: FinanceLimitWriteInput): string[] {
-  const requested = input.accountIds ?? (input.accountId ? [input.accountId] : [])
-  return [...new Set(requested)]
-}
-
 export function normalizeFinanceLimitInput<T extends FinanceLimitWriteInput>(input: T): T {
-  if (!input.tagId) {
-    throw new Error('Лимит расходов должен быть привязан к тегу')
-  }
-
   const tag = getFinanceTag(input.tagId)
   if (tag.type === 'income') {
     throw new Error('Лимит расходов нельзя связать с доходным тегом')
   }
 
-  const accountIds = uniqueAccountIds(input)
-  const periodType = input.periodType === 'custom' ? 'month' : input.periodType
+  const accountIds = [...new Set(input.accountIds)]
 
   if (accountIds.length === 0) {
     const accounts = listFinanceAccounts()
@@ -47,12 +37,7 @@ export function normalizeFinanceLimitInput<T extends FinanceLimitWriteInput>(inp
     return {
       ...input,
       currencyCode: currencies[0],
-      scopeType: 'tag',
-      accountId: null,
-      accountIds: [],
-      startsAt: 0,
-      endsAt: null,
-      periodType
+      accountIds: []
     }
   }
 
@@ -65,12 +50,7 @@ export function normalizeFinanceLimitInput<T extends FinanceLimitWriteInput>(inp
   return {
     ...input,
     currencyCode: currencies[0],
-    scopeType: 'account-tag',
-    accountId: accountIds[0],
-    accountIds,
-    startsAt: 0,
-    endsAt: null,
-    periodType
+    accountIds
   }
 }
 
@@ -88,15 +68,14 @@ export function syncFinanceLimitAccounts(limitId: string, accountIds: readonly s
   }
 }
 
-export function getFinanceLimitAccountIds(limitId: string, fallbackAccountId: string | null): string[] {
+export function getFinanceLimitAccountIds(limitId: string): string[] {
   const rows = getSqlite()
     .prepare(
       'SELECT account_id FROM finance_limit_accounts WHERE limit_id = ? ORDER BY account_id ASC'
     )
     .all(limitId) as Array<{ account_id: string }>
 
-  if (rows.length > 0) return rows.map((row) => row.account_id)
-  return fallbackAccountId ? [fallbackAccountId] : []
+  return rows.map((row) => row.account_id)
 }
 
 export function withFinanceLimitAccounts<T extends FinanceLimit>(
@@ -104,7 +83,6 @@ export function withFinanceLimitAccounts<T extends FinanceLimit>(
 ): T & FinanceLimitWithAccounts {
   return {
     ...limit,
-    periodType: limit.periodType === 'custom' ? 'month' : limit.periodType,
-    accountIds: getFinanceLimitAccountIds(limit.id, limit.accountId)
+    accountIds: getFinanceLimitAccountIds(limit.id)
   }
 }

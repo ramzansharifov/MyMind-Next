@@ -22,6 +22,7 @@ beforeEach(() => {
   sqlite.exec(`
     DELETE FROM finance_transaction_entries;
     DELETE FROM finance_transactions;
+    DELETE FROM finance_limit_accounts;
     DELETE FROM finance_limits;
     DELETE FROM finance_transaction_templates;
     DELETE FROM finance_tags;
@@ -211,15 +212,11 @@ describe('finance repository and service', () => {
       color: '#64748b'
     })
     financeService.createLimit({
-      name: 'Временный',
       amountMinor: 1_000,
       currencyCode: 'TJS',
-      scopeType: 'tag',
-      accountId: null,
+      accountIds: [fixture.cash.id],
       tagId: unused.id,
       periodType: 'month',
-      startsAt: 0,
-      endsAt: null,
       warningPercent: 80
     })
     expect(financeService.deleteTag({ id: unused.id })).toBe(true)
@@ -228,15 +225,11 @@ describe('finance repository and service', () => {
   it('calculates warning and exceed states without blocking expenses', () => {
     const fixture = createFixture()
     financeService.createLimit({
-      name: 'Еда',
       amountMinor: 1_000,
       currencyCode: 'TJS',
-      scopeType: 'tag',
-      accountId: null,
+      accountIds: [fixture.cash.id],
       tagId: fixture.expenseTag.id,
-      periodType: 'custom',
-      startsAt: 0,
-      endsAt: 10_000,
+      periodType: 'month',
       warningPercent: 80
     })
     financeService.createTransaction({
@@ -270,7 +263,7 @@ describe('finance repository and service', () => {
     expect(financeService.listLimits(100)[0].exceededMinor).toBe(100)
   })
 
-  it('uses a template without mutating it and keeps transactions after template deletion', () => {
+  it('uses a passive template without mutating it and keeps history after template deletion', () => {
     const fixture = createFixture()
     const template = financeService.createTemplate({
       name: 'Обед',
@@ -280,22 +273,16 @@ describe('finance repository and service', () => {
       tagId: fixture.expenseTag.id,
       sourceAmountMinor: 500,
       destinationAmountMinor: null,
-      comment: 'Шаблон',
-      scheduleType: 'monthly',
-      scheduleInterval: 1,
-      nextOccurrenceAt: 100,
-      reminderEnabled: true
+      comment: 'Шаблон'
     })
-    const transaction = financeService.useTemplate({
-      templateId: template.id,
-      transaction: {
-        type: 'expense',
-        accountId: fixture.cash.id,
-        amountMinor: 700,
-        tagId: fixture.expenseTag.id,
-        occurredAt: 100,
-        comment: 'Изменено'
-      }
+    const transaction = financeService.createTransaction({
+      type: 'expense',
+      accountId: fixture.cash.id,
+      amountMinor: 700,
+      tagId: fixture.expenseTag.id,
+      occurredAt: 100,
+      comment: 'Изменено',
+      templateId: template.id
     })
     expect(financeService.getTemplate(template.id).sourceAmountMinor).toBe(500)
     expect(transaction.templateNameSnapshot).toBe('Обед')

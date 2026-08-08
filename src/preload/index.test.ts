@@ -101,11 +101,7 @@ describe('preload API contract', () => {
       'listTemplates',
       'createTemplate',
       'updateTemplate',
-      'setTemplateState',
       'deleteTemplate',
-      'useTemplate',
-      'snoozeTemplate',
-      'skipTemplate',
       'getDashboard',
       'getReport'
     ])

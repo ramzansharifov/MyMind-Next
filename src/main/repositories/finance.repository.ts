@@ -24,19 +24,15 @@ import type {
   FinanceTransactionPage,
   SetFinanceBaseCurrencyInput,
   SetFinanceLimitStateInput,
-  SetFinanceTemplateStateInput,
-  SnoozeFinanceTemplateInput,
   UpdateFinanceAccountInput,
   UpdateFinanceLimitInput,
   UpdateFinanceTagInput,
   UpdateFinanceTemplateInput,
   UpdateFinanceTransactionInput,
-  UpsertFinanceExchangeRateInput,
-  UseFinanceTemplateInput
+  UpsertFinanceExchangeRateInput
 } from '../../shared/contracts/finance'
 import { FINANCE_RATE_SCALE, assertSafeMinor } from '../../shared/finance-money'
 import { getSqlite } from '../database/client'
-import { advanceFinanceSchedule } from '../services/finance-periods'
 
 interface SettingsRow {
   id: string
@@ -119,13 +115,12 @@ interface CountRow {
 
 interface LimitRow {
   id: string
-  name: string
   amount_minor: number
   currency_code: string
-  scope_type: FinanceLimit['scopeType']
+  scope_type: string
   account_id: string | null
   tag_id: string | null
-  period_type: FinanceLimit['periodType']
+  period_type: FinanceLimit['periodType'] | 'custom'
   starts_at: number
   ends_at: number | null
   warning_percent: number
@@ -144,12 +139,6 @@ interface TemplateRow {
   source_amount_minor: number
   destination_amount_minor: number | null
   comment: string
-  schedule_type: FinanceTemplate['scheduleType']
-  schedule_interval: number
-  next_occurrence_at: number | null
-  reminder_enabled: number
-  state: FinanceTemplate['state']
-  last_used_at: number | null
   created_at: number
   updated_at: number
 }
@@ -210,15 +199,10 @@ function mapTag(row: TagRow): FinanceTag {
 function mapLimit(row: LimitRow): FinanceLimit {
   return {
     id: row.id,
-    name: row.name,
     amountMinor: assertSafeMinor(row.amount_minor),
     currencyCode: row.currency_code,
-    scopeType: row.scope_type,
-    accountId: row.account_id,
     tagId: row.tag_id,
-    periodType: row.period_type,
-    startsAt: row.starts_at,
-    endsAt: row.ends_at,
+    periodType: row.period_type === 'custom' ? 'month' : row.period_type,
     warningPercent: row.warning_percent,
     state: row.state,
     createdAt: row.created_at,
@@ -238,12 +222,6 @@ function mapTemplate(row: TemplateRow): FinanceTemplate {
     destinationAmountMinor:
       row.destination_amount_minor === null ? null : assertSafeMinor(row.destination_amount_minor),
     comment: row.comment,
-    scheduleType: row.schedule_type,
-    scheduleInterval: row.schedule_interval,
-    nextOccurrenceAt: row.next_occurrence_at,
-    reminderEnabled: row.reminder_enabled === 1,
-    state: row.state,
-    lastUsedAt: row.last_used_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   }
@@ -1102,32 +1080,29 @@ export function getFinanceLimitRaw(id: string): FinanceLimit {
 }
 
 function writeLimit(id: string, input: CreateFinanceLimitInput | UpdateFinanceLimitInput): void {
-  if (input.accountId) getAccountRow(input.accountId)
-  if (input.tagId) {
-    const tag = getTagRow(input.tagId)
-    if (tag.type === 'income') throw new Error('Лимит расходов нельзя связать с доходным тегом')
-  }
+  const tag = getTagRow(input.tagId)
+  if (tag.type === 'income') throw new Error('Лимит расходов нельзя связать с доходным тегом')
+
   const now = Date.now()
   const state = input.state ?? 'active'
+  const accountId = input.accountIds[0] ?? null
+  const scopeType = input.accountIds.length > 0 ? 'account-tag' : 'tag'
   const existing = getSqlite().prepare('SELECT id FROM finance_limits WHERE id = ?').get(id)
 
   if (existing) {
     getSqlite()
       .prepare(
-        `UPDATE finance_limits SET name = ?, amount_minor = ?, currency_code = ?, scope_type = ?,
-          account_id = ?, tag_id = ?, period_type = ?, starts_at = ?, ends_at = ?,
+        `UPDATE finance_limits SET amount_minor = ?, currency_code = ?, scope_type = ?,
+          account_id = ?, tag_id = ?, period_type = ?, starts_at = 0, ends_at = NULL,
           warning_percent = ?, state = ?, updated_at = ? WHERE id = ?`
       )
       .run(
-        input.name,
         input.amountMinor,
         input.currencyCode,
-        input.scopeType,
-        input.accountId,
+        scopeType,
+        accountId,
         input.tagId,
         input.periodType,
-        input.startsAt,
-        input.endsAt,
         input.warningPercent,
         state,
         now,
@@ -1137,21 +1112,18 @@ function writeLimit(id: string, input: CreateFinanceLimitInput | UpdateFinanceLi
     getSqlite()
       .prepare(
         `INSERT INTO finance_limits (
-          id, name, amount_minor, currency_code, scope_type, account_id, tag_id,
+          id, amount_minor, currency_code, scope_type, account_id, tag_id,
           period_type, starts_at, ends_at, warning_percent, state, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, NULL, ?, ?, ?, ?)`
       )
       .run(
         id,
-        input.name,
         input.amountMinor,
         input.currencyCode,
-        input.scopeType,
-        input.accountId,
+        scopeType,
+        accountId,
         input.tagId,
         input.periodType,
-        input.startsAt,
-        input.endsAt,
         input.warningPercent,
         state,
         now,
@@ -1187,10 +1159,7 @@ export function deleteFinanceLimit(id: string): boolean {
 export function listFinanceTemplates(): FinanceTemplate[] {
   return (
     getSqlite()
-      .prepare(
-        `SELECT * FROM finance_transaction_templates
-         ORDER BY CASE WHEN next_occurrence_at IS NULL THEN 1 ELSE 0 END, next_occurrence_at ASC, name ASC`
-      )
+      .prepare('SELECT * FROM finance_transaction_templates ORDER BY name ASC, created_at ASC')
       .all() as TemplateRow[]
   ).map(mapTemplate)
 }
@@ -1224,18 +1193,16 @@ function writeTemplate(
   validateTemplateReferences(input)
   const sqlite = getSqlite()
   const now = Date.now()
-  const state = input.state ?? 'active'
   const existing = sqlite
-    .prepare('SELECT created_at, last_used_at FROM finance_transaction_templates WHERE id = ?')
-    .get(id) as { created_at: number; last_used_at: number | null } | undefined
+    .prepare('SELECT created_at FROM finance_transaction_templates WHERE id = ?')
+    .get(id) as { created_at: number } | undefined
 
   if (existing) {
     sqlite
       .prepare(
         `UPDATE finance_transaction_templates SET
           name = ?, type = ?, source_account_id = ?, destination_account_id = ?, tag_id = ?,
-          source_amount_minor = ?, destination_amount_minor = ?, comment = ?, schedule_type = ?,
-          schedule_interval = ?, next_occurrence_at = ?, reminder_enabled = ?, state = ?, updated_at = ?
+          source_amount_minor = ?, destination_amount_minor = ?, comment = ?, updated_at = ?
          WHERE id = ?`
       )
       .run(
@@ -1247,11 +1214,6 @@ function writeTemplate(
         input.sourceAmountMinor,
         input.destinationAmountMinor,
         input.comment,
-        input.scheduleType,
-        input.scheduleInterval,
-        input.nextOccurrenceAt,
-        input.reminderEnabled ? 1 : 0,
-        state,
         now,
         id
       )
@@ -1260,10 +1222,8 @@ function writeTemplate(
       .prepare(
         `INSERT INTO finance_transaction_templates (
           id, name, type, source_account_id, destination_account_id, tag_id,
-          source_amount_minor, destination_amount_minor, comment, schedule_type,
-          schedule_interval, next_occurrence_at, reminder_enabled, state,
-          last_used_at, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?)`
+          source_amount_minor, destination_amount_minor, comment, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .run(
         id,
@@ -1275,11 +1235,6 @@ function writeTemplate(
         input.sourceAmountMinor,
         input.destinationAmountMinor,
         input.comment,
-        input.scheduleType,
-        input.scheduleInterval,
-        input.nextOccurrenceAt,
-        input.reminderEnabled ? 1 : 0,
-        state,
         now,
         now
       )
@@ -1298,14 +1253,6 @@ export function updateFinanceTemplate(input: UpdateFinanceTemplateInput): Financ
   return getFinanceTemplate(input.id)
 }
 
-export function setFinanceTemplateState(input: SetFinanceTemplateStateInput): FinanceTemplate {
-  getTemplateRow(input.id)
-  getSqlite()
-    .prepare('UPDATE finance_transaction_templates SET state = ?, updated_at = ? WHERE id = ?')
-    .run(input.state, Date.now(), input.id)
-  return getFinanceTemplate(input.id)
-}
-
 export function deleteFinanceTemplate(id: string): boolean {
   return getSqlite().transaction(() => {
     return (
@@ -1313,56 +1260,4 @@ export function deleteFinanceTemplate(id: string): boolean {
         .changes > 0
     )
   })()
-}
-
-export function useFinanceTemplate(input: UseFinanceTemplateInput): FinanceTransaction {
-  const sqlite = getSqlite()
-  const transactionId = randomUUID()
-
-  sqlite.transaction(() => {
-    const template = getFinanceTemplate(input.templateId)
-    const transaction = {
-      ...input.transaction,
-      templateId: template.id
-    } as CreateFinanceTransactionInput
-    writeTransaction(transactionId, transaction)
-    const nextOccurrenceAt = advanceFinanceSchedule(
-      template.scheduleType,
-      template.scheduleInterval,
-      template.nextOccurrenceAt ?? input.transaction.occurredAt
-    )
-    sqlite
-      .prepare(
-        `UPDATE finance_transaction_templates SET
-          last_used_at = ?, next_occurrence_at = ?, updated_at = ? WHERE id = ?`
-      )
-      .run(Date.now(), nextOccurrenceAt, Date.now(), template.id)
-  })()
-
-  return getFinanceTransaction(transactionId)
-}
-
-export function snoozeFinanceTemplate(input: SnoozeFinanceTemplateInput): FinanceTemplate {
-  getTemplateRow(input.id)
-  getSqlite()
-    .prepare(
-      'UPDATE finance_transaction_templates SET next_occurrence_at = ?, updated_at = ? WHERE id = ?'
-    )
-    .run(input.nextOccurrenceAt, Date.now(), input.id)
-  return getFinanceTemplate(input.id)
-}
-
-export function skipFinanceTemplate(id: string): FinanceTemplate {
-  const template = getFinanceTemplate(id)
-  const nextOccurrenceAt = advanceFinanceSchedule(
-    template.scheduleType,
-    template.scheduleInterval,
-    template.nextOccurrenceAt ?? Date.now()
-  )
-  getSqlite()
-    .prepare(
-      'UPDATE finance_transaction_templates SET next_occurrence_at = ?, updated_at = ? WHERE id = ?'
-    )
-    .run(nextOccurrenceAt, Date.now(), id)
-  return getFinanceTemplate(id)
 }

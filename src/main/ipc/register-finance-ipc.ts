@@ -22,16 +22,12 @@ import {
   previewFinanceExpenseInputSchema,
   setFinanceBaseCurrencyInputSchema,
   setFinanceLimitStateInputSchema,
-  setFinanceTemplateStateInputSchema,
-  skipFinanceTemplateInputSchema,
-  snoozeFinanceTemplateInputSchema,
   updateFinanceAccountInputSchema,
   updateFinanceLimitInputSchema,
   updateFinanceTagInputSchema,
   updateFinanceTemplateInputSchema,
   updateFinanceTransactionInputSchema,
-  upsertFinanceExchangeRateInputSchema,
-  useFinanceTemplateInputSchema
+  upsertFinanceExchangeRateInputSchema
 } from '../../shared/validation/finance'
 import { financeService } from '../services/finance.service'
 import { mainOperationTracker } from '../services/main-operation-tracker'
@@ -191,29 +187,9 @@ export function registerFinanceIpcHandlers(): void {
       financeService.updateTemplate(updateFinanceTemplateInputSchema.parse(rawInput))
     )
   )
-  ipcMain.handle(FINANCE_IPC_CHANNELS.setTemplateState, (_event, rawInput: unknown) =>
-    mainOperationTracker.run(() =>
-      financeService.setTemplateState(setFinanceTemplateStateInputSchema.parse(rawInput))
-    )
-  )
   ipcMain.handle(FINANCE_IPC_CHANNELS.deleteTemplate, (_event, rawInput: unknown) =>
     mainOperationTracker.run(() =>
       financeService.deleteTemplate(deleteFinanceTemplateInputSchema.parse(rawInput))
-    )
-  )
-  ipcMain.handle(FINANCE_IPC_CHANNELS.useTemplate, (_event, rawInput: unknown) =>
-    mainOperationTracker.run(() =>
-      financeService.useTemplate(useFinanceTemplateInputSchema.parse(rawInput))
-    )
-  )
-  ipcMain.handle(FINANCE_IPC_CHANNELS.snoozeTemplate, (_event, rawInput: unknown) =>
-    mainOperationTracker.run(() =>
-      financeService.snoozeTemplate(snoozeFinanceTemplateInputSchema.parse(rawInput))
-    )
-  )
-  ipcMain.handle(FINANCE_IPC_CHANNELS.skipTemplate, (_event, rawInput: unknown) =>
-    mainOperationTracker.run(() =>
-      financeService.skipTemplate(skipFinanceTemplateInputSchema.parse(rawInput))
     )
   )
 

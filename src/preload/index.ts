@@ -220,11 +220,7 @@ const api: MyMindApi = {
     listTemplates: () => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.listTemplates),
     createTemplate: (input) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.createTemplate, input),
     updateTemplate: (input) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.updateTemplate, input),
-    setTemplateState: (input) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.setTemplateState, input),
     deleteTemplate: (input) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.deleteTemplate, input),
-    useTemplate: (input) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.useTemplate, input),
-    snoozeTemplate: (input) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.snoozeTemplate, input),
-    skipTemplate: (input) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.skipTemplate, input),
     getDashboard: (period) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.getDashboard, period),
     getReport: (filters) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.getReport, filters)
   }

@@ -26,10 +26,7 @@ const mocks = vi.hoisted(() => ({
   deleteLimit: vi.fn(),
   createTemplate: vi.fn(),
   updateTemplate: vi.fn(),
-  setTemplateState: vi.fn(),
   deleteTemplate: vi.fn(),
-  snoozeTemplate: vi.fn(),
-  skipTemplate: vi.fn(),
   setBaseCurrency: vi.fn(),
   upsertExchangeRate: vi.fn(),
   deleteExchangeRate: vi.fn(),
@@ -69,8 +66,7 @@ const emptyDashboard: FinanceDashboard = {
   operationCount: 0,
   accounts: [],
   limits: [],
-  recentTransactions: [],
-  upcomingTemplates: []
+  recentTransactions: []
 }
 
 beforeEach(() => {

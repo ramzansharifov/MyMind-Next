@@ -120,7 +120,7 @@ function getDefaultValues(
           )
         : '',
       tagId: template.tagId ?? '',
-      occurredAt: toDateTimeLocalValue(template.nextOccurrenceAt ?? Date.now()),
+      occurredAt: toDateTimeLocalValue(Date.now()),
       comment: template.comment
     }
   }
@@ -284,9 +284,7 @@ function FinanceTransactionDialogContent({
 
       const saved = transaction
         ? await financeClient.updateTransaction({ id: transaction.id, transaction: input })
-        : template
-          ? await financeClient.useTemplate({ templateId: template.id, transaction: input })
-          : await financeClient.createTransaction(input)
+        : await financeClient.createTransaction(input)
       await onSaved(saved)
       onOpenChange(false)
     } catch (reason) {
@@ -442,18 +440,21 @@ function FinanceTransactionDialogContent({
         {impact && impact.items.length > 0 && (
           <div className="space-y-2 rounded-xl border border-amber-500/20 bg-amber-500/[0.06] p-4">
             <p className="text-sm font-semibold text-amber-100">Влияние на лимиты</p>
-            {impact.items.map((item) => (
-              <div key={item.limit.id} className="text-xs leading-5 text-amber-100/85">
-                <span className="font-medium">{item.limit.name}:</span>{' '}
-                {item.convertedExpenseMinor === null
-                  ? 'невозможно рассчитать без курса валюты'
-                  : `${item.limit.usagePercent.toFixed(0)}% → ${(
-                      (item.spentAfterMinor / item.limit.amountMinor) *
-                      100
-                    ).toFixed(0)}%`}
-                {item.exceededAfterMinor > 0 && ' · лимит будет превышен'}
-              </div>
-            ))}
+            {impact.items.map((item) => {
+              const limitTag = tags.find((tag) => tag.id === item.limit.tagId)
+              return (
+                <div key={item.limit.id} className="text-xs leading-5 text-amber-100/85">
+                  <span className="font-medium">{limitTag?.name ?? 'Лимит'}:</span>{' '}
+                  {item.convertedExpenseMinor === null
+                    ? 'невозможно рассчитать без курса валюты'
+                    : `${item.limit.usagePercent.toFixed(0)}% → ${(
+                        (item.spentAfterMinor / item.limit.amountMinor) *
+                        100
+                      ).toFixed(0)}%`}
+                  {item.exceededAfterMinor > 0 && ' · лимит будет превышен'}
+                </div>
+              )
+            })}
             <p className="text-xs text-amber-200/75">
               Превышение не блокирует расход. Повторное подтверждение сохранит операцию.
             </p>

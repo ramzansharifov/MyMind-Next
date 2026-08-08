@@ -46,7 +46,7 @@ export function FinanceLimits({
           <FinanceEmptyState
             icon={<Gauge className="size-6" />}
             title="Лимитов пока нет"
-            description="Создайте лимит для нужного тега и выберите счета, расходы которых он должен учитывать."
+            description="Выберите тег, сумму и счета, расходы которых должен учитывать лимит."
           />
         ) : (
           <div className="grid grid-cols-2 gap-3 max-[780px]:grid-cols-1">
@@ -70,9 +70,11 @@ export function FinanceLimits({
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <h3 className="truncate font-medium text-[var(--app-text)]">{limit.name}</h3>
+                      <h3 className="truncate font-medium text-[var(--app-text)]">
+                        {tag?.name ?? 'Тег не найден'}
+                      </h3>
                       <p className="mt-1 truncate text-xs text-[var(--app-muted)]">
-                        {tag?.name ?? 'Тег не найден'} · {accountsLabel}
+                        {accountsLabel}
                       </p>
                       <p className="mt-1 text-xs text-[var(--app-muted)]">
                         {periodLabels[limit.periodType]} ·{' '}
@@ -161,7 +163,7 @@ export function FinanceLimits({
       <FinanceConfirmDialog
         open={deleteLimit !== null}
         title="Удалить лимит?"
-        subject={deleteLimit?.name}
+        subject={tags.find((tag) => tag.id === deleteLimit?.tagId)?.name}
         description="Транзакции, балансы и прошлые расходы не изменятся; дальнейший контроль прекратится."
         onOpenChange={(open) => !open && setDeleteLimit(null)}
         onConfirm={async () => {

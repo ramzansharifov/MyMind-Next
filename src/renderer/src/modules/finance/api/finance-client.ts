@@ -29,16 +29,12 @@ import type {
   PreviewFinanceExpenseInput,
   SetFinanceBaseCurrencyInput,
   SetFinanceLimitStateInput,
-  SetFinanceTemplateStateInput,
-  SkipFinanceTemplateInput,
-  SnoozeFinanceTemplateInput,
   UpdateFinanceAccountInput,
   UpdateFinanceLimitInput,
   UpdateFinanceTagInput,
   UpdateFinanceTemplateInput,
   UpdateFinanceTransactionInput,
-  UpsertFinanceExchangeRateInput,
-  UseFinanceTemplateInput
+  UpsertFinanceExchangeRateInput
 } from '../../../../../shared/contracts/finance'
 
 function getFinanceApi(): FinanceApi {
@@ -136,20 +132,8 @@ export const financeClient = {
   updateTemplate(input: UpdateFinanceTemplateInput): Promise<FinanceTemplate> {
     return getFinanceApi().updateTemplate(input)
   },
-  setTemplateState(input: SetFinanceTemplateStateInput): Promise<FinanceTemplate> {
-    return getFinanceApi().setTemplateState(input)
-  },
   deleteTemplate(input: DeleteFinanceTemplateInput): Promise<boolean> {
     return getFinanceApi().deleteTemplate(input)
-  },
-  useTemplate(input: UseFinanceTemplateInput): Promise<FinanceTransaction> {
-    return getFinanceApi().useTemplate(input)
-  },
-  snoozeTemplate(input: SnoozeFinanceTemplateInput): Promise<FinanceTemplate> {
-    return getFinanceApi().snoozeTemplate(input)
-  },
-  skipTemplate(input: SkipFinanceTemplateInput): Promise<FinanceTemplate> {
-    return getFinanceApi().skipTemplate(input)
   },
   getDashboard(period?: FinancePeriod): Promise<FinanceDashboard> {
     return getFinanceApi().getDashboard(period)

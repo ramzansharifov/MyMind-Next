@@ -29,16 +29,12 @@ import type {
   PreviewFinanceExpenseInput,
   SetFinanceBaseCurrencyInput,
   SetFinanceLimitStateInput,
-  SetFinanceTemplateStateInput,
-  SkipFinanceTemplateInput,
-  SnoozeFinanceTemplateInput,
   UpdateFinanceAccountInput,
   UpdateFinanceLimitInput,
   UpdateFinanceTagInput,
   UpdateFinanceTemplateInput,
   UpdateFinanceTransactionInput,
-  UpsertFinanceExchangeRateInput,
-  UseFinanceTemplateInput
+  UpsertFinanceExchangeRateInput
 } from '../../shared/contracts/finance'
 import { assertSafeMinor } from '../../shared/finance-money'
 import { getSqlite } from '../database/client'
@@ -69,16 +65,12 @@ import {
   listFinanceTransactions,
   setFinanceBaseCurrency,
   setFinanceLimitStateRaw,
-  setFinanceTemplateState,
-  skipFinanceTemplate,
-  snoozeFinanceTemplate,
   updateFinanceAccount,
   updateFinanceLimitRaw,
   updateFinanceTag,
   updateFinanceTemplate,
   updateFinanceTransaction,
-  upsertFinanceExchangeRate,
-  useFinanceTemplate
+  upsertFinanceExchangeRate
 } from '../repositories/finance.repository'
 import { convertFinanceMinor, createFinanceRateBook } from './finance-conversion'
 import {
@@ -223,14 +215,14 @@ export function getFinanceLimitStatus(id: string, at = Date.now()): FinanceLimit
 export function createFinanceLimit(input: CreateFinanceLimitInput): FinanceLimitStatus {
   const normalized = normalizeFinanceLimitInput(input)
   const limit = createFinanceLimitRaw(normalized)
-  syncFinanceLimitAccounts(limit.id, normalized.accountIds ?? [])
+  syncFinanceLimitAccounts(limit.id, normalized.accountIds)
   return calculateLimitStatus(limit, Date.now())
 }
 
 export function updateFinanceLimit(input: UpdateFinanceLimitInput): FinanceLimitStatus {
   const normalized = normalizeFinanceLimitInput(input)
   const limit = updateFinanceLimitRaw(normalized)
-  syncFinanceLimitAccounts(limit.id, normalized.accountIds ?? [])
+  syncFinanceLimitAccounts(limit.id, normalized.accountIds)
   return calculateLimitStatus(limit, Date.now())
 }
 
@@ -431,11 +423,7 @@ export function getFinanceDashboard(period = getDefaultPeriod()): FinanceDashboa
     operationCount: periodTransactions.filter((transaction) => !transaction.isSystem).length,
     accounts,
     limits: listFinanceLimitStatuses(period.to).filter((limit) => limit.state === 'active'),
-    recentTransactions: listFinanceTransactions({ limit: 8, offset: 0, includeSystem: false })
-      .items,
-    upcomingTemplates: listFinanceTemplates()
-      .filter((template) => template.state === 'active' && template.nextOccurrenceAt !== null)
-      .slice(0, 6)
+    recentTransactions: listFinanceTransactions({ limit: 8, offset: 0, includeSystem: false }).items
   }
 }
 
@@ -737,12 +725,7 @@ export const financeService = {
     createFinanceTemplate(input),
   updateTemplate: (input: UpdateFinanceTemplateInput): FinanceTemplate =>
     updateFinanceTemplate(input),
-  setTemplateState: (input: SetFinanceTemplateStateInput): FinanceTemplate =>
-    setFinanceTemplateState(input),
   deleteTemplate: (input: DeleteFinanceTemplateInput) => deleteFinanceTemplate(input.id),
-  useTemplate: (input: UseFinanceTemplateInput) => useFinanceTemplate(input),
-  snoozeTemplate: (input: SnoozeFinanceTemplateInput) => snoozeFinanceTemplate(input),
-  skipTemplate: (input: SkipFinanceTemplateInput) => skipFinanceTemplate(input.id),
   getDashboard: getFinanceDashboard,
   getReport: getFinanceReport
 }

@@ -135,7 +135,7 @@ export function FinanceTags({
                         </dl>
                         {linkedLimit && (
                           <div className="mt-3 rounded-lg border border-[var(--app-border)] bg-[var(--app-overlay-faint)] px-3 py-2 text-xs text-[var(--app-muted)]">
-                            Лимит: {linkedLimit.name} · {Math.round(linkedLimit.usagePercent)}%
+                            Лимит · {Math.round(linkedLimit.usagePercent)}%
                           </div>
                         )}
                         <div className="mt-4 flex flex-wrap gap-2 border-t border-[var(--app-border)] pt-3">
