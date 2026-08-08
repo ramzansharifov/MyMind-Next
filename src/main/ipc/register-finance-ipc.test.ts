@@ -70,7 +70,7 @@ describe('registerFinanceIpcHandlers', () => {
     )
   })
 
-  it('validates payloads and executes handlers through MainOperationTracker', () => {
+  it('validates payloads, rejects legacy color fields and executes handlers through MainOperationTracker', () => {
     registerFinanceIpcHandlers()
     const handler = mocks.handle.mock.calls.find(
       ([channel]) => channel === FINANCE_IPC_CHANNELS.createAccount
@@ -79,12 +79,12 @@ describe('registerFinanceIpcHandlers', () => {
       name: 'Карта',
       currencyCode: 'tjs',
       initialBalanceMinor: 0,
-      icon: 'credit-card',
-      color: '#8b5cf6'
+      icon: 'credit-card'
     }
     handler({}, input)
     expect(mocks.run).toHaveBeenCalled()
     expect(mocks.createAccount).toHaveBeenCalledWith({ ...input, currencyCode: 'TJS' })
+    expect(() => handler({}, { ...input, color: '#8b5cf6' })).toThrow()
     expect(() => handler({}, { ...input, initialBalanceMinor: 1.5 })).toThrow()
   })
 
