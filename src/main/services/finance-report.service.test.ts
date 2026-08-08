@@ -129,6 +129,26 @@ describe('finance report analytics', () => {
     expect(report.timeline).toHaveLength(3)
     expect(report.timeline[0]).toMatchObject({ incomeMinor: 0, expenseMinor: 0, balanceMinor: 0 })
     expect(report.timeline[2].balanceMinor).toBe(31_400)
+    expect(report.incomeByTag).toEqual([
+      expect.objectContaining({
+        tagId: fixture.incomeTag.id,
+        amountMinor: 14_200,
+        sharePercent: 100
+      })
+    ])
+    expect(report.expenseByTag).toEqual([
+      expect.objectContaining({
+        tagId: fixture.expenseTag.id,
+        amountMinor: 2_000,
+        sharePercent: 100
+      })
+    ])
+    expect(report.accountActivity).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ accountId: fixture.cash.id, incomeMinor: 5_000, expenseMinor: 2_000 }),
+        expect.objectContaining({ accountId: fixture.usd.id, incomeMinor: 9_200, expenseMinor: 0 })
+      ])
+    )
     expect(report.missingRateCurrencies).toEqual([])
 
     const manualOnly = getFinanceReportAnalytics({ ...filters, templateOnly: false })
@@ -161,7 +181,8 @@ describe('finance report analytics', () => {
       expenseMinor: 0,
       transferCount: 1,
       operationCount: 1,
-      transferVolumeMinor: 9_200
+      transferVolumeMinor: 9_200,
+      balanceEndMinor: 800
     })
     expect(report.transferFlows).toHaveLength(1)
     expect(report.transferFlows[0]).toMatchObject({
