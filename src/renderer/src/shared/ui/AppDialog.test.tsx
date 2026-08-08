@@ -21,11 +21,11 @@ function ControlledDialog({ busy = false }: { busy?: boolean }): React.JSX.Eleme
 }
 
 describe('AppDialog', () => {
-  it('renders the shared overlay, header and content shell', () => {
+  it('renders the shared overlay, compact header and content shell', () => {
     render(<ControlledDialog />)
 
     expect(screen.getByRole('dialog', { name: 'Общий диалог' })).toBeInTheDocument()
-    expect(screen.getByText('Единая оболочка')).toBeInTheDocument()
+    expect(screen.getByText('Единая оболочка')).toHaveClass('sr-only')
     expect(document.querySelector('[data-app-dialog-overlay]')).toBeInTheDocument()
     expect(document.querySelector('[data-app-dialog-header]')).toBeInTheDocument()
     expect(document.querySelector('[data-app-dialog-body]')).toBeInTheDocument()

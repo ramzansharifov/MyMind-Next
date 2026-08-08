@@ -15,11 +15,11 @@ vi.mock('../../api/finance-client', () => ({ financeClient: mocks }))
 import { FinanceTagDialog } from './FinanceTagDialog'
 
 const savedTag: FinanceTagSummary = {
-  id: 'tag-salary',
-  name: 'Зарплата',
-  type: 'income',
+  id: 'tag-universal',
+  name: 'Универсальный',
+  type: 'both',
   icon: 'briefcase',
-  color: '#34d399',
+  color: '#fbbf24',
   transactionCount: 0,
   totalAmountMinor: 0,
   averageAmountMinor: 0,
@@ -30,7 +30,7 @@ const savedTag: FinanceTagSummary = {
 }
 
 describe('FinanceTagDialog', () => {
-  it('keeps only the selected purpose card colored and uses shared icon/color pickers', async () => {
+  it('keeps only the selected purpose card colored and makes universal tags amber', async () => {
     const user = userEvent.setup()
     const onSaved = vi.fn()
     const onOpenChange = vi.fn()
@@ -48,6 +48,8 @@ describe('FinanceTagDialog', () => {
     )
 
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
+    expect(screen.queryByText('Цвет')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Цвет тега' })).not.toBeInTheDocument()
 
     const expenseCard = screen.getByRole('radio', { name: /Расходы/ })
     const incomeCard = screen.getByRole('radio', { name: /Доходы/ })
@@ -59,28 +61,24 @@ describe('FinanceTagDialog', () => {
     expect(universalCard).toHaveAttribute('aria-checked', 'false')
     expect(universalCard).toHaveClass('bg-[var(--app-workspace)]')
 
-    await user.click(incomeCard)
-    expect(incomeCard).toHaveAttribute('aria-checked', 'true')
-    expect(incomeCard).toHaveClass('border-emerald-500/45')
+    await user.click(universalCard)
+    expect(universalCard).toHaveAttribute('aria-checked', 'true')
+    expect(universalCard).toHaveClass('border-amber-500/45')
     expect(expenseCard).toHaveClass('bg-[var(--app-workspace)]')
 
     await user.click(screen.getByRole('button', { name: 'Выбрать иконку тега' }))
     expect(document.querySelector('[data-icon-picker-content]')).toHaveClass('z-[120]')
     await user.click(await screen.findByRole('menuitem', { name: 'Работа' }))
 
-    await user.click(screen.getByRole('button', { name: 'Цвет тега' }))
-    expect(document.querySelector('[data-color-picker-content]')).toHaveClass('z-[120]')
-    await user.click(screen.getByRole('button', { name: 'Цвет #34d399' }))
-
-    await user.type(screen.getByRole('textbox', { name: 'Название' }), 'Зарплата')
+    await user.type(screen.getByRole('textbox', { name: 'Название' }), 'Универсальный')
     await user.click(screen.getByRole('button', { name: 'Создать тег' }))
 
     await waitFor(() =>
       expect(mocks.createTag).toHaveBeenCalledWith({
-        name: 'Зарплата',
-        type: 'income',
+        name: 'Универсальный',
+        type: 'both',
         icon: 'briefcase',
-        color: '#34d399'
+        color: '#fbbf24'
       })
     )
     expect(onSaved).toHaveBeenCalledWith(savedTag)

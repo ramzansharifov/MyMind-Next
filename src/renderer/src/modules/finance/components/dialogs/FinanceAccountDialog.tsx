@@ -126,57 +126,38 @@ function FinanceAccountDialogContent({
           <input {...register('name')} autoFocus className={financeInputClassName} />
         </FinanceField>
 
-        <FinanceField
-          label="Валюта"
-          error={errors.currencyCode?.message}
-          hint={
-            account && account.transactionCount > 0
-              ? 'После появления операций валюту изменить нельзя.'
-              : 'Введите трёхбуквенный код, например TJS, USD или RUB.'
-          }
-        >
-          <input
-            {...register('currencyCode')}
-            maxLength={3}
-            placeholder="TJS"
-            autoCapitalize="characters"
-            autoComplete="off"
-            disabled={Boolean(account && account.transactionCount > 0)}
-            className={`${financeInputClassName} uppercase`}
-          />
-        </FinanceField>
-
-        {!account && (
-          <FinanceField label="Начальный баланс" error={errors.initialBalance?.message}>
+        <div className="grid grid-cols-3 items-start gap-3 max-[560px]:grid-cols-1">
+          <FinanceField
+            label="Валюта"
+            error={errors.currencyCode?.message}
+            hint={
+              account && account.transactionCount > 0
+                ? 'Изменить нельзя после операций.'
+                : undefined
+            }
+          >
             <input
-              {...register('initialBalance')}
-              type="number"
-              step="any"
-              inputMode="decimal"
-              className={financeInputClassName}
+              {...register('currencyCode')}
+              maxLength={3}
+              placeholder="TJS"
+              autoCapitalize="characters"
+              autoComplete="off"
+              disabled={Boolean(account && account.transactionCount > 0)}
+              className={`${financeInputClassName} uppercase`}
             />
           </FinanceField>
-        )}
 
-        <div className={account ? 'grid grid-cols-2 gap-4 max-[520px]:grid-cols-1' : ''}>
-          <div className="text-sm text-[var(--app-text)]">
-            <span className="mb-1.5 block font-medium">Иконка</span>
-            <Controller
-              control={control}
-              name="icon"
-              render={({ field }) => (
-                <FinanceIconPicker
-                  value={field.value}
-                  disabled={isSaving}
-                  onChange={field.onChange}
-                />
-              )}
-            />
-            {errors.icon?.message && (
-              <span className="mt-1.5 block text-xs text-red-300">{errors.icon.message}</span>
-            )}
-          </div>
-          {account && (
+          {!account ? (
+            <FinanceField label="Начальный баланс" error={errors.initialBalance?.message}>
+              <input
+                {...register('initialBalance')}
+                type="number"
+                step="any"
+                inputMode="decimal"
+                className={financeInputClassName}
+              />
+            </FinanceField>
+          ) : (
             <div className="text-sm text-[var(--app-text)]">
               <span className="mb-1.5 block font-medium">Цвет</span>
               <Controller
@@ -196,6 +177,24 @@ function FinanceAccountDialogContent({
               )}
             </div>
           )}
+
+          <div className="text-sm text-[var(--app-text)]">
+            <span className="mb-1.5 block font-medium">Иконка</span>
+            <Controller
+              control={control}
+              name="icon"
+              render={({ field }) => (
+                <FinanceIconPicker
+                  value={field.value}
+                  disabled={isSaving}
+                  onChange={field.onChange}
+                />
+              )}
+            />
+            {errors.icon?.message && (
+              <span className="mt-1.5 block text-xs text-red-300">{errors.icon.message}</span>
+            )}
+          </div>
         </div>
 
         {backendError && (

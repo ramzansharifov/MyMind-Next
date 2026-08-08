@@ -27,7 +27,7 @@ import { FinanceIconPicker } from '../FinanceIconPicker'
 const DEFAULT_TAG_COLORS: Record<FinanceTagType, string> = {
   expense: '#f87171',
   income: '#34d399',
-  both: '#a78bfa'
+  both: '#fbbf24'
 }
 
 const tagFormSchema = z.object({
@@ -61,8 +61,8 @@ const tagTypeOptions = [
     label: financeTagTypeLabels.both,
     description: 'Доходы и расходы',
     icon: ArrowRightLeft,
-    activeClassName: 'border-violet-500/45 bg-violet-500/18 text-violet-100 shadow-sm',
-    activeIconClassName: 'bg-violet-500/18 text-violet-200'
+    activeClassName: 'border-amber-500/45 bg-amber-500/18 text-amber-100 shadow-sm',
+    activeIconClassName: 'bg-amber-500/18 text-amber-200'
   }
 ] as const satisfies ReadonlyArray<{
   value: FinanceTagType
