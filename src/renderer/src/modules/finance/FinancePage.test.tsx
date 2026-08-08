@@ -210,7 +210,7 @@ describe('FinancePage', () => {
     expect(await screen.findByText('Доходы и расходы по времени')).toBeInTheDocument()
   })
 
-  it('creates an account with manual currency and the shared color picker', async () => {
+  it('creates an account without exposing color selection', async () => {
     const user = userEvent.setup()
     render(<FinancePage />)
     await screen.findByRole('heading', { name: 'Финансы' })
@@ -218,13 +218,13 @@ describe('FinancePage', () => {
     await user.click(screen.getByRole('button', { name: 'Новый счёт' }))
 
     expect(screen.queryByText('Тип')).not.toBeInTheDocument()
+    expect(screen.queryByText('Цвет')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Цвет счёта' })).not.toBeInTheDocument()
     const currencyInput = screen.getByRole('textbox', { name: 'Валюта' })
     expect(currencyInput).toHaveValue('')
 
     await user.type(screen.getByRole('textbox', { name: 'Название' }), 'Карта')
     await user.type(currencyInput, 'tjs')
-    await user.click(screen.getByRole('button', { name: 'Цвет счёта' }))
-    await user.click(screen.getByRole('button', { name: 'Цвет #60a5fa' }))
     await user.click(screen.getByRole('button', { name: 'Создать счёт' }))
 
     await waitFor(() =>
@@ -233,7 +233,7 @@ describe('FinancePage', () => {
         currencyCode: 'TJS',
         initialBalanceMinor: 0,
         icon: 'wallet',
-        color: '#60a5fa'
+        color: '#a78bfa'
       })
     )
   })
