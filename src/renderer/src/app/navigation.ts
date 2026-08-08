@@ -9,6 +9,10 @@ export interface AppNavigationItem {
   icon: LucideIcon
 }
 
+export const homeNavigationItem = appModules.find(
+  (module) => module.navigationGroup === 'home'
+) as AppNavigationItem
+
 export const primaryNavigationItems: AppNavigationItem[] = appModules.filter(
   (module) => module.navigationGroup === 'primary'
 )
