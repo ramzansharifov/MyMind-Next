@@ -4,7 +4,7 @@
 [data-study-focus-mode='false'] > [data-module-sidebar] header button > span,
 [data-study-focus-mode='false']
   > main
-  > section
+  > section:has(input[aria-label='Поиск по библиотеке'])
   > div
   > section:first-child
   header
@@ -16,7 +16,7 @@
 [data-study-focus-mode='false'] > [data-module-sidebar] header button > span > svg,
 [data-study-focus-mode='false']
   > main
-  > section
+  > section:has(input[aria-label='Поиск по библиотеке'])
   > div
   > section:first-child
   header
@@ -29,7 +29,7 @@
 [data-study-focus-mode='false'] > [data-module-sidebar] header button > span::after,
 [data-study-focus-mode='false']
   > main
-  > section
+  > section:has(input[aria-label='Поиск по библиотеке'])
   > div
   > section:first-child
   header
@@ -53,7 +53,7 @@
 
 [data-study-focus-mode='false']
   > main
-  > section
+  > section:has(input[aria-label='Поиск по библиотеке'])
   > div
   > section:first-child
   header
@@ -65,7 +65,7 @@
 
 [data-study-focus-mode='false']
   > main
-  > section
+  > section:has(input[aria-label='Поиск по библиотеке'])
   > div
   > section:first-child
   header
@@ -78,7 +78,7 @@
 /* Boards: keep only the primary title. */
 [data-boards-focus-mode]
   > main
-  > section
+  > section:has(input[aria-label='Поиск по доскам'])
   > div
   > section:first-child
   header
@@ -90,7 +90,7 @@
 
 [data-boards-focus-mode]
   > main
-  > section
+  > section:has(input[aria-label='Поиск по доскам'])
   > div
   > section:first-child
   header
