@@ -13,6 +13,9 @@ export const DIARY_ICON_NAMES = [
 
 export const DIARY_MOODS = ['excellent', 'good', 'neutral', 'difficult', 'bad'] as const
 
+export type DiaryIconName = (typeof DIARY_ICON_NAMES)[number]
+export type DiaryMood = (typeof DIARY_MOODS)[number]
+
 export const DIARY_MOOD_SCORES: Record<DiaryMood, number> = {
   excellent: 5,
   good: 4,
@@ -20,9 +23,6 @@ export const DIARY_MOOD_SCORES: Record<DiaryMood, number> = {
   difficult: 2,
   bad: 1
 }
-
-export type DiaryIconName = (typeof DIARY_ICON_NAMES)[number]
-export type DiaryMood = (typeof DIARY_MOODS)[number]
 
 export interface DiarySummary {
   id: string
@@ -130,7 +130,7 @@ export interface DeleteDiaryEntryInput {
   id: string
 }
 
-export interface GetDiaryReportInput extends ListDiaryDaysInput {}
+export type GetDiaryReportInput = ListDiaryDaysInput
 
 export const DIARY_IPC_CHANNELS = {
   listOverview: 'diary:list-overview',
