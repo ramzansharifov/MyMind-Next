@@ -1,6 +1,7 @@
 import { lazy, type ComponentType } from 'react'
 import {
   GraduationCap,
+  House,
   Notebook,
   Presentation,
   Settings,
@@ -8,7 +9,7 @@ import {
   type LucideIcon
 } from 'lucide-react'
 
-export type AppNavigationGroup = 'primary' | 'utility'
+export type AppNavigationGroup = 'home' | 'primary' | 'utility'
 
 export interface AppModuleProps {
   resourceId?: string | null
@@ -34,6 +35,9 @@ export function defineAppModules<const Definitions extends Record<string, AppMod
   return definitions
 }
 
+const HomeModule = lazy(() =>
+  import('../modules/home/HomeModule').then(({ HomeModule }) => ({ default: HomeModule }))
+) as ComponentType<AppModuleProps>
 const StudyModule = lazy(() =>
   import('../modules/study/StudyPage').then(({ StudyPage }) => ({ default: StudyPage }))
 ) as ComponentType<AppModuleProps>
@@ -53,6 +57,14 @@ const SettingsModule = lazy(() =>
 ) as ComponentType<AppModuleProps>
 
 export const appModuleRegistry = defineAppModules({
+  home: {
+    id: 'home',
+    label: 'Главная',
+    loadingLabel: 'Загрузка главной',
+    icon: House,
+    navigationGroup: 'home',
+    component: HomeModule
+  },
   study: {
     id: 'study',
     label: 'Обучение',

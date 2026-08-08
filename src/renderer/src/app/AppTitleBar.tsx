@@ -42,11 +42,6 @@ export function AppTitleBar(): React.JSX.Element {
         'text-[var(--app-text)] shadow-[0_1px_0_rgb(255_255_255/0.015)]'
       )}
     >
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute top-0 left-16 h-px w-52 bg-gradient-to-r from-transparent via-violet-400/30 to-transparent"
-      />
-
       <div className="flex min-w-0 items-center gap-2.5 px-3">
         <span className="flex size-6 shrink-0 items-center justify-center rounded-lg border border-violet-500/20 bg-violet-500/10 text-violet-300 shadow-inner shadow-violet-500/5">
           <BrainCircuit aria-hidden="true" className="size-3.5" />

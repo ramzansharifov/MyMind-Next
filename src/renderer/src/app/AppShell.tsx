@@ -1,11 +1,12 @@
 import { cva } from 'class-variance-authority'
-import { BrainCircuit, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 
 import { cn } from '../shared/lib/cn'
 import { Tooltip, TooltipProvider } from '../shared/ui/tooltip'
 import { AppTitleBar } from './AppTitleBar'
 import {
+  homeNavigationItem,
   primaryNavigationItems,
   utilityNavigationItems,
   type AppNavigationItem,
@@ -141,35 +142,13 @@ export function AppShell({
                 isCollapsed ? 'w-[72px]' : 'w-64'
               )}
             >
-              <header
-                className={cn(
-                  'flex h-[var(--app-header-height)] shrink-0 items-center border-b',
-                  'border-[var(--app-border)]',
-                  isCollapsed ? 'justify-center px-0' : 'px-3'
-                )}
-              >
-                <div
-                  className={cn(
-                    'flex min-w-0 items-center',
-                    isCollapsed ? 'justify-center' : 'w-full gap-3'
-                  )}
-                >
-                  <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-violet-500/15 bg-violet-500/10 text-violet-300">
-                    <BrainCircuit aria-hidden="true" className="size-[18px]" />
-                  </div>
-
-                  {!isCollapsed && (
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold tracking-tight text-[var(--app-text)]">
-                        MyMind
-                      </p>
-
-                      <p className="truncate text-[11px] text-[var(--app-muted)]">
-                        Личная система
-                      </p>
-                    </div>
-                  )}
-                </div>
+              <header className="flex h-[var(--app-header-height)] shrink-0 items-center border-b border-[var(--app-border)] p-3">
+                <NavigationButton
+                  item={homeNavigationItem}
+                  activeView={activeView}
+                  isCollapsed={isCollapsed}
+                  onSelect={handleViewChange}
+                />
               </header>
 
               <Tooltip content={toggleLabel} side="right">

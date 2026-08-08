@@ -24,7 +24,7 @@ type AppFlushFailure =
   | { kind: 'shutdown'; request: ShutdownRequest; message: string }
 
 function AppContent(): React.JSX.Element {
-  const [activeView, setActiveView] = useState<AppViewId>('study')
+  const [activeView, setActiveView] = useState<AppViewId>('home')
   const [activeResourceId, setActiveResourceId] = useState<string | null>(null)
   const [focusMode, setFocusMode] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
