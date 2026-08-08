@@ -29,6 +29,7 @@ import {
   updateFinanceTransactionInputSchema,
   upsertFinanceExchangeRateInputSchema
 } from '../../shared/validation/finance'
+import { getFinanceReportAnalytics } from '../services/finance-report.service'
 import { financeService } from '../services/finance.service'
 import { mainOperationTracker } from '../services/main-operation-tracker'
 
@@ -202,7 +203,7 @@ export function registerFinanceIpcHandlers(): void {
   )
   ipcMain.handle(FINANCE_IPC_CHANNELS.getReport, (_event, rawFilters: unknown) =>
     mainOperationTracker.run(() =>
-      financeService.getReport(financeReportFiltersSchema.parse(rawFilters))
+      getFinanceReportAnalytics(financeReportFiltersSchema.parse(rawFilters))
     )
   )
 }
