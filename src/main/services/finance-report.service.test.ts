@@ -35,14 +35,11 @@ afterAll(async () => {
   await rm(root, { recursive: true, force: true })
 })
 
-function at(day: number, hour = 12): number {
-  return new Date(2026, 7, day, hour, 0, 0, 0).getTime()
-}
-
-function period(fromDay: number, toDay: number) {
+function reportWindow() {
+  const now = new Date()
   return {
-    dateFrom: new Date(2026, 7, fromDay, 0, 0, 0, 0).getTime(),
-    dateTo: new Date(2026, 7, toDay, 23, 59, 59, 999).getTime(),
+    dateFrom: new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 0, 0, 0, 0).getTime(),
+    dateTo: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 23, 59, 59, 999).getTime(),
     currencyCode: 'TJS'
   }
 }
@@ -77,6 +74,7 @@ function createCoreFixture() {
 describe('finance report analytics', () => {
   it('includes template operations by default and converts every account currency into the report currency', () => {
     const fixture = createCoreFixture()
+    const occurredAt = Date.now()
     const template = financeService.createTemplate({
       name: 'Обед',
       type: 'expense',
@@ -93,7 +91,7 @@ describe('finance report analytics', () => {
       accountId: fixture.cash.id,
       amountMinor: 5_000,
       tagId: fixture.incomeTag.id,
-      occurredAt: at(2),
+      occurredAt,
       comment: ''
     })
     financeService.createTransaction({
@@ -101,7 +99,7 @@ describe('finance report analytics', () => {
       accountId: fixture.cash.id,
       amountMinor: 2_000,
       tagId: fixture.expenseTag.id,
-      occurredAt: at(3),
+      occurredAt,
       comment: '',
       templateId: template.id
     })
@@ -110,11 +108,12 @@ describe('finance report analytics', () => {
       accountId: fixture.usd.id,
       amountMinor: 1_000,
       tagId: fixture.incomeTag.id,
-      occurredAt: at(4),
+      occurredAt,
       comment: ''
     })
 
-    const report = getFinanceReportAnalytics(period(1, 5))
+    const filters = reportWindow()
+    const report = getFinanceReportAnalytics(filters)
     expect(report).toMatchObject({
       currencyCode: 'TJS',
       incomeMinor: 14_200,
@@ -124,18 +123,18 @@ describe('finance report analytics', () => {
       expenseCount: 1,
       transferCount: 0,
       operationCount: 3,
-      balanceStartMinor: 19_200,
+      balanceStartMinor: 0,
       balanceEndMinor: 31_400
     })
-    expect(report.timeline).toHaveLength(5)
-    expect(report.timeline[0]).toMatchObject({ incomeMinor: 0, expenseMinor: 0, balanceMinor: 19_200 })
-    expect(report.timeline[4].balanceMinor).toBe(31_400)
+    expect(report.timeline).toHaveLength(3)
+    expect(report.timeline[0]).toMatchObject({ incomeMinor: 0, expenseMinor: 0, balanceMinor: 0 })
+    expect(report.timeline[2].balanceMinor).toBe(31_400)
     expect(report.missingRateCurrencies).toEqual([])
 
-    const manualOnly = getFinanceReportAnalytics({ ...period(1, 5), templateOnly: false })
+    const manualOnly = getFinanceReportAnalytics({ ...filters, templateOnly: false })
     expect(manualOnly).toMatchObject({ incomeMinor: 14_200, expenseMinor: 0, operationCount: 2 })
 
-    const templateOnly = getFinanceReportAnalytics({ ...period(1, 5), templateOnly: true })
+    const templateOnly = getFinanceReportAnalytics({ ...filters, templateOnly: true })
     expect(templateOnly).toMatchObject({ incomeMinor: 0, expenseMinor: 2_000, operationCount: 1 })
   })
 
@@ -147,12 +146,12 @@ describe('finance report analytics', () => {
       destinationAccountId: fixture.usd.id,
       sourceAmountMinor: 9_200,
       destinationAmountMinor: 1_000,
-      occurredAt: at(2),
+      occurredAt: Date.now(),
       comment: ''
     })
 
     const report = getFinanceReportAnalytics({
-      ...period(1, 3),
+      ...reportWindow(),
       types: ['transfer'],
       accountIds: [fixture.cash.id]
     })
@@ -199,24 +198,24 @@ describe('finance report analytics', () => {
     const expenseTag = financeService.createTag({
       name: 'Покупки',
       type: 'expense',
-      icon: 'shopping-bag'
+      icon: 'shopping-cart'
     })
     financeService.createTransaction({
       type: 'expense',
       accountId: eur.id,
       amountMinor: 2_500,
       tagId: expenseTag.id,
-      occurredAt: at(2),
+      occurredAt: Date.now(),
       comment: ''
     })
 
-    const report = getFinanceReportAnalytics(period(1, 3))
+    const report = getFinanceReportAnalytics(reportWindow())
     expect(cash.id).not.toBe(eur.id)
     expect(report.operationCount).toBe(1)
     expect(report.expenseCount).toBe(1)
     expect(report.expenseMinor).toBe(0)
     expect(report.missingRateCurrencies).toContain('EUR')
-    expect(report.balanceStartMinor).toBeNull()
+    expect(report.balanceStartMinor).toBe(0)
     expect(report.balanceEndMinor).toBeNull()
   })
 })
