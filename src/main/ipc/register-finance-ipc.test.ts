@@ -9,13 +9,17 @@ const mocks = vi.hoisted(() => ({
   createAccount: vi.fn(),
   createTag: vi.fn(),
   createTransaction: vi.fn(),
-  getDashboard: vi.fn()
+  getDashboard: vi.fn(),
+  getReportAnalytics: vi.fn()
 }))
 
 vi.mock('electron', () => ({
   ipcMain: { handle: mocks.handle, removeHandler: mocks.removeHandler }
 }))
 vi.mock('../services/main-operation-tracker', () => ({ mainOperationTracker: { run: mocks.run } }))
+vi.mock('../services/finance-report.service', () => ({
+  getFinanceReportAnalytics: mocks.getReportAnalytics
+}))
 vi.mock('../services/finance.service', () => ({
   financeService: {
     getSettings: vi.fn(),
@@ -100,6 +104,24 @@ describe('registerFinanceIpcHandlers', () => {
     expect(mocks.createTag).toHaveBeenCalledWith(input)
     expect(() => handler({}, { ...input, color: '#ffffff' })).toThrow()
     expect(mocks.createTag).toHaveBeenCalledTimes(1)
+  })
+
+  it('routes validated report filters through the analytics report service', () => {
+    registerFinanceIpcHandlers()
+    const handler = mocks.handle.mock.calls.find(
+      ([channel]) => channel === FINANCE_IPC_CHANNELS.getReport
+    )?.[1]
+    const filters = {
+      dateFrom: 0,
+      dateTo: 1_000,
+      currencyCode: 'tjs'
+    }
+
+    handler({}, filters)
+    expect(mocks.getReportAnalytics).toHaveBeenCalledWith({
+      ...filters,
+      currencyCode: 'TJS'
+    })
   })
 
   it('keeps adjustment operations inaccessible to public transaction creation', () => {
