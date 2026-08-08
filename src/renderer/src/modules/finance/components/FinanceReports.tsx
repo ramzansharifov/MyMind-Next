@@ -17,6 +17,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type {
   FinanceAccountSummary,
   FinanceReportFilters,
+  FinanceReportPoint,
   FinanceTagSummary
 } from '../../../../../shared/contracts/finance'
 import type { FinanceReportAnalytics } from '../../../../../shared/contracts/finance-report-analytics'
@@ -79,7 +80,11 @@ function quickRange(value: Exclude<QuickPeriod, 'custom'>, now = new Date()): {
 }
 
 function formatDateRange(period: { from: number; to: number }): string {
-  const formatter = new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' })
+  const formatter = new Intl.DateTimeFormat('ru-RU', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric'
+  })
   return `${formatter.format(new Date(period.from))} — ${formatter.format(new Date(period.to))}`
 }
 
@@ -115,7 +120,9 @@ export function FinanceReports({
 
   const availableTags = useMemo(() => {
     if (type === 'income') return tags.filter((tag) => tag.type === 'income' || tag.type === 'both')
-    if (type === 'expense') return tags.filter((tag) => tag.type === 'expense' || tag.type === 'both')
+    if (type === 'expense') {
+      return tags.filter((tag) => tag.type === 'expense' || tag.type === 'both')
+    }
     return tags
   }, [tags, type])
 
@@ -179,11 +186,22 @@ export function FinanceReports({
     .map((point) => ({ label: point.label, value: point.balanceMinor ?? 0 }))
   const topExpense = report?.expenseByTag?.[0]
   const topIncome = report?.incomeByTag?.[0]
-  const peakExpensePoint = report?.timeline?.reduce<(typeof report.timeline)[number] | null>(
-    (current, point) => (!current || point.expenseMinor > current.expenseMinor ? point : current),
-    null
-  )
+  const peakExpensePoint =
+    report?.timeline.reduce<FinanceReportPoint | null>(
+      (current, point) => (!current || point.expenseMinor > current.expenseMinor ? point : current),
+      null
+    ) ?? null
   const comparisonLabel = report ? formatDateRange(report.comparisonPeriod) : ''
+  const incomeChange = report
+    ? report.incomeChangePercent !== undefined
+      ? report.incomeChangePercent
+      : report.changePercent
+    : null
+  const netChange = report
+    ? report.netChangePercent !== undefined
+      ? report.netChangePercent
+      : report.changePercent
+    : null
 
   return (
     <div className="space-y-5">
@@ -237,7 +255,9 @@ export function FinanceReports({
                 aria-label="Начальная дата"
                 type="date"
                 value={from}
-                onChange={(event) => setFrom(event.target.value)}
+                onChange={(event) => {
+                  if (event.target.value) setFrom(event.target.value)
+                }}
                 className={financeInputClassName}
               />
             </FilterField>
@@ -246,7 +266,9 @@ export function FinanceReports({
                 aria-label="Конечная дата"
                 type="date"
                 value={to}
-                onChange={(event) => setTo(event.target.value)}
+                onChange={(event) => {
+                  if (event.target.value) setTo(event.target.value)
+                }}
                 className={financeInputClassName}
               />
             </FilterField>
@@ -317,7 +339,9 @@ export function FinanceReports({
 
         <div className="mt-3 flex min-h-8 items-center justify-between gap-3 border-t border-[var(--app-border)] pt-3 text-xs text-[var(--app-muted)]">
           <span>
-            {period === 'custom' ? `${from} — ${to}` : 'Сравнение строится с сопоставимым предыдущим периодом'}
+            {period === 'custom'
+              ? `${from} — ${to}`
+              : 'Сравнение строится с сопоставимым предыдущим периодом'}
           </span>
           {hasSecondaryFilters && (
             <button
@@ -341,7 +365,8 @@ export function FinanceReports({
           <>
             {error && (
               <div className="rounded-xl border border-red-500/20 bg-red-500/[0.06] px-4 py-3 text-sm text-red-100">
-                Не удалось обновить отчёт: {error}. Ниже показаны последние успешно загруженные данные.
+                Не удалось обновить отчёт: {error}. Ниже показаны последние успешно загруженные
+                данные.
               </div>
             )}
 
@@ -351,7 +376,7 @@ export function FinanceReports({
                 value={report.incomeMinor}
                 currency={report.currencyCode}
                 tone="positive"
-                change={report.incomeChangePercent ?? report.changePercent}
+                change={incomeChange}
                 comparisonLabel={comparisonLabel}
                 icon={<ArrowDownLeft className="size-4" />}
               />
@@ -370,7 +395,7 @@ export function FinanceReports({
                 value={report.netMinor}
                 currency={report.currencyCode}
                 tone={report.netMinor >= 0 ? 'positive' : 'negative'}
-                change={report.netChangePercent ?? report.changePercent}
+                change={netChange}
                 comparisonLabel={comparisonLabel}
                 icon={<PiggyBank className="size-4" />}
               />
@@ -600,7 +625,10 @@ export function FinanceReports({
                     report.limits.map((limit) => {
                       const tag = tags.find((item) => item.id === limit.tagId)
                       return (
-                        <div key={limit.id} className="rounded-xl border border-[var(--app-border)] p-3">
+                        <div
+                          key={limit.id}
+                          className="rounded-xl border border-[var(--app-border)] p-3"
+                        >
                           <div className="flex items-start justify-between gap-4 text-sm">
                             <div>
                               <div className="font-medium text-[var(--app-text)]">
@@ -649,7 +677,13 @@ export function FinanceReports({
   )
 }
 
-function FilterField({ label, children }: { label: string; children: React.ReactNode }): React.JSX.Element {
+function FilterField({
+  label,
+  children
+}: {
+  label: string
+  children: React.ReactNode
+}): React.JSX.Element {
   return (
     <label className="block text-xs text-[var(--app-muted)]">
       <span className="mb-1.5 block font-medium">{label}</span>
@@ -735,7 +769,15 @@ function PercentMetric({
   )
 }
 
-function CompactMetric({ label, value, hint }: { label: string; value: string; hint: string }): React.JSX.Element {
+function CompactMetric({
+  label,
+  value,
+  hint
+}: {
+  label: string
+  value: string
+  hint: string
+}): React.JSX.Element {
   return (
     <FinanceSurface className="p-4">
       <div className="text-xs text-[var(--app-muted)]">{label}</div>
@@ -799,7 +841,9 @@ function AccountActivityTable({ report }: { report: FinanceReportAnalytics }): R
             <tr key={item.accountId} className="border-t border-[var(--app-border)]">
               <td className="px-3 py-3">
                 <div className="font-medium text-[var(--app-text)]">{item.accountName}</div>
-                <div className="mt-0.5 text-[10px] text-[var(--app-muted)]">{item.currencyCode}</div>
+                <div className="mt-0.5 text-[10px] text-[var(--app-muted)]">
+                  {item.currencyCode}
+                </div>
               </td>
               <td className="px-3 py-3 text-right text-emerald-300 tabular-nums">
                 {formatMoneyMinor(item.incomeMinor, report.currencyCode)}
@@ -852,7 +896,9 @@ function ChartSurface({
           </div>
           <div>
             <h3 className="font-semibold text-[var(--app-text)]">{title}</h3>
-            <p className="mt-0.5 max-w-3xl text-xs leading-5 text-[var(--app-muted)]">{description}</p>
+            <p className="mt-0.5 max-w-3xl text-xs leading-5 text-[var(--app-muted)]">
+              {description}
+            </p>
           </div>
         </div>
         {aside}
