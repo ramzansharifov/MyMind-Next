@@ -45,7 +45,6 @@ const account = {
   initialBalanceMinor: 100_00,
   balanceMinor: 80_00,
   icon: 'credit-card' as const,
-  color: '#8b5cf6',
   transactionCount: 1,
   lastTransactionAt: 100,
   periodChangeMinor: -20_00,
@@ -226,7 +225,7 @@ describe('FinancePage', () => {
     expect(await screen.findByText('Доходы и расходы по времени')).toBeInTheDocument()
   })
 
-  it('creates an account without exposing color selection', async () => {
+  it('creates an account without exposing or sending a color', async () => {
     const user = userEvent.setup()
     render(<FinancePage />)
     await screen.findByRole('heading', { name: 'Финансы' })
@@ -248,13 +247,12 @@ describe('FinancePage', () => {
         name: 'Карта',
         currencyCode: 'TJS',
         initialBalanceMinor: 0,
-        icon: 'wallet',
-        color: '#a78bfa'
+        icon: 'wallet'
       })
     )
   })
 
-  it('creates a tag without exposing color selection and assigns color by purpose', async () => {
+  it('creates a tag without exposing or sending a color', async () => {
     const user = userEvent.setup()
     render(<FinancePage />)
     await screen.findByRole('heading', { name: 'Финансы' })
@@ -272,8 +270,7 @@ describe('FinancePage', () => {
       expect(mocks.createTag).toHaveBeenCalledWith({
         name: 'Зарплата',
         type: 'income',
-        icon: 'tag',
-        color: '#34d399'
+        icon: 'tag'
       })
     )
   })
