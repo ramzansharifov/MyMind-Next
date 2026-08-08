@@ -18,7 +18,6 @@ import type {
   FinanceLimitImpact,
   FinanceLimitStatus,
   FinancePeriod,
-  FinanceReport,
   FinanceReportFilters,
   FinanceSettings,
   FinanceTagSummary,
@@ -36,6 +35,7 @@ import type {
   UpdateFinanceTransactionInput,
   UpsertFinanceExchangeRateInput
 } from '../../../../../shared/contracts/finance'
+import type { FinanceReportAnalytics } from '../../../../../shared/contracts/finance-report-analytics'
 
 function getFinanceApi(): FinanceApi {
   if (!window.api?.finance) {
@@ -138,7 +138,8 @@ export const financeClient = {
   getDashboard(period?: FinancePeriod): Promise<FinanceDashboard> {
     return getFinanceApi().getDashboard(period)
   },
-  getReport(filters: FinanceReportFilters): Promise<FinanceReport> {
-    return getFinanceApi().getReport(filters)
+  async getReport(filters: FinanceReportFilters): Promise<FinanceReportAnalytics> {
+    const report = await getFinanceApi().getReport(filters)
+    return report as FinanceReportAnalytics
   }
 }
