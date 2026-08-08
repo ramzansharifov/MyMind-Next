@@ -12,7 +12,7 @@ import {
   TrendingDown,
   TrendingUp
 } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type {
   FinanceAccountSummary,
@@ -113,6 +113,7 @@ export function FinanceReports({
   const [report, setReport] = useState<FinanceReportAnalytics | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const requestSequence = useRef(0)
 
   useEffect(() => {
     if (type === 'transfer' && tagId !== 'all') setTagId('all')
@@ -145,21 +146,31 @@ export function FinanceReports({
   )
 
   const load = useCallback(async (): Promise<void> => {
+    const sequence = ++requestSequence.current
     setIsLoading(true)
     setError(null)
     try {
       const result = await financeClient.getReport(filters)
+      if (sequence !== requestSequence.current) return
       setReport(result)
     } catch (reason) {
+      if (sequence !== requestSequence.current) return
       setError(getFinanceErrorMessage(reason))
     } finally {
-      setIsLoading(false)
+      if (sequence === requestSequence.current) setIsLoading(false)
     }
   }, [filters])
 
   useEffect(() => {
     void load()
   }, [load, limitsVersion])
+
+  useEffect(
+    () => () => {
+      requestSequence.current += 1
+    },
+    []
+  )
 
   function choosePeriod(next: QuickPeriod): void {
     setPeriod(next)
