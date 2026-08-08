@@ -125,7 +125,7 @@ export function AppDialog({
               <header
                 data-app-dialog-header
                 className={cn(
-                  'flex shrink-0 items-start gap-3 border-b border-[var(--app-border)] p-5',
+                  'flex shrink-0 items-center gap-3 border-b border-[var(--app-border)] px-5 py-4',
                   headerClassName
                 )}
               >
@@ -144,9 +144,7 @@ export function AppDialog({
                   <Dialog.Title className="text-lg font-semibold text-[var(--app-text)]">
                     {title}
                   </Dialog.Title>
-                  <Dialog.Description className="mt-1 text-sm leading-5 text-[var(--app-muted)]">
-                    {description}
-                  </Dialog.Description>
+                  <Dialog.Description className="sr-only">{description}</Dialog.Description>
                 </div>
                 {showClose && (
                   <Dialog.Close asChild disabled={busy}>
