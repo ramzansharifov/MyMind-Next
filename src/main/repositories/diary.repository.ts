@@ -34,7 +34,7 @@ interface DiaryRow {
 interface DiarySummaryRow extends DiaryRow {
   page_count: number
   entry_count: number
-  last_activity_at: number | null
+  last_activity_at: number
 }
 
 interface DiaryDayRow {
@@ -88,14 +88,16 @@ function mapDiary(row: DiarySummaryRow): DiarySummary {
     icon: row.icon,
     pageCount: row.page_count,
     entryCount: row.entry_count,
-    lastActivityAt: row.last_activity_at ?? row.updated_at,
+    lastActivityAt: row.last_activity_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   }
 }
 
 function ensureDefaultDiary(): void {
-  const row = getSqlite().prepare('SELECT COUNT(*) AS count FROM diaries').get() as { count: number }
+  const row = getSqlite().prepare('SELECT COUNT(*) AS count FROM diaries').get() as {
+    count: number
+  }
   if (row.count > 0) return
 
   const now = Date.now()
@@ -126,7 +128,7 @@ function getDiarySummary(id: string): DiarySummary {
         d.updated_at,
         COUNT(DISTINCT dy.id) AS page_count,
         COUNT(e.id) AS entry_count,
-        MAX(COALESCE(e.updated_at, dy.updated_at, d.updated_at)) AS last_activity_at
+        d.updated_at AS last_activity_at
        FROM diaries d
        LEFT JOIN diary_days dy ON dy.diary_id = d.id
        LEFT JOIN diary_entries e ON e.diary_day_id = dy.id
@@ -185,7 +187,10 @@ function pruneDayIfEmpty(dayId: string): void {
        WHERE dy.id = ?
        GROUP BY dy.id`
     )
-    .get(dayId) as { diary_id: string; mood: DiaryMood | null; entry_count: number } | undefined
+    .get(dayId) as
+    | { diary_id: string; mood: DiaryMood | null; entry_count: number }
+    | undefined
+
   if (!row || row.mood !== null || row.entry_count > 0) return
   getSqlite().prepare('DELETE FROM diary_days WHERE id = ?').run(dayId)
   touchDiary(row.diary_id)
@@ -203,12 +208,12 @@ export function listDiaryOverview(): DiaryOverview {
         d.updated_at,
         COUNT(DISTINCT dy.id) AS page_count,
         COUNT(e.id) AS entry_count,
-        MAX(COALESCE(e.updated_at, dy.updated_at, d.updated_at)) AS last_activity_at
+        d.updated_at AS last_activity_at
        FROM diaries d
        LEFT JOIN diary_days dy ON dy.diary_id = d.id
        LEFT JOIN diary_entries e ON e.diary_day_id = dy.id
        GROUP BY d.id
-       ORDER BY last_activity_at DESC, d.created_at ASC`
+       ORDER BY d.updated_at DESC, d.created_at ASC`
     )
     .all() as DiarySummaryRow[]
   return { diaries: rows.map(mapDiary) }
@@ -248,6 +253,7 @@ export function getDiaryDay(input: GetDiaryDayInput): DiaryDay | null {
   requireDiary(input.diaryId)
   const row = getDayRow(input.diaryId, input.dayKey)
   if (!row) return null
+
   const entries = getSqlite()
     .prepare(
       `SELECT id, diary_day_id, text, occurred_at, created_at, updated_at
@@ -256,6 +262,7 @@ export function getDiaryDay(input: GetDiaryDayInput): DiaryDay | null {
        ORDER BY occurred_at ASC, created_at ASC`
     )
     .all(row.id) as DiaryEntryRow[]
+
   return { ...mapDay(row), entries: entries.map(mapEntry) }
 }
 
@@ -263,6 +270,7 @@ export function listDiaryDays(input: ListDiaryDaysInput): DiaryDaySummary[] {
   requireDiary(input.diaryId)
   const clauses = ['dy.diary_id = ?']
   const params: unknown[] = [input.diaryId]
+
   if (input.fromDay) {
     clauses.push('dy.day_key >= ?')
     params.push(input.fromDay)
@@ -271,6 +279,7 @@ export function listDiaryDays(input: ListDiaryDaysInput): DiaryDaySummary[] {
     clauses.push('dy.day_key <= ?')
     params.push(input.toDay)
   }
+
   const rows = getSqlite()
     .prepare(
       `SELECT
@@ -288,16 +297,23 @@ export function listDiaryDays(input: ListDiaryDaysInput): DiaryDaySummary[] {
        ORDER BY dy.day_key DESC`
     )
     .all(...params) as DiaryDayRow[]
+
   return rows.map(mapDay)
 }
 
 export function setDiaryMood(input: SetDiaryMoodInput): DiaryDay | null {
   const sqlite = getSqlite()
   return sqlite.transaction(() => {
-    const day = input.mood === null ? getDayRow(input.diaryId, input.dayKey) : getOrCreateDay(input.diaryId, input.dayKey)
+    const day =
+      input.mood === null
+        ? getDayRow(input.diaryId, input.dayKey)
+        : getOrCreateDay(input.diaryId, input.dayKey)
     if (!day) return null
+
     const now = Date.now()
-    sqlite.prepare('UPDATE diary_days SET mood = ?, updated_at = ? WHERE id = ?').run(input.mood, now, day.id)
+    sqlite
+      .prepare('UPDATE diary_days SET mood = ?, updated_at = ? WHERE id = ?')
+      .run(input.mood, now, day.id)
     touchDiary(input.diaryId, now)
     pruneDayIfEmpty(day.id)
     return getDiaryDay(input)
@@ -310,6 +326,7 @@ export function createDiaryEntry(input: CreateDiaryEntryInput): DiaryEntry {
     const day = getOrCreateDay(input.diaryId, input.dayKey)
     const id = randomUUID()
     const now = Date.now()
+
     sqlite
       .prepare(
         `INSERT INTO diary_entries
@@ -319,6 +336,7 @@ export function createDiaryEntry(input: CreateDiaryEntryInput): DiaryEntry {
       .run(id, day.id, input.text, now, now, now)
     sqlite.prepare('UPDATE diary_days SET updated_at = ? WHERE id = ?').run(now, day.id)
     touchDiary(input.diaryId, now)
+
     const row = sqlite
       .prepare(
         'SELECT id, diary_day_id, text, occurred_at, created_at, updated_at FROM diary_entries WHERE id = ?'
@@ -340,10 +358,16 @@ export function updateDiaryEntry(input: UpdateDiaryEntryInput): DiaryEntry {
       )
       .get(input.id) as (DiaryEntryRow & { diary_id: string }) | undefined
     if (!existing) throw new Error('Запись не найдена')
+
     const now = Date.now()
-    sqlite.prepare('UPDATE diary_entries SET text = ?, updated_at = ? WHERE id = ?').run(input.text, now, input.id)
-    sqlite.prepare('UPDATE diary_days SET updated_at = ? WHERE id = ?').run(now, existing.diary_day_id)
+    sqlite
+      .prepare('UPDATE diary_entries SET text = ?, updated_at = ? WHERE id = ?')
+      .run(input.text, now, input.id)
+    sqlite
+      .prepare('UPDATE diary_days SET updated_at = ? WHERE id = ?')
+      .run(now, existing.diary_day_id)
     touchDiary(existing.diary_id, now)
+
     const row = sqlite
       .prepare(
         'SELECT id, diary_day_id, text, occurred_at, created_at, updated_at FROM diary_entries WHERE id = ?'
@@ -365,9 +389,12 @@ export function deleteDiaryEntry(input: DeleteDiaryEntryInput): boolean {
       )
       .get(input.id) as { diary_day_id: string; diary_id: string } | undefined
     if (!existing) return false
+
     const result = sqlite.prepare('DELETE FROM diary_entries WHERE id = ?').run(input.id)
     const now = Date.now()
-    sqlite.prepare('UPDATE diary_days SET updated_at = ? WHERE id = ?').run(now, existing.diary_day_id)
+    sqlite
+      .prepare('UPDATE diary_days SET updated_at = ? WHERE id = ?')
+      .run(now, existing.diary_day_id)
     touchDiary(existing.diary_id, now)
     pruneDayIfEmpty(existing.diary_day_id)
     return result.changes > 0
