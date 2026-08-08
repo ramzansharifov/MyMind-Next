@@ -7,6 +7,7 @@ interface ChartDatum {
   label: string
   value: number
   secondaryValue?: number
+  detail?: string
 }
 
 interface ChartPoint {
@@ -21,117 +22,260 @@ interface DonutSegment {
   end: number
 }
 
+type LineTone = 'accent' | 'income' | 'expense' | 'muted'
+
+function toneColor(tone: LineTone): string {
+  switch (tone) {
+    case 'income':
+      return '#34d399'
+    case 'expense':
+      return '#f87171'
+    case 'muted':
+      return 'var(--app-muted)'
+    case 'accent':
+      return 'var(--app-accent-500)'
+  }
+}
+
+function sampleLabelIndexes(length: number, maximum = 6): Set<number> {
+  if (length <= maximum) return new Set(Array.from({ length }, (_, index) => index))
+  const result = new Set<number>([0, length - 1])
+  for (let slot = 1; slot < maximum - 1; slot += 1) {
+    result.add(Math.round((slot * (length - 1)) / (maximum - 1)))
+  }
+  return result
+}
+
 export function FinanceLineChart({
   data,
   currencyCode,
-  ariaLabel = 'Динамика финансовых показателей'
+  ariaLabel = 'Динамика финансовых показателей',
+  primaryLabel = 'Значение',
+  secondaryLabel = 'Второе значение',
+  primaryTone = 'accent',
+  secondaryTone = 'income',
+  includeZero = true
 }: {
   data: ChartDatum[]
   currencyCode: string
   ariaLabel?: string
+  primaryLabel?: string
+  secondaryLabel?: string
+  primaryTone?: LineTone
+  secondaryTone?: LineTone
+  includeZero?: boolean
 }): React.JSX.Element {
   const geometry = useMemo(() => {
-    const width = 720
-    const height = 220
-    const padding = 24
-    const values = data.flatMap((point) => [point.value, point.secondaryValue ?? point.value])
-    const minimum = Math.min(0, ...values)
-    const maximum = Math.max(1, ...values)
-    const range = maximum - minimum || 1
+    const width = 760
+    const height = 270
+    const padding = { left: 78, right: 18, top: 18, bottom: 34 }
+    const values = data.flatMap((point) =>
+      point.secondaryValue === undefined ? [point.value] : [point.value, point.secondaryValue]
+    )
+    const rawMinimum = values.length > 0 ? Math.min(...values) : 0
+    const rawMaximum = values.length > 0 ? Math.max(...values) : 1
+    let minimum = includeZero ? Math.min(0, rawMinimum) : rawMinimum
+    let maximum = includeZero ? Math.max(0, rawMaximum) : rawMaximum
+    if (minimum === maximum) {
+      const paddingValue = Math.max(1, Math.abs(minimum) * 0.08)
+      minimum -= paddingValue
+      maximum += paddingValue
+    }
+    const range = maximum - minimum
+    const chartWidth = width - padding.left - padding.right
+    const chartHeight = height - padding.top - padding.bottom
     const point = (value: number, index: number): ChartPoint => ({
-      x: padding + (index * (width - padding * 2)) / Math.max(1, data.length - 1),
-      y: height - padding - ((value - minimum) / range) * (height - padding * 2)
+      x: padding.left + (index * chartWidth) / Math.max(1, data.length - 1),
+      y: padding.top + ((maximum - value) / range) * chartHeight
+    })
+    const ticks = Array.from({ length: 5 }, (_, index) => {
+      const value = maximum - (range * index) / 4
+      return {
+        value,
+        y: padding.top + (chartHeight * index) / 4
+      }
     })
     return {
       width,
       height,
+      padding,
+      minimum,
+      maximum,
       primary: data.map((entry, index) => point(entry.value, index)),
-      secondary: data.map((entry, index) => point(entry.secondaryValue ?? entry.value, index))
+      secondary: data.map((entry, index) =>
+        entry.secondaryValue === undefined ? null : point(entry.secondaryValue, index)
+      ),
+      ticks,
+      zeroY:
+        minimum <= 0 && maximum >= 0
+          ? padding.top + ((maximum - 0) / range) * chartHeight
+          : null
     }
-  }, [data])
+  }, [data, includeZero])
 
   if (data.length === 0) return <ChartEmpty label="Недостаточно данных для графика" />
+
   const primaryPath = geometry.primary
     .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`)
     .join(' ')
-  const secondaryPath = geometry.secondary
+  const secondaryPoints = geometry.secondary.filter((point): point is ChartPoint => point !== null)
+  const secondaryPath = secondaryPoints
     .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`)
     .join(' ')
+  const labelIndexes = sampleLabelIndexes(data.length)
+  const hasSecondary = data.some((entry) => entry.secondaryValue !== undefined)
 
   return (
     <figure aria-label={ariaLabel} className="space-y-3">
+      <div className="flex flex-wrap items-center gap-4 text-xs text-[var(--app-muted)]">
+        <span className="inline-flex items-center gap-2">
+          <span
+            className="h-0.5 w-5 rounded-full"
+            style={{ backgroundColor: toneColor(primaryTone) }}
+          />
+          {primaryLabel}
+        </span>
+        {hasSecondary && (
+          <span className="inline-flex items-center gap-2">
+            <span
+              className="h-0.5 w-5 rounded-full"
+              style={{ backgroundColor: toneColor(secondaryTone) }}
+            />
+            {secondaryLabel}
+          </span>
+        )}
+      </div>
+
       <svg
         viewBox={`0 0 ${geometry.width} ${geometry.height}`}
         role="img"
-        className="h-56 w-full overflow-visible"
-        preserveAspectRatio="none"
+        className="h-64 w-full overflow-visible"
       >
         <title>{ariaLabel}</title>
-        {[0.25, 0.5, 0.75].map((fraction) => (
-          <line
-            key={fraction}
-            x1="24"
-            x2="696"
-            y1={geometry.height * fraction}
-            y2={geometry.height * fraction}
-            stroke="var(--app-border)"
-            strokeDasharray="4 5"
-          />
+        {geometry.ticks.map((tick) => (
+          <g key={tick.y}>
+            <line
+              x1={geometry.padding.left}
+              x2={geometry.width - geometry.padding.right}
+              y1={tick.y}
+              y2={tick.y}
+              stroke="var(--app-border)"
+              strokeDasharray="4 5"
+            />
+            <text
+              x={geometry.padding.left - 10}
+              y={tick.y + 4}
+              textAnchor="end"
+              fill="var(--app-muted)"
+              fontSize="10"
+            >
+              {formatMoneyMinor(Math.round(tick.value), currencyCode)}
+            </text>
+          </g>
         ))}
-        <path
-          d={secondaryPath}
-          fill="none"
-          stroke="currentColor"
-          className="text-emerald-400/80"
-          strokeWidth="3"
-          vectorEffect="non-scaling-stroke"
-        />
+        {geometry.zeroY !== null && (
+          <line
+            x1={geometry.padding.left}
+            x2={geometry.width - geometry.padding.right}
+            y1={geometry.zeroY}
+            y2={geometry.zeroY}
+            stroke="var(--app-border-strong)"
+            strokeWidth="1.2"
+          />
+        )}
+        {hasSecondary && (
+          <path
+            d={secondaryPath}
+            fill="none"
+            stroke={toneColor(secondaryTone)}
+            strokeWidth="2.5"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+            vectorEffect="non-scaling-stroke"
+          />
+        )}
         <path
           d={primaryPath}
           fill="none"
-          stroke="var(--app-accent-500)"
-          strokeWidth="3"
+          stroke={toneColor(primaryTone)}
+          strokeWidth="2.5"
+          strokeLinejoin="round"
+          strokeLinecap="round"
           vectorEffect="non-scaling-stroke"
         />
         {geometry.primary.map((point, index) => (
-          <circle
-            key={data[index].label}
-            cx={point.x}
-            cy={point.y}
-            r="4"
-            fill="var(--app-surface-raised)"
-            stroke="var(--app-accent-500)"
-            strokeWidth="2"
-          >
-            <title>
-              {data[index].label}: {formatMoneyMinor(data[index].value, currencyCode)}
-            </title>
-          </circle>
+          <g key={`primary-${data[index].label}-${index}`}>
+            <circle
+              cx={point.x}
+              cy={point.y}
+              r="3.5"
+              fill="var(--app-surface-raised)"
+              stroke={toneColor(primaryTone)}
+              strokeWidth="2"
+            >
+              <title>
+                {data[index].label} · {primaryLabel}: {formatMoneyMinor(data[index].value, currencyCode)}
+              </title>
+            </circle>
+            {labelIndexes.has(index) && (
+              <text
+                x={point.x}
+                y={geometry.height - 8}
+                textAnchor={index === 0 ? 'start' : index === data.length - 1 ? 'end' : 'middle'}
+                fill="var(--app-muted)"
+                fontSize="10"
+              >
+                {data[index].label}
+              </text>
+            )}
+          </g>
         ))}
+        {geometry.secondary.map((point, index) =>
+          point && data[index].secondaryValue !== undefined ? (
+            <circle
+              key={`secondary-${data[index].label}-${index}`}
+              cx={point.x}
+              cy={point.y}
+              r="3"
+              fill="var(--app-surface-raised)"
+              stroke={toneColor(secondaryTone)}
+              strokeWidth="1.8"
+            >
+              <title>
+                {data[index].label} · {secondaryLabel}:{' '}
+                {formatMoneyMinor(data[index].secondaryValue ?? 0, currencyCode)}
+              </title>
+            </circle>
+          ) : null
+        )}
       </svg>
-      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--app-muted)]">
-        {data.slice(0, 8).map((point) => (
-          <span key={point.label}>{point.label}</span>
-        ))}
-      </div>
+
       <details className="text-xs text-[var(--app-muted)]">
-        <summary className="cursor-pointer">Табличные данные</summary>
-        <div className="mt-2 overflow-x-auto">
+        <summary className="cursor-pointer select-none">Показать точные значения</summary>
+        <div className="mt-2 max-h-64 overflow-auto rounded-lg border border-[var(--app-border)]">
           <table className="w-full text-left">
-            <thead>
+            <thead className="sticky top-0 bg-[var(--app-surface-raised)] text-[var(--app-muted)]">
               <tr>
-                <th className="py-1">Период</th>
-                <th>Значение</th>
-                {data.some((item) => item.secondaryValue != null) && <th>Второе значение</th>}
+                <th className="px-3 py-2 font-medium">Период</th>
+                <th className="px-3 py-2 font-medium">{primaryLabel}</th>
+                {hasSecondary && (
+                  <th className="px-3 py-2 font-medium">{secondaryLabel}</th>
+                )}
               </tr>
             </thead>
             <tbody>
               {data.map((item) => (
-                <tr key={item.label}>
-                  <td className="py-1">{item.label}</td>
-                  <td>{formatMoneyMinor(item.value, currencyCode)}</td>
-                  {item.secondaryValue != null && (
-                    <td>{formatMoneyMinor(item.secondaryValue, currencyCode)}</td>
+                <tr key={item.label} className="border-t border-[var(--app-border)]">
+                  <td className="px-3 py-2">{item.label}</td>
+                  <td className="px-3 py-2 tabular-nums">
+                    {formatMoneyMinor(item.value, currencyCode)}
+                  </td>
+                  {hasSecondary && (
+                    <td className="px-3 py-2 tabular-nums">
+                      {item.secondaryValue === undefined
+                        ? '—'
+                        : formatMoneyMinor(item.secondaryValue, currencyCode)}
+                    </td>
                   )}
                 </tr>
               ))}
@@ -156,14 +300,21 @@ export function FinanceBarChart({
   if (data.length === 0) return <ChartEmpty label="Нет данных за выбранный период" />
   return (
     <figure aria-label={ariaLabel} className="space-y-3">
-      <div className="space-y-3">
-        {data.map((item) => (
+      <div className="max-h-80 space-y-3 overflow-y-auto pr-1">
+        {data.map((item, index) => (
           <div
-            key={item.label}
-            className="grid grid-cols-[minmax(7rem,0.8fr)_minmax(8rem,2fr)_auto] items-center gap-3 text-sm max-[560px]:grid-cols-[1fr_auto]"
+            key={`${item.label}-${index}`}
+            className="grid grid-cols-[minmax(8rem,1fr)_minmax(8rem,2fr)_auto] items-center gap-3 text-sm max-[620px]:grid-cols-[1fr_auto]"
           >
-            <span className="truncate text-[var(--app-text)]">{item.label}</span>
-            <div className="h-3 overflow-hidden rounded-full bg-[var(--app-overlay-subtle)] max-[560px]:order-3 max-[560px]:col-span-2">
+            <span className="min-w-0">
+              <span className="block truncate text-[var(--app-text)]">{item.label}</span>
+              {item.detail && (
+                <span className="mt-0.5 block truncate text-[10px] text-[var(--app-muted)]">
+                  {item.detail}
+                </span>
+              )}
+            </span>
+            <div className="h-2.5 overflow-hidden rounded-full bg-[var(--app-overlay-subtle)] max-[620px]:order-3 max-[620px]:col-span-2">
               <div
                 className="h-full rounded-full bg-[var(--app-accent-500)]"
                 style={{ width: `${Math.max(2, (Math.abs(item.value) / maximum) * 100)}%` }}
@@ -176,16 +327,54 @@ export function FinanceBarChart({
           </div>
         ))}
       </div>
-      <details className="text-xs text-[var(--app-muted)]">
-        <summary className="cursor-pointer">Табличные данные</summary>
-        <ul className="mt-2 space-y-1">
-          {data.map((item) => (
-            <li key={item.label}>
-              {item.label}: {formatMoneyMinor(item.value, currencyCode)}
-            </li>
-          ))}
-        </ul>
-      </details>
+    </figure>
+  )
+}
+
+export function FinanceBreakdownChart({
+  data,
+  currencyCode,
+  ariaLabel
+}: {
+  data: Array<ChartDatum & { color?: string | null; sharePercent?: number }>
+  currencyCode: string
+  ariaLabel: string
+}): React.JSX.Element {
+  if (data.length === 0) return <ChartEmpty label="Нет данных для распределения" />
+  const maximum = Math.max(1, ...data.map((item) => item.value))
+
+  return (
+    <figure aria-label={ariaLabel} className="max-h-[22rem] space-y-3 overflow-y-auto pr-1">
+      {data.map((item, index) => (
+        <div key={`${item.label}-${index}`} className="space-y-1.5">
+          <div className="flex items-start justify-between gap-4 text-sm">
+            <div className="flex min-w-0 items-center gap-2">
+              <span
+                className="mt-1 size-2.5 shrink-0 rounded-full"
+                style={{ backgroundColor: item.color ?? 'var(--app-accent-500)' }}
+              />
+              <div className="min-w-0">
+                <span className="block truncate text-[var(--app-text)]">{item.label}</span>
+                <span className="text-[10px] text-[var(--app-muted)]">
+                  {(item.sharePercent ?? 0).toFixed(1)}% от суммы
+                </span>
+              </div>
+            </div>
+            <span className="shrink-0 font-medium text-[var(--app-text)] tabular-nums">
+              {formatMoneyMinor(item.value, currencyCode)}
+            </span>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-[var(--app-overlay-subtle)]">
+            <div
+              className="h-full rounded-full"
+              style={{
+                width: `${Math.max(2, (item.value / maximum) * 100)}%`,
+                backgroundColor: item.color ?? 'var(--app-accent-500)'
+              }}
+            />
+          </div>
+        </div>
+      ))}
     </figure>
   )
 }
@@ -221,9 +410,9 @@ export function FinanceDonutChart({
           stroke="var(--app-overlay-subtle)"
           strokeWidth="18"
         />
-        {segments.map(({ item, part, offset }) => (
+        {segments.map(({ item, part, offset }, index) => (
           <circle
-            key={item.label}
+            key={`${item.label}-${index}`}
             cx="60"
             cy="60"
             r="44"
@@ -241,8 +430,11 @@ export function FinanceDonutChart({
         ))}
       </svg>
       <div className="space-y-2">
-        {data.map((item) => (
-          <div key={item.label} className="flex items-center justify-between gap-3 text-sm">
+        {data.map((item, index) => (
+          <div
+            key={`${item.label}-${index}`}
+            className="flex items-center justify-between gap-3 text-sm"
+          >
             <span className="flex min-w-0 items-center gap-2 text-[var(--app-muted)]">
               <span
                 className="size-2.5 shrink-0 rounded-full"
@@ -292,7 +484,7 @@ export function FinanceProgress({
 
 function ChartEmpty({ label }: { label: string }): React.JSX.Element {
   return (
-    <div className="flex h-44 items-center justify-center rounded-xl border border-dashed border-[var(--app-border)] text-sm text-[var(--app-muted)]">
+    <div className="flex h-44 items-center justify-center rounded-xl border border-dashed border-[var(--app-border)] px-4 text-center text-sm text-[var(--app-muted)]">
       {label}
     </div>
   )
