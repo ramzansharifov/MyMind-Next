@@ -9,7 +9,9 @@ import {
   createFinanceTransactionInputSchema,
   financeCurrencyCodeSchema,
   financeTransactionFiltersSchema,
-  internalFinanceAdjustmentInputSchema
+  internalFinanceAdjustmentInputSchema,
+  updateFinanceAccountInputSchema,
+  updateFinanceTagInputSchema
 } from './finance'
 
 describe('finance validation', () => {
@@ -41,14 +43,31 @@ describe('finance validation', () => {
         color: '#60a5fa'
       })
     ).toThrow()
+    expect(() =>
+      updateFinanceAccountInputSchema.parse({
+        id: 'wallet',
+        name: 'Кошелёк',
+        icon: 'wallet',
+        color: '#60a5fa'
+      })
+    ).toThrow()
   })
 
-  it('rejects custom tag colors at the validation boundary', () => {
+  it('rejects custom tag colors at create and update validation boundaries', () => {
     expect(
       createFinanceTagInputSchema.parse({ name: 'Еда', type: 'expense', icon: 'utensils' })
     ).toEqual({ name: 'Еда', type: 'expense', icon: 'utensils' })
     expect(() =>
       createFinanceTagInputSchema.parse({
+        name: 'Еда',
+        type: 'expense',
+        icon: 'utensils',
+        color: '#ffffff'
+      })
+    ).toThrow()
+    expect(() =>
+      updateFinanceTagInputSchema.parse({
+        id: 'food',
         name: 'Еда',
         type: 'expense',
         icon: 'utensils',
