@@ -1,6 +1,6 @@
-import { ipcMain, type WebContents } from 'electron'
+import { BrowserWindow, ipcMain, type IpcMainInvokeEvent, type WebContents } from 'electron'
 
-import { IPC_CHANNELS } from '../../shared/contracts/system'
+import { IPC_CHANNELS, type SystemWindowState } from '../../shared/contracts/system'
 import { shutdownResponseSchema, systemHealthSchema } from '../../shared/validation/system'
 import { getSqlite } from '../database/client'
 import { mainOperationTracker } from '../services/main-operation-tracker'
@@ -21,6 +21,35 @@ interface RegisterIpcHandlersOptions {
   ): void | Promise<void>
 }
 
+function getTrustedWindow(
+  event: IpcMainInvokeEvent,
+  getTrustedWebContents: () => WebContents | null
+): BrowserWindow {
+  const trustedWebContents = getTrustedWebContents()
+
+  if (
+    trustedWebContents === null ||
+    event.sender !== trustedWebContents ||
+    event.senderFrame !== event.sender.mainFrame
+  ) {
+    throw new Error('Untrusted window control request')
+  }
+
+  const window = BrowserWindow.fromWebContents(event.sender)
+
+  if (!window || window.isDestroyed()) {
+    throw new Error('Window is unavailable')
+  }
+
+  return window
+}
+
+function getWindowState(window: BrowserWindow): SystemWindowState {
+  return {
+    maximized: window.isMaximized()
+  }
+}
+
 export function registerIpcHandlers(options: RegisterIpcHandlersOptions): void {
   registerStudyIpcHandlers()
   registerBoardsIpcHandlers()
@@ -30,6 +59,10 @@ export function registerIpcHandlers(options: RegisterIpcHandlersOptions): void {
 
   ipcMain.removeHandler(IPC_CHANNELS.systemHealth)
   ipcMain.removeHandler(IPC_CHANNELS.respondToShutdown)
+  ipcMain.removeHandler(IPC_CHANNELS.windowGetState)
+  ipcMain.removeHandler(IPC_CHANNELS.windowMinimize)
+  ipcMain.removeHandler(IPC_CHANNELS.windowToggleMaximize)
+  ipcMain.removeHandler(IPC_CHANNELS.windowClose)
 
   ipcMain.handle(IPC_CHANNELS.systemHealth, () =>
     mainOperationTracker.run(() => {
@@ -43,6 +76,33 @@ export function registerIpcHandlers(options: RegisterIpcHandlersOptions): void {
       })
     })
   )
+
+  ipcMain.handle(IPC_CHANNELS.windowGetState, (event) => {
+    const window = getTrustedWindow(event, options.getTrustedWebContents)
+    return getWindowState(window)
+  })
+
+  ipcMain.handle(IPC_CHANNELS.windowMinimize, (event) => {
+    const window = getTrustedWindow(event, options.getTrustedWebContents)
+    window.minimize()
+  })
+
+  ipcMain.handle(IPC_CHANNELS.windowToggleMaximize, (event) => {
+    const window = getTrustedWindow(event, options.getTrustedWebContents)
+
+    if (window.isMaximized()) {
+      window.unmaximize()
+    } else {
+      window.maximize()
+    }
+
+    return getWindowState(window)
+  })
+
+  ipcMain.handle(IPC_CHANNELS.windowClose, (event) => {
+    const window = getTrustedWindow(event, options.getTrustedWebContents)
+    window.close()
+  })
 
   ipcMain.handle(IPC_CHANNELS.respondToShutdown, (event, rawResponse: unknown) => {
     const trustedWebContents = options.getTrustedWebContents()
