@@ -118,9 +118,14 @@ export const createFinanceTagInputSchema = z
   })
   .strict()
 
-export const updateFinanceTagInputSchema = createFinanceTagInputSchema.safeExtend({
-  id: financeSafeIdSchema
-})
+export const updateFinanceTagInputSchema = z
+  .object({
+    id: financeSafeIdSchema,
+    name: financeNameSchema,
+    type: financeTagTypeSchema,
+    icon: financeIconNameSchema
+  })
+  .strict()
 
 export const deleteFinanceTagInputSchema = z.object({
   id: financeSafeIdSchema
