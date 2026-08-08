@@ -68,7 +68,7 @@ export function DiaryPage({ resourceId, onResourceHandled }: DiaryPageProps): Re
       const overview = await diaryClient.listOverview()
       setDiaries(overview.diaries)
       setSelectedDiaryId((current) =>
-        current && overview.diaries.some((diary) => diary.id === current) ? current : current
+        current && overview.diaries.some((diary) => diary.id === current) ? current : null
       )
     } catch (reason) {
       setError(getDiaryErrorMessage(reason))
@@ -137,9 +137,13 @@ export function DiaryPage({ resourceId, onResourceHandled }: DiaryPageProps): Re
                 <BookHeart aria-hidden="true" className="size-6" />
               </span>
               <div className="min-w-0">
-                <h1 className="text-2xl font-semibold tracking-tight text-[var(--app-text)]">Дневник</h1>
+                <h1 className="text-2xl font-semibold tracking-tight text-[var(--app-text)]">
+                  Дневник
+                </h1>
                 {selectedDiary && section !== 'library' && (
-                  <div className="mt-1 truncate text-xs text-[var(--app-muted)]">{selectedDiary.title}</div>
+                  <div className="mt-1 truncate text-xs text-[var(--app-muted)]">
+                    {selectedDiary.title}
+                  </div>
                 )}
               </div>
             </div>
@@ -163,7 +167,10 @@ export function DiaryPage({ resourceId, onResourceHandled }: DiaryPageProps): Re
             ) : null}
           </div>
 
-          <nav className="mt-4 flex gap-1 overflow-x-auto rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-1.5" aria-label="Навигация дневника">
+          <nav
+            className="mt-4 flex gap-1 overflow-x-auto rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-1.5"
+            aria-label="Навигация дневника"
+          >
             {diarySections
               .filter((item) => !item.needsDiary || selectedDiary)
               .map(({ id, label, icon: Icon }) => (
@@ -181,13 +188,20 @@ export function DiaryPage({ resourceId, onResourceHandled }: DiaryPageProps): Re
         </header>
 
         {error && (
-          <div role="alert" className="mb-4 rounded-xl border border-red-500/20 bg-red-500/[0.06] px-4 py-3 text-sm text-red-200">
+          <div
+            role="alert"
+            className="mb-4 rounded-xl border border-red-500/20 bg-red-500/[0.06] px-4 py-3 text-sm text-red-200"
+          >
             {error}
           </div>
         )}
 
         {section === 'library' && (
-          <DiaryLibrary diaries={diaries} onOpenDiary={openDiary} onCreateDiary={() => setDialogMode('create')} />
+          <DiaryLibrary
+            diaries={diaries}
+            onOpenDiary={openDiary}
+            onCreateDiary={() => setDialogMode('create')}
+          />
         )}
 
         {selectedDiary && section === 'today' && (
