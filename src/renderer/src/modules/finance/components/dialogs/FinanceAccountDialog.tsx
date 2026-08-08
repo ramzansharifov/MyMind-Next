@@ -15,8 +15,6 @@ import { getFinanceErrorMessage } from '../../lib/finance-ui'
 import { FinanceButton, FinanceField, financeInputClassName } from '../FinancePrimitives'
 import { FinanceIconPicker } from '../FinanceIconPicker'
 
-const DEFAULT_ACCOUNT_COLOR = '#a78bfa'
-
 const accountFormSchema = z.object({
   name: z.string().trim().min(1, 'Введите название').max(120),
   currencyCode: z
@@ -84,15 +82,13 @@ function FinanceAccountDialogContent({
             id: account.id,
             name: values.name,
             icon: values.icon,
-            color: account.color,
             currencyCode: values.currencyCode
           })
         : await financeClient.createAccount({
             name: values.name,
             currencyCode: values.currencyCode,
             initialBalanceMinor,
-            icon: values.icon,
-            color: DEFAULT_ACCOUNT_COLOR
+            icon: values.icon
           })
       await onSaved(saved)
       onOpenChange(false)
