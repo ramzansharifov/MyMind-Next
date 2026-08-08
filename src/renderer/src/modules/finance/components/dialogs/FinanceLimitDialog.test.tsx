@@ -24,7 +24,6 @@ const cash: FinanceAccountSummary = {
   initialBalanceMinor: 0,
   balanceMinor: 0,
   icon: 'banknote',
-  color: '#34d399',
   transactionCount: 0,
   lastTransactionAt: null,
   periodChangeMinor: 0,
@@ -36,8 +35,7 @@ const card: FinanceAccountSummary = {
   ...cash,
   id: 'card',
   name: 'Карта',
-  icon: 'credit-card',
-  color: '#60a5fa'
+  icon: 'credit-card'
 }
 
 const usd: FinanceAccountSummary = {
@@ -45,8 +43,7 @@ const usd: FinanceAccountSummary = {
   id: 'usd',
   name: 'Доллары',
   currencyCode: 'USD',
-  icon: 'wallet',
-  color: '#a78bfa'
+  icon: 'wallet'
 }
 
 const expenseTag: FinanceTagSummary = {
