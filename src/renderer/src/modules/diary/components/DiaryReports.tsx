@@ -18,17 +18,19 @@ import {
   diaryMoodMeta,
   expandDiaryTimeline,
   getDiaryErrorMessage,
+  localDayKey,
   reportRange
 } from '../lib/diary-ui'
 
-type ReportPeriod = 'week' | 'month' | 'three-months' | 'year' | 'all'
+type ReportPeriod = 'week' | 'month' | 'three-months' | 'year' | 'all' | 'custom'
 
 const periodOptions: Array<[ReportPeriod, string]> = [
   ['week', '7 дней'],
   ['month', '30 дней'],
   ['three-months', '3 месяца'],
   ['year', 'Год'],
-  ['all', 'Всё время']
+  ['all', 'Всё время'],
+  ['custom', 'Свой период']
 ]
 
 export function DiaryReports({
@@ -38,14 +40,35 @@ export function DiaryReports({
   diary: DiarySummary
   refreshVersion: number
 }): React.JSX.Element {
+  const initialCustomRange = reportRange('month')
   const [period, setPeriod] = useState<ReportPeriod>('month')
+  const [customFrom, setCustomFrom] = useState(initialCustomRange.fromDay ?? localDayKey())
+  const [customTo, setCustomTo] = useState(initialCustomRange.toDay ?? localDayKey())
   const [report, setReport] = useState<DiaryReport | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
-    const range = reportRange(period)
+    const range =
+      period === 'custom'
+        ? { fromDay: customFrom, toDay: customTo }
+        : reportRange(period)
+
+    if (!range.fromDay && period === 'custom') {
+      setIsLoading(false)
+      return
+    }
+    if (!range.toDay && period === 'custom') {
+      setIsLoading(false)
+      return
+    }
+    if (range.fromDay && range.toDay && range.fromDay > range.toDay) {
+      setIsLoading(false)
+      setError('Конечная дата должна быть не раньше начальной')
+      return
+    }
+
     setIsLoading(true)
     setError(null)
 
@@ -64,13 +87,11 @@ export function DiaryReports({
     return () => {
       cancelled = true
     }
-  }, [diary.id, period, refreshVersion])
+  }, [customFrom, customTo, diary.id, period, refreshVersion])
 
   const activityTimeline = useMemo(
     () =>
-      report
-        ? expandDiaryTimeline(report.timeline, report.fromDay, report.toDay)
-        : [],
+      report ? expandDiaryTimeline(report.timeline, report.fromDay, report.toDay) : [],
     [report]
   )
   const activityPercent =
@@ -100,6 +121,29 @@ export function DiaryReports({
           ))}
         </div>
       </div>
+
+      {period === 'custom' && (
+        <div className="grid max-w-xl grid-cols-2 gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 max-[520px]:grid-cols-1">
+          <label className="text-xs text-[var(--app-muted)]">
+            <span className="mb-1.5 block font-medium">С даты</span>
+            <input
+              type="date"
+              value={customFrom}
+              className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-control)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/40 focus:ring-2 focus:ring-violet-500/15"
+              onChange={(event) => setCustomFrom(event.target.value)}
+            />
+          </label>
+          <label className="text-xs text-[var(--app-muted)]">
+            <span className="mb-1.5 block font-medium">По дату</span>
+            <input
+              type="date"
+              value={customTo}
+              className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-control)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/40 focus:ring-2 focus:ring-violet-500/15"
+              onChange={(event) => setCustomTo(event.target.value)}
+            />
+          </label>
+        </div>
+      )}
 
       {isLoading && !report ? (
         <div className="flex min-h-72 items-center justify-center text-sm text-[var(--app-muted)]">
