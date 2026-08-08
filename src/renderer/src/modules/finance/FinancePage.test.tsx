@@ -53,6 +53,21 @@ const account = {
   updatedAt: 1
 }
 
+const incomeTag = {
+  id: 'salary',
+  name: 'Зарплата',
+  type: 'income' as const,
+  icon: 'tag' as const,
+  color: '#34d399',
+  transactionCount: 0,
+  totalAmountMinor: 0,
+  averageAmountMinor: 0,
+  linkedLimitCount: 0,
+  sharePercent: 0,
+  createdAt: 1,
+  updatedAt: 1
+}
+
 const emptyDashboard: FinanceDashboard = {
   settings: { id: 'default', baseCurrencyCode: 'TJS', createdAt: 1, updatedAt: 1 },
   period: { from: 0, to: 1000 },
@@ -79,6 +94,7 @@ beforeEach(() => {
   ])
   mocks.listTransactions.mockResolvedValue({ items: [], total: 0, limit: 30, offset: 0 })
   mocks.createAccount.mockResolvedValue(account)
+  mocks.createTag.mockResolvedValue(incomeTag)
   mocks.previewExpenseImpact.mockResolvedValue({ items: [], missingRateCurrencies: [] })
   mocks.getReport.mockResolvedValue({
     period: { from: 0, to: 1 },
@@ -234,6 +250,30 @@ describe('FinancePage', () => {
         initialBalanceMinor: 0,
         icon: 'wallet',
         color: '#a78bfa'
+      })
+    )
+  })
+
+  it('creates a tag without exposing color selection and assigns color by purpose', async () => {
+    const user = userEvent.setup()
+    render(<FinancePage />)
+    await screen.findByRole('heading', { name: 'Финансы' })
+    await user.click(screen.getByRole('button', { name: 'Теги' }))
+    await user.click(screen.getByRole('button', { name: 'Новый тег' }))
+
+    expect(screen.queryByText('Цвет')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Цвет тега' })).not.toBeInTheDocument()
+
+    await user.type(screen.getByRole('textbox', { name: 'Название' }), 'Зарплата')
+    await user.click(screen.getByRole('radio', { name: /Доходы/ }))
+    await user.click(screen.getByRole('button', { name: 'Создать тег' }))
+
+    await waitFor(() =>
+      expect(mocks.createTag).toHaveBeenCalledWith({
+        name: 'Зарплата',
+        type: 'income',
+        icon: 'tag',
+        color: '#34d399'
       })
     )
   })
