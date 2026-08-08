@@ -41,7 +41,6 @@ export const financeAccounts = sqliteTable(
     currencyCode: text('currency_code').notNull(),
     initialBalanceMinor: integer('initial_balance_minor').notNull().default(0),
     icon: text('icon').$type<FinanceIconName>().notNull(),
-    color: text('color').notNull(),
     createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
     updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull()
   },
@@ -55,7 +54,6 @@ export const financeTags = sqliteTable(
     name: text('name').notNull(),
     type: text('type').$type<FinanceTagType>().notNull(),
     icon: text('icon').$type<FinanceIconName>().notNull(),
-    color: text('color').notNull(),
     createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
     updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull()
   },
