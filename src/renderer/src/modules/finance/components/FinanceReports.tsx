@@ -149,7 +149,7 @@ export function FinanceReports({
     setError(null)
     try {
       const result = await financeClient.getReport(filters)
-      setReport(result as FinanceReportAnalytics)
+      setReport(result)
     } catch (reason) {
       setError(getFinanceErrorMessage(reason))
     } finally {
@@ -490,8 +490,8 @@ export function FinanceReports({
 
             {type !== 'transfer' && (
               <ChartSurface
-                title="Денежный поток по времени"
-                description="Доходы и расходы показаны отдельно. Переводы и системные корректировки не считаются доходом или расходом. Пустые интервалы сохранены на шкале."
+                title="Доходы и расходы по времени"
+                description="Денежный поток показан двумя независимыми линиями. Переводы и системные корректировки не считаются доходом или расходом. Пустые интервалы сохранены на шкале."
               >
                 <FinanceLineChart
                   data={report.timeline.map((point) => ({
