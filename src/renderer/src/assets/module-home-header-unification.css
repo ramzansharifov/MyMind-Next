@@ -1,0 +1,115 @@
+/* Keep module home headers visually aligned with the icons from appModuleRegistry. */
+
+/* Study: the registry icon is GraduationCap. */
+[data-study-focus-mode='false'] > [data-module-sidebar] header button > span,
+[data-study-focus-mode='false']
+  > main
+  > section:has(input[aria-label='Поиск по библиотеке'])
+  > div
+  > section:first-child
+  header
+  > div:first-child
+  > div:first-child {
+  position: relative;
+}
+
+[data-study-focus-mode='false'] > [data-module-sidebar] header button > span > svg,
+[data-study-focus-mode='false']
+  > main
+  > section:has(input[aria-label='Поиск по библиотеке'])
+  > div
+  > section:first-child
+  header
+  > div:first-child
+  > div:first-child
+  > svg {
+  opacity: 0;
+}
+
+[data-study-focus-mode='false'] > [data-module-sidebar] header button > span::after,
+[data-study-focus-mode='false']
+  > main
+  > section:has(input[aria-label='Поиск по библиотеке'])
+  > div
+  > section:first-child
+  header
+  > div:first-child
+  > div:first-child::after {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 1.5rem;
+  height: 1.5rem;
+  background: currentColor;
+  content: '';
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.58 3.908a2 2 0 0 0 1.66 0z'/%3E%3Cpath d='M22 10v6'/%3E%3Cpath d='M6 12.5V16a6 3 0 0 0 12 0v-3.5'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+[data-study-focus-mode='false'] > [data-module-sidebar] header button > span::after {
+  width: 1rem;
+  height: 1rem;
+}
+
+[data-study-focus-mode='false']
+  > main
+  > section:has(input[aria-label='Поиск по библиотеке'])
+  > div
+  > section:first-child
+  header
+  > div:first-child
+  > div:last-child
+  > p {
+  display: none;
+}
+
+[data-study-focus-mode='false']
+  > main
+  > section:has(input[aria-label='Поиск по библиотеке'])
+  > div
+  > section:first-child
+  header
+  > div:first-child
+  > div:last-child
+  > h1 {
+  margin-top: 0;
+}
+
+/* Boards: keep only the primary title. */
+[data-boards-focus-mode]
+  > main
+  > section:has(input[aria-label='Поиск по доскам'])
+  > div
+  > section:first-child
+  header
+  > div:first-child
+  > div:last-child
+  > p {
+  display: none;
+}
+
+[data-boards-focus-mode]
+  > main
+  > section:has(input[aria-label='Поиск по доскам'])
+  > div
+  > section:first-child
+  header
+  > div:first-child
+  > div:last-child
+  > h1 {
+  margin-top: 0;
+}
+
+/* Notes: the registry icon is Notebook; keep only the primary title. */
+[data-notes-hero] > header > :first-child > p,
+[data-notes-hero] > header > :first-child > h1 + p {
+  display: none;
+}
+
+[data-notes-hero] > header > :first-child > h1 {
+  margin-top: 0;
+}
+
+[data-notes-hero] > header > :first-child::after {
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 6h4'/%3E%3Cpath d='M2 10h4'/%3E%3Cpath d='M2 14h4'/%3E%3Cpath d='M2 18h4'/%3E%3Crect width='16' height='20' x='4' y='2' rx='2'/%3E%3Cpath d='M16 2v20'/%3E%3C/svg%3E") center / contain no-repeat;
+}

@@ -11,6 +11,7 @@ import './assets/module-sidebar-design.css'
 import './assets/board-canvas-layout.css'
 import './assets/notes-home-header.css'
 import './assets/finance-home-header.css'
+import './assets/module-home-header-unification.css'
 
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
