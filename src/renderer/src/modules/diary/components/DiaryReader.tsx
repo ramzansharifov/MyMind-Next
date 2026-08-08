@@ -1,7 +1,11 @@
 import { CalendarDays, ChevronLeft, ChevronRight, LoaderCircle } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
-import type { DiaryDay, DiaryDaySummary, DiarySummary } from '../../../../../shared/contracts/diary'
+import type {
+  DiaryDay,
+  DiaryDaySummary,
+  DiarySummary
+} from '../../../../../shared/contracts/diary'
 import { diaryClient } from '../api/diary-client'
 import {
   diaryMoodMeta,
@@ -27,9 +31,19 @@ export function DiaryReader({
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const orderedDays = useMemo(() => days.slice().sort((a, b) => a.dayKey.localeCompare(b.dayKey)), [days])
+  const orderedDays = useMemo(
+    () => days.slice().sort((left, right) => left.dayKey.localeCompare(right.dayKey)),
+    [days]
+  )
   const currentKey = day?.dayKey ?? requestedDayKey
-  const currentIndex = currentKey ? orderedDays.findIndex((item) => item.dayKey === currentKey) : -1
+  const currentIndex = currentKey
+    ? orderedDays.findIndex((item) => item.dayKey === currentKey)
+    : -1
+  const previousDay = currentIndex > 0 ? orderedDays[currentIndex - 1] : null
+  const nextDay =
+    currentIndex >= 0 && currentIndex < orderedDays.length - 1
+      ? orderedDays[currentIndex + 1]
+      : null
 
   const loadDays = useCallback(async (): Promise<void> => {
     setIsLoading(true)
@@ -44,8 +58,8 @@ export function DiaryReader({
       const target =
         (requestedDayKey && nextDays.find((item) => item.dayKey === requestedDayKey)?.dayKey) ??
         nextDays[0].dayKey
-      const nextDay = await diaryClient.getDay({ diaryId: diary.id, dayKey: target })
-      setDay(nextDay)
+      const nextPage = await diaryClient.getDay({ diaryId: diary.id, dayKey: target })
+      setDay(nextPage)
       onDayChange(target)
     } catch (reason) {
       setError(getDiaryErrorMessage(reason))
@@ -85,7 +99,9 @@ export function DiaryReader({
         <div className="mx-auto flex size-12 items-center justify-center rounded-2xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
           <CalendarDays className="size-6" />
         </div>
-        <h2 className="mt-4 font-semibold text-[var(--app-text)]">В дневнике пока нет страниц</h2>
+        <h2 className="mt-4 font-semibold text-[var(--app-text)]">
+          В дневнике пока нет страниц
+        </h2>
         <p className="mx-auto mt-2 max-w-md text-sm text-[var(--app-muted)]">
           Страница появится автоматически, когда вы добавите запись или настроение дня.
         </p>
@@ -100,15 +116,19 @@ export function DiaryReader({
       <div className="flex items-center justify-between gap-4 max-[700px]:flex-col max-[700px]:items-start">
         <div>
           <h2 className="text-lg font-semibold text-[var(--app-text)]">Просмотр дневника</h2>
-          <p className="mt-1 text-sm text-[var(--app-muted)]">Только чтение — спокойно листайте уже прожитые страницы.</p>
+          <p className="mt-1 text-sm text-[var(--app-muted)]">
+            Только чтение — спокойно листайте уже прожитые страницы.
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <button
             type="button"
-            disabled={currentIndex <= 0}
+            disabled={!previousDay}
             aria-label="Предыдущая страница"
             className="flex size-10 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-muted)] hover:text-[var(--app-text)] disabled:opacity-35"
-            onClick={() => void openDay(orderedDays[currentIndex - 1]?.dayKey)}
+            onClick={() => {
+              if (previousDay) void openDay(previousDay.dayKey)
+            }}
           >
             <ChevronLeft className="size-4" />
           </button>
@@ -120,16 +140,22 @@ export function DiaryReader({
           >
             {orderedDays.map((item) => (
               <option key={item.id} value={item.dayKey}>
-                {formatDiaryDate(item.dayKey, { day: 'numeric', month: 'long', year: 'numeric' })}
+                {formatDiaryDate(item.dayKey, {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric'
+                })}
               </option>
             ))}
           </select>
           <button
             type="button"
-            disabled={currentIndex < 0 || currentIndex >= orderedDays.length - 1}
+            disabled={!nextDay}
             aria-label="Следующая страница"
             className="flex size-10 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-muted)] hover:text-[var(--app-text)] disabled:opacity-35"
-            onClick={() => void openDay(orderedDays[currentIndex + 1]?.dayKey)}
+            onClick={() => {
+              if (nextDay) void openDay(nextDay.dayKey)
+            }}
           >
             <ChevronRight className="size-4" />
           </button>
@@ -143,7 +169,9 @@ export function DiaryReader({
               <>
                 <header className="flex items-start justify-between gap-6 border-b border-stone-300/70 pb-5 max-[560px]:flex-col">
                   <div>
-                    <div className="text-xs font-semibold uppercase tracking-[0.16em] text-stone-500">{diary.title}</div>
+                    <div className="text-xs font-semibold uppercase tracking-[0.16em] text-stone-500">
+                      {diary.title}
+                    </div>
                     <h3 className="mt-2 font-serif text-2xl font-semibold capitalize text-stone-900">
                       {formatDiaryDate(day.dayKey)}
                     </h3>
@@ -165,9 +193,16 @@ export function DiaryReader({
                     </p>
                   ) : (
                     day.entries.map((entry) => (
-                      <div key={entry.id} className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-4 max-[480px]:grid-cols-1 max-[480px]:gap-1">
-                        <time className="pt-1 font-mono text-xs text-stone-400">{formatDiaryTime(entry.occurredAt)}</time>
-                        <p className="diary-handwriting whitespace-pre-wrap break-words text-[15px] leading-8 text-stone-800">{entry.text}</p>
+                      <div
+                        key={entry.id}
+                        className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-4 max-[480px]:grid-cols-1 max-[480px]:gap-1"
+                      >
+                        <time className="pt-1 font-mono text-xs text-stone-400">
+                          {formatDiaryTime(entry.occurredAt)}
+                        </time>
+                        <p className="diary-handwriting whitespace-pre-wrap break-words text-[15px] leading-8 text-stone-800">
+                          {entry.text}
+                        </p>
                       </div>
                     ))
                   )}
@@ -189,7 +224,14 @@ export function DiaryReader({
         </button>
       </div>
 
-      {error && <div role="alert" className="rounded-xl border border-red-500/20 bg-red-500/[0.06] px-4 py-3 text-sm text-red-200">{error}</div>}
+      {error && (
+        <div
+          role="alert"
+          className="rounded-xl border border-red-500/20 bg-red-500/[0.06] px-4 py-3 text-sm text-red-200"
+        >
+          {error}
+        </div>
+      )}
     </section>
   )
 }
