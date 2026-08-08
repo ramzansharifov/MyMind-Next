@@ -1,0 +1,57 @@
+.diary-paper {
+  border-color: rgb(120 113 108 / 28%);
+  background:
+    linear-gradient(90deg, transparent 0 4.25rem, rgb(244 114 182 / 10%) 4.25rem 4.32rem, transparent 4.32rem),
+    repeating-linear-gradient(
+      to bottom,
+      rgb(255 253 246) 0,
+      rgb(255 253 246) 31px,
+      rgb(120 113 108 / 13%) 32px
+    );
+  color: #292524;
+}
+
+.diary-paper-content {
+  background:
+    radial-gradient(circle at 18% 12%, rgb(255 255 255 / 72%), transparent 26rem),
+    linear-gradient(90deg, rgb(120 113 108 / 4%), transparent 1.2rem, transparent calc(100% - 1.2rem), rgb(120 113 108 / 4%));
+}
+
+.diary-handwriting {
+  font-family: "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive;
+  letter-spacing: 0.005em;
+}
+
+.diary-book-frame {
+  position: relative;
+  background: color-mix(in srgb, var(--app-surface-raised) 82%, #3f3429 18%);
+  box-shadow: 0 30px 80px rgb(0 0 0 / 28%);
+}
+
+.diary-book-frame::before {
+  position: absolute;
+  inset: 1rem auto 1rem 50%;
+  z-index: 2;
+  width: 1px;
+  content: '';
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent, rgb(87 83 78 / 20%), transparent);
+  box-shadow: 0 0 18px rgb(87 83 78 / 18%);
+}
+
+@media (max-width: 620px) {
+  .diary-paper {
+    background:
+      linear-gradient(90deg, transparent 0 2.8rem, rgb(244 114 182 / 9%) 2.8rem 2.87rem, transparent 2.87rem),
+      repeating-linear-gradient(
+        to bottom,
+        rgb(255 253 246) 0,
+        rgb(255 253 246) 31px,
+        rgb(120 113 108 / 13%) 32px
+      );
+  }
+
+  .diary-book-frame::before {
+    display: none;
+  }
+}

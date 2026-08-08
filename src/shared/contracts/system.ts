@@ -1,4 +1,5 @@
 import type { BoardApi } from './boards'
+import type { DiaryApi } from './diary'
 import type { FinanceApi } from './finance'
 import type { NotesApi } from './notes'
 import type { PreferencesApi } from './preferences'
@@ -47,6 +48,7 @@ export interface MyMindApi {
   study: StudyApi
   boards: BoardApi
   notes: NotesApi
+  diary: DiaryApi
   finance: FinanceApi
   preferences: PreferencesApi
 }

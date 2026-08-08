@@ -127,6 +127,13 @@
       "when": 1786177200000,
       "tag": "0017_finance_system_tag_colors",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1786188000000,
+      "tag": "0018_diary_module",
+      "breakpoints": true
     }
   ]
 }

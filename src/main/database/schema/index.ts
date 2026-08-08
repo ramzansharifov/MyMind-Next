@@ -1,6 +1,7 @@
 import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
 export { boardDocuments, boardNodes } from './boards'
+export { diaries, diaryDays, diaryEntries } from './diary'
 export {
   financeAccounts,
   financeExchangeRates,

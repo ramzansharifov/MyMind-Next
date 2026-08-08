@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
 import { BOARD_IPC_CHANNELS, type BoardDocument, type BoardNode } from '../shared/contracts/boards'
+import { DIARY_IPC_CHANNELS } from '../shared/contracts/diary'
 import { FINANCE_IPC_CHANNELS } from '../shared/contracts/finance'
 import {
   NOTES_IPC_CHANNELS,
@@ -209,6 +210,20 @@ const api: MyMindApi = {
       ipcRenderer.invoke(NOTES_IPC_CHANNELS.importAsset, input) as Promise<NoteLocalAsset | null>,
 
     openAsset: (input) => ipcRenderer.invoke(NOTES_IPC_CHANNELS.openAsset, input) as Promise<void>
+  },
+
+  diary: {
+    listOverview: () => ipcRenderer.invoke(DIARY_IPC_CHANNELS.listOverview),
+    createDiary: (input) => ipcRenderer.invoke(DIARY_IPC_CHANNELS.createDiary, input),
+    updateDiary: (input) => ipcRenderer.invoke(DIARY_IPC_CHANNELS.updateDiary, input),
+    deleteDiary: (input) => ipcRenderer.invoke(DIARY_IPC_CHANNELS.deleteDiary, input),
+    getDay: (input) => ipcRenderer.invoke(DIARY_IPC_CHANNELS.getDay, input),
+    listDays: (input) => ipcRenderer.invoke(DIARY_IPC_CHANNELS.listDays, input),
+    setMood: (input) => ipcRenderer.invoke(DIARY_IPC_CHANNELS.setMood, input),
+    createEntry: (input) => ipcRenderer.invoke(DIARY_IPC_CHANNELS.createEntry, input),
+    updateEntry: (input) => ipcRenderer.invoke(DIARY_IPC_CHANNELS.updateEntry, input),
+    deleteEntry: (input) => ipcRenderer.invoke(DIARY_IPC_CHANNELS.deleteEntry, input),
+    getReport: (input) => ipcRenderer.invoke(DIARY_IPC_CHANNELS.getReport, input)
   },
 
   finance: {
