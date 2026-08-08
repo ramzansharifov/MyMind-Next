@@ -48,7 +48,7 @@ describe('FinanceReports', () => {
       />
     )
 
-    await screen.findByText('Денежный поток по времени')
+    await screen.findByText('Доходы и расходы по времени')
     await waitFor(() => expect(mocks.getReport).toHaveBeenCalled())
     const initialFilters = mocks.getReport.mock.calls.at(-1)?.[0]
     expect(initialFilters).toMatchObject({ currencyCode: 'TJS' })
@@ -65,7 +65,7 @@ describe('FinanceReports', () => {
         limitsVersion={0}
       />
     )
-    await screen.findByText('Денежный поток по времени')
+    await screen.findByText('Доходы и расходы по времени')
 
     const source = screen.getByRole('combobox', { name: 'Источник операции' })
     await user.selectOptions(source, 'template')
@@ -109,7 +109,7 @@ describe('FinanceReports', () => {
         limitsVersion={0}
       />
     )
-    await screen.findByText('Денежный поток по времени')
+    await screen.findByText('Доходы и расходы по времени')
 
     await user.selectOptions(screen.getByRole('combobox', { name: 'Тег' }), 'food')
     await user.selectOptions(screen.getByRole('combobox', { name: 'Тип операции' }), 'transfer')
