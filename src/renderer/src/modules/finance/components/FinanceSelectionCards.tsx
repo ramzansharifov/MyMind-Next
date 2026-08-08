@@ -55,10 +55,7 @@ export function FinanceAccountCardPicker({
             )}
             onClick={() => onChange(account.id)}
           >
-            <span
-              className="flex size-9 items-center justify-center rounded-xl border border-white/5"
-              style={{ backgroundColor: `${account.color}1f`, color: account.color }}
-            >
+            <span className="flex size-9 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
               <FinanceIcon name={account.icon} className="size-4.5" />
             </span>
             <span className="mt-2 max-w-full truncate text-xs font-semibold text-[var(--app-text)]">

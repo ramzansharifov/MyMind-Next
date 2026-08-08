@@ -10,7 +10,6 @@ import {
 } from '../../../../../../shared/contracts/finance'
 import { formatMinorPlain, parseMoneyToMinor } from '../../../../../../shared/finance-money'
 import { AppDialog } from '../../../../shared/ui/AppDialog'
-import { ColorPicker } from '../../../../shared/ui/ColorPicker'
 import { financeClient } from '../../api/finance-client'
 import { getFinanceErrorMessage } from '../../lib/finance-ui'
 import { FinanceButton, FinanceField, financeInputClassName } from '../FinancePrimitives'
@@ -26,8 +25,7 @@ const accountFormSchema = z.object({
     .toUpperCase()
     .regex(/^[A-Z]{3}$/, 'Введите трёхбуквенный код валюты'),
   initialBalance: z.string().trim().min(1, 'Введите начальный баланс'),
-  icon: z.enum(FINANCE_ICON_NAMES),
-  color: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Выберите корректный цвет')
+  icon: z.enum(FINANCE_ICON_NAMES)
 })
 
 type AccountFormValues = z.infer<typeof accountFormSchema>
@@ -65,8 +63,7 @@ function FinanceAccountDialogContent({
       initialBalance: account
         ? formatMinorPlain(account.initialBalanceMinor, account.currencyCode)
         : '0.00',
-      icon: account?.icon ?? 'wallet',
-      color: account?.color ?? DEFAULT_ACCOUNT_COLOR
+      icon: account?.icon ?? 'wallet'
     }
   })
 
@@ -87,7 +84,7 @@ function FinanceAccountDialogContent({
             id: account.id,
             name: values.name,
             icon: values.icon,
-            color: values.color,
+            color: account.color,
             currencyCode: values.currencyCode
           })
         : await financeClient.createAccount({
@@ -126,7 +123,9 @@ function FinanceAccountDialogContent({
           <input {...register('name')} autoFocus className={financeInputClassName} />
         </FinanceField>
 
-        <div className="grid grid-cols-3 items-start gap-3 max-[560px]:grid-cols-1">
+        <div
+          className={`grid items-start gap-3 max-[560px]:grid-cols-1 ${account ? 'grid-cols-2' : 'grid-cols-3'}`}
+        >
           <FinanceField
             label="Валюта"
             error={errors.currencyCode?.message}
@@ -147,7 +146,7 @@ function FinanceAccountDialogContent({
             />
           </FinanceField>
 
-          {!account ? (
+          {!account && (
             <FinanceField label="Начальный баланс" error={errors.initialBalance?.message}>
               <input
                 {...register('initialBalance')}
@@ -157,25 +156,6 @@ function FinanceAccountDialogContent({
                 className={financeInputClassName}
               />
             </FinanceField>
-          ) : (
-            <div className="text-sm text-[var(--app-text)]">
-              <span className="mb-1.5 block font-medium">Цвет</span>
-              <Controller
-                control={control}
-                name="color"
-                render={({ field }) => (
-                  <ColorPicker
-                    value={field.value}
-                    ariaLabel="Цвет счёта"
-                    disabled={isSaving}
-                    onChange={field.onChange}
-                  />
-                )}
-              />
-              {errors.color?.message && (
-                <span className="mt-1.5 block text-xs text-red-300">{errors.color.message}</span>
-              )}
-            </div>
           )}
 
           <div className="text-sm text-[var(--app-text)]">
