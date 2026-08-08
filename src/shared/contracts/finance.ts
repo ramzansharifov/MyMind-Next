@@ -1,6 +1,11 @@
 export const FINANCE_TRANSACTION_TYPES = ['income', 'expense', 'transfer', 'adjustment'] as const
 export const FINANCE_USER_TRANSACTION_TYPES = ['income', 'expense', 'transfer'] as const
 export const FINANCE_TAG_TYPES = ['income', 'expense', 'both'] as const
+export const FINANCE_TAG_COLORS = {
+  income: '#34d399',
+  expense: '#f87171',
+  both: '#fbbf24'
+} as const
 export const FINANCE_LIMIT_PERIOD_TYPES = ['day', 'week', 'month', 'year'] as const
 export const FINANCE_LIMIT_STATES = ['active', 'paused'] as const
 export const FINANCE_TRANSACTION_SORTS = [
@@ -42,6 +47,10 @@ export type FinanceTransactionSort = (typeof FINANCE_TRANSACTION_SORTS)[number]
 export type FinancePageId = (typeof FINANCE_PAGES)[number]
 export type FinanceIconName = (typeof FINANCE_ICON_NAMES)[number]
 
+export function getFinanceTagColor(type: FinanceTagType): string {
+  return FINANCE_TAG_COLORS[type]
+}
+
 export interface FinanceSettings {
   id: 'default'
   baseCurrencyCode: string
@@ -62,7 +71,6 @@ export interface FinanceAccount {
   currencyCode: string
   initialBalanceMinor: number
   icon: FinanceIconName
-  color: string
   createdAt: number
   updatedAt: number
 }
@@ -243,14 +251,12 @@ export interface CreateFinanceAccountInput {
   currencyCode: string
   initialBalanceMinor: number
   icon: FinanceIconName
-  color: string
 }
 
 export interface UpdateFinanceAccountInput {
   id: string
   name: string
   icon: FinanceIconName
-  color: string
   currencyCode?: string
 }
 
@@ -276,7 +282,6 @@ export interface CreateFinanceTagInput {
   name: string
   type: FinanceTagType
   icon: FinanceIconName
-  color: string
 }
 
 export interface UpdateFinanceTagInput extends CreateFinanceTagInput {

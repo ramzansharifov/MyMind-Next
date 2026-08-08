@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { FinanceTagSummary } from '../../../../../../shared/contracts/finance'
 import { TooltipProvider } from '../../../../shared/ui/tooltip'
@@ -30,7 +30,11 @@ const savedTag: FinanceTagSummary = {
 }
 
 describe('FinanceTagDialog', () => {
-  it('keeps only the selected purpose card colored and makes universal tags amber', async () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('keeps only the selected purpose card colored and sends no configurable color', async () => {
     const user = userEvent.setup()
     const onSaved = vi.fn()
     const onOpenChange = vi.fn()
@@ -77,11 +81,52 @@ describe('FinanceTagDialog', () => {
       expect(mocks.createTag).toHaveBeenCalledWith({
         name: 'Универсальный',
         type: 'both',
-        icon: 'briefcase',
-        color: '#fbbf24'
+        icon: 'briefcase'
       })
     )
     expect(onSaved).toHaveBeenCalledWith(savedTag)
     expect(onOpenChange).toHaveBeenCalledWith(false)
+  })
+
+  it('does not expose or send a color while editing an existing tag', async () => {
+    const user = userEvent.setup()
+    const onSaved = vi.fn()
+    const onOpenChange = vi.fn()
+    const updatedTag: FinanceTagSummary = {
+      ...savedTag,
+      name: 'Прочее',
+      type: 'expense',
+      color: '#f87171'
+    }
+    mocks.updateTag.mockResolvedValue(updatedTag)
+
+    render(
+      <TooltipProvider>
+        <FinanceTagDialog
+          open
+          tag={savedTag}
+          onOpenChange={onOpenChange}
+          onSaved={onSaved}
+        />
+      </TooltipProvider>
+    )
+
+    expect(screen.queryByText('Цвет')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Цвет тега' })).not.toBeInTheDocument()
+
+    const name = screen.getByRole('textbox', { name: 'Название' })
+    await user.clear(name)
+    await user.type(name, 'Прочее')
+    await user.click(screen.getByRole('radio', { name: /Расходы/ }))
+    await user.click(screen.getByRole('button', { name: 'Сохранить' }))
+
+    await waitFor(() =>
+      expect(mocks.updateTag).toHaveBeenCalledWith({
+        id: savedTag.id,
+        name: 'Прочее',
+        type: 'expense',
+        icon: 'briefcase'
+      })
+    )
   })
 })

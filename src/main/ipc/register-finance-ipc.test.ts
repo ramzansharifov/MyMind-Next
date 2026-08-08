@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   removeHandler: vi.fn(),
   run: vi.fn((operation: () => unknown) => operation()),
   createAccount: vi.fn(),
+  createTag: vi.fn(),
   createTransaction: vi.fn(),
   getDashboard: vi.fn()
 }))
@@ -35,7 +36,7 @@ vi.mock('../services/finance.service', () => ({
     deleteTransaction: vi.fn(),
     listTags: vi.fn(),
     getTag: vi.fn(),
-    createTag: vi.fn(),
+    createTag: mocks.createTag,
     updateTag: vi.fn(),
     deleteTag: vi.fn(),
     listLimits: vi.fn(),
@@ -70,7 +71,7 @@ describe('registerFinanceIpcHandlers', () => {
     )
   })
 
-  it('validates payloads and executes handlers through MainOperationTracker', () => {
+  it('validates account payloads and rejects the legacy color field', () => {
     registerFinanceIpcHandlers()
     const handler = mocks.handle.mock.calls.find(
       ([channel]) => channel === FINANCE_IPC_CHANNELS.createAccount
@@ -79,13 +80,26 @@ describe('registerFinanceIpcHandlers', () => {
       name: 'Карта',
       currencyCode: 'tjs',
       initialBalanceMinor: 0,
-      icon: 'credit-card',
-      color: '#8b5cf6'
+      icon: 'credit-card'
     }
     handler({}, input)
     expect(mocks.run).toHaveBeenCalled()
     expect(mocks.createAccount).toHaveBeenCalledWith({ ...input, currencyCode: 'TJS' })
+    expect(() => handler({}, { ...input, color: '#8b5cf6' })).toThrow()
     expect(() => handler({}, { ...input, initialBalanceMinor: 1.5 })).toThrow()
+  })
+
+  it('rejects a custom tag color before calling the service', () => {
+    registerFinanceIpcHandlers()
+    const handler = mocks.handle.mock.calls.find(
+      ([channel]) => channel === FINANCE_IPC_CHANNELS.createTag
+    )?.[1]
+    const input = { name: 'Еда', type: 'expense', icon: 'utensils' }
+
+    handler({}, input)
+    expect(mocks.createTag).toHaveBeenCalledWith(input)
+    expect(() => handler({}, { ...input, color: '#ffffff' })).toThrow()
+    expect(mocks.createTag).toHaveBeenCalledTimes(1)
   })
 
   it('keeps adjustment operations inaccessible to public transaction creation', () => {

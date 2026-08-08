@@ -4,11 +4,14 @@ import {
   clearFinanceAccountHistoryInputSchema,
   createFinanceAccountInputSchema,
   createFinanceLimitInputSchema,
+  createFinanceTagInputSchema,
   createFinanceTemplateInputSchema,
   createFinanceTransactionInputSchema,
   financeCurrencyCodeSchema,
   financeTransactionFiltersSchema,
-  internalFinanceAdjustmentInputSchema
+  internalFinanceAdjustmentInputSchema,
+  updateFinanceAccountInputSchema,
+  updateFinanceTagInputSchema
 } from './finance'
 
 describe('finance validation', () => {
@@ -17,22 +20,60 @@ describe('finance validation', () => {
     expect(() => financeCurrencyCodeSchema.parse('TJ')).toThrow()
   })
 
-  it('validates accounts without an account type and normalizes manual currency input', () => {
+  it('validates accounts without a configurable color and normalizes manual currency input', () => {
     expect(
       createFinanceAccountInputSchema.parse({
         name: 'Кошелёк',
         currencyCode: 'usd',
         initialBalanceMinor: 0,
-        icon: 'wallet',
-        color: '#60a5fa'
+        icon: 'wallet'
       })
     ).toEqual({
       name: 'Кошелёк',
       currencyCode: 'USD',
       initialBalanceMinor: 0,
-      icon: 'wallet',
-      color: '#60a5fa'
+      icon: 'wallet'
     })
+    expect(() =>
+      createFinanceAccountInputSchema.parse({
+        name: 'Кошелёк',
+        currencyCode: 'USD',
+        initialBalanceMinor: 0,
+        icon: 'wallet',
+        color: '#60a5fa'
+      })
+    ).toThrow()
+    expect(() =>
+      updateFinanceAccountInputSchema.parse({
+        id: 'wallet',
+        name: 'Кошелёк',
+        icon: 'wallet',
+        color: '#60a5fa'
+      })
+    ).toThrow()
+  })
+
+  it('rejects custom tag colors at create and update validation boundaries', () => {
+    expect(
+      createFinanceTagInputSchema.parse({ name: 'Еда', type: 'expense', icon: 'utensils' })
+    ).toEqual({ name: 'Еда', type: 'expense', icon: 'utensils' })
+    expect(() =>
+      createFinanceTagInputSchema.parse({
+        name: 'Еда',
+        type: 'expense',
+        icon: 'utensils',
+        color: '#ffffff'
+      })
+    ).toThrow()
+    expect(() =>
+      updateFinanceTagInputSchema.parse({
+        id: 'food',
+        name: 'Еда',
+        type: 'expense',
+        icon: 'utensils',
+        color: '#ffffff'
+      })
+    ).toThrow()
   })
 
   it('accepts income and rejects public adjustments or non-positive amounts', () => {

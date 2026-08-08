@@ -38,8 +38,7 @@ function createExpenseTag() {
   return financeService.createTag({
     name: 'Еда',
     type: 'expense',
-    icon: 'utensils',
-    color: '#f87171'
+    icon: 'utensils'
   })
 }
 
@@ -48,8 +47,7 @@ function createAccount(name: string, currencyCode: string) {
     name,
     currencyCode,
     initialBalanceMinor: 0,
-    icon: 'wallet',
-    color: '#a78bfa'
+    icon: 'wallet'
   })
 }
 

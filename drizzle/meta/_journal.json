@@ -120,6 +120,13 @@
       "when": 1786169400000,
       "tag": "0016_finance_universal_tag_yellow",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1786177200000,
+      "tag": "0017_finance_system_tag_colors",
+      "breakpoints": true
     }
   ]
 }
