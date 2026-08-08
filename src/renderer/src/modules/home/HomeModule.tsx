@@ -1,4 +1,11 @@
-import { GraduationCap, House, Notebook, Presentation, Wallet } from 'lucide-react'
+import {
+  GraduationCap,
+  House,
+  Notebook,
+  Presentation,
+  Wallet,
+  type LucideIcon
+} from 'lucide-react'
 
 import { requestAppModuleNavigation } from '../../app/module-navigation'
 import type { AppViewId } from '../../app/module-registry'
@@ -6,7 +13,7 @@ import type { AppViewId } from '../../app/module-registry'
 const HOME_MODULES: Array<{
   id: Exclude<AppViewId, 'home' | 'settings'>
   label: string
-  icon: typeof GraduationCap
+  icon: LucideIcon
 }> = [
   { id: 'study', label: 'Обучение', icon: GraduationCap },
   { id: 'boards', label: 'Доски', icon: Presentation },
@@ -23,7 +30,9 @@ export function HomeModule(): React.JSX.Element {
             <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-violet-500/20 bg-violet-500/10 text-violet-300 shadow-inner shadow-violet-500/5">
               <House aria-hidden="true" className="size-6" />
             </div>
-            <h1 className="text-2xl font-semibold tracking-tight text-[var(--app-text)]">Главная</h1>
+            <h1 className="text-2xl font-semibold tracking-tight text-[var(--app-text)]">
+              Главная
+            </h1>
           </div>
         </section>
 
