@@ -13,7 +13,6 @@ import { FINANCE_MAX_MINOR } from '../finance-money'
 
 const FINANCE_SAFE_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/
 const FINANCE_CURRENCY_PATTERN = /^[A-Z]{3}$/
-const FINANCE_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/
 
 export const financeSafeIdSchema = z
   .string()
@@ -24,9 +23,6 @@ export const financeCurrencyCodeSchema = z
   .trim()
   .toUpperCase()
   .regex(FINANCE_CURRENCY_PATTERN, 'Код валюты должен состоять из трёх латинских букв')
-export const financeColorSchema = z
-  .string()
-  .regex(FINANCE_COLOR_PATTERN, 'Цвет должен быть указан в формате #RRGGBB')
 export const financeIconNameSchema = z.enum(FINANCE_ICON_NAMES)
 export const financeTransactionTypeSchema = z.enum(FINANCE_TRANSACTION_TYPES)
 export const financeUserTransactionTypeSchema = z.enum(FINANCE_USER_TRANSACTION_TYPES)
@@ -84,21 +80,23 @@ export const deleteFinanceExchangeRateInputSchema = z.object({
   currencyCode: financeCurrencyCodeSchema
 })
 
-export const createFinanceAccountInputSchema = z.object({
-  name: financeNameSchema,
-  currencyCode: financeCurrencyCodeSchema,
-  initialBalanceMinor: financeMinorAmountSchema,
-  icon: financeIconNameSchema,
-  color: financeColorSchema
-})
+export const createFinanceAccountInputSchema = z
+  .object({
+    name: financeNameSchema,
+    currencyCode: financeCurrencyCodeSchema,
+    initialBalanceMinor: financeMinorAmountSchema,
+    icon: financeIconNameSchema
+  })
+  .strict()
 
-export const updateFinanceAccountInputSchema = z.object({
-  id: financeSafeIdSchema,
-  name: financeNameSchema,
-  icon: financeIconNameSchema,
-  color: financeColorSchema,
-  currencyCode: financeCurrencyCodeSchema.optional()
-})
+export const updateFinanceAccountInputSchema = z
+  .object({
+    id: financeSafeIdSchema,
+    name: financeNameSchema,
+    icon: financeIconNameSchema,
+    currencyCode: financeCurrencyCodeSchema.optional()
+  })
+  .strict()
 
 export const deleteFinanceAccountInputSchema = z.object({
   id: financeSafeIdSchema
@@ -112,14 +110,15 @@ export const clearFinanceAccountHistoryInputSchema = z.object({
   })
 })
 
-export const createFinanceTagInputSchema = z.object({
-  name: financeNameSchema,
-  type: financeTagTypeSchema,
-  icon: financeIconNameSchema,
-  color: financeColorSchema
-})
+export const createFinanceTagInputSchema = z
+  .object({
+    name: financeNameSchema,
+    type: financeTagTypeSchema,
+    icon: financeIconNameSchema
+  })
+  .strict()
 
-export const updateFinanceTagInputSchema = createFinanceTagInputSchema.extend({
+export const updateFinanceTagInputSchema = createFinanceTagInputSchema.safeExtend({
   id: financeSafeIdSchema
 })
 
