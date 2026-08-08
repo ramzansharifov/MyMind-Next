@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 
+import { getFinanceTagColor } from '../../shared/contracts/finance'
 import type {
   ClearFinanceAccountHistoryInput,
   ClearFinanceAccountHistoryResult,
@@ -54,7 +55,6 @@ interface AccountRow {
   currency_code: string
   initial_balance_minor: number
   icon: FinanceAccount['icon']
-  color: string
   created_at: number
   updated_at: number
 }
@@ -71,7 +71,6 @@ interface TagRow {
   name: string
   type: FinanceTag['type']
   icon: FinanceTag['icon']
-  color: string
   created_at: number
   updated_at: number
 }
@@ -168,7 +167,6 @@ function mapAccount(row: AccountRow): FinanceAccount {
     currencyCode: row.currency_code,
     initialBalanceMinor: assertSafeMinor(row.initial_balance_minor),
     icon: row.icon,
-    color: row.color,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   }
@@ -190,7 +188,7 @@ function mapTag(row: TagRow): FinanceTag {
     name: row.name,
     type: row.type,
     icon: row.icon,
-    color: row.color,
+    color: getFinanceTagColor(row.type),
     createdAt: row.created_at,
     updatedAt: row.updated_at
   }
@@ -352,6 +350,7 @@ function writeTransaction(
     const tag = getTagRow(input.tagId)
     assertTagCompatible(tag, input.type)
     const signedAmountMinor = input.type === 'income' ? input.amountMinor : -input.amountMinor
+    const tagColor = getFinanceTagColor(tag.type)
 
     if (options.updating) {
       sqlite
@@ -368,7 +367,7 @@ function writeTransaction(
           tag.id,
           tag.name,
           tag.icon,
-          tag.color,
+          tagColor,
           templateSnapshot.templateId,
           templateSnapshot.templateNameSnapshot,
           input.occurredAt,
@@ -391,7 +390,7 @@ function writeTransaction(
           tag.id,
           tag.name,
           tag.icon,
-          tag.color,
+          tagColor,
           templateSnapshot.templateId,
           templateSnapshot.templateNameSnapshot,
           input.occurredAt,
@@ -609,19 +608,10 @@ export function createFinanceAccount(input: CreateFinanceAccountInput): FinanceA
   getSqlite()
     .prepare(
       `INSERT INTO finance_accounts (
-        id, name, currency_code, initial_balance_minor, icon, color, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+        id, name, currency_code, initial_balance_minor, icon, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)`
     )
-    .run(
-      id,
-      input.name,
-      input.currencyCode,
-      input.initialBalanceMinor,
-      input.icon,
-      input.color,
-      now,
-      now
-    )
+    .run(id, input.name, input.currencyCode, input.initialBalanceMinor, input.icon, now, now)
 
   return getFinanceAccount(id)
 }
@@ -642,10 +632,10 @@ export function updateFinanceAccount(input: UpdateFinanceAccountInput): FinanceA
   getSqlite()
     .prepare(
       `UPDATE finance_accounts SET
-        name = ?, currency_code = ?, icon = ?, color = ?, updated_at = ?
+        name = ?, currency_code = ?, icon = ?, updated_at = ?
        WHERE id = ?`
     )
-    .run(input.name, nextCurrency, input.icon, input.color, Date.now(), input.id)
+    .run(input.name, nextCurrency, input.icon, Date.now(), input.id)
 
   return getFinanceAccount(input.id)
 }
@@ -741,9 +731,9 @@ export function createFinanceTag(input: CreateFinanceTagInput): FinanceTagSummar
   const now = Date.now()
   getSqlite()
     .prepare(
-      'INSERT INTO finance_tags (id, name, type, icon, color, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+      'INSERT INTO finance_tags (id, name, type, icon, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)'
     )
-    .run(id, input.name, input.type, input.icon, input.color, now, now)
+    .run(id, input.name, input.type, input.icon, now, now)
   return getFinanceTag(id)
 }
 
@@ -764,11 +754,15 @@ export function updateFinanceTag(input: UpdateFinanceTagInput): FinanceTagSummar
     throw new Error('Нельзя изменить тип тега: он уже используется несовместимыми операциями')
   }
 
-  getSqlite()
-    .prepare(
-      'UPDATE finance_tags SET name = ?, type = ?, icon = ?, color = ?, updated_at = ? WHERE id = ?'
-    )
-    .run(input.name, input.type, input.icon, input.color, Date.now(), input.id)
+  const tagColor = getFinanceTagColor(input.type)
+  getSqlite().transaction(() => {
+    getSqlite()
+      .prepare('UPDATE finance_tags SET name = ?, type = ?, icon = ?, updated_at = ? WHERE id = ?')
+      .run(input.name, input.type, input.icon, Date.now(), input.id)
+    getSqlite()
+      .prepare('UPDATE finance_transactions SET tag_color_snapshot = ? WHERE tag_id = ?')
+      .run(tagColor, input.id)
+  })()
   return getFinanceTag(input.id)
 }
 
