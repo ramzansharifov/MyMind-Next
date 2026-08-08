@@ -18,23 +18,15 @@ import {
 } from '../../../../../../shared/contracts/finance'
 import { cn } from '../../../../shared/lib/cn'
 import { AppDialog } from '../../../../shared/ui/AppDialog'
-import { ColorPicker } from '../../../../shared/ui/ColorPicker'
 import { financeClient } from '../../api/finance-client'
 import { financeTagTypeLabels, getFinanceErrorMessage } from '../../lib/finance-ui'
 import { FinanceButton, FinanceField, financeInputClassName } from '../FinancePrimitives'
 import { FinanceIconPicker } from '../FinanceIconPicker'
 
-const DEFAULT_TAG_COLORS: Record<FinanceTagType, string> = {
-  expense: '#f87171',
-  income: '#34d399',
-  both: '#fbbf24'
-}
-
 const tagFormSchema = z.object({
   name: z.string().trim().min(1, 'Введите название').max(120),
   type: z.enum(FINANCE_TAG_TYPES),
-  icon: z.enum(FINANCE_ICON_NAMES),
-  color: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Выберите корректный цвет')
+  icon: z.enum(FINANCE_ICON_NAMES)
 })
 
 type TagFormValues = z.infer<typeof tagFormSchema>
@@ -107,8 +99,7 @@ function FinanceTagDialogContent({
     defaultValues: {
       name: tag?.name ?? '',
       type: tag?.type ?? initialType,
-      icon: tag?.icon ?? 'tag',
-      color: tag?.color ?? DEFAULT_TAG_COLORS[initialType]
+      icon: tag?.icon ?? 'tag'
     }
   })
 
@@ -118,12 +109,7 @@ function FinanceTagDialogContent({
     try {
       const saved = tag
         ? await financeClient.updateTag({ id: tag.id, ...values })
-        : await financeClient.createTag({
-            name: values.name,
-            type: values.type,
-            icon: values.icon,
-            color: DEFAULT_TAG_COLORS[values.type]
-          })
+        : await financeClient.createTag(values)
       await onSaved(saved)
       onOpenChange(false)
     } catch (reason) {
@@ -214,46 +200,23 @@ function FinanceTagDialogContent({
           ) : null}
         </fieldset>
 
-        <div className={tag ? 'grid grid-cols-2 gap-4 max-[520px]:grid-cols-1' : ''}>
-          <div className="text-sm text-[var(--app-text)]">
-            <span className="mb-1.5 block font-medium">Иконка</span>
-            <Controller
-              control={control}
-              name="icon"
-              render={({ field }) => (
-                <FinanceIconPicker
-                  value={field.value}
-                  disabled={isSaving}
-                  pickerLabel="Иконка тега"
-                  ariaLabel="Выбрать иконку тега"
-                  onChange={field.onChange}
-                />
-              )}
-            />
-            {errors.icon?.message && (
-              <span className="mt-1.5 block text-xs text-red-300">{errors.icon.message}</span>
-            )}
-          </div>
-
-          {tag && (
-            <div className="text-sm text-[var(--app-text)]">
-              <span className="mb-1.5 block font-medium">Цвет</span>
-              <Controller
-                control={control}
-                name="color"
-                render={({ field }) => (
-                  <ColorPicker
-                    value={field.value}
-                    ariaLabel="Цвет тега"
-                    disabled={isSaving}
-                    onChange={field.onChange}
-                  />
-                )}
+        <div className="text-sm text-[var(--app-text)]">
+          <span className="mb-1.5 block font-medium">Иконка</span>
+          <Controller
+            control={control}
+            name="icon"
+            render={({ field }) => (
+              <FinanceIconPicker
+                value={field.value}
+                disabled={isSaving}
+                pickerLabel="Иконка тега"
+                ariaLabel="Выбрать иконку тега"
+                onChange={field.onChange}
               />
-              {errors.color?.message && (
-                <span className="mt-1.5 block text-xs text-red-300">{errors.color.message}</span>
-              )}
-            </div>
+            )}
+          />
+          {errors.icon?.message && (
+            <span className="mt-1.5 block text-xs text-red-300">{errors.icon.message}</span>
           )}
         </div>
 
