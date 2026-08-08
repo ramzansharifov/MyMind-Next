@@ -25,6 +25,7 @@ extraResources:
       - '**/*'
 win:
   executableName: MyMind
+  icon: build/icon.ico
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}

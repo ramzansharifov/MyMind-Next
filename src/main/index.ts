@@ -3,6 +3,7 @@ import { app, BrowserWindow, dialog, session, shell } from 'electron'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
+import windowsIcon from '../../build/icon.ico?asset'
 import icon from '../../resources/icon.png?asset'
 import { IPC_CHANNELS } from '../shared/contracts/system'
 import { closeDatabase, initializeDatabase } from './database/client'
@@ -141,7 +142,7 @@ function createWindow(): void {
     title: 'MyMind',
     backgroundColor: '#0b0d10',
     autoHideMenuBar: true,
-    icon,
+    icon: process.platform === 'win32' ? windowsIcon : icon,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,
@@ -151,6 +152,14 @@ function createWindow(): void {
   })
 
   mainWindow = window
+
+  if (process.platform === 'win32') {
+    window.setAppDetails({
+      appId: 'com.mymind.desktop',
+      appIconPath: windowsIcon,
+      appIconIndex: 0
+    })
+  }
 
   const sendWindowState = (): void => {
     if (!window.isDestroyed() && !window.webContents.isDestroyed()) {
