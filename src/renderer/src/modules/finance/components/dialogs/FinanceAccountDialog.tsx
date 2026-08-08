@@ -16,6 +16,8 @@ import { getFinanceErrorMessage } from '../../lib/finance-ui'
 import { FinanceButton, FinanceField, financeInputClassName } from '../FinancePrimitives'
 import { FinanceIconPicker } from '../FinanceIconPicker'
 
+const DEFAULT_ACCOUNT_COLOR = '#a78bfa'
+
 const accountFormSchema = z.object({
   name: z.string().trim().min(1, 'Введите название').max(120),
   currencyCode: z
@@ -64,7 +66,7 @@ function FinanceAccountDialogContent({
         ? formatMinorPlain(account.initialBalanceMinor, account.currencyCode)
         : '0.00',
       icon: account?.icon ?? 'wallet',
-      color: account?.color ?? '#a78bfa'
+      color: account?.color ?? DEFAULT_ACCOUNT_COLOR
     }
   })
 
@@ -93,7 +95,7 @@ function FinanceAccountDialogContent({
             currencyCode: values.currencyCode,
             initialBalanceMinor,
             icon: values.icon,
-            color: values.color
+            color: DEFAULT_ACCOUNT_COLOR
           })
       await onSaved(saved)
       onOpenChange(false)
@@ -156,7 +158,7 @@ function FinanceAccountDialogContent({
           </FinanceField>
         )}
 
-        <div className="grid grid-cols-2 gap-4 max-[520px]:grid-cols-1">
+        <div className={account ? 'grid grid-cols-2 gap-4 max-[520px]:grid-cols-1' : ''}>
           <div className="text-sm text-[var(--app-text)]">
             <span className="mb-1.5 block font-medium">Иконка</span>
             <Controller
@@ -174,24 +176,26 @@ function FinanceAccountDialogContent({
               <span className="mt-1.5 block text-xs text-red-300">{errors.icon.message}</span>
             )}
           </div>
-          <div className="text-sm text-[var(--app-text)]">
-            <span className="mb-1.5 block font-medium">Цвет</span>
-            <Controller
-              control={control}
-              name="color"
-              render={({ field }) => (
-                <ColorPicker
-                  value={field.value}
-                  ariaLabel="Цвет счёта"
-                  disabled={isSaving}
-                  onChange={field.onChange}
-                />
+          {account && (
+            <div className="text-sm text-[var(--app-text)]">
+              <span className="mb-1.5 block font-medium">Цвет</span>
+              <Controller
+                control={control}
+                name="color"
+                render={({ field }) => (
+                  <ColorPicker
+                    value={field.value}
+                    ariaLabel="Цвет счёта"
+                    disabled={isSaving}
+                    onChange={field.onChange}
+                  />
+                )}
+              />
+              {errors.color?.message && (
+                <span className="mt-1.5 block text-xs text-red-300">{errors.color.message}</span>
               )}
-            />
-            {errors.color?.message && (
-              <span className="mt-1.5 block text-xs text-red-300">{errors.color.message}</span>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {backendError && (
