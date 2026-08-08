@@ -7,7 +7,9 @@ function read(path: string): string {
 }
 
 function interfaceBlock(source: string, name: string): string {
-  const match = source.match(new RegExp(`export interface ${name} \\{[\\s\\S]*?\\n\\}`))
+  const match = source.match(
+    new RegExp(`export interface ${name}[^\\{]*\\{[\\s\\S]*?\\n\\}`)
+  )
   expect(match, `${name} interface`).not.toBeNull()
   return match?.[0] ?? ''
 }
@@ -29,9 +31,9 @@ describe('finance color architecture', () => {
     expect(interfaceBlock(contract, 'CreateFinanceAccountInput')).not.toContain('color:')
     expect(interfaceBlock(contract, 'UpdateFinanceAccountInput')).not.toContain('color:')
     expect(validation).not.toContain('financeColorSchema')
-    expect(schema.match(/export const financeAccounts = sqliteTable\([\s\S]*?\n\)/)?.[0]).not.toContain(
-      "color: text('color')"
-    )
+    expect(
+      schema.match(/export const financeAccounts = sqliteTable\([\s\S]*?\n\)/)?.[0]
+    ).not.toContain("color: text('color')")
     expect(repository).not.toContain('input.color')
     expect(dialog).not.toContain('DEFAULT_ACCOUNT_COLOR')
     expect(dialog).not.toContain('account.color')
@@ -50,13 +52,13 @@ describe('finance color architecture', () => {
     expect(contract).toContain("income: '#34d399'")
     expect(contract).toContain("expense: '#f87171'")
     expect(contract).toContain("both: '#fbbf24'")
-    expect(schema.match(/export const financeTags = sqliteTable\([\s\S]*?\n\)/)?.[0]).not.toContain(
-      "color: text('color')"
-    )
+    expect(
+      schema.match(/export const financeTags = sqliteTable\([\s\S]*?\n\)/)?.[0]
+    ).not.toContain("color: text('color')")
     expect(repository).toContain('getFinanceTagColor(row.type)')
     expect(repository).toContain('getFinanceTagColor(input.type)')
     expect(dialog).not.toContain('ColorPicker')
-    expect(dialog).not.toContain("name=\"color\"")
+    expect(dialog).not.toContain('name="color"')
     expect(migration).toContain('ALTER TABLE `finance_accounts` DROP COLUMN `color`')
     expect(migration).toContain('ALTER TABLE `finance_tags` DROP COLUMN `color`')
   })
