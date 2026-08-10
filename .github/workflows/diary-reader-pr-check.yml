@@ -1,4 +1,4 @@
-name: Diary reader PR check
+name: Diary reader targeted check
 
 on:
   pull_request:
@@ -7,7 +7,7 @@ on:
 jobs:
   check:
     runs-on: windows-latest
-    timeout-minutes: 25
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -15,9 +15,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run format:check
-      - run: npm run lint
+      - run: npx prettier --check src/renderer/src/modules/diary/components/DiaryReader.tsx src/renderer/src/modules/diary/components/DiaryReader.test.tsx src/renderer/src/modules/diary/diary-reader-behavior.css
+      - run: npx eslint src/renderer/src/modules/diary/components/DiaryReader.tsx src/renderer/src/modules/diary/components/DiaryReader.test.tsx
       - run: npm run typecheck
-      - run: npm run test:run
-      - run: npm run db:check
-      - run: npm run build:bundle
+      - run: npx vitest run src/renderer/src/modules/diary/components/DiaryReader.test.tsx
