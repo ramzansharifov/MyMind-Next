@@ -241,7 +241,9 @@ function distinctTransactions(
 function summarize(rawRows: AggregateEntryRow[], convertedRows: ConvertedEntryRow[]): ReportSummary {
   const incomeAmounts = amountsByTransaction(convertedRows, 'income')
   const expenseAmounts = amountsByTransaction(convertedRows, 'expense')
-  const incomeMinor = assertSafeMinor([...incomeAmounts.values()].reduce((sum, value) => sum + value, 0))
+  const incomeMinor = assertSafeMinor(
+    [...incomeAmounts.values()].reduce((sum, value) => sum + value, 0)
+  )
   const expenseMinor = assertSafeMinor(
     [...expenseAmounts.values()].reduce((sum, value) => sum + value, 0)
   )
@@ -369,7 +371,12 @@ function createBuckets(period: FinancePeriod): { kind: BucketKind; buckets: Repo
       from,
       to
     })
-    cursor = kind === 'day' ? addDays(cursor, 1) : kind === 'week' ? addWeeks(cursor, 1) : addMonths(cursor, 1)
+    cursor =
+      kind === 'day'
+        ? addDays(cursor, 1)
+        : kind === 'week'
+          ? addWeeks(cursor, 1)
+          : addMonths(cursor, 1)
   }
 
   return { kind, buckets }
@@ -408,10 +415,7 @@ function createTimeline(
 
 function loadBalanceAccounts(accountIds?: string[]): BalanceAccountRow[] {
   const params: unknown[] = []
-  const where =
-    accountIds?.length
-      ? `WHERE id IN (${accountIds.map(() => '?').join(', ')})`
-      : ''
+  const where = accountIds?.length ? `WHERE id IN (${accountIds.map(() => '?').join(', ')})` : ''
   if (accountIds?.length) params.push(...accountIds)
   return getSqlite()
     .prepare(
@@ -690,7 +694,9 @@ function createAccountActivity(
     })
 }
 
-function relevantLimits(filters: FinanceReportFilters) {
+function relevantLimits(
+  filters: FinanceReportFilters
+): ReturnType<typeof listFinanceLimitStatuses> {
   if (filters.types?.length && !filters.types.includes('expense')) return []
   if (filters.tagId === null) return []
   const selectedAccounts = filters.accountIds?.length ? new Set(filters.accountIds) : null
@@ -747,9 +753,7 @@ export function getFinanceReportAnalytics(filters: FinanceReportFilters): Financ
     rateBook
   )
   const transferFlows = createTransferFlows(current.rawRows, current.convertedRows)
-  const missingRateCurrencies = [
-    ...new Set([...current.missing, ...balance.missing])
-  ].sort()
+  const missingRateCurrencies = [...new Set([...current.missing, ...balance.missing])].sort()
   const calendarDays = Math.max(
     1,
     differenceInCalendarDays(new Date(period.to), new Date(period.from)) + 1
