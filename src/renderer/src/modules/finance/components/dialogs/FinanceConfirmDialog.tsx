@@ -28,7 +28,14 @@ export function FinanceConfirmDialog({
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (open) setError(null)
+    if (!open) return
+    let cancelled = false
+    queueMicrotask(() => {
+      if (!cancelled) setError(null)
+    })
+    return () => {
+      cancelled = true
+    }
   }, [open])
 
   function requestOpenChange(nextOpen: boolean): void {
