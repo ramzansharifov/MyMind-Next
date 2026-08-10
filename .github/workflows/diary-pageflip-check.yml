@@ -1,0 +1,26 @@
+name: Check diary page flip integration
+
+on:
+  push:
+    branches:
+      - agent/diary-stpageflip
+    paths:
+      - .github/workflows/diary-pageflip-check.yml
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/diary-stpageflip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck:web
+      - run: npx vitest run src/renderer/src/modules/diary/components/DiaryReader.test.tsx
+      - run: npm run build:bundle
