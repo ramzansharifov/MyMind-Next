@@ -1,4 +1,4 @@
-import { ArrowRight, BookOpen, CalendarDays, Plus } from 'lucide-react'
+import { ArrowRight, BookOpen, CalendarDays } from 'lucide-react'
 
 import type { DiarySummary } from '../../../../../shared/contracts/diary'
 import { formatShortDate } from '../lib/diary-ui'
@@ -6,30 +6,18 @@ import { DiaryIcon } from './DiaryIcon'
 
 export function DiaryLibrary({
   diaries,
-  onOpenDiary,
-  onCreateDiary
+  onOpenDiary
 }: {
   diaries: DiarySummary[]
   onOpenDiary: (diary: DiarySummary) => void
-  onCreateDiary: () => void
 }): React.JSX.Element {
   return (
     <section className="space-y-5">
-      <div className="flex items-end justify-between gap-4 max-[620px]:flex-col max-[620px]:items-start">
-        <div>
-          <h2 className="text-lg font-semibold text-[var(--app-text)]">Мои дневники</h2>
-          <p className="mt-1 text-sm text-[var(--app-muted)]">
-            Каждая книга хранит собственные страницы, настроение, календарь и историю.
-          </p>
-        </div>
-        <button
-          type="button"
-          className="inline-flex h-10 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-medium text-white transition-colors hover:bg-violet-400"
-          onClick={onCreateDiary}
-        >
-          <Plus aria-hidden="true" className="size-4" />
-          Новый дневник
-        </button>
+      <div>
+        <h2 className="text-lg font-semibold text-[var(--app-text)]">Мои дневники</h2>
+        <p className="mt-1 text-sm text-[var(--app-muted)]">
+          Каждая книга хранит собственные страницы, настроение, календарь и историю.
+        </p>
       </div>
 
       <div className="grid grid-cols-3 gap-6 max-[1050px]:grid-cols-2 max-[650px]:grid-cols-1">
