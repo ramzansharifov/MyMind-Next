@@ -171,7 +171,10 @@ export function DiaryToday({
               ) : (
                 <>
                   {(day?.entries ?? []).length === 0 && (
-                    <div className="diary-empty-message pl-20 text-center max-[620px]:pl-8">
+                    <div
+                      className="flex items-center justify-center pl-20 text-center max-[620px]:pl-8"
+                      style={{ minHeight: 'calc(var(--diary-rule-step) * 3)' }}
+                    >
                       <p className="font-serif text-sm text-stone-500 italic">
                         Здесь пока тихо. Добавьте первую мысль этого дня.
                       </p>
