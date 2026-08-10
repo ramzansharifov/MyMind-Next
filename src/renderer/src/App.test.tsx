@@ -203,8 +203,12 @@ describe('App shell', () => {
 
     render(<App />)
 
+    const sidebar = screen.getByRole('complementary', {
+      name: 'Боковая панель'
+    })
+
     await user.click(
-      screen.getByRole('button', {
+      within(sidebar).getByRole('button', {
         name: 'Обучение'
       })
     )
@@ -245,8 +249,12 @@ describe('App shell', () => {
 
     render(<App />)
 
+    const sidebar = screen.getByRole('complementary', {
+      name: 'Боковая панель'
+    })
+
     await user.click(
-      screen.getByRole('button', {
+      within(sidebar).getByRole('button', {
         name: 'Обучение'
       })
     )
@@ -288,7 +296,7 @@ describe('App shell', () => {
     ).toBeInTheDocument()
 
     await user.click(
-      screen.getByRole('button', {
+      within(sidebar).getByRole('button', {
         name: 'Обучение'
       })
     )
