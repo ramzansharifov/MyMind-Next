@@ -62,6 +62,22 @@ export function DiaryReader({
     }
   }, [diary.id, onDayChange, requestedDayKey])
 
+  const openDay = useCallback(
+    async (dayKey: string): Promise<void> => {
+      setIsLoading(true)
+      setError(null)
+      try {
+        setDay(await diaryClient.getDay({ diaryId: diary.id, dayKey }))
+        onDayChange(dayKey)
+      } catch (reason) {
+        setError(getDiaryErrorMessage(reason))
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [diary.id, onDayChange]
+  )
+
   useEffect(() => {
     let cancelled = false
     queueMicrotask(() => {
@@ -72,18 +88,37 @@ export function DiaryReader({
     }
   }, [loadDays, refreshVersion])
 
-  async function openDay(dayKey: string): Promise<void> {
-    setIsLoading(true)
-    setError(null)
-    try {
-      setDay(await diaryClient.getDay({ diaryId: diary.id, dayKey }))
-      onDayChange(dayKey)
-    } catch (reason) {
-      setError(getDiaryErrorMessage(reason))
-    } finally {
-      setIsLoading(false)
+  useEffect(() => {
+    function handlePageKeyDown(event: KeyboardEvent): void {
+      if (
+        event.defaultPrevented ||
+        event.altKey ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.shiftKey
+      ) {
+        return
+      }
+
+      const target = event.target
+      if (
+        target instanceof HTMLElement &&
+        (target.matches('input, textarea, select, button') || target.isContentEditable)
+      ) {
+        return
+      }
+
+      const targetDay =
+        event.key === 'ArrowLeft' ? previousDay : event.key === 'ArrowRight' ? nextDay : null
+      if (!targetDay) return
+
+      event.preventDefault()
+      void openDay(targetDay.dayKey)
     }
-  }
+
+    window.addEventListener('keydown', handlePageKeyDown)
+    return () => window.removeEventListener('keydown', handlePageKeyDown)
+  }, [nextDay, openDay, previousDay])
 
   if (isLoading && !day) {
     return (
@@ -111,29 +146,22 @@ export function DiaryReader({
 
   return (
     <section className="space-y-4">
-      <div className="flex items-center justify-between gap-4 max-[700px]:flex-col max-[700px]:items-start">
+      <div className="flex items-end justify-between gap-4 max-[700px]:flex-col max-[700px]:items-start">
         <div>
           <h2 className="text-lg font-semibold text-[var(--app-text)]">Просмотр дневника</h2>
           <p className="mt-1 text-sm text-[var(--app-muted)]">
-            Только чтение — спокойно листайте уже прожитые страницы.
+            Листайте страницы кнопками у книги или стрелками ← → на клавиатуре.
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            disabled={!previousDay}
-            aria-label="Предыдущая страница"
-            className="flex size-10 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-muted)] hover:text-[var(--app-text)] disabled:opacity-35"
-            onClick={() => {
-              if (previousDay) void openDay(previousDay.dayKey)
-            }}
-          >
-            <ChevronLeft className="size-4" />
-          </button>
+          <span className="hidden text-xs text-[var(--app-muted)] min-[760px]:inline">
+            Страница {Math.max(1, currentIndex + 1)} из {orderedDays.length}
+          </span>
           <select
             aria-label="Страница дневника"
             value={currentKey ?? ''}
-            className="h-10 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 text-sm text-[var(--app-text)] outline-none"
+            disabled={isLoading}
+            className="h-10 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/60 disabled:opacity-60"
             onChange={(event) => void openDay(event.target.value)}
           >
             {orderedDays.map((item) => (
@@ -146,26 +174,30 @@ export function DiaryReader({
               </option>
             ))}
           </select>
-          <button
-            type="button"
-            disabled={!nextDay}
-            aria-label="Следующая страница"
-            className="flex size-10 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-muted)] hover:text-[var(--app-text)] disabled:opacity-35"
-            onClick={() => {
-              if (nextDay) void openDay(nextDay.dayKey)
-            }}
-          >
-            <ChevronRight className="size-4" />
-          </button>
         </div>
       </div>
 
-      <div className="diary-book-frame mx-auto max-w-[980px] rounded-[32px] p-3 max-[620px]:p-0">
-        <article className="diary-paper min-h-[610px] overflow-hidden rounded-[24px] border shadow-2xl">
-          <div className="diary-paper-content relative min-h-[610px] px-10 py-10 max-[620px]:px-5">
+      <div className="diary-book-frame mx-auto max-w-[980px]">
+        <button
+          type="button"
+          disabled={!previousDay || isLoading}
+          aria-label="Предыдущая страница"
+          className="diary-page-edge-button diary-page-edge-button--previous"
+          onClick={() => {
+            if (previousDay) void openDay(previousDay.dayKey)
+          }}
+        >
+          <ChevronLeft className="size-5" />
+        </button>
+
+        <article
+          key={day?.dayKey ?? 'diary-page'}
+          className="diary-paper diary-page-turn-in min-h-[610px] overflow-hidden rounded-[24px] border shadow-2xl"
+        >
+          <div className="diary-paper-content min-h-[610px]">
             {day && (
               <>
-                <header className="flex items-start justify-between gap-6 border-b border-stone-300/70 pb-5 max-[560px]:flex-col">
+                <header className="diary-paper-header flex items-start justify-between gap-6 border-b border-stone-300/70 px-10 py-9 max-[620px]:px-6 max-[560px]:flex-col">
                   <div>
                     <div className="text-xs font-semibold tracking-[0.16em] text-stone-500 uppercase">
                       {diary.title}
@@ -184,23 +216,18 @@ export function DiaryReader({
                   </div>
                 </header>
 
-                <div className="mt-8 space-y-7">
+                <div className="diary-ruled-surface diary-ruled-content min-h-[470px] pt-0">
                   {day.entries.length === 0 ? (
-                    <p className="py-14 text-center font-serif text-sm text-stone-500 italic">
-                      В этот день осталось только настроение.
-                    </p>
+                    <div className="flex min-h-[324px] items-center justify-center pl-20 text-center max-[620px]:pl-8">
+                      <p className="font-serif text-sm text-stone-500 italic">
+                        В этот день осталось только настроение.
+                      </p>
+                    </div>
                   ) : (
                     day.entries.map((entry) => (
-                      <div
-                        key={entry.id}
-                        className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-4 max-[480px]:grid-cols-1 max-[480px]:gap-1"
-                      >
-                        <time className="pt-1 font-mono text-xs text-stone-400">
-                          {formatDiaryTime(entry.occurredAt)}
-                        </time>
-                        <p className="diary-handwriting text-[15px] leading-8 break-words whitespace-pre-wrap text-stone-800">
-                          {entry.text}
-                        </p>
+                      <div key={entry.id} className="diary-entry-row">
+                        <time className="diary-entry-time">{formatDiaryTime(entry.occurredAt)}</time>
+                        <p className="diary-handwriting diary-entry-text">{entry.text}</p>
                       </div>
                     ))
                   )}
@@ -209,12 +236,24 @@ export function DiaryReader({
             )}
           </div>
         </article>
+
+        <button
+          type="button"
+          disabled={!nextDay || isLoading}
+          aria-label="Следующая страница"
+          className="diary-page-edge-button diary-page-edge-button--next"
+          onClick={() => {
+            if (nextDay) void openDay(nextDay.dayKey)
+          }}
+        >
+          <ChevronRight className="size-5" />
+        </button>
       </div>
 
       <div className="flex justify-center">
         <button
           type="button"
-          disabled={!orderedDays.some((item) => item.dayKey === localDayKey())}
+          disabled={!orderedDays.some((item) => item.dayKey === localDayKey()) || isLoading}
           className="text-xs font-medium text-[var(--app-muted)] hover:text-violet-300 disabled:opacity-40"
           onClick={() => void openDay(localDayKey())}
         >
