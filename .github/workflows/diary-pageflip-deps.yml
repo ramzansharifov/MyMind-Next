@@ -1,0 +1,35 @@
+name: Install diary page flip dependency
+
+on:
+  push:
+    branches:
+      - agent/diary-stpageflip
+    paths:
+      - .github/workflows/diary-pageflip-deps.yml
+
+permissions:
+  contents: write
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/diary-stpageflip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm install react-pageflip@2.0.3 --save-exact --package-lock-only --ignore-scripts
+      - name: Commit dependency metadata
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "Add react-pageflip dependency"
+          git push origin HEAD:agent/diary-stpageflip
