@@ -28,7 +28,6 @@ jobs:
       - run: npm run format
       - run: npm run check
       - name: Commit verified formatting
-        if: github.event_name == 'push'
         shell: pwsh
         run: |
           git config user.name "github-actions[bot]"
