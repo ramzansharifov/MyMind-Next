@@ -8,6 +8,7 @@ import {
 } from '../../../../../shared/contracts/diary'
 import { DeleteConfirmationDialog } from '../../../shared/ui/DeleteConfirmationDialog'
 import '../diary-premium.css'
+import '../diary-leather-cover.css'
 import { diaryClient } from '../api/diary-client'
 import {
   diaryMoodMeta,
