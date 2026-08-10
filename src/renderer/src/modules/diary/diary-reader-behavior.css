@@ -34,11 +34,13 @@
 }
 
 .diary-reader-page-layer--turn-next {
-  animation: diary-reader-turn-next 680ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: diary-reader-turn-next var(--diary-page-turn-duration, 680ms)
+    cubic-bezier(0.25, 0.8, 0.25, 1) both;
 }
 
 .diary-reader-page-layer--turn-previous {
-  animation: diary-reader-turn-previous 680ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: diary-reader-turn-previous var(--diary-page-turn-duration, 680ms)
+    cubic-bezier(0.25, 0.8, 0.25, 1) both;
 }
 
 .diary-reader-page-stage[data-turning='true'] .diary-reader-page-layer {
@@ -87,12 +89,5 @@
 @media (max-width: 620px) {
   .diary-reader-page-stage {
     height: calc(90vh - 1.22rem);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .diary-reader-page-layer--turn-next,
-  .diary-reader-page-layer--turn-previous {
-    animation-duration: 1ms;
   }
 }
