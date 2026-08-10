@@ -1,5 +1,13 @@
 import { CalendarDays, ChevronLeft, ChevronRight, LoaderCircle } from 'lucide-react'
-import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
+import {
+  type CSSProperties,
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useMemo,
+  useRef,
+  useState
+} from 'react'
 
 import type { DiaryDay, DiaryDaySummary, DiarySummary } from '../../../../../shared/contracts/diary'
 import '../diary-premium.css'
@@ -13,11 +21,14 @@ import {
   getDiaryErrorMessage
 } from '../lib/diary-ui'
 
+const PAGE_TURN_DURATION_MS = 680
+
 type PageTurnDirection = 'next' | 'previous'
 
 interface PageTurnState {
   target: DiaryDay
   direction: PageTurnDirection
+  durationMs: number
 }
 
 export function DiaryReader({
@@ -113,9 +124,14 @@ export function DiaryReader({
           return
         }
 
+        const reducedMotion =
+          typeof window.matchMedia === 'function' &&
+          window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
         setPageTurn({
           target: nextPage,
-          direction: targetIndex < sourceIndex ? 'previous' : 'next'
+          direction: targetIndex < sourceIndex ? 'previous' : 'next',
+          durationMs: reducedMotion ? 1 : PAGE_TURN_DURATION_MS
         })
       } catch (reason) {
         setError(getDiaryErrorMessage(reason))
@@ -127,12 +143,16 @@ export function DiaryReader({
     [day, diary.id, onDayChange, orderedDays, pageTurn]
   )
 
-  const finishPageTurn = useCallback((): void => {
+  useEffect(() => {
     if (!pageTurn) return
 
-    setDay(pageTurn.target)
-    onDayChange(pageTurn.target.dayKey)
-    setPageTurn(null)
+    const timeoutId = window.setTimeout(() => {
+      setDay(pageTurn.target)
+      onDayChange(pageTurn.target.dayKey)
+      setPageTurn(null)
+    }, pageTurn.durationMs)
+
+    return () => window.clearTimeout(timeoutId)
   }, [onDayChange, pageTurn])
 
   const handlePageKeyDown = useEffectEvent((event: KeyboardEvent): void => {
@@ -201,6 +221,10 @@ export function DiaryReader({
     )
   }
 
+  const pageStageStyle = pageTurn
+    ? ({ '--diary-page-turn-duration': `${pageTurn.durationMs}ms` } as CSSProperties)
+    : undefined
+
   return (
     <section className="space-y-5">
       <div className="diary-book-frame diary-premium-book diary-reader-book w-full">
@@ -227,7 +251,8 @@ export function DiaryReader({
         <div
           className="diary-reader-page-stage"
           data-turning={pageTurn ? 'true' : undefined}
-          aria-busy={isLoading || undefined}
+          aria-busy={isLoading || pageTurn !== null || undefined}
+          style={pageStageStyle}
         >
           {pageTurn?.direction === 'next' && (
             <DiaryReaderPage
@@ -256,7 +281,6 @@ export function DiaryReader({
                     : undefined
               }
               ariaHidden={pageTurn?.direction === 'previous'}
-              onTurnEnd={pageTurn?.direction === 'next' ? finishPageTurn : undefined}
             />
           )}
 
@@ -269,7 +293,6 @@ export function DiaryReader({
               pageCount={orderedDays.length}
               className="diary-reader-page-layer--turn-previous"
               ariaHidden
-              onTurnEnd={finishPageTurn}
             />
           )}
         </div>
@@ -305,8 +328,7 @@ function DiaryReaderPage({
   pageNumber,
   pageCount,
   className,
-  ariaHidden = false,
-  onTurnEnd
+  ariaHidden = false
 }: {
   day: DiaryDay
   diaryTitle: string
@@ -314,7 +336,6 @@ function DiaryReaderPage({
   pageCount: number
   className?: string
   ariaHidden?: boolean
-  onTurnEnd?: () => void
 }): React.JSX.Element {
   const mood = day.mood ? diaryMoodMeta[day.mood] : null
 
@@ -322,7 +343,6 @@ function DiaryReaderPage({
     <article
       aria-hidden={ariaHidden || undefined}
       className={`diary-paper diary-premium-paper diary-paper--reader diary-reader-page-layer overflow-hidden border ${className ?? ''}`}
-      onAnimationEnd={onTurnEnd}
     >
       <div className="diary-paper-content diary-reader-page-content">
         <header className="diary-paper-header diary-paper-masthead diary-premium-masthead border-b border-stone-300/70 px-11 max-[700px]:px-7 max-[620px]:px-6">
