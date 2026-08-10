@@ -152,11 +152,11 @@ export function FinanceReports({
     () => ({
       dateFrom: fromDateInputValue(from),
       dateTo: fromDateInputValue(to, true),
-      types: type === 'all' ? undefined : [type],
-      accountIds: accountId === 'all' ? undefined : [accountId],
-      tagId: type === 'transfer' || tagId === 'all' ? undefined : tagId,
+      ...(type === 'all' ? {} : { types: [type] }),
+      ...(accountId === 'all' ? {} : { accountIds: [accountId] }),
+      ...(type === 'transfer' || tagId === 'all' ? {} : { tagId }),
       currencyCode: baseCurrencyCode,
-      templateOnly: templateMode === 'all' ? undefined : templateMode === 'template' ? true : false
+      ...(templateMode === 'all' ? {} : { templateOnly: templateMode === 'template' })
     }),
     [accountId, baseCurrencyCode, from, tagId, templateMode, to, type]
   )

@@ -33,6 +33,12 @@ describe('App shell', () => {
             sqliteVersion: '3.0.0'
           }),
 
+          getWindowState: vi.fn().mockResolvedValue({ maximized: false }),
+          onWindowStateChanged: vi.fn().mockReturnValue(() => undefined),
+          minimizeWindow: vi.fn().mockResolvedValue(undefined),
+          toggleMaximizeWindow: vi.fn().mockResolvedValue({ maximized: false }),
+          closeWindow: vi.fn().mockResolvedValue(undefined),
+
           onShutdownRequested: vi.fn().mockReturnValue(() => undefined),
 
           respondToShutdown: vi.fn().mockResolvedValue(undefined)
@@ -68,19 +74,13 @@ describe('App shell', () => {
     Reflect.deleteProperty(window, 'api')
   })
 
-  it('shows the study module by default', async () => {
+  it('shows the home module by default', async () => {
     render(<App />)
 
     expect(
-      await screen.findByRole(
-        'heading',
-        {
-          name: 'Обучение'
-        },
-        {
-          timeout: LAZY_MODULE_TIMEOUT_MS
-        }
-      )
+      await screen.findByRole('heading', {
+        name: 'Главная'
+      })
     ).toBeInTheDocument()
 
     expect(
@@ -198,10 +198,32 @@ describe('App shell', () => {
     ).toBeInTheDocument()
   })
 
-  it('starts with a collapsed sidebar in study and allows expansion', async () => {
+  it('collapses the sidebar when entering study and allows expansion', async () => {
     const user = userEvent.setup()
 
     render(<App />)
+
+    const sidebar = screen.getByRole('complementary', {
+      name: 'Боковая панель'
+    })
+
+    await user.click(
+      within(sidebar).getByRole('button', {
+        name: 'Обучение'
+      })
+    )
+
+    expect(
+      await screen.findByRole(
+        'heading',
+        {
+          name: 'Обучение'
+        },
+        {
+          timeout: LAZY_MODULE_TIMEOUT_MS
+        }
+      )
+    ).toBeInTheDocument()
 
     expect(
       screen.getByRole('button', {
@@ -226,6 +248,28 @@ describe('App shell', () => {
     const user = userEvent.setup()
 
     render(<App />)
+
+    const sidebar = screen.getByRole('complementary', {
+      name: 'Боковая панель'
+    })
+
+    await user.click(
+      within(sidebar).getByRole('button', {
+        name: 'Обучение'
+      })
+    )
+
+    expect(
+      await screen.findByRole(
+        'heading',
+        {
+          name: 'Обучение'
+        },
+        {
+          timeout: LAZY_MODULE_TIMEOUT_MS
+        }
+      )
+    ).toBeInTheDocument()
 
     await user.click(
       screen.getByRole('button', {
@@ -252,10 +296,22 @@ describe('App shell', () => {
     ).toBeInTheDocument()
 
     await user.click(
-      screen.getByRole('button', {
+      within(sidebar).getByRole('button', {
         name: 'Обучение'
       })
     )
+
+    expect(
+      await screen.findByRole(
+        'heading',
+        {
+          name: 'Обучение'
+        },
+        {
+          timeout: LAZY_MODULE_TIMEOUT_MS
+        }
+      )
+    ).toBeInTheDocument()
 
     expect(
       screen.getByRole('button', {

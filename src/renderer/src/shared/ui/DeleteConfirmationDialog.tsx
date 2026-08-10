@@ -98,7 +98,7 @@ export function DeleteConfirmationDialog({
           ) : (
             <Trash2 aria-hidden="true" className="size-4" />
           )}
-          {isSubmitting ? 'Выполняем…' : confirmLabel}
+          {isSubmitting ? 'Удаляем…' : confirmLabel}
         </button>
       </div>
     </AppDialog>

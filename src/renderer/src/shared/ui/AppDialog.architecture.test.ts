@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 const moduleDialogFiles = [
@@ -21,14 +22,17 @@ const moduleDialogFiles = [
 describe('shared dialog architecture', () => {
   it('keeps Radix dialog primitives inside shared UI instead of feature modules', () => {
     for (const relativePath of moduleDialogFiles) {
-      const source = readFileSync(new URL(relativePath, import.meta.url), 'utf8')
+      const source = readFileSync(
+        resolve(process.cwd(), 'src/renderer/src/shared/ui', relativePath),
+        'utf8'
+      )
       expect(source, relativePath).not.toMatch(/@radix-ui\/react-(?:alert-)?dialog/)
     }
   })
 
   it('uses the shared dialog shell for the transition blocker in study', () => {
     const source = readFileSync(
-      new URL('../../modules/study/StudyPage.tsx', import.meta.url),
+      resolve(process.cwd(), 'src/renderer/src/modules/study/StudyPage.tsx'),
       'utf8'
     )
     expect(source).toContain('StudyBlockedTransitionDialog')

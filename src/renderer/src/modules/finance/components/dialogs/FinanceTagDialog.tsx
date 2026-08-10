@@ -159,6 +159,7 @@ function FinanceTagDialogContent({
                       key={option.value}
                       type="button"
                       role="radio"
+                      aria-label={option.label}
                       aria-checked={selected}
                       disabled={isSaving}
                       className={cn(
