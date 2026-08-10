@@ -103,6 +103,10 @@ export function DiaryReader({
       try {
         const nextPage = await diaryClient.getDay({ diaryId: diary.id, dayKey })
 
+        if (!nextPage) {
+          throw new Error('Страница дневника больше недоступна.')
+        }
+
         if (!day || sourceIndex < 0 || targetIndex < 0) {
           setDay(nextPage)
           onDayChange(dayKey)
