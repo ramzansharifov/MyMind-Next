@@ -178,8 +178,15 @@ function FinanceTransactionDialogContent({
   const compatibleTags = tags.filter((tag) => tag.type === 'both' || tag.type === values.type)
 
   useEffect(() => {
-    setImpactConfirmed(false)
-    setImpact(null)
+    let cancelled = false
+    queueMicrotask(() => {
+      if (cancelled) return
+      setImpactConfirmed(false)
+      setImpact(null)
+    })
+    return () => {
+      cancelled = true
+    }
   }, [values.accountId, values.amount, values.occurredAt, values.tagId, values.type])
 
   function chooseType(type: FinanceUserTransactionType): void {
