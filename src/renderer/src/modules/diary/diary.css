@@ -62,8 +62,7 @@
   position: relative;
   z-index: 2;
   background:
-    linear-gradient(to bottom, rgb(255 253 246 / 99%), rgb(255 253 246 / 94%)),
-    var(--diary-paper);
+    linear-gradient(to bottom, rgb(255 253 246 / 99%), rgb(255 253 246 / 94%)), var(--diary-paper);
 }
 
 .diary-paper-masthead::after {
