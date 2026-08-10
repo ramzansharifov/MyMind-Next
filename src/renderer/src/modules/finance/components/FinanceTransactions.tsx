@@ -57,9 +57,16 @@ export function FinanceTransactions({
 
   useEffect(() => {
     if (!initialTransaction) return
-    setEditTransaction(initialTransaction)
-    setDialogType(initialTransaction.type === 'adjustment' ? 'expense' : initialTransaction.type)
-    setTransactionDialogOpen(true)
+    let cancelled = false
+    queueMicrotask(() => {
+      if (cancelled) return
+      setEditTransaction(initialTransaction)
+      setDialogType(initialTransaction.type === 'adjustment' ? 'expense' : initialTransaction.type)
+      setTransactionDialogOpen(true)
+    })
+    return () => {
+      cancelled = true
+    }
   }, [initialTransaction])
 
   const filters = useMemo<FinanceTransactionFilters>(

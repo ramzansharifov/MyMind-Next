@@ -42,7 +42,13 @@ export function DiaryToday({
   }, [dayKey, diary.id])
 
   useEffect(() => {
-    void load()
+    let cancelled = false
+    queueMicrotask(() => {
+      if (!cancelled) void load()
+    })
+    return () => {
+      cancelled = true
+    }
   }, [load])
 
   async function chooseMood(mood: (typeof DIARY_MOODS)[number]): Promise<void> {
@@ -165,7 +171,10 @@ export function DiaryToday({
               )}
 
               {(day?.entries ?? []).map((entry) => (
-                <div key={entry.id} className="group relative grid grid-cols-[4.5rem_minmax(0,1fr)] gap-4">
+                <div
+                  key={entry.id}
+                  className="group relative grid grid-cols-[4.5rem_minmax(0,1fr)] gap-4"
+                >
                   <time className="pt-1 font-mono text-xs text-stone-400">
                     {formatDiaryTime(entry.occurredAt)}
                   </time>
@@ -254,7 +263,11 @@ export function DiaryToday({
                     className="inline-flex items-center gap-2 rounded-xl bg-stone-800 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-stone-700 disabled:cursor-not-allowed disabled:opacity-40"
                     onClick={() => void addEntry()}
                   >
-                    {isSaving ? <LoaderCircle className="size-4 animate-spin" /> : <Plus className="size-4" />}
+                    {isSaving ? (
+                      <LoaderCircle className="size-4 animate-spin" />
+                    ) : (
+                      <Plus className="size-4" />
+                    )}
                     Добавить запись
                   </button>
                 </div>
@@ -263,7 +276,10 @@ export function DiaryToday({
           )}
 
           {error && (
-            <div role="alert" className="mt-5 rounded-xl border border-red-300 bg-red-50/80 px-3 py-2 text-sm text-red-700">
+            <div
+              role="alert"
+              className="mt-5 rounded-xl border border-red-300 bg-red-50/80 px-3 py-2 text-sm text-red-700"
+            >
               {error}
             </div>
           )}

@@ -34,7 +34,7 @@ afterAll(async () => {
   await rm(root, { recursive: true, force: true })
 })
 
-function createExpenseTag() {
+function createExpenseTag(): ReturnType<typeof financeService.createTag> {
   return financeService.createTag({
     name: 'Еда',
     type: 'expense',
@@ -42,7 +42,10 @@ function createExpenseTag() {
   })
 }
 
-function createAccount(name: string, currencyCode: string) {
+function createAccount(
+  name: string,
+  currencyCode: string
+): ReturnType<typeof financeService.createAccount> {
   return financeService.createAccount({
     name,
     currencyCode,

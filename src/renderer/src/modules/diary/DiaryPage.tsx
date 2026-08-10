@@ -78,14 +78,27 @@ export function DiaryPage({ resourceId, onResourceHandled }: DiaryPageProps): Re
   }, [])
 
   useEffect(() => {
-    void loadOverview()
+    let cancelled = false
+    queueMicrotask(() => {
+      if (!cancelled) void loadOverview()
+    })
+    return () => {
+      cancelled = true
+    }
   }, [loadOverview])
 
   useEffect(() => {
     if (!resourceId) return
     const target = diarySections.find((item) => item.id === resourceId)
-    if (target && (!target.needsDiary || selectedDiaryId)) setSection(target.id)
-    onResourceHandled?.()
+    let cancelled = false
+    queueMicrotask(() => {
+      if (cancelled) return
+      if (target && (!target.needsDiary || selectedDiaryId)) setSection(target.id)
+      onResourceHandled?.()
+    })
+    return () => {
+      cancelled = true
+    }
   }, [onResourceHandled, resourceId, selectedDiaryId])
 
   async function handleChanged(): Promise<void> {

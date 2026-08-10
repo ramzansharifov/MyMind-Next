@@ -69,7 +69,13 @@ export function DiaryReader({
   }, [diary.id, onDayChange, requestedDayKey])
 
   useEffect(() => {
-    void loadDays()
+    let cancelled = false
+    queueMicrotask(() => {
+      if (!cancelled) void loadDays()
+    })
+    return () => {
+      cancelled = true
+    }
   }, [loadDays, refreshVersion])
 
   async function openDay(dayKey: string): Promise<void> {

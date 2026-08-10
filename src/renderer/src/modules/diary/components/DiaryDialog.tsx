@@ -48,9 +48,16 @@ export function DiaryDialog({
 
   useEffect(() => {
     if (!open) return
-    setTitle(diary?.title ?? '')
-    setIcon(diary?.icon ?? 'book-heart')
-    setError(null)
+    let cancelled = false
+    queueMicrotask(() => {
+      if (cancelled) return
+      setTitle(diary?.title ?? '')
+      setIcon(diary?.icon ?? 'book-heart')
+      setError(null)
+    })
+    return () => {
+      cancelled = true
+    }
   }, [diary, open])
 
   async function submit(): Promise<void> {
@@ -148,7 +155,10 @@ export function DiaryDialog({
         </div>
 
         {error && (
-          <div role="alert" className="rounded-xl border border-red-500/20 bg-red-500/[0.06] px-3 py-2 text-sm text-red-200">
+          <div
+            role="alert"
+            className="rounded-xl border border-red-500/20 bg-red-500/[0.06] px-3 py-2 text-sm text-red-200"
+          >
             {error}
           </div>
         )}
