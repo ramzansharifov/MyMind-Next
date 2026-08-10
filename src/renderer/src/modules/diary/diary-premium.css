@@ -127,7 +127,11 @@
     radial-gradient(circle at 86% 72%, rgb(132 93 49 / 8%) 0, transparent 22rem),
     radial-gradient(circle at 22% 32%, rgb(92 62 35 / 7%) 0 0.7px, transparent 0.8px),
     radial-gradient(circle at 71% 18%, rgb(92 62 35 / 5%) 0 0.65px, transparent 0.75px);
-  background-size: auto, auto, 9px 11px, 13px 15px;
+  background-size:
+    auto,
+    auto,
+    9px 11px,
+    13px 15px;
   box-shadow:
     0 16px 30px rgb(0 0 0 / 24%),
     0 3px 7px rgb(59 40 24 / 18%),

@@ -93,9 +93,7 @@ export function DiaryReader({
         return
       }
 
-      const sourceIndex = day
-        ? orderedDays.findIndex((item) => item.dayKey === day.dayKey)
-        : -1
+      const sourceIndex = day ? orderedDays.findIndex((item) => item.dayKey === day.dayKey) : -1
       const targetIndex = orderedDays.findIndex((item) => item.dayKey === dayKey)
 
       pageRequestPendingRef.current = true
