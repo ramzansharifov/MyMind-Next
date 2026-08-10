@@ -1,17 +1,9 @@
 import { ChevronLeft, ChevronRight, LoaderCircle } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
-import type {
-  DiaryDaySummary,
-  DiarySummary
-} from '../../../../../shared/contracts/diary'
+import type { DiaryDaySummary, DiarySummary } from '../../../../../shared/contracts/diary'
 import { diaryClient } from '../api/diary-client'
-import {
-  diaryMoodMeta,
-  getDiaryErrorMessage,
-  localDayKey,
-  monthRange
-} from '../lib/diary-ui'
+import { diaryMoodMeta, getDiaryErrorMessage, localDayKey, monthRange } from '../lib/diary-ui'
 
 const weekdayLabels = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 
@@ -102,7 +94,7 @@ export function DiaryCalendar({
           >
             <ChevronLeft className="size-4" />
           </button>
-          <div className="min-w-40 text-center text-sm font-semibold capitalize text-[var(--app-text)]">
+          <div className="min-w-40 text-center text-sm font-semibold text-[var(--app-text)] capitalize">
             {monthTitle}
           </div>
           <button
@@ -154,7 +146,7 @@ export function DiaryCalendar({
                   key={cell.dayKey}
                   type="button"
                   disabled={!page}
-                  className={`relative min-h-28 border-r border-b border-[var(--app-border)] p-3 text-left outline-none transition-colors ${page ? 'hover:bg-[var(--app-control-hover)] focus-visible:bg-[var(--app-control-hover)]' : 'cursor-default'} ${today ? 'bg-violet-500/[0.045]' : ''}`}
+                  className={`relative min-h-28 border-r border-b border-[var(--app-border)] p-3 text-left transition-colors outline-none ${page ? 'hover:bg-[var(--app-control-hover)] focus-visible:bg-[var(--app-control-hover)]' : 'cursor-default'} ${today ? 'bg-violet-500/[0.045]' : ''}`}
                   onClick={() => {
                     if (page) onOpenDay(cell.dayKey)
                   }}

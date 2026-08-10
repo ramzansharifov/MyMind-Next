@@ -197,12 +197,8 @@ describe('FinanceTransactionDialog', () => {
 
     await user.click(screen.getByRole('radio', { name: 'Перевод' }))
     expect(screen.getByRole('radio', { name: 'Перевод' })).toHaveClass('border-violet-400/60')
-    expect(screen.getByRole('radio', { name: 'Доход' })).toHaveClass(
-      'bg-[var(--app-workspace)]'
-    )
-    expect(screen.getByRole('radio', { name: 'Расход' })).toHaveClass(
-      'bg-[var(--app-workspace)]'
-    )
+    expect(screen.getByRole('radio', { name: 'Доход' })).toHaveClass('bg-[var(--app-workspace)]')
+    expect(screen.getByRole('radio', { name: 'Расход' })).toHaveClass('bg-[var(--app-workspace)]')
 
     const destinationGroup = screen.getByRole('radiogroup', { name: 'Счёт зачисления' })
     await user.click(within(destinationGroup).getByRole('radio', { name: 'Карта, TJS' }))

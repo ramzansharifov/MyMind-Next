@@ -28,11 +28,12 @@ import type {
 } from '../../shared/contracts/finance-report-analytics'
 import { assertSafeMinor } from '../../shared/finance-money'
 import { getSqlite } from '../database/client'
+import { getFinanceSettings, listFinanceExchangeRates } from '../repositories/finance.repository'
 import {
-  getFinanceSettings,
-  listFinanceExchangeRates
-} from '../repositories/finance.repository'
-import { convertFinanceMinor, createFinanceRateBook, type FinanceRateBook } from './finance-conversion'
+  convertFinanceMinor,
+  createFinanceRateBook,
+  type FinanceRateBook
+} from './finance-conversion'
 import { listFinanceLimitStatuses } from './finance.service'
 import { previousComparablePeriod } from './finance-periods'
 
@@ -238,7 +239,10 @@ function distinctTransactions(
   return ids
 }
 
-function summarize(rawRows: AggregateEntryRow[], convertedRows: ConvertedEntryRow[]): ReportSummary {
+function summarize(
+  rawRows: AggregateEntryRow[],
+  convertedRows: ConvertedEntryRow[]
+): ReportSummary {
   const incomeAmounts = amountsByTransaction(convertedRows, 'income')
   const expenseAmounts = amountsByTransaction(convertedRows, 'expense')
   const incomeMinor = assertSafeMinor(
@@ -254,8 +258,7 @@ function summarize(rawRows: AggregateEntryRow[], convertedRows: ConvertedEntryRo
     incomeMinor,
     expenseMinor,
     netMinor: assertSafeMinor(incomeMinor - expenseMinor),
-    averageIncomeMinor:
-      incomeValues.length > 0 ? Math.round(incomeMinor / incomeValues.length) : 0,
+    averageIncomeMinor: incomeValues.length > 0 ? Math.round(incomeMinor / incomeValues.length) : 0,
     averageExpenseMinor:
       expenseValues.length > 0 ? Math.round(expenseMinor / expenseValues.length) : 0,
     largestIncomeMinor: incomeValues.length > 0 ? Math.max(...incomeValues) : 0,
@@ -314,9 +317,7 @@ function resolveComparisonPeriod(period: FinancePeriod): FinancePeriod {
     const comparableDay = Math.min(targetDay, endOfMonth(previousTargetMonth).getDate())
     return {
       from: previousYearStart.getTime(),
-      to: endOfDay(
-        new Date(previousYearStart.getFullYear(), targetMonth, comparableDay)
-      ).getTime()
+      to: endOfDay(new Date(previousYearStart.getFullYear(), targetMonth, comparableDay)).getTime()
     }
   }
 
@@ -324,10 +325,7 @@ function resolveComparisonPeriod(period: FinancePeriod): FinancePeriod {
 }
 
 function bucketKind(period: FinancePeriod): BucketKind {
-  const days = Math.max(
-    1,
-    differenceInCalendarDays(new Date(period.to), new Date(period.from)) + 1
-  )
+  const days = Math.max(1, differenceInCalendarDays(new Date(period.to), new Date(period.from)) + 1)
   if (days <= 45) return 'day'
   if (days <= 210) return 'week'
   return 'month'
@@ -645,10 +643,7 @@ function createAccountActivity(
   selectedAccountIds?: string[]
 ): FinanceReportAccountActivity[] {
   const selected = selectedAccountIds?.length ? new Set(selectedAccountIds) : null
-  const working = new Map<
-    string,
-    FinanceReportAccountActivity & { operationIds: Set<string> }
-  >()
+  const working = new Map<string, FinanceReportAccountActivity & { operationIds: Set<string> }>()
 
   for (const row of rows) {
     if (selected && !selected.has(row.account_id)) continue
@@ -666,7 +661,8 @@ function createAccountActivity(
     }
     const amount = Math.abs(row.convertedMinor)
     if (row.type === 'income') current.incomeMinor = assertSafeMinor(current.incomeMinor + amount)
-    if (row.type === 'expense') current.expenseMinor = assertSafeMinor(current.expenseMinor + amount)
+    if (row.type === 'expense')
+      current.expenseMinor = assertSafeMinor(current.expenseMinor + amount)
     if (row.type === 'transfer' && row.convertedMinor > 0) {
       current.transferInMinor = assertSafeMinor(current.transferInMinor + amount)
     }

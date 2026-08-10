@@ -55,7 +55,7 @@ export function AppTitleBar(): React.JSX.Element {
           <button
             type="button"
             aria-label="Свернуть окно"
-            className="flex h-full w-11 items-center justify-center text-[var(--app-muted)] outline-none transition-colors hover:bg-white/[0.055] hover:text-[var(--app-text)] focus-visible:bg-white/[0.07] focus-visible:text-[var(--app-text)]"
+            className="flex h-full w-11 items-center justify-center text-[var(--app-muted)] transition-colors outline-none hover:bg-white/[0.055] hover:text-[var(--app-text)] focus-visible:bg-white/[0.07] focus-visible:text-[var(--app-text)]"
             onClick={() => {
               void window.api.system.minimizeWindow()
             }}
@@ -68,7 +68,7 @@ export function AppTitleBar(): React.JSX.Element {
           <button
             type="button"
             aria-label={isMaximized ? 'Восстановить окно' : 'Развернуть окно'}
-            className="flex h-full w-11 items-center justify-center text-[var(--app-muted)] outline-none transition-colors hover:bg-white/[0.055] hover:text-[var(--app-text)] focus-visible:bg-white/[0.07] focus-visible:text-[var(--app-text)]"
+            className="flex h-full w-11 items-center justify-center text-[var(--app-muted)] transition-colors outline-none hover:bg-white/[0.055] hover:text-[var(--app-text)] focus-visible:bg-white/[0.07] focus-visible:text-[var(--app-text)]"
             onClick={() => {
               void window.api.system
                 .toggleMaximizeWindow()
@@ -87,7 +87,7 @@ export function AppTitleBar(): React.JSX.Element {
           <button
             type="button"
             aria-label="Закрыть окно"
-            className="flex h-full w-11 items-center justify-center text-[var(--app-muted)] outline-none transition-colors hover:bg-red-500/90 hover:text-white focus-visible:bg-red-500/90 focus-visible:text-white"
+            className="flex h-full w-11 items-center justify-center text-[var(--app-muted)] transition-colors outline-none hover:bg-red-500/90 hover:text-white focus-visible:bg-red-500/90 focus-visible:text-white"
             onClick={() => {
               void window.api.system.closeWindow()
             }}

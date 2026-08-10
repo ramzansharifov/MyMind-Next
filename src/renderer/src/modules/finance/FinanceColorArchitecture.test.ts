@@ -7,9 +7,7 @@ function read(path: string): string {
 }
 
 function interfaceBlock(source: string, name: string): string {
-  const match = source.match(
-    new RegExp(`export interface ${name}[^\\{]*\\{[\\s\\S]*?\\n\\}`)
-  )
+  const match = source.match(new RegExp(`export interface ${name}[^\\{]*\\{[\\s\\S]*?\\n\\}`))
   expect(match, `${name} interface`).not.toBeNull()
   return match?.[0] ?? ''
 }
@@ -52,9 +50,9 @@ describe('finance color architecture', () => {
     expect(contract).toContain("income: '#34d399'")
     expect(contract).toContain("expense: '#f87171'")
     expect(contract).toContain("both: '#fbbf24'")
-    expect(
-      schema.match(/export const financeTags = sqliteTable\([\s\S]*?\n\)/)?.[0]
-    ).not.toContain("color: text('color')")
+    expect(schema.match(/export const financeTags = sqliteTable\([\s\S]*?\n\)/)?.[0]).not.toContain(
+      "color: text('color')"
+    )
     expect(repository).toContain('getFinanceTagColor(row.type)')
     expect(repository).toContain('getFinanceTagColor(input.type)')
     expect(dialog).not.toContain('ColorPicker')

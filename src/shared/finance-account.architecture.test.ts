@@ -36,10 +36,7 @@ describe('finance account architecture', () => {
     const snapshot = JSON.parse(
       readFileSync(resolve(process.cwd(), 'drizzle/meta/0013_snapshot.json'), 'utf8')
     ) as {
-      tables: Record<
-        string,
-        { columns: Record<string, unknown>; indexes: Record<string, unknown> }
-      >
+      tables: Record<string, { columns: Record<string, unknown>; indexes: Record<string, unknown> }>
     }
     const accounts = snapshot.tables.finance_accounts
 

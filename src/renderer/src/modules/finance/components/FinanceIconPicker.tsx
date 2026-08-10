@@ -1,9 +1,6 @@
 import { ChevronDown } from 'lucide-react'
 
-import {
-  FINANCE_ICON_NAMES,
-  type FinanceIconName
-} from '../../../../../shared/contracts/finance'
+import { FINANCE_ICON_NAMES, type FinanceIconName } from '../../../../../shared/contracts/finance'
 import { IconPicker, type IconPickerOption } from '../../../shared/ui/IconPicker'
 import { FinanceIcon } from '../lib/FinanceIcon'
 import { financeInputClassName } from './FinancePrimitives'
@@ -31,12 +28,10 @@ const financeIconLabels: Record<FinanceIconName, string> = {
   tag: 'Другое'
 }
 
-const financeIconOptions = FINANCE_ICON_NAMES.map(
-  (value): IconPickerOption<FinanceIconName> => ({
-    value,
-    label: financeIconLabels[value]
-  })
-)
+const financeIconOptions = FINANCE_ICON_NAMES.map((value): IconPickerOption<FinanceIconName> => ({
+  value,
+  label: financeIconLabels[value]
+}))
 
 export function FinanceIconPicker({
   value,

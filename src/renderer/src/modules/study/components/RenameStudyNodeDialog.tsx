@@ -46,7 +46,7 @@ export function RenameStudyNodeDialog({
         value={value}
         disabled={isSubmitting}
         aria-describedby={error ? 'study-rename-error' : undefined}
-        className="w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 py-2.5 text-sm text-[var(--app-text)] outline-none transition-colors focus:border-[var(--app-accent-500)]/50 focus:ring-2 focus:ring-[var(--app-accent-500)]/10"
+        className="w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 py-2.5 text-sm text-[var(--app-text)] transition-colors outline-none focus:border-[var(--app-accent-500)]/50 focus:ring-2 focus:ring-[var(--app-accent-500)]/10"
         onChange={(event) => onValueChange(event.target.value)}
       />
 

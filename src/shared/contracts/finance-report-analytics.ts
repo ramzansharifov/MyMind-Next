@@ -1,7 +1,4 @@
-import type {
-  FinanceReport,
-  FinanceTransferFlow
-} from './finance'
+import type { FinanceReport, FinanceTransferFlow } from './finance'
 
 export interface FinanceReportAccountActivity {
   accountId: string

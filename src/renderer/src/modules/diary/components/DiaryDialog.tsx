@@ -125,7 +125,7 @@ export function DiaryDialog({
             value={title}
             maxLength={120}
             autoFocus
-            className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-control)] px-3 outline-none transition-colors placeholder:text-[var(--app-muted)] focus:border-violet-500/40 focus:ring-2 focus:ring-violet-500/15"
+            className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-control)] px-3 transition-colors outline-none placeholder:text-[var(--app-muted)] focus:border-violet-500/40 focus:ring-2 focus:ring-violet-500/15"
             placeholder="Например, Личный дневник"
             onChange={(event) => setTitle(event.target.value)}
           />
@@ -143,7 +143,7 @@ export function DiaryDialog({
             trigger={
               <button
                 type="button"
-                className="flex h-12 w-full items-center gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-control)] px-3 text-left outline-none transition-colors hover:bg-[var(--app-control-hover)] focus-visible:ring-2 focus-visible:ring-violet-500/30"
+                className="flex h-12 w-full items-center gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-control)] px-3 text-left transition-colors outline-none hover:bg-[var(--app-control-hover)] focus-visible:ring-2 focus-visible:ring-violet-500/30"
               >
                 <span className="flex size-8 items-center justify-center rounded-lg border border-violet-500/15 bg-violet-500/10 text-violet-300">
                   <DiaryIcon name={icon} className="size-4" />

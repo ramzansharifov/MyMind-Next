@@ -49,7 +49,10 @@ type QuickPeriod = '7' | '30' | '90' | 'month' | 'previous-month' | 'year' | 'cu
 type ReportType = 'all' | 'income' | 'expense' | 'transfer'
 type TemplateMode = 'all' | 'template' | 'manual'
 
-function quickRange(value: Exclude<QuickPeriod, 'custom'>, now = new Date()): {
+function quickRange(
+  value: Exclude<QuickPeriod, 'custom'>,
+  now = new Date()
+): {
   from: number
   to: number
 } {
@@ -153,8 +156,7 @@ export function FinanceReports({
       accountIds: accountId === 'all' ? undefined : [accountId],
       tagId: type === 'transfer' || tagId === 'all' ? undefined : tagId,
       currencyCode: baseCurrencyCode,
-      templateOnly:
-        templateMode === 'all' ? undefined : templateMode === 'template' ? true : false
+      templateOnly: templateMode === 'all' ? undefined : templateMode === 'template' ? true : false
     }),
     [accountId, baseCurrencyCode, from, tagId, templateMode, to, type]
   )
@@ -472,9 +474,9 @@ export function FinanceReports({
                 <div className="font-medium">Отчёт содержит неполные суммы</div>
                 <div className="mt-1 text-xs leading-5 text-amber-100/80">
                   Нет курса для {report.missingRateCurrencies.join(', ')}. Операции продолжают
-                  учитываться в количестве, но суммы, которые нельзя привести к {report.currencyCode},
-                  не включены в денежные показатели. Баланс при неполной конвертации не подменяется
-                  частичным значением.
+                  учитываться в количестве, но суммы, которые нельзя привести к{' '}
+                  {report.currencyCode}, не включены в денежные показатели. Баланс при неполной
+                  конвертации не подменяется частичным значением.
                 </div>
               </div>
             )}
@@ -495,7 +497,9 @@ export function FinanceReports({
                     ? `${topExpense.label} · ${formatMoneyMinor(topExpense.amountMinor, report.currencyCode)}`
                     : 'Нет расходов'
                 }
-                hint={topExpense ? `${topExpense.sharePercent.toFixed(1)}% всех расходов` : undefined}
+                hint={
+                  topExpense ? `${topExpense.sharePercent.toFixed(1)}% всех расходов` : undefined
+                }
               />
               <InsightCard
                 icon={<TrendingUp className="size-4" />}
@@ -666,8 +670,8 @@ export function FinanceReports({
                                 {tag?.name ?? 'Тег не найден'}
                               </div>
                               <div className="mt-1 text-xs text-[var(--app-muted)]">
-                                Потрачено {formatMoneyMinor(limit.spentMinor, limit.currencyCode)} из{' '}
-                                {formatMoneyMinor(limit.amountMinor, limit.currencyCode)}
+                                Потрачено {formatMoneyMinor(limit.spentMinor, limit.currencyCode)}{' '}
+                                из {formatMoneyMinor(limit.amountMinor, limit.currencyCode)}
                               </div>
                             </div>
                             <div

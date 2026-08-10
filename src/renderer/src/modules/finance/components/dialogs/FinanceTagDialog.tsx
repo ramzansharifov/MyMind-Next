@@ -141,9 +141,7 @@ function FinanceTagDialogContent({
         </FinanceField>
 
         <fieldset>
-          <legend className="mb-1.5 text-sm font-medium text-[var(--app-text)]">
-            Назначение
-          </legend>
+          <legend className="mb-1.5 text-sm font-medium text-[var(--app-text)]">Назначение</legend>
           <Controller
             control={control}
             name="type"
@@ -164,7 +162,7 @@ function FinanceTagDialogContent({
                       aria-checked={selected}
                       disabled={isSaving}
                       className={cn(
-                        'min-h-24 rounded-xl border p-3 text-left outline-none transition-[background-color,border-color,box-shadow,color]',
+                        'min-h-24 rounded-xl border p-3 text-left transition-[background-color,border-color,box-shadow,color] outline-none',
                         'focus-visible:ring-2 focus-visible:ring-violet-500/35',
                         'disabled:cursor-not-allowed disabled:opacity-45',
                         selected ? option.activeClassName : idleCardClassName

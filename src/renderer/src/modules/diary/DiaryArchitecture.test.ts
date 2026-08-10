@@ -7,9 +7,7 @@ function read(path: string): string {
 }
 
 function interfaceBlock(source: string, name: string): string {
-  const match = source.match(
-    new RegExp(`export interface ${name}[^\\{]*\\{[\\s\\S]*?\\n\\}`)
-  )
+  const match = source.match(new RegExp(`export interface ${name}[^\\{]*\\{[\\s\\S]*?\\n\\}`))
   expect(match, `${name} interface`).not.toBeNull()
   return match?.[0] ?? ''
 }

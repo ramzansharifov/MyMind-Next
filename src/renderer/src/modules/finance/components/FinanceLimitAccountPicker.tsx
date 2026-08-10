@@ -25,7 +25,7 @@ export function FinanceLimitAccountPicker({
     ? canSelectAll
       ? currencies[0]
       : null
-    : accounts.find((account) => account.id === accountIds[0])?.currencyCode ?? null
+    : (accounts.find((account) => account.id === accountIds[0])?.currencyCode ?? null)
 
   if (accounts.length === 0) {
     return (

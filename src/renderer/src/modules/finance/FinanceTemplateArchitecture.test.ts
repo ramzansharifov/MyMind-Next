@@ -7,9 +7,7 @@ function read(path: string): string {
 }
 
 function expectRegisteredNumberInput(source: string, field: string): void {
-  expect(source).toMatch(
-    new RegExp(`register\\('${field}'\\)[\\s\\S]{0,180}?type=\\"number\\"`)
-  )
+  expect(source).toMatch(new RegExp(`register\\('${field}'\\)[\\s\\S]{0,180}?type=\\"number\\"`))
 }
 
 describe('finance template architecture', () => {
@@ -38,9 +36,7 @@ describe('finance template architecture', () => {
     const ipc = read('src/main/ipc/register-finance-ipc.ts')
     const schema = read('src/main/database/schema/finance.ts')
     const migration = read('drizzle/0015_simplify_finance_templates_limits.sql')
-    const templateContract = contract.match(
-      /export interface FinanceTemplate \{[\s\S]*?\n\}/
-    )?.[0]
+    const templateContract = contract.match(/export interface FinanceTemplate \{[\s\S]*?\n\}/)?.[0]
     const templateSchema = schema.match(
       /export const financeTransactionTemplates = sqliteTable\([\s\S]*?\n\)\n\nexport const financeTransactions/
     )?.[0]
@@ -80,9 +76,7 @@ describe('finance template architecture', () => {
     const template = read(
       'src/renderer/src/modules/finance/components/dialogs/FinanceTemplateDialog.tsx'
     )
-    const limit = read(
-      'src/renderer/src/modules/finance/components/dialogs/FinanceLimitDialog.tsx'
-    )
+    const limit = read('src/renderer/src/modules/finance/components/dialogs/FinanceLimitDialog.tsx')
 
     expectRegisteredNumberInput(account, 'initialBalance')
     expectRegisteredNumberInput(transaction, 'amount')

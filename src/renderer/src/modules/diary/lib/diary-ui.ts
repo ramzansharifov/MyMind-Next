@@ -1,7 +1,4 @@
-import type {
-  DiaryMood,
-  DiaryReportPoint
-} from '../../../../../shared/contracts/diary'
+import type { DiaryMood, DiaryReportPoint } from '../../../../../shared/contracts/diary'
 
 export const diaryMoodMeta: Record<
   DiaryMood,

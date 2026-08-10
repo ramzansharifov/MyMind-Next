@@ -67,7 +67,9 @@ export function FinanceTemplates({
                 >
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <h3 className="truncate font-medium text-[var(--app-text)]">{template.name}</h3>
+                      <h3 className="truncate font-medium text-[var(--app-text)]">
+                        {template.name}
+                      </h3>
                       <span className="rounded-md border border-[var(--app-border)] bg-[var(--app-overlay-faint)] px-1.5 py-0.5 text-[10px] tracking-wider text-[var(--app-muted)] uppercase">
                         {typeLabel}
                       </span>

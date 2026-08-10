@@ -29,9 +29,7 @@ export function FolderIconPicker({
       align={align}
       label={label}
       optionDataAttribute="data-folder-icon-option"
-      renderIcon={(icon) => (
-        <FolderIcon name={icon} className={FOLDER_ICON_SIDEBAR_CLASS_NAME} />
-      )}
+      renderIcon={(icon) => <FolderIcon name={icon} className={FOLDER_ICON_SIDEBAR_CLASS_NAME} />}
     />
   )
 }

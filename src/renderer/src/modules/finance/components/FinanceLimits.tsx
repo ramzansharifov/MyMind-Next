@@ -29,12 +29,7 @@ const periodLabels = {
   custom: 'Период'
 } as const
 
-export function FinanceLimits({
-  accounts,
-  tags,
-  limits,
-  onChanged
-}: Props): React.JSX.Element {
+export function FinanceLimits({ accounts, tags, limits, onChanged }: Props): React.JSX.Element {
   const [limitDialogOpen, setLimitDialogOpen] = useState(false)
   const [editLimit, setEditLimit] = useState<FinanceLimitStatus | null>(null)
   const [deleteLimit, setDeleteLimit] = useState<FinanceLimitStatus | null>(null)
@@ -60,7 +55,10 @@ export function FinanceLimits({
                   ? `Все счета · ${limit.currencyCode}`
                   : selectedAccounts.length <= 2
                     ? selectedAccounts.map((account) => account.name).join(', ')
-                    : `${selectedAccounts.slice(0, 2).map((account) => account.name).join(', ')} +${selectedAccounts.length - 2}`
+                    : `${selectedAccounts
+                        .slice(0, 2)
+                        .map((account) => account.name)
+                        .join(', ')} +${selectedAccounts.length - 2}`
 
               return (
                 <FinanceSurface

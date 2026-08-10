@@ -19,7 +19,8 @@ export function DiaryLibrary({
         <div>
           <h2 className="text-lg font-semibold text-[var(--app-text)]">Мои дневники</h2>
           <p className="mt-1 text-sm text-[var(--app-muted)]">
-            Отдельные книги для разных частей жизни. У каждого дневника своя история, календарь и отчёты.
+            Отдельные книги для разных частей жизни. У каждого дневника своя история, календарь и
+            отчёты.
           </p>
         </div>
         <button
@@ -37,7 +38,7 @@ export function DiaryLibrary({
           <button
             key={diary.id}
             type="button"
-            className="group relative min-h-64 overflow-hidden rounded-[24px] border border-[var(--app-border)] bg-[var(--app-surface)] p-0 text-left shadow-[var(--app-shadow-card)] outline-none transition-transform hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-violet-500/40"
+            className="group relative min-h-64 overflow-hidden rounded-[24px] border border-[var(--app-border)] bg-[var(--app-surface)] p-0 text-left shadow-[var(--app-shadow-card)] transition-transform outline-none hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-violet-500/40"
             onClick={() => onOpenDiary(diary)}
           >
             <div className="absolute inset-y-0 left-0 w-3 border-r border-violet-500/15 bg-violet-500/10" />

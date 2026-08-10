@@ -22,10 +22,7 @@ import {
   financeInputClassName,
   financeTextareaClassName
 } from '../FinancePrimitives'
-import {
-  FinanceAccountCardPicker,
-  FinanceTagCardPicker
-} from '../FinanceSelectionCards'
+import { FinanceAccountCardPicker, FinanceTagCardPicker } from '../FinanceSelectionCards'
 
 const schema = z
   .object({
@@ -76,7 +73,14 @@ export function FinanceTemplateDialog(props: Props): React.JSX.Element {
   return props.open ? <Content {...props} /> : <></>
 }
 
-function Content({ open, template, accounts, tags, onOpenChange, onSaved }: Props): React.JSX.Element {
+function Content({
+  open,
+  template,
+  accounts,
+  tags,
+  onOpenChange,
+  onSaved
+}: Props): React.JSX.Element {
   const [isSaving, setIsSaving] = useState(false)
   const [backendError, setBackendError] = useState<string | null>(null)
   const sourceAccount = accounts.find((account) => account.id === template?.sourceAccountId)
@@ -148,7 +152,10 @@ function Content({ open, template, accounts, tags, onOpenChange, onSaved }: Prop
         return
       }
       try {
-        destinationAmountMinor = parseMoneyToMinor(formValues.sourceAmount, destination.currencyCode)
+        destinationAmountMinor = parseMoneyToMinor(
+          formValues.sourceAmount,
+          destination.currencyCode
+        )
         if (destinationAmountMinor <= 0) throw new Error('Сумма должна быть больше нуля')
       } catch (reason) {
         setError('sourceAmount', { message: getFinanceErrorMessage(reason) })
@@ -163,7 +170,8 @@ function Content({ open, template, accounts, tags, onOpenChange, onSaved }: Prop
         name: formValues.name,
         type: formValues.type,
         sourceAccountId: formValues.sourceAccountId,
-        destinationAccountId: formValues.type === 'transfer' ? formValues.destinationAccountId : null,
+        destinationAccountId:
+          formValues.type === 'transfer' ? formValues.destinationAccountId : null,
         tagId: formValues.type === 'transfer' ? null : formValues.tagId,
         sourceAmountMinor,
         destinationAmountMinor,
@@ -204,7 +212,9 @@ function Content({ open, template, accounts, tags, onOpenChange, onSaved }: Prop
         </FinanceField>
 
         <fieldset>
-          <legend className="mb-1.5 text-sm font-medium text-[var(--app-text)]">Тип операции</legend>
+          <legend className="mb-1.5 text-sm font-medium text-[var(--app-text)]">
+            Тип операции
+          </legend>
           <FinanceOperationTypePicker value={type} disabled={isSaving} onChange={chooseType} />
         </fieldset>
 

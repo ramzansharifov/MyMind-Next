@@ -123,15 +123,7 @@ describe('FinancePage', () => {
     expect(document.querySelector('[data-finance-hero]')).toBeInTheDocument()
     expect(document.querySelector('[data-finance-navigation]')).toBeInTheDocument()
     expect(document.querySelector('[data-finance-header-actions]')).toBeInTheDocument()
-    for (const label of [
-      'Главная',
-      'Транзакции',
-      'Шаблоны',
-      'Лимиты',
-      'Счета',
-      'Теги',
-      'Отчёты'
-    ]) {
+    for (const label of ['Главная', 'Транзакции', 'Шаблоны', 'Лимиты', 'Счета', 'Теги', 'Отчёты']) {
       expect(screen.getByRole('button', { name: label })).toBeInTheDocument()
     }
     for (const label of ['Доход', 'Расход', 'Перевод']) {
