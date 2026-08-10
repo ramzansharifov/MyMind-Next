@@ -116,7 +116,13 @@ export function FinanceReports({
   const requestSequence = useRef(0)
 
   useEffect(() => {
-    if (type === 'transfer' && tagId !== 'all') setTagId('all')
+    let cancelled = false
+    queueMicrotask(() => {
+      if (!cancelled && type === 'transfer' && tagId !== 'all') setTagId('all')
+    })
+    return () => {
+      cancelled = true
+    }
   }, [tagId, type])
 
   const availableTags = useMemo(() => {
@@ -128,7 +134,15 @@ export function FinanceReports({
   }, [tags, type])
 
   useEffect(() => {
-    if (tagId !== 'all' && !availableTags.some((tag) => tag.id === tagId)) setTagId('all')
+    let cancelled = false
+    queueMicrotask(() => {
+      if (!cancelled && tagId !== 'all' && !availableTags.some((tag) => tag.id === tagId)) {
+        setTagId('all')
+      }
+    })
+    return () => {
+      cancelled = true
+    }
   }, [availableTags, tagId])
 
   const filters = useMemo<FinanceReportFilters>(
@@ -162,7 +176,13 @@ export function FinanceReports({
   }, [filters])
 
   useEffect(() => {
-    void load()
+    let cancelled = false
+    queueMicrotask(() => {
+      if (!cancelled) void load()
+    })
+    return () => {
+      cancelled = true
+    }
   }, [load, limitsVersion])
 
   useEffect(
