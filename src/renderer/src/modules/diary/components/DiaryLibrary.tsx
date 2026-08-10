@@ -1,4 +1,4 @@
-import { ArrowRight, BookOpen, Plus } from 'lucide-react'
+import { ArrowRight, BookOpen, CalendarDays, Plus } from 'lucide-react'
 
 import type { DiarySummary } from '../../../../../shared/contracts/diary'
 import { formatShortDate } from '../lib/diary-ui'
@@ -14,13 +14,12 @@ export function DiaryLibrary({
   onCreateDiary: () => void
 }): React.JSX.Element {
   return (
-    <section className="space-y-4">
+    <section className="space-y-5">
       <div className="flex items-end justify-between gap-4 max-[620px]:flex-col max-[620px]:items-start">
         <div>
           <h2 className="text-lg font-semibold text-[var(--app-text)]">Мои дневники</h2>
           <p className="mt-1 text-sm text-[var(--app-muted)]">
-            Отдельные книги для разных частей жизни. У каждого дневника своя история, календарь и
-            отчёты.
+            Каждая книга хранит собственные страницы, настроение, календарь и историю.
           </p>
         </div>
         <button
@@ -33,18 +32,18 @@ export function DiaryLibrary({
         </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-5 max-[1050px]:grid-cols-2 max-[650px]:grid-cols-1">
+      <div className="grid grid-cols-3 gap-6 max-[1050px]:grid-cols-2 max-[650px]:grid-cols-1">
         {diaries.map((diary) => (
           <button
             key={diary.id}
             type="button"
-            className="group relative min-h-64 overflow-hidden rounded-[24px] border border-[var(--app-border)] bg-[var(--app-surface)] p-0 text-left shadow-[var(--app-shadow-card)] transition-transform outline-none hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-violet-500/40"
+            className="diary-cover-card group p-0 text-left"
+            aria-label={`Открыть дневник «${diary.title}»`}
             onClick={() => onOpenDiary(diary)}
           >
-            <div className="absolute inset-y-0 left-0 w-3 border-r border-violet-500/15 bg-violet-500/10" />
-            <div className="flex h-full min-h-64 flex-col p-5 pl-7">
+            <div className="flex min-h-[17rem] flex-col p-6 pl-8">
               <div className="flex items-start justify-between gap-4">
-                <span className="flex size-12 items-center justify-center rounded-2xl border border-violet-500/15 bg-violet-500/10 text-violet-300 shadow-inner">
+                <span className="flex size-12 items-center justify-center rounded-2xl border border-violet-500/20 bg-violet-500/10 text-violet-300 shadow-inner shadow-violet-500/5">
                   <DiaryIcon name={diary.icon} className="size-6" />
                 </span>
                 <ArrowRight
@@ -53,17 +52,37 @@ export function DiaryLibrary({
                 />
               </div>
 
-              <div className="mt-8 flex-1">
-                <h3 className="text-xl font-semibold tracking-tight text-[var(--app-text)]">
+              <div className="mt-7 flex-1">
+                <div className="text-[10px] font-semibold tracking-[0.2em] text-[var(--app-muted)] uppercase">
+                  Дневник
+                </div>
+                <h3 className="mt-2 max-w-[15rem] text-xl font-semibold tracking-tight text-[var(--app-text)]">
                   {diary.title}
                 </h3>
                 <div className="mt-2 flex items-center gap-2 text-xs text-[var(--app-muted)]">
-                  <BookOpen aria-hidden="true" className="size-3.5" />
-                  {diary.pageCount} страниц · {diary.entryCount} записей
+                  <CalendarDays aria-hidden="true" className="size-3.5" />
+                  Создан {formatShortDate(diary.createdAt)}
                 </div>
               </div>
 
-              <div className="mt-5 border-t border-[var(--app-border)] pt-3 text-xs text-[var(--app-muted)]">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="rounded-xl border border-[var(--app-border)] bg-black/[0.06] px-3 py-2.5">
+                  <div className="flex items-center gap-1.5 text-[11px] text-[var(--app-muted)]">
+                    <BookOpen aria-hidden="true" className="size-3.5" /> Страницы
+                  </div>
+                  <div className="mt-1 text-sm font-semibold text-[var(--app-text)]">
+                    {diary.pageCount}
+                  </div>
+                </div>
+                <div className="rounded-xl border border-[var(--app-border)] bg-black/[0.06] px-3 py-2.5">
+                  <div className="text-[11px] text-[var(--app-muted)]">Записи</div>
+                  <div className="mt-1 text-sm font-semibold text-[var(--app-text)]">
+                    {diary.entryCount}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 border-t border-[var(--app-border)] pt-3 text-[11px] text-[var(--app-muted)]">
                 Последняя активность: {formatShortDate(diary.lastActivityAt)}
               </div>
             </div>
