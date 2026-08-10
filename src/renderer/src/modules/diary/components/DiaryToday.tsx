@@ -124,171 +124,188 @@ export function DiaryToday({
       <div>
         <h2 className="text-lg font-semibold text-[var(--app-text)]">Сегодня</h2>
         <p className="mt-1 text-sm text-[var(--app-muted)]">
-          Зафиксируйте настроение и небольшие моменты дня — возвращаться можно сколько угодно раз.
+          Одна страница на день: настроение и столько коротких записей, сколько захочется.
         </p>
       </div>
 
-      <article className="diary-paper mx-auto w-full max-w-[900px] overflow-hidden rounded-[28px] border shadow-2xl">
-        <div className="diary-paper-content relative px-8 py-8 max-[620px]:px-5">
-          <header className="border-b border-stone-300/70 pb-5">
-            <div className="text-xs font-semibold tracking-[0.16em] text-stone-500 uppercase">
-              {diary.title}
-            </div>
-            <h3 className="mt-2 font-serif text-2xl font-semibold text-stone-900 capitalize">
-              {formatDiaryDate(dayKey)}
-            </h3>
+      <div className="diary-book-frame mx-auto w-full max-w-[940px]">
+        <article className="diary-paper min-h-[610px] overflow-hidden rounded-[24px] border shadow-2xl">
+          <div className="diary-paper-content min-h-[610px]">
+            <header className="diary-paper-header border-b border-stone-300/70 px-9 py-8 max-[620px]:px-6">
+              <div className="text-xs font-semibold tracking-[0.16em] text-stone-500 uppercase">
+                {diary.title}
+              </div>
+              <h3 className="mt-2 font-serif text-2xl font-semibold text-stone-900 capitalize">
+                {formatDiaryDate(dayKey)}
+              </h3>
 
-            <div className="mt-5">
-              <div className="mb-2 text-xs font-semibold text-stone-500">Настроение дня</div>
-              <div className="flex flex-wrap gap-2">
-                {DIARY_MOODS.map((mood) => {
-                  const meta = diaryMoodMeta[mood]
-                  const selected = day?.mood === mood
-                  return (
-                    <button
-                      key={mood}
-                      type="button"
-                      disabled={isSaving}
-                      aria-pressed={selected}
-                      className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm transition-all disabled:opacity-50 ${selected ? 'border-stone-700 bg-stone-800 text-stone-50 shadow-sm' : 'border-stone-300 bg-white/55 text-stone-600 hover:bg-white/85'}`}
-                      onClick={() => void chooseMood(mood)}
+              <div className="mt-5">
+                <div className="mb-2 text-xs font-semibold text-stone-500">Настроение дня</div>
+                <div className="flex flex-wrap gap-2">
+                  {DIARY_MOODS.map((mood) => {
+                    const meta = diaryMoodMeta[mood]
+                    const selected = day?.mood === mood
+                    return (
+                      <button
+                        key={mood}
+                        type="button"
+                        disabled={isSaving}
+                        aria-pressed={selected}
+                        className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm transition-all disabled:opacity-50 ${selected ? 'border-violet-500 bg-violet-500/10 text-stone-900 shadow-sm' : 'border-stone-300 bg-white/55 text-stone-600 hover:bg-white/85'}`}
+                        onClick={() => void chooseMood(mood)}
+                      >
+                        <span className="text-base">{meta.emoji}</span>
+                        {meta.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            </header>
+
+            <div className="diary-ruled-surface diary-ruled-content min-h-[360px]">
+              {isLoading ? (
+                <div className="flex min-h-[324px] items-center justify-center pl-20 text-stone-500 max-[620px]:pl-8">
+                  <LoaderCircle className="mr-2 size-4 animate-spin" /> Загружаем страницу…
+                </div>
+              ) : (
+                <>
+                  {(day?.entries ?? []).length === 0 && (
+                    <div
+                      className="flex items-center justify-center pl-20 text-center max-[620px]:pl-8"
+                      style={{ minHeight: 'calc(var(--diary-rule-step) * 3)' }}
                     >
-                      <span className="text-base">{meta.emoji}</span>
-                      {meta.label}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          </header>
+                      <p className="font-serif text-sm text-stone-500 italic">
+                        Здесь пока тихо. Добавьте первую мысль этого дня.
+                      </p>
+                    </div>
+                  )}
 
-          {isLoading ? (
-            <div className="flex min-h-52 items-center justify-center text-stone-500">
-              <LoaderCircle className="mr-2 size-4 animate-spin" /> Загружаем страницу…
-            </div>
-          ) : (
-            <div className="mt-7 space-y-6">
-              {(day?.entries ?? []).length === 0 && (
-                <div className="py-8 text-center font-serif text-sm text-stone-500 italic">
-                  Здесь пока тихо. Добавьте первую мысль этого дня.
-                </div>
-              )}
-
-              {(day?.entries ?? []).map((entry) => (
-                <div
-                  key={entry.id}
-                  className="group relative grid grid-cols-[4.5rem_minmax(0,1fr)] gap-4"
-                >
-                  <time className="pt-1 font-mono text-xs text-stone-400">
-                    {formatDiaryTime(entry.occurredAt)}
-                  </time>
-                  <div className="min-w-0">
-                    {editingId === entry.id ? (
-                      <div className="space-y-2">
-                        <textarea
-                          value={editingText}
-                          maxLength={8000}
-                          rows={3}
-                          className="w-full resize-y rounded-xl border border-stone-300 bg-white/80 px-3 py-2 text-sm leading-7 text-stone-800 outline-none focus:border-stone-500"
-                          onChange={(event) => setEditingText(event.target.value)}
-                        />
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            className="inline-flex items-center gap-1 rounded-lg bg-stone-800 px-2.5 py-1.5 text-xs text-white"
-                            onClick={() => void saveEdit()}
-                          >
-                            <Check className="size-3.5" /> Сохранить
-                          </button>
-                          <button
-                            type="button"
-                            className="inline-flex items-center gap-1 rounded-lg border border-stone-300 bg-white/60 px-2.5 py-1.5 text-xs text-stone-600"
-                            onClick={() => {
-                              setEditingId(null)
-                              setEditingText('')
-                            }}
-                          >
-                            <X className="size-3.5" /> Отмена
-                          </button>
-                        </div>
+                  {(day?.entries ?? []).map((entry) => (
+                    <div key={entry.id} className="diary-entry-row group">
+                      <time className="diary-entry-time">{formatDiaryTime(entry.occurredAt)}</time>
+                      <div className="relative min-w-0">
+                        {editingId === entry.id ? (
+                          <>
+                            <textarea
+                              aria-label="Текст записи"
+                              value={editingText}
+                              maxLength={8000}
+                              rows={4}
+                              className="diary-handwriting diary-inline-editor"
+                              onChange={(event) => setEditingText(event.target.value)}
+                              onKeyDown={(event) => {
+                                if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+                                  event.preventDefault()
+                                  void saveEdit()
+                                }
+                              }}
+                            />
+                            <div className="diary-edit-actions">
+                              <button
+                                type="button"
+                                disabled={isSaving || !editingText.trim()}
+                                aria-label="Сохранить запись"
+                                className="inline-flex size-8 items-center justify-center rounded-lg bg-violet-600 text-white disabled:opacity-40"
+                                onClick={() => void saveEdit()}
+                              >
+                                <Check className="size-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                disabled={isSaving}
+                                aria-label="Отменить редактирование"
+                                className="inline-flex size-8 items-center justify-center rounded-lg border border-stone-300 bg-white/70 text-stone-600 disabled:opacity-40"
+                                onClick={() => {
+                                  setEditingId(null)
+                                  setEditingText('')
+                                }}
+                              >
+                                <X className="size-3.5" />
+                              </button>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <p className="diary-handwriting diary-entry-text">{entry.text}</p>
+                            <div className="diary-entry-actions">
+                              <button
+                                type="button"
+                                disabled={isSaving}
+                                aria-label="Редактировать запись"
+                                className="rounded-md p-1.5 text-stone-400 hover:bg-stone-900/5 hover:text-stone-700 disabled:opacity-40"
+                                onClick={() => {
+                                  setEditingId(entry.id)
+                                  setEditingText(entry.text)
+                                }}
+                              >
+                                <Pencil className="size-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                disabled={isSaving}
+                                aria-label="Удалить запись"
+                                className="rounded-md p-1.5 text-stone-400 hover:bg-red-500/10 hover:text-red-700 disabled:opacity-40"
+                                onClick={() => setDeleteId(entry.id)}
+                              >
+                                <Trash2 className="size-3.5" />
+                              </button>
+                            </div>
+                          </>
+                        )}
                       </div>
-                    ) : (
-                      <>
-                        <p className="diary-handwriting text-[15px] leading-8 break-words whitespace-pre-wrap text-stone-800">
-                          {entry.text}
-                        </p>
-                        <div className="mt-1 flex gap-1 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100">
-                          <button
-                            type="button"
-                            aria-label="Редактировать запись"
-                            className="rounded-md p-1.5 text-stone-400 hover:bg-stone-900/5 hover:text-stone-700"
-                            onClick={() => {
-                              setEditingId(entry.id)
-                              setEditingText(entry.text)
-                            }}
-                          >
-                            <Pencil className="size-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            aria-label="Удалить запись"
-                            className="rounded-md p-1.5 text-stone-400 hover:bg-red-500/10 hover:text-red-700"
-                            onClick={() => setDeleteId(entry.id)}
-                          >
-                            <Trash2 className="size-3.5" />
-                          </button>
-                        </div>
-                      </>
-                    )}
+                    </div>
+                  ))}
+
+                  <div className="diary-composer-row">
+                    <span aria-hidden="true" />
+                    <textarea
+                      value={draft}
+                      maxLength={8000}
+                      rows={3}
+                      className="diary-handwriting diary-composer-input"
+                      placeholder="Что хочется запомнить?"
+                      onChange={(event) => setDraft(event.target.value)}
+                      onKeyDown={(event) => {
+                        if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+                          event.preventDefault()
+                          void addEntry()
+                        }
+                      }}
+                    />
                   </div>
-                </div>
-              ))}
-
-              <div className="border-t border-stone-300/70 pt-5">
-                <textarea
-                  value={draft}
-                  maxLength={8000}
-                  rows={3}
-                  className="diary-handwriting w-full resize-y rounded-2xl border border-stone-300 bg-white/55 px-4 py-3 text-[15px] leading-8 text-stone-800 outline-none placeholder:text-stone-400 focus:border-stone-500 focus:bg-white/75"
-                  placeholder="Что хочется запомнить?"
-                  onChange={(event) => setDraft(event.target.value)}
-                  onKeyDown={(event) => {
-                    if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
-                      event.preventDefault()
-                      void addEntry()
-                    }
-                  }}
-                />
-                <div className="mt-3 flex items-center justify-between gap-3">
-                  <span className="text-[11px] text-stone-400">Ctrl + Enter — сохранить</span>
-                  <button
-                    type="button"
-                    disabled={isSaving || !draft.trim()}
-                    className="inline-flex items-center gap-2 rounded-xl bg-stone-800 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-stone-700 disabled:cursor-not-allowed disabled:opacity-40"
-                    onClick={() => void addEntry()}
-                  >
-                    {isSaving ? (
-                      <LoaderCircle className="size-4 animate-spin" />
-                    ) : (
-                      <Plus className="size-4" />
-                    )}
-                    Добавить запись
-                  </button>
-                </div>
-              </div>
+                </>
+              )}
             </div>
-          )}
 
-          {error && (
-            <div
-              role="alert"
-              className="mt-5 rounded-xl border border-red-300 bg-red-50/80 px-3 py-2 text-sm text-red-700"
-            >
-              {error}
-            </div>
-          )}
+            <footer className="diary-paper-header flex items-center justify-between gap-3 border-t border-stone-300/70 px-9 py-4 max-[620px]:px-6">
+              <span className="text-[11px] text-stone-400">Ctrl + Enter — сохранить</span>
+              <button
+                type="button"
+                disabled={isLoading || isSaving || !draft.trim()}
+                className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-40"
+                onClick={() => void addEntry()}
+              >
+                {isSaving ? (
+                  <LoaderCircle className="size-4 animate-spin" />
+                ) : (
+                  <Plus className="size-4" />
+                )}
+                Добавить запись
+              </button>
+            </footer>
+          </div>
+        </article>
+      </div>
+
+      {error && (
+        <div
+          role="alert"
+          className="mx-auto max-w-[940px] rounded-xl border border-red-500/20 bg-red-500/[0.06] px-4 py-3 text-sm text-red-200"
+        >
+          {error}
         </div>
-      </article>
+      )}
 
       <DeleteConfirmationDialog
         open={deleteId !== null}
