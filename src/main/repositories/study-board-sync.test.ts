@@ -1,14 +1,20 @@
-import { readdir, readFile } from 'node:fs/promises'
-import { resolve } from 'node:path'
+import { mkdtemp, readdir, readFile, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join, resolve } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import type { StudyDocument } from '../../shared/contracts/study'
 import { closeDatabase, getSqlite, initializeDatabaseForTesting } from '../database/client'
+import { setStudyAssetsRootForTesting } from '../services/study-assets'
 import { deleteBoardNode, ensureStudyBoard, listBoardNodes } from './boards.repository'
 import { createStudyNode, getStudyMaterial, saveStudyMaterial } from './study.repository'
 
+let assetsRoot = ''
+
 beforeEach(async () => {
   initializeDatabaseForTesting(':memory:')
+  assetsRoot = await mkdtemp(join(tmpdir(), 'mymind-study-board-sync-'))
+  setStudyAssetsRootForTesting(join(assetsRoot, 'assets'))
 
   const migrationsDirectory = resolve(process.cwd(), 'drizzle')
   const migrations = (await readdir(migrationsDirectory))
@@ -20,8 +26,10 @@ beforeEach(async () => {
   }
 })
 
-afterEach(() => {
+afterEach(async () => {
   closeDatabase()
+  setStudyAssetsRootForTesting(null)
+  await rm(assetsRoot, { recursive: true, force: true })
 })
 
 describe('study board deletion synchronization', () => {
