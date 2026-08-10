@@ -209,13 +209,7 @@ export function DiaryPage({ resourceId, onResourceHandled }: DiaryPageProps): Re
           </div>
         )}
 
-        {section === 'library' && (
-          <DiaryLibrary
-            diaries={diaries}
-            onOpenDiary={openDiary}
-            onCreateDiary={() => setDialogMode('create')}
-          />
-        )}
+        {section === 'library' && <DiaryLibrary diaries={diaries} onOpenDiary={openDiary} />}
 
         {selectedDiary && section === 'today' && (
           <DiaryToday diary={selectedDiary} dayKey={localDayKey()} onChanged={handleChanged} />
