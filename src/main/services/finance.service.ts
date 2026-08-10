@@ -106,7 +106,11 @@ function getDefaultPeriod(now = Date.now()): FinancePeriod {
   }
 }
 
-function loadRateBook() {
+function loadRateBook(): {
+  settings: ReturnType<typeof getFinanceSettings>
+  rates: ReturnType<typeof listFinanceExchangeRates>
+  rateBook: ReturnType<typeof createFinanceRateBook>
+} {
   const settings = getFinanceSettings()
   const rates = listFinanceExchangeRates()
   return {
@@ -692,14 +696,14 @@ export function getFinanceReport(filters: FinanceReportFilters): FinanceReport {
 
 export const financeService = {
   getSettings: getFinanceSettings,
-  setBaseCurrency: setFinanceBaseCurrency,
+  setBaseCurrency: (input: SetFinanceBaseCurrencyInput) => setFinanceBaseCurrency(input),
   listExchangeRates: listFinanceExchangeRates,
-  upsertExchangeRate: upsertFinanceExchangeRate,
-  deleteExchangeRate: deleteFinanceExchangeRate,
+  upsertExchangeRate: (input: UpsertFinanceExchangeRateInput) => upsertFinanceExchangeRate(input),
+  deleteExchangeRate: (input: DeleteFinanceExchangeRateInput) => deleteFinanceExchangeRate(input),
   listAccounts: listFinanceAccounts,
   getAccount: getFinanceAccount,
-  createAccount: createFinanceAccount,
-  updateAccount: updateFinanceAccount,
+  createAccount: (input: CreateFinanceAccountInput) => createFinanceAccount(input),
+  updateAccount: (input: UpdateFinanceAccountInput) => updateFinanceAccount(input),
   deleteAccount: (input: DeleteFinanceAccountInput) => deleteFinanceAccount(input.id),
   clearAccountHistory: clearFinanceAccountHistory,
   listTransactions: (filters: FinanceTransactionFilters): FinanceTransactionPage =>
