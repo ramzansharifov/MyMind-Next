@@ -226,7 +226,9 @@ export function DiaryReader({
                   ) : (
                     day.entries.map((entry) => (
                       <div key={entry.id} className="diary-entry-row">
-                        <time className="diary-entry-time">{formatDiaryTime(entry.occurredAt)}</time>
+                        <time className="diary-entry-time">
+                          {formatDiaryTime(entry.occurredAt)}
+                        </time>
                         <p className="diary-handwriting diary-entry-text">{entry.text}</p>
                       </div>
                     ))
