@@ -322,9 +322,7 @@ function DiaryReaderPage({
     <article
       aria-hidden={ariaHidden || undefined}
       className={`diary-paper diary-premium-paper diary-paper--reader diary-reader-page-layer overflow-hidden border ${className ?? ''}`}
-      onAnimationEnd={(event) => {
-        if (event.target === event.currentTarget) onTurnEnd?.()
-      }}
+      onAnimationEnd={onTurnEnd}
     >
       <div className="diary-paper-content diary-reader-page-content">
         <header className="diary-paper-header diary-paper-masthead diary-premium-masthead border-b border-stone-300/70 px-11 max-[700px]:px-7 max-[620px]:px-6">
