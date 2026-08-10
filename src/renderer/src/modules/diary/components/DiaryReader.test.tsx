@@ -82,7 +82,27 @@ beforeEach(() => {
 })
 
 describe('DiaryReader', () => {
-  it('turns pages with keyboard arrows without entering edit mode', async () => {
+  it('keeps the ruled sheet inside the scrolling viewport while the masthead stays outside', async () => {
+    render(
+      <DiaryReader
+        diary={diary}
+        requestedDayKey="2026-08-08"
+        refreshVersion={0}
+        onDayChange={vi.fn()}
+      />
+    )
+
+    const entry = await screen.findByText('Первая страница')
+    const ruledSheet = entry.closest('.diary-reader-ruled-sheet')
+    const viewport = ruledSheet?.parentElement
+    const masthead = screen.getByText('Личный дневник').closest('header')
+
+    expect(ruledSheet).toHaveClass('diary-ruled-surface')
+    expect(viewport).toHaveClass('diary-reader-scroll-viewport')
+    expect(viewport).not.toContainElement(masthead)
+  })
+
+  it('commits a keyboard page turn only after the physical page animation finishes', async () => {
     const onDayChange = vi.fn()
 
     render(
@@ -94,7 +114,8 @@ describe('DiaryReader', () => {
       />
     )
 
-    expect(await screen.findByText('Первая страница')).toBeInTheDocument()
+    const firstPageText = await screen.findByText('Первая страница')
+    expect(onDayChange).toHaveBeenLastCalledWith('2026-08-08')
 
     fireEvent.keyDown(window, { key: 'ArrowRight' })
 
@@ -105,6 +126,15 @@ describe('DiaryReader', () => {
         dayKey: '2026-08-09'
       })
     )
-    expect(onDayChange).toHaveBeenLastCalledWith('2026-08-09')
+
+    expect(onDayChange).toHaveBeenLastCalledWith('2026-08-08')
+
+    const turningPage = firstPageText.closest('article')
+    expect(turningPage).toHaveClass('diary-reader-page-layer--turn-next')
+    if (!turningPage) throw new Error('Turning diary page was not rendered')
+    fireEvent.animationEnd(turningPage)
+
+    await waitFor(() => expect(onDayChange).toHaveBeenLastCalledWith('2026-08-09'))
+    expect(screen.getByText('Вторая страница')).toBeInTheDocument()
   })
 })
