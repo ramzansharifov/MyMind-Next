@@ -5,6 +5,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write
+
 jobs:
   quality-gate:
     runs-on: windows-latest
@@ -13,6 +16,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -22,6 +27,19 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Format premium diary styles
+        shell: pwsh
+        run: |
+          npx prettier src/renderer/src/modules/diary/diary-premium.css --write
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/renderer/src/modules/diary/diary-premium.css
+          git diff --cached --quiet
+          if ($LASTEXITCODE -ne 0) {
+            git commit -m "Format premium diary styles"
+            git push
+          }
 
       - name: Check formatting
         run: npm run format:check
