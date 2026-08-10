@@ -4,13 +4,13 @@ import { useCallback, useEffect, useEffectEvent, useMemo, useState } from 'react
 import type { DiaryDay, DiaryDaySummary, DiarySummary } from '../../../../../shared/contracts/diary'
 import '../diary-premium.css'
 import '../diary-leather-cover.css'
+import '../diary-reader-behavior.css'
 import { diaryClient } from '../api/diary-client'
 import {
   diaryMoodMeta,
   formatDiaryDate,
   formatDiaryTime,
-  getDiaryErrorMessage,
-  localDayKey
+  getDiaryErrorMessage
 } from '../lib/diary-ui'
 
 export function DiaryReader({
@@ -148,7 +148,7 @@ export function DiaryReader({
 
   return (
     <section className="space-y-5">
-      <div className="diary-book-frame diary-premium-book w-full">
+      <div className="diary-book-frame diary-premium-book diary-reader-book w-full">
         <span className="diary-back-binding" aria-hidden="true" />
         <span className="diary-side-tab" aria-hidden="true">
           Просмотр
@@ -239,17 +239,6 @@ export function DiaryReader({
           }}
         >
           <ChevronRight className="size-5" />
-        </button>
-      </div>
-
-      <div className="flex justify-center">
-        <button
-          type="button"
-          disabled={!orderedDays.some((item) => item.dayKey === localDayKey()) || isLoading}
-          className="text-xs font-medium text-[var(--app-muted)] hover:text-[var(--app-accent-300)] disabled:opacity-40"
-          onClick={() => void openDay(localDayKey())}
-        >
-          Перейти к сегодняшней странице
         </button>
       </div>
 

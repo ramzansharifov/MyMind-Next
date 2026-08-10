@@ -1,0 +1,93 @@
+.diary-reader-book {
+  max-height: 90vh;
+}
+
+.diary-reader-book .diary-paper--reader {
+  min-height: min(650px, calc(90vh - 2.12rem));
+  max-height: calc(90vh - 2.12rem);
+  overflow: hidden;
+}
+
+.diary-reader-book .diary-paper--reader > .diary-paper-content {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: min(650px, calc(90vh - 2.12rem));
+  max-height: calc(90vh - 2.12rem);
+  overflow: hidden;
+}
+
+.diary-reader-book .diary-paper--reader .diary-paper-masthead {
+  position: relative;
+  z-index: 4;
+  flex: none;
+}
+
+.diary-reader-book .diary-paper--reader .diary-ruled-content {
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #9a7040 transparent;
+}
+
+.diary-reader-book .diary-paper--reader .diary-ruled-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.diary-reader-book .diary-paper--reader .diary-ruled-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.diary-reader-book .diary-paper--reader .diary-ruled-content::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: #9a7040;
+  background-clip: padding-box;
+}
+
+.diary-reader-book .diary-page-turn-in {
+  transform-origin: left center;
+  backface-visibility: hidden;
+  will-change: transform, opacity, filter;
+  animation: diary-reader-page-turn 460ms cubic-bezier(0.22, 0.74, 0.2, 1) both;
+}
+
+@keyframes diary-reader-page-turn {
+  0% {
+    opacity: 0.72;
+    filter: brightness(0.9);
+    transform: perspective(1800px) translateX(18px) rotateY(-10deg) scale(0.992);
+  }
+
+  48% {
+    opacity: 0.96;
+    filter: brightness(0.97);
+    transform: perspective(1800px) translateX(-2px) rotateY(2.2deg) scale(0.998);
+  }
+
+  100% {
+    opacity: 1;
+    filter: brightness(1);
+    transform: perspective(1800px) translateX(0) rotateY(0deg) scale(1);
+  }
+}
+
+@media (max-width: 620px) {
+  .diary-reader-book .diary-paper--reader {
+    min-height: min(560px, calc(90vh - 1.22rem));
+    max-height: calc(90vh - 1.22rem);
+  }
+
+  .diary-reader-book .diary-paper--reader > .diary-paper-content {
+    min-height: min(560px, calc(90vh - 1.22rem));
+    max-height: calc(90vh - 1.22rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .diary-reader-book .diary-page-turn-in {
+    animation: none;
+  }
+}
