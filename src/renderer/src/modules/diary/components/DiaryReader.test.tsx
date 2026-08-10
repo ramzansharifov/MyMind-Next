@@ -10,6 +10,55 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('../api/diary-client', () => ({ diaryClient: mocks }))
 
+vi.mock('react-pageflip', async () => {
+  const React = await vi.importActual<typeof import('react')>('react')
+
+  type FlipController = {
+    flipNext: () => void
+    flipPrev: () => void
+  }
+
+  type FlipEvent<T> = {
+    data: T
+    object: FlipController
+  }
+
+  type MockFlipBookProps = {
+    children: import('react').ReactNode
+    startPage: number
+    onInit?: (event: FlipEvent<{ page: number; mode: 'portrait' }>) => void
+    onFlip?: (event: FlipEvent<number>) => void
+    onChangeState?: (event: FlipEvent<string>) => void
+  }
+
+  function MockFlipBook(props: MockFlipBookProps): import('react').ReactElement {
+    const controller = React.useMemo<FlipController>(() => {
+      const nextController: FlipController = {
+        flipNext: () => {
+          props.onFlip?.({ data: 1, object: nextController })
+          props.onChangeState?.({ data: 'read', object: nextController })
+        },
+        flipPrev: () => {
+          props.onFlip?.({ data: 0, object: nextController })
+          props.onChangeState?.({ data: 'read', object: nextController })
+        }
+      }
+      return nextController
+    }, [props.onChangeState, props.onFlip])
+
+    React.useEffect(() => {
+      props.onInit?.({
+        data: { page: props.startPage, mode: 'portrait' },
+        object: controller
+      })
+    }, [controller, props.onInit, props.startPage])
+
+    return React.createElement('div', { 'data-testid': 'mock-pageflip' }, props.children)
+  }
+
+  return { default: MockFlipBook }
+})
+
 import { DiaryReader } from './DiaryReader'
 
 const diary: DiarySummary = {
@@ -102,7 +151,7 @@ describe('DiaryReader', () => {
     expect(viewport).not.toContainElement(masthead)
   })
 
-  it('commits a keyboard page turn only after the physical page animation duration', async () => {
+  it('commits a keyboard page turn after StPageFlip finishes the page curl', async () => {
     const onDayChange = vi.fn()
 
     render(
@@ -114,12 +163,11 @@ describe('DiaryReader', () => {
       />
     )
 
-    const firstPageText = await screen.findByText('Первая страница')
+    await screen.findByText('Первая страница')
     expect(onDayChange).toHaveBeenLastCalledWith('2026-08-08')
 
     fireEvent.keyDown(window, { key: 'ArrowRight' })
 
-    expect(await screen.findByText('Вторая страница')).toBeInTheDocument()
     await waitFor(() =>
       expect(mocks.getDay).toHaveBeenLastCalledWith({
         diaryId: diary.id,
@@ -127,12 +175,9 @@ describe('DiaryReader', () => {
       })
     )
 
-    expect(onDayChange).toHaveBeenLastCalledWith('2026-08-08')
-    expect(firstPageText.closest('article')).toHaveClass('diary-reader-page-layer--turn-next')
+    expect(await screen.findByTestId('mock-pageflip')).toBeInTheDocument()
 
-    await waitFor(() => expect(onDayChange).toHaveBeenLastCalledWith('2026-08-09'), {
-      timeout: 1_500
-    })
+    await waitFor(() => expect(onDayChange).toHaveBeenLastCalledWith('2026-08-09'))
     expect(screen.getByText('Вторая страница')).toBeInTheDocument()
   })
 })
