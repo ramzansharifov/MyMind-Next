@@ -148,37 +148,6 @@ export function DiaryReader({
 
   return (
     <section className="space-y-5">
-      <div className="flex items-end justify-between gap-4 max-[700px]:flex-col max-[700px]:items-start">
-        <div>
-          <h2 className="text-lg font-semibold text-[var(--app-text)]">Просмотр дневника</h2>
-          <p className="mt-1 text-sm text-[var(--app-muted)]">
-            Листайте страницы кнопками у книги или стрелками ← → на клавиатуре.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="hidden text-xs text-[var(--app-muted)] min-[760px]:inline">
-            Страница {Math.max(1, currentIndex + 1)} из {orderedDays.length}
-          </span>
-          <select
-            aria-label="Страница дневника"
-            value={currentKey ?? ''}
-            disabled={isLoading}
-            className="h-10 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-[var(--app-accent-500)] disabled:opacity-60"
-            onChange={(event) => void openDay(event.target.value)}
-          >
-            {orderedDays.map((item) => (
-              <option key={item.id} value={item.dayKey}>
-                {formatDiaryDate(item.dayKey, {
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric'
-                })}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
       <div className="diary-book-frame diary-premium-book w-full">
         <span className="diary-back-binding" aria-hidden="true" />
         <span className="diary-side-tab" aria-hidden="true">
