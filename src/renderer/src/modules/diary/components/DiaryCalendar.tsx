@@ -40,8 +40,11 @@ export function DiaryCalendar({
 
   useEffect(() => {
     let cancelled = false
-    setIsLoading(true)
-    setError(null)
+    queueMicrotask(() => {
+      if (cancelled) return
+      setIsLoading(true)
+      setError(null)
+    })
 
     void diaryClient
       .listDays({ diaryId: diary.id, ...range })
