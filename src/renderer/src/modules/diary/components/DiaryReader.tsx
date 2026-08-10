@@ -2,6 +2,7 @@ import { CalendarDays, ChevronLeft, ChevronRight, LoaderCircle } from 'lucide-re
 import { useCallback, useEffect, useEffectEvent, useMemo, useState } from 'react'
 
 import type { DiaryDay, DiaryDaySummary, DiarySummary } from '../../../../../shared/contracts/diary'
+import '../diary-premium.css'
 import { diaryClient } from '../api/diary-client'
 import {
   diaryMoodMeta,
@@ -177,7 +178,14 @@ export function DiaryReader({
         </div>
       </div>
 
-      <div className="diary-book-frame w-full">
+      <div className="diary-book-frame diary-premium-book w-full">
+        <span className="diary-side-tab" aria-hidden="true">
+          Просмотр
+        </span>
+        <span className="diary-bookmark-ribbon" aria-hidden="true">
+          <span>✦</span>
+        </span>
+
         <button
           type="button"
           disabled={!previousDay || isLoading}
@@ -192,34 +200,38 @@ export function DiaryReader({
 
         <article
           key={day?.dayKey ?? 'diary-page'}
-          className="diary-paper diary-paper--reader diary-page-turn-in min-h-[650px] overflow-hidden rounded-[26px] border"
+          className="diary-paper diary-premium-paper diary-paper--reader diary-page-turn-in min-h-[650px] overflow-hidden border"
         >
           <div className="diary-paper-content min-h-[650px]">
             {day && (
               <>
-                <header className="diary-paper-header diary-paper-masthead flex items-start justify-between gap-8 border-b border-stone-300/70 px-11 py-9 max-[700px]:px-7 max-[620px]:px-6 max-[560px]:flex-col">
-                  <div>
-                    <div className="text-[11px] font-semibold tracking-[0.2em] text-stone-500 uppercase">
-                      {diary.title}
+                <header className="diary-paper-header diary-paper-masthead diary-premium-masthead border-b border-stone-300/70 px-11 max-[700px]:px-7 max-[620px]:px-6">
+                  <div className="flex items-start justify-between gap-8 max-[640px]:flex-col max-[640px]:gap-4">
+                    <div className="min-w-0 flex-1">
+                      <div className="diary-premium-kicker">{diary.title}</div>
+                      <h3 className="diary-premium-date capitalize">
+                        {formatDiaryDate(day.dayKey)}
+                      </h3>
                     </div>
-                    <h3 className="mt-2 font-serif text-[1.75rem] leading-tight font-semibold text-stone-900 capitalize">
-                      {formatDiaryDate(day.dayKey)}
-                    </h3>
+                    <div className="diary-reader-meta max-[640px]:items-start">
+                      <div className="text-[11px] tracking-wide text-stone-400 uppercase">
+                        Страница {Math.max(1, currentIndex + 1)} из {orderedDays.length}
+                      </div>
+                      <div className="diary-reader-mood">
+                        {mood ? (
+                          <>
+                            <span className="text-base">{mood.emoji}</span>
+                            <span>{mood.label}</span>
+                          </>
+                        ) : (
+                          <span>Настроение не отмечено</span>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <div className="diary-reader-meta max-[560px]:items-start">
-                    <div className="text-[11px] tracking-wide text-stone-400 uppercase">
-                      Страница {Math.max(1, currentIndex + 1)} из {orderedDays.length}
-                    </div>
-                    <div className="diary-reader-mood">
-                      {mood ? (
-                        <>
-                          <span className="text-base">{mood.emoji}</span>
-                          <span>{mood.label}</span>
-                        </>
-                      ) : (
-                        <span>Настроение не отмечено</span>
-                      )}
-                    </div>
+
+                  <div className="diary-premium-divider" aria-hidden="true">
+                    <span>— ✦ —</span>
                   </div>
                 </header>
 
