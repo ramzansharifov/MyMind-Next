@@ -120,7 +120,7 @@ export function DiaryToday({
   }
 
   return (
-    <section className="space-y-4">
+    <section className="space-y-5">
       <div>
         <h2 className="text-lg font-semibold text-[var(--app-text)]">Сегодня</h2>
         <p className="mt-1 text-sm text-[var(--app-muted)]">
@@ -128,20 +128,27 @@ export function DiaryToday({
         </p>
       </div>
 
-      <div className="diary-book-frame mx-auto w-full max-w-[940px]">
-        <article className="diary-paper min-h-[610px] overflow-hidden rounded-[24px] border shadow-2xl">
-          <div className="diary-paper-content min-h-[610px]">
-            <header className="diary-paper-header border-b border-stone-300/70 px-9 py-8 max-[620px]:px-6">
-              <div className="text-xs font-semibold tracking-[0.16em] text-stone-500 uppercase">
-                {diary.title}
+      <div className="diary-book-frame w-full">
+        <article className="diary-paper diary-paper--editor min-h-[650px] overflow-hidden rounded-[26px] border">
+          <div className="diary-paper-content min-h-[650px]">
+            <header className="diary-paper-header diary-paper-masthead border-b border-stone-300/70 px-11 py-9 max-[700px]:px-7 max-[620px]:px-6">
+              <div className="flex items-start justify-between gap-8 max-[760px]:flex-col max-[760px]:gap-4">
+                <div>
+                  <div className="text-[11px] font-semibold tracking-[0.2em] text-stone-500 uppercase">
+                    {diary.title}
+                  </div>
+                  <h3 className="mt-2 font-serif text-[1.75rem] leading-tight font-semibold text-stone-900 capitalize">
+                    {formatDiaryDate(dayKey)}
+                  </h3>
+                </div>
+                <div className="diary-paper-day-label">Сегодня</div>
               </div>
-              <h3 className="mt-2 font-serif text-2xl font-semibold text-stone-900 capitalize">
-                {formatDiaryDate(dayKey)}
-              </h3>
 
-              <div className="mt-5">
-                <div className="mb-2 text-xs font-semibold text-stone-500">Настроение дня</div>
-                <div className="flex flex-wrap gap-2">
+              <div className="mt-7">
+                <div className="mb-2.5 text-[11px] font-semibold tracking-wide text-stone-500 uppercase">
+                  Настроение дня
+                </div>
+                <div className="diary-mood-strip">
                   {DIARY_MOODS.map((mood) => {
                     const meta = diaryMoodMeta[mood]
                     const selected = day?.mood === mood
@@ -151,11 +158,11 @@ export function DiaryToday({
                         type="button"
                         disabled={isSaving}
                         aria-pressed={selected}
-                        className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm transition-all disabled:opacity-50 ${selected ? 'border-violet-500 bg-violet-500/10 text-stone-900 shadow-sm' : 'border-stone-300 bg-white/55 text-stone-600 hover:bg-white/85'}`}
+                        className={`diary-mood-option ${selected ? 'diary-mood-option--selected' : ''}`}
                         onClick={() => void chooseMood(mood)}
                       >
                         <span className="text-base">{meta.emoji}</span>
-                        {meta.label}
+                        <span>{meta.label}</span>
                       </button>
                     )
                   })}
@@ -163,7 +170,7 @@ export function DiaryToday({
               </div>
             </header>
 
-            <div className="diary-ruled-surface diary-ruled-content min-h-[360px]">
+            <div className="diary-ruled-surface diary-ruled-content min-h-[390px]">
               {isLoading ? (
                 <div className="flex min-h-[324px] items-center justify-center pl-20 text-stone-500 max-[620px]:pl-8">
                   <LoaderCircle className="mr-2 size-4 animate-spin" /> Загружаем страницу…
@@ -206,7 +213,7 @@ export function DiaryToday({
                                 type="button"
                                 disabled={isSaving || !editingText.trim()}
                                 aria-label="Сохранить запись"
-                                className="inline-flex size-8 items-center justify-center rounded-lg bg-violet-600 text-white disabled:opacity-40"
+                                className="inline-flex size-8 items-center justify-center rounded-lg bg-[var(--app-accent-600)] text-white disabled:opacity-40"
                                 onClick={() => void saveEdit()}
                               >
                                 <Check className="size-3.5" />
@@ -278,12 +285,12 @@ export function DiaryToday({
               )}
             </div>
 
-            <footer className="diary-paper-header flex items-center justify-between gap-3 border-t border-stone-300/70 px-9 py-4 max-[620px]:px-6">
+            <footer className="diary-paper-header diary-paper-footer flex items-center justify-between gap-3 border-t border-stone-300/70 px-11 py-4 max-[700px]:px-7 max-[620px]:px-6">
               <span className="text-[11px] text-stone-400">Ctrl + Enter — сохранить</span>
               <button
                 type="button"
                 disabled={isLoading || isSaving || !draft.trim()}
-                className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex items-center gap-2 rounded-xl bg-[var(--app-accent-600)] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--app-accent-500)] disabled:cursor-not-allowed disabled:opacity-40"
                 onClick={() => void addEntry()}
               >
                 {isSaving ? (
@@ -301,7 +308,7 @@ export function DiaryToday({
       {error && (
         <div
           role="alert"
-          className="mx-auto max-w-[940px] rounded-xl border border-red-500/20 bg-red-500/[0.06] px-4 py-3 text-sm text-red-200"
+          className="rounded-xl border border-red-500/20 bg-red-500/[0.06] px-4 py-3 text-sm text-red-200"
         >
           {error}
         </div>
