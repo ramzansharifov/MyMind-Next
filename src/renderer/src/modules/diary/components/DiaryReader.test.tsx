@@ -102,7 +102,7 @@ describe('DiaryReader', () => {
     expect(viewport).not.toContainElement(masthead)
   })
 
-  it('commits a keyboard page turn only after the physical page animation finishes', async () => {
+  it('commits a keyboard page turn only after the physical page animation duration', async () => {
     const onDayChange = vi.fn()
 
     render(
@@ -128,13 +128,11 @@ describe('DiaryReader', () => {
     )
 
     expect(onDayChange).toHaveBeenLastCalledWith('2026-08-08')
+    expect(firstPageText.closest('article')).toHaveClass('diary-reader-page-layer--turn-next')
 
-    const turningPage = firstPageText.closest('article')
-    expect(turningPage).toHaveClass('diary-reader-page-layer--turn-next')
-    if (!turningPage) throw new Error('Turning diary page was not rendered')
-    fireEvent.animationEnd(turningPage)
-
-    await waitFor(() => expect(onDayChange).toHaveBeenLastCalledWith('2026-08-09'))
+    await waitFor(() => expect(onDayChange).toHaveBeenLastCalledWith('2026-08-09'), {
+      timeout: 1_500
+    })
     expect(screen.getByText('Вторая страница')).toBeInTheDocument()
   })
 })
