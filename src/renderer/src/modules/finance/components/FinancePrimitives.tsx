@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { AlertCircle, LoaderCircle, RefreshCw } from 'lucide-react'
-import type { ButtonHTMLAttributes, ReactNode } from 'react'
+import { cloneElement, isValidElement, useId } from 'react'
+import type { ButtonHTMLAttributes, ReactElement, ReactNode } from 'react'
 
 import { cn } from '../../../shared/lib/cn'
 
@@ -142,6 +143,10 @@ export const financeInputClassName = cn(
 
 export const financeTextareaClassName = cn(financeInputClassName, 'min-h-24 resize-y py-3')
 
+type FinanceFieldControlProps = {
+  'aria-describedby'?: string
+}
+
 export function FinanceField({
   label,
   error,
@@ -153,15 +158,34 @@ export function FinanceField({
   hint?: string
   children: ReactNode
 }): React.JSX.Element {
+  const description = error ?? hint
+  const descriptionId = useId()
+  let control = children
+
+  if (description && isValidElement(children) && typeof children.type === 'string') {
+    const element = children as ReactElement<FinanceFieldControlProps>
+    const describedBy = [element.props['aria-describedby'], descriptionId].filter(Boolean).join(' ')
+    control = cloneElement(element, { 'aria-describedby': describedBy })
+  }
+
   return (
-    <label className="block text-sm text-[var(--app-text)]">
-      <span className="mb-1.5 block font-medium">{label}</span>
-      {children}
+    <div className="block text-sm text-[var(--app-text)]">
+      <label className="block">
+        <span className="mb-1.5 block font-medium">{label}</span>
+        {control}
+      </label>
       {error ? (
-        <span className="mt-1.5 block text-xs text-red-300">{error}</span>
+        <span id={descriptionId} className="mt-1.5 block text-xs text-red-300">
+          {error}
+        </span>
       ) : hint ? (
-        <span className="mt-1.5 block text-xs leading-5 text-[var(--app-muted)]">{hint}</span>
+        <span
+          id={descriptionId}
+          className="mt-1.5 block text-xs leading-5 text-[var(--app-muted)]"
+        >
+          {hint}
+        </span>
       ) : null}
-    </label>
+    </div>
   )
 }
