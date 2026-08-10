@@ -541,7 +541,7 @@ function attachBalanceTimeline(
   return {
     points,
     balanceStartMinor,
-    balanceEndMinor: points.at(-1)?.balanceMinor ?? balanceStartMinor,
+    balanceEndMinor: points.length > 0 ? points[points.length - 1].balanceMinor : balanceStartMinor,
     missing: [...missing].sort()
   }
 }

@@ -1,6 +1,10 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
+vi.mock('./AppTitleBar', () => ({
+  AppTitleBar: () => null
+}))
+
 import { AppShell } from './AppShell'
 
 describe('AppShell focus mode', () => {
