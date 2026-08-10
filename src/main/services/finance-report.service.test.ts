@@ -3,12 +3,16 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
+import type { FinanceReportFilters } from '../../shared/contracts/finance'
 import { closeDatabase, getSqlite, initializeDatabaseForTesting } from '../database/client'
 import { runDatabaseMigrationsFrom } from '../database/migrate'
 import { financeService } from './finance.service'
 import { getFinanceReportAnalytics } from './finance-report.service'
 
 let root = ''
+
+type AccountFixture = ReturnType<typeof financeService.createAccount>
+type TagFixture = ReturnType<typeof financeService.createTag>
 
 beforeAll(async () => {
   root = await mkdtemp(join(tmpdir(), 'mymind-finance-report-'))
@@ -35,7 +39,7 @@ afterAll(async () => {
   await rm(root, { recursive: true, force: true })
 })
 
-function reportWindow() {
+function reportWindow(): FinanceReportFilters {
   const now = new Date()
   return {
     dateFrom: new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 0, 0, 0, 0).getTime(),
@@ -44,7 +48,12 @@ function reportWindow() {
   }
 }
 
-function createCoreFixture() {
+function createCoreFixture(): {
+  cash: AccountFixture
+  usd: AccountFixture
+  incomeTag: TagFixture
+  expenseTag: TagFixture
+} {
   const cash = financeService.createAccount({
     name: 'Наличные',
     currencyCode: 'TJS',
