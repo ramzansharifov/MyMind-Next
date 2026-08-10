@@ -1,0 +1,106 @@
+name: Temporary quality gate fix
+
+on:
+  push:
+    branches:
+      - fix/quality-gate-vitest
+
+permissions:
+  contents: write
+
+jobs:
+  fix-and-verify:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/quality-gate-vitest
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Apply verified quality-gate fixes
+        shell: pwsh
+        run: |
+          @'
+          const fs = require('node:fs')
+
+          function replaceOnce(path, before, after) {
+            const source = fs.readFileSync(path, 'utf8')
+            const first = source.indexOf(before)
+            if (first < 0) throw new Error(`Pattern not found in ${path}`)
+            if (source.indexOf(before, first + before.length) >= 0) {
+              throw new Error(`Pattern is not unique in ${path}`)
+            }
+            fs.writeFileSync(path, source.replace(before, after), 'utf8')
+          }
+
+          replaceOnce(
+            'src/main/services/finance-report.service.ts',
+            '    balanceEndMinor: points.at(-1)?.balanceMinor ?? balanceStartMinor,',
+            '    balanceEndMinor:\n      points.length > 0 ? points[points.length - 1].balanceMinor : balanceStartMinor,'
+          )
+
+          replaceOnce(
+            'src/renderer/src/modules/finance/components/FinanceReports.tsx',
+            `  const filters = useMemo<FinanceReportFilters>(\n    () => ({\n      dateFrom: fromDateInputValue(from),\n      dateTo: fromDateInputValue(to, true),\n      types: type === 'all' ? undefined : [type],\n      accountIds: accountId === 'all' ? undefined : [accountId],\n      tagId: type === 'transfer' || tagId === 'all' ? undefined : tagId,\n      currencyCode: baseCurrencyCode,\n      templateOnly: templateMode === 'all' ? undefined : templateMode === 'template' ? true : false\n    }),\n    [accountId, baseCurrencyCode, from, tagId, templateMode, to, type]\n  )`,
+            `  const filters = useMemo<FinanceReportFilters>(\n    () => ({\n      dateFrom: fromDateInputValue(from),\n      dateTo: fromDateInputValue(to, true),\n      ...(type === 'all' ? {} : { types: [type] }),\n      ...(accountId === 'all' ? {} : { accountIds: [accountId] }),\n      ...(type === 'transfer' || tagId === 'all' ? {} : { tagId }),\n      currencyCode: baseCurrencyCode,\n      ...(templateMode === 'all' ? {} : { templateOnly: templateMode === 'template' })\n    }),\n    [accountId, baseCurrencyCode, from, tagId, templateMode, to, type]\n  )`
+          )
+
+          replaceOnce(
+            'src/renderer/src/modules/finance/components/dialogs/FinanceTagDialog.tsx',
+            `                      role="radio"\n                      aria-checked={selected}`,
+            `                      role="radio"\n                      aria-label={option.label}\n                      aria-checked={selected}`
+          )
+
+          replaceOnce(
+            'src/renderer/src/shared/ui/DeleteConfirmationDialog.tsx',
+            `{isSubmitting ? 'Выполняем…' : confirmLabel}`,
+            `{isSubmitting ? 'Удаляем…' : confirmLabel}`
+          )
+
+          replaceOnce(
+            'src/renderer/src/shared/ui/AppDialog.architecture.test.ts',
+            `import { readFileSync } from 'node:fs'\nimport { describe, expect, it } from 'vitest'`,
+            `import { readFileSync } from 'node:fs'\nimport { resolve } from 'node:path'\nimport { describe, expect, it } from 'vitest'`
+          )
+          replaceOnce(
+            'src/renderer/src/shared/ui/AppDialog.architecture.test.ts',
+            `      const source = readFileSync(new URL(relativePath, import.meta.url), 'utf8')`,
+            `      const source = readFileSync(\n        resolve(process.cwd(), 'src/renderer/src/shared/ui', relativePath),\n        'utf8'\n      )`
+          )
+          replaceOnce(
+            'src/renderer/src/shared/ui/AppDialog.architecture.test.ts',
+            `    const source = readFileSync(\n      new URL('../../modules/study/StudyPage.tsx', import.meta.url),\n      'utf8'\n    )`,
+            `    const source = readFileSync(\n      resolve(process.cwd(), 'src/renderer/src/modules/study/StudyPage.tsx'),\n      'utf8'\n    )`
+          )
+
+          replaceOnce(
+            'src/renderer/src/app/AppShell.focus.test.tsx',
+            `import { AppShell } from './AppShell'`,
+            `vi.mock('./AppTitleBar', () => ({\n  AppTitleBar: () => null\n}))\n\nimport { AppShell } from './AppShell'`
+          )
+
+          replaceOnce(
+            'src/renderer/src/App.test.tsx',
+            `          getHealth: vi.fn().mockResolvedValue({\n            database: 'ready',\n            sqliteVersion: '3.0.0'\n          }),\n\n          onShutdownRequested: vi.fn().mockReturnValue(() => undefined),`,
+            `          getHealth: vi.fn().mockResolvedValue({\n            database: 'ready',\n            sqliteVersion: '3.0.0'\n          }),\n\n          getWindowState: vi.fn().mockResolvedValue({ maximized: false }),\n          onWindowStateChanged: vi.fn().mockReturnValue(() => undefined),\n          minimizeWindow: vi.fn().mockResolvedValue(undefined),\n          toggleMaximizeWindow: vi.fn().mockResolvedValue({ maximized: false }),\n          closeWindow: vi.fn().mockResolvedValue(undefined),\n\n          onShutdownRequested: vi.fn().mockReturnValue(() => undefined),`
+          )
+          '@ | Set-Content -Path quality-gate-fix.cjs -Encoding utf8
+          node quality-gate-fix.cjs
+          Remove-Item quality-gate-fix.cjs
+      - run: npm run format
+      - run: npm run check
+      - name: Commit verified fixes
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -u
+          if (-not (git diff --cached --quiet)) {
+            git commit -m "Fix remaining quality gate failures"
+            git push origin HEAD:fix/quality-gate-vitest
+          }
