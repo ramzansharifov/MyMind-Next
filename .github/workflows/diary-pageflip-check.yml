@@ -4,16 +4,15 @@ on:
   push:
     branches:
       - agent/diary-stpageflip
-    paths:
-      - .github/workflows/diary-pageflip-check.yml
+  pull_request:
+    branches:
+      - main
 
 jobs:
   check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: agent/diary-stpageflip
       - uses: actions/setup-node@v4
         with:
           node-version: 22
