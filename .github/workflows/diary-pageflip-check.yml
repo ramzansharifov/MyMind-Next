@@ -23,3 +23,5 @@ jobs:
       - run: npm run typecheck:web
       - run: npx vitest run src/renderer/src/modules/diary/components/DiaryReader.test.tsx
       - run: npm run build:bundle
+
+# Triggered after automatic formatting.
