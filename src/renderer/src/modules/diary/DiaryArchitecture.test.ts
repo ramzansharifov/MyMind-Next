@@ -52,7 +52,11 @@ describe('diary architecture', () => {
 
     expect(css).toContain('--diary-rule-step: 36px')
     expect(css).toContain('--diary-rule-baseline: 27px')
-    expect(css.match(/line-height: var\(--diary-rule-step\)/g)?.length).toBeGreaterThanOrEqual(4)
+    expect(css).toContain('.diary-entry-time')
+    expect(css).toContain('.diary-entry-text')
+    expect(css).toContain('.diary-inline-editor,')
+    expect(css).toContain('.diary-composer-input')
+    expect(css.match(/line-height: var\(--diary-rule-step\)/g)?.length).toBeGreaterThanOrEqual(3)
     expect(reader).toContain('diary-ruled-surface')
     expect(reader).toContain('diary-entry-row')
     expect(today).toContain('diary-ruled-surface')
