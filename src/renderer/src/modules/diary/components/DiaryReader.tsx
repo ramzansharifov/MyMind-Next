@@ -3,6 +3,7 @@ import { useCallback, useEffect, useEffectEvent, useMemo, useState } from 'react
 
 import type { DiaryDay, DiaryDaySummary, DiarySummary } from '../../../../../shared/contracts/diary'
 import '../diary-premium.css'
+import '../diary-leather-cover.css'
 import { diaryClient } from '../api/diary-client'
 import {
   diaryMoodMeta,
