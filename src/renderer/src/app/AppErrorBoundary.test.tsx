@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { AppErrorBoundary, isLazyImportError } from './AppErrorBoundary'
 
@@ -8,6 +8,14 @@ function ThrowError({ error }: { error: Error }): React.JSX.Element {
 }
 
 describe('AppErrorBoundary', () => {
+  beforeEach(() => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined)
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   it('reloads after a lazy import failure', () => {
     const reload = vi.fn()
     const error = new Error('Failed to fetch dynamically imported module')
