@@ -104,6 +104,6 @@ describe('diary architecture', () => {
     expect(premiumCss).toContain('.diary-premium-paper')
     expect(premiumCss).toContain('.diary-side-tab')
     expect(premiumCss).toContain('.diary-bookmark-ribbon')
-    expect(premiumCss).toContain('--diary-rule-step').toBe(false)
+    expect(premiumCss).not.toContain('--diary-rule-step')
   })
 })
