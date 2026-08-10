@@ -1,5 +1,5 @@
 import { CalendarDays, ChevronLeft, ChevronRight, LoaderCircle } from 'lucide-react'
-import { useCallback, useEffect, useEffectEvent, useMemo, useState } from 'react'
+import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
 
 import type { DiaryDay, DiaryDaySummary, DiarySummary } from '../../../../../shared/contracts/diary'
 import '../diary-premium.css'
@@ -12,6 +12,13 @@ import {
   formatDiaryTime,
   getDiaryErrorMessage
 } from '../lib/diary-ui'
+
+type PageTurnDirection = 'next' | 'previous'
+
+interface PageTurnState {
+  target: DiaryDay
+  direction: PageTurnDirection
+}
 
 export function DiaryReader({
   diary,
@@ -26,8 +33,10 @@ export function DiaryReader({
 }): React.JSX.Element {
   const [days, setDays] = useState<DiaryDaySummary[]>([])
   const [day, setDay] = useState<DiaryDay | null>(null)
+  const [pageTurn, setPageTurn] = useState<PageTurnState | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const pageRequestPendingRef = useRef(false)
 
   const orderedDays = useMemo(
     () => days.slice().sort((left, right) => left.dayKey.localeCompare(right.dayKey)),
@@ -41,9 +50,18 @@ export function DiaryReader({
       ? orderedDays[currentIndex + 1]
       : null
 
+  const pageNumberFor = useCallback(
+    (dayKey: string): number => {
+      const index = orderedDays.findIndex((item) => item.dayKey === dayKey)
+      return Math.max(1, index + 1)
+    },
+    [orderedDays]
+  )
+
   const loadDays = useCallback(async (): Promise<void> => {
     setIsLoading(true)
     setError(null)
+    setPageTurn(null)
     try {
       const nextDays = await diaryClient.listDays({ diaryId: diary.id })
       setDays(nextDays)
@@ -66,19 +84,54 @@ export function DiaryReader({
 
   const openDay = useCallback(
     async (dayKey: string): Promise<void> => {
+      if (
+        day?.dayKey === dayKey ||
+        pageTurn ||
+        pageRequestPendingRef.current ||
+        orderedDays.length === 0
+      ) {
+        return
+      }
+
+      const sourceIndex = day
+        ? orderedDays.findIndex((item) => item.dayKey === day.dayKey)
+        : -1
+      const targetIndex = orderedDays.findIndex((item) => item.dayKey === dayKey)
+
+      pageRequestPendingRef.current = true
       setIsLoading(true)
       setError(null)
+
       try {
-        setDay(await diaryClient.getDay({ diaryId: diary.id, dayKey }))
-        onDayChange(dayKey)
+        const nextPage = await diaryClient.getDay({ diaryId: diary.id, dayKey })
+
+        if (!day || sourceIndex < 0 || targetIndex < 0) {
+          setDay(nextPage)
+          onDayChange(dayKey)
+          return
+        }
+
+        setPageTurn({
+          target: nextPage,
+          direction: targetIndex < sourceIndex ? 'previous' : 'next'
+        })
       } catch (reason) {
         setError(getDiaryErrorMessage(reason))
       } finally {
+        pageRequestPendingRef.current = false
         setIsLoading(false)
       }
     },
-    [diary.id, onDayChange]
+    [day, diary.id, onDayChange, orderedDays, pageTurn]
   )
+
+  const finishPageTurn = useCallback((): void => {
+    if (!pageTurn) return
+
+    setDay(pageTurn.target)
+    onDayChange(pageTurn.target.dayKey)
+    setPageTurn(null)
+  }, [onDayChange, pageTurn])
 
   const handlePageKeyDown = useEffectEvent((event: KeyboardEvent): void => {
     if (
@@ -86,7 +139,9 @@ export function DiaryReader({
       event.altKey ||
       event.ctrlKey ||
       event.metaKey ||
-      event.shiftKey
+      event.shiftKey ||
+      isLoading ||
+      pageTurn
     ) {
       return
     }
@@ -144,8 +199,6 @@ export function DiaryReader({
     )
   }
 
-  const mood = day?.mood ? diaryMoodMeta[day.mood] : null
-
   return (
     <section className="space-y-5">
       <div className="diary-book-frame diary-premium-book diary-reader-book w-full">
@@ -159,7 +212,7 @@ export function DiaryReader({
 
         <button
           type="button"
-          disabled={!previousDay || isLoading}
+          disabled={!previousDay || isLoading || pageTurn !== null}
           aria-label="Предыдущая страница"
           className="diary-page-edge-button diary-page-edge-button--previous"
           onClick={() => {
@@ -169,69 +222,59 @@ export function DiaryReader({
           <ChevronLeft className="size-5" />
         </button>
 
-        <article
-          key={day?.dayKey ?? 'diary-page'}
-          className="diary-paper diary-premium-paper diary-paper--reader diary-page-turn-in min-h-[650px] overflow-hidden border"
+        <div
+          className="diary-reader-page-stage"
+          data-turning={pageTurn ? 'true' : undefined}
+          aria-busy={isLoading || undefined}
         >
-          <div className="diary-paper-content min-h-[650px]">
-            {day && (
-              <>
-                <header className="diary-paper-header diary-paper-masthead diary-premium-masthead border-b border-stone-300/70 px-11 max-[700px]:px-7 max-[620px]:px-6">
-                  <div className="flex items-start justify-between gap-8 max-[640px]:flex-col max-[640px]:gap-4">
-                    <div className="min-w-0 flex-1">
-                      <div className="diary-premium-kicker">{diary.title}</div>
-                      <h3 className="diary-premium-date capitalize">
-                        {formatDiaryDate(day.dayKey)}
-                      </h3>
-                    </div>
-                    <div className="diary-reader-meta max-[640px]:items-start">
-                      <div className="text-[11px] tracking-wide text-stone-400 uppercase">
-                        Страница {Math.max(1, currentIndex + 1)} из {orderedDays.length}
-                      </div>
-                      <div className="diary-reader-mood">
-                        {mood ? (
-                          <>
-                            <span className="text-base">{mood.emoji}</span>
-                            <span>{mood.label}</span>
-                          </>
-                        ) : (
-                          <span>Настроение не отмечено</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+          {pageTurn?.direction === 'next' && (
+            <DiaryReaderPage
+              key={pageTurn.target.dayKey}
+              day={pageTurn.target}
+              diaryTitle={diary.title}
+              pageNumber={pageNumberFor(pageTurn.target.dayKey)}
+              pageCount={orderedDays.length}
+              className="diary-reader-page-layer--under"
+              ariaHidden
+            />
+          )}
 
-                  <div className="diary-premium-divider" aria-hidden="true">
-                    <span>— ✦ —</span>
-                  </div>
-                </header>
+          {day && (
+            <DiaryReaderPage
+              key={day.dayKey}
+              day={day}
+              diaryTitle={diary.title}
+              pageNumber={pageNumberFor(day.dayKey)}
+              pageCount={orderedDays.length}
+              className={
+                pageTurn?.direction === 'next'
+                  ? 'diary-reader-page-layer--turn-next'
+                  : pageTurn?.direction === 'previous'
+                    ? 'diary-reader-page-layer--under'
+                    : undefined
+              }
+              ariaHidden={pageTurn?.direction === 'previous'}
+              onTurnEnd={pageTurn?.direction === 'next' ? finishPageTurn : undefined}
+            />
+          )}
 
-                <div className="diary-ruled-surface diary-ruled-content min-h-[500px] pt-0">
-                  {day.entries.length === 0 ? (
-                    <div className="flex min-h-[324px] items-center justify-center pl-20 text-center max-[620px]:pl-8">
-                      <p className="font-serif text-sm text-stone-500 italic">
-                        В этот день осталось только настроение.
-                      </p>
-                    </div>
-                  ) : (
-                    day.entries.map((entry) => (
-                      <div key={entry.id} className="diary-entry-row">
-                        <time className="diary-entry-time">
-                          {formatDiaryTime(entry.occurredAt)}
-                        </time>
-                        <p className="diary-handwriting diary-entry-text">{entry.text}</p>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-        </article>
+          {pageTurn?.direction === 'previous' && (
+            <DiaryReaderPage
+              key={pageTurn.target.dayKey}
+              day={pageTurn.target}
+              diaryTitle={diary.title}
+              pageNumber={pageNumberFor(pageTurn.target.dayKey)}
+              pageCount={orderedDays.length}
+              className="diary-reader-page-layer--turn-previous"
+              ariaHidden
+              onTurnEnd={finishPageTurn}
+            />
+          )}
+        </div>
 
         <button
           type="button"
-          disabled={!nextDay || isLoading}
+          disabled={!nextDay || isLoading || pageTurn !== null}
           aria-label="Следующая страница"
           className="diary-page-edge-button diary-page-edge-button--next"
           onClick={() => {
@@ -251,5 +294,84 @@ export function DiaryReader({
         </div>
       )}
     </section>
+  )
+}
+
+function DiaryReaderPage({
+  day,
+  diaryTitle,
+  pageNumber,
+  pageCount,
+  className,
+  ariaHidden = false,
+  onTurnEnd
+}: {
+  day: DiaryDay
+  diaryTitle: string
+  pageNumber: number
+  pageCount: number
+  className?: string
+  ariaHidden?: boolean
+  onTurnEnd?: () => void
+}): React.JSX.Element {
+  const mood = day.mood ? diaryMoodMeta[day.mood] : null
+
+  return (
+    <article
+      aria-hidden={ariaHidden || undefined}
+      className={`diary-paper diary-premium-paper diary-paper--reader diary-reader-page-layer overflow-hidden border ${className ?? ''}`}
+      onAnimationEnd={(event) => {
+        if (event.target === event.currentTarget) onTurnEnd?.()
+      }}
+    >
+      <div className="diary-paper-content diary-reader-page-content">
+        <header className="diary-paper-header diary-paper-masthead diary-premium-masthead border-b border-stone-300/70 px-11 max-[700px]:px-7 max-[620px]:px-6">
+          <div className="flex items-start justify-between gap-8 max-[640px]:flex-col max-[640px]:gap-4">
+            <div className="min-w-0 flex-1">
+              <div className="diary-premium-kicker">{diaryTitle}</div>
+              <h3 className="diary-premium-date capitalize">{formatDiaryDate(day.dayKey)}</h3>
+            </div>
+            <div className="diary-reader-meta max-[640px]:items-start">
+              <div className="text-[11px] tracking-wide text-stone-400 uppercase">
+                Страница {pageNumber} из {pageCount}
+              </div>
+              <div className="diary-reader-mood">
+                {mood ? (
+                  <>
+                    <span className="text-base">{mood.emoji}</span>
+                    <span>{mood.label}</span>
+                  </>
+                ) : (
+                  <span>Настроение не отмечено</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="diary-premium-divider" aria-hidden="true">
+            <span>— ✦ —</span>
+          </div>
+        </header>
+
+        <div className="diary-reader-scroll-viewport">
+          <div className="diary-ruled-surface diary-ruled-content diary-reader-ruled-sheet">
+            {day.entries.length === 0 ? (
+              <div className="flex min-h-[324px] items-center justify-center pl-20 text-center max-[620px]:pl-8">
+                <p className="font-serif text-sm text-stone-500 italic">
+                  В этот день осталось только настроение.
+                </p>
+              </div>
+            ) : (
+              day.entries.map((entry) => (
+                <div key={entry.id} className="diary-entry-row">
+                  <time className="diary-entry-time">{formatDiaryTime(entry.occurredAt)}</time>
+                  <p className="diary-handwriting diary-entry-text">{entry.text}</p>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+    </article>
   )
 }
