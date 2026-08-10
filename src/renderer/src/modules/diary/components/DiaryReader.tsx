@@ -1,5 +1,5 @@
 import { CalendarDays, ChevronLeft, ChevronRight, LoaderCircle } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useEffectEvent, useMemo, useState } from 'react'
 
 import type { DiaryDay, DiaryDaySummary, DiarySummary } from '../../../../../shared/contracts/diary'
 import { diaryClient } from '../api/diary-client'
@@ -38,11 +38,6 @@ export function DiaryReader({
     currentIndex >= 0 && currentIndex < orderedDays.length - 1
       ? orderedDays[currentIndex + 1]
       : null
-  const navigationRef = useRef<{
-    previousDay: DiaryDaySummary | null
-    nextDay: DiaryDaySummary | null
-  }>({ previousDay: null, nextDay: null })
-  navigationRef.current = { previousDay, nextDay }
 
   const loadDays = useCallback(async (): Promise<void> => {
     setIsLoading(true)
@@ -83,6 +78,33 @@ export function DiaryReader({
     [diary.id, onDayChange]
   )
 
+  const handlePageKeyDown = useEffectEvent((event: KeyboardEvent): void => {
+    if (
+      event.defaultPrevented ||
+      event.altKey ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.shiftKey
+    ) {
+      return
+    }
+
+    const target = event.target
+    if (
+      target instanceof HTMLElement &&
+      (target.matches('input, textarea, select, button') || target.isContentEditable)
+    ) {
+      return
+    }
+
+    const targetDay =
+      event.key === 'ArrowLeft' ? previousDay : event.key === 'ArrowRight' ? nextDay : null
+    if (!targetDay) return
+
+    event.preventDefault()
+    void openDay(targetDay.dayKey)
+  })
+
   useEffect(() => {
     let cancelled = false
     queueMicrotask(() => {
@@ -94,40 +116,9 @@ export function DiaryReader({
   }, [loadDays, refreshVersion])
 
   useEffect(() => {
-    function handlePageKeyDown(event: KeyboardEvent): void {
-      if (
-        event.defaultPrevented ||
-        event.altKey ||
-        event.ctrlKey ||
-        event.metaKey ||
-        event.shiftKey
-      ) {
-        return
-      }
-
-      const target = event.target
-      if (
-        target instanceof HTMLElement &&
-        (target.matches('input, textarea, select, button') || target.isContentEditable)
-      ) {
-        return
-      }
-
-      const targetDay =
-        event.key === 'ArrowLeft'
-          ? navigationRef.current.previousDay
-          : event.key === 'ArrowRight'
-            ? navigationRef.current.nextDay
-            : null
-      if (!targetDay) return
-
-      event.preventDefault()
-      void openDay(targetDay.dayKey)
-    }
-
     window.addEventListener('keydown', handlePageKeyDown)
     return () => window.removeEventListener('keydown', handlePageKeyDown)
-  }, [openDay])
+  }, [])
 
   if (isLoading && !day) {
     return (
