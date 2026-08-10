@@ -1,5 +1,5 @@
 import { CalendarDays, ChevronLeft, ChevronRight, LoaderCircle } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type { DiaryDay, DiaryDaySummary, DiarySummary } from '../../../../../shared/contracts/diary'
 import { diaryClient } from '../api/diary-client'
@@ -38,6 +38,11 @@ export function DiaryReader({
     currentIndex >= 0 && currentIndex < orderedDays.length - 1
       ? orderedDays[currentIndex + 1]
       : null
+  const navigationRef = useRef<{
+    previousDay: DiaryDaySummary | null
+    nextDay: DiaryDaySummary | null
+  }>({ previousDay: null, nextDay: null })
+  navigationRef.current = { previousDay, nextDay }
 
   const loadDays = useCallback(async (): Promise<void> => {
     setIsLoading(true)
@@ -109,7 +114,11 @@ export function DiaryReader({
       }
 
       const targetDay =
-        event.key === 'ArrowLeft' ? previousDay : event.key === 'ArrowRight' ? nextDay : null
+        event.key === 'ArrowLeft'
+          ? navigationRef.current.previousDay
+          : event.key === 'ArrowRight'
+            ? navigationRef.current.nextDay
+            : null
       if (!targetDay) return
 
       event.preventDefault()
@@ -118,7 +127,7 @@ export function DiaryReader({
 
     window.addEventListener('keydown', handlePageKeyDown)
     return () => window.removeEventListener('keydown', handlePageKeyDown)
-  }, [nextDay, openDay, previousDay])
+  }, [openDay])
 
   if (isLoading && !day) {
     return (
@@ -226,9 +235,7 @@ export function DiaryReader({
                   ) : (
                     day.entries.map((entry) => (
                       <div key={entry.id} className="diary-entry-row">
-                        <time className="diary-entry-time">
-                          {formatDiaryTime(entry.occurredAt)}
-                        </time>
+                        <time className="diary-entry-time">{formatDiaryTime(entry.occurredAt)}</time>
                         <p className="diary-handwriting diary-entry-text">{entry.text}</p>
                       </div>
                     ))
