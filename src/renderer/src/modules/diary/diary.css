@@ -47,8 +47,7 @@
     repeating-linear-gradient(
       to bottom,
       transparent 0 calc(var(--diary-rule-baseline) - 1px),
-      var(--diary-rule-color) calc(var(--diary-rule-baseline) - 1px)
-        var(--diary-rule-baseline),
+      var(--diary-rule-color) calc(var(--diary-rule-baseline) - 1px) var(--diary-rule-baseline),
       transparent var(--diary-rule-baseline) var(--diary-rule-step)
     );
 }
@@ -176,13 +175,12 @@
   padding: 0.8rem 0.9rem 1rem 1.1rem;
   border: 1px solid color-mix(in srgb, var(--app-border-strong) 78%, #695845 22%);
   border-radius: 2.25rem;
-  background:
-    linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--app-surface-raised) 72%, #4b3b2c 28%),
-      color-mix(in srgb, var(--app-surface-raised) 90%, #75624d 10%) 4.5rem,
-      color-mix(in srgb, var(--app-surface-raised) 94%, #3f3429 6%)
-    );
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--app-surface-raised) 72%, #4b3b2c 28%),
+    color-mix(in srgb, var(--app-surface-raised) 90%, #75624d 10%) 4.5rem,
+    color-mix(in srgb, var(--app-surface-raised) 94%, #3f3429 6%)
+  );
   box-shadow:
     0 34px 90px rgb(0 0 0 / 30%),
     inset 0 1px rgb(255 255 255 / 5%);

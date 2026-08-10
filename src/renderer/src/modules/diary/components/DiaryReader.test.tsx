@@ -1,11 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type {
-  DiaryDay,
-  DiaryDaySummary,
-  DiarySummary
-} from '../../../../../shared/contracts/diary'
+import type { DiaryDay, DiaryDaySummary, DiarySummary } from '../../../../../shared/contracts/diary'
 
 const mocks = vi.hoisted(() => ({
   listDays: vi.fn(),
