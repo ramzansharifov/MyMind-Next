@@ -102,12 +102,7 @@ describe('FinanceTagDialog', () => {
 
     render(
       <TooltipProvider>
-        <FinanceTagDialog
-          open
-          tag={savedTag}
-          onOpenChange={onOpenChange}
-          onSaved={onSaved}
-        />
+        <FinanceTagDialog open tag={savedTag} onOpenChange={onOpenChange} onSaved={onSaved} />
       </TooltipProvider>
     )
 

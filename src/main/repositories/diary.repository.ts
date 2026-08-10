@@ -102,9 +102,7 @@ function ensureDefaultDiary(): void {
 
   const now = Date.now()
   getSqlite()
-    .prepare(
-      'INSERT INTO diaries (id, title, icon, created_at, updated_at) VALUES (?, ?, ?, ?, ?)'
-    )
+    .prepare('INSERT INTO diaries (id, title, icon, created_at, updated_at) VALUES (?, ?, ?, ?, ?)')
     .run(DEFAULT_DIARY_ID, 'Личный дневник', 'book-heart', now, now)
 }
 
@@ -187,9 +185,7 @@ function pruneDayIfEmpty(dayId: string): void {
        WHERE dy.id = ?
        GROUP BY dy.id`
     )
-    .get(dayId) as
-    | { diary_id: string; mood: DiaryMood | null; entry_count: number }
-    | undefined
+    .get(dayId) as { diary_id: string; mood: DiaryMood | null; entry_count: number } | undefined
 
   if (!row || row.mood !== null || row.entry_count > 0) return
   getSqlite().prepare('DELETE FROM diary_days WHERE id = ?').run(dayId)
@@ -223,9 +219,7 @@ export function createDiary(input: CreateDiaryInput): DiarySummary {
   const id = randomUUID()
   const now = Date.now()
   getSqlite()
-    .prepare(
-      'INSERT INTO diaries (id, title, icon, created_at, updated_at) VALUES (?, ?, ?, ?, ?)'
-    )
+    .prepare('INSERT INTO diaries (id, title, icon, created_at, updated_at) VALUES (?, ?, ?, ?, ?)')
     .run(id, input.title, input.icon, now, now)
   return getDiarySummary(id)
 }

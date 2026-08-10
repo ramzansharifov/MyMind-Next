@@ -170,9 +170,7 @@ export function DiaryReports({
               icon={<Smile />}
               label="Среднее настроение"
               value={
-                report.averageMoodScore == null
-                  ? '—'
-                  : `${report.averageMoodScore.toFixed(1)} / 5`
+                report.averageMoodScore == null ? '—' : `${report.averageMoodScore.toFixed(1)} / 5`
               }
               hint={`${report.moodDays} дней с настроением`}
             />
@@ -185,10 +183,7 @@ export function DiaryReports({
           </div>
 
           <div className="grid grid-cols-2 gap-4 max-[900px]:grid-cols-1">
-            <ReportSurface
-              title="Распределение настроения"
-              icon={<Smile className="size-4" />}
-            >
+            <ReportSurface title="Распределение настроения" icon={<Smile className="size-4" />}>
               <div className="space-y-3">
                 {report.moodBreakdown.map((item) => {
                   const meta = diaryMoodMeta[item.mood]
@@ -207,27 +202,19 @@ export function DiaryReports({
                           style={{ width: `${item.sharePercent}%` }}
                         />
                       </div>
-                      <div className="text-right text-xs text-[var(--app-muted)]">
-                        {item.count}
-                      </div>
+                      <div className="text-right text-xs text-[var(--app-muted)]">{item.count}</div>
                     </div>
                   )
                 })}
               </div>
             </ReportSurface>
 
-            <ReportSurface
-              title="Динамика настроения"
-              icon={<Activity className="size-4" />}
-            >
+            <ReportSurface title="Динамика настроения" icon={<Activity className="size-4" />}>
               <MoodTrend points={activityTimeline} />
             </ReportSurface>
           </div>
 
-          <ReportSurface
-            title="Календарь активности"
-            icon={<CalendarDays className="size-4" />}
-          >
+          <ReportSurface title="Календарь активности" icon={<CalendarDays className="size-4" />}>
             {activityTimeline.length === 0 ? (
               <EmptyReport label="За выбранный период пока нет страниц" />
             ) : (
@@ -286,9 +273,7 @@ function Metric({
         <span>{label}</span>
         <span className="text-violet-300 [&>svg]:size-4">{icon}</span>
       </div>
-      <div className="mt-2 text-xl font-semibold text-[var(--app-text)] tabular-nums">
-        {value}
-      </div>
+      <div className="mt-2 text-xl font-semibold text-[var(--app-text)] tabular-nums">{value}</div>
       <div className="mt-1 text-[10px] leading-4 text-[var(--app-muted)]">{hint}</div>
     </div>
   )

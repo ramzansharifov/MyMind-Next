@@ -179,10 +179,7 @@ export function FinanceField({
           {error}
         </span>
       ) : hint ? (
-        <span
-          id={descriptionId}
-          className="mt-1.5 block text-xs leading-5 text-[var(--app-muted)]"
-        >
+        <span id={descriptionId} className="mt-1.5 block text-xs leading-5 text-[var(--app-muted)]">
           {hint}
         </span>
       ) : null}

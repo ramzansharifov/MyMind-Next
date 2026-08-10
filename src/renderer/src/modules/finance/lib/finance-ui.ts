@@ -1,4 +1,7 @@
-import type { FinanceTagType, FinanceTransactionType } from '../../../../../shared/contracts/finance'
+import type {
+  FinanceTagType,
+  FinanceTransactionType
+} from '../../../../../shared/contracts/finance'
 
 export { FinanceIcon } from './FinanceIcon'
 

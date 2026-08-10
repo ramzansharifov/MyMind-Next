@@ -31,10 +31,7 @@ import {
   financeInputClassName,
   financeTextareaClassName
 } from '../FinancePrimitives'
-import {
-  FinanceAccountCardPicker,
-  FinanceTagCardPicker
-} from '../FinanceSelectionCards'
+import { FinanceAccountCardPicker, FinanceTagCardPicker } from '../FinanceSelectionCards'
 
 const transactionFormSchema = z
   .object({
@@ -172,9 +169,7 @@ function FinanceTransactionDialogContent({
   })
   const values = useWatch({ control })
   const selectedAccount = accounts.find((account) => account.id === values.accountId)
-  const selectedDestination = accounts.find(
-    (account) => account.id === values.destinationAccountId
-  )
+  const selectedDestination = accounts.find((account) => account.id === values.destinationAccountId)
   const compatibleTags = tags.filter((tag) => tag.type === 'both' || tag.type === values.type)
 
   useEffect(() => {

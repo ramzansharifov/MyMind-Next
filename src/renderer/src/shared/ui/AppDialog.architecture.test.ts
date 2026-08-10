@@ -27,7 +27,10 @@ describe('shared dialog architecture', () => {
   })
 
   it('uses the shared dialog shell for the transition blocker in study', () => {
-    const source = readFileSync(new URL('../../modules/study/StudyPage.tsx', import.meta.url), 'utf8')
+    const source = readFileSync(
+      new URL('../../modules/study/StudyPage.tsx', import.meta.url),
+      'utf8'
+    )
     expect(source).toContain('StudyBlockedTransitionDialog')
     expect(source).not.toContain('aria-labelledby="study-transition-error-title"')
   })

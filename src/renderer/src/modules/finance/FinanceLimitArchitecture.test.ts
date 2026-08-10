@@ -27,9 +27,7 @@ describe('finance limit architecture', () => {
     const contract = read('src/shared/contracts/finance.ts')
     const schema = read('src/main/database/schema/finance.ts')
     const migration = read('drizzle/0015_simplify_finance_templates_limits.sql')
-    const financeLimitContract = contract.match(
-      /export interface FinanceLimit \{[\s\S]*?\n\}/
-    )?.[0]
+    const financeLimitContract = contract.match(/export interface FinanceLimit \{[\s\S]*?\n\}/)?.[0]
     const financeLimitSchema = schema.match(
       /export const financeLimits = sqliteTable\([\s\S]*?\n\)\n\nexport const financeLimitAccounts/
     )?.[0]
@@ -38,7 +36,7 @@ describe('finance limit architecture', () => {
     expect(financeLimitContract).not.toContain('name:')
     expect(financeLimitSchema).toBeDefined()
     expect(financeLimitSchema).not.toContain("name: text('name')")
-    expect(migration).toContain("ALTER TABLE `finance_limits` DROP COLUMN `name`")
+    expect(migration).toContain('ALTER TABLE `finance_limits` DROP COLUMN `name`')
   })
 
   it('persists multi-account selections through a dedicated relation table', () => {

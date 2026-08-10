@@ -1,7 +1,11 @@
 import { Check, LoaderCircle, Pencil, Plus, Trash2, X } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 
-import { DIARY_MOODS, type DiaryDay, type DiarySummary } from '../../../../../shared/contracts/diary'
+import {
+  DIARY_MOODS,
+  type DiaryDay,
+  type DiarySummary
+} from '../../../../../shared/contracts/diary'
 import { DeleteConfirmationDialog } from '../../../shared/ui/DeleteConfirmationDialog'
 import { diaryClient } from '../api/diary-client'
 import {
@@ -127,10 +131,10 @@ export function DiaryToday({
       <article className="diary-paper mx-auto w-full max-w-[900px] overflow-hidden rounded-[28px] border shadow-2xl">
         <div className="diary-paper-content relative px-8 py-8 max-[620px]:px-5">
           <header className="border-b border-stone-300/70 pb-5">
-            <div className="text-xs font-semibold uppercase tracking-[0.16em] text-stone-500">
+            <div className="text-xs font-semibold tracking-[0.16em] text-stone-500 uppercase">
               {diary.title}
             </div>
-            <h3 className="mt-2 font-serif text-2xl font-semibold capitalize text-stone-900">
+            <h3 className="mt-2 font-serif text-2xl font-semibold text-stone-900 capitalize">
               {formatDiaryDate(dayKey)}
             </h3>
 
@@ -165,7 +169,7 @@ export function DiaryToday({
           ) : (
             <div className="mt-7 space-y-6">
               {(day?.entries ?? []).length === 0 && (
-                <div className="py-8 text-center font-serif text-sm italic text-stone-500">
+                <div className="py-8 text-center font-serif text-sm text-stone-500 italic">
                   Здесь пока тихо. Добавьте первую мысль этого дня.
                 </div>
               )}
@@ -210,10 +214,10 @@ export function DiaryToday({
                       </div>
                     ) : (
                       <>
-                        <p className="diary-handwriting whitespace-pre-wrap break-words text-[15px] leading-8 text-stone-800">
+                        <p className="diary-handwriting text-[15px] leading-8 break-words whitespace-pre-wrap text-stone-800">
                           {entry.text}
                         </p>
-                        <div className="mt-1 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+                        <div className="mt-1 flex gap-1 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100">
                           <button
                             type="button"
                             aria-label="Редактировать запись"

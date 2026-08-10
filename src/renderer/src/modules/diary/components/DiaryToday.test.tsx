@@ -67,13 +67,7 @@ describe('DiaryToday', () => {
     const user = userEvent.setup()
     const onChanged = vi.fn()
 
-    render(
-      <DiaryToday
-        diary={diary}
-        dayKey="2026-08-08"
-        onChanged={onChanged}
-      />
-    )
+    render(<DiaryToday diary={diary} dayKey="2026-08-08" onChanged={onChanged} />)
 
     await screen.findByText('Здесь пока тихо. Добавьте первую мысль этого дня.')
     await user.click(screen.getByRole('button', { name: /Хорошее/ }))
@@ -93,13 +87,7 @@ describe('DiaryToday', () => {
     const onChanged = vi.fn()
     mocks.getDay.mockResolvedValueOnce(moodOnlyDay).mockResolvedValueOnce(dayWithEntry)
 
-    render(
-      <DiaryToday
-        diary={diary}
-        dayKey="2026-08-08"
-        onChanged={onChanged}
-      />
-    )
+    render(<DiaryToday diary={diary} dayKey="2026-08-08" onChanged={onChanged} />)
 
     const editor = await screen.findByPlaceholderText('Что хочется запомнить?')
     await user.type(editor, 'Сегодня было спокойно.')

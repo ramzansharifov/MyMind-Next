@@ -14,12 +14,7 @@ describe('FinanceIconPicker', () => {
 
     render(
       <TooltipProvider>
-        <AppDialog
-          open
-          title="Новый счёт"
-          description="Форма счёта"
-          onOpenChange={() => undefined}
-        >
+        <AppDialog open title="Новый счёт" description="Форма счёта" onOpenChange={() => undefined}>
           <FinanceIconPicker value="wallet" onChange={onChange} />
         </AppDialog>
       </TooltipProvider>

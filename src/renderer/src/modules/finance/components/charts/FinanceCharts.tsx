@@ -107,9 +107,7 @@ export function FinanceLineChart({
       ),
       ticks,
       zeroY:
-        minimum <= 0 && maximum >= 0
-          ? padding.top + ((maximum - 0) / range) * chartHeight
-          : null
+        minimum <= 0 && maximum >= 0 ? padding.top + ((maximum - 0) / range) * chartHeight : null
     }
   }, [data, includeZero])
 
@@ -214,7 +212,8 @@ export function FinanceLineChart({
               strokeWidth="2"
             >
               <title>
-                {data[index].label} · {primaryLabel}: {formatMoneyMinor(data[index].value, currencyCode)}
+                {data[index].label} · {primaryLabel}:{' '}
+                {formatMoneyMinor(data[index].value, currencyCode)}
               </title>
             </circle>
             {labelIndexes.has(index) && (
@@ -258,9 +257,7 @@ export function FinanceLineChart({
               <tr>
                 <th className="px-3 py-2 font-medium">Период</th>
                 <th className="px-3 py-2 font-medium">{primaryLabel}</th>
-                {hasSecondary && (
-                  <th className="px-3 py-2 font-medium">{secondaryLabel}</th>
-                )}
+                {hasSecondary && <th className="px-3 py-2 font-medium">{secondaryLabel}</th>}
               </tr>
             </thead>
             <tbody>

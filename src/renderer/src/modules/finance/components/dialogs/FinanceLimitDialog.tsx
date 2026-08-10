@@ -232,9 +232,7 @@ function FinanceLimitDialogContent({
             }}
           />
           {errors.accountIds?.message && (
-            <span className="mt-1.5 block text-xs text-red-300">
-              {errors.accountIds.message}
-            </span>
+            <span className="mt-1.5 block text-xs text-red-300">{errors.accountIds.message}</span>
           )}
         </fieldset>
 

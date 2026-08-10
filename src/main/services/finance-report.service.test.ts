@@ -43,7 +43,15 @@ function reportWindow(): FinanceReportFilters {
   const now = new Date()
   return {
     dateFrom: new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 0, 0, 0, 0).getTime(),
-    dateTo: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 23, 59, 59, 999).getTime(),
+    dateTo: new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() + 1,
+      23,
+      59,
+      59,
+      999
+    ).getTime(),
     currencyCode: 'TJS'
   }
 }
@@ -154,7 +162,11 @@ describe('finance report analytics', () => {
     ])
     expect(report.accountActivity).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ accountId: fixture.cash.id, incomeMinor: 5_000, expenseMinor: 2_000 }),
+        expect.objectContaining({
+          accountId: fixture.cash.id,
+          incomeMinor: 5_000,
+          expenseMinor: 2_000
+        }),
         expect.objectContaining({ accountId: fixture.usd.id, incomeMinor: 9_200, expenseMinor: 0 })
       ])
     )

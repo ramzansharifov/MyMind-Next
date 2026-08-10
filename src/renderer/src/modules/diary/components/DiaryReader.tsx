@@ -1,11 +1,7 @@
 import { CalendarDays, ChevronLeft, ChevronRight, LoaderCircle } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
-import type {
-  DiaryDay,
-  DiaryDaySummary,
-  DiarySummary
-} from '../../../../../shared/contracts/diary'
+import type { DiaryDay, DiaryDaySummary, DiarySummary } from '../../../../../shared/contracts/diary'
 import { diaryClient } from '../api/diary-client'
 import {
   diaryMoodMeta,
@@ -36,9 +32,7 @@ export function DiaryReader({
     [days]
   )
   const currentKey = day?.dayKey ?? requestedDayKey
-  const currentIndex = currentKey
-    ? orderedDays.findIndex((item) => item.dayKey === currentKey)
-    : -1
+  const currentIndex = currentKey ? orderedDays.findIndex((item) => item.dayKey === currentKey) : -1
   const previousDay = currentIndex > 0 ? orderedDays[currentIndex - 1] : null
   const nextDay =
     currentIndex >= 0 && currentIndex < orderedDays.length - 1
@@ -105,9 +99,7 @@ export function DiaryReader({
         <div className="mx-auto flex size-12 items-center justify-center rounded-2xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
           <CalendarDays className="size-6" />
         </div>
-        <h2 className="mt-4 font-semibold text-[var(--app-text)]">
-          В дневнике пока нет страниц
-        </h2>
+        <h2 className="mt-4 font-semibold text-[var(--app-text)]">В дневнике пока нет страниц</h2>
         <p className="mx-auto mt-2 max-w-md text-sm text-[var(--app-muted)]">
           Страница появится автоматически, когда вы добавите запись или настроение дня.
         </p>
@@ -175,10 +167,10 @@ export function DiaryReader({
               <>
                 <header className="flex items-start justify-between gap-6 border-b border-stone-300/70 pb-5 max-[560px]:flex-col">
                   <div>
-                    <div className="text-xs font-semibold uppercase tracking-[0.16em] text-stone-500">
+                    <div className="text-xs font-semibold tracking-[0.16em] text-stone-500 uppercase">
                       {diary.title}
                     </div>
-                    <h3 className="mt-2 font-serif text-2xl font-semibold capitalize text-stone-900">
+                    <h3 className="mt-2 font-serif text-2xl font-semibold text-stone-900 capitalize">
                       {formatDiaryDate(day.dayKey)}
                     </h3>
                   </div>
@@ -194,7 +186,7 @@ export function DiaryReader({
 
                 <div className="mt-8 space-y-7">
                   {day.entries.length === 0 ? (
-                    <p className="py-14 text-center font-serif text-sm italic text-stone-500">
+                    <p className="py-14 text-center font-serif text-sm text-stone-500 italic">
                       В этот день осталось только настроение.
                     </p>
                   ) : (
@@ -206,7 +198,7 @@ export function DiaryReader({
                         <time className="pt-1 font-mono text-xs text-stone-400">
                           {formatDiaryTime(entry.occurredAt)}
                         </time>
-                        <p className="diary-handwriting whitespace-pre-wrap break-words text-[15px] leading-8 text-stone-800">
+                        <p className="diary-handwriting text-[15px] leading-8 break-words whitespace-pre-wrap text-stone-800">
                           {entry.text}
                         </p>
                       </div>

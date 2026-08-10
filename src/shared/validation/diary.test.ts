@@ -15,7 +15,11 @@ describe('diary validation', () => {
       icon: 'book-heart'
     })
     expect(() =>
-      createDiaryInputSchema.parse({ title: 'Личный дневник', icon: 'book-heart', color: '#ffffff' })
+      createDiaryInputSchema.parse({
+        title: 'Личный дневник',
+        icon: 'book-heart',
+        color: '#ffffff'
+      })
     ).toThrow()
   })
 

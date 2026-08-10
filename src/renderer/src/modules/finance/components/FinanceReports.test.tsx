@@ -39,14 +39,7 @@ beforeEach(() => {
 
 describe('FinanceReports', () => {
   it('loads all operations without accidentally filtering out template-based transactions', async () => {
-    render(
-      <FinanceReports
-        accounts={[]}
-        tags={[]}
-        baseCurrencyCode="TJS"
-        limitsVersion={0}
-      />
-    )
+    render(<FinanceReports accounts={[]} tags={[]} baseCurrencyCode="TJS" limitsVersion={0} />)
 
     await screen.findByText('Доходы и расходы по времени')
     await waitFor(() => expect(mocks.getReport).toHaveBeenCalled())
@@ -57,14 +50,7 @@ describe('FinanceReports', () => {
 
   it('switches explicitly between template and manual operation sources', async () => {
     const user = userEvent.setup()
-    render(
-      <FinanceReports
-        accounts={[]}
-        tags={[]}
-        baseCurrencyCode="TJS"
-        limitsVersion={0}
-      />
-    )
+    render(<FinanceReports accounts={[]} tags={[]} baseCurrencyCode="TJS" limitsVersion={0} />)
     await screen.findByText('Доходы и расходы по времени')
 
     const source = screen.getByRole('combobox', { name: 'Источник операции' })

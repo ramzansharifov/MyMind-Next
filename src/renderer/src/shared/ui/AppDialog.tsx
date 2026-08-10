@@ -152,7 +152,7 @@ export function AppDialog({
                       type="button"
                       aria-label={closeLabel}
                       disabled={busy}
-                      className="flex size-8 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] outline-none transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 disabled:cursor-not-allowed disabled:opacity-40"
+                      className="flex size-8 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors outline-none hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       <X aria-hidden="true" className="size-4" />
                     </button>

@@ -15,8 +15,7 @@ const options = [
     value: 'expense',
     label: 'Расход',
     icon: ArrowUpRight,
-    activeClassName:
-      'border-red-400/60 bg-red-500/22 text-red-100 shadow-sm ring-1 ring-red-400/15'
+    activeClassName: 'border-red-400/60 bg-red-500/22 text-red-100 shadow-sm ring-1 ring-red-400/15'
   },
   {
     value: 'transfer',

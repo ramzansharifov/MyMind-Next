@@ -19,7 +19,9 @@ export function DiarySettings({
     <section className="space-y-4">
       <div>
         <h2 className="text-lg font-semibold text-[var(--app-text)]">Настройки дневника</h2>
-        <p className="mt-1 text-sm text-[var(--app-muted)]">Название и иконка относятся только к этой книге. Цветовой настройки у дневника нет.</p>
+        <p className="mt-1 text-sm text-[var(--app-muted)]">
+          Название и иконка относятся только к этой книге. Цветовой настройки у дневника нет.
+        </p>
       </div>
 
       <div className="grid grid-cols-[minmax(0,1fr)_20rem] gap-5 max-[900px]:grid-cols-1">
@@ -29,9 +31,13 @@ export function DiarySettings({
               <DiaryIcon name={diary.icon} className="size-7" />
             </span>
             <div className="min-w-0 flex-1">
-              <h3 className="truncate text-xl font-semibold text-[var(--app-text)]">{diary.title}</h3>
+              <h3 className="truncate text-xl font-semibold text-[var(--app-text)]">
+                {diary.title}
+              </h3>
               <div className="mt-2 flex flex-wrap gap-x-5 gap-y-2 text-xs text-[var(--app-muted)]">
-                <span className="inline-flex items-center gap-1.5"><CalendarDays className="size-3.5" /> Создан {formatShortDate(diary.createdAt)}</span>
+                <span className="inline-flex items-center gap-1.5">
+                  <CalendarDays className="size-3.5" /> Создан {formatShortDate(diary.createdAt)}
+                </span>
                 <span>{diary.pageCount} страниц</span>
                 <span>{diary.entryCount} записей</span>
               </div>
@@ -49,7 +55,8 @@ export function DiarySettings({
         <div className="rounded-[24px] border border-red-500/15 bg-red-500/[0.035] p-5">
           <h3 className="font-semibold text-red-200">Удаление дневника</h3>
           <p className="mt-2 text-xs leading-5 text-[var(--app-muted)]">
-            Вместе с дневником удалятся все его страницы, настроения и записи. Это действие нельзя отменить.
+            Вместе с дневником удалятся все его страницы, настроения и записи. Это действие нельзя
+            отменить.
           </p>
           {!canDelete && (
             <div className="mt-3 rounded-xl border border-amber-500/15 bg-amber-500/[0.06] px-3 py-2 text-xs text-amber-200">
