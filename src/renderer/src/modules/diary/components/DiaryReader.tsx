@@ -42,6 +42,8 @@ interface PageTurnState {
   target: DiaryDay
   direction: PageTurnDirection
   sourceScrollTop: number
+  pageWidth: number
+  pageHeight: number
 }
 
 export function DiaryReader({
@@ -166,13 +168,18 @@ export function DiaryReader({
           pageStageRef.current?.querySelector<HTMLElement>(
             '.diary-reader-page-layer--static .diary-reader-scroll-viewport'
           )?.scrollTop ?? 0
+        const pageStageRect = pageStageRef.current?.getBoundingClientRect()
+        const pageWidth = Math.max(1, Math.round(pageStageRect?.width ?? 1200))
+        const pageHeight = Math.max(1, Math.round(pageStageRect?.height ?? 760))
 
         pageFlipStartedRef.current = false
         pageFlipReachedTargetRef.current = false
         setPageTurn({
           target: nextPage,
           direction: targetIndex < sourceIndex ? 'previous' : 'next',
-          sourceScrollTop
+          sourceScrollTop,
+          pageWidth,
+          pageHeight
         })
       } catch (reason) {
         setError(getDiaryErrorMessage(reason))
@@ -344,13 +351,13 @@ export function DiaryReader({
               key={`${day.dayKey}:${pageTurn.target.dayKey}:${pageTurn.direction}`}
               className="diary-reader-page-flip"
               style={{ width: '100%', height: '100%' }}
-              width={1200}
-              height={760}
-              size="stretch"
-              minWidth={320}
-              maxWidth={2400}
-              minHeight={420}
-              maxHeight={1600}
+              width={pageTurn.pageWidth}
+              height={pageTurn.pageHeight}
+              size="fixed"
+              minWidth={pageTurn.pageWidth}
+              maxWidth={pageTurn.pageWidth}
+              minHeight={pageTurn.pageHeight}
+              maxHeight={pageTurn.pageHeight}
               startPage={pageTurn.direction === 'next' ? 0 : 1}
               drawShadow
               flippingTime={PAGE_FLIP_DURATION_MS}
