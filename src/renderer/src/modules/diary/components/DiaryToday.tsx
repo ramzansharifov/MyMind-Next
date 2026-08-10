@@ -7,6 +7,7 @@ import {
   type DiarySummary
 } from '../../../../../shared/contracts/diary'
 import { DeleteConfirmationDialog } from '../../../shared/ui/DeleteConfirmationDialog'
+import '../diary-premium.css'
 import { diaryClient } from '../api/diary-client'
 import {
   diaryMoodMeta,
@@ -128,26 +129,25 @@ export function DiaryToday({
         </p>
       </div>
 
-      <div className="diary-book-frame w-full">
-        <article className="diary-paper diary-paper--editor min-h-[650px] overflow-hidden rounded-[26px] border">
+      <div className="diary-book-frame diary-premium-book w-full">
+        <span className="diary-side-tab" aria-hidden="true">
+          Сегодня
+        </span>
+        <span className="diary-bookmark-ribbon" aria-hidden="true">
+          <span>✦</span>
+        </span>
+
+        <article className="diary-paper diary-premium-paper diary-paper--editor min-h-[650px] overflow-hidden border">
           <div className="diary-paper-content min-h-[650px]">
-            <header className="diary-paper-header diary-paper-masthead border-b border-stone-300/70 px-11 py-9 max-[700px]:px-7 max-[620px]:px-6">
-              <div className="flex items-start justify-between gap-8 max-[760px]:flex-col max-[760px]:gap-4">
-                <div>
-                  <div className="text-[11px] font-semibold tracking-[0.2em] text-stone-500 uppercase">
-                    {diary.title}
-                  </div>
-                  <h3 className="mt-2 font-serif text-[1.75rem] leading-tight font-semibold text-stone-900 capitalize">
-                    {formatDiaryDate(dayKey)}
-                  </h3>
-                </div>
-                <div className="diary-paper-day-label">Сегодня</div>
+            <header className="diary-paper-header diary-paper-masthead diary-premium-masthead border-b border-stone-300/70 px-11 max-[700px]:px-7 max-[620px]:px-6">
+              <div className="diary-premium-kicker">{diary.title}</div>
+              <h3 className="diary-premium-date capitalize">{formatDiaryDate(dayKey)}</h3>
+              <div className="diary-premium-divider" aria-hidden="true">
+                <span>— ✦ —</span>
               </div>
 
-              <div className="mt-7">
-                <div className="mb-2.5 text-[11px] font-semibold tracking-wide text-stone-500 uppercase">
-                  Настроение дня
-                </div>
+              <div className="mt-6">
+                <div className="diary-premium-section-label">Настроение дня</div>
                 <div className="diary-mood-strip">
                   {DIARY_MOODS.map((mood) => {
                     const meta = diaryMoodMeta[mood]
