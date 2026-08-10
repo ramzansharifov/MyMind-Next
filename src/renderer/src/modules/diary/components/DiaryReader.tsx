@@ -454,15 +454,7 @@ interface DiaryReaderPageProps {
 }
 
 const DiaryReaderPage = forwardRef<HTMLElement, DiaryReaderPageProps>(function DiaryReaderPage(
-  {
-    day,
-    diaryTitle,
-    pageNumber,
-    pageCount,
-    className,
-    initialScrollTop = 0,
-    ariaHidden = false
-  },
+  { day, diaryTitle, pageNumber, pageCount, className, initialScrollTop = 0, ariaHidden = false },
   ref
 ): React.JSX.Element {
   const mood = day.mood ? diaryMoodMeta[day.mood] : null
