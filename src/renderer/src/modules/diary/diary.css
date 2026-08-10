@@ -62,8 +62,7 @@
   position: relative;
   z-index: 2;
   background:
-    linear-gradient(to bottom, rgb(255 253 246 / 99%), rgb(255 253 246 / 94%)),
-    var(--diary-paper);
+    linear-gradient(to bottom, rgb(255 253 246 / 99%), rgb(255 253 246 / 94%)), var(--diary-paper);
 }
 
 .diary-paper-masthead::after {
@@ -329,14 +328,13 @@
   border-radius: 1.55rem;
   content: '';
   pointer-events: none;
-  background:
-    repeating-linear-gradient(
-      to bottom,
-      #eee7da 0,
-      #eee7da 2px,
-      #d4cab9 2px,
-      #d4cab9 3px
-    );
+  background: repeating-linear-gradient(
+    to bottom,
+    #eee7da 0,
+    #eee7da 2px,
+    #d4cab9 2px,
+    #d4cab9 3px
+  );
   box-shadow:
     8px 10px 22px rgb(0 0 0 / 16%),
     inset -8px 0 10px rgb(120 113 108 / 7%);
@@ -446,14 +444,13 @@
   overflow: hidden;
   border: 1px solid rgb(120 113 108 / 32%);
   border-radius: 1.25rem 1.85rem 1.85rem 1.1rem;
-  background:
-    repeating-linear-gradient(
-      to bottom,
-      #eee8dd 0,
-      #eee8dd 2px,
-      #d7cec0 2px,
-      #d7cec0 3px
-    );
+  background: repeating-linear-gradient(
+    to bottom,
+    #eee8dd 0,
+    #eee8dd 2px,
+    #d7cec0 2px,
+    #d7cec0 3px
+  );
   box-shadow: 7px 9px 18px rgb(0 0 0 / 20%);
   transform: translate(0.38rem, 0.45rem);
 }
