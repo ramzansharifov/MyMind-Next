@@ -179,6 +179,7 @@ export function DiaryReader({
       </div>
 
       <div className="diary-book-frame diary-premium-book w-full">
+        <span className="diary-back-binding" aria-hidden="true" />
         <span className="diary-side-tab" aria-hidden="true">
           Просмотр
         </span>
