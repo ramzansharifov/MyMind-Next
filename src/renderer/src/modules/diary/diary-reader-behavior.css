@@ -11,6 +11,10 @@
   perspective-origin: left center;
 }
 
+.diary-reader-page-stage[data-turning='true'] {
+  z-index: 20;
+}
+
 .diary-reader-page-layer {
   position: absolute;
   inset: 0;
