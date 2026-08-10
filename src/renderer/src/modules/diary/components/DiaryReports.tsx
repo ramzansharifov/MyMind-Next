@@ -50,39 +50,42 @@ export function DiaryReports({
 
   useEffect(() => {
     let cancelled = false
-    const range =
-      period === 'custom'
-        ? { fromDay: customFrom, toDay: customTo }
-        : reportRange(period)
 
-    if (!range.fromDay && period === 'custom') {
-      setIsLoading(false)
-      return
-    }
-    if (!range.toDay && period === 'custom') {
-      setIsLoading(false)
-      return
-    }
-    if (range.fromDay && range.toDay && range.fromDay > range.toDay) {
-      setIsLoading(false)
-      setError('Конечная дата должна быть не раньше начальной')
-      return
-    }
+    queueMicrotask(() => {
+      if (cancelled) return
 
-    setIsLoading(true)
-    setError(null)
+      const range =
+        period === 'custom' ? { fromDay: customFrom, toDay: customTo } : reportRange(period)
 
-    void diaryClient
-      .getReport({ diaryId: diary.id, ...range })
-      .then((result) => {
-        if (!cancelled) setReport(result)
-      })
-      .catch((reason) => {
-        if (!cancelled) setError(getDiaryErrorMessage(reason))
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false)
-      })
+      if (!range.fromDay && period === 'custom') {
+        setIsLoading(false)
+        return
+      }
+      if (!range.toDay && period === 'custom') {
+        setIsLoading(false)
+        return
+      }
+      if (range.fromDay && range.toDay && range.fromDay > range.toDay) {
+        setIsLoading(false)
+        setError('Конечная дата должна быть не раньше начальной')
+        return
+      }
+
+      setIsLoading(true)
+      setError(null)
+
+      void diaryClient
+        .getReport({ diaryId: diary.id, ...range })
+        .then((result) => {
+          if (!cancelled) setReport(result)
+        })
+        .catch((reason) => {
+          if (!cancelled) setError(getDiaryErrorMessage(reason))
+        })
+        .finally(() => {
+          if (!cancelled) setIsLoading(false)
+        })
+    })
 
     return () => {
       cancelled = true
@@ -90,8 +93,7 @@ export function DiaryReports({
   }, [customFrom, customTo, diary.id, period, refreshVersion])
 
   const activityTimeline = useMemo(
-    () =>
-      report ? expandDiaryTimeline(report.timeline, report.fromDay, report.toDay) : [],
+    () => (report ? expandDiaryTimeline(report.timeline, report.fromDay, report.toDay) : []),
     [report]
   )
   const activityPercent =
