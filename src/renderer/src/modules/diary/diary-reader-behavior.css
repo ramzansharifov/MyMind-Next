@@ -55,6 +55,14 @@
   border-radius: inherit;
 }
 
+.diary-reader-page-flip--mirrored.stf__parent {
+  transform: scaleX(-1) translateZ(0) !important;
+}
+
+.diary-reader-page-flip--mirrored .diary-reader-page-content {
+  transform: scaleX(-1);
+}
+
 .diary-reader-page-flip .stf__item {
   overflow: hidden;
   border-radius: 1.3rem 1.65rem 1.65rem 1.18rem;

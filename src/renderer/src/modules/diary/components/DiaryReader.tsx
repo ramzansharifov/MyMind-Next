@@ -197,11 +197,7 @@ export function DiaryReader({
 
       pageFlipStartedRef.current = true
       window.requestAnimationFrame(() => {
-        if (pageTurn.direction === 'next') {
-          event.object.flipNext('bottom')
-        } else {
-          event.object.flipPrev('bottom')
-        }
+        event.object.flipNext('bottom')
       })
     },
     [pageTurn]
@@ -211,7 +207,7 @@ export function DiaryReader({
     (event: PageFlipEvent<number>): void => {
       if (!pageTurn || !pageFlipStartedRef.current) return
 
-      const targetIndex = pageTurn.direction === 'next' ? 1 : 0
+      const targetIndex = 1
       if (Number(event.data) === targetIndex) {
         pageFlipReachedTargetRef.current = true
       }
@@ -349,7 +345,11 @@ export function DiaryReader({
           {day && pageTurn && (
             <HTMLFlipBook
               key={`${day.dayKey}:${pageTurn.target.dayKey}:${pageTurn.direction}`}
-              className="diary-reader-page-flip"
+              className={
+                pageTurn.direction === 'previous'
+                  ? 'diary-reader-page-flip diary-reader-page-flip--mirrored'
+                  : 'diary-reader-page-flip'
+              }
               style={{ width: '100%', height: '100%' }}
               width={pageTurn.pageWidth}
               height={pageTurn.pageHeight}
@@ -358,7 +358,7 @@ export function DiaryReader({
               maxWidth={pageTurn.pageWidth}
               minHeight={pageTurn.pageHeight}
               maxHeight={pageTurn.pageHeight}
-              startPage={pageTurn.direction === 'next' ? 0 : 1}
+              startPage={0}
               drawShadow
               flippingTime={PAGE_FLIP_DURATION_MS}
               usePortrait
@@ -376,51 +376,26 @@ export function DiaryReader({
               onFlip={handleFlip}
               onChangeState={handleFlipState}
             >
-              {pageTurn.direction === 'next' ? (
-                <DiaryReaderPage
-                  key={`flip-current-${day.dayKey}`}
-                  day={day}
-                  diaryTitle={diary.title}
-                  pageNumber={pageNumberFor(day.dayKey)}
-                  pageCount={orderedDays.length}
-                  className="diary-reader-page-layer--flip"
-                  initialScrollTop={pageTurn.sourceScrollTop}
-                  ariaHidden
-                />
-              ) : (
-                <DiaryReaderPage
-                  key={`flip-target-${pageTurn.target.dayKey}`}
-                  day={pageTurn.target}
-                  diaryTitle={diary.title}
-                  pageNumber={pageNumberFor(pageTurn.target.dayKey)}
-                  pageCount={orderedDays.length}
-                  className="diary-reader-page-layer--flip"
-                  ariaHidden
-                />
-              )}
+              <DiaryReaderPage
+                key={`flip-current-${day.dayKey}`}
+                day={day}
+                diaryTitle={diary.title}
+                pageNumber={pageNumberFor(day.dayKey)}
+                pageCount={orderedDays.length}
+                className="diary-reader-page-layer--flip"
+                initialScrollTop={pageTurn.sourceScrollTop}
+                ariaHidden
+              />
 
-              {pageTurn.direction === 'next' ? (
-                <DiaryReaderPage
-                  key={`flip-target-${pageTurn.target.dayKey}`}
-                  day={pageTurn.target}
-                  diaryTitle={diary.title}
-                  pageNumber={pageNumberFor(pageTurn.target.dayKey)}
-                  pageCount={orderedDays.length}
-                  className="diary-reader-page-layer--flip"
-                  ariaHidden
-                />
-              ) : (
-                <DiaryReaderPage
-                  key={`flip-current-${day.dayKey}`}
-                  day={day}
-                  diaryTitle={diary.title}
-                  pageNumber={pageNumberFor(day.dayKey)}
-                  pageCount={orderedDays.length}
-                  className="diary-reader-page-layer--flip"
-                  initialScrollTop={pageTurn.sourceScrollTop}
-                  ariaHidden
-                />
-              )}
+              <DiaryReaderPage
+                key={`flip-target-${pageTurn.target.dayKey}`}
+                day={pageTurn.target}
+                diaryTitle={diary.title}
+                pageNumber={pageNumberFor(pageTurn.target.dayKey)}
+                pageCount={orderedDays.length}
+                className="diary-reader-page-layer--flip"
+                ariaHidden
+              />
             </HTMLFlipBook>
           )}
         </div>
