@@ -64,4 +64,22 @@ describe('diary architecture', () => {
     expect(reader).not.toContain('leading-8')
     expect(today).not.toContain('leading-8')
   })
+
+  it('keeps diary pages full-width and library cards visibly notebook-shaped', () => {
+    const css = read('src/renderer/src/modules/diary/diary.css')
+    const library = read('src/renderer/src/modules/diary/components/DiaryLibrary.tsx')
+    const reader = read('src/renderer/src/modules/diary/components/DiaryReader.tsx')
+    const today = read('src/renderer/src/modules/diary/components/DiaryToday.tsx')
+
+    expect(reader).toContain('diary-book-frame w-full')
+    expect(today).toContain('diary-book-frame w-full')
+    expect(reader).not.toContain('max-w-[980px]')
+    expect(today).not.toContain('max-w-[940px]')
+    expect(library).toContain('diary-notebook-binding')
+    expect(library).toContain('diary-notebook-ring')
+    expect(library).toContain('diary-notebook-page-block')
+    expect(css).toContain('.diary-notebook-card')
+    expect(css).toContain('.diary-notebook-binding')
+    expect(css).toContain('.diary-notebook-page-block')
+  })
 })

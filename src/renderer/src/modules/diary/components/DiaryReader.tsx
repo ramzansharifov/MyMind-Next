@@ -131,7 +131,7 @@ export function DiaryReader({
   if (orderedDays.length === 0) {
     return (
       <section className="rounded-[24px] border border-dashed border-[var(--app-border)] bg-[var(--app-surface)] px-6 py-16 text-center">
-        <div className="mx-auto flex size-12 items-center justify-center rounded-2xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
+        <div className="mx-auto flex size-12 items-center justify-center rounded-2xl border border-[var(--app-border)] bg-[var(--app-control)] text-[var(--app-accent-300)]">
           <CalendarDays className="size-6" />
         </div>
         <h2 className="mt-4 font-semibold text-[var(--app-text)]">В дневнике пока нет страниц</h2>
@@ -145,7 +145,7 @@ export function DiaryReader({
   const mood = day?.mood ? diaryMoodMeta[day.mood] : null
 
   return (
-    <section className="space-y-4">
+    <section className="space-y-5">
       <div className="flex items-end justify-between gap-4 max-[700px]:flex-col max-[700px]:items-start">
         <div>
           <h2 className="text-lg font-semibold text-[var(--app-text)]">Просмотр дневника</h2>
@@ -161,7 +161,7 @@ export function DiaryReader({
             aria-label="Страница дневника"
             value={currentKey ?? ''}
             disabled={isLoading}
-            className="h-10 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/60 disabled:opacity-60"
+            className="h-10 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-[var(--app-accent-500)] disabled:opacity-60"
             onChange={(event) => void openDay(event.target.value)}
           >
             {orderedDays.map((item) => (
@@ -177,7 +177,7 @@ export function DiaryReader({
         </div>
       </div>
 
-      <div className="diary-book-frame mx-auto max-w-[980px]">
+      <div className="diary-book-frame w-full">
         <button
           type="button"
           disabled={!previousDay || isLoading}
@@ -192,31 +192,38 @@ export function DiaryReader({
 
         <article
           key={day?.dayKey ?? 'diary-page'}
-          className="diary-paper diary-page-turn-in min-h-[610px] overflow-hidden rounded-[24px] border shadow-2xl"
+          className="diary-paper diary-paper--reader diary-page-turn-in min-h-[650px] overflow-hidden rounded-[26px] border"
         >
-          <div className="diary-paper-content min-h-[610px]">
+          <div className="diary-paper-content min-h-[650px]">
             {day && (
               <>
-                <header className="diary-paper-header flex items-start justify-between gap-6 border-b border-stone-300/70 px-10 py-9 max-[620px]:px-6 max-[560px]:flex-col">
+                <header className="diary-paper-header diary-paper-masthead flex items-start justify-between gap-8 border-b border-stone-300/70 px-11 py-9 max-[700px]:px-7 max-[620px]:px-6 max-[560px]:flex-col">
                   <div>
-                    <div className="text-xs font-semibold tracking-[0.16em] text-stone-500 uppercase">
+                    <div className="text-[11px] font-semibold tracking-[0.2em] text-stone-500 uppercase">
                       {diary.title}
                     </div>
-                    <h3 className="mt-2 font-serif text-2xl font-semibold text-stone-900 capitalize">
+                    <h3 className="mt-2 font-serif text-[1.75rem] leading-tight font-semibold text-stone-900 capitalize">
                       {formatDiaryDate(day.dayKey)}
                     </h3>
                   </div>
-                  <div className="text-right max-[560px]:text-left">
-                    <div className="text-xs text-stone-400">
+                  <div className="diary-reader-meta max-[560px]:items-start">
+                    <div className="text-[11px] tracking-wide text-stone-400 uppercase">
                       Страница {Math.max(1, currentIndex + 1)} из {orderedDays.length}
                     </div>
-                    <div className="mt-2 text-sm text-stone-600">
-                      {mood ? `${mood.emoji} ${mood.label}` : 'Настроение не отмечено'}
+                    <div className="diary-reader-mood">
+                      {mood ? (
+                        <>
+                          <span className="text-base">{mood.emoji}</span>
+                          <span>{mood.label}</span>
+                        </>
+                      ) : (
+                        <span>Настроение не отмечено</span>
+                      )}
                     </div>
                   </div>
                 </header>
 
-                <div className="diary-ruled-surface diary-ruled-content min-h-[470px] pt-0">
+                <div className="diary-ruled-surface diary-ruled-content min-h-[500px] pt-0">
                   {day.entries.length === 0 ? (
                     <div className="flex min-h-[324px] items-center justify-center pl-20 text-center max-[620px]:pl-8">
                       <p className="font-serif text-sm text-stone-500 italic">
@@ -256,7 +263,7 @@ export function DiaryReader({
         <button
           type="button"
           disabled={!orderedDays.some((item) => item.dayKey === localDayKey()) || isLoading}
-          className="text-xs font-medium text-[var(--app-muted)] hover:text-violet-300 disabled:opacity-40"
+          className="text-xs font-medium text-[var(--app-muted)] hover:text-[var(--app-accent-300)] disabled:opacity-40"
           onClick={() => void openDay(localDayKey())}
         >
           Перейти к сегодняшней странице
