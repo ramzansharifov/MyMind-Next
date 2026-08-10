@@ -1,13 +1,15 @@
 import { CalendarDays, ChevronLeft, ChevronRight, LoaderCircle } from 'lucide-react'
 import {
-  type CSSProperties,
+  forwardRef,
   useCallback,
   useEffect,
   useEffectEvent,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState
 } from 'react'
+import HTMLFlipBook from 'react-pageflip'
 
 import type { DiaryDay, DiaryDaySummary, DiarySummary } from '../../../../../shared/contracts/diary'
 import '../diary-premium.css'
@@ -21,14 +23,25 @@ import {
   getDiaryErrorMessage
 } from '../lib/diary-ui'
 
-const PAGE_TURN_DURATION_MS = 680
+const PAGE_FLIP_DURATION_MS = 980
+const PAGE_FLIP_FALLBACK_MS = PAGE_FLIP_DURATION_MS + 700
 
 type PageTurnDirection = 'next' | 'previous'
+
+type PageFlipController = {
+  flipNext: (corner?: 'top' | 'bottom') => void
+  flipPrev: (corner?: 'top' | 'bottom') => void
+}
+
+type PageFlipEvent<T = unknown> = {
+  data: T
+  object: PageFlipController
+}
 
 interface PageTurnState {
   target: DiaryDay
   direction: PageTurnDirection
-  durationMs: number
+  sourceScrollTop: number
 }
 
 export function DiaryReader({
@@ -48,6 +61,9 @@ export function DiaryReader({
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const pageRequestPendingRef = useRef(false)
+  const pageStageRef = useRef<HTMLDivElement>(null)
+  const pageFlipStartedRef = useRef(false)
+  const pageFlipReachedTargetRef = useRef(false)
 
   const orderedDays = useMemo(
     () => days.slice().sort((left, right) => left.dayKey.localeCompare(right.dayKey)),
@@ -73,6 +89,8 @@ export function DiaryReader({
     setIsLoading(true)
     setError(null)
     setPageTurn(null)
+    pageFlipStartedRef.current = false
+    pageFlipReachedTargetRef.current = false
     try {
       const nextDays = await diaryClient.listDays({ diaryId: diary.id })
       setDays(nextDays)
@@ -92,6 +110,16 @@ export function DiaryReader({
       setIsLoading(false)
     }
   }, [diary.id, onDayChange, requestedDayKey])
+
+  const commitPageTurn = useCallback((): void => {
+    if (!pageTurn) return
+
+    setDay(pageTurn.target)
+    onDayChange(pageTurn.target.dayKey)
+    setPageTurn(null)
+    pageFlipStartedRef.current = false
+    pageFlipReachedTargetRef.current = false
+  }, [onDayChange, pageTurn])
 
   const openDay = useCallback(
     async (dayKey: string): Promise<void> => {
@@ -128,10 +156,23 @@ export function DiaryReader({
           typeof window.matchMedia === 'function' &&
           window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
+        if (reducedMotion) {
+          setDay(nextPage)
+          onDayChange(dayKey)
+          return
+        }
+
+        const sourceScrollTop =
+          pageStageRef.current?.querySelector<HTMLElement>(
+            '.diary-reader-page-layer--static .diary-reader-scroll-viewport'
+          )?.scrollTop ?? 0
+
+        pageFlipStartedRef.current = false
+        pageFlipReachedTargetRef.current = false
         setPageTurn({
           target: nextPage,
           direction: targetIndex < sourceIndex ? 'previous' : 'next',
-          durationMs: reducedMotion ? 1 : PAGE_TURN_DURATION_MS
+          sourceScrollTop
         })
       } catch (reason) {
         setError(getDiaryErrorMessage(reason))
@@ -143,17 +184,54 @@ export function DiaryReader({
     [day, diary.id, onDayChange, orderedDays, pageTurn]
   )
 
+  const handleFlipInit = useCallback(
+    (event: PageFlipEvent): void => {
+      if (!pageTurn || pageFlipStartedRef.current) return
+
+      pageFlipStartedRef.current = true
+      window.requestAnimationFrame(() => {
+        if (pageTurn.direction === 'next') {
+          event.object.flipNext('bottom')
+        } else {
+          event.object.flipPrev('bottom')
+        }
+      })
+    },
+    [pageTurn]
+  )
+
+  const handleFlip = useCallback(
+    (event: PageFlipEvent<number>): void => {
+      if (!pageTurn || !pageFlipStartedRef.current) return
+
+      const targetIndex = pageTurn.direction === 'next' ? 1 : 0
+      if (Number(event.data) === targetIndex) {
+        pageFlipReachedTargetRef.current = true
+      }
+    },
+    [pageTurn]
+  )
+
+  const handleFlipState = useCallback(
+    (event: PageFlipEvent<string>): void => {
+      if (
+        pageTurn &&
+        pageFlipStartedRef.current &&
+        pageFlipReachedTargetRef.current &&
+        event.data === 'read'
+      ) {
+        commitPageTurn()
+      }
+    },
+    [commitPageTurn, pageTurn]
+  )
+
   useEffect(() => {
     if (!pageTurn) return
 
-    const timeoutId = window.setTimeout(() => {
-      setDay(pageTurn.target)
-      onDayChange(pageTurn.target.dayKey)
-      setPageTurn(null)
-    }, pageTurn.durationMs)
-
+    const timeoutId = window.setTimeout(commitPageTurn, PAGE_FLIP_FALLBACK_MS)
     return () => window.clearTimeout(timeoutId)
-  }, [onDayChange, pageTurn])
+  }, [commitPageTurn, pageTurn])
 
   const handlePageKeyDown = useEffectEvent((event: KeyboardEvent): void => {
     if (
@@ -221,10 +299,6 @@ export function DiaryReader({
     )
   }
 
-  const pageStageStyle = pageTurn
-    ? ({ '--diary-page-turn-duration': `${pageTurn.durationMs}ms` } as CSSProperties)
-    : undefined
-
   return (
     <section className="space-y-5">
       <div className="diary-book-frame diary-premium-book diary-reader-book w-full">
@@ -249,23 +323,11 @@ export function DiaryReader({
         </button>
 
         <div
+          ref={pageStageRef}
           className="diary-reader-page-stage"
           data-turning={pageTurn ? 'true' : undefined}
           aria-busy={isLoading || pageTurn !== null || undefined}
-          style={pageStageStyle}
         >
-          {pageTurn?.direction === 'next' && (
-            <DiaryReaderPage
-              key={pageTurn.target.dayKey}
-              day={pageTurn.target}
-              diaryTitle={diary.title}
-              pageNumber={pageNumberFor(pageTurn.target.dayKey)}
-              pageCount={orderedDays.length}
-              className="diary-reader-page-layer--under"
-              ariaHidden
-            />
-          )}
-
           {day && (
             <DiaryReaderPage
               key={day.dayKey}
@@ -273,27 +335,86 @@ export function DiaryReader({
               diaryTitle={diary.title}
               pageNumber={pageNumberFor(day.dayKey)}
               pageCount={orderedDays.length}
-              className={
-                pageTurn?.direction === 'next'
-                  ? 'diary-reader-page-layer--turn-next'
-                  : pageTurn?.direction === 'previous'
-                    ? 'diary-reader-page-layer--under'
-                    : undefined
-              }
-              ariaHidden={pageTurn?.direction === 'previous'}
+              className="diary-reader-page-layer--static"
             />
           )}
 
-          {pageTurn?.direction === 'previous' && (
-            <DiaryReaderPage
-              key={pageTurn.target.dayKey}
-              day={pageTurn.target}
-              diaryTitle={diary.title}
-              pageNumber={pageNumberFor(pageTurn.target.dayKey)}
-              pageCount={orderedDays.length}
-              className="diary-reader-page-layer--turn-previous"
-              ariaHidden
-            />
+          {day && pageTurn && (
+            <HTMLFlipBook
+              key={`${day.dayKey}:${pageTurn.target.dayKey}:${pageTurn.direction}`}
+              className="diary-reader-page-flip"
+              style={{ width: '100%', height: '100%' }}
+              width={1200}
+              height={760}
+              size="stretch"
+              minWidth={320}
+              maxWidth={2400}
+              minHeight={420}
+              maxHeight={1600}
+              startPage={pageTurn.direction === 'next' ? 0 : 1}
+              drawShadow
+              flippingTime={PAGE_FLIP_DURATION_MS}
+              usePortrait
+              startZIndex={20}
+              autoSize={false}
+              maxShadowOpacity={0.46}
+              showCover={false}
+              mobileScrollSupport
+              clickEventForward={false}
+              useMouseEvents={false}
+              swipeDistance={30}
+              showPageCorners={false}
+              disableFlipByClick
+              onInit={handleFlipInit}
+              onFlip={handleFlip}
+              onChangeState={handleFlipState}
+            >
+              {pageTurn.direction === 'next' ? (
+                <DiaryReaderPage
+                  key={`flip-current-${day.dayKey}`}
+                  day={day}
+                  diaryTitle={diary.title}
+                  pageNumber={pageNumberFor(day.dayKey)}
+                  pageCount={orderedDays.length}
+                  className="diary-reader-page-layer--flip"
+                  initialScrollTop={pageTurn.sourceScrollTop}
+                  ariaHidden
+                />
+              ) : (
+                <DiaryReaderPage
+                  key={`flip-target-${pageTurn.target.dayKey}`}
+                  day={pageTurn.target}
+                  diaryTitle={diary.title}
+                  pageNumber={pageNumberFor(pageTurn.target.dayKey)}
+                  pageCount={orderedDays.length}
+                  className="diary-reader-page-layer--flip"
+                  ariaHidden
+                />
+              )}
+
+              {pageTurn.direction === 'next' ? (
+                <DiaryReaderPage
+                  key={`flip-target-${pageTurn.target.dayKey}`}
+                  day={pageTurn.target}
+                  diaryTitle={diary.title}
+                  pageNumber={pageNumberFor(pageTurn.target.dayKey)}
+                  pageCount={orderedDays.length}
+                  className="diary-reader-page-layer--flip"
+                  ariaHidden
+                />
+              ) : (
+                <DiaryReaderPage
+                  key={`flip-current-${day.dayKey}`}
+                  day={day}
+                  diaryTitle={diary.title}
+                  pageNumber={pageNumberFor(day.dayKey)}
+                  pageCount={orderedDays.length}
+                  className="diary-reader-page-layer--flip"
+                  initialScrollTop={pageTurn.sourceScrollTop}
+                  ariaHidden
+                />
+              )}
+            </HTMLFlipBook>
           )}
         </div>
 
@@ -322,25 +443,40 @@ export function DiaryReader({
   )
 }
 
-function DiaryReaderPage({
-  day,
-  diaryTitle,
-  pageNumber,
-  pageCount,
-  className,
-  ariaHidden = false
-}: {
+interface DiaryReaderPageProps {
   day: DiaryDay
   diaryTitle: string
   pageNumber: number
   pageCount: number
   className?: string
+  initialScrollTop?: number
   ariaHidden?: boolean
-}): React.JSX.Element {
+}
+
+const DiaryReaderPage = forwardRef<HTMLElement, DiaryReaderPageProps>(function DiaryReaderPage(
+  {
+    day,
+    diaryTitle,
+    pageNumber,
+    pageCount,
+    className,
+    initialScrollTop = 0,
+    ariaHidden = false
+  },
+  ref
+): React.JSX.Element {
   const mood = day.mood ? diaryMoodMeta[day.mood] : null
+  const scrollViewportRef = useRef<HTMLDivElement>(null)
+
+  useLayoutEffect(() => {
+    if (scrollViewportRef.current) {
+      scrollViewportRef.current.scrollTop = initialScrollTop
+    }
+  }, [day.dayKey, initialScrollTop])
 
   return (
     <article
+      ref={ref}
       aria-hidden={ariaHidden || undefined}
       className={`diary-paper diary-premium-paper diary-paper--reader diary-reader-page-layer overflow-hidden border ${className ?? ''}`}
     >
@@ -373,7 +509,7 @@ function DiaryReaderPage({
           </div>
         </header>
 
-        <div className="diary-reader-scroll-viewport">
+        <div ref={scrollViewportRef} className="diary-reader-scroll-viewport">
           <div className="diary-ruled-surface diary-ruled-content diary-reader-ruled-sheet">
             {day.entries.length === 0 ? (
               <div className="flex min-h-[324px] items-center justify-center pl-20 text-center max-[620px]:pl-8">
@@ -394,4 +530,4 @@ function DiaryReaderPage({
       </div>
     </article>
   )
-}
+})
