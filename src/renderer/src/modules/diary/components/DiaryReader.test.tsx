@@ -1,62 +1,39 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { DiaryDay, DiaryDaySummary, DiarySummary } from '../../../../../shared/contracts/diary'
 
 const mocks = vi.hoisted(() => ({
   listDays: vi.fn(),
-  getDay: vi.fn()
+  getDay: vi.fn(),
+  completeCurl: null as (() => void) | null
 }))
 
 vi.mock('../api/diary-client', () => ({ diaryClient: mocks }))
 
-vi.mock('react-pageflip', async () => {
+vi.mock('./DiaryPageCurlOverlay', async () => {
   const React = await vi.importActual<typeof import('react')>('react')
 
-  type FlipController = {
-    flipNext: () => void
-    flipPrev: () => void
+  type MockCurlProps = {
+    turn: { id: string } | null
+    onComplete: () => void
   }
 
-  type FlipEvent<T> = {
-    data: T
-    object: FlipController
-  }
-
-  type MockFlipBookProps = {
-    children: import('react').ReactNode
-    startPage: number
-    onInit?: (event: FlipEvent<{ page: number; mode: 'portrait' }>) => void
-    onFlip?: (event: FlipEvent<number>) => void
-    onChangeState?: (event: FlipEvent<string>) => void
-  }
-
-  function MockFlipBook(props: MockFlipBookProps): import('react').ReactElement {
-    const controller = React.useMemo<FlipController>(() => {
-      const nextController: FlipController = {
-        flipNext: () => {
-          props.onFlip?.({ data: 1, object: nextController })
-          props.onChangeState?.({ data: 'read', object: nextController })
-        },
-        flipPrev: () => {
-          props.onFlip?.({ data: 0, object: nextController })
-          props.onChangeState?.({ data: 'read', object: nextController })
-        }
-      }
-      return nextController
-    }, [props.onChangeState, props.onFlip])
-
+  function MockCurlOverlay({ turn, onComplete }: MockCurlProps): import('react').ReactElement {
     React.useEffect(() => {
-      props.onInit?.({
-        data: { page: props.startPage, mode: 'portrait' },
-        object: controller
-      })
-    }, [controller, props.onInit, props.startPage])
+      mocks.completeCurl = turn ? onComplete : null
+      return () => {
+        if (mocks.completeCurl === onComplete) mocks.completeCurl = null
+      }
+    }, [onComplete, turn])
 
-    return React.createElement('div', { 'data-testid': 'mock-pageflip' }, props.children)
+    return React.createElement('div', {
+      'data-testid': 'mock-page-curl',
+      'data-active': turn ? 'true' : 'false'
+    })
   }
 
-  return { default: MockFlipBook }
+  return { DiaryPageCurlOverlay: MockCurlOverlay }
 })
 
 import { DiaryReader } from './DiaryReader'
@@ -124,6 +101,7 @@ const pages: Record<string, DiaryDay> = {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mocks.completeCurl = null
   mocks.listDays.mockResolvedValue(days)
   mocks.getDay.mockImplementation(({ dayKey }: { dayKey: string }) =>
     Promise.resolve(pages[dayKey] ?? null)
@@ -144,14 +122,14 @@ describe('DiaryReader', () => {
     const entry = await screen.findByText('Первая страница')
     const ruledSheet = entry.closest('.diary-reader-ruled-sheet')
     const viewport = ruledSheet?.parentElement
-    const masthead = screen.getByText('Личный дневник').closest('header')
+    const masthead = screen.getByRole('heading', { name: /8 августа 2026/i }).closest('header')
 
     expect(ruledSheet).toHaveClass('diary-ruled-surface')
     expect(viewport).toHaveClass('diary-reader-scroll-viewport')
     expect(viewport).not.toContainElement(masthead)
   })
 
-  it('commits a keyboard page turn after StPageFlip finishes the page curl', async () => {
+  it('commits a keyboard page turn only after the WebGL curl completes', async () => {
     const onDayChange = vi.fn()
 
     render(
@@ -175,9 +153,17 @@ describe('DiaryReader', () => {
       })
     )
 
-    expect(await screen.findByTestId('mock-pageflip')).toBeInTheDocument()
+    await waitFor(() =>
+      expect(screen.getByTestId('mock-page-curl')).toHaveAttribute('data-active', 'true')
+    )
+    expect(onDayChange).toHaveBeenLastCalledWith('2026-08-08')
+    expect(mocks.completeCurl).not.toBeNull()
+
+    act(() => {
+      mocks.completeCurl?.()
+    })
 
     await waitFor(() => expect(onDayChange).toHaveBeenLastCalledWith('2026-08-09'))
-    expect(screen.getByText('Вторая страница')).toBeInTheDocument()
+    expect(await screen.findByText('Вторая страница')).toBeInTheDocument()
   })
 })
