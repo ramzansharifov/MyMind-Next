@@ -1,4 +1,4 @@
-name: Prepare Three.js diary page curl dependencies
+name: Verify Three.js diary page curl
 
 on:
   push:
@@ -8,10 +8,10 @@ on:
       - .github/workflows/prepare-threejs-diary-curl.yml
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  dependencies:
+  verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,15 +22,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --ignore-scripts
-      - name: Replace pageflip with Three.js page-curl dependencies
-        run: |
-          npm uninstall react-pageflip --ignore-scripts
-          npm install --save-exact three@0.185.1 modern-screenshot@4.7.0 --ignore-scripts
-          npm install --save-dev --save-exact @types/three@0.185.1 --ignore-scripts
-      - name: Commit dependency metadata
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package.json package-lock.json
-          git commit -m "Replace diary pageflip dependency with Three.js curl stack"
-          git push origin HEAD:agent/threejs-diary-page-curl
+      - run: npx prettier --check src/renderer/src/modules/diary/components/DiaryReader.tsx src/renderer/src/modules/diary/components/DiaryPageCurlOverlay.tsx src/renderer/src/modules/diary/components/DiaryReader.test.tsx src/renderer/src/modules/diary/diary-reader-behavior.css
+      - run: npx eslint src/renderer/src/modules/diary/components/DiaryReader.tsx src/renderer/src/modules/diary/components/DiaryPageCurlOverlay.tsx src/renderer/src/modules/diary/components/DiaryReader.test.tsx
+      - run: npm run typecheck:web
+      - run: npx vitest run src/renderer/src/modules/diary/components/DiaryReader.test.tsx
+      - run: npm run build:bundle
