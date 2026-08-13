@@ -34,7 +34,7 @@ jobs:
 
           css_path = Path('src/renderer/src/modules/diary/diary-reader-behavior.css')
           css = css_path.read_text(encoding='utf-8')
-          obsolete = '''\n.diary-reader-page-stage:has(.diary-reader-page-flip--mirrored)\n  .diary-reader-page-layer--static {\n  visibility: hidden;\n}\n'''
+          obsolete = '''\n.diary-reader-page-stage:has(.diary-reader-page-flip--mirrored) .diary-reader-page-layer--static {\n  visibility: hidden;\n}\n'''
           if obsolete not in css:
               raise SystemExit('Expected obsolete backward visibility rule not found')
           css = css.replace(obsolete, '\n', 1)
