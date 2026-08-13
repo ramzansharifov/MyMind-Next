@@ -79,14 +79,6 @@ export function DiaryReader({
       ? orderedDays[currentIndex + 1]
       : null
 
-  const pageNumberFor = useCallback(
-    (dayKey: string): number => {
-      const index = orderedDays.findIndex((item) => item.dayKey === dayKey)
-      return Math.max(1, index + 1)
-    },
-    [orderedDays]
-  )
-
   const loadDays = useCallback(async (): Promise<void> => {
     setIsLoading(true)
     setError(null)
@@ -302,6 +294,8 @@ export function DiaryReader({
     )
   }
 
+  const currentPageNumber = Math.max(1, currentIndex + 1)
+
   return (
     <section className="space-y-5">
       <div className="diary-book-frame diary-premium-book diary-reader-book w-full">
@@ -309,9 +303,9 @@ export function DiaryReader({
         <span
           className="diary-side-tab diary-reader-page-tab"
           tabIndex={0}
-          aria-label={`Страница ${Math.max(1, currentIndex + 1)} из ${orderedDays.length}`}
+          aria-label={`Страница ${currentPageNumber} из ${orderedDays.length}`}
         >
-          <span className="diary-reader-page-tab-current">{Math.max(1, currentIndex + 1)}</span>
+          <span className="diary-reader-page-tab-current">{currentPageNumber}</span>
           <span className="diary-reader-page-tab-total" aria-hidden="true">
             <span className="diary-reader-page-tab-separator"> / </span>
             {orderedDays.length}
@@ -343,8 +337,6 @@ export function DiaryReader({
             <DiaryReaderPage
               key={day.dayKey}
               day={day}
-              pageNumber={pageNumberFor(day.dayKey)}
-              pageCount={orderedDays.length}
               className="diary-reader-page-layer--static"
             />
           )}
@@ -386,8 +378,6 @@ export function DiaryReader({
               <DiaryReaderPage
                 key={`flip-current-${day.dayKey}`}
                 day={day}
-                pageNumber={pageNumberFor(day.dayKey)}
-                pageCount={orderedDays.length}
                 className="diary-reader-page-layer--flip"
                 initialScrollTop={pageTurn.sourceScrollTop}
                 ariaHidden
@@ -396,8 +386,6 @@ export function DiaryReader({
               <DiaryReaderPage
                 key={`flip-target-${pageTurn.target.dayKey}`}
                 day={pageTurn.target}
-                pageNumber={pageNumberFor(pageTurn.target.dayKey)}
-                pageCount={orderedDays.length}
                 className="diary-reader-page-layer--flip"
                 ariaHidden
               />
@@ -432,15 +420,13 @@ export function DiaryReader({
 
 interface DiaryReaderPageProps {
   day: DiaryDay
-  pageNumber: number
-  pageCount: number
   className?: string
   initialScrollTop?: number
   ariaHidden?: boolean
 }
 
 const DiaryReaderPage = forwardRef<HTMLElement, DiaryReaderPageProps>(function DiaryReaderPage(
-  { day, pageNumber, pageCount, className, initialScrollTop = 0, ariaHidden = false },
+  { day, className, initialScrollTop = 0, ariaHidden = false },
   ref
 ): React.JSX.Element {
   const mood = day.mood ? diaryMoodMeta[day.mood] : null
