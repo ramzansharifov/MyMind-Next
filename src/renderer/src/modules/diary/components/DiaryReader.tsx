@@ -1,15 +1,5 @@
 import { CalendarDays, ChevronLeft, ChevronRight, LoaderCircle } from 'lucide-react'
-import {
-  forwardRef,
-  useCallback,
-  useEffect,
-  useEffectEvent,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState
-} from 'react'
-import HTMLFlipBook from 'react-pageflip'
+import { forwardRef, useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
 
 import type { DiaryDay, DiaryDaySummary, DiarySummary } from '../../../../../shared/contracts/diary'
 import '../diary-premium.css'
@@ -22,28 +12,17 @@ import {
   formatDiaryTime,
   getDiaryErrorMessage
 } from '../lib/diary-ui'
+import {
+  DiaryPageCurlOverlay,
+  type DiaryPageCurlDirection,
+  type DiaryPageCurlTurn
+} from './DiaryPageCurlOverlay'
 
-const PAGE_FLIP_DURATION_MS = 980
-const PAGE_FLIP_FALLBACK_MS = PAGE_FLIP_DURATION_MS + 700
+const PAGE_CURL_DURATION_MS = 1120
 
-type PageTurnDirection = 'next' | 'previous'
-
-type PageFlipController = {
-  flipNext: (corner?: 'top' | 'bottom') => void
-  flipPrev: (corner?: 'top' | 'bottom') => void
-}
-
-type PageFlipEvent<T = unknown> = {
-  data: T
-  object: PageFlipController
-}
-
-interface PageTurnState {
+interface PageTurnState extends DiaryPageCurlTurn {
   target: DiaryDay
-  direction: PageTurnDirection
   sourceScrollTop: number
-  pageWidth: number
-  pageHeight: number
 }
 
 export function DiaryReader({
@@ -64,8 +43,8 @@ export function DiaryReader({
   const [error, setError] = useState<string | null>(null)
   const pageRequestPendingRef = useRef(false)
   const pageStageRef = useRef<HTMLDivElement>(null)
-  const pageFlipStartedRef = useRef(false)
-  const pageFlipReachedTargetRef = useRef(false)
+  const sourceCapturePageRef = useRef<HTMLElement>(null)
+  const targetCapturePageRef = useRef<HTMLElement>(null)
 
   const orderedDays = useMemo(
     () => days.slice().sort((left, right) => left.dayKey.localeCompare(right.dayKey)),
@@ -83,8 +62,6 @@ export function DiaryReader({
     setIsLoading(true)
     setError(null)
     setPageTurn(null)
-    pageFlipStartedRef.current = false
-    pageFlipReachedTargetRef.current = false
     try {
       const nextDays = await diaryClient.listDays({ diaryId: diary.id })
       setDays(nextDays)
@@ -111,9 +88,15 @@ export function DiaryReader({
     setDay(pageTurn.target)
     onDayChange(pageTurn.target.dayKey)
     setPageTurn(null)
-    pageFlipStartedRef.current = false
-    pageFlipReachedTargetRef.current = false
   }, [onDayChange, pageTurn])
+
+  const handlePageCurlError = useCallback(
+    (reason: unknown): void => {
+      setError(`Не удалось отрисовать перелистывание: ${getDiaryErrorMessage(reason)}`)
+      commitPageTurn()
+    },
+    [commitPageTurn]
+  )
 
   const openDay = useCallback(
     async (dayKey: string): Promise<void> => {
@@ -161,17 +144,17 @@ export function DiaryReader({
             '.diary-reader-page-layer--static .diary-reader-scroll-viewport'
           )?.scrollTop ?? 0
         const pageStageRect = pageStageRef.current?.getBoundingClientRect()
-        const pageWidth = Math.max(1, Math.round(pageStageRect?.width ?? 1200))
-        const pageHeight = Math.max(1, Math.round(pageStageRect?.height ?? 760))
+        const width = Math.max(1, Math.round(pageStageRect?.width ?? 1200))
+        const height = Math.max(1, Math.round(pageStageRect?.height ?? 760))
+        const direction: DiaryPageCurlDirection = targetIndex < sourceIndex ? 'previous' : 'next'
 
-        pageFlipStartedRef.current = false
-        pageFlipReachedTargetRef.current = false
         setPageTurn({
+          id: `${day.dayKey}:${nextPage.dayKey}:${Date.now()}`,
           target: nextPage,
-          direction: targetIndex < sourceIndex ? 'previous' : 'next',
+          direction,
           sourceScrollTop,
-          pageWidth,
-          pageHeight
+          width,
+          height
         })
       } catch (reason) {
         setError(getDiaryErrorMessage(reason))
@@ -182,51 +165,6 @@ export function DiaryReader({
     },
     [day, diary.id, onDayChange, orderedDays, pageTurn]
   )
-
-  const handleFlipInit = useCallback(
-    (event: PageFlipEvent): void => {
-      if (!pageTurn || pageFlipStartedRef.current) return
-
-      pageFlipStartedRef.current = true
-      window.requestAnimationFrame(() => {
-        event.object.flipNext('bottom')
-      })
-    },
-    [pageTurn]
-  )
-
-  const handleFlip = useCallback(
-    (event: PageFlipEvent<number>): void => {
-      if (!pageTurn || !pageFlipStartedRef.current) return
-
-      const targetIndex = 1
-      if (Number(event.data) === targetIndex) {
-        pageFlipReachedTargetRef.current = true
-      }
-    },
-    [pageTurn]
-  )
-
-  const handleFlipState = useCallback(
-    (event: PageFlipEvent<string>): void => {
-      if (
-        pageTurn &&
-        pageFlipStartedRef.current &&
-        pageFlipReachedTargetRef.current &&
-        event.data === 'read'
-      ) {
-        commitPageTurn()
-      }
-    },
-    [commitPageTurn, pageTurn]
-  )
-
-  useEffect(() => {
-    if (!pageTurn) return
-
-    const timeoutId = window.setTimeout(commitPageTurn, PAGE_FLIP_FALLBACK_MS)
-    return () => window.clearTimeout(timeoutId)
-  }, [commitPageTurn, pageTurn])
 
   const handlePageKeyDown = useEffectEvent((event: KeyboardEvent): void => {
     if (
@@ -335,62 +273,44 @@ export function DiaryReader({
         >
           {day && (
             <DiaryReaderPage
-              key={pageTurn?.target.dayKey ?? day.dayKey}
-              day={pageTurn?.target ?? day}
+              key={day.dayKey}
+              day={day}
               className="diary-reader-page-layer--static"
             />
           )}
 
           {day && pageTurn && (
-            <HTMLFlipBook
-              key={`${day.dayKey}:${pageTurn.target.dayKey}:${pageTurn.direction}`}
-              className={
-                pageTurn.direction === 'previous'
-                  ? 'diary-reader-page-flip diary-reader-page-flip--mirrored'
-                  : 'diary-reader-page-flip'
-              }
-              style={{ width: '100%', height: '100%' }}
-              width={pageTurn.pageWidth}
-              height={pageTurn.pageHeight}
-              size="fixed"
-              minWidth={pageTurn.pageWidth}
-              maxWidth={pageTurn.pageWidth}
-              minHeight={pageTurn.pageHeight}
-              maxHeight={pageTurn.pageHeight}
-              startPage={0}
-              drawShadow
-              flippingTime={PAGE_FLIP_DURATION_MS}
-              usePortrait
-              startZIndex={20}
-              autoSize={false}
-              maxShadowOpacity={0.46}
-              showCover={false}
-              mobileScrollSupport
-              clickEventForward={false}
-              useMouseEvents={false}
-              swipeDistance={30}
-              showPageCorners={false}
-              disableFlipByClick
-              onInit={handleFlipInit}
-              onFlip={handleFlip}
-              onChangeState={handleFlipState}
+            <div
+              className="diary-reader-capture-pages"
+              style={{ width: pageTurn.width, height: pageTurn.height }}
+              aria-hidden="true"
             >
               <DiaryReaderPage
-                key={`flip-current-${day.dayKey}`}
+                ref={sourceCapturePageRef}
                 day={day}
-                className="diary-reader-page-layer--flip"
-                initialScrollTop={pageTurn.sourceScrollTop}
+                className="diary-reader-page-layer--capture"
+                snapshotMode
+                snapshotScrollTop={pageTurn.sourceScrollTop}
                 ariaHidden
               />
-
               <DiaryReaderPage
-                key={`flip-target-${pageTurn.target.dayKey}`}
+                ref={targetCapturePageRef}
                 day={pageTurn.target}
-                className="diary-reader-page-layer--flip"
+                className="diary-reader-page-layer--capture"
+                snapshotMode
                 ariaHidden
               />
-            </HTMLFlipBook>
+            </div>
           )}
+
+          <DiaryPageCurlOverlay
+            turn={pageTurn}
+            sourcePageRef={sourceCapturePageRef}
+            targetPageRef={targetCapturePageRef}
+            durationMs={PAGE_CURL_DURATION_MS}
+            onComplete={commitPageTurn}
+            onError={handlePageCurlError}
+          />
         </div>
 
         <button
@@ -421,22 +341,20 @@ export function DiaryReader({
 interface DiaryReaderPageProps {
   day: DiaryDay
   className?: string
-  initialScrollTop?: number
+  snapshotMode?: boolean
+  snapshotScrollTop?: number
   ariaHidden?: boolean
 }
 
 const DiaryReaderPage = forwardRef<HTMLElement, DiaryReaderPageProps>(function DiaryReaderPage(
-  { day, className, initialScrollTop = 0, ariaHidden = false },
+  { day, className, snapshotMode = false, snapshotScrollTop = 0, ariaHidden = false },
   ref
 ): React.JSX.Element {
   const mood = day.mood ? diaryMoodMeta[day.mood] : null
-  const scrollViewportRef = useRef<HTMLDivElement>(null)
-
-  useLayoutEffect(() => {
-    if (scrollViewportRef.current) {
-      scrollViewportRef.current.scrollTop = initialScrollTop
-    }
-  }, [day.dayKey, initialScrollTop])
+  const ruledSheetStyle =
+    snapshotMode && snapshotScrollTop > 0
+      ? { transform: `translateY(-${snapshotScrollTop}px)` }
+      : undefined
 
   return (
     <article
@@ -471,8 +389,13 @@ const DiaryReaderPage = forwardRef<HTMLElement, DiaryReaderPageProps>(function D
           </div>
         </header>
 
-        <div ref={scrollViewportRef} className="diary-reader-scroll-viewport">
-          <div className="diary-ruled-surface diary-ruled-content diary-reader-ruled-sheet">
+        <div
+          className={`diary-reader-scroll-viewport${snapshotMode ? ' diary-reader-scroll-viewport--snapshot' : ''}`}
+        >
+          <div
+            className="diary-ruled-surface diary-ruled-content diary-reader-ruled-sheet"
+            style={ruledSheetStyle}
+          >
             {day.entries.length === 0 ? (
               <div className="flex min-h-[324px] items-center justify-center pl-20 text-center max-[620px]:pl-8">
                 <p className="font-serif text-sm text-stone-500 italic">
