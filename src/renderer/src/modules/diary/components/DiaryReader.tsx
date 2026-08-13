@@ -306,8 +306,16 @@ export function DiaryReader({
     <section className="space-y-5">
       <div className="diary-book-frame diary-premium-book diary-reader-book w-full">
         <span className="diary-back-binding" aria-hidden="true" />
-        <span className="diary-side-tab" aria-hidden="true">
-          Просмотр
+        <span
+          className="diary-side-tab diary-reader-page-tab"
+          tabIndex={0}
+          aria-label={`Страница ${Math.max(1, currentIndex + 1)} из ${orderedDays.length}`}
+        >
+          <span className="diary-reader-page-tab-current">{Math.max(1, currentIndex + 1)}</span>
+          <span className="diary-reader-page-tab-total" aria-hidden="true">
+            <span className="diary-reader-page-tab-separator"> / </span>
+            {orderedDays.length}
+          </span>
         </span>
         <span className="diary-bookmark-ribbon" aria-hidden="true">
           <span>✦</span>
@@ -335,7 +343,6 @@ export function DiaryReader({
             <DiaryReaderPage
               key={day.dayKey}
               day={day}
-              diaryTitle={diary.title}
               pageNumber={pageNumberFor(day.dayKey)}
               pageCount={orderedDays.length}
               className="diary-reader-page-layer--static"
@@ -379,7 +386,6 @@ export function DiaryReader({
               <DiaryReaderPage
                 key={`flip-current-${day.dayKey}`}
                 day={day}
-                diaryTitle={diary.title}
                 pageNumber={pageNumberFor(day.dayKey)}
                 pageCount={orderedDays.length}
                 className="diary-reader-page-layer--flip"
@@ -390,7 +396,6 @@ export function DiaryReader({
               <DiaryReaderPage
                 key={`flip-target-${pageTurn.target.dayKey}`}
                 day={pageTurn.target}
-                diaryTitle={diary.title}
                 pageNumber={pageNumberFor(pageTurn.target.dayKey)}
                 pageCount={orderedDays.length}
                 className="diary-reader-page-layer--flip"
@@ -427,7 +432,6 @@ export function DiaryReader({
 
 interface DiaryReaderPageProps {
   day: DiaryDay
-  diaryTitle: string
   pageNumber: number
   pageCount: number
   className?: string
@@ -436,7 +440,7 @@ interface DiaryReaderPageProps {
 }
 
 const DiaryReaderPage = forwardRef<HTMLElement, DiaryReaderPageProps>(function DiaryReaderPage(
-  { day, diaryTitle, pageNumber, pageCount, className, initialScrollTop = 0, ariaHidden = false },
+  { day, pageNumber, pageCount, className, initialScrollTop = 0, ariaHidden = false },
   ref
 ): React.JSX.Element {
   const mood = day.mood ? diaryMoodMeta[day.mood] : null
@@ -458,13 +462,11 @@ const DiaryReaderPage = forwardRef<HTMLElement, DiaryReaderPageProps>(function D
         <header className="diary-paper-header diary-paper-masthead diary-premium-masthead border-b border-stone-300/70 px-11 max-[700px]:px-7 max-[620px]:px-6">
           <div className="flex items-start justify-between gap-8 max-[640px]:flex-col max-[640px]:gap-4">
             <div className="min-w-0 flex-1">
-              <div className="diary-premium-kicker">{diaryTitle}</div>
-              <h3 className="diary-premium-date capitalize">{formatDiaryDate(day.dayKey)}</h3>
+              <h3 className="diary-premium-date diary-reader-date capitalize">
+                {formatDiaryDate(day.dayKey)}
+              </h3>
             </div>
             <div className="diary-reader-meta max-[640px]:items-start">
-              <div className="text-[11px] tracking-wide text-stone-400 uppercase">
-                Страница {pageNumber} из {pageCount}
-              </div>
               <div className="diary-reader-mood">
                 {mood ? (
                   <>
