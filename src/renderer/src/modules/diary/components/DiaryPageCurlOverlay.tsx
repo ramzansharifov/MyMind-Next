@@ -58,6 +58,8 @@ interface CurlSceneResources {
   dispose: () => void
 }
 
+type RendererPrecision = 'highp' | 'mediump' | 'lowp'
+
 const PAGE_WIDTH_SEGMENTS = 80
 const PAGE_HEIGHT_SEGMENTS = 32
 const PAGE_SOFTNESS = 0.78
@@ -138,6 +140,79 @@ function createTexture(canvas: HTMLCanvasElement): CanvasTexture {
   texture.magFilter = LinearFilter
   texture.needsUpdate = true
   return texture
+}
+
+function readShaderPrecision(
+  context: WebGL2RenderingContext,
+  shaderType: number,
+  precisionType: number
+): number | null {
+  try {
+    return context.getShaderPrecisionFormat(shaderType, precisionType)?.precision ?? null
+  } catch {
+    return null
+  }
+}
+
+function resolveRendererPrecision(context: WebGL2RenderingContext): RendererPrecision {
+  const vertexHigh = readShaderPrecision(context, context.VERTEX_SHADER, context.HIGH_FLOAT)
+  const fragmentHigh = readShaderPrecision(context, context.FRAGMENT_SHADER, context.HIGH_FLOAT)
+
+  if (vertexHigh !== null && fragmentHigh !== null && vertexHigh > 0 && fragmentHigh > 0) {
+    return 'highp'
+  }
+
+  const vertexMedium = readShaderPrecision(context, context.VERTEX_SHADER, context.MEDIUM_FLOAT)
+  const fragmentMedium = readShaderPrecision(context, context.FRAGMENT_SHADER, context.MEDIUM_FLOAT)
+
+  if (
+    vertexMedium !== null &&
+    fragmentMedium !== null &&
+    vertexMedium > 0 &&
+    fragmentMedium > 0
+  ) {
+    return 'mediump'
+  }
+
+  // Some Chromium/Electron GPU paths expose a usable WebGL2 context while
+  // getShaderPrecisionFormat() returns null. Three.js r185 dereferences that
+  // result for highp/mediump. lowp bypasses that capability probe entirely.
+  return 'lowp'
+}
+
+function createPageCurlRenderer(canvas: HTMLCanvasElement): WebGLRenderer {
+  const contextAttributes: WebGLContextAttributes = {
+    alpha: true,
+    antialias: true,
+    depth: true,
+    stencil: false,
+    premultipliedAlpha: true,
+    preserveDrawingBuffer: false,
+    failIfMajorPerformanceCaveat: false,
+    powerPreference: 'default'
+  }
+  const context = canvas.getContext('webgl2', contextAttributes)
+
+  if (!context || context.isContextLost()) {
+    throw new Error('WebGL2 недоступен. Перелистывание будет выполнено без 3D-анимации.')
+  }
+
+  const version = context.getParameter(context.VERSION)
+  if (typeof version !== 'string' || version.length === 0) {
+    throw new Error('WebGL2-контекст инициализирован некорректно.')
+  }
+
+  const renderer = new WebGLRenderer({
+    canvas,
+    context,
+    precision: resolveRendererPrecision(context),
+    alpha: true,
+    antialias: true,
+    powerPreference: 'default'
+  })
+  renderer.outputColorSpace = SRGBColorSpace
+  renderer.setClearColor(0x000000, 0)
+  return renderer
 }
 
 function createCurlScene(
@@ -279,12 +354,21 @@ function updateCurlGeometry(
     const sweepAngle = Math.PI * localProgress
 
     const belly =
-      Math.sin(Math.PI * u) * Math.sin(Math.PI * v) * phase * PAGE_SOFTNESS * minDimension * 0.042
-    const verticalTwist = (v - 0.5) * Math.sin(Math.PI * u) * phase * PAGE_SOFTNESS * height * 0.022
+      Math.sin(Math.PI * u) *
+      Math.sin(Math.PI * v) *
+      phase *
+      PAGE_SOFTNESS *
+      minDimension *
+      0.042
+    const verticalTwist =
+      (v - 0.5) * Math.sin(Math.PI * u) * phase * PAGE_SOFTNESS * height * 0.022
 
     const x = hingeX + directionSign * distanceFromHinge * Math.cos(sweepAngle)
     const y = originalY + directionSign * verticalTwist
-    const z = Math.max(0, distanceFromHinge * Math.sin(sweepAngle) * PAGE_LIFT_SCALE + belly)
+    const z = Math.max(
+      0,
+      distanceFromHinge * Math.sin(sweepAngle) * PAGE_LIFT_SCALE + belly
+    )
 
     pagePositions.setXYZ(index, x, y, z)
 
@@ -322,34 +406,19 @@ export function DiaryPageCurlOverlay({
   const [isVisible, setIsVisible] = useState(false)
 
   useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-
-    const renderer = new WebGLRenderer({
-      canvas,
-      alpha: true,
-      antialias: true,
-      powerPreference: 'high-performance'
-    })
-    renderer.outputColorSpace = SRGBColorSpace
-    renderer.setClearColor(0x000000, 0)
-    rendererRef.current = renderer
-
     return () => {
       if (animationFrameRef.current !== null) {
         window.cancelAnimationFrame(animationFrameRef.current)
       }
       resourcesRef.current?.dispose()
       resourcesRef.current = null
-      renderer.dispose()
-      renderer.forceContextLoss()
+      rendererRef.current?.dispose()
       rendererRef.current = null
     }
   }, [])
 
   useEffect(() => {
-    const renderer = rendererRef.current
-    if (!turn || !renderer) {
+    if (!turn) {
       setIsVisible(false)
       return
     }
@@ -370,10 +439,17 @@ export function DiaryPageCurlOverlay({
         await nextPaint()
         if (cancelled || runId !== runIdRef.current) return
 
+        const canvas = canvasRef.current
         const sourceElement = sourcePageRef.current
         const targetElement = targetPageRef.current
-        if (!sourceElement || !targetElement) {
+        if (!canvas || !sourceElement || !targetElement) {
           throw new Error('Не удалось подготовить DOM-страницы для перелистывания.')
+        }
+
+        let renderer = rendererRef.current
+        if (!renderer) {
+          renderer = createPageCurlRenderer(canvas)
+          rendererRef.current = renderer
         }
 
         const [sourceCanvas, targetCanvas] = await Promise.all([
