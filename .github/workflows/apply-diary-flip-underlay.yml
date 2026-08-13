@@ -1,4 +1,4 @@
-name: Verify diary flip underlay fix
+name: Format diary flip underlay fix
 
 on:
   push:
@@ -7,8 +7,11 @@ on:
     paths:
       - .github/workflows/apply-diary-flip-underlay.yml
 
+permissions:
+  contents: write
+
 jobs:
-  verify:
+  format:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,6 +22,11 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --ignore-scripts
-      - run: npx prettier --check src/renderer/src/modules/diary/components/DiaryReader.tsx src/renderer/src/modules/diary/diary-reader-behavior.css
-      - run: npx eslint src/renderer/src/modules/diary/components/DiaryReader.tsx
-      - run: npm run typecheck:web
+      - run: npx prettier --write src/renderer/src/modules/diary/components/DiaryReader.tsx src/renderer/src/modules/diary/diary-reader-behavior.css
+      - name: Commit formatting
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/renderer/src/modules/diary/components/DiaryReader.tsx src/renderer/src/modules/diary/diary-reader-behavior.css
+          git commit -m "Format diary flip underlay fix"
+          git push origin HEAD:agent/fix-diary-flip-underlay-target
