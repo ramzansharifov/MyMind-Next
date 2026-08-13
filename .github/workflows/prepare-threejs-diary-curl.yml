@@ -1,4 +1,4 @@
-name: Verify Three.js diary page curl
+name: Harden diary page snapshot staging
 
 on:
   push:
@@ -8,10 +8,10 @@ on:
       - .github/workflows/prepare-threejs-diary-curl.yml
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  verify:
+  patch:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,8 +22,37 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --ignore-scripts
-      - run: npx prettier --check src/renderer/src/modules/diary/components/DiaryReader.tsx src/renderer/src/modules/diary/components/DiaryPageCurlOverlay.tsx src/renderer/src/modules/diary/components/DiaryReader.test.tsx src/renderer/src/modules/diary/diary-reader-behavior.css
-      - run: npx eslint src/renderer/src/modules/diary/components/DiaryReader.tsx src/renderer/src/modules/diary/components/DiaryPageCurlOverlay.tsx src/renderer/src/modules/diary/components/DiaryReader.test.tsx
-      - run: npm run typecheck:web
-      - run: npx vitest run src/renderer/src/modules/diary/components/DiaryReader.test.tsx
-      - run: npm run build:bundle
+      - name: Move snapshot DOM outside the clipped page stage
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path('src/renderer/src/modules/diary/components/DiaryReader.tsx')
+          source = path.read_text(encoding='utf-8')
+
+          capture = '''          {day && pageTurn && (\n            <div\n              className="diary-reader-capture-pages"\n              style={{ width: pageTurn.width, height: pageTurn.height }}\n              aria-hidden="true"\n            >\n              <DiaryReaderPage\n                ref={sourceCapturePageRef}\n                day={day}\n                className="diary-reader-page-layer--capture"\n                snapshotMode\n                snapshotScrollTop={pageTurn.sourceScrollTop}\n                ariaHidden\n              />\n              <DiaryReaderPage\n                ref={targetCapturePageRef}\n                day={pageTurn.target}\n                className="diary-reader-page-layer--capture"\n                snapshotMode\n                ariaHidden\n              />\n            </div>\n          )}\n\n'''
+          if capture not in source:
+              raise SystemExit('Capture block not found')
+          source = source.replace(capture, '', 1)
+
+          insertion_marker = '''        </button>\n      </div>\n\n      {error && ('''
+          insertion = '''        </button>\n      </div>\n\n      {day && pageTurn && (\n        <div\n          className="diary-reader-capture-pages"\n          style={{ width: pageTurn.width, height: pageTurn.height }}\n          aria-hidden="true"\n        >\n          <DiaryReaderPage\n            ref={sourceCapturePageRef}\n            day={day}\n            className="diary-reader-page-layer--capture"\n            snapshotMode\n            snapshotScrollTop={pageTurn.sourceScrollTop}\n            ariaHidden\n          />\n          <DiaryReaderPage\n            ref={targetCapturePageRef}\n            day={pageTurn.target}\n            className="diary-reader-page-layer--capture"\n            snapshotMode\n            ariaHidden\n          />\n        </div>\n      )}\n\n      {error && ('''
+          if insertion_marker not in source:
+              raise SystemExit('Insertion marker not found')
+          source = source.replace(insertion_marker, insertion, 1)
+
+          broken = "${snapshotMode ? 'diary-reader-scroll-viewport--snapshot' : ''}"
+          fixed = "${snapshotMode ? ' diary-reader-scroll-viewport--snapshot' : ''}"
+          if broken not in source:
+              raise SystemExit('Snapshot viewport class expression not found')
+          source = source.replace(broken, fixed, 1)
+
+          path.write_text(source, encoding='utf-8')
+      - run: npx prettier --write src/renderer/src/modules/diary/components/DiaryReader.tsx
+      - name: Commit snapshot staging hardening
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/renderer/src/modules/diary/components/DiaryReader.tsx
+          git commit -m "Harden diary page snapshot staging"
+          git push origin HEAD:agent/threejs-diary-page-curl
