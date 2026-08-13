@@ -153,7 +153,9 @@ describe('DiaryReader', () => {
       })
     )
 
-    await waitFor(() => expect(screen.getByTestId('mock-page-curl')).toHaveAttribute('data-active', 'true'))
+    await waitFor(() =>
+      expect(screen.getByTestId('mock-page-curl')).toHaveAttribute('data-active', 'true')
+    )
     expect(onDayChange).toHaveBeenLastCalledWith('2026-08-08')
     expect(mocks.completeCurl).not.toBeNull()
 

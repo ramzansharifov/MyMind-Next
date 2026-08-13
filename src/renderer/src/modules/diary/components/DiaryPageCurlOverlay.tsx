@@ -163,12 +163,7 @@ function createCurlScene(
   targetMesh.frustumCulled = false
   scene.add(targetMesh)
 
-  const pageGeometry = new PlaneGeometry(
-    width,
-    height,
-    PAGE_WIDTH_SEGMENTS,
-    PAGE_HEIGHT_SEGMENTS
-  )
+  const pageGeometry = new PlaneGeometry(width, height, PAGE_WIDTH_SEGMENTS, PAGE_HEIGHT_SEGMENTS)
   const pagePositions = pageGeometry.getAttribute('position') as BufferAttribute
   pagePositions.setUsage(DynamicDrawUsage)
   const originalPositions = new Float32Array(pagePositions.array as ArrayLike<number>)
@@ -284,34 +279,19 @@ function updateCurlGeometry(
     const sweepAngle = Math.PI * localProgress
 
     const belly =
-      Math.sin(Math.PI * u) *
-      Math.sin(Math.PI * v) *
-      phase *
-      PAGE_SOFTNESS *
-      minDimension *
-      0.042
-    const verticalTwist =
-      (v - 0.5) *
-      Math.sin(Math.PI * u) *
-      phase *
-      PAGE_SOFTNESS *
-      height *
-      0.022
+      Math.sin(Math.PI * u) * Math.sin(Math.PI * v) * phase * PAGE_SOFTNESS * minDimension * 0.042
+    const verticalTwist = (v - 0.5) * Math.sin(Math.PI * u) * phase * PAGE_SOFTNESS * height * 0.022
 
     const x = hingeX + directionSign * distanceFromHinge * Math.cos(sweepAngle)
     const y = originalY + directionSign * verticalTwist
-    const z = Math.max(
-      0,
-      distanceFromHinge * Math.sin(sweepAngle) * PAGE_LIFT_SCALE + belly
-    )
+    const z = Math.max(0, distanceFromHinge * Math.sin(sweepAngle) * PAGE_LIFT_SCALE + belly)
 
     pagePositions.setXYZ(index, x, y, z)
 
     // Project each deformed vertex along the actual directional-light ray onto
     // the next-page plane. The shadow therefore cannot drift out of sync.
     const rayZ = resources.lightRayDirection.z
-    const projectionDistance =
-      Math.abs(rayZ) > 0.0001 ? (SHADOW_PLANE_Z - z) / rayZ : 0
+    const projectionDistance = Math.abs(rayZ) > 0.0001 ? (SHADOW_PLANE_Z - z) / rayZ : 0
     const shadowX = x + resources.lightRayDirection.x * projectionDistance
     const shadowY = y + resources.lightRayDirection.y * projectionDistance
     shadowPositions.setXYZ(index, shadowX, shadowY, SHADOW_PLANE_Z)
@@ -405,12 +385,7 @@ export function DiaryPageCurlOverlay({
         renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
         renderer.setSize(turn.width, turn.height, false)
 
-        const resources = createCurlScene(
-          sourceCanvas,
-          targetCanvas,
-          turn.width,
-          turn.height
-        )
+        const resources = createCurlScene(sourceCanvas, targetCanvas, turn.width, turn.height)
         resourcesRef.current = resources
         updateCurlGeometry(resources, 0, turn.direction, turn.width, turn.height)
         renderer.render(resources.scene, resources.camera)

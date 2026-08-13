@@ -1,5 +1,13 @@
 import { CalendarDays, ChevronLeft, ChevronRight, LoaderCircle } from 'lucide-react'
-import { forwardRef, useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useMemo,
+  useRef,
+  useState
+} from 'react'
 
 import type { DiaryDay, DiaryDaySummary, DiarySummary } from '../../../../../shared/contracts/diary'
 import '../diary-premium.css'
@@ -390,7 +398,7 @@ const DiaryReaderPage = forwardRef<HTMLElement, DiaryReaderPageProps>(function D
         </header>
 
         <div
-          className={`diary-reader-scroll-viewport${snapshotMode ? ' diary-reader-scroll-viewport--snapshot' : ''}`}
+          className={`diary-reader-scroll-viewport${snapshotMode ? 'diary-reader-scroll-viewport--snapshot' : ''}`}
         >
           <div
             className="diary-ruled-surface diary-ruled-content diary-reader-ruled-sheet"
