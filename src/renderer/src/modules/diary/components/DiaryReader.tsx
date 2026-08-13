@@ -335,8 +335,8 @@ export function DiaryReader({
         >
           {day && (
             <DiaryReaderPage
-              key={day.dayKey}
-              day={day}
+              key={pageTurn?.target.dayKey ?? day.dayKey}
+              day={pageTurn?.target ?? day}
               className="diary-reader-page-layer--static"
             />
           )}
