@@ -80,6 +80,10 @@
   pointer-events: none;
 }
 
+.diary-reader-page-stage:has(.diary-reader-page-flip--mirrored) .diary-reader-page-layer--static {
+  visibility: hidden;
+}
+
 .diary-reader-date {
   margin-top: 0;
 }
