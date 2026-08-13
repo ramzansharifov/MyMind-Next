@@ -415,7 +415,6 @@ export function DiaryPageCurlOverlay({
     }
     resourcesRef.current?.dispose()
     resourcesRef.current = null
-    setIsVisible(false)
 
     const start = async (): Promise<void> => {
       try {
