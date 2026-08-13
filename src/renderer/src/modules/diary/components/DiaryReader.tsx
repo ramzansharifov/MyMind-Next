@@ -287,30 +287,6 @@ export function DiaryReader({
             />
           )}
 
-          {day && pageTurn && (
-            <div
-              className="diary-reader-capture-pages"
-              style={{ width: pageTurn.width, height: pageTurn.height }}
-              aria-hidden="true"
-            >
-              <DiaryReaderPage
-                ref={sourceCapturePageRef}
-                day={day}
-                className="diary-reader-page-layer--capture"
-                snapshotMode
-                snapshotScrollTop={pageTurn.sourceScrollTop}
-                ariaHidden
-              />
-              <DiaryReaderPage
-                ref={targetCapturePageRef}
-                day={pageTurn.target}
-                className="diary-reader-page-layer--capture"
-                snapshotMode
-                ariaHidden
-              />
-            </div>
-          )}
-
           <DiaryPageCurlOverlay
             turn={pageTurn}
             sourcePageRef={sourceCapturePageRef}
@@ -333,6 +309,30 @@ export function DiaryReader({
           <ChevronRight className="size-5" />
         </button>
       </div>
+
+      {day && pageTurn && (
+        <div
+          className="diary-reader-capture-pages"
+          style={{ width: pageTurn.width, height: pageTurn.height }}
+          aria-hidden="true"
+        >
+          <DiaryReaderPage
+            ref={sourceCapturePageRef}
+            day={day}
+            className="diary-reader-page-layer--capture"
+            snapshotMode
+            snapshotScrollTop={pageTurn.sourceScrollTop}
+            ariaHidden
+          />
+          <DiaryReaderPage
+            ref={targetCapturePageRef}
+            day={pageTurn.target}
+            className="diary-reader-page-layer--capture"
+            snapshotMode
+            ariaHidden
+          />
+        </div>
+      )}
 
       {error && (
         <div
