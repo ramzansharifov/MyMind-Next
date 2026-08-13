@@ -1,0 +1,30 @@
+name: Verify diary WebGL fallback
+
+on:
+  push:
+    branches:
+      - agent/fix-threejs-webgl-precision
+    paths:
+      - .github/workflows/verify-diary-webgl-fallback.yml
+      - src/renderer/src/modules/diary/components/DiaryPageCurlOverlay.tsx
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/fix-threejs-webgl-precision
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npx prettier --check src/renderer/src/modules/diary/components/DiaryPageCurlOverlay.tsx
+      - run: npx eslint src/renderer/src/modules/diary/components/DiaryPageCurlOverlay.tsx
+      - run: npm run typecheck:web
+      - run: npx vitest run src/renderer/src/modules/diary/components/DiaryReader.test.tsx
+      - run: npm run build:bundle
