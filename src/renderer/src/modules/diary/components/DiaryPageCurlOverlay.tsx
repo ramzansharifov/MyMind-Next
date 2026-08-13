@@ -165,12 +165,7 @@ function resolveRendererPrecision(context: WebGL2RenderingContext): RendererPrec
   const vertexMedium = readShaderPrecision(context, context.VERTEX_SHADER, context.MEDIUM_FLOAT)
   const fragmentMedium = readShaderPrecision(context, context.FRAGMENT_SHADER, context.MEDIUM_FLOAT)
 
-  if (
-    vertexMedium !== null &&
-    fragmentMedium !== null &&
-    vertexMedium > 0 &&
-    fragmentMedium > 0
-  ) {
+  if (vertexMedium !== null && fragmentMedium !== null && vertexMedium > 0 && fragmentMedium > 0) {
     return 'mediump'
   }
 
@@ -354,21 +349,12 @@ function updateCurlGeometry(
     const sweepAngle = Math.PI * localProgress
 
     const belly =
-      Math.sin(Math.PI * u) *
-      Math.sin(Math.PI * v) *
-      phase *
-      PAGE_SOFTNESS *
-      minDimension *
-      0.042
-    const verticalTwist =
-      (v - 0.5) * Math.sin(Math.PI * u) * phase * PAGE_SOFTNESS * height * 0.022
+      Math.sin(Math.PI * u) * Math.sin(Math.PI * v) * phase * PAGE_SOFTNESS * minDimension * 0.042
+    const verticalTwist = (v - 0.5) * Math.sin(Math.PI * u) * phase * PAGE_SOFTNESS * height * 0.022
 
     const x = hingeX + directionSign * distanceFromHinge * Math.cos(sweepAngle)
     const y = originalY + directionSign * verticalTwist
-    const z = Math.max(
-      0,
-      distanceFromHinge * Math.sin(sweepAngle) * PAGE_LIFT_SCALE + belly
-    )
+    const z = Math.max(0, distanceFromHinge * Math.sin(sweepAngle) * PAGE_LIFT_SCALE + belly)
 
     pagePositions.setXYZ(index, x, y, z)
 
