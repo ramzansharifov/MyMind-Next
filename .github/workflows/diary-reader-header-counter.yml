@@ -1,0 +1,72 @@
+name: Apply diary reader header counter redesign
+
+on:
+  push:
+    branches:
+      - agent/diary-reader-header-counter
+    paths:
+      - .github/workflows/diary-reader-header-counter.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/diary-reader-header-counter
+      - name: Simplify reader masthead and move page count to tab
+        shell: python
+        run: |
+          from pathlib import Path
+
+          tsx_path = Path('src/renderer/src/modules/diary/components/DiaryReader.tsx')
+          source = tsx_path.read_text(encoding='utf-8')
+
+          replacements = [
+              (
+                  '''        <span className="diary-side-tab" aria-hidden="true">\n          Просмотр\n        </span>''',
+                  '''        <span\n          className="diary-side-tab diary-reader-page-tab"\n          tabIndex={0}\n          aria-label={`Страница ${Math.max(1, currentIndex + 1)} из ${orderedDays.length}`}\n        >\n          <span className="diary-reader-page-tab-current">{Math.max(1, currentIndex + 1)}</span>\n          <span className="diary-reader-page-tab-total" aria-hidden="true">\n            <span className="diary-reader-page-tab-separator"> / </span>\n            {orderedDays.length}\n          </span>\n        </span>'''
+              ),
+              ('              diaryTitle={diary.title}\n', ''),
+              ('                diaryTitle={diary.title}\n', ''),
+              ('                diaryTitle={diary.title}\n', ''),
+              (
+                  '''interface DiaryReaderPageProps {\n  day: DiaryDay\n  diaryTitle: string\n  pageNumber: number\n  pageCount: number''',
+                  '''interface DiaryReaderPageProps {\n  day: DiaryDay\n  pageNumber: number\n  pageCount: number'''
+              ),
+              (
+                  '''const DiaryReaderPage = forwardRef<HTMLElement, DiaryReaderPageProps>(function DiaryReaderPage(\n  { day, diaryTitle, pageNumber, pageCount, className, initialScrollTop = 0, ariaHidden = false },\n  ref\n): React.JSX.Element {''',
+                  '''const DiaryReaderPage = forwardRef<HTMLElement, DiaryReaderPageProps>(function DiaryReaderPage(\n  { day, pageNumber, pageCount, className, initialScrollTop = 0, ariaHidden = false },\n  ref\n): React.JSX.Element {'''
+              ),
+              (
+                  '''            <div className="min-w-0 flex-1">\n              <div className="diary-premium-kicker">{diaryTitle}</div>\n              <h3 className="diary-premium-date capitalize">{formatDiaryDate(day.dayKey)}</h3>\n            </div>\n            <div className="diary-reader-meta max-[640px]:items-start">\n              <div className="text-[11px] tracking-wide text-stone-400 uppercase">\n                Страница {pageNumber} из {pageCount}\n              </div>\n              <div className="diary-reader-mood">''',
+                  '''            <div className="min-w-0 flex-1">\n              <h3 className="diary-premium-date diary-reader-date capitalize">\n                {formatDiaryDate(day.dayKey)}\n              </h3>\n            </div>\n            <div className="diary-reader-meta max-[640px]:items-start">\n              <div className="diary-reader-mood">'''
+              ),
+          ]
+
+          for old, new in replacements:
+              if old not in source:
+                  raise SystemExit(f'Expected DiaryReader snippet not found: {old[:120]!r}')
+              source = source.replace(old, new, 1)
+
+          tsx_path.write_text(source, encoding='utf-8')
+
+          css_path = Path('src/renderer/src/modules/diary/diary-reader-behavior.css')
+          css = css_path.read_text(encoding='utf-8')
+          addition = '''\n.diary-reader-date {\n  margin-top: 0;\n}\n\n.diary-reader-page-tab {\n  width: 2.7rem;\n  min-width: 0;\n  overflow: hidden;\n  padding-inline: 0;\n  gap: 0;\n  white-space: nowrap;\n  font-style: normal;\n  font-variant-numeric: tabular-nums;\n  cursor: default;\n  transition:\n    width 180ms ease,\n    transform 180ms ease,\n    box-shadow 180ms ease;\n}\n\n.diary-reader-page-tab:hover,\n.diary-reader-page-tab:focus-visible {\n  width: 5.15rem;\n  transform: rotate(-0.4deg) translateX(0.08rem);\n  outline: none;\n}\n\n.diary-reader-page-tab-current {\n  display: inline-flex;\n  width: 2.6rem;\n  flex: 0 0 2.6rem;\n  align-items: center;\n  justify-content: center;\n  font-weight: 700;\n}\n\n.diary-reader-page-tab-total {\n  display: inline-flex;\n  max-width: 0;\n  align-items: center;\n  opacity: 0;\n  transform: translateX(-0.3rem);\n  transition:\n    max-width 180ms ease,\n    opacity 140ms ease,\n    transform 180ms ease;\n}\n\n.diary-reader-page-tab:hover .diary-reader-page-tab-total,\n.diary-reader-page-tab:focus-visible .diary-reader-page-tab-total {\n  max-width: 2.4rem;\n  opacity: 1;\n  transform: translateX(0);\n}\n\n.diary-reader-page-tab-separator {\n  opacity: 0.62;\n}\n'''
+          marker = "\n.diary-reader-page-content {"
+          if marker not in css:
+              raise SystemExit('Expected reader CSS marker not found')
+          css = css.replace(marker, addition + marker, 1)
+          css_path.write_text(css, encoding='utf-8')
+      - name: Commit changes
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/renderer/src/modules/diary/components/DiaryReader.tsx src/renderer/src/modules/diary/diary-reader-behavior.css
+          git commit -m "Simplify diary reader masthead and page counter"
+          git push origin HEAD:agent/diary-reader-header-counter
