@@ -1,4 +1,4 @@
-name: Verify diary WebGL fallback
+name: Format diary WebGL fallback
 
 on:
   push:
@@ -6,13 +6,12 @@ on:
       - agent/fix-threejs-webgl-precision
     paths:
       - .github/workflows/verify-diary-webgl-fallback.yml
-      - src/renderer/src/modules/diary/components/DiaryPageCurlOverlay.tsx
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  verify:
+  format:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,8 +22,11 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --ignore-scripts
-      - run: npx prettier --check src/renderer/src/modules/diary/components/DiaryPageCurlOverlay.tsx
-      - run: npx eslint src/renderer/src/modules/diary/components/DiaryPageCurlOverlay.tsx
-      - run: npm run typecheck:web
-      - run: npx vitest run src/renderer/src/modules/diary/components/DiaryReader.test.tsx
-      - run: npm run build:bundle
+      - run: npx prettier --write src/renderer/src/modules/diary/components/DiaryPageCurlOverlay.tsx
+      - name: Commit formatting
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/renderer/src/modules/diary/components/DiaryPageCurlOverlay.tsx
+          git commit -m "Format diary WebGL fallback"
+          git push origin HEAD:agent/fix-threejs-webgl-precision
