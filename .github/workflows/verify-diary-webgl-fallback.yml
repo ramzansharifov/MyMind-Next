@@ -1,4 +1,4 @@
-name: Patch diary WebGL fallback
+name: Verify diary WebGL fallback
 
 on:
   push:
@@ -8,10 +8,10 @@ on:
       - .github/workflows/verify-diary-webgl-fallback.yml
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  patch:
+  verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,22 +22,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --ignore-scripts
-      - name: Remove redundant setState from empty-turn effect
-        shell: python
-        run: |
-          from pathlib import Path
-          path = Path('src/renderer/src/modules/diary/components/DiaryPageCurlOverlay.tsx')
-          source = path.read_text(encoding='utf-8')
-          old = """  useEffect(() => {\n    if (!turn) {\n      setIsVisible(false)\n      return\n    }\n"""
-          new = """  useEffect(() => {\n    if (!turn) return\n"""
-          if old not in source:
-              raise SystemExit('Target effect block not found')
-          path.write_text(source.replace(old, new, 1), encoding='utf-8')
-      - run: npx prettier --write src/renderer/src/modules/diary/components/DiaryPageCurlOverlay.tsx
-      - name: Commit patch
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/renderer/src/modules/diary/components/DiaryPageCurlOverlay.tsx
-          git commit -m "Remove redundant diary visibility reset"
-          git push origin HEAD:agent/fix-threejs-webgl-precision
+      - run: npx prettier --check src/renderer/src/modules/diary/components/DiaryPageCurlOverlay.tsx
+      - run: npx eslint src/renderer/src/modules/diary/components/DiaryPageCurlOverlay.tsx
+      - run: npm run typecheck:web
+      - run: npx vitest run src/renderer/src/modules/diary/components/DiaryReader.test.tsx
+      - run: npm run build:bundle
