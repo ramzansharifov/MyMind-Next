@@ -404,10 +404,7 @@ export function DiaryPageCurlOverlay({
   }, [])
 
   useEffect(() => {
-    if (!turn) {
-      setIsVisible(false)
-      return
-    }
+    if (!turn) return
 
     const runId = ++runIdRef.current
     let cancelled = false
