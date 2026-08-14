@@ -125,9 +125,7 @@ export function DiaryPage({ resourceId, onResourceHandled }: DiaryPageProps): Re
   }
 
   function shiftCalendarMonth(offset: number): void {
-    setCalendarCursor(
-      (date) => new Date(date.getFullYear(), date.getMonth() + offset, 1)
-    )
+    setCalendarCursor((date) => new Date(date.getFullYear(), date.getMonth() + offset, 1))
   }
 
   async function removeDiary(): Promise<void> {
@@ -195,7 +193,7 @@ export function DiaryPage({ resourceId, onResourceHandled }: DiaryPageProps): Re
                 <button
                   type="button"
                   aria-label="Предыдущий месяц"
-                  className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/35"
+                  className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:outline-none"
                   onClick={() => shiftCalendarMonth(-1)}
                 >
                   <ChevronLeft aria-hidden="true" className="size-4" />
@@ -206,7 +204,7 @@ export function DiaryPage({ resourceId, onResourceHandled }: DiaryPageProps): Re
                 <button
                   type="button"
                   aria-label="Следующий месяц"
-                  className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/35"
+                  className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:outline-none"
                   onClick={() => shiftCalendarMonth(1)}
                 >
                   <ChevronRight aria-hidden="true" className="size-4" />
