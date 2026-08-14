@@ -115,7 +115,7 @@ export function DiaryCalendar({
                   type="button"
                   disabled={!page}
                   aria-current={today ? 'date' : undefined}
-                  className={`relative min-h-32 bg-[var(--app-surface)] p-4 text-left outline-none transition-colors ${interactiveState} ${today ? 'bg-violet-500/[0.10] before:absolute before:inset-x-0 before:top-0 before:h-0.5 before:bg-violet-400/70' : ''} focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-violet-400/55 focus-visible:ring-inset`}
+                  className={`relative min-h-32 bg-[var(--app-surface)] p-4 text-left transition-colors outline-none ${interactiveState} ${today ? 'bg-violet-500/[0.10] before:absolute before:inset-x-0 before:top-0 before:h-0.5 before:bg-violet-400/70' : ''} focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-violet-400/55 focus-visible:ring-inset`}
                   onClick={() => {
                     if (page) onOpenDay(cell.dayKey)
                   }}
