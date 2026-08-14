@@ -6,7 +6,6 @@ import { diaryClient } from '../api/diary-client'
 import { diaryMoodMeta, getDiaryErrorMessage, localDayKey, monthRange } from '../lib/diary-ui'
 
 const weekdayLabels = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
-const calendarGridLineColor = 'color-mix(in srgb, var(--app-border) 62%, var(--app-text) 38%)'
 
 function entryWord(count: number): string {
   const mod10 = count % 10
@@ -73,19 +72,12 @@ export function DiaryCalendar({
 
   return (
     <section className="space-y-4">
-      <div
-        className="overflow-hidden rounded-[24px] border bg-[var(--app-surface)] shadow-[var(--app-shadow-card)]"
-        style={{ borderColor: calendarGridLineColor }}
-      >
-        <div
-          className="grid grid-cols-7 border-b bg-[var(--app-overlay-faint)]"
-          style={{ borderColor: calendarGridLineColor }}
-        >
-          {weekdayLabels.map((label, index) => (
+      <div className="overflow-hidden rounded-[24px] border border-[var(--app-border)] bg-[var(--app-border)] shadow-[var(--app-shadow-card)]">
+        <div className="grid grid-cols-7 gap-px border-b border-[var(--app-border)] bg-[var(--app-border)]">
+          {weekdayLabels.map((label) => (
             <div
               key={label}
-              className={`px-2 py-3.5 text-center text-xs font-semibold tracking-wide text-[var(--app-muted)] ${index < weekdayLabels.length - 1 ? 'border-r' : ''}`}
-              style={{ borderColor: calendarGridLineColor }}
+              className="bg-[var(--app-overlay-faint)] px-2 py-3.5 text-center text-xs font-semibold tracking-wide text-[var(--app-muted)]"
             >
               {label}
             </div>
@@ -93,22 +85,18 @@ export function DiaryCalendar({
         </div>
 
         {isLoading ? (
-          <div className="flex min-h-96 items-center justify-center text-sm text-[var(--app-muted)]">
+          <div className="flex min-h-96 items-center justify-center bg-[var(--app-surface)] text-sm text-[var(--app-muted)]">
             <LoaderCircle className="mr-2 size-4 animate-spin" /> Загружаем месяц…
           </div>
         ) : (
-          <div className="grid grid-cols-7">
+          <div className="grid grid-cols-7 gap-px bg-[var(--app-border)]">
             {cells.map((cell, index) => {
-              const isLastColumn = index % 7 === 6
-              const isLastRow = index >= cells.length - 7
-              const cellBorders = `${isLastColumn ? '' : 'border-r'} ${isLastRow ? '' : 'border-b'}`
-
               if (!cell) {
                 return (
                   <div
                     key={`empty-${index}`}
-                    className={`min-h-32 bg-[var(--app-overlay-faint)] ${cellBorders}`}
-                    style={{ borderColor: calendarGridLineColor }}
+                    className="min-h-32 bg-[var(--app-overlay-faint)]"
+                    aria-hidden="true"
                   />
                 )
               }
@@ -117,7 +105,7 @@ export function DiaryCalendar({
               const today = cell.dayKey === localDayKey()
               const interactiveState = page
                 ? today
-                  ? 'hover:bg-violet-500/[0.16] focus-visible:bg-violet-500/[0.16]'
+                  ? 'hover:bg-violet-500/[0.15] focus-visible:bg-violet-500/[0.15]'
                   : 'hover:bg-[var(--app-control-hover)] focus-visible:bg-[var(--app-control-hover)]'
                 : 'cursor-default'
 
@@ -126,21 +114,22 @@ export function DiaryCalendar({
                   key={cell.dayKey}
                   type="button"
                   disabled={!page}
-                  className={`relative min-h-32 p-4 text-left transition-colors outline-none ${cellBorders} ${interactiveState} ${today ? 'bg-violet-500/[0.12] ring-1 ring-violet-400/35 ring-inset' : ''} focus-visible:ring-2 focus-visible:ring-violet-400/55 focus-visible:ring-inset`}
-                  style={{ borderColor: calendarGridLineColor }}
+                  aria-current={today ? 'date' : undefined}
+                  className={`relative min-h-32 bg-[var(--app-surface)] p-4 text-left transition-colors outline-none ${interactiveState} ${today ? 'bg-violet-500/[0.10] before:absolute before:inset-x-0 before:top-0 before:h-0.5 before:bg-violet-400/70' : ''} focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-violet-400/55 focus-visible:ring-inset`}
                   onClick={() => {
                     if (page) onOpenDay(cell.dayKey)
                   }}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <span
-                      className={`text-lg leading-none font-semibold ${today ? 'text-violet-200' : 'text-[var(--app-text)]'}`}
+                      className={`text-[20px] leading-none font-semibold tracking-tight ${today ? 'text-violet-100' : 'text-[var(--app-text)]'}`}
                     >
                       {cell.dayNumber}
                     </span>
+
                     {page?.mood && (
                       <span
-                        className="text-xl leading-none"
+                        className={`flex size-8 items-center justify-center rounded-xl text-xl leading-none ${today ? 'bg-violet-500/10' : 'bg-[var(--app-overlay-faint)]'}`}
                         title={diaryMoodMeta[page.mood].label}
                         aria-label={diaryMoodMeta[page.mood].label}
                       >
@@ -151,7 +140,7 @@ export function DiaryCalendar({
 
                   {page && (
                     <div
-                      className={`absolute right-4 bottom-4 left-4 text-xs leading-4 font-medium ${today ? 'text-violet-100/75' : 'text-[var(--app-muted)]'}`}
+                      className={`absolute right-4 bottom-4 left-4 text-xs leading-4 font-medium ${today ? 'text-violet-100/70' : 'text-[var(--app-muted)]'}`}
                     >
                       {page.entryCount > 0
                         ? `${page.entryCount} ${entryWord(page.entryCount)}`
