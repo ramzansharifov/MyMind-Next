@@ -95,7 +95,7 @@ export function DiaryCalendar({
                 return (
                   <div
                     key={`empty-${index}`}
-                    className="min-h-32 bg-[var(--app-overlay-faint)]"
+                    className="min-h-32 bg-[var(--app-workspace)]"
                     aria-hidden="true"
                   />
                 )
@@ -115,12 +115,12 @@ export function DiaryCalendar({
                   type="button"
                   disabled={!page}
                   aria-current={today ? 'date' : undefined}
-                  className={`relative min-h-32 bg-[var(--app-surface)] p-4 text-left transition-colors outline-none ${interactiveState} ${today ? 'bg-violet-500/[0.10] before:absolute before:inset-x-0 before:top-0 before:h-0.5 before:bg-violet-400/70' : ''} focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-violet-400/55 focus-visible:ring-inset`}
+                  className={`relative flex min-h-32 flex-col items-stretch justify-start bg-[var(--app-surface)] p-4 text-left transition-colors outline-none ${interactiveState} ${today ? 'bg-violet-500/[0.10] before:absolute before:inset-x-0 before:top-0 before:h-0.5 before:bg-violet-400/70' : ''} focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-violet-400/55 focus-visible:ring-inset`}
                   onClick={() => {
                     if (page) onOpenDay(cell.dayKey)
                   }}
                 >
-                  <div className="flex items-start justify-between gap-3">
+                  <div className="flex w-full shrink-0 items-start justify-between gap-3">
                     <span
                       className={`text-[20px] leading-none font-semibold tracking-tight ${today ? 'text-violet-100' : 'text-[var(--app-text)]'}`}
                     >
