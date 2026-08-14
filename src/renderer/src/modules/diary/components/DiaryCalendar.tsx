@@ -6,8 +6,7 @@ import { diaryClient } from '../api/diary-client'
 import { diaryMoodMeta, getDiaryErrorMessage, localDayKey, monthRange } from '../lib/diary-ui'
 
 const weekdayLabels = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
-const calendarGridLineColor =
-  'color-mix(in srgb, var(--app-border) 62%, var(--app-text) 38%)'
+const calendarGridLineColor = 'color-mix(in srgb, var(--app-border) 62%, var(--app-text) 38%)'
 
 function entryWord(count: number): string {
   const mod10 = count % 10
@@ -127,7 +126,7 @@ export function DiaryCalendar({
                   key={cell.dayKey}
                   type="button"
                   disabled={!page}
-                  className={`relative min-h-32 p-4 text-left transition-colors outline-none ${cellBorders} ${interactiveState} ${today ? 'bg-violet-500/[0.12] ring-1 ring-inset ring-violet-400/35' : ''} focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-400/55`}
+                  className={`relative min-h-32 p-4 text-left transition-colors outline-none ${cellBorders} ${interactiveState} ${today ? 'bg-violet-500/[0.12] ring-1 ring-violet-400/35 ring-inset' : ''} focus-visible:ring-2 focus-visible:ring-violet-400/55 focus-visible:ring-inset`}
                   style={{ borderColor: calendarGridLineColor }}
                   onClick={() => {
                     if (page) onOpenDay(cell.dayKey)
@@ -135,7 +134,7 @@ export function DiaryCalendar({
                 >
                   <div className="flex items-start justify-between gap-3">
                     <span
-                      className={`text-lg font-semibold leading-none ${today ? 'text-violet-200' : 'text-[var(--app-text)]'}`}
+                      className={`text-lg leading-none font-semibold ${today ? 'text-violet-200' : 'text-[var(--app-text)]'}`}
                     >
                       {cell.dayNumber}
                     </span>
@@ -152,7 +151,7 @@ export function DiaryCalendar({
 
                   {page && (
                     <div
-                      className={`absolute right-4 bottom-4 left-4 text-xs font-medium leading-4 ${today ? 'text-violet-100/75' : 'text-[var(--app-muted)]'}`}
+                      className={`absolute right-4 bottom-4 left-4 text-xs leading-4 font-medium ${today ? 'text-violet-100/75' : 'text-[var(--app-muted)]'}`}
                     >
                       {page.entryCount > 0
                         ? `${page.entryCount} ${entryWord(page.entryCount)}`
