@@ -128,6 +128,20 @@ export function DiaryPage({ resourceId, onResourceHandled }: DiaryPageProps): Re
     setCalendarCursor((date) => new Date(date.getFullYear(), date.getMonth() + offset, 1))
   }
 
+  async function updatePaperAppearance(
+    appearance: Pick<DiarySummary, 'paperPattern' | 'paperTone'>
+  ): Promise<void> {
+    if (!selectedDiary) return
+    setError(null)
+    try {
+      const saved = await diaryClient.updateAppearance({ id: selectedDiary.id, ...appearance })
+      setDiaries((current) => current.map((item) => (item.id === saved.id ? saved : item)))
+    } catch (reason) {
+      setError(getDiaryErrorMessage(reason))
+      throw reason
+    }
+  }
+
   async function removeDiary(): Promise<void> {
     if (!selectedDiary) return
     setIsDeleting(true)
@@ -286,6 +300,7 @@ export function DiaryPage({ resourceId, onResourceHandled }: DiaryPageProps): Re
             diary={selectedDiary}
             canDelete={diaries.length > 1}
             onEdit={() => setDialogMode('edit')}
+            onAppearanceChange={updatePaperAppearance}
             onDelete={() => setDeleteOpen(true)}
           />
         )}

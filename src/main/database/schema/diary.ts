@@ -1,6 +1,11 @@
 import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 
-import type { DiaryIconName, DiaryMood } from '../../../shared/contracts/diary'
+import type {
+  DiaryIconName,
+  DiaryMood,
+  DiaryPaperPattern,
+  DiaryPaperTone
+} from '../../../shared/contracts/diary'
 
 export const diaries = sqliteTable(
   'diaries',
@@ -8,6 +13,8 @@ export const diaries = sqliteTable(
     id: text('id').primaryKey(),
     title: text('title').notNull(),
     icon: text('icon').$type<DiaryIconName>().notNull(),
+    paperPattern: text('paper_pattern').$type<DiaryPaperPattern>().notNull().default('ruled'),
+    paperTone: text('paper_tone').$type<DiaryPaperTone>().notNull().default('natural'),
     createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
     updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull()
   },

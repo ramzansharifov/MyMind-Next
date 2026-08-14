@@ -20,6 +20,7 @@ import {
   formatDiaryTime,
   getDiaryErrorMessage
 } from '../lib/diary-ui'
+import { getDiaryPaperStyle } from '../lib/diary-paper'
 import {
   DiaryPageCurlOverlay,
   type DiaryPageCurlDirection,
@@ -283,6 +284,8 @@ export function DiaryReader({
             <DiaryReaderPage
               key={day.dayKey}
               day={day}
+              paperPattern={diary.paperPattern}
+              paperTone={diary.paperTone}
               className="diary-reader-page-layer--static"
             />
           )}
@@ -321,6 +324,8 @@ export function DiaryReader({
           <DiaryReaderPage
             ref={sourceCapturePageRef}
             day={day}
+            paperPattern={diary.paperPattern}
+            paperTone={diary.paperTone}
             className="diary-reader-page-layer--capture"
             snapshotMode
             snapshotScrollTop={pageTurn.sourceScrollTop}
@@ -329,6 +334,8 @@ export function DiaryReader({
           <DiaryReaderPage
             ref={targetCapturePageRef}
             day={pageTurn.target}
+            paperPattern={diary.paperPattern}
+            paperTone={diary.paperTone}
             className="diary-reader-page-layer--capture"
             snapshotMode
             ariaHidden
@@ -350,6 +357,8 @@ export function DiaryReader({
 
 interface DiaryReaderPageProps {
   day: DiaryDay
+  paperPattern: DiarySummary['paperPattern']
+  paperTone: DiarySummary['paperTone']
   className?: string
   snapshotMode?: boolean
   snapshotScrollTop?: number
@@ -357,7 +366,15 @@ interface DiaryReaderPageProps {
 }
 
 const DiaryReaderPage = forwardRef<HTMLElement, DiaryReaderPageProps>(function DiaryReaderPage(
-  { day, className, snapshotMode = false, snapshotScrollTop = 0, ariaHidden = false },
+  {
+    day,
+    paperPattern,
+    paperTone,
+    className,
+    snapshotMode = false,
+    snapshotScrollTop = 0,
+    ariaHidden = false
+  },
   ref
 ): React.JSX.Element {
   const mood = day.mood ? diaryMoodMeta[day.mood] : null
@@ -371,6 +388,8 @@ const DiaryReaderPage = forwardRef<HTMLElement, DiaryReaderPageProps>(function D
       ref={ref}
       aria-hidden={ariaHidden || undefined}
       className={`diary-paper diary-premium-paper diary-paper--reader diary-reader-page-layer overflow-hidden border ${className ?? ''}`}
+      data-paper-tone={paperTone}
+      style={getDiaryPaperStyle(paperTone)}
     >
       <div className="diary-paper-content diary-reader-page-content">
         <header className="diary-paper-header diary-paper-masthead diary-premium-masthead border-b border-stone-300/70 px-11 max-[700px]:px-7 max-[620px]:px-6">
@@ -403,7 +422,8 @@ const DiaryReaderPage = forwardRef<HTMLElement, DiaryReaderPageProps>(function D
           className={`diary-reader-scroll-viewport${snapshotMode ? 'diary-reader-scroll-viewport--snapshot' : ''}`}
         >
           <div
-            className="diary-ruled-surface diary-ruled-content diary-reader-ruled-sheet"
+            className="diary-ruled-surface diary-paper-pattern-surface diary-ruled-content diary-reader-ruled-sheet"
+            data-paper-pattern={paperPattern}
             style={ruledSheetStyle}
           >
             {day.entries.length === 0 ? (

@@ -216,6 +216,7 @@ const api: MyMindApi = {
     listOverview: () => ipcRenderer.invoke(DIARY_IPC_CHANNELS.listOverview),
     createDiary: (input) => ipcRenderer.invoke(DIARY_IPC_CHANNELS.createDiary, input),
     updateDiary: (input) => ipcRenderer.invoke(DIARY_IPC_CHANNELS.updateDiary, input),
+    updateAppearance: (input) => ipcRenderer.invoke(DIARY_IPC_CHANNELS.updateAppearance, input),
     deleteDiary: (input) => ipcRenderer.invoke(DIARY_IPC_CHANNELS.deleteDiary, input),
     getDay: (input) => ipcRenderer.invoke(DIARY_IPC_CHANNELS.getDay, input),
     listDays: (input) => ipcRenderer.invoke(DIARY_IPC_CHANNELS.listDays, input),

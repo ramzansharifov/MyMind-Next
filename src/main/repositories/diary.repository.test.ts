@@ -14,7 +14,8 @@ import {
   getDiaryReport,
   listDiaryDays,
   listDiaryOverview,
-  setDiaryMood
+  setDiaryMood,
+  updateDiaryAppearance
 } from './diary.repository'
 
 let root = ''
@@ -46,6 +47,8 @@ describe('diary repository', () => {
       id: 'diary-default',
       title: 'Личный дневник',
       icon: 'book-heart',
+      paperPattern: 'ruled',
+      paperTone: 'natural',
       pageCount: 0,
       entryCount: 0
     })
@@ -56,6 +59,21 @@ describe('diary repository', () => {
     expect(listDiaryOverview().diaries).toHaveLength(2)
     expect(deleteDiary({ id: second.id })).toBe(true)
     expect(listDiaryOverview().diaries).toHaveLength(1)
+  })
+
+  it('persists paper appearance per diary', () => {
+    const diary = listDiaryOverview().diaries[0]
+    const updated = updateDiaryAppearance({
+      id: diary.id,
+      paperPattern: 'grid',
+      paperTone: 'white'
+    })
+
+    expect(updated).toMatchObject({ paperPattern: 'grid', paperTone: 'white' })
+    expect(listDiaryOverview().diaries[0]).toMatchObject({
+      paperPattern: 'grid',
+      paperTone: 'white'
+    })
   })
 
   it('keeps exactly one page per diary and local day with multiple entries', () => {

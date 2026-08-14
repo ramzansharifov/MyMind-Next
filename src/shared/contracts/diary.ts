@@ -12,9 +12,13 @@ export const DIARY_ICON_NAMES = [
 ] as const
 
 export const DIARY_MOODS = ['excellent', 'good', 'neutral', 'difficult', 'bad'] as const
+export const DIARY_PAPER_PATTERNS = ['ruled', 'grid', 'dots', 'plain'] as const
+export const DIARY_PAPER_TONES = ['natural', 'cream', 'beige', 'ivory', 'white'] as const
 
 export type DiaryIconName = (typeof DIARY_ICON_NAMES)[number]
 export type DiaryMood = (typeof DIARY_MOODS)[number]
+export type DiaryPaperPattern = (typeof DIARY_PAPER_PATTERNS)[number]
+export type DiaryPaperTone = (typeof DIARY_PAPER_TONES)[number]
 
 export const DIARY_MOOD_SCORES: Record<DiaryMood, number> = {
   excellent: 5,
@@ -28,6 +32,8 @@ export interface DiarySummary {
   id: string
   title: string
   icon: DiaryIconName
+  paperPattern: DiaryPaperPattern
+  paperTone: DiaryPaperTone
   pageCount: number
   entryCount: number
   lastActivityAt: number
@@ -98,6 +104,12 @@ export interface UpdateDiaryInput extends CreateDiaryInput {
   id: string
 }
 
+export interface UpdateDiaryAppearanceInput {
+  id: string
+  paperPattern: DiaryPaperPattern
+  paperTone: DiaryPaperTone
+}
+
 export interface DeleteDiaryInput {
   id: string
 }
@@ -136,6 +148,7 @@ export const DIARY_IPC_CHANNELS = {
   listOverview: 'diary:list-overview',
   createDiary: 'diary:create-diary',
   updateDiary: 'diary:update-diary',
+  updateAppearance: 'diary:update-appearance',
   deleteDiary: 'diary:delete-diary',
   getDay: 'diary:get-day',
   listDays: 'diary:list-days',
@@ -150,6 +163,7 @@ export interface DiaryApi {
   listOverview(): Promise<DiaryOverview>
   createDiary(input: CreateDiaryInput): Promise<DiarySummary>
   updateDiary(input: UpdateDiaryInput): Promise<DiarySummary>
+  updateAppearance(input: UpdateDiaryAppearanceInput): Promise<DiarySummary>
   deleteDiary(input: DeleteDiaryInput): Promise<boolean>
   getDay(input: GetDiaryDayInput): Promise<DiaryDay | null>
   listDays(input: ListDiaryDaysInput): Promise<DiaryDaySummary[]>

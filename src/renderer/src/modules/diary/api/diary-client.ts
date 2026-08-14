@@ -14,6 +14,7 @@ import type {
   GetDiaryReportInput,
   ListDiaryDaysInput,
   SetDiaryMoodInput,
+  UpdateDiaryAppearanceInput,
   UpdateDiaryEntryInput,
   UpdateDiaryInput
 } from '../../../../../shared/contracts/diary'
@@ -32,6 +33,9 @@ export const diaryClient = {
   },
   updateDiary(input: UpdateDiaryInput): Promise<DiarySummary> {
     return getDiaryApi().updateDiary(input)
+  },
+  updateAppearance(input: UpdateDiaryAppearanceInput): Promise<DiarySummary> {
+    return getDiaryApi().updateAppearance(input)
   },
   deleteDiary(input: DeleteDiaryInput): Promise<boolean> {
     return getDiaryApi().deleteDiary(input)
