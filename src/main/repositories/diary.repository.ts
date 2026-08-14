@@ -30,6 +30,7 @@ interface DiaryRow {
   icon: DiarySummary['icon']
   paper_pattern: DiarySummary['paperPattern']
   paper_tone: DiarySummary['paperTone']
+  cover_tone: DiarySummary['coverTone']
   created_at: number
   updated_at: number
 }
@@ -91,6 +92,7 @@ function mapDiary(row: DiarySummaryRow): DiarySummary {
     icon: row.icon,
     paperPattern: row.paper_pattern,
     paperTone: row.paper_tone,
+    coverTone: row.cover_tone,
     pageCount: row.page_count,
     entryCount: row.entry_count,
     lastActivityAt: row.last_activity_at,
@@ -115,7 +117,7 @@ function requireDiary(id: string): DiaryRow {
   ensureDefaultDiary()
   const row = getSqlite()
     .prepare(
-      'SELECT id, title, icon, paper_pattern, paper_tone, created_at, updated_at FROM diaries WHERE id = ?'
+      'SELECT id, title, icon, paper_pattern, paper_tone, cover_tone, created_at, updated_at FROM diaries WHERE id = ?'
     )
     .get(id) as DiaryRow | undefined
   if (!row) throw new Error('Дневник не найден')
@@ -131,6 +133,7 @@ function getDiarySummary(id: string): DiarySummary {
         d.icon,
         d.paper_pattern,
         d.paper_tone,
+        d.cover_tone,
         d.created_at,
         d.updated_at,
         COUNT(DISTINCT dy.id) AS page_count,
@@ -211,6 +214,7 @@ export function listDiaryOverview(): DiaryOverview {
         d.icon,
         d.paper_pattern,
         d.paper_tone,
+        d.cover_tone,
         d.created_at,
         d.updated_at,
         COUNT(DISTINCT dy.id) AS page_count,
@@ -248,8 +252,10 @@ export function updateDiaryAppearance(input: UpdateDiaryAppearanceInput): DiaryS
   requireDiary(input.id)
   const now = Date.now()
   getSqlite()
-    .prepare('UPDATE diaries SET paper_pattern = ?, paper_tone = ?, updated_at = ? WHERE id = ?')
-    .run(input.paperPattern, input.paperTone, now, input.id)
+    .prepare(
+      'UPDATE diaries SET paper_pattern = ?, paper_tone = ?, cover_tone = ?, updated_at = ? WHERE id = ?'
+    )
+    .run(input.paperPattern, input.paperTone, input.coverTone, now, input.id)
   return getDiarySummary(input.id)
 }
 

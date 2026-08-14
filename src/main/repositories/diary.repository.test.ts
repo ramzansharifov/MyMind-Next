@@ -49,6 +49,7 @@ describe('diary repository', () => {
       icon: 'book-heart',
       paperPattern: 'ruled',
       paperTone: 'natural',
+      coverTone: 'walnut',
       pageCount: 0,
       entryCount: 0
     })
@@ -66,13 +67,19 @@ describe('diary repository', () => {
     const updated = updateDiaryAppearance({
       id: diary.id,
       paperPattern: 'grid',
-      paperTone: 'white'
+      paperTone: 'white',
+      coverTone: 'burgundy'
     })
 
-    expect(updated).toMatchObject({ paperPattern: 'grid', paperTone: 'white' })
+    expect(updated).toMatchObject({
+      paperPattern: 'grid',
+      paperTone: 'white',
+      coverTone: 'burgundy'
+    })
     expect(listDiaryOverview().diaries[0]).toMatchObject({
       paperPattern: 'grid',
-      paperTone: 'white'
+      paperTone: 'white',
+      coverTone: 'burgundy'
     })
   })
 

@@ -1,4 +1,12 @@
 .diary-premium-book {
+  --diary-cover-base: #4a2f1d;
+  --diary-cover-light: #6a432a;
+  --diary-cover-dark: #2f1d13;
+  --diary-cover-border: #1f120a;
+  --diary-cover-stitch: #a87b49;
+  --diary-cover-spine-light: #6a432a;
+  --diary-cover-spine-dark: #2a160c;
+
   position: relative;
   isolation: isolate;
   overflow: visible;
@@ -41,18 +49,23 @@
   z-index: 0;
   width: auto;
   overflow: hidden;
-  border: 1px solid #1f120a;
+  border: 1px solid var(--diary-cover-border);
   border-radius: 1.72rem 1.88rem 1.88rem 1.58rem;
-  background-color: #4a2f1d;
+  background-color: var(--diary-cover-base);
   background-image:
     radial-gradient(circle at 18% 16%, rgb(255 214 154 / 8%) 0, transparent 16rem),
     radial-gradient(circle at 84% 82%, rgb(18 8 3 / 18%) 0, transparent 24rem),
-    linear-gradient(135deg, #5a3922 0%, #402719 48%, #2f1d13 100%);
+    linear-gradient(
+      135deg,
+      var(--diary-cover-light) 0%,
+      var(--diary-cover-base) 48%,
+      var(--diary-cover-dark) 100%
+    );
   box-shadow:
     0 1.25rem 2.2rem rgb(0 0 0 / 28%),
     0 0.35rem 0.85rem rgb(0 0 0 / 22%),
-    inset 0 1px #755036,
-    inset 0 0 0 2px #2d1a10,
+    inset 0 1px color-mix(in srgb, var(--diary-cover-light) 78%, white 22%),
+    inset 0 0 0 2px var(--diary-cover-dark),
     inset 0 -0.8rem 1.5rem rgb(20 10 5 / 22%);
 }
 
@@ -60,7 +73,7 @@
   position: absolute;
   inset: 0.54rem;
   width: auto;
-  border: 1px dashed #a87b49;
+  border: 1px dashed var(--diary-cover-stitch);
   border-radius: 1.2rem 1.36rem 1.36rem 1.1rem;
   content: '';
   background: transparent;
@@ -75,7 +88,7 @@
   left: 0.5rem;
   width: 2.65rem;
   border: 0;
-  border-right: 1px solid #28160c;
+  border-right: 1px solid var(--diary-cover-border);
   border-radius: 1rem 0.45rem 0.45rem 1rem;
   content: '';
   background:
@@ -83,12 +96,18 @@
       to bottom,
       transparent 0,
       transparent 0.72rem,
-      rgb(188 135 78 / 34%) 0.72rem,
-      rgb(188 135 78 / 34%) 0.78rem,
+      color-mix(in srgb, var(--diary-cover-stitch) 58%, transparent) 0.72rem,
+      color-mix(in srgb, var(--diary-cover-stitch) 58%, transparent) 0.78rem,
       transparent 0.78rem,
       transparent 1.44rem
     ),
-    linear-gradient(90deg, #2a160c 0%, #4d2d1b 46%, #6a432a 72%, #3b2316 100%);
+    linear-gradient(
+      90deg,
+      var(--diary-cover-spine-dark) 0%,
+      var(--diary-cover-base) 46%,
+      var(--diary-cover-spine-light) 72%,
+      var(--diary-cover-dark) 100%
+    );
   box-shadow:
     inset -0.65rem 0 0.8rem rgb(17 8 4 / 28%),
     0.36rem 0 0.72rem rgb(20 10 5 / 22%);
@@ -147,19 +166,19 @@
 }
 
 .diary-premium-book .diary-page-edge-button {
-  border-color: #2b180e;
-  background: #49301e;
+  border-color: var(--diary-cover-border);
+  background: var(--diary-cover-base);
   box-shadow:
     0 0.5rem 1rem rgb(0 0 0 / 25%),
-    inset 0 1px #765036;
+    inset 0 1px var(--diary-cover-light);
   backdrop-filter: none;
 }
 
 .diary-side-tab {
-  background: #4b301e;
+  background: var(--diary-cover-base);
   box-shadow:
     0 0.45rem 0.75rem rgb(0 0 0 / 24%),
-    inset 0 0 0 2px #2c190f;
+    inset 0 0 0 2px var(--diary-cover-dark);
 }
 
 @media (max-width: 760px) {
@@ -204,4 +223,67 @@
     bottom: 0.22rem;
     left: 0.78rem;
   }
+}
+
+.diary-cover-tone-swatch {
+  display: block;
+  width: 2.4rem;
+  height: 2.4rem;
+  border: 1px solid var(--diary-cover-border);
+  border-radius: 0.8rem;
+  background:
+    radial-gradient(circle at 24% 18%, rgb(255 255 255 / 12%), transparent 1.5rem),
+    linear-gradient(
+      135deg,
+      var(--diary-cover-light),
+      var(--diary-cover-base) 48%,
+      var(--diary-cover-dark)
+    );
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 10%),
+    0 4px 10px rgb(0 0 0 / 20%);
+}
+
+.diary-cover-preview {
+  position: relative;
+  overflow: hidden;
+  padding: 0.9rem 0.8rem 0.9rem 1.2rem;
+  border: 1px solid var(--diary-cover-border);
+  border-radius: 1.5rem;
+  background:
+    radial-gradient(circle at 18% 12%, rgb(255 255 255 / 9%), transparent 9rem),
+    linear-gradient(
+      135deg,
+      var(--diary-cover-light),
+      var(--diary-cover-base) 48%,
+      var(--diary-cover-dark)
+    );
+  box-shadow: 0 16px 36px rgb(0 0 0 / 22%);
+}
+
+.diary-cover-preview::after {
+  position: absolute;
+  inset: 0.45rem;
+  border: 1px dashed var(--diary-cover-stitch);
+  border-radius: 1.05rem;
+  content: '';
+  pointer-events: none;
+  opacity: 0.72;
+}
+
+.diary-cover-preview-spine {
+  position: absolute;
+  top: 0.55rem;
+  bottom: 0.55rem;
+  left: 0.45rem;
+  width: 1.35rem;
+  border-right: 1px solid var(--diary-cover-border);
+  border-radius: 0.9rem 0.3rem 0.3rem 0.9rem;
+  background: linear-gradient(90deg, var(--diary-cover-spine-dark), var(--diary-cover-spine-light));
+  box-shadow: 0.3rem 0 0.65rem rgb(0 0 0 / 20%);
+}
+
+.diary-cover-preview .diary-paper-preview {
+  position: relative;
+  z-index: 1;
 }

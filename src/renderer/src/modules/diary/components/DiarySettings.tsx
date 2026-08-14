@@ -2,13 +2,16 @@ import { CalendarDays, Check, LoaderCircle, Palette, Pencil, Trash2 } from 'luci
 import { useState } from 'react'
 
 import {
+  DIARY_COVER_TONES,
   DIARY_PAPER_PATTERNS,
   DIARY_PAPER_TONES,
+  type DiaryCoverTone,
   type DiaryPaperPattern,
   type DiaryPaperTone,
   type DiarySummary
 } from '../../../../../shared/contracts/diary'
 import '../diary-premium.css'
+import { diaryCoverToneMeta, getDiaryCoverStyle } from '../lib/diary-cover'
 import { formatShortDate } from '../lib/diary-ui'
 import { diaryPaperPatternMeta, diaryPaperToneMeta, getDiaryPaperStyle } from '../lib/diary-paper'
 import { DiaryIcon } from './DiaryIcon'
@@ -24,30 +27,43 @@ export function DiarySettings({
   canDelete: boolean
   onEdit: () => void
   onAppearanceChange: (
-    appearance: Pick<DiarySummary, 'paperPattern' | 'paperTone'>
+    appearance: Pick<DiarySummary, 'paperPattern' | 'paperTone' | 'coverTone'>
   ) => Promise<void>
   onDelete: () => void
 }): React.JSX.Element {
   const [paperPattern, setPaperPattern] = useState<DiaryPaperPattern>(diary.paperPattern)
   const [paperTone, setPaperTone] = useState<DiaryPaperTone>(diary.paperTone)
+  const [coverTone, setCoverTone] = useState<DiaryCoverTone>(diary.coverTone)
   const [isSavingAppearance, setIsSavingAppearance] = useState(false)
 
   async function saveAppearance(
     nextPattern: DiaryPaperPattern,
-    nextTone: DiaryPaperTone
+    nextTone: DiaryPaperTone,
+    nextCoverTone: DiaryCoverTone
   ): Promise<void> {
-    if (isSavingAppearance || (nextPattern === paperPattern && nextTone === paperTone)) return
+    if (
+      isSavingAppearance ||
+      (nextPattern === paperPattern && nextTone === paperTone && nextCoverTone === coverTone)
+    )
+      return
 
     const previousPattern = paperPattern
     const previousTone = paperTone
+    const previousCoverTone = coverTone
     setPaperPattern(nextPattern)
     setPaperTone(nextTone)
+    setCoverTone(nextCoverTone)
     setIsSavingAppearance(true)
     try {
-      await onAppearanceChange({ paperPattern: nextPattern, paperTone: nextTone })
+      await onAppearanceChange({
+        paperPattern: nextPattern,
+        paperTone: nextTone,
+        coverTone: nextCoverTone
+      })
     } catch {
       setPaperPattern(previousPattern)
       setPaperTone(previousTone)
+      setCoverTone(previousCoverTone)
     } finally {
       setIsSavingAppearance(false)
     }
@@ -58,7 +74,7 @@ export function DiarySettings({
       <div>
         <h2 className="text-lg font-semibold text-[var(--app-text)]">Настройки дневника</h2>
         <p className="mt-1 text-sm text-[var(--app-muted)]">
-          Название, иконка и оформление бумаги сохраняются отдельно для каждого дневника.
+          Название, иконка, бумага и цвет переплёта сохраняются отдельно для каждого дневника.
         </p>
       </div>
 
@@ -145,7 +161,7 @@ export function DiarySettings({
                       type="button"
                       aria-pressed={selected}
                       className={`group relative flex min-h-24 items-center gap-3 rounded-2xl border p-3 text-left transition-colors outline-none disabled:cursor-wait ${selected ? 'border-violet-500/45 bg-violet-500/[0.08]' : 'border-[var(--app-border)] bg-[var(--app-control)] hover:bg-[var(--app-control-hover)]'} focus-visible:ring-2 focus-visible:ring-violet-500/30`}
-                      onClick={() => void saveAppearance(pattern, paperTone)}
+                      onClick={() => void saveAppearance(pattern, paperTone, coverTone)}
                     >
                       <span
                         data-paper-pattern={pattern}
@@ -184,11 +200,45 @@ export function DiarySettings({
                       aria-pressed={selected}
                       title={meta.description}
                       className={`relative flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl border px-2 py-3 text-center transition-colors outline-none disabled:cursor-wait ${selected ? 'border-violet-500/45 bg-violet-500/[0.08]' : 'border-[var(--app-border)] bg-[var(--app-control)] hover:bg-[var(--app-control-hover)]'} focus-visible:ring-2 focus-visible:ring-violet-500/30`}
-                      onClick={() => void saveAppearance(paperPattern, tone)}
+                      onClick={() => void saveAppearance(paperPattern, tone, coverTone)}
                     >
                       <span
                         className="size-9 rounded-full border shadow-sm"
                         style={{ backgroundColor: meta.paper, borderColor: meta.border }}
+                        aria-hidden="true"
+                      />
+                      <span className="text-[11px] leading-4 font-medium text-[var(--app-muted)]">
+                        {meta.label}
+                      </span>
+                      {selected && (
+                        <span className="absolute top-2 right-2 flex size-4 items-center justify-center rounded-full bg-violet-500 text-white">
+                          <Check className="size-2.5" />
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            </fieldset>
+
+            <fieldset disabled={isSavingAppearance}>
+              <legend className="text-sm font-medium text-[var(--app-text)]">Цвет переплёта</legend>
+              <div className="mt-3 grid grid-cols-5 gap-2 max-[620px]:grid-cols-3">
+                {DIARY_COVER_TONES.map((tone) => {
+                  const meta = diaryCoverToneMeta[tone]
+                  const selected = coverTone === tone
+                  return (
+                    <button
+                      key={tone}
+                      type="button"
+                      aria-pressed={selected}
+                      title={meta.description}
+                      className={`relative flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl border px-2 py-3 text-center transition-colors outline-none disabled:cursor-wait ${selected ? 'border-violet-500/45 bg-violet-500/[0.08]' : 'border-[var(--app-border)] bg-[var(--app-control)] hover:bg-[var(--app-control-hover)]'} focus-visible:ring-2 focus-visible:ring-violet-500/30`}
+                      onClick={() => void saveAppearance(paperPattern, paperTone, tone)}
+                    >
+                      <span
+                        className="diary-cover-tone-swatch"
+                        style={getDiaryCoverStyle(tone)}
                         aria-hidden="true"
                       />
                       <span className="text-[11px] leading-4 font-medium text-[var(--app-muted)]">
@@ -210,30 +260,33 @@ export function DiarySettings({
             <div className="mb-2 text-xs font-medium tracking-wide text-[var(--app-muted)] uppercase">
               Предпросмотр
             </div>
-            <div
-              className="diary-paper diary-premium-paper diary-paper-preview border"
-              data-paper-tone={paperTone}
-              style={getDiaryPaperStyle(paperTone)}
-            >
-              <div className="diary-paper-preview-header">Четверг, 14 августа</div>
+            <div className="diary-cover-preview" style={getDiaryCoverStyle(coverTone)}>
+              <div className="diary-cover-preview-spine" aria-hidden="true" />
               <div
-                data-paper-pattern={paperPattern}
-                className="diary-ruled-surface diary-paper-pattern-surface diary-paper-preview-surface"
+                className="diary-paper diary-premium-paper diary-paper-preview border"
+                data-paper-tone={paperTone}
+                style={getDiaryPaperStyle(paperTone)}
               >
-                <div className="diary-paper-preview-entry">
-                  <span>09:15</span>
-                  <strong className="diary-handwriting">
-                    Спокойное утро и хороший план на день.
-                  </strong>
-                </div>
-                <div className="diary-paper-preview-entry">
-                  <span>18:40</span>
-                  <strong className="diary-handwriting">Запомнить эту мысль ✦</strong>
+                <div className="diary-paper-preview-header">Четверг, 14 августа</div>
+                <div
+                  data-paper-pattern={paperPattern}
+                  className="diary-ruled-surface diary-paper-pattern-surface diary-paper-preview-surface"
+                >
+                  <div className="diary-paper-preview-entry">
+                    <span>09:15</span>
+                    <strong className="diary-handwriting">
+                      Спокойное утро и хороший план на день.
+                    </strong>
+                  </div>
+                  <div className="diary-paper-preview-entry">
+                    <span>18:40</span>
+                    <strong className="diary-handwriting">Запомнить эту мысль ✦</strong>
+                  </div>
                 </div>
               </div>
             </div>
             <p className="mt-3 text-xs leading-5 text-[var(--app-muted)]">
-              Так будут выглядеть листы в разделах «Сегодня» и «Просмотр».
+              Так будут выглядеть листы и переплёт в разделах «Сегодня» и «Просмотр».
             </p>
           </div>
         </div>

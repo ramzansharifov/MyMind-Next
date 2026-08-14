@@ -141,6 +141,13 @@
       "when": 1786689000000,
       "tag": "0019_diary_paper_appearance",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1786698600000,
+      "tag": "0020_diary_cover_tone",
+      "breakpoints": true
     }
   ]
 }

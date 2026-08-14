@@ -16,6 +16,7 @@ import {
   formatDiaryTime,
   getDiaryErrorMessage
 } from '../lib/diary-ui'
+import { getDiaryCoverStyle } from '../lib/diary-cover'
 import { getDiaryPaperStyle } from '../lib/diary-paper'
 
 export function DiaryToday({
@@ -131,7 +132,10 @@ export function DiaryToday({
         </p>
       </div>
 
-      <div className="diary-book-frame diary-premium-book w-full">
+      <div
+        className="diary-book-frame diary-premium-book w-full"
+        style={getDiaryCoverStyle(diary.coverTone)}
+      >
         <span className="diary-back-binding" aria-hidden="true" />
         <span className="diary-side-tab" aria-hidden="true">
           Сегодня

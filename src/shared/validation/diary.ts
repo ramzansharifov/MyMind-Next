@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import {
+  DIARY_COVER_TONES,
   DIARY_ICON_NAMES,
   DIARY_MOODS,
   DIARY_PAPER_PATTERNS,
@@ -29,6 +30,7 @@ export const diaryIconSchema = z.enum(DIARY_ICON_NAMES)
 export const diaryMoodSchema = z.enum(DIARY_MOODS)
 export const diaryPaperPatternSchema = z.enum(DIARY_PAPER_PATTERNS)
 export const diaryPaperToneSchema = z.enum(DIARY_PAPER_TONES)
+export const diaryCoverToneSchema = z.enum(DIARY_COVER_TONES)
 
 export const createDiaryInputSchema = z
   .object({
@@ -45,7 +47,8 @@ export const updateDiaryAppearanceInputSchema = z
   .object({
     id: diarySafeIdSchema,
     paperPattern: diaryPaperPatternSchema,
-    paperTone: diaryPaperToneSchema
+    paperTone: diaryPaperToneSchema,
+    coverTone: diaryCoverToneSchema
   })
   .strict()
 
