@@ -47,11 +47,6 @@
   background-image:
     radial-gradient(circle at 18% 16%, rgb(255 214 154 / 8%) 0, transparent 16rem),
     radial-gradient(circle at 84% 82%, rgb(18 8 3 / 18%) 0, transparent 24rem),
-    repeating-radial-gradient(
-      circle at 40% 35%,
-      rgb(255 255 255 / 2%) 0 0.7px,
-      transparent 0.8px 3px
-    ),
     linear-gradient(135deg, #5a3922 0%, #402719 48%, #2f1d13 100%);
   box-shadow:
     0 1.25rem 2.2rem rgb(0 0 0 / 28%),
@@ -114,15 +109,7 @@
   background-image:
     radial-gradient(circle at 9% 11%, rgb(255 241 204 / 35%) 0, transparent 18rem),
     radial-gradient(circle at 84% 78%, rgb(119 78 37 / 10%) 0, transparent 22rem),
-    radial-gradient(circle at 18% 34%, rgb(92 58 26 / 9%) 0 0.65px, transparent 0.75px),
-    radial-gradient(circle at 72% 19%, rgb(92 58 26 / 7%) 0 0.6px, transparent 0.7px),
     repeating-linear-gradient(17deg, rgb(104 73 39 / 2.5%) 0 1px, transparent 1px 7px);
-  background-size:
-    auto,
-    auto,
-    9px 11px,
-    13px 15px,
-    auto;
   box-shadow:
     0 0.85rem 1.5rem rgb(31 18 9 / 23%),
     0 0.18rem 0.36rem rgb(63 40 20 / 17%),

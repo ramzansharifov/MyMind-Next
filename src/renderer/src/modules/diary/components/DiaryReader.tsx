@@ -287,14 +287,16 @@ export function DiaryReader({
             />
           )}
 
-          <DiaryPageCurlOverlay
-            turn={pageTurn}
-            sourcePageRef={sourceCapturePageRef}
-            targetPageRef={targetCapturePageRef}
-            durationMs={PAGE_CURL_DURATION_MS}
-            onComplete={commitPageTurn}
-            onError={handlePageCurlError}
-          />
+          {pageTurn && (
+            <DiaryPageCurlOverlay
+              turn={pageTurn}
+              sourcePageRef={sourceCapturePageRef}
+              targetPageRef={targetCapturePageRef}
+              durationMs={PAGE_CURL_DURATION_MS}
+              onComplete={commitPageTurn}
+              onError={handlePageCurlError}
+            />
+          )}
         </div>
 
         <button

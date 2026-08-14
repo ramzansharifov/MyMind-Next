@@ -1,5 +1,6 @@
 .diary-reader-book {
   max-height: 90vh;
+  contain: layout style;
 }
 
 .diary-reader-page-stage {
@@ -9,6 +10,7 @@
   min-height: 0;
   overflow: clip;
   isolation: isolate;
+  contain: layout paint style;
   border-radius: 1.3rem 1.65rem 1.65rem 1.18rem;
 }
 
@@ -27,6 +29,7 @@
   position: absolute;
   inset: 0;
   z-index: 1;
+  contain: paint style;
 }
 
 .diary-reader-page-stage[data-turning='true'] .diary-reader-page-layer--static {
@@ -162,6 +165,7 @@
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
+  contain: paint;
 }
 
 .diary-reader-ruled-sheet {
