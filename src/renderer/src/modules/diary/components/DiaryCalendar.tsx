@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, LoaderCircle } from 'lucide-react'
+import { LoaderCircle } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 import type { DiaryDaySummary, DiarySummary } from '../../../../../shared/contracts/diary'
@@ -18,13 +18,14 @@ function entryWord(count: number): string {
 export function DiaryCalendar({
   diary,
   refreshVersion,
+  cursor,
   onOpenDay
 }: {
   diary: DiarySummary
   refreshVersion: number
+  cursor: Date
   onOpenDay: (dayKey: string) => void
 }): React.JSX.Element {
-  const [cursor, setCursor] = useState(() => new Date())
   const [days, setDays] = useState<DiaryDaySummary[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -69,47 +70,8 @@ export function DiaryCalendar({
     }
   )
 
-  const monthTitle = new Intl.DateTimeFormat('ru-RU', {
-    month: 'long',
-    year: 'numeric'
-  }).format(cursor)
-
   return (
     <section className="space-y-4">
-      <div className="flex items-center justify-between gap-4 max-[620px]:flex-col max-[620px]:items-start">
-        <div>
-          <h2 className="text-lg font-semibold text-[var(--app-text)]">Календарь</h2>
-          <p className="mt-1 text-sm text-[var(--app-muted)]">
-            Индекс дневника: настроение и количество записей видны прямо по дням.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            aria-label="Предыдущий месяц"
-            className="flex size-9 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-muted)] hover:text-[var(--app-text)]"
-            onClick={() =>
-              setCursor((date) => new Date(date.getFullYear(), date.getMonth() - 1, 1))
-            }
-          >
-            <ChevronLeft className="size-4" />
-          </button>
-          <div className="min-w-40 text-center text-sm font-semibold text-[var(--app-text)] capitalize">
-            {monthTitle}
-          </div>
-          <button
-            type="button"
-            aria-label="Следующий месяц"
-            className="flex size-9 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-muted)] hover:text-[var(--app-text)]"
-            onClick={() =>
-              setCursor((date) => new Date(date.getFullYear(), date.getMonth() + 1, 1))
-            }
-          >
-            <ChevronRight className="size-4" />
-          </button>
-        </div>
-      </div>
-
       <div className="overflow-hidden rounded-[24px] border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--app-shadow-card)]">
         <div className="grid grid-cols-7 border-b border-[var(--app-border)] bg-[var(--app-overlay-faint)]">
           {weekdayLabels.map((label) => (
