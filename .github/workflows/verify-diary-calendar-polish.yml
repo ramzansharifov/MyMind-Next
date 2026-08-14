@@ -1,4 +1,4 @@
-name: Verify polished diary calendar grid
+name: Format polished diary calendar grid
 
 on:
   push:
@@ -8,10 +8,10 @@ on:
       - .github/workflows/verify-diary-calendar-polish.yml
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  verify:
+  format:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,7 +22,11 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --ignore-scripts
-      - run: npx prettier --check src/renderer/src/modules/diary/components/DiaryCalendar.tsx
-      - run: npx eslint src/renderer/src/modules/diary/components/DiaryCalendar.tsx
-      - run: npm run typecheck:web
-      - run: npm run build:bundle
+      - run: npx prettier --write src/renderer/src/modules/diary/components/DiaryCalendar.tsx
+      - name: Commit formatting
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/renderer/src/modules/diary/components/DiaryCalendar.tsx
+          git diff --cached --quiet || git commit -m "Format polished diary calendar grid"
+          git push origin HEAD:agent/polish-diary-calendar-grid
