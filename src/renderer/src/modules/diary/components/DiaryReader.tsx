@@ -400,7 +400,7 @@ const DiaryReaderPage = forwardRef<HTMLElement, DiaryReaderPageProps>(function D
         </header>
 
         <div
-          className={`diary-reader-scroll-viewport${snapshotMode ? ' diary-reader-scroll-viewport--snapshot' : ''}`}
+          className={`diary-reader-scroll-viewport${snapshotMode ? 'diary-reader-scroll-viewport--snapshot' : ''}`}
         >
           <div
             className="diary-ruled-surface diary-ruled-content diary-reader-ruled-sheet"
