@@ -1,0 +1,88 @@
+name: Diary cover controls theme
+
+on:
+  push:
+    branches:
+      - agent/diary-cover-controls-theme
+    paths:
+      - .github/workflows/diary-cover-controls-theme.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/diary-cover-controls-theme
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Make all notebook controls follow cover tone
+        run: |
+          cat >> src/renderer/src/modules/diary/diary-leather-cover.css <<'CSS'
+
+          /* Keep every leather accessory in the selected cover palette. */
+          .diary-premium-book .diary-side-tab {
+            border-color: var(--diary-cover-border);
+            color: color-mix(in srgb, var(--diary-cover-stitch) 68%, white 32%);
+            background: var(--diary-cover-base);
+            box-shadow:
+              0 0.45rem 0.75rem rgb(0 0 0 / 24%),
+              inset 0 0 0 2px var(--diary-cover-dark),
+              inset 0 1px color-mix(in srgb, var(--diary-cover-light) 82%, white 18%);
+          }
+
+          .diary-premium-book .diary-side-tab::after {
+            border-color: var(--diary-cover-stitch);
+          }
+
+          .diary-premium-book .diary-bookmark-ribbon {
+            border-color: var(--diary-cover-border);
+            background: var(--diary-cover-base);
+            box-shadow:
+              0 6px 9px rgb(0 0 0 / 25%),
+              inset 0 1px var(--diary-cover-light);
+          }
+
+          .diary-premium-book .diary-bookmark-ribbon::after {
+            background: var(--diary-cover-base);
+          }
+
+          .diary-premium-book .diary-bookmark-ribbon span {
+            color: color-mix(in srgb, var(--diary-cover-stitch) 72%, white 28%);
+          }
+
+          .diary-premium-book .diary-page-edge-button {
+            color: color-mix(in srgb, var(--diary-cover-stitch) 70%, white 30%);
+          }
+
+          .diary-premium-book .diary-page-edge-button:hover:not(:disabled),
+          .diary-premium-book .diary-page-edge-button:focus-visible {
+            border-color: var(--diary-cover-stitch);
+            color: color-mix(in srgb, var(--diary-cover-stitch) 52%, white 48%);
+            background: color-mix(
+              in srgb,
+              var(--diary-cover-base) 72%,
+              var(--diary-cover-light) 28%
+            );
+            box-shadow:
+              0 0.6rem 1.15rem rgb(0 0 0 / 28%),
+              inset 0 1px color-mix(in srgb, var(--diary-cover-light) 78%, white 22%);
+          }
+          CSS
+          npx prettier --write src/renderer/src/modules/diary/diary-leather-cover.css
+      - name: Commit source without temporary workflow
+        run: |
+          git rm .github/workflows/diary-cover-controls-theme.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/renderer/src/modules/diary/diary-leather-cover.css
+          git commit -m "Theme diary cover controls with selected tone"
+          git push origin HEAD:agent/diary-cover-controls-theme
+      - run: npm run format:check
+      - run: npm run build:bundle
