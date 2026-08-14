@@ -29,7 +29,7 @@ interface NavigationButtonProps {
 
 const navigationButtonVariants = cva(
   [
-    'group relative flex h-11 w-full items-center rounded-xl',
+    'group relative flex h-11 w-full items-center overflow-hidden rounded-xl',
     'text-sm font-medium outline-none transition-colors',
     'focus-visible:ring-2 focus-visible:ring-violet-500/70',
     'focus-visible:ring-offset-2',
@@ -94,7 +94,18 @@ function NavigationButton({
         )}
       />
 
-      {!isCollapsed && <span className="min-w-0 truncate">{item.label}</span>}
+      <span
+        aria-hidden={isCollapsed || undefined}
+        className={cn(
+          'min-w-0 truncate transition-[max-width,opacity,transform] duration-150 ease-out',
+          'motion-reduce:transition-none',
+          isCollapsed
+            ? 'pointer-events-none max-w-0 -translate-x-2 opacity-0'
+            : 'max-w-[11rem] translate-x-0 opacity-100 delay-75'
+        )}
+      >
+        {item.label}
+      </span>
     </button>
   )
 
@@ -134,15 +145,24 @@ export function AppShell({
               aria-label="Боковая панель"
               data-collapsed={isCollapsed}
               className={cn(
-                'group/sidebar relative z-10 flex h-full shrink-0 flex-col',
-                'border-r border-[var(--app-border)] bg-[var(--app-sidebar)]',
+                'group/sidebar relative z-10 flex h-full shrink-0 flex-col overflow-visible',
+                'border-r border-[var(--app-border)] bg-transparent',
                 'shadow-[var(--app-shadow-sidebar)]',
-                'transition-[width] duration-200 ease-out',
-                'motion-reduce:transition-none',
                 isCollapsed ? 'w-[72px]' : 'w-64'
               )}
             >
-              <header className="flex h-[var(--app-header-height)] shrink-0 items-center border-b border-[var(--app-border)] p-3">
+              <span
+                aria-hidden="true"
+                className={cn(
+                  'pointer-events-none absolute inset-y-0 left-0 z-0',
+                  'border-r border-[var(--app-border)] bg-[var(--app-sidebar)]',
+                  'shadow-[var(--app-shadow-sidebar)]',
+                  'transition-[width] duration-200 ease-out motion-reduce:transition-none',
+                  isCollapsed ? 'w-[72px]' : 'w-64'
+                )}
+              />
+
+              <header className="relative z-10 flex h-[var(--app-header-height)] shrink-0 items-center border-b border-[var(--app-border)] p-3">
                 <NavigationButton
                   item={homeNavigationItem}
                   activeView={activeView}
@@ -189,7 +209,7 @@ export function AppShell({
 
               <nav
                 aria-label="Основная навигация"
-                className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto p-3"
+                className="relative z-10 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto p-3"
               >
                 {primaryNavigationItems.map((item) => (
                   <NavigationButton
@@ -202,7 +222,7 @@ export function AppShell({
                 ))}
               </nav>
 
-              <footer className="shrink-0 border-t border-[var(--app-border)] p-3">
+              <footer className="relative z-10 shrink-0 border-t border-[var(--app-border)] p-3">
                 {utilityNavigationItems.map((item) => (
                   <NavigationButton
                     key={item.id}
