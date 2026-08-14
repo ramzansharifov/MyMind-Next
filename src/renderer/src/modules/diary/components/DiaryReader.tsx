@@ -20,6 +20,7 @@ import {
   formatDiaryTime,
   getDiaryErrorMessage
 } from '../lib/diary-ui'
+import { getDiaryCoverStyle } from '../lib/diary-cover'
 import { getDiaryPaperStyle } from '../lib/diary-paper'
 import {
   DiaryPageCurlOverlay,
@@ -245,7 +246,10 @@ export function DiaryReader({
 
   return (
     <section className="space-y-5">
-      <div className="diary-book-frame diary-premium-book diary-reader-book w-full">
+      <div
+        className="diary-book-frame diary-premium-book diary-reader-book w-full"
+        style={getDiaryCoverStyle(diary.coverTone)}
+      >
         <span className="diary-back-binding" aria-hidden="true" />
         <span
           className="diary-side-tab diary-reader-page-tab"

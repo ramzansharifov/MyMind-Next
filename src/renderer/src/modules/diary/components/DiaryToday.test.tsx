@@ -22,6 +22,7 @@ const diary: DiarySummary = {
   icon: 'book-heart',
   paperPattern: 'ruled',
   paperTone: 'natural',
+  coverTone: 'walnut',
   pageCount: 0,
   entryCount: 0,
   lastActivityAt: 1,

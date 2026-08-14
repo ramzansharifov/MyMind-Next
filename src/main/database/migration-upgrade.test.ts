@@ -80,15 +80,17 @@ describe('study link target migration upgrade', () => {
         .run('Существующий дневник', 'diary-default')
 
       await executeMigration(sqlite, '0019_diary_paper_appearance.sql')
+      await executeMigration(sqlite, '0020_diary_cover_tone.sql')
 
       const stored = sqlite
-        .prepare('SELECT title, paper_pattern, paper_tone FROM diaries WHERE id = ?')
+        .prepare('SELECT title, paper_pattern, paper_tone, cover_tone FROM diaries WHERE id = ?')
         .get('diary-default')
 
       expect(stored).toEqual({
         title: 'Существующий дневник',
         paper_pattern: 'ruled',
-        paper_tone: 'natural'
+        paper_tone: 'natural',
+        cover_tone: 'walnut'
       })
     } finally {
       sqlite.close()

@@ -14,11 +14,13 @@ export const DIARY_ICON_NAMES = [
 export const DIARY_MOODS = ['excellent', 'good', 'neutral', 'difficult', 'bad'] as const
 export const DIARY_PAPER_PATTERNS = ['ruled', 'grid', 'dots', 'plain'] as const
 export const DIARY_PAPER_TONES = ['natural', 'cream', 'beige', 'ivory', 'white'] as const
+export const DIARY_COVER_TONES = ['walnut', 'cognac', 'burgundy', 'graphite', 'forest'] as const
 
 export type DiaryIconName = (typeof DIARY_ICON_NAMES)[number]
 export type DiaryMood = (typeof DIARY_MOODS)[number]
 export type DiaryPaperPattern = (typeof DIARY_PAPER_PATTERNS)[number]
 export type DiaryPaperTone = (typeof DIARY_PAPER_TONES)[number]
+export type DiaryCoverTone = (typeof DIARY_COVER_TONES)[number]
 
 export const DIARY_MOOD_SCORES: Record<DiaryMood, number> = {
   excellent: 5,
@@ -34,6 +36,7 @@ export interface DiarySummary {
   icon: DiaryIconName
   paperPattern: DiaryPaperPattern
   paperTone: DiaryPaperTone
+  coverTone: DiaryCoverTone
   pageCount: number
   entryCount: number
   lastActivityAt: number
@@ -108,6 +111,7 @@ export interface UpdateDiaryAppearanceInput {
   id: string
   paperPattern: DiaryPaperPattern
   paperTone: DiaryPaperTone
+  coverTone: DiaryCoverTone
 }
 
 export interface DeleteDiaryInput {

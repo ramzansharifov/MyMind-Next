@@ -129,7 +129,7 @@ export function DiaryPage({ resourceId, onResourceHandled }: DiaryPageProps): Re
   }
 
   async function updatePaperAppearance(
-    appearance: Pick<DiarySummary, 'paperPattern' | 'paperTone'>
+    appearance: Pick<DiarySummary, 'paperPattern' | 'paperTone' | 'coverTone'>
   ): Promise<void> {
     if (!selectedDiary) return
     setError(null)

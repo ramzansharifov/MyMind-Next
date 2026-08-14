@@ -29,15 +29,17 @@ describe('diary validation', () => {
       updateDiaryAppearanceInputSchema.parse({
         id: 'diary-default',
         paperPattern: 'grid',
-        paperTone: 'ivory'
+        paperTone: 'ivory',
+        coverTone: 'forest'
       })
-    ).toMatchObject({ paperPattern: 'grid', paperTone: 'ivory' })
+    ).toMatchObject({ paperPattern: 'grid', paperTone: 'ivory', coverTone: 'forest' })
 
     expect(() =>
       updateDiaryAppearanceInputSchema.parse({
         id: 'diary-default',
         paperPattern: 'lined-paper',
-        paperTone: 'blue'
+        paperTone: 'blue',
+        coverTone: 'orange'
       })
     ).toThrow()
   })
