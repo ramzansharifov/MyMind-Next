@@ -332,3 +332,28 @@
     0 0.6rem 1.15rem rgb(0 0 0 / 28%),
     inset 0 1px color-mix(in srgb, var(--diary-cover-light) 78%, white 22%);
 }
+
+.diary-premium-book .diary-cover-primary-action {
+  border: 1px solid var(--diary-cover-border);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--diary-cover-light) 82%, white 18%),
+    var(--diary-cover-base)
+  );
+  box-shadow:
+    0 0.35rem 0.8rem rgb(0 0 0 / 18%),
+    inset 0 1px color-mix(in srgb, var(--diary-cover-light) 74%, white 26%);
+}
+
+.diary-premium-book .diary-cover-primary-action:hover:not(:disabled),
+.diary-premium-book .diary-cover-primary-action:focus-visible {
+  background: color-mix(in srgb, var(--diary-cover-base) 68%, var(--diary-cover-light) 32%);
+  box-shadow:
+    0 0.45rem 1rem rgb(0 0 0 / 22%),
+    inset 0 1px color-mix(in srgb, var(--diary-cover-light) 70%, white 30%);
+}
+
+.diary-premium-book ::selection {
+  color: white;
+  background: color-mix(in srgb, var(--diary-cover-base) 78%, var(--diary-cover-light) 22%);
+}
