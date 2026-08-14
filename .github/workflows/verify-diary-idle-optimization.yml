@@ -1,4 +1,4 @@
-name: Format diary idle rendering optimization
+name: Verify diary idle rendering optimization
 
 on:
   push:
@@ -8,10 +8,10 @@ on:
       - .github/workflows/verify-diary-idle-optimization.yml
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  format:
+  verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,11 +22,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --ignore-scripts
-      - run: npx prettier --write src/renderer/src/modules/diary/components/DiaryReader.tsx src/renderer/src/modules/diary/diary-reader-behavior.css src/renderer/src/modules/diary/diary-leather-cover.css
-      - name: Commit formatting
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/renderer/src/modules/diary/components/DiaryReader.tsx src/renderer/src/modules/diary/diary-reader-behavior.css src/renderer/src/modules/diary/diary-leather-cover.css
-          git diff --cached --quiet || git commit -m "Format diary idle optimization"
-          git push origin HEAD:agent/optimize-diary-idle-rendering
+      - run: npx prettier --check src/renderer/src/modules/diary/components/DiaryReader.tsx src/renderer/src/modules/diary/diary-reader-behavior.css src/renderer/src/modules/diary/diary-leather-cover.css
+      - run: npx eslint src/renderer/src/modules/diary/components/DiaryReader.tsx
+      - run: npm run typecheck:web
+      - run: npx vitest run src/renderer/src/modules/diary/components/DiaryReader.test.tsx
+      - run: npm run build:bundle
