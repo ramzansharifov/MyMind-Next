@@ -287,14 +287,16 @@ export function DiaryReader({
             />
           )}
 
-          <DiaryPageCurlOverlay
-            turn={pageTurn}
-            sourcePageRef={sourceCapturePageRef}
-            targetPageRef={targetCapturePageRef}
-            durationMs={PAGE_CURL_DURATION_MS}
-            onComplete={commitPageTurn}
-            onError={handlePageCurlError}
-          />
+          {pageTurn && (
+            <DiaryPageCurlOverlay
+              turn={pageTurn}
+              sourcePageRef={sourceCapturePageRef}
+              targetPageRef={targetCapturePageRef}
+              durationMs={PAGE_CURL_DURATION_MS}
+              onComplete={commitPageTurn}
+              onError={handlePageCurlError}
+            />
+          )}
         </div>
 
         <button
@@ -398,7 +400,7 @@ const DiaryReaderPage = forwardRef<HTMLElement, DiaryReaderPageProps>(function D
         </header>
 
         <div
-          className={`diary-reader-scroll-viewport${snapshotMode ? 'diary-reader-scroll-viewport--snapshot' : ''}`}
+          className={`diary-reader-scroll-viewport${snapshotMode ? ' diary-reader-scroll-viewport--snapshot' : ''}`}
         >
           <div
             className="diary-ruled-surface diary-ruled-content diary-reader-ruled-sheet"
