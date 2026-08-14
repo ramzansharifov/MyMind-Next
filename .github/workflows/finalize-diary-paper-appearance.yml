@@ -1,0 +1,72 @@
+name: Finalize diary paper appearance checks
+
+on:
+  push:
+    branches:
+      - agent/diary-paper-appearance
+    paths:
+      - .github/workflows/finalize-diary-paper-appearance.yml
+
+permissions:
+  contents: write
+
+jobs:
+  finalize-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/diary-paper-appearance
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Remove effect state sync and add migration upgrade coverage
+        run: |
+          python <<'PY'
+          from pathlib import Path
+
+          settings = Path('src/renderer/src/modules/diary/components/DiarySettings.tsx')
+          text = settings.read_text()
+          text = text.replace("import { useEffect, useState } from 'react'", "import { useState } from 'react'", 1)
+          effect = """\n  useEffect(() => {\n    setPaperPattern(diary.paperPattern)\n    setPaperTone(diary.paperTone)\n  }, [diary.paperPattern, diary.paperTone])\n"""
+          if effect not in text:
+              raise SystemExit('DiarySettings appearance sync effect not found')
+          settings.write_text(text.replace(effect, '', 1))
+
+          page = Path('src/renderer/src/modules/diary/DiaryPage.tsx')
+          text = page.read_text()
+          old = """          <DiarySettings\n            diary={selectedDiary}"""
+          new = """          <DiarySettings\n            key={selectedDiary.id}\n            diary={selectedDiary}"""
+          if old not in text:
+              raise SystemExit('DiarySettings render site not found')
+          page.write_text(text.replace(old, new, 1))
+
+          migration_test = Path('src/main/database/migration-upgrade.test.ts')
+          text = migration_test.read_text()
+          anchor = """  })\n})\n\nasync function executeMigration"""
+          new_test = """  })\n\n  it('preserves an existing diary while adding paper appearance defaults', async () => {\n    const sqlite = new Database(':memory:')\n    sqlite.pragma('foreign_keys = ON')\n\n    try {\n      await executeMigration(sqlite, '0018_diary_module.sql')\n      sqlite\n        .prepare('UPDATE diaries SET title = ? WHERE id = ?')\n        .run('Существующий дневник', 'diary-default')\n\n      await executeMigration(sqlite, '0019_diary_paper_appearance.sql')\n\n      const stored = sqlite\n        .prepare(\n          'SELECT title, paper_pattern, paper_tone FROM diaries WHERE id = ?'\n        )\n        .get('diary-default')\n\n      expect(stored).toEqual({\n        title: 'Существующий дневник',\n        paper_pattern: 'ruled',\n        paper_tone: 'natural'\n      })\n    } finally {\n      sqlite.close()\n    }\n  })\n})\n\nasync function executeMigration"""
+          if anchor not in text:
+              raise SystemExit('Migration test describe closing anchor not found')
+          migration_test.write_text(text.replace(anchor, new_test, 1))
+          PY
+          npx prettier --write \
+            src/renderer/src/modules/diary/components/DiarySettings.tsx \
+            src/renderer/src/modules/diary/DiaryPage.tsx \
+            src/main/database/migration-upgrade.test.ts
+      - name: Commit final fixes without workflow
+        run: |
+          git rm .github/workflows/finalize-diary-paper-appearance.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Finalize diary paper appearance settings"
+          git push origin HEAD:agent/diary-paper-appearance
+      - run: npm run format:check
+      - run: npm run lint -- --no-cache
+      - run: npm run typecheck
+      - run: npm rebuild better-sqlite3 --build-from-source --runtime=node
+      - run: npx vitest run src/shared/validation/diary.test.ts src/main/repositories/diary.repository.test.ts src/main/database/migration-upgrade.test.ts src/renderer/src/modules/diary/components/DiaryToday.test.tsx src/renderer/src/modules/diary/components/DiaryReader.test.tsx src/renderer/src/modules/diary/components/DiaryReports.test.tsx
+      - run: npm run db:check
+      - run: npm run build:bundle
