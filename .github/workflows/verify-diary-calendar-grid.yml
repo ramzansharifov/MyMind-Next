@@ -1,0 +1,28 @@
+name: Verify diary calendar grid
+
+on:
+  push:
+    branches:
+      - agent/improve-diary-calendar-grid
+    paths:
+      - .github/workflows/verify-diary-calendar-grid.yml
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/improve-diary-calendar-grid
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npx prettier --check src/renderer/src/modules/diary/components/DiaryCalendar.tsx
+      - run: npx eslint src/renderer/src/modules/diary/components/DiaryCalendar.tsx
+      - run: npm run typecheck:web
+      - run: npm run build:bundle
