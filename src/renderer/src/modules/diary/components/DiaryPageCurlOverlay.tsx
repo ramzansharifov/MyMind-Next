@@ -13,10 +13,10 @@ import {
   Mesh,
   MeshBasicMaterial,
   MeshStandardMaterial,
+  PCFSoftShadowMap,
   PerspectiveCamera,
   PlaneGeometry,
   Scene,
-  ShaderMaterial,
   SRGBColorSpace,
   Vector3,
   WebGLRenderer
@@ -45,16 +45,19 @@ interface CurlSceneResources {
   camera: PerspectiveCamera
   pageGeometry: PlaneGeometry
   originalPositions: Float32Array
-  shadowGeometry: PlaneGeometry
-  shadowAlpha: BufferAttribute
+  projectedShadowGeometry: PlaneGeometry
+  softShadowGeometry: PlaneGeometry
   lightRayDirection: Vector3
   sourceTexture: CanvasTexture
   targetTexture: CanvasTexture
   frontMaterial: MeshStandardMaterial
   backMaterial: MeshStandardMaterial
-  targetMaterial: MeshBasicMaterial
-  shadowMaterial: ShaderMaterial
+  targetMaterial: MeshStandardMaterial
+  projectedShadowMaterial: MeshBasicMaterial
+  softShadowMaterial: MeshBasicMaterial
   targetGeometry: PlaneGeometry
+  pageLocalZ: number
+  targetPageZ: number
   dispose: () => void
 }
 
@@ -62,32 +65,10 @@ type RendererPrecision = 'highp' | 'mediump' | 'lowp'
 
 const PAGE_WIDTH_SEGMENTS = 80
 const PAGE_HEIGHT_SEGMENTS = 32
-const PAGE_SOFTNESS = 0.78
-const PAGE_LIFT_SCALE = 0.34
-const NEXT_PAGE_Z = -0.6
-const SHADOW_PLANE_Z = -0.28
+const PAGE_SOFTNESS = 0.82
 const CAMERA_FOV = 28
-const DEFAULT_DURATION_MS = 1120
+const DEFAULT_DURATION_MS = 1500
 const CAPTURE_SCALE_LIMIT = 1.6
-
-const SHADOW_VERTEX_SHADER = `
-  attribute float shadowAlpha;
-  varying float vShadowAlpha;
-
-  void main() {
-    vShadowAlpha = shadowAlpha;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-  }
-`
-
-const SHADOW_FRAGMENT_SHADER = `
-  varying float vShadowAlpha;
-
-  void main() {
-    if (vShadowAlpha <= 0.002) discard;
-    gl_FragColor = vec4(0.13, 0.085, 0.045, vShadowAlpha);
-  }
-`
 
 function clamp01(value: number): number {
   return Math.min(1, Math.max(0, value))
@@ -207,6 +188,8 @@ function createPageCurlRenderer(canvas: HTMLCanvasElement): WebGLRenderer {
   })
   renderer.outputColorSpace = SRGBColorSpace
   renderer.setClearColor(0x000000, 0)
+  renderer.shadowMap.enabled = true
+  renderer.shadowMap.type = PCFSoftShadowMap
   return renderer
 }
 
@@ -225,11 +208,24 @@ function createCurlScene(
 
   const sourceTexture = createTexture(sourceCanvas)
   const targetTexture = createTexture(targetCanvas)
+  const minDimension = Math.min(width, height)
+  const pageLocalZ = minDimension * 0.00015
+  const targetPageZ = -minDimension * 0.00035
 
-  const targetGeometry = new PlaneGeometry(width + 1.5, height + 1.5, 1, 1)
-  const targetMaterial = new MeshBasicMaterial({ map: targetTexture })
+  const targetGeometry = new PlaneGeometry(width, height, 1, 1)
+  const targetMaterial = new MeshStandardMaterial({
+    map: targetTexture,
+    roughness: 0.84,
+    metalness: 0,
+    side: FrontSide,
+    polygonOffset: true,
+    polygonOffsetFactor: 1,
+    polygonOffsetUnits: 1
+  })
   const targetMesh = new Mesh(targetGeometry, targetMaterial)
-  targetMesh.position.z = NEXT_PAGE_Z
+  targetMesh.position.z = targetPageZ
+  targetMesh.receiveShadow = true
+  targetMesh.renderOrder = 1
   targetMesh.frustumCulled = false
   scene.add(targetMesh)
 
@@ -240,47 +236,86 @@ function createCurlScene(
 
   const frontMaterial = new MeshStandardMaterial({
     map: sourceTexture,
-    roughness: 0.86,
+    color: 0xfffbf2,
+    roughness: 0.77,
     metalness: 0,
-    side: FrontSide
+    side: FrontSide,
+    depthTest: true,
+    depthWrite: true
   })
   const backMaterial = new MeshStandardMaterial({
-    color: 0xf3eadb,
-    roughness: 0.92,
+    color: 0xf6edde,
+    roughness: 0.9,
     metalness: 0,
-    side: BackSide
+    side: BackSide,
+    depthTest: true,
+    depthWrite: true
   })
 
   const frontPage = new Mesh(pageGeometry, frontMaterial)
   const backPage = new Mesh(pageGeometry, backMaterial)
-  frontPage.frustumCulled = false
-  backPage.frustumCulled = false
-  scene.add(frontPage, backPage)
+  for (const page of [frontPage, backPage]) {
+    page.position.z = pageLocalZ
+    page.castShadow = true
+    page.receiveShadow = true
+    page.renderOrder = 20
+    page.frustumCulled = false
+    scene.add(page)
+  }
 
-  const shadowGeometry = pageGeometry.clone()
-  const shadowPositions = shadowGeometry.getAttribute('position') as BufferAttribute
-  shadowPositions.setUsage(DynamicDrawUsage)
-  const shadowAlpha = new BufferAttribute(new Float32Array(shadowPositions.count), 1)
-  shadowAlpha.setUsage(DynamicDrawUsage)
-  shadowGeometry.setAttribute('shadowAlpha', shadowAlpha)
-
-  const shadowMaterial = new ShaderMaterial({
-    vertexShader: SHADOW_VERTEX_SHADER,
-    fragmentShader: SHADOW_FRAGMENT_SHADER,
+  const projectedShadowGeometry = pageGeometry.clone()
+  const projectedShadowPositions = projectedShadowGeometry.getAttribute(
+    'position'
+  ) as BufferAttribute
+  projectedShadowPositions.setUsage(DynamicDrawUsage)
+  const projectedShadowMaterial = new MeshBasicMaterial({
+    color: 0x120b07,
     transparent: true,
-    depthTest: true,
+    opacity: 0,
     depthWrite: false,
+    depthTest: true,
     side: DoubleSide
   })
-  const shadowMesh = new Mesh(shadowGeometry, shadowMaterial)
-  shadowMesh.frustumCulled = false
-  scene.add(shadowMesh)
+  const projectedShadow = new Mesh(projectedShadowGeometry, projectedShadowMaterial)
+  projectedShadow.renderOrder = 6
+  projectedShadow.frustumCulled = false
+  scene.add(projectedShadow)
 
-  const hemisphereLight = new HemisphereLight(0xffffff, 0x80684f, 1.85)
-  const directionalLight = new DirectionalLight(0xffffff, 2.35)
-  directionalLight.position.set(-width * 0.34, height * 0.42, cameraDistance * 0.72)
+  const softShadowGeometry = pageGeometry.clone()
+  const softShadowPositions = softShadowGeometry.getAttribute('position') as BufferAttribute
+  softShadowPositions.setUsage(DynamicDrawUsage)
+  const softShadowMaterial = new MeshBasicMaterial({
+    color: 0x2a1a10,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+    depthTest: true,
+    side: DoubleSide
+  })
+  const softShadow = new Mesh(softShadowGeometry, softShadowMaterial)
+  softShadow.renderOrder = 5
+  softShadow.frustumCulled = false
+  scene.add(softShadow)
+
+  const hemisphereLight = new HemisphereLight(0xfff8ea, 0x4b382a, 2.0)
+  const directionalLight = new DirectionalLight(0xfff3dc, 4.6)
+  directionalLight.position.set(-width * 0.92, height * 1.11, cameraDistance * 0.83)
   directionalLight.target.position.set(0, 0, 0)
-  scene.add(hemisphereLight, directionalLight, directionalLight.target)
+  directionalLight.castShadow = true
+  directionalLight.shadow.mapSize.set(2048, 2048)
+  directionalLight.shadow.camera.left = -width
+  directionalLight.shadow.camera.right = width
+  directionalLight.shadow.camera.top = height
+  directionalLight.shadow.camera.bottom = -height
+  directionalLight.shadow.camera.near = 0.1
+  directionalLight.shadow.camera.far = cameraDistance * 2.5
+  directionalLight.shadow.bias = -0.00015
+  directionalLight.shadow.normalBias = minDimension * 0.00018
+  directionalLight.shadow.radius = 3
+
+  const fillLight = new DirectionalLight(0xb7c8ff, 0.55)
+  fillLight.position.set(width * 1.64, height * 0.25, cameraDistance * 0.47)
+  scene.add(hemisphereLight, directionalLight, directionalLight.target, fillLight)
 
   const lightRayDirection = new Vector3()
     .subVectors(directionalLight.target.position, directionalLight.position)
@@ -291,26 +326,31 @@ function createCurlScene(
     camera,
     pageGeometry,
     originalPositions,
-    shadowGeometry,
-    shadowAlpha,
+    projectedShadowGeometry,
+    softShadowGeometry,
     lightRayDirection,
     sourceTexture,
     targetTexture,
     frontMaterial,
     backMaterial,
     targetMaterial,
-    shadowMaterial,
+    projectedShadowMaterial,
+    softShadowMaterial,
     targetGeometry,
+    pageLocalZ,
+    targetPageZ,
     dispose: () => {
       sourceTexture.dispose()
       targetTexture.dispose()
       pageGeometry.dispose()
-      shadowGeometry.dispose()
+      projectedShadowGeometry.dispose()
+      softShadowGeometry.dispose()
       targetGeometry.dispose()
       frontMaterial.dispose()
       backMaterial.dispose()
       targetMaterial.dispose()
-      shadowMaterial.dispose()
+      projectedShadowMaterial.dispose()
+      softShadowMaterial.dispose()
       scene.clear()
     }
   }
@@ -323,15 +363,27 @@ function updateCurlGeometry(
   width: number,
   height: number
 ): void {
-  const eased = smootherStep(progress)
-  const phase = Math.sin(Math.PI * eased)
+  const p = clamp01(progress)
+  const eased = smootherStep(p)
   const directionSign = direction === 'next' ? 1 : -1
-  const hingeX = directionSign === 1 ? -width * 0.5 : width * 0.5
+  const baseAngle = -Math.PI * eased * directionSign
+  const phase = Math.sin(Math.PI * p)
+  const curl = PAGE_SOFTNESS * 1.18 * phase
   const halfWidth = width * 0.5
   const halfHeight = height * 0.5
-  const pagePositions = resources.pageGeometry.getAttribute('position') as BufferAttribute
-  const shadowPositions = resources.shadowGeometry.getAttribute('position') as BufferAttribute
   const minDimension = Math.min(width, height)
+
+  const pagePositions = resources.pageGeometry.getAttribute('position') as BufferAttribute
+  const projectedShadowPositions = resources.projectedShadowGeometry.getAttribute(
+    'position'
+  ) as BufferAttribute
+  const softShadowPositions = resources.softShadowGeometry.getAttribute(
+    'position'
+  ) as BufferAttribute
+
+  const planeZ = resources.targetPageZ + minDimension * 0.000018
+  const softPlaneZ = resources.targetPageZ + minDimension * 0.000012
+  const lightRay = resources.lightRayDirection
 
   for (let index = 0; index < pagePositions.count; index += 1) {
     const offset = index * 3
@@ -340,40 +392,66 @@ function updateCurlGeometry(
     const rawU = clamp01((originalX + halfWidth) / width)
     const u = directionSign === 1 ? rawU : 1 - rawU
     const v = clamp01((originalY + halfHeight) / height)
-    const distanceFromHinge = u * width
+    const lead = Math.pow(u, 1.55)
+    const vertical = v - 0.5
+    const twist = vertical * curl * 0.24 * Math.pow(u, 1.8)
+    const theta = baseAngle - curl * lead * directionSign + twist * directionSign
 
-    // The free edge starts slightly earlier than the spine. The term disappears
-    // at both ends of the animation so the sheet begins and ends perfectly flat.
-    const edgeLead = phase * PAGE_SOFTNESS * 0.19 * (u - 0.22)
-    const localProgress = clamp01(eased + edgeLead)
-    const sweepAngle = Math.PI * localProgress
+    let x: number
+    let z: number
+
+    if (directionSign === 1) {
+      const distanceFromSpine = originalX + halfWidth
+      x = -halfWidth + Math.cos(theta) * distanceFromSpine
+      z = Math.abs(Math.sin(theta) * distanceFromSpine)
+    } else {
+      const distanceFromSpine = halfWidth - originalX
+      x = halfWidth - Math.cos(theta) * distanceFromSpine
+      z = Math.abs(Math.sin(theta) * distanceFromSpine)
+    }
 
     const belly =
-      Math.sin(Math.PI * u) * Math.sin(Math.PI * v) * phase * PAGE_SOFTNESS * minDimension * 0.042
-    const verticalTwist = (v - 0.5) * Math.sin(Math.PI * u) * phase * PAGE_SOFTNESS * height * 0.022
+      Math.sin(Math.PI * u) * Math.sin(Math.PI * v) * phase * PAGE_SOFTNESS * minDimension * 0.03115
+    z += belly
 
-    const x = hingeX + directionSign * distanceFromHinge * Math.cos(sweepAngle)
-    const y = originalY + directionSign * verticalTwist
-    const z = Math.max(0, distanceFromHinge * Math.sin(sweepAngle) * PAGE_LIFT_SCALE + belly)
+    const yCompression = 1 - phase * PAGE_SOFTNESS * 0.008 * Math.sin(Math.PI * u)
+    let y = originalY * yCompression
+
+    const corner = Math.pow(u, 2.1) * Math.pow(Math.abs(vertical) * 2, 1.8) * phase * PAGE_SOFTNESS
+    z += corner * minDimension * 0.0246
+    y += vertical * corner * height * 0.00864
 
     pagePositions.setXYZ(index, x, y, z)
 
-    // Project each deformed vertex along the actual directional-light ray onto
-    // the next-page plane. The shadow therefore cannot drift out of sync.
-    const rayZ = resources.lightRayDirection.z
-    const projectionDistance = Math.abs(rayZ) > 0.0001 ? (SHADOW_PLANE_Z - z) / rayZ : 0
-    const shadowX = x + resources.lightRayDirection.x * projectionDistance
-    const shadowY = y + resources.lightRayDirection.y * projectionDistance
-    shadowPositions.setXYZ(index, shadowX, shadowY, SHADOW_PLANE_Z)
+    const worldZ = z + resources.pageLocalZ
+    const projectionDistance = Math.abs(lightRay.z) > 0.000001 ? (planeZ - worldZ) / lightRay.z : 0
+    const shadowX = x + lightRay.x * projectionDistance
+    const shadowY = y + lightRay.y * projectionDistance
+    projectedShadowPositions.setXYZ(index, shadowX, shadowY, planeZ)
 
-    const liftRatio = clamp01(z / (minDimension * 0.23))
-    resources.shadowAlpha.setX(index, liftRatio * Math.pow(phase, 0.7) * 0.27)
+    const softProjectionDistance =
+      Math.abs(lightRay.z) > 0.000001 ? (softPlaneZ - worldZ) / lightRay.z : 0
+    const softX = x + lightRay.x * softProjectionDistance
+    const softY = y + lightRay.y * softProjectionDistance
+    softShadowPositions.setXYZ(index, softX * 1.012, softY * 1.006, softPlaneZ)
   }
 
   pagePositions.needsUpdate = true
-  shadowPositions.needsUpdate = true
-  resources.shadowAlpha.needsUpdate = true
+  projectedShadowPositions.needsUpdate = true
+  softShadowPositions.needsUpdate = true
   resources.pageGeometry.computeVertexNormals()
+  const normalAttribute = resources.pageGeometry.getAttribute('normal') as BufferAttribute
+  normalAttribute.needsUpdate = true
+
+  const visible = Math.sin(Math.PI * p)
+  const early = Math.sin(Math.min(1, p / 0.035) * Math.PI * 0.5)
+  resources.projectedShadowMaterial.opacity = early * (0.07 + visible * 0.13)
+  resources.softShadowMaterial.opacity = early * (0.018 + visible * 0.05)
+
+  if (p <= 0.0001 || p >= 0.9999) {
+    resources.projectedShadowMaterial.opacity = 0
+    resources.softShadowMaterial.opacity = 0
+  }
 }
 
 export function DiaryPageCurlOverlay({
@@ -453,11 +531,12 @@ export function DiaryPageCurlOverlay({
         const renderFrame = (now: number): void => {
           if (cancelled || runId !== runIdRef.current) return
 
-          const progress = clamp01((now - startedAt) / durationMs)
+          const timelineProgress = clamp01((now - startedAt) / durationMs)
+          const progress = 0.5 - Math.cos(Math.PI * timelineProgress) / 2
           updateCurlGeometry(resources, progress, turn.direction, turn.width, turn.height)
           renderer.render(resources.scene, resources.camera)
 
-          if (progress < 1) {
+          if (timelineProgress < 1) {
             animationFrameRef.current = window.requestAnimationFrame(renderFrame)
             return
           }
