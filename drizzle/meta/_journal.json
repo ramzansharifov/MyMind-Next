@@ -134,6 +134,13 @@
       "when": 1786188000000,
       "tag": "0018_diary_module",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1786689000000,
+      "tag": "0019_diary_paper_appearance",
+      "breakpoints": true
     }
   ]
 }

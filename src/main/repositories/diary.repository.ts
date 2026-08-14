@@ -18,6 +18,7 @@ import {
   type GetDiaryReportInput,
   type ListDiaryDaysInput,
   type SetDiaryMoodInput,
+  type UpdateDiaryAppearanceInput,
   type UpdateDiaryEntryInput,
   type UpdateDiaryInput
 } from '../../shared/contracts/diary'
@@ -27,6 +28,8 @@ interface DiaryRow {
   id: string
   title: string
   icon: DiarySummary['icon']
+  paper_pattern: DiarySummary['paperPattern']
+  paper_tone: DiarySummary['paperTone']
   created_at: number
   updated_at: number
 }
@@ -86,6 +89,8 @@ function mapDiary(row: DiarySummaryRow): DiarySummary {
     id: row.id,
     title: row.title,
     icon: row.icon,
+    paperPattern: row.paper_pattern,
+    paperTone: row.paper_tone,
     pageCount: row.page_count,
     entryCount: row.entry_count,
     lastActivityAt: row.last_activity_at,
@@ -109,7 +114,9 @@ function ensureDefaultDiary(): void {
 function requireDiary(id: string): DiaryRow {
   ensureDefaultDiary()
   const row = getSqlite()
-    .prepare('SELECT id, title, icon, created_at, updated_at FROM diaries WHERE id = ?')
+    .prepare(
+      'SELECT id, title, icon, paper_pattern, paper_tone, created_at, updated_at FROM diaries WHERE id = ?'
+    )
     .get(id) as DiaryRow | undefined
   if (!row) throw new Error('Дневник не найден')
   return row
@@ -122,6 +129,8 @@ function getDiarySummary(id: string): DiarySummary {
         d.id,
         d.title,
         d.icon,
+        d.paper_pattern,
+        d.paper_tone,
         d.created_at,
         d.updated_at,
         COUNT(DISTINCT dy.id) AS page_count,
@@ -200,6 +209,8 @@ export function listDiaryOverview(): DiaryOverview {
         d.id,
         d.title,
         d.icon,
+        d.paper_pattern,
+        d.paper_tone,
         d.created_at,
         d.updated_at,
         COUNT(DISTINCT dy.id) AS page_count,
@@ -230,6 +241,15 @@ export function updateDiary(input: UpdateDiaryInput): DiarySummary {
   getSqlite()
     .prepare('UPDATE diaries SET title = ?, icon = ?, updated_at = ? WHERE id = ?')
     .run(input.title, input.icon, now, input.id)
+  return getDiarySummary(input.id)
+}
+
+export function updateDiaryAppearance(input: UpdateDiaryAppearanceInput): DiarySummary {
+  requireDiary(input.id)
+  const now = Date.now()
+  getSqlite()
+    .prepare('UPDATE diaries SET paper_pattern = ?, paper_tone = ?, updated_at = ? WHERE id = ?')
+    .run(input.paperPattern, input.paperTone, now, input.id)
   return getDiarySummary(input.id)
 }
 

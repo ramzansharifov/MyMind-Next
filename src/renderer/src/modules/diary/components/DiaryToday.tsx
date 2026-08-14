@@ -16,6 +16,7 @@ import {
   formatDiaryTime,
   getDiaryErrorMessage
 } from '../lib/diary-ui'
+import { getDiaryPaperStyle } from '../lib/diary-paper'
 
 export function DiaryToday({
   diary,
@@ -139,7 +140,11 @@ export function DiaryToday({
           <span>✦</span>
         </span>
 
-        <article className="diary-paper diary-premium-paper diary-paper--editor min-h-[650px] overflow-hidden border">
+        <article
+          className="diary-paper diary-premium-paper diary-paper--editor min-h-[650px] overflow-hidden border"
+          data-paper-tone={diary.paperTone}
+          style={getDiaryPaperStyle(diary.paperTone)}
+        >
           <div className="diary-paper-content min-h-[650px]">
             <header className="diary-paper-header diary-paper-masthead diary-premium-masthead border-b border-stone-300/70 px-11 max-[700px]:px-7 max-[620px]:px-6">
               <div className="diary-premium-kicker">{diary.title}</div>
@@ -172,7 +177,10 @@ export function DiaryToday({
               </div>
             </header>
 
-            <div className="diary-ruled-surface diary-ruled-content min-h-[390px]">
+            <div
+              className="diary-ruled-surface diary-paper-pattern-surface diary-ruled-content min-h-[390px]"
+              data-paper-pattern={diary.paperPattern}
+            >
               {isLoading ? (
                 <div className="flex min-h-[324px] items-center justify-center pl-20 text-stone-500 max-[620px]:pl-8">
                   <LoaderCircle className="mr-2 size-4 animate-spin" /> Загружаем страницу…

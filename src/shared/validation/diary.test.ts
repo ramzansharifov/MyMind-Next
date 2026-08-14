@@ -5,7 +5,8 @@ import {
   createDiaryInputSchema,
   diaryDayKeySchema,
   listDiaryDaysInputSchema,
-  setDiaryMoodInputSchema
+  setDiaryMoodInputSchema,
+  updateDiaryAppearanceInputSchema
 } from './diary'
 
 describe('diary validation', () => {
@@ -19,6 +20,24 @@ describe('diary validation', () => {
         title: 'Личный дневник',
         icon: 'book-heart',
         color: '#ffffff'
+      })
+    ).toThrow()
+  })
+
+  it('validates diary paper appearance presets', () => {
+    expect(
+      updateDiaryAppearanceInputSchema.parse({
+        id: 'diary-default',
+        paperPattern: 'grid',
+        paperTone: 'ivory'
+      })
+    ).toMatchObject({ paperPattern: 'grid', paperTone: 'ivory' })
+
+    expect(() =>
+      updateDiaryAppearanceInputSchema.parse({
+        id: 'diary-default',
+        paperPattern: 'lined-paper',
+        paperTone: 'blue'
       })
     ).toThrow()
   })

@@ -68,6 +68,32 @@ describe('study link target migration upgrade', () => {
       sqlite.close()
     }
   })
+
+  it('preserves an existing diary while adding paper appearance defaults', async () => {
+    const sqlite = new Database(':memory:')
+    sqlite.pragma('foreign_keys = ON')
+
+    try {
+      await executeMigration(sqlite, '0018_diary_module.sql')
+      sqlite
+        .prepare('UPDATE diaries SET title = ? WHERE id = ?')
+        .run('Существующий дневник', 'diary-default')
+
+      await executeMigration(sqlite, '0019_diary_paper_appearance.sql')
+
+      const stored = sqlite
+        .prepare('SELECT title, paper_pattern, paper_tone FROM diaries WHERE id = ?')
+        .get('diary-default')
+
+      expect(stored).toEqual({
+        title: 'Существующий дневник',
+        paper_pattern: 'ruled',
+        paper_tone: 'natural'
+      })
+    } finally {
+      sqlite.close()
+    }
+  })
 })
 
 async function executeMigration(sqlite: Database.Database, fileName: string): Promise<void> {

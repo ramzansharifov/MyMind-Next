@@ -42,6 +42,8 @@ const diary: DiarySummary = {
   id: 'diary-default',
   title: 'Личный дневник',
   icon: 'book-heart',
+  paperPattern: 'ruled',
+  paperTone: 'natural',
   pageCount: 2,
   entryCount: 2,
   lastActivityAt: 2,

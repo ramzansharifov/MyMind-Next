@@ -10,6 +10,7 @@ import {
   getDiaryReportInputSchema,
   listDiaryDaysInputSchema,
   setDiaryMoodInputSchema,
+  updateDiaryAppearanceInputSchema,
   updateDiaryEntryInputSchema,
   updateDiaryInputSchema
 } from '../../shared/validation/diary'
@@ -24,6 +25,7 @@ import {
   listDiaryOverview,
   setDiaryMood,
   updateDiary,
+  updateDiaryAppearance,
   updateDiaryEntry
 } from '../repositories/diary.repository'
 import { mainOperationTracker } from '../services/main-operation-tracker'
@@ -39,6 +41,11 @@ export function registerDiaryIpcHandlers(): void {
   )
   ipcMain.handle(DIARY_IPC_CHANNELS.updateDiary, (_event, rawInput: unknown) =>
     mainOperationTracker.run(() => updateDiary(updateDiaryInputSchema.parse(rawInput)))
+  )
+  ipcMain.handle(DIARY_IPC_CHANNELS.updateAppearance, (_event, rawInput: unknown) =>
+    mainOperationTracker.run(() =>
+      updateDiaryAppearance(updateDiaryAppearanceInputSchema.parse(rawInput))
+    )
   )
   ipcMain.handle(DIARY_IPC_CHANNELS.deleteDiary, (_event, rawInput: unknown) =>
     mainOperationTracker.run(() => deleteDiary(deleteDiaryInputSchema.parse(rawInput)))

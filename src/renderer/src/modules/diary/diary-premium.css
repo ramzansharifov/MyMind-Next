@@ -111,6 +111,7 @@
 .diary-premium-paper {
   --diary-paper: #e8d3ad;
   --diary-paper-deep: #d4b985;
+  --diary-paper-border: #bca274;
   --diary-ink: #3b2f24;
   --diary-rule-color: rgb(104 82 55 / 22%);
   --diary-margin-color: rgb(165 85 72 / 24%);
@@ -119,7 +120,7 @@
   --diary-baseline-nudge: -1px;
 
   z-index: 3;
-  border-color: #bca274;
+  border-color: var(--diary-paper-border);
   border-radius: 1.35rem 1.65rem 1.65rem 1.2rem;
   background-color: var(--diary-paper);
   background-image:
@@ -334,10 +335,10 @@
 }
 
 .diary-premium-book .diary-paper-footer {
-  background: #dfc89f;
+  background: color-mix(in srgb, var(--diary-paper) 72%, var(--diary-paper-deep) 28%);
   box-shadow:
     0 -8px 18px rgb(80 54 30 / 6%),
-    inset 0 1px #eddab8;
+    inset 0 1px color-mix(in srgb, var(--diary-paper) 84%, white 16%);
 }
 
 .diary-side-tab {
@@ -533,4 +534,119 @@
   .diary-bookmark-ribbon {
     transition: none;
   }
+}
+
+/* Per-diary paper appearance */
+.diary-paper-pattern-surface[data-paper-pattern='ruled'] {
+  background:
+    linear-gradient(
+      90deg,
+      transparent 0 var(--diary-margin-x),
+      var(--diary-margin-color) var(--diary-margin-x) calc(var(--diary-margin-x) + 1px),
+      transparent calc(var(--diary-margin-x) + 1px)
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0 calc(var(--diary-rule-baseline) - 1px),
+      var(--diary-rule-color) calc(var(--diary-rule-baseline) - 1px) var(--diary-rule-baseline),
+      transparent var(--diary-rule-baseline) var(--diary-rule-step)
+    );
+}
+
+.diary-paper-pattern-surface[data-paper-pattern='grid'] {
+  background:
+    repeating-linear-gradient(
+      to right,
+      transparent 0 calc(var(--diary-rule-step) - 1px),
+      var(--diary-rule-color) calc(var(--diary-rule-step) - 1px) var(--diary-rule-step)
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0 calc(var(--diary-rule-baseline) - 1px),
+      var(--diary-rule-color) calc(var(--diary-rule-baseline) - 1px) var(--diary-rule-baseline),
+      transparent var(--diary-rule-baseline) var(--diary-rule-step)
+    );
+}
+
+.diary-paper-pattern-surface[data-paper-pattern='dots'] {
+  background-image: radial-gradient(circle, var(--diary-rule-color) 1.1px, transparent 1.25px);
+  background-position: 0 calc(var(--diary-rule-baseline) - 1px);
+  background-size: calc(var(--diary-rule-step) / 2) calc(var(--diary-rule-step) / 2);
+}
+
+.diary-paper-pattern-surface[data-paper-pattern='plain'] {
+  background: none;
+}
+
+.diary-paper-pattern-thumbnail {
+  --diary-rule-step: 12px;
+  --diary-rule-baseline: 10px;
+  --diary-rule-color: rgb(120 113 108 / 32%);
+  --diary-margin-color: rgb(174 91 91 / 26%);
+  --diary-margin-x: 1rem;
+
+  display: block;
+  width: 4.5rem;
+  height: 3.25rem;
+  min-height: 0;
+  border: 1px solid rgb(120 113 108 / 22%);
+  border-radius: 0.75rem;
+  background-color: #f3e5ca;
+  box-shadow: inset 0 1px rgb(255 255 255 / 46%);
+}
+
+.diary-paper-preview {
+  position: relative;
+  min-height: 15rem;
+  overflow: hidden;
+  border-radius: 1.2rem;
+  box-shadow:
+    0 15px 34px rgb(0 0 0 / 18%),
+    inset 0 1px rgb(255 255 255 / 24%);
+}
+
+.diary-paper-preview::after {
+  display: none;
+}
+
+.diary-paper-preview-header {
+  position: relative;
+  z-index: 2;
+  padding: 1.25rem 1.4rem 1rem;
+  border-bottom: 1px solid rgb(120 93 64 / 17%);
+  font-family: ui-serif, Georgia, Cambria, 'Times New Roman', serif;
+  font-size: 1.05rem;
+  font-weight: 650;
+  color: #3b2f24;
+  background: color-mix(in srgb, var(--diary-paper) 96%, white 4%);
+}
+
+.diary-paper-preview-surface {
+  --diary-margin-x: 4.2rem;
+
+  min-height: 11rem;
+  padding: 1.25rem 1.2rem;
+}
+
+.diary-paper-preview-entry {
+  display: grid;
+  grid-template-columns: 3.1rem minmax(0, 1fr);
+  min-height: calc(var(--diary-rule-step) * 2);
+  gap: 0.65rem;
+  align-items: start;
+  color: #5f4932;
+}
+
+.diary-paper-preview-entry span {
+  font-size: 0.65rem;
+  line-height: var(--diary-rule-step);
+  color: rgb(87 64 42 / 60%);
+}
+
+.diary-paper-preview-entry strong {
+  overflow: hidden;
+  font-size: 0.85rem;
+  line-height: var(--diary-rule-step);
+  font-weight: 500;
+  color: #3d3024;
 }
