@@ -6,6 +6,7 @@ import { diaryClient } from '../api/diary-client'
 import { diaryMoodMeta, getDiaryErrorMessage, localDayKey, monthRange } from '../lib/diary-ui'
 
 const weekdayLabels = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
+const calendarGridLineColor = 'color-mix(in srgb, var(--app-border) 62%, var(--app-text) 38%)'
 
 function entryWord(count: number): string {
   const mod10 = count % 10
@@ -72,12 +73,19 @@ export function DiaryCalendar({
 
   return (
     <section className="space-y-4">
-      <div className="overflow-hidden rounded-[24px] border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--app-shadow-card)]">
-        <div className="grid grid-cols-7 border-b border-[var(--app-border)] bg-[var(--app-overlay-faint)]">
-          {weekdayLabels.map((label) => (
+      <div
+        className="overflow-hidden rounded-[24px] border bg-[var(--app-surface)] shadow-[var(--app-shadow-card)]"
+        style={{ borderColor: calendarGridLineColor }}
+      >
+        <div
+          className="grid grid-cols-7 border-b bg-[var(--app-overlay-faint)]"
+          style={{ borderColor: calendarGridLineColor }}
+        >
+          {weekdayLabels.map((label, index) => (
             <div
               key={label}
-              className="px-2 py-3 text-center text-xs font-semibold text-[var(--app-muted)]"
+              className={`px-2 py-3.5 text-center text-xs font-semibold tracking-wide text-[var(--app-muted)] ${index < weekdayLabels.length - 1 ? 'border-r' : ''}`}
+              style={{ borderColor: calendarGridLineColor }}
             >
               {label}
             </div>
@@ -91,42 +99,60 @@ export function DiaryCalendar({
         ) : (
           <div className="grid grid-cols-7">
             {cells.map((cell, index) => {
+              const isLastColumn = index % 7 === 6
+              const isLastRow = index >= cells.length - 7
+              const cellBorders = `${isLastColumn ? '' : 'border-r'} ${isLastRow ? '' : 'border-b'}`
+
               if (!cell) {
                 return (
                   <div
                     key={`empty-${index}`}
-                    className="min-h-28 border-r border-b border-[var(--app-border)] bg-[var(--app-overlay-faint)]"
+                    className={`min-h-32 bg-[var(--app-overlay-faint)] ${cellBorders}`}
+                    style={{ borderColor: calendarGridLineColor }}
                   />
                 )
               }
 
               const page = byKey.get(cell.dayKey)
               const today = cell.dayKey === localDayKey()
+              const interactiveState = page
+                ? today
+                  ? 'hover:bg-violet-500/[0.16] focus-visible:bg-violet-500/[0.16]'
+                  : 'hover:bg-[var(--app-control-hover)] focus-visible:bg-[var(--app-control-hover)]'
+                : 'cursor-default'
 
               return (
                 <button
                   key={cell.dayKey}
                   type="button"
                   disabled={!page}
-                  className={`relative min-h-28 border-r border-b border-[var(--app-border)] p-3 text-left transition-colors outline-none ${page ? 'hover:bg-[var(--app-control-hover)] focus-visible:bg-[var(--app-control-hover)]' : 'cursor-default'} ${today ? 'bg-violet-500/[0.045]' : ''}`}
+                  className={`relative min-h-32 p-4 text-left transition-colors outline-none ${cellBorders} ${interactiveState} ${today ? 'bg-violet-500/[0.12] ring-1 ring-violet-400/35 ring-inset' : ''} focus-visible:ring-2 focus-visible:ring-violet-400/55 focus-visible:ring-inset`}
+                  style={{ borderColor: calendarGridLineColor }}
                   onClick={() => {
                     if (page) onOpenDay(cell.dayKey)
                   }}
                 >
-                  <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-start justify-between gap-3">
                     <span
-                      className={`flex size-7 items-center justify-center rounded-lg text-xs font-semibold ${today ? 'bg-violet-500 text-white' : 'text-[var(--app-text)]'}`}
+                      className={`text-lg leading-none font-semibold ${today ? 'text-violet-200' : 'text-[var(--app-text)]'}`}
                     >
                       {cell.dayNumber}
                     </span>
                     {page?.mood && (
-                      <span className="text-lg" title={diaryMoodMeta[page.mood].label}>
+                      <span
+                        className="text-xl leading-none"
+                        title={diaryMoodMeta[page.mood].label}
+                        aria-label={diaryMoodMeta[page.mood].label}
+                      >
                         {diaryMoodMeta[page.mood].emoji}
                       </span>
                     )}
                   </div>
+
                   {page && (
-                    <div className="absolute right-3 bottom-3 left-3 text-[10px] text-[var(--app-muted)]">
+                    <div
+                      className={`absolute right-4 bottom-4 left-4 text-xs leading-4 font-medium ${today ? 'text-violet-100/75' : 'text-[var(--app-muted)]'}`}
+                    >
                       {page.entryCount > 0
                         ? `${page.entryCount} ${entryWord(page.entryCount)}`
                         : 'Только настроение'}
