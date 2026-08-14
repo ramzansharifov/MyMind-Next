@@ -77,7 +77,7 @@ export function DiaryCalendar({
           {weekdayLabels.map((label) => (
             <div
               key={label}
-              className="bg-[var(--app-overlay-faint)] px-2 py-3.5 text-center text-xs font-semibold tracking-wide text-[var(--app-muted)]"
+              className="bg-[var(--app-surface)] px-2 py-3.5 text-center text-xs font-semibold tracking-wide text-[var(--app-muted)]"
             >
               {label}
             </div>
@@ -122,7 +122,7 @@ export function DiaryCalendar({
                 >
                   <div className="flex w-full shrink-0 items-start justify-between gap-3">
                     <span
-                      className={`text-[20px] leading-none font-semibold tracking-tight ${today ? 'text-violet-100' : 'text-[var(--app-text)]'}`}
+                      className={`text-[24px] leading-none font-semibold tracking-tight ${today ? 'text-violet-100' : 'text-[var(--app-text)]'}`}
                     >
                       {cell.dayNumber}
                     </span>
