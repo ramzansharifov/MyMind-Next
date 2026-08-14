@@ -297,6 +297,7 @@ export function DiaryPage({ resourceId, onResourceHandled }: DiaryPageProps): Re
 
         {selectedDiary && section === 'settings' && (
           <DiarySettings
+            key={selectedDiary.id}
             diary={selectedDiary}
             canDelete={diaries.length > 1}
             onEdit={() => setDialogMode('edit')}

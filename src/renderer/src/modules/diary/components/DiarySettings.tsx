@@ -1,5 +1,5 @@
 import { CalendarDays, Check, LoaderCircle, Palette, Pencil, Trash2 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import {
   DIARY_PAPER_PATTERNS,
@@ -31,11 +31,6 @@ export function DiarySettings({
   const [paperPattern, setPaperPattern] = useState<DiaryPaperPattern>(diary.paperPattern)
   const [paperTone, setPaperTone] = useState<DiaryPaperTone>(diary.paperTone)
   const [isSavingAppearance, setIsSavingAppearance] = useState(false)
-
-  useEffect(() => {
-    setPaperPattern(diary.paperPattern)
-    setPaperTone(diary.paperTone)
-  }, [diary.paperPattern, diary.paperTone])
 
   async function saveAppearance(
     nextPattern: DiaryPaperPattern,
