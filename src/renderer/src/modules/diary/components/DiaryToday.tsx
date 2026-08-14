@@ -304,7 +304,7 @@ export function DiaryToday({
               <button
                 type="button"
                 disabled={isLoading || isSaving || !draft.trim()}
-                className="inline-flex items-center gap-2 rounded-xl bg-[var(--app-accent-600)] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--app-accent-500)] disabled:cursor-not-allowed disabled:opacity-40"
+                className="diary-cover-primary-action inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-40"
                 onClick={() => void addEntry()}
               >
                 {isSaving ? (
