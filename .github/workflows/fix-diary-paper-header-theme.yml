@@ -28,25 +28,8 @@ jobs:
           from pathlib import Path
           path = Path('src/renderer/src/modules/diary/diary-premium.css')
           text = path.read_text()
-          old = """.diary-premium-masthead {
-  padding-top: 2.15rem;
-  padding-bottom: 1.45rem;
-  background: var(--diary-paper);
-}
-"""
-          new = """.diary-premium-paper .diary-premium-masthead {
-  padding-top: 2.15rem;
-  padding-bottom: 1.45rem;
-  border-color: color-mix(in srgb, var(--diary-paper-border) 58%, transparent);
-  background:
-    linear-gradient(
-      to bottom,
-      color-mix(in srgb, var(--diary-paper) 97%, white 3%),
-      color-mix(in srgb, var(--diary-paper) 94%, var(--diary-paper-deep) 6%)
-    ),
-    var(--diary-paper);
-}
-"""
+          old = ".diary-premium-masthead {\n  padding-top: 2.15rem;\n  padding-bottom: 1.45rem;\n  background: var(--diary-paper);\n}\n"
+          new = ".diary-premium-paper .diary-premium-masthead {\n  padding-top: 2.15rem;\n  padding-bottom: 1.45rem;\n  border-color: color-mix(in srgb, var(--diary-paper-border) 58%, transparent);\n  background:\n    linear-gradient(\n      to bottom,\n      color-mix(in srgb, var(--diary-paper) 97%, white 3%),\n      color-mix(in srgb, var(--diary-paper) 94%, var(--diary-paper-deep) 6%)\n    ),\n    var(--diary-paper);\n}\n"
           if old not in text:
               raise SystemExit('Expected diary masthead block not found')
           path.write_text(text.replace(old, new, 1))
