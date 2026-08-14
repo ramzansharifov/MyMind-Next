@@ -3,6 +3,8 @@ import {
   BookHeart,
   BookOpen,
   CalendarDays,
+  ChevronLeft,
+  ChevronRight,
   Library,
   LoaderCircle,
   Plus,
@@ -50,6 +52,7 @@ export function DiaryPage({ resourceId, onResourceHandled }: DiaryPageProps): Re
   const [selectedDiaryId, setSelectedDiaryId] = useState<string | null>(null)
   const [section, setSection] = useState<DiarySection>('library')
   const [readerDayKey, setReaderDayKey] = useState<string | null>(null)
+  const [calendarCursor, setCalendarCursor] = useState(() => new Date())
   const [dialogMode, setDialogMode] = useState<'create' | 'edit' | null>(null)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [refreshVersion, setRefreshVersion] = useState(0)
@@ -60,6 +63,15 @@ export function DiaryPage({ resourceId, onResourceHandled }: DiaryPageProps): Re
   const selectedDiary = useMemo(
     () => diaries.find((diary) => diary.id === selectedDiaryId) ?? null,
     [diaries, selectedDiaryId]
+  )
+
+  const calendarMonthTitle = useMemo(
+    () =>
+      new Intl.DateTimeFormat('ru-RU', {
+        month: 'long',
+        year: 'numeric'
+      }).format(calendarCursor),
+    [calendarCursor]
   )
 
   const loadOverview = useCallback(async (): Promise<void> => {
@@ -110,6 +122,12 @@ export function DiaryPage({ resourceId, onResourceHandled }: DiaryPageProps): Re
     setSelectedDiaryId(diary.id)
     setReaderDayKey(null)
     setSection('today')
+  }
+
+  function shiftCalendarMonth(offset: number): void {
+    setCalendarCursor(
+      (date) => new Date(date.getFullYear(), date.getMonth() + offset, 1)
+    )
   }
 
   async function removeDiary(): Promise<void> {
@@ -169,6 +187,31 @@ export function DiaryPage({ resourceId, onResourceHandled }: DiaryPageProps): Re
               >
                 <Plus className="size-4" /> Новый дневник
               </button>
+            ) : selectedDiary && section === 'calendar' ? (
+              <div
+                className="inline-flex h-11 items-center gap-1 rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-1 shadow-inner shadow-black/5"
+                aria-label="Выбор месяца календаря"
+              >
+                <button
+                  type="button"
+                  aria-label="Предыдущий месяц"
+                  className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/35"
+                  onClick={() => shiftCalendarMonth(-1)}
+                >
+                  <ChevronLeft aria-hidden="true" className="size-4" />
+                </button>
+                <div className="min-w-36 px-2 text-center text-sm font-semibold text-[var(--app-text)] capitalize tabular-nums max-[420px]:min-w-28">
+                  {calendarMonthTitle}
+                </div>
+                <button
+                  type="button"
+                  aria-label="Следующий месяц"
+                  className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/35"
+                  onClick={() => shiftCalendarMonth(1)}
+                >
+                  <ChevronRight aria-hidden="true" className="size-4" />
+                </button>
+              </div>
             ) : selectedDiary ? (
               <button
                 type="button"
@@ -228,6 +271,7 @@ export function DiaryPage({ resourceId, onResourceHandled }: DiaryPageProps): Re
           <DiaryCalendar
             diary={selectedDiary}
             refreshVersion={refreshVersion}
+            cursor={calendarCursor}
             onOpenDay={(dayKey) => {
               setReaderDayKey(dayKey)
               setSection('reader')
