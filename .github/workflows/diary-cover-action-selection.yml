@@ -1,0 +1,78 @@
+name: Diary cover action and selection
+
+on:
+  push:
+    branches: [agent/diary-cover-action-selection]
+    paths:
+      - '.github/workflows/diary-cover-action-selection.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Apply diary cover action and selection theme
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          today = Path('src/renderer/src/modules/diary/components/DiaryToday.tsx')
+          text = today.read_text()
+          old = 'className="inline-flex items-center gap-2 rounded-xl bg-[var(--app-accent-600)] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--app-accent-500)] disabled:cursor-not-allowed disabled:opacity-40"'
+          new = 'className="diary-cover-primary-action inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-40"'
+          if old not in text:
+              raise SystemExit('Add-entry button class not found')
+          today.write_text(text.replace(old, new, 1))
+
+          css = Path('src/renderer/src/modules/diary/diary-leather-cover.css')
+          text = css.read_text()
+          addition = r'''
+
+.diary-premium-book .diary-cover-primary-action {
+  border: 1px solid var(--diary-cover-border);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--diary-cover-light) 82%, white 18%),
+    var(--diary-cover-base)
+  );
+  box-shadow:
+    0 0.35rem 0.8rem rgb(0 0 0 / 18%),
+    inset 0 1px color-mix(in srgb, var(--diary-cover-light) 74%, white 26%);
+}
+
+.diary-premium-book .diary-cover-primary-action:hover:not(:disabled),
+.diary-premium-book .diary-cover-primary-action:focus-visible {
+  background: color-mix(in srgb, var(--diary-cover-base) 68%, var(--diary-cover-light) 32%);
+  box-shadow:
+    0 0.45rem 1rem rgb(0 0 0 / 22%),
+    inset 0 1px color-mix(in srgb, var(--diary-cover-light) 70%, white 30%);
+}
+
+.diary-premium-book ::selection {
+  color: white;
+  background: color-mix(in srgb, var(--diary-cover-base) 78%, var(--diary-cover-light) 22%);
+}
+'''
+          if '.diary-premium-book .diary-cover-primary-action' in text:
+              raise SystemExit('Cover action styles already exist')
+          css.write_text(text.rstrip() + addition + '\n')
+          PY
+      - run: npx prettier --write src/renderer/src/modules/diary/components/DiaryToday.tsx src/renderer/src/modules/diary/diary-leather-cover.css
+      - name: Commit source without temporary workflow
+        run: |
+          git config user.name "Ramzan Sharifov"
+          git config user.email "114869338+ramzansharifov@users.noreply.github.com"
+          git add src/renderer/src/modules/diary/components/DiaryToday.tsx src/renderer/src/modules/diary/diary-leather-cover.css
+          git commit -m "Theme diary action and selection from cover" || exit 0
+          git push
+      - run: npm run format:check
+      - run: npm run typecheck:web
+      - run: npm run build:bundle
