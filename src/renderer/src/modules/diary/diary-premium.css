@@ -173,10 +173,17 @@
     transparent;
 }
 
-.diary-premium-masthead {
+.diary-premium-paper .diary-premium-masthead {
   padding-top: 2.15rem;
   padding-bottom: 1.45rem;
-  background: var(--diary-paper);
+  border-color: color-mix(in srgb, var(--diary-paper-border) 58%, transparent);
+  background:
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--diary-paper) 97%, white 3%),
+      color-mix(in srgb, var(--diary-paper) 94%, var(--diary-paper-deep) 6%)
+    ),
+    var(--diary-paper);
 }
 
 .diary-premium-masthead::after {
