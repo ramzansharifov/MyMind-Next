@@ -1,0 +1,68 @@
+name: Retry diary paper appearance verification
+
+on:
+  push:
+    branches:
+      - agent/diary-paper-appearance
+    paths:
+      - .github/workflows/retry-diary-paper-appearance.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/diary-paper-appearance
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Reuse implementation patch from first workflow
+        run: |
+          python <<'PY'
+          from pathlib import Path
+          source = Path('.github/workflows/apply-diary-paper-appearance.yml').read_text().splitlines()
+          start = next(i for i, line in enumerate(source) if line == '          from pathlib import Path')
+          end = next(i for i in range(start + 1, len(source)) if source[i] == '          PY')
+          script = '\n'.join(line[10:] if line.startswith('          ') else line for line in source[start:end]) + '\n'
+          Path('/tmp/apply_diary_paper.py').write_text(script)
+          PY
+          python /tmp/apply_diary_paper.py
+      - name: Format changed source files
+        run: |
+          npx prettier --write \
+            src/shared/contracts/diary.ts \
+            src/shared/validation/diary.ts \
+            src/shared/validation/diary.test.ts \
+            src/main/database/schema/diary.ts \
+            src/main/repositories/diary.repository.ts \
+            src/main/repositories/diary.repository.test.ts \
+            src/main/ipc/register-diary-ipc.ts \
+            src/preload/index.ts \
+            src/renderer/src/modules/diary/api/diary-client.ts \
+            src/renderer/src/modules/diary/lib/diary-paper.ts \
+            src/renderer/src/modules/diary/DiaryPage.tsx \
+            src/renderer/src/modules/diary/components/DiarySettings.tsx \
+            src/renderer/src/modules/diary/components/DiaryToday.tsx \
+            src/renderer/src/modules/diary/components/DiaryReader.tsx \
+            src/renderer/src/modules/diary/diary-premium.css \
+            drizzle/meta/_journal.json
+      - name: Commit implementation without temporary workflows
+        run: |
+          git rm .github/workflows/apply-diary-paper-appearance.yml .github/workflows/retry-diary-paper-appearance.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Add per-diary paper appearance settings"
+          git push origin HEAD:agent/diary-paper-appearance
+      - run: npm run typecheck
+      - run: npx eslint src/shared/contracts/diary.ts src/shared/validation/diary.ts src/main/database/schema/diary.ts src/main/repositories/diary.repository.ts src/main/ipc/register-diary-ipc.ts src/preload/index.ts src/renderer/src/modules/diary/api/diary-client.ts src/renderer/src/modules/diary/lib/diary-paper.ts src/renderer/src/modules/diary/DiaryPage.tsx src/renderer/src/modules/diary/components/DiarySettings.tsx src/renderer/src/modules/diary/components/DiaryToday.tsx src/renderer/src/modules/diary/components/DiaryReader.tsx
+      - run: npm rebuild better-sqlite3 --build-from-source --runtime=node
+      - run: npx vitest run src/shared/validation/diary.test.ts src/main/repositories/diary.repository.test.ts src/renderer/src/modules/diary/components/DiaryToday.test.tsx src/renderer/src/modules/diary/components/DiaryReader.test.tsx
+      - run: npm run db:check
+      - run: npm run build:bundle
