@@ -1,0 +1,42 @@
+name: Validate movies card and header
+
+on:
+  push:
+    branches:
+      - agent/movies-card-header
+    paths:
+      - .github/workflows/movies-card-header-validation.yml
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: python .github/scripts/apply-movies-card-header.py
+      - run: rm .github/scripts/apply-movies-card-header.py .github/workflows/movies-card-header-validation.yml
+      - run: npm ci
+      - name: Format changed files
+        run: >-
+          npx prettier --write
+          src/renderer/src/modules/movies/MoviesPage.tsx
+          src/renderer/src/modules/movies/MoviesPage.test.tsx
+          src/renderer/src/modules/movies/components/MovieDetail.tsx
+      - run: npm run typecheck
+      - run: npm run lint
+      - name: Run movies UI tests
+        run: npx vitest run src/renderer/src/modules/movies/MoviesPage.test.tsx
+      - run: npm run build:bundle
+      - name: Commit validated changes
+        run: |
+          git config user.name "Ramzan Sharifov"
+          git config user.email "114869338+ramzansharifov@users.noreply.github.com"
+          git add -A
+          git commit -m "Refine movie cards and detail header"
+          git push
