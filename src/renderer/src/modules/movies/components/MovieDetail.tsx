@@ -9,6 +9,7 @@ import {
   Pencil,
   Star,
   Trash2,
+  Users,
   X
 } from 'lucide-react'
 import { useState } from 'react'
@@ -33,15 +34,6 @@ function formatRuntime(minutes: number | null): string | null {
   return `${hours} ч ${rest > 0 ? `${rest} мин.` : ''}`.trim()
 }
 
-function formatWatchedAt(timestamp: number | null): string | null {
-  if (timestamp === null) return null
-  return new Intl.DateTimeFormat('ru-RU', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric'
-  }).format(new Date(timestamp))
-}
-
 export function MovieDetail({
   movie,
   busy,
@@ -53,7 +45,6 @@ export function MovieDetail({
   const [posterOpen, setPosterOpen] = useState(false)
   const [posterFailed, setPosterFailed] = useState(false)
   const runtime = formatRuntime(movie.runtimeMinutes)
-  const watchedAt = formatWatchedAt(movie.watchedAt)
 
   async function toggleFavorite(): Promise<void> {
     await onUpdate({ ...movie, favorite: !movie.favorite })
@@ -64,7 +55,7 @@ export function MovieDetail({
     await onUpdate({
       ...movie,
       status: nextWatched ? 'watched' : 'watchlist',
-      watchedAt: nextWatched ? (movie.watchedAt ?? Date.now()) : null
+      rating: nextWatched ? movie.rating : null
     })
   }
 
@@ -120,9 +111,8 @@ export function MovieDetail({
                   </span>
                 </button>
               ) : (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-[var(--app-muted)]">
+                <div className="absolute inset-0 flex items-center justify-center text-[var(--app-muted)]">
                   <Image className="size-12 opacity-50" />
-                  <span className="text-sm">Постер не указан</span>
                 </div>
               )}
             </div>
@@ -137,12 +127,10 @@ export function MovieDetail({
                     <p className="mt-2 text-base text-[var(--app-muted)]">{movie.originalTitle}</p>
                   )}
                 </div>
-                {movie.rating !== null && (
+                {movie.status === 'watched' && movie.rating !== null && (
                   <div className="flex shrink-0 items-center gap-2 rounded-2xl border border-amber-400/20 bg-amber-400/10 px-4 py-3 text-amber-200">
                     <Star className="size-5 fill-current" />
-                    <span className="text-xl font-semibold tabular-nums">
-                      {movie.rating.toFixed(1)}
-                    </span>
+                    <span className="text-xl font-semibold tabular-nums">{movie.rating}</span>
                     <span className="text-xs opacity-70">/ 10</span>
                   </div>
                 )}
@@ -170,6 +158,13 @@ export function MovieDetail({
                 <p className="mt-5 text-sm text-[var(--app-muted)]">
                   Режиссёр: <span className="text-[var(--app-text)]">{movie.director}</span>
                 </p>
+              )}
+
+              {movie.actors.length > 0 && (
+                <div className="mt-3 flex items-start gap-2 text-sm text-[var(--app-muted)]">
+                  <Users className="mt-0.5 size-4 shrink-0" />
+                  <span>{movie.actors.join(', ')}</span>
+                </div>
               )}
 
               <div className="mt-6 flex flex-wrap gap-2">
@@ -202,31 +197,23 @@ export function MovieDetail({
                 </button>
               </div>
 
-              {movie.status === 'watched' && watchedAt && (
-                <p className="mt-3 text-xs text-[var(--app-muted)]">Просмотрено: {watchedAt}</p>
-              )}
-
-              {movie.description ? (
+              {movie.description && (
                 <div className="mt-8">
-                  <h3 className="text-sm font-semibold text-[var(--app-text)]">О фильме</h3>
+                  <h3 className="text-sm font-semibold text-[var(--app-text)]">Описание</h3>
                   <p className="mt-3 max-w-3xl text-sm leading-7 whitespace-pre-wrap text-[var(--app-muted)]">
                     {movie.description}
                   </p>
                 </div>
-              ) : null}
+              )}
 
-              <div className="mt-8 border-t border-[var(--app-border)] pt-6">
-                <h3 className="text-sm font-semibold text-[var(--app-text)]">Мои впечатления</h3>
-                {movie.notes ? (
+              {movie.comments && (
+                <div className="mt-8 border-t border-[var(--app-border)] pt-6">
+                  <h3 className="text-sm font-semibold text-[var(--app-text)]">Комментарии</h3>
                   <p className="mt-3 max-w-3xl text-sm leading-7 whitespace-pre-wrap text-[var(--app-muted)]">
-                    {movie.notes}
+                    {movie.comments}
                   </p>
-                ) : (
-                  <p className="mt-2 text-sm text-[var(--app-muted)]">
-                    Пока без заметки. Её можно добавить через редактирование фильма.
-                  </p>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

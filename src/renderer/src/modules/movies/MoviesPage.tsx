@@ -44,12 +44,12 @@ function toUpdateInput(movie: MovieRecord): UpdateMovieInput {
     director: movie.director,
     runtimeMinutes: movie.runtimeMinutes,
     genres: movie.genres,
+    actors: movie.actors,
     description: movie.description,
     status: movie.status,
     favorite: movie.favorite,
     rating: movie.rating,
-    watchedAt: movie.watchedAt,
-    notes: movie.notes
+    comments: movie.comments
   }
 }
 
@@ -119,7 +119,13 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
       if (filter === 'favorites' && !movie.favorite) return false
       if (!normalizedQuery) return true
 
-      return [movie.title, movie.originalTitle ?? '', movie.director, ...movie.genres]
+      return [
+        movie.title,
+        movie.originalTitle ?? '',
+        movie.director,
+        ...movie.actors,
+        ...movie.genres
+      ]
         .join(' ')
         .toLocaleLowerCase('ru-RU')
         .includes(normalizedQuery)
@@ -424,7 +430,7 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
                             )}
                             {movie.status === 'watched' ? 'Просмотрено' : 'Хочу посмотреть'}
                           </span>
-                          {movie.rating !== null && (
+                          {movie.status === 'watched' && movie.rating !== null && (
                             <span className="inline-flex items-center gap-1 rounded-lg bg-black/55 px-2 py-1 text-[11px] font-semibold text-amber-200 backdrop-blur-md">
                               <Star className="size-3 fill-current" /> {movie.rating.toFixed(1)}
                             </span>

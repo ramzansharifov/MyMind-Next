@@ -1,4 +1,4 @@
-import { index, integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
 import type { MovieStatus } from '../../../shared/contracts/movies'
 
@@ -13,12 +13,12 @@ export const movies = sqliteTable(
     director: text('director').notNull().default(''),
     runtimeMinutes: integer('runtime_minutes'),
     genresJson: text('genres_json').notNull().default('[]'),
+    actorsJson: text('actors_json').notNull().default('[]'),
     description: text('description').notNull().default(''),
     status: text('status').$type<MovieStatus>().notNull().default('watchlist'),
     favorite: integer('favorite', { mode: 'boolean' }).notNull().default(false),
-    rating: real('rating'),
-    watchedAt: integer('watched_at', { mode: 'timestamp_ms' }),
-    notes: text('notes').notNull().default(''),
+    rating: integer('rating'),
+    comments: text('comments').notNull().default(''),
     createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
     updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull()
   },
