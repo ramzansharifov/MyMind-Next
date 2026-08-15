@@ -9,9 +9,13 @@ import type {
 import { DeleteConfirmationDialog } from '../../shared/ui/DeleteConfirmationDialog'
 import { moviesClient } from './api/movies-client'
 import { MovieDetail } from './components/MovieDetail'
-import { MovieDialog } from './components/MovieDialog'
+import { MovieFormPage } from './components/MovieFormPage'
 
 type MovieFilter = 'all' | 'watchlist' | 'watched' | 'favorites'
+type MovieView =
+  | { kind: 'library' }
+  | { kind: 'detail'; movieId: string }
+  | { kind: 'form'; movieId: string | null }
 
 interface MoviesPageProps {
   resourceId?: string | null
@@ -82,19 +86,19 @@ function MoviePoster({ movie }: { movie: MovieRecord }): React.JSX.Element {
 
 export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): React.JSX.Element {
   const [movies, setMovies] = useState<MovieRecord[]>([])
-  const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null)
+  const [view, setView] = useState<MovieView>({ kind: 'library' })
   const [filter, setFilter] = useState<MovieFilter>('all')
   const [query, setQuery] = useState('')
-  const [dialog, setDialog] = useState<{ movie: MovieRecord | null } | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<MovieRecord | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const selectedMovie = useMemo(
-    () => movies.find((movie) => movie.id === selectedMovieId) ?? null,
-    [movies, selectedMovieId]
+  const activeMovieId = view.kind === 'library' ? null : view.movieId
+  const activeMovie = useMemo(
+    () => movies.find((movie) => movie.id === activeMovieId) ?? null,
+    [activeMovieId, movies]
   )
 
   const stats = useMemo(
@@ -127,9 +131,12 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
     try {
       const overview = await moviesClient.listOverview()
       setMovies(overview.movies)
-      setSelectedMovieId((current) =>
-        current && overview.movies.some((movie) => movie.id === current) ? current : null
-      )
+      setView((current) => {
+        if (current.kind === 'library' || current.movieId === null) return current
+        return overview.movies.some((movie) => movie.id === current.movieId)
+          ? current
+          : { kind: 'library' }
+      })
       return overview.movies
     } catch (reason) {
       setError(errorMessage(reason))
@@ -162,7 +169,7 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
               ? current.map((item) => (item.id === movie.id ? movie : item))
               : [movie, ...current]
           )
-          setSelectedMovieId(movie.id)
+          setView({ kind: 'detail', movieId: movie.id })
         }
       } finally {
         if (!cancelled) onResourceHandled?.()
@@ -185,8 +192,7 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
         const withoutSaved = current.filter((movie) => movie.id !== saved.id)
         return [saved, ...withoutSaved]
       })
-      setSelectedMovieId(saved.id)
-      setDialog(null)
+      setView({ kind: 'detail', movieId: saved.id })
     } catch (reason) {
       setError(errorMessage(reason))
       throw reason
@@ -215,7 +221,7 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
     try {
       await moviesClient.deleteMovie({ id: deleteTarget.id })
       setMovies((current) => current.filter((movie) => movie.id !== deleteTarget.id))
-      if (selectedMovieId === deleteTarget.id) setSelectedMovieId(null)
+      if (activeMovieId === deleteTarget.id) setView({ kind: 'library' })
       setDeleteTarget(null)
     } catch (reason) {
       setError(errorMessage(reason))
@@ -253,31 +259,34 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
               </div>
             </div>
 
-            <button
-              type="button"
-              className="inline-flex h-10 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-400"
-              onClick={() => setDialog({ movie: null })}
-            >
-              <Plus className="size-4" /> Добавить фильм
-            </button>
+            {view.kind === 'library' && (
+              <button
+                type="button"
+                className="inline-flex h-10 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-400"
+                onClick={() => setView({ kind: 'form', movieId: null })}
+              >
+                <Plus className="size-4" /> Добавить фильм
+              </button>
+            )}
           </div>
 
-          <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-[var(--app-border)] pt-4 text-xs text-[var(--app-muted)]">
-            <span>
-              <strong className="mr-1 text-sm text-[var(--app-text)]">{stats.total}</strong> всего
-            </span>
-            <span>
-              <strong className="mr-1 text-sm text-[var(--app-text)]">{stats.watched}</strong>{' '}
-              просмотрено
-            </span>
-            <span>
-              <strong className="mr-1 text-sm text-[var(--app-text)]">{stats.watchlist}</strong>{' '}
-              хочу посмотреть
-            </span>
-            <span>
-              <strong className="mr-1 text-sm text-[var(--app-text)]">{stats.favorites}</strong>{' '}
-              избранных
-            </span>
+          <div className="mt-5 grid grid-cols-2 gap-2 border-t border-[var(--app-border)] pt-4 sm:flex sm:flex-wrap sm:items-center sm:gap-2">
+            {[
+              ['Всего', stats.total],
+              ['Просмотрено', stats.watched],
+              ['Хочу посмотреть', stats.watchlist],
+              ['Избранное', stats.favorites]
+            ].map(([label, value]) => (
+              <div
+                key={label}
+                className="rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 py-2 sm:min-w-28"
+              >
+                <strong className="block text-sm font-semibold text-[var(--app-text)]">
+                  {value}
+                </strong>
+                <span className="mt-0.5 block text-[11px] text-[var(--app-muted)]">{label}</span>
+              </div>
+            ))}
           </div>
         </header>
 
@@ -287,13 +296,27 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
           </div>
         )}
 
-        {selectedMovie ? (
-          <MovieDetail
-            movie={selectedMovie}
+        {view.kind === 'form' ? (
+          <MovieFormPage
+            key={view.movieId ?? 'new-movie'}
+            movie={activeMovie}
             busy={isSaving}
-            onBack={() => setSelectedMovieId(null)}
-            onEdit={() => setDialog({ movie: selectedMovie })}
-            onDelete={() => setDeleteTarget(selectedMovie)}
+            onCancel={() =>
+              setView(
+                view.movieId && activeMovie
+                  ? { kind: 'detail', movieId: view.movieId }
+                  : { kind: 'library' }
+              )
+            }
+            onSave={saveMovie}
+          />
+        ) : view.kind === 'detail' && activeMovie ? (
+          <MovieDetail
+            movie={activeMovie}
+            busy={isSaving}
+            onBack={() => setView({ kind: 'library' })}
+            onEdit={() => setView({ kind: 'form', movieId: activeMovie.id })}
+            onDelete={() => setDeleteTarget(activeMovie)}
             onUpdate={updateMovie}
           />
         ) : (
@@ -346,7 +369,7 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
                   <button
                     type="button"
                     className="mt-5 inline-flex h-10 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400"
-                    onClick={() => setDialog({ movie: null })}
+                    onClick={() => setView({ kind: 'form', movieId: null })}
                   >
                     <Plus className="size-4" /> Добавить фильм
                   </button>
@@ -363,7 +386,7 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
                           type="button"
                           aria-label={`Открыть фильм «${movie.title}»`}
                           className="absolute inset-0 z-0 overflow-hidden text-left outline-none focus-visible:ring-2 focus-visible:ring-violet-500/60 focus-visible:ring-inset"
-                          onClick={() => setSelectedMovieId(movie.id)}
+                          onClick={() => setView({ kind: 'detail', movieId: movie.id })}
                         >
                           <MoviePoster movie={movie} />
                           <span className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
@@ -412,7 +435,7 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
                       <button
                         type="button"
                         className="mt-3 block w-full min-w-0 text-left outline-none"
-                        onClick={() => setSelectedMovieId(movie.id)}
+                        onClick={() => setView({ kind: 'detail', movieId: movie.id })}
                       >
                         <span className="block truncate text-sm font-semibold text-[var(--app-text)] transition-colors group-hover:text-violet-200">
                           {movie.title}
@@ -435,19 +458,6 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
           </section>
         )}
       </div>
-
-      {dialog && (
-        <MovieDialog
-          key={dialog.movie?.id ?? 'new-movie'}
-          open
-          movie={dialog.movie}
-          busy={isSaving}
-          onOpenChange={(open) => {
-            if (!open) setDialog(null)
-          }}
-          onSave={saveMovie}
-        />
-      )}
 
       <DeleteConfirmationDialog
         open={deleteTarget !== null}
