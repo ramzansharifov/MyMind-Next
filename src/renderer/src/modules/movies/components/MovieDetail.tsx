@@ -1,17 +1,4 @@
-import {
-  ArrowLeft,
-  CalendarDays,
-  Check,
-  Clock3,
-  Expand,
-  Heart,
-  Image,
-  Pencil,
-  Star,
-  Trash2,
-  Users,
-  X
-} from 'lucide-react'
+import { CalendarDays, Check, Clock3, Expand, Heart, Image, Star, Users, X } from 'lucide-react'
 import { useState } from 'react'
 
 import type { MovieRecord } from '../../../../../shared/contracts/movies'
@@ -20,9 +7,6 @@ import { AppDialog } from '../../../shared/ui/AppDialog'
 interface MovieDetailProps {
   movie: MovieRecord
   busy: boolean
-  onBack: () => void
-  onEdit: () => void
-  onDelete: () => void
   onUpdate: (movie: MovieRecord) => Promise<void>
 }
 
@@ -34,14 +18,7 @@ function formatRuntime(minutes: number | null): string | null {
   return `${hours} ч ${rest > 0 ? `${rest} мин.` : ''}`.trim()
 }
 
-export function MovieDetail({
-  movie,
-  busy,
-  onBack,
-  onEdit,
-  onDelete,
-  onUpdate
-}: MovieDetailProps): React.JSX.Element {
+export function MovieDetail({ movie, busy, onUpdate }: MovieDetailProps): React.JSX.Element {
   const [posterOpen, setPosterOpen] = useState(false)
   const [posterFailed, setPosterFailed] = useState(false)
   const runtime = formatRuntime(movie.runtimeMinutes)
@@ -61,35 +38,7 @@ export function MovieDetail({
 
   return (
     <>
-      <section className="space-y-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <button
-            type="button"
-            className="inline-flex h-10 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-            onClick={onBack}
-          >
-            <ArrowLeft className="size-4" /> К библиотеке
-          </button>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              disabled={busy}
-              className="inline-flex h-10 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:opacity-50"
-              onClick={onEdit}
-            >
-              <Pencil className="size-4" /> Изменить
-            </button>
-            <button
-              type="button"
-              disabled={busy}
-              className="inline-flex h-10 items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/5 px-3 text-sm font-medium text-red-300 transition-colors hover:bg-red-500/10 disabled:opacity-50"
-              onClick={onDelete}
-            >
-              <Trash2 className="size-4" /> Удалить
-            </button>
-          </div>
-        </div>
-
+      <section>
         <div className="overflow-hidden rounded-[28px] border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--app-shadow-card)]">
           <div className="grid gap-0 lg:grid-cols-[300px_minmax(0,1fr)]">
             <div className="relative min-h-[440px] bg-[var(--app-workspace)]">

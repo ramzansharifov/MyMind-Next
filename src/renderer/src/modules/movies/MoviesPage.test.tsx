@@ -45,6 +45,29 @@ beforeEach(() => {
 })
 
 describe('MoviesPage', () => {
+  it('keeps the module header clean and puts movie actions into it', async () => {
+    const user = userEvent.setup()
+    mocks.listOverview.mockResolvedValue({ movies: [movie] })
+
+    const { container } = render(<MoviesPage />)
+
+    await screen.findByRole('button', { name: 'Открыть фильм «Интерстеллар»' })
+    expect(
+      screen.queryByText('Личная библиотека просмотренного и будущих просмотров')
+    ).not.toBeInTheDocument()
+    expect(screen.queryByText('2014')).not.toBeInTheDocument()
+
+    const movieTitleButton = screen.getByRole('button', { name: 'Интерстеллар' })
+    expect(movieTitleButton.parentElement).toHaveClass('overflow-hidden')
+
+    await user.click(screen.getByRole('button', { name: 'Открыть фильм «Интерстеллар»' }))
+    const header = container.querySelector('header')
+    expect(header).not.toBeNull()
+    expect(header).toContainElement(screen.getByRole('button', { name: 'К библиотеке' }))
+    expect(header).toContainElement(screen.getByRole('button', { name: 'Изменить' }))
+    expect(header).toContainElement(screen.getByRole('button', { name: 'Удалить' }))
+  })
+
   it('uses a clean dedicated form with actors, comments and URL-only poster', async () => {
     const user = userEvent.setup()
     const { container } = render(<MoviesPage />)
