@@ -20,7 +20,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: python .github/scripts/apply-movies-json-import.py
-      - run: rm .github/scripts/apply-movies-json-import.py .github/workflows/movies-json-import-validation.yml
+      - run: python .github/scripts/fix-movies-json-import.py
+      - run: rm .github/scripts/apply-movies-json-import.py .github/scripts/fix-movies-json-import.py .github/workflows/movies-json-import-validation.yml
       - run: npm ci
       - name: Format changed files
         run: >-
