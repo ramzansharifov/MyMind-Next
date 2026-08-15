@@ -45,19 +45,41 @@ beforeEach(() => {
 })
 
 describe('MoviesPage', () => {
-  it('adds posters only by URL and does not offer file upload', async () => {
+  it('opens movie creation as a dedicated page with URL-only poster input', async () => {
     const user = userEvent.setup()
     const { container } = render(<MoviesPage />)
 
     await screen.findByText('Библиотека пока пустая')
     await user.click(screen.getAllByRole('button', { name: 'Добавить фильм' })[0])
 
+    expect(screen.getByRole('heading', { name: 'Добавить фильм в библиотеку' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'К библиотеке' })).toBeInTheDocument()
+    expect(screen.getByText('Основная информация')).toBeInTheDocument()
+    expect(screen.getByText('Моя библиотека')).toBeInTheDocument()
     expect(screen.getByText('Ссылка на постер')).toBeInTheDocument()
     expect(screen.getByPlaceholderText('https://example.com/poster.jpg')).toHaveAttribute(
       'type',
       'url'
     )
     expect(container.querySelector('input[type="file"]')).toBeNull()
+    expect(container.querySelector('[data-app-dialog-content]')).toBeNull()
+  })
+
+  it('opens editing as a dedicated page and returns to the movie view', async () => {
+    const user = userEvent.setup()
+    mocks.listOverview.mockResolvedValue({ movies: [movie] })
+
+    render(<MoviesPage />)
+
+    await user.click(await screen.findByRole('button', { name: 'Открыть фильм «Интерстеллар»' }))
+    await user.click(screen.getByRole('button', { name: 'Изменить' }))
+
+    expect(screen.getByText('Редактирование')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Интерстеллар' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'К фильму' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'К фильму' }))
+    expect(screen.getByRole('button', { name: 'Изменить' })).toBeInTheDocument()
   })
 
   it('opens a separate movie view and fullscreen poster dialog', async () => {
