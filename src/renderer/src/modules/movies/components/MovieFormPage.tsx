@@ -309,7 +309,9 @@ export function MovieFormPage({
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <span className="mb-2 block text-xs font-medium text-[var(--app-muted)]">Статус</span>
+                <span className="mb-2 block text-xs font-medium text-[var(--app-muted)]">
+                  Статус
+                </span>
                 <div className="grid gap-2 sm:grid-cols-2">
                   <button
                     type="button"
@@ -324,7 +326,9 @@ export function MovieFormPage({
                     <Bookmark className="size-5 shrink-0" />
                     <span>
                       <strong className="block text-sm font-semibold">Хочу посмотреть</strong>
-                      <span className="mt-0.5 block text-[11px] opacity-70">Фильм в списке на будущее</span>
+                      <span className="mt-0.5 block text-[11px] opacity-70">
+                        Фильм в списке на будущее
+                      </span>
                     </span>
                   </button>
                   <button
@@ -340,7 +344,9 @@ export function MovieFormPage({
                     <Check className="size-5 shrink-0" />
                     <span>
                       <strong className="block text-sm font-semibold">Просмотрено</strong>
-                      <span className="mt-0.5 block text-[11px] opacity-70">Фильм уже просмотрен</span>
+                      <span className="mt-0.5 block text-[11px] opacity-70">
+                        Фильм уже просмотрен
+                      </span>
                     </span>
                   </button>
                 </div>
@@ -366,7 +372,9 @@ export function MovieFormPage({
 
               {status === 'watched' ? (
                 <label className="space-y-1.5">
-                  <span className="text-xs font-medium text-[var(--app-muted)]">Дата просмотра</span>
+                  <span className="text-xs font-medium text-[var(--app-muted)]">
+                    Дата просмотра
+                  </span>
                   <input
                     value={watchedAt}
                     type="date"
@@ -383,8 +391,8 @@ export function MovieFormPage({
                 aria-pressed={favorite}
                 className={
                   favorite
-                    ? 'sm:col-span-2 flex min-h-12 items-center gap-3 rounded-xl border border-rose-400/25 bg-rose-500/10 px-4 text-sm font-medium text-rose-200'
-                    : 'sm:col-span-2 flex min-h-12 items-center gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
+                    ? 'flex min-h-12 items-center gap-3 rounded-xl border border-rose-400/25 bg-rose-500/10 px-4 text-sm font-medium text-rose-200 sm:col-span-2'
+                    : 'flex min-h-12 items-center gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] sm:col-span-2'
                 }
                 onClick={() => setFavorite((current) => !current)}
               >
@@ -440,8 +448,12 @@ export function MovieFormPage({
                   <span className="flex size-12 items-center justify-center rounded-2xl border border-[var(--app-border)] bg-[var(--app-control)]">
                     <Image className="size-6 opacity-60" />
                   </span>
-                  <span className="text-sm font-medium text-[var(--app-text)]">Предпросмотр постера</span>
-                  <span className="text-xs leading-5">Вставьте прямую HTTP/HTTPS-ссылку на изображение</span>
+                  <span className="text-sm font-medium text-[var(--app-text)]">
+                    Предпросмотр постера
+                  </span>
+                  <span className="text-xs leading-5">
+                    Вставьте прямую HTTP/HTTPS-ссылку на изображение
+                  </span>
                 </div>
               )}
             </div>
@@ -464,7 +476,11 @@ export function MovieFormPage({
                       : 'inline-flex items-center gap-1.5 rounded-lg bg-violet-500/10 px-2.5 py-1.5 text-xs font-medium text-violet-300'
                   }
                 >
-                  {status === 'watched' ? <Check className="size-3.5" /> : <Bookmark className="size-3.5" />}
+                  {status === 'watched' ? (
+                    <Check className="size-3.5" />
+                  ) : (
+                    <Bookmark className="size-3.5" />
+                  )}
                   {status === 'watched' ? 'Просмотрено' : 'Хочу посмотреть'}
                 </span>
                 {favorite && (

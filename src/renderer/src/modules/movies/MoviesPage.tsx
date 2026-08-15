@@ -281,7 +281,9 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
                 key={label}
                 className="rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 py-2 sm:min-w-28"
               >
-                <strong className="block text-sm font-semibold text-[var(--app-text)]">{value}</strong>
+                <strong className="block text-sm font-semibold text-[var(--app-text)]">
+                  {value}
+                </strong>
                 <span className="mt-0.5 block text-[11px] text-[var(--app-muted)]">{label}</span>
               </div>
             ))}
