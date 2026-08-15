@@ -1,5 +1,6 @@
 name: Validate movies JSON import
 
+# Final validation after UI test input fix.
 on:
   push:
     branches:
