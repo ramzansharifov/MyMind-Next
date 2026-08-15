@@ -6,7 +6,7 @@
 .diary-reader-page-stage {
   position: relative;
   z-index: 3;
-  height: calc(90vh - 2.12rem);
+  height: calc(90vh - var(--diary-page-vertical-inset, 3.5rem));
   min-height: 0;
   overflow: clip;
   isolation: isolate;
@@ -170,10 +170,4 @@
 
 .diary-reader-ruled-sheet {
   min-height: 100%;
-}
-
-@media (max-width: 620px) {
-  .diary-reader-page-stage {
-    height: calc(90vh - 1.22rem);
-  }
 }
