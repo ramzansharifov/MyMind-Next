@@ -15,7 +15,8 @@ export const movieSafeIdSchema = z
 
 export const movieStatusSchema = z.enum(MOVIE_STATUSES)
 
-const nullableTrimmedText = (max: number) => z.string().trim().max(max).nullable()
+const nullableTrimmedText = (max: number): z.ZodNullable<z.ZodString> =>
+  z.string().trim().max(max).nullable()
 
 const posterUrlSchema = z
   .string()
