@@ -148,6 +148,13 @@
       "when": 1786698600000,
       "tag": "0020_diary_cover_tone",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "6",
+      "when": 1786818000000,
+      "tag": "0021_movies_module",
+      "breakpoints": true
     }
   ]
 }
