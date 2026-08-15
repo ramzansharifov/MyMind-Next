@@ -1,5 +1,6 @@
 import type {
   CreateMovieInput,
+  CreateMoviesInput,
   DeleteMovieInput,
   GetMovieInput,
   MovieRecord,
@@ -24,6 +25,9 @@ export const moviesClient = {
   },
   createMovie(input: CreateMovieInput): Promise<MovieRecord> {
     return getMoviesApi().createMovie(input)
+  },
+  createMovies(input: CreateMoviesInput): Promise<MovieRecord[]> {
+    return getMoviesApi().createMovies(input)
   },
   updateMovie(input: UpdateMovieInput): Promise<MovieRecord> {
     return getMoviesApi().updateMovie(input)

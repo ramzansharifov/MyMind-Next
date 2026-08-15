@@ -87,6 +87,7 @@ describe('preload API contract', () => {
       'listOverview',
       'getMovie',
       'createMovie',
+      'createMovies',
       'updateMovie',
       'deleteMovie'
     ])
@@ -145,6 +146,9 @@ describe('preload API contract', () => {
 
     await api.movies.getMovie({ id: 'movie-1' })
     expect(electronMocks.invoke).toHaveBeenCalledWith('movies:get-movie', { id: 'movie-1' })
+
+    await api.movies.createMovies({ movies: [] })
+    expect(electronMocks.invoke).toHaveBeenCalledWith('movies:create-movies', { movies: [] })
 
     await api.finance.createAccount({
       name: 'Карта',

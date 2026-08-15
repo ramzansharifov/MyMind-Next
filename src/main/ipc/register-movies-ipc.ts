@@ -3,12 +3,14 @@ import { ipcMain } from 'electron'
 import { MOVIES_IPC_CHANNELS } from '../../shared/contracts/movies'
 import {
   createMovieInputSchema,
+  createMoviesInputSchema,
   deleteMovieInputSchema,
   getMovieInputSchema,
   updateMovieInputSchema
 } from '../../shared/validation/movies'
 import {
   createMovie,
+  createMovies,
   deleteMovie,
   getMovie,
   listMoviesOverview,
@@ -27,6 +29,9 @@ export function registerMoviesIpcHandlers(): void {
   )
   ipcMain.handle(MOVIES_IPC_CHANNELS.createMovie, (_event, rawInput: unknown) =>
     mainOperationTracker.run(() => createMovie(createMovieInputSchema.parse(rawInput)))
+  )
+  ipcMain.handle(MOVIES_IPC_CHANNELS.createMovies, (_event, rawInput: unknown) =>
+    mainOperationTracker.run(() => createMovies(createMoviesInputSchema.parse(rawInput)))
   )
   ipcMain.handle(MOVIES_IPC_CHANNELS.updateMovie, (_event, rawInput: unknown) =>
     mainOperationTracker.run(() => updateMovie(updateMovieInputSchema.parse(rawInput)))

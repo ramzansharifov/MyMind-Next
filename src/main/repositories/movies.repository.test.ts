@@ -7,6 +7,7 @@ import { closeDatabase, getSqlite, initializeDatabaseForTesting } from '../datab
 import { runDatabaseMigrationsFrom } from '../database/migrate'
 import {
   createMovie,
+  createMovies,
   deleteMovie,
   getMovie,
   listMoviesOverview,
@@ -50,6 +51,43 @@ describe('movies repository', () => {
 
     expect(getMovie({ id: movie.id })).toEqual(movie)
     expect(listMoviesOverview().movies).toEqual([movie])
+  })
+
+  it('creates multiple movies in one transaction and rolls back the whole batch on failure', () => {
+    const base = {
+      originalTitle: null,
+      year: null,
+      posterUrl: null,
+      director: '',
+      runtimeMinutes: null,
+      genres: [],
+      actors: [],
+      description: '',
+      status: 'watchlist' as const,
+      favorite: false,
+      rating: null,
+      comments: ''
+    }
+
+    const created = createMovies({
+      movies: [
+        { ...base, title: 'Movie A' },
+        { ...base, title: 'Movie B' }
+      ]
+    })
+    expect(created.map((movie) => movie.title)).toEqual(['Movie A', 'Movie B'])
+    expect(listMoviesOverview().movies).toHaveLength(2)
+
+    getSqlite().exec('DELETE FROM movies;')
+    expect(() =>
+      createMovies({
+        movies: [
+          { ...base, title: 'Will roll back' },
+          { ...base, title: null as unknown as string }
+        ]
+      })
+    ).toThrow()
+    expect(listMoviesOverview().movies).toHaveLength(0)
   })
 
   it('clears rating outside watched state', () => {
