@@ -6,11 +6,20 @@
   --diary-cover-stitch: #a87b49;
   --diary-cover-spine-light: #6a432a;
   --diary-cover-spine-dark: #2a160c;
+  --diary-stack-top: 1.06rem;
+  --diary-stack-right: 0.58rem;
+  --diary-stack-bottom: 0.86rem;
+  --diary-stack-left: 1.42rem;
+  --diary-stack-page-offset: 12.5px;
+  --diary-page-vertical-inset: calc(var(--diary-stack-top) + var(--diary-stack-bottom) + 25px);
 
   position: relative;
   isolation: isolate;
   overflow: visible;
-  padding: 4.5px;
+  padding: calc(var(--diary-stack-top) + var(--diary-stack-page-offset))
+    calc(var(--diary-stack-right) + var(--diary-stack-page-offset))
+    calc(var(--diary-stack-bottom) + var(--diary-stack-page-offset))
+    calc(var(--diary-stack-left) + var(--diary-stack-page-offset));
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -33,35 +42,40 @@
 }
 
 .diary-paper-stack-layer--1 {
-  inset: 2px;
+  inset: var(--diary-stack-top) var(--diary-stack-right) var(--diary-stack-bottom)
+    var(--diary-stack-left);
   z-index: 1;
   border-color: color-mix(in srgb, var(--diary-paper-deep) 72%, black 28%);
   background: color-mix(in srgb, var(--diary-paper-deep) 78%, black 22%);
 }
 
 .diary-paper-stack-layer--2 {
-  inset: 2.5px;
+  inset: calc(var(--diary-stack-top) + 2.5px) calc(var(--diary-stack-right) + 2.5px)
+    calc(var(--diary-stack-bottom) + 2.5px) calc(var(--diary-stack-left) + 2.5px);
   z-index: 2;
   border-color: color-mix(in srgb, var(--diary-paper-deep) 78%, black 22%);
   background: color-mix(in srgb, var(--diary-paper-deep) 84%, black 16%);
 }
 
 .diary-paper-stack-layer--3 {
-  inset: 3px;
+  inset: calc(var(--diary-stack-top) + 5px) calc(var(--diary-stack-right) + 5px)
+    calc(var(--diary-stack-bottom) + 5px) calc(var(--diary-stack-left) + 5px);
   z-index: 3;
   border-color: color-mix(in srgb, var(--diary-paper-deep) 84%, black 16%);
   background: color-mix(in srgb, var(--diary-paper-deep) 90%, black 10%);
 }
 
 .diary-paper-stack-layer--4 {
-  inset: 3.5px;
+  inset: calc(var(--diary-stack-top) + 7.5px) calc(var(--diary-stack-right) + 7.5px)
+    calc(var(--diary-stack-bottom) + 7.5px) calc(var(--diary-stack-left) + 7.5px);
   z-index: 4;
   border-color: color-mix(in srgb, var(--diary-paper-deep) 90%, black 10%);
   background: color-mix(in srgb, var(--diary-paper-deep) 82%, var(--diary-paper) 18%);
 }
 
 .diary-paper-stack-layer--5 {
-  inset: 4px;
+  inset: calc(var(--diary-stack-top) + 10px) calc(var(--diary-stack-right) + 10px)
+    calc(var(--diary-stack-bottom) + 10px) calc(var(--diary-stack-left) + 10px);
   z-index: 5;
   border-color: color-mix(in srgb, var(--diary-paper-deep) 82%, var(--diary-paper) 18%);
   background: color-mix(in srgb, var(--diary-paper) 78%, var(--diary-paper-deep) 22%);
@@ -211,7 +225,10 @@
 
 @media (max-width: 760px) {
   .diary-premium-book {
-    padding: 4.5px;
+    --diary-stack-top: 0.9rem;
+    --diary-stack-right: 0.42rem;
+    --diary-stack-bottom: 0.72rem;
+    --diary-stack-left: 1.1rem;
   }
 
   .diary-back-binding::after {
@@ -221,7 +238,10 @@
 
 @media (max-width: 620px) {
   .diary-premium-book {
-    padding: 4.5px;
+    --diary-stack-top: 0.62rem;
+    --diary-stack-right: 0.24rem;
+    --diary-stack-bottom: 0.52rem;
+    --diary-stack-left: 0.76rem;
   }
 
   .diary-back-binding {
