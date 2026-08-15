@@ -22,6 +22,7 @@ import {
 } from '../lib/diary-ui'
 import { getDiaryCoverStyle } from '../lib/diary-cover'
 import { getDiaryPaperStyle } from '../lib/diary-paper'
+import { DiaryPaperStack } from './DiaryPaperStack'
 import {
   DiaryPageCurlOverlay,
   type DiaryPageCurlDirection,
@@ -251,6 +252,7 @@ export function DiaryReader({
         style={getDiaryCoverStyle(diary.coverTone)}
       >
         <span className="diary-back-binding" aria-hidden="true" />
+        <DiaryPaperStack paperTone={diary.paperTone} />
         <span
           className="diary-side-tab diary-reader-page-tab"
           tabIndex={0}

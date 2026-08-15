@@ -18,6 +18,7 @@ import {
 } from '../lib/diary-ui'
 import { getDiaryCoverStyle } from '../lib/diary-cover'
 import { getDiaryPaperStyle } from '../lib/diary-paper'
+import { DiaryPaperStack } from './DiaryPaperStack'
 
 export function DiaryToday({
   diary,
@@ -137,6 +138,7 @@ export function DiaryToday({
         style={getDiaryCoverStyle(diary.coverTone)}
       >
         <span className="diary-back-binding" aria-hidden="true" />
+        <DiaryPaperStack paperTone={diary.paperTone} />
         <span className="diary-side-tab" aria-hidden="true">
           Сегодня
         </span>
