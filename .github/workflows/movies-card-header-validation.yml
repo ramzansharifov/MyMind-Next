@@ -20,6 +20,18 @@ jobs:
           node-version: 22
           cache: npm
       - run: python .github/scripts/apply-movies-card-header.py
+      - name: Fix card wrapper nesting
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('src/renderer/src/modules/movies/MoviesPage.tsx')
+          text = path.read_text()
+          needle = '''                        </div>\n                        <button\n                          type="button"\n                          className="flex min-h-13'''
+          replacement = '''                        </div>\n                        </div>\n                        <button\n                          type="button"\n                          className="flex min-h-13'''
+          if needle not in text:
+              raise SystemExit('card footer insertion point not found')
+          path.write_text(text.replace(needle, replacement, 1))
+          PY
       - run: rm .github/scripts/apply-movies-card-header.py .github/workflows/movies-card-header-validation.yml
       - run: npm ci
       - name: Format changed files
