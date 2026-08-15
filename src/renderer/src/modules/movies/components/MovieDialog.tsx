@@ -181,7 +181,9 @@ export function MovieDialog({
             </label>
 
             <label className="space-y-1.5 sm:col-span-2">
-              <span className="text-xs font-medium text-[var(--app-muted)]">Оригинальное название</span>
+              <span className="text-xs font-medium text-[var(--app-muted)]">
+                Оригинальное название
+              </span>
               <input
                 value={originalTitle}
                 className={fieldClassName}
@@ -222,7 +224,9 @@ export function MovieDialog({
             </label>
 
             <label className="space-y-1.5">
-              <span className="text-xs font-medium text-[var(--app-muted)]">Длительность, мин.</span>
+              <span className="text-xs font-medium text-[var(--app-muted)]">
+                Длительность, мин.
+              </span>
               <input
                 value={runtimeMinutes}
                 type="number"
@@ -245,7 +249,9 @@ export function MovieDialog({
             </label>
 
             <label className="space-y-1.5 sm:col-span-2">
-              <span className="text-xs font-medium text-[var(--app-muted)]">Жанры через запятую</span>
+              <span className="text-xs font-medium text-[var(--app-muted)]">
+                Жанры через запятую
+              </span>
               <input
                 value={genres}
                 className={fieldClassName}
@@ -305,8 +311,7 @@ export function MovieDialog({
                 className="size-4 accent-violet-500"
                 onChange={(event) => setFavorite(event.target.checked)}
               />
-              <Heart className="size-4 text-rose-300" />
-              В избранном
+              <Heart className="size-4 text-rose-300" />В избранном
             </label>
           </div>
 

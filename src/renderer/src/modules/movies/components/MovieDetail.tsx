@@ -140,7 +140,9 @@ export function MovieDetail({
                 {movie.rating !== null && (
                   <div className="flex shrink-0 items-center gap-2 rounded-2xl border border-amber-400/20 bg-amber-400/10 px-4 py-3 text-amber-200">
                     <Star className="size-5 fill-current" />
-                    <span className="text-xl font-semibold tabular-nums">{movie.rating.toFixed(1)}</span>
+                    <span className="text-xl font-semibold tabular-nums">
+                      {movie.rating.toFixed(1)}
+                    </span>
                     <span className="text-xs opacity-70">/ 10</span>
                   </div>
                 )}
@@ -207,7 +209,7 @@ export function MovieDetail({
               {movie.description ? (
                 <div className="mt-8">
                   <h3 className="text-sm font-semibold text-[var(--app-text)]">О фильме</h3>
-                  <p className="mt-3 max-w-3xl whitespace-pre-wrap text-sm leading-7 text-[var(--app-muted)]">
+                  <p className="mt-3 max-w-3xl text-sm leading-7 whitespace-pre-wrap text-[var(--app-muted)]">
                     {movie.description}
                   </p>
                 </div>
@@ -216,7 +218,7 @@ export function MovieDetail({
               <div className="mt-8 border-t border-[var(--app-border)] pt-6">
                 <h3 className="text-sm font-semibold text-[var(--app-text)]">Мои впечатления</h3>
                 {movie.notes ? (
-                  <p className="mt-3 max-w-3xl whitespace-pre-wrap text-sm leading-7 text-[var(--app-muted)]">
+                  <p className="mt-3 max-w-3xl text-sm leading-7 whitespace-pre-wrap text-[var(--app-muted)]">
                     {movie.notes}
                   </p>
                 ) : (

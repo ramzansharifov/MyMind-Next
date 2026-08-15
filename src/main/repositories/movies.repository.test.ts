@@ -5,7 +5,13 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { closeDatabase, getSqlite, initializeDatabaseForTesting } from '../database/client'
 import { runDatabaseMigrationsFrom } from '../database/migrate'
-import { createMovie, deleteMovie, getMovie, listMoviesOverview, updateMovie } from './movies.repository'
+import {
+  createMovie,
+  deleteMovie,
+  getMovie,
+  listMoviesOverview,
+  updateMovie
+} from './movies.repository'
 
 let root = ''
 

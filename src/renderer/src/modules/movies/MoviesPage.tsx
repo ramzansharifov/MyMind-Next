@@ -1,14 +1,4 @@
-import {
-  Bookmark,
-  Check,
-  Film,
-  Heart,
-  Image,
-  LoaderCircle,
-  Plus,
-  Search,
-  Star
-} from 'lucide-react'
+import { Bookmark, Check, Film, Heart, Image, LoaderCircle, Plus, Search, Star } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import type {
@@ -187,9 +177,10 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
     setIsSaving(true)
     setError(null)
     try {
-      const saved = 'id' in input
-        ? await moviesClient.updateMovie(input)
-        : await moviesClient.createMovie(input)
+      const saved =
+        'id' in input
+          ? await moviesClient.updateMovie(input)
+          : await moviesClient.createMovie(input)
       setMovies((current) => {
         const withoutSaved = current.filter((movie) => movie.id !== saved.id)
         return [saved, ...withoutSaved]
@@ -253,8 +244,12 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
                 <Film aria-hidden="true" className="size-6" />
               </span>
               <div>
-                <h1 className="text-2xl font-semibold tracking-tight text-[var(--app-text)]">Фильмы</h1>
-                <p className="mt-1 text-xs text-[var(--app-muted)]">Личная библиотека просмотренного и будущих просмотров</p>
+                <h1 className="text-2xl font-semibold tracking-tight text-[var(--app-text)]">
+                  Фильмы
+                </h1>
+                <p className="mt-1 text-xs text-[var(--app-muted)]">
+                  Личная библиотека просмотренного и будущих просмотров
+                </p>
               </div>
             </div>
 
@@ -268,10 +263,21 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
           </div>
 
           <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-[var(--app-border)] pt-4 text-xs text-[var(--app-muted)]">
-            <span><strong className="mr-1 text-sm text-[var(--app-text)]">{stats.total}</strong> всего</span>
-            <span><strong className="mr-1 text-sm text-[var(--app-text)]">{stats.watched}</strong> просмотрено</span>
-            <span><strong className="mr-1 text-sm text-[var(--app-text)]">{stats.watchlist}</strong> хочу посмотреть</span>
-            <span><strong className="mr-1 text-sm text-[var(--app-text)]">{stats.favorites}</strong> избранных</span>
+            <span>
+              <strong className="mr-1 text-sm text-[var(--app-text)]">{stats.total}</strong> всего
+            </span>
+            <span>
+              <strong className="mr-1 text-sm text-[var(--app-text)]">{stats.watched}</strong>{' '}
+              просмотрено
+            </span>
+            <span>
+              <strong className="mr-1 text-sm text-[var(--app-text)]">{stats.watchlist}</strong>{' '}
+              хочу посмотреть
+            </span>
+            <span>
+              <strong className="mr-1 text-sm text-[var(--app-text)]">{stats.favorites}</strong>{' '}
+              избранных
+            </span>
           </div>
         </header>
 
@@ -365,7 +371,9 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
 
                         <button
                           type="button"
-                          aria-label={movie.favorite ? 'Убрать из избранного' : 'Добавить в избранное'}
+                          aria-label={
+                            movie.favorite ? 'Убрать из избранного' : 'Добавить в избранное'
+                          }
                           aria-pressed={movie.favorite}
                           disabled={isSaving}
                           className={
@@ -386,7 +394,11 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
                                 : 'inline-flex items-center gap-1 rounded-lg border border-violet-300/20 bg-black/50 px-2 py-1 text-[11px] font-medium text-violet-200 backdrop-blur-md'
                             }
                           >
-                            {movie.status === 'watched' ? <Check className="size-3" /> : <Bookmark className="size-3" />}
+                            {movie.status === 'watched' ? (
+                              <Check className="size-3" />
+                            ) : (
+                              <Bookmark className="size-3" />
+                            )}
                             {movie.status === 'watched' ? 'Просмотрено' : 'Хочу посмотреть'}
                           </span>
                           {movie.rating !== null && (
@@ -407,7 +419,12 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
                         </span>
                         <span className="mt-1 flex items-center gap-1.5 truncate text-xs text-[var(--app-muted)]">
                           {movie.year ?? 'Год не указан'}
-                          {runtime && <><span>·</span><span>{runtime}</span></>}
+                          {runtime && (
+                            <>
+                              <span>·</span>
+                              <span>{runtime}</span>
+                            </>
+                          )}
                         </span>
                       </button>
                     </article>

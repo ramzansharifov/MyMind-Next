@@ -53,7 +53,10 @@ describe('MoviesPage', () => {
     await user.click(screen.getAllByRole('button', { name: 'Добавить фильм' })[0])
 
     expect(screen.getByText('Ссылка на постер')).toBeInTheDocument()
-    expect(screen.getByPlaceholderText('https://example.com/poster.jpg')).toHaveAttribute('type', 'url')
+    expect(screen.getByPlaceholderText('https://example.com/poster.jpg')).toHaveAttribute(
+      'type',
+      'url'
+    )
     expect(container.querySelector('input[type="file"]')).toBeNull()
   })
 
@@ -68,7 +71,9 @@ describe('MoviesPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Открыть постер на весь экран' }))
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Закрыть полноэкранный постер' })).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Закрыть полноэкранный постер' })
+      ).toBeInTheDocument()
     )
   })
 })
