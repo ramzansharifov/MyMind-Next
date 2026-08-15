@@ -1,0 +1,217 @@
+name: Apply five-layer diary paper stack
+
+on:
+  push:
+    branches: [agent/diary-five-layer-stack]
+    paths:
+      - '.github/workflows/diary-five-layer-stack.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply five-layer stack structure
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          today = Path('src/renderer/src/modules/diary/components/DiaryToday.tsx')
+          text = today.read_text()
+          old = "import { getDiaryPaperStyle } from '../lib/diary-paper'\n"
+          new = old + "import { DiaryPaperStack } from './DiaryPaperStack'\n"
+          if old not in text:
+              raise SystemExit('DiaryToday import anchor not found')
+          text = text.replace(old, new, 1)
+          old = '        <span className="diary-back-binding" aria-hidden="true" />\n'
+          new = old + '        <DiaryPaperStack paperTone={diary.paperTone} />\n'
+          if old not in text:
+              raise SystemExit('DiaryToday stack anchor not found')
+          today.write_text(text.replace(old, new, 1))
+
+          reader = Path('src/renderer/src/modules/diary/components/DiaryReader.tsx')
+          text = reader.read_text()
+          old = "import { getDiaryPaperStyle } from '../lib/diary-paper'\n"
+          new = old + "import { DiaryPaperStack } from './DiaryPaperStack'\n"
+          if old not in text:
+              raise SystemExit('DiaryReader import anchor not found')
+          text = text.replace(old, new, 1)
+          old = '        <span className="diary-back-binding" aria-hidden="true" />\n'
+          new = old + '        <DiaryPaperStack paperTone={diary.paperTone} />\n'
+          if old not in text:
+              raise SystemExit('DiaryReader stack anchor not found')
+          reader.write_text(text.replace(old, new, 1))
+
+          css = Path('src/renderer/src/modules/diary/diary-leather-cover.css')
+          text = css.read_text()
+
+          text = text.replace(
+              '  padding: 0.92rem 0.92rem 1.2rem 1.28rem;',
+              '  padding: 4.5px;',
+              1,
+          )
+
+          start = text.index('.diary-premium-book::before {')
+          end = text.index('\n\n.diary-back-binding {', start)
+          layers = '''.diary-premium-book::before,
+.diary-premium-book::after {
+  display: none;
+}
+
+.diary-paper-stack-layer {
+  position: absolute;
+  pointer-events: none;
+  border-style: solid;
+  border-width: 1px;
+  border-radius: 1.48rem 1.66rem 1.66rem 1.36rem;
+  box-shadow: 0 1px 2px rgb(20 13 7 / 12%);
+}
+
+.diary-paper-stack-layer--1 {
+  inset: 2px;
+  z-index: 1;
+  border-color: color-mix(in srgb, var(--diary-paper-deep) 72%, black 28%);
+  background: color-mix(in srgb, var(--diary-paper-deep) 78%, black 22%);
+}
+
+.diary-paper-stack-layer--2 {
+  inset: 2.5px;
+  z-index: 2;
+  border-color: color-mix(in srgb, var(--diary-paper-deep) 78%, black 22%);
+  background: color-mix(in srgb, var(--diary-paper-deep) 84%, black 16%);
+}
+
+.diary-paper-stack-layer--3 {
+  inset: 3px;
+  z-index: 3;
+  border-color: color-mix(in srgb, var(--diary-paper-deep) 84%, black 16%);
+  background: color-mix(in srgb, var(--diary-paper-deep) 90%, black 10%);
+}
+
+.diary-paper-stack-layer--4 {
+  inset: 3.5px;
+  z-index: 4;
+  border-color: color-mix(in srgb, var(--diary-paper-deep) 90%, black 10%);
+  background: color-mix(in srgb, var(--diary-paper-deep) 82%, var(--diary-paper) 18%);
+}
+
+.diary-paper-stack-layer--5 {
+  inset: 4px;
+  z-index: 5;
+  border-color: color-mix(in srgb, var(--diary-paper-deep) 82%, var(--diary-paper) 18%);
+  background: color-mix(in srgb, var(--diary-paper) 78%, var(--diary-paper-deep) 22%);
+}'''
+          text = text[:start] + layers + text[end:]
+
+          text = text.replace('  inset: 0 0 0.28rem 0;', '  inset: 0;', 1)
+          text = text.replace('  z-index: 3;\n  border-color: #b89560;', '  z-index: 6;\n  border-color: #b89560;', 1)
+
+          anchor = '''.diary-premium-paper::before {
+'''
+          reader_stage = '''.diary-premium-book .diary-reader-page-stage {
+  z-index: 6;
+}
+
+'''
+          if anchor not in text:
+              raise SystemExit('Reader stage CSS anchor not found')
+          text = text.replace(anchor, reader_stage + anchor, 1)
+
+          text = text.replace(
+              '''  .diary-premium-book {
+    padding: 0.75rem 0.7rem 1rem 1rem;
+  }
+''',
+              '''  .diary-premium-book {
+    padding: 4.5px;
+  }
+''',
+              1,
+          )
+          text = text.replace(
+              '''
+  .diary-premium-book::before {
+    top: 0.9rem;
+    right: 0.42rem;
+    bottom: 0.72rem;
+    left: 1.1rem;
+  }
+
+  .diary-premium-book::after {
+    top: 0.86rem;
+    right: 0.54rem;
+    bottom: 0.84rem;
+    left: 1.06rem;
+  }
+''',
+              '\n',
+              1,
+          )
+          text = text.replace(
+              '''  .diary-premium-book {
+    padding: 0.5rem 0.44rem 0.72rem 0.7rem;
+  }
+''',
+              '''  .diary-premium-book {
+    padding: 4.5px;
+  }
+''',
+              1,
+          )
+          text = text.replace(
+              '''
+  .diary-premium-book::before {
+    top: 0.62rem;
+    right: 0.24rem;
+    bottom: 0.52rem;
+    left: 0.76rem;
+  }
+
+  .diary-premium-book::after {
+    top: 0.58rem;
+    right: 0.34rem;
+    bottom: 0.62rem;
+    left: 0.72rem;
+  }
+''',
+              '\n',
+              1,
+          )
+
+          css.write_text(text)
+          PY
+
+      - name: Format changed files
+        run: npx prettier --write src/renderer/src/modules/diary/components/DiaryPaperStack.tsx src/renderer/src/modules/diary/components/DiaryToday.tsx src/renderer/src/modules/diary/components/DiaryReader.tsx src/renderer/src/modules/diary/diary-leather-cover.css
+
+      - name: Typecheck renderer
+        run: npm run typecheck:web
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Targeted diary tests
+        run: npx vitest run src/renderer/src/modules/diary/components/DiaryToday.test.tsx src/renderer/src/modules/diary/components/DiaryReader.test.tsx
+
+      - name: Production bundle
+        run: npm run build:bundle
+
+      - name: Commit source changes
+        run: |
+          git config user.name "Ramzan Sharifov"
+          git config user.email "114869338+ramzansharifov@users.noreply.github.com"
+          git add src/renderer/src/modules/diary/components/DiaryPaperStack.tsx src/renderer/src/modules/diary/components/DiaryToday.tsx src/renderer/src/modules/diary/components/DiaryReader.tsx src/renderer/src/modules/diary/diary-leather-cover.css
+          git commit -m "Build diary page stack from five real layers"
+          git push
