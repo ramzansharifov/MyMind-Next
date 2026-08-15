@@ -10,7 +10,7 @@
   position: relative;
   isolation: isolate;
   overflow: visible;
-  padding: 0.92rem 0.92rem 1.2rem 1.28rem;
+  padding: 4.5px;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -18,63 +18,58 @@
   backdrop-filter: none;
 }
 
-.diary-premium-book::before {
-  position: absolute;
-  top: 1.06rem;
-  right: 0.58rem;
-  bottom: 0.86rem;
-  left: 1.42rem;
-  z-index: 1;
-  display: block;
-  border: 1px solid rgb(190 164 119 / 52%);
-  border-radius: 1.28rem 1.55rem 1.55rem 1.14rem;
-  content: '';
-  pointer-events: none;
-  background:
-    repeating-linear-gradient(
-      to bottom,
-      rgb(215 194 154 / 68%) 0,
-      rgb(215 194 154 / 68%) 1px,
-      rgb(238 223 194 / 82%) 1px,
-      rgb(238 223 194 / 82%) 2px
-    ),
-    linear-gradient(180deg, rgb(237 222 193 / 86%), rgb(219 199 162 / 88%));
-  box-shadow:
-    0 0.42rem 0.82rem rgb(24 15 8 / 14%),
-    0.18rem 0.12rem 0.28rem rgb(40 27 14 / 10%);
-  transform: translate(0.08rem, 0.08rem);
+.diary-premium-book::before,
+.diary-premium-book::after {
+  display: none;
 }
 
-.diary-premium-book::after {
+.diary-paper-stack-layer {
   position: absolute;
-  top: 1.02rem;
-  right: 0.72rem;
-  bottom: 1rem;
-  left: 1.36rem;
-  z-index: 2;
-  display: block;
-  border: 1px solid rgb(202 178 135 / 46%);
-  border-radius: 1.3rem 1.58rem 1.58rem 1.16rem;
-  content: '';
   pointer-events: none;
-  background:
-    repeating-linear-gradient(
-      to bottom,
-      rgb(226 208 172 / 70%) 0,
-      rgb(226 208 172 / 70%) 1px,
-      rgb(244 232 207 / 84%) 1px,
-      rgb(244 232 207 / 84%) 2px
-    ),
-    linear-gradient(180deg, rgb(244 232 207 / 90%), rgb(228 211 178 / 90%));
-  box-shadow:
-    0 0.28rem 0.56rem rgb(30 19 10 / 12%),
-    0.12rem 0.08rem 0.2rem rgb(47 31 16 / 8%);
-  transform: translate(0.04rem, 0.04rem);
+  border-style: solid;
+  border-width: 1px;
+  border-radius: 1.48rem 1.66rem 1.66rem 1.36rem;
+  box-shadow: 0 1px 2px rgb(20 13 7 / 12%);
+}
+
+.diary-paper-stack-layer--1 {
+  inset: 2px;
+  z-index: 1;
+  border-color: color-mix(in srgb, var(--diary-paper-deep) 72%, black 28%);
+  background: color-mix(in srgb, var(--diary-paper-deep) 78%, black 22%);
+}
+
+.diary-paper-stack-layer--2 {
+  inset: 2.5px;
+  z-index: 2;
+  border-color: color-mix(in srgb, var(--diary-paper-deep) 78%, black 22%);
+  background: color-mix(in srgb, var(--diary-paper-deep) 84%, black 16%);
+}
+
+.diary-paper-stack-layer--3 {
+  inset: 3px;
+  z-index: 3;
+  border-color: color-mix(in srgb, var(--diary-paper-deep) 84%, black 16%);
+  background: color-mix(in srgb, var(--diary-paper-deep) 90%, black 10%);
+}
+
+.diary-paper-stack-layer--4 {
+  inset: 3.5px;
+  z-index: 4;
+  border-color: color-mix(in srgb, var(--diary-paper-deep) 90%, black 10%);
+  background: color-mix(in srgb, var(--diary-paper-deep) 82%, var(--diary-paper) 18%);
+}
+
+.diary-paper-stack-layer--5 {
+  inset: 4px;
+  z-index: 5;
+  border-color: color-mix(in srgb, var(--diary-paper-deep) 82%, var(--diary-paper) 18%);
+  background: color-mix(in srgb, var(--diary-paper) 78%, var(--diary-paper-deep) 22%);
 }
 
 .diary-back-binding {
   position: absolute;
-  inset: 0 0 0.28rem 0;
+  inset: 0;
   z-index: 0;
   width: auto;
   overflow: hidden;
@@ -151,7 +146,7 @@
   --diary-rule-baseline: 29px;
   --diary-baseline-nudge: 0px;
 
-  z-index: 3;
+  z-index: 6;
   border-color: #b89560;
   background-color: var(--diary-paper);
   background-image:
@@ -163,6 +158,10 @@
     0 0.16rem 0.3rem rgb(63 40 20 / 14%),
     inset 1rem 0 1.4rem rgb(92 60 29 / 7%),
     inset -0.45rem 0 0.8rem rgb(92 60 29 / 8%);
+}
+
+.diary-premium-book .diary-reader-page-stage {
+  z-index: 6;
 }
 
 .diary-premium-paper::before {
@@ -212,31 +211,17 @@
 
 @media (max-width: 760px) {
   .diary-premium-book {
-    padding: 0.75rem 0.7rem 1rem 1rem;
+    padding: 4.5px;
   }
 
   .diary-back-binding::after {
     width: 2.2rem;
   }
-
-  .diary-premium-book::before {
-    top: 0.9rem;
-    right: 0.42rem;
-    bottom: 0.72rem;
-    left: 1.1rem;
-  }
-
-  .diary-premium-book::after {
-    top: 0.86rem;
-    right: 0.54rem;
-    bottom: 0.84rem;
-    left: 1.06rem;
-  }
 }
 
 @media (max-width: 620px) {
   .diary-premium-book {
-    padding: 0.5rem 0.44rem 0.72rem 0.7rem;
+    padding: 4.5px;
   }
 
   .diary-back-binding {
@@ -253,20 +238,6 @@
     bottom: 0.32rem;
     left: 0.32rem;
     width: 1.4rem;
-  }
-
-  .diary-premium-book::before {
-    top: 0.62rem;
-    right: 0.24rem;
-    bottom: 0.52rem;
-    left: 0.76rem;
-  }
-
-  .diary-premium-book::after {
-    top: 0.58rem;
-    right: 0.34rem;
-    bottom: 0.62rem;
-    left: 0.72rem;
   }
 }
 
