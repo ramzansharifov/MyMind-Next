@@ -1,6 +1,7 @@
 import { lazy, type ComponentType } from 'react'
 import {
   BookHeart,
+  Film,
   GraduationCap,
   House,
   Notebook,
@@ -51,6 +52,9 @@ const NotesModule = lazy(() =>
 const DiaryModule = lazy(() =>
   import('../modules/diary/DiaryPage').then(({ DiaryPage }) => ({ default: DiaryPage }))
 ) as ComponentType<AppModuleProps>
+const MoviesModule = lazy(() =>
+  import('../modules/movies/MoviesPage').then(({ MoviesPage }) => ({ default: MoviesPage }))
+) as ComponentType<AppModuleProps>
 const FinanceModule = lazy(() =>
   import('../modules/finance/FinancePage').then(({ FinancePage }) => ({ default: FinancePage }))
 ) as ComponentType<AppModuleProps>
@@ -100,6 +104,14 @@ export const appModuleRegistry = defineAppModules({
     icon: BookHeart,
     navigationGroup: 'primary',
     component: DiaryModule
+  },
+  movies: {
+    id: 'movies',
+    label: 'Фильмы',
+    loadingLabel: 'Загрузка фильмов',
+    icon: Film,
+    navigationGroup: 'primary',
+    component: MoviesModule
   },
   finance: {
     id: 'finance',
