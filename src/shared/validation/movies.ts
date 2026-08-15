@@ -8,6 +8,7 @@ const MAX_MOVIE_TEXT_LENGTH = 10_000
 const MAX_MOVIE_DESCRIPTION_LENGTH = 5_000
 const MAX_MOVIE_DIRECTOR_LENGTH = 240
 const MAX_MOVIE_GENRES = 16
+const MAX_MOVIE_ACTORS = 64
 
 export const movieSafeIdSchema = z
   .string()
@@ -29,10 +30,16 @@ const posterUrlSchema = z
 
 const ratingSchema = z
   .number()
+  .int('Оценка должна быть целым числом')
   .min(1, 'Минимальная оценка — 1')
   .max(10, 'Максимальная оценка — 10')
-  .refine((value) => Number.isInteger(value * 2), 'Оценка должна иметь шаг 0.5')
   .nullable()
+
+const stringListSchema = (maxItems: number): z.ZodType<string[]> =>
+  z
+    .array(z.string().trim().min(1).max(120))
+    .max(maxItems)
+    .transform((items) => Array.from(new Set(items)))
 
 const movieBaseInputSchema = z
   .object({
@@ -42,41 +49,35 @@ const movieBaseInputSchema = z
     posterUrl: posterUrlSchema,
     director: z.string().trim().max(MAX_MOVIE_DIRECTOR_LENGTH),
     runtimeMinutes: z.number().int().min(1).max(1_440).nullable(),
-    genres: z
-      .array(z.string().trim().min(1).max(80))
-      .max(MAX_MOVIE_GENRES)
-      .transform((genres) => Array.from(new Set(genres))),
+    genres: stringListSchema(MAX_MOVIE_GENRES),
+    actors: stringListSchema(MAX_MOVIE_ACTORS),
     description: z.string().trim().max(MAX_MOVIE_DESCRIPTION_LENGTH),
     status: movieStatusSchema,
     favorite: z.boolean(),
     rating: ratingSchema,
-    watchedAt: z.number().int().nonnegative().nullable(),
-    notes: z.string().trim().max(MAX_MOVIE_TEXT_LENGTH)
+    comments: z.string().trim().max(MAX_MOVIE_TEXT_LENGTH)
   })
   .strict()
 
-export const createMovieInputSchema = movieBaseInputSchema.superRefine((input, context) => {
-  if (input.status !== 'watched' && input.watchedAt !== null) {
+function validateRatingStatus(
+  input: { status: string; rating: number | null },
+  context: z.RefinementCtx
+): void {
+  if (input.status !== 'watched' && input.rating !== null) {
     context.addIssue({
       code: 'custom',
-      path: ['watchedAt'],
-      message: 'Дата просмотра доступна только для просмотренного фильма'
+      path: ['rating'],
+      message: 'Оценка доступна только для просмотренного фильма'
     })
   }
-})
+}
+
+export const createMovieInputSchema = movieBaseInputSchema.superRefine(validateRatingStatus)
 
 export const updateMovieInputSchema = movieBaseInputSchema
   .extend({ id: movieSafeIdSchema })
   .strict()
-  .superRefine((input, context) => {
-    if (input.status !== 'watched' && input.watchedAt !== null) {
-      context.addIssue({
-        code: 'custom',
-        path: ['watchedAt'],
-        message: 'Дата просмотра доступна только для просмотренного фильма'
-      })
-    }
-  })
+  .superRefine(validateRatingStatus)
 
 export const getMovieInputSchema = z.object({ id: movieSafeIdSchema }).strict()
 export const deleteMovieInputSchema = getMovieInputSchema

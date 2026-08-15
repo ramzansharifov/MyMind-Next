@@ -25,12 +25,12 @@ const movie: MovieRecord = {
   director: 'Christopher Nolan',
   runtimeMinutes: 169,
   genres: ['Фантастика', 'Драма'],
+  actors: ['Matthew McConaughey', 'Anne Hathaway'],
   description: 'История о путешествии к звёздам.',
   status: 'watched',
   favorite: true,
-  rating: 9.5,
-  watchedAt: 1_700_000_000_000,
-  notes: 'Сильный фильм.',
+  rating: 9,
+  comments: 'Сильный фильм.',
   createdAt: 1,
   updatedAt: 2
 }
@@ -45,24 +45,42 @@ beforeEach(() => {
 })
 
 describe('MoviesPage', () => {
-  it('opens movie creation as a dedicated page with URL-only poster input', async () => {
+  it('uses a clean dedicated form with actors, comments and URL-only poster', async () => {
     const user = userEvent.setup()
     const { container } = render(<MoviesPage />)
 
     await screen.findByText('Библиотека пока пустая')
     await user.click(screen.getAllByRole('button', { name: 'Добавить фильм' })[0])
 
-    expect(screen.getByRole('heading', { name: 'Добавить фильм в библиотеку' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'К библиотеке' })).toBeInTheDocument()
-    expect(screen.getByText('Основная информация')).toBeInTheDocument()
-    expect(screen.getByText('Моя библиотека')).toBeInTheDocument()
-    expect(screen.getByText('Ссылка на постер')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Добавить фильм' })).toBeInTheDocument()
+    expect(screen.getByText('Актёры')).toBeInTheDocument()
+    expect(screen.getByText('Комментарии')).toBeInTheDocument()
     expect(screen.getByPlaceholderText('https://example.com/poster.jpg')).toHaveAttribute(
       'type',
       'url'
     )
+    expect(screen.queryByText('Дата просмотра')).not.toBeInTheDocument()
+    expect(screen.queryByText('Моя оценка')).not.toBeInTheDocument()
     expect(container.querySelector('input[type="file"]')).toBeNull()
     expect(container.querySelector('[data-app-dialog-content]')).toBeNull()
+  })
+
+  it('shows numeric rating only for watched movies and clears it when status changes', async () => {
+    const user = userEvent.setup()
+    render(<MoviesPage />)
+
+    await screen.findByText('Библиотека пока пустая')
+    await user.click(screen.getAllByRole('button', { name: 'Добавить фильм' })[0])
+    await user.click(screen.getByRole('button', { name: 'Просмотрено' }))
+
+    expect(screen.getByText('Моя оценка')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Оценка 1' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Оценка 10' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Оценка 8' }))
+    expect(screen.getByRole('button', { name: 'Оценка 8' })).toHaveAttribute('aria-pressed', 'true')
+    await user.click(screen.getByRole('button', { name: 'Хочу посмотреть' }))
+    expect(screen.queryByText('Моя оценка')).not.toBeInTheDocument()
   })
 
   it('opens editing as a dedicated page and returns to the movie view', async () => {
@@ -74,22 +92,24 @@ describe('MoviesPage', () => {
     await user.click(await screen.findByRole('button', { name: 'Открыть фильм «Интерстеллар»' }))
     await user.click(screen.getByRole('button', { name: 'Изменить' }))
 
-    expect(screen.getByText('Редактирование')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Интерстеллар' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Редактировать фильм' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'К фильму' })).toBeInTheDocument()
+    expect(screen.getByDisplayValue('Matthew McConaughey, Anne Hathaway')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'К фильму' }))
     expect(screen.getByRole('button', { name: 'Изменить' })).toBeInTheDocument()
   })
 
-  it('opens a separate movie view and fullscreen poster dialog', async () => {
+  it('shows actors and comments in movie view and opens fullscreen poster', async () => {
     const user = userEvent.setup()
     mocks.listOverview.mockResolvedValue({ movies: [movie] })
 
     render(<MoviesPage />)
 
     await user.click(await screen.findByRole('button', { name: 'Открыть фильм «Интерстеллар»' }))
-    expect(screen.getByRole('heading', { name: 'Интерстеллар' })).toBeInTheDocument()
+    expect(screen.getByText('Matthew McConaughey, Anne Hathaway')).toBeInTheDocument()
+    expect(screen.getByText('Комментарии')).toBeInTheDocument()
+    expect(screen.queryByText(/Просмотрено:/)).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Открыть постер на весь экран' }))
     await waitFor(() =>

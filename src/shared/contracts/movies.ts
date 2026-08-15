@@ -11,12 +11,12 @@ export interface MovieRecord {
   director: string
   runtimeMinutes: number | null
   genres: string[]
+  actors: string[]
   description: string
   status: MovieStatus
   favorite: boolean
   rating: number | null
-  watchedAt: number | null
-  notes: string
+  comments: string
   createdAt: number
   updatedAt: number
 }
@@ -33,12 +33,12 @@ export interface CreateMovieInput {
   director: string
   runtimeMinutes: number | null
   genres: string[]
+  actors: string[]
   description: string
   status: MovieStatus
   favorite: boolean
   rating: number | null
-  watchedAt: number | null
-  notes: string
+  comments: string
 }
 
 export interface UpdateMovieInput extends CreateMovieInput {

@@ -49,9 +49,7 @@ describe('movies metadata migration', () => {
       await executeMigration(sqlite, '0022_movies_metadata_cleanup.sql')
 
       const row = sqlite
-        .prepare(
-          'SELECT title, actors_json, rating, comments FROM movies WHERE id = ?'
-        )
+        .prepare('SELECT title, actors_json, rating, comments FROM movies WHERE id = ?')
         .get('movie-1')
       const columns = sqlite.prepare('PRAGMA table_info(movies)').all() as Array<{ name: string }>
 

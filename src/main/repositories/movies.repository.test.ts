@@ -31,7 +31,7 @@ afterAll(async () => {
 })
 
 describe('movies repository', () => {
-  it('creates, lists and loads a movie with personal metadata', () => {
+  it('persists actors, comments and personal rating', () => {
     const movie = createMovie({
       title: 'Интерстеллар',
       originalTitle: 'Interstellar',
@@ -40,19 +40,19 @@ describe('movies repository', () => {
       director: 'Christopher Nolan',
       runtimeMinutes: 169,
       genres: ['Фантастика', 'Драма'],
+      actors: ['Matthew McConaughey', 'Anne Hathaway'],
       description: 'Космическая история.',
       status: 'watched',
       favorite: true,
-      rating: 9.5,
-      watchedAt: 1_700_000_000_000,
-      notes: 'Пересмотреть.'
+      rating: 9,
+      comments: 'Пересмотреть.'
     })
 
     expect(getMovie({ id: movie.id })).toEqual(movie)
     expect(listMoviesOverview().movies).toEqual([movie])
   })
 
-  it('updates status and clears watchedAt outside watched state', () => {
+  it('clears rating outside watched state', () => {
     const movie = createMovie({
       title: 'Dune',
       originalTitle: null,
@@ -61,17 +61,17 @@ describe('movies repository', () => {
       director: '',
       runtimeMinutes: null,
       genres: [],
+      actors: [],
       description: '',
       status: 'watched',
       favorite: false,
       rating: 8,
-      watchedAt: 1_700_000_000_000,
-      notes: ''
+      comments: ''
     })
 
-    const updated = updateMovie({ ...movie, status: 'watchlist', watchedAt: null })
+    const updated = updateMovie({ ...movie, status: 'watchlist', rating: 8 })
     expect(updated.status).toBe('watchlist')
-    expect(updated.watchedAt).toBeNull()
+    expect(updated.rating).toBeNull()
   })
 
   it('deletes movies permanently', () => {
@@ -83,12 +83,12 @@ describe('movies repository', () => {
       director: '',
       runtimeMinutes: null,
       genres: [],
+      actors: [],
       description: '',
       status: 'watchlist',
       favorite: false,
       rating: null,
-      watchedAt: null,
-      notes: ''
+      comments: ''
     })
 
     expect(deleteMovie({ id: movie.id })).toBe(true)

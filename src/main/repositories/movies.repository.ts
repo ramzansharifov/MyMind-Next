@@ -20,12 +20,12 @@ interface MovieRow {
   director: string
   runtime_minutes: number | null
   genres_json: string
+  actors_json: string
   description: string
   status: MovieStatus
   favorite: number
   rating: number | null
-  watched_at: number | null
-  notes: string
+  comments: string
   created_at: number
   updated_at: number
 }
@@ -39,17 +39,17 @@ const MOVIE_SELECT = `SELECT
   director,
   runtime_minutes,
   genres_json,
+  actors_json,
   description,
   status,
   favorite,
   rating,
-  watched_at,
-  notes,
+  comments,
   created_at,
   updated_at
 FROM movies`
 
-function parseGenres(value: string): string[] {
+function parseStringList(value: string): string[] {
   try {
     const parsed = JSON.parse(value) as unknown
     return Array.isArray(parsed)
@@ -69,13 +69,13 @@ function mapMovie(row: MovieRow): MovieRecord {
     posterUrl: row.poster_url,
     director: row.director,
     runtimeMinutes: row.runtime_minutes,
-    genres: parseGenres(row.genres_json),
+    genres: parseStringList(row.genres_json),
+    actors: parseStringList(row.actors_json),
     description: row.description,
     status: row.status,
     favorite: Boolean(row.favorite),
-    rating: row.rating,
-    watchedAt: row.watched_at,
-    notes: row.notes,
+    rating: row.status === 'watched' ? row.rating : null,
+    comments: row.comments,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   }
@@ -101,12 +101,12 @@ function normalizedPayload(input: CreateMovieInput | UpdateMovieInput): readonly
     input.director,
     input.runtimeMinutes,
     JSON.stringify(input.genres),
+    JSON.stringify(input.actors),
     input.description,
     input.status,
     input.favorite ? 1 : 0,
-    input.rating,
-    input.status === 'watched' ? input.watchedAt : null,
-    input.notes
+    input.status === 'watched' ? input.rating : null,
+    input.comments
   ]
 }
 
@@ -135,12 +135,12 @@ export function createMovie(input: CreateMovieInput): MovieRecord {
         director,
         runtime_minutes,
         genres_json,
+        actors_json,
         description,
         status,
         favorite,
         rating,
-        watched_at,
-        notes,
+        comments,
         created_at,
         updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
@@ -163,12 +163,12 @@ export function updateMovie(input: UpdateMovieInput): MovieRecord {
         director = ?,
         runtime_minutes = ?,
         genres_json = ?,
+        actors_json = ?,
         description = ?,
         status = ?,
         favorite = ?,
         rating = ?,
-        watched_at = ?,
-        notes = ?,
+        comments = ?,
         updated_at = ?
        WHERE id = ?`
     )
