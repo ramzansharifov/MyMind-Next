@@ -1,4 +1,17 @@
-import { Bookmark, Check, Film, Heart, Image, LoaderCircle, Plus, Search, Star } from 'lucide-react'
+import {
+  ArrowLeft,
+  Bookmark,
+  Check,
+  Film,
+  Heart,
+  Image,
+  LoaderCircle,
+  Pencil,
+  Plus,
+  Search,
+  Star,
+  Trash2
+} from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import type {
@@ -51,14 +64,6 @@ function toUpdateInput(movie: MovieRecord): UpdateMovieInput {
     rating: movie.rating,
     comments: movie.comments
   }
-}
-
-function formatRuntime(minutes: number | null): string | null {
-  if (minutes === null) return null
-  const hours = Math.floor(minutes / 60)
-  const rest = minutes % 60
-  if (hours === 0) return `${rest} мин.`
-  return rest > 0 ? `${hours} ч ${rest} мин.` : `${hours} ч`
 }
 
 function MoviePoster({ movie }: { movie: MovieRecord }): React.JSX.Element {
@@ -255,25 +260,50 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
               <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-violet-500/20 bg-violet-500/10 text-violet-300 shadow-inner shadow-violet-500/5">
                 <Film aria-hidden="true" className="size-6" />
               </span>
-              <div>
-                <h1 className="text-2xl font-semibold tracking-tight text-[var(--app-text)]">
-                  Фильмы
-                </h1>
-                <p className="mt-1 text-xs text-[var(--app-muted)]">
-                  Личная библиотека просмотренного и будущих просмотров
-                </p>
-              </div>
+              <h1 className="text-2xl font-semibold tracking-tight text-[var(--app-text)]">
+                Фильмы
+              </h1>
             </div>
 
-            {view.kind === 'library' && (
-              <button
-                type="button"
-                className="inline-flex h-10 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-400"
-                onClick={() => setView({ kind: 'form', movieId: null })}
-              >
-                <Plus className="size-4" /> Добавить фильм
-              </button>
-            )}
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {view.kind === 'library' && (
+                <button
+                  type="button"
+                  className="inline-flex h-10 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-400"
+                  onClick={() => setView({ kind: 'form', movieId: null })}
+                >
+                  <Plus className="size-4" /> Добавить фильм
+                </button>
+              )}
+
+              {view.kind === 'detail' && activeMovie && (
+                <>
+                  <button
+                    type="button"
+                    className="inline-flex h-10 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+                    onClick={() => setView({ kind: 'library' })}
+                  >
+                    <ArrowLeft className="size-4" /> К библиотеке
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isSaving}
+                    className="inline-flex h-10 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:opacity-50"
+                    onClick={() => setView({ kind: 'form', movieId: activeMovie.id })}
+                  >
+                    <Pencil className="size-4" /> Изменить
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isSaving}
+                    className="inline-flex h-10 items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/5 px-3.5 text-sm font-medium text-red-300 transition-colors hover:bg-red-500/10 disabled:opacity-50"
+                    onClick={() => setDeleteTarget(activeMovie)}
+                  >
+                    <Trash2 className="size-4" /> Удалить
+                  </button>
+                </>
+              )}
+            </div>
           </div>
 
           <div className="mt-5 grid grid-cols-2 gap-2 border-t border-[var(--app-border)] pt-4 sm:flex sm:flex-wrap sm:items-center sm:gap-2">
@@ -317,14 +347,7 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
             onSave={saveMovie}
           />
         ) : view.kind === 'detail' && activeMovie ? (
-          <MovieDetail
-            movie={activeMovie}
-            busy={isSaving}
-            onBack={() => setView({ kind: 'library' })}
-            onEdit={() => setView({ kind: 'form', movieId: activeMovie.id })}
-            onDelete={() => setDeleteTarget(activeMovie)}
-            onUpdate={updateMovie}
-          />
+          <MovieDetail movie={activeMovie} busy={isSaving} onUpdate={updateMovie} />
         ) : (
           <section>
             <div className="mb-5 flex flex-col gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 shadow-[var(--app-shadow-card)] lg:flex-row lg:items-center lg:justify-between">
@@ -384,78 +407,71 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
             ) : (
               <div className="grid grid-cols-[repeat(auto-fill,minmax(170px,1fr))] gap-x-4 gap-y-7 sm:grid-cols-[repeat(auto-fill,minmax(185px,1fr))]">
                 {visibleMovies.map((movie) => {
-                  const runtime = formatRuntime(movie.runtimeMinutes)
                   return (
                     <article key={movie.id} className="group min-w-0">
-                      <div className="relative aspect-[2/3] overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--app-shadow-card)] transition-[transform,border-color,box-shadow] duration-200 group-hover:-translate-y-1 group-hover:border-violet-500/25 group-hover:shadow-xl motion-reduce:transition-none">
-                        <button
-                          type="button"
-                          aria-label={`Открыть фильм «${movie.title}»`}
-                          className="absolute inset-0 z-0 overflow-hidden text-left outline-none focus-visible:ring-2 focus-visible:ring-violet-500/60 focus-visible:ring-inset"
-                          onClick={() => setView({ kind: 'detail', movieId: movie.id })}
-                        >
-                          <MoviePoster movie={movie} />
-                          <span className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
-                        </button>
+                      <div className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--app-shadow-card)] transition-[transform,border-color,box-shadow] duration-200 group-hover:-translate-y-1 group-hover:border-violet-500/25 group-hover:shadow-xl motion-reduce:transition-none">
+                        <div className="relative aspect-[2/3] overflow-hidden bg-[var(--app-surface)]">
+                          <button
+                            type="button"
+                            aria-label={`Открыть фильм «${movie.title}»`}
+                            className="absolute inset-0 z-0 overflow-hidden text-left outline-none focus-visible:ring-2 focus-visible:ring-violet-500/60 focus-visible:ring-inset"
+                            onClick={() => setView({ kind: 'detail', movieId: movie.id })}
+                          >
+                            <MoviePoster movie={movie} />
+                            <span className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
+                          </button>
 
-                        <button
-                          type="button"
-                          aria-label={
-                            movie.favorite ? 'Убрать из избранного' : 'Добавить в избранное'
-                          }
-                          aria-pressed={movie.favorite}
-                          disabled={isSaving}
-                          className={
-                            movie.favorite
-                              ? 'absolute top-2.5 right-2.5 z-10 flex size-9 items-center justify-center rounded-xl border border-rose-300/25 bg-black/50 text-rose-300 backdrop-blur-md transition-colors hover:bg-black/65 disabled:opacity-50'
-                              : 'absolute top-2.5 right-2.5 z-10 flex size-9 items-center justify-center rounded-xl border border-white/10 bg-black/45 text-white/70 backdrop-blur-md transition-colors hover:text-white disabled:opacity-50'
-                          }
-                          onClick={() => void updateMovie({ ...movie, favorite: !movie.favorite })}
-                        >
-                          <Heart className={`size-4 ${movie.favorite ? 'fill-current' : ''}`} />
-                        </button>
-
-                        <div className="pointer-events-none absolute right-2.5 bottom-2.5 left-2.5 z-10 flex items-end justify-between gap-2">
-                          <span
+                          <button
+                            type="button"
+                            aria-label={
+                              movie.favorite ? 'Убрать из избранного' : 'Добавить в избранное'
+                            }
+                            aria-pressed={movie.favorite}
+                            disabled={isSaving}
                             className={
-                              movie.status === 'watched'
-                                ? 'inline-flex items-center gap-1 rounded-lg border border-emerald-300/20 bg-black/50 px-2 py-1 text-[11px] font-medium text-emerald-200 backdrop-blur-md'
-                                : 'inline-flex items-center gap-1 rounded-lg border border-violet-300/20 bg-black/50 px-2 py-1 text-[11px] font-medium text-violet-200 backdrop-blur-md'
+                              movie.favorite
+                                ? 'absolute top-2.5 right-2.5 z-10 flex size-9 items-center justify-center rounded-xl border border-rose-300/25 bg-black/50 text-rose-300 backdrop-blur-md transition-colors hover:bg-black/65 disabled:opacity-50'
+                                : 'absolute top-2.5 right-2.5 z-10 flex size-9 items-center justify-center rounded-xl border border-white/10 bg-black/45 text-white/70 backdrop-blur-md transition-colors hover:text-white disabled:opacity-50'
+                            }
+                            onClick={() =>
+                              void updateMovie({ ...movie, favorite: !movie.favorite })
                             }
                           >
-                            {movie.status === 'watched' ? (
-                              <Check className="size-3" />
-                            ) : (
-                              <Bookmark className="size-3" />
-                            )}
-                            {movie.status === 'watched' ? 'Просмотрено' : 'Хочу посмотреть'}
-                          </span>
-                          {movie.status === 'watched' && movie.rating !== null && (
-                            <span className="inline-flex items-center gap-1 rounded-lg bg-black/55 px-2 py-1 text-[11px] font-semibold text-amber-200 backdrop-blur-md">
-                              <Star className="size-3 fill-current" /> {movie.rating.toFixed(1)}
-                            </span>
-                          )}
-                        </div>
-                      </div>
+                            <Heart className={`size-4 ${movie.favorite ? 'fill-current' : ''}`} />
+                          </button>
 
-                      <button
-                        type="button"
-                        className="mt-3 block w-full min-w-0 text-left outline-none"
-                        onClick={() => setView({ kind: 'detail', movieId: movie.id })}
-                      >
-                        <span className="block truncate text-sm font-semibold text-[var(--app-text)] transition-colors group-hover:text-violet-200">
-                          {movie.title}
-                        </span>
-                        <span className="mt-1 flex items-center gap-1.5 truncate text-xs text-[var(--app-muted)]">
-                          {movie.year ?? 'Год не указан'}
-                          {runtime && (
-                            <>
-                              <span>·</span>
-                              <span>{runtime}</span>
-                            </>
-                          )}
-                        </span>
-                      </button>
+                          <div className="pointer-events-none absolute right-2.5 bottom-2.5 left-2.5 z-10 flex items-end justify-between gap-2">
+                            <span
+                              className={
+                                movie.status === 'watched'
+                                  ? 'inline-flex items-center gap-1 rounded-lg border border-emerald-300/20 bg-black/50 px-2 py-1 text-[11px] font-medium text-emerald-200 backdrop-blur-md'
+                                  : 'inline-flex items-center gap-1 rounded-lg border border-violet-300/20 bg-black/50 px-2 py-1 text-[11px] font-medium text-violet-200 backdrop-blur-md'
+                              }
+                            >
+                              {movie.status === 'watched' ? (
+                                <Check className="size-3" />
+                              ) : (
+                                <Bookmark className="size-3" />
+                              )}
+                              {movie.status === 'watched' ? 'Просмотрено' : 'Хочу посмотреть'}
+                            </span>
+                            {movie.status === 'watched' && movie.rating !== null && (
+                              <span className="inline-flex items-center gap-1 rounded-lg bg-black/55 px-2 py-1 text-[11px] font-semibold text-amber-200 backdrop-blur-md">
+                                <Star className="size-3 fill-current" /> {movie.rating.toFixed(1)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          className="flex min-h-13 w-full min-w-0 items-center border-t border-[var(--app-border)] bg-[var(--app-surface)] px-3.5 py-3 text-left transition-colors outline-none hover:bg-[var(--app-control-hover)] focus-visible:bg-[var(--app-control-hover)]"
+                          onClick={() => setView({ kind: 'detail', movieId: movie.id })}
+                        >
+                          <span className="block truncate text-sm font-semibold text-[var(--app-text)] transition-colors group-hover:text-violet-200">
+                            {movie.title}
+                          </span>
+                        </button>
+                      </div>
                     </article>
                   )
                 })}
