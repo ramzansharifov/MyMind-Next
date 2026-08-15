@@ -1,0 +1,184 @@
+import { randomUUID } from 'node:crypto'
+
+import type {
+  CreateMovieInput,
+  DeleteMovieInput,
+  GetMovieInput,
+  MovieRecord,
+  MovieStatus,
+  MoviesOverview,
+  UpdateMovieInput
+} from '../../shared/contracts/movies'
+import { getSqlite } from '../database/client'
+
+interface MovieRow {
+  id: string
+  title: string
+  original_title: string | null
+  year: number | null
+  poster_url: string | null
+  director: string
+  runtime_minutes: number | null
+  genres_json: string
+  description: string
+  status: MovieStatus
+  favorite: number
+  rating: number | null
+  watched_at: number | null
+  notes: string
+  created_at: number
+  updated_at: number
+}
+
+const MOVIE_SELECT = `SELECT
+  id,
+  title,
+  original_title,
+  year,
+  poster_url,
+  director,
+  runtime_minutes,
+  genres_json,
+  description,
+  status,
+  favorite,
+  rating,
+  watched_at,
+  notes,
+  created_at,
+  updated_at
+FROM movies`
+
+function parseGenres(value: string): string[] {
+  try {
+    const parsed = JSON.parse(value) as unknown
+    return Array.isArray(parsed)
+      ? parsed.filter((item): item is string => typeof item === 'string')
+      : []
+  } catch {
+    return []
+  }
+}
+
+function mapMovie(row: MovieRow): MovieRecord {
+  return {
+    id: row.id,
+    title: row.title,
+    originalTitle: row.original_title,
+    year: row.year,
+    posterUrl: row.poster_url,
+    director: row.director,
+    runtimeMinutes: row.runtime_minutes,
+    genres: parseGenres(row.genres_json),
+    description: row.description,
+    status: row.status,
+    favorite: Boolean(row.favorite),
+    rating: row.rating,
+    watchedAt: row.watched_at,
+    notes: row.notes,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  }
+}
+
+function findMovie(id: string): MovieRecord | null {
+  const row = getSqlite().prepare(`${MOVIE_SELECT} WHERE id = ?`).get(id) as MovieRow | undefined
+  return row ? mapMovie(row) : null
+}
+
+function requireMovie(id: string): MovieRecord {
+  const movie = findMovie(id)
+  if (!movie) throw new Error('Фильм не найден')
+  return movie
+}
+
+function normalizedPayload(input: CreateMovieInput | UpdateMovieInput): readonly unknown[] {
+  return [
+    input.title,
+    input.originalTitle,
+    input.year,
+    input.posterUrl,
+    input.director,
+    input.runtimeMinutes,
+    JSON.stringify(input.genres),
+    input.description,
+    input.status,
+    input.favorite ? 1 : 0,
+    input.rating,
+    input.status === 'watched' ? input.watchedAt : null,
+    input.notes
+  ]
+}
+
+export function listMoviesOverview(): MoviesOverview {
+  const rows = getSqlite()
+    .prepare(`${MOVIE_SELECT} ORDER BY updated_at DESC, created_at DESC`)
+    .all() as MovieRow[]
+  return { movies: rows.map(mapMovie) }
+}
+
+export function getMovie(input: GetMovieInput): MovieRecord | null {
+  return findMovie(input.id)
+}
+
+export function createMovie(input: CreateMovieInput): MovieRecord {
+  const id = randomUUID()
+  const now = Date.now()
+  getSqlite()
+    .prepare(
+      `INSERT INTO movies (
+        id,
+        title,
+        original_title,
+        year,
+        poster_url,
+        director,
+        runtime_minutes,
+        genres_json,
+        description,
+        status,
+        favorite,
+        rating,
+        watched_at,
+        notes,
+        created_at,
+        updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    )
+    .run(id, ...normalizedPayload(input), now, now)
+
+  return requireMovie(id)
+}
+
+export function updateMovie(input: UpdateMovieInput): MovieRecord {
+  requireMovie(input.id)
+  const now = Date.now()
+  getSqlite()
+    .prepare(
+      `UPDATE movies SET
+        title = ?,
+        original_title = ?,
+        year = ?,
+        poster_url = ?,
+        director = ?,
+        runtime_minutes = ?,
+        genres_json = ?,
+        description = ?,
+        status = ?,
+        favorite = ?,
+        rating = ?,
+        watched_at = ?,
+        notes = ?,
+        updated_at = ?
+       WHERE id = ?`
+    )
+    .run(...normalizedPayload(input), now, input.id)
+
+  return requireMovie(input.id)
+}
+
+export function deleteMovie(input: DeleteMovieInput): boolean {
+  requireMovie(input.id)
+  const result = getSqlite().prepare('DELETE FROM movies WHERE id = ?').run(input.id)
+  return result.changes > 0
+}

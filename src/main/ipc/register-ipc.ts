@@ -7,6 +7,7 @@ import { mainOperationTracker } from '../services/main-operation-tracker'
 import { registerBoardsIpcHandlers } from './register-boards-ipc'
 import { registerDiaryIpcHandlers } from './register-diary-ipc'
 import { registerFinanceIpcHandlers } from './register-finance-ipc'
+import { registerMoviesIpcHandlers } from './register-movies-ipc'
 import { registerNotesIpcHandlers } from './register-notes-ipc'
 import { registerPreferencesIpcHandlers } from './register-preferences-ipc'
 import { registerStudyIpcHandlers } from './register-study-ipc'
@@ -57,6 +58,7 @@ export function registerIpcHandlers(options: RegisterIpcHandlersOptions): void {
   registerNotesIpcHandlers()
   registerDiaryIpcHandlers()
   registerFinanceIpcHandlers()
+  registerMoviesIpcHandlers()
   registerPreferencesIpcHandlers()
 
   ipcMain.removeHandler(IPC_CHANNELS.systemHealth)

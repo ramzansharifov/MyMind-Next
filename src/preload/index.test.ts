@@ -29,7 +29,7 @@ afterEach(() => {
 })
 
 describe('preload API contract', () => {
-  it('exposes the complete boards, notes, diary and finance contracts in the renderer', async () => {
+  it('exposes the complete boards, notes, diary, movies and finance contracts in the renderer', async () => {
     Object.defineProperty(process, 'contextIsolated', {
       configurable: true,
       value: true
@@ -73,6 +73,7 @@ describe('preload API contract', () => {
       'listOverview',
       'createDiary',
       'updateDiary',
+      'updateAppearance',
       'deleteDiary',
       'getDay',
       'listDays',
@@ -81,6 +82,13 @@ describe('preload API contract', () => {
       'updateEntry',
       'deleteEntry',
       'getReport'
+    ])
+    expect(Object.keys(api.movies)).toEqual([
+      'listOverview',
+      'getMovie',
+      'createMovie',
+      'updateMovie',
+      'deleteMovie'
     ])
     expect(Object.keys(api.finance)).toEqual([
       'getSettings',
@@ -134,6 +142,9 @@ describe('preload API contract', () => {
       dayKey: '2026-08-08',
       text: 'Первая запись'
     })
+
+    await api.movies.getMovie({ id: 'movie-1' })
+    expect(electronMocks.invoke).toHaveBeenCalledWith('movies:get-movie', { id: 'movie-1' })
 
     await api.finance.createAccount({
       name: 'Карта',

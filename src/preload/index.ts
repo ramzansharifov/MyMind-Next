@@ -3,6 +3,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 import { BOARD_IPC_CHANNELS, type BoardDocument, type BoardNode } from '../shared/contracts/boards'
 import { DIARY_IPC_CHANNELS } from '../shared/contracts/diary'
 import { FINANCE_IPC_CHANNELS } from '../shared/contracts/finance'
+import { MOVIES_IPC_CHANNELS } from '../shared/contracts/movies'
 import {
   NOTES_IPC_CHANNELS,
   type NoteGroup,
@@ -225,6 +226,14 @@ const api: MyMindApi = {
     updateEntry: (input) => ipcRenderer.invoke(DIARY_IPC_CHANNELS.updateEntry, input),
     deleteEntry: (input) => ipcRenderer.invoke(DIARY_IPC_CHANNELS.deleteEntry, input),
     getReport: (input) => ipcRenderer.invoke(DIARY_IPC_CHANNELS.getReport, input)
+  },
+
+  movies: {
+    listOverview: () => ipcRenderer.invoke(MOVIES_IPC_CHANNELS.listOverview),
+    getMovie: (input) => ipcRenderer.invoke(MOVIES_IPC_CHANNELS.getMovie, input),
+    createMovie: (input) => ipcRenderer.invoke(MOVIES_IPC_CHANNELS.createMovie, input),
+    updateMovie: (input) => ipcRenderer.invoke(MOVIES_IPC_CHANNELS.updateMovie, input),
+    deleteMovie: (input) => ipcRenderer.invoke(MOVIES_IPC_CHANNELS.deleteMovie, input)
   },
 
   finance: {

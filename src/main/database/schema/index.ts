@@ -12,6 +12,7 @@ export {
   financeTransactions,
   financeTransactionTemplates
 } from './finance'
+export { movies } from './movies'
 export { noteGroups, notes } from './notes'
 export { studyLinkTargets, studyMaterials, studyNodes } from './study'
 
