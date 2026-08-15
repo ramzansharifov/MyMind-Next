@@ -74,6 +74,12 @@ function validateRatingStatus(
 
 export const createMovieInputSchema = movieBaseInputSchema.superRefine(validateRatingStatus)
 
+export const createMoviesInputSchema = z
+  .object({
+    movies: z.array(createMovieInputSchema).min(1).max(100)
+  })
+  .strict()
+
 export const updateMovieInputSchema = movieBaseInputSchema
   .extend({ id: movieSafeIdSchema })
   .strict()

@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 
 import type {
   CreateMovieInput,
+  CreateMoviesInput,
   DeleteMovieInput,
   GetMovieInput,
   MovieRecord,
@@ -121,7 +122,7 @@ export function getMovie(input: GetMovieInput): MovieRecord | null {
   return findMovie(input.id)
 }
 
-export function createMovie(input: CreateMovieInput): MovieRecord {
+function insertMovie(input: CreateMovieInput): MovieRecord {
   const id = randomUUID()
   const now = Date.now()
   getSqlite()
@@ -148,6 +149,17 @@ export function createMovie(input: CreateMovieInput): MovieRecord {
     .run(id, ...normalizedPayload(input), now, now)
 
   return requireMovie(id)
+}
+
+export function createMovie(input: CreateMovieInput): MovieRecord {
+  return insertMovie(input)
+}
+
+export function createMovies(input: CreateMoviesInput): MovieRecord[] {
+  const transaction = getSqlite().transaction((movies: CreateMovieInput[]) =>
+    movies.map((movie) => insertMovie(movie))
+  )
+  return transaction(input.movies)
 }
 
 export function updateMovie(input: UpdateMovieInput): MovieRecord {

@@ -1,6 +1,7 @@
 import {
   ArrowLeft,
   Bookmark,
+  Braces,
   Check,
   Film,
   Heart,
@@ -23,6 +24,7 @@ import { DeleteConfirmationDialog } from '../../shared/ui/DeleteConfirmationDial
 import { moviesClient } from './api/movies-client'
 import { MovieDetail } from './components/MovieDetail'
 import { MovieFormPage } from './components/MovieFormPage'
+import { MovieJsonImportDialog } from './components/MovieJsonImportDialog'
 
 type MovieFilter = 'all' | 'watchlist' | 'watched' | 'favorites'
 type MovieView =
@@ -95,6 +97,7 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
   const [filter, setFilter] = useState<MovieFilter>('all')
   const [query, setQuery] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<MovieRecord | null>(null)
+  const [jsonImportOpen, setJsonImportOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -212,6 +215,20 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
     }
   }
 
+  async function importMovies(inputs: CreateMovieInput[]): Promise<void> {
+    setIsSaving(true)
+    setError(null)
+    try {
+      const created = await moviesClient.createMovies({ movies: inputs })
+      setMovies((current) => [...created, ...current])
+    } catch (reason) {
+      setError(errorMessage(reason))
+      throw reason
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   async function updateMovie(movie: MovieRecord): Promise<void> {
     setIsSaving(true)
     setError(null)
@@ -267,13 +284,22 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
 
             <div className="flex flex-wrap items-center justify-end gap-2">
               {view.kind === 'library' && (
-                <button
-                  type="button"
-                  className="inline-flex h-10 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-400"
-                  onClick={() => setView({ kind: 'form', movieId: null })}
-                >
-                  <Plus className="size-4" /> Добавить фильм
-                </button>
+                <>
+                  <button
+                    type="button"
+                    className="inline-flex h-10 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+                    onClick={() => setJsonImportOpen(true)}
+                  >
+                    <Braces className="size-4" /> Из JSON
+                  </button>
+                  <button
+                    type="button"
+                    className="inline-flex h-10 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-400"
+                    onClick={() => setView({ kind: 'form', movieId: null })}
+                  >
+                    <Plus className="size-4" /> Добавить фильм
+                  </button>
+                </>
               )}
 
               {view.kind === 'detail' && activeMovie && (
@@ -480,6 +506,13 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
           </section>
         )}
       </div>
+
+      <MovieJsonImportDialog
+        open={jsonImportOpen}
+        busy={isSaving}
+        onOpenChange={setJsonImportOpen}
+        onImport={importMovies}
+      />
 
       <DeleteConfirmationDialog
         open={deleteTarget !== null}

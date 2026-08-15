@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   listOverview: vi.fn(),
   getMovie: vi.fn(),
   createMovie: vi.fn(),
+  createMovies: vi.fn(),
   updateMovie: vi.fn(),
   deleteMovie: vi.fn()
 }))
@@ -40,11 +41,79 @@ beforeEach(() => {
   mocks.listOverview.mockResolvedValue({ movies: [] })
   mocks.getMovie.mockResolvedValue(null)
   mocks.createMovie.mockResolvedValue(movie)
+  mocks.createMovies.mockResolvedValue([movie])
   mocks.updateMovie.mockImplementation(async (input) => ({ ...movie, ...input, updatedAt: 3 }))
   mocks.deleteMovie.mockResolvedValue(true)
 })
 
 describe('MoviesPage', () => {
+  it('imports one or many movies from GPT-friendly JSON', async () => {
+    const user = userEvent.setup()
+    const secondMovie = {
+      ...movie,
+      id: 'movie-2',
+      title: 'Дюна',
+      favorite: false,
+      rating: null,
+      status: 'watchlist' as const
+    }
+    mocks.createMovies.mockResolvedValue([movie, secondMovie])
+
+    render(<MoviesPage />)
+    await screen.findByText('Библиотека пока пустая')
+    await user.click(screen.getByRole('button', { name: 'Из JSON' }))
+
+    const input = screen.getByRole('textbox', { name: 'JSON фильмов' })
+    fireEvent.change(input, {
+      target: {
+        value:
+          '```json\n[{"title":"Интерстеллар","status":"watched","rating":9},{"title":"Дюна"}]\n```'
+      }
+    })
+
+    expect(screen.getByText('Готово к добавлению: 2')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Добавить 2 фильма' }))
+
+    await waitFor(() =>
+      expect(mocks.createMovies).toHaveBeenCalledWith({
+        movies: [
+          {
+            title: 'Интерстеллар',
+            originalTitle: null,
+            year: null,
+            posterUrl: null,
+            director: '',
+            runtimeMinutes: null,
+            genres: [],
+            actors: [],
+            description: '',
+            status: 'watched',
+            favorite: false,
+            rating: 9,
+            comments: ''
+          },
+          {
+            title: 'Дюна',
+            originalTitle: null,
+            year: null,
+            posterUrl: null,
+            director: '',
+            runtimeMinutes: null,
+            genres: [],
+            actors: [],
+            description: '',
+            status: 'watchlist',
+            favorite: false,
+            rating: null,
+            comments: ''
+          }
+        ]
+      })
+    )
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.getByText('Дюна')).toBeInTheDocument()
+  })
+
   it('keeps the module header clean and puts movie actions into it', async () => {
     const user = userEvent.setup()
     mocks.listOverview.mockResolvedValue({ movies: [movie] })

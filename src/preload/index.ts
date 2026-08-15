@@ -232,6 +232,7 @@ const api: MyMindApi = {
     listOverview: () => ipcRenderer.invoke(MOVIES_IPC_CHANNELS.listOverview),
     getMovie: (input) => ipcRenderer.invoke(MOVIES_IPC_CHANNELS.getMovie, input),
     createMovie: (input) => ipcRenderer.invoke(MOVIES_IPC_CHANNELS.createMovie, input),
+    createMovies: (input) => ipcRenderer.invoke(MOVIES_IPC_CHANNELS.createMovies, input),
     updateMovie: (input) => ipcRenderer.invoke(MOVIES_IPC_CHANNELS.updateMovie, input),
     deleteMovie: (input) => ipcRenderer.invoke(MOVIES_IPC_CHANNELS.deleteMovie, input)
   },

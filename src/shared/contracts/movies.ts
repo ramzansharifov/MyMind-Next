@@ -45,6 +45,10 @@ export interface UpdateMovieInput extends CreateMovieInput {
   id: string
 }
 
+export interface CreateMoviesInput {
+  movies: CreateMovieInput[]
+}
+
 export interface GetMovieInput {
   id: string
 }
@@ -57,6 +61,7 @@ export const MOVIES_IPC_CHANNELS = {
   listOverview: 'movies:list-overview',
   getMovie: 'movies:get-movie',
   createMovie: 'movies:create-movie',
+  createMovies: 'movies:create-movies',
   updateMovie: 'movies:update-movie',
   deleteMovie: 'movies:delete-movie'
 } as const
@@ -65,6 +70,7 @@ export interface MoviesApi {
   listOverview(): Promise<MoviesOverview>
   getMovie(input: GetMovieInput): Promise<MovieRecord | null>
   createMovie(input: CreateMovieInput): Promise<MovieRecord>
+  createMovies(input: CreateMoviesInput): Promise<MovieRecord[]>
   updateMovie(input: UpdateMovieInput): Promise<MovieRecord>
   deleteMovie(input: DeleteMovieInput): Promise<boolean>
 }
