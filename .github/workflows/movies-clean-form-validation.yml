@@ -20,6 +20,18 @@ jobs:
           node-version: 22
           cache: npm
       - run: python .github/scripts/apply-movies-clean-form.py
+      - name: Fix explicit validation return type
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('src/shared/validation/movies.ts')
+          text = path.read_text()
+          old = "const stringListSchema = (maxItems: number) =>"
+          new = "const stringListSchema = (maxItems: number): z.ZodType<string[]> =>"
+          if old not in text:
+              raise SystemExit('validation helper signature not found')
+          path.write_text(text.replace(old, new, 1))
+          PY
       - run: rm .github/scripts/apply-movies-clean-form.py .github/workflows/movies-clean-form-validation.yml
       - run: npm ci
       - name: Format changed files
