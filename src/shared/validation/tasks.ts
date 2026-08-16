@@ -67,10 +67,7 @@ const taskBaseInputSchema = z
   })
   .strict()
 
-function validateDueTime(
-  input: { dueDate: string | null; dueTime: string | null },
-  context: z.RefinementCtx
-): void {
+export const createTaskInputSchema = taskBaseInputSchema.superRefine((input, context) => {
   if (input.dueTime !== null && input.dueDate === null) {
     context.addIssue({
       code: 'custom',
@@ -78,11 +75,19 @@ function validateDueTime(
       message: 'Чтобы указать время, сначала выберите дату'
     })
   }
-}
+})
 
-export const createTaskInputSchema = taskBaseInputSchema.superRefine(validateDueTime)
 export const updateTaskInputSchema = taskBaseInputSchema
   .extend({ id: taskSafeIdSchema })
   .strict()
-  .superRefine(validateDueTime)
+  .superRefine((input, context) => {
+    if (input.dueTime !== null && input.dueDate === null) {
+      context.addIssue({
+        code: 'custom',
+        path: ['dueTime'],
+        message: 'Чтобы указать время, сначала выберите дату'
+      })
+    }
+  })
+
 export const deleteTaskInputSchema = z.object({ id: taskSafeIdSchema }).strict()
