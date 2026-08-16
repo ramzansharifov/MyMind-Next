@@ -169,6 +169,13 @@
       "when": 1786864524000,
       "tag": "0023_movies_content_type",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "6",
+      "when": 1786865100000,
+      "tag": "0024_series_metadata",
+      "breakpoints": true
     }
   ]
 }
