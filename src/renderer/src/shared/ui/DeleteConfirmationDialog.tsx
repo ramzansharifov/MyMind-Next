@@ -1,8 +1,7 @@
 import { LoaderCircle, RotateCcw, Trash2, TriangleAlert } from 'lucide-react'
 
 import { isDialogConfirmShortcut } from '../lib/dialog-keyboard'
-import type { AppDialogTone } from './AppDialog'
-import { AppDialog } from './AppDialog'
+import { AppDialog, type AppDialogTone } from './AppDialog'
 
 interface DeleteConfirmationDialogProps {
   open: boolean
@@ -83,7 +82,9 @@ export function DeleteConfirmationDialog({
       {noticeText && (
         <div
           className={`flex items-center gap-2 border-b border-[var(--app-border)] px-5 py-3 text-xs ${
-            isWarning ? 'bg-amber-500/[0.035] text-amber-200/85' : 'bg-red-500/[0.035] text-red-200/80'
+            isWarning
+              ? 'bg-amber-500/[0.035] text-amber-200/85'
+              : 'bg-red-500/[0.035] text-red-200/80'
           }`}
         >
           <TriangleAlert aria-hidden="true" className="size-4 shrink-0" />
