@@ -138,7 +138,7 @@ describe('MoviesPage', () => {
     expect(screen.getByRole('button', { name: 'Изменить' })).toBeInTheDocument()
   })
 
-  it('shows interactive metadata, explicit watch status and fullscreen poster', async () => {
+  it('shows interactive metadata, confirms watched rollback and opens fullscreen poster', async () => {
     const user = userEvent.setup()
     mocks.listOverview.mockResolvedValue({ movies: [movie] })
     render(<MoviesPage />)
@@ -178,9 +178,24 @@ describe('MoviesPage', () => {
     expect(mocks.searchWeb).toHaveBeenCalledWith({ query: 'Christopher Nolan' })
 
     await user.click(watchlist)
-    expect(mocks.updateMovie).toHaveBeenCalledWith(
-      expect.objectContaining({ id: movie.id, status: 'watchlist', rating: null })
+    expect(mocks.updateMovie).not.toHaveBeenCalled()
+    expect(
+      screen.getByRole('heading', { name: 'Вернуть фильм в «Хочу посмотреть»?' })
+    ).toBeInTheDocument()
+    expect(screen.getByText('Текущая оценка фильма будет удалена')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Отмена' }))
+    expect(mocks.updateMovie).not.toHaveBeenCalled()
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+
+    await user.click(watchlist)
+    await user.click(screen.getByRole('button', { name: 'Вернуть' }))
+    await waitFor(() =>
+      expect(mocks.updateMovie).toHaveBeenCalledWith(
+        expect.objectContaining({ id: movie.id, status: 'watchlist', rating: null })
+      )
     )
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Посмотреть' }))
     expect(mocks.searchWeb).toHaveBeenCalledWith({

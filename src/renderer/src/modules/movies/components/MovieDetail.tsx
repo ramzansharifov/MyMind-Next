@@ -18,6 +18,7 @@ import { useEffect, useRef, useState } from 'react'
 
 import type { MovieRecord } from '../../../../../shared/contracts/movies'
 import { AppDialog } from '../../../shared/ui/AppDialog'
+import { DeleteConfirmationDialog } from '../../../shared/ui/DeleteConfirmationDialog'
 import './movies-interactions.css'
 
 interface MovieDetailProps {
@@ -163,6 +164,7 @@ export function MovieDetail({
 }: MovieDetailProps): React.JSX.Element {
   const [posterOpen, setPosterOpen] = useState(false)
   const [posterFailed, setPosterFailed] = useState(false)
+  const [watchlistConfirmOpen, setWatchlistConfirmOpen] = useState(false)
   const runtime = formatRuntime(movie.runtimeMinutes)
 
   async function toggleFavorite(): Promise<void> {
@@ -176,6 +178,20 @@ export function MovieDetail({
       status,
       rating: status === 'watched' ? movie.rating : null
     })
+  }
+
+  function requestStatus(status: MovieRecord['status']): void {
+    if (movie.status === status) return
+    if (movie.status === 'watched' && status === 'watchlist') {
+      setWatchlistConfirmOpen(true)
+      return
+    }
+    void setStatus(status)
+  }
+
+  async function confirmWatchlist(): Promise<void> {
+    await setStatus('watchlist')
+    setWatchlistConfirmOpen(false)
   }
 
   const watchQuery = `Смотреть фильм ${movie.title}${
@@ -333,7 +349,7 @@ export function MovieDetail({
                         ? 'h-8 rounded-lg border border-emerald-400/20 bg-emerald-400/10 px-3 text-sm font-semibold text-emerald-300 transition-colors disabled:opacity-50'
                         : 'h-8 rounded-lg px-3 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:opacity-50'
                     }
-                    onClick={() => void setStatus('watched')}
+                    onClick={() => requestStatus('watched')}
                   >
                     Просмотрено
                   </button>
@@ -350,7 +366,7 @@ export function MovieDetail({
                         ? 'h-8 rounded-lg border border-violet-400/20 bg-violet-400/10 px-3 text-sm font-semibold text-violet-300 transition-colors disabled:opacity-50'
                         : 'h-8 rounded-lg px-3 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:opacity-50'
                     }
-                    onClick={() => void setStatus('watchlist')}
+                    onClick={() => requestStatus('watchlist')}
                   >
                     Хочу посмотреть
                   </button>
@@ -387,6 +403,20 @@ export function MovieDetail({
           </div>
         </div>
       </section>
+
+      <DeleteConfirmationDialog
+        open={watchlistConfirmOpen}
+        title="Вернуть фильм в «Хочу посмотреть»?"
+        subject={movie.title}
+        description="Фильм перестанет считаться просмотренным и вернётся в список «Хочу посмотреть»."
+        confirmLabel="Вернуть"
+        submittingLabel="Сохраняем…"
+        tone="warning"
+        notice={movie.rating !== null ? 'Текущая оценка фильма будет удалена' : 'Статус просмотра будет изменён'}
+        isSubmitting={busy}
+        onOpenChange={setWatchlistConfirmOpen}
+        onConfirm={confirmWatchlist}
+      />
 
       <AppDialog
         open={posterOpen}
