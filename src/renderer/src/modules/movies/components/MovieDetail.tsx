@@ -18,6 +18,7 @@ import { useEffect, useRef, useState } from 'react'
 
 import type { MovieRecord } from '../../../../../shared/contracts/movies'
 import { AppDialog } from '../../../shared/ui/AppDialog'
+import './movies-interactions.css'
 
 interface MovieDetailProps {
   movie: MovieRecord
@@ -83,7 +84,7 @@ function SearchPopover({
 
   const triggerClassName =
     variant === 'chip'
-      ? 'rounded-lg border border-[var(--app-border)] bg-[var(--app-control)] px-2.5 py-1.5 font-medium text-[var(--app-muted)] transition-colors hover:border-violet-400/30 hover:bg-[var(--app-control-hover)] hover:text-violet-300 focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:outline-none'
+      ? 'rounded-xl border border-[var(--app-border-strong)] bg-[var(--app-control)] px-3 py-2 font-medium text-[var(--app-muted)] transition-colors hover:border-violet-400/35 hover:bg-[var(--app-control-hover)] hover:text-violet-300 focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:outline-none'
       : 'rounded-md font-medium text-[var(--app-text)] underline decoration-transparent underline-offset-4 transition-colors hover:text-violet-300 hover:decoration-violet-400/45 focus-visible:text-violet-300 focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:outline-none'
 
   return (
@@ -249,12 +250,12 @@ export function MovieDetail({
               {(movie.year !== null || runtime) && (
                 <div className="mt-6 flex flex-wrap gap-2.5 text-base text-[var(--app-muted)]">
                   {movie.year !== null && (
-                    <span className="inline-flex items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-control)] px-3 py-2 font-medium">
+                    <span className="inline-flex items-center gap-2 rounded-xl border border-[var(--app-border-strong)] bg-[var(--app-control)] px-3 py-2 font-medium">
                       <CalendarDays className="size-4" /> {movie.year}
                     </span>
                   )}
                   {runtime && (
-                    <span className="inline-flex items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-control)] px-3 py-2 font-medium">
+                    <span className="inline-flex items-center gap-2 rounded-xl border border-[var(--app-border-strong)] bg-[var(--app-control)] px-3 py-2 font-medium">
                       <Clock3 className="size-4" /> {runtime}
                     </span>
                   )}

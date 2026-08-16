@@ -1,0 +1,88 @@
+button[aria-haspopup='dialog'][class*='rounded-xl'] {
+  border: 1px solid var(--app-border-strong);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  article:has(button[aria-label^='Открыть фильм «']) > div {
+    position: relative;
+    isolation: isolate;
+    transform-origin: 50% 85%;
+    transition:
+      transform 360ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      border-color 300ms ease,
+      box-shadow 360ms ease;
+  }
+
+  article:has(button[aria-label^='Открыть фильм «']) > div:hover {
+    border-color: color-mix(in srgb, var(--app-accent-500) 38%, var(--app-border));
+    box-shadow:
+      0 20px 50px rgb(0 0 0 / 32%),
+      0 0 0 1px color-mix(in srgb, var(--app-accent-500) 14%, transparent);
+    transform: translateY(-7px) scale(1.018);
+  }
+
+  article:has(button[aria-label^='Открыть фильм «']) img[alt^='Постер фильма «'] {
+    transition:
+      transform 650ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      filter 420ms ease;
+  }
+
+  article:has(button[aria-label^='Открыть фильм «']) > div:hover img[alt^='Постер фильма «'] {
+    filter: saturate(1.06) contrast(1.03);
+    transform: scale(1.06);
+  }
+
+  article:has(button[aria-label^='Открыть фильм «']) > div > div:first-child::after {
+    position: absolute;
+    z-index: 5;
+    inset: -35%;
+    pointer-events: none;
+    content: '';
+    background: linear-gradient(
+      110deg,
+      transparent 36%,
+      rgb(255 255 255 / 2%) 43%,
+      rgb(255 255 255 / 11%) 50%,
+      rgb(255 255 255 / 2%) 57%,
+      transparent 64%
+    );
+    opacity: 0;
+    transform: translateX(-58%);
+    transition:
+      transform 760ms cubic-bezier(0.2, 0.75, 0.2, 1),
+      opacity 180ms ease;
+  }
+
+  article:has(button[aria-label^='Открыть фильм «']) > div:hover > div:first-child::after {
+    opacity: 1;
+    transform: translateX(58%);
+  }
+
+  article:has(button[aria-label^='Открыть фильм «']) > div > button:last-child span {
+    transition:
+      color 200ms ease,
+      transform 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  article:has(button[aria-label^='Открыть фильм «']) > div:hover > button:last-child span {
+    transform: translateX(2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  article:has(button[aria-label^='Открыть фильм «']) > div,
+  article:has(button[aria-label^='Открыть фильм «']) img[alt^='Постер фильма «'],
+  article:has(button[aria-label^='Открыть фильм «']) > div > button:last-child span {
+    transition: none;
+  }
+
+  article:has(button[aria-label^='Открыть фильм «']) > div:hover,
+  article:has(button[aria-label^='Открыть фильм «']) > div:hover img[alt^='Постер фильма «'],
+  article:has(button[aria-label^='Открыть фильм «']) > div:hover > button:last-child span {
+    transform: none;
+  }
+
+  article:has(button[aria-label^='Открыть фильм «']) > div > div:first-child::after {
+    display: none;
+  }
+}
