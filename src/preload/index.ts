@@ -36,19 +36,29 @@ import { parseShutdownRequest } from './shutdown-request'
 const api: MyMindApi = {
   system: {
     getHealth: () => ipcRenderer.invoke(IPC_CHANNELS.systemHealth) as Promise<SystemHealth>,
+
     getWindowState: () =>
       ipcRenderer.invoke(IPC_CHANNELS.windowGetState) as Promise<SystemWindowState>,
+
     onWindowStateChanged: (listener) => {
       const handler = (_event: Electron.IpcRendererEvent, state: SystemWindowState): void => {
         listener(state)
       }
+
       ipcRenderer.on(IPC_CHANNELS.windowStateChanged, handler)
-      return () => ipcRenderer.removeListener(IPC_CHANNELS.windowStateChanged, handler)
+
+      return () => {
+        ipcRenderer.removeListener(IPC_CHANNELS.windowStateChanged, handler)
+      }
     },
+
     minimizeWindow: () => ipcRenderer.invoke(IPC_CHANNELS.windowMinimize) as Promise<void>,
+
     toggleMaximizeWindow: () =>
       ipcRenderer.invoke(IPC_CHANNELS.windowToggleMaximize) as Promise<SystemWindowState>,
+
     closeWindow: () => ipcRenderer.invoke(IPC_CHANNELS.windowClose) as Promise<void>,
+
     onShutdownRequested: (listener) => {
       const handler = (_event: Electron.IpcRendererEvent, rawRequest: unknown): void => {
         try {
@@ -57,9 +67,14 @@ const api: MyMindApi = {
           console.error('Ignored invalid shutdown request', reason)
         }
       }
+
       ipcRenderer.on(IPC_CHANNELS.shutdownRequested, handler)
-      return () => ipcRenderer.removeListener(IPC_CHANNELS.shutdownRequested, handler)
+
+      return () => {
+        ipcRenderer.removeListener(IPC_CHANNELS.shutdownRequested, handler)
+      }
     },
+
     respondToShutdown: (response) =>
       ipcRenderer.invoke(IPC_CHANNELS.respondToShutdown, response) as Promise<void>
   },
@@ -67,6 +82,7 @@ const api: MyMindApi = {
   preferences: {
     getAppearance: () =>
       ipcRenderer.invoke(PREFERENCES_IPC_CHANNELS.getAppearance) as Promise<AppearancePreferences>,
+
     updateAppearance: (input) =>
       ipcRenderer.invoke(
         PREFERENCES_IPC_CHANNELS.updateAppearance,
@@ -76,90 +92,125 @@ const api: MyMindApi = {
 
   boards: {
     listNodes: () => ipcRenderer.invoke(BOARD_IPC_CHANNELS.listNodes) as Promise<BoardNode[]>,
+
     createNode: (input) =>
       ipcRenderer.invoke(BOARD_IPC_CHANNELS.createNode, input) as Promise<BoardNode>,
+
     renameNode: (input) =>
       ipcRenderer.invoke(BOARD_IPC_CHANNELS.renameNode, input) as Promise<BoardNode>,
+
     updateFolderIcon: (input) =>
       ipcRenderer.invoke(BOARD_IPC_CHANNELS.updateFolderIcon, input) as Promise<BoardNode>,
+
     deleteNode: (nodeId) =>
       ipcRenderer.invoke(BOARD_IPC_CHANNELS.deleteNode, nodeId) as Promise<boolean>,
+
     updateExpansion: (input) =>
       ipcRenderer.invoke(BOARD_IPC_CHANNELS.updateExpansion, input) as Promise<BoardNode>,
+
     moveNode: (input) =>
       ipcRenderer.invoke(BOARD_IPC_CHANNELS.moveNode, input) as Promise<BoardNode[]>,
+
     getDocument: (nodeId) =>
       ipcRenderer.invoke(BOARD_IPC_CHANNELS.getDocument, nodeId) as Promise<BoardDocument>,
+
     saveDocument: (input) =>
       ipcRenderer.invoke(BOARD_IPC_CHANNELS.saveDocument, input) as Promise<BoardDocument>,
+
     ensureStudyBoard: (input) =>
       ipcRenderer.invoke(BOARD_IPC_CHANNELS.ensureStudyBoard, input) as Promise<BoardNode>,
+
     ensureNoteBoard: (input) =>
       ipcRenderer.invoke(BOARD_IPC_CHANNELS.ensureNoteBoard, input) as Promise<BoardNode>
   },
 
   study: {
     listNodes: () => ipcRenderer.invoke(STUDY_IPC_CHANNELS.listNodes) as Promise<StudyNode[]>,
+
     createNode: (input) =>
       ipcRenderer.invoke(STUDY_IPC_CHANNELS.createNode, input) as Promise<StudyNode>,
+
     renameNode: (input) =>
       ipcRenderer.invoke(STUDY_IPC_CHANNELS.renameNode, input) as Promise<StudyNode>,
+
     duplicateNode: (input) =>
       ipcRenderer.invoke(
         STUDY_IPC_CHANNELS.duplicateNode,
         input
       ) as Promise<DuplicateStudyNodeResult>,
+
     updateFolderIcon: (input) =>
       ipcRenderer.invoke(STUDY_IPC_CHANNELS.updateFolderIcon, input) as Promise<StudyNode>,
+
     deleteNode: (nodeId) =>
       ipcRenderer.invoke(STUDY_IPC_CHANNELS.deleteNode, nodeId) as Promise<boolean>,
+
     updateExpansion: (input) =>
       ipcRenderer.invoke(STUDY_IPC_CHANNELS.updateExpansion, input) as Promise<StudyNode>,
+
     moveNode: (input) =>
       ipcRenderer.invoke(STUDY_IPC_CHANNELS.moveNode, input) as Promise<StudyNode[]>,
+
     getMaterial: (nodeId) =>
       ipcRenderer.invoke(STUDY_IPC_CHANNELS.getMaterial, nodeId) as Promise<StudyMaterial>,
+
     saveMaterial: (input) =>
       ipcRenderer.invoke(STUDY_IPC_CHANNELS.saveMaterial, input) as Promise<StudyMaterial>,
+
     searchInternalLinkTargets: (input) =>
       ipcRenderer.invoke(STUDY_IPC_CHANNELS.searchInternalLinkTargets, input) as Promise<
         StudyInternalLinkTarget[]
       >,
+
     resolveInternalLinkTarget: (input) =>
       ipcRenderer.invoke(
         STUDY_IPC_CHANNELS.resolveInternalLinkTarget,
         input
       ) as Promise<StudyInternalLinkTarget | null>,
+
     importAsset: (input) =>
       ipcRenderer.invoke(STUDY_IPC_CHANNELS.importAsset, input) as Promise<StudyLocalAsset | null>,
+
     openAsset: (input) => ipcRenderer.invoke(STUDY_IPC_CHANNELS.openAsset, input) as Promise<void>
   },
 
   notes: {
     listOverview: () =>
       ipcRenderer.invoke(NOTES_IPC_CHANNELS.listOverview) as Promise<NotesOverview>,
+
     createGroup: (input) =>
       ipcRenderer.invoke(NOTES_IPC_CHANNELS.createGroup, input) as Promise<NoteGroup>,
+
     renameGroup: (input) =>
       ipcRenderer.invoke(NOTES_IPC_CHANNELS.renameGroup, input) as Promise<NoteGroup>,
+
     updateGroupIcon: (input) =>
       ipcRenderer.invoke(NOTES_IPC_CHANNELS.updateGroupIcon, input) as Promise<NoteGroup>,
+
     deleteGroup: (groupId) =>
       ipcRenderer.invoke(NOTES_IPC_CHANNELS.deleteGroup, groupId) as Promise<boolean>,
+
     createNote: (input) =>
       ipcRenderer.invoke(NOTES_IPC_CHANNELS.createNote, input) as Promise<NoteRecord>,
+
     renameNote: (input) =>
       ipcRenderer.invoke(NOTES_IPC_CHANNELS.renameNote, input) as Promise<NoteSummary>,
+
     moveNote: (input) =>
       ipcRenderer.invoke(NOTES_IPC_CHANNELS.moveNote, input) as Promise<NoteSummary>,
+
     deleteNote: (noteId) =>
       ipcRenderer.invoke(NOTES_IPC_CHANNELS.deleteNote, noteId) as Promise<boolean>,
+
     getNote: (noteId) =>
       ipcRenderer.invoke(NOTES_IPC_CHANNELS.getNote, noteId) as Promise<NoteRecord>,
+
     saveNote: (input) =>
       ipcRenderer.invoke(NOTES_IPC_CHANNELS.saveNote, input) as Promise<NoteRecord>,
+
     importAsset: (input) =>
       ipcRenderer.invoke(NOTES_IPC_CHANNELS.importAsset, input) as Promise<NoteLocalAsset | null>,
+
     openAsset: (input) => ipcRenderer.invoke(NOTES_IPC_CHANNELS.openAsset, input) as Promise<void>
   },
 
@@ -202,15 +253,19 @@ const api: MyMindApi = {
     getSettings: () => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.getSettings),
     setBaseCurrency: (input) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.setBaseCurrency, input),
     listExchangeRates: () => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.listExchangeRates),
-    upsertExchangeRate: (input) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.upsertExchangeRate, input),
-    deleteExchangeRate: (input) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.deleteExchangeRate, input),
+    upsertExchangeRate: (input) =>
+      ipcRenderer.invoke(FINANCE_IPC_CHANNELS.upsertExchangeRate, input),
+    deleteExchangeRate: (input) =>
+      ipcRenderer.invoke(FINANCE_IPC_CHANNELS.deleteExchangeRate, input),
     listAccounts: (period) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.listAccounts, period),
     getAccount: (id, period) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.getAccount, id, period),
     createAccount: (input) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.createAccount, input),
     updateAccount: (input) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.updateAccount, input),
     deleteAccount: (input) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.deleteAccount, input),
-    clearAccountHistory: (input) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.clearAccountHistory, input),
-    listTransactions: (filters) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.listTransactions, filters),
+    clearAccountHistory: (input) =>
+      ipcRenderer.invoke(FINANCE_IPC_CHANNELS.clearAccountHistory, input),
+    listTransactions: (filters) =>
+      ipcRenderer.invoke(FINANCE_IPC_CHANNELS.listTransactions, filters),
     getTransaction: (id) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.getTransaction, id),
     createTransaction: (input) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.createTransaction, input),
     updateTransaction: (input) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.updateTransaction, input),
@@ -225,7 +280,8 @@ const api: MyMindApi = {
     updateLimit: (input) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.updateLimit, input),
     setLimitState: (input) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.setLimitState, input),
     deleteLimit: (input) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.deleteLimit, input),
-    previewExpenseImpact: (input) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.previewExpenseImpact, input),
+    previewExpenseImpact: (input) =>
+      ipcRenderer.invoke(FINANCE_IPC_CHANNELS.previewExpenseImpact, input),
     listTemplates: () => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.listTemplates),
     createTemplate: (input) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.createTemplate, input),
     updateTemplate: (input) => ipcRenderer.invoke(FINANCE_IPC_CHANNELS.updateTemplate, input),
