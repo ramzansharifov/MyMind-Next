@@ -2,31 +2,187 @@
   "version": "7",
   "dialect": "sqlite",
   "entries": [
-    { "idx": 0, "version": "6", "when": 1783671712509, "tag": "0000_rare_umar", "breakpoints": true },
-    { "idx": 1, "version": "6", "when": 1783707436396, "tag": "0001_regular_iron_lad", "breakpoints": true },
-    { "idx": 2, "version": "6", "when": 1783743932886, "tag": "0002_orange_young_avengers", "breakpoints": true },
-    { "idx": 3, "version": "6", "when": 1783800368177, "tag": "0003_flowery_beast", "breakpoints": true },
-    { "idx": 4, "version": "6", "when": 1783948129233, "tag": "0004_typical_deathbird", "breakpoints": true },
-    { "idx": 5, "version": "6", "when": 1783948519129, "tag": "0005_cooing_roland_deschain", "breakpoints": true },
-    { "idx": 6, "version": "6", "when": 1784009891289, "tag": "0006_nasty_the_executioner", "breakpoints": true },
-    { "idx": 7, "version": "6", "when": 1784321852325, "tag": "0007_boards", "breakpoints": true },
-    { "idx": 8, "version": "6", "when": 1784607914875, "tag": "0008_board_folder_icons", "breakpoints": true },
-    { "idx": 9, "version": "6", "when": 1785821116088, "tag": "0009_giant_misty_knight", "breakpoints": true },
-    { "idx": 10, "version": "6", "when": 1785857638418, "tag": "0010_romantic_bloodaxe", "breakpoints": true },
-    { "idx": 11, "version": "6", "when": 1785904646909, "tag": "0011_motionless_zaran", "breakpoints": true },
-    { "idx": 12, "version": "6", "when": 1785913846876, "tag": "0012_remarkable_phantom_reporter", "breakpoints": true },
-    { "idx": 13, "version": "6", "when": 1786117020000, "tag": "0013_finance_account_without_type", "breakpoints": true },
-    { "idx": 14, "version": "6", "when": 1786139700000, "tag": "0014_finance_limit_accounts", "breakpoints": true },
-    { "idx": 15, "version": "6", "when": 1786140600000, "tag": "0015_simplify_finance_templates_limits", "breakpoints": true },
-    { "idx": 16, "version": "6", "when": 1786169400000, "tag": "0016_finance_universal_tag_yellow", "breakpoints": true },
-    { "idx": 17, "version": "6", "when": 1786177200000, "tag": "0017_finance_system_tag_colors", "breakpoints": true },
-    { "idx": 18, "version": "6", "when": 1786188000000, "tag": "0018_diary_module", "breakpoints": true },
-    { "idx": 19, "version": "6", "when": 1786689000000, "tag": "0019_diary_paper_appearance", "breakpoints": true },
-    { "idx": 20, "version": "6", "when": 1786698600000, "tag": "0020_diary_cover_tone", "breakpoints": true },
-    { "idx": 21, "version": "6", "when": 1786818000000, "tag": "0021_movies_module", "breakpoints": true },
-    { "idx": 22, "version": "6", "when": 1786839000000, "tag": "0022_movies_metadata_cleanup", "breakpoints": true },
-    { "idx": 23, "version": "6", "when": 1786864524000, "tag": "0023_movies_content_type", "breakpoints": true },
-    { "idx": 24, "version": "6", "when": 1786865100000, "tag": "0024_series_metadata", "breakpoints": true },
-    { "idx": 25, "version": "6", "when": 1786870320000, "tag": "0025_music_module", "breakpoints": true }
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1783671712509,
+      "tag": "0000_rare_umar",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1783707436396,
+      "tag": "0001_regular_iron_lad",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1783743932886,
+      "tag": "0002_orange_young_avengers",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1783800368177,
+      "tag": "0003_flowery_beast",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1783948129233,
+      "tag": "0004_typical_deathbird",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1783948519129,
+      "tag": "0005_cooing_roland_deschain",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1784009891289,
+      "tag": "0006_nasty_the_executioner",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1784321852325,
+      "tag": "0007_boards",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1784607914875,
+      "tag": "0008_board_folder_icons",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1785821116088,
+      "tag": "0009_giant_misty_knight",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1785857638418,
+      "tag": "0010_romantic_bloodaxe",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1785904646909,
+      "tag": "0011_motionless_zaran",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1785913846876,
+      "tag": "0012_remarkable_phantom_reporter",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1786117020000,
+      "tag": "0013_finance_account_without_type",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1786139700000,
+      "tag": "0014_finance_limit_accounts",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "6",
+      "when": 1786140600000,
+      "tag": "0015_simplify_finance_templates_limits",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "6",
+      "when": 1786169400000,
+      "tag": "0016_finance_universal_tag_yellow",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1786177200000,
+      "tag": "0017_finance_system_tag_colors",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1786188000000,
+      "tag": "0018_diary_module",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1786689000000,
+      "tag": "0019_diary_paper_appearance",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1786698600000,
+      "tag": "0020_diary_cover_tone",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "6",
+      "when": 1786818000000,
+      "tag": "0021_movies_module",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "6",
+      "when": 1786839000000,
+      "tag": "0022_movies_metadata_cleanup",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "6",
+      "when": 1786864524000,
+      "tag": "0023_movies_content_type",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "6",
+      "when": 1786865100000,
+      "tag": "0024_series_metadata",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "6",
+      "when": 1786870320000,
+      "tag": "0025_music_module",
+      "breakpoints": true
+    }
   ]
 }
