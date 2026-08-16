@@ -169,6 +169,8 @@ export function MovieDetail({
   const [posterOpen, setPosterOpen] = useState(false)
   const [posterFailed, setPosterFailed] = useState(false)
   const [watchlistConfirmOpen, setWatchlistConfirmOpen] = useState(false)
+  const [ratingDialogOpen, setRatingDialogOpen] = useState(false)
+  const [pendingRating, setPendingRating] = useState<number | null>(null)
   const episodicType = isEpisodicMovieType(movie.type)
   const runtime = formatRuntime(movie.runtimeMinutes)
   const episodeRuntime = formatRuntime(movie.episodeRuntimeMinutes)
@@ -177,13 +179,18 @@ export function MovieDetail({
     await onUpdate({ ...movie, favorite: !movie.favorite })
   }
 
-  async function setStatus(status: MovieRecord['status']): Promise<void> {
+  async function setStatus(status: MovieRecord['status'], rating: number | null): Promise<void> {
     if (movie.status === status) return
     await onUpdate({
       ...movie,
       status,
-      rating: status === 'watched' ? movie.rating : null
+      rating: status === 'watched' ? rating : null
     })
+  }
+
+  function changeRatingDialogOpen(open: boolean): void {
+    setRatingDialogOpen(open)
+    if (!open) setPendingRating(null)
   }
 
   function requestStatus(status: MovieRecord['status']): void {
@@ -192,12 +199,22 @@ export function MovieDetail({
       setWatchlistConfirmOpen(true)
       return
     }
-    void setStatus(status)
+    if (movie.status === 'watchlist' && status === 'watched') {
+      setPendingRating(null)
+      setRatingDialogOpen(true)
+    }
   }
 
   async function confirmWatchlist(): Promise<void> {
-    await setStatus('watchlist')
+    await setStatus('watchlist', null)
     setWatchlistConfirmOpen(false)
+  }
+
+  async function confirmWatched(): Promise<void> {
+    if (pendingRating === null) return
+    await setStatus('watched', pendingRating)
+    setRatingDialogOpen(false)
+    setPendingRating(null)
   }
 
   const contentTypeName = movieTypeLabel(movie.type).toLocaleLowerCase('ru-RU')
@@ -426,6 +443,72 @@ export function MovieDetail({
           </div>
         </div>
       </section>
+
+      <AppDialog
+        open={ratingDialogOpen}
+        onOpenChange={changeRatingDialogOpen}
+        title="Отметить как просмотрено"
+        description={`Выберите оценку для «${movie.title}»`}
+        icon={<Star />}
+        size="md"
+        busy={busy}
+        bodyClassName="space-y-4"
+        footer={
+          <>
+            <button
+              type="button"
+              disabled={busy}
+              className="h-10 rounded-xl border border-[var(--app-border)] px-4 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:opacity-50"
+              onClick={() => changeRatingDialogOpen(false)}
+            >
+              Отмена
+            </button>
+            <button
+              type="button"
+              disabled={busy || pendingRating === null}
+              className="h-10 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-45"
+              onClick={() => void confirmWatched()}
+            >
+              {busy ? 'Сохраняем…' : 'Отметить просмотренным'}
+            </button>
+          </>
+        }
+      >
+        <div>
+          <p className="text-sm leading-6 text-[var(--app-muted)]">
+            Выберите оценку для «<span className="font-medium text-[var(--app-text)]">{movie.title}</span>».
+            После сохранения запись перейдёт в «Просмотрено».
+          </p>
+          <div
+            role="radiogroup"
+            aria-label="Оценка"
+            className="mt-4 grid grid-cols-5 gap-2 sm:grid-cols-10"
+          >
+            {Array.from({ length: 10 }, (_, index) => index + 1).map((value) => (
+              <button
+                key={value}
+                type="button"
+                role="radio"
+                aria-label={`Оценка ${value}`}
+                aria-checked={pendingRating === value}
+                disabled={busy}
+                className={
+                  pendingRating === value
+                    ? 'flex h-11 items-center justify-center rounded-xl border border-amber-400/35 bg-amber-400/15 text-sm font-semibold text-amber-200 shadow-inner shadow-amber-400/5'
+                    : 'flex h-11 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] text-sm font-medium text-[var(--app-muted)] transition-colors hover:border-amber-400/25 hover:bg-amber-400/10 hover:text-amber-200 disabled:opacity-50'
+                }
+                onClick={() => setPendingRating(value)}
+              >
+                {value}
+              </button>
+            ))}
+          </div>
+          <div className="mt-3 flex items-center gap-2 text-xs text-[var(--app-muted)]">
+            <Star className={`size-3.5 ${pendingRating !== null ? 'fill-current text-amber-300' : ''}`} />
+            {pendingRating === null ? 'Сначала выберите оценку' : `Выбрано: ${pendingRating} / 10`}
+          </div>
+        </div>
+      </AppDialog>
 
       <DeleteConfirmationDialog
         open={watchlistConfirmOpen}
