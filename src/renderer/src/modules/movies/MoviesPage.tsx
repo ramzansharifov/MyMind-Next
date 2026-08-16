@@ -4,7 +4,6 @@ import {
   Bookmark,
   Braces,
   Check,
-  ChevronDown,
   Film,
   Heart,
   Image,
@@ -26,6 +25,7 @@ import type {
   MovieType,
   UpdateMovieInput
 } from '../../../../shared/contracts/movies'
+import { AppSelect, type AppSelectOption } from '../../shared/ui/AppSelect'
 import { DeleteConfirmationDialog } from '../../shared/ui/DeleteConfirmationDialog'
 import { moviesClient } from './api/movies-client'
 import { MovieDetail } from './components/MovieDetail'
@@ -58,8 +58,8 @@ interface MoviesPageProps {
 interface FilterSelectProps {
   label: string
   value: string
+  options: readonly AppSelectOption[]
   onChange: (value: string) => void
-  children: React.ReactNode
 }
 
 interface ActiveFilterChipProps {
@@ -85,6 +85,14 @@ const filterItems: Array<{ id: MovieFilter; label: string; icon?: React.ReactNod
   { id: 'favorites', label: 'Избранное', icon: <Heart className="size-4" /> }
 ]
 
+const ratingFilterOptions: AppSelectOption[] = [
+  { value: 'all', label: 'Любая оценка' },
+  ...[10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map((rating) => ({
+    value: rating.toString(),
+    label: `От ${rating}`
+  }))
+]
+
 function errorMessage(reason: unknown): string {
   if (reason instanceof Error) return reason.message
   return 'Не удалось выполнить действие'
@@ -96,21 +104,12 @@ function uniqueSorted(values: string[]): string[] {
   )
 }
 
-function FilterSelect({ label, value, onChange, children }: FilterSelectProps): React.JSX.Element {
+function FilterSelect({ label, value, options, onChange }: FilterSelectProps): React.JSX.Element {
   return (
-    <label className="space-y-1.5">
-      <span className="text-xs font-medium text-[var(--app-muted)]">{label}</span>
-      <span className="relative block">
-        <select
-          value={value}
-          className="h-10 w-full appearance-none rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] pr-9 pl-3 text-sm text-[var(--app-text)] outline-none transition-[border-color,box-shadow,background-color] focus:border-violet-500/45 focus:bg-[var(--app-surface)] focus:ring-2 focus:ring-violet-500/15"
-          onChange={(event) => onChange(event.target.value)}
-        >
-          {children}
-        </select>
-        <ChevronDown className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-[var(--app-muted)]" />
-      </span>
-    </label>
+    <div className="space-y-1.5">
+      <span className="block text-xs font-medium text-[var(--app-muted)]">{label}</span>
+      <AppSelect ariaLabel={label} value={value} options={options} onValueChange={onChange} />
+    </div>
   )
 }
 
@@ -601,80 +600,65 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
                           <FilterSelect
                             label="Тип"
                             value={advancedFilters.type}
+                            options={[
+                              { value: 'all', label: 'Все типы' },
+                              ...MOVIE_TYPE_OPTIONS
+                            ]}
                             onChange={(value) => setAdvancedFilter('type', value)}
-                          >
-                            <option value="all">Все типы</option>
-                            {MOVIE_TYPE_OPTIONS.map((option) => (
-                              <option key={option.value} value={option.value}>
-                                {option.label}
-                              </option>
-                            ))}
-                          </FilterSelect>
+                          />
 
                           <FilterSelect
                             label="Жанр"
                             value={advancedFilters.genre}
+                            options={[
+                              { value: 'all', label: 'Все жанры' },
+                              ...filterOptions.genres.map((genre) => ({ value: genre, label: genre }))
+                            ]}
                             onChange={(value) => setAdvancedFilter('genre', value)}
-                          >
-                            <option value="all">Все жанры</option>
-                            {filterOptions.genres.map((genre) => (
-                              <option key={genre} value={genre}>
-                                {genre}
-                              </option>
-                            ))}
-                          </FilterSelect>
+                          />
 
                           <FilterSelect
                             label="Режиссёр"
                             value={advancedFilters.director}
+                            options={[
+                              { value: 'all', label: 'Все режиссёры' },
+                              ...filterOptions.directors.map((director) => ({
+                                value: director,
+                                label: director
+                              }))
+                            ]}
                             onChange={(value) => setAdvancedFilter('director', value)}
-                          >
-                            <option value="all">Все режиссёры</option>
-                            {filterOptions.directors.map((director) => (
-                              <option key={director} value={director}>
-                                {director}
-                              </option>
-                            ))}
-                          </FilterSelect>
+                          />
 
                           <FilterSelect
                             label="Актёр"
                             value={advancedFilters.actor}
+                            options={[
+                              { value: 'all', label: 'Все актёры' },
+                              ...filterOptions.actors.map((actor) => ({ value: actor, label: actor }))
+                            ]}
                             onChange={(value) => setAdvancedFilter('actor', value)}
-                          >
-                            <option value="all">Все актёры</option>
-                            {filterOptions.actors.map((actor) => (
-                              <option key={actor} value={actor}>
-                                {actor}
-                              </option>
-                            ))}
-                          </FilterSelect>
+                          />
 
                           <FilterSelect
                             label="Год"
                             value={advancedFilters.year}
+                            options={[
+                              { value: 'all', label: 'Любой год' },
+                              ...filterOptions.years.map((year) => ({
+                                value: year.toString(),
+                                label: year.toString()
+                              }))
+                            ]}
                             onChange={(value) => setAdvancedFilter('year', value)}
-                          >
-                            <option value="all">Любой год</option>
-                            {filterOptions.years.map((year) => (
-                              <option key={year} value={year.toString()}>
-                                {year}
-                              </option>
-                            ))}
-                          </FilterSelect>
+                          />
 
                           <FilterSelect
                             label="Оценка"
                             value={advancedFilters.minRating}
+                            options={ratingFilterOptions}
                             onChange={(value) => setAdvancedFilter('minRating', value)}
-                          >
-                            <option value="all">Любая оценка</option>
-                            {[10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map((rating) => (
-                              <option key={rating} value={rating.toString()}>
-                                От {rating}
-                              </option>
-                            ))}
-                          </FilterSelect>
+                          />
                         </div>
 
                         <div className="mt-4 flex items-center justify-between gap-3 border-t border-[var(--app-border)] pt-3">

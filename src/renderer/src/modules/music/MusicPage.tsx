@@ -4,7 +4,6 @@ import {
   Bookmark,
   Braces,
   Check,
-  ChevronDown,
   Disc3,
   Heart,
   Image,
@@ -19,7 +18,7 @@ import {
   Trash2,
   X
 } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Children, isValidElement, useCallback, useEffect, useMemo, useState } from 'react'
 
 import type {
   CreateMusicItemInput,
@@ -27,6 +26,7 @@ import type {
   MusicType,
   UpdateMusicItemInput
 } from '../../../../shared/contracts/music'
+import { AppSelect } from '../../shared/ui/AppSelect'
 import { DeleteConfirmationDialog } from '../../shared/ui/DeleteConfirmationDialog'
 import { musicClient } from './api/music-client'
 import { MusicDetail } from './components/MusicDetail'
@@ -127,20 +127,34 @@ function FilterSelect({
   onChange: (value: string) => void
   children: React.ReactNode
 }): React.JSX.Element {
+  const selectOptions = Children.toArray(children).flatMap((child) => {
+    if (
+      !isValidElement<{ value?: unknown; children?: React.ReactNode }>(child) ||
+      child.type !== 'option' ||
+      child.props.value === undefined ||
+      child.props.value === null
+    ) {
+      return []
+    }
+
+    return [
+      {
+        value: String(child.props.value),
+        label: Children.toArray(child.props.children).join('')
+      }
+    ]
+  })
+
   return (
-    <label className="space-y-1.5">
-      <span className="text-xs font-medium text-[var(--app-muted)]">{label}</span>
-      <span className="relative block">
-        <select
-          value={value}
-          className="h-10 w-full appearance-none rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] pr-9 pl-3 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
-          onChange={(event) => onChange(event.target.value)}
-        >
-          {children}
-        </select>
-        <ChevronDown className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-[var(--app-muted)]" />
-      </span>
-    </label>
+    <div className="space-y-1.5">
+      <span className="block text-xs font-medium text-[var(--app-muted)]">{label}</span>
+      <AppSelect
+        ariaLabel={label}
+        value={value}
+        options={selectOptions}
+        onValueChange={onChange}
+      />
+    </div>
   )
 }
 
