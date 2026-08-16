@@ -21,6 +21,7 @@ const EXAMPLE_JSON = `[
   {
     "title": "Интерстеллар",
     "originalTitle": "Interstellar",
+    "type": "movie",
     "year": 2014,
     "posterUrl": "https://example.com/poster.jpg",
     "director": "Christopher Nolan",
@@ -50,6 +51,7 @@ function normalizedCandidate(value: unknown): unknown {
   return {
     title: source.title,
     originalTitle: source.originalTitle ?? null,
+    type: source.type ?? 'movie',
     year: source.year ?? null,
     posterUrl: source.posterUrl ?? null,
     director: source.director ?? '',
@@ -165,7 +167,12 @@ export function MovieJsonImportDialog({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-xs text-[var(--app-muted)]">
           Один объект или массив. Обязательное поле:{' '}
-          <code className="text-[var(--app-text)]">title</code>.
+          <code className="text-[var(--app-text)]">title</code>. Тип:{' '}
+          <code className="text-[var(--app-text)]">
+            movie | series | cartoon | animated_series | anime
+          </code>
+          . Если <code className="text-[var(--app-text)]">type</code> не указан, используется{' '}
+          <code className="text-[var(--app-text)]">movie</code>.
         </span>
         <div className="flex gap-2">
           <button
@@ -193,7 +200,7 @@ export function MovieJsonImportDialog({
         aria-label="JSON фильмов"
         autoFocus
         spellCheck={false}
-        placeholder='[{ "title": "Интерстеллар", "status": "watched", "rating": 9 }]'
+        placeholder='[{ "title": "Интерстеллар", "type": "movie", "status": "watched", "rating": 9 }]'
         className="min-h-[360px] w-full resize-y rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-4 font-mono text-[13px] leading-6 text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)] focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
         onChange={(event) => {
           setValue(event.target.value)
