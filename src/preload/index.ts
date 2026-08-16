@@ -3,6 +3,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 import { BOARD_IPC_CHANNELS, type BoardDocument, type BoardNode } from '../shared/contracts/boards'
 import { DIARY_IPC_CHANNELS } from '../shared/contracts/diary'
 import { FINANCE_IPC_CHANNELS } from '../shared/contracts/finance'
+import { HABITS_IPC_CHANNELS } from '../shared/contracts/habits'
 import { MOVIES_IPC_CHANNELS } from '../shared/contracts/movies'
 import { MUSIC_IPC_CHANNELS } from '../shared/contracts/music'
 import {
@@ -258,6 +259,19 @@ const api: MyMindApi = {
     createTask: (input) => ipcRenderer.invoke(TASKS_IPC_CHANNELS.createTask, input),
     updateTask: (input) => ipcRenderer.invoke(TASKS_IPC_CHANNELS.updateTask, input),
     deleteTask: (input) => ipcRenderer.invoke(TASKS_IPC_CHANNELS.deleteTask, input)
+  },
+
+  habits: {
+    listOverview: (input) => ipcRenderer.invoke(HABITS_IPC_CHANNELS.listOverview, input),
+    createGroup: (input) => ipcRenderer.invoke(HABITS_IPC_CHANNELS.createGroup, input),
+    updateGroup: (input) => ipcRenderer.invoke(HABITS_IPC_CHANNELS.updateGroup, input),
+    deleteGroup: (input) => ipcRenderer.invoke(HABITS_IPC_CHANNELS.deleteGroup, input),
+    createHabit: (input) => ipcRenderer.invoke(HABITS_IPC_CHANNELS.createHabit, input),
+    updateHabit: (input) => ipcRenderer.invoke(HABITS_IPC_CHANNELS.updateHabit, input),
+    deleteHabit: (input) => ipcRenderer.invoke(HABITS_IPC_CHANNELS.deleteHabit, input),
+    upsertEntry: (input) => ipcRenderer.invoke(HABITS_IPC_CHANNELS.upsertEntry, input),
+    deleteEntry: (input) => ipcRenderer.invoke(HABITS_IPC_CHANNELS.deleteEntry, input),
+    getReport: (input) => ipcRenderer.invoke(HABITS_IPC_CHANNELS.getReport, input)
   },
 
   finance: {
