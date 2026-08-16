@@ -16,6 +16,7 @@ export { movies } from './movies'
 export { musicItems } from './music'
 export { noteGroups, notes } from './notes'
 export { studyLinkTargets, studyMaterials, studyNodes } from './study'
+export { taskGroups, tasks } from './tasks'
 
 export const appMeta = sqliteTable('app_meta', {
   key: text('key').primaryKey(),
