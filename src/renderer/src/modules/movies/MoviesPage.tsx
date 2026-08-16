@@ -1,8 +1,10 @@
+import * as Popover from '@radix-ui/react-popover'
 import {
   ArrowLeft,
   Bookmark,
   Braces,
   Check,
+  ChevronDown,
   Film,
   Heart,
   Image,
@@ -11,14 +13,17 @@ import {
   Plus,
   Save,
   Search,
+  SlidersHorizontal,
   Star,
-  Trash2
+  Trash2,
+  X
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import type {
   CreateMovieInput,
   MovieRecord,
+  MovieType,
   UpdateMovieInput
 } from '../../../../shared/contracts/movies'
 import { DeleteConfirmationDialog } from '../../shared/ui/DeleteConfirmationDialog'
@@ -26,7 +31,7 @@ import { moviesClient } from './api/movies-client'
 import { MovieDetail } from './components/MovieDetail'
 import { MovieFormPage } from './components/MovieFormPage'
 import { MovieJsonImportDialog } from './components/MovieJsonImportDialog'
-import { movieTypeLabel } from './movie-types'
+import { MOVIE_TYPE_OPTIONS, movieTypeLabel } from './movie-types'
 
 type MovieFilter = 'all' | 'watchlist' | 'watched' | 'favorites'
 type MovieView =
@@ -34,23 +39,95 @@ type MovieView =
   | { kind: 'detail'; movieId: string }
   | { kind: 'form'; movieId: string | null }
 
+type MovieAdvancedFilterKey = keyof MovieAdvancedFilters
+
+interface MovieAdvancedFilters {
+  type: MovieType | 'all'
+  genre: string
+  director: string
+  actor: string
+  year: string
+  minRating: string
+}
+
 interface MoviesPageProps {
   resourceId?: string | null
   onResourceHandled?: () => void
 }
 
+interface FilterSelectProps {
+  label: string
+  value: string
+  onChange: (value: string) => void
+  children: React.ReactNode
+}
+
+interface ActiveFilterChipProps {
+  label: string
+  onRemove: () => void
+}
+
 const MOVIE_FORM_ID = 'movie-form'
 
-const filterItems: Array<{ id: MovieFilter; label: string }> = [
+const EMPTY_ADVANCED_FILTERS: MovieAdvancedFilters = {
+  type: 'all',
+  genre: 'all',
+  director: 'all',
+  actor: 'all',
+  year: 'all',
+  minRating: 'all'
+}
+
+const filterItems: Array<{ id: MovieFilter; label: string; icon?: React.ReactNode }> = [
   { id: 'all', label: 'Все' },
-  { id: 'watchlist', label: 'Хочу посмотреть' },
-  { id: 'watched', label: 'Просмотрено' },
-  { id: 'favorites', label: 'Избранное' }
+  { id: 'watchlist', label: 'Хочу посмотреть', icon: <Bookmark className="size-4" /> },
+  { id: 'watched', label: 'Просмотрено', icon: <Check className="size-4" /> },
+  { id: 'favorites', label: 'Избранное', icon: <Heart className="size-4" /> }
 ]
 
 function errorMessage(reason: unknown): string {
   if (reason instanceof Error) return reason.message
   return 'Не удалось выполнить действие'
+}
+
+function uniqueSorted(values: string[]): string[] {
+  return Array.from(new Set(values.map((value) => value.trim()).filter(Boolean))).sort((a, b) =>
+    a.localeCompare(b, 'ru-RU')
+  )
+}
+
+function FilterSelect({ label, value, onChange, children }: FilterSelectProps): React.JSX.Element {
+  return (
+    <label className="space-y-1.5">
+      <span className="text-xs font-medium text-[var(--app-muted)]">{label}</span>
+      <span className="relative block">
+        <select
+          value={value}
+          className="h-10 w-full appearance-none rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] pr-9 pl-3 text-sm text-[var(--app-text)] outline-none transition-[border-color,box-shadow,background-color] focus:border-violet-500/45 focus:bg-[var(--app-surface)] focus:ring-2 focus:ring-violet-500/15"
+          onChange={(event) => onChange(event.target.value)}
+        >
+          {children}
+        </select>
+        <ChevronDown className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-[var(--app-muted)]" />
+      </span>
+    </label>
+  )
+}
+
+function ActiveFilterChip({ label, onRemove }: ActiveFilterChipProps): React.JSX.Element {
+  return (
+    <span className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-violet-400/20 bg-violet-500/10 px-2.5 text-xs font-medium text-violet-200">
+      {label}
+      <button
+        type="button"
+        aria-label={`Убрать фильтр «${label}»`}
+        className="flex size-5 items-center justify-center rounded-md text-violet-200/70 transition-colors hover:bg-white/[0.08] hover:text-violet-100"
+        onClick={onRemove}
+      >
+        <X className="size-3" />
+      </button>
+    </span>
+  )
 }
 
 function toUpdateInput(movie: MovieRecord): UpdateMovieInput {
@@ -101,6 +178,8 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
   const [view, setView] = useState<MovieView>({ kind: 'library' })
   const [filter, setFilter] = useState<MovieFilter>('all')
   const [query, setQuery] = useState('')
+  const [advancedFilters, setAdvancedFilters] =
+    useState<MovieAdvancedFilters>(EMPTY_ADVANCED_FILTERS)
   const [deleteTarget, setDeleteTarget] = useState<MovieRecord | null>(null)
   const [jsonImportOpen, setJsonImportOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -114,28 +193,51 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
     [activeMovieId, movies]
   )
 
-  const stats = useMemo(
+  const filterOptions = useMemo(
     () => ({
-      total: movies.length,
-      watched: movies.filter((movie) => movie.status === 'watched').length,
-      watchlist: movies.filter((movie) => movie.status === 'watchlist').length,
-      favorites: movies.filter((movie) => movie.favorite).length
+      genres: uniqueSorted(movies.flatMap((movie) => movie.genres)),
+      directors: uniqueSorted(movies.map((movie) => movie.director)),
+      actors: uniqueSorted(movies.flatMap((movie) => movie.actors)),
+      years: Array.from(
+        new Set(movies.flatMap((movie) => (movie.year === null ? [] : [movie.year])))
+      ).sort((a, b) => b - a)
     }),
     [movies]
   )
 
+  const activeAdvancedFilterCount = useMemo(
+    () => Object.values(advancedFilters).filter((value) => value !== 'all').length,
+    [advancedFilters]
+  )
+
   const visibleMovies = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase('ru-RU')
+    const selectedYear =
+      advancedFilters.year === 'all' ? null : Number.parseInt(advancedFilters.year, 10)
+    const minRating =
+      advancedFilters.minRating === 'all'
+        ? null
+        : Number.parseInt(advancedFilters.minRating, 10)
+
     return movies.filter((movie) => {
       if (filter === 'watchlist' && movie.status !== 'watchlist') return false
       if (filter === 'watched' && movie.status !== 'watched') return false
       if (filter === 'favorites' && !movie.favorite) return false
+      if (advancedFilters.type !== 'all' && movie.type !== advancedFilters.type) return false
+      if (advancedFilters.genre !== 'all' && !movie.genres.includes(advancedFilters.genre)) return false
+      if (advancedFilters.director !== 'all' && movie.director !== advancedFilters.director) {
+        return false
+      }
+      if (advancedFilters.actor !== 'all' && !movie.actors.includes(advancedFilters.actor)) return false
+      if (selectedYear !== null && movie.year !== selectedYear) return false
+      if (minRating !== null && (movie.rating === null || movie.rating < minRating)) return false
       if (!normalizedQuery) return true
 
       return [
         movie.title,
         movie.originalTitle ?? '',
         movieTypeLabel(movie.type),
+        movie.year?.toString() ?? '',
         movie.director,
         ...movie.actors,
         ...movie.genres
@@ -144,7 +246,7 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
         .toLocaleLowerCase('ru-RU')
         .includes(normalizedQuery)
     })
-  }, [filter, movies, query])
+  }, [advancedFilters, filter, movies, query])
 
   const loadOverview = useCallback(async (): Promise<MovieRecord[]> => {
     setError(null)
@@ -199,6 +301,18 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
       cancelled = true
     }
   }, [onResourceHandled, resourceId])
+
+  function setAdvancedFilter(key: MovieAdvancedFilterKey, value: string): void {
+    setAdvancedFilters((current) => ({ ...current, [key]: value }) as MovieAdvancedFilters)
+  }
+
+  function clearAdvancedFilter(key: MovieAdvancedFilterKey): void {
+    setAdvancedFilters((current) => ({ ...current, [key]: 'all' }) as MovieAdvancedFilters)
+  }
+
+  function resetAdvancedFilters(): void {
+    setAdvancedFilters({ ...EMPTY_ADVANCED_FILTERS })
+  }
 
   async function saveMovie(input: CreateMovieInput | UpdateMovieInput): Promise<void> {
     setIsSaving(true)
@@ -293,13 +407,13 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
   return (
     <main className="h-full overflow-y-auto bg-[var(--app-workspace)] px-8 py-7 max-[700px]:px-4 max-[700px]:py-5">
       <div className="mx-auto w-full max-w-[1320px]">
-        <header className="mb-5 overflow-hidden rounded-[24px] border border-[var(--app-border)] bg-[var(--app-surface)] p-6 shadow-[var(--app-shadow-card)]">
+        <header className="mb-5 overflow-hidden rounded-[28px] border border-[var(--app-border)] bg-[var(--app-surface)] p-6 shadow-[var(--app-shadow-card)]">
           <div className="flex flex-wrap items-center justify-between gap-5">
             <div className="flex min-w-0 items-center gap-4">
               <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-violet-500/20 bg-violet-500/10 text-violet-300 shadow-inner shadow-violet-500/5">
                 <Film aria-hidden="true" className="size-6" />
               </span>
-              <h1 className="text-2xl font-semibold tracking-tight text-[var(--app-text)]">
+              <h1 className="text-3xl font-semibold tracking-[-0.035em] text-[var(--app-text)]">
                 {headerTitle}
               </h1>
             </div>
@@ -309,14 +423,14 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
                 <>
                   <button
                     type="button"
-                    className="inline-flex h-10 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+                    className="inline-flex h-11 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
                     onClick={() => setJsonImportOpen(true)}
                   >
                     <Braces className="size-4" /> Из JSON
                   </button>
                   <button
                     type="button"
-                    className="inline-flex h-10 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-400"
+                    className="inline-flex h-11 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-400"
                     onClick={() => setView({ kind: 'form', movieId: null })}
                   >
                     <Plus className="size-4" /> Добавить фильм
@@ -386,24 +500,254 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
             </div>
           </div>
 
-          <div className="mt-5 grid grid-cols-2 gap-2 border-t border-[var(--app-border)] pt-4 sm:flex sm:flex-wrap sm:items-center sm:gap-2">
-            {[
-              ['Всего', stats.total],
-              ['Просмотрено', stats.watched],
-              ['Хочу посмотреть', stats.watchlist],
-              ['Избранное', stats.favorites]
-            ].map(([label, value]) => (
-              <div
-                key={label}
-                className="rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 py-2 sm:min-w-28"
-              >
-                <strong className="block text-sm font-semibold text-[var(--app-text)]">
-                  {value}
-                </strong>
-                <span className="mt-0.5 block text-[11px] text-[var(--app-muted)]">{label}</span>
+          {view.kind === 'library' && (
+            <>
+              <div className="mt-5 grid grid-cols-[minmax(0,1fr)_auto] gap-3 max-[1120px]:grid-cols-1">
+                <label className="flex h-12 min-w-0 items-center gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 focus-within:border-violet-500/45 focus-within:bg-[var(--app-surface)] focus-within:ring-2 focus-within:ring-violet-500/10">
+                  <Search className="size-4 shrink-0 text-[var(--app-muted)]" />
+                  <input
+                    value={query}
+                    type="search"
+                    aria-label="Поиск по фильмам"
+                    placeholder="Найти по названию, режиссёру, актёру или жанру"
+                    className="min-w-0 flex-1 bg-transparent text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/65"
+                    onChange={(event) => setQuery(event.target.value)}
+                  />
+                  {query && (
+                    <button
+                      type="button"
+                      aria-label="Очистить поиск"
+                      className="flex size-7 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors hover:bg-white/[0.06] hover:text-[var(--app-text)]"
+                      onClick={() => setQuery('')}
+                    >
+                      <X className="size-4" />
+                    </button>
+                  )}
+                </label>
+
+                <div className="flex min-w-0 items-stretch gap-2 max-[1120px]:w-full max-[760px]:flex-col">
+                  <div
+                    role="tablist"
+                    aria-label="Разделы фильмов"
+                    className="flex min-h-12 min-w-0 items-center gap-1 overflow-x-auto rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-1.5 max-[1120px]:flex-1"
+                  >
+                    {filterItems.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        role="tab"
+                        aria-selected={filter === item.id}
+                        className={
+                          filter === item.id
+                            ? 'inline-flex h-9 shrink-0 items-center gap-2 rounded-xl bg-violet-500 px-3.5 text-sm font-semibold text-white'
+                            : 'inline-flex h-9 shrink-0 items-center gap-2 rounded-xl px-3.5 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
+                        }
+                        onClick={() => setFilter(item.id)}
+                      >
+                        {item.icon}
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <Popover.Root>
+                    <Popover.Trigger asChild>
+                      <button
+                        type="button"
+                        aria-label="Фильтры библиотеки"
+                        className={
+                          activeAdvancedFilterCount > 0
+                            ? 'inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-2xl border border-violet-400/30 bg-violet-500/10 px-4 text-sm font-semibold text-violet-200 transition-colors hover:bg-violet-500/15'
+                            : 'inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
+                        }
+                      >
+                        <SlidersHorizontal className="size-4" />
+                        Фильтры
+                        {activeAdvancedFilterCount > 0 && (
+                          <span className="flex min-w-5 items-center justify-center rounded-md bg-violet-400/15 px-1.5 text-[11px] text-violet-100">
+                            {activeAdvancedFilterCount}
+                          </span>
+                        )}
+                      </button>
+                    </Popover.Trigger>
+                    <Popover.Portal>
+                      <Popover.Content
+                        align="end"
+                        sideOffset={8}
+                        collisionPadding={12}
+                        className="z-[70] w-[min(34rem,calc(100vw-2rem))] rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-4 shadow-2xl outline-none"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <h2 className="text-sm font-semibold text-[var(--app-text)]">
+                              Фильтры библиотеки
+                            </h2>
+                            <p className="mt-1 text-xs leading-5 text-[var(--app-muted)]">
+                              Фильтруйте по типу, людям и метаданным фильма.
+                            </p>
+                          </div>
+                          <Popover.Close asChild>
+                            <button
+                              type="button"
+                              aria-label="Закрыть фильтры"
+                              className="flex size-8 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+                            >
+                              <X className="size-4" />
+                            </button>
+                          </Popover.Close>
+                        </div>
+
+                        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                          <FilterSelect
+                            label="Тип"
+                            value={advancedFilters.type}
+                            onChange={(value) => setAdvancedFilter('type', value)}
+                          >
+                            <option value="all">Все типы</option>
+                            {MOVIE_TYPE_OPTIONS.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </FilterSelect>
+
+                          <FilterSelect
+                            label="Жанр"
+                            value={advancedFilters.genre}
+                            onChange={(value) => setAdvancedFilter('genre', value)}
+                          >
+                            <option value="all">Все жанры</option>
+                            {filterOptions.genres.map((genre) => (
+                              <option key={genre} value={genre}>
+                                {genre}
+                              </option>
+                            ))}
+                          </FilterSelect>
+
+                          <FilterSelect
+                            label="Режиссёр"
+                            value={advancedFilters.director}
+                            onChange={(value) => setAdvancedFilter('director', value)}
+                          >
+                            <option value="all">Все режиссёры</option>
+                            {filterOptions.directors.map((director) => (
+                              <option key={director} value={director}>
+                                {director}
+                              </option>
+                            ))}
+                          </FilterSelect>
+
+                          <FilterSelect
+                            label="Актёр"
+                            value={advancedFilters.actor}
+                            onChange={(value) => setAdvancedFilter('actor', value)}
+                          >
+                            <option value="all">Все актёры</option>
+                            {filterOptions.actors.map((actor) => (
+                              <option key={actor} value={actor}>
+                                {actor}
+                              </option>
+                            ))}
+                          </FilterSelect>
+
+                          <FilterSelect
+                            label="Год"
+                            value={advancedFilters.year}
+                            onChange={(value) => setAdvancedFilter('year', value)}
+                          >
+                            <option value="all">Любой год</option>
+                            {filterOptions.years.map((year) => (
+                              <option key={year} value={year.toString()}>
+                                {year}
+                              </option>
+                            ))}
+                          </FilterSelect>
+
+                          <FilterSelect
+                            label="Оценка"
+                            value={advancedFilters.minRating}
+                            onChange={(value) => setAdvancedFilter('minRating', value)}
+                          >
+                            <option value="all">Любая оценка</option>
+                            {[10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map((rating) => (
+                              <option key={rating} value={rating.toString()}>
+                                От {rating}
+                              </option>
+                            ))}
+                          </FilterSelect>
+                        </div>
+
+                        <div className="mt-4 flex items-center justify-between gap-3 border-t border-[var(--app-border)] pt-3">
+                          <span className="text-[11px] text-[var(--app-muted)]">
+                            Изменения применяются сразу
+                          </span>
+                          <button
+                            type="button"
+                            disabled={activeAdvancedFilterCount === 0}
+                            className="h-8 rounded-lg px-2.5 text-xs font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:cursor-default disabled:opacity-40"
+                            onClick={resetAdvancedFilters}
+                          >
+                            Сбросить
+                          </button>
+                        </div>
+                      </Popover.Content>
+                    </Popover.Portal>
+                  </Popover.Root>
+                </div>
               </div>
-            ))}
-          </div>
+
+              {activeAdvancedFilterCount > 0 && (
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <span className="text-[11px] font-medium text-[var(--app-muted)]">
+                    Активные фильтры:
+                  </span>
+                  {advancedFilters.type !== 'all' && (
+                    <ActiveFilterChip
+                      label={`Тип: ${movieTypeLabel(advancedFilters.type)}`}
+                      onRemove={() => clearAdvancedFilter('type')}
+                    />
+                  )}
+                  {advancedFilters.genre !== 'all' && (
+                    <ActiveFilterChip
+                      label={`Жанр: ${advancedFilters.genre}`}
+                      onRemove={() => clearAdvancedFilter('genre')}
+                    />
+                  )}
+                  {advancedFilters.director !== 'all' && (
+                    <ActiveFilterChip
+                      label={`Режиссёр: ${advancedFilters.director}`}
+                      onRemove={() => clearAdvancedFilter('director')}
+                    />
+                  )}
+                  {advancedFilters.actor !== 'all' && (
+                    <ActiveFilterChip
+                      label={`Актёр: ${advancedFilters.actor}`}
+                      onRemove={() => clearAdvancedFilter('actor')}
+                    />
+                  )}
+                  {advancedFilters.year !== 'all' && (
+                    <ActiveFilterChip
+                      label={`Год: ${advancedFilters.year}`}
+                      onRemove={() => clearAdvancedFilter('year')}
+                    />
+                  )}
+                  {advancedFilters.minRating !== 'all' && (
+                    <ActiveFilterChip
+                      label={`Оценка: от ${advancedFilters.minRating}`}
+                      onRemove={() => clearAdvancedFilter('minRating')}
+                    />
+                  )}
+                  <button
+                    type="button"
+                    className="h-8 rounded-lg px-2.5 text-xs font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+                    onClick={resetAdvancedFilters}
+                  >
+                    Сбросить все
+                  </button>
+                </div>
+              )}
+            </>
+          )}
         </header>
 
         {error && (
@@ -428,37 +772,6 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
           />
         ) : (
           <section>
-            <div className="mb-5 flex flex-col gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 shadow-[var(--app-shadow-card)] lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex flex-wrap gap-1.5">
-                {filterItems.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    aria-pressed={filter === item.id}
-                    className={
-                      filter === item.id
-                        ? 'h-9 rounded-xl bg-violet-500 px-3.5 text-sm font-medium text-white'
-                        : 'h-9 rounded-xl px-3.5 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
-                    }
-                    onClick={() => setFilter(item.id)}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-
-              <label className="relative block w-full lg:w-80">
-                <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[var(--app-muted)]" />
-                <input
-                  value={query}
-                  type="search"
-                  placeholder="Название, тип, режиссёр, жанр…"
-                  className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] pr-3 pl-9 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)] focus:border-violet-500/40 focus:ring-2 focus:ring-violet-500/15"
-                  onChange={(event) => setQuery(event.target.value)}
-                />
-              </label>
-            </div>
-
             {visibleMovies.length === 0 ? (
               <div className="flex min-h-80 flex-col items-center justify-center rounded-[24px] border border-dashed border-[var(--app-border)] bg-[var(--app-surface)] px-6 text-center">
                 <span className="flex size-14 items-center justify-center rounded-2xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
@@ -470,7 +783,7 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
                 <p className="mt-2 max-w-md text-sm leading-6 text-[var(--app-muted)]">
                   {movies.length === 0
                     ? 'Добавь первый фильм — просмотренный или тот, который хочется посмотреть.'
-                    : 'Попробуй изменить поиск или выбрать другой фильтр.'}
+                    : 'Попробуй изменить поиск, раздел или активные фильтры.'}
                 </p>
                 {movies.length === 0 && (
                   <button
