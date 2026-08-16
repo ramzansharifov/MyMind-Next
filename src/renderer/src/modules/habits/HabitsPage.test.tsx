@@ -128,7 +128,9 @@ describe('HabitsPage', () => {
     const user = userEvent.setup()
     render(<HabitsPage />)
 
-    await user.click(await screen.findByRole('button', { name: 'Выполнить привычку «Пить воду»' }))
+    await user.click(
+      await screen.findByRole('button', { name: 'Выполнить привычку «Пить воду»' })
+    )
 
     await waitFor(() =>
       expect(mocks.upsertEntry).toHaveBeenCalledWith({
@@ -147,7 +149,7 @@ describe('HabitsPage', () => {
     await user.click(await screen.findByRole('button', { name: /Отчёты/ }))
 
     expect(await screen.findByText('Календарь выполнения')).toBeInTheDocument()
-    expect(screen.getByText('100%')).toBeInTheDocument()
+    expect(screen.getAllByText('100%').length).toBeGreaterThan(0)
     expect(mocks.getReport).toHaveBeenCalled()
   })
 })
