@@ -1,7 +1,6 @@
 import * as Popover from '@radix-ui/react-popover'
 import {
   CalendarDays,
-  Check,
   Clapperboard,
   Clock3,
   Expand,
@@ -27,9 +26,17 @@ interface MovieDetailProps {
   onSearchWeb: (query: string) => Promise<void>
 }
 
-interface PersonSearchPopoverProps {
-  name: string
-  role: 'Режиссёр' | 'Актёр'
+interface SearchPopoverItem {
+  label: string
+  query: string
+}
+
+interface SearchPopoverProps {
+  label: string
+  context: 'Режиссёр' | 'Актёр' | 'Жанр'
+  directQuery: string
+  items: SearchPopoverItem[]
+  variant?: 'text' | 'chip'
   onSearch: (query: string) => Promise<void>
 }
 
@@ -41,11 +48,14 @@ function formatRuntime(minutes: number | null): string | null {
   return `${hours} ч ${rest > 0 ? `${rest} мин.` : ''}`.trim()
 }
 
-function PersonSearchPopover({
-  name,
-  role,
+function SearchPopover({
+  label,
+  context,
+  directQuery,
+  items,
+  variant = 'text',
   onSearch
-}: PersonSearchPopoverProps): React.JSX.Element {
+}: SearchPopoverProps): React.JSX.Element {
   const [open, setOpen] = useState(false)
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -66,25 +76,29 @@ function PersonSearchPopover({
     closeTimer.current = setTimeout(() => setOpen(false), 140)
   }
 
-  const items = [
-    { label: 'Поиск по имени', query: name },
-    { label: 'Фильмография', query: `${name} фильмография` },
-    { label: 'Биография', query: `${name} биография` }
-  ]
+  function search(query: string): void {
+    setOpen(false)
+    void onSearch(query)
+  }
+
+  const triggerClassName =
+    variant === 'chip'
+      ? 'rounded-lg border border-[var(--app-border)] bg-[var(--app-control)] px-2.5 py-1.5 font-medium text-[var(--app-muted)] transition-colors hover:border-violet-400/30 hover:bg-[var(--app-control-hover)] hover:text-violet-300 focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:outline-none'
+      : 'rounded-md font-medium text-[var(--app-text)] underline decoration-transparent underline-offset-4 transition-colors hover:text-violet-300 hover:decoration-violet-400/45 focus-visible:text-violet-300 focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:outline-none'
 
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
       <Popover.Trigger asChild>
         <button
           type="button"
-          className="rounded-md font-medium text-[var(--app-text)] underline decoration-transparent underline-offset-4 transition-colors hover:text-violet-300 hover:decoration-violet-400/45 focus-visible:text-violet-300 focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:outline-none"
+          className={triggerClassName}
           onMouseEnter={show}
           onMouseLeave={hideSoon}
           onFocus={show}
           onBlur={hideSoon}
-          onClick={() => void onSearch(name)}
+          onClick={() => search(directQuery)}
         >
-          {name}
+          {label}
         </button>
       </Popover.Trigger>
       <Popover.Portal>
@@ -100,9 +114,9 @@ function PersonSearchPopover({
         >
           <div className="mb-2 px-1">
             <div className="flex items-center gap-2 text-xs font-medium text-[var(--app-muted)]">
-              <Search className="size-3.5" /> {role}
+              <Search className="size-3.5" /> {context}
             </div>
-            <p className="mt-1 truncate text-sm font-semibold text-[var(--app-text)]">{name}</p>
+            <p className="mt-1 truncate text-sm font-semibold text-[var(--app-text)]">{label}</p>
           </div>
           <div className="space-y-1">
             {items.map((item) => (
@@ -110,7 +124,7 @@ function PersonSearchPopover({
                 key={item.label}
                 type="button"
                 className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:bg-[var(--app-control-hover)] focus-visible:text-[var(--app-text)] focus-visible:outline-none"
-                onClick={() => void onSearch(item.query)}
+                onClick={() => search(item.query)}
               >
                 <span>{item.label}</span>
                 <ExternalLink className="size-3.5 shrink-0" />
@@ -122,6 +136,22 @@ function PersonSearchPopover({
       </Popover.Portal>
     </Popover.Root>
   )
+}
+
+function personSearchItems(name: string): SearchPopoverItem[] {
+  return [
+    { label: 'Поиск по имени', query: name },
+    { label: 'Фильмография', query: `${name} фильмография` },
+    { label: 'Биография', query: `${name} биография` }
+  ]
+}
+
+function genreSearchItems(genre: string): SearchPopoverItem[] {
+  return [
+    { label: 'Поиск по жанру', query: `фильмы жанра ${genre}` },
+    { label: 'Лучшие фильмы', query: `лучшие фильмы жанра ${genre}` },
+    { label: 'Новинки жанра', query: `новые фильмы жанра ${genre}` }
+  ]
 }
 
 export function MovieDetail({
@@ -138,12 +168,12 @@ export function MovieDetail({
     await onUpdate({ ...movie, favorite: !movie.favorite })
   }
 
-  async function toggleWatched(): Promise<void> {
-    const nextWatched = movie.status !== 'watched'
+  async function setStatus(status: MovieRecord['status']): Promise<void> {
+    if (movie.status === status) return
     await onUpdate({
       ...movie,
-      status: nextWatched ? 'watched' : 'watchlist',
-      rating: nextWatched ? movie.rating : null
+      status,
+      rating: status === 'watched' ? movie.rating : null
     })
   }
 
@@ -191,24 +221,40 @@ export function MovieDetail({
                     <p className="mt-2 text-base text-[var(--app-muted)]">{movie.originalTitle}</p>
                   )}
                 </div>
-                {movie.status === 'watched' && movie.rating !== null && (
-                  <div className="flex shrink-0 items-center gap-2 rounded-2xl border border-amber-400/20 bg-amber-400/10 px-4 py-3 text-amber-200">
-                    <Star className="size-5 fill-current" />
-                    <span className="text-xl font-semibold tabular-nums">{movie.rating}</span>
-                    <span className="text-xs opacity-70">/ 10</span>
-                  </div>
-                )}
+                <div className="flex shrink-0 items-center gap-2">
+                  {movie.status === 'watched' && movie.rating !== null && (
+                    <div className="flex items-center gap-2 rounded-2xl border border-amber-400/20 bg-amber-400/10 px-4 py-3 text-amber-200">
+                      <Star className="size-5 fill-current" />
+                      <span className="text-xl font-semibold tabular-nums">{movie.rating}</span>
+                      <span className="text-xs opacity-70">/ 10</span>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    disabled={busy}
+                    aria-label={movie.favorite ? 'Убрать из избранного' : 'Добавить в избранное'}
+                    aria-pressed={movie.favorite}
+                    className={
+                      movie.favorite
+                        ? 'flex size-[52px] items-center justify-center rounded-2xl border border-rose-400/20 bg-rose-400/10 text-rose-300 transition-colors hover:bg-rose-400/15 disabled:opacity-50'
+                        : 'flex size-[52px] items-center justify-center rounded-2xl border border-[var(--app-border)] bg-[var(--app-control)] text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-rose-300 disabled:opacity-50'
+                    }
+                    onClick={() => void toggleFavorite()}
+                  >
+                    <Heart className={`size-5 ${movie.favorite ? 'fill-current' : ''}`} />
+                  </button>
+                </div>
               </div>
 
               {(movie.year !== null || runtime) && (
                 <div className="mt-6 flex flex-wrap gap-2.5 text-base text-[var(--app-muted)]">
                   {movie.year !== null && (
-                    <span className="inline-flex items-center gap-2 rounded-xl bg-[var(--app-control)] px-3 py-2 font-medium">
+                    <span className="inline-flex items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-control)] px-3 py-2 font-medium">
                       <CalendarDays className="size-4" /> {movie.year}
                     </span>
                   )}
                   {runtime && (
-                    <span className="inline-flex items-center gap-2 rounded-xl bg-[var(--app-control)] px-3 py-2 font-medium">
+                    <span className="inline-flex items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-control)] px-3 py-2 font-medium">
                       <Clock3 className="size-4" /> {runtime}
                     </span>
                   )}
@@ -222,12 +268,15 @@ export function MovieDetail({
                   </span>
                   <div className="flex flex-wrap gap-2">
                     {movie.genres.map((genre) => (
-                      <span
+                      <SearchPopover
                         key={genre}
-                        className="rounded-lg bg-[var(--app-control)] px-2.5 py-1.5 text-[var(--app-muted)]"
-                      >
-                        {genre}
-                      </span>
+                        label={genre}
+                        context="Жанр"
+                        directQuery={`фильмы жанра ${genre}`}
+                        items={genreSearchItems(genre)}
+                        variant="chip"
+                        onSearch={onSearchWeb}
+                      />
                     ))}
                   </div>
                 </div>
@@ -237,9 +286,11 @@ export function MovieDetail({
                 <div className="mt-5 flex flex-wrap items-center gap-2 text-sm text-[var(--app-muted)]">
                   <Clapperboard className="size-4 shrink-0" />
                   <span>Режиссёр:</span>
-                  <PersonSearchPopover
-                    name={movie.director}
-                    role="Режиссёр"
+                  <SearchPopover
+                    label={movie.director}
+                    context="Режиссёр"
+                    directQuery={movie.director}
+                    items={personSearchItems(movie.director)}
                     onSearch={onSearchWeb}
                   />
                 </div>
@@ -252,7 +303,13 @@ export function MovieDetail({
                   <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
                     {movie.actors.map((actor, index) => (
                       <span key={actor} className="inline-flex items-center gap-1.5">
-                        <PersonSearchPopover name={actor} role="Актёр" onSearch={onSearchWeb} />
+                        <SearchPopover
+                          label={actor}
+                          context="Актёр"
+                          directQuery={actor}
+                          items={personSearchItems(actor)}
+                          onSearch={onSearchWeb}
+                        />
                         {index < movie.actors.length - 1 && <span aria-hidden="true">,</span>}
                       </span>
                     ))}
@@ -261,33 +318,42 @@ export function MovieDetail({
               )}
 
               <div className="mt-6 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  disabled={busy}
-                  className={
-                    movie.status === 'watched'
-                      ? 'inline-flex h-10 items-center gap-2 rounded-xl border border-emerald-400/20 bg-emerald-400/10 px-4 text-sm font-semibold text-emerald-300 transition-colors hover:bg-emerald-400/15 disabled:opacity-50'
-                      : 'inline-flex h-10 items-center gap-2 rounded-xl border border-violet-400/20 bg-violet-400/10 px-4 text-sm font-semibold text-violet-300 transition-colors hover:bg-violet-400/15 disabled:opacity-50'
-                  }
-                  onClick={() => void toggleWatched()}
+                <div
+                  role="group"
+                  aria-label="Статус просмотра"
+                  className="inline-flex h-10 items-center rounded-xl border border-[var(--app-border)] bg-[var(--app-control)] p-1"
                 >
-                  <Check className="size-4" />
-                  {movie.status === 'watched' ? 'Просмотрено' : 'Хочу посмотреть'}
-                </button>
-                <button
-                  type="button"
-                  disabled={busy}
-                  aria-pressed={movie.favorite}
-                  className={
-                    movie.favorite
-                      ? 'inline-flex h-10 items-center gap-2 rounded-xl border border-rose-400/20 bg-rose-400/10 px-4 text-sm font-semibold text-rose-300 transition-colors hover:bg-rose-400/15 disabled:opacity-50'
-                      : 'inline-flex h-10 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-control)] px-4 text-sm font-medium text-[var(--app-muted)] transition-colors hover:text-[var(--app-text)] disabled:opacity-50'
-                  }
-                  onClick={() => void toggleFavorite()}
-                >
-                  <Heart className={`size-4 ${movie.favorite ? 'fill-current' : ''}`} />
-                  {movie.favorite ? 'В избранном' : 'В избранное'}
-                </button>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    aria-pressed={movie.status === 'watched'}
+                    className={
+                      movie.status === 'watched'
+                        ? 'h-8 rounded-lg border border-emerald-400/20 bg-emerald-400/10 px-3 text-sm font-semibold text-emerald-300 transition-colors disabled:opacity-50'
+                        : 'h-8 rounded-lg px-3 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:opacity-50'
+                    }
+                    onClick={() => void setStatus('watched')}
+                  >
+                    Просмотрено
+                  </button>
+                  <span
+                    aria-hidden="true"
+                    className="mx-1 h-5 w-px shrink-0 bg-[var(--app-border)]"
+                  />
+                  <button
+                    type="button"
+                    disabled={busy}
+                    aria-pressed={movie.status === 'watchlist'}
+                    className={
+                      movie.status === 'watchlist'
+                        ? 'h-8 rounded-lg border border-violet-400/20 bg-violet-400/10 px-3 text-sm font-semibold text-violet-300 transition-colors disabled:opacity-50'
+                        : 'h-8 rounded-lg px-3 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:opacity-50'
+                    }
+                    onClick={() => void setStatus('watchlist')}
+                  >
+                    Хочу посмотреть
+                  </button>
+                </div>
                 <button
                   type="button"
                   className="inline-flex h-10 items-center gap-2 rounded-xl border border-violet-400/20 bg-violet-400/10 px-4 text-sm font-semibold text-violet-300 transition-colors hover:bg-violet-400/15"

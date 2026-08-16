@@ -138,7 +138,7 @@ describe('MoviesPage', () => {
     expect(screen.getByRole('button', { name: 'Изменить' })).toBeInTheDocument()
   })
 
-  it('shows structured metadata, person search, watch action and fullscreen poster', async () => {
+  it('shows interactive metadata, explicit watch status and fullscreen poster', async () => {
     const user = userEvent.setup()
     mocks.listOverview.mockResolvedValue({ movies: [movie] })
     render(<MoviesPage />)
@@ -151,12 +151,36 @@ describe('MoviesPage', () => {
     expect(screen.getByRole('button', { name: 'Matthew McConaughey' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Anne Hathaway' })).toBeInTheDocument()
 
+    const watched = screen.getByRole('button', { name: 'Просмотрено' })
+    const watchlist = screen.getByRole('button', { name: 'Хочу посмотреть' })
+    expect(watched).toHaveAttribute('aria-pressed', 'true')
+    expect(watchlist).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByRole('button', { name: 'Убрать из избранного' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    )
+    expect(screen.queryByText('В избранном')).not.toBeInTheDocument()
+
+    const genre = screen.getByRole('button', { name: 'Фантастика' })
+    expect(genre).toHaveClass('border')
+    fireEvent.mouseEnter(genre)
+    expect(await screen.findByText('Поиск по жанру')).toBeInTheDocument()
+    expect(screen.getByText('Лучшие фильмы')).toBeInTheDocument()
+    expect(screen.getByText('Новинки жанра')).toBeInTheDocument()
+    await user.click(genre)
+    expect(mocks.searchWeb).toHaveBeenCalledWith({ query: 'фильмы жанра Фантастика' })
+
     const director = screen.getByRole('button', { name: 'Christopher Nolan' })
     fireEvent.mouseEnter(director)
     expect(await screen.findByText('Фильмография')).toBeInTheDocument()
     expect(screen.getByText('Биография')).toBeInTheDocument()
     await user.click(director)
     expect(mocks.searchWeb).toHaveBeenCalledWith({ query: 'Christopher Nolan' })
+
+    await user.click(watchlist)
+    expect(mocks.updateMovie).toHaveBeenCalledWith(
+      expect.objectContaining({ id: movie.id, status: 'watchlist', rating: null })
+    )
 
     await user.click(screen.getByRole('button', { name: 'Посмотреть' }))
     expect(mocks.searchWeb).toHaveBeenCalledWith({
