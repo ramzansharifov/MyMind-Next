@@ -81,8 +81,8 @@ describe('TasksPage', () => {
     render(<TasksPage />)
 
     expect(await screen.findByRole('heading', { name: 'Задачи' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Все задачи/ })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Работа/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Все задачи 1' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Работа 1' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Активные' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Сегодня' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Просрочено' })).toBeInTheDocument()
@@ -94,8 +94,11 @@ describe('TasksPage', () => {
     const user = userEvent.setup()
     render(<TasksPage />)
 
-    await user.click(await screen.findByRole('button', { name: /Работа/ }))
-    await user.type(screen.getByRole('textbox', { name: 'Быстро добавить задачу' }), 'Позвонить клиенту')
+    await user.click(await screen.findByRole('button', { name: 'Работа 1' }))
+    await user.type(
+      screen.getByRole('textbox', { name: 'Быстро добавить задачу' }),
+      'Позвонить клиенту'
+    )
     await user.click(screen.getByRole('button', { name: 'Добавить' }))
 
     await waitFor(() =>
