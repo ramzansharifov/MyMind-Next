@@ -2,7 +2,9 @@ name: CI (manual)
 
 on:
   workflow_dispatch:
-  pull_request:
+  push:
+    branches:
+      - codex/refine-movie-detail-controls
 
 permissions:
   contents: read
