@@ -1,5 +1,5 @@
 export const MOVIE_STATUSES = ['watchlist', 'watched'] as const
-export const MOVIE_TYPES = ['movie', 'series', 'cartoon', 'animated_series', 'anime'] as const
+export const MOVIE_TYPES = ['movie', 'series', 'cartoon', 'animated_series'] as const
 
 export type MovieStatus = (typeof MOVIE_STATUSES)[number]
 export type MovieType = (typeof MOVIE_TYPES)[number]
@@ -13,6 +13,9 @@ export interface MovieRecord {
   posterUrl: string | null
   director: string
   runtimeMinutes: number | null
+  seasonCount: number | null
+  episodesPerSeason: number | null
+  episodeRuntimeMinutes: number | null
   genres: string[]
   actors: string[]
   description: string
@@ -36,6 +39,9 @@ export interface CreateMovieInput {
   posterUrl: string | null
   director: string
   runtimeMinutes: number | null
+  seasonCount?: number | null
+  episodesPerSeason?: number | null
+  episodeRuntimeMinutes?: number | null
   genres: string[]
   actors: string[]
   description: string
