@@ -57,13 +57,18 @@ export interface DeleteMovieInput {
   id: string
 }
 
+export interface MovieWebSearchInput {
+  query: string
+}
+
 export const MOVIES_IPC_CHANNELS = {
   listOverview: 'movies:list-overview',
   getMovie: 'movies:get-movie',
   createMovie: 'movies:create-movie',
   createMovies: 'movies:create-movies',
   updateMovie: 'movies:update-movie',
-  deleteMovie: 'movies:delete-movie'
+  deleteMovie: 'movies:delete-movie',
+  searchWeb: 'movies:search-web'
 } as const
 
 export interface MoviesApi {
@@ -73,4 +78,5 @@ export interface MoviesApi {
   createMovies(input: CreateMoviesInput): Promise<MovieRecord[]>
   updateMovie(input: UpdateMovieInput): Promise<MovieRecord>
   deleteMovie(input: DeleteMovieInput): Promise<boolean>
+  searchWeb(input: MovieWebSearchInput): Promise<void>
 }

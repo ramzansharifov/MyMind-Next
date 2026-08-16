@@ -89,7 +89,8 @@ describe('preload API contract', () => {
       'createMovie',
       'createMovies',
       'updateMovie',
-      'deleteMovie'
+      'deleteMovie',
+      'searchWeb'
     ])
     expect(Object.keys(api.finance)).toEqual([
       'getSettings',
@@ -146,6 +147,11 @@ describe('preload API contract', () => {
 
     await api.movies.getMovie({ id: 'movie-1' })
     expect(electronMocks.invoke).toHaveBeenCalledWith('movies:get-movie', { id: 'movie-1' })
+
+    await api.movies.searchWeb({ query: 'Christopher Nolan' })
+    expect(electronMocks.invoke).toHaveBeenCalledWith('movies:search-web', {
+      query: 'Christopher Nolan'
+    })
 
     await api.movies.createMovies({ movies: [] })
     expect(electronMocks.invoke).toHaveBeenCalledWith('movies:create-movies', { movies: [] })

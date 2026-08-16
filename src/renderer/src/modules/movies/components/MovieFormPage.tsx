@@ -347,7 +347,7 @@ export function MovieFormPage({
           </div>
 
           <div className="rounded-[24px] border border-[var(--app-border)] bg-[var(--app-surface)] p-5 shadow-[var(--app-shadow-card)] sm:p-6">
-            <SectionTitle icon={<Star />} title="Описание и комментарии" />
+            <SectionTitle icon={<Star />} title="Описание и личные комментарии" />
 
             <div className="space-y-5">
               <label className="block space-y-1.5">
@@ -361,11 +361,13 @@ export function MovieFormPage({
               </label>
 
               <label className="block space-y-1.5">
-                <span className="text-xs font-medium text-[var(--app-muted)]">Комментарии</span>
+                <span className="text-xs font-medium text-[var(--app-muted)]">
+                  Личные комментарии
+                </span>
                 <textarea
                   value={comments}
                   className={`${textareaClassName} min-h-40`}
-                  placeholder="Комментарий…"
+                  placeholder="Личный комментарий…"
                   onChange={(event) => setComments(event.target.value)}
                 />
               </label>

@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron'
+import { ipcMain, shell } from 'electron'
 
 import { MOVIES_IPC_CHANNELS } from '../../shared/contracts/movies'
 import {
@@ -6,6 +6,7 @@ import {
   createMoviesInputSchema,
   deleteMovieInputSchema,
   getMovieInputSchema,
+  movieWebSearchInputSchema,
   updateMovieInputSchema
 } from '../../shared/validation/movies'
 import {
@@ -38,5 +39,13 @@ export function registerMoviesIpcHandlers(): void {
   )
   ipcMain.handle(MOVIES_IPC_CHANNELS.deleteMovie, (_event, rawInput: unknown) =>
     mainOperationTracker.run(() => deleteMovie(deleteMovieInputSchema.parse(rawInput)))
+  )
+  ipcMain.handle(MOVIES_IPC_CHANNELS.searchWeb, (_event, rawInput: unknown) =>
+    mainOperationTracker.run(async () => {
+      const { query } = movieWebSearchInputSchema.parse(rawInput)
+      const url = new URL('https://www.google.com/search')
+      url.searchParams.set('q', query)
+      await shell.openExternal(url.toString())
+    })
   )
 }
