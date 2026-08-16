@@ -13,6 +13,7 @@ export {
   financeTransactionTemplates
 } from './finance'
 export { movies } from './movies'
+export { musicItems } from './music'
 export { noteGroups, notes } from './notes'
 export { studyLinkTargets, studyMaterials, studyNodes } from './study'
 
