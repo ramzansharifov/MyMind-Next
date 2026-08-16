@@ -58,25 +58,30 @@ const musicBaseInputSchema = z
     comments: z.string().trim().max(MAX_TEXT_LENGTH)
   })
   .strict()
-  .superRefine((input, context) => {
-    if (input.status !== 'listened' && input.rating !== null) {
-      context.addIssue({
-        code: 'custom',
-        path: ['rating'],
-        message: 'Оценка доступна только для прослушанной музыки'
-      })
-    }
-  })
 
-export const createMusicItemInputSchema = musicBaseInputSchema
+function validateRating(
+  input: { status: string; rating: number | null },
+  context: z.RefinementCtx
+): void {
+  if (input.status !== 'listened' && input.rating !== null) {
+    context.addIssue({
+      code: 'custom',
+      path: ['rating'],
+      message: 'Оценка доступна только для прослушанной музыки'
+    })
+  }
+}
+
+export const createMusicItemInputSchema = musicBaseInputSchema.superRefine(validateRating)
 
 export const createMusicItemsInputSchema = z
   .object({ items: z.array(createMusicItemInputSchema).min(1).max(100) })
   .strict()
 
-export const updateMusicItemInputSchema = musicBaseInputSchema.and(
-  z.object({ id: musicSafeIdSchema }).strict()
-)
+export const updateMusicItemInputSchema = musicBaseInputSchema
+  .extend({ id: musicSafeIdSchema })
+  .strict()
+  .superRefine(validateRating)
 
 export const getMusicItemInputSchema = z.object({ id: musicSafeIdSchema }).strict()
 export const deleteMusicItemInputSchema = getMusicItemInputSchema
