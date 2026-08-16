@@ -2,6 +2,53 @@ button[aria-haspopup='dialog'][class*='rounded-xl'] {
   border: 1px solid var(--app-border-strong);
 }
 
+main:has(input[aria-label='Поиск по фильмам']) > div > header,
+main:has(form#movie-form) > div > header,
+main:has(button[aria-label='Открыть постер на весь экран']) > div > header {
+  position: relative;
+  isolation: isolate;
+  box-shadow: 0 20px 70px rgb(0 0 0 / 16%);
+}
+
+main:has(input[aria-label='Поиск по фильмам']) > div > header::before,
+main:has(input[aria-label='Поиск по фильмам']) > div > header::after,
+main:has(form#movie-form) > div > header::before,
+main:has(form#movie-form) > div > header::after,
+main:has(button[aria-label='Открыть постер на весь экран']) > div > header::before,
+main:has(button[aria-label='Открыть постер на весь экран']) > div > header::after {
+  position: absolute;
+  z-index: 0;
+  width: 20rem;
+  height: 20rem;
+  pointer-events: none;
+  content: '';
+  border-radius: 9999px;
+  filter: blur(48px);
+}
+
+main:has(input[aria-label='Поиск по фильмам']) > div > header::before,
+main:has(form#movie-form) > div > header::before,
+main:has(button[aria-label='Открыть постер на весь экран']) > div > header::before {
+  top: -8rem;
+  right: 2rem;
+  background: color-mix(in srgb, var(--app-accent-500) 10%, transparent);
+}
+
+main:has(input[aria-label='Поиск по фильмам']) > div > header::after,
+main:has(form#movie-form) > div > header::after,
+main:has(button[aria-label='Открыть постер на весь экран']) > div > header::after {
+  bottom: -11rem;
+  left: -6rem;
+  background: color-mix(in srgb, var(--app-accent-900) 10%, transparent);
+}
+
+main:has(input[aria-label='Поиск по фильмам']) > div > header > *,
+main:has(form#movie-form) > div > header > *,
+main:has(button[aria-label='Открыть постер на весь экран']) > div > header > * {
+  position: relative;
+  z-index: 1;
+}
+
 @media (hover: hover) and (pointer: fine) {
   article:has(button[aria-label^='Открыть фильм «']) > div {
     position: relative;
