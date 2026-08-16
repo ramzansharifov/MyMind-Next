@@ -22,6 +22,9 @@ interface MovieRow {
   poster_url: string | null
   director: string
   runtime_minutes: number | null
+  season_count: number | null
+  episodes_per_season: number | null
+  episode_runtime_minutes: number | null
   genres_json: string
   actors_json: string
   description: string
@@ -42,6 +45,9 @@ const MOVIE_SELECT = `SELECT
   poster_url,
   director,
   runtime_minutes,
+  season_count,
+  episodes_per_season,
+  episode_runtime_minutes,
   genres_json,
   actors_json,
   description,
@@ -64,6 +70,10 @@ function parseStringList(value: string): string[] {
   }
 }
 
+function isEpisodicType(type: MovieType): boolean {
+  return type === 'series' || type === 'animated_series'
+}
+
 function mapMovie(row: MovieRow): MovieRecord {
   return {
     id: row.id,
@@ -74,6 +84,9 @@ function mapMovie(row: MovieRow): MovieRecord {
     posterUrl: row.poster_url,
     director: row.director,
     runtimeMinutes: row.runtime_minutes,
+    seasonCount: row.season_count,
+    episodesPerSeason: row.episodes_per_season,
+    episodeRuntimeMinutes: row.episode_runtime_minutes,
     genres: parseStringList(row.genres_json),
     actors: parseStringList(row.actors_json),
     description: row.description,
@@ -97,7 +110,28 @@ function requireMovie(id: string): MovieRecord {
   return movie
 }
 
-function normalizedPayload(input: CreateMovieInput | UpdateMovieInput): readonly unknown[] {
+function resolvedOptionalNumber(
+  value: number | null | undefined,
+  fallback: number | null
+): number | null {
+  return value === undefined ? fallback : value
+}
+
+function normalizedPayload(
+  input: CreateMovieInput | UpdateMovieInput,
+  existing: MovieRecord | null = null
+): readonly unknown[] {
+  const episodic = isEpisodicType(input.type)
+  const seasonCount = episodic
+    ? resolvedOptionalNumber(input.seasonCount, existing?.seasonCount ?? null)
+    : null
+  const episodesPerSeason = episodic
+    ? resolvedOptionalNumber(input.episodesPerSeason, existing?.episodesPerSeason ?? null)
+    : null
+  const episodeRuntimeMinutes = episodic
+    ? resolvedOptionalNumber(input.episodeRuntimeMinutes, existing?.episodeRuntimeMinutes ?? null)
+    : null
+
   return [
     input.title,
     input.originalTitle,
@@ -105,7 +139,10 @@ function normalizedPayload(input: CreateMovieInput | UpdateMovieInput): readonly
     input.year,
     input.posterUrl,
     input.director,
-    input.runtimeMinutes,
+    episodic ? null : input.runtimeMinutes,
+    seasonCount,
+    episodesPerSeason,
+    episodeRuntimeMinutes,
     JSON.stringify(input.genres),
     JSON.stringify(input.actors),
     input.description,
@@ -141,6 +178,9 @@ function insertMovie(input: CreateMovieInput): MovieRecord {
         poster_url,
         director,
         runtime_minutes,
+        season_count,
+        episodes_per_season,
+        episode_runtime_minutes,
         genres_json,
         actors_json,
         description,
@@ -150,7 +190,7 @@ function insertMovie(input: CreateMovieInput): MovieRecord {
         comments,
         created_at,
         updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(id, ...normalizedPayload(input), now, now)
 
@@ -169,7 +209,7 @@ export function createMovies(input: CreateMoviesInput): MovieRecord[] {
 }
 
 export function updateMovie(input: UpdateMovieInput): MovieRecord {
-  requireMovie(input.id)
+  const existing = requireMovie(input.id)
   const now = Date.now()
   getSqlite()
     .prepare(
@@ -181,6 +221,9 @@ export function updateMovie(input: UpdateMovieInput): MovieRecord {
         poster_url = ?,
         director = ?,
         runtime_minutes = ?,
+        season_count = ?,
+        episodes_per_season = ?,
+        episode_runtime_minutes = ?,
         genres_json = ?,
         actors_json = ?,
         description = ?,
@@ -191,7 +234,7 @@ export function updateMovie(input: UpdateMovieInput): MovieRecord {
         updated_at = ?
        WHERE id = ?`
     )
-    .run(...normalizedPayload(input), now, input.id)
+    .run(...normalizedPayload(input, existing), now, input.id)
 
   return requireMovie(input.id)
 }
