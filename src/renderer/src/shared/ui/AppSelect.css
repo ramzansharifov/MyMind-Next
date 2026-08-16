@@ -1,0 +1,11 @@
+.app-select-trigger {
+  border: 1px solid var(--app-border);
+}
+
+.app-select-trigger:hover {
+  border-color: var(--app-border-strong);
+}
+
+.app-select-trigger:focus-visible {
+  border-color: color-mix(in srgb, var(--app-accent-500) 50%, var(--app-border));
+}
