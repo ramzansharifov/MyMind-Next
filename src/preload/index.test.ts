@@ -29,7 +29,7 @@ afterEach(() => {
 })
 
 describe('preload API contract', () => {
-  it('exposes the complete boards, notes, diary, movies, music and finance contracts in the renderer', async () => {
+  it('exposes the complete boards, notes, diary, movies, music, tasks and finance contracts in the renderer', async () => {
     Object.defineProperty(process, 'contextIsolated', {
       configurable: true,
       value: true
@@ -100,6 +100,15 @@ describe('preload API contract', () => {
       'updateItem',
       'deleteItem',
       'searchWeb'
+    ])
+    expect(Object.keys(api.tasks)).toEqual([
+      'listOverview',
+      'createGroup',
+      'updateGroup',
+      'deleteGroup',
+      'createTask',
+      'updateTask',
+      'deleteTask'
     ])
     expect(Object.keys(api.finance)).toEqual([
       'getSettings',
@@ -175,6 +184,25 @@ describe('preload API contract', () => {
 
     await api.music.createItems({ items: [] })
     expect(electronMocks.invoke).toHaveBeenCalledWith('music:create-items', { items: [] })
+
+    await api.tasks.createTask({
+      title: 'Подготовить отчёт',
+      description: '',
+      groupId: null,
+      status: 'active',
+      priority: 'high',
+      dueDate: '2026-08-17',
+      dueTime: '10:00'
+    })
+    expect(electronMocks.invoke).toHaveBeenCalledWith('tasks:create-task', {
+      title: 'Подготовить отчёт',
+      description: '',
+      groupId: null,
+      status: 'active',
+      priority: 'high',
+      dueDate: '2026-08-17',
+      dueTime: '10:00'
+    })
 
     await api.finance.createAccount({
       name: 'Карта',
