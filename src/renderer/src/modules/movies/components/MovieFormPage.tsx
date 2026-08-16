@@ -1,5 +1,4 @@
 import {
-  ArrowLeft,
   Bookmark,
   CalendarDays,
   Check,
@@ -7,8 +6,6 @@ import {
   Film,
   Heart,
   Image,
-  LoaderCircle,
-  Save,
   Star,
   Users
 } from 'lucide-react'
@@ -25,8 +22,7 @@ import { isEpisodicMovieType, MOVIE_TYPE_OPTIONS, movieTypeLabel } from '../movi
 
 interface MovieFormPageProps {
   movie: MovieRecord | null
-  busy: boolean
-  onCancel: () => void
+  formId: string
   onSave: (input: CreateMovieInput | UpdateMovieInput) => Promise<void>
 }
 
@@ -67,8 +63,7 @@ function parseOptionalNumber(value: string): number | null {
 
 export function MovieFormPage({
   movie,
-  busy,
-  onCancel,
+  formId,
   onSave
 }: MovieFormPageProps): React.JSX.Element {
   const [title, setTitle] = useState(movie?.title ?? '')
@@ -148,32 +143,14 @@ export function MovieFormPage({
   }
 
   return (
-    <section className="pb-8">
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <button
-          type="button"
-          disabled={busy}
-          className="inline-flex h-10 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3.5 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:opacity-50"
-          onClick={onCancel}
-        >
-          <ArrowLeft className="size-4" /> {movie ? 'К фильму' : 'К библиотеке'}
-        </button>
-
-        <button
-          type="button"
-          disabled={busy}
-          className="inline-flex h-10 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-50"
-          onClick={() => void submit()}
-        >
-          {busy ? <LoaderCircle className="size-4 animate-spin" /> : <Save className="size-4" />}
-          {busy ? 'Сохраняем…' : movie ? 'Сохранить' : 'Добавить фильм'}
-        </button>
-      </div>
-
-      <h1 className="mb-6 text-3xl font-semibold tracking-tight text-[var(--app-text)]">
-        {movie ? 'Редактировать фильм' : 'Добавить фильм'}
-      </h1>
-
+    <form
+      id={formId}
+      className="pb-8"
+      onSubmit={(event) => {
+        event.preventDefault()
+        void submit()
+      }}
+    >
       {error && (
         <div className="mb-5 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
           {error}
@@ -525,6 +502,6 @@ export function MovieFormPage({
           </div>
         </aside>
       </div>
-    </section>
+    </form>
   )
 }

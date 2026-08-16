@@ -9,6 +9,7 @@ import {
   LoaderCircle,
   Pencil,
   Plus,
+  Save,
   Search,
   Star,
   Trash2
@@ -37,6 +38,8 @@ interface MoviesPageProps {
   resourceId?: string | null
   onResourceHandled?: () => void
 }
+
+const MOVIE_FORM_ID = 'movie-form'
 
 const filterItems: Array<{ id: MovieFilter; label: string }> = [
   { id: 'all', label: 'Все' },
@@ -280,6 +283,13 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
     )
   }
 
+  const headerTitle =
+    view.kind === 'form'
+      ? view.movieId
+        ? 'Редактировать фильм'
+        : 'Добавить фильм'
+      : 'Фильмы'
+
   return (
     <main className="h-full overflow-y-auto bg-[var(--app-workspace)] px-8 py-7 max-[700px]:px-4 max-[700px]:py-5">
       <div className="mx-auto w-full max-w-[1320px]">
@@ -290,7 +300,7 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
                 <Film aria-hidden="true" className="size-6" />
               </span>
               <h1 className="text-2xl font-semibold tracking-tight text-[var(--app-text)]">
-                Фильмы
+                {headerTitle}
               </h1>
             </div>
 
@@ -310,6 +320,38 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
                     onClick={() => setView({ kind: 'form', movieId: null })}
                   >
                     <Plus className="size-4" /> Добавить фильм
+                  </button>
+                </>
+              )}
+
+              {view.kind === 'form' && (
+                <>
+                  <button
+                    type="button"
+                    disabled={isSaving}
+                    className="inline-flex h-10 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:opacity-50"
+                    onClick={() =>
+                      setView(
+                        view.movieId && activeMovie
+                          ? { kind: 'detail', movieId: view.movieId }
+                          : { kind: 'library' }
+                      )
+                    }
+                  >
+                    <ArrowLeft className="size-4" /> {view.movieId ? 'К фильму' : 'К библиотеке'}
+                  </button>
+                  <button
+                    type="submit"
+                    form={MOVIE_FORM_ID}
+                    disabled={isSaving}
+                    className="inline-flex h-10 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isSaving ? (
+                      <LoaderCircle className="size-4 animate-spin" />
+                    ) : (
+                      <Save className="size-4" />
+                    )}
+                    {isSaving ? 'Сохраняем…' : view.movieId ? 'Сохранить' : 'Добавить фильм'}
                   </button>
                 </>
               )}
@@ -374,14 +416,7 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
           <MovieFormPage
             key={view.movieId ?? 'new-movie'}
             movie={activeMovie}
-            busy={isSaving}
-            onCancel={() =>
-              setView(
-                view.movieId && activeMovie
-                  ? { kind: 'detail', movieId: view.movieId }
-                  : { kind: 'library' }
-              )
-            }
+            formId={MOVIE_FORM_ID}
             onSave={saveMovie}
           />
         ) : view.kind === 'detail' && activeMovie ? (
