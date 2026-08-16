@@ -18,8 +18,10 @@ import type {
   CreateMovieInput,
   MovieRecord,
   MovieStatus,
+  MovieType,
   UpdateMovieInput
 } from '../../../../../shared/contracts/movies'
+import { MOVIE_TYPE_OPTIONS, movieTypeLabel } from '../movie-types'
 
 interface MovieFormPageProps {
   movie: MovieRecord | null
@@ -65,6 +67,7 @@ export function MovieFormPage({
 }: MovieFormPageProps): React.JSX.Element {
   const [title, setTitle] = useState(movie?.title ?? '')
   const [originalTitle, setOriginalTitle] = useState(movie?.originalTitle ?? '')
+  const [type, setType] = useState<MovieType>(movie?.type ?? 'movie')
   const [posterUrl, setPosterUrl] = useState(movie?.posterUrl ?? '')
   const [year, setYear] = useState(movie?.year?.toString() ?? '')
   const [director, setDirector] = useState(movie?.director ?? '')
@@ -108,6 +111,7 @@ export function MovieFormPage({
     const base: CreateMovieInput = {
       title: cleanTitle,
       originalTitle: originalTitle.trim() || null,
+      type,
       year: Number.isFinite(parsedYear) ? parsedYear : null,
       posterUrl: normalizedPosterUrl || null,
       director: director.trim(),
@@ -189,6 +193,28 @@ export function MovieFormPage({
                   onChange={(event) => setOriginalTitle(event.target.value)}
                 />
               </label>
+
+              <div className="space-y-1.5 sm:col-span-2">
+                <span className="text-xs font-medium text-[var(--app-muted)]">Тип</span>
+                <div role="group" aria-label="Тип" className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+                  {MOVIE_TYPE_OPTIONS.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      aria-label={`Тип: ${option.label}`}
+                      aria-pressed={type === option.value}
+                      className={
+                        type === option.value
+                          ? 'h-10 rounded-xl border border-violet-400/30 bg-violet-500/10 px-3 text-sm font-semibold text-violet-200'
+                          : 'h-10 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
+                      }
+                      onClick={() => setType(option.value)}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
               <label className="space-y-1.5 sm:col-span-2">
                 <span className="flex items-center gap-1.5 text-xs font-medium text-[var(--app-muted)]">
@@ -397,8 +423,10 @@ export function MovieFormPage({
                 {title.trim() || 'Без названия'}
               </p>
               <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-[var(--app-muted)]">
+                <span>{movieTypeLabel(type)}</span>
+                {year.trim() && <span>·</span>}
                 {year.trim() && <span>{year}</span>}
-                {director.trim() && year.trim() && <span>·</span>}
+                {director.trim() && <span>·</span>}
                 {director.trim() && <span className="truncate">{director}</span>}
               </div>
 

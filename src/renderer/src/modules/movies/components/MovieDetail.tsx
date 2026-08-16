@@ -5,6 +5,7 @@ import {
   Clock3,
   Expand,
   ExternalLink,
+  Film,
   Heart,
   Image,
   Play,
@@ -19,6 +20,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { MovieRecord } from '../../../../../shared/contracts/movies'
 import { AppDialog } from '../../../shared/ui/AppDialog'
 import { DeleteConfirmationDialog } from '../../../shared/ui/DeleteConfirmationDialog'
+import { movieTypeLabel } from '../movie-types'
 import './movies-interactions.css'
 
 interface MovieDetailProps {
@@ -263,20 +265,21 @@ export function MovieDetail({
                 </div>
               </div>
 
-              {(movie.year !== null || runtime) && (
-                <div className="mt-6 flex flex-wrap gap-2.5 text-base text-[var(--app-muted)]">
-                  {movie.year !== null && (
-                    <span className="inline-flex items-center gap-2 rounded-xl border border-[var(--app-border-strong)] bg-[var(--app-control)] px-3 py-2 font-medium">
-                      <CalendarDays className="size-4" /> {movie.year}
-                    </span>
-                  )}
-                  {runtime && (
-                    <span className="inline-flex items-center gap-2 rounded-xl border border-[var(--app-border-strong)] bg-[var(--app-control)] px-3 py-2 font-medium">
-                      <Clock3 className="size-4" /> {runtime}
-                    </span>
-                  )}
-                </div>
-              )}
+              <div className="mt-6 flex flex-wrap gap-2.5 text-base text-[var(--app-muted)]">
+                <span className="inline-flex items-center gap-2 rounded-xl border border-[var(--app-border-strong)] bg-[var(--app-control)] px-3 py-2 font-medium">
+                  <Film className="size-4" /> {movieTypeLabel(movie.type)}
+                </span>
+                {movie.year !== null && (
+                  <span className="inline-flex items-center gap-2 rounded-xl border border-[var(--app-border-strong)] bg-[var(--app-control)] px-3 py-2 font-medium">
+                    <CalendarDays className="size-4" /> {movie.year}
+                  </span>
+                )}
+                {runtime && (
+                  <span className="inline-flex items-center gap-2 rounded-xl border border-[var(--app-border-strong)] bg-[var(--app-control)] px-3 py-2 font-medium">
+                    <Clock3 className="size-4" /> {runtime}
+                  </span>
+                )}
+              </div>
 
               {movie.genres.length > 0 && (
                 <div className="mt-5 flex flex-wrap items-center gap-2.5 text-sm text-[var(--app-muted)]">
@@ -412,7 +415,11 @@ export function MovieDetail({
         confirmLabel="Вернуть"
         submittingLabel="Сохраняем…"
         tone="warning"
-        notice={movie.rating !== null ? 'Текущая оценка фильма будет удалена' : 'Статус просмотра будет изменён'}
+        notice={
+          movie.rating !== null
+            ? 'Текущая оценка фильма будет удалена'
+            : 'Статус просмотра будет изменён'
+        }
         isSubmitting={busy}
         onOpenChange={setWatchlistConfirmOpen}
         onConfirm={confirmWatchlist}

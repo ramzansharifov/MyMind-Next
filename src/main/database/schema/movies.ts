@@ -1,6 +1,6 @@
 import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
-import type { MovieStatus } from '../../../shared/contracts/movies'
+import type { MovieStatus, MovieType } from '../../../shared/contracts/movies'
 
 export const movies = sqliteTable(
   'movies',
@@ -8,6 +8,7 @@ export const movies = sqliteTable(
     id: text('id').primaryKey(),
     title: text('title').notNull(),
     originalTitle: text('original_title'),
+    type: text('type').$type<MovieType>().notNull().default('movie'),
     year: integer('year'),
     posterUrl: text('poster_url'),
     director: text('director').notNull().default(''),

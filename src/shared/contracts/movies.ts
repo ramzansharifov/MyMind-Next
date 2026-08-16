@@ -1,11 +1,14 @@
 export const MOVIE_STATUSES = ['watchlist', 'watched'] as const
+export const MOVIE_TYPES = ['movie', 'series', 'cartoon', 'animated_series', 'anime'] as const
 
 export type MovieStatus = (typeof MOVIE_STATUSES)[number]
+export type MovieType = (typeof MOVIE_TYPES)[number]
 
 export interface MovieRecord {
   id: string
   title: string
   originalTitle: string | null
+  type: MovieType
   year: number | null
   posterUrl: string | null
   director: string
@@ -28,6 +31,7 @@ export interface MoviesOverview {
 export interface CreateMovieInput {
   title: string
   originalTitle: string | null
+  type: MovieType
   year: number | null
   posterUrl: string | null
   director: string

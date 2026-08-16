@@ -25,6 +25,7 @@ import { moviesClient } from './api/movies-client'
 import { MovieDetail } from './components/MovieDetail'
 import { MovieFormPage } from './components/MovieFormPage'
 import { MovieJsonImportDialog } from './components/MovieJsonImportDialog'
+import { movieTypeLabel } from './movie-types'
 
 type MovieFilter = 'all' | 'watchlist' | 'watched' | 'favorites'
 type MovieView =
@@ -54,6 +55,7 @@ function toUpdateInput(movie: MovieRecord): UpdateMovieInput {
     id: movie.id,
     title: movie.title,
     originalTitle: movie.originalTitle,
+    type: movie.type,
     year: movie.year,
     posterUrl: movie.posterUrl,
     director: movie.director,
@@ -130,6 +132,7 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
       return [
         movie.title,
         movie.originalTitle ?? '',
+        movieTypeLabel(movie.type),
         movie.director,
         ...movie.actors,
         ...movie.genres
@@ -414,7 +417,7 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
                 <input
                   value={query}
                   type="search"
-                  placeholder="Название, режиссёр, жанр…"
+                  placeholder="Название, тип, режиссёр, жанр…"
                   className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] pr-3 pl-9 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)] focus:border-violet-500/40 focus:ring-2 focus:ring-violet-500/15"
                   onChange={(event) => setQuery(event.target.value)}
                 />
@@ -504,11 +507,14 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
                         </div>
                         <button
                           type="button"
-                          className="flex min-h-13 w-full min-w-0 items-center border-t border-[var(--app-border)] bg-[var(--app-surface)] px-3.5 py-3 text-left transition-colors outline-none hover:bg-[var(--app-control-hover)] focus-visible:bg-[var(--app-control-hover)]"
+                          className="flex min-h-16 w-full min-w-0 flex-col items-start justify-center border-t border-[var(--app-border)] bg-[var(--app-surface)] px-3.5 py-3 text-left transition-colors outline-none hover:bg-[var(--app-control-hover)] focus-visible:bg-[var(--app-control-hover)]"
                           onClick={() => setView({ kind: 'detail', movieId: movie.id })}
                         >
-                          <span className="block truncate text-sm font-semibold text-[var(--app-text)] transition-colors group-hover:text-violet-200">
+                          <span className="block w-full truncate text-sm font-semibold text-[var(--app-text)] transition-colors group-hover:text-violet-200">
                             {movie.title}
+                          </span>
+                          <span className="mt-0.5 block text-[11px] text-[var(--app-muted)]">
+                            {movieTypeLabel(movie.type)}
                           </span>
                         </button>
                       </div>

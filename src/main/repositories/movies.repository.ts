@@ -7,6 +7,7 @@ import type {
   GetMovieInput,
   MovieRecord,
   MovieStatus,
+  MovieType,
   MoviesOverview,
   UpdateMovieInput
 } from '../../shared/contracts/movies'
@@ -16,6 +17,7 @@ interface MovieRow {
   id: string
   title: string
   original_title: string | null
+  type: MovieType
   year: number | null
   poster_url: string | null
   director: string
@@ -35,6 +37,7 @@ const MOVIE_SELECT = `SELECT
   id,
   title,
   original_title,
+  type,
   year,
   poster_url,
   director,
@@ -66,6 +69,7 @@ function mapMovie(row: MovieRow): MovieRecord {
     id: row.id,
     title: row.title,
     originalTitle: row.original_title,
+    type: row.type,
     year: row.year,
     posterUrl: row.poster_url,
     director: row.director,
@@ -97,6 +101,7 @@ function normalizedPayload(input: CreateMovieInput | UpdateMovieInput): readonly
   return [
     input.title,
     input.originalTitle,
+    input.type,
     input.year,
     input.posterUrl,
     input.director,
@@ -131,6 +136,7 @@ function insertMovie(input: CreateMovieInput): MovieRecord {
         id,
         title,
         original_title,
+        type,
         year,
         poster_url,
         director,
@@ -144,7 +150,7 @@ function insertMovie(input: CreateMovieInput): MovieRecord {
         comments,
         created_at,
         updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(id, ...normalizedPayload(input), now, now)
 
@@ -170,6 +176,7 @@ export function updateMovie(input: UpdateMovieInput): MovieRecord {
       `UPDATE movies SET
         title = ?,
         original_title = ?,
+        type = ?,
         year = ?,
         poster_url = ?,
         director = ?,

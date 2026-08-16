@@ -91,4 +91,35 @@ describe('movies metadata migration', () => {
       sqlite.close()
     }
   })
+
+  it('adds content type and defaults existing records to movie', async () => {
+    const sqlite = new Database(':memory:')
+
+    try {
+      await executeMigration(sqlite, '0021_movies_module.sql')
+      await executeMigration(sqlite, '0022_movies_metadata_cleanup.sql')
+      sqlite
+        .prepare(
+          `INSERT INTO movies (
+            id, title, director, genres_json, actors_json, description, status, favorite,
+            comments, created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        )
+        .run('movie-3', 'Arrival', '', '[]', '[]', '', 'watchlist', 0, '', 1, 2)
+
+      await executeMigration(sqlite, '0023_movies_content_type.sql')
+
+      expect(sqlite.prepare('SELECT type FROM movies WHERE id = ?').get('movie-3')).toEqual({
+        type: 'movie'
+      })
+      const typeColumn = (sqlite.prepare('PRAGMA table_info(movies)').all() as Array<{
+        name: string
+        notnull: number
+        dflt_value: string | null
+      }>).find((column) => column.name === 'type')
+      expect(typeColumn).toMatchObject({ name: 'type', notnull: 1, dflt_value: "'movie'" })
+    } finally {
+      sqlite.close()
+    }
+  })
 })

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { MOVIE_STATUSES } from '../contracts/movies'
+import { MOVIE_STATUSES, MOVIE_TYPES } from '../contracts/movies'
 
 const MOVIE_SAFE_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/
 const MAX_MOVIE_TITLE_LENGTH = 200
@@ -15,6 +15,9 @@ export const movieSafeIdSchema = z
   .regex(MOVIE_SAFE_ID_PATTERN, 'Некорректный идентификатор фильма')
 
 export const movieStatusSchema = z.enum(MOVIE_STATUSES)
+export const movieTypeSchema = z.enum(MOVIE_TYPES, {
+  message: 'Тип должен быть одним из: фильм, сериал, мультфильм, мультсериал, аниме'
+})
 
 const nullableTrimmedText = (max: number): z.ZodNullable<z.ZodString> =>
   z.string().trim().max(max).nullable()
@@ -45,6 +48,7 @@ const movieBaseInputSchema = z
   .object({
     title: z.string().trim().min(1, 'Введите название фильма').max(MAX_MOVIE_TITLE_LENGTH),
     originalTitle: nullableTrimmedText(MAX_MOVIE_TITLE_LENGTH),
+    type: movieTypeSchema,
     year: z.number().int().min(1800).max(2200).nullable(),
     posterUrl: posterUrlSchema,
     director: z.string().trim().max(MAX_MOVIE_DIRECTOR_LENGTH),

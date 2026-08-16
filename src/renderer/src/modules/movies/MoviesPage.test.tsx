@@ -22,6 +22,7 @@ const movie: MovieRecord = {
   id: 'movie-1',
   title: 'Интерстеллар',
   originalTitle: 'Interstellar',
+  type: 'movie',
   year: 2014,
   posterUrl: 'https://example.com/interstellar.jpg',
   director: 'Christopher Nolan',
@@ -49,12 +50,13 @@ beforeEach(() => {
 })
 
 describe('MoviesPage', () => {
-  it('imports one or many movies from GPT-friendly JSON', async () => {
+  it('imports one or many typed movies from GPT-friendly JSON', async () => {
     const user = userEvent.setup()
     const secondMovie = {
       ...movie,
       id: 'movie-2',
-      title: 'Дюна',
+      title: 'Аркейн',
+      type: 'animated_series' as const,
       favorite: false,
       rating: null,
       status: 'watchlist' as const
@@ -69,7 +71,7 @@ describe('MoviesPage', () => {
     fireEvent.change(input, {
       target: {
         value:
-          '```json\n[{"title":"Интерстеллар","status":"watched","rating":9},{"title":"Дюна"}]\n```'
+          '```json\n[{"title":"Интерстеллар","type":"movie","status":"watched","rating":9},{"title":"Аркейн","type":"animated_series"}]\n```'
       }
     })
 
@@ -77,8 +79,33 @@ describe('MoviesPage', () => {
     await user.click(screen.getByRole('button', { name: 'Добавить 2 фильма' }))
 
     await waitFor(() => expect(mocks.createMovies).toHaveBeenCalledOnce())
+    expect(mocks.createMovies).toHaveBeenCalledWith({
+      movies: [
+        expect.objectContaining({ title: 'Интерстеллар', type: 'movie' }),
+        expect.objectContaining({ title: 'Аркейн', type: 'animated_series' })
+      ]
+    })
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    expect(screen.getByText('Дюна')).toBeInTheDocument()
+    expect(screen.getByText('Аркейн')).toBeInTheDocument()
+    expect(screen.getByText('Мультсериал')).toBeInTheDocument()
+  })
+
+  it('keeps JSON import backward-compatible by defaulting omitted type to movie', async () => {
+    const user = userEvent.setup()
+    render(<MoviesPage />)
+    await screen.findByText('Библиотека пока пустая')
+    await user.click(screen.getByRole('button', { name: 'Из JSON' }))
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'JSON фильмов' }), {
+      target: { value: '{"title":"Дюна"}' }
+    })
+    await user.click(screen.getByRole('button', { name: 'Добавить' }))
+
+    await waitFor(() =>
+      expect(mocks.createMovies).toHaveBeenCalledWith({
+        movies: [expect.objectContaining({ title: 'Дюна', type: 'movie' })]
+      })
+    )
   })
 
   it('keeps the module header clean and puts movie actions into it', async () => {
@@ -94,7 +121,7 @@ describe('MoviesPage', () => {
     expect(header).toContainElement(screen.getByRole('button', { name: 'Удалить' }))
   })
 
-  it('uses a clean dedicated form with actors, personal comments and URL-only poster', async () => {
+  it('uses a clean dedicated form with type, actors, comments and URL-only poster', async () => {
     const user = userEvent.setup()
     const { container } = render(<MoviesPage />)
 
@@ -102,6 +129,11 @@ describe('MoviesPage', () => {
     await user.click(screen.getAllByRole('button', { name: 'Добавить фильм' })[0])
 
     expect(screen.getByRole('heading', { name: 'Добавить фильм' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Тип: Фильм' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Тип: Сериал' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Тип: Мультфильм' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Тип: Мультсериал' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Тип: Аниме' })).toBeInTheDocument()
     expect(screen.getByText('Актёры')).toBeInTheDocument()
     expect(screen.getByText('Личные комментарии')).toBeInTheDocument()
     expect(screen.getByPlaceholderText('https://example.com/poster.jpg')).toHaveAttribute(
@@ -110,6 +142,23 @@ describe('MoviesPage', () => {
     )
     expect(screen.queryByText('Дата просмотра')).not.toBeInTheDocument()
     expect(container.querySelector('input[type="file"]')).toBeNull()
+  })
+
+  it('saves the selected content type from the dedicated form', async () => {
+    const user = userEvent.setup()
+    render(<MoviesPage />)
+
+    await screen.findByText('Библиотека пока пустая')
+    await user.click(screen.getAllByRole('button', { name: 'Добавить фильм' })[0])
+    await user.type(screen.getByPlaceholderText('Интерстеллар'), 'Атака титанов')
+    await user.click(screen.getByRole('button', { name: 'Тип: Аниме' }))
+    await user.click(screen.getByRole('button', { name: 'Добавить фильм' }))
+
+    await waitFor(() =>
+      expect(mocks.createMovie).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'Атака титанов', type: 'anime' })
+      )
+    )
   })
 
   it('shows numeric rating only for watched movies and clears it when status changes', async () => {
@@ -133,6 +182,7 @@ describe('MoviesPage', () => {
     await user.click(await screen.findByRole('button', { name: 'Открыть фильм «Интерстеллар»' }))
     await user.click(screen.getByRole('button', { name: 'Изменить' }))
     expect(screen.getByRole('heading', { name: 'Редактировать фильм' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Тип: Фильм' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByDisplayValue('Matthew McConaughey, Anne Hathaway')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'К фильму' }))
     expect(screen.getByRole('button', { name: 'Изменить' })).toBeInTheDocument()
@@ -192,7 +242,7 @@ describe('MoviesPage', () => {
     await user.click(screen.getByRole('button', { name: 'Вернуть' }))
     await waitFor(() =>
       expect(mocks.updateMovie).toHaveBeenCalledWith(
-        expect.objectContaining({ id: movie.id, status: 'watchlist', rating: null })
+        expect.objectContaining({ id: movie.id, type: 'movie', status: 'watchlist', rating: null })
       )
     )
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
