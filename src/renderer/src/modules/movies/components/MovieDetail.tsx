@@ -8,6 +8,8 @@ import {
   Film,
   Heart,
   Image,
+  Layers,
+  List,
   Play,
   Search,
   Star,
@@ -20,7 +22,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { MovieRecord } from '../../../../../shared/contracts/movies'
 import { AppDialog } from '../../../shared/ui/AppDialog'
 import { DeleteConfirmationDialog } from '../../../shared/ui/DeleteConfirmationDialog'
-import { movieTypeLabel } from '../movie-types'
+import { isEpisodicMovieType, movieTypeLabel } from '../movie-types'
 import './movies-interactions.css'
 
 interface MovieDetailProps {
@@ -167,7 +169,9 @@ export function MovieDetail({
   const [posterOpen, setPosterOpen] = useState(false)
   const [posterFailed, setPosterFailed] = useState(false)
   const [watchlistConfirmOpen, setWatchlistConfirmOpen] = useState(false)
+  const episodicType = isEpisodicMovieType(movie.type)
   const runtime = formatRuntime(movie.runtimeMinutes)
+  const episodeRuntime = formatRuntime(movie.episodeRuntimeMinutes)
 
   async function toggleFavorite(): Promise<void> {
     await onUpdate({ ...movie, favorite: !movie.favorite })
@@ -196,7 +200,8 @@ export function MovieDetail({
     setWatchlistConfirmOpen(false)
   }
 
-  const watchQuery = `Смотреть фильм ${movie.title}${
+  const contentTypeName = movieTypeLabel(movie.type).toLocaleLowerCase('ru-RU')
+  const watchQuery = `Смотреть ${contentTypeName} ${movie.title}${
     movie.originalTitle && movie.originalTitle !== movie.title ? ` ${movie.originalTitle}` : ''
   }`
 
@@ -215,7 +220,7 @@ export function MovieDetail({
                 >
                   <img
                     src={movie.posterUrl}
-                    alt={`Постер фильма «${movie.title}»`}
+                    alt={`Постер «${movie.title}»`}
                     className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02] motion-reduce:transition-none"
                     onError={() => setPosterFailed(true)}
                   />
@@ -274,9 +279,24 @@ export function MovieDetail({
                     <CalendarDays className="size-4" /> {movie.year}
                   </span>
                 )}
-                {runtime && (
+                {!episodicType && runtime && (
                   <span className="inline-flex items-center gap-2 rounded-xl border border-[var(--app-border-strong)] bg-[var(--app-control)] px-3 py-2 font-medium">
                     <Clock3 className="size-4" /> {runtime}
+                  </span>
+                )}
+                {episodicType && movie.seasonCount !== null && (
+                  <span className="inline-flex items-center gap-2 rounded-xl border border-[var(--app-border-strong)] bg-[var(--app-control)] px-3 py-2 font-medium">
+                    <Layers className="size-4" /> Сезонов: {movie.seasonCount}
+                  </span>
+                )}
+                {episodicType && movie.episodesPerSeason !== null && (
+                  <span className="inline-flex items-center gap-2 rounded-xl border border-[var(--app-border-strong)] bg-[var(--app-control)] px-3 py-2 font-medium">
+                    <List className="size-4" /> Серий в сезоне: {movie.episodesPerSeason}
+                  </span>
+                )}
+                {episodicType && episodeRuntime && (
+                  <span className="inline-flex items-center gap-2 rounded-xl border border-[var(--app-border-strong)] bg-[var(--app-control)] px-3 py-2 font-medium">
+                    <Clock3 className="size-4" /> Серия: {episodeRuntime}
                   </span>
                 )}
               </div>
@@ -409,16 +429,14 @@ export function MovieDetail({
 
       <DeleteConfirmationDialog
         open={watchlistConfirmOpen}
-        title="Вернуть фильм в «Хочу посмотреть»?"
+        title="Вернуть в «Хочу посмотреть»?"
         subject={movie.title}
-        description="Фильм перестанет считаться просмотренным и вернётся в список «Хочу посмотреть»."
+        description="Запись перестанет считаться просмотренной и вернётся в список «Хочу посмотреть»."
         confirmLabel="Вернуть"
         submittingLabel="Сохраняем…"
         tone="warning"
         notice={
-          movie.rating !== null
-            ? 'Текущая оценка фильма будет удалена'
-            : 'Статус просмотра будет изменён'
+          movie.rating !== null ? 'Текущая оценка будет удалена' : 'Статус просмотра будет изменён'
         }
         isSubmitting={busy}
         onOpenChange={setWatchlistConfirmOpen}
@@ -428,7 +446,7 @@ export function MovieDetail({
       <AppDialog
         open={posterOpen}
         onOpenChange={setPosterOpen}
-        title={`Постер фильма ${movie.title}`}
+        title={`Постер: ${movie.title}`}
         description="Полноэкранный просмотр постера"
         size="fullscreen"
         showHeader={false}
@@ -447,7 +465,7 @@ export function MovieDetail({
         {movie.posterUrl && (
           <img
             src={movie.posterUrl}
-            alt={`Постер фильма «${movie.title}»`}
+            alt={`Постер «${movie.title}»`}
             className="max-h-full max-w-full object-contain shadow-2xl"
           />
         )}
