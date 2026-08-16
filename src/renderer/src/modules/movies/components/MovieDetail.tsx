@@ -217,10 +217,7 @@ export function MovieDetail({
     setPendingRating(null)
   }
 
-  const contentTypeName = movieTypeLabel(movie.type).toLocaleLowerCase('ru-RU')
-  const watchQuery = `Смотреть ${contentTypeName} ${movie.title}${
-    movie.originalTitle && movie.originalTitle !== movie.title ? ` ${movie.originalTitle}` : ''
-  }`
+  const watchQuery = movie.title
 
   return (
     <>
