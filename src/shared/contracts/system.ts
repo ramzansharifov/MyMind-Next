@@ -6,6 +6,7 @@ import type { MusicApi } from './music'
 import type { NotesApi } from './notes'
 import type { PreferencesApi } from './preferences'
 import type { StudyApi } from './study'
+import type { TasksApi } from './tasks'
 
 export const IPC_CHANNELS = {
   systemHealth: 'system:health',
@@ -54,5 +55,6 @@ export interface MyMindApi {
   finance: FinanceApi
   movies: MoviesApi
   music: MusicApi
+  tasks: TasksApi
   preferences: PreferencesApi
 }
