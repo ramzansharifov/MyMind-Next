@@ -1,0 +1,35 @@
+.home-module-header {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  box-shadow: 0 20px 70px rgb(0 0 0 / 16%);
+}
+
+.home-module-header::before,
+.home-module-header::after {
+  position: absolute;
+  z-index: 0;
+  width: 20rem;
+  height: 20rem;
+  pointer-events: none;
+  content: '';
+  border-radius: 9999px;
+  filter: blur(48px);
+}
+
+.home-module-header::before {
+  top: -8rem;
+  right: 2rem;
+  background: color-mix(in srgb, var(--app-accent-500) 10%, transparent);
+}
+
+.home-module-header::after {
+  bottom: -11rem;
+  left: -6rem;
+  background: color-mix(in srgb, var(--app-accent-900) 10%, transparent);
+}
+
+.home-module-header > * {
+  position: relative;
+  z-index: 1;
+}
