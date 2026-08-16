@@ -4,6 +4,7 @@ import type {
   DeleteMovieInput,
   GetMovieInput,
   MovieRecord,
+  MovieWebSearchInput,
   MoviesApi,
   MoviesOverview,
   UpdateMovieInput
@@ -34,5 +35,8 @@ export const moviesClient = {
   },
   deleteMovie(input: DeleteMovieInput): Promise<boolean> {
     return getMoviesApi().deleteMovie(input)
+  },
+  searchWeb(input: MovieWebSearchInput): Promise<void> {
+    return getMoviesApi().searchWeb(input)
   }
 }

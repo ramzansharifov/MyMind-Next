@@ -1,5 +1,21 @@
-import { CalendarDays, Check, Clock3, Expand, Heart, Image, Star, Users, X } from 'lucide-react'
-import { useState } from 'react'
+import * as Popover from '@radix-ui/react-popover'
+import {
+  CalendarDays,
+  Check,
+  Clapperboard,
+  Clock3,
+  Expand,
+  ExternalLink,
+  Heart,
+  Image,
+  Play,
+  Search,
+  Star,
+  Tags,
+  Users,
+  X
+} from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 
 import type { MovieRecord } from '../../../../../shared/contracts/movies'
 import { AppDialog } from '../../../shared/ui/AppDialog'
@@ -8,6 +24,13 @@ interface MovieDetailProps {
   movie: MovieRecord
   busy: boolean
   onUpdate: (movie: MovieRecord) => Promise<void>
+  onSearchWeb: (query: string) => Promise<void>
+}
+
+interface PersonSearchPopoverProps {
+  name: string
+  role: 'Режиссёр' | 'Актёр'
+  onSearch: (query: string) => Promise<void>
 }
 
 function formatRuntime(minutes: number | null): string | null {
@@ -18,7 +41,95 @@ function formatRuntime(minutes: number | null): string | null {
   return `${hours} ч ${rest > 0 ? `${rest} мин.` : ''}`.trim()
 }
 
-export function MovieDetail({ movie, busy, onUpdate }: MovieDetailProps): React.JSX.Element {
+function PersonSearchPopover({
+  name,
+  role,
+  onSearch
+}: PersonSearchPopoverProps): React.JSX.Element {
+  const [open, setOpen] = useState(false)
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(
+    () => () => {
+      if (closeTimer.current) clearTimeout(closeTimer.current)
+    },
+    []
+  )
+
+  function show(): void {
+    if (closeTimer.current) clearTimeout(closeTimer.current)
+    setOpen(true)
+  }
+
+  function hideSoon(): void {
+    if (closeTimer.current) clearTimeout(closeTimer.current)
+    closeTimer.current = setTimeout(() => setOpen(false), 140)
+  }
+
+  const items = [
+    { label: 'Поиск по имени', query: name },
+    { label: 'Фильмография', query: `${name} фильмография` },
+    { label: 'Биография', query: `${name} биография` }
+  ]
+
+  return (
+    <Popover.Root open={open} onOpenChange={setOpen}>
+      <Popover.Trigger asChild>
+        <button
+          type="button"
+          className="rounded-md font-medium text-[var(--app-text)] underline decoration-transparent underline-offset-4 transition-colors hover:text-violet-300 hover:decoration-violet-400/45 focus-visible:text-violet-300 focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:outline-none"
+          onMouseEnter={show}
+          onMouseLeave={hideSoon}
+          onFocus={show}
+          onBlur={hideSoon}
+          onClick={() => void onSearch(name)}
+        >
+          {name}
+        </button>
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content
+          side="top"
+          align="start"
+          sideOffset={8}
+          collisionPadding={12}
+          className="z-[70] w-72 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-3 shadow-2xl outline-none"
+          onMouseEnter={show}
+          onMouseLeave={hideSoon}
+          onOpenAutoFocus={(event) => event.preventDefault()}
+        >
+          <div className="mb-2 px-1">
+            <div className="flex items-center gap-2 text-xs font-medium text-[var(--app-muted)]">
+              <Search className="size-3.5" /> {role}
+            </div>
+            <p className="mt-1 truncate text-sm font-semibold text-[var(--app-text)]">{name}</p>
+          </div>
+          <div className="space-y-1">
+            {items.map((item) => (
+              <button
+                key={item.label}
+                type="button"
+                className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:bg-[var(--app-control-hover)] focus-visible:text-[var(--app-text)] focus-visible:outline-none"
+                onClick={() => void onSearch(item.query)}
+              >
+                <span>{item.label}</span>
+                <ExternalLink className="size-3.5 shrink-0" />
+              </button>
+            ))}
+          </div>
+          <Popover.Arrow className="fill-[var(--app-surface-raised)]" />
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
+  )
+}
+
+export function MovieDetail({
+  movie,
+  busy,
+  onUpdate,
+  onSearchWeb
+}: MovieDetailProps): React.JSX.Element {
   const [posterOpen, setPosterOpen] = useState(false)
   const [posterFailed, setPosterFailed] = useState(false)
   const runtime = formatRuntime(movie.runtimeMinutes)
@@ -35,6 +146,10 @@ export function MovieDetail({ movie, busy, onUpdate }: MovieDetailProps): React.
       rating: nextWatched ? movie.rating : null
     })
   }
+
+  const watchQuery = `Смотреть фильм ${movie.title}${
+    movie.originalTitle && movie.originalTitle !== movie.title ? ` ${movie.originalTitle}` : ''
+  }`
 
   return (
     <>
@@ -67,8 +182,8 @@ export function MovieDetail({ movie, busy, onUpdate }: MovieDetailProps): React.
             </div>
 
             <div className="flex min-w-0 flex-col p-7 lg:p-9">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div className="min-w-0">
+              <div className="flex flex-wrap items-start justify-between gap-5 border-b border-[var(--app-border)] pb-6">
+                <div className="min-w-0 flex-1">
                   <h2 className="text-3xl font-semibold tracking-tight text-[var(--app-text)] lg:text-4xl">
                     {movie.title}
                   </h2>
@@ -85,34 +200,63 @@ export function MovieDetail({ movie, busy, onUpdate }: MovieDetailProps): React.
                 )}
               </div>
 
-              <div className="mt-5 flex flex-wrap gap-2 text-sm text-[var(--app-muted)]">
-                {movie.year !== null && (
-                  <span className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--app-control)] px-2.5 py-1.5">
-                    <CalendarDays className="size-3.5" /> {movie.year}
+              {(movie.year !== null || runtime) && (
+                <div className="mt-6 flex flex-wrap gap-2.5 text-base text-[var(--app-muted)]">
+                  {movie.year !== null && (
+                    <span className="inline-flex items-center gap-2 rounded-xl bg-[var(--app-control)] px-3 py-2 font-medium">
+                      <CalendarDays className="size-4" /> {movie.year}
+                    </span>
+                  )}
+                  {runtime && (
+                    <span className="inline-flex items-center gap-2 rounded-xl bg-[var(--app-control)] px-3 py-2 font-medium">
+                      <Clock3 className="size-4" /> {runtime}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {movie.genres.length > 0 && (
+                <div className="mt-5 flex flex-wrap items-center gap-2.5 text-sm text-[var(--app-muted)]">
+                  <span className="inline-flex items-center gap-2 font-medium text-[var(--app-muted)]">
+                    <Tags className="size-4" /> Жанры:
                   </span>
-                )}
-                {runtime && (
-                  <span className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--app-control)] px-2.5 py-1.5">
-                    <Clock3 className="size-3.5" /> {runtime}
-                  </span>
-                )}
-                {movie.genres.map((genre) => (
-                  <span key={genre} className="rounded-lg bg-[var(--app-control)] px-2.5 py-1.5">
-                    {genre}
-                  </span>
-                ))}
-              </div>
+                  <div className="flex flex-wrap gap-2">
+                    {movie.genres.map((genre) => (
+                      <span
+                        key={genre}
+                        className="rounded-lg bg-[var(--app-control)] px-2.5 py-1.5 text-[var(--app-muted)]"
+                      >
+                        {genre}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {movie.director && (
-                <p className="mt-5 text-sm text-[var(--app-muted)]">
-                  Режиссёр: <span className="text-[var(--app-text)]">{movie.director}</span>
-                </p>
+                <div className="mt-5 flex flex-wrap items-center gap-2 text-sm text-[var(--app-muted)]">
+                  <Clapperboard className="size-4 shrink-0" />
+                  <span>Режиссёр:</span>
+                  <PersonSearchPopover
+                    name={movie.director}
+                    role="Режиссёр"
+                    onSearch={onSearchWeb}
+                  />
+                </div>
               )}
 
               {movie.actors.length > 0 && (
                 <div className="mt-3 flex items-start gap-2 text-sm text-[var(--app-muted)]">
                   <Users className="mt-0.5 size-4 shrink-0" />
-                  <span>{movie.actors.join(', ')}</span>
+                  <span className="shrink-0">Актёры:</span>
+                  <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
+                    {movie.actors.map((actor, index) => (
+                      <span key={actor} className="inline-flex items-center gap-1.5">
+                        <PersonSearchPopover name={actor} role="Актёр" onSearch={onSearchWeb} />
+                        {index < movie.actors.length - 1 && <span aria-hidden="true">,</span>}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               )}
 
@@ -144,10 +288,17 @@ export function MovieDetail({ movie, busy, onUpdate }: MovieDetailProps): React.
                   <Heart className={`size-4 ${movie.favorite ? 'fill-current' : ''}`} />
                   {movie.favorite ? 'В избранном' : 'В избранное'}
                 </button>
+                <button
+                  type="button"
+                  className="inline-flex h-10 items-center gap-2 rounded-xl border border-violet-400/20 bg-violet-400/10 px-4 text-sm font-semibold text-violet-300 transition-colors hover:bg-violet-400/15"
+                  onClick={() => void onSearchWeb(watchQuery)}
+                >
+                  <Play className="size-4 fill-current" /> Посмотреть
+                </button>
               </div>
 
               {movie.description && (
-                <div className="mt-8">
+                <div className="mt-8 rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-5">
                   <h3 className="text-sm font-semibold text-[var(--app-text)]">Описание</h3>
                   <p className="mt-3 max-w-3xl text-sm leading-7 whitespace-pre-wrap text-[var(--app-muted)]">
                     {movie.description}
@@ -156,8 +307,10 @@ export function MovieDetail({ movie, busy, onUpdate }: MovieDetailProps): React.
               )}
 
               {movie.comments && (
-                <div className="mt-8 border-t border-[var(--app-border)] pt-6">
-                  <h3 className="text-sm font-semibold text-[var(--app-text)]">Комментарии</h3>
+                <div className="mt-7 border-t border-[var(--app-border)] pt-6">
+                  <h3 className="text-sm font-semibold text-[var(--app-text)]">
+                    Личные комментарии
+                  </h3>
                   <p className="mt-3 max-w-3xl text-sm leading-7 whitespace-pre-wrap text-[var(--app-muted)]">
                     {movie.comments}
                   </p>

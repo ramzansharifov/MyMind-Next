@@ -87,3 +87,7 @@ export const updateMovieInputSchema = movieBaseInputSchema
 
 export const getMovieInputSchema = z.object({ id: movieSafeIdSchema }).strict()
 export const deleteMovieInputSchema = getMovieInputSchema
+
+export const movieWebSearchInputSchema = z
+  .object({ query: z.string().trim().min(1).max(300) })
+  .strict()

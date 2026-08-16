@@ -242,6 +242,15 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
     }
   }
 
+  async function searchWeb(query: string): Promise<void> {
+    setError(null)
+    try {
+      await moviesClient.searchWeb({ query })
+    } catch (reason) {
+      setError(errorMessage(reason))
+    }
+  }
+
   async function removeMovie(): Promise<void> {
     if (!deleteTarget) return
     setIsDeleting(true)
@@ -373,7 +382,12 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
             onSave={saveMovie}
           />
         ) : view.kind === 'detail' && activeMovie ? (
-          <MovieDetail movie={activeMovie} busy={isSaving} onUpdate={updateMovie} />
+          <MovieDetail
+            movie={activeMovie}
+            busy={isSaving}
+            onUpdate={updateMovie}
+            onSearchWeb={searchWeb}
+          />
         ) : (
           <section>
             <div className="mb-5 flex flex-col gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 shadow-[var(--app-shadow-card)] lg:flex-row lg:items-center lg:justify-between">
