@@ -1,6 +1,7 @@
-import { LoaderCircle, Trash2, TriangleAlert } from 'lucide-react'
+import { LoaderCircle, RotateCcw, Trash2, TriangleAlert } from 'lucide-react'
 
 import { isDialogConfirmShortcut } from '../lib/dialog-keyboard'
+import type { AppDialogTone } from './AppDialog'
 import { AppDialog } from './AppDialog'
 
 interface DeleteConfirmationDialogProps {
@@ -9,6 +10,9 @@ interface DeleteConfirmationDialogProps {
   description: string
   subject?: string
   confirmLabel?: string
+  submittingLabel?: string
+  tone?: Extract<AppDialogTone, 'danger' | 'warning'>
+  notice?: string | null
   isSubmitting?: boolean
   error?: string | null
   disabledReason?: string | null
@@ -22,6 +26,9 @@ export function DeleteConfirmationDialog({
   description,
   subject,
   confirmLabel = 'Удалить',
+  submittingLabel = 'Удаляем…',
+  tone = 'danger',
+  notice,
   isSubmitting = false,
   error = null,
   disabledReason = null,
@@ -29,6 +36,8 @@ export function DeleteConfirmationDialog({
   onConfirm
 }: DeleteConfirmationDialogProps): React.JSX.Element {
   const canConfirm = !isSubmitting && !disabledReason
+  const isWarning = tone === 'warning'
+  const noticeText = notice === undefined ? 'Это действие нельзя отменить' : notice
 
   function confirm(): void {
     if (!canConfirm) return
@@ -43,13 +52,21 @@ export function DeleteConfirmationDialog({
       description={
         <>
           {subject && (
-            <span className="mb-1 block font-medium break-words text-red-200">{subject}</span>
+            <span
+              className={`mb-1 block font-medium break-words ${
+                isWarning ? 'text-amber-200' : 'text-red-200'
+              }`}
+            >
+              {subject}
+            </span>
           )}
           {description}
         </>
       }
-      icon={<Trash2 aria-hidden="true" />}
-      tone="danger"
+      icon={
+        isWarning ? <TriangleAlert aria-hidden="true" /> : <Trash2 aria-hidden="true" />
+      }
+      tone={tone}
       role="alertdialog"
       size="sm"
       busy={isSubmitting}
@@ -63,10 +80,16 @@ export function DeleteConfirmationDialog({
         confirm()
       }}
     >
-      <div className="flex items-center gap-2 border-b border-[var(--app-border)] bg-red-500/[0.035] px-5 py-3 text-xs text-red-200/80">
-        <TriangleAlert aria-hidden="true" className="size-4 shrink-0" />
-        Это действие нельзя отменить
-      </div>
+      {noticeText && (
+        <div
+          className={`flex items-center gap-2 border-b border-[var(--app-border)] px-5 py-3 text-xs ${
+            isWarning ? 'bg-amber-500/[0.035] text-amber-200/85' : 'bg-red-500/[0.035] text-red-200/80'
+          }`}
+        >
+          <TriangleAlert aria-hidden="true" className="size-4 shrink-0" />
+          {noticeText}
+        </div>
+      )}
 
       {(disabledReason || error) && (
         <div
@@ -90,15 +113,21 @@ export function DeleteConfirmationDialog({
           type="button"
           aria-keyshortcuts="Shift+Enter"
           disabled={!canConfirm}
-          className="inline-flex items-center gap-2 rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white transition-colors outline-none hover:bg-red-400 focus-visible:ring-2 focus-visible:ring-red-400/50 disabled:cursor-not-allowed disabled:opacity-45"
+          className={
+            isWarning
+              ? 'inline-flex items-center gap-2 rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-black transition-colors outline-none hover:bg-amber-400 focus-visible:ring-2 focus-visible:ring-amber-400/50 disabled:cursor-not-allowed disabled:opacity-45'
+              : 'inline-flex items-center gap-2 rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white transition-colors outline-none hover:bg-red-400 focus-visible:ring-2 focus-visible:ring-red-400/50 disabled:cursor-not-allowed disabled:opacity-45'
+          }
           onClick={confirm}
         >
           {isSubmitting ? (
             <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
+          ) : isWarning ? (
+            <RotateCcw aria-hidden="true" className="size-4" />
           ) : (
             <Trash2 aria-hidden="true" className="size-4" />
           )}
-          {isSubmitting ? 'Удаляем…' : confirmLabel}
+          {isSubmitting ? submittingLabel : confirmLabel}
         </button>
       </div>
     </AppDialog>
