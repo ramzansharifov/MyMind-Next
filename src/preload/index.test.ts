@@ -29,7 +29,7 @@ afterEach(() => {
 })
 
 describe('preload API contract', () => {
-  it('exposes the complete boards, notes, diary, movies, music, tasks and finance contracts in the renderer', async () => {
+  it('exposes the complete boards, notes, diary, movies, music, tasks, habits and finance contracts in the renderer', async () => {
     Object.defineProperty(process, 'contextIsolated', {
       configurable: true,
       value: true
@@ -109,6 +109,18 @@ describe('preload API contract', () => {
       'createTask',
       'updateTask',
       'deleteTask'
+    ])
+    expect(Object.keys(api.habits)).toEqual([
+      'listOverview',
+      'createGroup',
+      'updateGroup',
+      'deleteGroup',
+      'createHabit',
+      'updateHabit',
+      'deleteHabit',
+      'upsertEntry',
+      'deleteEntry',
+      'getReport'
     ])
     expect(Object.keys(api.finance)).toEqual([
       'getSettings',
@@ -202,6 +214,34 @@ describe('preload API contract', () => {
       priority: 'high',
       dueDate: '2026-08-17',
       dueTime: '10:00'
+    })
+
+    await api.habits.upsertEntry({
+      habitId: 'habit-1',
+      date: '2026-08-16',
+      value: 1,
+      skipped: false
+    })
+    expect(electronMocks.invoke).toHaveBeenCalledWith('habits:upsert-entry', {
+      habitId: 'habit-1',
+      date: '2026-08-16',
+      value: 1,
+      skipped: false
+    })
+
+    await api.habits.getReport({
+      dateFrom: '2026-08-01',
+      dateTo: '2026-08-16',
+      groupId: null,
+      ungroupedOnly: false,
+      includeArchived: true
+    })
+    expect(electronMocks.invoke).toHaveBeenCalledWith('habits:get-report', {
+      dateFrom: '2026-08-01',
+      dateTo: '2026-08-16',
+      groupId: null,
+      ungroupedOnly: false,
+      includeArchived: true
     })
 
     await api.finance.createAccount({
