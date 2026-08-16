@@ -122,4 +122,78 @@ describe('movies metadata migration', () => {
       sqlite.close()
     }
   })
+
+  it('adds episodic metadata, moves series runtime and removes legacy anime type', async () => {
+    const sqlite = new Database(':memory:')
+
+    try {
+      await executeMigration(sqlite, '0021_movies_module.sql')
+      await executeMigration(sqlite, '0022_movies_metadata_cleanup.sql')
+      await executeMigration(sqlite, '0023_movies_content_type.sql')
+
+      const insert = sqlite.prepare(
+        `INSERT INTO movies (
+          id, title, type, director, runtime_minutes, genres_json, actors_json, description,
+          status, favorite, comments, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      )
+      insert.run(
+        'series-1',
+        'Series',
+        'series',
+        '',
+        45,
+        '[]',
+        '[]',
+        '',
+        'watchlist',
+        0,
+        '',
+        1,
+        2
+      )
+      insert.run(
+        'anime-1',
+        'Legacy anime',
+        'anime',
+        '',
+        120,
+        '[]',
+        '[]',
+        '',
+        'watchlist',
+        0,
+        '',
+        1,
+        2
+      )
+
+      await executeMigration(sqlite, '0024_series_metadata.sql')
+
+      expect(
+        sqlite
+          .prepare(
+            `SELECT type, runtime_minutes, season_count, episodes_per_season,
+              episode_runtime_minutes FROM movies WHERE id = ?`
+          )
+          .get('series-1')
+      ).toEqual({
+        type: 'series',
+        runtime_minutes: null,
+        season_count: null,
+        episodes_per_season: null,
+        episode_runtime_minutes: 45
+      })
+      expect(sqlite.prepare('SELECT type FROM movies WHERE id = ?').get('anime-1')).toEqual({
+        type: 'movie'
+      })
+
+      const columns = sqlite.prepare('PRAGMA table_info(movies)').all() as Array<{ name: string }>
+      expect(columns.some((column) => column.name === 'season_count')).toBe(true)
+      expect(columns.some((column) => column.name === 'episodes_per_season')).toBe(true)
+      expect(columns.some((column) => column.name === 'episode_runtime_minutes')).toBe(true)
+    } finally {
+      sqlite.close()
+    }
+  })
 })
