@@ -29,6 +29,7 @@ import type {
   HabitGroupRecord,
   HabitRecord,
   HabitStatus,
+  HabitTrackingType,
   UpdateHabitGroupInput,
   UpdateHabitInput
 } from '../../../../shared/contracts/habits'
@@ -64,23 +65,6 @@ function errorMessage(reason: unknown): string {
   return reason instanceof Error ? reason.message : 'Не удалось выполнить действие'
 }
 
-function toUpdateHabitInput(habit: HabitRecord): UpdateHabitInput {
-  return {
-    id: habit.id,
-    title: habit.title,
-    description: habit.description,
-    groupId: habit.groupId,
-    status: habit.status,
-    trackingType: habit.trackingType,
-    targetValue: habit.targetValue,
-    unit: habit.unit,
-    repeatEveryDays: habit.repeatEveryDays,
-    startDate: habit.startDate,
-    endDate: habit.endDate,
-    preferredTime: habit.preferredTime
-  }
-}
-
 export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): React.JSX.Element {
   const [groups, setGroups] = useState<HabitGroupRecord[]>([])
   const [habits, setHabits] = useState<HabitRecord[]>([])
@@ -89,6 +73,7 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
   const [selectedDate, setSelectedDate] = useState(localDateKey())
   const [groupFilter, setGroupFilter] = useState<HabitGroupFilter>('all')
   const [statusFilter, setStatusFilter] = useState<HabitStatus | 'all'>('active')
+  const [trackingFilter, setTrackingFilter] = useState<HabitTrackingType | 'all'>('all')
   const [query, setQuery] = useState('')
   const [habitDialogOpen, setHabitDialogOpen] = useState(false)
   const [editingHabit, setEditingHabit] = useState<HabitRecord | null>(null)
@@ -149,7 +134,6 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
     () => new Map(entries.map((entry) => [entry.habitId, entry])),
     [entries]
   )
-
   const activeHabits = useMemo(() => habits.filter((habit) => habit.status === 'active'), [habits])
   const scheduledHabits = useMemo(
     () => habits.filter((habit) => isHabitScheduledOn(habit, selectedDate)),
@@ -189,21 +173,12 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
       .includes(normalizedQuery)
   }
 
-  const visibleScheduledHabits = useMemo(
-    () => scheduledHabits.filter(matchesCommonFilters),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [groupById, groupFilter, normalizedQuery, scheduledHabits]
-  )
-
-  const visibleAllHabits = useMemo(
-    () =>
-      habits.filter((habit) => {
-        if (statusFilter !== 'all' && habit.status !== statusFilter) return false
-        return matchesCommonFilters(habit)
-      }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [groupById, groupFilter, habits, normalizedQuery, statusFilter]
-  )
+  const visibleScheduledHabits = scheduledHabits.filter(matchesCommonFilters)
+  const visibleAllHabits = habits.filter((habit) => {
+    if (statusFilter !== 'all' && habit.status !== statusFilter) return false
+    if (trackingFilter !== 'all' && habit.trackingType !== trackingFilter) return false
+    return matchesCommonFilters(habit)
+  })
 
   const selectedGroupForNewHabit =
     groupFilter !== 'all' && groupFilter !== 'ungrouped' && groupById.has(groupFilter)
@@ -416,7 +391,11 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
           <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {[
               { label: 'Активные', value: activeHabits.length, icon: Sparkles },
-              { label: formatHabitDate(selectedDate, today), value: scheduledHabits.length, icon: CalendarDays },
+              {
+                label: formatHabitDate(selectedDate, today),
+                value: scheduledHabits.length,
+                icon: CalendarDays
+              },
               { label: 'Выполнено', value: completedOnSelectedDate, icon: CheckCircle2 },
               { label: 'Группы', value: groups.length, icon: FolderPlus }
             ].map((stat) => {
@@ -427,8 +406,12 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
                   className="flex items-center justify-between rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 py-3"
                 >
                   <span>
-                    <span className="block text-xs font-medium text-[var(--app-muted)]">{stat.label}</span>
-                    <span className="mt-1 block text-2xl font-semibold text-[var(--app-text)]">{stat.value}</span>
+                    <span className="block text-xs font-medium text-[var(--app-muted)]">
+                      {stat.label}
+                    </span>
+                    <span className="mt-1 block text-2xl font-semibold text-[var(--app-text)]">
+                      {stat.value}
+                    </span>
                   </span>
                   <Icon className="size-5 text-violet-300" />
                 </div>
@@ -437,11 +420,11 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
           </div>
 
           <div className="mt-4 flex gap-1 overflow-x-auto rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-1">
-            {([
+            {[
               { id: 'today' as const, label: 'Сегодня', icon: CalendarDays },
               { id: 'all' as const, label: 'Все привычки', icon: Target },
               { id: 'reports' as const, label: 'Отчёты', icon: BarChart3 }
-            ]).map((item) => {
+            ].map((item) => {
               const Icon = item.icon
               return (
                 <button
@@ -625,18 +608,36 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
                   </label>
 
                   {view === 'all' && (
-                    <div className="min-w-[160px]">
-                      <AppSelect
-                        ariaLabel="Фильтр по состоянию привычек"
-                        value={statusFilter}
-                        options={[
-                          { value: 'active', label: 'Активные' },
-                          { value: 'archived', label: 'Архив' },
-                          { value: 'all', label: 'Все состояния' }
-                        ]}
-                        onValueChange={(value) => setStatusFilter(value as HabitStatus | 'all')}
-                      />
-                    </div>
+                    <>
+                      <div className="min-w-[160px]">
+                        <AppSelect
+                          ariaLabel="Фильтр по состоянию привычек"
+                          value={statusFilter}
+                          options={[
+                            { value: 'active', label: 'Активные' },
+                            { value: 'archived', label: 'Архив' },
+                            { value: 'all', label: 'Все состояния' }
+                          ]}
+                          onValueChange={(value) =>
+                            setStatusFilter(value as HabitStatus | 'all')
+                          }
+                        />
+                      </div>
+                      <div className="min-w-[180px]">
+                        <AppSelect
+                          ariaLabel="Фильтр по типу отслеживания"
+                          value={trackingFilter}
+                          options={[
+                            { value: 'all', label: 'Все типы' },
+                            { value: 'check', label: 'Простая отметка' },
+                            { value: 'count', label: 'Количество / прогресс' }
+                          ]}
+                          onValueChange={(value) =>
+                            setTrackingFilter(value as HabitTrackingType | 'all')
+                          }
+                        />
+                      </div>
+                    </>
                   )}
                 </div>
               </div>
@@ -656,6 +657,7 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
                   <input
                     type="date"
                     value={selectedDate}
+                    max={today}
                     aria-label="Дата привычек"
                     className="h-10 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
                     onChange={(event) => setSelectedDate(event.target.value)}
@@ -670,8 +672,14 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
                   <button
                     type="button"
                     aria-label="Следующий день"
-                    className="flex size-10 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-                    onClick={() => setSelectedDate((current) => addDays(current, 1))}
+                    disabled={selectedDate >= today}
+                    className="flex size-10 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-[var(--app-workspace)]"
+                    onClick={() =>
+                      setSelectedDate((current) => {
+                        const next = addDays(current, 1)
+                        return next > today ? today : next
+                      })
+                    }
                   >
                     <ChevronRight className="size-4" />
                   </button>
@@ -686,7 +694,9 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
                       <Sparkles className="size-7" />
                     </span>
                     <h2 className="mt-4 text-lg font-semibold text-[var(--app-text)]">
-                      {habits.length === 0 ? 'Привычек пока нет' : 'На этот день ничего не запланировано'}
+                      {habits.length === 0
+                        ? 'Привычек пока нет'
+                        : 'На этот день ничего не запланировано'}
                     </h2>
                     <p className="mt-2 max-w-md text-sm leading-6 text-[var(--app-muted)]">
                       {habits.length === 0
@@ -749,7 +759,11 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
                                   : `Выполнить цель «${habit.title}»`
                               }
                             >
-                              {completed ? <Check className="size-5" /> : <Target className="size-5" />}
+                              {completed ? (
+                                <Check className="size-5" />
+                              ) : (
+                                <Target className="size-5" />
+                              )}
                             </button>
 
                             <button
@@ -784,7 +798,8 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
                                   </span>
                                 )}
                                 <span className="inline-flex h-6 items-center gap-1 rounded-lg border border-violet-400/20 bg-violet-500/10 px-2 text-[11px] font-medium text-violet-200">
-                                  <Repeat2 className="size-3" /> {habitRepeatLabel(habit.repeatEveryDays)}
+                                  <Repeat2 className="size-3" />
+                                  {habitRepeatLabel(habit.repeatEveryDays)}
                                 </span>
                                 {habit.preferredTime && (
                                   <span className="inline-flex h-6 items-center gap-1 rounded-lg border border-[var(--app-border)] bg-[var(--app-control)] px-2 text-[11px] text-[var(--app-muted)]">
@@ -839,7 +854,8 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
                                 )}
                                 onClick={() => void toggleSkipped(habit)}
                               >
-                                <SkipForward className="size-3.5" /> {skipped ? 'Пропущено' : 'Пропустить'}
+                                <SkipForward className="size-3.5" />
+                                {skipped ? 'Пропущено' : 'Пропустить'}
                               </button>
 
                               <button
@@ -868,8 +884,12 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
                 {visibleAllHabits.length === 0 ? (
                   <div className="flex min-h-72 flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface)] px-6 text-center">
                     <Target className="size-10 text-violet-300" />
-                    <h2 className="mt-4 text-lg font-semibold text-[var(--app-text)]">Ничего не найдено</h2>
-                    <p className="mt-2 text-sm text-[var(--app-muted)]">Измените группу, состояние или поиск.</p>
+                    <h2 className="mt-4 text-lg font-semibold text-[var(--app-text)]">
+                      Ничего не найдено
+                    </h2>
+                    <p className="mt-2 text-sm text-[var(--app-muted)]">
+                      Измените группу, состояние, тип отслеживания или поиск.
+                    </p>
                   </div>
                 ) : (
                   visibleAllHabits.map((habit) => {
@@ -917,11 +937,13 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
                               )}
                             </div>
                             {habit.description && (
-                              <p className="mt-1 line-clamp-2 text-xs leading-5 text-[var(--app-muted)]">{habit.description}</p>
+                              <p className="mt-1 line-clamp-2 text-xs leading-5 text-[var(--app-muted)]">
+                                {habit.description}
+                              </p>
                             )}
                             <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] text-[var(--app-muted)]">
                               {group && <span>{group.name}</span>}
-                              <span>·</span>
+                              {group && <span>·</span>}
                               <span>
                                 {habit.trackingType === 'check'
                                   ? 'Отметка выполнения'
