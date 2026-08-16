@@ -27,6 +27,11 @@ interface TaskGroupRow {
   updated_at: number
 }
 
+interface TaskGroupNameRow {
+  id: string
+  name: string
+}
+
 interface TaskRow {
   id: string
   title: string
@@ -110,6 +115,17 @@ function ensureGroupExists(groupId: string | null): void {
   if (groupId !== null) requireGroup(groupId)
 }
 
+function ensureUniqueGroupName(name: string, ignoredId: string | null = null): void {
+  const normalizedName = name.trim().toLocaleLowerCase('ru-RU')
+  const rows = getSqlite().prepare('SELECT id, name FROM task_groups').all() as TaskGroupNameRow[]
+  const duplicate = rows.some(
+    (row) =>
+      row.id !== ignoredId && row.name.trim().toLocaleLowerCase('ru-RU') === normalizedName
+  )
+
+  if (duplicate) throw new Error('Группа с таким названием уже существует')
+}
+
 function findTask(id: string): TaskRecord | null {
   const row = getSqlite().prepare(`${TASK_SELECT} WHERE id = ?`).get(id) as TaskRow | undefined
   return row ? mapTask(row) : null
@@ -179,6 +195,7 @@ export function listTasksOverview(): TasksOverview {
 }
 
 export function createTaskGroup(input: CreateTaskGroupInput): TaskGroupRecord {
+  ensureUniqueGroupName(input.name)
   const id = randomUUID()
   const now = Date.now()
   const position = nextGroupPosition()
@@ -195,6 +212,7 @@ export function createTaskGroup(input: CreateTaskGroupInput): TaskGroupRecord {
 
 export function updateTaskGroup(input: UpdateTaskGroupInput): TaskGroupRecord {
   const group = requireGroup(input.id)
+  ensureUniqueGroupName(input.name, group.id)
   const now = Date.now()
 
   getSqlite()
