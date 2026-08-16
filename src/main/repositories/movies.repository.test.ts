@@ -32,10 +32,11 @@ afterAll(async () => {
 })
 
 describe('movies repository', () => {
-  it('persists actors, comments and personal rating', () => {
+  it('persists type, actors, comments and personal rating', () => {
     const movie = createMovie({
       title: 'Интерстеллар',
       originalTitle: 'Interstellar',
+      type: 'movie',
       year: 2014,
       posterUrl: 'https://example.com/interstellar.jpg',
       director: 'Christopher Nolan',
@@ -50,12 +51,14 @@ describe('movies repository', () => {
     })
 
     expect(getMovie({ id: movie.id })).toEqual(movie)
+    expect(movie.type).toBe('movie')
     expect(listMoviesOverview().movies).toEqual([movie])
   })
 
-  it('creates multiple movies in one transaction and rolls back the whole batch on failure', () => {
+  it('creates multiple content types in one transaction and rolls back the whole batch on failure', () => {
     const base = {
       originalTitle: null,
+      type: 'movie' as const,
       year: null,
       posterUrl: null,
       director: '',
@@ -72,10 +75,13 @@ describe('movies repository', () => {
     const created = createMovies({
       movies: [
         { ...base, title: 'Movie A' },
-        { ...base, title: 'Movie B' }
+        { ...base, title: 'Series B', type: 'series' }
       ]
     })
-    expect(created.map((movie) => movie.title)).toEqual(['Movie A', 'Movie B'])
+    expect(created.map((movie) => [movie.title, movie.type])).toEqual([
+      ['Movie A', 'movie'],
+      ['Series B', 'series']
+    ])
     expect(listMoviesOverview().movies).toHaveLength(2)
 
     getSqlite().exec('DELETE FROM movies;')
@@ -94,6 +100,7 @@ describe('movies repository', () => {
     const movie = createMovie({
       title: 'Dune',
       originalTitle: null,
+      type: 'movie',
       year: 2021,
       posterUrl: null,
       director: '',
@@ -116,6 +123,7 @@ describe('movies repository', () => {
     const movie = createMovie({
       title: 'Arrival',
       originalTitle: null,
+      type: 'movie',
       year: null,
       posterUrl: null,
       director: '',
