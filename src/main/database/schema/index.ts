@@ -12,6 +12,7 @@ export {
   financeTransactions,
   financeTransactionTemplates
 } from './finance'
+export { habitEntries, habitGroups, habits } from './habits'
 export { movies } from './movies'
 export { musicItems } from './music'
 export { noteGroups, notes } from './notes'

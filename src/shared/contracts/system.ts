@@ -1,6 +1,7 @@
 import type { BoardApi } from './boards'
 import type { DiaryApi } from './diary'
 import type { FinanceApi } from './finance'
+import type { HabitsApi } from './habits'
 import type { MoviesApi } from './movies'
 import type { MusicApi } from './music'
 import type { NotesApi } from './notes'
@@ -56,5 +57,6 @@ export interface MyMindApi {
   movies: MoviesApi
   music: MusicApi
   tasks: TasksApi
+  habits: HabitsApi
   preferences: PreferencesApi
 }

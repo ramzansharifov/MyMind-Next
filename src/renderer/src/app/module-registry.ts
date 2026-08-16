@@ -8,6 +8,7 @@ import {
   ListTodo,
   Notebook,
   Presentation,
+  Repeat2,
   Settings,
   Wallet,
   type LucideIcon
@@ -53,6 +54,9 @@ const NotesModule = lazy(() =>
 ) as ComponentType<AppModuleProps>
 const TasksModule = lazy(() =>
   import('../modules/tasks/TasksPage').then(({ TasksPage }) => ({ default: TasksPage }))
+) as ComponentType<AppModuleProps>
+const HabitsModule = lazy(() =>
+  import('../modules/habits/HabitsPage').then(({ HabitsPage }) => ({ default: HabitsPage }))
 ) as ComponentType<AppModuleProps>
 const DiaryModule = lazy(() =>
   import('../modules/diary/DiaryPage').then(({ DiaryPage }) => ({ default: DiaryPage }))
@@ -112,6 +116,14 @@ export const appModuleRegistry = defineAppModules({
     icon: ListTodo,
     navigationGroup: 'primary',
     component: TasksModule
+  },
+  habits: {
+    id: 'habits',
+    label: 'Привычки',
+    loadingLabel: 'Загрузка привычек',
+    icon: Repeat2,
+    navigationGroup: 'primary',
+    component: HabitsModule
   },
   diary: {
     id: 'diary',
