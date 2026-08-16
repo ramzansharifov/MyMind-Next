@@ -176,6 +176,13 @@
       "when": 1786865100000,
       "tag": "0024_series_metadata",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "6",
+      "when": 1786870320000,
+      "tag": "0025_music_module",
+      "breakpoints": true
     }
   ]
 }

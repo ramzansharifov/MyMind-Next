@@ -4,6 +4,7 @@ import { BOARD_IPC_CHANNELS, type BoardDocument, type BoardNode } from '../share
 import { DIARY_IPC_CHANNELS } from '../shared/contracts/diary'
 import { FINANCE_IPC_CHANNELS } from '../shared/contracts/finance'
 import { MOVIES_IPC_CHANNELS } from '../shared/contracts/movies'
+import { MUSIC_IPC_CHANNELS } from '../shared/contracts/music'
 import {
   NOTES_IPC_CHANNELS,
   type NoteGroup,
@@ -236,6 +237,16 @@ const api: MyMindApi = {
     updateMovie: (input) => ipcRenderer.invoke(MOVIES_IPC_CHANNELS.updateMovie, input),
     deleteMovie: (input) => ipcRenderer.invoke(MOVIES_IPC_CHANNELS.deleteMovie, input),
     searchWeb: (input) => ipcRenderer.invoke(MOVIES_IPC_CHANNELS.searchWeb, input)
+  },
+
+  music: {
+    listOverview: () => ipcRenderer.invoke(MUSIC_IPC_CHANNELS.listOverview),
+    getItem: (input) => ipcRenderer.invoke(MUSIC_IPC_CHANNELS.getItem, input),
+    createItem: (input) => ipcRenderer.invoke(MUSIC_IPC_CHANNELS.createItem, input),
+    createItems: (input) => ipcRenderer.invoke(MUSIC_IPC_CHANNELS.createItems, input),
+    updateItem: (input) => ipcRenderer.invoke(MUSIC_IPC_CHANNELS.updateItem, input),
+    deleteItem: (input) => ipcRenderer.invoke(MUSIC_IPC_CHANNELS.deleteItem, input),
+    searchWeb: (input) => ipcRenderer.invoke(MUSIC_IPC_CHANNELS.searchWeb, input)
   },
 
   finance: {

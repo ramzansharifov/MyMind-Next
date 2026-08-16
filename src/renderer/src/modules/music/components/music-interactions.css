@@ -1,0 +1,40 @@
+@media (hover: hover) and (pointer: fine) {
+  .music-card-body {
+    transform-origin: 50% 80%;
+    transition:
+      transform 360ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      border-color 300ms ease,
+      box-shadow 360ms ease;
+  }
+
+  .music-card:hover .music-card-body {
+    border-color: color-mix(in srgb, var(--app-accent-500) 38%, var(--app-border));
+    box-shadow:
+      0 20px 50px rgb(0 0 0 / 30%),
+      0 0 0 1px color-mix(in srgb, var(--app-accent-500) 14%, transparent);
+    transform: translateY(-7px) scale(1.018);
+  }
+
+  .music-card-cover {
+    transition:
+      transform 620ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      filter 420ms ease;
+  }
+
+  .music-card:hover .music-card-cover {
+    filter: saturate(1.07) contrast(1.025);
+    transform: scale(1.06) rotate(0.35deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .music-card-body,
+  .music-card-cover {
+    transition: none;
+  }
+
+  .music-card:hover .music-card-body,
+  .music-card:hover .music-card-cover {
+    transform: none;
+  }
+}

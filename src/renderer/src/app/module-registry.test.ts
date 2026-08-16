@@ -1,4 +1,4 @@
-import { BookHeart, GraduationCap, Notebook, Wallet } from 'lucide-react'
+import { BookHeart, Disc3, Film, GraduationCap, Notebook, Wallet } from 'lucide-react'
 import { describe, expect, it } from 'vitest'
 
 import { appModuleRegistry, appModules, defineAppModules, getAppModule } from './module-registry'
@@ -11,17 +11,23 @@ describe('app module registry', () => {
     expect(getAppModule('boards')).toBe(appModuleRegistry.boards)
     expect(getAppModule('notes')).toBe(appModuleRegistry.notes)
     expect(getAppModule('diary')).toBe(appModuleRegistry.diary)
+    expect(getAppModule('movies')).toBe(appModuleRegistry.movies)
+    expect(getAppModule('music')).toBe(appModuleRegistry.music)
     expect(getAppModule('finance')).toBe(appModuleRegistry.finance)
     expect(getAppModule('settings')).toBe(appModuleRegistry.settings)
     expect(appModuleRegistry.study.icon).toBe(GraduationCap)
     expect(appModuleRegistry.notes.icon).toBe(Notebook)
     expect(appModuleRegistry.diary.icon).toBe(BookHeart)
+    expect(appModuleRegistry.movies.icon).toBe(Film)
+    expect(appModuleRegistry.music.icon).toBe(Disc3)
     expect(appModuleRegistry.finance.icon).toBe(Wallet)
     expect(primaryNavigationItems.map(({ id }) => id)).toEqual([
       'study',
       'boards',
       'notes',
       'diary',
+      'movies',
+      'music',
       'finance'
     ])
     expect(utilityNavigationItems.map(({ id }) => id)).toEqual(['settings'])
