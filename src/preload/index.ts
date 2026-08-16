@@ -31,6 +31,7 @@ import {
   type SystemHealth,
   type SystemWindowState
 } from '../shared/contracts/system'
+import { TASKS_IPC_CHANNELS } from '../shared/contracts/tasks'
 import { parseShutdownRequest } from './shutdown-request'
 
 const api: MyMindApi = {
@@ -247,6 +248,16 @@ const api: MyMindApi = {
     updateItem: (input) => ipcRenderer.invoke(MUSIC_IPC_CHANNELS.updateItem, input),
     deleteItem: (input) => ipcRenderer.invoke(MUSIC_IPC_CHANNELS.deleteItem, input),
     searchWeb: (input) => ipcRenderer.invoke(MUSIC_IPC_CHANNELS.searchWeb, input)
+  },
+
+  tasks: {
+    listOverview: () => ipcRenderer.invoke(TASKS_IPC_CHANNELS.listOverview),
+    createGroup: (input) => ipcRenderer.invoke(TASKS_IPC_CHANNELS.createGroup, input),
+    updateGroup: (input) => ipcRenderer.invoke(TASKS_IPC_CHANNELS.updateGroup, input),
+    deleteGroup: (input) => ipcRenderer.invoke(TASKS_IPC_CHANNELS.deleteGroup, input),
+    createTask: (input) => ipcRenderer.invoke(TASKS_IPC_CHANNELS.createTask, input),
+    updateTask: (input) => ipcRenderer.invoke(TASKS_IPC_CHANNELS.updateTask, input),
+    deleteTask: (input) => ipcRenderer.invoke(TASKS_IPC_CHANNELS.deleteTask, input)
   },
 
   finance: {

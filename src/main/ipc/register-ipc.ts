@@ -12,6 +12,7 @@ import { registerMusicIpcHandlers } from './register-music-ipc'
 import { registerNotesIpcHandlers } from './register-notes-ipc'
 import { registerPreferencesIpcHandlers } from './register-preferences-ipc'
 import { registerStudyIpcHandlers } from './register-study-ipc'
+import { registerTasksIpcHandlers } from './register-tasks-ipc'
 
 interface SQLiteVersionRow {
   version: string
@@ -61,6 +62,7 @@ export function registerIpcHandlers(options: RegisterIpcHandlersOptions): void {
   registerFinanceIpcHandlers()
   registerMoviesIpcHandlers()
   registerMusicIpcHandlers()
+  registerTasksIpcHandlers()
   registerPreferencesIpcHandlers()
 
   ipcMain.removeHandler(IPC_CHANNELS.systemHealth)

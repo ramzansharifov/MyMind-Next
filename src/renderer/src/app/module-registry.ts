@@ -5,6 +5,7 @@ import {
   Film,
   GraduationCap,
   House,
+  ListTodo,
   Notebook,
   Presentation,
   Settings,
@@ -49,6 +50,9 @@ const BoardsModule = lazy(() =>
 ) as ComponentType<AppModuleProps>
 const NotesModule = lazy(() =>
   import('../modules/notes/NotesPage').then(({ NotesPage }) => ({ default: NotesPage }))
+) as ComponentType<AppModuleProps>
+const TasksModule = lazy(() =>
+  import('../modules/tasks/TasksPage').then(({ TasksPage }) => ({ default: TasksPage }))
 ) as ComponentType<AppModuleProps>
 const DiaryModule = lazy(() =>
   import('../modules/diary/DiaryPage').then(({ DiaryPage }) => ({ default: DiaryPage }))
@@ -100,6 +104,14 @@ export const appModuleRegistry = defineAppModules({
     icon: Notebook,
     navigationGroup: 'primary',
     component: NotesModule
+  },
+  tasks: {
+    id: 'tasks',
+    label: 'Задачи',
+    loadingLabel: 'Загрузка задач',
+    icon: ListTodo,
+    navigationGroup: 'primary',
+    component: TasksModule
   },
   diary: {
     id: 'diary',
