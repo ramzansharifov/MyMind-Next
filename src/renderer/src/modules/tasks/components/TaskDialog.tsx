@@ -49,10 +49,15 @@ export function TaskDialog({
 
     const initialGroupExists =
       initialGroupId !== null && groups.some((group) => group.id === initialGroupId)
+    const initialGroup = task
+      ? task.groupId ?? NO_GROUP_VALUE
+      : initialGroupExists && initialGroupId
+        ? initialGroupId
+        : NO_GROUP_VALUE
 
     setTitle(task?.title ?? '')
     setDescription(task?.description ?? '')
-    setGroupId(task?.groupId ?? (initialGroupExists ? initialGroupId : NO_GROUP_VALUE))
+    setGroupId(initialGroup)
     setStatus(task?.status ?? 'active')
     setPriority(task?.priority ?? 'normal')
     setDueDate(task?.dueDate ?? '')
@@ -223,7 +228,10 @@ export function TaskDialog({
         </div>
 
         {error && (
-          <div role="alert" className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+          <div
+            role="alert"
+            className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-300"
+          >
             {error}
           </div>
         )}
