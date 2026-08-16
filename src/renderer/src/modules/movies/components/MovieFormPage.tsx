@@ -186,7 +186,7 @@ export function MovieFormPage({
             <SectionTitle icon={<Film />} title="Основная информация" />
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className="space-y-1.5 sm:col-span-2">
+              <label className="space-y-1.5">
                 <span className="text-xs font-medium text-[var(--app-muted)]">Название *</span>
                 <input
                   value={title}
@@ -197,7 +197,7 @@ export function MovieFormPage({
                 />
               </label>
 
-              <label className="space-y-1.5 sm:col-span-2">
+              <label className="space-y-1.5">
                 <span className="text-xs font-medium text-[var(--app-muted)]">
                   Оригинальное название
                 </span>
@@ -231,56 +231,61 @@ export function MovieFormPage({
                 </div>
               </div>
 
-              <label className="space-y-1.5 sm:col-span-2">
-                <span className="flex items-center gap-1.5 text-xs font-medium text-[var(--app-muted)]">
-                  <Image className="size-3.5" /> Постер
-                </span>
-                <input
-                  value={posterUrl}
-                  type="url"
-                  className={fieldClassName}
-                  placeholder="https://example.com/poster.jpg"
-                  onChange={(event) => {
-                    setPosterUrl(event.target.value)
-                    setPosterFailed(false)
-                  }}
-                />
-              </label>
-
-              <label className="space-y-1.5">
-                <span className="flex items-center gap-1.5 text-xs font-medium text-[var(--app-muted)]">
-                  <CalendarDays className="size-3.5" /> Год
-                </span>
-                <input
-                  value={year}
-                  type="number"
-                  min="1800"
-                  max="2200"
-                  className={fieldClassName}
-                  placeholder="2014"
-                  onChange={(event) => setYear(event.target.value)}
-                />
-              </label>
-
-              {!episodicType && (
+              <div className="grid gap-4 sm:col-span-2 lg:grid-cols-[minmax(0,2fr)_140px_180px]">
                 <label className="space-y-1.5">
                   <span className="flex items-center gap-1.5 text-xs font-medium text-[var(--app-muted)]">
-                    <Clock3 className="size-3.5" /> Длительность, мин.
+                    <Image className="size-3.5" /> Постер
                   </span>
                   <input
-                    value={runtimeMinutes}
+                    value={posterUrl}
+                    type="url"
+                    className={fieldClassName}
+                    placeholder="https://example.com/poster.jpg"
+                    onChange={(event) => {
+                      setPosterUrl(event.target.value)
+                      setPosterFailed(false)
+                    }}
+                  />
+                </label>
+
+                <label className="space-y-1.5">
+                  <span className="flex items-center gap-1.5 text-xs font-medium text-[var(--app-muted)]">
+                    <CalendarDays className="size-3.5" /> Год
+                  </span>
+                  <input
+                    value={year}
+                    type="number"
+                    min="1800"
+                    max="2200"
+                    className={fieldClassName}
+                    placeholder="2014"
+                    onChange={(event) => setYear(event.target.value)}
+                  />
+                </label>
+
+                <label className="space-y-1.5">
+                  <span className="flex items-center gap-1.5 text-xs font-medium text-[var(--app-muted)]">
+                    <Clock3 className="size-3.5" />{' '}
+                    {episodicType ? 'Длительность серии, мин.' : 'Длительность, мин.'}
+                  </span>
+                  <input
+                    value={episodicType ? episodeRuntimeMinutes : runtimeMinutes}
                     type="number"
                     min="1"
                     max="1440"
                     className={fieldClassName}
-                    placeholder="169"
-                    onChange={(event) => setRuntimeMinutes(event.target.value)}
+                    placeholder={episodicType ? '45' : '169'}
+                    onChange={(event) =>
+                      episodicType
+                        ? setEpisodeRuntimeMinutes(event.target.value)
+                        : setRuntimeMinutes(event.target.value)
+                    }
                   />
                 </label>
-              )}
+              </div>
 
               {episodicType && (
-                <div className="grid gap-4 sm:col-span-2 sm:grid-cols-3">
+                <div className="grid gap-4 sm:col-span-2 sm:grid-cols-2">
                   <label className="space-y-1.5">
                     <span className="text-xs font-medium text-[var(--app-muted)]">
                       Количество сезонов
@@ -307,20 +312,6 @@ export function MovieFormPage({
                       className={fieldClassName}
                       placeholder="10"
                       onChange={(event) => setEpisodesPerSeason(event.target.value)}
-                    />
-                  </label>
-                  <label className="space-y-1.5">
-                    <span className="flex items-center gap-1.5 text-xs font-medium text-[var(--app-muted)]">
-                      <Clock3 className="size-3.5" /> Длительность серии, мин.
-                    </span>
-                    <input
-                      value={episodeRuntimeMinutes}
-                      type="number"
-                      min="1"
-                      max="1440"
-                      className={fieldClassName}
-                      placeholder="45"
-                      onChange={(event) => setEpisodeRuntimeMinutes(event.target.value)}
                     />
                   </label>
                 </div>
@@ -367,7 +358,7 @@ export function MovieFormPage({
             />
 
             <div className="space-y-5">
-              <div className="grid gap-2 sm:grid-cols-2">
+              <div className="grid gap-2 sm:grid-cols-3">
                 <button
                   type="button"
                   aria-pressed={status === 'watchlist'}
@@ -391,6 +382,19 @@ export function MovieFormPage({
                   onClick={() => changeStatus('watched')}
                 >
                   <Check className="size-4" /> Просмотрено
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={favorite}
+                  className={
+                    favorite
+                      ? 'flex h-12 items-center justify-center gap-2 rounded-xl border border-rose-400/25 bg-rose-500/10 px-4 text-sm font-semibold text-rose-200'
+                      : 'flex h-12 items-center justify-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
+                  }
+                  onClick={() => setFavorite((current) => !current)}
+                >
+                  <Heart className={`size-4 ${favorite ? 'fill-current' : ''}`} />
+                  {favorite ? 'В избранном' : 'Добавить в избранное'}
                 </button>
               </div>
 
@@ -419,20 +423,6 @@ export function MovieFormPage({
                   </div>
                 </div>
               )}
-
-              <button
-                type="button"
-                aria-pressed={favorite}
-                className={
-                  favorite
-                    ? 'flex h-11 w-full items-center gap-2 rounded-xl border border-rose-400/25 bg-rose-500/10 px-4 text-sm font-medium text-rose-200'
-                    : 'flex h-11 w-full items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
-                }
-                onClick={() => setFavorite((current) => !current)}
-              >
-                <Heart className={`size-4 ${favorite ? 'fill-current' : ''}`} />
-                {favorite ? 'В избранном' : 'Добавить в избранное'}
-              </button>
             </div>
           </div>
 
