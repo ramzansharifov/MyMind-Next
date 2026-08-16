@@ -23,7 +23,9 @@ jobs:
         run: python .github/scripts/apply-movie-detail-polish.py || true
       - name: Finish movie detail patch
         run: python .github/scripts/fix-movie-detail-polish.py
-      - run: rm .github/scripts/apply-movie-detail-polish.py .github/scripts/fix-movie-detail-polish.py .github/workflows/movie-detail-polish-validation.yml
+      - name: Finalize movie detail patch
+        run: python .github/scripts/finalize-movie-detail-polish.py
+      - run: rm .github/scripts/apply-movie-detail-polish.py .github/scripts/fix-movie-detail-polish.py .github/scripts/finalize-movie-detail-polish.py .github/workflows/movie-detail-polish-validation.yml
       - run: npm ci
       - name: Format changed files
         run: >-
@@ -55,4 +57,3 @@ jobs:
           git add -A
           git commit -m "Polish movie detail view"
           git push
-# deterministic test rewrite
