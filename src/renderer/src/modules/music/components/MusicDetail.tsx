@@ -30,7 +30,9 @@ function formatDuration(seconds: number | null): string | null {
   const hours = Math.floor(seconds / 3600)
   const minutes = Math.floor((seconds % 3600) / 60)
   const rest = seconds % 60
-  if (hours > 0) return `${hours}:${minutes.toString().padStart(2, '0')}:${rest.toString().padStart(2, '0')}`
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${rest.toString().padStart(2, '0')}`
+  }
   return `${minutes}:${rest.toString().padStart(2, '0')}`
 }
 
@@ -58,7 +60,12 @@ function Cover({ item }: { item: MusicItemRecord }): React.JSX.Element {
   )
 }
 
-export function MusicDetail({ item, busy, onUpdate, onSearchWeb }: MusicDetailProps): React.JSX.Element {
+export function MusicDetail({
+  item,
+  busy,
+  onUpdate,
+  onSearchWeb
+}: MusicDetailProps): React.JSX.Element {
   const [revertOpen, setRevertOpen] = useState(false)
   const [ratingOpen, setRatingOpen] = useState(false)
   const [pendingRating, setPendingRating] = useState<number | null>(item.rating)
@@ -101,15 +108,16 @@ export function MusicDetail({ item, busy, onUpdate, onSearchWeb }: MusicDetailPr
               </div>
 
               <div className="flex shrink-0 items-center gap-2">
-                {item.status === 'listened' && item.rating !== null && (
+                {item.status === 'listened' && (
                   <button
                     type="button"
                     disabled={busy}
-                    aria-label="Изменить оценку"
+                    aria-label={item.rating === null ? 'Поставить оценку' : 'Изменить оценку'}
                     className="inline-flex h-11 items-center gap-2 rounded-xl border border-amber-400/20 bg-amber-500/10 px-3.5 text-sm font-semibold text-amber-200 transition-colors hover:bg-amber-500/15 disabled:opacity-50"
                     onClick={openRating}
                   >
-                    <Star className="size-4 fill-current" /> {item.rating} / 10
+                    <Star className={`size-4 ${item.rating !== null ? 'fill-current' : ''}`} />
+                    {item.rating === null ? 'Оценить' : `${item.rating} / 10`}
                   </button>
                 )}
                 <button
@@ -153,7 +161,10 @@ export function MusicDetail({ item, busy, onUpdate, onSearchWeb }: MusicDetailPr
               {item.album && (
                 <div className="flex items-start gap-2 text-[var(--app-muted)]">
                   <Disc3 className="mt-0.5 size-4 shrink-0" />
-                  <span>Альбом: <strong className="font-medium text-[var(--app-text)]">{item.album}</strong></span>
+                  <span>
+                    Альбом:{' '}
+                    <strong className="font-medium text-[var(--app-text)]">{item.album}</strong>
+                  </span>
                 </div>
               )}
               {item.artists.length > 0 && (
@@ -204,9 +215,7 @@ export function MusicDetail({ item, busy, onUpdate, onSearchWeb }: MusicDetailPr
                       ? 'h-9 rounded-lg bg-emerald-500/15 px-3 text-sm font-medium text-emerald-200'
                       : 'h-9 rounded-lg px-3 text-sm text-[var(--app-muted)] hover:bg-[var(--app-control-hover)]'
                   }
-                  onClick={() => {
-                    if (item.status !== 'listened') openRating()
-                  }}
+                  onClick={openRating}
                 >
                   Прослушано
                 </button>
@@ -239,7 +248,9 @@ export function MusicDetail({ item, busy, onUpdate, onSearchWeb }: MusicDetailPr
             {item.description && (
               <div className="mt-7 rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-5">
                 <h3 className="text-sm font-semibold text-[var(--app-text)]">Описание</h3>
-                <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-[var(--app-muted)]">{item.description}</p>
+                <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-[var(--app-muted)]">
+                  {item.description}
+                </p>
               </div>
             )}
 
@@ -248,7 +259,9 @@ export function MusicDetail({ item, busy, onUpdate, onSearchWeb }: MusicDetailPr
                 <h3 className="flex items-center gap-2 text-sm font-semibold text-[var(--app-text)]">
                   <Music2 className="size-4 text-violet-300" /> Личные комментарии
                 </h3>
-                <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-[var(--app-muted)]">{item.comments}</p>
+                <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-[var(--app-muted)]">
+                  {item.comments}
+                </p>
               </div>
             )}
           </div>
@@ -276,7 +289,7 @@ export function MusicDetail({ item, busy, onUpdate, onSearchWeb }: MusicDetailPr
         open={ratingOpen}
         busy={busy}
         onOpenChange={setRatingOpen}
-        title={item.status === 'listened' ? 'Изменить оценку' : 'Оцените музыку'}
+        title={item.status === 'listened' ? 'Оценить музыку' : 'Оцените музыку'}
         description="Выберите оценку от 1 до 10"
         icon={<Star />}
         size="sm"
