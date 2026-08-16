@@ -52,7 +52,57 @@ describe('movies repository', () => {
 
     expect(getMovie({ id: movie.id })).toEqual(movie)
     expect(movie.type).toBe('movie')
+    expect(movie.seasonCount).toBeNull()
+    expect(movie.episodesPerSeason).toBeNull()
+    expect(movie.episodeRuntimeMinutes).toBeNull()
     expect(listMoviesOverview().movies).toEqual([movie])
+  })
+
+  it('persists episodic metadata and preserves it when an update omits optional fields', () => {
+    const series = createMovie({
+      title: 'Аркейн',
+      originalTitle: 'Arcane',
+      type: 'animated_series',
+      year: 2021,
+      posterUrl: null,
+      director: '',
+      runtimeMinutes: null,
+      seasonCount: 2,
+      episodesPerSeason: 9,
+      episodeRuntimeMinutes: 42,
+      genres: ['Анимация'],
+      actors: [],
+      description: '',
+      status: 'watchlist',
+      favorite: false,
+      rating: null,
+      comments: ''
+    })
+
+    expect(series).toMatchObject({
+      type: 'animated_series',
+      runtimeMinutes: null,
+      seasonCount: 2,
+      episodesPerSeason: 9,
+      episodeRuntimeMinutes: 42
+    })
+
+    const {
+      seasonCount: _seasonCount,
+      episodesPerSeason: _episodesPerSeason,
+      episodeRuntimeMinutes: _episodeRuntimeMinutes,
+      createdAt: _createdAt,
+      updatedAt: _updatedAt,
+      ...updateInput
+    } = series
+    const updated = updateMovie({ ...updateInput, favorite: true })
+
+    expect(updated).toMatchObject({
+      favorite: true,
+      seasonCount: 2,
+      episodesPerSeason: 9,
+      episodeRuntimeMinutes: 42
+    })
   })
 
   it('creates multiple content types in one transaction and rolls back the whole batch on failure', () => {
@@ -75,13 +125,14 @@ describe('movies repository', () => {
     const created = createMovies({
       movies: [
         { ...base, title: 'Movie A' },
-        { ...base, title: 'Series B', type: 'series' }
+        { ...base, title: 'Series B', type: 'series', seasonCount: 3 }
       ]
     })
     expect(created.map((movie) => [movie.title, movie.type])).toEqual([
       ['Movie A', 'movie'],
       ['Series B', 'series']
     ])
+    expect(created[1]?.seasonCount).toBe(3)
     expect(listMoviesOverview().movies).toHaveLength(2)
 
     getSqlite().exec('DELETE FROM movies;')
