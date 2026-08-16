@@ -241,7 +241,7 @@ describe('MoviesPage', () => {
     expect(screen.getByRole('button', { name: 'Изменить' })).toBeInTheDocument()
   })
 
-  it('shows episodic metadata on the detail page and searches by display title only', async () => {
+  it('shows episodic metadata on the detail page and searches with the viewing prefix', async () => {
     const user = userEvent.setup()
     const seriesMovie: MovieRecord = {
       ...movie,
@@ -266,7 +266,7 @@ describe('MoviesPage', () => {
     expect(screen.getByText('Серия: 47 мин.')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Посмотреть' }))
-    expect(mocks.searchWeb).toHaveBeenCalledWith({ query: 'Во все тяжкие' })
+    expect(mocks.searchWeb).toHaveBeenCalledWith({ query: 'Смотреть фильм Во все тяжкие' })
   })
 
   it('shows interactive metadata, confirms watched rollback and opens fullscreen poster', async () => {
@@ -327,7 +327,7 @@ describe('MoviesPage', () => {
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Посмотреть' }))
-    expect(mocks.searchWeb).toHaveBeenCalledWith({ query: 'Интерстеллар' })
+    expect(mocks.searchWeb).toHaveBeenCalledWith({ query: 'Смотреть фильм Интерстеллар' })
 
     await user.click(screen.getByRole('button', { name: 'Открыть постер на весь экран' }))
     await waitFor(() =>

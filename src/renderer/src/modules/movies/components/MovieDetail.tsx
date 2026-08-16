@@ -217,7 +217,7 @@ export function MovieDetail({
     setPendingRating(null)
   }
 
-  const watchQuery = movie.title
+  const watchQuery = `Смотреть фильм ${movie.title}`
 
   return (
     <>
