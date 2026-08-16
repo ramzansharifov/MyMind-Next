@@ -29,7 +29,7 @@ afterEach(() => {
 })
 
 describe('preload API contract', () => {
-  it('exposes the complete boards, notes, diary, movies and finance contracts in the renderer', async () => {
+  it('exposes the complete boards, notes, diary, movies, music and finance contracts in the renderer', async () => {
     Object.defineProperty(process, 'contextIsolated', {
       configurable: true,
       value: true
@@ -90,6 +90,15 @@ describe('preload API contract', () => {
       'createMovies',
       'updateMovie',
       'deleteMovie',
+      'searchWeb'
+    ])
+    expect(Object.keys(api.music)).toEqual([
+      'listOverview',
+      'getItem',
+      'createItem',
+      'createItems',
+      'updateItem',
+      'deleteItem',
       'searchWeb'
     ])
     expect(Object.keys(api.finance)).toEqual([
@@ -155,6 +164,17 @@ describe('preload API contract', () => {
 
     await api.movies.createMovies({ movies: [] })
     expect(electronMocks.invoke).toHaveBeenCalledWith('movies:create-movies', { movies: [] })
+
+    await api.music.getItem({ id: 'music-1' })
+    expect(electronMocks.invoke).toHaveBeenCalledWith('music:get-item', { id: 'music-1' })
+
+    await api.music.searchWeb({ query: 'Слушать Blinding Lights' })
+    expect(electronMocks.invoke).toHaveBeenCalledWith('music:search-web', {
+      query: 'Слушать Blinding Lights'
+    })
+
+    await api.music.createItems({ items: [] })
+    expect(electronMocks.invoke).toHaveBeenCalledWith('music:create-items', { items: [] })
 
     await api.finance.createAccount({
       name: 'Карта',
