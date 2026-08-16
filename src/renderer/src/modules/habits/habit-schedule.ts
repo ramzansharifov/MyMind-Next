@@ -29,21 +29,21 @@ export function daysBetween(from: string, to: string): number {
 }
 
 export function isHabitScheduledOn(habit: HabitRecord, date: string): boolean {
+  if (habit.status !== 'active') return false
   if (date < habit.startDate) return false
   if (habit.endDate !== null && date > habit.endDate) return false
-  if (habit.archivedOn !== null && date > habit.archivedOn) return false
   const delta = daysBetween(habit.startDate, date)
   return delta >= 0 && delta % habit.repeatEveryDays === 0
 }
 
 export function nextHabitDate(habit: HabitRecord, from: string): string | null {
+  if (habit.status !== 'active') return null
   const effectiveFrom = from < habit.startDate ? habit.startDate : from
   const delta = daysBetween(habit.startDate, effectiveFrom)
   const remainder = delta % habit.repeatEveryDays
   const next = remainder === 0 ? effectiveFrom : addDays(effectiveFrom, habit.repeatEveryDays - remainder)
 
   if (habit.endDate !== null && next > habit.endDate) return null
-  if (habit.archivedOn !== null && next > habit.archivedOn) return null
   return next
 }
 
