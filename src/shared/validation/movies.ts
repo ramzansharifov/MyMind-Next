@@ -16,7 +16,7 @@ export const movieSafeIdSchema = z
 
 export const movieStatusSchema = z.enum(MOVIE_STATUSES)
 export const movieTypeSchema = z.enum(MOVIE_TYPES, {
-  message: 'Тип должен быть одним из: фильм, сериал, мультфильм, мультсериал, аниме'
+  message: 'Тип должен быть одним из: фильм, сериал, мультфильм, мультсериал'
 })
 
 const nullableTrimmedText = (max: number): z.ZodNullable<z.ZodString> =>
@@ -38,6 +38,15 @@ const ratingSchema = z
   .max(10, 'Максимальная оценка — 10')
   .nullable()
 
+const nullablePositiveInteger = (label: string, max: number) =>
+  z
+    .number()
+    .int(`${label} должно быть целым числом`)
+    .min(1, `${label} должно быть не меньше 1`)
+    .max(max, `${label} превышает допустимое значение`)
+    .nullable()
+    .optional()
+
 const stringListSchema = (maxItems: number): z.ZodType<string[]> =>
   z
     .array(z.string().trim().min(1).max(120))
@@ -53,6 +62,9 @@ const movieBaseInputSchema = z
     posterUrl: posterUrlSchema,
     director: z.string().trim().max(MAX_MOVIE_DIRECTOR_LENGTH),
     runtimeMinutes: z.number().int().min(1).max(1_440).nullable(),
+    seasonCount: nullablePositiveInteger('Количество сезонов', 1_000),
+    episodesPerSeason: nullablePositiveInteger('Количество серий в сезоне', 10_000),
+    episodeRuntimeMinutes: nullablePositiveInteger('Длительность серии', 1_440),
     genres: stringListSchema(MAX_MOVIE_GENRES),
     actors: stringListSchema(MAX_MOVIE_ACTORS),
     description: z.string().trim().max(MAX_MOVIE_DESCRIPTION_LENGTH),
@@ -63,8 +75,16 @@ const movieBaseInputSchema = z
   })
   .strict()
 
-function validateRatingStatus(
-  input: { status: string; rating: number | null },
+function validateMovieMetadata(
+  input: {
+    type: string
+    status: string
+    rating: number | null
+    runtimeMinutes: number | null
+    seasonCount?: number | null
+    episodesPerSeason?: number | null
+    episodeRuntimeMinutes?: number | null
+  },
   context: z.RefinementCtx
 ): void {
   if (input.status !== 'watched' && input.rating !== null) {
@@ -74,9 +94,39 @@ function validateRatingStatus(
       message: 'Оценка доступна только для просмотренного фильма'
     })
   }
+
+  const episodic = input.type === 'series' || input.type === 'animated_series'
+  if (episodic && input.runtimeMinutes !== null) {
+    context.addIssue({
+      code: 'custom',
+      path: ['runtimeMinutes'],
+      message: 'Для сериалов укажите длительность одной серии'
+    })
+  }
+
+  if (!episodic) {
+    const episodicFields: Array<[string, number | null | undefined, string]> = [
+      ['seasonCount', input.seasonCount, 'Количество сезонов доступно только для сериалов'],
+      [
+        'episodesPerSeason',
+        input.episodesPerSeason,
+        'Количество серий в сезоне доступно только для сериалов'
+      ],
+      [
+        'episodeRuntimeMinutes',
+        input.episodeRuntimeMinutes,
+        'Длительность серии доступна только для сериалов'
+      ]
+    ]
+    for (const [path, value, message] of episodicFields) {
+      if (value !== null && value !== undefined) {
+        context.addIssue({ code: 'custom', path: [path], message })
+      }
+    }
+  }
 }
 
-export const createMovieInputSchema = movieBaseInputSchema.superRefine(validateRatingStatus)
+export const createMovieInputSchema = movieBaseInputSchema.superRefine(validateMovieMetadata)
 
 export const createMoviesInputSchema = z
   .object({
@@ -87,7 +137,7 @@ export const createMoviesInputSchema = z
 export const updateMovieInputSchema = movieBaseInputSchema
   .extend({ id: movieSafeIdSchema })
   .strict()
-  .superRefine(validateRatingStatus)
+  .superRefine(validateMovieMetadata)
 
 export const getMovieInputSchema = z.object({ id: movieSafeIdSchema }).strict()
 export const deleteMovieInputSchema = getMovieInputSchema

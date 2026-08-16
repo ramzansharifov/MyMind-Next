@@ -21,7 +21,7 @@ import type {
   MovieType,
   UpdateMovieInput
 } from '../../../../../shared/contracts/movies'
-import { MOVIE_TYPE_OPTIONS, movieTypeLabel } from '../movie-types'
+import { isEpisodicMovieType, MOVIE_TYPE_OPTIONS, movieTypeLabel } from '../movie-types'
 
 interface MovieFormPageProps {
   movie: MovieRecord | null
@@ -59,6 +59,12 @@ function splitList(value: string): string[] {
     .filter(Boolean)
 }
 
+function parseOptionalNumber(value: string): number | null {
+  if (!value.trim()) return null
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
 export function MovieFormPage({
   movie,
   busy,
@@ -72,6 +78,13 @@ export function MovieFormPage({
   const [year, setYear] = useState(movie?.year?.toString() ?? '')
   const [director, setDirector] = useState(movie?.director ?? '')
   const [runtimeMinutes, setRuntimeMinutes] = useState(movie?.runtimeMinutes?.toString() ?? '')
+  const [seasonCount, setSeasonCount] = useState(movie?.seasonCount?.toString() ?? '')
+  const [episodesPerSeason, setEpisodesPerSeason] = useState(
+    movie?.episodesPerSeason?.toString() ?? ''
+  )
+  const [episodeRuntimeMinutes, setEpisodeRuntimeMinutes] = useState(
+    movie?.episodeRuntimeMinutes?.toString() ?? ''
+  )
   const [genres, setGenres] = useState(movie?.genres.join(', ') ?? '')
   const [actors, setActors] = useState(movie?.actors.join(', ') ?? '')
   const [description, setDescription] = useState(movie?.description ?? '')
@@ -82,6 +95,7 @@ export function MovieFormPage({
   const [posterFailed, setPosterFailed] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const episodicType = isEpisodicMovieType(type)
   const normalizedPosterUrl = posterUrl.trim()
   const canPreviewPoster = useMemo(() => {
     if (!normalizedPosterUrl || posterFailed) return false
@@ -106,16 +120,17 @@ export function MovieFormPage({
       return
     }
 
-    const parsedYear = year.trim() ? Number(year) : null
-    const parsedRuntime = runtimeMinutes.trim() ? Number(runtimeMinutes) : null
     const base: CreateMovieInput = {
       title: cleanTitle,
       originalTitle: originalTitle.trim() || null,
       type,
-      year: Number.isFinite(parsedYear) ? parsedYear : null,
+      year: parseOptionalNumber(year),
       posterUrl: normalizedPosterUrl || null,
       director: director.trim(),
-      runtimeMinutes: Number.isFinite(parsedRuntime) ? parsedRuntime : null,
+      runtimeMinutes: episodicType ? null : parseOptionalNumber(runtimeMinutes),
+      seasonCount: episodicType ? parseOptionalNumber(seasonCount) : null,
+      episodesPerSeason: episodicType ? parseOptionalNumber(episodesPerSeason) : null,
+      episodeRuntimeMinutes: episodicType ? parseOptionalNumber(episodeRuntimeMinutes) : null,
       genres: splitList(genres),
       actors: splitList(actors),
       description: description.trim(),
@@ -196,7 +211,7 @@ export function MovieFormPage({
 
               <div className="space-y-1.5 sm:col-span-2">
                 <span className="text-xs font-medium text-[var(--app-muted)]">Тип</span>
-                <div role="group" aria-label="Тип" className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+                <div role="group" aria-label="Тип" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                   {MOVIE_TYPE_OPTIONS.map((option) => (
                     <button
                       key={option.value}
@@ -247,20 +262,69 @@ export function MovieFormPage({
                 />
               </label>
 
-              <label className="space-y-1.5">
-                <span className="flex items-center gap-1.5 text-xs font-medium text-[var(--app-muted)]">
-                  <Clock3 className="size-3.5" /> Длительность, мин.
-                </span>
-                <input
-                  value={runtimeMinutes}
-                  type="number"
-                  min="1"
-                  max="1440"
-                  className={fieldClassName}
-                  placeholder="169"
-                  onChange={(event) => setRuntimeMinutes(event.target.value)}
-                />
-              </label>
+              {!episodicType && (
+                <label className="space-y-1.5">
+                  <span className="flex items-center gap-1.5 text-xs font-medium text-[var(--app-muted)]">
+                    <Clock3 className="size-3.5" /> Длительность, мин.
+                  </span>
+                  <input
+                    value={runtimeMinutes}
+                    type="number"
+                    min="1"
+                    max="1440"
+                    className={fieldClassName}
+                    placeholder="169"
+                    onChange={(event) => setRuntimeMinutes(event.target.value)}
+                  />
+                </label>
+              )}
+
+              {episodicType && (
+                <div className="grid gap-4 sm:col-span-2 sm:grid-cols-3">
+                  <label className="space-y-1.5">
+                    <span className="text-xs font-medium text-[var(--app-muted)]">
+                      Количество сезонов
+                    </span>
+                    <input
+                      value={seasonCount}
+                      type="number"
+                      min="1"
+                      max="1000"
+                      className={fieldClassName}
+                      placeholder="3"
+                      onChange={(event) => setSeasonCount(event.target.value)}
+                    />
+                  </label>
+                  <label className="space-y-1.5">
+                    <span className="text-xs font-medium text-[var(--app-muted)]">
+                      Серий в сезоне
+                    </span>
+                    <input
+                      value={episodesPerSeason}
+                      type="number"
+                      min="1"
+                      max="10000"
+                      className={fieldClassName}
+                      placeholder="10"
+                      onChange={(event) => setEpisodesPerSeason(event.target.value)}
+                    />
+                  </label>
+                  <label className="space-y-1.5">
+                    <span className="flex items-center gap-1.5 text-xs font-medium text-[var(--app-muted)]">
+                      <Clock3 className="size-3.5" /> Длительность серии, мин.
+                    </span>
+                    <input
+                      value={episodeRuntimeMinutes}
+                      type="number"
+                      min="1"
+                      max="1440"
+                      className={fieldClassName}
+                      placeholder="45"
+                      onChange={(event) => setEpisodeRuntimeMinutes(event.target.value)}
+                    />
+                  </label>
+                </div>
+              )}
 
               <label className="space-y-1.5 sm:col-span-2">
                 <span className="text-xs font-medium text-[var(--app-muted)]">Режиссёр</span>
@@ -429,6 +493,17 @@ export function MovieFormPage({
                 {director.trim() && <span>·</span>}
                 {director.trim() && <span className="truncate">{director}</span>}
               </div>
+
+              {episodicType &&
+                (seasonCount.trim() || episodesPerSeason.trim() || episodeRuntimeMinutes.trim()) && (
+                  <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-[var(--app-muted)]">
+                    {seasonCount.trim() && <span>Сезонов: {seasonCount}</span>}
+                    {episodesPerSeason.trim() && <span>Серий в сезоне: {episodesPerSeason}</span>}
+                    {episodeRuntimeMinutes.trim() && (
+                      <span>Серия: {episodeRuntimeMinutes} мин.</span>
+                    )}
+                  </div>
+                )}
 
               <div className="mt-4 flex flex-wrap gap-2">
                 <span

@@ -19,15 +19,18 @@ interface ParseResult {
 
 const EXAMPLE_JSON = `[
   {
-    "title": "Интерстеллар",
-    "originalTitle": "Interstellar",
-    "type": "movie",
-    "year": 2014,
+    "title": "Аркейн",
+    "originalTitle": "Arcane",
+    "type": "animated_series",
+    "year": 2021,
     "posterUrl": "https://example.com/poster.jpg",
-    "director": "Christopher Nolan",
-    "runtimeMinutes": 169,
-    "genres": ["Фантастика", "Драма"],
-    "actors": ["Matthew McConaughey", "Anne Hathaway"],
+    "director": "",
+    "runtimeMinutes": null,
+    "seasonCount": 2,
+    "episodesPerSeason": 9,
+    "episodeRuntimeMinutes": 42,
+    "genres": ["Анимация", "Драма"],
+    "actors": [],
     "description": "",
     "status": "watched",
     "favorite": true,
@@ -56,6 +59,9 @@ function normalizedCandidate(value: unknown): unknown {
     posterUrl: source.posterUrl ?? null,
     director: source.director ?? '',
     runtimeMinutes: source.runtimeMinutes ?? null,
+    seasonCount: source.seasonCount ?? null,
+    episodesPerSeason: source.episodesPerSeason ?? null,
+    episodeRuntimeMinutes: source.episodeRuntimeMinutes ?? null,
     genres: source.genres ?? [],
     actors: source.actors ?? [],
     description: source.description ?? '',
@@ -169,10 +175,13 @@ export function MovieJsonImportDialog({
           Один объект или массив. Обязательное поле:{' '}
           <code className="text-[var(--app-text)]">title</code>. Тип:{' '}
           <code className="text-[var(--app-text)]">
-            movie | series | cartoon | animated_series | anime
+            movie | series | cartoon | animated_series
           </code>
-          . Если <code className="text-[var(--app-text)]">type</code> не указан, используется{' '}
-          <code className="text-[var(--app-text)]">movie</code>.
+          . Для <code className="text-[var(--app-text)]">series</code> и{' '}
+          <code className="text-[var(--app-text)]">animated_series</code> доступны{' '}
+          <code className="text-[var(--app-text)]">seasonCount</code>,{' '}
+          <code className="text-[var(--app-text)]">episodesPerSeason</code> и{' '}
+          <code className="text-[var(--app-text)]">episodeRuntimeMinutes</code>.
         </span>
         <div className="flex gap-2">
           <button
@@ -200,7 +209,7 @@ export function MovieJsonImportDialog({
         aria-label="JSON фильмов"
         autoFocus
         spellCheck={false}
-        placeholder='[{ "title": "Интерстеллар", "type": "movie", "status": "watched", "rating": 9 }]'
+        placeholder='[{ "title": "Аркейн", "type": "animated_series", "seasonCount": 2, "episodesPerSeason": 9, "episodeRuntimeMinutes": 42 }]'
         className="min-h-[360px] w-full resize-y rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-4 font-mono text-[13px] leading-6 text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)] focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
         onChange={(event) => {
           setValue(event.target.value)

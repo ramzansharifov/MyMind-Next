@@ -4,8 +4,7 @@ export const MOVIE_TYPE_OPTIONS: Array<{ value: MovieType; label: string }> = [
   { value: 'movie', label: 'Фильм' },
   { value: 'series', label: 'Сериал' },
   { value: 'cartoon', label: 'Мультфильм' },
-  { value: 'animated_series', label: 'Мультсериал' },
-  { value: 'anime', label: 'Аниме' }
+  { value: 'animated_series', label: 'Мультсериал' }
 ]
 
 const MOVIE_TYPE_LABELS = Object.fromEntries(
@@ -14,4 +13,8 @@ const MOVIE_TYPE_LABELS = Object.fromEntries(
 
 export function movieTypeLabel(type: MovieType): string {
   return MOVIE_TYPE_LABELS[type]
+}
+
+export function isEpisodicMovieType(type: MovieType): boolean {
+  return type === 'series' || type === 'animated_series'
 }
