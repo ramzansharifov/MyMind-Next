@@ -21,7 +21,7 @@ export function shiftNutritionDate(value: string, days: number): string {
   return nutritionLocalDateKey(date)
 }
 
-export function nutritionDaysAgo(days: number): string {
+export function nutritionDaysAgoKey(days: number): string {
   return shiftNutritionDate(nutritionLocalDateKey(), -days)
 }
 
@@ -60,6 +60,10 @@ export function scaleNutritionValues(
 export function nutritionProgress(value: number, target: number | null): number {
   if (!target || target <= 0) return 0
   return Math.min(100, (value / target) * 100)
+}
+
+export function nutritionErrorMessage(reason: unknown): string {
+  return reason instanceof Error ? reason.message : 'Не удалось выполнить действие'
 }
 
 export const NUTRITION_INPUT_CLASS_NAME =
