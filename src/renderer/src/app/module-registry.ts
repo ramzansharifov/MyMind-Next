@@ -5,6 +5,7 @@ import {
   Film,
   GraduationCap,
   House,
+  KeyRound,
   ListTodo,
   Notebook,
   Presentation,
@@ -69,6 +70,9 @@ const MusicModule = lazy(() =>
 ) as ComponentType<AppModuleProps>
 const FinanceModule = lazy(() =>
   import('../modules/finance/FinancePage').then(({ FinancePage }) => ({ default: FinancePage }))
+) as ComponentType<AppModuleProps>
+const PasswordsModule = lazy(() =>
+  import('../modules/passwords/PasswordsPage').then(({ PasswordsPage }) => ({ default: PasswordsPage }))
 ) as ComponentType<AppModuleProps>
 const SettingsModule = lazy(() =>
   import('../modules/settings/SettingsModule').then(({ SettingsModule }) => ({
@@ -156,6 +160,14 @@ export const appModuleRegistry = defineAppModules({
     icon: Wallet,
     navigationGroup: 'primary',
     component: FinanceModule
+  },
+  passwords: {
+    id: 'passwords',
+    label: 'Пароли',
+    loadingLabel: 'Загрузка паролей',
+    icon: KeyRound,
+    navigationGroup: 'primary',
+    component: PasswordsModule
   },
   settings: {
     id: 'settings',
