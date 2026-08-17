@@ -2,7 +2,11 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { BookOpen, FilePlus2, FileText, Folder, FolderPlus, Palette, Pencil } from 'lucide-react'
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-import type { StudyFolderIconName, StudyNode } from '../../../../shared/contracts/study'
+import type {
+  StudyCodeApplyResult,
+  StudyFolderIconName,
+  StudyNode
+} from '../../../../shared/contracts/study'
 import type { AppModuleProps } from '../../app/module-registry'
 import { cn } from '../../shared/lib/cn'
 import { ModuleSidebar } from '../../shared/ui/ModuleSidebar'
@@ -16,6 +20,7 @@ import {
 import { Tooltip } from '../../shared/ui/tooltip'
 import { StudyActionButton } from './components/StudyActionButton'
 import { StudyBlockedTransitionDialog } from './components/StudyBlockedTransitionDialog'
+import { StudyFolderCodeWorkspace } from './components/code-mode/StudyFolderCodeWorkspace'
 import { DeleteConfirmationDialog } from './components/DeleteConfirmationDialog'
 import { StudyHome } from './components/StudyHome'
 import { STUDY_FOLDER_ICON_SIDEBAR_CLASS_NAME, StudyFolderIcon } from './components/StudyFolderIcon'
@@ -55,46 +60,30 @@ export function StudyPage({
   onFocusModeChange
 }: AppModuleProps): React.JSX.Element {
   const study = useStudy()
-
   const studyNodes = study.nodes
   const selectNode = study.selectNode
   const toggleFolder = study.toggleFolder
 
   const [renameTarget, setRenameTarget] = useState<StudyNode | null>(null)
-
   const [renameValue, setRenameValue] = useState('')
-
   const [renameError, setRenameError] = useState<string | null>(null)
-
   const [isRenaming, setIsRenaming] = useState(false)
-
   const [deleteTarget, setDeleteTarget] = useState<StudyNode | null>(null)
-
   const [deleteError, setDeleteError] = useState<string | null>(null)
-
   const [isDeleting, setIsDeleting] = useState(false)
-
   const deletePendingRef = useRef(false)
-
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
-
   const [isTransitionSaving, setIsTransitionSaving] = useState(false)
-
   const [blockedTransition, setBlockedTransition] = useState<BlockedStudyTransition | null>(null)
-
   const [forceLeaveArmed, setForceLeaveArmed] = useState(false)
-
   const transitionCoordinatorRef = useRef(
     new StudyMaterialTransitionCoordinator(getActiveStudyDraftHandle)
   )
-
   const [internalNavigation, setInternalNavigation] =
     useState<StudyInternalLinkNavigationRequest | null>(null)
-
   const [internalLinkHistory, setInternalLinkHistory] = useState<StudyInternalLinkHistoryEntry[]>(
     []
   )
-
   const internalNavigationSequenceRef = useRef(0)
   const handledResourceIdRef = useRef<string | null>(null)
 
@@ -115,12 +104,9 @@ export function StudyPage({
     () => normalizeStudyInternalLinkHistory(internalLinkHistory, materialIds),
     [internalLinkHistory, materialIds]
   )
-
   const internalLinkBackTarget = normalizedInternalLinkHistory.at(-1)
-
   const removedInvalidTrailingEntries =
     normalizedInternalLinkHistory.length < internalLinkHistory.length
-
   const canNavigateBack =
     selectedNode?.type === 'material' &&
     internalLinkBackTarget !== undefined &&
@@ -128,11 +114,13 @@ export function StudyPage({
       removedInvalidTrailingEntries) &&
     materialIds.has(internalLinkBackTarget.sourceMaterialId)
 
-  function openRename(node: StudyNode): void {
-    if (deletePendingRef.current) {
-      return
-    }
+  function handleCodeApplied(result: StudyCodeApplyResult): void {
+    study.replaceNodes(result.nodes)
+    clearInternalLinkNavigation()
+  }
 
+  function openRename(node: StudyNode): void {
+    if (deletePendingRef.current) return
     setRenameTarget(node)
     setRenameValue(node.title)
     setRenameError(null)
@@ -140,17 +128,12 @@ export function StudyPage({
 
   async function confirmRename(): Promise<void> {
     const title = renameValue.trim()
-
-    if (!renameTarget || !title || isRenaming || deletePendingRef.current) {
-      return
-    }
+    if (!renameTarget || !title || isRenaming || deletePendingRef.current) return
 
     setIsRenaming(true)
     setRenameError(null)
-
     try {
       await study.renameNode(renameTarget.id, title)
-
       setRenameTarget(null)
     } catch (reason: unknown) {
       setRenameError(reason instanceof Error ? reason.message : 'Не удалось переименовать элемент')
@@ -160,42 +143,29 @@ export function StudyPage({
   }
 
   function openDelete(node: StudyNode): void {
-    if (deletePendingRef.current) {
-      return
-    }
-
+    if (deletePendingRef.current) return
     setDeleteTarget(node)
     setDeleteError(null)
   }
 
   async function confirmDelete(): Promise<void> {
     const target = deleteTarget
+    if (!target || deletePendingRef.current) return
 
-    if (!target || deletePendingRef.current) {
-      return
-    }
-
-    /*
-     * The ref closes the same-render double-click window before React commits
-     * the isDeleting state update.
-     */
     deletePendingRef.current = true
     setIsDeleting(true)
     setDeleteError(null)
 
     try {
       const deleted = await study.deleteNode(target.id)
-
       if (!deleted) {
         setDeleteError(
           target.type === 'folder'
             ? 'Не удалось удалить папку. Вложенные материалы и черновики оставлены без изменений.'
             : 'Не удалось удалить материал. Черновик оставлен открытым и восстановлен для сохранения.'
         )
-
         return
       }
-
       setDeleteTarget((current) => (current?.id === target.id ? null : current))
     } catch (reason: unknown) {
       setDeleteError(reason instanceof Error ? reason.message : 'Не удалось удалить элемент.')
@@ -207,18 +177,11 @@ export function StudyPage({
 
   const openStudyNode = useCallback(
     (nodeId: string): void => {
-      if (deletePendingRef.current) {
-        return
-      }
-
+      if (deletePendingRef.current) return
       const ancestorFolders = getStudyAncestorFolders(studyNodes, nodeId)
-
       ancestorFolders.forEach((folder) => {
-        if (!folder.isExpanded) {
-          void toggleFolder(folder)
-        }
+        if (!folder.isExpanded) void toggleFolder(folder)
       })
-
       selectNode(nodeId)
     },
     [selectNode, studyNodes, toggleFolder]
@@ -229,27 +192,18 @@ export function StudyPage({
       handledResourceIdRef.current = null
       return undefined
     }
-
-    if (study.isLoading || handledResourceIdRef.current === resourceId) {
-      return undefined
-    }
+    if (study.isLoading || handledResourceIdRef.current === resourceId) return undefined
 
     let active = true
     const target = studyNodes.find((node) => node.id === resourceId && node.type === 'material')
-
     void Promise.resolve().then(() => {
-      if (!active || handledResourceIdRef.current === resourceId) {
-        return
-      }
-
+      if (!active || handledResourceIdRef.current === resourceId) return
       handledResourceIdRef.current = resourceId
-
       if (target) {
         setInternalLinkHistory(clearStudyInternalLinkHistory())
         setInternalNavigation(null)
         openStudyNode(target.id)
       }
-
       onResourceHandled?.()
     })
 
@@ -260,7 +214,6 @@ export function StudyPage({
 
   const clearInternalLinkNavigation = useCallback((): void => {
     setInternalLinkHistory(clearStudyInternalLinkHistory())
-
     setInternalNavigation(null)
   }, [])
 
@@ -269,10 +222,7 @@ export function StudyPage({
       run: (() => void) | (() => Promise<void>),
       targetMaterialId: string | null = null
     ): Promise<boolean> => {
-      if (deletePendingRef.current) {
-        return false
-      }
-
+      if (deletePendingRef.current) return false
       setBlockedTransition(null)
       setForceLeaveArmed(false)
 
@@ -291,10 +241,8 @@ export function StudyPage({
               ? result.reason.message
               : 'Не удалось сохранить последние изменения материала.'
         })
-
         return false
       }
-
       return result.status === 'completed'
     },
     []
@@ -302,21 +250,13 @@ export function StudyPage({
 
   const selectStudyNode = useCallback(
     (nodeId: string | null): void => {
-      if (deletePendingRef.current) {
-        return
-      }
-
+      if (deletePendingRef.current) return
       void runAfterDraftFlush(
         () => {
           setInternalLinkHistory(clearStudyInternalLinkHistory())
-
           setInternalNavigation(null)
-
-          if (nodeId === null) {
-            selectNode(null)
-          } else {
-            openStudyNode(nodeId)
-          }
+          if (nodeId === null) selectNode(null)
+          else openStudyNode(nodeId)
         },
         materialIds.has(nodeId ?? '') ? nodeId : null
       )
@@ -326,15 +266,9 @@ export function StudyPage({
 
   useEffect(() => {
     function handleInternalNavigation(event: Event): void {
-      if (deletePendingRef.current) {
-        return
-      }
-
+      if (deletePendingRef.current) return
       const detail = (event as CustomEvent<StudyInternalLinkNavigateDetail>).detail
-
-      if (!detail?.materialId || (detail.kind !== 'material' && detail.kind !== 'heading')) {
-        return
-      }
+      if (!detail?.materialId || (detail.kind !== 'material' && detail.kind !== 'heading')) return
 
       void runAfterDraftFlush(() => {
         if (selectedNode?.type === 'material') {
@@ -349,23 +283,18 @@ export function StudyPage({
         }
 
         internalNavigationSequenceRef.current += 1
-
         setInternalNavigation({
           kind: detail.kind,
           materialId: detail.materialId,
           headingId: detail.headingId ?? null,
           requestId: internalNavigationSequenceRef.current
         })
-
         openStudyNode(detail.materialId)
       }, detail.materialId)
     }
 
     window.addEventListener(STUDY_INTERNAL_LINK_NAVIGATE_EVENT, handleInternalNavigation)
-
-    return () => {
-      window.removeEventListener(STUDY_INTERNAL_LINK_NAVIGATE_EVENT, handleInternalNavigation)
-    }
+    return () => window.removeEventListener(STUDY_INTERNAL_LINK_NAVIGATE_EVENT, handleInternalNavigation)
   }, [openStudyNode, runAfterDraftFlush, selectedNode])
 
   return (
@@ -388,9 +317,7 @@ export function StudyPage({
           homeSelected={selectedNode === null}
           expandLabel="Показать библиотеку"
           collapseLabel="Скрыть библиотеку"
-          onHomeSelect={() => {
-            selectStudyNode(null)
-          }}
+          onHomeSelect={() => selectStudyNode(null)}
           onCollapsedChange={setIsSidebarCollapsed}
         >
           {study.isLoading ? (
@@ -403,19 +330,14 @@ export function StudyPage({
               activeParentId={selectedParentId}
               collapsed={isSidebarCollapsed}
               onSelect={selectStudyNode}
-              onSelectRoot={() => {
-                selectStudyNode(null)
-              }}
+              onSelectRoot={() => selectStudyNode(null)}
               onToggleFolder={(node) => {
-                if (!deletePendingRef.current) {
-                  void study.toggleFolder(node)
-                }
+                if (!deletePendingRef.current) void study.toggleFolder(node)
               }}
               onRename={openRename}
               onDuplicate={(node) => {
                 void runAfterDraftFlush(async () => {
                   clearInternalLinkNavigation()
-
                   await study.duplicateNode(node.id)
                 })
               }}
@@ -423,39 +345,25 @@ export function StudyPage({
               onCreateFolder={(parentId) => {
                 void runAfterDraftFlush(async () => {
                   clearInternalLinkNavigation()
-
                   const parentFolder = study.nodes.find((node) => node.id === parentId)
-
                   if (parentFolder?.type === 'folder' && !parentFolder.isExpanded) {
                     await study.toggleFolder(parentFolder)
                   }
-
-                  await study.createNode({
-                    type: 'folder',
-                    parentId
-                  })
+                  await study.createNode({ type: 'folder', parentId })
                 })
               }}
               onCreateMaterial={(parentId) => {
                 void runAfterDraftFlush(async () => {
                   clearInternalLinkNavigation()
-
                   const parentFolder = study.nodes.find((node) => node.id === parentId)
-
                   if (parentFolder?.type === 'folder' && !parentFolder.isExpanded) {
                     await study.toggleFolder(parentFolder)
                   }
-
-                  await study.createNode({
-                    type: 'material',
-                    parentId
-                  })
+                  await study.createNode({ type: 'material', parentId })
                 })
               }}
               onMove={(input) => {
-                if (!deletePendingRef.current) {
-                  void study.moveNode(input)
-                }
+                if (!deletePendingRef.current) void study.moveNode(input)
               }}
             />
           )}
@@ -476,21 +384,15 @@ export function StudyPage({
               node={selectedNode}
               focusMode={focusMode}
               onFocusModeChange={onFocusModeChange}
-              onRename={() => {
-                openRename(selectedNode)
-              }}
+              onRename={() => openRename(selectedNode)}
               onBack={
                 canNavigateBack
                   ? () => {
                       const backTarget = internalLinkBackTarget
-
-                      if (!backTarget) {
-                        return
-                      }
+                      if (!backTarget) return
 
                       void runAfterDraftFlush(() => {
                         internalNavigationSequenceRef.current += 1
-
                         setInternalNavigation({
                           kind: 'material',
                           materialId: backTarget.sourceMaterialId,
@@ -499,9 +401,7 @@ export function StudyPage({
                           revealSourceBlockId: backTarget.sourceBlockId,
                           requestId: internalNavigationSequenceRef.current
                         })
-
                         openStudyNode(backTarget.sourceMaterialId)
-
                         setInternalLinkHistory(normalizedInternalLinkHistory.slice(0, -1))
                       }, backTarget.sourceMaterialId)
                     }
@@ -515,67 +415,52 @@ export function StudyPage({
                   current?.requestId === requestId ? null : current
                 )
               }}
+              onCodeApplied={handleCodeApplied}
             />
           </Suspense>
         ) : selectedNode?.type === 'folder' ? (
-          <FolderWorkspace
+          <StudyFolderCodeWorkspace
+            key={selectedNode.id}
             node={selectedNode}
-            items={study.nodes.filter((node) => node.parentId === selectedNode.id)}
-            onSelect={selectStudyNode}
-            onRename={() => {
-              openRename(selectedNode)
-            }}
-            onCreateFolder={() => {
-              void runAfterDraftFlush(async () => {
-                clearInternalLinkNavigation()
-
-                await study.createNode({
-                  type: 'folder',
-                  parentId: selectedNode.id
+            onApplied={handleCodeApplied}
+          >
+            <FolderWorkspace
+              node={selectedNode}
+              items={study.nodes.filter((node) => node.parentId === selectedNode.id)}
+              onSelect={selectStudyNode}
+              onRename={() => openRename(selectedNode)}
+              onCreateFolder={() => {
+                void runAfterDraftFlush(async () => {
+                  clearInternalLinkNavigation()
+                  await study.createNode({ type: 'folder', parentId: selectedNode.id })
                 })
-              })
-            }}
-            onCreateMaterial={() => {
-              void runAfterDraftFlush(async () => {
-                clearInternalLinkNavigation()
-
-                await study.createNode({
-                  type: 'material',
-                  parentId: selectedNode.id
+              }}
+              onCreateMaterial={() => {
+                void runAfterDraftFlush(async () => {
+                  clearInternalLinkNavigation()
+                  await study.createNode({ type: 'material', parentId: selectedNode.id })
                 })
-              })
-            }}
-            onIconChange={(icon) => {
-              if (!deletePendingRef.current) {
-                void study.updateFolderIcon(selectedNode.id, icon)
-              }
-            }}
-          />
+              }}
+              onIconChange={(icon) => {
+                if (!deletePendingRef.current) void study.updateFolderIcon(selectedNode.id, icon)
+              }}
+            />
+          </StudyFolderCodeWorkspace>
         ) : (
           <StudyHome
             nodes={study.nodes}
             isLoading={study.isLoading}
-            onOpen={(nodeId) => {
-              selectStudyNode(nodeId)
-            }}
+            onOpen={(nodeId) => selectStudyNode(nodeId)}
             onCreateFolder={() => {
               void runAfterDraftFlush(async () => {
                 clearInternalLinkNavigation()
-
-                await study.createNode({
-                  type: 'folder',
-                  parentId: null
-                })
+                await study.createNode({ type: 'folder', parentId: null })
               })
             }}
             onCreateMaterial={() => {
               void runAfterDraftFlush(async () => {
                 clearInternalLinkNavigation()
-
-                await study.createNode({
-                  type: 'material',
-                  parentId: null
-                })
+                await study.createNode({ type: 'material', parentId: null })
               })
             }}
           />
@@ -608,7 +493,6 @@ export function StudyPage({
               setForceLeaveArmed(true)
               return
             }
-
             const transition = blockedTransition.run
             setBlockedTransition(null)
             setForceLeaveArmed(false)
@@ -621,9 +505,7 @@ export function StudyPage({
         target={renameTarget}
         value={renameValue}
         onOpenChange={(open) => {
-          if (!open && !deletePendingRef.current) {
-            setRenameTarget(null)
-          }
+          if (!open && !deletePendingRef.current) setRenameTarget(null)
         }}
         onValueChange={setRenameValue}
         onConfirm={confirmRename}
@@ -695,26 +577,17 @@ function FolderWorkspace({
   const folders = items
     .filter((item) => item.type === 'folder')
     .sort((first, second) => first.position - second.position)
-
   const materials = items
     .filter((item) => item.type === 'material')
     .sort((first, second) => first.position - second.position)
-
   const activeIcon = node.icon ?? 'folder'
 
   return (
     <section className="h-full overflow-y-auto bg-[var(--app-workspace)] px-8 py-7 max-[720px]:px-4 max-[720px]:py-5">
       <div className="mx-auto w-full max-w-[1240px] space-y-5">
         <section className="relative isolate overflow-hidden rounded-3xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[0_20px_70px_rgb(0_0_0/0.16)]">
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute -top-32 right-8 -z-10 size-80 rounded-full bg-violet-500/10 blur-3xl"
-          />
-
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute -bottom-44 -left-24 -z-10 size-80 rounded-full bg-violet-900/10 blur-3xl"
-          />
+          <div aria-hidden="true" className="pointer-events-none absolute -top-32 right-8 -z-10 size-80 rounded-full bg-violet-500/10 blur-3xl" />
+          <div aria-hidden="true" className="pointer-events-none absolute -bottom-44 -left-24 -z-10 size-80 rounded-full bg-violet-900/10 blur-3xl" />
 
           <div className="p-6 max-[720px]:p-4">
             <header className="flex items-start justify-between gap-6 max-[920px]:flex-col">
@@ -722,15 +595,9 @@ function FolderWorkspace({
                 <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-violet-500/20 bg-violet-500/12 text-violet-300 shadow-inner shadow-violet-500/5">
                   <StudyFolderIcon name={activeIcon} expanded className="size-6" />
                 </div>
-
                 <div className="min-w-0">
-                  <p className="text-[11px] font-semibold tracking-[0.12em] text-violet-300 uppercase">
-                    Папка библиотеки
-                  </p>
-
-                  <h1 className="mt-1 truncate text-3xl font-semibold tracking-[-0.035em] text-[var(--app-text)]">
-                    {node.title}
-                  </h1>
+                  <p className="text-[11px] font-semibold tracking-[0.12em] text-violet-300 uppercase">Папка библиотеки</p>
+                  <h1 className="mt-1 truncate text-3xl font-semibold tracking-[-0.035em] text-[var(--app-text)]">{node.title}</h1>
                 </div>
               </div>
 
@@ -739,14 +606,11 @@ function FolderWorkspace({
                   <Pencil aria-hidden="true" />
                   Переименовать
                 </StudyActionButton>
-
                 <FolderIconPicker value={activeIcon} onChange={onIconChange} />
-
                 <StudyActionButton type="button" onClick={onCreateFolder}>
                   <FolderPlus aria-hidden="true" />
                   Новая папка
                 </StudyActionButton>
-
                 <StudyActionButton type="button" variant="primary" onClick={onCreateMaterial}>
                   <FilePlus2 aria-hidden="true" />
                   Новый материал
@@ -755,59 +619,23 @@ function FolderWorkspace({
             </header>
 
             <div className="mt-6 grid grid-cols-3 gap-3 max-[760px]:grid-cols-1">
-              <WorkspaceStatCard
-                icon={<BookOpen aria-hidden="true" className="size-5" />}
-                value={items.length}
-                label="Всего"
-                description="Элементов в этой папке"
-              />
-
-              <WorkspaceStatCard
-                icon={<FileText aria-hidden="true" className="size-5" />}
-                value={materials.length}
-                label="Материалов"
-                description="Конспекты и записи"
-              />
-
-              <WorkspaceStatCard
-                icon={<Folder aria-hidden="true" className="size-5" />}
-                value={folders.length}
-                label="Папок"
-                description="Вложенных разделов"
-              />
+              <WorkspaceStatCard icon={<BookOpen aria-hidden="true" className="size-5" />} value={items.length} label="Всего" description="Элементов в этой папке" />
+              <WorkspaceStatCard icon={<FileText aria-hidden="true" className="size-5" />} value={materials.length} label="Материалов" description="Конспекты и записи" />
+              <WorkspaceStatCard icon={<Folder aria-hidden="true" className="size-5" />} value={folders.length} label="Папок" description="Вложенных разделов" />
             </div>
           </div>
         </section>
 
         <div className="grid grid-cols-[minmax(0,1.35fr)_minmax(300px,0.75fr)] items-start gap-5 max-[1040px]:grid-cols-1">
-          <FolderItemsSection
-            kind="material"
-            title="Материалы"
-            items={materials}
-            emptyText="В этой папке пока нет материалов"
-            onSelect={onSelect}
-          />
-
-          <FolderItemsSection
-            kind="folder"
-            title="Вложенные папки"
-            items={folders}
-            emptyText="Вложенных папок пока нет"
-            onSelect={onSelect}
-          />
+          <FolderItemsSection kind="material" title="Материалы" items={materials} emptyText="В этой папке пока нет материалов" onSelect={onSelect} />
+          <FolderItemsSection kind="folder" title="Вложенные папки" items={folders} emptyText="Вложенных папок пока нет" onSelect={onSelect} />
         </div>
       </div>
     </section>
   )
 }
 
-function FolderIconPicker({
-  value,
-  onChange
-}: {
-  value: StudyFolderIconName
-  onChange: (icon: StudyFolderIconName) => void
-}): React.JSX.Element {
+function FolderIconPicker({ value, onChange }: { value: StudyFolderIconName; onChange: (icon: StudyFolderIconName) => void }): React.JSX.Element {
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
@@ -816,18 +644,9 @@ function FolderIconPicker({
           Иконка
         </StudyActionButton>
       </DropdownMenu.Trigger>
-
       <DropdownMenu.Portal>
-        <DropdownMenu.Content
-          sideOffset={8}
-          align="end"
-          collisionPadding={12}
-          className="z-50 w-72 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-2 shadow-2xl shadow-black/35"
-        >
-          <DropdownMenu.Label className="px-2 py-2 text-xs font-medium text-[var(--app-muted)]">
-            Иконка папки
-          </DropdownMenu.Label>
-
+        <DropdownMenu.Content sideOffset={8} align="end" collisionPadding={12} className="z-50 w-72 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-2 shadow-2xl shadow-black/35">
+          <DropdownMenu.Label className="px-2 py-2 text-xs font-medium text-[var(--app-muted)]">Иконка папки</DropdownMenu.Label>
           <div className="grid max-h-[28rem] grid-cols-5 gap-1 overflow-y-auto pr-1">
             {STUDY_FOLDER_ICON_OPTIONS.map((option) => (
               <Tooltip key={option.value} content={option.label} side="top">
@@ -838,22 +657,15 @@ function FolderIconPicker({
                     'border-transparent text-[var(--app-muted)] transition-colors',
                     'hover:bg-white/[0.06] hover:text-[var(--app-text)]',
                     'focus:bg-white/[0.06] focus:text-[var(--app-text)]',
-                    option.value === value &&
-                      'border-violet-500/25 bg-violet-500/15 text-violet-200'
+                    option.value === value && 'border-violet-500/25 bg-violet-500/15 text-violet-200'
                   )}
-                  onSelect={() => {
-                    onChange(option.value)
-                  }}
+                  onSelect={() => onChange(option.value)}
                 >
-                  <StudyFolderIcon
-                    name={option.value}
-                    className={STUDY_FOLDER_ICON_SIDEBAR_CLASS_NAME}
-                  />
+                  <StudyFolderIcon name={option.value} className={STUDY_FOLDER_ICON_SIDEBAR_CLASS_NAME} />
                 </DropdownMenu.Item>
               </Tooltip>
             ))}
           </div>
-
           <DropdownMenu.Arrow className="fill-[var(--app-surface-raised)]" />
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
@@ -878,46 +690,27 @@ function FolderItemsSection({
 
   return (
     <WorkspacePanel
-      icon={
-        kind === 'folder' ? (
-          <Folder aria-hidden="true" className="size-5" />
-        ) : (
-          <FileText aria-hidden="true" className="size-5" />
-        )
-      }
+      icon={kind === 'folder' ? <Folder aria-hidden="true" className="size-5" /> : <FileText aria-hidden="true" className="size-5" />}
       title={title}
       count={items.length}
     >
       {items.length > 0 ? (
-        <div
-          className={cn(compact ? 'grid gap-2' : 'grid grid-cols-2 gap-3 max-[720px]:grid-cols-1')}
-        >
+        <div className={cn(compact ? 'grid gap-2' : 'grid grid-cols-2 gap-3 max-[720px]:grid-cols-1')}>
           {items.map((child) => (
             <WorkspaceNodeCard
               key={child.id}
               ariaLabel={`Открыть ${child.type === 'folder' ? 'папку' : 'материал'} «${child.title}»`}
               icon={
                 child.type === 'folder' ? (
-                  <StudyFolderIcon
-                    name={child.icon}
-                    expanded={child.isExpanded}
-                    className="size-5"
-                  />
+                  <StudyFolderIcon name={child.icon} expanded={child.isExpanded} className="size-5" />
                 ) : (
                   <FileText aria-hidden="true" className="size-5" />
                 )
               }
               title={child.title}
-              metadata={
-                <>
-                  {child.type === 'folder' ? 'Папка' : 'Материал'} ·{' '}
-                  {folderWorkspaceDateFormatter.format(new Date(child.updatedAt))}
-                </>
-              }
+              metadata={<>{child.type === 'folder' ? 'Папка' : 'Материал'} · {folderWorkspaceDateFormatter.format(new Date(child.updatedAt))}</>}
               compact={compact}
-              onOpen={() => {
-                onSelect(child.id)
-              }}
+              onOpen={() => onSelect(child.id)}
             />
           ))}
         </div>
