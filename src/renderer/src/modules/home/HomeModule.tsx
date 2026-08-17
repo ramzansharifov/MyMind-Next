@@ -16,6 +16,8 @@ import {
 
 import { requestAppModuleNavigation } from '../../app/module-navigation'
 import type { AppViewId } from '../../app/module-registry'
+import { ModuleHeader } from '../../shared/ui/ModuleHeader'
+import { StandardModulePage } from '../../shared/ui/StandardModulePage'
 
 const HOME_MODULES: Array<{
   id: Exclude<AppViewId, 'home' | 'settings'>
@@ -37,27 +39,13 @@ const HOME_MODULES: Array<{
 
 export function HomeModule(): React.JSX.Element {
   return (
-    <div className="h-full overflow-y-auto px-8 py-7">
-      <div className="mx-auto flex w-full max-w-[1240px] flex-col gap-4">
-        <section className="relative isolate overflow-hidden rounded-3xl border border-[var(--app-border)] bg-[var(--app-surface)] p-6 shadow-[0_20px_70px_rgb(0_0_0/0.16)]">
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute -top-32 right-8 -z-10 size-80 rounded-full bg-violet-500/10 blur-3xl"
-          />
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute -bottom-44 -left-24 -z-10 size-80 rounded-full bg-violet-900/10 blur-3xl"
-          />
-
-          <div className="flex items-center gap-4">
-            <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-violet-500/20 bg-violet-500/10 text-violet-300 shadow-inner shadow-violet-500/5">
-              <House aria-hidden="true" className="size-6" />
-            </div>
-            <h1 className="text-2xl font-semibold tracking-tight text-[var(--app-text)]">
-              Главная
-            </h1>
-          </div>
-        </section>
+    <StandardModulePage>
+      <div className="flex flex-col gap-5">
+        <ModuleHeader
+          icon={House}
+          title="Главная"
+          description="Все ключевые разделы MyMind в единой рабочей области."
+        />
 
         <section className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 shadow-[var(--app-shadow-card)]">
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-6">
@@ -81,6 +69,6 @@ export function HomeModule(): React.JSX.Element {
           </div>
         </section>
       </div>
-    </div>
+    </StandardModulePage>
   )
 }

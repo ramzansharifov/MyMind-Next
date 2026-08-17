@@ -16,7 +16,7 @@ import { appModuleRegistry, appModules, defineAppModules, getAppModule } from '.
 import { primaryNavigationItems, utilityNavigationItems } from './navigation'
 
 describe('app module registry', () => {
-  it('drives lookup and navigation from the same definitions', () => {
+  it('drives lookup, workspace layout and navigation from the same definitions', () => {
     expect(appModules).toEqual(Object.values(appModuleRegistry))
     expect(getAppModule('study')).toBe(appModuleRegistry.study)
     expect(getAppModule('boards')).toBe(appModuleRegistry.boards)
@@ -40,6 +40,13 @@ describe('app module registry', () => {
     expect(appModuleRegistry.music.icon).toBe(Disc3)
     expect(appModuleRegistry.finance.icon).toBe(Wallet)
     expect(appModuleRegistry.passwords.icon).toBe(KeyRound)
+    expect(appModuleRegistry.study.workspaceLayout).toBe('study')
+    expect(appModuleRegistry.boards.workspaceLayout).toBe('boards')
+    expect(
+      Object.values(appModuleRegistry)
+        .filter(({ id }) => id !== 'study' && id !== 'boards')
+        .every(({ workspaceLayout }) => workspaceLayout === 'standard')
+    ).toBe(true)
     expect(primaryNavigationItems.map(({ id }) => id)).toEqual([
       'study',
       'boards',

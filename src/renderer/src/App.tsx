@@ -9,6 +9,7 @@ import { AppShell } from './app/AppShell'
 import { APP_MODULE_NAVIGATE_EVENT, type AppModuleNavigationRequest } from './app/module-navigation'
 import { getAppModule } from './app/module-registry'
 import { type AppViewId } from './app/navigation'
+import { WorkspaceLayout } from './app/WorkspaceLayout'
 import { flushActiveBoardDraft } from './modules/boards/lib/board-draft-lifecycle'
 import { flushActiveNotesDraft } from './modules/notes/lib/notes-draft-lifecycle'
 import { flushActiveStudyDraft } from './modules/study/lib/study-draft-lifecycle'
@@ -133,14 +134,16 @@ function AppContent(): React.JSX.Element {
         scope={activeModule.id}
         resetKey={`${activeModule.id}:${activeResourceId ?? ''}`}
       >
-        <Suspense fallback={<AppViewLoadingFallback label={activeModule.loadingLabel} />}>
-          <ActiveModule
-            resourceId={activeResourceId}
-            onResourceHandled={() => setActiveResourceId(null)}
-            focusMode={focusMode}
-            onFocusModeChange={setFocusMode}
-          />
-        </Suspense>
+        <WorkspaceLayout layout={activeModule.workspaceLayout}>
+          <Suspense fallback={<AppViewLoadingFallback label={activeModule.loadingLabel} />}>
+            <ActiveModule
+              resourceId={activeResourceId}
+              onResourceHandled={() => setActiveResourceId(null)}
+              focusMode={focusMode}
+              onFocusModeChange={setFocusMode}
+            />
+          </Suspense>
+        </WorkspaceLayout>
       </AppErrorBoundary>
       {isSaving && (
         <div

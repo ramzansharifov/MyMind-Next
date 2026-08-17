@@ -22,6 +22,8 @@ import type {
   FinanceTransaction,
   FinanceUserTransactionType
 } from '../../../../shared/contracts/finance'
+import { ModuleHeader } from '../../shared/ui/ModuleHeader'
+import { StandardModulePage } from '../../shared/ui/StandardModulePage'
 import { financeClient } from './api/finance-client'
 import { FinanceAccounts } from './components/FinanceAccounts'
 import { FinanceHome } from './components/FinanceHome'
@@ -134,200 +136,183 @@ export function FinancePage({
 
   if (isLoading && !dashboard) {
     return (
-      <main className="h-full overflow-y-auto bg-[var(--app-workspace)] px-8 py-7 max-[700px]:px-4 max-[700px]:py-5">
-        <div className="mx-auto w-full max-w-[1240px]">
-          <FinanceLoadingState />
-        </div>
-      </main>
+      <StandardModulePage>
+        <FinanceLoadingState />
+      </StandardModulePage>
     )
   }
   if (error && !dashboard) {
     return (
-      <main className="h-full overflow-y-auto bg-[var(--app-workspace)] px-8 py-7 max-[700px]:px-4 max-[700px]:py-5">
-        <div className="mx-auto w-full max-w-[1240px]">
-          <FinanceErrorState message={error} onRetry={() => void load()} />
-        </div>
-      </main>
+      <StandardModulePage>
+        <FinanceErrorState message={error} onRetry={() => void load()} />
+      </StandardModulePage>
     )
   }
   if (!dashboard) return <></>
 
   return (
-    <main className="h-full overflow-y-auto bg-[var(--app-workspace)] px-8 py-7 max-[700px]:px-4 max-[700px]:py-5">
-      <div data-finance-workspace-container className="mx-auto w-full max-w-[1240px]">
-        <header data-finance-hero className="mb-5">
-          <div className="flex items-center justify-between gap-6 max-[820px]:flex-col max-[820px]:items-start">
-            <div className="flex min-w-0 items-center gap-3">
-              <span
-                data-finance-module-icon
-                className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-violet-300"
-              >
-                <Wallet aria-hidden="true" className="size-5" />
-              </span>
-              <h1 className="text-3xl font-semibold tracking-[-0.035em] text-[var(--app-text)]">
-                Финансы
-              </h1>
-            </div>
-
-            {activePage !== 'reports' && (
-              <div
-                data-finance-header-actions
-                className="flex max-w-full shrink-0 flex-wrap justify-end gap-2 max-[820px]:w-full max-[820px]:justify-start"
-              >
-                {(activePage === 'home' || activePage === 'transactions') && (
-                  <>
-                    <FinanceButton tone="positive" onClick={() => openQuick('income')}>
-                      <ArrowDownLeft aria-hidden="true" className="size-4" />
-                      Доход
-                    </FinanceButton>
-                    <FinanceButton tone="danger" onClick={() => openQuick('expense')}>
-                      <ArrowUpRight aria-hidden="true" className="size-4" />
-                      Расход
-                    </FinanceButton>
-                    <FinanceButton tone="primary" onClick={() => openQuick('transfer')}>
-                      <ArrowRightLeft aria-hidden="true" className="size-4" />
-                      Перевод
-                    </FinanceButton>
-                  </>
-                )}
-                {activePage === 'templates' && (
-                  <FinanceButton tone="primary" onClick={() => setCreateTemplateOpen(true)}>
-                    <Plus aria-hidden="true" className="size-4" />
-                    Новый шаблон
+    <StandardModulePage>
+      <ModuleHeader
+        icon={Wallet}
+        title="Финансы"
+        description="Счета, транзакции, лимиты и аналитика в одной финансовой рабочей области."
+        className="mb-5"
+        actions={
+          activePage !== 'reports' ? (
+            <>
+              {(activePage === 'home' || activePage === 'transactions') && (
+                <>
+                  <FinanceButton tone="positive" onClick={() => openQuick('income')}>
+                    <ArrowDownLeft aria-hidden="true" className="size-4" />
+                    Доход
                   </FinanceButton>
-                )}
-                {activePage === 'limits' && (
-                  <FinanceButton tone="primary" onClick={() => setCreateLimitOpen(true)}>
-                    <Plus aria-hidden="true" className="size-4" />
-                    Новый лимит
+                  <FinanceButton tone="danger" onClick={() => openQuick('expense')}>
+                    <ArrowUpRight aria-hidden="true" className="size-4" />
+                    Расход
                   </FinanceButton>
-                )}
-                {activePage === 'accounts' && (
-                  <FinanceButton tone="primary" onClick={() => setCreateAccountOpen(true)}>
-                    <Plus aria-hidden="true" className="size-4" />
-                    Новый счёт
+                  <FinanceButton tone="primary" onClick={() => openQuick('transfer')}>
+                    <ArrowRightLeft aria-hidden="true" className="size-4" />
+                    Перевод
                   </FinanceButton>
-                )}
-                {activePage === 'tags' && (
-                  <FinanceButton tone="primary" onClick={() => setQuickTagType('expense')}>
-                    <Plus aria-hidden="true" className="size-4" />
-                    Новый тег
-                  </FinanceButton>
-                )}
-              </div>
-            )}
-          </div>
-
-          <nav
-            data-finance-navigation
-            className="mt-4 flex gap-1 overflow-x-auto rounded-2xl border border-[var(--app-border)] p-1.5"
-            aria-label="Навигация финансового модуля"
-          >
-            {tabs.map(({ id, label, icon: Icon }) => (
-              <button
-                key={id}
-                type="button"
-                aria-current={activePage === id ? 'page' : undefined}
-                className={`inline-flex h-10 shrink-0 items-center gap-2 rounded-xl px-4 text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-violet-500/35 ${activePage === id ? 'bg-violet-500 text-white shadow-sm' : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'}`}
-                onClick={() => {
-                  setActivePage(id)
-                  if (id !== 'accounts') setSelectedAccountId(null)
-                }}
-              >
-                <Icon aria-hidden="true" className="size-4" />
-                {label}
-              </button>
-            ))}
-          </nav>
-        </header>
-
-        {error && (
-          <div
-            role="alert"
-            className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-red-500/20 bg-red-500/[0.06] px-4 py-3 text-sm text-red-100"
-          >
-            <span>{error}</span>
+                </>
+              )}
+              {activePage === 'templates' && (
+                <FinanceButton tone="primary" onClick={() => setCreateTemplateOpen(true)}>
+                  <Plus aria-hidden="true" className="size-4" />
+                  Новый шаблон
+                </FinanceButton>
+              )}
+              {activePage === 'limits' && (
+                <FinanceButton tone="primary" onClick={() => setCreateLimitOpen(true)}>
+                  <Plus aria-hidden="true" className="size-4" />
+                  Новый лимит
+                </FinanceButton>
+              )}
+              {activePage === 'accounts' && (
+                <FinanceButton tone="primary" onClick={() => setCreateAccountOpen(true)}>
+                  <Plus aria-hidden="true" className="size-4" />
+                  Новый счёт
+                </FinanceButton>
+              )}
+              {activePage === 'tags' && (
+                <FinanceButton tone="primary" onClick={() => setQuickTagType('expense')}>
+                  <Plus aria-hidden="true" className="size-4" />
+                  Новый тег
+                </FinanceButton>
+              )}
+            </>
+          ) : undefined
+        }
+      >
+        <nav
+          data-finance-navigation
+          className="flex gap-1 overflow-x-auto rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-1.5"
+          aria-label="Навигация финансового модуля"
+        >
+          {tabs.map(({ id, label, icon: Icon }) => (
             <button
+              key={id}
               type="button"
-              className="underline"
+              aria-current={activePage === id ? 'page' : undefined}
+              className={`inline-flex h-10 shrink-0 items-center gap-2 rounded-xl px-4 text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-violet-500/35 ${activePage === id ? 'bg-violet-500 text-white shadow-sm' : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'}`}
               onClick={() => {
-                setError(null)
-                void load()
+                setActivePage(id)
+                if (id !== 'accounts') setSelectedAccountId(null)
               }}
             >
-              Повторить
+              <Icon aria-hidden="true" className="size-4" />
+              {label}
             </button>
-          </div>
-        )}
+          ))}
+        </nav>
+      </ModuleHeader>
 
-        {activePage === 'home' && (
-          <FinanceHome
-            dashboard={dashboard}
-            tags={tags}
-            onOpenPage={setActivePage}
-            onOpenAccount={(id) => {
-              setSelectedAccountId(id)
-              setActivePage('accounts')
+      {error && (
+        <div
+          role="alert"
+          className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-red-500/20 bg-red-500/[0.06] px-4 py-3 text-sm text-red-100"
+        >
+          <span>{error}</span>
+          <button
+            type="button"
+            className="underline"
+            onClick={() => {
+              setError(null)
+              void load()
             }}
-            onEditTransaction={(transaction) => {
-              setTransactionsInitial(transaction)
-              setActivePage('transactions')
-            }}
-          />
-        )}
-        {activePage === 'transactions' && (
-          <FinanceTransactions
-            accounts={dashboard.accounts}
-            tags={tags}
-            initialTransaction={transactionsInitial}
-            onChanged={async () => {
-              setTransactionsInitial(null)
-              await load()
-            }}
-          />
-        )}
-        {activePage === 'templates' && (
-          <FinanceTemplates
-            accounts={dashboard.accounts}
-            tags={tags}
-            templates={templates}
-            onChanged={load}
-          />
-        )}
-        {activePage === 'limits' && (
-          <FinanceLimits
-            accounts={dashboard.accounts}
-            tags={tags}
-            limits={dashboard.limits}
-            onChanged={load}
-          />
-        )}
-        {activePage === 'accounts' && (
-          <FinanceAccounts
-            accounts={dashboard.accounts}
-            selectedAccountId={selectedAccountId}
-            onSelectedAccountChange={setSelectedAccountId}
-            onChanged={load}
-          />
-        )}
-        {activePage === 'tags' && (
-          <FinanceTags
-            tags={tags}
-            accounts={dashboard.accounts}
-            limits={dashboard.limits}
-            baseCurrencyCode={dashboard.settings.baseCurrencyCode}
-            onChanged={load}
-          />
-        )}
-        {activePage === 'reports' && (
-          <FinanceReports
-            accounts={dashboard.accounts}
-            tags={tags}
-            baseCurrencyCode={dashboard.settings.baseCurrencyCode}
-            limitsVersion={refreshVersion}
-          />
-        )}
-      </div>
+          >
+            Повторить
+          </button>
+        </div>
+      )}
+
+      {activePage === 'home' && (
+        <FinanceHome
+          dashboard={dashboard}
+          tags={tags}
+          onOpenPage={setActivePage}
+          onOpenAccount={(id) => {
+            setSelectedAccountId(id)
+            setActivePage('accounts')
+          }}
+          onEditTransaction={(transaction) => {
+            setTransactionsInitial(transaction)
+            setActivePage('transactions')
+          }}
+        />
+      )}
+      {activePage === 'transactions' && (
+        <FinanceTransactions
+          accounts={dashboard.accounts}
+          tags={tags}
+          initialTransaction={transactionsInitial}
+          onChanged={async () => {
+            setTransactionsInitial(null)
+            await load()
+          }}
+        />
+      )}
+      {activePage === 'templates' && (
+        <FinanceTemplates
+          accounts={dashboard.accounts}
+          tags={tags}
+          templates={templates}
+          onChanged={load}
+        />
+      )}
+      {activePage === 'limits' && (
+        <FinanceLimits
+          accounts={dashboard.accounts}
+          tags={tags}
+          limits={dashboard.limits}
+          onChanged={load}
+        />
+      )}
+      {activePage === 'accounts' && (
+        <FinanceAccounts
+          accounts={dashboard.accounts}
+          selectedAccountId={selectedAccountId}
+          onSelectedAccountChange={setSelectedAccountId}
+          onChanged={load}
+        />
+      )}
+      {activePage === 'tags' && (
+        <FinanceTags
+          tags={tags}
+          accounts={dashboard.accounts}
+          limits={dashboard.limits}
+          baseCurrencyCode={dashboard.settings.baseCurrencyCode}
+          onChanged={load}
+        />
+      )}
+      {activePage === 'reports' && (
+        <FinanceReports
+          accounts={dashboard.accounts}
+          tags={tags}
+          baseCurrencyCode={dashboard.settings.baseCurrencyCode}
+          limitsVersion={refreshVersion}
+        />
+      )}
 
       <FinanceAccountDialog
         open={createAccountOpen}
@@ -369,6 +354,6 @@ export function FinancePage({
         onOpenChange={setQuickTransactionOpen}
         onSaved={async () => load()}
       />
-    </main>
+    </StandardModulePage>
   )
 }

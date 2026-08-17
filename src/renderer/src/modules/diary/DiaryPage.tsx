@@ -15,6 +15,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import type { DiarySummary } from '../../../../shared/contracts/diary'
 import { DeleteConfirmationDialog } from '../../shared/ui/DeleteConfirmationDialog'
+import { ModuleHeader } from '../../shared/ui/ModuleHeader'
+import { StandardModulePage } from '../../shared/ui/StandardModulePage'
 import { diaryClient } from './api/diary-client'
 import { DiaryCalendar } from './components/DiaryCalendar'
 import { DiaryDialog } from './components/DiaryDialog'
@@ -162,150 +164,141 @@ export function DiaryPage({ resourceId, onResourceHandled }: DiaryPageProps): Re
 
   if (isLoading) {
     return (
-      <main className="h-full overflow-y-auto bg-[var(--app-workspace)] px-8 py-7 max-[700px]:px-4 max-[700px]:py-5">
-        <div className="mx-auto flex min-h-72 w-full max-w-[1240px] items-center justify-center text-sm text-[var(--app-muted)]">
+      <StandardModulePage>
+        <div className="flex min-h-72 items-center justify-center text-sm text-[var(--app-muted)]">
           <LoaderCircle className="mr-2 size-4 animate-spin" /> Загружаем дневники…
         </div>
-      </main>
+      </StandardModulePage>
     )
   }
 
-  return (
-    <main className="h-full overflow-y-auto bg-[var(--app-workspace)] px-8 py-7 max-[700px]:px-4 max-[700px]:py-5">
-      <div className="mx-auto w-full max-w-[1240px]">
-        <header className="mb-5 overflow-hidden rounded-[24px] border border-[var(--app-border)] bg-[var(--app-surface)] p-6 shadow-[var(--app-shadow-card)]">
-          <div className="flex items-center justify-between gap-5 max-[760px]:flex-col max-[760px]:items-start">
-            <div className="flex min-w-0 items-center gap-4">
-              <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-violet-500/20 bg-violet-500/10 text-violet-300 shadow-inner shadow-violet-500/5">
-                <BookHeart aria-hidden="true" className="size-6" />
-              </span>
-              <div className="min-w-0">
-                <h1 className="text-2xl font-semibold tracking-tight text-[var(--app-text)]">
-                  Дневник
-                </h1>
-                {selectedDiary && section !== 'library' && (
-                  <div className="mt-1 truncate text-xs text-[var(--app-muted)]">
-                    {selectedDiary.title}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {section === 'library' ? (
-              <button
-                type="button"
-                className="inline-flex h-10 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-medium text-white transition-colors hover:bg-violet-400"
-                onClick={() => setDialogMode('create')}
-              >
-                <Plus className="size-4" /> Новый дневник
-              </button>
-            ) : selectedDiary && section === 'calendar' ? (
-              <div
-                className="inline-flex h-11 items-center gap-1 rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-1 shadow-inner shadow-black/5"
-                aria-label="Выбор месяца календаря"
-              >
-                <button
-                  type="button"
-                  aria-label="Предыдущий месяц"
-                  className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:outline-none"
-                  onClick={() => shiftCalendarMonth(-1)}
-                >
-                  <ChevronLeft aria-hidden="true" className="size-4" />
-                </button>
-                <div className="min-w-36 px-2 text-center text-sm font-semibold text-[var(--app-text)] capitalize tabular-nums max-[420px]:min-w-28">
-                  {calendarMonthTitle}
-                </div>
-                <button
-                  type="button"
-                  aria-label="Следующий месяц"
-                  className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:outline-none"
-                  onClick={() => shiftCalendarMonth(1)}
-                >
-                  <ChevronRight aria-hidden="true" className="size-4" />
-                </button>
-              </div>
-            ) : selectedDiary ? (
-              <button
-                type="button"
-                className="rounded-xl border border-[var(--app-border)] bg-[var(--app-control)] px-4 py-2 text-sm text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-                onClick={() => setSection('library')}
-              >
-                Сменить дневник
-              </button>
-            ) : null}
-          </div>
-
-          <nav
-            className="mt-4 flex gap-1 overflow-x-auto rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-1.5"
-            aria-label="Навигация дневника"
-          >
-            {diarySections
-              .filter((item) => !item.needsDiary || selectedDiary)
-              .map(({ id, label, icon: Icon }) => (
-                <button
-                  key={id}
-                  type="button"
-                  aria-current={section === id ? 'page' : undefined}
-                  className={`inline-flex h-10 shrink-0 items-center gap-2 rounded-xl px-4 text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-violet-500/35 ${section === id ? 'bg-violet-500 text-white shadow-sm' : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'}`}
-                  onClick={() => setSection(id)}
-                >
-                  <Icon aria-hidden="true" className="size-4" /> {label}
-                </button>
-              ))}
-          </nav>
-        </header>
-
-        {error && (
-          <div
-            role="alert"
-            className="mb-4 rounded-xl border border-red-500/20 bg-red-500/[0.06] px-4 py-3 text-sm text-red-200"
-          >
-            {error}
-          </div>
-        )}
-
-        {section === 'library' && <DiaryLibrary diaries={diaries} onOpenDiary={openDiary} />}
-
-        {selectedDiary && section === 'today' && (
-          <DiaryToday diary={selectedDiary} dayKey={localDayKey()} onChanged={handleChanged} />
-        )}
-
-        {selectedDiary && section === 'reader' && (
-          <DiaryReader
-            diary={selectedDiary}
-            requestedDayKey={readerDayKey}
-            refreshVersion={refreshVersion}
-            onDayChange={setReaderDayKey}
-          />
-        )}
-
-        {selectedDiary && section === 'calendar' && (
-          <DiaryCalendar
-            diary={selectedDiary}
-            refreshVersion={refreshVersion}
-            cursor={calendarCursor}
-            onOpenDay={(dayKey) => {
-              setReaderDayKey(dayKey)
-              setSection('reader')
-            }}
-          />
-        )}
-
-        {selectedDiary && section === 'reports' && (
-          <DiaryReports diary={selectedDiary} refreshVersion={refreshVersion} />
-        )}
-
-        {selectedDiary && section === 'settings' && (
-          <DiarySettings
-            key={selectedDiary.id}
-            diary={selectedDiary}
-            canDelete={diaries.length > 1}
-            onEdit={() => setDialogMode('edit')}
-            onAppearanceChange={updatePaperAppearance}
-            onDelete={() => setDeleteOpen(true)}
-          />
-        )}
+  const headerActions =
+    section === 'library' ? (
+      <button
+        type="button"
+        className="inline-flex h-11 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-medium text-white transition-colors hover:bg-violet-400"
+        onClick={() => setDialogMode('create')}
+      >
+        <Plus className="size-4" /> Новый дневник
+      </button>
+    ) : selectedDiary && section === 'calendar' ? (
+      <div
+        className="inline-flex h-11 items-center gap-1 rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-1 shadow-inner shadow-black/5"
+        aria-label="Выбор месяца календаря"
+      >
+        <button
+          type="button"
+          aria-label="Предыдущий месяц"
+          className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:outline-none"
+          onClick={() => shiftCalendarMonth(-1)}
+        >
+          <ChevronLeft aria-hidden="true" className="size-4" />
+        </button>
+        <div className="min-w-36 px-2 text-center text-sm font-semibold text-[var(--app-text)] capitalize tabular-nums max-[420px]:min-w-28">
+          {calendarMonthTitle}
+        </div>
+        <button
+          type="button"
+          aria-label="Следующий месяц"
+          className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:outline-none"
+          onClick={() => shiftCalendarMonth(1)}
+        >
+          <ChevronRight aria-hidden="true" className="size-4" />
+        </button>
       </div>
+    ) : selectedDiary ? (
+      <button
+        type="button"
+        className="h-11 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 text-sm text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+        onClick={() => setSection('library')}
+      >
+        Сменить дневник
+      </button>
+    ) : undefined
+
+  return (
+    <StandardModulePage>
+      <ModuleHeader
+        icon={BookHeart}
+        title="Дневник"
+        description={
+          selectedDiary && section !== 'library'
+            ? selectedDiary.title
+            : 'Личные записи, календарь, настроение и история в одном пространстве.'
+        }
+        className="mb-5"
+        actions={headerActions}
+      >
+        <nav
+          className="flex gap-1 overflow-x-auto rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-1.5"
+          aria-label="Навигация дневника"
+        >
+          {diarySections
+            .filter((item) => !item.needsDiary || selectedDiary)
+            .map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                type="button"
+                aria-current={section === id ? 'page' : undefined}
+                className={`inline-flex h-10 shrink-0 items-center gap-2 rounded-xl px-4 text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-violet-500/35 ${section === id ? 'bg-violet-500 text-white shadow-sm' : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'}`}
+                onClick={() => setSection(id)}
+              >
+                <Icon aria-hidden="true" className="size-4" /> {label}
+              </button>
+            ))}
+        </nav>
+      </ModuleHeader>
+
+      {error && (
+        <div
+          role="alert"
+          className="mb-4 rounded-xl border border-red-500/20 bg-red-500/[0.06] px-4 py-3 text-sm text-red-200"
+        >
+          {error}
+        </div>
+      )}
+
+      {section === 'library' && <DiaryLibrary diaries={diaries} onOpenDiary={openDiary} />}
+
+      {selectedDiary && section === 'today' && (
+        <DiaryToday diary={selectedDiary} dayKey={localDayKey()} onChanged={handleChanged} />
+      )}
+
+      {selectedDiary && section === 'reader' && (
+        <DiaryReader
+          diary={selectedDiary}
+          requestedDayKey={readerDayKey}
+          refreshVersion={refreshVersion}
+          onDayChange={setReaderDayKey}
+        />
+      )}
+
+      {selectedDiary && section === 'calendar' && (
+        <DiaryCalendar
+          diary={selectedDiary}
+          refreshVersion={refreshVersion}
+          cursor={calendarCursor}
+          onOpenDay={(dayKey) => {
+            setReaderDayKey(dayKey)
+            setSection('reader')
+          }}
+        />
+      )}
+
+      {selectedDiary && section === 'reports' && (
+        <DiaryReports diary={selectedDiary} refreshVersion={refreshVersion} />
+      )}
+
+      {selectedDiary && section === 'settings' && (
+        <DiarySettings
+          key={selectedDiary.id}
+          diary={selectedDiary}
+          canDelete={diaries.length > 1}
+          onEdit={() => setDialogMode('edit')}
+          onAppearanceChange={updatePaperAppearance}
+          onDelete={() => setDeleteOpen(true)}
+        />
+      )}
 
       <DiaryDialog
         open={dialogMode !== null}
@@ -334,6 +327,6 @@ export function DiaryPage({ resourceId, onResourceHandled }: DiaryPageProps): Re
         disabledReason={diaries.length <= 1 ? 'Нельзя удалить последний дневник.' : null}
         onConfirm={removeDiary}
       />
-    </main>
+    </StandardModulePage>
   )
 }

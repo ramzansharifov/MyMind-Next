@@ -16,6 +16,8 @@ import {
   type LucideIcon
 } from 'lucide-react'
 
+import type { AppWorkspaceLayout } from './WorkspaceLayout'
+
 export type AppNavigationGroup = 'home' | 'primary' | 'utility'
 
 export interface AppModuleProps {
@@ -31,6 +33,7 @@ export interface AppModuleDefinition {
   loadingLabel: string
   icon: LucideIcon
   navigationGroup: AppNavigationGroup
+  workspaceLayout: AppWorkspaceLayout
   component: ComponentType<AppModuleProps>
 }
 
@@ -91,6 +94,7 @@ export const appModuleRegistry = defineAppModules({
     loadingLabel: 'Загрузка главной',
     icon: House,
     navigationGroup: 'home',
+    workspaceLayout: 'standard',
     component: HomeModule
   },
   study: {
@@ -99,6 +103,7 @@ export const appModuleRegistry = defineAppModules({
     loadingLabel: 'Загрузка обучения',
     icon: GraduationCap,
     navigationGroup: 'primary',
+    workspaceLayout: 'study',
     component: StudyModule
   },
   boards: {
@@ -107,6 +112,7 @@ export const appModuleRegistry = defineAppModules({
     loadingLabel: 'Загрузка досок',
     icon: Presentation,
     navigationGroup: 'primary',
+    workspaceLayout: 'boards',
     component: BoardsModule
   },
   notes: {
@@ -115,6 +121,7 @@ export const appModuleRegistry = defineAppModules({
     loadingLabel: 'Загрузка заметок',
     icon: Notebook,
     navigationGroup: 'primary',
+    workspaceLayout: 'standard',
     component: NotesModule
   },
   tasks: {
@@ -123,6 +130,7 @@ export const appModuleRegistry = defineAppModules({
     loadingLabel: 'Загрузка задач',
     icon: ListTodo,
     navigationGroup: 'primary',
+    workspaceLayout: 'standard',
     component: TasksModule
   },
   habits: {
@@ -131,6 +139,7 @@ export const appModuleRegistry = defineAppModules({
     loadingLabel: 'Загрузка привычек',
     icon: Repeat2,
     navigationGroup: 'primary',
+    workspaceLayout: 'standard',
     component: HabitsModule
   },
   workouts: {
@@ -139,6 +148,7 @@ export const appModuleRegistry = defineAppModules({
     loadingLabel: 'Загрузка тренировок',
     icon: Dumbbell,
     navigationGroup: 'primary',
+    workspaceLayout: 'standard',
     component: WorkoutsModule
   },
   diary: {
@@ -147,6 +157,7 @@ export const appModuleRegistry = defineAppModules({
     loadingLabel: 'Загрузка дневника',
     icon: BookHeart,
     navigationGroup: 'primary',
+    workspaceLayout: 'standard',
     component: DiaryModule
   },
   movies: {
@@ -155,6 +166,7 @@ export const appModuleRegistry = defineAppModules({
     loadingLabel: 'Загрузка фильмов',
     icon: Film,
     navigationGroup: 'primary',
+    workspaceLayout: 'standard',
     component: MoviesModule
   },
   music: {
@@ -163,6 +175,7 @@ export const appModuleRegistry = defineAppModules({
     loadingLabel: 'Загрузка музыки',
     icon: Disc3,
     navigationGroup: 'primary',
+    workspaceLayout: 'standard',
     component: MusicModule
   },
   finance: {
@@ -171,6 +184,7 @@ export const appModuleRegistry = defineAppModules({
     loadingLabel: 'Загрузка финансов',
     icon: Wallet,
     navigationGroup: 'primary',
+    workspaceLayout: 'standard',
     component: FinanceModule
   },
   passwords: {
@@ -179,6 +193,7 @@ export const appModuleRegistry = defineAppModules({
     loadingLabel: 'Загрузка паролей',
     icon: KeyRound,
     navigationGroup: 'primary',
+    workspaceLayout: 'standard',
     component: PasswordsModule
   },
   settings: {
@@ -187,6 +202,7 @@ export const appModuleRegistry = defineAppModules({
     loadingLabel: 'Загрузка настроек',
     icon: Settings,
     navigationGroup: 'utility',
+    workspaceLayout: 'standard',
     component: SettingsModule
   }
 })

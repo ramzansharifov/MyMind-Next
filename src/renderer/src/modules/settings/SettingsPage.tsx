@@ -16,6 +16,8 @@ import type { SystemHealth } from '../../../../shared/contracts/system'
 import { useAppearance } from '../../app/appearance/appearance-context'
 import { APP_ACCENT_OPTIONS, APP_THEME_OPTIONS } from '../../app/appearance/appearance-options'
 import { cn } from '../../shared/lib/cn'
+import { ModuleHeader } from '../../shared/ui/ModuleHeader'
+import { StandardModulePage } from '../../shared/ui/StandardModulePage'
 import { AppearanceSettingsSection } from './AppearanceSettingsSection'
 import { SettingsBreadcrumbs, type SettingsBreadcrumbItem } from './SettingsBreadcrumbs'
 import {
@@ -115,12 +117,10 @@ export function SettingsPage({ health, error, isLoading }: SettingsPageProps): R
     route.page === 'boards-topic'
 
   return (
-    <section className="h-full overflow-y-auto bg-[var(--app-workspace)] px-8 py-7 max-[720px]:px-4 max-[720px]:py-5">
-      <div className="mx-auto w-full max-w-[1240px]">
-        {breadcrumbItems.length > 0 && <SettingsBreadcrumbs items={breadcrumbItems} />}
-        <div className={cn(hidesLegacyBackButton && '[&>div>header>button]:hidden')}>{content}</div>
-      </div>
-    </section>
+    <StandardModulePage>
+      {breadcrumbItems.length > 0 && <SettingsBreadcrumbs items={breadcrumbItems} />}
+      <div className={cn(hidesLegacyBackButton && '[&>div>header>button]:hidden')}>{content}</div>
+    </StandardModulePage>
   )
 }
 
@@ -128,9 +128,7 @@ function getSettingsBreadcrumbItems(
   route: SettingsRoute,
   navigate: (route: SettingsRoute) => void
 ): SettingsBreadcrumbItem[] {
-  if (route.page === 'overview') {
-    return []
-  }
+  if (route.page === 'overview') return []
 
   const items: SettingsBreadcrumbItem[] = [
     {
@@ -306,65 +304,24 @@ function SettingsNavigationCard({
 
 function SettingsHero(): React.JSX.Element {
   return (
-    <header className="relative isolate overflow-hidden rounded-3xl border border-[var(--app-border)] bg-[var(--app-surface)] p-6 shadow-[0_20px_70px_rgb(0_0_0/0.16)] max-[720px]:p-4">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -top-32 right-8 -z-10 size-80 rounded-full bg-violet-500/10 blur-3xl"
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -bottom-44 -left-24 -z-10 size-80 rounded-full bg-violet-900/10 blur-3xl"
-      />
-
-      <div className="flex items-start gap-4">
-        <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-violet-500/20 bg-violet-500/12 text-violet-300 shadow-inner shadow-violet-500/5">
-          <Settings aria-hidden="true" className="size-6" />
-        </div>
-
-        <div className="min-w-0">
-          <p className="text-[11px] font-semibold tracking-[0.12em] text-violet-300 uppercase">
-            Система
-          </p>
-          <h1 className="mt-1 text-3xl font-semibold tracking-[-0.035em] text-[var(--app-text)]">
-            Настройки
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--app-muted)]">
-            Настройте MyMind под себя, изучите возможности приложения и проверьте состояние
-            локальных компонентов.
-          </p>
-        </div>
-      </div>
-    </header>
+    <ModuleHeader
+      icon={Settings}
+      eyebrow="Система"
+      title="Настройки"
+      description="Настройте MyMind под себя, изучите возможности приложения и проверьте состояние локальных компонентов."
+    />
   )
 }
 
 function AppearanceSettingsPage(): React.JSX.Element {
   return (
     <div className="space-y-5">
-      <header className="relative isolate overflow-hidden rounded-3xl border border-[var(--app-border)] bg-[var(--app-surface)] p-6 shadow-[0_20px_70px_rgb(0_0_0/0.16)] max-[720px]:p-4">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -top-28 right-8 -z-10 size-72 rounded-full bg-violet-500/12 blur-3xl"
-        />
-
-        <div className="flex items-start gap-4">
-          <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-violet-500/20 bg-violet-500/12 text-violet-300 shadow-inner shadow-violet-500/5">
-            <Sparkles aria-hidden="true" className="size-6" />
-          </div>
-
-          <div className="min-w-0">
-            <p className="text-[11px] font-semibold tracking-[0.12em] text-violet-300 uppercase">
-              Персонализация
-            </p>
-            <h1 className="mt-1 text-3xl font-semibold tracking-[-0.035em] text-[var(--app-text)]">
-              Внешний вид
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--app-muted)]">
-              Тема и акцент применяются сразу ко всему приложению и сохраняются между запусками.
-            </p>
-          </div>
-        </div>
-      </header>
+      <ModuleHeader
+        icon={Sparkles}
+        eyebrow="Персонализация"
+        title="Внешний вид"
+        description="Тема и акцент применяются сразу ко всему приложению и сохраняются между запусками."
+      />
 
       <AppearanceSettingsSection />
     </div>
