@@ -5,6 +5,7 @@ import type { HabitsApi } from './habits'
 import type { MoviesApi } from './movies'
 import type { MusicApi } from './music'
 import type { NotesApi } from './notes'
+import type { PasswordsApi } from './passwords'
 import type { PreferencesApi } from './preferences'
 import type { StudyApi } from './study'
 import type { TasksApi } from './tasks'
@@ -58,5 +59,6 @@ export interface MyMindApi {
   music: MusicApi
   tasks: TasksApi
   habits: HabitsApi
+  passwords: PasswordsApi
   preferences: PreferencesApi
 }
