@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react'
 
+import '../assets/workspace-layout.css'
+
 export type AppWorkspaceLayout = 'standard' | 'study' | 'boards'
 
 interface WorkspaceLayoutProps {
