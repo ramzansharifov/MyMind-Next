@@ -35,6 +35,17 @@ import {
 import { clearTrackedPasswordClipboard, copyPasswordValue } from '../services/password-clipboard'
 import { mainOperationTracker } from '../services/main-operation-tracker'
 
+let vaultLifecycleQueue: Promise<void> = Promise.resolve()
+
+function runVaultLifecycleOperation<T>(operation: () => T | Promise<T>): Promise<T> {
+  const result = vaultLifecycleQueue.then(operation, operation)
+  vaultLifecycleQueue = result.then(
+    () => undefined,
+    () => undefined
+  )
+  return result
+}
+
 function safeWebsite(value: string): string {
   let url: URL
   try {
@@ -56,20 +67,32 @@ export function registerPasswordsIpcHandlers(): void {
     mainOperationTracker.run(() => getPasswordVaultStatus())
   )
   ipcMain.handle(PASSWORDS_IPC_CHANNELS.setupVault, (_event, rawInput: unknown) =>
-    mainOperationTracker.run(() => setupPasswordVault(setupPasswordVaultInputSchema.parse(rawInput)))
+    mainOperationTracker.run(() =>
+      runVaultLifecycleOperation(() =>
+        setupPasswordVault(setupPasswordVaultInputSchema.parse(rawInput))
+      )
+    )
   )
   ipcMain.handle(PASSWORDS_IPC_CHANNELS.unlockVault, (_event, rawInput: unknown) =>
-    mainOperationTracker.run(() => unlockPasswordVault(unlockPasswordVaultInputSchema.parse(rawInput)))
+    mainOperationTracker.run(() =>
+      runVaultLifecycleOperation(() =>
+        unlockPasswordVault(unlockPasswordVaultInputSchema.parse(rawInput))
+      )
+    )
   )
   ipcMain.handle(PASSWORDS_IPC_CHANNELS.lockVault, () =>
-    mainOperationTracker.run(() => {
-      clearTrackedPasswordClipboard()
-      return lockPasswordVault()
-    })
+    mainOperationTracker.run(() =>
+      runVaultLifecycleOperation(() => {
+        clearTrackedPasswordClipboard()
+        return lockPasswordVault()
+      })
+    )
   )
   ipcMain.handle(PASSWORDS_IPC_CHANNELS.changeMasterPassword, (_event, rawInput: unknown) =>
     mainOperationTracker.run(() =>
-      changeMasterPassword(changeMasterPasswordInputSchema.parse(rawInput))
+      runVaultLifecycleOperation(() =>
+        changeMasterPassword(changeMasterPasswordInputSchema.parse(rawInput))
+      )
     )
   )
   ipcMain.handle(PASSWORDS_IPC_CHANNELS.listOverview, () =>
@@ -107,7 +130,9 @@ export function registerPasswordsIpcHandlers(): void {
       const input = copyPasswordItemFieldInputSchema.parse(rawInput)
       const item = getPasswordItem(input.id)
       const value = input.field === 'password' ? item.password : item.username
-      if (!value) throw new Error(input.field === 'username' ? 'Логин не указан' : 'Пароль не указан')
+      if (!value) {
+        throw new Error(input.field === 'username' ? 'Логин не указан' : 'Пароль не указан')
+      }
       copyPasswordValue(value)
       return true
     })
