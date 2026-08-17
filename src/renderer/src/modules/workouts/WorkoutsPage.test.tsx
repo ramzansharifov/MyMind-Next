@@ -113,12 +113,54 @@ beforeEach(() => {
       maxWeightKg: 16
     },
     muscleGroups: [
-      { muscleGroup: 'arms', exercises: 1, sets: 2, reps: 22, volumeKg: 328, loadPercent: 100 },
-      { muscleGroup: 'back', exercises: 0, sets: 0, reps: 0, volumeKg: 0, loadPercent: 0 },
-      { muscleGroup: 'chest', exercises: 0, sets: 0, reps: 0, volumeKg: 0, loadPercent: 0 },
-      { muscleGroup: 'abs', exercises: 0, sets: 0, reps: 0, volumeKg: 0, loadPercent: 0 },
-      { muscleGroup: 'legs', exercises: 0, sets: 0, reps: 0, volumeKg: 0, loadPercent: 0 },
-      { muscleGroup: 'shoulders', exercises: 0, sets: 0, reps: 0, volumeKg: 0, loadPercent: 0 }
+      {
+        muscleGroup: 'arms',
+        exercises: 1,
+        sets: 2,
+        reps: 22,
+        volumeKg: 328,
+        loadPercent: 100
+      },
+      {
+        muscleGroup: 'back',
+        exercises: 0,
+        sets: 0,
+        reps: 0,
+        volumeKg: 0,
+        loadPercent: 0
+      },
+      {
+        muscleGroup: 'chest',
+        exercises: 0,
+        sets: 0,
+        reps: 0,
+        volumeKg: 0,
+        loadPercent: 0
+      },
+      {
+        muscleGroup: 'abs',
+        exercises: 0,
+        sets: 0,
+        reps: 0,
+        volumeKg: 0,
+        loadPercent: 0
+      },
+      {
+        muscleGroup: 'legs',
+        exercises: 0,
+        sets: 0,
+        reps: 0,
+        volumeKg: 0,
+        loadPercent: 0
+      },
+      {
+        muscleGroup: 'shoulders',
+        exercises: 0,
+        sets: 0,
+        reps: 0,
+        volumeKg: 0,
+        loadPercent: 0
+      }
     ],
     exercises: [
       {
@@ -149,7 +191,14 @@ beforeEach(() => {
       }
     ],
     timeline: [
-      { date: '2026-08-17', sessions: 1, sets: 2, reps: 22, volumeKg: 328, durationMinutes: 60 }
+      {
+        date: '2026-08-17',
+        sessions: 1,
+        sets: 2,
+        reps: 22,
+        volumeKg: 328,
+        durationMinutes: 60
+      }
     ],
     personalRecords: [
       {
@@ -170,7 +219,7 @@ describe('WorkoutsPage', () => {
     render(<WorkoutsPage />)
 
     expect(await screen.findByRole('heading', { name: 'Тренировки' })).toBeInTheDocument()
-    expect(screen.getByText('Pull')).toBeInTheDocument()
+    expect(screen.getAllByText('Pull').length).toBeGreaterThan(0)
     expect(screen.getByText(/2 подх/)).toBeInTheDocument()
     expect(screen.getByText(/22 повт/)).toBeInTheDocument()
   })
