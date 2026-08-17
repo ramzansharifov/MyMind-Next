@@ -9,3 +9,18 @@
 [data-workspace-layout='standard'] [data-standard-module-container] {
   max-width: var(--app-standard-content-width);
 }
+
+[data-notes-home-embedded] > section {
+  height: auto;
+  overflow: visible;
+  padding: 0;
+  background: transparent;
+}
+
+[data-notes-home-embedded] [data-notes-home-container] {
+  max-width: none !important;
+}
+
+[data-notes-home-embedded] [data-notes-hero] > header:first-child {
+  display: none;
+}
