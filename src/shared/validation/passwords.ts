@@ -17,7 +17,10 @@ export const setupPasswordVaultInputSchema = z.object({
 })
 
 export const unlockPasswordVaultInputSchema = z.object({
-  masterPassword: z.string().min(1, 'Введите мастер-пароль').max(256, 'Мастер-пароль слишком длинный')
+  masterPassword: z
+    .string()
+    .min(1, 'Введите мастер-пароль')
+    .max(256, 'Мастер-пароль слишком длинный')
 })
 
 export const changeMasterPasswordInputSchema = z
@@ -31,7 +34,11 @@ export const changeMasterPasswordInputSchema = z
   })
 
 const groupPayloadSchema = z.object({
-  name: z.string().trim().min(1, 'Введите название группы').max(80, 'Название группы слишком длинное'),
+  name: z
+    .string()
+    .trim()
+    .min(1, 'Введите название группы')
+    .max(80, 'Название группы слишком длинное'),
   icon: z.enum(PASSWORD_GROUP_ICONS),
   color: z.enum(PASSWORD_GROUP_COLORS)
 })
@@ -54,8 +61,12 @@ const itemPayloadSchema = z
     password: z.string().min(1, 'Введите пароль').max(1024, 'Пароль слишком длинный'),
     website: z.string().trim().max(2048, 'Адрес сайта слишком длинный'),
     notes: z.string().max(20_000, 'Заметка слишком длинная'),
-    tags: z.array(z.string().trim().min(1).max(40)).max(30, 'Можно добавить не более 30 тегов'),
-    customFields: z.array(customFieldSchema).max(20, 'Можно добавить не более 20 дополнительных полей'),
+    tags: z
+      .array(z.string().trim().min(1).max(40))
+      .max(30, 'Можно добавить не более 30 тегов'),
+    customFields: z
+      .array(customFieldSchema)
+      .max(20, 'Можно добавить не более 20 дополнительных полей'),
     favorite: z.boolean()
   })
   .superRefine((input, context) => {
@@ -79,7 +90,7 @@ const itemPayloadSchema = z
   })
 
 export const createPasswordItemInputSchema = itemPayloadSchema
-export const updatePasswordItemInputSchema = itemPayloadSchema.extend({ id: idSchema })
+export const updatePasswordItemInputSchema = itemPayloadSchema.safeExtend({ id: idSchema })
 export const deletePasswordItemInputSchema = z.object({ id: idSchema })
 export const getPasswordItemInputSchema = z.object({ id: idSchema })
 export const copyPasswordItemFieldInputSchema = z.object({
@@ -90,7 +101,11 @@ export const openPasswordItemWebsiteInputSchema = z.object({ id: idSchema })
 
 export const generatePasswordInputSchema = z
   .object({
-    length: z.number().int().min(8, 'Минимальная длина — 8 символов').max(128, 'Максимальная длина — 128 символов'),
+    length: z
+      .number()
+      .int()
+      .min(8, 'Минимальная длина — 8 символов')
+      .max(128, 'Максимальная длина — 128 символов'),
     lowercase: z.boolean(),
     uppercase: z.boolean(),
     digits: z.boolean(),
@@ -98,13 +113,17 @@ export const generatePasswordInputSchema = z
     excludeAmbiguous: z.boolean()
   })
   .superRefine((input, context) => {
-    const enabled = [input.lowercase, input.uppercase, input.digits, input.symbols].filter(Boolean).length
+    const enabled = [input.lowercase, input.uppercase, input.digits, input.symbols].filter(
+      Boolean
+    ).length
+
     if (enabled === 0) {
       context.addIssue({
         code: 'custom',
         message: 'Выберите хотя бы один набор символов'
       })
     }
+
     if (input.length < enabled) {
       context.addIssue({
         code: 'custom',
