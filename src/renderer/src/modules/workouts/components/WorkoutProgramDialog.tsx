@@ -1,0 +1,323 @@
+import { ArrowDown, ArrowUp, ListPlus, Plus, Trash2 } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+
+import type {
+  CreateWorkoutProgramInput,
+  UpdateWorkoutProgramInput,
+  WorkoutExerciseRecord,
+  WorkoutProgramRecord
+} from '../../../../../shared/contracts/workouts'
+import { AppDialog } from '../../../shared/ui/AppDialog'
+import { AppSelect } from '../../../shared/ui/AppSelect'
+import { workoutMuscleGroupLabel } from '../workout-options'
+
+const FORM_ID = 'workout-program-form'
+const NONE = '__none__'
+
+interface EditableProgramExercise {
+  exerciseId: string
+  plannedSets: number
+  targetReps: string
+  notes: string
+}
+
+interface WorkoutProgramDialogProps {
+  open: boolean
+  program: WorkoutProgramRecord | null
+  exercises: WorkoutExerciseRecord[]
+  busy: boolean
+  onOpenChange: (open: boolean) => void
+  onSave: (input: CreateWorkoutProgramInput | UpdateWorkoutProgramInput) => Promise<void>
+}
+
+export function WorkoutProgramDialog({
+  open,
+  program,
+  exercises,
+  busy,
+  onOpenChange,
+  onSave
+}: WorkoutProgramDialogProps): React.JSX.Element {
+  const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
+  const [archived, setArchived] = useState(false)
+  const [items, setItems] = useState<EditableProgramExercise[]>([])
+  const [exerciseToAdd, setExerciseToAdd] = useState(NONE)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!open) return
+    setName(program?.name ?? '')
+    setDescription(program?.description ?? '')
+    setArchived(program?.status === 'archived')
+    setItems(
+      program?.exercises.map((item) => ({
+        exerciseId: item.exerciseId,
+        plannedSets: item.plannedSets,
+        targetReps: item.targetReps === null ? '' : String(item.targetReps),
+        notes: item.notes
+      })) ?? []
+    )
+    setExerciseToAdd(NONE)
+    setError(null)
+  }, [open, program])
+
+  const exerciseMap = useMemo(
+    () => new Map(exercises.map((exercise) => [exercise.id, exercise])),
+    [exercises]
+  )
+  const availableExercises = exercises.filter(
+    (exercise) =>
+      exercise.status === 'active' && !items.some((item) => item.exerciseId === exercise.id)
+  )
+
+  function addExercise(): void {
+    if (exerciseToAdd === NONE) return
+    setItems((current) => [
+      ...current,
+      { exerciseId: exerciseToAdd, plannedSets: 3, targetReps: '', notes: '' }
+    ])
+    setExerciseToAdd(NONE)
+  }
+
+  function move(index: number, direction: -1 | 1): void {
+    const target = index + direction
+    if (target < 0 || target >= items.length) return
+    setItems((current) => {
+      const next = [...current]
+      const [item] = next.splice(index, 1)
+      if (item) next.splice(target, 0, item)
+      return next
+    })
+  }
+
+  function updateItem(index: number, patch: Partial<EditableProgramExercise>): void {
+    setItems((current) =>
+      current.map((item, itemIndex) => (itemIndex === index ? { ...item, ...patch } : item))
+    )
+  }
+
+  async function submit(event: React.FormEvent<HTMLFormElement>): Promise<void> {
+    event.preventDefault()
+    if (!name.trim() || items.length === 0 || busy) return
+    const payload: CreateWorkoutProgramInput = {
+      name: name.trim(),
+      description,
+      status: archived ? 'archived' : 'active',
+      exercises: items.map((item) => ({
+        exerciseId: item.exerciseId,
+        plannedSets: item.plannedSets,
+        targetReps: item.targetReps.trim() ? Number(item.targetReps) : null,
+        notes: item.notes
+      }))
+    }
+    try {
+      await onSave(program ? { ...payload, id: program.id } : payload)
+      onOpenChange(false)
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Не удалось сохранить программу')
+    }
+  }
+
+  return (
+    <AppDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={program ? 'Изменить программу' : 'Новая программа'}
+      description="Соберите порядок упражнений. План подходов и повторений будет использован как заготовка новой тренировки."
+      icon={<ListPlus />}
+      size="xl"
+      busy={busy}
+      footer={
+        <>
+          <button
+            type="button"
+            disabled={busy}
+            className="h-10 rounded-xl px-4 text-sm font-medium text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:opacity-45"
+            onClick={() => onOpenChange(false)}
+          >
+            Отмена
+          </button>
+          <button
+            type="submit"
+            form={FORM_ID}
+            disabled={busy || !name.trim() || items.length === 0}
+            className="h-10 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            {busy ? 'Сохраняем…' : program ? 'Сохранить' : 'Создать программу'}
+          </button>
+        </>
+      }
+    >
+      <form id={FORM_ID} className="space-y-5" onSubmit={(event) => void submit(event)}>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="block space-y-1.5 sm:col-span-2">
+            <span className="text-xs font-medium text-[var(--app-muted)]">Название программы</span>
+            <input
+              autoFocus
+              value={name}
+              maxLength={160}
+              placeholder="Например, Push / Pull / Legs — День 1"
+              className="h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
+              onChange={(event) => setName(event.target.value)}
+            />
+          </label>
+          <label className="block space-y-1.5 sm:col-span-2">
+            <span className="text-xs font-medium text-[var(--app-muted)]">Описание</span>
+            <textarea
+              value={description}
+              rows={3}
+              maxLength={10000}
+              placeholder="Цель программы, период, особенности…"
+              className="w-full resize-y rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 py-3 text-sm leading-6 text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
+              onChange={(event) => setDescription(event.target.value)}
+            />
+          </label>
+        </div>
+
+        <section className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-3.5">
+          <div className="flex flex-wrap items-end gap-2">
+            <div className="min-w-[260px] flex-1 space-y-1.5">
+              <span className="text-xs font-medium text-[var(--app-muted)]">Добавить упражнение</span>
+              <AppSelect
+                ariaLabel="Упражнение для программы"
+                value={exerciseToAdd}
+                options={[
+                  { value: NONE, label: availableExercises.length ? 'Выберите упражнение' : 'Все упражнения добавлены' },
+                  ...availableExercises.map((exercise) => ({
+                    value: exercise.id,
+                    label: `${exercise.title} · ${workoutMuscleGroupLabel(exercise.muscleGroup)}`
+                  }))
+                ]}
+                onValueChange={setExerciseToAdd}
+              />
+            </div>
+            <button
+              type="button"
+              disabled={exerciseToAdd === NONE}
+              className="inline-flex h-10 items-center gap-2 rounded-xl border border-violet-400/20 bg-violet-500/10 px-3.5 text-sm font-semibold text-violet-200 hover:bg-violet-500/15 disabled:opacity-40"
+              onClick={addExercise}
+            >
+              <Plus className="size-4" /> Добавить
+            </button>
+          </div>
+        </section>
+
+        <div className="space-y-2.5">
+          {items.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-[var(--app-border)] px-5 py-8 text-center text-sm text-[var(--app-muted)]">
+              Сначала добавьте упражнения в программу.
+            </div>
+          ) : (
+            items.map((item, index) => {
+              const exercise = exerciseMap.get(item.exerciseId)
+              return (
+                <article
+                  key={item.exerciseId}
+                  className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4"
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-xs font-semibold text-violet-300">
+                      {index + 1}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-semibold text-[var(--app-text)]">
+                        {exercise?.title ?? 'Удалённое упражнение'}
+                      </div>
+                      {exercise && (
+                        <div className="mt-0.5 text-xs text-[var(--app-muted)]">
+                          {workoutMuscleGroupLabel(exercise.muscleGroup)}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        aria-label="Поднять упражнение"
+                        disabled={index === 0}
+                        className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:opacity-25"
+                        onClick={() => move(index, -1)}
+                      >
+                        <ArrowUp className="size-4" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Опустить упражнение"
+                        disabled={index === items.length - 1}
+                        className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:opacity-25"
+                        onClick={() => move(index, 1)}
+                      >
+                        <ArrowDown className="size-4" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Удалить упражнение из программы"
+                        className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
+                        onClick={() => setItems((current) => current.filter((_, itemIndex) => itemIndex !== index))}
+                      >
+                        <Trash2 className="size-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 grid gap-3 sm:grid-cols-[140px_160px_minmax(0,1fr)]">
+                    <label className="space-y-1.5">
+                      <span className="text-xs text-[var(--app-muted)]">План подходов</span>
+                      <input
+                        type="number"
+                        min={1}
+                        max={50}
+                        value={item.plannedSets}
+                        className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/45"
+                        onChange={(event) =>
+                          updateItem(index, { plannedSets: Math.max(1, Number(event.target.value) || 1) })
+                        }
+                      />
+                    </label>
+                    <label className="space-y-1.5">
+                      <span className="text-xs text-[var(--app-muted)]">Цель повторений</span>
+                      <input
+                        type="number"
+                        min={1}
+                        value={item.targetReps}
+                        placeholder="Не задано"
+                        className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45"
+                        onChange={(event) => updateItem(index, { targetReps: event.target.value })}
+                      />
+                    </label>
+                    <label className="space-y-1.5">
+                      <span className="text-xs text-[var(--app-muted)]">Комментарий к упражнению</span>
+                      <input
+                        value={item.notes}
+                        maxLength={4000}
+                        placeholder="Темп, техника, отдых…"
+                        className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45"
+                        onChange={(event) => updateItem(index, { notes: event.target.value })}
+                      />
+                    </label>
+                  </div>
+                </article>
+              )
+            })
+          )}
+        </div>
+
+        {program && (
+          <label className="flex items-center justify-between gap-4 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 py-3">
+            <span>
+              <span className="block text-sm font-medium text-[var(--app-text)]">Архивировать программу</span>
+              <span className="mt-0.5 block text-xs text-[var(--app-muted)]">Старые записи тренировок сохранятся.</span>
+            </span>
+            <input type="checkbox" checked={archived} className="size-4 accent-violet-500" onChange={(event) => setArchived(event.target.checked)} />
+          </label>
+        )}
+
+        {error && (
+          <div role="alert" className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+            {error}
+          </div>
+        )}
+      </form>
+    </AppDialog>
+  )
+}
