@@ -138,9 +138,6 @@ export function NutritionReportsView({
             </div>
           )}
         </div>
-        <p className="mt-3 text-[11px] leading-5 text-[var(--app-muted)]">
-          Фильтры меняют статистику продуктов, приёмов пищи и БЖУ. Попадание в дневную калорийную цель всегда считается по полному рациону дня, чтобы частичный фильтр не давал ложный результат.
-        </p>
       </div>
 
       {loading && !report ? (
@@ -253,9 +250,6 @@ function ReportContents({ report }: { report: NutritionReport }): React.JSX.Elem
             <SmallMetric label="Выше" value={String(report.summary.daysAboveCalories)} />
             <SmallMetric label="Ниже" value={String(report.summary.daysBelowCalories)} />
           </div>
-          <p className="mt-3 text-[11px] leading-5 text-[var(--app-muted)]">
-            Для каждого дня используется цель, которая действовала на его дату.
-          </p>
         </ReportPanel>
       </div>
 
