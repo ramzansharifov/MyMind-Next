@@ -24,7 +24,7 @@ export function StandardModulePage({
     >
       <div
         data-standard-module-container
-        className={cn('mx-auto w-full max-w-[1440px]', contentClassName)}
+        className={cn('mx-auto w-full max-w-[var(--app-standard-content-width)]', contentClassName)}
       >
         {children}
       </div>
