@@ -1,6 +1,7 @@
 import {
   BookHeart,
   Disc3,
+  Dumbbell,
   Film,
   GraduationCap,
   House,
@@ -26,6 +27,7 @@ const HOME_MODULES: Array<{
   { id: 'notes', label: 'Заметки', icon: Notebook },
   { id: 'tasks', label: 'Задачи', icon: ListTodo },
   { id: 'habits', label: 'Привычки', icon: Repeat2 },
+  { id: 'workouts', label: 'Тренировки', icon: Dumbbell },
   { id: 'diary', label: 'Дневник', icon: BookHeart },
   { id: 'movies', label: 'Фильмы', icon: Film },
   { id: 'music', label: 'Музыка', icon: Disc3 },
@@ -58,7 +60,7 @@ export function HomeModule(): React.JSX.Element {
         </section>
 
         <section className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 shadow-[var(--app-shadow-card)]">
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-6">
             {HOME_MODULES.map((module) => {
               const Icon = module.icon
 

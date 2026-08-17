@@ -2,6 +2,7 @@ import { lazy, type ComponentType } from 'react'
 import {
   BookHeart,
   Disc3,
+  Dumbbell,
   Film,
   GraduationCap,
   House,
@@ -58,6 +59,9 @@ const TasksModule = lazy(() =>
 ) as ComponentType<AppModuleProps>
 const HabitsModule = lazy(() =>
   import('../modules/habits/HabitsPage').then(({ HabitsPage }) => ({ default: HabitsPage }))
+) as ComponentType<AppModuleProps>
+const WorkoutsModule = lazy(() =>
+  import('../modules/workouts/WorkoutsPage').then(({ WorkoutsPage }) => ({ default: WorkoutsPage }))
 ) as ComponentType<AppModuleProps>
 const DiaryModule = lazy(() =>
   import('../modules/diary/DiaryPage').then(({ DiaryPage }) => ({ default: DiaryPage }))
@@ -128,6 +132,14 @@ export const appModuleRegistry = defineAppModules({
     icon: Repeat2,
     navigationGroup: 'primary',
     component: HabitsModule
+  },
+  workouts: {
+    id: 'workouts',
+    label: 'Тренировки',
+    loadingLabel: 'Загрузка тренировок',
+    icon: Dumbbell,
+    navigationGroup: 'primary',
+    component: WorkoutsModule
   },
   diary: {
     id: 'diary',

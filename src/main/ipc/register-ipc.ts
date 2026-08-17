@@ -15,6 +15,7 @@ import { registerPasswordsIpcHandlers } from './register-passwords-ipc'
 import { registerPreferencesIpcHandlers } from './register-preferences-ipc'
 import { registerStudyIpcHandlers } from './register-study-ipc'
 import { registerTasksIpcHandlers } from './register-tasks-ipc'
+import { registerWorkoutsIpcHandlers } from './register-workouts-ipc'
 
 interface SQLiteVersionRow {
   version: string
@@ -67,6 +68,7 @@ export function registerIpcHandlers(options: RegisterIpcHandlersOptions): void {
   registerTasksIpcHandlers()
   registerHabitsIpcHandlers()
   registerPasswordsIpcHandlers()
+  registerWorkoutsIpcHandlers()
   registerPreferencesIpcHandlers()
 
   ipcMain.removeHandler(IPC_CHANNELS.systemHealth)

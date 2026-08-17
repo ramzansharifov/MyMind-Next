@@ -29,7 +29,7 @@ afterEach(() => {
 })
 
 describe('preload API contract', () => {
-  it('exposes the complete boards, notes, diary, movies, music, tasks, habits, passwords and finance contracts in the renderer', async () => {
+  it('exposes the complete boards, notes, diary, movies, music, tasks, habits, passwords, workouts and finance contracts in the renderer', async () => {
     Object.defineProperty(process, 'contextIsolated', {
       configurable: true,
       value: true
@@ -139,6 +139,25 @@ describe('preload API contract', () => {
       'generatePassword',
       'copyItemField',
       'openWebsite'
+    ])
+    expect(Object.keys(api.workouts)).toEqual([
+      'listOverview',
+      'createExercise',
+      'updateExercise',
+      'deleteExercise',
+      'createProgram',
+      'updateProgram',
+      'deleteProgram',
+      'createSession',
+      'updateSession',
+      'deleteSession',
+      'getSession',
+      'createProgressEntry',
+      'updateProgressEntry',
+      'deleteProgressEntry',
+      'importProgressPhoto',
+      'deleteProgressPhoto',
+      'getReport'
     ])
     expect(Object.keys(api.finance)).toEqual([
       'getSettings',
@@ -271,6 +290,26 @@ describe('preload API contract', () => {
     expect(electronMocks.invoke).toHaveBeenCalledWith('passwords:copy-item-field', {
       id: 'password-1',
       field: 'password'
+    })
+
+    await api.workouts.getSession({ id: 'workout-1' })
+    expect(electronMocks.invoke).toHaveBeenCalledWith('workouts:get-session', {
+      id: 'workout-1'
+    })
+
+    await api.workouts.getReport({
+      dateFrom: '2026-08-01',
+      dateTo: '2026-08-17',
+      programId: null,
+      exerciseId: null,
+      muscleGroup: null
+    })
+    expect(electronMocks.invoke).toHaveBeenCalledWith('workouts:get-report', {
+      dateFrom: '2026-08-01',
+      dateTo: '2026-08-17',
+      programId: null,
+      exerciseId: null,
+      muscleGroup: null
     })
 
     await api.finance.createAccount({
