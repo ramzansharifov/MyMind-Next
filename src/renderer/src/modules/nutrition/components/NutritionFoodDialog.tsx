@@ -12,10 +12,7 @@ import type {
 } from '../../../../../shared/contracts/nutrition'
 import { AppDialog } from '../../../shared/ui/AppDialog'
 import { AppSelect } from '../../../shared/ui/AppSelect'
-import {
-  NUTRITION_CATEGORY_OPTIONS,
-  NUTRITION_UNIT_OPTIONS
-} from '../nutrition-options'
+import { NUTRITION_CATEGORY_OPTIONS, NUTRITION_UNIT_OPTIONS } from '../nutrition-options'
 import {
   EMPTY_NUTRITION_VALUES,
   NUTRITION_INPUT_CLASS_NAME,
@@ -131,7 +128,11 @@ export function NutritionFoodDialog({
         </>
       }
     >
-      <form id="nutrition-food-form" className="space-y-4" onSubmit={(event) => void submit(event)}>
+      <form
+        id="nutrition-food-form"
+        className="space-y-4"
+        onSubmit={(event) => void submit(event).catch(() => undefined)}
+      >
         <NutritionFormField label="Название">
           <input
             autoFocus
@@ -196,10 +197,7 @@ export function NutritionFoodDialog({
           </div>
           <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {NUTRIENT_FIELDS.map((field) => (
-              <NutritionFormField
-                key={field.key}
-                label={`${field.label}, ${field.unit}`}
-              >
+              <NutritionFormField key={field.key} label={`${field.label}, ${field.unit}`}>
                 <input
                   type="number"
                   min="0"
