@@ -11,6 +11,7 @@ import { registerHabitsIpcHandlers } from './register-habits-ipc'
 import { registerMoviesIpcHandlers } from './register-movies-ipc'
 import { registerMusicIpcHandlers } from './register-music-ipc'
 import { registerNotesIpcHandlers } from './register-notes-ipc'
+import { registerPasswordsIpcHandlers } from './register-passwords-ipc'
 import { registerPreferencesIpcHandlers } from './register-preferences-ipc'
 import { registerStudyIpcHandlers } from './register-study-ipc'
 import { registerTasksIpcHandlers } from './register-tasks-ipc'
@@ -65,6 +66,7 @@ export function registerIpcHandlers(options: RegisterIpcHandlersOptions): void {
   registerMusicIpcHandlers()
   registerTasksIpcHandlers()
   registerHabitsIpcHandlers()
+  registerPasswordsIpcHandlers()
   registerPreferencesIpcHandlers()
 
   ipcMain.removeHandler(IPC_CHANNELS.systemHealth)
