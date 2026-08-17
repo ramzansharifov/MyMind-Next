@@ -19,6 +19,17 @@ export { noteGroups, notes } from './notes'
 export { passwordGroups, passwordItems, passwordVault } from './passwords'
 export { studyLinkTargets, studyMaterials, studyNodes } from './study'
 export { taskGroups, tasks } from './tasks'
+export {
+  workoutExercises,
+  workoutProgramExercises,
+  workoutPrograms,
+  workoutProgressEntries,
+  workoutProgressMetrics,
+  workoutProgressPhotos,
+  workoutSessionExercises,
+  workoutSessions,
+  workoutSets
+} from './workouts'
 
 export const appMeta = sqliteTable('app_meta', {
   key: text('key').primaryKey(),
