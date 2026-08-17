@@ -72,16 +72,13 @@ export function NutritionRecipeDialog({
     }
 
     const firstFood = activeFoods[0]
-    setIngredients(
-      firstFood ? [{ foodId: firstFood.id, amount: firstFood.baseAmount }] : []
-    )
+    setIngredients(firstFood ? [{ foodId: firstFood.id, amount: firstFood.baseAmount }] : [])
   }, [activeFoods, open, recipe])
 
   const usedFoodIds = useMemo(
     () => new Set(ingredients.map((ingredient) => ingredient.foodId)),
     [ingredients]
   )
-
   const addableFoods = activeFoods.filter((food) => !usedFoodIds.has(food.id))
 
   function optionsForIngredient(index: number): Array<{ value: string; label: string }> {
@@ -89,8 +86,7 @@ export function NutritionRecipeDialog({
     return foods
       .filter(
         (food) =>
-          food.id === currentId ||
-          (food.status === 'active' && !usedFoodIds.has(food.id))
+          food.id === currentId || (food.status === 'active' && !usedFoodIds.has(food.id))
       )
       .map((food) => ({
         value: food.id,
@@ -101,10 +97,7 @@ export function NutritionRecipeDialog({
   function addIngredient(): void {
     const food = addableFoods[0]
     if (!food) return
-    setIngredients((current) => [
-      ...current,
-      { foodId: food.id, amount: food.baseAmount }
-    ])
+    setIngredients((current) => [...current, { foodId: food.id, amount: food.baseAmount }])
   }
 
   function changeIngredientFood(index: number, foodId: string): void {
@@ -112,9 +105,7 @@ export function NutritionRecipeDialog({
     if (!food) return
     setIngredients((current) =>
       current.map((ingredient, itemIndex) =>
-        itemIndex === index
-          ? { foodId, amount: food.baseAmount }
-          : ingredient
+        itemIndex === index ? { foodId, amount: food.baseAmount } : ingredient
       )
     )
   }
@@ -127,7 +118,9 @@ export function NutritionRecipeDialog({
       !Number.isFinite(servings) ||
       servings <= 0 ||
       ingredients.length === 0 ||
-      ingredients.some((ingredient) => !Number.isFinite(ingredient.amount) || ingredient.amount <= 0)
+      ingredients.some(
+        (ingredient) => !Number.isFinite(ingredient.amount) || ingredient.amount <= 0
+      )
     ) {
       return
     }
@@ -172,7 +165,7 @@ export function NutritionRecipeDialog({
       <form
         id="nutrition-recipe-form"
         className="space-y-4"
-        onSubmit={(event) => void submit(event)}
+        onSubmit={(event) => void submit(event).catch(() => undefined)}
       >
         <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_160px]">
           <NutritionFormField label="Название">
