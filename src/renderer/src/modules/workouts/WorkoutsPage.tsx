@@ -41,6 +41,8 @@ import type {
 import { cn } from '../../shared/lib/cn'
 import { AppSelect } from '../../shared/ui/AppSelect'
 import { DeleteConfirmationDialog } from '../../shared/ui/DeleteConfirmationDialog'
+import { ModuleHeader } from '../../shared/ui/ModuleHeader'
+import { StandardModulePage } from '../../shared/ui/StandardModulePage'
 import { workoutsClient } from './api/workouts-client'
 import { WorkoutExerciseDialog } from './components/WorkoutExerciseDialog'
 import { WorkoutProgramDialog } from './components/WorkoutProgramDialog'
@@ -428,9 +430,11 @@ export function WorkoutsPage({ resourceId, onResourceHandled }: WorkoutsPageProp
 
   if (isLoading || overview === null) {
     return (
-      <main className="flex h-full items-center justify-center bg-[var(--app-workspace)] text-sm text-[var(--app-muted)]">
-        Загружаем тренировки…
-      </main>
+      <StandardModulePage>
+        <div className="flex min-h-[70vh] items-center justify-center text-sm text-[var(--app-muted)]">
+          Загружаем тренировки…
+        </div>
+      </StandardModulePage>
     )
   }
 
@@ -442,195 +446,1217 @@ export function WorkoutsPage({ resourceId, onResourceHandled }: WorkoutsPageProp
     { id: 'reports', label: 'Отчёты', icon: BarChart3 }
   ]
 
+  const headerActions = (
+    <>
+      {tab === 'journal' && (
+        <button
+          type="button"
+          disabled={exercises.filter((exercise) => exercise.status === 'active').length === 0}
+          className="inline-flex h-11 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-45"
+          onClick={() => {
+            setEditingSession(null)
+            setSessionDialogOpen(true)
+          }}
+        >
+          <Plus className="size-4" /> Записать тренировку
+        </button>
+      )}
+      {tab === 'exercises' && (
+        <button
+          type="button"
+          className="inline-flex h-11 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400"
+          onClick={() => {
+            setEditingExercise(null)
+            setExerciseDialogOpen(true)
+          }}
+        >
+          <Plus className="size-4" /> Добавить упражнение
+        </button>
+      )}
+      {tab === 'programs' && (
+        <button
+          type="button"
+          disabled={exercises.filter((exercise) => exercise.status === 'active').length === 0}
+          className="inline-flex h-11 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-45"
+          onClick={() => {
+            setEditingProgram(null)
+            setProgramDialogOpen(true)
+          }}
+        >
+          <Plus className="size-4" /> Новая программа
+        </button>
+      )}
+      {tab === 'progress' && (
+        <button
+          type="button"
+          className="inline-flex h-11 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400"
+          onClick={() => {
+            setEditingProgress(null)
+            setProgressDialogOpen(true)
+          }}
+        >
+          <Plus className="size-4" /> Зафиксировать прогресс
+        </button>
+      )}
+    </>
+  )
+
   return (
-    <main className="h-full overflow-y-auto bg-[var(--app-workspace)] px-8 py-7 max-[700px]:px-4 max-[700px]:py-5">
-      <div className="mx-auto w-full max-w-[1460px]">
-        <header className="relative isolate overflow-hidden rounded-[28px] border border-[var(--app-border)] bg-[var(--app-surface)] p-6 shadow-[var(--app-shadow-card)]">
-          <div aria-hidden="true" className="pointer-events-none absolute -top-32 right-8 -z-10 size-80 rounded-full bg-violet-500/10 blur-3xl" />
-          <div aria-hidden="true" className="pointer-events-none absolute -bottom-44 -left-24 -z-10 size-80 rounded-full bg-violet-900/10 blur-3xl" />
+    <StandardModulePage>
+      <ModuleHeader
+        icon={Dumbbell}
+        title="Тренировки"
+        description="Упражнения, программы, журнал нагрузки, физический прогресс и подробная аналитика."
+        actions={headerActions}
+      >
+        <div className="flex gap-1 overflow-x-auto rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-1">
+          {tabs.map((item) => {
+            const Icon = item.icon
+            return (
+              <button
+                key={item.id}
+                type="button"
+                aria-pressed={tab === item.id}
+                className={cn(
+                  'inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3.5 text-sm font-medium transition-colors',
+                  tab === item.id
+                    ? 'bg-violet-500 font-semibold text-white'
+                    : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
+                )}
+                onClick={() => {
+                  setTab(item.id)
+                  setQuery('')
+                  setMuscleFilter('all')
+                  setProgramFilter('all')
+                  setShowArchived(false)
+                }}
+              >
+                <Icon className="size-4" /> {item.label}
+              </button>
+            )
+          })}
+        </div>
+      </ModuleHeader>
 
-          <div className="flex flex-wrap items-center justify-between gap-5">
-            <div className="flex min-w-0 items-center gap-4">
-              <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-violet-500/20 bg-violet-500/10 text-violet-300 shadow-inner shadow-violet-500/5">
-                <Dumbbell className="size-6" />
-              </span>
-              <div>
-                <h1 className="text-3xl font-semibold tracking-[-0.035em] text-[var(--app-text)]">Тренировки</h1>
-                <p className="mt-1 text-sm text-[var(--app-muted)]">Упражнения, программы, журнал нагрузки, физический прогресс и подробная аналитика.</p>
-              </div>
-            </div>
+      {error && (
+        <div
+          role="alert"
+          className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+        >
+          <span>{error}</span>
+          <button
+            type="button"
+            aria-label="Закрыть ошибку"
+            className="flex size-7 items-center justify-center rounded-lg hover:bg-red-500/10"
+            onClick={() => setError(null)}
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+      )}
 
-            <div className="flex flex-wrap gap-2">
-              {tab === 'journal' && (
-                <button type="button" disabled={exercises.filter((exercise) => exercise.status === 'active').length === 0} className="inline-flex h-11 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-45" onClick={() => { setEditingSession(null); setSessionDialogOpen(true) }}>
-                  <Plus className="size-4" /> Записать тренировку
-                </button>
-              )}
-              {tab === 'exercises' && (
-                <button type="button" className="inline-flex h-11 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400" onClick={() => { setEditingExercise(null); setExerciseDialogOpen(true) }}>
-                  <Plus className="size-4" /> Добавить упражнение
-                </button>
-              )}
-              {tab === 'programs' && (
-                <button type="button" disabled={exercises.filter((exercise) => exercise.status === 'active').length === 0} className="inline-flex h-11 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-45" onClick={() => { setEditingProgram(null); setProgramDialogOpen(true) }}>
-                  <Plus className="size-4" /> Новая программа
-                </button>
-              )}
-              {tab === 'progress' && (
-                <button type="button" className="inline-flex h-11 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400" onClick={() => { setEditingProgress(null); setProgressDialogOpen(true) }}>
-                  <Plus className="size-4" /> Зафиксировать прогресс
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="mt-6 flex gap-1 overflow-x-auto rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-1">
-            {tabs.map((item) => {
-              const Icon = item.icon
+      {tab === 'journal' && (
+        <section className="mt-5 space-y-4">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {[
+              { label: 'Тренировок за 30 дней', value: recentStats.sessions, icon: Dumbbell },
+              { label: 'Подходов', value: recentStats.sets, icon: Sigma },
+              { label: 'Повторений', value: recentStats.reps, icon: Activity },
+              { label: 'Тоннаж', value: `${formatNumber(recentStats.volume)} кг`, icon: Scale }
+            ].map((stat) => {
+              const Icon = stat.icon
               return (
-                <button key={item.id} type="button" aria-pressed={tab === item.id} className={cn('inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3.5 text-sm font-medium transition-colors', tab === item.id ? 'bg-violet-500 font-semibold text-white' : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]')} onClick={() => { setTab(item.id); setQuery(''); setMuscleFilter('all'); setProgramFilter('all'); setShowArchived(false) }}>
-                  <Icon className="size-4" /> {item.label}
-                </button>
+                <div
+                  key={stat.label}
+                  className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)]"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-xs font-medium text-[var(--app-muted)]">
+                      {stat.label}
+                    </span>
+                    <Icon className="size-4 text-violet-300" />
+                  </div>
+                  <div className="mt-2 text-2xl font-semibold text-[var(--app-text)]">
+                    {stat.value}
+                  </div>
+                </div>
               )
             })}
           </div>
-        </header>
 
-        {error && (
-          <div role="alert" className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-            <span>{error}</span>
-            <button type="button" aria-label="Закрыть ошибку" className="flex size-7 items-center justify-center rounded-lg hover:bg-red-500/10" onClick={() => setError(null)}><X className="size-4" /></button>
+          <div className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)]">
+            <div className="flex flex-wrap gap-2">
+              <label className="flex h-10 min-w-[240px] flex-1 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 focus-within:border-violet-500/45">
+                <Search className="size-4 text-[var(--app-muted)]" />
+                <input
+                  type="search"
+                  value={query}
+                  placeholder="Поиск по тренировкам и упражнениям…"
+                  className="min-w-0 flex-1 bg-transparent text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60"
+                  onChange={(event) => setQuery(event.target.value)}
+                />
+              </label>
+              <div className="min-w-[190px]">
+                <AppSelect
+                  ariaLabel="Фильтр по программе"
+                  value={programFilter}
+                  options={[
+                    { value: 'all', label: 'Все программы' },
+                    { value: 'custom', label: 'Свободные тренировки' },
+                    ...programs.map((program) => ({ value: program.id, label: program.name }))
+                  ]}
+                  onValueChange={setProgramFilter}
+                />
+              </div>
+              <div className="min-w-[170px]">
+                <AppSelect
+                  ariaLabel="Фильтр по группе мышц"
+                  value={muscleFilter}
+                  options={[
+                    { value: 'all', label: 'Все группы мышц' },
+                    ...WORKOUT_MUSCLE_GROUP_OPTIONS.map(({ value, label }) => ({ value, label }))
+                  ]}
+                  onValueChange={(value) => setMuscleFilter(value as MuscleFilter)}
+                />
+              </div>
+            </div>
           </div>
-        )}
 
-        {tab === 'journal' && (
-          <section className="mt-5 space-y-4">
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              {[
-                { label: 'Тренировок за 30 дней', value: recentStats.sessions, icon: Dumbbell },
-                { label: 'Подходов', value: recentStats.sets, icon: Sigma },
-                { label: 'Повторений', value: recentStats.reps, icon: Activity },
-                { label: 'Тоннаж', value: `${formatNumber(recentStats.volume)} кг`, icon: Scale }
-              ].map((stat) => {
-                const Icon = stat.icon
-                return <div key={stat.label} className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)]"><div className="flex items-center justify-between gap-3"><span className="text-xs font-medium text-[var(--app-muted)]">{stat.label}</span><Icon className="size-4 text-violet-300" /></div><div className="mt-2 text-2xl font-semibold text-[var(--app-text)]">{stat.value}</div></div>
+          {filteredSessions.length === 0 ? (
+            <div className="flex min-h-72 flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface)] px-6 text-center">
+              <Dumbbell className="size-9 text-violet-300" />
+              <h2 className="mt-4 text-lg font-semibold text-[var(--app-text)]">
+                {sessions.length === 0 ? 'Тренировок пока нет' : 'Ничего не найдено'}
+              </h2>
+              <p className="mt-2 max-w-lg text-sm leading-6 text-[var(--app-muted)]">
+                {sessions.length === 0
+                  ? exercises.length === 0
+                    ? 'Сначала добавьте упражнения, затем создайте программу или сразу запишите свободную тренировку.'
+                    : 'Запишите первую тренировку по программе или соберите её из упражнений вручную.'
+                  : 'Измените фильтры или поисковый запрос.'}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredSessions.map((session) => {
+                const groups = [
+                  ...new Set(session.exercises.map((exercise) => exercise.muscleGroup))
+                ]
+                return (
+                  <article
+                    key={session.id}
+                    className="group rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)] transition-colors hover:bg-[var(--app-card-hover)]"
+                  >
+                    <div className="flex flex-wrap items-start gap-4">
+                      <button
+                        type="button"
+                        className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-violet-400/15 bg-violet-500/10 text-violet-300"
+                        onClick={() => {
+                          setSelectedSession(session)
+                          setSessionDetailOpen(true)
+                        }}
+                      >
+                        <Dumbbell className="size-5" />
+                      </button>
+                      <button
+                        type="button"
+                        className="min-w-0 flex-1 text-left"
+                        onClick={() => {
+                          setSelectedSession(session)
+                          setSessionDetailOpen(true)
+                        }}
+                      >
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="text-base font-semibold text-[var(--app-text)]">
+                            {session.title || session.programName || 'Свободная тренировка'}
+                          </h3>
+                          {session.programName && (
+                            <span className="rounded-lg border border-violet-400/15 bg-violet-500/10 px-2 py-0.5 text-[11px] font-medium text-violet-300">
+                              {session.programName}
+                            </span>
+                          )}
+                        </div>
+                        <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[var(--app-muted)]">
+                          <span className="inline-flex items-center gap-1.5">
+                            <CalendarDays className="size-3.5" />
+                            {formatDate(session.date)}
+                          </span>
+                          {session.durationMinutes && (
+                            <span className="inline-flex items-center gap-1.5">
+                              <Clock3 className="size-3.5" />
+                              {session.durationMinutes} мин
+                            </span>
+                          )}
+                          <span>{session.totalSets} подх.</span>
+                          <span>{session.totalReps} повт.</span>
+                          <span>{formatNumber(session.totalVolumeKg)} кг</span>
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {groups.map((group) => {
+                            const classes = workoutMuscleGroupClasses[group]
+                            return (
+                              <span
+                                key={group}
+                                className={cn(
+                                  'inline-flex h-6 items-center gap-1 rounded-lg border px-2 text-[11px] font-medium',
+                                  classes.soft,
+                                  classes.text,
+                                  classes.border
+                                )}
+                              >
+                                <WorkoutMuscleGroupIcon group={group} className="size-3" />
+                                {workoutMuscleGroupLabel(group)}
+                              </span>
+                            )
+                          })}
+                        </div>
+                      </button>
+                      <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                        <button
+                          type="button"
+                          aria-label="Изменить тренировку"
+                          className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control)] hover:text-[var(--app-text)]"
+                          onClick={() => {
+                            setEditingSession(session)
+                            setSessionDialogOpen(true)
+                          }}
+                        >
+                          <Pencil className="size-4" />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label="Удалить тренировку"
+                          className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
+                          onClick={() => setDeleteSessionTarget(session)}
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                )
               })}
             </div>
+          )}
+        </section>
+      )}
 
-            <div className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)]">
-              <div className="flex flex-wrap gap-2">
-                <label className="flex h-10 min-w-[240px] flex-1 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 focus-within:border-violet-500/45">
-                  <Search className="size-4 text-[var(--app-muted)]" />
-                  <input type="search" value={query} placeholder="Поиск по тренировкам и упражнениям…" className="min-w-0 flex-1 bg-transparent text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60" onChange={(event) => setQuery(event.target.value)} />
-                </label>
-                <div className="min-w-[190px]"><AppSelect ariaLabel="Фильтр по программе" value={programFilter} options={[{ value: 'all', label: 'Все программы' }, { value: 'custom', label: 'Свободные тренировки' }, ...programs.map((program) => ({ value: program.id, label: program.name }))]} onValueChange={setProgramFilter} /></div>
-                <div className="min-w-[170px]"><AppSelect ariaLabel="Фильтр по группе мышц" value={muscleFilter} options={[{ value: 'all', label: 'Все группы мышц' }, ...WORKOUT_MUSCLE_GROUP_OPTIONS.map(({ value, label }) => ({ value, label }))]} onValueChange={(value) => setMuscleFilter(value as MuscleFilter)} /></div>
+      {tab === 'exercises' && (
+        <section className="mt-5 space-y-4">
+          <div className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)]">
+            <div className="flex flex-wrap gap-2">
+              <label className="flex h-10 min-w-[240px] flex-1 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 focus-within:border-violet-500/45">
+                <Search className="size-4 text-[var(--app-muted)]" />
+                <input
+                  type="search"
+                  value={query}
+                  placeholder="Найти упражнение…"
+                  className="min-w-0 flex-1 bg-transparent text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60"
+                  onChange={(event) => setQuery(event.target.value)}
+                />
+              </label>
+              <div className="min-w-[190px]">
+                <AppSelect
+                  ariaLabel="Группа мышц"
+                  value={muscleFilter}
+                  options={[
+                    { value: 'all', label: 'Все группы мышц' },
+                    ...WORKOUT_MUSCLE_GROUP_OPTIONS.map(({ value, label }) => ({ value, label }))
+                  ]}
+                  onValueChange={(value) => setMuscleFilter(value as MuscleFilter)}
+                />
               </div>
+              <label className="inline-flex h-10 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-xs font-medium text-[var(--app-muted)]">
+                <input
+                  type="checkbox"
+                  checked={showArchived}
+                  className="accent-violet-500"
+                  onChange={(event) => setShowArchived(event.target.checked)}
+                />{' '}
+                Показывать архив
+              </label>
             </div>
+          </div>
 
-            {filteredSessions.length === 0 ? (
-              <div className="flex min-h-72 flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface)] px-6 text-center">
-                <Dumbbell className="size-9 text-violet-300" />
-                <h2 className="mt-4 text-lg font-semibold text-[var(--app-text)]">{sessions.length === 0 ? 'Тренировок пока нет' : 'Ничего не найдено'}</h2>
-                <p className="mt-2 max-w-lg text-sm leading-6 text-[var(--app-muted)]">{sessions.length === 0 ? exercises.length === 0 ? 'Сначала добавьте упражнения, затем создайте программу или сразу запишите свободную тренировку.' : 'Запишите первую тренировку по программе или соберите её из упражнений вручную.' : 'Измените фильтры или поисковый запрос.'}</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {filteredSessions.map((session) => {
-                  const groups = [...new Set(session.exercises.map((exercise) => exercise.muscleGroup))]
-                  return (
-                    <article key={session.id} className="group rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)] transition-colors hover:bg-[var(--app-card-hover)]">
-                      <div className="flex flex-wrap items-start gap-4">
-                        <button type="button" className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-violet-400/15 bg-violet-500/10 text-violet-300" onClick={() => { setSelectedSession(session); setSessionDetailOpen(true) }}><Dumbbell className="size-5" /></button>
-                        <button type="button" className="min-w-0 flex-1 text-left" onClick={() => { setSelectedSession(session); setSessionDetailOpen(true) }}>
-                          <div className="flex flex-wrap items-center gap-2"><h3 className="text-base font-semibold text-[var(--app-text)]">{session.title || session.programName || 'Свободная тренировка'}</h3>{session.programName && <span className="rounded-lg border border-violet-400/15 bg-violet-500/10 px-2 py-0.5 text-[11px] font-medium text-violet-300">{session.programName}</span>}</div>
-                          <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[var(--app-muted)]"><span className="inline-flex items-center gap-1.5"><CalendarDays className="size-3.5" />{formatDate(session.date)}</span>{session.durationMinutes && <span className="inline-flex items-center gap-1.5"><Clock3 className="size-3.5" />{session.durationMinutes} мин</span>}<span>{session.totalSets} подх.</span><span>{session.totalReps} повт.</span><span>{formatNumber(session.totalVolumeKg)} кг</span></div>
-                          <div className="mt-2 flex flex-wrap gap-1.5">{groups.map((group) => { const classes = workoutMuscleGroupClasses[group]; return <span key={group} className={cn('inline-flex h-6 items-center gap-1 rounded-lg border px-2 text-[11px] font-medium', classes.soft, classes.text, classes.border)}><WorkoutMuscleGroupIcon group={group} className="size-3" />{workoutMuscleGroupLabel(group)}</span> })}</div>
-                        </button>
-                        <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100"><button type="button" aria-label="Изменить тренировку" className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control)] hover:text-[var(--app-text)]" onClick={() => { setEditingSession(session); setSessionDialogOpen(true) }}><Pencil className="size-4" /></button><button type="button" aria-label="Удалить тренировку" className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300" onClick={() => setDeleteSessionTarget(session)}><Trash2 className="size-4" /></button></div>
+          {filteredExercises.length === 0 ? (
+            <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface)] text-center">
+              <Target className="size-8 text-violet-300" />
+              <h2 className="mt-3 text-lg font-semibold text-[var(--app-text)]">
+                Добавьте упражнения
+              </h2>
+              <p className="mt-1 max-w-md text-sm text-[var(--app-muted)]">
+                Справочник упражнений используется во всех программах, тренировках и отчётах.
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {filteredExercises.map((exercise) => {
+                const classes = workoutMuscleGroupClasses[exercise.muscleGroup]
+                return (
+                  <article
+                    key={exercise.id}
+                    className="group rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)]"
+                  >
+                    <div className="flex items-start gap-3">
+                      <span
+                        className={cn(
+                          'flex size-10 shrink-0 items-center justify-center rounded-xl border',
+                          classes.soft,
+                          classes.text,
+                          classes.border
+                        )}
+                      >
+                        <WorkoutMuscleGroupIcon group={exercise.muscleGroup} className="size-5" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="truncate font-semibold text-[var(--app-text)]">
+                            {exercise.title}
+                          </h3>
+                          {exercise.status === 'archived' && (
+                            <span className="rounded-md bg-[var(--app-control)] px-1.5 py-0.5 text-[10px] text-[var(--app-muted)]">
+                              Архив
+                            </span>
+                          )}
+                        </div>
+                        <span className={cn('mt-1 inline-block text-xs font-medium', classes.text)}>
+                          {workoutMuscleGroupLabel(exercise.muscleGroup)}
+                        </span>
                       </div>
-                    </article>
-                  )
-                })}
-              </div>
-            )}
-          </section>
-        )}
-
-        {tab === 'exercises' && (
-          <section className="mt-5 space-y-4">
-            <div className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)]"><div className="flex flex-wrap gap-2"><label className="flex h-10 min-w-[240px] flex-1 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 focus-within:border-violet-500/45"><Search className="size-4 text-[var(--app-muted)]" /><input type="search" value={query} placeholder="Найти упражнение…" className="min-w-0 flex-1 bg-transparent text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60" onChange={(event) => setQuery(event.target.value)} /></label><div className="min-w-[190px]"><AppSelect ariaLabel="Группа мышц" value={muscleFilter} options={[{ value: 'all', label: 'Все группы мышц' }, ...WORKOUT_MUSCLE_GROUP_OPTIONS.map(({ value, label }) => ({ value, label }))]} onValueChange={(value) => setMuscleFilter(value as MuscleFilter)} /></div><label className="inline-flex h-10 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-xs font-medium text-[var(--app-muted)]"><input type="checkbox" checked={showArchived} className="accent-violet-500" onChange={(event) => setShowArchived(event.target.checked)} /> Показывать архив</label></div></div>
-
-            {filteredExercises.length === 0 ? <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface)] text-center"><Target className="size-8 text-violet-300" /><h2 className="mt-3 text-lg font-semibold text-[var(--app-text)]">Добавьте упражнения</h2><p className="mt-1 max-w-md text-sm text-[var(--app-muted)]">Справочник упражнений используется во всех программах, тренировках и отчётах.</p></div> : <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{filteredExercises.map((exercise) => { const classes = workoutMuscleGroupClasses[exercise.muscleGroup]; return <article key={exercise.id} className="group rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)]"><div className="flex items-start gap-3"><span className={cn('flex size-10 shrink-0 items-center justify-center rounded-xl border', classes.soft, classes.text, classes.border)}><WorkoutMuscleGroupIcon group={exercise.muscleGroup} className="size-5" /></span><div className="min-w-0 flex-1"><div className="flex items-center gap-2"><h3 className="truncate font-semibold text-[var(--app-text)]">{exercise.title}</h3>{exercise.status === 'archived' && <span className="rounded-md bg-[var(--app-control)] px-1.5 py-0.5 text-[10px] text-[var(--app-muted)]">Архив</span>}</div><span className={cn('mt-1 inline-block text-xs font-medium', classes.text)}>{workoutMuscleGroupLabel(exercise.muscleGroup)}</span></div><div className="flex shrink-0 gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100"><button type="button" aria-label={`Изменить «${exercise.title}»`} className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]" onClick={() => { setEditingExercise(exercise); setExerciseDialogOpen(true) }}><Pencil className="size-4" /></button><button type="button" aria-label={`Удалить «${exercise.title}»`} className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300" onClick={() => setDeleteExerciseTarget(exercise)}><Trash2 className="size-4" /></button></div></div>{exercise.description && <p className="mt-3 line-clamp-3 text-xs leading-5 text-[var(--app-muted)]">{exercise.description}</p>}</article> })}</div>}
-          </section>
-        )}
-
-        {tab === 'programs' && (
-          <section className="mt-5 space-y-4">
-            <div className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)]"><div className="flex flex-wrap gap-2"><label className="flex h-10 min-w-[240px] flex-1 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 focus-within:border-violet-500/45"><Search className="size-4 text-[var(--app-muted)]" /><input type="search" value={query} placeholder="Найти программу…" className="min-w-0 flex-1 bg-transparent text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60" onChange={(event) => setQuery(event.target.value)} /></label><label className="inline-flex h-10 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-xs font-medium text-[var(--app-muted)]"><input type="checkbox" checked={showArchived} className="accent-violet-500" onChange={(event) => setShowArchived(event.target.checked)} /> Показывать архив</label></div></div>
-            {filteredPrograms.length === 0 ? <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface)] text-center"><FileText className="size-8 text-violet-300" /><h2 className="mt-3 text-lg font-semibold text-[var(--app-text)]">Программ пока нет</h2><p className="mt-1 max-w-md text-sm text-[var(--app-muted)]">Соберите программу из упражнений и задайте план подходов и повторений.</p></div> : <div className="grid gap-4 xl:grid-cols-2">{filteredPrograms.map((program) => <article key={program.id} className="group rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-5 shadow-[var(--app-shadow-card)]"><div className="flex items-start gap-3"><span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-violet-400/15 bg-violet-500/10 text-violet-300"><FileText className="size-5" /></span><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h3 className="text-base font-semibold text-[var(--app-text)]">{program.name}</h3>{program.status === 'archived' && <span className="rounded-md bg-[var(--app-control)] px-1.5 py-0.5 text-[10px] text-[var(--app-muted)]">Архив</span>}</div><p className="mt-1 text-xs text-[var(--app-muted)]">{program.exercises.length} упражнений · {program.exercises.reduce((sum, item) => sum + item.plannedSets, 0)} плановых подходов</p></div><div className="flex gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100"><button type="button" aria-label="Изменить программу" className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]" onClick={() => { setEditingProgram(program); setProgramDialogOpen(true) }}><Pencil className="size-4" /></button><button type="button" aria-label="Удалить программу" className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300" onClick={() => setDeleteProgramTarget(program)}><Trash2 className="size-4" /></button></div></div>{program.description && <p className="mt-3 text-sm leading-6 text-[var(--app-muted)]">{program.description}</p>}<div className="mt-4 space-y-1.5">{program.exercises.map((item, index) => { const exercise = exerciseMap.get(item.exerciseId); if (!exercise) return null; const classes = workoutMuscleGroupClasses[exercise.muscleGroup]; return <div key={item.id} className="flex items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 py-2.5"><span className="w-5 text-xs font-semibold text-[var(--app-muted)]">{index + 1}</span><span className={cn('flex size-7 items-center justify-center rounded-lg border', classes.soft, classes.text, classes.border)}><WorkoutMuscleGroupIcon group={exercise.muscleGroup} className="size-3.5" /></span><span className="min-w-0 flex-1 truncate text-sm font-medium text-[var(--app-text)]">{exercise.title}</span><span className="text-xs text-[var(--app-muted)]">{item.plannedSets} × {item.targetReps ?? '—'}</span></div> })}</div></article>)}</div>}
-          </section>
-        )}
-
-        {tab === 'progress' && (
-          <section className="mt-5 space-y-4">
-            {progressEntries.length === 0 ? <div className="flex min-h-72 flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface)] px-6 text-center"><TrendingUp className="size-9 text-violet-300" /><h2 className="mt-4 text-lg font-semibold text-[var(--app-text)]">Начните фиксировать прогресс</h2><p className="mt-2 max-w-lg text-sm leading-6 text-[var(--app-muted)]">Записывайте вес тела, самочувствие, контрольные показатели в упражнениях и прикрепляйте фотографии формы.</p></div> : <div className="space-y-4">{progressEntries.map((entry) => <article key={entry.id} className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-5 shadow-[var(--app-shadow-card)]"><div className="flex flex-wrap items-start justify-between gap-4"><div><div className="flex items-center gap-2"><TrendingUp className="size-5 text-violet-300" /><h3 className="text-base font-semibold text-[var(--app-text)]">{formatDate(entry.date)}</h3></div>{entry.bodyWeightKg !== null && <div className="mt-1.5 inline-flex items-center gap-1.5 text-xs text-[var(--app-muted)]"><Scale className="size-3.5" />Вес тела: {entry.bodyWeightKg} кг</div>}</div><div className="flex gap-1"><button type="button" disabled={isBusy} className="inline-flex h-9 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-xs font-medium text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:opacity-45" onClick={() => void importPhoto(entry.id)}><Camera className="size-3.5" /> Добавить фото</button><button type="button" aria-label="Изменить прогресс" className="flex size-9 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]" onClick={() => { setEditingProgress(entry); setProgressDialogOpen(true) }}><Pencil className="size-4" /></button><button type="button" aria-label="Удалить запись прогресса" className="flex size-9 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300" onClick={() => setDeleteProgressTarget(entry)}><Trash2 className="size-4" /></button></div></div>{entry.wellbeing && <div className="mt-4 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 py-3"><div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--app-muted)]">Самочувствие</div><p className="mt-1.5 text-sm leading-6 text-[var(--app-text)]">{entry.wellbeing}</p></div>}{entry.metrics.length > 0 && <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">{entry.metrics.map((metric) => { const classes = workoutMuscleGroupClasses[metric.muscleGroup]; return <div key={metric.id} className="rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-3"><div className="flex items-center gap-2"><span className={cn('flex size-7 items-center justify-center rounded-lg border', classes.soft, classes.text, classes.border)}><WorkoutMuscleGroupIcon group={metric.muscleGroup} className="size-3.5" /></span><span className="min-w-0 flex-1 truncate text-xs font-semibold text-[var(--app-text)]">{metric.exerciseTitle}</span></div><div className="mt-2 text-lg font-semibold text-[var(--app-text)]">{metric.weightKg} кг × {metric.reps}</div>{metric.comment && <p className="mt-1 text-xs text-[var(--app-muted)]">{metric.comment}</p>}</div> })}</div>}{entry.photos.length > 0 && <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">{entry.photos.map((photo) => <div key={photo.id} className="group/photo relative aspect-[4/5] overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)]"><img src={photo.url} alt={`Прогресс ${entry.date}`} className="size-full object-cover" /><button type="button" aria-label="Удалить фотографию" className="absolute top-2 right-2 flex size-8 items-center justify-center rounded-lg bg-black/60 text-white opacity-0 backdrop-blur transition-opacity group-hover/photo:opacity-100" onClick={() => void removePhoto(photo.id)}><Trash2 className="size-4" /></button></div>)}</div>}{entry.notes && <p className="mt-4 text-sm leading-6 text-[var(--app-muted)]">{entry.notes}</p>}</article>)}</div>}
-          </section>
-        )}
-
-        {tab === 'reports' && (
-          <section className="mt-5 space-y-4">
-            <div className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)]">
-              <div className="flex flex-wrap gap-2"><div className="min-w-[160px]"><AppSelect ariaLabel="Период отчёта" value={reportPeriod} options={[{ value: '7', label: '7 дней' }, { value: '30', label: '30 дней' }, { value: '90', label: '90 дней' }, { value: '365', label: '365 дней' }, { value: 'custom', label: 'Свой период' }]} onValueChange={(value) => applyReportPeriod(value as ReportPeriod)} /></div><input type="date" aria-label="Начало периода" value={reportDateFrom} className="h-10 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/45" onChange={(event) => { setReportPeriod('custom'); setReportDateFrom(event.target.value) }} /><input type="date" aria-label="Конец периода" value={reportDateTo} className="h-10 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/45" onChange={(event) => { setReportPeriod('custom'); setReportDateTo(event.target.value) }} /><div className="min-w-[190px] flex-1"><AppSelect ariaLabel="Программа в отчёте" value={reportProgramId} options={[{ value: 'all', label: 'Все программы' }, ...programs.map((program) => ({ value: program.id, label: program.name }))]} onValueChange={setReportProgramId} /></div><div className="min-w-[210px] flex-1"><AppSelect ariaLabel="Упражнение в отчёте" value={reportExerciseId} options={[{ value: 'all', label: 'Все упражнения' }, ...exercises.map((exercise) => ({ value: exercise.id, label: exercise.title }))]} onValueChange={setReportExerciseId} /></div><div className="min-w-[170px]"><AppSelect ariaLabel="Группа мышц в отчёте" value={reportMuscleGroup} options={[{ value: 'all', label: 'Все группы мышц' }, ...WORKOUT_MUSCLE_GROUP_OPTIONS.map(({ value, label }) => ({ value, label }))]} onValueChange={(value) => setReportMuscleGroup(value as MuscleFilter)} /></div></div>
+                      <div className="flex shrink-0 gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100">
+                        <button
+                          type="button"
+                          aria-label={`Изменить «${exercise.title}»`}
+                          className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+                          onClick={() => {
+                            setEditingExercise(exercise)
+                            setExerciseDialogOpen(true)
+                          }}
+                        >
+                          <Pencil className="size-4" />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label={`Удалить «${exercise.title}»`}
+                          className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
+                          onClick={() => setDeleteExerciseTarget(exercise)}
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
+                      </div>
+                    </div>
+                    {exercise.description && (
+                      <p className="mt-3 line-clamp-3 text-xs leading-5 text-[var(--app-muted)]">
+                        {exercise.description}
+                      </p>
+                    )}
+                  </article>
+                )
+              })}
             </div>
+          )}
+        </section>
+      )}
 
-            {reportLoading && !report ? <div className="flex min-h-64 items-center justify-center rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] text-sm text-[var(--app-muted)]">Считаем отчёт…</div> : report && (
+      {tab === 'programs' && (
+        <section className="mt-5 space-y-4">
+          <div className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)]">
+            <div className="flex flex-wrap gap-2">
+              <label className="flex h-10 min-w-[240px] flex-1 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 focus-within:border-violet-500/45">
+                <Search className="size-4 text-[var(--app-muted)]" />
+                <input
+                  type="search"
+                  value={query}
+                  placeholder="Найти программу…"
+                  className="min-w-0 flex-1 bg-transparent text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60"
+                  onChange={(event) => setQuery(event.target.value)}
+                />
+              </label>
+              <label className="inline-flex h-10 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-xs font-medium text-[var(--app-muted)]">
+                <input
+                  type="checkbox"
+                  checked={showArchived}
+                  className="accent-violet-500"
+                  onChange={(event) => setShowArchived(event.target.checked)}
+                />{' '}
+                Показывать архив
+              </label>
+            </div>
+          </div>
+
+          {filteredPrograms.length === 0 ? (
+            <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface)] text-center">
+              <FileText className="size-8 text-violet-300" />
+              <h2 className="mt-3 text-lg font-semibold text-[var(--app-text)]">Программ пока нет</h2>
+              <p className="mt-1 max-w-md text-sm text-[var(--app-muted)]">
+                Соберите программу из упражнений и задайте план подходов и повторений.
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-4 xl:grid-cols-2">
+              {filteredPrograms.map((program) => (
+                <article
+                  key={program.id}
+                  className="group rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-5 shadow-[var(--app-shadow-card)]"
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-violet-400/15 bg-violet-500/10 text-violet-300">
+                      <FileText className="size-5" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="text-base font-semibold text-[var(--app-text)]">
+                          {program.name}
+                        </h3>
+                        {program.status === 'archived' && (
+                          <span className="rounded-md bg-[var(--app-control)] px-1.5 py-0.5 text-[10px] text-[var(--app-muted)]">
+                            Архив
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-1 text-xs text-[var(--app-muted)]">
+                        {program.exercises.length} упражнений ·{' '}
+                        {program.exercises.reduce((sum, item) => sum + item.plannedSets, 0)} плановых
+                        подходов
+                      </p>
+                    </div>
+                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100">
+                      <button
+                        type="button"
+                        aria-label="Изменить программу"
+                        className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+                        onClick={() => {
+                          setEditingProgram(program)
+                          setProgramDialogOpen(true)
+                        }}
+                      >
+                        <Pencil className="size-4" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Удалить программу"
+                        className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
+                        onClick={() => setDeleteProgramTarget(program)}
+                      >
+                        <Trash2 className="size-4" />
+                      </button>
+                    </div>
+                  </div>
+                  {program.description && (
+                    <p className="mt-3 text-sm leading-6 text-[var(--app-muted)]">
+                      {program.description}
+                    </p>
+                  )}
+                  <div className="mt-4 space-y-1.5">
+                    {program.exercises.map((item, index) => {
+                      const exercise = exerciseMap.get(item.exerciseId)
+                      if (!exercise) return null
+                      const classes = workoutMuscleGroupClasses[exercise.muscleGroup]
+                      return (
+                        <div
+                          key={item.id}
+                          className="flex items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 py-2.5"
+                        >
+                          <span className="w-5 text-xs font-semibold text-[var(--app-muted)]">
+                            {index + 1}
+                          </span>
+                          <span
+                            className={cn(
+                              'flex size-7 items-center justify-center rounded-lg border',
+                              classes.soft,
+                              classes.text,
+                              classes.border
+                            )}
+                          >
+                            <WorkoutMuscleGroupIcon group={exercise.muscleGroup} className="size-3.5" />
+                          </span>
+                          <span className="min-w-0 flex-1 truncate text-sm font-medium text-[var(--app-text)]">
+                            {exercise.title}
+                          </span>
+                          <span className="text-xs text-[var(--app-muted)]">
+                            {item.plannedSets} × {item.targetReps ?? '—'}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {tab === 'progress' && (
+        <section className="mt-5 space-y-4">
+          {progressEntries.length === 0 ? (
+            <div className="flex min-h-72 flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface)] px-6 text-center">
+              <TrendingUp className="size-9 text-violet-300" />
+              <h2 className="mt-4 text-lg font-semibold text-[var(--app-text)]">
+                Начните фиксировать прогресс
+              </h2>
+              <p className="mt-2 max-w-lg text-sm leading-6 text-[var(--app-muted)]">
+                Записывайте вес тела, самочувствие, контрольные показатели в упражнениях и
+                прикрепляйте фотографии формы.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {progressEntries.map((entry) => (
+                <article
+                  key={entry.id}
+                  className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-5 shadow-[var(--app-shadow-card)]"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <TrendingUp className="size-5 text-violet-300" />
+                        <h3 className="text-base font-semibold text-[var(--app-text)]">
+                          {formatDate(entry.date)}
+                        </h3>
+                      </div>
+                      {entry.bodyWeightKg !== null && (
+                        <div className="mt-1.5 inline-flex items-center gap-1.5 text-xs text-[var(--app-muted)]">
+                          <Scale className="size-3.5" />
+                          Вес тела: {entry.bodyWeightKg} кг
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex gap-1">
+                      <button
+                        type="button"
+                        disabled={isBusy}
+                        className="inline-flex h-9 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-xs font-medium text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:opacity-45"
+                        onClick={() => void importPhoto(entry.id)}
+                      >
+                        <Camera className="size-3.5" /> Добавить фото
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Изменить прогресс"
+                        className="flex size-9 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+                        onClick={() => {
+                          setEditingProgress(entry)
+                          setProgressDialogOpen(true)
+                        }}
+                      >
+                        <Pencil className="size-4" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Удалить запись прогресса"
+                        className="flex size-9 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
+                        onClick={() => setDeleteProgressTarget(entry)}
+                      >
+                        <Trash2 className="size-4" />
+                      </button>
+                    </div>
+                  </div>
+                  {entry.wellbeing && (
+                    <div className="mt-4 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 py-3">
+                      <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--app-muted)]">
+                        Самочувствие
+                      </div>
+                      <p className="mt-1.5 text-sm leading-6 text-[var(--app-text)]">
+                        {entry.wellbeing}
+                      </p>
+                    </div>
+                  )}
+                  {entry.metrics.length > 0 && (
+                    <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                      {entry.metrics.map((metric) => {
+                        const classes = workoutMuscleGroupClasses[metric.muscleGroup]
+                        return (
+                          <div
+                            key={metric.id}
+                            className="rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-3"
+                          >
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={cn(
+                                  'flex size-7 items-center justify-center rounded-lg border',
+                                  classes.soft,
+                                  classes.text,
+                                  classes.border
+                                )}
+                              >
+                                <WorkoutMuscleGroupIcon
+                                  group={metric.muscleGroup}
+                                  className="size-3.5"
+                                />
+                              </span>
+                              <span className="min-w-0 flex-1 truncate text-xs font-semibold text-[var(--app-text)]">
+                                {metric.exerciseTitle}
+                              </span>
+                            </div>
+                            <div className="mt-2 text-lg font-semibold text-[var(--app-text)]">
+                              {metric.weightKg} кг × {metric.reps}
+                            </div>
+                            {metric.comment && (
+                              <p className="mt-1 text-xs text-[var(--app-muted)]">{metric.comment}</p>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                  {entry.photos.length > 0 && (
+                    <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                      {entry.photos.map((photo) => (
+                        <div
+                          key={photo.id}
+                          className="group/photo relative aspect-[4/5] overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)]"
+                        >
+                          <img
+                            src={photo.url}
+                            alt={`Прогресс ${entry.date}`}
+                            className="size-full object-cover"
+                          />
+                          <button
+                            type="button"
+                            aria-label="Удалить фотографию"
+                            className="absolute top-2 right-2 flex size-8 items-center justify-center rounded-lg bg-black/60 text-white opacity-0 backdrop-blur transition-opacity group-hover/photo:opacity-100"
+                            onClick={() => void removePhoto(photo.id)}
+                          >
+                            <Trash2 className="size-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {entry.notes && (
+                    <p className="mt-4 text-sm leading-6 text-[var(--app-muted)]">{entry.notes}</p>
+                  )}
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {tab === 'reports' && (
+        <section className="mt-5 space-y-4">
+          <div className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)]">
+            <div className="flex flex-wrap gap-2">
+              <div className="min-w-[160px]">
+                <AppSelect
+                  ariaLabel="Период отчёта"
+                  value={reportPeriod}
+                  options={[
+                    { value: '7', label: '7 дней' },
+                    { value: '30', label: '30 дней' },
+                    { value: '90', label: '90 дней' },
+                    { value: '365', label: '365 дней' },
+                    { value: 'custom', label: 'Свой период' }
+                  ]}
+                  onValueChange={(value) => applyReportPeriod(value as ReportPeriod)}
+                />
+              </div>
+              <input
+                type="date"
+                aria-label="Начало периода"
+                value={reportDateFrom}
+                className="h-10 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/45"
+                onChange={(event) => {
+                  setReportPeriod('custom')
+                  setReportDateFrom(event.target.value)
+                }}
+              />
+              <input
+                type="date"
+                aria-label="Конец периода"
+                value={reportDateTo}
+                className="h-10 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/45"
+                onChange={(event) => {
+                  setReportPeriod('custom')
+                  setReportDateTo(event.target.value)
+                }}
+              />
+              <div className="min-w-[190px] flex-1">
+                <AppSelect
+                  ariaLabel="Программа в отчёте"
+                  value={reportProgramId}
+                  options={[
+                    { value: 'all', label: 'Все программы' },
+                    ...programs.map((program) => ({ value: program.id, label: program.name }))
+                  ]}
+                  onValueChange={setReportProgramId}
+                />
+              </div>
+              <div className="min-w-[210px] flex-1">
+                <AppSelect
+                  ariaLabel="Упражнение в отчёте"
+                  value={reportExerciseId}
+                  options={[
+                    { value: 'all', label: 'Все упражнения' },
+                    ...exercises.map((exercise) => ({ value: exercise.id, label: exercise.title }))
+                  ]}
+                  onValueChange={setReportExerciseId}
+                />
+              </div>
+              <div className="min-w-[170px]">
+                <AppSelect
+                  ariaLabel="Группа мышц в отчёте"
+                  value={reportMuscleGroup}
+                  options={[
+                    { value: 'all', label: 'Все группы мышц' },
+                    ...WORKOUT_MUSCLE_GROUP_OPTIONS.map(({ value, label }) => ({ value, label }))
+                  ]}
+                  onValueChange={(value) => setReportMuscleGroup(value as MuscleFilter)}
+                />
+              </div>
+            </div>
+          </div>
+
+          {reportLoading && !report ? (
+            <div className="flex min-h-64 items-center justify-center rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] text-sm text-[var(--app-muted)]">
+              Считаем отчёт…
+            </div>
+          ) : (
+            report && (
               <>
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">{[
-                  { label: 'Тренировки', value: report.summary.sessions, icon: Dumbbell },
-                  { label: 'Активные дни', value: report.summary.activeDays, icon: CalendarDays },
-                  { label: 'Подходы', value: report.summary.sets, icon: Sigma },
-                  { label: 'Повторения', value: report.summary.reps, icon: Activity },
-                  { label: 'Тоннаж', value: `${formatNumber(report.summary.volumeKg)} кг`, icon: Scale },
-                  { label: 'Среднее время', value: `${formatNumber(report.summary.averageDurationMinutes, 0)} мин`, icon: Clock3 }
-                ].map((stat) => { const Icon = stat.icon; return <div key={stat.label} className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)]"><div className="flex items-center justify-between gap-2"><span className="text-[11px] font-medium text-[var(--app-muted)]">{stat.label}</span><Icon className="size-4 text-violet-300" /></div><div className="mt-2 text-xl font-semibold text-[var(--app-text)]">{stat.value}</div></div> })}</div>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                  {[
+                    { label: 'Тренировки', value: report.summary.sessions, icon: Dumbbell },
+                    { label: 'Активные дни', value: report.summary.activeDays, icon: CalendarDays },
+                    { label: 'Подходы', value: report.summary.sets, icon: Sigma },
+                    { label: 'Повторения', value: report.summary.reps, icon: Activity },
+                    {
+                      label: 'Тоннаж',
+                      value: `${formatNumber(report.summary.volumeKg)} кг`,
+                      icon: Scale
+                    },
+                    {
+                      label: 'Среднее время',
+                      value: `${formatNumber(report.summary.averageDurationMinutes, 0)} мин`,
+                      icon: Clock3
+                    }
+                  ].map((stat) => {
+                    const Icon = stat.icon
+                    return (
+                      <div
+                        key={stat.label}
+                        className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)]"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[11px] font-medium text-[var(--app-muted)]">
+                            {stat.label}
+                          </span>
+                          <Icon className="size-4 text-violet-300" />
+                        </div>
+                        <div className="mt-2 text-xl font-semibold text-[var(--app-text)]">
+                          {stat.value}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
 
                 <div className="grid gap-4 xl:grid-cols-[1fr_1.25fr]">
-                  <section className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-5 shadow-[var(--app-shadow-card)]"><div className="flex items-center gap-2"><Flame className="size-5 text-violet-300" /><div><h2 className="text-sm font-semibold text-[var(--app-text)]">Распределение нагрузки</h2><p className="mt-0.5 text-xs text-[var(--app-muted)]">Процент считается по доле рабочих подходов.</p></div></div><div className="mt-5 space-y-4">{report.muscleGroups.map((item) => { const classes = workoutMuscleGroupClasses[item.muscleGroup]; return <div key={item.muscleGroup}><div className="mb-1.5 flex items-center justify-between gap-3 text-xs"><span className={cn('inline-flex items-center gap-1.5 font-semibold', classes.text)}><WorkoutMuscleGroupIcon group={item.muscleGroup} className="size-3.5" />{workoutMuscleGroupLabel(item.muscleGroup)}</span><span className="text-[var(--app-muted)]">{formatNumber(item.loadPercent)}% · {item.sets} подх. · {item.reps} повт.</span></div><div className="h-2 overflow-hidden rounded-full bg-[var(--app-workspace)]"><div className={cn('h-full rounded-full transition-[width]', classes.bar)} style={{ width: `${Math.min(100, item.loadPercent)}%` }} /></div></div> })}</div></section>
-                  <section className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-5 shadow-[var(--app-shadow-card)]"><div className="flex items-center gap-2"><TrendingUp className="size-5 text-violet-300" /><div><h2 className="text-sm font-semibold text-[var(--app-text)]">Динамика нагрузки</h2><p className="mt-0.5 text-xs text-[var(--app-muted)]">Тоннаж и объём по дням с тренировками.</p></div></div>{report.timeline.length === 0 ? <div className="flex min-h-48 items-center justify-center text-sm text-[var(--app-muted)]">Нет данных за период</div> : <div className="mt-5 space-y-2.5">{report.timeline.slice(-18).map((day) => { const maxVolume = Math.max(1, ...report.timeline.map((item) => item.volumeKg)); return <div key={day.date} className="grid grid-cols-[88px_minmax(0,1fr)_110px] items-center gap-3"><span className="text-xs text-[var(--app-muted)]">{day.date.slice(5)}</span><div className="h-7 overflow-hidden rounded-lg bg-[var(--app-workspace)]"><div className="flex h-full items-center rounded-lg bg-violet-500/20 px-2 text-[10px] font-medium text-violet-200" style={{ width: `${Math.max(day.volumeKg > 0 ? 8 : 0, (day.volumeKg / maxVolume) * 100)}%` }}>{day.sets} подх.</div></div><span className="text-right text-xs text-[var(--app-muted)]">{formatNumber(day.volumeKg)} кг</span></div> })}</div>}</section>
+                  <section className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-5 shadow-[var(--app-shadow-card)]">
+                    <div className="flex items-center gap-2">
+                      <Flame className="size-5 text-violet-300" />
+                      <div>
+                        <h2 className="text-sm font-semibold text-[var(--app-text)]">
+                          Распределение нагрузки
+                        </h2>
+                        <p className="mt-0.5 text-xs text-[var(--app-muted)]">
+                          Процент считается по доле рабочих подходов.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-5 space-y-4">
+                      {report.muscleGroups.map((item) => {
+                        const classes = workoutMuscleGroupClasses[item.muscleGroup]
+                        return (
+                          <div key={item.muscleGroup}>
+                            <div className="mb-1.5 flex items-center justify-between gap-3 text-xs">
+                              <span
+                                className={cn(
+                                  'inline-flex items-center gap-1.5 font-semibold',
+                                  classes.text
+                                )}
+                              >
+                                <WorkoutMuscleGroupIcon
+                                  group={item.muscleGroup}
+                                  className="size-3.5"
+                                />
+                                {workoutMuscleGroupLabel(item.muscleGroup)}
+                              </span>
+                              <span className="text-[var(--app-muted)]">
+                                {formatNumber(item.loadPercent)}% · {item.sets} подх. · {item.reps}{' '}
+                                повт.
+                              </span>
+                            </div>
+                            <div className="h-2 overflow-hidden rounded-full bg-[var(--app-workspace)]">
+                              <div
+                                className={cn('h-full rounded-full transition-[width]', classes.bar)}
+                                style={{ width: `${Math.min(100, item.loadPercent)}%` }}
+                              />
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </section>
+
+                  <section className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-5 shadow-[var(--app-shadow-card)]">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="size-5 text-violet-300" />
+                      <div>
+                        <h2 className="text-sm font-semibold text-[var(--app-text)]">
+                          Динамика нагрузки
+                        </h2>
+                        <p className="mt-0.5 text-xs text-[var(--app-muted)]">
+                          Тоннаж и объём по дням с тренировками.
+                        </p>
+                      </div>
+                    </div>
+                    {report.timeline.length === 0 ? (
+                      <div className="flex min-h-48 items-center justify-center text-sm text-[var(--app-muted)]">
+                        Нет данных за период
+                      </div>
+                    ) : (
+                      <div className="mt-5 space-y-2.5">
+                        {report.timeline.slice(-18).map((day) => {
+                          const maxVolume = Math.max(
+                            1,
+                            ...report.timeline.map((item) => item.volumeKg)
+                          )
+                          return (
+                            <div
+                              key={day.date}
+                              className="grid grid-cols-[88px_minmax(0,1fr)_110px] items-center gap-3"
+                            >
+                              <span className="text-xs text-[var(--app-muted)]">
+                                {day.date.slice(5)}
+                              </span>
+                              <div className="h-7 overflow-hidden rounded-lg bg-[var(--app-workspace)]">
+                                <div
+                                  className="flex h-full items-center rounded-lg bg-violet-500/20 px-2 text-[10px] font-medium text-violet-200"
+                                  style={{
+                                    width: `${Math.max(
+                                      day.volumeKg > 0 ? 8 : 0,
+                                      (day.volumeKg / maxVolume) * 100
+                                    )}%`
+                                  }}
+                                >
+                                  {day.sets} подх.
+                                </div>
+                              </div>
+                              <span className="text-right text-xs text-[var(--app-muted)]">
+                                {formatNumber(day.volumeKg)} кг
+                              </span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </section>
                 </div>
 
-                <section className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--app-shadow-card)]"><div className="flex items-center gap-2 border-b border-[var(--app-border)] px-5 py-4"><Target className="size-5 text-violet-300" /><div><h2 className="text-sm font-semibold text-[var(--app-text)]">По упражнениям</h2><p className="mt-0.5 text-xs text-[var(--app-muted)]">Объём, вес и изменение лучшего рабочего веса между первой и последней тренировкой периода.</p></div></div>{report.exercises.length === 0 ? <div className="flex min-h-48 items-center justify-center text-sm text-[var(--app-muted)]">Нет упражнений за выбранный период</div> : <div className="overflow-x-auto"><table className="w-full min-w-[900px] text-left text-xs"><thead className="bg-[var(--app-workspace)] text-[var(--app-muted)]"><tr><th className="px-4 py-3 font-semibold">Упражнение</th><th className="px-3 py-3 font-semibold">Тренировки</th><th className="px-3 py-3 font-semibold">Подходы</th><th className="px-3 py-3 font-semibold">Повторы</th><th className="px-3 py-3 font-semibold">Тоннаж</th><th className="px-3 py-3 font-semibold">Макс. вес</th><th className="px-3 py-3 font-semibold">Расч. 1ПМ</th><th className="px-3 py-3 font-semibold">Изменение</th></tr></thead><tbody className="divide-y divide-[var(--app-border)]">{report.exercises.map((item) => <tr key={`${item.exerciseId}-${item.title}`} className="text-[var(--app-text)]"><td className="px-4 py-3"><div className="font-semibold">{item.title}</div><div className="mt-0.5 text-[11px] text-[var(--app-muted)]">{workoutMuscleGroupLabel(item.muscleGroup)}</div></td><td className="px-3 py-3">{item.sessions}</td><td className="px-3 py-3">{item.sets}</td><td className="px-3 py-3">{item.reps}</td><td className="px-3 py-3">{formatNumber(item.volumeKg)} кг</td><td className="px-3 py-3">{formatNumber(item.maxWeightKg)} кг</td><td className="px-3 py-3">{formatNumber(item.estimatedOneRepMax)} кг</td><td className={cn('px-3 py-3 font-semibold', item.weightChangeKg > 0 ? 'text-emerald-300' : item.weightChangeKg < 0 ? 'text-rose-300' : 'text-[var(--app-muted)]')}>{item.weightChangeKg > 0 ? '+' : ''}{formatNumber(item.weightChangeKg)} кг</td></tr>)}</tbody></table></div>}</section>
+                <section className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--app-shadow-card)]">
+                  <div className="flex items-center gap-2 border-b border-[var(--app-border)] px-5 py-4">
+                    <Target className="size-5 text-violet-300" />
+                    <div>
+                      <h2 className="text-sm font-semibold text-[var(--app-text)]">По упражнениям</h2>
+                      <p className="mt-0.5 text-xs text-[var(--app-muted)]">
+                        Объём, вес и изменение лучшего рабочего веса между первой и последней
+                        тренировкой периода.
+                      </p>
+                    </div>
+                  </div>
+                  {report.exercises.length === 0 ? (
+                    <div className="flex min-h-48 items-center justify-center text-sm text-[var(--app-muted)]">
+                      Нет упражнений за выбранный период
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[900px] text-left text-xs">
+                        <thead className="bg-[var(--app-workspace)] text-[var(--app-muted)]">
+                          <tr>
+                            <th className="px-4 py-3 font-semibold">Упражнение</th>
+                            <th className="px-3 py-3 font-semibold">Тренировки</th>
+                            <th className="px-3 py-3 font-semibold">Подходы</th>
+                            <th className="px-3 py-3 font-semibold">Повторы</th>
+                            <th className="px-3 py-3 font-semibold">Тоннаж</th>
+                            <th className="px-3 py-3 font-semibold">Макс. вес</th>
+                            <th className="px-3 py-3 font-semibold">Расч. 1ПМ</th>
+                            <th className="px-3 py-3 font-semibold">Изменение</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[var(--app-border)]">
+                          {report.exercises.map((item) => (
+                            <tr
+                              key={`${item.exerciseId}-${item.title}`}
+                              className="text-[var(--app-text)]"
+                            >
+                              <td className="px-4 py-3">
+                                <div className="font-semibold">{item.title}</div>
+                                <div className="mt-0.5 text-[11px] text-[var(--app-muted)]">
+                                  {workoutMuscleGroupLabel(item.muscleGroup)}
+                                </div>
+                              </td>
+                              <td className="px-3 py-3">{item.sessions}</td>
+                              <td className="px-3 py-3">{item.sets}</td>
+                              <td className="px-3 py-3">{item.reps}</td>
+                              <td className="px-3 py-3">{formatNumber(item.volumeKg)} кг</td>
+                              <td className="px-3 py-3">{formatNumber(item.maxWeightKg)} кг</td>
+                              <td className="px-3 py-3">
+                                {formatNumber(item.estimatedOneRepMax)} кг
+                              </td>
+                              <td
+                                className={cn(
+                                  'px-3 py-3 font-semibold',
+                                  item.weightChangeKg > 0
+                                    ? 'text-emerald-300'
+                                    : item.weightChangeKg < 0
+                                      ? 'text-rose-300'
+                                      : 'text-[var(--app-muted)]'
+                                )}
+                              >
+                                {item.weightChangeKg > 0 ? '+' : ''}
+                                {formatNumber(item.weightChangeKg)} кг
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </section>
 
                 <div className="grid gap-4 xl:grid-cols-2">
-                  <section className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--app-shadow-card)]"><div className="flex items-center gap-2 border-b border-[var(--app-border)] px-5 py-4"><FileText className="size-5 text-violet-300" /><h2 className="text-sm font-semibold text-[var(--app-text)]">По программам</h2></div><div className="divide-y divide-[var(--app-border)]">{report.programs.length === 0 ? <div className="px-5 py-10 text-center text-sm text-[var(--app-muted)]">Нет данных</div> : report.programs.map((item) => <div key={item.programId ?? 'custom'} className="flex items-center gap-3 px-5 py-3.5"><span className="flex size-9 items-center justify-center rounded-xl bg-violet-500/10 text-violet-300"><FileText className="size-4" /></span><div className="min-w-0 flex-1"><div className="truncate text-sm font-semibold text-[var(--app-text)]">{item.name}</div><div className="mt-0.5 text-xs text-[var(--app-muted)]">{item.sessions} трен. · {item.sets} подх. · {item.reps} повт.</div></div><span className="text-xs font-medium text-[var(--app-muted)]">{formatNumber(item.volumeKg)} кг</span></div>)}</div></section>
-                  <section className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--app-shadow-card)]"><div className="flex items-center gap-2 border-b border-[var(--app-border)] px-5 py-4"><Trophy className="size-5 text-amber-300" /><div><h2 className="text-sm font-semibold text-[var(--app-text)]">Лучшие показатели</h2><p className="mt-0.5 text-xs text-[var(--app-muted)]">Оценочный 1ПМ по формуле Эпли.</p></div></div><div className="divide-y divide-[var(--app-border)]">{report.personalRecords.length === 0 ? <div className="px-5 py-10 text-center text-sm text-[var(--app-muted)]">Добавьте тренировки с рабочим весом</div> : report.personalRecords.slice(0, 12).map((record, index) => <div key={`${record.exerciseId}-${record.title}`} className="flex items-center gap-3 px-5 py-3.5"><span className="flex size-8 items-center justify-center rounded-lg bg-amber-500/10 text-xs font-bold text-amber-300">{index + 1}</span><div className="min-w-0 flex-1"><div className="truncate text-sm font-semibold text-[var(--app-text)]">{record.title}</div><div className="mt-0.5 text-xs text-[var(--app-muted)]">{record.weightKg} кг × {record.reps} · {record.date}</div></div><span className="text-sm font-semibold text-amber-200">≈ {formatNumber(record.estimatedOneRepMax)} кг</span></div>)}</div></section>
+                  <section className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--app-shadow-card)]">
+                    <div className="flex items-center gap-2 border-b border-[var(--app-border)] px-5 py-4">
+                      <FileText className="size-5 text-violet-300" />
+                      <h2 className="text-sm font-semibold text-[var(--app-text)]">По программам</h2>
+                    </div>
+                    <div className="divide-y divide-[var(--app-border)]">
+                      {report.programs.length === 0 ? (
+                        <div className="px-5 py-10 text-center text-sm text-[var(--app-muted)]">
+                          Нет данных
+                        </div>
+                      ) : (
+                        report.programs.map((item) => (
+                          <div
+                            key={item.programId ?? 'custom'}
+                            className="flex items-center gap-3 px-5 py-3.5"
+                          >
+                            <span className="flex size-9 items-center justify-center rounded-xl bg-violet-500/10 text-violet-300">
+                              <FileText className="size-4" />
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate text-sm font-semibold text-[var(--app-text)]">
+                                {item.name}
+                              </div>
+                              <div className="mt-0.5 text-xs text-[var(--app-muted)]">
+                                {item.sessions} трен. · {item.sets} подх. · {item.reps} повт.
+                              </div>
+                            </div>
+                            <span className="text-xs font-medium text-[var(--app-muted)]">
+                              {formatNumber(item.volumeKg)} кг
+                            </span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </section>
+
+                  <section className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--app-shadow-card)]">
+                    <div className="flex items-center gap-2 border-b border-[var(--app-border)] px-5 py-4">
+                      <Trophy className="size-5 text-amber-300" />
+                      <div>
+                        <h2 className="text-sm font-semibold text-[var(--app-text)]">
+                          Лучшие показатели
+                        </h2>
+                        <p className="mt-0.5 text-xs text-[var(--app-muted)]">
+                          Оценочный 1ПМ по формуле Эпли.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="divide-y divide-[var(--app-border)]">
+                      {report.personalRecords.length === 0 ? (
+                        <div className="px-5 py-10 text-center text-sm text-[var(--app-muted)]">
+                          Добавьте тренировки с рабочим весом
+                        </div>
+                      ) : (
+                        report.personalRecords.slice(0, 12).map((record, index) => (
+                          <div
+                            key={`${record.exerciseId}-${record.title}`}
+                            className="flex items-center gap-3 px-5 py-3.5"
+                          >
+                            <span className="flex size-8 items-center justify-center rounded-lg bg-amber-500/10 text-xs font-bold text-amber-300">
+                              {index + 1}
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate text-sm font-semibold text-[var(--app-text)]">
+                                {record.title}
+                              </div>
+                              <div className="mt-0.5 text-xs text-[var(--app-muted)]">
+                                {record.weightKg} кг × {record.reps} · {record.date}
+                              </div>
+                            </div>
+                            <span className="text-sm font-semibold text-amber-200">
+                              ≈ {formatNumber(record.estimatedOneRepMax)} кг
+                            </span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </section>
                 </div>
 
-                <section className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-5 shadow-[var(--app-shadow-card)]"><div className="flex items-center gap-2"><BarChart3 className="size-5 text-violet-300" /><h2 className="text-sm font-semibold text-[var(--app-text)]">Средние показатели периода</h2></div><div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">{[
-                  ['Подходов / трен.', formatNumber(report.summary.averageSetsPerSession)],
-                  ['Повторов / трен.', formatNumber(report.summary.averageRepsPerSession)],
-                  ['Тоннаж / трен.', `${formatNumber(report.summary.averageVolumeKgPerSession)} кг`],
-                  ['Средний вес подхода', `${formatNumber(report.summary.averageWeightKg)} кг`],
-                  ['Максимальный вес', `${formatNumber(report.summary.maxWeightKg)} кг`],
-                  ['Упражнений', report.summary.exercises]
-                ].map(([label, value]) => <div key={String(label)} className="rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-3"><div className="text-[11px] text-[var(--app-muted)]">{label}</div><div className="mt-1 text-lg font-semibold text-[var(--app-text)]">{value}</div></div>)}</div></section>
+                <section className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-5 shadow-[var(--app-shadow-card)]">
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="size-5 text-violet-300" />
+                    <h2 className="text-sm font-semibold text-[var(--app-text)]">
+                      Средние показатели периода
+                    </h2>
+                  </div>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
+                    {[
+                      ['Подходов / трен.', formatNumber(report.summary.averageSetsPerSession)],
+                      ['Повторов / трен.', formatNumber(report.summary.averageRepsPerSession)],
+                      [
+                        'Тоннаж / трен.',
+                        `${formatNumber(report.summary.averageVolumeKgPerSession)} кг`
+                      ],
+                      ['Средний вес подхода', `${formatNumber(report.summary.averageWeightKg)} кг`],
+                      ['Максимальный вес', `${formatNumber(report.summary.maxWeightKg)} кг`],
+                      ['Упражнений', report.summary.exercises]
+                    ].map(([label, value]) => (
+                      <div
+                        key={String(label)}
+                        className="rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-3"
+                      >
+                        <div className="text-[11px] text-[var(--app-muted)]">{label}</div>
+                        <div className="mt-1 text-lg font-semibold text-[var(--app-text)]">
+                          {value}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
               </>
-            )}
-          </section>
-        )}
-      </div>
+            )
+          )}
+        </section>
+      )}
 
-      <WorkoutExerciseDialog open={exerciseDialogOpen} exercise={editingExercise} busy={isBusy} onOpenChange={(open) => { setExerciseDialogOpen(open); if (!open) setEditingExercise(null) }} onSave={saveExercise} />
-      <WorkoutProgramDialog open={programDialogOpen} program={editingProgram} exercises={exercises} busy={isBusy} onOpenChange={(open) => { setProgramDialogOpen(open); if (!open) setEditingProgram(null) }} onSave={saveProgram} />
-      <WorkoutSessionDialog open={sessionDialogOpen} session={editingSession} exercises={exercises} programs={programs} busy={isBusy} onOpenChange={(open) => { setSessionDialogOpen(open); if (!open) setEditingSession(null) }} onSave={saveSession} />
-      <WorkoutProgressDialog open={progressDialogOpen} entry={editingProgress} exercises={exercises} busy={isBusy} onOpenChange={(open) => { setProgressDialogOpen(open); if (!open) setEditingProgress(null) }} onSave={saveProgress} />
-      <WorkoutSessionDetailDialog open={sessionDetailOpen} session={selectedSession} onOpenChange={(open) => { setSessionDetailOpen(open); if (!open) setSelectedSession(null) }} onEdit={() => { if (!selectedSession) return; setEditingSession(selectedSession); setSessionDetailOpen(false); setSessionDialogOpen(true) }} />
+      <WorkoutExerciseDialog
+        open={exerciseDialogOpen}
+        exercise={editingExercise}
+        busy={isBusy}
+        onOpenChange={(open) => {
+          setExerciseDialogOpen(open)
+          if (!open) setEditingExercise(null)
+        }}
+        onSave={saveExercise}
+      />
+      <WorkoutProgramDialog
+        open={programDialogOpen}
+        program={editingProgram}
+        exercises={exercises}
+        busy={isBusy}
+        onOpenChange={(open) => {
+          setProgramDialogOpen(open)
+          if (!open) setEditingProgram(null)
+        }}
+        onSave={saveProgram}
+      />
+      <WorkoutSessionDialog
+        open={sessionDialogOpen}
+        session={editingSession}
+        exercises={exercises}
+        programs={programs}
+        busy={isBusy}
+        onOpenChange={(open) => {
+          setSessionDialogOpen(open)
+          if (!open) setEditingSession(null)
+        }}
+        onSave={saveSession}
+      />
+      <WorkoutProgressDialog
+        open={progressDialogOpen}
+        entry={editingProgress}
+        exercises={exercises}
+        busy={isBusy}
+        onOpenChange={(open) => {
+          setProgressDialogOpen(open)
+          if (!open) setEditingProgress(null)
+        }}
+        onSave={saveProgress}
+      />
+      <WorkoutSessionDetailDialog
+        open={sessionDetailOpen}
+        session={selectedSession}
+        onOpenChange={(open) => {
+          setSessionDetailOpen(open)
+          if (!open) setSelectedSession(null)
+        }}
+        onEdit={() => {
+          if (!selectedSession) return
+          setEditingSession(selectedSession)
+          setSessionDetailOpen(false)
+          setSessionDialogOpen(true)
+        }}
+      />
 
-      <DeleteConfirmationDialog open={deleteExerciseTarget !== null} title="Удалить упражнение?" subject={deleteExerciseTarget?.title} description="Удаление возможно только если упражнение не используется в программах или истории. Для сохранения связей лучше архивировать его." notice="Исторические данные не должны терять связь с упражнением" isSubmitting={isDeleting} error={error} onOpenChange={(open) => { if (!open) setDeleteExerciseTarget(null) }} onConfirm={confirmDeleteExercise} />
-      <DeleteConfirmationDialog open={deleteProgramTarget !== null} title="Удалить программу?" subject={deleteProgramTarget?.name} description="Записанные тренировки сохранятся и продолжат показывать название программы из исторического снимка." notice="Состав программы будет удалён" isSubmitting={isDeleting} error={error} onOpenChange={(open) => { if (!open) setDeleteProgramTarget(null) }} onConfirm={confirmDeleteProgram} />
-      <DeleteConfirmationDialog open={deleteSessionTarget !== null} title="Удалить тренировку?" subject={deleteSessionTarget?.title || deleteSessionTarget?.programName || deleteSessionTarget?.date} description="Будут удалены все упражнения, подходы, повторения и веса этой записи." notice="Это изменит статистику и отчёты" isSubmitting={isDeleting} error={error} onOpenChange={(open) => { if (!open) setDeleteSessionTarget(null) }} onConfirm={confirmDeleteSession} />
-      <DeleteConfirmationDialog open={deleteProgressTarget !== null} title="Удалить запись прогресса?" subject={deleteProgressTarget ? formatDate(deleteProgressTarget.date) : undefined} description="Будут удалены показатели, заметки и локальные фотографии этой записи." notice="Восстановить запись после удаления нельзя" isSubmitting={isDeleting} error={error} onOpenChange={(open) => { if (!open) setDeleteProgressTarget(null) }} onConfirm={confirmDeleteProgress} />
-    </main>
+      <DeleteConfirmationDialog
+        open={deleteExerciseTarget !== null}
+        title="Удалить упражнение?"
+        subject={deleteExerciseTarget?.title}
+        description="Удаление возможно только если упражнение не используется в программах или истории. Для сохранения связей лучше архивировать его."
+        notice="Исторические данные не должны терять связь с упражнением"
+        isSubmitting={isDeleting}
+        error={error}
+        onOpenChange={(open) => {
+          if (!open) setDeleteExerciseTarget(null)
+        }}
+        onConfirm={confirmDeleteExercise}
+      />
+      <DeleteConfirmationDialog
+        open={deleteProgramTarget !== null}
+        title="Удалить программу?"
+        subject={deleteProgramTarget?.name}
+        description="Записанные тренировки сохранятся и продолжат показывать название программы из исторического снимка."
+        notice="Состав программы будет удалён"
+        isSubmitting={isDeleting}
+        error={error}
+        onOpenChange={(open) => {
+          if (!open) setDeleteProgramTarget(null)
+        }}
+        onConfirm={confirmDeleteProgram}
+      />
+      <DeleteConfirmationDialog
+        open={deleteSessionTarget !== null}
+        title="Удалить тренировку?"
+        subject={
+          deleteSessionTarget?.title || deleteSessionTarget?.programName || deleteSessionTarget?.date
+        }
+        description="Будут удалены все упражнения, подходы, повторения и веса этой записи."
+        notice="Это изменит статистику и отчёты"
+        isSubmitting={isDeleting}
+        error={error}
+        onOpenChange={(open) => {
+          if (!open) setDeleteSessionTarget(null)
+        }}
+        onConfirm={confirmDeleteSession}
+      />
+      <DeleteConfirmationDialog
+        open={deleteProgressTarget !== null}
+        title="Удалить запись прогресса?"
+        subject={deleteProgressTarget ? formatDate(deleteProgressTarget.date) : undefined}
+        description="Будут удалены показатели, заметки и локальные фотографии этой записи."
+        notice="Восстановить запись после удаления нельзя"
+        isSubmitting={isDeleting}
+        error={error}
+        onOpenChange={(open) => {
+          if (!open) setDeleteProgressTarget(null)
+        }}
+        onConfirm={confirmDeleteProgress}
+      />
+    </StandardModulePage>
   )
 }
