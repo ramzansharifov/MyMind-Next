@@ -19,7 +19,6 @@ interface ModuleHeaderProps {
 export function ModuleHeader({
   icon: Icon,
   leading,
-  eyebrow,
   title,
   description,
   actions,
@@ -61,19 +60,10 @@ export function ModuleHeader({
             ) : null)}
 
           <div className="min-w-0">
-            {eyebrow && (
-              <div className="mb-1 text-[11px] font-semibold tracking-[0.12em] text-violet-300 uppercase">
-                {eyebrow}
-              </div>
-            )}
             <h1 className="text-3xl font-semibold tracking-[-0.035em] text-[var(--app-text)]">
               {title}
             </h1>
-            {description && (
-              <div className="mt-1 max-w-3xl text-sm leading-6 text-[var(--app-muted)]">
-                {description}
-              </div>
-            )}
+            {description && <div className="sr-only">{description}</div>}
           </div>
         </div>
 
