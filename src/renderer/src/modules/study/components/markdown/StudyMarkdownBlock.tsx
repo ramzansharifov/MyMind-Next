@@ -13,6 +13,7 @@ import { cn } from '../../../../shared/lib/cn'
 import { normalizeStudyCodeLanguage } from '../code/code-languages'
 import { StudyCodeBlock } from '../code/StudyCodeBlock'
 import { StudySourceBlockShell } from '../source/StudySourceBlockShell'
+import { StudySourceLineNumbers } from '../source/StudySourceLineNumbers'
 
 interface StudyMarkdownBlockProps {
   source: string
@@ -232,29 +233,39 @@ function MarkdownSourceEditor({
       </label>
 
       <div
-        className={cn(fullscreen ? 'min-h-0 flex-1 overflow-auto' : 'max-h-[36rem] overflow-auto')}
+        className={cn(
+          'study-source-editor-scroll',
+          fullscreen ? 'min-h-0 flex-1 overflow-auto' : 'max-h-[36rem] overflow-auto'
+        )}
       >
-        <Editor
-          value={source}
-          textareaId={id}
-          insertSpaces
-          tabSize={2}
-          padding={16}
-          placeholder="Начни писать Markdown…"
-          className="study-markdown-source"
-          textareaClassName="study-markdown-source__textarea"
-          preClassName="study-markdown-source__pre"
-          highlight={highlightMarkdown}
-          style={{
-            minHeight: fullscreen ? '100%' : '3.45rem',
-            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-            fontSize: '0.875rem',
-            lineHeight: '1.65'
-          }}
-          onValueChange={(value) => {
-            onChange?.(value)
-          }}
-        />
+        <div
+          data-fullscreen={fullscreen ? 'true' : 'false'}
+          className="study-source-editor-body"
+        >
+          <StudySourceLineNumbers source={source} />
+
+          <Editor
+            value={source}
+            textareaId={id}
+            insertSpaces
+            tabSize={2}
+            padding={16}
+            placeholder="Начни писать Markdown…"
+            className="study-markdown-source study-source-editor__editor"
+            textareaClassName="study-markdown-source__textarea"
+            preClassName="study-markdown-source__pre"
+            highlight={highlightMarkdown}
+            style={{
+              minHeight: fullscreen ? '100%' : '3.45rem',
+              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+              fontSize: '0.875rem',
+              lineHeight: '1.65'
+            }}
+            onValueChange={(value) => {
+              onChange?.(value)
+            }}
+          />
+        </div>
       </div>
     </>
   )
