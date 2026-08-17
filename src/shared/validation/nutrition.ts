@@ -13,7 +13,8 @@ const dateSchema = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, 'Дата должна быть в формате ГГГГ-ММ-ДД')
 const nonNegativeNumber = z.number().finite().min(0, 'Значение не может быть отрицательным')
-const optionalTarget = z.number().finite().positive('Цель должна быть больше нуля').nullable()
+const targetSchema = (maximum: number) =>
+  z.number().finite().positive('Цель должна быть больше нуля').max(maximum).nullable()
 
 export const nutritionValuesSchema = z.object({
   calories: nonNegativeNumber.max(100_000),
@@ -114,11 +115,11 @@ export const setNutritionWaterInputSchema = z.object({
 
 export const setNutritionTargetsInputSchema = z.object({
   effectiveFrom: dateSchema,
-  calories: optionalTarget.max(100_000).nullable(),
-  proteinG: optionalTarget.max(10_000).nullable(),
-  fatG: optionalTarget.max(10_000).nullable(),
-  carbsG: optionalTarget.max(10_000).nullable(),
-  fiberG: optionalTarget.max(10_000).nullable(),
+  calories: targetSchema(100_000),
+  proteinG: targetSchema(10_000),
+  fatG: targetSchema(10_000),
+  carbsG: targetSchema(10_000),
+  fiberG: targetSchema(10_000),
   waterMl: z.number().int().positive().max(100_000).nullable()
 })
 
