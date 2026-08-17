@@ -40,4 +40,16 @@ describe('StudyMarkdownBlock', () => {
 
     expect(screen.queryByText('unsafe()')).not.toBeInTheDocument()
   })
+
+  it('shows line numbers in the source editor', () => {
+    const { container } = render(
+      <StudyMarkdownBlock mode="edit" viewMode="write" source={'# Заголовок\n\nТекст'} />
+    )
+
+    expect(
+      Array.from(container.querySelectorAll('[data-study-source-line-number]')).map(
+        (node) => node.textContent
+      )
+    ).toEqual(['1', '2', '3'])
+  })
 })

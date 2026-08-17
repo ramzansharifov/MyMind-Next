@@ -14,6 +14,7 @@ import type {
 } from '../../../../../../shared/contracts/study'
 import { cn } from '../../../../shared/lib/cn'
 import { StudySourceBlockShell } from '../source/StudySourceBlockShell'
+import { StudySourceLineNumbers } from '../source/StudySourceLineNumbers'
 import { renderStudyLatex } from './latex-renderer'
 
 interface StudyLatexBlockProps {
@@ -208,29 +209,39 @@ function LatexSourceEditor({
       </label>
 
       <div
-        className={cn(fullscreen ? 'min-h-0 flex-1 overflow-auto' : 'max-h-[36rem] overflow-auto')}
+        className={cn(
+          'study-source-editor-scroll',
+          fullscreen ? 'min-h-0 flex-1 overflow-auto' : 'max-h-[36rem] overflow-auto'
+        )}
       >
-        <Editor
-          value={source}
-          textareaId={id}
-          insertSpaces
-          tabSize={2}
-          padding={16}
-          placeholder={String.raw`\frac{-b \pm \sqrt{b^2 - 4ac}}{2a}`}
-          className="study-latex-source"
-          textareaClassName="study-latex-source__textarea"
-          preClassName="study-latex-source__pre"
-          highlight={highlightLatex}
-          style={{
-            minHeight: fullscreen ? '100%' : '3.45rem',
-            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-            fontSize: '0.875rem',
-            lineHeight: '1.65'
-          }}
-          onValueChange={(value) => {
-            onChange?.(value)
-          }}
-        />
+        <div
+          data-fullscreen={fullscreen ? 'true' : 'false'}
+          className="study-source-editor-body"
+        >
+          <StudySourceLineNumbers source={source} />
+
+          <Editor
+            value={source}
+            textareaId={id}
+            insertSpaces
+            tabSize={2}
+            padding={16}
+            placeholder={String.raw`\frac{-b \pm \sqrt{b^2 - 4ac}}{2a}`}
+            className="study-latex-source study-source-editor__editor"
+            textareaClassName="study-latex-source__textarea"
+            preClassName="study-latex-source__pre"
+            highlight={highlightLatex}
+            style={{
+              minHeight: fullscreen ? '100%' : '3.45rem',
+              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+              fontSize: '0.875rem',
+              lineHeight: '1.65'
+            }}
+            onValueChange={(value) => {
+              onChange?.(value)
+            }}
+          />
+        </div>
       </div>
     </>
   )
