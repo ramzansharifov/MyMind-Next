@@ -3,6 +3,7 @@ import {
   Disc3,
   Film,
   GraduationCap,
+  KeyRound,
   ListTodo,
   Notebook,
   Repeat2,
@@ -25,6 +26,7 @@ describe('app module registry', () => {
     expect(getAppModule('movies')).toBe(appModuleRegistry.movies)
     expect(getAppModule('music')).toBe(appModuleRegistry.music)
     expect(getAppModule('finance')).toBe(appModuleRegistry.finance)
+    expect(getAppModule('passwords')).toBe(appModuleRegistry.passwords)
     expect(getAppModule('settings')).toBe(appModuleRegistry.settings)
     expect(appModuleRegistry.study.icon).toBe(GraduationCap)
     expect(appModuleRegistry.notes.icon).toBe(Notebook)
@@ -34,6 +36,7 @@ describe('app module registry', () => {
     expect(appModuleRegistry.movies.icon).toBe(Film)
     expect(appModuleRegistry.music.icon).toBe(Disc3)
     expect(appModuleRegistry.finance.icon).toBe(Wallet)
+    expect(appModuleRegistry.passwords.icon).toBe(KeyRound)
     expect(primaryNavigationItems.map(({ id }) => id)).toEqual([
       'study',
       'boards',
@@ -43,7 +46,8 @@ describe('app module registry', () => {
       'diary',
       'movies',
       'music',
-      'finance'
+      'finance',
+      'passwords'
     ])
     expect(utilityNavigationItems.map(({ id }) => id)).toEqual(['settings'])
   })
