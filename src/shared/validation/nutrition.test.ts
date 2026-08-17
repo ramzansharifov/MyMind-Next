@@ -3,11 +3,13 @@ import { describe, expect, it } from 'vitest'
 import {
   createNutritionLogEntryInputSchema,
   createNutritionRecipeInputSchema,
+  nutritionOverviewInputSchema,
   nutritionReportInputSchema,
   setNutritionTargetsInputSchema
 } from './nutrition'
 
 const foodId = '11111111-1111-4111-8111-111111111111'
+const recipeId = '22222222-2222-4222-8222-222222222222'
 
 const zeroNutrients = {
   calories: 0,
@@ -52,6 +54,11 @@ describe('nutrition validation', () => {
     })
 
     expect(result.success).toBe(false)
+  })
+
+  it('rejects impossible calendar dates', () => {
+    expect(nutritionOverviewInputSchema.safeParse({ date: '2026-02-29' }).success).toBe(false)
+    expect(nutritionOverviewInputSchema.safeParse({ date: '2028-02-29' }).success).toBe(true)
   })
 
   it('accepts optional targets and rejects negative values', () => {
@@ -107,6 +114,30 @@ describe('nutrition validation', () => {
     })
 
     expect(result.success).toBe(false)
+  })
+
+  it('rejects mutually incompatible report source filters', () => {
+    expect(
+      nutritionReportInputSchema.safeParse({
+        dateFrom: '2026-08-01',
+        dateTo: '2026-08-17',
+        mealType: null,
+        sourceType: 'recipe',
+        foodId,
+        recipeId: null
+      }).success
+    ).toBe(false)
+
+    expect(
+      nutritionReportInputSchema.safeParse({
+        dateFrom: '2026-08-01',
+        dateTo: '2026-08-17',
+        mealType: null,
+        sourceType: null,
+        foodId,
+        recipeId
+      }).success
+    ).toBe(false)
   })
 
   it('accepts a complete custom record', () => {
