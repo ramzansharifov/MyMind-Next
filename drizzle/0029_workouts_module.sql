@@ -65,7 +65,7 @@ CREATE TABLE `workout_session_exercises` (
   `position` integer NOT NULL,
   `comment` text DEFAULT '' NOT NULL,
   FOREIGN KEY (`session_id`) REFERENCES `workout_sessions`(`id`) ON UPDATE no action ON DELETE cascade,
-  FOREIGN KEY (`exercise_id`) REFERENCES `workout_exercises`(`id`) ON UPDATE no action ON DELETE set null
+  FOREIGN KEY (`exercise_id`) REFERENCES `workout_exercises`(`id`) ON UPDATE no action ON DELETE restrict
 );
 --> statement-breakpoint
 CREATE INDEX `workout_session_exercises_session_idx` ON `workout_session_exercises` (`session_id`,`position`);
@@ -108,7 +108,7 @@ CREATE TABLE `workout_progress_metrics` (
   `comment` text DEFAULT '' NOT NULL,
   `position` integer NOT NULL,
   FOREIGN KEY (`entry_id`) REFERENCES `workout_progress_entries`(`id`) ON UPDATE no action ON DELETE cascade,
-  FOREIGN KEY (`exercise_id`) REFERENCES `workout_exercises`(`id`) ON UPDATE no action ON DELETE set null
+  FOREIGN KEY (`exercise_id`) REFERENCES `workout_exercises`(`id`) ON UPDATE no action ON DELETE restrict
 );
 --> statement-breakpoint
 CREATE INDEX `workout_progress_metrics_entry_idx` ON `workout_progress_metrics` (`entry_id`,`position`);
