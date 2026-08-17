@@ -12,3 +12,7 @@
   bottom: 0;
   left: 0;
 }
+
+[data-study-image-fullscreen-dialog] {
+  top: var(--app-titlebar-height) !important;
+}
