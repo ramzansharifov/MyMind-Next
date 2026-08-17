@@ -105,7 +105,7 @@ export function NutritionTargetsDialog({
             disabled={busy || !effectiveFrom}
             className="h-10 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400 disabled:opacity-45"
           >
-            Сохранить период
+            Сохранить
           </button>
         </>
       }
@@ -126,7 +126,7 @@ export function NutritionTargetsDialog({
 
         <div className="grid gap-3 sm:grid-cols-2">
           {FIELDS.map((field) => (
-            <NutritionFormField key={field.key} label={field.label} hint="необязательно">
+            <NutritionFormField key={field.key} label={field.label}>
               <input
                 type="number"
                 min="0.001"
@@ -141,10 +141,6 @@ export function NutritionTargetsDialog({
             </NutritionFormField>
           ))}
         </div>
-
-        <p className="rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-3 text-xs leading-5 text-[var(--app-muted)]">
-          Пустое поле означает, что показатель не сравнивается с целью. Значения задаются вручную и используются только для личного отслеживания.
-        </p>
       </form>
     </AppDialog>
   )
