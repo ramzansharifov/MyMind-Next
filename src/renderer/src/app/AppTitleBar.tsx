@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 
 import { cn } from '../shared/lib/cn'
 import { Tooltip } from '../shared/ui/tooltip'
+import './window-layout.css'
 
 export function AppTitleBar(): React.JSX.Element {
   const [isMaximized, setIsMaximized] = useState(false)
@@ -37,7 +38,7 @@ export function AppTitleBar(): React.JSX.Element {
     <header
       data-app-titlebar
       className={cn(
-        'relative z-[100] flex h-9 shrink-0 items-center overflow-hidden',
+        'app-titlebar relative z-[100] flex shrink-0 items-center overflow-hidden',
         'border-b border-[var(--app-border)] bg-[var(--app-sidebar)]',
         'text-[var(--app-text)] shadow-[0_1px_0_rgb(255_255_255/0.015)]'
       )}
