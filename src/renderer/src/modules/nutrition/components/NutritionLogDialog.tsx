@@ -121,9 +121,7 @@ export function NutritionLogDialog({
   const selectedFood =
     sourceType === 'food' ? foods.find((food) => food.id === sourceId) ?? null : null
   const selectedRecipe =
-    sourceType === 'recipe'
-      ? recipes.find((recipe) => recipe.id === sourceId) ?? null
-      : null
+    sourceType === 'recipe' ? recipes.find((recipe) => recipe.id === sourceId) ?? null : null
 
   const sourceCandidates = useMemo(() => {
     const normalized = sourceQuery.trim().toLocaleLowerCase('ru-RU')
@@ -209,7 +207,7 @@ export function NutritionLogDialog({
 
   async function submit(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault()
-    if (busy || amount <= 0) return
+    if (busy || !Number.isFinite(amount) || amount <= 0) return
     if (mealType === 'other' && !customMealName.trim()) return
     if (sourceType !== 'custom' && !sourceId) return
     if (sourceType === 'custom' && !customTitle.trim()) return
@@ -247,7 +245,7 @@ export function NutritionLogDialog({
           <button
             type="submit"
             form="nutrition-log-form"
-            disabled={busy || amount <= 0}
+            disabled={busy || !Number.isFinite(amount) || amount <= 0}
             className="h-10 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400 disabled:opacity-45"
           >
             Сохранить
@@ -258,7 +256,7 @@ export function NutritionLogDialog({
       <form
         id="nutrition-log-form"
         className="space-y-4"
-        onSubmit={(event) => void submit(event)}
+        onSubmit={(event) => void submit(event).catch(() => undefined)}
       >
         <div className="grid gap-3 sm:grid-cols-2">
           <NutritionFormField label="Приём пищи">
