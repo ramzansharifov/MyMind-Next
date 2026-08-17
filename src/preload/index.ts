@@ -14,6 +14,7 @@ import {
   type NoteSummary,
   type NotesOverview
 } from '../shared/contracts/notes'
+import { PASSWORDS_IPC_CHANNELS } from '../shared/contracts/passwords'
 import {
   PREFERENCES_IPC_CHANNELS,
   type AppearancePreferences
@@ -272,6 +273,26 @@ const api: MyMindApi = {
     upsertEntry: (input) => ipcRenderer.invoke(HABITS_IPC_CHANNELS.upsertEntry, input),
     deleteEntry: (input) => ipcRenderer.invoke(HABITS_IPC_CHANNELS.deleteEntry, input),
     getReport: (input) => ipcRenderer.invoke(HABITS_IPC_CHANNELS.getReport, input)
+  },
+
+  passwords: {
+    getVaultStatus: () => ipcRenderer.invoke(PASSWORDS_IPC_CHANNELS.getVaultStatus),
+    setupVault: (input) => ipcRenderer.invoke(PASSWORDS_IPC_CHANNELS.setupVault, input),
+    unlockVault: (input) => ipcRenderer.invoke(PASSWORDS_IPC_CHANNELS.unlockVault, input),
+    lockVault: () => ipcRenderer.invoke(PASSWORDS_IPC_CHANNELS.lockVault),
+    changeMasterPassword: (input) =>
+      ipcRenderer.invoke(PASSWORDS_IPC_CHANNELS.changeMasterPassword, input),
+    listOverview: () => ipcRenderer.invoke(PASSWORDS_IPC_CHANNELS.listOverview),
+    getItem: (input) => ipcRenderer.invoke(PASSWORDS_IPC_CHANNELS.getItem, input),
+    createGroup: (input) => ipcRenderer.invoke(PASSWORDS_IPC_CHANNELS.createGroup, input),
+    updateGroup: (input) => ipcRenderer.invoke(PASSWORDS_IPC_CHANNELS.updateGroup, input),
+    deleteGroup: (input) => ipcRenderer.invoke(PASSWORDS_IPC_CHANNELS.deleteGroup, input),
+    createItem: (input) => ipcRenderer.invoke(PASSWORDS_IPC_CHANNELS.createItem, input),
+    updateItem: (input) => ipcRenderer.invoke(PASSWORDS_IPC_CHANNELS.updateItem, input),
+    deleteItem: (input) => ipcRenderer.invoke(PASSWORDS_IPC_CHANNELS.deleteItem, input),
+    generatePassword: (input) => ipcRenderer.invoke(PASSWORDS_IPC_CHANNELS.generatePassword, input),
+    copyItemField: (input) => ipcRenderer.invoke(PASSWORDS_IPC_CHANNELS.copyItemField, input),
+    openWebsite: (input) => ipcRenderer.invoke(PASSWORDS_IPC_CHANNELS.openWebsite, input)
   },
 
   finance: {
