@@ -9,9 +9,23 @@ import {
 } from '../contracts/nutrition'
 
 const idSchema = z.string().uuid('Некорректный идентификатор')
+const datePattern = /^\d{4}-\d{2}-\d{2}$/
+
+function isCalendarDate(value: string): boolean {
+  if (!datePattern.test(value)) return false
+  const [year, month, day] = value.split('-').map(Number)
+  const date = new Date(Date.UTC(year, month - 1, day))
+  return (
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
+  )
+}
+
 const dateSchema = z
   .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Дата должна быть в формате ГГГГ-ММ-ДД')
+  .regex(datePattern, 'Дата должна быть в формате ГГГГ-ММ-ДД')
+  .refine(isCalendarDate, 'Укажите существующую календарную дату')
 const nonNegativeNumber = z.number().finite().min(0, 'Значение не может быть отрицательным')
 const targetSchema = (maximum: number) =>
   z.number().finite().positive('Цель должна быть больше нуля').max(maximum).nullable()
@@ -44,7 +58,11 @@ export const deleteNutritionFoodInputSchema = z.object({ id: idSchema })
 
 const recipeIngredientSchema = z.object({
   foodId: idSchema,
-  amount: z.number().finite().positive('Количество ингредиента должно быть больше нуля').max(100_000)
+  amount: z
+    .number()
+    .finite()
+    .positive('Количество ингредиента должно быть больше нуля')
+    .max(100_000)
 })
 
 const recipePayloadSchema = z
@@ -54,7 +72,10 @@ const recipePayloadSchema = z
     servings: z.number().finite().positive('Количество порций должно быть больше нуля').max(1000),
     favorite: z.boolean(),
     status: z.enum(NUTRITION_ENTITY_STATUSES),
-    ingredients: z.array(recipeIngredientSchema).min(1, 'Добавьте хотя бы один ингредиент').max(200)
+    ingredients: z
+      .array(recipeIngredientSchema)
+      .min(1, 'Добавьте хотя бы один ингредиент')
+      .max(200)
   })
   .superRefine((input, context) => {
     const ids = input.ingredients.map((ingredient) => ingredient.foodId)
@@ -86,20 +107,37 @@ const logPayloadSchema = z
   })
   .superRefine((input, context) => {
     if (input.mealType === 'other' && !input.customMealName) {
-      context.addIssue({ code: 'custom', message: 'Укажите название приёма пищи', path: ['customMealName'] })
+      context.addIssue({
+        code: 'custom',
+        message: 'Укажите название приёма пищи',
+        path: ['customMealName']
+      })
     }
+
     if (input.sourceType === 'custom') {
       if (!input.customTitle) {
         context.addIssue({ code: 'custom', message: 'Введите название', path: ['customTitle'] })
       }
       if (!input.customNutrients) {
-        context.addIssue({ code: 'custom', message: 'Укажите пищевую ценность', path: ['customNutrients'] })
+        context.addIssue({
+          code: 'custom',
+          message: 'Укажите пищевую ценность',
+          path: ['customNutrients']
+        })
       }
       if (input.sourceId !== null) {
-        context.addIssue({ code: 'custom', message: 'Своя запись не должна ссылаться на каталог', path: ['sourceId'] })
+        context.addIssue({
+          code: 'custom',
+          message: 'Своя запись не должна ссылаться на каталог',
+          path: ['sourceId']
+        })
       }
     } else if (input.sourceId === null) {
-      context.addIssue({ code: 'custom', message: 'Выберите продукт или рецепт', path: ['sourceId'] })
+      context.addIssue({
+        code: 'custom',
+        message: 'Выберите продукт или рецепт',
+        path: ['sourceId']
+      })
     }
   })
 
@@ -132,7 +170,33 @@ export const nutritionReportInputSchema = z
     foodId: idSchema.nullable(),
     recipeId: idSchema.nullable()
   })
-  .refine((input) => input.dateFrom <= input.dateTo, {
-    message: 'Начальная дата не может быть позже конечной',
-    path: ['dateTo']
+  .superRefine((input, context) => {
+    if (input.dateFrom > input.dateTo) {
+      context.addIssue({
+        code: 'custom',
+        message: 'Начальная дата не может быть позже конечной',
+        path: ['dateTo']
+      })
+    }
+    if (input.foodId && input.recipeId) {
+      context.addIssue({
+        code: 'custom',
+        message: 'Одновременно можно выбрать только продукт или рецепт',
+        path: ['recipeId']
+      })
+    }
+    if (input.foodId && input.sourceType !== null && input.sourceType !== 'food') {
+      context.addIssue({
+        code: 'custom',
+        message: 'Фильтр продукта совместим только с источником «Продукт»',
+        path: ['foodId']
+      })
+    }
+    if (input.recipeId && input.sourceType !== null && input.sourceType !== 'recipe') {
+      context.addIssue({
+        code: 'custom',
+        message: 'Фильтр рецепта совместим только с источником «Рецепт»',
+        path: ['recipeId']
+      })
+    }
   })
