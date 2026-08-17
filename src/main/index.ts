@@ -9,11 +9,13 @@ import { IPC_CHANNELS } from '../shared/contracts/system'
 import { closeDatabase, initializeDatabase } from './database/client'
 import { runDatabaseMigrations } from './database/migrate'
 import { registerIpcHandlers } from './ipc/register-ipc'
+import { lockPasswordVault } from './repositories/passwords.repository'
 import { runStudyLinkTargetsMaintenance } from './repositories/study.repository'
 import { installContentSecurityPolicy } from './security/content-security-policy'
 import { installPermissionPolicy } from './security/permissions'
 import { focusExistingAppWindow } from './security/single-instance'
 import { mainOperationTracker } from './services/main-operation-tracker'
+import { clearTrackedPasswordClipboard } from './services/password-clipboard'
 import {
   ShutdownCoordinator,
   type ShutdownFallbackContext,
@@ -95,8 +97,14 @@ async function resolveShutdownFallback(
   return result.response === 1 ? 'force' : 'cancel'
 }
 
+function closeApplicationResources(): void {
+  clearTrackedPasswordClipboard()
+  lockPasswordVault()
+  closeDatabase()
+}
+
 const shutdownCoordinator = new ShutdownCoordinator({
-  closeResources: closeDatabase,
+  closeResources: closeApplicationResources,
   waitForOperations: () => mainOperationTracker.whenIdle(),
   pauseOperations: () => mainOperationTracker.pauseNewOperations(),
   resumeOperations: () => mainOperationTracker.resumeNewOperations(),
