@@ -28,6 +28,8 @@ import type {
 import { cn } from '../../shared/lib/cn'
 import { AppSelect } from '../../shared/ui/AppSelect'
 import { DeleteConfirmationDialog } from '../../shared/ui/DeleteConfirmationDialog'
+import { ModuleHeader } from '../../shared/ui/ModuleHeader'
+import { StandardModulePage } from '../../shared/ui/StandardModulePage'
 import { tasksClient } from './api/tasks-client'
 import { TaskDialog } from './components/TaskDialog'
 import { TaskGroupDialog } from './components/TaskGroupDialog'
@@ -481,524 +483,502 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
 
   if (isLoading) {
     return (
-      <main className="flex h-full items-center justify-center bg-[var(--app-workspace)] text-sm text-[var(--app-muted)]">
-        Загружаем задачи…
-      </main>
+      <StandardModulePage>
+        <div className="flex min-h-[70vh] items-center justify-center text-sm text-[var(--app-muted)]">
+          Загружаем задачи…
+        </div>
+      </StandardModulePage>
     )
   }
 
   return (
-    <main className="h-full overflow-y-auto bg-[var(--app-workspace)] px-8 py-7 max-[700px]:px-4 max-[700px]:py-5">
-      <div className="mx-auto w-full max-w-[1400px]">
-        <header className="relative isolate overflow-hidden rounded-[28px] border border-[var(--app-border)] bg-[var(--app-surface)] p-6 shadow-[var(--app-shadow-card)]">
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute -top-32 right-8 -z-10 size-80 rounded-full bg-violet-500/10 blur-3xl"
-          />
-          <div className="flex flex-wrap items-center justify-between gap-5">
-            <div className="flex min-w-0 items-center gap-4">
-              <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-violet-500/20 bg-violet-500/10 text-violet-300">
-                <ListTodo className="size-6" />
-              </span>
-              <div>
-                <h1 className="text-3xl font-semibold tracking-[-0.035em] text-[var(--app-text)]">
-                  Задачи
-                </h1>
-                <p className="mt-1 text-sm text-[var(--app-muted)]">
-                  Дела по контекстам, срокам и приоритетам — без лишней сложности.
-                </p>
-              </div>
-            </div>
+    <StandardModulePage>
+      <ModuleHeader
+        icon={ListTodo}
+        title="Задачи"
+        description="Дела по контекстам, срокам и приоритетам — без лишней сложности."
+        actions={
+          <>
+            <button
+              type="button"
+              className="inline-flex h-11 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+              onClick={openNewGroup}
+            >
+              <FolderPlus className="size-4" /> Новая группа
+            </button>
+            <button
+              type="button"
+              className="inline-flex h-11 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-400"
+              onClick={openNewTask}
+            >
+              <Plus className="size-4" /> Новая задача
+            </button>
+          </>
+        }
+      >
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {[
+            { id: 'active' as const, label: 'Активные', value: stats.active, icon: Circle },
+            {
+              id: 'today' as const,
+              label: 'Сегодня',
+              value: stats.today,
+              icon: CalendarClock
+            },
+            {
+              id: 'overdue' as const,
+              label: 'Просроченные',
+              value: stats.overdue,
+              icon: TriangleAlert
+            },
+            {
+              id: 'completed' as const,
+              label: 'Выполненные',
+              value: stats.completed,
+              icon: CheckCircle2
+            }
+          ].map((stat) => {
+            const Icon = stat.icon
+            const danger = stat.id === 'overdue' && stat.value > 0
+            return (
+              <button
+                key={stat.id}
+                type="button"
+                className={cn(
+                  'flex items-center justify-between rounded-2xl border bg-[var(--app-workspace)] px-4 py-3 text-left transition-colors',
+                  viewFilter === stat.id
+                    ? 'border-violet-400/30 bg-violet-500/10'
+                    : danger
+                      ? 'border-rose-400/20 hover:bg-rose-500/[0.06]'
+                      : 'border-[var(--app-border)] hover:bg-[var(--app-control-hover)]'
+                )}
+                onClick={() => setViewFilter(stat.id)}
+              >
+                <span>
+                  <span className="block text-xs font-medium text-[var(--app-muted)]">
+                    {stat.label}
+                  </span>
+                  <span
+                    className={cn(
+                      'mt-1 block text-2xl font-semibold text-[var(--app-text)]',
+                      danger && 'text-rose-200'
+                    )}
+                  >
+                    {stat.value}
+                  </span>
+                </span>
+                <Icon
+                  aria-hidden="true"
+                  className={cn('size-5 text-[var(--app-muted)]', danger && 'text-rose-300')}
+                />
+              </button>
+            )
+          })}
+        </div>
+      </ModuleHeader>
 
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                className="inline-flex h-11 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-                onClick={openNewGroup}
-              >
-                <FolderPlus className="size-4" /> Новая группа
-              </button>
-              <button
-                type="button"
-                className="inline-flex h-11 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-400"
-                onClick={openNewTask}
-              >
-                <Plus className="size-4" /> Новая задача
-              </button>
-            </div>
+      {error && (
+        <div
+          role="alert"
+          className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+        >
+          <span>{error}</span>
+          <button
+            type="button"
+            aria-label="Закрыть ошибку"
+            className="flex size-7 items-center justify-center rounded-lg hover:bg-red-500/10"
+            onClick={() => setError(null)}
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+      )}
+
+      <div className="mt-5 grid gap-5 lg:grid-cols-[250px_minmax(0,1fr)]">
+        <aside className="self-start rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 shadow-[var(--app-shadow-card)] lg:sticky lg:top-5">
+          <div className="flex items-center justify-between px-2 py-1.5">
+            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--app-muted)]">
+              Группы
+            </span>
+            <button
+              type="button"
+              aria-label="Создать группу"
+              className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+              onClick={openNewGroup}
+            >
+              <Plus className="size-4" />
+            </button>
           </div>
 
-          <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {[
-              { id: 'active' as const, label: 'Активные', value: stats.active, icon: Circle },
-              {
-                id: 'today' as const,
-                label: 'Сегодня',
-                value: stats.today,
-                icon: CalendarClock
-              },
-              {
-                id: 'overdue' as const,
-                label: 'Просроченные',
-                value: stats.overdue,
-                icon: TriangleAlert
-              },
-              {
-                id: 'completed' as const,
-                label: 'Выполненные',
-                value: stats.completed,
-                icon: CheckCircle2
-              }
-            ].map((stat) => {
-              const Icon = stat.icon
-              const danger = stat.id === 'overdue' && stat.value > 0
+          <div className="mt-2 space-y-1">
+            <button
+              type="button"
+              className={cn(
+                'flex h-10 w-full items-center gap-2 rounded-xl px-3 text-sm transition-colors',
+                groupFilter === 'all'
+                  ? 'bg-violet-500/12 font-semibold text-violet-200'
+                  : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
+              )}
+              onClick={() => setGroupFilter('all')}
+            >
+              <ListTodo className="size-4" />
+              <span className="min-w-0 flex-1 truncate text-left">Все задачи</span>
+              <span className="text-xs opacity-70">{stats.active}</span>
+            </button>
+
+            <button
+              type="button"
+              className={cn(
+                'flex h-10 w-full items-center gap-2 rounded-xl px-3 text-sm transition-colors',
+                groupFilter === 'ungrouped'
+                  ? 'bg-violet-500/12 font-semibold text-violet-200'
+                  : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
+              )}
+              onClick={() => setGroupFilter('ungrouped')}
+            >
+              <Inbox className="size-4" />
+              <span className="min-w-0 flex-1 truncate text-left">Без группы</span>
+              <span className="text-xs opacity-70">{groupActiveCounts.ungrouped}</span>
+            </button>
+          </div>
+
+          {groups.length > 0 && <div className="my-3 border-t border-[var(--app-border)]" />}
+
+          <div className="space-y-1">
+            {groups.map((group) => {
+              const color = taskGroupColorClasses[group.color]
+              const selected = groupFilter === group.id
+
               return (
-                <button
-                  key={stat.id}
-                  type="button"
+                <div
+                  key={group.id}
                   className={cn(
-                    'flex items-center justify-between rounded-2xl border bg-[var(--app-workspace)] px-4 py-3 text-left transition-colors',
-                    viewFilter === stat.id
-                      ? 'border-violet-400/30 bg-violet-500/10'
-                      : danger
-                        ? 'border-rose-400/20 hover:bg-rose-500/[0.06]'
-                        : 'border-[var(--app-border)] hover:bg-[var(--app-control-hover)]'
+                    'group flex items-center rounded-xl',
+                    selected && 'bg-[var(--app-control)]'
                   )}
-                  onClick={() => setViewFilter(stat.id)}
                 >
-                  <span>
-                    <span className="block text-xs font-medium text-[var(--app-muted)]">
-                      {stat.label}
-                    </span>
+                  <button
+                    type="button"
+                    className={cn(
+                      'flex h-11 min-w-0 flex-1 items-center gap-2.5 rounded-xl px-2.5 text-sm transition-colors',
+                      selected
+                        ? 'font-semibold text-[var(--app-text)]'
+                        : 'text-[var(--app-muted)] hover:text-[var(--app-text)]'
+                    )}
+                    onClick={() => setGroupFilter(group.id)}
+                  >
                     <span
                       className={cn(
-                        'mt-1 block text-2xl font-semibold text-[var(--app-text)]',
-                        danger && 'text-rose-200'
+                        'flex size-7 shrink-0 items-center justify-center rounded-lg border',
+                        color.soft,
+                        color.text,
+                        color.border
                       )}
                     >
-                      {stat.value}
+                      <TaskGroupIconGlyph icon={group.icon} className="size-3.5" />
                     </span>
-                  </span>
-                  <Icon
-                    aria-hidden="true"
+                    <span className="min-w-0 flex-1 truncate text-left">{group.name}</span>
+                    <span className="text-xs opacity-60">
+                      {groupActiveCounts.counts.get(group.id) ?? 0}
+                    </span>
+                  </button>
+                  <div
                     className={cn(
-                      'size-5 text-[var(--app-muted)]',
-                      danger && 'text-rose-300'
+                      'mr-1 flex shrink-0 items-center',
+                      selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
                     )}
-                  />
-                </button>
+                  >
+                    <button
+                      type="button"
+                      aria-label={`Изменить группу «${group.name}»`}
+                      className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+                      onClick={() => {
+                        setEditingGroup(group)
+                        setGroupDialogOpen(true)
+                      }}
+                    >
+                      <Pencil className="size-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={`Удалить группу «${group.name}»`}
+                      className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
+                      onClick={() => setDeleteGroupTarget(group)}
+                    >
+                      <Trash2 className="size-3.5" />
+                    </button>
+                  </div>
+                </div>
               )
             })}
           </div>
-        </header>
+        </aside>
 
-        {error && (
-          <div
-            role="alert"
-            className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300"
-          >
-            <span>{error}</span>
-            <button
-              type="button"
-              aria-label="Закрыть ошибку"
-              className="flex size-7 items-center justify-center rounded-lg hover:bg-red-500/10"
-              onClick={() => setError(null)}
-            >
-              <X className="size-4" />
-            </button>
+        <section className="min-w-0 space-y-4">
+          <div className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)]">
+            <div className="flex flex-wrap gap-2">
+              <label className="flex h-11 min-w-[240px] flex-1 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 focus-within:border-violet-500/45 focus-within:ring-2 focus-within:ring-violet-500/10">
+                <Search className="size-4 shrink-0 text-[var(--app-muted)]" />
+                <input
+                  value={query}
+                  type="search"
+                  aria-label="Поиск по задачам"
+                  placeholder="Найти задачу…"
+                  className="min-w-0 flex-1 bg-transparent text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60"
+                  onChange={(event) => setQuery(event.target.value)}
+                />
+                {query && (
+                  <button
+                    type="button"
+                    aria-label="Очистить поиск задач"
+                    className="text-[var(--app-muted)] hover:text-[var(--app-text)]"
+                    onClick={() => setQuery('')}
+                  >
+                    <X className="size-4" />
+                  </button>
+                )}
+              </label>
+
+              <div className="min-w-[150px]">
+                <AppSelect
+                  ariaLabel="Фильтр по приоритету"
+                  value={priorityFilter}
+                  options={[
+                    { value: PRIORITY_ALL, label: 'Все приоритеты' },
+                    ...TASK_PRIORITY_OPTIONS
+                  ]}
+                  onValueChange={(value) => setPriorityFilter(value as TaskPriority | 'all')}
+                />
+              </div>
+            </div>
+
+            <div className="mt-3 flex gap-1 overflow-x-auto rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-1">
+              {viewFilters.map((filter) => (
+                <button
+                  key={filter.id}
+                  type="button"
+                  aria-pressed={viewFilter === filter.id}
+                  className={
+                    viewFilter === filter.id
+                      ? 'h-9 shrink-0 rounded-lg bg-violet-500 px-3.5 text-sm font-semibold text-white'
+                      : 'h-9 shrink-0 rounded-lg px-3.5 text-sm font-medium text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
+                  }
+                  onClick={() => setViewFilter(filter.id)}
+                >
+                  {filter.label}
+                </button>
+              ))}
+            </div>
           </div>
-        )}
 
-        <div className="mt-5 grid gap-5 lg:grid-cols-[250px_minmax(0,1fr)]">
-          <aside className="self-start rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 shadow-[var(--app-shadow-card)] lg:sticky lg:top-5">
-            <div className="flex items-center justify-between px-2 py-1.5">
-              <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--app-muted)]">
-                Группы
+          <form
+            className="flex items-center gap-2 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 shadow-[var(--app-shadow-card)]"
+            onSubmit={(event) => void quickAdd(event)}
+          >
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-300">
+              <Plus className="size-4" />
+            </span>
+            <input
+              value={quickTitle}
+              maxLength={240}
+              aria-label="Быстро добавить задачу"
+              placeholder={
+                selectedGroupForNewTask
+                  ? `Новая задача в «${groupById.get(selectedGroupForNewTask)?.name ?? ''}»…`
+                  : 'Быстро добавить задачу…'
+              }
+              className="min-w-0 flex-1 bg-transparent text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60"
+              onChange={(event) => setQuickTitle(event.target.value)}
+            />
+            <button
+              type="submit"
+              disabled={!quickTitle.trim() || isSaving}
+              className="h-9 shrink-0 rounded-xl bg-violet-500 px-3.5 text-sm font-semibold text-white hover:bg-violet-400 disabled:opacity-40"
+            >
+              Добавить
+            </button>
+          </form>
+
+          {nonEmptySections.length === 0 ? (
+            <div className="flex min-h-72 flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface)] px-6 text-center">
+              <span className="flex size-14 items-center justify-center rounded-2xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
+                <CheckCircle2 className="size-7" />
               </span>
-              <button
-                type="button"
-                aria-label="Создать группу"
-                className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-                onClick={openNewGroup}
-              >
-                <Plus className="size-4" />
-              </button>
+              <h2 className="mt-4 text-lg font-semibold text-[var(--app-text)]">
+                {tasks.length === 0 ? 'Задач пока нет' : 'Ничего не найдено'}
+              </h2>
+              <p className="mt-2 max-w-md text-sm leading-6 text-[var(--app-muted)]">
+                {tasks.length === 0
+                  ? 'Добавьте первую задачу или сначала создайте группы вроде «Работа» и «Дом».'
+                  : 'Измените группу, статус, приоритет или строку поиска.'}
+              </p>
+              {tasks.length === 0 && (
+                <button
+                  type="button"
+                  className="mt-5 inline-flex h-10 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400"
+                  onClick={openNewTask}
+                >
+                  <Plus className="size-4" /> Новая задача
+                </button>
+              )}
             </div>
-
-            <div className="mt-2 space-y-1">
-              <button
-                type="button"
-                className={cn(
-                  'flex h-10 w-full items-center gap-2 rounded-xl px-3 text-sm transition-colors',
-                  groupFilter === 'all'
-                    ? 'bg-violet-500/12 font-semibold text-violet-200'
-                    : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
-                )}
-                onClick={() => setGroupFilter('all')}
+          ) : (
+            nonEmptySections.map((section) => (
+              <div
+                key={section.id}
+                className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--app-shadow-card)]"
               >
-                <ListTodo className="size-4" />
-                <span className="min-w-0 flex-1 truncate text-left">Все задачи</span>
-                <span className="text-xs opacity-70">{stats.active}</span>
-              </button>
-
-              <button
-                type="button"
-                className={cn(
-                  'flex h-10 w-full items-center gap-2 rounded-xl px-3 text-sm transition-colors',
-                  groupFilter === 'ungrouped'
-                    ? 'bg-violet-500/12 font-semibold text-violet-200'
-                    : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
-                )}
-                onClick={() => setGroupFilter('ungrouped')}
-              >
-                <Inbox className="size-4" />
-                <span className="min-w-0 flex-1 truncate text-left">Без группы</span>
-                <span className="text-xs opacity-70">{groupActiveCounts.ungrouped}</span>
-              </button>
-            </div>
-
-            {groups.length > 0 && (
-              <div className="my-3 border-t border-[var(--app-border)]" />
-            )}
-
-            <div className="space-y-1">
-              {groups.map((group) => {
-                const color = taskGroupColorClasses[group.color]
-                const selected = groupFilter === group.id
-
-                return (
-                  <div
-                    key={group.id}
+                <div className="flex items-center gap-2 border-b border-[var(--app-border)] px-4 py-3">
+                  <span
                     className={cn(
-                      'group flex items-center rounded-xl',
-                      selected && 'bg-[var(--app-control)]'
+                      'text-[var(--app-muted)]',
+                      section.tone === 'danger' && 'text-rose-300',
+                      section.tone === 'success' && 'text-emerald-300'
                     )}
                   >
-                    <button
-                      type="button"
-                      className={cn(
-                        'flex h-11 min-w-0 flex-1 items-center gap-2.5 rounded-xl px-2.5 text-sm transition-colors',
-                        selected
-                          ? 'font-semibold text-[var(--app-text)]'
-                          : 'text-[var(--app-muted)] hover:text-[var(--app-text)]'
-                      )}
-                      onClick={() => setGroupFilter(group.id)}
-                    >
-                      <span
+                    {section.icon}
+                  </span>
+                  <h2
+                    className={cn(
+                      'text-sm font-semibold text-[var(--app-text)]',
+                      section.tone === 'danger' && 'text-rose-200'
+                    )}
+                  >
+                    {section.title}
+                  </h2>
+                  <span className="ml-auto rounded-lg bg-[var(--app-control)] px-2 py-0.5 text-xs text-[var(--app-muted)]">
+                    {section.tasks.length}
+                  </span>
+                </div>
+
+                <div className="divide-y divide-[var(--app-border)]">
+                  {section.tasks.map((task) => {
+                    const group = task.groupId ? groupById.get(task.groupId) ?? null : null
+                    const overdue = isTaskOverdue(task, today, nowTime)
+
+                    return (
+                      <article
+                        key={task.id}
                         className={cn(
-                          'flex size-7 shrink-0 items-center justify-center rounded-lg border',
-                          color.soft,
-                          color.text,
-                          color.border
+                          'group/task flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-[var(--app-control-hover)]',
+                          task.status === 'completed' && 'opacity-65'
                         )}
                       >
-                        <TaskGroupIconGlyph icon={group.icon} className="size-3.5" />
-                      </span>
-                      <span className="min-w-0 flex-1 truncate text-left">{group.name}</span>
-                      <span className="text-xs opacity-60">
-                        {groupActiveCounts.counts.get(group.id) ?? 0}
-                      </span>
-                    </button>
-                    <div
-                      className={cn(
-                        'mr-1 flex shrink-0 items-center',
-                        selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                      )}
-                    >
-                      <button
-                        type="button"
-                        aria-label={`Изменить группу «${group.name}»`}
-                        className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-                        onClick={() => {
-                          setEditingGroup(group)
-                          setGroupDialogOpen(true)
-                        }}
-                      >
-                        <Pencil className="size-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        aria-label={`Удалить группу «${group.name}»`}
-                        className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
-                        onClick={() => setDeleteGroupTarget(group)}
-                      >
-                        <Trash2 className="size-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </aside>
-
-          <section className="min-w-0 space-y-4">
-            <div className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)]">
-              <div className="flex flex-wrap gap-2">
-                <label className="flex h-11 min-w-[240px] flex-1 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 focus-within:border-violet-500/45 focus-within:ring-2 focus-within:ring-violet-500/10">
-                  <Search className="size-4 shrink-0 text-[var(--app-muted)]" />
-                  <input
-                    value={query}
-                    type="search"
-                    aria-label="Поиск по задачам"
-                    placeholder="Найти задачу…"
-                    className="min-w-0 flex-1 bg-transparent text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60"
-                    onChange={(event) => setQuery(event.target.value)}
-                  />
-                  {query && (
-                    <button
-                      type="button"
-                      aria-label="Очистить поиск задач"
-                      className="text-[var(--app-muted)] hover:text-[var(--app-text)]"
-                      onClick={() => setQuery('')}
-                    >
-                      <X className="size-4" />
-                    </button>
-                  )}
-                </label>
-
-                <div className="min-w-[150px]">
-                  <AppSelect
-                    ariaLabel="Фильтр по приоритету"
-                    value={priorityFilter}
-                    options={[
-                      { value: PRIORITY_ALL, label: 'Все приоритеты' },
-                      ...TASK_PRIORITY_OPTIONS
-                    ]}
-                    onValueChange={(value) =>
-                      setPriorityFilter(value as TaskPriority | 'all')
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="mt-3 flex gap-1 overflow-x-auto rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-1">
-                {viewFilters.map((filter) => (
-                  <button
-                    key={filter.id}
-                    type="button"
-                    aria-pressed={viewFilter === filter.id}
-                    className={
-                      viewFilter === filter.id
-                        ? 'h-9 shrink-0 rounded-lg bg-violet-500 px-3.5 text-sm font-semibold text-white'
-                        : 'h-9 shrink-0 rounded-lg px-3.5 text-sm font-medium text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
-                    }
-                    onClick={() => setViewFilter(filter.id)}
-                  >
-                    {filter.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <form
-              className="flex items-center gap-2 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 shadow-[var(--app-shadow-card)]"
-              onSubmit={(event) => void quickAdd(event)}
-            >
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-300">
-                <Plus className="size-4" />
-              </span>
-              <input
-                value={quickTitle}
-                maxLength={240}
-                aria-label="Быстро добавить задачу"
-                placeholder={
-                  selectedGroupForNewTask
-                    ? `Новая задача в «${groupById.get(selectedGroupForNewTask)?.name ?? ''}»…`
-                    : 'Быстро добавить задачу…'
-                }
-                className="min-w-0 flex-1 bg-transparent text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60"
-                onChange={(event) => setQuickTitle(event.target.value)}
-              />
-              <button
-                type="submit"
-                disabled={!quickTitle.trim() || isSaving}
-                className="h-9 shrink-0 rounded-xl bg-violet-500 px-3.5 text-sm font-semibold text-white hover:bg-violet-400 disabled:opacity-40"
-              >
-                Добавить
-              </button>
-            </form>
-
-            {nonEmptySections.length === 0 ? (
-              <div className="flex min-h-72 flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface)] px-6 text-center">
-                <span className="flex size-14 items-center justify-center rounded-2xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
-                  <CheckCircle2 className="size-7" />
-                </span>
-                <h2 className="mt-4 text-lg font-semibold text-[var(--app-text)]">
-                  {tasks.length === 0 ? 'Задач пока нет' : 'Ничего не найдено'}
-                </h2>
-                <p className="mt-2 max-w-md text-sm leading-6 text-[var(--app-muted)]">
-                  {tasks.length === 0
-                    ? 'Добавьте первую задачу или сначала создайте группы вроде «Работа» и «Дом».'
-                    : 'Измените группу, статус, приоритет или строку поиска.'}
-                </p>
-                {tasks.length === 0 && (
-                  <button
-                    type="button"
-                    className="mt-5 inline-flex h-10 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400"
-                    onClick={openNewTask}
-                  >
-                    <Plus className="size-4" /> Новая задача
-                  </button>
-                )}
-              </div>
-            ) : (
-              nonEmptySections.map((section) => (
-                <div
-                  key={section.id}
-                  className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--app-shadow-card)]"
-                >
-                  <div className="flex items-center gap-2 border-b border-[var(--app-border)] px-4 py-3">
-                    <span
-                      className={cn(
-                        'text-[var(--app-muted)]',
-                        section.tone === 'danger' && 'text-rose-300',
-                        section.tone === 'success' && 'text-emerald-300'
-                      )}
-                    >
-                      {section.icon}
-                    </span>
-                    <h2
-                      className={cn(
-                        'text-sm font-semibold text-[var(--app-text)]',
-                        section.tone === 'danger' && 'text-rose-200'
-                      )}
-                    >
-                      {section.title}
-                    </h2>
-                    <span className="ml-auto rounded-lg bg-[var(--app-control)] px-2 py-0.5 text-xs text-[var(--app-muted)]">
-                      {section.tasks.length}
-                    </span>
-                  </div>
-
-                  <div className="divide-y divide-[var(--app-border)]">
-                    {section.tasks.map((task) => {
-                      const group = task.groupId ? groupById.get(task.groupId) ?? null : null
-                      const overdue = isTaskOverdue(task, today, nowTime)
-
-                      return (
-                        <article
-                          key={task.id}
+                        <button
+                          type="button"
+                          aria-label={
+                            task.status === 'completed'
+                              ? `Вернуть задачу «${task.title}»`
+                              : `Выполнить задачу «${task.title}»`
+                          }
+                          aria-pressed={task.status === 'completed'}
+                          disabled={isSaving}
                           className={cn(
-                            'group/task flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-[var(--app-control-hover)]',
-                            task.status === 'completed' && 'opacity-65'
+                            'mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full border transition-colors',
+                            task.status === 'completed'
+                              ? 'border-emerald-400/40 bg-emerald-500/15 text-emerald-300'
+                              : 'border-[var(--app-border-strong)] text-transparent hover:border-violet-400/50 hover:bg-violet-500/10 hover:text-violet-300'
                           )}
+                          onClick={() => void toggleTask(task)}
                         >
-                          <button
-                            type="button"
-                            aria-label={
-                              task.status === 'completed'
-                                ? `Вернуть задачу «${task.title}»`
-                                : `Выполнить задачу «${task.title}»`
-                            }
-                            aria-pressed={task.status === 'completed'}
-                            disabled={isSaving}
-                            className={cn(
-                              'mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full border transition-colors',
-                              task.status === 'completed'
-                                ? 'border-emerald-400/40 bg-emerald-500/15 text-emerald-300'
-                                : 'border-[var(--app-border-strong)] text-transparent hover:border-violet-400/50 hover:bg-violet-500/10 hover:text-violet-300'
-                            )}
-                            onClick={() => void toggleTask(task)}
-                          >
-                            <Check className="size-3.5" />
-                          </button>
+                          <Check className="size-3.5" />
+                        </button>
 
+                        <button
+                          type="button"
+                          className="min-w-0 flex-1 text-left outline-none"
+                          onClick={() => {
+                            setEditingTask(task)
+                            setTaskDialogOpen(true)
+                          }}
+                        >
+                          <div
+                            className={cn(
+                              'text-sm font-semibold leading-5 text-[var(--app-text)]',
+                              task.status === 'completed' &&
+                                'line-through decoration-[var(--app-muted)]/70'
+                            )}
+                          >
+                            {task.title}
+                          </div>
+                          {task.description && (
+                            <p className="mt-1 line-clamp-2 text-xs leading-5 text-[var(--app-muted)]">
+                              {task.description}
+                            </p>
+                          )}
+
+                          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                            {group && (
+                              <span
+                                className={cn(
+                                  'inline-flex h-6 items-center gap-1.5 rounded-lg border px-2 text-[11px] font-medium',
+                                  taskGroupColorClasses[group.color].soft,
+                                  taskGroupColorClasses[group.color].text,
+                                  taskGroupColorClasses[group.color].border
+                                )}
+                              >
+                                <TaskGroupIconGlyph icon={group.icon} className="size-3" />
+                                {group.name}
+                              </span>
+                            )}
+                            {task.dueDate && (
+                              <span
+                                className={cn(
+                                  'inline-flex h-6 items-center gap-1 rounded-lg border px-2 text-[11px] font-medium',
+                                  overdue
+                                    ? 'border-rose-400/25 bg-rose-500/10 text-rose-200'
+                                    : task.dueDate === today
+                                      ? 'border-violet-400/25 bg-violet-500/10 text-violet-200'
+                                      : 'border-[var(--app-border)] bg-[var(--app-control)] text-[var(--app-muted)]'
+                                )}
+                              >
+                                <CalendarClock className="size-3" />
+                                {formatDueDate(task.dueDate, today)}
+                                {task.dueTime ? ` · ${task.dueTime}` : ''}
+                              </span>
+                            )}
+                            {task.priority !== 'normal' && (
+                              <span
+                                className={cn(
+                                  'inline-flex h-6 items-center rounded-lg border px-2 text-[11px] font-medium',
+                                  taskPriorityClassName(task.priority)
+                                )}
+                              >
+                                {taskPriorityLabel(task.priority)}
+                              </span>
+                            )}
+                          </div>
+                        </button>
+
+                        <div className="flex shrink-0 items-center opacity-0 transition-opacity group-hover/task:opacity-100 focus-within:opacity-100">
                           <button
                             type="button"
-                            className="min-w-0 flex-1 text-left outline-none"
+                            aria-label={`Изменить задачу «${task.title}»`}
+                            className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control)] hover:text-[var(--app-text)]"
                             onClick={() => {
                               setEditingTask(task)
                               setTaskDialogOpen(true)
                             }}
                           >
-                            <div
-                              className={cn(
-                                'text-sm font-semibold leading-5 text-[var(--app-text)]',
-                                task.status === 'completed' &&
-                                  'line-through decoration-[var(--app-muted)]/70'
-                              )}
-                            >
-                              {task.title}
-                            </div>
-                            {task.description && (
-                              <p className="mt-1 line-clamp-2 text-xs leading-5 text-[var(--app-muted)]">
-                                {task.description}
-                              </p>
-                            )}
-
-                            <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                              {group && (
-                                <span
-                                  className={cn(
-                                    'inline-flex h-6 items-center gap-1.5 rounded-lg border px-2 text-[11px] font-medium',
-                                    taskGroupColorClasses[group.color].soft,
-                                    taskGroupColorClasses[group.color].text,
-                                    taskGroupColorClasses[group.color].border
-                                  )}
-                                >
-                                  <TaskGroupIconGlyph icon={group.icon} className="size-3" />
-                                  {group.name}
-                                </span>
-                              )}
-                              {task.dueDate && (
-                                <span
-                                  className={cn(
-                                    'inline-flex h-6 items-center gap-1 rounded-lg border px-2 text-[11px] font-medium',
-                                    overdue
-                                      ? 'border-rose-400/25 bg-rose-500/10 text-rose-200'
-                                      : task.dueDate === today
-                                        ? 'border-violet-400/25 bg-violet-500/10 text-violet-200'
-                                        : 'border-[var(--app-border)] bg-[var(--app-control)] text-[var(--app-muted)]'
-                                  )}
-                                >
-                                  <CalendarClock className="size-3" />
-                                  {formatDueDate(task.dueDate, today)}
-                                  {task.dueTime ? ` · ${task.dueTime}` : ''}
-                                </span>
-                              )}
-                              {task.priority !== 'normal' && (
-                                <span
-                                  className={cn(
-                                    'inline-flex h-6 items-center rounded-lg border px-2 text-[11px] font-medium',
-                                    taskPriorityClassName(task.priority)
-                                  )}
-                                >
-                                  {taskPriorityLabel(task.priority)}
-                                </span>
-                              )}
-                            </div>
+                            <Pencil className="size-3.5" />
                           </button>
-
-                          <div className="flex shrink-0 items-center opacity-0 transition-opacity group-hover/task:opacity-100 focus-within:opacity-100">
-                            <button
-                              type="button"
-                              aria-label={`Изменить задачу «${task.title}»`}
-                              className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control)] hover:text-[var(--app-text)]"
-                              onClick={() => {
-                                setEditingTask(task)
-                                setTaskDialogOpen(true)
-                              }}
-                            >
-                              <Pencil className="size-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              aria-label={`Удалить задачу «${task.title}»`}
-                              className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
-                              onClick={() => setDeleteTaskTarget(task)}
-                            >
-                              <Trash2 className="size-3.5" />
-                            </button>
-                          </div>
-                        </article>
-                      )
-                    })}
-                  </div>
+                          <button
+                            type="button"
+                            aria-label={`Удалить задачу «${task.title}»`}
+                            className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
+                            onClick={() => setDeleteTaskTarget(task)}
+                          >
+                            <Trash2 className="size-3.5" />
+                          </button>
+                        </div>
+                      </article>
+                    )
+                  })}
                 </div>
-              ))
-            )}
-          </section>
-        </div>
+              </div>
+            ))
+          )}
+        </section>
       </div>
 
       <TaskDialog
@@ -1051,6 +1031,6 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
         }}
         onConfirm={confirmDeleteGroup}
       />
-    </main>
+    </StandardModulePage>
   )
 }
