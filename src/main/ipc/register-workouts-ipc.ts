@@ -19,6 +19,7 @@ import {
   updateWorkoutSessionInputSchema,
   workoutReportInputSchema
 } from '../../shared/validation/workouts'
+import { getSqlite } from '../database/client'
 import {
   createWorkoutExercise,
   createWorkoutProgram,
@@ -43,6 +44,25 @@ import {
   removeWorkoutProgressPhoto
 } from '../services/workout-progress-assets'
 
+function assertExerciseCanBeDeleted(id: string): void {
+  const reference = getSqlite()
+    .prepare(
+      `SELECT 1 AS referenced FROM workout_program_exercises WHERE exercise_id = ?
+       UNION ALL
+       SELECT 1 AS referenced FROM workout_session_exercises WHERE exercise_id = ?
+       UNION ALL
+       SELECT 1 AS referenced FROM workout_progress_metrics WHERE exercise_id = ?
+       LIMIT 1`
+    )
+    .get(id, id, id)
+
+  if (reference) {
+    throw new Error(
+      'Упражнение уже используется в программе, истории тренировок или прогрессе. Архивируйте его вместо удаления.'
+    )
+  }
+}
+
 export function registerWorkoutsIpcHandlers(): void {
   Object.values(WORKOUTS_IPC_CHANNELS).forEach((channel) => ipcMain.removeHandler(channel))
 
@@ -60,9 +80,11 @@ export function registerWorkoutsIpcHandlers(): void {
     )
   )
   ipcMain.handle(WORKOUTS_IPC_CHANNELS.deleteExercise, (_event, rawInput: unknown) =>
-    mainOperationTracker.run(() =>
-      deleteWorkoutExercise(deleteWorkoutExerciseInputSchema.parse(rawInput))
-    )
+    mainOperationTracker.run(() => {
+      const input = deleteWorkoutExerciseInputSchema.parse(rawInput)
+      assertExerciseCanBeDeleted(input.id)
+      return deleteWorkoutExercise(input)
+    })
   )
   ipcMain.handle(WORKOUTS_IPC_CHANNELS.createProgram, (_event, rawInput: unknown) =>
     mainOperationTracker.run(() =>
