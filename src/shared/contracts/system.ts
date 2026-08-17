@@ -9,6 +9,7 @@ import type { PasswordsApi } from './passwords'
 import type { PreferencesApi } from './preferences'
 import type { StudyApi } from './study'
 import type { TasksApi } from './tasks'
+import type { WorkoutsApi } from './workouts'
 
 export const IPC_CHANNELS = {
   systemHealth: 'system:health',
@@ -60,5 +61,6 @@ export interface MyMindApi {
   tasks: TasksApi
   habits: HabitsApi
   passwords: PasswordsApi
+  workouts: WorkoutsApi
   preferences: PreferencesApi
 }
