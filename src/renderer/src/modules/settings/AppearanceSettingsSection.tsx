@@ -20,16 +20,11 @@ export function AppearanceSettingsSection(): React.JSX.Element {
 
       <div className="grid gap-5">
         <section className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[0_12px_40px_rgb(0_0_0/0.1)]">
-          <header className="flex min-h-20 items-center gap-3 border-b border-[var(--app-border)] px-5 py-4">
+          <header className="flex min-h-16 items-center gap-3 border-b border-[var(--app-border)] px-5 py-3">
             <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
               <Monitor aria-hidden="true" className="size-5" />
             </div>
-            <div>
-              <h2 className="text-base font-semibold text-[var(--app-text)]">Тема приложения</h2>
-              <p className="mt-0.5 text-xs text-[var(--app-muted)]">
-                Выберите оформление окон и рабочих областей.
-              </p>
-            </div>
+            <h2 className="text-base font-semibold text-[var(--app-text)]">Тема приложения</h2>
           </header>
 
           <fieldset className="p-4">
@@ -43,7 +38,7 @@ export function AppearanceSettingsSection(): React.JSX.Element {
                   <label
                     key={option.value}
                     className={cn(
-                      'relative flex min-h-32 cursor-pointer flex-col rounded-xl border p-3.5 transition-[border-color,background-color,transform] outline-none',
+                      'relative flex min-h-24 cursor-pointer flex-col rounded-xl border p-3.5 transition-[border-color,background-color,transform] outline-none',
                       'has-focus-visible:ring-2 has-focus-visible:ring-violet-500/50',
                       selected
                         ? 'border-violet-500/45 bg-violet-500/10'
@@ -68,13 +63,8 @@ export function AppearanceSettingsSection(): React.JSX.Element {
                       )}
                     </span>
 
-                    <span className="mt-auto pt-4">
-                      <span className="block text-sm font-medium text-[var(--app-text)]">
-                        {option.label}
-                      </span>
-                      <span className="mt-1 block text-[11px] leading-4 text-[var(--app-muted)]">
-                        {option.description}
-                      </span>
+                    <span className="mt-auto pt-4 text-sm font-medium text-[var(--app-text)]">
+                      {option.label}
                     </span>
                   </label>
                 )
@@ -84,16 +74,11 @@ export function AppearanceSettingsSection(): React.JSX.Element {
         </section>
 
         <section className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[0_12px_40px_rgb(0_0_0/0.1)]">
-          <header className="flex min-h-20 items-center gap-3 border-b border-[var(--app-border)] px-5 py-4">
+          <header className="flex min-h-16 items-center gap-3 border-b border-[var(--app-border)] px-5 py-3">
             <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
               <Palette aria-hidden="true" className="size-5" />
             </div>
-            <div>
-              <h2 className="text-base font-semibold text-[var(--app-text)]">Акцентный цвет</h2>
-              <p className="mt-0.5 text-xs text-[var(--app-muted)]">
-                Используется для кнопок, выбора и активных элементов.
-              </p>
-            </div>
+            <h2 className="text-base font-semibold text-[var(--app-text)]">Акцентный цвет</h2>
           </header>
 
           <fieldset className="p-4">
@@ -139,19 +124,18 @@ export function AppearanceSettingsSection(): React.JSX.Element {
           </fieldset>
         </section>
 
-        <div
-          aria-live="polite"
-          className="min-h-10 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-4 py-3 text-xs"
-        >
-          {status === 'ready' && !error && (
-            <span className="text-[var(--app-muted)]">Изменения применяются автоматически.</span>
-          )}
-          {status === 'loading' && (
-            <span className="text-[var(--app-muted)]">Загрузка оформления…</span>
-          )}
-          {status === 'saving' && <span className="text-violet-300">Сохранение…</span>}
-          {error && <span className="text-red-400">Не удалось сохранить: {error}</span>}
-        </div>
+        {(status !== 'ready' || error) && (
+          <div
+            aria-live="polite"
+            className="rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-4 py-3 text-xs"
+          >
+            {status === 'loading' && (
+              <span className="text-[var(--app-muted)]">Загрузка оформления…</span>
+            )}
+            {status === 'saving' && <span className="text-violet-300">Сохранение…</span>}
+            {error && <span className="text-red-400">Не удалось сохранить: {error}</span>}
+          </div>
+        )}
       </div>
     </div>
   )
@@ -161,13 +145,10 @@ function AppearancePreview(): React.JSX.Element {
   return (
     <aside className="sticky top-0 overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-5 shadow-[0_12px_40px_rgb(0_0_0/0.1)] max-[980px]:static">
       <p className="text-sm font-semibold text-[var(--app-text)]">Предпросмотр</p>
-      <p className="mt-1 text-xs leading-5 text-[var(--app-muted)]">
-        Так будут выглядеть основные поверхности MyMind.
-      </p>
 
       <div
         aria-hidden="true"
-        className="mt-5 overflow-hidden rounded-2xl border border-[var(--app-border-strong)] bg-[var(--app-workspace)] shadow-2xl shadow-black/20"
+        className="mt-4 overflow-hidden rounded-2xl border border-[var(--app-border-strong)] bg-[var(--app-workspace)] shadow-2xl shadow-black/20"
       >
         <div className="flex h-9 items-center gap-1.5 border-b border-[var(--app-border)] bg-[var(--app-surface-raised)] px-3">
           <span className="size-2 rounded-full bg-red-400/70" />
