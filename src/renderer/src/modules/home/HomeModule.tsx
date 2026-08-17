@@ -10,6 +10,7 @@ import {
   Notebook,
   Presentation,
   Repeat2,
+  Utensils,
   Wallet,
   type LucideIcon
 } from 'lucide-react'
@@ -30,6 +31,7 @@ const HOME_MODULES: Array<{
   { id: 'tasks', label: 'Задачи', icon: ListTodo },
   { id: 'habits', label: 'Привычки', icon: Repeat2 },
   { id: 'workouts', label: 'Тренировки', icon: Dumbbell },
+  { id: 'nutrition', label: 'Питание', icon: Utensils },
   { id: 'diary', label: 'Дневник', icon: BookHeart },
   { id: 'movies', label: 'Фильмы', icon: Film },
   { id: 'music', label: 'Музыка', icon: Disc3 },

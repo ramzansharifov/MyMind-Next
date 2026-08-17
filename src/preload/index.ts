@@ -14,6 +14,7 @@ import {
   type NoteSummary,
   type NotesOverview
 } from '../shared/contracts/notes'
+import { NUTRITION_IPC_CHANNELS } from '../shared/contracts/nutrition'
 import { PASSWORDS_IPC_CHANNELS } from '../shared/contracts/passwords'
 import {
   PREFERENCES_IPC_CHANNELS,
@@ -263,6 +264,25 @@ const api: MyMindApi = {
     deleteProgressPhoto: (input) =>
       ipcRenderer.invoke(WORKOUTS_IPC_CHANNELS.deleteProgressPhoto, input),
     getReport: (input) => ipcRenderer.invoke(WORKOUTS_IPC_CHANNELS.getReport, input)
+  },
+
+  nutrition: {
+    listOverview: (input) => ipcRenderer.invoke(NUTRITION_IPC_CHANNELS.listOverview, input),
+    createFood: (input) => ipcRenderer.invoke(NUTRITION_IPC_CHANNELS.createFood, input),
+    updateFood: (input) => ipcRenderer.invoke(NUTRITION_IPC_CHANNELS.updateFood, input),
+    deleteFood: (input) => ipcRenderer.invoke(NUTRITION_IPC_CHANNELS.deleteFood, input),
+    createRecipe: (input) => ipcRenderer.invoke(NUTRITION_IPC_CHANNELS.createRecipe, input),
+    updateRecipe: (input) => ipcRenderer.invoke(NUTRITION_IPC_CHANNELS.updateRecipe, input),
+    deleteRecipe: (input) => ipcRenderer.invoke(NUTRITION_IPC_CHANNELS.deleteRecipe, input),
+    createLogEntry: (input) =>
+      ipcRenderer.invoke(NUTRITION_IPC_CHANNELS.createLogEntry, input),
+    updateLogEntry: (input) =>
+      ipcRenderer.invoke(NUTRITION_IPC_CHANNELS.updateLogEntry, input),
+    deleteLogEntry: (input) =>
+      ipcRenderer.invoke(NUTRITION_IPC_CHANNELS.deleteLogEntry, input),
+    setWater: (input) => ipcRenderer.invoke(NUTRITION_IPC_CHANNELS.setWater, input),
+    setTargets: (input) => ipcRenderer.invoke(NUTRITION_IPC_CHANNELS.setTargets, input),
+    getReport: (input) => ipcRenderer.invoke(NUTRITION_IPC_CHANNELS.getReport, input)
   },
 
   finance: {

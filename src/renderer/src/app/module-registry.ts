@@ -12,6 +12,7 @@ import {
   Presentation,
   Repeat2,
   Settings,
+  Utensils,
   Wallet,
   type LucideIcon
 } from 'lucide-react'
@@ -65,6 +66,11 @@ const HabitsModule = lazy(() =>
 ) as ComponentType<AppModuleProps>
 const WorkoutsModule = lazy(() =>
   import('../modules/workouts/WorkoutsPage').then(({ WorkoutsPage }) => ({ default: WorkoutsPage }))
+) as ComponentType<AppModuleProps>
+const NutritionModule = lazy(() =>
+  import('../modules/nutrition/NutritionPage').then(({ NutritionPage }) => ({
+    default: NutritionPage
+  }))
 ) as ComponentType<AppModuleProps>
 const DiaryModule = lazy(() =>
   import('../modules/diary/DiaryPage').then(({ DiaryPage }) => ({ default: DiaryPage }))
@@ -150,6 +156,15 @@ export const appModuleRegistry = defineAppModules({
     navigationGroup: 'primary',
     workspaceLayout: 'standard',
     component: WorkoutsModule
+  },
+  nutrition: {
+    id: 'nutrition',
+    label: 'Питание',
+    loadingLabel: 'Загрузка питания',
+    icon: Utensils,
+    navigationGroup: 'primary',
+    workspaceLayout: 'standard',
+    component: NutritionModule
   },
   diary: {
     id: 'diary',

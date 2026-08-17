@@ -8,6 +8,7 @@ import {
   ListTodo,
   Notebook,
   Repeat2,
+  Utensils,
   Wallet
 } from 'lucide-react'
 import { describe, expect, it } from 'vitest'
@@ -24,6 +25,7 @@ describe('app module registry', () => {
     expect(getAppModule('tasks')).toBe(appModuleRegistry.tasks)
     expect(getAppModule('habits')).toBe(appModuleRegistry.habits)
     expect(getAppModule('workouts')).toBe(appModuleRegistry.workouts)
+    expect(getAppModule('nutrition')).toBe(appModuleRegistry.nutrition)
     expect(getAppModule('diary')).toBe(appModuleRegistry.diary)
     expect(getAppModule('movies')).toBe(appModuleRegistry.movies)
     expect(getAppModule('music')).toBe(appModuleRegistry.music)
@@ -35,6 +37,7 @@ describe('app module registry', () => {
     expect(appModuleRegistry.tasks.icon).toBe(ListTodo)
     expect(appModuleRegistry.habits.icon).toBe(Repeat2)
     expect(appModuleRegistry.workouts.icon).toBe(Dumbbell)
+    expect(appModuleRegistry.nutrition.icon).toBe(Utensils)
     expect(appModuleRegistry.diary.icon).toBe(BookHeart)
     expect(appModuleRegistry.movies.icon).toBe(Film)
     expect(appModuleRegistry.music.icon).toBe(Disc3)
@@ -54,6 +57,7 @@ describe('app module registry', () => {
       'tasks',
       'habits',
       'workouts',
+      'nutrition',
       'diary',
       'movies',
       'music',
