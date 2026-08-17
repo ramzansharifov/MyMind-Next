@@ -16,6 +16,7 @@ export { habitEntries, habitGroups, habits } from './habits'
 export { movies } from './movies'
 export { musicItems } from './music'
 export { noteGroups, notes } from './notes'
+export { passwordGroups, passwordItems, passwordVault } from './passwords'
 export { studyLinkTargets, studyMaterials, studyNodes } from './study'
 export { taskGroups, tasks } from './tasks'
 
