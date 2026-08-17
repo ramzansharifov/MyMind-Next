@@ -72,6 +72,7 @@ export function NutritionTargetsDialog({
     event.preventDefault()
     if (busy || !effectiveFrom) return
 
+    const waterMl = optionalNumber(values.waterMl)
     await onSave({
       effectiveFrom,
       calories: optionalNumber(values.calories),
@@ -79,7 +80,7 @@ export function NutritionTargetsDialog({
       fatG: optionalNumber(values.fatG),
       carbsG: optionalNumber(values.carbsG),
       fiberG: optionalNumber(values.fiberG),
-      waterMl: optionalNumber(values.waterMl)
+      waterMl: waterMl === null ? null : Math.round(waterMl)
     })
     onOpenChange(false)
   }
@@ -112,7 +113,7 @@ export function NutritionTargetsDialog({
       <form
         id="nutrition-targets-form"
         className="space-y-4"
-        onSubmit={(event) => void submit(event)}
+        onSubmit={(event) => void submit(event).catch(() => undefined)}
       >
         <NutritionFormField label="Действует с">
           <input
