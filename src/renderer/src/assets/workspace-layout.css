@@ -1,0 +1,11 @@
+:root {
+  --app-standard-content-width: 90rem;
+}
+
+[data-workspace-layout='standard'] > :is(main, section, div) > .mx-auto.w-full {
+  max-width: var(--app-standard-content-width) !important;
+}
+
+[data-workspace-layout='standard'] [data-standard-module-container] {
+  max-width: var(--app-standard-content-width);
+}
