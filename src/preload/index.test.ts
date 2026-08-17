@@ -29,7 +29,7 @@ afterEach(() => {
 })
 
 describe('preload API contract', () => {
-  it('exposes the complete boards, notes, diary, movies, music, tasks, habits and finance contracts in the renderer', async () => {
+  it('exposes the complete boards, notes, diary, movies, music, tasks, habits, passwords and finance contracts in the renderer', async () => {
     Object.defineProperty(process, 'contextIsolated', {
       configurable: true,
       value: true
@@ -121,6 +121,24 @@ describe('preload API contract', () => {
       'upsertEntry',
       'deleteEntry',
       'getReport'
+    ])
+    expect(Object.keys(api.passwords)).toEqual([
+      'getVaultStatus',
+      'setupVault',
+      'unlockVault',
+      'lockVault',
+      'changeMasterPassword',
+      'listOverview',
+      'getItem',
+      'createGroup',
+      'updateGroup',
+      'deleteGroup',
+      'createItem',
+      'updateItem',
+      'deleteItem',
+      'generatePassword',
+      'copyItemField',
+      'openWebsite'
     ])
     expect(Object.keys(api.finance)).toEqual([
       'getSettings',
@@ -242,6 +260,17 @@ describe('preload API contract', () => {
       groupId: null,
       ungroupedOnly: false,
       includeArchived: true
+    })
+
+    await api.passwords.unlockVault({ masterPassword: 'master-password' })
+    expect(electronMocks.invoke).toHaveBeenCalledWith('passwords:unlock-vault', {
+      masterPassword: 'master-password'
+    })
+
+    await api.passwords.copyItemField({ id: 'password-1', field: 'password' })
+    expect(electronMocks.invoke).toHaveBeenCalledWith('passwords:copy-item-field', {
+      id: 'password-1',
+      field: 'password'
     })
 
     await api.finance.createAccount({
