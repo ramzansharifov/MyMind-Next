@@ -79,7 +79,9 @@ export const workoutSessionExercises = sqliteTable(
     sessionId: text('session_id')
       .notNull()
       .references(() => workoutSessions.id, { onDelete: 'cascade' }),
-    exerciseId: text('exercise_id').references(() => workoutExercises.id, { onDelete: 'set null' }),
+    exerciseId: text('exercise_id').references(() => workoutExercises.id, {
+      onDelete: 'restrict'
+    }),
     exerciseTitleSnapshot: text('exercise_title_snapshot').notNull(),
     muscleGroupSnapshot: text('muscle_group_snapshot').$type<WorkoutMuscleGroup>().notNull(),
     position: integer('position').notNull(),
@@ -127,7 +129,9 @@ export const workoutProgressMetrics = sqliteTable(
     entryId: text('entry_id')
       .notNull()
       .references(() => workoutProgressEntries.id, { onDelete: 'cascade' }),
-    exerciseId: text('exercise_id').references(() => workoutExercises.id, { onDelete: 'set null' }),
+    exerciseId: text('exercise_id').references(() => workoutExercises.id, {
+      onDelete: 'restrict'
+    }),
     exerciseTitleSnapshot: text('exercise_title_snapshot').notNull(),
     muscleGroupSnapshot: text('muscle_group_snapshot').$type<WorkoutMuscleGroup>().notNull(),
     weightMilliKg: integer('weight_milli_kg').notNull().default(0),
