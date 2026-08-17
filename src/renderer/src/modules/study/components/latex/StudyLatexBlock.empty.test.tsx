@@ -14,7 +14,7 @@ describe('StudyLatexBlock', () => {
 
   it('shows line numbers in the source editor', () => {
     const { container } = render(
-      <StudyLatexBlock mode="edit" viewMode="write" source={'x = 1\\\\\ny = 2\\\\\nz = 3'} />
+      <StudyLatexBlock mode="edit" viewMode="write" source={'x = 1\ny = 2\nz = 3'} />
     )
 
     expect(
