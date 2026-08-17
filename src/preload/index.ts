@@ -41,29 +41,21 @@ import { parseShutdownRequest } from './shutdown-request'
 const api: MyMindApi = {
   system: {
     getHealth: () => ipcRenderer.invoke(IPC_CHANNELS.systemHealth) as Promise<SystemHealth>,
-
     getWindowState: () =>
       ipcRenderer.invoke(IPC_CHANNELS.windowGetState) as Promise<SystemWindowState>,
-
     onWindowStateChanged: (listener) => {
       const handler = (_event: Electron.IpcRendererEvent, state: SystemWindowState): void => {
         listener(state)
       }
-
       ipcRenderer.on(IPC_CHANNELS.windowStateChanged, handler)
-
       return () => {
         ipcRenderer.removeListener(IPC_CHANNELS.windowStateChanged, handler)
       }
     },
-
     minimizeWindow: () => ipcRenderer.invoke(IPC_CHANNELS.windowMinimize) as Promise<void>,
-
     toggleMaximizeWindow: () =>
       ipcRenderer.invoke(IPC_CHANNELS.windowToggleMaximize) as Promise<SystemWindowState>,
-
     closeWindow: () => ipcRenderer.invoke(IPC_CHANNELS.windowClose) as Promise<void>,
-
     onShutdownRequested: (listener) => {
       const handler = (_event: Electron.IpcRendererEvent, rawRequest: unknown): void => {
         try {
@@ -72,14 +64,11 @@ const api: MyMindApi = {
           console.error('Ignored invalid shutdown request', reason)
         }
       }
-
       ipcRenderer.on(IPC_CHANNELS.shutdownRequested, handler)
-
       return () => {
         ipcRenderer.removeListener(IPC_CHANNELS.shutdownRequested, handler)
       }
     },
-
     respondToShutdown: (response) =>
       ipcRenderer.invoke(IPC_CHANNELS.respondToShutdown, response) as Promise<void>
   },
@@ -87,7 +76,6 @@ const api: MyMindApi = {
   preferences: {
     getAppearance: () =>
       ipcRenderer.invoke(PREFERENCES_IPC_CHANNELS.getAppearance) as Promise<AppearancePreferences>,
-
     updateAppearance: (input) =>
       ipcRenderer.invoke(
         PREFERENCES_IPC_CHANNELS.updateAppearance,
@@ -131,6 +119,9 @@ const api: MyMindApi = {
       ipcRenderer.invoke(STUDY_IPC_CHANNELS.getMaterial, nodeId) as Promise<StudyMaterial>,
     saveMaterial: (input) =>
       ipcRenderer.invoke(STUDY_IPC_CHANNELS.saveMaterial, input) as Promise<StudyMaterial>,
+    getCodeSnapshot: (input) => ipcRenderer.invoke(STUDY_IPC_CHANNELS.getCodeSnapshot, input),
+    previewCode: (input) => ipcRenderer.invoke(STUDY_IPC_CHANNELS.previewCode, input),
+    applyCode: (input) => ipcRenderer.invoke(STUDY_IPC_CHANNELS.applyCode, input),
     searchInternalLinkTargets: (input) =>
       ipcRenderer.invoke(STUDY_IPC_CHANNELS.searchInternalLinkTargets, input) as Promise<
         StudyInternalLinkTarget[]
