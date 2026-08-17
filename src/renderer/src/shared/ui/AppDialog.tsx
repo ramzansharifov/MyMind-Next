@@ -13,7 +13,7 @@ const sizeClassNames: Record<AppDialogSize, string> = {
   md: 'w-[min(94vw,34rem)]',
   lg: 'w-[min(94vw,38rem)]',
   xl: 'w-[min(94vw,48rem)]',
-  fullscreen: 'inset-0 h-full w-full p-3'
+  fullscreen: 'app-fullscreen-bounds w-full p-3'
 }
 
 const iconClassNames: Record<AppDialogTone, string> = {
@@ -92,7 +92,8 @@ export function AppDialog({
           <Dialog.Overlay
             data-app-dialog-overlay
             className={cn(
-              'fixed inset-0 bg-black/65 backdrop-blur-[2px]',
+              'fixed bg-black/65 backdrop-blur-[2px]',
+              fullscreen ? 'app-fullscreen-bounds' : 'inset-0',
               layerClasses.overlay,
               fullscreen && 'bg-black/75 backdrop-blur-[3px]',
               overlayClassName

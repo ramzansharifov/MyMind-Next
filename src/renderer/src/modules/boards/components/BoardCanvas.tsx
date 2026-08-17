@@ -278,7 +278,7 @@ export function BoardCanvas({
           data-board-focus-mode={focusMode}
           className={cn(
             'mymind-board-canvas tldraw__editor relative h-full min-h-0 w-full overflow-hidden bg-[var(--app-workspace)]',
-            isLocalFullscreen && 'fixed inset-0 z-40 h-screen w-screen'
+            isLocalFullscreen && 'app-fullscreen-bounds fixed z-40 h-auto w-screen'
           )}
         >
           <Tldraw

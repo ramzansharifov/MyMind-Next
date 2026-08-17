@@ -27,6 +27,7 @@ describe('AppDialog', () => {
     expect(screen.getByRole('dialog', { name: 'Общий диалог' })).toBeInTheDocument()
     expect(screen.getByText('Единая оболочка')).toHaveClass('sr-only')
     expect(document.querySelector('[data-app-dialog-overlay]')).toBeInTheDocument()
+    expect(document.querySelector('[data-app-dialog-overlay]')).toHaveClass('inset-0')
     expect(document.querySelector('[data-app-dialog-header]')).toBeInTheDocument()
     expect(document.querySelector('[data-app-dialog-body]')).toBeInTheDocument()
   })
@@ -66,7 +67,7 @@ describe('AppDialog', () => {
     expect(screen.getByRole('dialog', { name: 'Вложенный диалог' })).toHaveClass('z-[91]')
   })
 
-  it('supports fullscreen content with accessible hidden title and description', () => {
+  it('keeps fullscreen content below the application titlebar', () => {
     const onOpenChange = vi.fn()
     render(
       <AppDialog
@@ -80,8 +81,15 @@ describe('AppDialog', () => {
       </AppDialog>
     )
 
-    expect(screen.getByRole('dialog', { name: 'Полноэкранный просмотр' })).toBeInTheDocument()
+    const dialog = screen.getByRole('dialog', { name: 'Полноэкранный просмотр' })
+    const overlay = document.querySelector('[data-app-dialog-overlay]')
+
+    expect(dialog).toBeInTheDocument()
     expect(screen.getByText('Полноэкранное содержимое')).toBeInTheDocument()
     expect(document.querySelector('[data-app-dialog-header]')).not.toBeInTheDocument()
+    expect(dialog).toHaveClass('app-fullscreen-bounds')
+    expect(dialog).not.toHaveClass('inset-0', 'h-full')
+    expect(overlay).toHaveClass('app-fullscreen-bounds')
+    expect(overlay).not.toHaveClass('inset-0')
   })
 })
