@@ -111,7 +111,7 @@ beforeEach(() => {
 })
 
 describe('BoardCanvas fullscreen mode', () => {
-  it('keeps the themed canvas mounted and places fullscreen inside quick actions', async () => {
+  it('keeps the themed canvas mounted and places fullscreen below the application titlebar', async () => {
     const user = userEvent.setup()
 
     render(<BoardCanvas boardId="board-1" />)
@@ -133,7 +133,8 @@ describe('BoardCanvas fullscreen mode', () => {
     await user.click(expandButton)
 
     expect(workspace).toHaveAttribute('data-board-fullscreen', 'true')
-    expect(workspace).toHaveClass('fixed')
+    expect(workspace).toHaveClass('fixed', 'app-fullscreen-bounds', 'h-auto')
+    expect(workspace).not.toHaveClass('h-screen', 'inset-0')
     expect(screen.getByTestId('tldraw-canvas')).toBe(canvas)
     expect(screen.getByRole('button', { name: 'Вернуть обычный вид доски' })).toHaveAttribute(
       'aria-pressed',
