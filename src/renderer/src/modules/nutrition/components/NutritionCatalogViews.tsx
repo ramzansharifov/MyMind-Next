@@ -121,9 +121,7 @@ export function NutritionFoodsGrid({
       <NutritionEmptyPanel
         icon={Apple}
         title={hasAnyFoods ? 'Ничего не найдено' : 'Добавьте первый продукт'}
-      >
-        База продуктов позволяет быстро собирать рацион и переиспользовать одни и те же значения в рецептах.
-      </NutritionEmptyPanel>
+      />
     )
   }
 
@@ -220,9 +218,7 @@ export function NutritionRecipesGrid({
       <NutritionEmptyPanel
         icon={CookingPot}
         title={hasAnyRecipes ? 'Ничего не найдено' : 'Создайте первый рецепт'}
-      >
-        Рецепт собирается из продуктов, автоматически считает пищевую ценность и добавляется в дневник по порциям.
-      </NutritionEmptyPanel>
+      />
     )
   }
 
@@ -323,18 +319,15 @@ export function NutritionRecipesGrid({
 
 function NutritionEmptyPanel({
   icon: Icon,
-  title,
-  children
+  title
 }: {
   icon: typeof Apple
   title: string
-  children: ReactNode
 }): React.JSX.Element {
   return (
-    <div className="flex min-h-72 flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface)] px-6 text-center">
+    <div className="flex min-h-60 flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface)] px-6 text-center">
       <Icon className="size-9 text-violet-300" />
       <h2 className="mt-4 text-lg font-semibold text-[var(--app-text)]">{title}</h2>
-      <p className="mt-2 max-w-lg text-sm leading-6 text-[var(--app-muted)]">{children}</p>
     </div>
   )
 }

@@ -81,8 +81,7 @@ export function WorkspaceStatCard({
           <p className="text-xl font-semibold text-[var(--app-text)] tabular-nums">{value}</p>
           <p className="truncate text-xs font-medium text-[var(--app-text)]">{label}</p>
         </div>
-
-        <p className="mt-0.5 truncate text-[11px] text-[var(--app-muted)]">{description}</p>
+        <p className="sr-only">{description}</p>
       </div>
     </div>
   )
