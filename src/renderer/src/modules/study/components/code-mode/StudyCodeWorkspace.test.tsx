@@ -100,6 +100,31 @@ describe('StudyCodeWorkspace', () => {
     expect(screen.queryByText(/Проверочная ошибка/)).not.toBeInTheDocument()
   })
 
+  it('opens search and replace from dedicated toolbar buttons', async () => {
+    const source = `@version(1)\n\nmaterial "Длинная лекция" {\n  text """\n    Roma\n  """\n}\n`
+    mocks.getCodeSnapshot.mockResolvedValue({
+      nodeId: node.id,
+      nodeType: 'material',
+      title: node.title,
+      source,
+      revision: 'c'.repeat(64)
+    })
+
+    render(<StudyCodeWorkspace node={node} onApplied={vi.fn()} />)
+
+    await screen.findByRole('textbox', { name: /DSL-код материала/ })
+
+    const findButton = await screen.findByRole('button', { name: 'Найти в коде' })
+    const replaceButton = screen.getByRole('button', { name: 'Найти и заменить в коде' })
+
+    fireEvent.click(findButton)
+    expect(await screen.findByRole('textbox', { name: 'Найти в коде' })).toBeInTheDocument()
+    expect(screen.queryByRole('textbox', { name: 'Заменить на' })).not.toBeInTheDocument()
+
+    fireEvent.click(replaceButton)
+    expect(await screen.findByRole('textbox', { name: 'Заменить на' })).toBeInTheDocument()
+  })
+
   it('opens VS Code-like replace with Ctrl+H and replaces all matches', async () => {
     const source = `@version(1)\n\nmaterial "Длинная лекция" {\n  text """\n    Roma roma ROMA\n  """\n}\n`
     mocks.getCodeSnapshot.mockResolvedValue({
@@ -107,7 +132,7 @@ describe('StudyCodeWorkspace', () => {
       nodeType: 'material',
       title: node.title,
       source,
-      revision: 'c'.repeat(64)
+      revision: 'd'.repeat(64)
     })
 
     render(<StudyCodeWorkspace node={node} onApplied={vi.fn()} />)
