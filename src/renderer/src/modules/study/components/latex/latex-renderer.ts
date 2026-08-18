@@ -21,7 +21,7 @@ export function renderStudyLatex(
   }
 
   try {
-    const html = katex.renderToString(trimmedSource, {
+    const renderedHtml = katex.renderToString(trimmedSource, {
       displayMode: displayMode === 'display',
       output: 'htmlAndMathml',
       throwOnError: true,
@@ -30,6 +30,10 @@ export function renderStudyLatex(
       maxExpand: 500,
       maxSize: 20
     })
+
+    const html = isDocumentLikeLatex(trimmedSource)
+      ? `<span class="study-latex-document-layout">${renderedHtml}</span>`
+      : renderedHtml
 
     return {
       html,
@@ -41,6 +45,14 @@ export function renderStudyLatex(
       error: getLatexErrorMessage(reason)
     }
   }
+}
+
+function isDocumentLikeLatex(source: string): boolean {
+  const hasDocumentEnvironment = /\\begin\{(?:aligned|alignedat|gathered)\*?\}/.test(source)
+  const rowBreakCount = source.match(/\\\\(?:\[[^\]]*\])?/g)?.length ?? 0
+  const hasTextContent = /\\(?:text|textbf|textit|textrm|mathrm)\s*\{/.test(source)
+
+  return hasDocumentEnvironment && rowBreakCount >= 2 && hasTextContent
 }
 
 function getLatexErrorMessage(reason: unknown): string {
