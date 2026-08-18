@@ -12,10 +12,11 @@ import 'prismjs/components/prism-bash'
 import 'prismjs/components/prism-c'
 import 'prismjs/components/prism-cpp'
 import 'prismjs/components/prism-java'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 
 import { cn } from '../../../../shared/lib/cn'
 import { StudySourceBlockShell } from '../source/StudySourceBlockShell'
+import '../source/StudySourceLineNumbers.css'
 import { getStudyCodeLanguage } from './code-languages'
 
 interface StudyCodeBlockProps {
@@ -33,12 +34,33 @@ export function StudyCodeBlock({
 }: StudyCodeBlockProps): React.JSX.Element {
   const languageOption = getStudyCodeLanguage(language)
   const editable = mode === 'edit'
-  const lineNumbers = useMemo(() => createStudyCodeLineNumbers(source), [source])
+  const normalizedInitialSource = useRef(normalizeLegacyCodeSource(source))
+  const didNormalizeInitialSource = useRef(false)
+  const displaySource =
+    editable && !didNormalizeInitialSource.current
+      ? normalizedInitialSource.current
+      : editable
+        ? source
+        : normalizeLegacyCodeSource(source)
+  const lineNumbers = useMemo(() => createStudyCodeLineNumbers(displaySource), [displaySource])
   const lineNumberDigits = Math.max(2, String(lineNumbers.length).length)
+
+  useEffect(() => {
+    if (!editable || didNormalizeInitialSource.current) {
+      return
+    }
+
+    didNormalizeInitialSource.current = true
+    const normalized = normalizedInitialSource.current
+
+    if (normalized !== source) {
+      onChange?.(normalized)
+    }
+  }, [editable, onChange, source])
 
   return (
     <StudySourceBlockShell
-      source={source}
+      source={displaySource}
       copyLabel="Копировать код"
       copiedAnnouncement="Код скопирован"
       copyErrorAnnouncement="Не удалось скопировать код"
@@ -93,7 +115,7 @@ export function StudyCodeBlock({
               </div>
 
               <Editor
-                value={source}
+                value={displaySource}
                 readOnly={!editable}
                 ignoreTabKey={!editable}
                 insertSpaces
@@ -108,7 +130,7 @@ export function StudyCodeBlock({
                   minHeight: editable ? '3.45rem' : '6rem',
                   fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
                   fontSize: '0.875rem',
-                  lineHeight: '1.65'
+                  lineHeight: 'var(--study-source-editor-line-height)'
                 }}
                 onValueChange={(value) => {
                   if (editable) {
@@ -133,6 +155,10 @@ function createStudyCodeLineNumbers(source: string): number[] {
     },
     (_value, index) => index + 1
   )
+}
+
+function normalizeLegacyCodeSource(source: string): string {
+  return source.replace(/^[\t ]*\n/, '')
 }
 
 function highlightStudyCode(source: string, prismLanguage: string): string {

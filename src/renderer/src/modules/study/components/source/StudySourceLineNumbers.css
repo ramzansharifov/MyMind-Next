@@ -2,6 +2,11 @@
   overscroll-behavior: contain;
 }
 
+.study-source-editor-body,
+.study-code-block__body {
+  --study-source-editor-line-height: 1.45rem;
+}
+
 .study-source-editor-body {
   display: flex;
   width: max-content;
@@ -33,7 +38,7 @@
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.875rem;
   font-variant-numeric: tabular-nums;
-  line-height: 1.65;
+  line-height: var(--study-source-editor-line-height) !important;
 
   user-select: none;
   pointer-events: none;
@@ -49,6 +54,28 @@
   flex: 1 0 auto;
   min-width: max-content;
   background: #090a0c;
+}
+
+.study-source-editor__editor,
+.study-code-block__editor {
+  line-height: var(--study-source-editor-line-height) !important;
+}
+
+.study-source-editor-body :is(
+  .study-markdown-source__pre,
+  .study-markdown-source__textarea,
+  .study-latex-source__pre,
+  .study-latex-source__textarea,
+  .study-mermaid-source__pre,
+  .study-mermaid-source__textarea
+),
+.study-code-block__pre,
+.study-code-block__textarea {
+  line-height: var(--study-source-editor-line-height) !important;
+}
+
+.study-code-block__line-numbers {
+  line-height: var(--study-source-editor-line-height) !important;
 }
 
 :root[data-theme='light'] .study-source-editor-body,
