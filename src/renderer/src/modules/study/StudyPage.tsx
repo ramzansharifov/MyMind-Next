@@ -1,5 +1,14 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
-import { BookOpen, FilePlus2, FileText, Folder, FolderPlus, Palette, Pencil } from 'lucide-react'
+import {
+  BookOpen,
+  Braces,
+  FilePlus2,
+  FileText,
+  Folder,
+  FolderPlus,
+  Palette,
+  Pencil
+} from 'lucide-react'
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type {
@@ -53,6 +62,11 @@ interface BlockedStudyTransition {
   message: string
 }
 
+interface FolderCodeRequest {
+  nodeId: string
+  requestId: number
+}
+
 export function StudyPage({
   resourceId,
   onResourceHandled,
@@ -84,7 +98,9 @@ export function StudyPage({
   const [internalLinkHistory, setInternalLinkHistory] = useState<StudyInternalLinkHistoryEntry[]>(
     []
   )
+  const [folderCodeRequest, setFolderCodeRequest] = useState<FolderCodeRequest | null>(null)
   const internalNavigationSequenceRef = useRef(0)
+  const folderCodeRequestSequenceRef = useRef(0)
   const handledResourceIdRef = useRef<string | null>(null)
 
   const selectedNode = useMemo(
@@ -202,6 +218,7 @@ export function StudyPage({
       if (target) {
         setInternalLinkHistory(clearStudyInternalLinkHistory())
         setInternalNavigation(null)
+        setFolderCodeRequest(null)
         openStudyNode(target.id)
       }
       onResourceHandled?.()
@@ -255,6 +272,7 @@ export function StudyPage({
         () => {
           setInternalLinkHistory(clearStudyInternalLinkHistory())
           setInternalNavigation(null)
+          setFolderCodeRequest(null)
           if (nodeId === null) selectNode(null)
           else openStudyNode(nodeId)
         },
@@ -262,6 +280,23 @@ export function StudyPage({
       )
     },
     [materialIds, openStudyNode, runAfterDraftFlush, selectNode]
+  )
+
+  const openFolderCode = useCallback(
+    (node: StudyNode): void => {
+      if (node.type !== 'folder' || deletePendingRef.current) return
+
+      void runAfterDraftFlush(() => {
+        clearInternalLinkNavigation()
+        folderCodeRequestSequenceRef.current += 1
+        setFolderCodeRequest({
+          nodeId: node.id,
+          requestId: folderCodeRequestSequenceRef.current
+        })
+        openStudyNode(node.id)
+      })
+    },
+    [clearInternalLinkNavigation, openStudyNode, runAfterDraftFlush]
   )
 
   useEffect(() => {
@@ -282,6 +317,7 @@ export function StudyPage({
           )
         }
 
+        setFolderCodeRequest(null)
         internalNavigationSequenceRef.current += 1
         setInternalNavigation({
           kind: detail.kind,
@@ -362,6 +398,7 @@ export function StudyPage({
                   await study.createNode({ type: 'material', parentId })
                 })
               }}
+              onOpenCode={openFolderCode}
               onMove={(input) => {
                 if (!deletePendingRef.current) void study.moveNode(input)
               }}
@@ -392,6 +429,7 @@ export function StudyPage({
                       if (!backTarget) return
 
                       void runAfterDraftFlush(() => {
+                        setFolderCodeRequest(null)
                         internalNavigationSequenceRef.current += 1
                         setInternalNavigation({
                           kind: 'material',
@@ -420,31 +458,37 @@ export function StudyPage({
           </Suspense>
         ) : selectedNode?.type === 'folder' ? (
           <StudyFolderCodeWorkspace
-            key={selectedNode.id}
+            key={`${selectedNode.id}:${
+              folderCodeRequest?.nodeId === selectedNode.id ? folderCodeRequest.requestId : 0
+            }`}
             node={selectedNode}
+            initialMode={folderCodeRequest?.nodeId === selectedNode.id ? 'code' : 'overview'}
             onApplied={handleCodeApplied}
           >
-            <FolderWorkspace
-              node={selectedNode}
-              items={study.nodes.filter((node) => node.parentId === selectedNode.id)}
-              onSelect={selectStudyNode}
-              onRename={() => openRename(selectedNode)}
-              onCreateFolder={() => {
-                void runAfterDraftFlush(async () => {
-                  clearInternalLinkNavigation()
-                  await study.createNode({ type: 'folder', parentId: selectedNode.id })
-                })
-              }}
-              onCreateMaterial={() => {
-                void runAfterDraftFlush(async () => {
-                  clearInternalLinkNavigation()
-                  await study.createNode({ type: 'material', parentId: selectedNode.id })
-                })
-              }}
-              onIconChange={(icon) => {
-                if (!deletePendingRef.current) void study.updateFolderIcon(selectedNode.id, icon)
-              }}
-            />
+            {({ openCode }) => (
+              <FolderWorkspace
+                node={selectedNode}
+                items={study.nodes.filter((node) => node.parentId === selectedNode.id)}
+                onSelect={selectStudyNode}
+                onRename={() => openRename(selectedNode)}
+                onOpenCode={openCode}
+                onCreateFolder={() => {
+                  void runAfterDraftFlush(async () => {
+                    clearInternalLinkNavigation()
+                    await study.createNode({ type: 'folder', parentId: selectedNode.id })
+                  })
+                }}
+                onCreateMaterial={() => {
+                  void runAfterDraftFlush(async () => {
+                    clearInternalLinkNavigation()
+                    await study.createNode({ type: 'material', parentId: selectedNode.id })
+                  })
+                }}
+                onIconChange={(icon) => {
+                  if (!deletePendingRef.current) void study.updateFolderIcon(selectedNode.id, icon)
+                }}
+              />
+            )}
           </StudyFolderCodeWorkspace>
         ) : (
           <StudyHome
@@ -563,6 +607,7 @@ function FolderWorkspace({
   onSelect,
   onCreateFolder,
   onRename,
+  onOpenCode,
   onCreateMaterial,
   onIconChange
 }: {
@@ -571,6 +616,7 @@ function FolderWorkspace({
   onSelect: (nodeId: string) => void
   onCreateFolder: () => void
   onRename: () => void
+  onOpenCode: () => void
   onCreateMaterial: () => void
   onIconChange: (icon: StudyFolderIconName) => void
 }): React.JSX.Element {
@@ -586,8 +632,14 @@ function FolderWorkspace({
     <section className="h-full overflow-y-auto bg-[var(--app-workspace)] px-8 py-7 max-[720px]:px-4 max-[720px]:py-5">
       <div className="mx-auto w-full max-w-[1240px] space-y-5">
         <section className="relative isolate overflow-hidden rounded-3xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[0_20px_70px_rgb(0_0_0/0.16)]">
-          <div aria-hidden="true" className="pointer-events-none absolute -top-32 right-8 -z-10 size-80 rounded-full bg-violet-500/10 blur-3xl" />
-          <div aria-hidden="true" className="pointer-events-none absolute -bottom-44 -left-24 -z-10 size-80 rounded-full bg-violet-900/10 blur-3xl" />
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -top-32 right-8 -z-10 size-80 rounded-full bg-violet-500/10 blur-3xl"
+          />
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -bottom-44 -left-24 -z-10 size-80 rounded-full bg-violet-900/10 blur-3xl"
+          />
 
           <div className="p-6 max-[720px]:p-4">
             <header className="flex items-start justify-between gap-6 max-[920px]:flex-col">
@@ -596,15 +648,23 @@ function FolderWorkspace({
                   <StudyFolderIcon name={activeIcon} expanded className="size-6" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[11px] font-semibold tracking-[0.12em] text-violet-300 uppercase">Папка библиотеки</p>
-                  <h1 className="mt-1 truncate text-3xl font-semibold tracking-[-0.035em] text-[var(--app-text)]">{node.title}</h1>
+                  <p className="text-[11px] font-semibold tracking-[0.12em] text-violet-300 uppercase">
+                    Папка библиотеки
+                  </p>
+                  <h1 className="mt-1 truncate text-3xl font-semibold tracking-[-0.035em] text-[var(--app-text)]">
+                    {node.title}
+                  </h1>
                 </div>
               </div>
 
-              <div className="grid w-[44rem] max-w-full shrink-0 grid-cols-4 gap-2 max-[920px]:w-full max-[760px]:grid-cols-2 max-[620px]:grid-cols-1">
+              <div className="grid w-[52rem] max-w-full shrink-0 grid-cols-5 gap-2 max-[920px]:w-full max-[760px]:grid-cols-2 max-[620px]:grid-cols-1">
                 <StudyActionButton type="button" onClick={onRename}>
                   <Pencil aria-hidden="true" />
                   Переименовать
+                </StudyActionButton>
+                <StudyActionButton type="button" onClick={onOpenCode}>
+                  <Braces aria-hidden="true" className="text-violet-300" />
+                  Код
                 </StudyActionButton>
                 <FolderIconPicker value={activeIcon} onChange={onIconChange} />
                 <StudyActionButton type="button" onClick={onCreateFolder}>
@@ -619,23 +679,56 @@ function FolderWorkspace({
             </header>
 
             <div className="mt-6 grid grid-cols-3 gap-3 max-[760px]:grid-cols-1">
-              <WorkspaceStatCard icon={<BookOpen aria-hidden="true" className="size-5" />} value={items.length} label="Всего" description="Элементов в этой папке" />
-              <WorkspaceStatCard icon={<FileText aria-hidden="true" className="size-5" />} value={materials.length} label="Материалов" description="Конспекты и записи" />
-              <WorkspaceStatCard icon={<Folder aria-hidden="true" className="size-5" />} value={folders.length} label="Папок" description="Вложенных разделов" />
+              <WorkspaceStatCard
+                icon={<BookOpen aria-hidden="true" className="size-5" />}
+                value={items.length}
+                label="Всего"
+                description="Элементов в этой папке"
+              />
+              <WorkspaceStatCard
+                icon={<FileText aria-hidden="true" className="size-5" />}
+                value={materials.length}
+                label="Материалов"
+                description="Конспекты и записи"
+              />
+              <WorkspaceStatCard
+                icon={<Folder aria-hidden="true" className="size-5" />}
+                value={folders.length}
+                label="Папок"
+                description="Вложенных разделов"
+              />
             </div>
           </div>
         </section>
 
         <div className="grid grid-cols-[minmax(0,1.35fr)_minmax(300px,0.75fr)] items-start gap-5 max-[1040px]:grid-cols-1">
-          <FolderItemsSection kind="material" title="Материалы" items={materials} emptyText="В этой папке пока нет материалов" onSelect={onSelect} />
-          <FolderItemsSection kind="folder" title="Вложенные папки" items={folders} emptyText="Вложенных папок пока нет" onSelect={onSelect} />
+          <FolderItemsSection
+            kind="material"
+            title="Материалы"
+            items={materials}
+            emptyText="В этой папке пока нет материалов"
+            onSelect={onSelect}
+          />
+          <FolderItemsSection
+            kind="folder"
+            title="Вложенные папки"
+            items={folders}
+            emptyText="Вложенных папок пока нет"
+            onSelect={onSelect}
+          />
         </div>
       </div>
     </section>
   )
 }
 
-function FolderIconPicker({ value, onChange }: { value: StudyFolderIconName; onChange: (icon: StudyFolderIconName) => void }): React.JSX.Element {
+function FolderIconPicker({
+  value,
+  onChange
+}: {
+  value: StudyFolderIconName
+  onChange: (icon: StudyFolderIconName) => void
+}): React.JSX.Element {
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
@@ -645,8 +738,15 @@ function FolderIconPicker({ value, onChange }: { value: StudyFolderIconName; onC
         </StudyActionButton>
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
-        <DropdownMenu.Content sideOffset={8} align="end" collisionPadding={12} className="z-50 w-72 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-2 shadow-2xl shadow-black/35">
-          <DropdownMenu.Label className="px-2 py-2 text-xs font-medium text-[var(--app-muted)]">Иконка папки</DropdownMenu.Label>
+        <DropdownMenu.Content
+          sideOffset={8}
+          align="end"
+          collisionPadding={12}
+          className="z-50 w-72 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-2 shadow-2xl shadow-black/35"
+        >
+          <DropdownMenu.Label className="px-2 py-2 text-xs font-medium text-[var(--app-muted)]">
+            Иконка папки
+          </DropdownMenu.Label>
           <div className="grid max-h-[28rem] grid-cols-5 gap-1 overflow-y-auto pr-1">
             {STUDY_FOLDER_ICON_OPTIONS.map((option) => (
               <Tooltip key={option.value} content={option.label} side="top">
@@ -657,11 +757,15 @@ function FolderIconPicker({ value, onChange }: { value: StudyFolderIconName; onC
                     'border-transparent text-[var(--app-muted)] transition-colors',
                     'hover:bg-white/[0.06] hover:text-[var(--app-text)]',
                     'focus:bg-white/[0.06] focus:text-[var(--app-text)]',
-                    option.value === value && 'border-violet-500/25 bg-violet-500/15 text-violet-200'
+                    option.value === value &&
+                      'border-violet-500/25 bg-violet-500/15 text-violet-200'
                   )}
                   onSelect={() => onChange(option.value)}
                 >
-                  <StudyFolderIcon name={option.value} className={STUDY_FOLDER_ICON_SIDEBAR_CLASS_NAME} />
+                  <StudyFolderIcon
+                    name={option.value}
+                    className={STUDY_FOLDER_ICON_SIDEBAR_CLASS_NAME}
+                  />
                 </DropdownMenu.Item>
               </Tooltip>
             ))}
@@ -690,25 +794,46 @@ function FolderItemsSection({
 
   return (
     <WorkspacePanel
-      icon={kind === 'folder' ? <Folder aria-hidden="true" className="size-5" /> : <FileText aria-hidden="true" className="size-5" />}
+      icon={
+        kind === 'folder' ? (
+          <Folder aria-hidden="true" className="size-5" />
+        ) : (
+          <FileText aria-hidden="true" className="size-5" />
+        )
+      }
       title={title}
       count={items.length}
     >
       {items.length > 0 ? (
-        <div className={cn(compact ? 'grid gap-2' : 'grid grid-cols-2 gap-3 max-[720px]:grid-cols-1')}>
+        <div
+          className={cn(
+            compact
+              ? 'grid gap-2'
+              : 'grid grid-cols-2 gap-3 max-[720px]:grid-cols-1'
+          )}
+        >
           {items.map((child) => (
             <WorkspaceNodeCard
               key={child.id}
               ariaLabel={`Открыть ${child.type === 'folder' ? 'папку' : 'материал'} «${child.title}»`}
               icon={
                 child.type === 'folder' ? (
-                  <StudyFolderIcon name={child.icon} expanded={child.isExpanded} className="size-5" />
+                  <StudyFolderIcon
+                    name={child.icon}
+                    expanded={child.isExpanded}
+                    className="size-5"
+                  />
                 ) : (
                   <FileText aria-hidden="true" className="size-5" />
                 )
               }
               title={child.title}
-              metadata={<>{child.type === 'folder' ? 'Папка' : 'Материал'} · {folderWorkspaceDateFormatter.format(new Date(child.updatedAt))}</>}
+              metadata={
+                <>
+                  {child.type === 'folder' ? 'Папка' : 'Материал'} ·{' '}
+                  {folderWorkspaceDateFormatter.format(new Date(child.updatedAt))}
+                </>
+              }
               compact={compact}
               onOpen={() => onSelect(child.id)}
             />
