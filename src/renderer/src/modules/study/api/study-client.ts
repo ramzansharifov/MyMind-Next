@@ -1,13 +1,19 @@
 import type {
+  ApplyStudyCodeInput,
   CreateStudyNodeInput,
   DuplicateStudyNodeResult,
+  GetStudyCodeSnapshotInput,
   ImportStudyAssetInput,
   MoveStudyNodeInput,
   OpenStudyAssetInput,
+  PreviewStudyCodeInput,
   ResolveStudyInternalLinkTargetInput,
   SaveStudyMaterialInput,
   SearchStudyInternalLinkTargetsInput,
   StudyApi,
+  StudyCodeApplyResult,
+  StudyCodePreviewResult,
+  StudyCodeSnapshot,
   StudyFolderIconName,
   StudyInternalLinkTarget,
   StudyLocalAsset,
@@ -33,27 +39,19 @@ export const studyClient = {
   },
 
   renameNode(id: string, title: string): Promise<StudyNode> {
-    return getStudyApi().renameNode({
-      id,
-      title
-    })
+    return getStudyApi().renameNode({ id, title })
   },
+
   duplicateNode(id: string): Promise<DuplicateStudyNodeResult> {
     const api = getStudyApi() as Partial<StudyApi>
-
     if (typeof api.duplicateNode !== 'function') {
       throw new Error('API дублирования не загружен. Полностью перезапусти приложение MyMind.')
     }
-
-    return api.duplicateNode({
-      id
-    })
+    return api.duplicateNode({ id })
   },
+
   updateFolderIcon(id: string, icon: StudyFolderIconName): Promise<StudyNode> {
-    return getStudyApi().updateFolderIcon({
-      id,
-      icon
-    })
+    return getStudyApi().updateFolderIcon({ id, icon })
   },
 
   deleteNode(nodeId: string): Promise<boolean> {
@@ -61,11 +59,9 @@ export const studyClient = {
   },
 
   updateExpansion(id: string, isExpanded: boolean): Promise<StudyNode> {
-    return getStudyApi().updateExpansion({
-      id,
-      isExpanded
-    })
+    return getStudyApi().updateExpansion({ id, isExpanded })
   },
+
   moveNode(input: MoveStudyNodeInput): Promise<StudyNode[]> {
     return getStudyApi().moveNode(input)
   },
@@ -77,6 +73,19 @@ export const studyClient = {
   saveMaterial(input: SaveStudyMaterialInput): Promise<StudyMaterial> {
     return getStudyApi().saveMaterial(input)
   },
+
+  getCodeSnapshot(input: GetStudyCodeSnapshotInput): Promise<StudyCodeSnapshot> {
+    return getStudyApi().getCodeSnapshot(input)
+  },
+
+  previewCode(input: PreviewStudyCodeInput): Promise<StudyCodePreviewResult> {
+    return getStudyApi().previewCode(input)
+  },
+
+  applyCode(input: ApplyStudyCodeInput): Promise<StudyCodeApplyResult> {
+    return getStudyApi().applyCode(input)
+  },
+
   searchInternalLinkTargets(
     input: SearchStudyInternalLinkTargetsInput
   ): Promise<StudyInternalLinkTarget[]> {
@@ -88,9 +97,11 @@ export const studyClient = {
   ): Promise<StudyInternalLinkTarget | null> {
     return getStudyApi().resolveInternalLinkTarget(input)
   },
+
   importAsset(input: ImportStudyAssetInput): Promise<StudyLocalAsset | null> {
     return getStudyApi().importAsset(input)
   },
+
   openAsset(input: OpenStudyAssetInput): Promise<void> {
     return getStudyApi().openAsset(input)
   }

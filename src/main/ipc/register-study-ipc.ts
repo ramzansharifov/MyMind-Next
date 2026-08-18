@@ -2,6 +2,11 @@ import { BrowserWindow, ipcMain } from 'electron'
 
 import { STUDY_IPC_CHANNELS } from '../../shared/contracts/study'
 import {
+  applyStudyCodeInputSchema,
+  getStudyCodeSnapshotInputSchema,
+  previewStudyCodeInputSchema
+} from '../../shared/validation/study-code'
+import {
   createStudyNodeInputSchema,
   duplicateStudyNodeInputSchema,
   importStudyAssetInputSchema,
@@ -29,6 +34,7 @@ import {
   updateStudyNodeExpansion
 } from '../repositories/study.repository'
 import { importStudyAsset, openStudyAsset } from '../services/study-assets'
+import { applyStudyCode, getStudyCodeSnapshot, previewStudyCode } from '../services/study-code-service'
 import { mainOperationTracker } from '../services/main-operation-tracker'
 
 export function registerStudyIpcHandlers(): void {
@@ -43,7 +49,6 @@ export function registerStudyIpcHandlers(): void {
   ipcMain.handle(STUDY_IPC_CHANNELS.createNode, (_event, rawInput: unknown) =>
     mainOperationTracker.run(() => {
       const input = createStudyNodeInputSchema.parse(rawInput)
-
       return createStudyNode(input)
     })
   )
@@ -51,7 +56,6 @@ export function registerStudyIpcHandlers(): void {
   ipcMain.handle(STUDY_IPC_CHANNELS.renameNode, (_event, rawInput: unknown) =>
     mainOperationTracker.run(() => {
       const input = renameStudyNodeInputSchema.parse(rawInput)
-
       return renameStudyNode(input.id, input.title)
     })
   )
@@ -59,7 +63,6 @@ export function registerStudyIpcHandlers(): void {
   ipcMain.handle(STUDY_IPC_CHANNELS.duplicateNode, (_event, rawInput: unknown) =>
     mainOperationTracker.run(() => {
       const input = duplicateStudyNodeInputSchema.parse(rawInput)
-
       return duplicateStudyNode(input.id)
     })
   )
@@ -67,17 +70,13 @@ export function registerStudyIpcHandlers(): void {
   ipcMain.handle(STUDY_IPC_CHANNELS.updateFolderIcon, (_event, rawInput: unknown) =>
     mainOperationTracker.run(() => {
       const input = updateStudyFolderIconInputSchema.parse(rawInput)
-
       return updateStudyFolderIcon(input.id, input.icon)
     })
   )
 
   ipcMain.handle(STUDY_IPC_CHANNELS.deleteNode, (_event, nodeId: unknown) =>
     mainOperationTracker.run(() => {
-      if (typeof nodeId !== 'string' || !nodeId) {
-        throw new Error('Invalid study node id')
-      }
-
+      if (typeof nodeId !== 'string' || !nodeId) throw new Error('Invalid study node id')
       return deleteStudyNode(nodeId)
     })
   )
@@ -85,7 +84,6 @@ export function registerStudyIpcHandlers(): void {
   ipcMain.handle(STUDY_IPC_CHANNELS.updateExpansion, (_event, rawInput: unknown) =>
     mainOperationTracker.run(() => {
       const input = updateStudyNodeExpansionInputSchema.parse(rawInput)
-
       return updateStudyNodeExpansion(input.id, input.isExpanded)
     })
   )
@@ -93,17 +91,13 @@ export function registerStudyIpcHandlers(): void {
   ipcMain.handle(STUDY_IPC_CHANNELS.moveNode, (_event, rawInput: unknown) =>
     mainOperationTracker.run(() => {
       const input = moveStudyNodeInputSchema.parse(rawInput)
-
       return moveStudyNode(input)
     })
   )
 
   ipcMain.handle(STUDY_IPC_CHANNELS.getMaterial, (_event, nodeId: unknown) =>
     mainOperationTracker.run(() => {
-      if (typeof nodeId !== 'string' || !nodeId) {
-        throw new Error('Invalid study material id')
-      }
-
+      if (typeof nodeId !== 'string' || !nodeId) throw new Error('Invalid study material id')
       return getStudyMaterial(nodeId)
     })
   )
@@ -111,15 +105,34 @@ export function registerStudyIpcHandlers(): void {
   ipcMain.handle(STUDY_IPC_CHANNELS.saveMaterial, (_event, rawInput: unknown) =>
     mainOperationTracker.run(() => {
       const input = saveStudyMaterialInputSchema.parse(rawInput)
-
       return saveStudyMaterial(input)
+    })
+  )
+
+  ipcMain.handle(STUDY_IPC_CHANNELS.getCodeSnapshot, (_event, rawInput: unknown) =>
+    mainOperationTracker.run(() => {
+      const input = getStudyCodeSnapshotInputSchema.parse(rawInput)
+      return getStudyCodeSnapshot(input.nodeId)
+    })
+  )
+
+  ipcMain.handle(STUDY_IPC_CHANNELS.previewCode, (_event, rawInput: unknown) =>
+    mainOperationTracker.run(() => {
+      const input = previewStudyCodeInputSchema.parse(rawInput)
+      return previewStudyCode(input)
+    })
+  )
+
+  ipcMain.handle(STUDY_IPC_CHANNELS.applyCode, (_event, rawInput: unknown) =>
+    mainOperationTracker.run(() => {
+      const input = applyStudyCodeInputSchema.parse(rawInput)
+      return applyStudyCode(input)
     })
   )
 
   ipcMain.handle(STUDY_IPC_CHANNELS.searchInternalLinkTargets, (_event, rawInput: unknown) =>
     mainOperationTracker.run(() => {
       const input = searchStudyInternalLinkTargetsInputSchema.parse(rawInput)
-
       return searchStudyInternalLinkTargets(input)
     })
   )
@@ -127,7 +140,6 @@ export function registerStudyIpcHandlers(): void {
   ipcMain.handle(STUDY_IPC_CHANNELS.resolveInternalLinkTarget, (_event, rawInput: unknown) =>
     mainOperationTracker.run(() => {
       const input = resolveStudyInternalLinkTargetInputSchema.parse(rawInput)
-
       return resolveStudyInternalLinkTarget(input)
     })
   )
@@ -137,10 +149,8 @@ export function registerStudyIpcHandlers(): void {
       if (!event.senderFrame || event.senderFrame !== event.sender.mainFrame) {
         throw new Error('Untrusted study asset request')
       }
-
       const input = importStudyAssetInputSchema.parse(rawInput)
       const parentWindow = BrowserWindow.fromWebContents(event.sender)
-
       return importStudyAsset(input, parentWindow, () => {
         getStudyMaterial(input.nodeId)
       })
@@ -152,9 +162,7 @@ export function registerStudyIpcHandlers(): void {
       if (!event.senderFrame || event.senderFrame !== event.sender.mainFrame) {
         throw new Error('Untrusted study asset request')
       }
-
       const input = openStudyAssetInputSchema.parse(rawInput)
-
       return openStudyAsset(input)
     })
   )

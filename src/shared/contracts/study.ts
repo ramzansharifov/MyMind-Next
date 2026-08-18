@@ -319,6 +319,65 @@ export interface ImportStudyAssetInput {
 }
 export type OpenStudyAssetInput = Pick<StudyLocalAsset, 'id' | 'materialId' | 'name'>
 
+export type StudyCodeDiagnosticSeverity = 'error' | 'warning'
+
+export interface StudyCodeDiagnostic {
+  severity: StudyCodeDiagnosticSeverity
+  line: number
+  column: number
+  message: string
+}
+
+export interface StudyCodeChangeSummary {
+  createdFolders: number
+  createdMaterials: number
+  deletedFolders: number
+  deletedMaterials: number
+  renamedNodes: number
+  movedNodes: number
+  createdBlocks: number
+  deletedBlocks: number
+  updatedBlocks: number
+  reorderedBlocks: number
+}
+
+export interface GetStudyCodeSnapshotInput {
+  nodeId: string
+}
+
+export interface StudyCodeSnapshot {
+  nodeId: string
+  nodeType: StudyNodeType
+  title: string
+  source: string
+  revision: string
+}
+
+export interface PreviewStudyCodeInput {
+  nodeId: string
+  source: string
+  baseRevision: string
+}
+
+export interface StudyCodePreviewResult {
+  valid: boolean
+  diagnostics: StudyCodeDiagnostic[]
+  summary: StudyCodeChangeSummary
+  destructive: boolean
+}
+
+export interface ApplyStudyCodeInput extends PreviewStudyCodeInput {
+  confirmDestructive?: boolean
+}
+
+export interface StudyCodeApplyResult {
+  rootId: string
+  nodes: StudyNode[]
+  source: string
+  revision: string
+  summary: StudyCodeChangeSummary
+}
+
 export const STUDY_IPC_CHANNELS = {
   listNodes: 'study:list-nodes',
   createNode: 'study:create-node',
@@ -330,6 +389,9 @@ export const STUDY_IPC_CHANNELS = {
   moveNode: 'study:move-node',
   getMaterial: 'study:get-material',
   saveMaterial: 'study:save-material',
+  getCodeSnapshot: 'study:get-code-snapshot',
+  previewCode: 'study:preview-code',
+  applyCode: 'study:apply-code',
   searchInternalLinkTargets: 'study:search-internal-link-targets',
   resolveInternalLinkTarget: 'study:resolve-internal-link-target',
   importAsset: 'study:import-asset',
@@ -347,6 +409,9 @@ export interface StudyApi {
   moveNode(input: MoveStudyNodeInput): Promise<StudyNode[]>
   getMaterial(nodeId: string): Promise<StudyMaterial>
   saveMaterial(input: SaveStudyMaterialInput): Promise<StudyMaterial>
+  getCodeSnapshot(input: GetStudyCodeSnapshotInput): Promise<StudyCodeSnapshot>
+  previewCode(input: PreviewStudyCodeInput): Promise<StudyCodePreviewResult>
+  applyCode(input: ApplyStudyCodeInput): Promise<StudyCodeApplyResult>
   searchInternalLinkTargets(
     input: SearchStudyInternalLinkTargetsInput
   ): Promise<StudyInternalLinkTarget[]>

@@ -2,6 +2,7 @@ import * as Tabs from '@radix-ui/react-tabs'
 import {
   ArrowLeft,
   BookOpen,
+  Braces,
   Check,
   Edit3,
   LoaderCircle,
@@ -11,8 +12,13 @@ import {
 } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-import type { StudyDocument, StudyNode } from '../../../../../shared/contracts/study'
+import type {
+  StudyCodeApplyResult,
+  StudyDocument,
+  StudyNode
+} from '../../../../../shared/contracts/study'
 import { cn } from '../../../shared/lib/cn'
+import { AppDialog } from '../../../shared/ui/AppDialog'
 import { Tooltip } from '../../../shared/ui/tooltip'
 
 import { studyClient } from '../api/study-client'
@@ -33,7 +39,10 @@ import {
 } from '../lib/study-read-navigation'
 import { StudyActionButton } from './StudyActionButton'
 import { StudyBlockEditor } from './StudyBlockEditor'
+import { StudyCodeWorkspace } from './code-mode/StudyCodeWorkspace'
 import { StudyReadNavigation } from './StudyReadNavigation'
+
+type StudyMaterialMode = 'read' | 'edit' | 'code'
 
 interface StudyMaterialEditorProps {
   node: StudyNode
@@ -43,6 +52,7 @@ interface StudyMaterialEditorProps {
   onBack?: () => void
   navigation: StudyInternalLinkNavigationRequest | null
   onNavigationHandled: (requestId: number) => void
+  onCodeApplied?: (result: StudyCodeApplyResult) => void | Promise<void>
 }
 
 export function StudyMaterialEditor({
@@ -52,14 +62,17 @@ export function StudyMaterialEditor({
   onRename,
   onBack,
   navigation,
-  onNavigationHandled
+  onNavigationHandled,
+  onCodeApplied
 }: StudyMaterialEditorProps): React.JSX.Element {
   const [document, setDocument] = useState<StudyDocument>(createEmptyStudyDocument())
-  const [mode, setMode] = useState<'edit' | 'read'>(() => (focusMode ? 'read' : 'edit'))
+  const [mode, setMode] = useState<StudyMaterialMode>(() => (focusMode ? 'read' : 'edit'))
   const [saveState, setSaveState] = useState<StudyAutosaveState>('saved')
   const [isLoading, setIsLoading] = useState(true)
+  const [codeDirty, setCodeDirty] = useState(false)
+  const [pendingMode, setPendingMode] = useState<Exclude<StudyMaterialMode, 'code'> | null>(null)
 
-  const activeMode = focusMode ? 'read' : mode
+  const activeMode: StudyMaterialMode = focusMode ? 'read' : mode
 
   useEffect(() => {
     if (!focusMode) return undefined
@@ -88,10 +101,7 @@ export function StudyMaterialEditor({
   )
 
   const clearSaveTimer = useCallback((): void => {
-    if (saveTimerRef.current === null) {
-      return
-    }
-
+    if (saveTimerRef.current === null) return
     window.clearTimeout(saveTimerRef.current)
     saveTimerRef.current = null
   }, [])
@@ -105,24 +115,21 @@ export function StudyMaterialEditor({
     () =>
       createStudyDraftDeletionSuspension({
         cancelScheduledSave: clearSaveTimer,
-        pause: () => {
-          autosaveQueue.pause()
-        },
+        pause: () => autosaveQueue.pause(),
         resume: () => autosaveQueue.resume(),
-        dispose: () => {
-          autosaveQueue.dispose()
-        }
+        dispose: () => autosaveQueue.dispose()
       }),
     [autosaveQueue, clearSaveTimer]
   )
 
   useEffect(() => {
-    /*
-     * React Strict Mode intentionally runs effect setup and cleanup twice in
-     * development. Deactivation is reversible; permanent disposal happens
-     * only after the backend confirms deletion.
-     */
     autosaveQueue.activate()
+
+    if (activeMode === 'code') {
+      clearSaveTimer()
+      autosaveQueue.deactivate()
+      return undefined
+    }
 
     const unregister = registerStudyDraftHandle({
       materialId: node.id,
@@ -136,7 +143,14 @@ export function StudyMaterialEditor({
       autosaveQueue.deactivate()
       unregister()
     }
-  }, [autosaveQueue, clearSaveTimer, flushLatestDraft, node.id, suspendForDeletion])
+  }, [activeMode, autosaveQueue, clearSaveTimer, flushLatestDraft, node.id, suspendForDeletion])
+
+  const reloadMaterial = useCallback(async (): Promise<void> => {
+    const loadedMaterial = await studyClient.getMaterial(node.id)
+    autosaveQueue.hydrate(loadedMaterial.document)
+    setDocument(loadedMaterial.document)
+    setSaveState('saved')
+  }, [autosaveQueue, node.id])
 
   useEffect(() => {
     let active = true
@@ -144,23 +158,16 @@ export function StudyMaterialEditor({
     studyClient
       .getMaterial(node.id)
       .then((loadedMaterial) => {
-        if (!active) {
-          return
-        }
-
+        if (!active) return
         autosaveQueue.hydrate(loadedMaterial.document)
         setDocument(loadedMaterial.document)
         setSaveState('saved')
       })
       .catch(() => {
-        if (active) {
-          setSaveState('error')
-        }
+        if (active) setSaveState('error')
       })
       .finally(() => {
-        if (active) {
-          setIsLoading(false)
-        }
+        if (active) setIsLoading(false)
       })
 
     return () => {
@@ -179,7 +186,6 @@ export function StudyMaterialEditor({
     }
 
     handledNavigationRef.current = navigation.requestId
-
     const frames: number[] = []
 
     function schedule(callback: () => void): void {
@@ -193,9 +199,7 @@ export function StudyMaterialEditor({
         if (navigation.headingId) {
           window.dispatchEvent(
             new CustomEvent(STUDY_REVEAL_HEADING_EVENT, {
-              detail: {
-                headingId: navigation.headingId
-              }
+              detail: { headingId: navigation.headingId }
             })
           )
         }
@@ -203,9 +207,7 @@ export function StudyMaterialEditor({
         if (navigation.revealSourceBlockId) {
           window.dispatchEvent(
             new CustomEvent(STUDY_REVEAL_BLOCK_EVENT, {
-              detail: {
-                blockId: navigation.revealSourceBlockId
-              }
+              detail: { blockId: navigation.revealSourceBlockId }
             })
           )
         }
@@ -228,17 +230,9 @@ export function StudyMaterialEditor({
                 const containerRect = scrollContainer.getBoundingClientRect()
                 const targetRect = target.getBoundingClientRect()
                 const top = scrollContainer.scrollTop + targetRect.top - containerRect.top - 80
+                scrollContainer.scrollTo({ top: Math.max(top, 0), behavior: 'smooth' })
 
-                scrollContainer.scrollTo({
-                  top: Math.max(top, 0),
-                  behavior: 'smooth'
-                })
-
-                if (exact) {
-                  target.focus({
-                    preventScroll: true
-                  })
-                }
+                if (exact) target.focus({ preventScroll: true })
 
                 target.animate(
                   [
@@ -247,14 +241,9 @@ export function StudyMaterialEditor({
                         ? '0 0 0 4px rgb(139 92 246 / 35%)'
                         : '0 0 0 2px rgb(139 92 246 / 30%)'
                     },
-                    {
-                      boxShadow: '0 0 0 0 rgb(139 92 246 / 0%)'
-                    }
+                    { boxShadow: '0 0 0 0 rgb(139 92 246 / 0%)' }
                   ],
-                  {
-                    duration: 1400,
-                    easing: 'ease-out'
-                  }
+                  { duration: 1400, easing: 'ease-out' }
                 )
               }
             } else if (navigation.headingId) {
@@ -266,32 +255,14 @@ export function StudyMaterialEditor({
                 const containerRect = scrollContainer.getBoundingClientRect()
                 const targetRect = target.getBoundingClientRect()
                 const top = scrollContainer.scrollTop + targetRect.top - containerRect.top - 24
-
-                scrollContainer.scrollTo({
-                  top: Math.max(top, 0),
-                  behavior: 'smooth'
-                })
-
+                scrollContainer.scrollTo({ top: Math.max(top, 0), behavior: 'smooth' })
                 target.animate(
-                  [
-                    {
-                      backgroundColor: 'rgb(139 92 246 / 24%)'
-                    },
-                    {
-                      backgroundColor: 'transparent'
-                    }
-                  ],
-                  {
-                    duration: 1400,
-                    easing: 'ease-out'
-                  }
+                  [{ backgroundColor: 'rgb(139 92 246 / 24%)' }, { backgroundColor: 'transparent' }],
+                  { duration: 1400, easing: 'ease-out' }
                 )
               }
             } else {
-              scrollContainer.scrollTo({
-                top: 0,
-                behavior: 'smooth'
-              })
+              scrollContainer.scrollTo({ top: 0, behavior: 'smooth' })
             }
           }
 
@@ -301,34 +272,50 @@ export function StudyMaterialEditor({
     })
 
     return () => {
-      frames.forEach((frame) => {
-        window.cancelAnimationFrame(frame)
-      })
+      frames.forEach((frame) => window.cancelAnimationFrame(frame))
     }
   }, [isLoading, navigation, node.id, onNavigationHandled])
 
   function updateDocument(nextDocument: StudyDocument): void {
     setDocument(nextDocument)
     autosaveQueue.updateDraft(nextDocument)
-
     clearSaveTimer()
-
-    /*
-     * While deletion is pending the draft remains editable in memory, but no
-     * new save is scheduled. A failed deletion resumes the queue and persists
-     * the newest retained draft immediately.
-     */
-    if (autosaveQueue.isPaused()) {
-      return
-    }
+    if (autosaveQueue.isPaused()) return
 
     saveTimerRef.current = window.setTimeout(() => {
       saveTimerRef.current = null
-
       void autosaveQueue.saveLatest().catch((reason: unknown) => {
         console.error('Failed to autosave study material', reason)
       })
     }, 800)
+  }
+
+  async function requestMode(nextMode: StudyMaterialMode): Promise<void> {
+    if (nextMode === activeMode || focusMode) return
+
+    if (activeMode === 'code' && nextMode !== 'code' && codeDirty) {
+      setPendingMode(nextMode)
+      return
+    }
+
+    if (nextMode === 'code') {
+      try {
+        await flushLatestDraft()
+        setSaveState('saved')
+        setMode('code')
+      } catch (reason: unknown) {
+        console.error('Failed to save study material before Code Mode', reason)
+        setSaveState('error')
+      }
+      return
+    }
+
+    setMode(nextMode)
+  }
+
+  async function handleCodeApplied(result: StudyCodeApplyResult): Promise<void> {
+    await reloadMaterial()
+    await onCodeApplied?.(result)
   }
 
   if (isLoading) {
@@ -371,7 +358,6 @@ export function StudyMaterialEditor({
           <p className="text-[11px] font-semibold tracking-[0.08em] text-violet-300 uppercase">
             {focusMode ? 'Режим фокуса' : 'Материал'}
           </p>
-
           <h1 className="mt-1 truncate text-xl font-semibold tracking-tight text-[var(--app-text)]">
             {node.title}
           </h1>
@@ -386,13 +372,12 @@ export function StudyMaterialEditor({
               onClick={onRename}
             >
               <Pencil aria-hidden="true" />
-
               <span className="max-[760px]:hidden">Переименовать</span>
             </StudyActionButton>
           </Tooltip>
         )}
 
-        {!focusMode && (
+        {!focusMode && activeMode !== 'code' && (
           <SaveStatus
             state={saveState}
             onRetry={() => {
@@ -404,32 +389,22 @@ export function StudyMaterialEditor({
         )}
 
         {!focusMode && (
-          <Tabs.Root
-            value={mode}
-            onValueChange={(value) => {
-              if (value === 'edit' || value === 'read') {
-                setMode(value)
-              }
-            }}
-          >
+          <Tabs.Root value={mode} onValueChange={(value) => void requestMode(value as StudyMaterialMode)}>
             <Tabs.List
-              aria-label="Режим просмотра материала"
+              aria-label="Режим материала"
               className="inline-flex rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] p-1"
             >
-              <Tabs.Trigger
-                value="edit"
-                className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-[var(--app-muted)] transition-colors outline-none hover:text-[var(--app-text)] data-[state=active]:bg-[var(--app-surface-raised)] data-[state=active]:text-[var(--app-text)]"
-              >
-                <Edit3 aria-hidden="true" className="size-4" />
-                Правка
-              </Tabs.Trigger>
-
-              <Tabs.Trigger
-                value="read"
-                className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-[var(--app-muted)] transition-colors outline-none hover:text-[var(--app-text)] data-[state=active]:bg-[var(--app-surface-raised)] data-[state=active]:text-[var(--app-text)]"
-              >
+              <Tabs.Trigger value="read" className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-[var(--app-muted)] transition-colors outline-none hover:text-[var(--app-text)] data-[state=active]:bg-[var(--app-surface-raised)] data-[state=active]:text-[var(--app-text)]">
                 <BookOpen aria-hidden="true" className="size-4" />
                 Чтение
+              </Tabs.Trigger>
+              <Tabs.Trigger value="edit" className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-[var(--app-muted)] transition-colors outline-none hover:text-[var(--app-text)] data-[state=active]:bg-[var(--app-surface-raised)] data-[state=active]:text-[var(--app-text)]">
+                <Edit3 aria-hidden="true" className="size-4" />
+                Редактирование
+              </Tabs.Trigger>
+              <Tabs.Trigger value="code" className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-[var(--app-muted)] transition-colors outline-none hover:text-[var(--app-text)] data-[state=active]:bg-[var(--app-surface-raised)] data-[state=active]:text-[var(--app-text)]">
+                <Braces aria-hidden="true" className="size-4" />
+                Код
               </Tabs.Trigger>
             </Tabs.List>
           </Tabs.Root>
@@ -462,35 +437,69 @@ export function StudyMaterialEditor({
         ) : null}
       </header>
 
-      <div
-        ref={activeMode === 'read' ? readScrollRef : undefined}
-        data-study-scroll-container={activeMode === 'read'}
-        className={cn(
-          'min-h-0 flex-1 overflow-y-auto px-6 py-6',
-          'max-[640px]:px-3 max-[640px]:py-4',
-          activeMode === 'read' && '[scrollbar-gutter:stable] bg-[var(--app-reader-surface)]'
-        )}
-      >
+      {activeMode === 'code' ? (
+        <StudyCodeWorkspace node={node} onApplied={handleCodeApplied} onDirtyChange={setCodeDirty} />
+      ) : (
         <div
-          className={
-            activeMode === 'read'
-              ? 'mx-auto grid w-full max-w-[1500px] grid-cols-[minmax(0,1fr)_280px] items-start gap-5 max-[1180px]:grid-cols-1'
-              : undefined
-          }
-        >
-          <StudyBlockEditor
-            materialId={node.id}
-            document={document}
-            mode={activeMode}
-            focusMode={focusMode}
-            onChange={updateDocument}
-          />
-
-          {activeMode === 'read' && (
-            <StudyReadNavigation blocks={document.blocks} scrollContainerRef={readScrollRef} />
+          ref={activeMode === 'read' ? readScrollRef : undefined}
+          data-study-scroll-container={activeMode === 'read'}
+          className={cn(
+            'min-h-0 flex-1 overflow-y-auto px-6 py-6',
+            'max-[640px]:px-3 max-[640px]:py-4',
+            activeMode === 'read' && '[scrollbar-gutter:stable] bg-[var(--app-reader-surface)]'
           )}
+        >
+          <div
+            className={
+              activeMode === 'read'
+                ? 'mx-auto grid w-full max-w-[1500px] grid-cols-[minmax(0,1fr)_280px] items-start gap-5 max-[1180px]:grid-cols-1'
+                : undefined
+            }
+          >
+            <StudyBlockEditor
+              materialId={node.id}
+              document={document}
+              mode={activeMode}
+              focusMode={focusMode}
+              onChange={updateDocument}
+            />
+
+            {activeMode === 'read' && (
+              <StudyReadNavigation blocks={document.blocks} scrollContainerRef={readScrollRef} />
+            )}
+          </div>
         </div>
-      </div>
+      )}
+
+      <AppDialog
+        open={pendingMode !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingMode(null)
+        }}
+        title="Отменить изменения кода?"
+        description="Несохранённый DSL не был применён к материалу."
+        footer={
+          <>
+            <button type="button" className="rounded-lg px-3 py-2 text-sm text-[var(--app-muted)]" onClick={() => setPendingMode(null)}>
+              Остаться
+            </button>
+            <button
+              type="button"
+              className="rounded-lg bg-violet-500/15 px-3 py-2 text-sm font-medium text-violet-200"
+              onClick={() => {
+                const next = pendingMode
+                setPendingMode(null)
+                setCodeDirty(false)
+                if (next) setMode(next)
+              }}
+            >
+              Отменить и перейти
+            </button>
+          </>
+        }
+      >
+        <p className="text-sm text-[var(--app-muted)]">Сохраните DSL, если хотите применить изменения.</p>
+      </AppDialog>
     </section>
   )
 }
@@ -511,9 +520,7 @@ function SaveStatus({
     )
   }
 
-  if (state === 'dirty') {
-    return <span className="text-xs text-amber-300">Есть изменения</span>
-  }
+  if (state === 'dirty') return <span className="text-xs text-amber-300">Есть изменения</span>
 
   if (state === 'error') {
     return (
