@@ -85,7 +85,7 @@ export function StudyLatexBlock({
           data-study-latex-block
           data-fullscreen={fullscreen ? 'true' : 'false'}
           className={cn(
-            'overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-code-surface)]',
+            'w-full overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-code-surface)]',
             fullscreen && 'flex h-full min-h-0 flex-col rounded-2xl shadow-2xl shadow-black/40'
           )}
         >
@@ -210,7 +210,7 @@ function LatexSourceEditor({
 
       <div
         className={cn(
-          'study-source-editor-scroll',
+          'study-source-editor-scroll w-full',
           fullscreen ? 'min-h-0 flex-1 overflow-auto' : 'max-h-[36rem] overflow-auto'
         )}
       >
@@ -268,7 +268,7 @@ function StudyLatexPreview({
       data-alignment={alignment}
       data-framed={framed}
       className={cn(
-        'study-latex-preview',
+        'study-latex-preview w-full',
         framed && 'rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)]'
       )}
     >
@@ -292,7 +292,12 @@ function StudyLatexPreview({
 
       {result.html && (
         <div
-          className="study-latex-render"
+          className={cn(
+            'study-latex-render w-full',
+            alignment === 'left' && 'text-left',
+            alignment === 'center' && 'text-center',
+            alignment === 'right' && 'text-right'
+          )}
           style={{
             fontSize: `${normalizedScale / 100}rem`
           }}
