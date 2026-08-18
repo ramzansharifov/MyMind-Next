@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
 import { validateStudyCodeConstraints } from './study-code-constraints'
+import {
+  studyDividerBlockSchema,
+  studyImageBlockSchema,
+  studyLatexBlockSchema,
+  studyMermaidBlockSchema
+} from './validation/study'
 
 describe('study Code Mode constraint diagnostics', () => {
   it('points Mermaid scale errors to the actual attribute and explains the valid range', () => {
@@ -73,5 +79,62 @@ describe('study Code Mode constraint diagnostics', () => {
     const source = `@version(1)\n\nmaterial "Лекция" {\n  heading 1 "Заголовок" color="#FFFFFF" background="#7C3AED"\n\n  latex view="preview" display="display" align="center" scale=100 """\n    x^2\n  """\n\n  mermaid view="preview" theme="forest" scale=100 """\n    flowchart LR\n      A --> B\n  """\n\n  image url="https://example.com/image.png" fit="contain" height=360\n  divider variant="tapered" thickness=4 color="#A78BFA"\n}\n`
 
     expect(validateStudyCodeConstraints(source)).toEqual([])
+  })
+
+  it('keeps numeric DSL limits aligned with the canonical block schemas', () => {
+    for (const value of [59, 60, 100, 180, 181, 100.5]) {
+      const schemaAccepts = studyMermaidBlockSchema.safeParse({
+        id: 'block',
+        type: 'mermaid',
+        source: 'flowchart LR',
+        scale: value
+      }).success
+      const dslAccepts =
+        validateStudyCodeConstraints(
+          `@version(1)\n\nmaterial "M" {\n  mermaid scale=${value} """\n    flowchart LR\n  """\n}\n`
+        ).length === 0
+      expect(dslAccepts).toBe(schemaAccepts)
+    }
+
+    for (const value of [69, 70, 100, 180, 181, 100.5]) {
+      const schemaAccepts = studyLatexBlockSchema.safeParse({
+        id: 'block',
+        type: 'latex',
+        source: 'x',
+        scale: value
+      }).success
+      const dslAccepts =
+        validateStudyCodeConstraints(
+          `@version(1)\n\nmaterial "M" {\n  latex scale=${value} """\n    x\n  """\n}\n`
+        ).length === 0
+      expect(dslAccepts).toBe(schemaAccepts)
+    }
+
+    for (const value of [179, 180, 360, 720, 721, 360.5]) {
+      const schemaAccepts = studyImageBlockSchema.safeParse({
+        id: 'block',
+        type: 'image',
+        source: { type: 'url', url: 'https://example.com/image.png' },
+        imageHeight: value
+      }).success
+      const dslAccepts =
+        validateStudyCodeConstraints(
+          `@version(1)\n\nmaterial "M" {\n  image url="https://example.com/image.png" height=${value}\n}\n`
+        ).length === 0
+      expect(dslAccepts).toBe(schemaAccepts)
+    }
+
+    for (const value of [0, 1, 4, 12, 13, 4.5]) {
+      const schemaAccepts = studyDividerBlockSchema.safeParse({
+        id: 'block',
+        type: 'divider',
+        thickness: value
+      }).success
+      const dslAccepts =
+        validateStudyCodeConstraints(
+          `@version(1)\n\nmaterial "M" {\n  divider thickness=${value}\n}\n`
+        ).length === 0
+      expect(dslAccepts).toBe(schemaAccepts)
+    }
   })
 })
