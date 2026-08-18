@@ -162,6 +162,7 @@ export function StudyCodeWorkspace({
 
   const visibleDiagnostics = liveDiagnostic ? [liveDiagnostic] : diagnostics
   const lineNumberText = useMemo(() => createLineNumberText(source), [source])
+  const pendingIsDestructive = pendingPreview?.destructive ?? false
 
   async function reloadSnapshot(): Promise<void> {
     try {
@@ -204,7 +205,10 @@ export function StudyCodeWorkspace({
         return
       }
 
-      if (preview.destructive) {
+      const changesFolderStructure =
+        node.type === 'folder' && hasFolderStructureChanges(preview.summary)
+
+      if (preview.destructive || changesFolderStructure) {
         setPendingPreview(preview)
         setSaveState('dirty')
         return
@@ -301,7 +305,9 @@ export function StudyCodeWorkspace({
       <header className="flex min-h-14 shrink-0 items-center gap-3 border-b border-[var(--app-border)] px-5 max-[720px]:px-3">
         <div className="flex min-w-0 items-center gap-2">
           <Braces aria-hidden="true" className="size-4 shrink-0 text-violet-300" />
-          <span className="truncate text-sm font-medium text-[var(--app-text)]">{node.title}</span>
+          <span className="truncate text-sm font-medium text-[var(--app-text)]">
+            {node.type === 'folder' ? `Структура: ${node.title}` : node.title}
+          </span>
         </div>
 
         <div className="ml-auto flex shrink-0 items-center gap-1.5">
@@ -432,10 +438,21 @@ export function StudyCodeWorkspace({
         onOpenChange={(open) => {
           if (!open && saveState !== 'saving') setPendingPreview(null)
         }}
-        title="Применить удаления?"
-        description="DSL содержит изменения, удаляющие существующие данные."
-        icon={<AlertTriangle aria-hidden="true" />}
-        tone="warning"
+        title={pendingIsDestructive ? 'Применить удаления?' : 'Применить изменения структуры?'}
+        description={
+          pendingIsDestructive
+            ? 'DSL содержит изменения, удаляющие существующие данные.'
+            : 'Будут изменены папки, материалы или их порядок.'
+        }
+        icon={
+          pendingIsDestructive ? (
+            <AlertTriangle aria-hidden="true" />
+          ) : (
+            <Braces aria-hidden="true" />
+          )
+        }
+        tone={pendingIsDestructive ? 'warning' : 'default'}
+        role={pendingIsDestructive ? 'alertdialog' : 'dialog'}
         busy={saveState === 'saving'}
         footer={
           <>
@@ -449,9 +466,14 @@ export function StudyCodeWorkspace({
             </button>
             <button
               type="button"
-              className="rounded-lg bg-amber-500/15 px-3 py-2 text-sm font-medium text-amber-200 hover:bg-amber-500/20"
+              className={cn(
+                'rounded-lg px-3 py-2 text-sm font-medium',
+                pendingIsDestructive
+                  ? 'bg-amber-500/15 text-amber-200 hover:bg-amber-500/20'
+                  : 'bg-violet-500/15 text-violet-200 hover:bg-violet-500/20'
+              )}
               disabled={saveState === 'saving'}
-              onClick={() => void applyPreview(true)}
+              onClick={() => void applyPreview(pendingIsDestructive)}
             >
               Применить изменения
             </button>
@@ -555,6 +577,17 @@ function ChangeSummary({ summary }: { summary: StudyCodeChangeSummary }): React.
         </div>
       ))}
     </div>
+  )
+}
+
+function hasFolderStructureChanges(summary: StudyCodeChangeSummary): boolean {
+  return (
+    summary.createdFolders > 0 ||
+    summary.createdMaterials > 0 ||
+    summary.deletedFolders > 0 ||
+    summary.deletedMaterials > 0 ||
+    summary.renamedNodes > 0 ||
+    summary.movedNodes > 0
   )
 }
 

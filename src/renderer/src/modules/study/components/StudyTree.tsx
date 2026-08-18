@@ -11,7 +11,7 @@ import {
   type DragOverEvent,
   type DragStartEvent
 } from '@dnd-kit/core'
-import { CopyPlus, FilePlus2, FileText, FolderPlus, Pencil, Trash2 } from 'lucide-react'
+import { Braces, CopyPlus, FilePlus2, FileText, FolderPlus, Pencil, Trash2 } from 'lucide-react'
 import { useMemo, useState, type ButtonHTMLAttributes } from 'react'
 
 import type { MoveStudyNodeInput, StudyNode } from '../../../../../shared/contracts/study'
@@ -46,6 +46,7 @@ interface StudyTreeProps {
   onDelete: (node: StudyNode) => void
   onCreateFolder: (parentId: string) => void
   onCreateMaterial: (parentId: string) => void
+  onOpenCode?: (node: StudyNode) => void
   onMove: (input: MoveStudyNodeInput) => void
 }
 
@@ -75,6 +76,7 @@ export function StudyTree({
   onDelete,
   onCreateFolder,
   onCreateMaterial,
+  onOpenCode,
   onMove
 }: StudyTreeProps): React.JSX.Element {
   const visibleNodes = useMemo(() => getVisibleStudyNodes(nodes, search), [nodes, search])
@@ -150,6 +152,7 @@ export function StudyTree({
                 onDelete={onDelete}
                 onCreateFolder={onCreateFolder}
                 onCreateMaterial={onCreateMaterial}
+                onOpenCode={onOpenCode}
               />
             ))}
           </div>
@@ -289,6 +292,7 @@ interface StudyTreeItemProps {
   onDelete: (node: StudyNode) => void
   onCreateFolder: (parentId: string) => void
   onCreateMaterial: (parentId: string) => void
+  onOpenCode?: (node: StudyNode) => void
 }
 
 function StudyTreeItem({
@@ -307,7 +311,8 @@ function StudyTreeItem({
   onDuplicate,
   onDelete,
   onCreateFolder,
-  onCreateMaterial
+  onCreateMaterial,
+  onOpenCode
 }: StudyTreeItemProps): React.JSX.Element {
   const isFolder = node.type === 'folder'
   const actions = createStudyTreeMenuEntries({
@@ -317,7 +322,8 @@ function StudyTreeItem({
     onDuplicate,
     onDelete,
     onCreateFolder,
-    onCreateMaterial
+    onCreateMaterial,
+    onOpenCode
   })
   const {
     attributes,
@@ -375,7 +381,8 @@ function createStudyTreeMenuEntries({
   onDuplicate,
   onDelete,
   onCreateFolder,
-  onCreateMaterial
+  onCreateMaterial,
+  onOpenCode
 }: {
   node: StudyNode
   isFolder: boolean
@@ -384,11 +391,27 @@ function createStudyTreeMenuEntries({
   onDelete: (node: StudyNode) => void
   onCreateFolder: (parentId: string) => void
   onCreateMaterial: (parentId: string) => void
+  onOpenCode?: (node: StudyNode) => void
 }): ModuleTreeActionEntry[] {
   const entries: ModuleTreeActionEntry[] = []
 
   if (isFolder) {
     entries.push(
+      ...(onOpenCode
+        ? [
+            {
+              kind: 'item' as const,
+              key: 'open-code',
+              label: 'Открыть код структуры',
+              icon: <Braces aria-hidden="true" className="size-4 text-violet-300" />,
+              onSelect: () => onOpenCode(node)
+            },
+            {
+              kind: 'separator' as const,
+              key: 'code-separator'
+            }
+          ]
+        : []),
       {
         kind: 'item',
         key: 'create-folder',
