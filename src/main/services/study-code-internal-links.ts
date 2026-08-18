@@ -81,7 +81,7 @@ export function symbolizeStoredStudyInternalLinks(
     const visibleLabel = decodeHtml(stripTags(content)) || storedLabel || ''
     const customLabel = labelMode === 'custom' ? storedLabel || visibleLabel : undefined
 
-    if (customLabel?.includes(']]') || customLabel?.includes('\n') || customLabel?.includes('\r')) {
+    if (customLabel?.includes(']') || customLabel?.includes('\n') || customLabel?.includes('\r')) {
       return full
     }
 
@@ -166,7 +166,7 @@ function renderInternalLinkHtml(
   label: string,
   customLabel: boolean
 ): string {
-  const attributes = [
+  const attributes: Array<[string, string | null]> = [
     ['data-study-internal-link', 'true'],
     ['data-target-kind', target.kind],
     ['data-material-id', target.materialId],
@@ -177,11 +177,13 @@ function renderInternalLinkHtml(
     ['data-material-title', target.materialTitle],
     ['data-folder-path', JSON.stringify(target.folderPath)]
   ]
+
+  const serializedAttributes = attributes
     .filter((entry): entry is [string, string] => typeof entry[1] === 'string')
     .map(([key, value]) => `${key}="${escapeHtmlAttribute(value)}"`)
     .join(' ')
 
-  return `<span ${attributes}>${escapeHtml(label)}</span>`
+  return `<span ${serializedAttributes}>${escapeHtml(label)}</span>`
 }
 
 function readHtmlAttribute(attributes: string, name: string): string | null {
