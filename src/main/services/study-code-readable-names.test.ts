@@ -196,6 +196,46 @@ describe('Study Code Mode readable identities', () => {
     expect(duplicatePreview.diagnostics[0]?.message).toContain('несколько раз')
   })
 
+  it('rejects a repeated legacy block id even when both blocks are new', () => {
+    const root = createStudyNode({ type: 'folder', parentId: null, title: 'Root' })
+    const snapshot = getStudyCodeSnapshot(root.id)
+    const source = `@version(1)\n\nfolder Folder1 "Root" {\n  material FirstLesson "Первый" {\n    text @id("legacy-shared-block") """\n      Первый текст\n    """\n  }\n\n  material SecondLesson "Второй" {\n    text @id("legacy-shared-block") """\n      Второй текст\n    """\n  }\n}\n`
+
+    const preview = previewStudyCode({
+      nodeId: root.id,
+      source,
+      baseRevision: snapshot.revision
+    })
+
+    expect(preview.valid).toBe(false)
+    expect(preview.diagnostics[0]?.message).toContain('несколько раз')
+  })
+
+  it('does not allow a readable board block to attach an arbitrary board id', async () => {
+    const material = createStudyNode({ type: 'material', parentId: null, title: 'Board' })
+    await saveStudyMaterial({
+      nodeId: material.id,
+      document: {
+        version: 1,
+        blocks: [{ id: 'board-block', type: 'board', title: 'Architecture' }]
+      }
+    })
+
+    const snapshot = getStudyCodeSnapshot(material.id)
+    const source = snapshot.source.replace(
+      'board Board1 "Architecture"',
+      'board Board1 "Architecture" board="foreign-board"'
+    )
+    const preview = previewStudyCode({
+      nodeId: material.id,
+      source,
+      baseRevision: snapshot.revision
+    })
+
+    expect(preview.valid).toBe(false)
+    expect(preview.diagnostics[0]?.message).toContain('связанную доску')
+  })
+
   it('keeps legacy @id input compatible and returns readable DSL after save', async () => {
     const material = createStudyNode({ type: 'material', parentId: null, title: 'Legacy' })
     await saveStudyMaterial({
