@@ -4,6 +4,7 @@
 }
 
 [data-study-code-editor-scroll-content] {
+  position: relative;
   display: flex;
   align-items: flex-start;
   width: max-content;
@@ -60,4 +61,20 @@
 
 .study-code-editor__root textarea {
   overscroll-behavior: none;
+}
+
+[data-study-code-find-highlight-layer] {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+[data-study-code-active-find-match] {
+  position: absolute;
+  box-sizing: border-box;
+  border: 1px solid rgb(250 204 21 / 55%);
+  border-radius: 3px;
+  background: rgb(250 204 21 / 20%);
+  box-shadow: 0 0 0 1px rgb(250 204 21 / 7%);
 }
