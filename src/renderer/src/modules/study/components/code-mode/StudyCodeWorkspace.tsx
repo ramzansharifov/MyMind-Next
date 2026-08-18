@@ -19,7 +19,12 @@ import type {
   StudyCodePreviewResult,
   StudyNode
 } from '../../../../../../shared/contracts/study'
-import { formatStudyCodeSource, parseStudyCodeSafe } from '../../../../../../shared/study-code'
+import {
+  formatStudyCodeSource,
+  parseStudyCodeSafe,
+  STUDY_CODE_MAX_SOURCE_LENGTH
+} from '../../../../../../shared/study-code'
+import '../../../../assets/study-code-editor.css'
 import { cn } from '../../../../shared/lib/cn'
 import { writeClipboard } from '../../../../shared/lib/write-clipboard'
 import { AppDialog } from '../../../../shared/ui/AppDialog'
@@ -37,6 +42,9 @@ type SaveState = 'loading' | 'saved' | 'dirty' | 'saving' | 'error'
 
 const iconButtonClassName =
   'flex h-9 items-center gap-2 rounded-lg border border-[var(--app-border)] bg-white/[0.025] px-3 text-xs font-medium text-[var(--app-muted)] transition-colors outline-none hover:bg-white/[0.055] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 disabled:cursor-not-allowed disabled:opacity-40'
+
+const STUDY_CODE_LIVE_PARSE_MAX_LENGTH = 300_000
+const STUDY_CODE_HIGHLIGHT_MAX_LENGTH = 300_000
 
 registerStudyCodeGrammar()
 
@@ -61,15 +69,22 @@ export function StudyCodeWorkspace({
 
   useEffect(() => {
     onDirtyChange?.(dirty)
-    if (saveState !== 'loading' && saveState !== 'saving' && saveState !== 'error') {
-      setSaveState(dirty ? 'dirty' : 'saved')
-    }
+    setSaveState((current) => {
+      if (current === 'loading' || current === 'saving' || current === 'error') return current
+      const next = dirty ? 'dirty' : 'saved'
+      return current === next ? current : next
+    })
   }, [dirty, onDirtyChange])
 
   useEffect(() => {
     let active = true
+    setSource('')
+    setSavedSource('')
+    setRevision(null)
     setSaveState('loading')
     setDiagnostics([])
+    setPendingPreview(null)
+    setReloadConfirmOpen(false)
 
     void studyClient
       .getCodeSnapshot({ nodeId: node.id })
@@ -121,13 +136,27 @@ export function StudyCodeWorkspace({
 
   const syntaxDiagnostic = useMemo<StudyCodeDiagnostic | null>(() => {
     if (!source) return null
+
+    if (source.length > STUDY_CODE_MAX_SOURCE_LENGTH) {
+      return {
+        severity: 'error',
+        line: 1,
+        column: 1,
+        message: 'Код превышает допустимый размер'
+      }
+    }
+
+    // Full parsing on every keystroke is useful for regular documents but too expensive for huge folders.
+    // Large sources still receive the same parser and semantic validation when the user saves them.
+    if (source.length > STUDY_CODE_LIVE_PARSE_MAX_LENGTH) return null
+
     const parsed = parseStudyCodeSafe(source)
     if (parsed.success) return null
     return { severity: 'error', ...parsed.diagnostic }
   }, [source])
 
   const visibleDiagnostics = syntaxDiagnostic ? [syntaxDiagnostic] : diagnostics
-  const lineNumbers = useMemo(() => Array.from({ length: source.split('\n').length }, (_, index) => index + 1), [source])
+  const lineNumberText = useMemo(() => createLineNumberText(source), [source])
 
   async function reloadSnapshot(): Promise<void> {
     try {
@@ -149,6 +178,7 @@ export function StudyCodeWorkspace({
     if (!revision || savingRef.current || !dirty) return
     if (syntaxDiagnostic) {
       setDiagnostics([syntaxDiagnostic])
+      setSaveState('error')
       return
     }
 
@@ -219,6 +249,7 @@ export function StudyCodeWorkspace({
       const formatted = formatStudyCodeSource(source)
       setSource(formatted)
       setDiagnostics([])
+      setSaveState(formatted === savedSource ? 'saved' : 'dirty')
     } catch (reason: unknown) {
       setDiagnostics([toDiagnostic(reason, 'Не удалось форматировать код')])
       setSaveState('error')
@@ -249,7 +280,10 @@ export function StudyCodeWorkspace({
   }
 
   return (
-    <section className="flex h-full min-h-0 flex-col bg-[var(--app-workspace)]" data-study-code-workspace>
+    <section
+      className="flex h-full min-h-0 flex-col bg-[var(--app-workspace)]"
+      data-study-code-workspace
+    >
       <header className="flex min-h-14 shrink-0 items-center gap-3 border-b border-[var(--app-border)] px-5 max-[720px]:px-3">
         <div className="flex min-w-0 items-center gap-2">
           <Braces aria-hidden="true" className="size-4 shrink-0 text-violet-300" />
@@ -297,14 +331,21 @@ export function StudyCodeWorkspace({
               ) : (
                 <Copy aria-hidden="true" className="size-3.5" />
               )}
-              <span className="max-[880px]:hidden">{copyFeedback ? 'Скопировано' : 'Копировать'}</span>
+              <span className="max-[880px]:hidden">
+                {copyFeedback ? 'Скопировано' : 'Копировать'}
+              </span>
             </button>
           </Tooltip>
 
           <button
             type="button"
             className="flex h-9 items-center gap-2 rounded-lg bg-violet-500/16 px-3 text-xs font-semibold text-violet-200 transition-colors outline-none hover:bg-violet-500/24 focus-visible:ring-2 focus-visible:ring-violet-500/45 disabled:cursor-not-allowed disabled:opacity-40"
-            disabled={!dirty || Boolean(syntaxDiagnostic) || saveState === 'loading' || saveState === 'saving'}
+            disabled={
+              !dirty ||
+              Boolean(syntaxDiagnostic) ||
+              saveState === 'loading' ||
+              saveState === 'saving'
+            }
             onClick={() => void requestSave()}
           >
             {saveState === 'saving' ? (
@@ -319,38 +360,42 @@ export function StudyCodeWorkspace({
 
       <div className="min-h-0 flex-1 overflow-hidden p-4 max-[720px]:p-2">
         <div
-          className="flex h-full min-h-0 overflow-auto rounded-xl border border-[var(--app-border)] bg-[var(--app-code-surface)]"
+          data-study-code-editor-scroll
+          className="h-full min-h-0 overflow-auto rounded-xl border border-[var(--app-border)] bg-[var(--app-code-surface)]"
           onKeyDown={handleEditorKeyDown}
         >
-          <div
-            aria-hidden="true"
-            className="sticky left-0 z-[2] shrink-0 border-r border-[var(--app-border)] bg-[var(--app-code-surface)] px-3 py-4 text-right font-mono text-xs leading-[1.65rem] text-[var(--app-muted)] select-none"
-          >
-            {lineNumbers.map((line) => (
-              <div key={line}>{line}</div>
-            ))}
-          </div>
+          <div data-study-code-editor-scroll-content>
+            <pre aria-hidden="true" data-study-code-line-numbers>
+              {lineNumberText}
+            </pre>
 
-          <Editor
-            value={source}
-            aria-label={`DSL-код ${node.type === 'folder' ? 'папки' : 'материала'} «${node.title}»`}
-            insertSpaces
-            tabSize={2}
-            padding={16}
-            className="min-h-full min-w-full flex-1 font-mono text-sm"
-            textareaClassName="outline-none"
-            highlight={(value) => Prism.highlight(value, Prism.languages.mymindStudyDsl, 'mymind-study-dsl')}
-            style={{
-              minHeight: '100%',
-              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-              fontSize: '0.875rem',
-              lineHeight: '1.65rem'
-            }}
-            onValueChange={(value) => {
-              setSource(value)
-              if (saveState === 'error') setDiagnostics([])
-            }}
-          />
+            <Editor
+              value={source}
+              aria-label={`DSL-код ${node.type === 'folder' ? 'папки' : 'материала'} «${node.title}»`}
+              insertSpaces
+              tabSize={2}
+              padding={16}
+              readOnly={saveState === 'loading' || saveState === 'saving'}
+              className="study-code-editor__root font-mono text-sm"
+              textareaClassName="study-code-editor__textarea outline-none"
+              preClassName="study-code-editor__highlight"
+              highlight={highlightStudyCodeSource}
+              style={{
+                fontFamily:
+                  'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                fontSize: '0.875rem',
+                lineHeight: '1.65rem'
+              }}
+              onValueChange={(value) => {
+                setSource(value)
+                setDiagnostics([])
+                setSaveState((current) => {
+                  if (current !== 'error') return current
+                  return value === savedSource ? 'saved' : 'dirty'
+                })
+              }}
+            />
+          </div>
         </div>
       </div>
 
@@ -359,7 +404,7 @@ export function StudyCodeWorkspace({
         {visibleDiagnostics[0] && (
           <div role="alert" className="ml-auto flex min-w-0 items-center gap-2 text-red-300">
             <AlertTriangle aria-hidden="true" className="size-3.5 shrink-0" />
-            <span className="truncate">
+            <span className="truncate" title={visibleDiagnostics[0].message}>
               Строка {visibleDiagnostics[0].line}:{visibleDiagnostics[0].column} —{' '}
               {visibleDiagnostics[0].message}
             </span>
@@ -425,7 +470,9 @@ export function StudyCodeWorkspace({
           </>
         }
       >
-        <p className="text-sm text-[var(--app-muted)]">Несохранённые изменения DSL будут потеряны.</p>
+        <p className="text-sm text-[var(--app-muted)]">
+          Несохранённые изменения DSL будут потеряны.
+        </p>
       </AppDialog>
     </section>
   )
@@ -433,14 +480,32 @@ export function StudyCodeWorkspace({
 
 function CodeSaveState({ state, dirty }: { state: SaveState; dirty: boolean }): React.JSX.Element {
   if (state === 'loading') {
-    return <span className="flex items-center gap-2 text-[var(--app-muted)]"><LoaderCircle className="size-3.5 animate-spin" />Загрузка</span>
+    return (
+      <span className="flex items-center gap-2 text-[var(--app-muted)]">
+        <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
+        Загрузка
+      </span>
+    )
   }
+
   if (state === 'saving') {
-    return <span className="flex items-center gap-2 text-[var(--app-muted)]"><LoaderCircle className="size-3.5 animate-spin" />Сохранение</span>
+    return (
+      <span className="flex items-center gap-2 text-[var(--app-muted)]">
+        <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
+        Сохранение
+      </span>
+    )
   }
+
   if (state === 'error') return <span className="text-red-300">Нужно исправить</span>
   if (dirty || state === 'dirty') return <span className="text-amber-300">Есть изменения</span>
-  return <span className="flex items-center gap-1.5 text-emerald-300"><Check className="size-3.5" />Сохранено</span>
+
+  return (
+    <span className="flex items-center gap-1.5 text-emerald-300">
+      <Check aria-hidden="true" className="size-3.5" />
+      Сохранено
+    </span>
+  )
 }
 
 function ChangeSummary({ summary }: { summary: StudyCodeChangeSummary }): React.JSX.Element {
@@ -459,13 +524,43 @@ function ChangeSummary({ summary }: { summary: StudyCodeChangeSummary }): React.
   return (
     <div className="grid gap-2">
       {items.map(([label, value]) => (
-        <div key={String(label)} className="flex items-center justify-between rounded-lg border border-[var(--app-border)] px-3 py-2 text-sm">
+        <div
+          key={String(label)}
+          className="flex items-center justify-between rounded-lg border border-[var(--app-border)] px-3 py-2 text-sm"
+        >
           <span className="text-[var(--app-muted)]">{label}</span>
-          <span className={cn('font-medium', String(label).startsWith('Удалено') && 'text-amber-300')}>{value}</span>
+          <span
+            className={cn(
+              'font-medium',
+              String(label).startsWith('Удалено') && 'text-amber-300'
+            )}
+          >
+            {value}
+          </span>
         </div>
       ))}
     </div>
   )
+}
+
+function createLineNumberText(source: string): string {
+  let lineCount = 1
+  for (let index = 0; index < source.length; index += 1) {
+    if (source.charCodeAt(index) === 10) lineCount += 1
+  }
+
+  const numbers = new Array<string>(lineCount)
+  for (let index = 0; index < lineCount; index += 1) numbers[index] = String(index + 1)
+  return numbers.join('\n')
+}
+
+function highlightStudyCodeSource(value: string): string {
+  if (value.length > STUDY_CODE_HIGHLIGHT_MAX_LENGTH) return escapeHighlightHtml(value)
+  return Prism.highlight(value, Prism.languages.mymindStudyDsl, 'mymind-study-dsl')
+}
+
+function escapeHighlightHtml(value: string): string {
+  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
 
 function toDiagnostic(reason: unknown, fallback: string): StudyCodeDiagnostic {
@@ -484,6 +579,7 @@ function toDiagnostic(reason: unknown, fallback: string): StudyCodeDiagnostic {
       message: reason instanceof Error ? reason.message : fallback
     }
   }
+
   return {
     severity: 'error',
     line: 1,
@@ -501,7 +597,8 @@ function registerStudyCodeGrammar(): void {
       pattern: /@(id|version)\s*\([^)]*\)/,
       alias: 'comment'
     },
-    keyword: /\b(?:folder|material|text|heading|code|markdown|latex|mermaid|image|video|audio|file|divider|board|html)\b/,
+    keyword:
+      /\b(?:folder|material|text|heading|code|markdown|latex|mermaid|image|video|audio|file|divider|board|html)\b/,
     property: /\b[A-Za-z_][A-Za-z0-9_-]*(?=\s*=)/,
     boolean: /\b(?:true|false)\b/,
     number: /\b\d+(?:\.\d+)?\b/,

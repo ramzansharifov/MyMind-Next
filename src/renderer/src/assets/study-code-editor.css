@@ -1,0 +1,63 @@
+[data-study-code-editor-scroll] {
+  --study-code-line-height: 1.65rem;
+  --study-code-editor-padding: 1rem;
+}
+
+[data-study-code-editor-scroll-content] {
+  display: flex;
+  align-items: flex-start;
+  width: max-content;
+  min-width: 100%;
+  min-height: 100%;
+}
+
+[data-study-code-line-numbers] {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  align-self: stretch;
+  box-sizing: border-box;
+  min-width: 3.25rem;
+  min-height: 100%;
+  margin: 0;
+  padding: var(--study-code-editor-padding) 0.75rem;
+  border-right: 1px solid var(--app-border);
+  background: var(--app-code-surface);
+  color: var(--app-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: var(--study-code-line-height);
+  text-align: right;
+  white-space: pre;
+  user-select: none;
+}
+
+.study-code-editor__root {
+  align-self: flex-start;
+  flex: 1 0 max-content;
+  min-height: 100%;
+}
+
+.study-code-editor__root textarea,
+.study-code-editor__root pre {
+  line-height: var(--study-code-line-height) !important;
+  white-space: pre !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+}
+
+.study-code-editor__root pre,
+.study-code-editor__root pre * {
+  font-family: inherit !important;
+  font-size: inherit !important;
+  font-style: inherit !important;
+  font-weight: inherit !important;
+  font-variant-ligatures: inherit !important;
+  letter-spacing: inherit !important;
+  line-height: inherit !important;
+}
+
+.study-code-editor__root textarea {
+  overscroll-behavior: none;
+}
