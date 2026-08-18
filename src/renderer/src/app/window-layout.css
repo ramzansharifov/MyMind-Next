@@ -1,5 +1,10 @@
 :root {
   --app-titlebar-height: 2.25rem;
+  --app-titlebar-offset: var(--app-titlebar-height);
+}
+
+:root[data-app-focus-mode='true'] {
+  --app-titlebar-offset: 0rem;
 }
 
 .app-titlebar {
@@ -7,12 +12,12 @@
 }
 
 .app-fullscreen-bounds {
-  top: var(--app-titlebar-height);
+  top: var(--app-titlebar-offset);
   right: 0;
   bottom: 0;
   left: 0;
 }
 
 [data-study-image-fullscreen-dialog] {
-  top: var(--app-titlebar-height) !important;
+  top: var(--app-titlebar-offset) !important;
 }

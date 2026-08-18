@@ -1,6 +1,6 @@
 import { cva } from 'class-variance-authority'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 
 import { cn } from '../shared/lib/cn'
 import { Tooltip, TooltipProvider } from '../shared/ui/tooltip'
@@ -124,6 +124,17 @@ export function AppShell({
 }: AppShellProps): React.JSX.Element {
   const [isCollapsed, setIsCollapsed] = useState(() => activeView === 'study')
 
+  useEffect(() => {
+    const root = document.documentElement
+
+    if (focusMode) root.dataset.appFocusMode = 'true'
+    else delete root.dataset.appFocusMode
+
+    return () => {
+      delete root.dataset.appFocusMode
+    }
+  }, [focusMode])
+
   function handleViewChange(view: AppViewId): void {
     if (view === 'study' && activeView !== 'study') {
       setIsCollapsed(true)
@@ -136,8 +147,11 @@ export function AppShell({
 
   return (
     <TooltipProvider>
-      <div className="flex h-screen w-screen flex-col overflow-hidden bg-[var(--app-workspace)] text-[var(--app-text)]">
-        <AppTitleBar />
+      <div
+        data-app-focus-mode={focusMode}
+        className="flex h-screen w-screen flex-col overflow-hidden bg-[var(--app-workspace)] text-[var(--app-text)]"
+      >
+        {!focusMode && <AppTitleBar />}
 
         <div className="flex min-h-0 flex-1 overflow-hidden">
           {!focusMode && (
