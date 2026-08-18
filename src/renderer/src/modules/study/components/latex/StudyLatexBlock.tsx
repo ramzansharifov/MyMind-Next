@@ -15,6 +15,7 @@ import type {
 import { cn } from '../../../../shared/lib/cn'
 import { StudySourceBlockShell } from '../source/StudySourceBlockShell'
 import { StudySourceLineNumbers } from '../source/StudySourceLineNumbers'
+import './StudyLatexBlock.css'
 import { renderStudyLatex } from './latex-renderer'
 
 interface StudyLatexBlockProps {
@@ -262,11 +263,13 @@ function StudyLatexPreview({
 }): React.JSX.Element {
   const result = useMemo(() => renderStudyLatex(source, displayMode), [source, displayMode])
   const normalizedScale = clampLatexScale(scale)
+  const wideLayout = shouldUseWideLatexLayout(source)
 
   return (
     <div
       data-alignment={alignment}
       data-framed={framed}
+      data-wide-layout={wideLayout ? 'true' : 'false'}
       className={cn(
         'study-latex-preview w-full',
         framed && 'rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)]'
@@ -330,6 +333,13 @@ function highlightLatex(value: string): string {
 
 function isLatexViewMode(value: string): value is StudyLatexViewMode {
   return value === 'write' || value === 'split' || value === 'preview'
+}
+
+function shouldUseWideLatexLayout(source: string): boolean {
+  const rowBreakCount = source.match(/\\\\/g)?.length ?? 0
+  const hasDocumentLikeEnvironment = /\\begin\{(?:aligned|alignedat|gathered)\*?\}/.test(source)
+
+  return hasDocumentLikeEnvironment && rowBreakCount >= 2
 }
 
 function clampLatexScale(value: number): number {
