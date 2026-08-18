@@ -1,4 +1,4 @@
-import katex from 'katex'
+import katex, { type KatexOptions } from 'katex'
 
 import type { StudyLatexDisplayMode } from '../../../../../../shared/contracts/study'
 
@@ -41,7 +41,7 @@ export function renderStudyLatex(
   }
 }
 
-function createKatexOptions(displayMode: boolean): katex.KatexOptions {
+function createKatexOptions(displayMode: boolean): KatexOptions {
   return {
     displayMode,
     output: 'htmlAndMathml',
