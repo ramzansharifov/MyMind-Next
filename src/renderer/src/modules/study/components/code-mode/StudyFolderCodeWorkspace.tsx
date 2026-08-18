@@ -7,9 +7,13 @@ import { AppDialog } from '../../../../shared/ui/AppDialog'
 import { Tooltip } from '../../../../shared/ui/tooltip'
 import { StudyCodeWorkspace } from './StudyCodeWorkspace'
 
-type StudyFolderWorkspaceMode = 'overview' | 'code'
+export type StudyFolderWorkspaceMode = 'overview' | 'code'
 
 export interface StudyFolderCodeControls {
+  mode: StudyFolderWorkspaceMode
+  modeTabs: ReactNode
+  codeWorkspace: ReactNode
+  openOverview: () => void
   openCode: () => void
 }
 
@@ -19,6 +23,9 @@ interface StudyFolderCodeWorkspaceProps {
   onApplied: (result: StudyCodeApplyResult) => void | Promise<void>
   initialMode?: StudyFolderWorkspaceMode
 }
+
+const modeTriggerClassName =
+  'flex size-9 items-center justify-center rounded-md text-[var(--app-muted)] transition-colors outline-none hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 data-[state=active]:bg-[var(--app-surface-raised)] data-[state=active]:text-[var(--app-text)]'
 
 export function StudyFolderCodeWorkspace({
   node,
@@ -42,54 +49,49 @@ export function StudyFolderCodeWorkspace({
     setMode(value)
   }
 
-  const overview =
-    typeof children === 'function'
-      ? children({
-          openCode: () => requestMode('code')
-        })
-      : children
+  const modeTabs = (
+    <Tabs.Root value={mode} onValueChange={requestMode}>
+      <Tabs.List
+        aria-label="Режим папки обучения"
+        className="inline-flex rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] p-1"
+      >
+        <Tooltip content="Обзор папки" side="bottom">
+          <Tabs.Trigger value="overview" aria-label="Обзор" className={modeTriggerClassName}>
+            <LayoutGrid aria-hidden="true" className="size-4" />
+          </Tabs.Trigger>
+        </Tooltip>
+        <Tooltip content="Редактировать структуру папки через DSL" side="bottom">
+          <Tabs.Trigger value="code" aria-label="Код структуры" className={modeTriggerClassName}>
+            <Braces aria-hidden="true" className="size-4" />
+          </Tabs.Trigger>
+        </Tooltip>
+      </Tabs.List>
+    </Tabs.Root>
+  )
+
+  const codeWorkspace = (
+    <StudyCodeWorkspace node={node} onApplied={onApplied} onDirtyChange={setCodeDirty} />
+  )
+
+  const controls: StudyFolderCodeControls = {
+    mode,
+    modeTabs,
+    codeWorkspace,
+    openOverview: () => requestMode('overview'),
+    openCode: () => requestMode('code')
+  }
 
   return (
     <section
       data-study-folder-code-workspace
       data-folder-mode={mode}
-      className="flex h-full min-h-0 flex-col bg-[var(--app-workspace)]"
+      className="h-full min-h-0 bg-[var(--app-workspace)]"
     >
-      <div className="flex min-h-12 shrink-0 items-center border-b border-[var(--app-border)] px-5 max-[720px]:px-3">
-        <Tabs.Root value={mode} onValueChange={requestMode}>
-          <Tabs.List
-            aria-label="Режим папки обучения"
-            className="inline-flex rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] p-1"
-          >
-            <Tooltip content="Обычный обзор папки" side="bottom">
-              <Tabs.Trigger
-                value="overview"
-                className="flex items-center gap-2 rounded-md px-3 py-1.5 text-xs text-[var(--app-muted)] transition-colors outline-none hover:text-[var(--app-text)] data-[state=active]:bg-[var(--app-surface-raised)] data-[state=active]:text-[var(--app-text)]"
-              >
-                <LayoutGrid aria-hidden="true" className="size-3.5" />
-                Обзор
-              </Tabs.Trigger>
-            </Tooltip>
-            <Tooltip content="Редактировать всю вложенную структуру папки через DSL" side="bottom">
-              <Tabs.Trigger
-                value="code"
-                className="flex items-center gap-2 rounded-md px-3 py-1.5 text-xs text-[var(--app-muted)] transition-colors outline-none hover:text-[var(--app-text)] data-[state=active]:bg-[var(--app-surface-raised)] data-[state=active]:text-[var(--app-text)]"
-              >
-                <Braces aria-hidden="true" className="size-3.5" />
-                Код структуры
-              </Tabs.Trigger>
-            </Tooltip>
-          </Tabs.List>
-        </Tabs.Root>
-      </div>
-
-      <div className="min-h-0 flex-1">
-        {mode === 'code' ? (
-          <StudyCodeWorkspace node={node} onApplied={onApplied} onDirtyChange={setCodeDirty} />
-        ) : (
-          overview
-        )}
-      </div>
+      {typeof children === 'function'
+        ? children(controls)
+        : mode === 'code'
+          ? codeWorkspace
+          : children}
 
       <AppDialog
         open={discardOpen}
