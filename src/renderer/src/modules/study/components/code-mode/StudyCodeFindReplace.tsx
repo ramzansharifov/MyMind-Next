@@ -212,7 +212,7 @@ export function StudyCodeFindReplace({
     <>
       <div
         data-study-code-find-widget
-        className="absolute right-6 top-6 z-30 w-[min(640px,calc(100%-3rem))] rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-2 shadow-2xl shadow-black/35 max-[720px]:right-4 max-[720px]:top-4 max-[720px]:w-[calc(100%-2rem)]"
+        className="absolute right-6 top-6 z-30 w-[min(640px,calc(100%_-_3rem))] rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-2 shadow-2xl shadow-black/35 max-[720px]:right-4 max-[720px]:top-4 max-[720px]:w-[calc(100%_-_2rem)]"
       >
         <div className="flex min-w-0 items-center gap-1.5">
           <button
