@@ -14,6 +14,7 @@ import {
   studyMaterials,
   studyNodes
 } from '../database/schema'
+import { symbolizeStoredStudyInternalLinks } from './study-code-internal-links'
 
 export interface StudyCodeNameAssignment {
   kind: 'node' | 'block'
@@ -54,7 +55,7 @@ export function toReadableStudyCodeSource(internalSource: string): string {
   const usedNodeKeys = new Set(state.nodeIdByNameKey.keys())
   const usedBlockKeysByMaterial = collectUsedBlockKeysByMaterial(state)
 
-  const visit = (node: StudyCodeTreeAst): void => {
+  const assignNames = (node: StudyCodeTreeAst): void => {
     if (!node.id) throw new Error('Внутреннее представление DSL не содержит идентификатор элемента')
 
     const nodeId = node.id
@@ -71,7 +72,7 @@ export function toReadableStudyCodeSource(internalSource: string): string {
     node.id = undefined
 
     if (node.kind === 'folder') {
-      node.children.forEach(visit)
+      node.children.forEach(assignNames)
       return
     }
 
@@ -118,7 +119,35 @@ export function toReadableStudyCodeSource(internalSource: string): string {
     })
   }
 
-  visit(document.root)
+  assignNames(document.root)
+
+  const symbolizeLinks = (node: StudyCodeTreeAst): void => {
+    if (node.kind === 'folder') {
+      node.children.forEach(symbolizeLinks)
+      return
+    }
+
+    node.blocks.forEach((block) => {
+      if (block.blockType !== 'text') return
+      const symbolic = symbolizeStoredStudyInternalLinks(
+        block.body ?? '',
+        block.html,
+        ({ materialId, headingId }) => {
+          const materialName = state.nodeNameById.get(materialId)
+          if (!materialName) return null
+          if (!headingId) return { materialName }
+
+          const headingName = state.blockNameById.get(headingId)
+          if (!headingName || headingName.materialId !== materialId) return null
+          return { materialName, headingName: headingName.name }
+        }
+      )
+      block.body = symbolic.text
+      block.html = symbolic.html
+    })
+  }
+
+  symbolizeLinks(document.root)
   persistStudyCodeNameAssignments(pendingAssignments)
   return serializeStudyCodeAst(document)
 }
