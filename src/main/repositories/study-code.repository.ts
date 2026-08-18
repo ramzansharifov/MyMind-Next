@@ -517,7 +517,21 @@ function resolveNodeId(
   if (!ast.id) return createUniqueId(new Set([...scope.rowsById.keys(), ...desiredIds]))
   if (!STUDY_SAFE_ID_PATTERN.test(ast.id)) semanticFail(ast, 'Некорректный @id')
   const existing = scope.rowsById.get(ast.id)
-  if (!existing) semanticFail(ast, 'Существующий @id должен принадлежать выбранной ветке обучения')
+  if (existing) return ast.id
+
+  const occupiedOutsideScope = getDatabase()
+    .select({ id: studyNodes.id })
+    .from(studyNodes)
+    .where(eq(studyNodes.id, ast.id))
+    .get()
+
+  if (occupiedOutsideScope) {
+    semanticFail(ast, 'Существующий @id принадлежит другой ветке обучения')
+  }
+
+  // The readable DSL service may pre-allocate a UUID for a newly named node so symbolic
+  // internal links can be resolved before the atomic apply. User-provided new @id values are
+  // rejected by that service before this internal representation reaches the repository.
   return ast.id
 }
 
