@@ -1,5 +1,6 @@
 import { eq } from 'drizzle-orm'
 
+import type { StudyDocument } from '../../shared/contracts/study'
 import { STUDY_SAFE_ID_PATTERN } from '../../shared/contracts/study'
 import {
   parseStudyCode,
@@ -48,6 +49,7 @@ interface ReadableIdentityState {
   blockNameById: Map<string, { materialId: string; name: string }>
   blockIdByMaterialAndNameKey: Map<string, string>
   blockOwners: Map<string, Set<string>>
+  documents: Map<string, StudyDocument>
 }
 
 const reservedNames = new Set(
@@ -94,6 +96,13 @@ export function translateReadableStudyCodeSource(
 
   const visit = (node: StudyCodeTreeAst, isRoot: boolean, path: number[]): void => {
     validateReadableName(node.name, node)
+
+    if (node.name) {
+      const key = nameKey(node.name)
+      if (claimedNodeNameKeys.has(key)) fail(node, `Имя DSL «${node.name}» используется несколько раз`)
+      claimedNodeNameKeys.add(key)
+    }
+
     let existingId: string | undefined
 
     if (isRoot) {
@@ -113,11 +122,7 @@ export function translateReadableStudyCodeSource(
       existingId = node.id
       validateExistingNodeName(node, existingId, state)
     } else if (node.name) {
-      const key = nameKey(node.name)
-      if (claimedNodeNameKeys.has(key)) fail(node, `Имя DSL «${node.name}» используется несколько раз`)
-      claimedNodeNameKeys.add(key)
-
-      const mappedId = state.nodeIdByNameKey.get(key)
+      const mappedId = state.nodeIdByNameKey.get(nameKey(node.name))
       if (mappedId) {
         if (!scopeNodeIds.has(mappedId)) fail(node, `Имя ${node.name} принадлежит другой ветке обучения`)
         existingId = mappedId
@@ -218,9 +223,17 @@ function translateMaterialBlocks(
   claimedBlockIds: Set<string>
 ): void {
   const claimedNameKeys = new Set<string>()
+  const existingDocument = existingMaterialId ? state.documents.get(existingMaterialId) : undefined
 
   material.blocks.forEach((block, blockIndex) => {
     validateReadableName(block.name, block)
+
+    if (block.name) {
+      const key = nameKey(block.name)
+      if (claimedNameKeys.has(key)) fail(block, `Имя блока DSL «${block.name}» используется несколько раз`)
+      claimedNameKeys.add(key)
+    }
+
     let existingBlockId: string | undefined
 
     if (block.id) {
@@ -245,10 +258,6 @@ function translateMaterialBlocks(
         }
       }
     } else if (block.name) {
-      const key = nameKey(block.name)
-      if (claimedNameKeys.has(key)) fail(block, `Имя блока DSL «${block.name}» используется несколько раз`)
-      claimedNameKeys.add(key)
-
       if (existingMaterialId) {
         existingBlockId = state.blockIdByMaterialAndNameKey.get(
           blockScopeKey(existingMaterialId, block.name)
@@ -265,14 +274,40 @@ function translateMaterialBlocks(
       }
     }
 
-    if (existingBlockId && state.blockOwners.has(existingBlockId)) {
+    if (existingBlockId) {
       if (claimedBlockIds.has(existingBlockId)) fail(block, 'Один идентификатор блока используется несколько раз')
       claimedBlockIds.add(existingBlockId)
     }
 
+    validateBoardBinding(block, existingBlockId, existingDocument)
+
     block.id = existingBlockId
     block.name = undefined
   })
+}
+
+function validateBoardBinding(
+  block: StudyCodeBlockAst,
+  existingBlockId: string | undefined,
+  existingDocument: StudyDocument | undefined
+): void {
+  if (block.blockType !== 'board') return
+
+  const requestedBoardId = block.attributes.board
+  if (typeof requestedBoardId !== 'string') return
+
+  const existingBlock = existingBlockId
+    ? existingDocument?.blocks.find((candidate) => candidate.id === existingBlockId)
+    : undefined
+
+  if (
+    !existingBlock ||
+    existingBlock.type !== 'board' ||
+    !existingBlock.boardId ||
+    existingBlock.boardId !== requestedBoardId
+  ) {
+    fail(block, 'Нельзя назначить или подменить связанную доску через DSL')
+  }
 }
 
 function validateExistingNodeName(
@@ -310,6 +345,24 @@ function loadReadableIdentityState(): ReadableIdentityState {
   const database = getDatabase()
   const nodeRows = database.select().from(studyCodeNodeNames).all()
   const blockRows = database.select().from(studyCodeBlockNames).all()
+  const documents = new Map<string, StudyDocument>()
+  const blockOwners = new Map<string, Set<string>>()
+
+  database
+    .select()
+    .from(studyMaterials)
+    .all()
+    .forEach((material) => {
+      const parsed = studyDocumentSchema.safeParse(material.document)
+      if (!parsed.success) return
+      documents.set(material.nodeId, parsed.data)
+      parsed.data.blocks.forEach((block) => {
+        const materialIds = blockOwners.get(block.id) ?? new Set<string>()
+        materialIds.add(material.nodeId)
+        blockOwners.set(block.id, materialIds)
+      })
+    })
+
   return {
     nodeNameById: new Map(nodeRows.map((row) => [row.nodeId, row.name])),
     nodeIdByNameKey: new Map(nodeRows.map((row) => [row.nameKey, row.nodeId])),
@@ -319,26 +372,9 @@ function loadReadableIdentityState(): ReadableIdentityState {
     blockIdByMaterialAndNameKey: new Map(
       blockRows.map((row) => [`${row.materialId}:${row.nameKey}`, row.blockId])
     ),
-    blockOwners: loadBlockOwners()
+    blockOwners,
+    documents
   }
-}
-
-function loadBlockOwners(): Map<string, Set<string>> {
-  const owners = new Map<string, Set<string>>()
-  getDatabase()
-    .select()
-    .from(studyMaterials)
-    .all()
-    .forEach((material) => {
-      const parsed = studyDocumentSchema.safeParse(material.document)
-      if (!parsed.success) return
-      parsed.data.blocks.forEach((block) => {
-        const materialIds = owners.get(block.id) ?? new Set<string>()
-        materialIds.add(material.nodeId)
-        owners.set(block.id, materialIds)
-      })
-    })
-  return owners
 }
 
 function collectSubtreeIds(rootId: string, rows: Array<typeof studyNodes.$inferSelect>): Set<string> {
