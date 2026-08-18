@@ -19,7 +19,6 @@ import {
   updateStudyFolderIconInputSchema,
   updateStudyNodeExpansionInputSchema
 } from '../../shared/validation/study'
-import { applyStudyCode, getStudyCodeSnapshot, previewStudyCode } from '../repositories/study-code.repository'
 import {
   createStudyNode,
   deleteStudyNode,
@@ -35,6 +34,7 @@ import {
   updateStudyNodeExpansion
 } from '../repositories/study.repository'
 import { importStudyAsset, openStudyAsset } from '../services/study-assets'
+import { applyStudyCode, getStudyCodeSnapshot, previewStudyCode } from '../services/study-code-service'
 import { mainOperationTracker } from '../services/main-operation-tracker'
 
 export function registerStudyIpcHandlers(): void {
