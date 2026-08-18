@@ -1,13 +1,5 @@
 import { ChevronDown, ChevronRight, ChevronUp, Search, X } from 'lucide-react'
-import {
-  forwardRef,
-  useEffect,
-  useImperativeHandle,
-  useMemo,
-  useRef,
-  useState,
-  type RefObject
-} from 'react'
+import { useEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
 
 import { cn } from '../../../../shared/lib/cn'
@@ -19,10 +11,6 @@ import {
   replaceStudyCodeMatch,
   type StudyCodeFindOptions
 } from './study-code-find'
-
-export interface StudyCodeFindReplaceHandle {
-  openFind: (showReplace?: boolean) => void
-}
 
 interface StudyCodeFindReplaceProps {
   source: string
@@ -37,13 +25,12 @@ const optionButtonClassName =
 const smallButtonClassName =
   'flex h-7 items-center justify-center rounded-md px-2 text-[11px] font-medium text-[var(--app-muted)] transition-colors outline-none hover:bg-white/[0.06] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 disabled:cursor-not-allowed disabled:opacity-35'
 
-export const StudyCodeFindReplace = forwardRef<
-  StudyCodeFindReplaceHandle,
-  StudyCodeFindReplaceProps
->(function StudyCodeFindReplace(
-  { source, disabled = false, editorScrollRef, onSourceChange },
-  ref
-): React.JSX.Element | null {
+export function StudyCodeFindReplace({
+  source,
+  disabled = false,
+  editorScrollRef,
+  onSourceChange
+}: StudyCodeFindReplaceProps): React.JSX.Element | null {
   const [open, setOpen] = useState(false)
   const [replaceOpen, setReplaceOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -97,12 +84,11 @@ export const StudyCodeFindReplace = forwardRef<
     window.setTimeout(() => getEditorTextarea()?.focus({ preventScroll: true }), 0)
   }
 
-  useImperativeHandle(ref, () => ({ openFind }), [source])
-
   useEffect(() => {
     if (!open) return
     setHighlightHost(
-      editorScrollRef.current?.querySelector('[data-study-code-editor-scroll-content]') ?? null
+      editorScrollRef.current?.querySelector<HTMLElement>('[data-study-code-editor-scroll-content]') ??
+        null
     )
   }, [editorScrollRef, open])
 
@@ -212,7 +198,13 @@ export const StudyCodeFindReplace = forwardRef<
     replaceCurrent()
   }
 
-  const resultLabel = getResultLabel(query, result.error, result.matches.length, activeMatchIndex, result.truncated)
+  const resultLabel = getResultLabel(
+    query,
+    result.error,
+    result.matches.length,
+    activeMatchIndex,
+    result.truncated
+  )
 
   if (!open) return null
 
@@ -261,7 +253,10 @@ export const StudyCodeFindReplace = forwardRef<
               aria-label="Учитывать регистр"
               aria-pressed={matchCase}
               title="Учитывать регистр"
-              className={cn(optionButtonClassName, matchCase && 'bg-violet-500/16 text-violet-200')}
+              className={cn(
+                optionButtonClassName,
+                matchCase && 'bg-violet-500/16 text-violet-200'
+              )}
               onClick={() => setMatchCase((current) => !current)}
             >
               Aa
@@ -271,7 +266,10 @@ export const StudyCodeFindReplace = forwardRef<
               aria-label="Только целые слова"
               aria-pressed={wholeWord}
               title="Только целые слова"
-              className={cn(optionButtonClassName, wholeWord && 'bg-violet-500/16 text-violet-200')}
+              className={cn(
+                optionButtonClassName,
+                wholeWord && 'bg-violet-500/16 text-violet-200'
+              )}
               onClick={() => setWholeWord((current) => !current)}
             >
               ab
@@ -281,7 +279,10 @@ export const StudyCodeFindReplace = forwardRef<
               aria-label="Регулярное выражение"
               aria-pressed={useRegex}
               title="Регулярное выражение"
-              className={cn(optionButtonClassName, useRegex && 'bg-violet-500/16 text-violet-200')}
+              className={cn(
+                optionButtonClassName,
+                useRegex && 'bg-violet-500/16 text-violet-200'
+              )}
               onClick={() => setUseRegex((current) => !current)}
             >
               .*
@@ -366,7 +367,8 @@ export const StudyCodeFindReplace = forwardRef<
         )}
       </div>
 
-      {highlightHost && activeMatch &&
+      {highlightHost &&
+        activeMatch &&
         createPortal(
           <div aria-hidden="true" data-study-code-find-highlight-layer>
             {activeSegments.map((segment, index) => (
@@ -386,7 +388,7 @@ export const StudyCodeFindReplace = forwardRef<
         )}
     </>
   )
-})
+}
 
 function getResultLabel(
   query: string,
