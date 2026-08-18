@@ -2,6 +2,7 @@ import type { StudyBlockType, StudyFolderIconName } from './contracts/study'
 
 export const STUDY_CODE_VERSION = 1 as const
 export const STUDY_CODE_MAX_SOURCE_LENGTH = 24 * 1024 * 1024
+export const STUDY_CODE_NAME_PATTERN = /^[A-Za-z_][A-Za-z0-9_]{0,79}$/
 
 export type StudyCodeAttributeValue = string | number | boolean
 
@@ -11,6 +12,9 @@ export interface StudyCodeLocation {
 }
 
 interface StudyCodeAstBase extends StudyCodeLocation {
+  /** Human-readable stable DSL identity. */
+  name?: string
+  /** Legacy/internal identity. Kept for backwards compatibility and engine serialization. */
   id?: string
 }
 
@@ -47,7 +51,8 @@ export interface StudyCodeDocumentAst {
 
 export interface StudyCodeTreeFolder {
   kind: 'folder'
-  id: string
+  id?: string
+  name?: string
   title: string
   icon?: StudyFolderIconName
   children: StudyCodeTreeNode[]
@@ -55,7 +60,8 @@ export interface StudyCodeTreeFolder {
 
 export interface StudyCodeTreeMaterial {
   kind: 'material'
-  id: string
+  id?: string
+  name?: string
   title: string
   blocks: StudyCodeSerializedBlock[]
 }
@@ -63,7 +69,8 @@ export interface StudyCodeTreeMaterial {
 export type StudyCodeTreeNode = StudyCodeTreeFolder | StudyCodeTreeMaterial
 
 export interface StudyCodeSerializedBlock {
-  id: string
+  id?: string
+  name?: string
   type: StudyBlockType
   headingLevel?: 1 | 2 | 3
   title?: string
@@ -170,6 +177,7 @@ function treeNodeToAst(node: StudyCodeTreeNode, line: number, column: number): S
     return {
       kind: 'folder',
       id: node.id,
+      name: node.name,
       title: node.title,
       line,
       column,
@@ -181,6 +189,7 @@ function treeNodeToAst(node: StudyCodeTreeNode, line: number, column: number): S
   return {
     kind: 'material',
     id: node.id,
+    name: node.name,
     title: node.title,
     line,
     column,
@@ -189,6 +198,7 @@ function treeNodeToAst(node: StudyCodeTreeNode, line: number, column: number): S
       kind: 'block',
       blockType: block.type,
       id: block.id,
+      name: block.name,
       headingLevel: block.headingLevel,
       title: block.title,
       attributes: block.attributes ?? {},
@@ -202,8 +212,9 @@ function treeNodeToAst(node: StudyCodeTreeNode, line: number, column: number): S
 
 function writeTreeAst(node: StudyCodeTreeAst, indent: number, lines: string[]): void {
   const prefix = '  '.repeat(indent)
+  const name = formatName(node.name)
   const attributes = formatAttributes(node.id, node.attributes)
-  lines.push(`${prefix}${node.kind} ${quote(node.title)}${attributes} {`)
+  lines.push(`${prefix}${node.kind}${name} ${quote(node.title)}${attributes} {`)
 
   if (node.kind === 'folder') {
     node.children.forEach((child, index) => {
@@ -222,28 +233,29 @@ function writeTreeAst(node: StudyCodeTreeAst, indent: number, lines: string[]): 
 
 function writeBlockAst(block: StudyCodeBlockAst, indent: number, lines: string[]): void {
   const prefix = '  '.repeat(indent)
+  const name = formatName(block.name)
   const attributes = formatAttributes(block.id, block.attributes)
 
   if (block.blockType === 'heading') {
     lines.push(
-      `${prefix}heading ${block.headingLevel ?? 1} ${quote(block.title ?? '')}${attributes}`
+      `${prefix}heading${name} ${block.headingLevel ?? 1} ${quote(block.title ?? '')}${attributes}`
     )
     return
   }
 
   if (block.blockType === 'board') {
     const title = block.title === undefined ? '' : ` ${quote(block.title)}`
-    lines.push(`${prefix}board${title}${attributes}`)
+    lines.push(`${prefix}board${name}${title}${attributes}`)
     return
   }
 
   if (!multilineBlockTypes.has(block.blockType)) {
-    lines.push(`${prefix}${block.blockType}${attributes}`)
+    lines.push(`${prefix}${block.blockType}${name}${attributes}`)
     return
   }
 
   const body = block.body ?? ''
-  writeMultilineDeclaration(`${prefix}${block.blockType}${attributes}`, body, indent, lines)
+  writeMultilineDeclaration(`${prefix}${block.blockType}${name}${attributes}`, body, indent, lines)
 
   if (block.blockType === 'text' && block.html !== undefined) {
     writeMultilineDeclaration(`${prefix}html`, block.html, indent, lines)
@@ -281,6 +293,10 @@ function chooseMultilineDelimiter(value: string): string {
   }
 
   return '"'.repeat(Math.max(3, maximumRun + 1))
+}
+
+function formatName(name: string | undefined): string {
+  return name ? ` ${name}` : ''
 }
 
 function formatAttributes(
@@ -354,6 +370,13 @@ class StudyCodeParser {
     }
 
     this.requireWhitespace('После типа элемента ожидается название')
+
+    let name: string | undefined
+    if (this.peek() !== '"') {
+      name = this.readIdentifier()
+      this.requireWhitespace('После имени элемента ожидается отображаемое название')
+    }
+
     const title = this.readString()
     const { id, attributes } = this.readInlineMetadataUntil('{')
     this.skipWhitespace()
@@ -367,7 +390,7 @@ class StudyCodeParser {
         this.skipTrivia()
       }
       this.expect('}')
-      return { kind, title, id, attributes, children, ...location }
+      return { kind, title, name, id, attributes, children, ...location }
     }
 
     const blocks: StudyCodeBlockAst[] = []
@@ -376,7 +399,7 @@ class StudyCodeParser {
       this.skipTrivia()
     }
     this.expect('}')
-    return { kind, title, id, attributes, blocks, ...location }
+    return { kind, title, name, id, attributes, blocks, ...location }
   }
 
   private parseBlock(): StudyCodeBlockAst {
@@ -388,11 +411,17 @@ class StudyCodeParser {
     }
 
     const blockType = identifier as StudyBlockType
+    let name: string | undefined
     let headingLevel: 1 | 2 | 3 | undefined
     let title: string | undefined
 
     if (blockType === 'heading') {
-      this.requireWhitespace('После heading ожидается уровень заголовка')
+      this.requireWhitespace('После heading ожидается имя или уровень заголовка')
+      if (this.isIdentifierStart(this.peek())) {
+        name = this.readIdentifier()
+        this.requireWhitespace('После имени heading ожидается уровень заголовка')
+      }
+
       const level = this.readNumber()
       if (level !== 1 && level !== 2 && level !== 3) {
         this.fail('Уровень heading должен быть 1, 2 или 3')
@@ -400,14 +429,17 @@ class StudyCodeParser {
       headingLevel = level
       this.requireWhitespace('После уровня heading ожидается текст заголовка')
       title = this.readString()
-    } else if (blockType === 'board') {
-      const checkpoint = this.index
-      this.skipHorizontalWhitespace()
-      if (this.peek() === '"' && !this.isMultilineDelimiter()) {
-        title = this.readString()
-      } else {
-        this.index = checkpoint
-        this.recalculateLocation()
+    } else {
+      name = this.readOptionalBlockName()
+
+      if (blockType === 'board') {
+        const checkpoint = this.snapshot()
+        this.skipHorizontalWhitespace()
+        if (this.peek() === '"' && !this.isMultilineDelimiter()) {
+          title = this.readString()
+        } else {
+          this.restore(checkpoint)
+        }
       }
     }
 
@@ -445,6 +477,7 @@ class StudyCodeParser {
     return {
       kind: 'block',
       blockType,
+      name,
       id: metadata.id,
       attributes: metadata.attributes,
       headingLevel,
@@ -453,6 +486,26 @@ class StudyCodeParser {
       html,
       ...location
     }
+  }
+
+  private readOptionalBlockName(): string | undefined {
+    const checkpoint = this.snapshot()
+    this.skipHorizontalWhitespace()
+
+    if (!this.isIdentifierStart(this.peek())) {
+      this.restore(checkpoint)
+      return undefined
+    }
+
+    const name = this.readIdentifier()
+    this.skipHorizontalWhitespace()
+
+    if (this.peek() === '=') {
+      this.restore(checkpoint)
+      return undefined
+    }
+
+    return name
   }
 
   private readInlineMetadataUntil(stopCharacter: string): {
@@ -625,7 +678,7 @@ class StudyCodeParser {
 
   private readIdentifier(): string {
     const location = this.location()
-    const match = this.source.slice(this.index).match(/^[A-Za-z_][A-Za-z0-9_-]*/)
+    const match = this.source.slice(this.index).match(/^[A-Za-z_][A-Za-z0-9_]*/)
     if (!match) this.fail('Ожидался идентификатор', location)
     for (let index = 0; index < match[0].length; index += 1) this.advance()
     return match[0]
@@ -640,7 +693,11 @@ class StudyCodeParser {
   private isIdentifierAhead(value: string): boolean {
     if (!this.source.startsWith(value, this.index)) return false
     const next = this.source[this.index + value.length]
-    return next === undefined || !/[A-Za-z0-9_-]/.test(next)
+    return next === undefined || !/[A-Za-z0-9_]/.test(next)
+  }
+
+  private isIdentifierStart(value: string): boolean {
+    return /[A-Za-z_]/.test(value)
   }
 
   private requireWhitespace(message: string): void {
@@ -720,13 +777,6 @@ class StudyCodeParser {
     this.index = snapshot.index
     this.line = snapshot.line
     this.column = snapshot.column
-  }
-
-  private recalculateLocation(): void {
-    const prefix = this.source.slice(0, this.index)
-    const lines = prefix.split('\n')
-    this.line = lines.length
-    this.column = (lines.at(-1)?.length ?? 0) + 1
   }
 
   private fail(message: string, location: StudyCodeLocation = this.location()): never {

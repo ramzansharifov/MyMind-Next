@@ -1,4 +1,11 @@
-import { index, integer, sqliteTable, text, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core'
+import {
+  index,
+  integer,
+  sqliteTable,
+  text,
+  uniqueIndex,
+  type AnySQLiteColumn
+} from 'drizzle-orm/sqlite-core'
 import { STUDY_FOLDER_ICON_NAMES } from '../../../shared/contracts/study'
 
 export const studyNodes = sqliteTable(
@@ -51,6 +58,50 @@ export const studyMaterials = sqliteTable('study_materials', {
     mode: 'timestamp_ms'
   }).notNull()
 })
+
+export const studyCodeNodeNames = sqliteTable(
+  'study_code_node_names',
+  {
+    nodeId: text('node_id')
+      .primaryKey()
+      .references(() => studyNodes.id, {
+        onDelete: 'cascade'
+      }),
+    name: text('name').notNull(),
+    nameKey: text('name_key').notNull(),
+    createdAt: integer('created_at', {
+      mode: 'timestamp_ms'
+    }).notNull(),
+    updatedAt: integer('updated_at', {
+      mode: 'timestamp_ms'
+    }).notNull()
+  },
+  (table) => [uniqueIndex('study_code_node_names_key_unique').on(table.nameKey)]
+)
+
+export const studyCodeBlockNames = sqliteTable(
+  'study_code_block_names',
+  {
+    blockId: text('block_id').primaryKey(),
+    materialId: text('material_id')
+      .notNull()
+      .references(() => studyNodes.id, {
+        onDelete: 'cascade'
+      }),
+    name: text('name').notNull(),
+    nameKey: text('name_key').notNull(),
+    createdAt: integer('created_at', {
+      mode: 'timestamp_ms'
+    }).notNull(),
+    updatedAt: integer('updated_at', {
+      mode: 'timestamp_ms'
+    }).notNull()
+  },
+  (table) => [
+    uniqueIndex('study_code_block_names_material_key_unique').on(table.materialId, table.nameKey),
+    index('study_code_block_names_material_idx').on(table.materialId)
+  ]
+)
 
 export const studyLinkTargets = sqliteTable(
   'study_link_targets',
