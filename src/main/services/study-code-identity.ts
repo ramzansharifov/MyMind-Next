@@ -1,14 +1,13 @@
 import { randomUUID } from 'node:crypto'
 import { eq } from 'drizzle-orm'
 
-import type { StudyBlockType, StudyDocument } from '../../shared/contracts/study'
+import type { StudyBlockType } from '../../shared/contracts/study'
 import { STUDY_SAFE_ID_PATTERN } from '../../shared/contracts/study'
 import {
   parseStudyCode,
   serializeStudyCodeAst,
   STUDY_CODE_NAME_PATTERN,
   type StudyCodeBlockAst,
-  type StudyCodeDocumentAst,
   type StudyCodeMaterialAst,
   type StudyCodeTreeAst
 } from '../../shared/study-code'
@@ -256,7 +255,13 @@ export function persistStudyCodeNameAssignments(assignments: StudyCodeNameAssign
   const database = getDatabase()
   const now = new Date()
   const state = loadIdentityState(false)
-  const existingNodeIds = new Set(database.select({ id: studyNodes.id }).from(studyNodes).all().map((row) => row.id))
+  const existingNodeIds = new Set(
+    database
+      .select({ id: studyNodes.id })
+      .from(studyNodes)
+      .all()
+      .map((row) => row.id)
+  )
   const blockOwners = loadBlockOwners()
 
   database.transaction((transaction) => {
@@ -325,7 +330,10 @@ function resolveMaterialBlocks(
   pendingBlockIdsByScopeKey: Map<string, string>,
   claimedBlockOwners: Map<string, string>
 ): void {
-  const allKnownBlockIds = new Set(state.blockNameById.keys())
+  const allKnownBlockIds = new Set([
+    ...state.blockOwners.keys(),
+    ...state.blockNameById.keys()
+  ])
 
   material.blocks.forEach((block) => {
     validateReadableName(block.name, block)
