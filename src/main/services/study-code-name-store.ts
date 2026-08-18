@@ -49,6 +49,7 @@ export function toReadableStudyCodeSource(internalSource: string): string {
 
   const document = parseStudyCode(internalSource)
   const state = loadNameStoreState()
+  const blockOwners = loadBlockOwners()
   const pendingAssignments: StudyCodeNameAssignment[] = []
   const usedNodeKeys = new Set(state.nodeIdByNameKey.keys())
   const usedBlockKeysByMaterial = collectUsedBlockKeysByMaterial(state)
@@ -76,13 +77,29 @@ export function toReadableStudyCodeSource(internalSource: string): string {
 
     const materialId = nodeId
     const usedBlockKeys = usedBlockKeysByMaterial.get(materialId) ?? new Set<string>()
+    const seenBlockIds = new Set<string>()
     usedBlockKeysByMaterial.set(materialId, usedBlockKeys)
 
     node.blocks.forEach((block) => {
       if (!block.id) throw new Error('Внутреннее представление DSL не содержит идентификатор блока')
 
       const blockId = block.id
-      let blockName = state.blockNameById.get(blockId)?.name
+      if (seenBlockIds.has(blockId)) {
+        throw new Error(`В материале обнаружен повторяющийся внутренний идентификатор блока ${blockId}`)
+      }
+      seenBlockIds.add(blockId)
+
+      const owners = blockOwners.get(blockId)
+      if (!owners || owners.size !== 1 || !owners.has(materialId)) {
+        throw new Error(`Внутренний идентификатор блока ${blockId} используется неоднозначно`)
+      }
+
+      const storedIdentity = state.blockNameById.get(blockId)
+      if (storedIdentity && storedIdentity.materialId !== materialId) {
+        throw new Error(`Сохранённое DSL-имя блока ${blockId} принадлежит другому материалу`)
+      }
+
+      let blockName = storedIdentity?.name
       if (!blockName) {
         blockName = createGeneratedName(blockNamePrefixes[block.blockType], usedBlockKeys)
         usedBlockKeys.add(nameKey(blockName))
@@ -151,7 +168,8 @@ export function persistStudyCodeNameAssignments(assignments: StudyCodeNameAssign
 
       const materialId = assignment.materialId
       if (!materialId || !existingNodeIds.has(materialId)) return
-      if (!blockOwners.get(assignment.entityId)?.has(materialId)) return
+      const owners = blockOwners.get(assignment.entityId)
+      if (!owners || owners.size !== 1 || !owners.has(materialId)) return
 
       const existingName = state.blockNameById.get(assignment.entityId)
       if (existingName) return
