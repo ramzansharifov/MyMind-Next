@@ -3,16 +3,16 @@ import { describe, expect, it } from 'vitest'
 import { renderStudyLatex } from './latex-renderer'
 
 describe('renderStudyLatex', () => {
-  it('renders accessible display math', () => {
+  it('renders accessible display math without forcing flush-left layout', () => {
     const result = renderStudyLatex(String.raw`\frac{a}{b}`, 'display')
 
     expect(result.error).toBeNull()
     expect(result.html).toContain('katex-display')
     expect(result.html).toContain('<math')
-    expect(result.html).not.toContain('study-latex-document-layout')
+    expect(result.html).not.toContain('fleqn')
   })
 
-  it('marks long aligned notes as document-like layout', () => {
+  it('uses KaTeX fleqn for long note-like aligned content', () => {
     const result = renderStudyLatex(
       String.raw`\begin{aligned}
         &\textbf{Конспект по математическому анализу} \\
@@ -23,18 +23,29 @@ describe('renderStudyLatex', () => {
     )
 
     expect(result.error).toBeNull()
-    expect(result.html).toContain('study-latex-document-layout')
     expect(result.html).toContain('katex-display')
+    expect(result.html).toContain('fleqn')
   })
 
-  it('does not classify a compact aligned equation as a document', () => {
+  it('keeps compact aligned equations centered', () => {
     const result = renderStudyLatex(
       String.raw`\begin{aligned}a &= b \\ c &= d\end{aligned}`,
       'display'
     )
 
     expect(result.error).toBeNull()
-    expect(result.html).not.toContain('study-latex-document-layout')
+    expect(result.html).not.toContain('fleqn')
+  })
+
+  it('does not enable fleqn for inline math', () => {
+    const result = renderStudyLatex(
+      String.raw`\begin{aligned}\text{A} \\ \text{B} \\ \text{C}\end{aligned}`,
+      'inline'
+    )
+
+    expect(result.error).toBeNull()
+    expect(result.html).not.toContain('katex-display')
+    expect(result.html).not.toContain('fleqn')
   })
 
   it('returns a readable parsing error', () => {
