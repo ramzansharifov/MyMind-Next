@@ -13,6 +13,10 @@ import {
   previewStudyCode as previewStudyCodeEngine
 } from '../repositories/study-code.repository'
 import { listStudyNodes, renameStudyNode } from '../repositories/study.repository'
+import {
+  createStudyCodeDiagnosticMap,
+  type StudyCodeSourceLocation
+} from './study-code-diagnostic-map'
 import { toReadableStudyCodeSource } from './study-code-name-store'
 import {
   persistAppliedStudyCodeNames,
@@ -44,12 +48,20 @@ export function previewStudyCode(input: PreviewStudyCodeInput): StudyCodePreview
     toReadableStudyCodeSource(currentSnapshot.source)
 
     const translated = translateReadableStudyCodeSource(input.nodeId, input.source)
+    const diagnosticMap = createStudyCodeDiagnosticMap(input.source, translated.source)
     const enginePreview = previewStudyCodeEngine({
       ...input,
       source: translated.source
     })
 
-    if (!enginePreview.valid) return enginePreview
+    if (!enginePreview.valid) {
+      return {
+        ...enginePreview,
+        diagnostics: enginePreview.diagnostics.map((diagnostic) =>
+          remapDiagnostic(diagnostic, diagnosticMap)
+        )
+      }
+    }
 
     return {
       ...enginePreview,
@@ -86,10 +98,17 @@ export async function applyStudyCode(input: ApplyStudyCodeInput): Promise<StudyC
   }
 
   const translated = translateReadableStudyCodeSource(input.nodeId, input.source)
-  const result = await applyStudyCodeEngine({
-    ...input,
-    source: translated.source
-  })
+  const diagnosticMap = createStudyCodeDiagnosticMap(input.source, translated.source)
+  let result: StudyCodeApplyResult
+
+  try {
+    result = await applyStudyCodeEngine({
+      ...input,
+      source: translated.source
+    })
+  } catch (reason: unknown) {
+    throw remapThrownDiagnostic(reason, diagnosticMap)
+  }
 
   // UUIDs are generated only by the existing transactional engine. Human-readable aliases are bound
   // afterwards by exact tree/block position, so a user or AI never has to invent database identifiers.
@@ -111,6 +130,43 @@ export async function applyStudyCode(input: ApplyStudyCodeInput): Promise<StudyC
     source: snapshot.source,
     revision: snapshot.revision
   }
+}
+
+function remapDiagnostic(
+  diagnostic: StudyCodeDiagnostic,
+  locations: ReadonlyMap<number, StudyCodeSourceLocation>
+): StudyCodeDiagnostic {
+  const location = locations.get(diagnostic.line)
+  if (!location) return diagnostic
+  return {
+    ...diagnostic,
+    line: location.line,
+    column: location.column
+  }
+}
+
+function remapThrownDiagnostic(
+  reason: unknown,
+  locations: ReadonlyMap<number, StudyCodeSourceLocation>
+): unknown {
+  if (
+    !reason ||
+    typeof reason !== 'object' ||
+    !('line' in reason) ||
+    !('column' in reason) ||
+    typeof reason.line !== 'number' ||
+    typeof reason.column !== 'number'
+  ) {
+    return reason
+  }
+
+  const location = locations.get(reason.line)
+  if (!location) return reason
+  return new StudyCodeSafetyError(
+    reason instanceof Error ? reason.message : 'Некорректный код',
+    location.line,
+    location.column
+  )
 }
 
 function hasDeletions(summary: StudyCodeChangeSummary): boolean {
