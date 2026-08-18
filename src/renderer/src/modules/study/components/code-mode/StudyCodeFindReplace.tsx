@@ -1,8 +1,9 @@
-import { ChevronDown, ChevronRight, ChevronUp, Search, X } from 'lucide-react'
+import { ChevronDown, ChevronRight, ChevronUp, Replace, Search, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
 
 import { cn } from '../../../../shared/lib/cn'
+import { Tooltip } from '../../../../shared/ui/tooltip'
 import {
   findStudyCodeMatches,
   getStudyCodeMatchSegments,
@@ -25,12 +26,15 @@ const optionButtonClassName =
 const smallButtonClassName =
   'flex h-7 items-center justify-center rounded-md px-2 text-[11px] font-medium text-[var(--app-muted)] transition-colors outline-none hover:bg-white/[0.06] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 disabled:cursor-not-allowed disabled:opacity-35'
 
+const headerButtonClassName =
+  'order-[-1] flex h-9 items-center gap-2 rounded-lg border border-[var(--app-border)] bg-white/[0.025] px-3 text-xs font-medium text-[var(--app-muted)] transition-colors outline-none hover:bg-white/[0.055] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 disabled:cursor-not-allowed disabled:opacity-40'
+
 export function StudyCodeFindReplace({
   source,
   disabled = false,
   editorScrollRef,
   onSourceChange
-}: StudyCodeFindReplaceProps): React.JSX.Element | null {
+}: StudyCodeFindReplaceProps): React.JSX.Element {
   const [open, setOpen] = useState(false)
   const [replaceOpen, setReplaceOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -40,6 +44,7 @@ export function StudyCodeFindReplace({
   const [useRegex, setUseRegex] = useState(false)
   const [activeMatchIndex, setActiveMatchIndex] = useState(-1)
   const [highlightHost, setHighlightHost] = useState<HTMLElement | null>(null)
+  const [toolbarHost, setToolbarHost] = useState<HTMLElement | null>(null)
   const findInputRef = useRef<HTMLInputElement>(null)
 
   const options = useMemo<StudyCodeFindOptions>(
@@ -85,7 +90,16 @@ export function StudyCodeFindReplace({
   }
 
   useEffect(() => {
-    if (!open) return
+    const workspace = editorScrollRef.current?.closest('[data-study-code-workspace]')
+    setToolbarHost(workspace?.querySelector<HTMLElement>('header > div:last-child') ?? null)
+  }, [editorScrollRef])
+
+  useEffect(() => {
+    if (!open) {
+      setHighlightHost(null)
+      return
+    }
+
     setHighlightHost(
       editorScrollRef.current?.querySelector<HTMLElement>('[data-study-code-editor-scroll-content]') ??
         null
@@ -206,186 +220,226 @@ export function StudyCodeFindReplace({
     result.truncated
   )
 
-  if (!open) return null
-
   return (
     <>
-      <div
-        data-study-code-find-widget
-        className="absolute right-6 top-6 z-30 w-[min(640px,calc(100%_-_3rem))] rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-2 shadow-2xl shadow-black/35 max-[720px]:right-4 max-[720px]:top-4 max-[720px]:w-[calc(100%_-_2rem)]"
-      >
-        <div className="flex min-w-0 items-center gap-1.5">
-          <button
-            type="button"
-            className={smallButtonClassName}
-            aria-label={replaceOpen ? 'Скрыть замену' : 'Показать замену'}
-            onClick={() => setReplaceOpen((current) => !current)}
-          >
-            {replaceOpen ? (
-              <ChevronDown aria-hidden="true" className="size-3.5" />
-            ) : (
-              <ChevronRight aria-hidden="true" className="size-3.5" />
-            )}
-          </button>
-
-          <div
-            className={cn(
-              'flex min-w-0 flex-1 items-center rounded-lg border bg-black/10 focus-within:ring-2',
-              result.error
-                ? 'border-red-500/55 focus-within:ring-red-500/20'
-                : 'border-[var(--app-border)] focus-within:border-violet-400/45 focus-within:ring-violet-500/15'
-            )}
-          >
-            <Search aria-hidden="true" className="ml-2.5 size-3.5 shrink-0 text-[var(--app-muted)]" />
-            <input
-              ref={findInputRef}
-              value={query}
-              aria-label="Найти в коде"
-              placeholder="Найти"
-              spellCheck={false}
-              className="h-8 min-w-0 flex-1 bg-transparent px-2 text-xs text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60"
-              onChange={(event) => setQuery(event.target.value)}
-              onKeyDown={handleFindKeyDown}
-            />
-
-            <button
-              type="button"
-              aria-label="Учитывать регистр"
-              aria-pressed={matchCase}
-              title="Учитывать регистр"
-              className={cn(
-                optionButtonClassName,
-                matchCase && 'bg-violet-500/16 text-violet-200'
-              )}
-              onClick={() => setMatchCase((current) => !current)}
-            >
-              Aa
-            </button>
-            <button
-              type="button"
-              aria-label="Только целые слова"
-              aria-pressed={wholeWord}
-              title="Только целые слова"
-              className={cn(
-                optionButtonClassName,
-                wholeWord && 'bg-violet-500/16 text-violet-200'
-              )}
-              onClick={() => setWholeWord((current) => !current)}
-            >
-              ab
-            </button>
-            <button
-              type="button"
-              aria-label="Регулярное выражение"
-              aria-pressed={useRegex}
-              title="Регулярное выражение"
-              className={cn(
-                optionButtonClassName,
-                useRegex && 'bg-violet-500/16 text-violet-200'
-              )}
-              onClick={() => setUseRegex((current) => !current)}
-            >
-              .*
-            </button>
-          </div>
-
-          <span
-            aria-live="polite"
-            className={cn(
-              'w-[84px] shrink-0 text-center text-[11px]',
-              result.error ? 'text-red-300' : 'text-[var(--app-muted)]'
-            )}
-            title={result.error ?? undefined}
-          >
-            {resultLabel}
-          </span>
-
-          <button
-            type="button"
-            aria-label="Предыдущее совпадение"
-            className={smallButtonClassName}
-            disabled={result.matches.length === 0}
-            onClick={() => moveMatch(-1)}
-          >
-            <ChevronUp aria-hidden="true" className="size-3.5" />
-          </button>
-          <button
-            type="button"
-            aria-label="Следующее совпадение"
-            className={smallButtonClassName}
-            disabled={result.matches.length === 0}
-            onClick={() => moveMatch(1)}
-          >
-            <ChevronDown aria-hidden="true" className="size-3.5" />
-          </button>
-          <button
-            type="button"
-            aria-label="Закрыть поиск"
-            className={smallButtonClassName}
-            onClick={closeFind}
-          >
-            <X aria-hidden="true" className="size-3.5" />
-          </button>
-        </div>
-
-        {replaceOpen && (
-          <div className="mt-1.5 flex min-w-0 items-center gap-1.5 pl-[34px]">
-            <input
-              value={replacement}
-              aria-label="Заменить на"
-              placeholder="Заменить"
-              spellCheck={false}
-              disabled={disabled}
-              className="h-8 min-w-0 flex-1 rounded-lg border border-[var(--app-border)] bg-black/10 px-2.5 text-xs text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-400/45 focus:ring-2 focus:ring-violet-500/15 disabled:opacity-50"
-              onChange={(event) => setReplacement(event.target.value)}
-              onKeyDown={handleReplaceKeyDown}
-            />
-            <button
-              type="button"
-              className={smallButtonClassName}
-              disabled={disabled || !activeMatch || Boolean(result.error)}
-              onClick={replaceCurrent}
-            >
-              Заменить
-            </button>
-            <button
-              type="button"
-              aria-label="Заменить все"
-              className={smallButtonClassName}
-              disabled={disabled || result.matches.length === 0 || Boolean(result.error)}
-              onClick={replaceAll}
-            >
-              Все
-            </button>
-          </div>
-        )}
-
-        {result.error && (
-          <p className="mt-1.5 truncate pl-[34px] text-[11px] text-red-300" title={result.error}>
-            {result.error}
-          </p>
-        )}
-      </div>
-
-      {highlightHost &&
-        activeMatch &&
+      {toolbarHost &&
         createPortal(
-          <div aria-hidden="true" data-study-code-find-highlight-layer>
-            {activeSegments.map((segment, index) => (
-              <span
-                key={`${segment.line}:${segment.column}:${index}`}
-                data-study-code-active-find-match
-                style={{
-                  top: `calc(var(--study-code-editor-padding) + ${segment.line * 1.65}rem)`,
-                  left: `calc(3.25rem + var(--study-code-editor-padding) + ${segment.column}ch)`,
-                  width: `${segment.length}ch`,
-                  height: 'var(--study-code-line-height)'
-                }}
-              />
-            ))}
-          </div>,
-          highlightHost
+          <>
+            <Tooltip content="Найти в коде (Ctrl+F)" side="bottom">
+              <button
+                type="button"
+                aria-label="Найти в коде"
+                className={headerButtonClassName}
+                disabled={!source || disabled}
+                onClick={() => openFind(false)}
+              >
+                <Search aria-hidden="true" className="size-3.5" />
+                <span className="max-[1040px]:hidden">Найти</span>
+              </button>
+            </Tooltip>
+
+            <Tooltip content="Найти и заменить (Ctrl+H)" side="bottom">
+              <button
+                type="button"
+                aria-label="Найти и заменить в коде"
+                className={headerButtonClassName}
+                disabled={!source || disabled}
+                onClick={() => openFind(true)}
+              >
+                <Replace aria-hidden="true" className="size-3.5" />
+                <span className="max-[1040px]:hidden">Заменить</span>
+              </button>
+            </Tooltip>
+          </>,
+          toolbarHost
         )}
+
+      {open && (
+        <>
+          <div
+            data-study-code-find-widget
+            className="absolute right-6 top-6 z-30 w-[min(640px,calc(100%_-_3rem))] rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-2 shadow-2xl shadow-black/35 max-[720px]:right-4 max-[720px]:top-4 max-[720px]:w-[calc(100%_-_2rem)]"
+          >
+            <div className="flex min-w-0 items-center gap-1.5">
+              <button
+                type="button"
+                className={smallButtonClassName}
+                aria-label={replaceOpen ? 'Скрыть замену' : 'Показать замену'}
+                onClick={() => setReplaceOpen((current) => !current)}
+              >
+                {replaceOpen ? (
+                  <ChevronDown aria-hidden="true" className="size-3.5" />
+                ) : (
+                  <ChevronRight aria-hidden="true" className="size-3.5" />
+                )}
+              </button>
+
+              <div
+                className={cn(
+                  'flex min-w-0 flex-1 items-center rounded-lg border bg-black/10 focus-within:ring-2',
+                  result.error
+                    ? 'border-red-500/55 focus-within:ring-red-500/20'
+                    : 'border-[var(--app-border)] focus-within:border-violet-400/45 focus-within:ring-violet-500/15'
+                )}
+              >
+                <Search
+                  aria-hidden="true"
+                  className="ml-2.5 size-3.5 shrink-0 text-[var(--app-muted)]"
+                />
+                <input
+                  ref={findInputRef}
+                  value={query}
+                  aria-label="Найти в коде"
+                  placeholder="Найти"
+                  spellCheck={false}
+                  className="h-8 min-w-0 flex-1 bg-transparent px-2 text-xs text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60"
+                  onChange={(event) => setQuery(event.target.value)}
+                  onKeyDown={handleFindKeyDown}
+                />
+
+                <button
+                  type="button"
+                  aria-label="Учитывать регистр"
+                  aria-pressed={matchCase}
+                  title="Учитывать регистр"
+                  className={cn(
+                    optionButtonClassName,
+                    matchCase && 'bg-violet-500/16 text-violet-200'
+                  )}
+                  onClick={() => setMatchCase((current) => !current)}
+                >
+                  Aa
+                </button>
+                <button
+                  type="button"
+                  aria-label="Только целые слова"
+                  aria-pressed={wholeWord}
+                  title="Только целые слова"
+                  className={cn(
+                    optionButtonClassName,
+                    wholeWord && 'bg-violet-500/16 text-violet-200'
+                  )}
+                  onClick={() => setWholeWord((current) => !current)}
+                >
+                  ab
+                </button>
+                <button
+                  type="button"
+                  aria-label="Регулярное выражение"
+                  aria-pressed={useRegex}
+                  title="Регулярное выражение"
+                  className={cn(
+                    optionButtonClassName,
+                    useRegex && 'bg-violet-500/16 text-violet-200'
+                  )}
+                  onClick={() => setUseRegex((current) => !current)}
+                >
+                  .*
+                </button>
+              </div>
+
+              <span
+                aria-live="polite"
+                className={cn(
+                  'w-[84px] shrink-0 text-center text-[11px]',
+                  result.error ? 'text-red-300' : 'text-[var(--app-muted)]'
+                )}
+                title={result.error ?? undefined}
+              >
+                {resultLabel}
+              </span>
+
+              <button
+                type="button"
+                aria-label="Предыдущее совпадение"
+                className={smallButtonClassName}
+                disabled={result.matches.length === 0}
+                onClick={() => moveMatch(-1)}
+              >
+                <ChevronUp aria-hidden="true" className="size-3.5" />
+              </button>
+              <button
+                type="button"
+                aria-label="Следующее совпадение"
+                className={smallButtonClassName}
+                disabled={result.matches.length === 0}
+                onClick={() => moveMatch(1)}
+              >
+                <ChevronDown aria-hidden="true" className="size-3.5" />
+              </button>
+              <button
+                type="button"
+                aria-label="Закрыть поиск"
+                className={smallButtonClassName}
+                onClick={closeFind}
+              >
+                <X aria-hidden="true" className="size-3.5" />
+              </button>
+            </div>
+
+            {replaceOpen && (
+              <div className="mt-1.5 flex min-w-0 items-center gap-1.5 pl-[34px]">
+                <input
+                  value={replacement}
+                  aria-label="Заменить на"
+                  placeholder="Заменить"
+                  spellCheck={false}
+                  disabled={disabled}
+                  className="h-8 min-w-0 flex-1 rounded-lg border border-[var(--app-border)] bg-black/10 px-2.5 text-xs text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-400/45 focus:ring-2 focus:ring-violet-500/15 disabled:opacity-50"
+                  onChange={(event) => setReplacement(event.target.value)}
+                  onKeyDown={handleReplaceKeyDown}
+                />
+                <button
+                  type="button"
+                  className={smallButtonClassName}
+                  disabled={disabled || !activeMatch || Boolean(result.error)}
+                  onClick={replaceCurrent}
+                >
+                  Заменить
+                </button>
+                <button
+                  type="button"
+                  aria-label="Заменить все"
+                  className={smallButtonClassName}
+                  disabled={disabled || result.matches.length === 0 || Boolean(result.error)}
+                  onClick={replaceAll}
+                >
+                  Все
+                </button>
+              </div>
+            )}
+
+            {result.error && (
+              <p
+                className="mt-1.5 truncate pl-[34px] text-[11px] text-red-300"
+                title={result.error}
+              >
+                {result.error}
+              </p>
+            )}
+          </div>
+
+          {highlightHost &&
+            activeMatch &&
+            createPortal(
+              <div aria-hidden="true" data-study-code-find-highlight-layer>
+                {activeSegments.map((segment, index) => (
+                  <span
+                    key={`${segment.line}:${segment.column}:${index}`}
+                    data-study-code-active-find-match
+                    style={{
+                      top: `calc(var(--study-code-editor-padding) + ${segment.line * 1.65}rem)`,
+                      left: `calc(3.25rem + var(--study-code-editor-padding) + ${segment.column}ch)`,
+                      width: `${segment.length}ch`,
+                      height: 'var(--study-code-line-height)'
+                    }}
+                  />
+                ))}
+              </div>,
+              highlightHost
+            )}
+        </>
+      )}
     </>
   )
 }
