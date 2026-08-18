@@ -1,7 +1,6 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import {
   BookOpen,
-  Braces,
   FilePlus2,
   FileText,
   Folder,
@@ -9,7 +8,16 @@ import {
   Palette,
   Pencil
 } from 'lucide-react'
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode
+} from 'react'
 
 import type {
   StudyCodeApplyResult,
@@ -29,10 +37,16 @@ import {
 import { Tooltip } from '../../shared/ui/tooltip'
 import { StudyActionButton } from './components/StudyActionButton'
 import { StudyBlockedTransitionDialog } from './components/StudyBlockedTransitionDialog'
-import { StudyFolderCodeWorkspace } from './components/code-mode/StudyFolderCodeWorkspace'
+import {
+  StudyFolderCodeWorkspace,
+  type StudyFolderWorkspaceMode
+} from './components/code-mode/StudyFolderCodeWorkspace'
 import { DeleteConfirmationDialog } from './components/DeleteConfirmationDialog'
 import { StudyHome } from './components/StudyHome'
-import { STUDY_FOLDER_ICON_SIDEBAR_CLASS_NAME, StudyFolderIcon } from './components/StudyFolderIcon'
+import {
+  STUDY_FOLDER_ICON_SIDEBAR_CLASS_NAME,
+  StudyFolderIcon
+} from './components/StudyFolderIcon'
 import { RenameStudyNodeDialog } from './components/RenameStudyNodeDialog'
 import { STUDY_FOLDER_ICON_OPTIONS } from './components/study-folder-icon-options'
 import { StudyTree } from './components/StudyTree'
@@ -465,13 +479,15 @@ export function StudyPage({
             initialMode={folderCodeRequest?.nodeId === selectedNode.id ? 'code' : 'overview'}
             onApplied={handleCodeApplied}
           >
-            {({ openCode }) => (
+            {({ mode, modeTabs, codeWorkspace }) => (
               <FolderWorkspace
                 node={selectedNode}
                 items={study.nodes.filter((node) => node.parentId === selectedNode.id)}
+                mode={mode}
+                modeTabs={modeTabs}
+                codeWorkspace={codeWorkspace}
                 onSelect={selectStudyNode}
                 onRename={() => openRename(selectedNode)}
-                onOpenCode={openCode}
                 onCreateFolder={() => {
                   void runAfterDraftFlush(async () => {
                     clearInternalLinkNavigation()
@@ -601,22 +617,28 @@ const folderWorkspaceDateFormatter = new Intl.DateTimeFormat('ru-RU', {
   month: 'short'
 })
 
+const folderIconButtonClassName = 'size-10 w-10 shrink-0 px-0'
+
 function FolderWorkspace({
   node,
   items,
+  mode,
+  modeTabs,
+  codeWorkspace,
   onSelect,
   onCreateFolder,
   onRename,
-  onOpenCode,
   onCreateMaterial,
   onIconChange
 }: {
   node: StudyNode
   items: StudyNode[]
+  mode: StudyFolderWorkspaceMode
+  modeTabs: ReactNode
+  codeWorkspace: ReactNode
   onSelect: (nodeId: string) => void
   onCreateFolder: () => void
   onRename: () => void
-  onOpenCode: () => void
   onCreateMaterial: () => void
   onIconChange: (icon: StudyFolderIconName) => void
 }): React.JSX.Element {
@@ -629,8 +651,18 @@ function FolderWorkspace({
   const activeIcon = node.icon ?? 'folder'
 
   return (
-    <section className="h-full overflow-y-auto bg-[var(--app-workspace)] px-8 py-7 max-[720px]:px-4 max-[720px]:py-5">
-      <div className="mx-auto w-full max-w-[1240px] space-y-5">
+    <section
+      className={cn(
+        'h-full min-h-0 bg-[var(--app-workspace)]',
+        mode === 'code' ? 'flex flex-col overflow-hidden' : 'overflow-y-auto'
+      )}
+    >
+      <div
+        className={cn(
+          'mx-auto w-full max-w-[1240px] px-8 pt-7 max-[720px]:px-4 max-[720px]:pt-5',
+          mode === 'code' ? 'shrink-0 pb-4' : 'space-y-5 pb-7 max-[720px]:pb-5'
+        )}
+      >
         <section className="relative isolate overflow-hidden rounded-3xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[0_20px_70px_rgb(0_0_0/0.16)]">
           <div
             aria-hidden="true"
@@ -657,67 +689,103 @@ function FolderWorkspace({
                 </div>
               </div>
 
-              <div className="grid w-[52rem] max-w-full shrink-0 grid-cols-5 gap-2 max-[920px]:w-full max-[760px]:grid-cols-2 max-[620px]:grid-cols-1">
-                <StudyActionButton type="button" onClick={onRename}>
-                  <Pencil aria-hidden="true" />
-                  Переименовать
-                </StudyActionButton>
-                <StudyActionButton type="button" onClick={onOpenCode}>
-                  <Braces aria-hidden="true" className="text-violet-300" />
-                  Код
-                </StudyActionButton>
+              <div className="flex max-w-full shrink-0 flex-wrap items-center justify-end gap-2 max-[920px]:w-full max-[920px]:justify-start">
+                {modeTabs}
+                <span
+                  aria-hidden="true"
+                  className="mx-0.5 h-7 w-px shrink-0 bg-[var(--app-border)]"
+                />
+
+                <Tooltip content="Переименовать папку" side="bottom">
+                  <StudyActionButton
+                    type="button"
+                    aria-label="Переименовать папку"
+                    className={folderIconButtonClassName}
+                    onClick={onRename}
+                  >
+                    <Pencil aria-hidden="true" />
+                  </StudyActionButton>
+                </Tooltip>
+
                 <FolderIconPicker value={activeIcon} onChange={onIconChange} />
-                <StudyActionButton type="button" onClick={onCreateFolder}>
-                  <FolderPlus aria-hidden="true" />
-                  Новая папка
-                </StudyActionButton>
-                <StudyActionButton type="button" variant="primary" onClick={onCreateMaterial}>
-                  <FilePlus2 aria-hidden="true" />
-                  Новый материал
-                </StudyActionButton>
+
+                <Tooltip content="Создать вложенную папку" side="bottom">
+                  <StudyActionButton
+                    type="button"
+                    aria-label="Новая папка"
+                    className={folderIconButtonClassName}
+                    onClick={onCreateFolder}
+                  >
+                    <FolderPlus aria-hidden="true" />
+                  </StudyActionButton>
+                </Tooltip>
+
+                <Tooltip content="Создать материал" side="bottom">
+                  <StudyActionButton
+                    type="button"
+                    variant="primary"
+                    aria-label="Новый материал"
+                    className={folderIconButtonClassName}
+                    onClick={onCreateMaterial}
+                  >
+                    <FilePlus2 aria-hidden="true" />
+                  </StudyActionButton>
+                </Tooltip>
               </div>
             </header>
 
-            <div className="mt-6 grid grid-cols-3 gap-3 max-[760px]:grid-cols-1">
-              <WorkspaceStatCard
-                icon={<BookOpen aria-hidden="true" className="size-5" />}
-                value={items.length}
-                label="Всего"
-                description="Элементов в этой папке"
-              />
-              <WorkspaceStatCard
-                icon={<FileText aria-hidden="true" className="size-5" />}
-                value={materials.length}
-                label="Материалов"
-                description="Конспекты и записи"
-              />
-              <WorkspaceStatCard
-                icon={<Folder aria-hidden="true" className="size-5" />}
-                value={folders.length}
-                label="Папок"
-                description="Вложенных разделов"
-              />
-            </div>
+            {mode === 'overview' && (
+              <div className="mt-6 grid grid-cols-3 gap-3 max-[760px]:grid-cols-1">
+                <WorkspaceStatCard
+                  icon={<BookOpen aria-hidden="true" className="size-5" />}
+                  value={items.length}
+                  label="Всего"
+                  description="Элементов в этой папке"
+                />
+                <WorkspaceStatCard
+                  icon={<FileText aria-hidden="true" className="size-5" />}
+                  value={materials.length}
+                  label="Материалов"
+                  description="Конспекты и записи"
+                />
+                <WorkspaceStatCard
+                  icon={<Folder aria-hidden="true" className="size-5" />}
+                  value={folders.length}
+                  label="Папок"
+                  description="Вложенных разделов"
+                />
+              </div>
+            )}
           </div>
         </section>
 
-        <div className="grid grid-cols-[minmax(0,1.35fr)_minmax(300px,0.75fr)] items-start gap-5 max-[1040px]:grid-cols-1">
-          <FolderItemsSection
-            kind="material"
-            title="Материалы"
-            items={materials}
-            emptyText="В этой папке пока нет материалов"
-            onSelect={onSelect}
-          />
-          <FolderItemsSection
-            kind="folder"
-            title="Вложенные папки"
-            items={folders}
-            emptyText="Вложенных папок пока нет"
-            onSelect={onSelect}
-          />
-        </div>
+        {mode === 'overview' && (
+          <div className="grid grid-cols-[minmax(0,1.35fr)_minmax(300px,0.75fr)] items-start gap-5 max-[1040px]:grid-cols-1">
+            <FolderItemsSection
+              kind="material"
+              title="Материалы"
+              items={materials}
+              emptyText="В этой папке пока нет материалов"
+              onSelect={onSelect}
+            />
+            <FolderItemsSection
+              kind="folder"
+              title="Вложенные папки"
+              items={folders}
+              emptyText="Вложенных папок пока нет"
+              onSelect={onSelect}
+            />
+          </div>
+        )}
       </div>
+
+      {mode === 'code' && (
+        <div className="min-h-0 flex-1 px-8 pb-7 max-[720px]:px-4 max-[720px]:pb-5">
+          <div className="mx-auto h-full w-full max-w-[1240px] overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--app-shadow-panel)]">
+            {codeWorkspace}
+          </div>
+        </div>
+      )}
     </section>
   )
 }
@@ -731,12 +799,17 @@ function FolderIconPicker({
 }): React.JSX.Element {
   return (
     <DropdownMenu.Root>
-      <DropdownMenu.Trigger asChild>
-        <StudyActionButton type="button">
-          <Palette aria-hidden="true" className="text-violet-300" />
-          Иконка
-        </StudyActionButton>
-      </DropdownMenu.Trigger>
+      <Tooltip content="Изменить иконку папки" side="bottom">
+        <DropdownMenu.Trigger asChild>
+          <StudyActionButton
+            type="button"
+            aria-label="Изменить иконку папки"
+            className={folderIconButtonClassName}
+          >
+            <Palette aria-hidden="true" className="text-violet-300" />
+          </StudyActionButton>
+        </DropdownMenu.Trigger>
+      </Tooltip>
       <DropdownMenu.Portal>
         <DropdownMenu.Content
           sideOffset={8}
