@@ -186,7 +186,11 @@ export function translateReadableStudyCodeSource(
   >()
 
   const indexPlannedTree = (node: StudyCodeTreeAst, parentId: string | null): void => {
-    if (!node.id) fail(node, 'Не удалось назначить внутренний идентификатор элементу DSL')
+    if (!node.id) {
+      node.id = createUniqueId(allNodeIds)
+      allNodeIds.add(node.id)
+    }
+
     const metadata: PlannedNodeMetadata = {
       id: node.id,
       kind: node.kind,
