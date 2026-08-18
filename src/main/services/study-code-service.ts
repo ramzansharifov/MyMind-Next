@@ -13,11 +13,11 @@ import {
   previewStudyCode as previewStudyCodeEngine
 } from '../repositories/study-code.repository'
 import { listStudyNodes, renameStudyNode } from '../repositories/study.repository'
+import { toReadableStudyCodeSource } from './study-code-identity'
 import {
-  persistStudyCodeNameAssignments,
-  toReadableStudyCodeSource,
+  persistAppliedStudyCodeNames,
   translateReadableStudyCodeSource
-} from './study-code-identity'
+} from './study-code-readable-translation'
 
 class StudyCodeSafetyError extends Error {
   constructor(
@@ -40,7 +40,7 @@ export function getStudyCodeSnapshot(nodeId: string): StudyCodeSnapshot {
 
 export function previewStudyCode(input: PreviewStudyCodeInput): StudyCodePreviewResult {
   try {
-    // Ensure every existing entity already has a stable readable name before resolving the edited source.
+    // Allocate stable readable names for every live entity before resolving the edited source.
     const currentSnapshot = getStudyCodeSnapshotEngine(input.nodeId)
     toReadableStudyCodeSource(currentSnapshot.source)
 
@@ -92,9 +92,9 @@ export async function applyStudyCode(input: ApplyStudyCodeInput): Promise<StudyC
     source: translated.source
   })
 
-  // New entities already exist after the atomic engine transaction, so their requested DSL names can
-  // now be persisted safely. Anonymous entities receive generated names when the snapshot is rebuilt.
-  persistStudyCodeNameAssignments(translated.assignments)
+  // The engine remains the only layer that generates database UUIDs. After its atomic transaction we
+  // resolve requested human names by their exact tree/block position and persist only the name mapping.
+  persistAppliedStudyCodeNames(input.nodeId, translated.pendingNames)
 
   /*
    * The selected Code Mode scope can start below the root of the Study tree.
