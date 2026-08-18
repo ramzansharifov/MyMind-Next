@@ -12,11 +12,11 @@ import 'prismjs/components/prism-bash'
 import 'prismjs/components/prism-c'
 import 'prismjs/components/prism-cpp'
 import 'prismjs/components/prism-java'
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 
 import { cn } from '../../../../shared/lib/cn'
 import { StudySourceBlockShell } from '../source/StudySourceBlockShell'
-import '../source/StudySourceLineNumbers.css'
+import { StudySourceLineNumbers } from '../source/StudySourceLineNumbers'
 import { getStudyCodeLanguage } from './code-languages'
 
 interface StudyCodeBlockProps {
@@ -42,8 +42,6 @@ export function StudyCodeBlock({
       : editable
         ? source
         : normalizeLegacyCodeSource(source)
-  const lineNumbers = useMemo(() => createStudyCodeLineNumbers(displaySource), [displaySource])
-  const lineNumberDigits = Math.max(2, String(lineNumbers.length).length)
 
   useEffect(() => {
     if (!editable || didNormalizeInitialSource.current) {
@@ -90,29 +88,15 @@ export function StudyCodeBlock({
           <div
             data-study-code-scroll
             className={cn(
-              'study-code-block__scroll min-h-0 overflow-x-auto overflow-y-auto',
+              'study-code-block__scroll study-source-editor-scroll min-h-0 overflow-x-auto overflow-y-auto',
               fullscreen ? 'flex-1' : 'max-h-[32rem]'
             )}
           >
-            <div className="study-code-block__body">
-              <div
-                aria-hidden="true"
-                data-study-code-line-numbers
-                className="study-code-block__line-numbers"
-                style={{
-                  minWidth: `calc(${lineNumberDigits}ch + 1.5rem)`
-                }}
-              >
-                {lineNumbers.map((lineNumber) => (
-                  <span
-                    key={lineNumber}
-                    data-study-code-line-number={lineNumber}
-                    className="study-code-block__line-number"
-                  >
-                    {lineNumber}
-                  </span>
-                ))}
-              </div>
+            <div
+              data-fullscreen={fullscreen ? 'true' : 'false'}
+              className="study-code-block__body study-source-editor-body"
+            >
+              <StudySourceLineNumbers source={displaySource} />
 
               <Editor
                 value={displaySource}
@@ -122,7 +106,7 @@ export function StudyCodeBlock({
                 tabSize={2}
                 padding={16}
                 placeholder={editable ? 'Код…' : 'Пустой блок кода'}
-                className="study-code-block__editor"
+                className="study-code-block__editor study-source-editor__editor"
                 textareaClassName="study-code-block__textarea"
                 preClassName="study-code-block__pre"
                 highlight={(value) => highlightStudyCode(value, languageOption.prismLanguage)}
@@ -130,7 +114,7 @@ export function StudyCodeBlock({
                   minHeight: editable ? '3.45rem' : '6rem',
                   fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
                   fontSize: '0.875rem',
-                  lineHeight: 'var(--study-source-editor-line-height)'
+                  lineHeight: '1.65'
                 }}
                 onValueChange={(value) => {
                   if (editable) {
@@ -143,17 +127,6 @@ export function StudyCodeBlock({
         </section>
       )}
     </StudySourceBlockShell>
-  )
-}
-
-function createStudyCodeLineNumbers(source: string): number[] {
-  const lineCount = source.split('\n').length
-
-  return Array.from(
-    {
-      length: Math.max(lineCount, 1)
-    },
-    (_value, index) => index + 1
   )
 }
 
