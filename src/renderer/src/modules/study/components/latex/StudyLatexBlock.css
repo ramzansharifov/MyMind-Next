@@ -1,0 +1,22 @@
+.study-latex-preview[data-wide-layout='true'] .katex-display,
+.study-latex-preview[data-wide-layout='true'] .katex-display > .katex,
+.study-latex-preview[data-wide-layout='true'] .katex-display > .katex > .katex-html,
+.study-latex-preview[data-wide-layout='true'] .katex-display > .katex > .katex-html > .base {
+  display: block;
+  width: 100%;
+  max-width: none;
+}
+
+.study-latex-preview[data-wide-layout='true']
+  .katex-display
+  > .katex
+  > .katex-html
+  > .base
+  > .mord:has(> .mtable) {
+  display: block;
+  width: 100%;
+}
+
+.study-latex-preview[data-wide-layout='true'] .katex .mtable {
+  width: 100%;
+}
