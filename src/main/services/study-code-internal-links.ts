@@ -96,16 +96,14 @@ export function symbolizeStoredStudyInternalLinks(
   if (replacements.length === 0) return { text, html }
 
   let nextText = text
-  let cursor = 0
-  let offset = 0
+  let searchFrom = 0
 
   replacements.forEach(({ label, token }) => {
     if (!label) return
-    const index = nextText.indexOf(label, cursor + offset)
+    const index = nextText.indexOf(label, searchFrom)
     if (index < 0) return
     nextText = `${nextText.slice(0, index)}${token}${nextText.slice(index + label.length)}`
-    offset += token.length - label.length
-    cursor = index + token.length - offset
+    searchFrom = index + token.length
   })
 
   return { text: nextText, html: nextHtml }
