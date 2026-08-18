@@ -41,4 +41,23 @@ describe('StudyLatexBlock', () => {
     expect(container.querySelector('.study-latex-preview')).toHaveClass('w-full')
     expect(container.querySelector('.study-latex-render')).toHaveClass('w-full', 'text-right')
   })
+
+  it('expands document-like multiline environments across the preview width', () => {
+    const source = String.raw`\begin{aligned}
+      &\text{Конспект} \\
+      &x = 1 \\
+      &y = 2 \\
+      &z = 3
+    \end{aligned}`
+    const { container } = render(<StudyLatexBlock mode="read" source={source} />)
+
+    expect(container.querySelector('.study-latex-preview')).toHaveAttribute('data-wide-layout', 'true')
+    expect(container.querySelector('.study-latex-render .mtable')).toBeInTheDocument()
+  })
+
+  it('keeps compact single-formula LaTeX intrinsic', () => {
+    const { container } = render(<StudyLatexBlock mode="read" source={String.raw`\frac{a}{b}`} />)
+
+    expect(container.querySelector('.study-latex-preview')).toHaveAttribute('data-wide-layout', 'false')
+  })
 })
