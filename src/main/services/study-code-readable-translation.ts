@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { eq } from 'drizzle-orm'
 
 import type { StudyDocument } from '../../shared/contracts/study'
@@ -18,6 +19,11 @@ import {
   studyMaterials,
   studyNodes
 } from '../database/schema'
+import {
+  resolveStudyCodeSymbolicInternalLinks,
+  type StudyCodeInternalLinkReference,
+  type StudyCodeResolvedInternalLink
+} from './study-code-internal-links'
 import {
   persistStudyCodeNameAssignments,
   type StudyCodeNameAssignment
@@ -52,6 +58,14 @@ interface ReadableIdentityState {
   documents: Map<string, StudyDocument>
 }
 
+interface PlannedNodeMetadata {
+  id: string
+  kind: 'folder' | 'material'
+  title: string
+  parentId: string | null
+  ast: StudyCodeTreeAst
+}
+
 const reservedNames = new Set(
   [
     'folder',
@@ -83,18 +97,24 @@ export function translateReadableStudyCodeSource(
   const document = parseStudyCode(source)
   const database = getDatabase()
   const allNodes = database.select().from(studyNodes).all()
-  const root = allNodes.find((node) => node.id === nodeId)
+  const allNodesById = new Map(allNodes.map((node) => [node.id, node]))
+  const root = allNodesById.get(nodeId)
   if (!root) throw new Error('Элемент обучения не найден')
 
   const scopeNodeIds = collectSubtreeIds(nodeId, allNodes)
   const allNodeIds = new Set(allNodes.map((node) => node.id))
   const state = loadReadableIdentityState()
+  const allBlockIds = new Set(state.blockOwners.keys())
   const pendingNames: StudyCodePendingNameAssignment[] = []
   const claimedExistingNodes = new Set<string>()
   const claimedNodeNameKeys = new Set<string>()
   const claimedBlockIds = new Set<string>()
 
-  const visit = (node: StudyCodeTreeAst, isRoot: boolean, path: number[]): void => {
+  const assignNodeIdentities = (
+    node: StudyCodeTreeAst,
+    isRoot: boolean,
+    path: number[]
+  ): void => {
     validateReadableName(node.name, node)
 
     if (node.name) {
@@ -103,12 +123,12 @@ export function translateReadableStudyCodeSource(
       claimedNodeNameKeys.add(key)
     }
 
-    let existingId: string | undefined
+    let resolvedId: string | undefined
 
     if (isRoot) {
       if (node.id && node.id !== nodeId) fail(node, 'Идентификатор корневого элемента нельзя менять')
-      existingId = nodeId
-      validateExistingNodeName(node, existingId, state)
+      resolvedId = nodeId
+      validateExistingNodeName(node, resolvedId, state)
     } else if (node.id) {
       if (!STUDY_SAFE_ID_PATTERN.test(node.id)) fail(node, 'Некорректный @id')
       if (!scopeNodeIds.has(node.id)) {
@@ -119,35 +139,161 @@ export function translateReadableStudyCodeSource(
             : 'Существующий @id должен принадлежать выбранной ветке обучения'
         )
       }
-      existingId = node.id
-      validateExistingNodeName(node, existingId, state)
+      resolvedId = node.id
+      validateExistingNodeName(node, resolvedId, state)
     } else if (node.name) {
       const mappedId = state.nodeIdByNameKey.get(nameKey(node.name))
       if (mappedId) {
         if (!scopeNodeIds.has(mappedId)) fail(node, `Имя ${node.name} принадлежит другой ветке обучения`)
-        existingId = mappedId
+        resolvedId = mappedId
       } else {
+        resolvedId = createUniqueId(allNodeIds)
+        allNodeIds.add(resolvedId)
         pendingNames.push({ kind: 'node', path: [...path], name: node.name })
       }
     }
 
-    if (existingId) {
-      if (claimedExistingNodes.has(existingId)) fail(node, 'Один элемент DSL указан несколько раз')
-      claimedExistingNodes.add(existingId)
+    if (resolvedId) {
+      if (claimedExistingNodes.has(resolvedId)) fail(node, 'Один элемент DSL указан несколько раз')
+      claimedExistingNodes.add(resolvedId)
     }
 
-    node.id = existingId
-    node.name = undefined
+    node.id = resolvedId
 
     if (node.kind === 'folder') {
-      node.children.forEach((child, index) => visit(child, false, [...path, index]))
+      node.children.forEach((child, index) => assignNodeIdentities(child, false, [...path, index]))
       return
     }
 
-    translateMaterialBlocks(node, existingId, path, state, pendingNames, claimedBlockIds)
+    assignMaterialBlockIdentities(
+      node,
+      resolvedId,
+      path,
+      state,
+      pendingNames,
+      claimedBlockIds,
+      allBlockIds
+    )
   }
 
-  visit(document.root, true, [])
+  assignNodeIdentities(document.root, true, [])
+
+  const plannedNodesById = new Map<string, PlannedNodeMetadata>()
+  const plannedNodesByName = new Map<string, PlannedNodeMetadata>()
+  const plannedHeadingsByMaterialAndName = new Map<
+    string,
+    { id: string; title: string; level: 1 | 2 | 3 }
+  >()
+
+  const indexPlannedTree = (node: StudyCodeTreeAst, parentId: string | null): void => {
+    if (!node.id) fail(node, 'Не удалось назначить внутренний идентификатор элементу DSL')
+    const metadata: PlannedNodeMetadata = {
+      id: node.id,
+      kind: node.kind,
+      title: node.title,
+      parentId,
+      ast: node
+    }
+    plannedNodesById.set(node.id, metadata)
+    if (node.name) plannedNodesByName.set(nameKey(node.name), metadata)
+
+    if (node.kind === 'folder') {
+      node.children.forEach((child) => indexPlannedTree(child, node.id!))
+      return
+    }
+
+    node.blocks.forEach((block) => {
+      if (block.blockType !== 'heading' || !block.name || !block.id) return
+      plannedHeadingsByMaterialAndName.set(blockScopeKey(node.id!, block.name), {
+        id: block.id,
+        title: block.title ?? '',
+        level: block.headingLevel ?? 1
+      })
+    })
+  }
+
+  indexPlannedTree(document.root, root.parentId)
+
+  const resolveInternalLink = (
+    reference: StudyCodeInternalLinkReference,
+    location: { line: number; column: number }
+  ): StudyCodeResolvedInternalLink => {
+    const materialKey = nameKey(reference.materialName)
+    const plannedTarget = plannedNodesByName.get(materialKey)
+    const storedTargetId = state.nodeIdByNameKey.get(materialKey)
+    const materialId = plannedTarget?.id ?? storedTargetId
+
+    if (!materialId) {
+      fail(location, `Внутренняя ссылка: материал DSL «${reference.materialName}» не найден`)
+    }
+
+    const plannedMaterial = plannedNodesById.get(materialId)
+    const storedMaterial = allNodesById.get(materialId)
+    const kind = plannedMaterial?.kind ?? storedMaterial?.type
+    if (kind !== 'material') {
+      fail(location, `Внутренняя ссылка «${reference.materialName}» должна указывать на материал`)
+    }
+
+    const materialTitle = plannedMaterial?.title ?? storedMaterial?.title ?? reference.materialName
+    let headingId: string | null = null
+    let headingLevel: 1 | 2 | 3 | null = null
+    let title = materialTitle
+
+    if (reference.headingName) {
+      const plannedHeading = plannedHeadingsByMaterialAndName.get(
+        blockScopeKey(materialId, reference.headingName)
+      )
+      const storedHeadingId = state.blockIdByMaterialAndNameKey.get(
+        blockScopeKey(materialId, reference.headingName)
+      )
+      const storedHeading = storedHeadingId
+        ? state.documents
+            .get(materialId)
+            ?.blocks.find((block) => block.id === storedHeadingId && block.type === 'heading')
+        : undefined
+
+      if (!plannedHeading && !storedHeading) {
+        fail(
+          location,
+          `Внутренняя ссылка: heading DSL «${reference.materialName}.${reference.headingName}» не найден`
+        )
+      }
+
+      headingId = plannedHeading?.id ?? storedHeading?.id ?? null
+      headingLevel = plannedHeading?.level ?? (storedHeading?.type === 'heading' ? storedHeading.level : null)
+      title = plannedHeading?.title ?? (storedHeading?.type === 'heading' ? storedHeading.text : materialTitle)
+    }
+
+    return {
+      kind: headingId ? 'heading' : 'material',
+      materialId,
+      headingId,
+      headingLevel,
+      title,
+      materialTitle,
+      folderPath: getPlannedFolderPath(materialId, plannedNodesById, allNodesById)
+    }
+  }
+
+  const resolveLinks = (node: StudyCodeTreeAst): void => {
+    if (node.kind === 'folder') {
+      node.children.forEach(resolveLinks)
+      return
+    }
+
+    node.blocks.forEach((block) => {
+      if (block.blockType !== 'text') return
+      const resolved = resolveStudyCodeSymbolicInternalLinks(
+        block.body ?? '',
+        block.html,
+        (reference) => resolveInternalLink(reference, block)
+      )
+      block.body = resolved.text
+      block.html = resolved.html
+    })
+  }
+
+  resolveLinks(document.root)
 
   return { source: serializeStudyCodeAst(document), pendingNames }
 }
@@ -214,13 +360,14 @@ export function persistAppliedStudyCodeNames(
   persistStudyCodeNameAssignments(concrete)
 }
 
-function translateMaterialBlocks(
+function assignMaterialBlockIdentities(
   material: StudyCodeMaterialAst,
   existingMaterialId: string | undefined,
   materialPath: number[],
   state: ReadableIdentityState,
   pendingNames: StudyCodePendingNameAssignment[],
-  claimedBlockIds: Set<string>
+  claimedBlockIds: Set<string>,
+  allBlockIds: Set<string>
 ): void {
   const claimedNameKeys = new Set<string>()
   const existingDocument = existingMaterialId ? state.documents.get(existingMaterialId) : undefined
@@ -246,7 +393,6 @@ function translateMaterialBlocks(
         existingBlockId = block.id
         validateExistingBlockName(block, block.id, existingMaterialId, state)
       } else {
-        // Legacy input may explicitly choose an id for a new block. We accept it but never serialize it back.
         existingBlockId = block.id
         if (block.name) {
           pendingNames.push({
@@ -265,6 +411,8 @@ function translateMaterialBlocks(
       }
 
       if (!existingBlockId) {
+        existingBlockId = createUniqueId(allBlockIds)
+        allBlockIds.add(existingBlockId)
         pendingNames.push({
           kind: 'block',
           materialPath: [...materialPath],
@@ -280,9 +428,7 @@ function translateMaterialBlocks(
     }
 
     validateBoardBinding(block, existingBlockId, existingDocument)
-
     block.id = existingBlockId
-    block.name = undefined
   })
 }
 
@@ -392,6 +538,28 @@ function collectSubtreeIds(rootId: string, rows: Array<typeof studyNodes.$inferS
   return included
 }
 
+function getPlannedFolderPath(
+  materialId: string,
+  plannedNodes: ReadonlyMap<string, PlannedNodeMetadata>,
+  storedNodes: ReadonlyMap<string, typeof studyNodes.$inferSelect>
+): string[] {
+  const path: string[] = []
+  const visited = new Set<string>()
+  let parentId = plannedNodes.get(materialId)?.parentId ?? storedNodes.get(materialId)?.parentId ?? null
+
+  while (parentId && !visited.has(parentId)) {
+    visited.add(parentId)
+    const planned = plannedNodes.get(parentId)
+    const stored = storedNodes.get(parentId)
+    const kind = planned?.kind ?? stored?.type
+    const title = planned?.title ?? stored?.title
+    if (kind === 'folder' && title) path.unshift(title)
+    parentId = planned?.parentId ?? stored?.parentId ?? null
+  }
+
+  return path
+}
+
 function validateReadableName(name: string | undefined, location: { line: number; column: number }): void {
   if (!name) return
   if (!STUDY_CODE_NAME_PATTERN.test(name)) {
@@ -401,6 +569,12 @@ function validateReadableName(name: string | undefined, location: { line: number
     )
   }
   if (reservedNames.has(nameKey(name))) fail(location, `Имя DSL «${name}» зарезервировано языком`)
+}
+
+function createUniqueId(existing: ReadonlySet<string>): string {
+  let id = randomUUID()
+  while (existing.has(id)) id = randomUUID()
+  return id
 }
 
 function nameKey(name: string): string {
