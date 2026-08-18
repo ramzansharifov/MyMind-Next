@@ -78,6 +78,44 @@
   line-height: var(--study-source-editor-line-height) !important;
 }
 
+/*
+ * KaTeX keeps its display tree at intrinsic/min-content width by default.
+ * MyMind renders LaTeX inside a block-level reading surface, so the KaTeX
+ * display root and its top-level base rows must participate in the full
+ * available width. The math glyphs themselves are not stretched.
+ */
+.study-latex-render > .katex,
+.study-latex-render > .katex-display,
+.study-latex-render > .katex-display > .katex,
+.study-latex-render > .katex > .katex-html,
+.study-latex-render > .katex-display > .katex > .katex-html {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+}
+
+.study-latex-render > .katex > .katex-html > .katex-base,
+.study-latex-render > .katex-display > .katex > .katex-html > .katex-base {
+  width: 100%;
+  max-width: 100%;
+}
+
+.study-latex-preview[data-alignment='left'] .study-latex-render :is(.katex, .katex-html, .katex-base) {
+  text-align: left;
+}
+
+.study-latex-preview[data-alignment='center']
+  .study-latex-render
+  :is(.katex, .katex-html, .katex-base) {
+  text-align: center;
+}
+
+.study-latex-preview[data-alignment='right']
+  .study-latex-render
+  :is(.katex, .katex-html, .katex-base) {
+  text-align: right;
+}
+
 :root[data-theme='light'] .study-source-editor-body,
 :root[data-theme='light'] .study-source-line-numbers,
 :root[data-theme='light'] .study-source-editor__editor {
