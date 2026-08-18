@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { StudyNode } from '../../../../../../shared/contracts/study'
+import type { StudyCodeChangeSummary, StudyNode } from '../../../../../../shared/contracts/study'
 import { StudyCodeWorkspace } from './StudyCodeWorkspace'
 
 const mocks = vi.hoisted(() => ({
@@ -29,10 +29,41 @@ const node: StudyNode = {
   updatedAt: 1
 }
 
+const folderNode: StudyNode = {
+  id: '7fe46e6d-c5c3-45ef-99b4-937377034475',
+  type: 'folder',
+  parentId: null,
+  title: 'Курс',
+  position: 0,
+  isExpanded: true,
+  createdAt: 1,
+  updatedAt: 1
+}
+
+function createEmptySummary(overrides: Partial<StudyCodeChangeSummary> = {}): StudyCodeChangeSummary {
+  return {
+    createdFolders: 0,
+    createdMaterials: 0,
+    deletedFolders: 0,
+    deletedMaterials: 0,
+    renamedNodes: 0,
+    movedNodes: 0,
+    createdBlocks: 0,
+    deletedBlocks: 0,
+    updatedBlocks: 0,
+    reorderedBlocks: 0,
+    ...overrides
+  }
+}
+
 function createLongSource(): string {
   const body = Array.from({ length: 140 }, (_, index) => `Строка лекции ${index + 1}`).join('\n')
   return `@version(1)\n\nmaterial "Длинная лекция" @id("${node.id}") {\n  text @id("35c3d864-c2eb-4eea-a2f8-51183fdaf082") """\n${body}\n  """\n}\n`
 }
+
+beforeEach(() => {
+  vi.clearAllMocks()
+})
 
 describe('StudyCodeWorkspace', () => {
   it('renders line numbers for the complete long document instead of viewport height', async () => {
@@ -70,18 +101,7 @@ describe('StudyCodeWorkspace', () => {
     mocks.previewCode.mockResolvedValue({
       valid: false,
       diagnostics: [{ severity: 'error', line: 2, column: 1, message: 'Проверочная ошибка' }],
-      summary: {
-        createdFolders: 0,
-        createdMaterials: 0,
-        deletedFolders: 0,
-        deletedMaterials: 0,
-        renamedNodes: 0,
-        movedNodes: 0,
-        createdBlocks: 0,
-        deletedBlocks: 0,
-        updatedBlocks: 0,
-        reorderedBlocks: 0
-      },
+      summary: createEmptySummary(),
       destructive: false
     })
 
@@ -150,5 +170,99 @@ describe('StudyCodeWorkspace', () => {
 
     await waitFor(() => expect(editor).toHaveValue(source.replace(/roma/gi, 'Rome')))
     expect(screen.getByText('Есть изменения')).toBeInTheDocument()
+  })
+
+  it('previews non-destructive folder structure changes before applying them', async () => {
+    const source = '@version(1)\n\nfolder "Курс" {\n}\n'
+    const changedSource =
+      '@version(1)\n\nfolder "Курс" {\n  material "Введение" {\n    text """\n      Начало курса\n    """\n  }\n}\n'
+    const summary = createEmptySummary({ createdMaterials: 1, createdBlocks: 1 })
+    const onApplied = vi.fn()
+
+    mocks.getCodeSnapshot.mockResolvedValue({
+      nodeId: folderNode.id,
+      nodeType: 'folder',
+      title: folderNode.title,
+      source,
+      revision: 'e'.repeat(64)
+    })
+    mocks.previewCode.mockResolvedValue({
+      valid: true,
+      diagnostics: [],
+      summary,
+      destructive: false
+    })
+    mocks.applyCode.mockResolvedValue({
+      rootId: folderNode.id,
+      nodes: [folderNode],
+      source: changedSource,
+      revision: 'f'.repeat(64),
+      summary
+    })
+
+    render(<StudyCodeWorkspace node={folderNode} onApplied={onApplied} />)
+
+    const editor = await screen.findByRole('textbox', { name: /DSL-код папки/ })
+    fireEvent.change(editor, { target: { value: changedSource } })
+    fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }))
+
+    expect(await screen.findByRole('dialog', { name: 'Применить изменения структуры?' })).toBeInTheDocument()
+    expect(screen.getByText('Создано материалов')).toBeInTheDocument()
+    expect(mocks.applyCode).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Применить изменения' }))
+
+    await waitFor(() =>
+      expect(mocks.applyCode).toHaveBeenCalledWith({
+        nodeId: folderNode.id,
+        source: changedSource,
+        baseRevision: 'e'.repeat(64),
+        confirmDestructive: false
+      })
+    )
+    await waitFor(() => expect(onApplied).toHaveBeenCalled())
+  })
+
+  it('keeps destructive folder changes behind the destructive confirmation', async () => {
+    const source =
+      '@version(1)\n\nfolder "Курс" {\n  material "Старый материал" {\n    text """\n      Текст\n    """\n  }\n}\n'
+    const changedSource = '@version(1)\n\nfolder "Курс" {\n}\n'
+    const summary = createEmptySummary({ deletedMaterials: 1, deletedBlocks: 1 })
+
+    mocks.getCodeSnapshot.mockResolvedValue({
+      nodeId: folderNode.id,
+      nodeType: 'folder',
+      title: folderNode.title,
+      source,
+      revision: '1'.repeat(64)
+    })
+    mocks.previewCode.mockResolvedValue({
+      valid: true,
+      diagnostics: [],
+      summary,
+      destructive: true
+    })
+    mocks.applyCode.mockResolvedValue({
+      rootId: folderNode.id,
+      nodes: [folderNode],
+      source: changedSource,
+      revision: '2'.repeat(64),
+      summary
+    })
+
+    render(<StudyCodeWorkspace node={folderNode} onApplied={vi.fn()} />)
+
+    const editor = await screen.findByRole('textbox', { name: /DSL-код папки/ })
+    fireEvent.change(editor, { target: { value: changedSource } })
+    fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }))
+
+    expect(await screen.findByRole('alertdialog', { name: 'Применить удаления?' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Применить изменения' }))
+
+    await waitFor(() =>
+      expect(mocks.applyCode).toHaveBeenCalledWith(
+        expect.objectContaining({ confirmDestructive: true })
+      )
+    )
   })
 })
