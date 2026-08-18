@@ -263,7 +263,6 @@ function StudyLatexPreview({
 }): React.JSX.Element {
   const result = useMemo(() => renderStudyLatex(source, displayMode), [source, displayMode])
   const normalizedScale = clampLatexScale(scale)
-  const wideLayout = usesWideLatexLayout(source)
 
   return (
     <div
@@ -294,7 +293,6 @@ function StudyLatexPreview({
 
       {result.html && (
         <div
-          data-wide-layout={wideLayout ? 'true' : 'false'}
           className={cn(
             'study-latex-render w-full',
             alignment === 'left' && 'text-left',
@@ -333,10 +331,6 @@ function highlightLatex(value: string): string {
 
 function isLatexViewMode(value: string): value is StudyLatexViewMode {
   return value === 'write' || value === 'split' || value === 'preview'
-}
-
-function usesWideLatexLayout(source: string): boolean {
-  return /\\begin\{(?:align\*?|aligned|alignedat|gather\*?|gathered|split)\}/.test(source)
 }
 
 function clampLatexScale(value: number): number {

@@ -1,9 +1,20 @@
-.study-latex-render[data-wide-layout='true'] .katex-display > .katex,
-.study-latex-render[data-wide-layout='true'] .katex-display > .katex > .katex-html,
-.study-latex-render[data-wide-layout='true'] .katex-display > .katex > .katex-html > .base {
+.study-latex-document-layout {
+  display: grid;
   width: 100%;
+  min-width: 0;
+  gap: 0.45rem;
+  text-align: left;
 }
 
-.study-latex-render[data-wide-layout='true'] .katex-display .mtable {
+.study-latex-document-row {
   width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  text-align: left;
+}
+
+.study-latex-document-row > .katex {
+  display: inline-block;
+  max-width: 100%;
 }
