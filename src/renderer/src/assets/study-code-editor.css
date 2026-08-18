@@ -80,3 +80,126 @@
   background: rgb(250 204 21 / 20%);
   box-shadow: 0 0 0 1px rgb(250 204 21 / 7%);
 }
+
+/*
+ * Material and Code Mode toolbars intentionally keep their accessible text in the DOM,
+ * but present primary actions as compact icon buttons. Existing Radix tooltips remain
+ * responsible for named actions; the few tab/save controls that did not have one get
+ * the same visual hint here without changing their interaction model.
+ */
+[data-study-code-workspace] > header > div:last-child > button {
+  width: 2.25rem;
+  min-width: 2.25rem;
+  padding-inline: 0;
+  justify-content: center;
+  gap: 0;
+  font-size: 0;
+}
+
+[data-study-code-workspace] > header > div:last-child > button > span {
+  display: none;
+}
+
+[data-study-code-workspace] > header > div:last-child > button > svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+[data-study-material-focus='false'] > header > button[aria-label='Переименовать материал'] {
+  width: 2.5rem;
+  min-width: 2.5rem;
+  padding-inline: 0;
+  justify-content: center;
+  gap: 0;
+}
+
+[data-study-material-focus='false']
+  > header
+  > button[aria-label='Переименовать материал']
+  > span {
+  display: none;
+}
+
+[data-study-material-focus='false'] > header [role='tablist'] [role='tab'] {
+  position: relative;
+  width: 2.25rem;
+  min-width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  justify-content: center;
+  gap: 0;
+  font-size: 0;
+}
+
+[data-study-material-focus='false'] > header [role='tablist'] [role='tab'] > svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+[data-study-code-workspace]
+  > header
+  > div:last-child
+  > button[class*='bg-violet-500/16'],
+[data-study-material-focus='false'] > header [role='tablist'] [role='tab'] {
+  --study-icon-tooltip-offset: 0.55rem;
+  position: relative;
+}
+
+[data-study-code-workspace]
+  > header
+  > div:last-child
+  > button[class*='bg-violet-500/16']::after,
+[data-study-material-focus='false'] > header [role='tablist'] [role='tab']::after {
+  position: absolute;
+  top: calc(100% + var(--study-icon-tooltip-offset));
+  left: 50%;
+  z-index: 160;
+  display: none;
+  width: max-content;
+  max-width: 18rem;
+  transform: translateX(-50%);
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--app-tooltip-border);
+  border-radius: 0.75rem;
+  background: var(--app-tooltip);
+  box-shadow: 0 14px 36px rgb(0 0 0 / 42%);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1rem;
+  white-space: nowrap;
+  pointer-events: none;
+  content: '';
+}
+
+[data-study-code-workspace]
+  > header
+  > div:last-child
+  > button[class*='bg-violet-500/16']:hover::after,
+[data-study-code-workspace]
+  > header
+  > div:last-child
+  > button[class*='bg-violet-500/16']:focus-visible::after,
+[data-study-material-focus='false'] > header [role='tablist'] [role='tab']:hover::after,
+[data-study-material-focus='false'] > header [role='tablist'] [role='tab']:focus-visible::after {
+  display: block;
+}
+
+[data-study-code-workspace]
+  > header
+  > div:last-child
+  > button[class*='bg-violet-500/16']::after {
+  content: 'Сохранить (Ctrl+S)';
+}
+
+[data-study-material-focus='false'] > header [role='tablist'] [role='tab']:nth-child(1)::after {
+  content: 'Чтение';
+}
+
+[data-study-material-focus='false'] > header [role='tablist'] [role='tab']:nth-child(2)::after {
+  content: 'Редактирование';
+}
+
+[data-study-material-focus='false'] > header [role='tablist'] [role='tab']:nth-child(3)::after {
+  content: 'Код';
+}
