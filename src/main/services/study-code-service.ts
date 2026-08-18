@@ -8,6 +8,7 @@ import type {
   StudyCodeSnapshot
 } from '../../shared/contracts/study'
 import { validateStudyCodeConstraints } from '../../shared/study-code-constraints'
+import { parseStudyCode, type StudyCodeTreeAst } from '../../shared/study-code'
 import {
   applyStudyCode as applyStudyCodeEngine,
   getStudyCodeSnapshot as getStudyCodeSnapshotEngine,
@@ -121,7 +122,7 @@ export async function applyStudyCode(input: ApplyStudyCodeInput): Promise<StudyC
     })
   } catch (reason: unknown) {
     const diagnosticMap = createStudyCodeDiagnosticMap(input.source, translated.source)
-    throw remapThrownDiagnostic(reason, diagnosticMap)
+    throw remapThrownDiagnostic(reason, diagnosticMap, translated.source)
   }
 
   // UUIDs are generated only by the existing transactional engine. Human-readable aliases are bound
@@ -161,28 +162,62 @@ function remapDiagnostic(
 
 function remapThrownDiagnostic(
   reason: unknown,
-  locations: ReadonlyMap<number, StudyCodeSourceLocation>
+  locations: ReadonlyMap<number, StudyCodeSourceLocation>,
+  internalSource: string
 ): unknown {
+  const message = humanizeValidationMessage(
+    reason instanceof Error ? reason.message : 'Некорректный код'
+  )
+
   if (
-    !reason ||
-    typeof reason !== 'object' ||
-    !('line' in reason) ||
-    !('column' in reason) ||
-    typeof reason.line !== 'number' ||
-    typeof reason.column !== 'number'
+    reason &&
+    typeof reason === 'object' &&
+    'line' in reason &&
+    'column' in reason &&
+    typeof reason.line === 'number' &&
+    typeof reason.column === 'number'
   ) {
-    if (reason instanceof Error) {
-      return new Error(humanizeValidationMessage(reason.message))
-    }
-    return reason
+    const location = locations.get(reason.line)
+    return new StudyCodeSafetyError(
+      message,
+      location?.line ?? reason.line,
+      location?.column ?? reason.column
+    )
   }
 
-  const location = locations.get(reason.line)
-  return new StudyCodeSafetyError(
-    humanizeValidationMessage(reason instanceof Error ? reason.message : 'Некорректный код'),
-    location?.line ?? reason.line,
-    location?.column ?? reason.column
-  )
+  const inferred = inferAssetErrorLocation(message, internalSource, locations)
+  return new StudyCodeSafetyError(message, inferred?.line ?? 1, inferred?.column ?? 1)
+}
+
+function inferAssetErrorLocation(
+  message: string,
+  internalSource: string,
+  locations: ReadonlyMap<number, StudyCodeSourceLocation>
+): StudyCodeSourceLocation | null {
+  const assetName = message.match(/Вложение «([^»]+)»/)?.[1]
+  if (!assetName) return null
+
+  try {
+    const document = parseStudyCode(internalSource)
+    let internalLine: number | null = null
+
+    const visit = (node: StudyCodeTreeAst): void => {
+      if (internalLine !== null) return
+      if (node.kind === 'folder') {
+        node.children.forEach(visit)
+        return
+      }
+
+      const block = node.blocks.find((candidate) => candidate.attributes.name === assetName)
+      if (block) internalLine = block.line
+    }
+
+    visit(document.root)
+    if (internalLine === null) return null
+    return locations.get(internalLine) ?? { line: internalLine, column: 1 }
+  } catch {
+    return null
+  }
 }
 
 function hasDeletions(summary: StudyCodeChangeSummary): boolean {
