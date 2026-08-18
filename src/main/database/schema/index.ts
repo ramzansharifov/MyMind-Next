@@ -25,7 +25,13 @@ export {
   nutritionWaterDays
 } from './nutrition'
 export { passwordGroups, passwordItems, passwordVault } from './passwords'
-export { studyLinkTargets, studyMaterials, studyNodes } from './study'
+export {
+  studyCodeBlockNames,
+  studyCodeNodeNames,
+  studyLinkTargets,
+  studyMaterials,
+  studyNodes
+} from './study'
 export { taskGroups, tasks } from './tasks'
 export {
   workoutExercises,
