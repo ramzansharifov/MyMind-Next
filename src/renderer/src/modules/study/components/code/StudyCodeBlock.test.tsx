@@ -22,6 +22,26 @@ describe('StudyCodeBlock', () => {
     expect(lineNumbers).toEqual(['1', '2', '3', '4'])
   })
 
+  it('removes one legacy framing line before numbering and editing code', () => {
+    const onChange = vi.fn()
+    const { container } = render(
+      <StudyCodeBlock
+        mode="edit"
+        language="sql"
+        source={'\nBEGIN;\n\nCOMMIT;'}
+        onChange={onChange}
+      />
+    )
+
+    const lineNumbers = [...container.querySelectorAll('[data-study-code-line-number]')].map(
+      (element) => element.textContent
+    )
+
+    expect(lineNumbers).toEqual(['1', '2', '3'])
+    expect(screen.getByRole('textbox')).toHaveValue('BEGIN;\n\nCOMMIT;')
+    expect(onChange).toHaveBeenCalledWith('BEGIN;\n\nCOMMIT;')
+  })
+
   it('shows the first line for an empty block', () => {
     const { container } = render(<StudyCodeBlock mode="read" language="text" source="" />)
 
