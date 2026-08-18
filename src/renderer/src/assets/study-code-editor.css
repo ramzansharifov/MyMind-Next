@@ -68,6 +68,8 @@
   inset: 0;
   z-index: 3;
   pointer-events: none;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.875rem;
 }
 
 [data-study-code-active-find-match] {
