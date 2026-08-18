@@ -116,6 +116,39 @@
   text-align: right;
 }
 
+/*
+ * Long note-like LaTeX is commonly authored as one root aligned/gathered
+ * environment. Centering that intrinsic KaTeX table produces a narrow column
+ * in an otherwise full-width reading block. For those document-like sources
+ * keep the KaTeX tree full-width and anchor its root table at the reading edge.
+ * Normal single equations still obey the block alignment setting above.
+ */
+.study-latex-render > .study-latex-document-layout,
+.study-latex-render > .study-latex-document-layout > .katex-display,
+.study-latex-render > .study-latex-document-layout > .katex-display > .katex,
+.study-latex-render
+  > .study-latex-document-layout
+  > .katex-display
+  > .katex
+  > .katex-html,
+.study-latex-render
+  > .study-latex-document-layout
+  > .katex-display
+  > .katex
+  > .katex-html
+  > .katex-base {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  text-align: left;
+}
+
+.study-latex-render .study-latex-document-layout .mtable {
+  margin-right: auto;
+  margin-left: 0;
+  text-align: left;
+}
+
 :root[data-theme='light'] .study-source-editor-body,
 :root[data-theme='light'] .study-source-line-numbers,
 :root[data-theme='light'] .study-source-editor__editor {
