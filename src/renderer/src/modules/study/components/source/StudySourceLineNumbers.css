@@ -38,7 +38,7 @@
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.875rem;
   font-variant-numeric: tabular-nums;
-  line-height: var(--study-source-editor-line-height);
+  line-height: var(--study-source-editor-line-height) !important;
 
   user-select: none;
   pointer-events: none;
@@ -75,7 +75,7 @@
 }
 
 .study-code-block__line-numbers {
-  line-height: var(--study-source-editor-line-height);
+  line-height: var(--study-source-editor-line-height) !important;
 }
 
 :root[data-theme='light'] .study-source-editor-body,
