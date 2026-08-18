@@ -7,6 +7,8 @@ import type {
   StudyCodePreviewResult,
   StudyCodeSnapshot
 } from '../../shared/contracts/study'
+import { validateStudyCodeConstraints } from '../../shared/study-code-constraints'
+import { parseStudyCode, type StudyCodeTreeAst } from '../../shared/study-code'
 import {
   applyStudyCode as applyStudyCodeEngine,
   getStudyCodeSnapshot as getStudyCodeSnapshotEngine,
@@ -46,6 +48,19 @@ export function previewStudyCode(input: PreviewStudyCodeInput): StudyCodePreview
   try {
     const currentSnapshot = getStudyCodeSnapshotEngine(input.nodeId)
     toReadableStudyCodeSource(currentSnapshot.source)
+
+    const constraintDiagnostics = validateStudyCodeConstraints(input.source)
+    if (constraintDiagnostics.length > 0) {
+      return {
+        valid: false,
+        diagnostics: constraintDiagnostics.map((diagnostic) => ({
+          severity: 'error' as const,
+          ...diagnostic
+        })),
+        summary: createEmptySummary(),
+        destructive: false
+      }
+    }
 
     const translated = translateReadableStudyCodeSource(input.nodeId, input.source)
     const enginePreview = previewStudyCodeEngine({
@@ -107,7 +122,7 @@ export async function applyStudyCode(input: ApplyStudyCodeInput): Promise<StudyC
     })
   } catch (reason: unknown) {
     const diagnosticMap = createStudyCodeDiagnosticMap(input.source, translated.source)
-    throw remapThrownDiagnostic(reason, diagnosticMap)
+    throw remapThrownDiagnostic(reason, diagnosticMap, translated.source)
   }
 
   // UUIDs are generated only by the existing transactional engine. Human-readable aliases are bound
@@ -137,36 +152,72 @@ function remapDiagnostic(
   locations: ReadonlyMap<number, StudyCodeSourceLocation>
 ): StudyCodeDiagnostic {
   const location = locations.get(diagnostic.line)
-  if (!location) return diagnostic
   return {
     ...diagnostic,
-    line: location.line,
-    column: location.column
+    line: location?.line ?? diagnostic.line,
+    column: location?.column ?? diagnostic.column,
+    message: humanizeValidationMessage(diagnostic.message)
   }
 }
 
 function remapThrownDiagnostic(
   reason: unknown,
-  locations: ReadonlyMap<number, StudyCodeSourceLocation>
+  locations: ReadonlyMap<number, StudyCodeSourceLocation>,
+  internalSource: string
 ): unknown {
+  const message = humanizeValidationMessage(
+    reason instanceof Error ? reason.message : 'Некорректный код'
+  )
+
   if (
-    !reason ||
-    typeof reason !== 'object' ||
-    !('line' in reason) ||
-    !('column' in reason) ||
-    typeof reason.line !== 'number' ||
-    typeof reason.column !== 'number'
+    reason &&
+    typeof reason === 'object' &&
+    'line' in reason &&
+    'column' in reason &&
+    typeof reason.line === 'number' &&
+    typeof reason.column === 'number'
   ) {
-    return reason
+    const location = locations.get(reason.line)
+    return new StudyCodeSafetyError(
+      message,
+      location?.line ?? reason.line,
+      location?.column ?? reason.column
+    )
   }
 
-  const location = locations.get(reason.line)
-  if (!location) return reason
-  return new StudyCodeSafetyError(
-    reason instanceof Error ? reason.message : 'Некорректный код',
-    location.line,
-    location.column
-  )
+  const inferred = inferAssetErrorLocation(message, internalSource, locations)
+  return new StudyCodeSafetyError(message, inferred?.line ?? 1, inferred?.column ?? 1)
+}
+
+function inferAssetErrorLocation(
+  message: string,
+  internalSource: string,
+  locations: ReadonlyMap<number, StudyCodeSourceLocation>
+): StudyCodeSourceLocation | null {
+  const assetName = message.match(/Вложение «([^»]+)»/)?.[1]
+  if (!assetName) return null
+
+  try {
+    const document = parseStudyCode(internalSource)
+    let internalLine: number | null = null
+
+    const visit = (node: StudyCodeTreeAst): void => {
+      if (internalLine !== null) return
+      if (node.kind === 'folder') {
+        node.children.forEach(visit)
+        return
+      }
+
+      const block = node.blocks.find((candidate) => candidate.attributes.name === assetName)
+      if (block) internalLine = block.line
+    }
+
+    visit(document.root)
+    if (internalLine === null) return null
+    return locations.get(internalLine) ?? { line: internalLine, column: 1 }
+  } catch {
+    return null
+  }
 }
 
 function hasDeletions(summary: StudyCodeChangeSummary): boolean {
@@ -205,7 +256,9 @@ function toDiagnostic(reason: unknown): StudyCodeDiagnostic {
       severity: 'error',
       line: reason.line,
       column: reason.column,
-      message: reason instanceof Error ? reason.message : 'Некорректный код'
+      message: humanizeValidationMessage(
+        reason instanceof Error ? reason.message : 'Некорректный код'
+      )
     }
   }
 
@@ -213,6 +266,24 @@ function toDiagnostic(reason: unknown): StudyCodeDiagnostic {
     severity: 'error',
     line: 1,
     column: 1,
-    message: reason instanceof Error ? reason.message : 'Некорректный код'
+    message: humanizeValidationMessage(
+      reason instanceof Error ? reason.message : 'Некорректный код'
+    )
   }
+}
+
+function humanizeValidationMessage(message: string): string {
+  const tooSmall = message.match(/^Too small: expected .*? to be >=\s*(\d+(?:\.\d+)?)/i)
+  if (tooSmall) return `Значение должно быть не меньше ${tooSmall[1]}`
+
+  const tooBig = message.match(/^Too big: expected .*? to be <=\s*(\d+(?:\.\d+)?)/i)
+  if (tooBig) return `Значение должно быть не больше ${tooBig[1]}`
+
+  if (/^Invalid input: expected string/i.test(message)) return 'Ожидалось текстовое значение'
+  if (/^Invalid input: expected number/i.test(message)) return 'Ожидалось числовое значение'
+  if (/^Invalid (?:string|input).*pattern/i.test(message)) return 'Некорректный формат значения'
+  if (/^Invalid (?:option|enum)/i.test(message)) return 'Указано недопустимое значение'
+  if (/uuid/i.test(message) && /^Invalid/i.test(message)) return 'Некорректный UUID'
+
+  return message
 }

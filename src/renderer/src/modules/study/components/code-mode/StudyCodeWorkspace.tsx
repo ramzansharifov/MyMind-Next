@@ -19,6 +19,7 @@ import type {
   StudyCodePreviewResult,
   StudyNode
 } from '../../../../../../shared/contracts/study'
+import { validateStudyCodeConstraints } from '../../../../../../shared/study-code-constraints'
 import {
   formatStudyCodeSource,
   parseStudyCodeSafe,
@@ -134,7 +135,7 @@ export function StudyCodeWorkspace({
     })
   }, [node.id, revision])
 
-  const syntaxDiagnostic = useMemo<StudyCodeDiagnostic | null>(() => {
+  const liveDiagnostic = useMemo<StudyCodeDiagnostic | null>(() => {
     if (!source) return null
 
     if (source.length > STUDY_CODE_MAX_SOURCE_LENGTH) {
@@ -151,11 +152,13 @@ export function StudyCodeWorkspace({
     if (source.length > STUDY_CODE_LIVE_PARSE_MAX_LENGTH) return null
 
     const parsed = parseStudyCodeSafe(source)
-    if (parsed.success) return null
-    return { severity: 'error', ...parsed.diagnostic }
+    if (!parsed.success) return { severity: 'error', ...parsed.diagnostic }
+
+    const constraint = validateStudyCodeConstraints(source)[0]
+    return constraint ? { severity: 'error', ...constraint } : null
   }, [source])
 
-  const visibleDiagnostics = syntaxDiagnostic ? [syntaxDiagnostic] : diagnostics
+  const visibleDiagnostics = liveDiagnostic ? [liveDiagnostic] : diagnostics
   const lineNumberText = useMemo(() => createLineNumberText(source), [source])
 
   async function reloadSnapshot(): Promise<void> {
@@ -176,8 +179,8 @@ export function StudyCodeWorkspace({
 
   async function requestSave(): Promise<void> {
     if (!revision || savingRef.current || !dirty) return
-    if (syntaxDiagnostic) {
-      setDiagnostics([syntaxDiagnostic])
+    if (liveDiagnostic) {
+      setDiagnostics([liveDiagnostic])
       setSaveState('error')
       return
     }
@@ -342,7 +345,7 @@ export function StudyCodeWorkspace({
             className="flex h-9 items-center gap-2 rounded-lg bg-violet-500/16 px-3 text-xs font-semibold text-violet-200 transition-colors outline-none hover:bg-violet-500/24 focus-visible:ring-2 focus-visible:ring-violet-500/45 disabled:cursor-not-allowed disabled:opacity-40"
             disabled={
               !dirty ||
-              Boolean(syntaxDiagnostic) ||
+              Boolean(liveDiagnostic) ||
               saveState === 'loading' ||
               saveState === 'saving'
             }
