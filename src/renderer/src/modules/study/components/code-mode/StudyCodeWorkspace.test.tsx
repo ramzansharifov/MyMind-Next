@@ -99,4 +99,31 @@ describe('StudyCodeWorkspace', () => {
     await waitFor(() => expect(screen.getByText('Есть изменения')).toBeInTheDocument())
     expect(screen.queryByText(/Проверочная ошибка/)).not.toBeInTheDocument()
   })
+
+  it('opens VS Code-like replace with Ctrl+H and replaces all matches', async () => {
+    const source = `@version(1)\n\nmaterial "Длинная лекция" {\n  text """\n    Roma roma ROMA\n  """\n}\n`
+    mocks.getCodeSnapshot.mockResolvedValue({
+      nodeId: node.id,
+      nodeType: 'material',
+      title: node.title,
+      source,
+      revision: 'c'.repeat(64)
+    })
+
+    render(<StudyCodeWorkspace node={node} onApplied={vi.fn()} />)
+
+    const editor = await screen.findByRole('textbox', { name: /DSL-код материала/ })
+    fireEvent.keyDown(editor, { key: 'h', ctrlKey: true })
+
+    const findInput = await screen.findByRole('textbox', { name: 'Найти в коде' })
+    const replaceInput = screen.getByRole('textbox', { name: 'Заменить на' })
+    fireEvent.change(findInput, { target: { value: 'roma' } })
+    fireEvent.change(replaceInput, { target: { value: 'Rome' } })
+
+    await waitFor(() => expect(screen.getByText('1 / 3')).toBeInTheDocument())
+    fireEvent.click(screen.getByRole('button', { name: 'Заменить все' }))
+
+    await waitFor(() => expect(editor).toHaveValue(source.replace(/roma/gi, 'Rome')))
+    expect(screen.getByText('Есть изменения')).toBeInTheDocument()
+  })
 })

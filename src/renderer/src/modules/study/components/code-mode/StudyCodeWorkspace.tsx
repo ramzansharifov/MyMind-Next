@@ -32,6 +32,7 @@ import { AppDialog } from '../../../../shared/ui/AppDialog'
 import { Tooltip } from '../../../../shared/ui/tooltip'
 import { studyClient } from '../../api/study-client'
 import { registerStudyDraftHandle } from '../../lib/study-draft-lifecycle'
+import { StudyCodeFindReplace } from './StudyCodeFindReplace'
 
 interface StudyCodeWorkspaceProps {
   node: StudyNode
@@ -64,6 +65,7 @@ export function StudyCodeWorkspace({
   const [copyFeedback, setCopyFeedback] = useState(false)
   const dirtyRef = useRef(false)
   const savingRef = useRef(false)
+  const editorScrollRef = useRef<HTMLDivElement>(null)
 
   const dirty = source !== savedSource
   dirtyRef.current = dirty
@@ -269,6 +271,15 @@ export function StudyCodeWorkspace({
     }
   }
 
+  function updateSource(value: string): void {
+    setSource(value)
+    setDiagnostics([])
+    setSaveState((current) => {
+      if (current !== 'error') return current
+      return value === savedSource ? 'saved' : 'dirty'
+    })
+  }
+
   function handleEditorKeyDown(event: React.KeyboardEvent<HTMLDivElement>): void {
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
       event.preventDefault()
@@ -361,8 +372,16 @@ export function StudyCodeWorkspace({
         </div>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-hidden p-4 max-[720px]:p-2">
+      <div className="relative min-h-0 flex-1 overflow-hidden p-4 max-[720px]:p-2">
+        <StudyCodeFindReplace
+          source={source}
+          disabled={saveState === 'loading' || saveState === 'saving'}
+          editorScrollRef={editorScrollRef}
+          onSourceChange={updateSource}
+        />
+
         <div
+          ref={editorScrollRef}
           data-study-code-editor-scroll
           className="h-full min-h-0 overflow-auto rounded-xl border border-[var(--app-border)] bg-[var(--app-code-surface)]"
           onKeyDown={handleEditorKeyDown}
@@ -389,14 +408,7 @@ export function StudyCodeWorkspace({
                 fontSize: '0.875rem',
                 lineHeight: '1.65rem'
               }}
-              onValueChange={(value) => {
-                setSource(value)
-                setDiagnostics([])
-                setSaveState((current) => {
-                  if (current !== 'error') return current
-                  return value === savedSource ? 'saved' : 'dirty'
-                })
-              }}
+              onValueChange={updateSource}
             />
           </div>
         </div>
