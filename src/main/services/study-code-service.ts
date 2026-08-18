@@ -13,7 +13,7 @@ import {
   previewStudyCode as previewStudyCodeEngine
 } from '../repositories/study-code.repository'
 import { listStudyNodes, renameStudyNode } from '../repositories/study.repository'
-import { toReadableStudyCodeSource } from './study-code-identity'
+import { toReadableStudyCodeSource } from './study-code-name-store'
 import {
   persistAppliedStudyCodeNames,
   translateReadableStudyCodeSource
@@ -40,7 +40,6 @@ export function getStudyCodeSnapshot(nodeId: string): StudyCodeSnapshot {
 
 export function previewStudyCode(input: PreviewStudyCodeInput): StudyCodePreviewResult {
   try {
-    // Allocate stable readable names for every live entity before resolving the edited source.
     const currentSnapshot = getStudyCodeSnapshotEngine(input.nodeId)
     toReadableStudyCodeSource(currentSnapshot.source)
 
@@ -92,16 +91,10 @@ export async function applyStudyCode(input: ApplyStudyCodeInput): Promise<StudyC
     source: translated.source
   })
 
-  // The engine remains the only layer that generates database UUIDs. After its atomic transaction we
-  // resolve requested human names by their exact tree/block position and persist only the name mapping.
+  // UUIDs are generated only by the existing transactional engine. Human-readable aliases are bound
+  // afterwards by exact tree/block position, so a user or AI never has to invent database identifiers.
   persistAppliedStudyCodeNames(input.nodeId, translated.pendingNames)
 
-  /*
-   * The selected Code Mode scope can start below the root of the Study tree.
-   * Re-running the existing rename/index path with the unchanged current title
-   * rebuilds derived link targets from the complete live tree, including
-   * ancestors that are intentionally outside the editable DSL scope.
-   */
   const appliedRoot = listStudyNodes().find((node) => node.id === input.nodeId)
 
   if (!appliedRoot) {
