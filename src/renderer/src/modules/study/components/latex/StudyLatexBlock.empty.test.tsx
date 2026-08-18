@@ -23,4 +23,22 @@ describe('StudyLatexBlock', () => {
       )
     ).toEqual(['1', '2', '3'])
   })
+
+  it('uses the full available width for the source editor', () => {
+    const { container } = render(
+      <StudyLatexBlock mode="edit" viewMode="write" source={'x = 1\ny = 2'} />
+    )
+
+    expect(container.querySelector('[data-study-latex-block]')).toHaveClass('w-full')
+    expect(container.querySelector('.study-source-editor-scroll')).toHaveClass('w-full')
+  })
+
+  it('uses the full available width for rendered LaTeX and preserves alignment', () => {
+    const { container } = render(
+      <StudyLatexBlock mode="read" source={'x = 1'} alignment="right" />
+    )
+
+    expect(container.querySelector('.study-latex-preview')).toHaveClass('w-full')
+    expect(container.querySelector('.study-latex-render')).toHaveClass('w-full', 'text-right')
+  })
 })
