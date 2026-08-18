@@ -20,9 +20,12 @@ export function renderStudyLatex(
     }
   }
 
+  const documentLike = displayMode === 'display' && isDocumentLikeLatex(trimmedSource)
+
   try {
-    const renderedHtml = katex.renderToString(trimmedSource, {
+    const html = katex.renderToString(trimmedSource, {
       displayMode: displayMode === 'display',
+      fleqn: documentLike,
       output: 'htmlAndMathml',
       throwOnError: true,
       trust: false,
@@ -30,10 +33,6 @@ export function renderStudyLatex(
       maxExpand: 500,
       maxSize: 20
     })
-
-    const html = isDocumentLikeLatex(trimmedSource)
-      ? `<span class="study-latex-document-layout">${renderedHtml}</span>`
-      : renderedHtml
 
     return {
       html,
@@ -48,11 +47,12 @@ export function renderStudyLatex(
 }
 
 function isDocumentLikeLatex(source: string): boolean {
-  const hasDocumentEnvironment = /\\begin\{(?:aligned|alignedat|gathered)\*?\}/.test(source)
   const rowBreakCount = source.match(/\\\\(?:\[[^\]]*\])?/g)?.length ?? 0
   const hasTextContent = /\\(?:text|textbf|textit|textrm|mathrm)\s*\{/.test(source)
+  const hasMultirowEnvironment =
+    /\\begin\{(?:align|alignat|aligned|alignedat|gather|gathered)\*?\}/.test(source)
 
-  return hasDocumentEnvironment && rowBreakCount >= 2 && hasTextContent
+  return hasMultirowEnvironment && rowBreakCount >= 2 && hasTextContent
 }
 
 function getLatexErrorMessage(reason: unknown): string {
