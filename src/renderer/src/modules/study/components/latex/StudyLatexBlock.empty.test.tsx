@@ -40,20 +40,22 @@ describe('StudyLatexBlock', () => {
 
     expect(container.querySelector('.study-latex-preview')).toHaveClass('w-full')
     expect(container.querySelector('.study-latex-render')).toHaveClass('w-full', 'text-right')
-    expect(container.querySelector('.study-latex-render')).toHaveAttribute('data-wide-layout', 'false')
   })
 
-  it('expands multi-line KaTeX environments instead of keeping their intrinsic table width', () => {
+  it('renders a note-like aligned environment as full-width document rows', () => {
     const { container } = render(
       <StudyLatexBlock
         mode="read"
         source={String.raw`\begin{aligned}
-          &\text{Конспект} \\
-          &f'(x)=\lim_{h\to0}\frac{f(x+h)-f(x)}{h}
+          &\textbf{Конспект по математическому анализу} \\
+          &\textbf{1. Пределы и определения} \\
+          &f'(x)=\lim_{h\to0}\frac{f(x+h)-f(x)}{h} \\
+          &\sin x \sim x,\quad \tan x \sim x
         \end{aligned}`}
       />
     )
 
-    expect(container.querySelector('.study-latex-render')).toHaveAttribute('data-wide-layout', 'true')
+    expect(container.querySelector('[data-study-latex-document-layout="true"]')).toBeInTheDocument()
+    expect(container.querySelectorAll('.study-latex-document-row')).toHaveLength(4)
   })
 })
