@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { StudyCodeBlock } from './StudyCodeBlock'
 
 describe('StudyCodeBlock', () => {
-  it('renders a number for every source line', () => {
+  it('renders a number for every source line through the shared source gutter', () => {
     const { container } = render(
       <StudyCodeBlock
         mode="edit"
@@ -15,11 +15,14 @@ describe('StudyCodeBlock', () => {
       />
     )
 
-    const lineNumbers = [...container.querySelectorAll('[data-study-code-line-number]')].map(
+    const lineNumbers = [...container.querySelectorAll('[data-study-source-line-number]')].map(
       (element) => element.textContent
     )
 
     expect(lineNumbers).toEqual(['1', '2', '3', '4'])
+    expect(container.querySelector('[data-study-source-line-numbers]')).toBeInTheDocument()
+    expect(container.querySelector('.study-source-editor-body')).toBeInTheDocument()
+    expect(container.querySelector('.study-source-editor__editor')).toBeInTheDocument()
   })
 
   it('removes one legacy framing line before numbering and editing code', () => {
@@ -33,7 +36,7 @@ describe('StudyCodeBlock', () => {
       />
     )
 
-    const lineNumbers = [...container.querySelectorAll('[data-study-code-line-number]')].map(
+    const lineNumbers = [...container.querySelectorAll('[data-study-source-line-number]')].map(
       (element) => element.textContent
     )
 
@@ -45,7 +48,7 @@ describe('StudyCodeBlock', () => {
   it('shows the first line for an empty block', () => {
     const { container } = render(<StudyCodeBlock mode="read" language="text" source="" />)
 
-    expect(container.querySelector('[data-study-code-line-number="1"]')).toHaveTextContent('1')
+    expect(container.querySelector('[data-study-source-line-number="1"]')).toHaveTextContent('1')
   })
 
   it('uses a horizontally scrollable code viewport', () => {
@@ -78,6 +81,7 @@ describe('StudyCodeBlock', () => {
     expect(
       dialog.querySelector('[data-study-code-block][data-fullscreen="true"]')
     ).toBeInTheDocument()
+    expect(dialog.querySelector('.study-source-editor-body[data-fullscreen="true"]')).toBeInTheDocument()
 
     await user.click(
       within(dialog).getByRole('button', {
