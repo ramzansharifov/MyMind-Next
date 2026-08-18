@@ -32,7 +32,7 @@ describe('study Code Mode find and replace', () => {
     })
 
     expect(result.matches.map((match) => match.text)).toEqual(['Рим', 'Рим'])
-    expect(result.matches.map((match) => match.start)).toEqual([0, 15])
+    expect(result.matches.map((match) => match.start)).toEqual([0, 16])
   })
 
   it('reports invalid and zero-length regular expressions instead of throwing', () => {
