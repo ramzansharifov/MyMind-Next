@@ -136,12 +136,19 @@
   height: 1rem;
 }
 
-[data-study-code-workspace] > header > div:last-child > button:last-child,
+[data-study-code-workspace]
+  > header
+  > div:last-child
+  > button[class*='bg-violet-500/16'],
 [data-study-material-focus='false'] > header [role='tablist'] [role='tab'] {
   --study-icon-tooltip-offset: 0.55rem;
+  position: relative;
 }
 
-[data-study-code-workspace] > header > div:last-child > button:last-child::after,
+[data-study-code-workspace]
+  > header
+  > div:last-child
+  > button[class*='bg-violet-500/16']::after,
 [data-study-material-focus='false'] > header [role='tablist'] [role='tab']::after {
   position: absolute;
   top: calc(100% + var(--study-icon-tooltip-offset));
@@ -165,14 +172,23 @@
   content: '';
 }
 
-[data-study-code-workspace] > header > div:last-child > button:last-child:hover::after,
-[data-study-code-workspace] > header > div:last-child > button:last-child:focus-visible::after,
+[data-study-code-workspace]
+  > header
+  > div:last-child
+  > button[class*='bg-violet-500/16']:hover::after,
+[data-study-code-workspace]
+  > header
+  > div:last-child
+  > button[class*='bg-violet-500/16']:focus-visible::after,
 [data-study-material-focus='false'] > header [role='tablist'] [role='tab']:hover::after,
 [data-study-material-focus='false'] > header [role='tablist'] [role='tab']:focus-visible::after {
   display: block;
 }
 
-[data-study-code-workspace] > header > div:last-child > button:last-child::after {
+[data-study-code-workspace]
+  > header
+  > div:last-child
+  > button[class*='bg-violet-500/16']::after {
   content: 'Сохранить (Ctrl+S)';
 }
 
