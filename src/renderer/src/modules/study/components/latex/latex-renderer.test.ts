@@ -9,6 +9,32 @@ describe('renderStudyLatex', () => {
     expect(result.error).toBeNull()
     expect(result.html).toContain('katex-display')
     expect(result.html).toContain('<math')
+    expect(result.html).not.toContain('study-latex-document-layout')
+  })
+
+  it('marks long aligned notes as document-like layout', () => {
+    const result = renderStudyLatex(
+      String.raw`\begin{aligned}
+        &\textbf{Конспект по математическому анализу} \\
+        &\textbf{1. Пределы} \\
+        &\lim_{x \to a} f(x) = A
+      \end{aligned}`,
+      'display'
+    )
+
+    expect(result.error).toBeNull()
+    expect(result.html).toContain('study-latex-document-layout')
+    expect(result.html).toContain('katex-display')
+  })
+
+  it('does not classify a compact aligned equation as a document', () => {
+    const result = renderStudyLatex(
+      String.raw`\begin{aligned}a &= b \\ c &= d\end{aligned}`,
+      'display'
+    )
+
+    expect(result.error).toBeNull()
+    expect(result.html).not.toContain('study-latex-document-layout')
   })
 
   it('returns a readable parsing error', () => {
