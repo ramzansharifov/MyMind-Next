@@ -14,7 +14,10 @@ import {
   studyMaterials,
   studyNodes
 } from '../database/schema'
-import { symbolizeStoredStudyInternalLinks } from './study-code-internal-links'
+import {
+  symbolizeStoredStudyInternalLinks,
+  type StudyCodeInternalLinkSymbol
+} from './study-code-internal-links'
 
 export interface StudyCodeNameAssignment {
   kind: 'node' | 'block'
@@ -48,6 +51,7 @@ const blockNamePrefixes: Record<StudyBlockType, string> = {
 export function toReadableStudyCodeSource(internalSource: string): string {
   removeAllStaleBlockNameRows()
 
+  const database = getDatabase()
   const document = parseStudyCode(internalSource)
   const state = loadNameStoreState()
   const blockOwners = loadBlockOwners()
@@ -121,6 +125,66 @@ export function toReadableStudyCodeSource(internalSource: string): string {
 
   assignNames(document.root)
 
+  const ensureLinkSymbol = ({
+    materialId,
+    headingId
+  }: {
+    materialId: string
+    headingId: string | null
+  }): StudyCodeInternalLinkSymbol | null => {
+    const materialNode = database
+      .select()
+      .from(studyNodes)
+      .where(eq(studyNodes.id, materialId))
+      .get()
+    if (!materialNode || materialNode.type !== 'material') return null
+
+    let materialName = state.nodeNameById.get(materialId)
+    if (!materialName) {
+      materialName = createGeneratedName('Material', usedNodeKeys)
+      usedNodeKeys.add(nameKey(materialName))
+      state.nodeNameById.set(materialId, materialName)
+      state.nodeIdByNameKey.set(nameKey(materialName), materialId)
+      pendingAssignments.push({ kind: 'node', entityId: materialId, name: materialName })
+    }
+
+    if (!headingId) return { materialName }
+
+    const material = database
+      .select()
+      .from(studyMaterials)
+      .where(eq(studyMaterials.nodeId, materialId))
+      .get()
+    const parsed = studyDocumentSchema.safeParse(material?.document)
+    if (!parsed.success) return null
+
+    const heading = parsed.data.blocks.find(
+      (block) => block.id === headingId && block.type === 'heading'
+    )
+    if (!heading || heading.type !== 'heading') return null
+
+    const existing = state.blockNameById.get(headingId)
+    if (existing && existing.materialId !== materialId) return null
+
+    let headingName = existing?.name
+    if (!headingName) {
+      const usedBlockKeys = usedBlockKeysByMaterial.get(materialId) ?? new Set<string>()
+      usedBlockKeysByMaterial.set(materialId, usedBlockKeys)
+      headingName = createGeneratedName('Heading', usedBlockKeys)
+      usedBlockKeys.add(nameKey(headingName))
+      state.blockNameById.set(headingId, { materialId, name: headingName })
+      state.blockIdByMaterialAndNameKey.set(blockScopeKey(materialId, headingName), headingId)
+      pendingAssignments.push({
+        kind: 'block',
+        entityId: headingId,
+        materialId,
+        name: headingName
+      })
+    }
+
+    return { materialName, headingName }
+  }
+
   const symbolizeLinks = (node: StudyCodeTreeAst): void => {
     if (node.kind === 'folder') {
       node.children.forEach(symbolizeLinks)
@@ -132,15 +196,7 @@ export function toReadableStudyCodeSource(internalSource: string): string {
       const symbolic = symbolizeStoredStudyInternalLinks(
         block.body ?? '',
         block.html,
-        ({ materialId, headingId }) => {
-          const materialName = state.nodeNameById.get(materialId)
-          if (!materialName) return null
-          if (!headingId) return { materialName }
-
-          const headingName = state.blockNameById.get(headingId)
-          if (!headingName || headingName.materialId !== materialId) return null
-          return { materialName, headingName: headingName.name }
-        }
+        ensureLinkSymbol
       )
       block.body = symbolic.text
       block.html = symbolic.html
