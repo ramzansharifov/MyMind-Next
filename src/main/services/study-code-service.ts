@@ -48,13 +48,13 @@ export function previewStudyCode(input: PreviewStudyCodeInput): StudyCodePreview
     toReadableStudyCodeSource(currentSnapshot.source)
 
     const translated = translateReadableStudyCodeSource(input.nodeId, input.source)
-    const diagnosticMap = createStudyCodeDiagnosticMap(input.source, translated.source)
     const enginePreview = previewStudyCodeEngine({
       ...input,
       source: translated.source
     })
 
     if (!enginePreview.valid) {
+      const diagnosticMap = createStudyCodeDiagnosticMap(input.source, translated.source)
       return {
         ...enginePreview,
         diagnostics: enginePreview.diagnostics.map((diagnostic) =>
@@ -98,7 +98,6 @@ export async function applyStudyCode(input: ApplyStudyCodeInput): Promise<StudyC
   }
 
   const translated = translateReadableStudyCodeSource(input.nodeId, input.source)
-  const diagnosticMap = createStudyCodeDiagnosticMap(input.source, translated.source)
   let result: StudyCodeApplyResult
 
   try {
@@ -107,6 +106,7 @@ export async function applyStudyCode(input: ApplyStudyCodeInput): Promise<StudyC
       source: translated.source
     })
   } catch (reason: unknown) {
+    const diagnosticMap = createStudyCodeDiagnosticMap(input.source, translated.source)
     throw remapThrownDiagnostic(reason, diagnosticMap)
   }
 
