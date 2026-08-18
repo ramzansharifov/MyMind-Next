@@ -1,0 +1,9 @@
+.study-latex-render[data-wide-layout='true'] .katex-display > .katex,
+.study-latex-render[data-wide-layout='true'] .katex-display > .katex > .katex-html,
+.study-latex-render[data-wide-layout='true'] .katex-display > .katex > .katex-html > .base {
+  width: 100%;
+}
+
+.study-latex-render[data-wide-layout='true'] .katex-display .mtable {
+  width: 100%;
+}
