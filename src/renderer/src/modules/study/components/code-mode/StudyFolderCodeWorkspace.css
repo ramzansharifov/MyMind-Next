@@ -1,0 +1,23 @@
+[data-study-folder-code-workspace] {
+  --study-folder-workspace-content-width: 77.5rem;
+  --study-folder-workspace-gutter: 2rem;
+}
+
+/*
+ * Folder overview wraps its header inside a max-width container that also owns
+ * the horizontal gutter, while Code Mode applies the gutter outside the DSL
+ * container. Compensate for that wrapper gutter so both visible surfaces end
+ * up with exactly the same content width.
+ */
+[data-study-folder-code-workspace] > section > div:first-child {
+  max-width: calc(
+    var(--study-folder-workspace-content-width) + var(--study-folder-workspace-gutter) +
+      var(--study-folder-workspace-gutter)
+  );
+}
+
+@media (max-width: 720px) {
+  [data-study-folder-code-workspace] {
+    --study-folder-workspace-gutter: 1rem;
+  }
+}

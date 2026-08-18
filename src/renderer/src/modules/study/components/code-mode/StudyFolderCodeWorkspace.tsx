@@ -6,6 +6,7 @@ import type { StudyCodeApplyResult, StudyNode } from '../../../../../../shared/c
 import { AppDialog } from '../../../../shared/ui/AppDialog'
 import { Tooltip } from '../../../../shared/ui/tooltip'
 import { StudyCodeWorkspace } from './StudyCodeWorkspace'
+import './StudyFolderCodeWorkspace.css'
 
 export type StudyFolderWorkspaceMode = 'overview' | 'code'
 
@@ -25,7 +26,7 @@ interface StudyFolderCodeWorkspaceProps {
 }
 
 const modeTriggerClassName =
-  'flex size-9 items-center justify-center rounded-md text-[var(--app-muted)] transition-colors outline-none hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 data-[state=active]:bg-[var(--app-surface-raised)] data-[state=active]:text-[var(--app-text)]'
+  'flex size-9 items-center justify-center rounded-md border border-transparent text-[var(--app-muted)] transition-colors outline-none hover:bg-white/[0.04] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 data-[state=active]:border-violet-500/30 data-[state=active]:bg-violet-500/15 data-[state=active]:text-violet-200 data-[state=active]:shadow-sm'
 
 export function StudyFolderCodeWorkspace({
   node,
