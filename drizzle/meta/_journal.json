@@ -218,6 +218,13 @@
       "when": 1786956600000,
       "tag": "0030_nutrition_module",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "6",
+      "when": 1787028500000,
+      "tag": "0031_study_code_names",
+      "breakpoints": true
     }
   ]
 }
