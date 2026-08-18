@@ -151,11 +151,11 @@ function remapDiagnostic(
   locations: ReadonlyMap<number, StudyCodeSourceLocation>
 ): StudyCodeDiagnostic {
   const location = locations.get(diagnostic.line)
-  if (!location) return diagnostic
   return {
     ...diagnostic,
-    line: location.line,
-    column: location.column
+    line: location?.line ?? diagnostic.line,
+    column: location?.column ?? diagnostic.column,
+    message: humanizeValidationMessage(diagnostic.message)
   }
 }
 
@@ -171,15 +171,17 @@ function remapThrownDiagnostic(
     typeof reason.line !== 'number' ||
     typeof reason.column !== 'number'
   ) {
+    if (reason instanceof Error) {
+      return new Error(humanizeValidationMessage(reason.message))
+    }
     return reason
   }
 
   const location = locations.get(reason.line)
-  if (!location) return reason
   return new StudyCodeSafetyError(
-    reason instanceof Error ? reason.message : 'Некорректный код',
-    location.line,
-    location.column
+    humanizeValidationMessage(reason instanceof Error ? reason.message : 'Некорректный код'),
+    location?.line ?? reason.line,
+    location?.column ?? reason.column
   )
 }
 
@@ -219,7 +221,9 @@ function toDiagnostic(reason: unknown): StudyCodeDiagnostic {
       severity: 'error',
       line: reason.line,
       column: reason.column,
-      message: reason instanceof Error ? reason.message : 'Некорректный код'
+      message: humanizeValidationMessage(
+        reason instanceof Error ? reason.message : 'Некорректный код'
+      )
     }
   }
 
@@ -227,6 +231,24 @@ function toDiagnostic(reason: unknown): StudyCodeDiagnostic {
     severity: 'error',
     line: 1,
     column: 1,
-    message: reason instanceof Error ? reason.message : 'Некорректный код'
+    message: humanizeValidationMessage(
+      reason instanceof Error ? reason.message : 'Некорректный код'
+    )
   }
+}
+
+function humanizeValidationMessage(message: string): string {
+  const tooSmall = message.match(/^Too small: expected .*? to be >=\s*(\d+(?:\.\d+)?)/i)
+  if (tooSmall) return `Значение должно быть не меньше ${tooSmall[1]}`
+
+  const tooBig = message.match(/^Too big: expected .*? to be <=\s*(\d+(?:\.\d+)?)/i)
+  if (tooBig) return `Значение должно быть не больше ${tooBig[1]}`
+
+  if (/^Invalid input: expected string/i.test(message)) return 'Ожидалось текстовое значение'
+  if (/^Invalid input: expected number/i.test(message)) return 'Ожидалось числовое значение'
+  if (/^Invalid (?:string|input).*pattern/i.test(message)) return 'Некорректный формат значения'
+  if (/^Invalid (?:option|enum)/i.test(message)) return 'Указано недопустимое значение'
+  if (/uuid/i.test(message) && /^Invalid/i.test(message)) return 'Некорректный UUID'
+
+  return message
 }
