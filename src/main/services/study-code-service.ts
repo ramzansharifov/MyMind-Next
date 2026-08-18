@@ -7,6 +7,7 @@ import type {
   StudyCodePreviewResult,
   StudyCodeSnapshot
 } from '../../shared/contracts/study'
+import { validateStudyCodeConstraints } from '../../shared/study-code-constraints'
 import {
   applyStudyCode as applyStudyCodeEngine,
   getStudyCodeSnapshot as getStudyCodeSnapshotEngine,
@@ -46,6 +47,19 @@ export function previewStudyCode(input: PreviewStudyCodeInput): StudyCodePreview
   try {
     const currentSnapshot = getStudyCodeSnapshotEngine(input.nodeId)
     toReadableStudyCodeSource(currentSnapshot.source)
+
+    const constraintDiagnostics = validateStudyCodeConstraints(input.source)
+    if (constraintDiagnostics.length > 0) {
+      return {
+        valid: false,
+        diagnostics: constraintDiagnostics.map((diagnostic) => ({
+          severity: 'error' as const,
+          ...diagnostic
+        })),
+        summary: createEmptySummary(),
+        destructive: false
+      }
+    }
 
     const translated = translateReadableStudyCodeSource(input.nodeId, input.source)
     const enginePreview = previewStudyCodeEngine({
