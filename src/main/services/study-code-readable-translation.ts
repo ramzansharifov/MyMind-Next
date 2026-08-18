@@ -20,7 +20,7 @@ import {
 import {
   persistStudyCodeNameAssignments,
   type StudyCodeNameAssignment
-} from './study-code-identity'
+} from './study-code-name-store'
 
 export type StudyCodePendingNameAssignment =
   | { kind: 'node'; path: number[]; name: string }
