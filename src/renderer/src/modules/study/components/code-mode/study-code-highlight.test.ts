@@ -25,7 +25,7 @@ describe('highlightStudyCodeSource', () => {
     expect(container.textContent).toContain('x^2 + 1')
   })
 
-  it('keeps DSL-looking text inside multiline bodies raw and highlights symbolic links', () => {
+  it('keeps DSL-looking text inside multiline bodies raw and highlights symbolic links in text', () => {
     const source = `text Body """\n// Это часть текста, а не комментарий DSL\nfolder Fake "Не структура" { true }\nПерейти: [[Lesson.Intro|Введение]]\n"""\n// Настоящий комментарий DSL\n`
     const container = renderHighlight(source)
 
@@ -41,14 +41,15 @@ describe('highlightStudyCodeSource', () => {
     )
   })
 
-  it('handles unfinished multiline bodies without leaking DSL highlighting into their contents', () => {
-    const source = `markdown Notes """\n# folder material true\n// still markdown\n`
+  it('keeps markdown bodies raw even when they contain DSL-looking links', () => {
+    const source = `markdown Notes """\n# folder material true\n[[Lesson.Intro|Это Markdown]]\n// still markdown\n`
     const container = renderHighlight(source)
 
     expect(container.textContent).toBe(source)
     expect(container.querySelectorAll('.dsl-delimiter')).toHaveLength(1)
     expect(container.querySelectorAll('.dsl-entity')).toHaveLength(0)
     expect(container.querySelectorAll('.dsl-comment')).toHaveLength(0)
+    expect(container.querySelectorAll('.dsl-internal-link')).toHaveLength(0)
     expect(container.textContent).toContain('// still markdown')
   })
 
