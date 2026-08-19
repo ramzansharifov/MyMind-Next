@@ -16,6 +16,8 @@ const blockKeywords = new Set([
   'board',
   'html'
 ])
+const multilineBlockKeywords = new Set(['text', 'code', 'markdown', 'latex', 'mermaid', 'html'])
+const symbolicLinkBlockKeywords = new Set(['text', 'html'])
 const booleanKeywords = new Set(['true', 'false'])
 const annotationKeywords = new Set(['id', 'version'])
 const punctuationCharacters = new Set(['{', '}', '(', ')', '='])
@@ -30,12 +32,14 @@ export function highlightStudyCodeSource(source: string): string {
   const output: string[] = []
   let index = 0
   let multilineDelimiter: string | null = null
+  let pendingMultilineBlock: string | null = null
+  let highlightLinksInMultiline = false
 
   while (index < source.length) {
     if (multilineDelimiter) {
       const closingIndex = source.indexOf(multilineDelimiter, index)
       const bodyEnd = closingIndex < 0 ? source.length : closingIndex
-      pushMultilineBody(output, source.slice(index, bodyEnd))
+      pushMultilineBody(output, source.slice(index, bodyEnd), highlightLinksInMultiline)
       index = bodyEnd
 
       if (closingIndex < 0) break
@@ -43,6 +47,7 @@ export function highlightStudyCodeSource(source: string): string {
       pushToken(output, 'dsl-delimiter', multilineDelimiter)
       index += multilineDelimiter.length
       multilineDelimiter = null
+      highlightLinksInMultiline = false
       continue
     }
 
@@ -68,6 +73,9 @@ export function highlightStudyCodeSource(source: string): string {
 
       if (quoteRunLength >= 3) {
         multilineDelimiter = '"'.repeat(quoteRunLength)
+        highlightLinksInMultiline =
+          pendingMultilineBlock !== null && symbolicLinkBlockKeywords.has(pendingMultilineBlock)
+        pendingMultilineBlock = null
         pushToken(output, 'dsl-delimiter', multilineDelimiter)
         index += quoteRunLength
         continue
@@ -105,6 +113,13 @@ export function highlightStudyCodeSource(source: string): string {
       const end = readIdentifierEnd(source, index)
       const identifier = source.slice(index, end)
       const token = classifyIdentifier(source, identifier, end)
+
+      if (blockKeywords.has(identifier)) {
+        pendingMultilineBlock = multilineBlockKeywords.has(identifier) ? identifier : null
+      } else if (entityKeywords.has(identifier)) {
+        pendingMultilineBlock = null
+      }
+
       pushToken(output, token, identifier)
       index = end
       continue
@@ -135,8 +150,13 @@ function classifyIdentifier(source: string, identifier: string, end: number): St
   return 'dsl-name'
 }
 
-function pushMultilineBody(output: string[], body: string): void {
+function pushMultilineBody(output: string[], body: string, highlightLinks: boolean): void {
   if (!body) return
+
+  if (!highlightLinks) {
+    output.push(escapeHighlightHtml(body))
+    return
+  }
 
   symbolicInternalLinkPattern.lastIndex = 0
   let cursor = 0
