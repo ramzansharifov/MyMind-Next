@@ -62,16 +62,14 @@ describe('highlightStudyCodeSource', () => {
     const booleans = Array.from(container.querySelectorAll('.dsl-boolean')).map(
       (element) => element.textContent
     )
+    const properties = Array.from(container.querySelectorAll('.dsl-property')).map(
+      (element) => element.textContent
+    )
 
     expect(container.textContent).toBe(source)
     expect(numbers).toEqual(['-12.5', '.5'])
     expect(booleans).toEqual(['true', 'false'])
-    expect(Array.from(container.querySelectorAll('.dsl-property')).map((element) => element.textContent)).toEqual([
-      'enabled',
-      'thickness',
-      'offset',
-      'disabled'
-    ])
+    expect(properties).toEqual(['enabled', 'thickness', 'offset', 'disabled'])
   })
 
   it('keeps exact editor text after escaping HTML-sensitive content', () => {
@@ -87,7 +85,7 @@ describe('highlightStudyCodeSource', () => {
     const source = `<${'x'.repeat(STUDY_CODE_HIGHLIGHT_MAX_LENGTH)}`
     const highlighted = highlightStudyCodeSource(source)
 
-    expect(highlighted).toStartWith('&lt;')
+    expect(highlighted.startsWith('&lt;')).toBe(true)
     expect(highlighted).not.toContain('<span')
   })
 })
