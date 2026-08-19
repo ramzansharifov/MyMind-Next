@@ -53,6 +53,18 @@ describe('highlightStudyCodeSource', () => {
     expect(container.textContent).toContain('// still markdown')
   })
 
+  it('uses the exact opening quote run as the multiline closing delimiter', () => {
+    const source = `code Example language="text" """"\nconst embedded = '"""'\n""""`
+    const container = renderHighlight(source)
+    const delimiters = Array.from(container.querySelectorAll('.dsl-delimiter')).map(
+      (element) => element.textContent
+    )
+
+    expect(container.textContent).toBe(source)
+    expect(delimiters).toEqual(['""""', '""""'])
+    expect(container.querySelectorAll('.dsl-string')).toHaveLength(1)
+  })
+
   it('matches parser scalar syntax including booleans, negative numbers and decimals', () => {
     const source = `divider Rule enabled=true thickness=-12.5 offset=.5 disabled=false`
     const container = renderHighlight(source)
