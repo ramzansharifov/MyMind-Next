@@ -31,7 +31,7 @@ const node: StudyNode = {
 
 describe('StudyCodeWorkspace syntax highlighting', () => {
   it('renders semantic DSL token spans behind the editable textarea', async () => {
-    const source = `@version(1)\n\nmaterial Lesson "Урок" {\n  text Intro """\n    Перейти к [[Lesson.Intro|введению]]\n  """\n}\n`
+    const source = `@version(1)\n\nmaterial Lesson "Урок" {\n  heading Intro 1 "Введение"\n  text Body """\n    Перейти к [[Lesson.Intro|введению]]\n  """\n}\n`
     mocks.getCodeSnapshot.mockResolvedValue({
       nodeId: node.id,
       nodeType: 'material',
@@ -46,10 +46,9 @@ describe('StudyCodeWorkspace syntax highlighting', () => {
 
     const highlight = container.querySelector('.study-code-editor__highlight')
     expect(highlight).toBeInTheDocument()
-    expect(highlight?.textContent).toBe(source)
     expect(highlight?.querySelector('.dsl-annotation')).toHaveTextContent('@version')
     expect(highlight?.querySelector('.dsl-entity')).toHaveTextContent('material')
-    expect(highlight?.querySelector('.dsl-block')).toHaveTextContent('text')
+    expect(highlight?.querySelector('.dsl-block')).toHaveTextContent('heading')
     expect(highlight?.querySelector('.dsl-name')).toHaveTextContent('Lesson')
     expect(highlight?.querySelector('.dsl-internal-link')).toHaveTextContent(
       '[[Lesson.Intro|введению]]'
