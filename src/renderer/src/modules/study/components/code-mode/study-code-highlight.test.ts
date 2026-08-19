@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  highlightStudyCodeSource,
-  STUDY_CODE_HIGHLIGHT_MAX_LENGTH
-} from './study-code-highlight'
+import { highlightStudyCodeSource, STUDY_CODE_HIGHLIGHT_MAX_LENGTH } from './study-code-highlight'
 
 function renderHighlight(source: string): HTMLElement {
   const container = document.createElement('pre')
@@ -34,7 +31,9 @@ describe('highlightStudyCodeSource', () => {
 
     expect(container.textContent).toBe(source)
     expect(container.querySelectorAll('.dsl-comment')).toHaveLength(1)
-    expect(container.querySelector('.dsl-comment')?.textContent).toBe('// Настоящий комментарий DSL')
+    expect(container.querySelector('.dsl-comment')?.textContent).toBe(
+      '// Настоящий комментарий DSL'
+    )
     expect(container.querySelectorAll('.dsl-entity')).toHaveLength(0)
     expect(container.querySelectorAll('.dsl-boolean')).toHaveLength(0)
     expect(container.querySelector('.dsl-internal-link')?.textContent).toBe(
