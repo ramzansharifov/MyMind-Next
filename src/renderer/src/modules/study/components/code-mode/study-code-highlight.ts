@@ -143,14 +143,12 @@ function pushMultilineBody(output: string[], body: string): void {
   let match: RegExpExecArray | null
 
   while ((match = symbolicInternalLinkPattern.exec(body)) !== null) {
-    if (match.index > cursor) {
-      pushToken(output, 'dsl-body', body.slice(cursor, match.index))
-    }
+    if (match.index > cursor) output.push(escapeHighlightHtml(body.slice(cursor, match.index)))
     pushToken(output, 'dsl-internal-link', match[0])
     cursor = match.index + match[0].length
   }
 
-  if (cursor < body.length) pushToken(output, 'dsl-body', body.slice(cursor))
+  if (cursor < body.length) output.push(escapeHighlightHtml(body.slice(cursor)))
 }
 
 function pushToken(output: string[], token: StudyCodeToken, value: string): void {
@@ -261,5 +259,4 @@ type StudyCodeToken =
   | 'dsl-punctuation'
   | 'dsl-comment'
   | 'dsl-delimiter'
-  | 'dsl-body'
   | 'dsl-internal-link'
