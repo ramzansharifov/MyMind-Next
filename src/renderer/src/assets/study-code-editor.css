@@ -1,6 +1,35 @@
 [data-study-code-editor-scroll] {
   --study-code-line-height: 1.65rem;
   --study-code-editor-padding: 1rem;
+  --study-code-syntax-entity: #c4b5fd;
+  --study-code-syntax-block: #93c5fd;
+  --study-code-syntax-name: #f0abfc;
+  --study-code-syntax-property: #67e8f9;
+  --study-code-syntax-annotation: #fbbf24;
+  --study-code-syntax-string: #86efac;
+  --study-code-syntax-number: #fca5a5;
+  --study-code-syntax-boolean: #fdba74;
+  --study-code-syntax-punctuation: #71717a;
+  --study-code-syntax-comment: #71717a;
+  --study-code-syntax-delimiter: #a1a1aa;
+  --study-code-syntax-body: #d4d4d8;
+  --study-code-syntax-link: #22d3ee;
+}
+
+:root[data-theme='light'] [data-study-code-editor-scroll] {
+  --study-code-syntax-entity: #6d28d9;
+  --study-code-syntax-block: #1d4ed8;
+  --study-code-syntax-name: #a21caf;
+  --study-code-syntax-property: #0e7490;
+  --study-code-syntax-annotation: #a16207;
+  --study-code-syntax-string: #15803d;
+  --study-code-syntax-number: #b91c1c;
+  --study-code-syntax-boolean: #c2410c;
+  --study-code-syntax-punctuation: #71717a;
+  --study-code-syntax-comment: #71717a;
+  --study-code-syntax-delimiter: #52525b;
+  --study-code-syntax-body: #27272a;
+  --study-code-syntax-link: #0369a1;
 }
 
 [data-study-code-editor-scroll-content] {
@@ -61,6 +90,65 @@
 
 .study-code-editor__root textarea {
   overscroll-behavior: none;
+}
+
+.study-code-editor__highlight {
+  color: var(--study-code-syntax-body);
+}
+
+.study-code-editor__highlight .token.dsl-entity {
+  color: var(--study-code-syntax-entity);
+}
+
+.study-code-editor__highlight .token.dsl-block {
+  color: var(--study-code-syntax-block);
+}
+
+.study-code-editor__highlight .token.dsl-name {
+  color: var(--study-code-syntax-name);
+}
+
+.study-code-editor__highlight .token.dsl-property {
+  color: var(--study-code-syntax-property);
+}
+
+.study-code-editor__highlight .token.dsl-annotation {
+  color: var(--study-code-syntax-annotation);
+}
+
+.study-code-editor__highlight .token.dsl-string {
+  color: var(--study-code-syntax-string);
+}
+
+.study-code-editor__highlight .token.dsl-number {
+  color: var(--study-code-syntax-number);
+}
+
+.study-code-editor__highlight .token.dsl-boolean {
+  color: var(--study-code-syntax-boolean);
+}
+
+.study-code-editor__highlight .token.dsl-punctuation {
+  color: var(--study-code-syntax-punctuation);
+}
+
+.study-code-editor__highlight .token.dsl-comment {
+  color: var(--study-code-syntax-comment);
+}
+
+.study-code-editor__highlight .token.dsl-delimiter {
+  color: var(--study-code-syntax-delimiter);
+}
+
+.study-code-editor__highlight .token.dsl-body {
+  color: var(--study-code-syntax-body);
+}
+
+.study-code-editor__highlight .token.dsl-internal-link {
+  color: var(--study-code-syntax-link);
+  text-decoration-line: underline;
+  text-decoration-color: color-mix(in srgb, var(--study-code-syntax-link) 55%, transparent);
+  text-underline-offset: 0.15em;
 }
 
 [data-study-code-find-highlight-layer] {
