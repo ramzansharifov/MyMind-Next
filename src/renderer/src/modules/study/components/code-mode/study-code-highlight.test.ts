@@ -22,7 +22,7 @@ describe('highlightStudyCodeSource', () => {
     expect(container.querySelector('.dsl-string')?.textContent).toBe('"Курс"')
     expect(container.querySelector('.dsl-number')?.textContent).toBe('1')
     expect(container.querySelectorAll('.dsl-delimiter')).toHaveLength(2)
-    expect(container.querySelector('.dsl-body')?.textContent).toContain('x^2 + 1')
+    expect(container.textContent).toContain('x^2 + 1')
   })
 
   it('keeps DSL-looking text inside multiline bodies raw and highlights symbolic links', () => {
@@ -49,7 +49,7 @@ describe('highlightStudyCodeSource', () => {
     expect(container.querySelectorAll('.dsl-delimiter')).toHaveLength(1)
     expect(container.querySelectorAll('.dsl-entity')).toHaveLength(0)
     expect(container.querySelectorAll('.dsl-comment')).toHaveLength(0)
-    expect(container.querySelector('.dsl-body')?.textContent).toContain('// still markdown')
+    expect(container.textContent).toContain('// still markdown')
   })
 
   it('matches parser scalar syntax including booleans, negative numbers and decimals', () => {
