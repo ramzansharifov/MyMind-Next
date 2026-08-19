@@ -140,10 +140,6 @@
   color: var(--study-code-syntax-delimiter);
 }
 
-.study-code-editor__highlight .token.dsl-body {
-  color: var(--study-code-syntax-body);
-}
-
 .study-code-editor__highlight .token.dsl-internal-link {
   color: var(--study-code-syntax-link);
   text-decoration-line: underline;
