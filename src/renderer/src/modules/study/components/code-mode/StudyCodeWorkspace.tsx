@@ -1,4 +1,3 @@
-import Prism from 'prismjs'
 import Editor from 'react-simple-code-editor'
 import {
   AlertTriangle,
@@ -33,6 +32,7 @@ import { Tooltip } from '../../../../shared/ui/tooltip'
 import { studyClient } from '../../api/study-client'
 import { registerStudyDraftHandle } from '../../lib/study-draft-lifecycle'
 import { StudyCodeFindReplace } from './StudyCodeFindReplace'
+import { highlightStudyCodeSource } from './study-code-highlight'
 
 interface StudyCodeWorkspaceProps {
   node: StudyNode
@@ -46,9 +46,6 @@ const iconButtonClassName =
   'flex h-9 items-center gap-2 rounded-lg border border-[var(--app-border)] bg-white/[0.025] px-3 text-xs font-medium text-[var(--app-muted)] transition-colors outline-none hover:bg-white/[0.055] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 disabled:cursor-not-allowed disabled:opacity-40'
 
 const STUDY_CODE_LIVE_PARSE_MAX_LENGTH = 300_000
-const STUDY_CODE_HIGHLIGHT_MAX_LENGTH = 300_000
-
-registerStudyCodeGrammar()
 
 export function StudyCodeWorkspace({
   node,
@@ -602,15 +599,6 @@ function createLineNumberText(source: string): string {
   return numbers.join('\n')
 }
 
-function highlightStudyCodeSource(value: string): string {
-  if (value.length > STUDY_CODE_HIGHLIGHT_MAX_LENGTH) return escapeHighlightHtml(value)
-  return Prism.highlight(value, Prism.languages.mymindStudyDsl, 'mymind-study-dsl')
-}
-
-function escapeHighlightHtml(value: string): string {
-  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-}
-
 function toDiagnostic(reason: unknown, fallback: string): StudyCodeDiagnostic {
   if (
     reason &&
@@ -633,27 +621,5 @@ function toDiagnostic(reason: unknown, fallback: string): StudyCodeDiagnostic {
     line: 1,
     column: 1,
     message: reason instanceof Error ? reason.message : fallback
-  }
-}
-
-function registerStudyCodeGrammar(): void {
-  if (Prism.languages.mymindStudyDsl) return
-
-  Prism.languages.mymindStudyDsl = {
-    comment: /\/\/.*$/m,
-    annotation: {
-      pattern: /@(id|version)\s*\([^)]*\)/,
-      alias: 'comment'
-    },
-    keyword:
-      /\b(?:folder|material|text|heading|code|markdown|latex|mermaid|image|video|audio|file|divider|board|html)\b/,
-    property: /\b[A-Za-z_][A-Za-z0-9_-]*(?=\s*=)/,
-    boolean: /\b(?:true|false)\b/,
-    number: /\b\d+(?:\.\d+)?\b/,
-    string: {
-      pattern: /"(?:\\.|[^"\\\r\n])*"/,
-      greedy: true
-    },
-    punctuation: /[{}()=]/
   }
 }
