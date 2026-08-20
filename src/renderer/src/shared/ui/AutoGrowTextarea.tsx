@@ -12,7 +12,7 @@ interface AutoGrowTextareaProps extends Omit<TextareaHTMLAttributes<HTMLTextArea
 export function AutoGrowTextarea({
   value,
   resizeKey,
-  backgroundMode = 'inline',
+  backgroundMode = 'container',
   className,
   onInput,
   style,
