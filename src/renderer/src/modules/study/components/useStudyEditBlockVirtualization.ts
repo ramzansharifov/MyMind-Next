@@ -1,10 +1,4 @@
-import {
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type MutableRefObject
-} from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 import type { StudyBlock } from '../../../../../shared/contracts/study'
 
@@ -19,13 +13,6 @@ interface StudyEditBlockVirtualizationInput {
   pinned: boolean
 }
 
-interface StudyEditBlockVirtualizationResult {
-  containerRef: MutableRefObject<HTMLDivElement | null>
-  contentRef: MutableRefObject<HTMLDivElement | null>
-  shouldRenderContent: boolean
-  placeholderHeight: number
-}
-
 export function shouldVirtualizeStudyEditBlocks(
   blockCount: number,
   intersectionObserverAvailable = typeof IntersectionObserver !== 'undefined'
@@ -38,7 +25,7 @@ export function useStudyEditBlockVirtualization({
   index,
   enabled,
   pinned
-}: StudyEditBlockVirtualizationInput): StudyEditBlockVirtualizationResult {
+}: StudyEditBlockVirtualizationInput) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const contentRef = useRef<HTMLDivElement | null>(null)
   const [nearViewport, setNearViewport] = useState(
