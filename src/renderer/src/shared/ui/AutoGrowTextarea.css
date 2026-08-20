@@ -1,0 +1,15 @@
+.auto-grow-textarea-inline-background__mirror {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+.auto-grow-textarea-inline-background__mark {
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}

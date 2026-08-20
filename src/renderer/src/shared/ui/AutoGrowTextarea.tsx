@@ -1,6 +1,7 @@
-import { useLayoutEffect, useRef, type TextareaHTMLAttributes } from 'react'
+import { useLayoutEffect, useRef, type CSSProperties, type TextareaHTMLAttributes } from 'react'
 
 import { cn } from '../lib/cn'
+import './AutoGrowTextarea.css'
 
 interface AutoGrowTextareaProps extends Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'value'> {
   value: string
@@ -12,21 +13,35 @@ export function AutoGrowTextarea({
   resizeKey,
   className,
   onInput,
+  style,
   ...props
 }: AutoGrowTextareaProps): React.JSX.Element {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
+  const inlineBackgroundColor = resolveInlineBackgroundColor(style)
 
   useLayoutEffect(() => {
     resizeTextarea(textareaRef.current)
   }, [resizeKey, value])
 
-  return (
+  const textarea = (
     <textarea
       {...props}
       ref={textareaRef}
       rows={1}
       value={value}
-      className={cn('block resize-none overflow-hidden', className)}
+      className={cn(
+        'block resize-none overflow-hidden',
+        inlineBackgroundColor && 'relative z-10',
+        className
+      )}
+      style={
+        inlineBackgroundColor
+          ? {
+              ...style,
+              backgroundColor: 'transparent'
+            }
+          : style
+      }
       onInput={(event) => {
         resizeTextarea(event.currentTarget)
 
@@ -34,6 +49,52 @@ export function AutoGrowTextarea({
       }}
     />
   )
+
+  if (!inlineBackgroundColor) {
+    return textarea
+  }
+
+  return (
+    <div className="auto-grow-textarea-inline-background relative">
+      <div
+        aria-hidden="true"
+        className={cn('auto-grow-textarea-inline-background__mirror', className)}
+        style={createMirrorStyle(style)}
+      >
+        <span
+          className="auto-grow-textarea-inline-background__mark"
+          style={{ backgroundColor: inlineBackgroundColor }}
+        >
+          {value}
+        </span>
+      </div>
+
+      {textarea}
+    </div>
+  )
+}
+
+function resolveInlineBackgroundColor(style?: CSSProperties): string | null {
+  const backgroundColor = style?.backgroundColor
+
+  if (
+    typeof backgroundColor !== 'string' ||
+    backgroundColor === '' ||
+    backgroundColor === 'transparent' ||
+    backgroundColor === 'rgba(0, 0, 0, 0)'
+  ) {
+    return null
+  }
+
+  return backgroundColor
+}
+
+function createMirrorStyle(style?: CSSProperties): CSSProperties {
+  return {
+    ...style,
+    color: 'transparent',
+    backgroundColor: 'transparent'
+  }
 }
 
 function resizeTextarea(textarea: HTMLTextAreaElement | null): void {
