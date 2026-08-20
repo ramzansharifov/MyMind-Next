@@ -3,7 +3,7 @@ import {
   useLayoutEffect,
   useRef,
   useState,
-  type RefObject
+  type MutableRefObject
 } from 'react'
 
 import type { StudyBlock } from '../../../../../shared/contracts/study'
@@ -20,8 +20,8 @@ interface StudyEditBlockVirtualizationInput {
 }
 
 interface StudyEditBlockVirtualizationResult {
-  containerRef: RefObject<HTMLDivElement | null>
-  contentRef: RefObject<HTMLDivElement | null>
+  containerRef: MutableRefObject<HTMLDivElement | null>
+  contentRef: MutableRefObject<HTMLDivElement | null>
   shouldRenderContent: boolean
   placeholderHeight: number
 }
