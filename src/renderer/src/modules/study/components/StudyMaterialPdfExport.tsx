@@ -68,6 +68,10 @@ async function waitForImages(root: HTMLElement, timeoutMs: number): Promise<void
   const images = Array.from(root.querySelectorAll('img'))
   if (images.length === 0) return
 
+  images.forEach((image) => {
+    image.loading = 'eager'
+  })
+
   await Promise.all(images.map((image) => waitForImage(image, timeoutMs)))
 }
 
