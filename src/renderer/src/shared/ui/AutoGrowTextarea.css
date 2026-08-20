@@ -9,20 +9,7 @@
   overflow-wrap: break-word;
 }
 
-.auto-grow-textarea-inline-background__mark,
-[data-study-heading-id] {
+.auto-grow-textarea-inline-background__mark {
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
-}
-
-textarea[aria-label='Текст заголовка'],
-section:has(textarea[aria-label='Текст заголовка']),
-button:has([data-study-heading-id]),
-[data-study-heading-id] {
-  border-radius: 0 !important;
-}
-
-[data-study-heading-id] {
-  display: inline;
-  padding: 0 !important;
 }
