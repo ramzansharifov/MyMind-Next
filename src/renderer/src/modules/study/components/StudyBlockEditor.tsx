@@ -76,6 +76,7 @@ import { StudyDivider } from './StudyDivider'
 import { StudyFileBlockView } from './file/StudyFileBlockView'
 import { RichTextBlockEditor, RichTextViewer } from './rich-text/RichTextBlockEditor'
 import './StudyBlockEditor.performance.css'
+import { StudyHeadingLayoutSettings } from './StudyHeadingLayoutSettings'
 import {
   shouldVirtualizeStudyEditBlocks,
   useStudyEditBlockVirtualization
@@ -428,6 +429,10 @@ function StudyBlockEditorContent({
               onChange={updateBlock}
             />
           </BlockSettingsErrorBoundary>
+
+          {activeBlock?.type === 'heading' && (
+            <StudyHeadingLayoutSettings block={activeBlock} onChange={updateBlock} />
+          )}
         </div>
         <DeleteConfirmationDialog
           open={deleteTarget !== null}
@@ -1001,26 +1006,50 @@ const studyBlockEditors = {
 
 function EditHeadingBlock({ block, onChange }: EditableBlockProps): React.JSX.Element {
   if (block.type !== 'heading') throw new Error('Heading editor received an incompatible block')
+
   const typography = getHeadingTypography(block.level)
+  const alignment = block.alignment ?? 'left'
+  const backgroundScope = block.backgroundScope ?? 'container'
+  const backgroundColor = block.backgroundColor ?? 'transparent'
+
   return (
-    <AutoGrowTextarea
-      value={block.text}
-      resizeKey={block.level}
-      placeholder="Заголовок"
-      aria-label="Текст заголовка"
-      className={cn(
-        'max-h-[24rem] w-full rounded-lg px-2 py-2',
-        'font-semibold outline-none',
-        'placeholder:text-[var(--app-muted)]/60',
-        'transition-[color,background-color,font-size]'
+    <div className="relative w-full" data-study-heading-edit-scope={backgroundScope}>
+      {backgroundScope === 'text' && block.text && (
+        <div
+          aria-hidden="true"
+          data-study-heading-edit-highlight
+          className="pointer-events-none absolute inset-0 overflow-hidden px-2 py-2 font-semibold whitespace-pre-wrap break-words text-transparent"
+          style={{ ...typography, textAlign: alignment }}
+        >
+          <span
+            className="box-decoration-clone rounded-lg px-0.5"
+            style={{ backgroundColor }}
+          >
+            {block.text}
+          </span>
+        </div>
       )}
-      style={{
-        ...typography,
-        color: resolveStudyHeadingColor(block.color),
-        backgroundColor: block.backgroundColor ?? 'transparent'
-      }}
-      onChange={(event) => onChange({ ...block, text: event.target.value })}
-    />
+
+      <AutoGrowTextarea
+        value={block.text}
+        resizeKey={`${block.level}:${alignment}:${backgroundScope}`}
+        placeholder="Заголовок"
+        aria-label="Текст заголовка"
+        className={cn(
+          'relative z-10 max-h-[24rem] w-full rounded-lg px-2 py-2',
+          'font-semibold outline-none',
+          'placeholder:text-[var(--app-muted)]/60',
+          'transition-[color,background-color,font-size]'
+        )}
+        style={{
+          ...typography,
+          textAlign: alignment,
+          color: resolveStudyHeadingColor(block.color),
+          backgroundColor: backgroundScope === 'container' ? backgroundColor : 'transparent'
+        }}
+        onChange={(event) => onChange({ ...block, text: event.target.value })}
+      />
+    </div>
   )
 }
 
@@ -1399,24 +1428,38 @@ function getStudyReadNodeKey(node: StudyReadNode): string {
 
 function StudyReadHeading({ heading }: { heading: StudyHeadingBlock }): React.JSX.Element {
   const typography = getHeadingTypography(heading.level)
+  const alignment = heading.alignment ?? 'left'
+  const backgroundScope = heading.backgroundScope ?? 'container'
+  const backgroundColor = heading.backgroundColor ?? 'transparent'
 
   const style = {
     ...typography,
     color: resolveStudyHeadingColor(heading.color),
-    backgroundColor: heading.backgroundColor ?? 'transparent'
+    textAlign: alignment,
+    backgroundColor: backgroundScope === 'container' ? backgroundColor : 'transparent'
   }
 
   const className = 'scroll-mt-6 rounded-lg px-1 py-1.5 font-semibold'
+  const content = (
+    <span
+      data-study-heading-background={backgroundScope}
+      className={cn(backgroundScope === 'text' && 'box-decoration-clone rounded-lg px-0.5')}
+      style={{ backgroundColor: backgroundScope === 'text' ? backgroundColor : 'transparent' }}
+    >
+      {heading.text || 'Без заголовка'}
+    </span>
+  )
 
   if (heading.level === 1) {
     return (
       <h1
         id={getStudyHeadingElementId(heading.id)}
         data-study-heading-id={heading.id}
+        data-study-heading-alignment={alignment}
         className={className}
         style={style}
       >
-        {heading.text || 'Без заголовка'}
+        {content}
       </h1>
     )
   }
@@ -1426,10 +1469,11 @@ function StudyReadHeading({ heading }: { heading: StudyHeadingBlock }): React.JS
       <h2
         id={getStudyHeadingElementId(heading.id)}
         data-study-heading-id={heading.id}
+        data-study-heading-alignment={alignment}
         className={className}
         style={style}
       >
-        {heading.text || 'Без заголовка'}
+        {content}
       </h2>
     )
   }
@@ -1438,10 +1482,11 @@ function StudyReadHeading({ heading }: { heading: StudyHeadingBlock }): React.JS
     <h3
       id={getStudyHeadingElementId(heading.id)}
       data-study-heading-id={heading.id}
+      data-study-heading-alignment={alignment}
       className={className}
       style={style}
     >
-      {heading.text || 'Без заголовка'}
+      {content}
     </h3>
   )
 }
