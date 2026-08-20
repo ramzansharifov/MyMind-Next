@@ -1,7 +1,12 @@
-import { dialog, type BrowserWindow, type WebContents } from 'electron'
+import {
+  dialog,
+  type BrowserWindow,
+  type SaveDialogOptions,
+  type WebContents
+} from 'electron'
 import { writeFile } from 'node:fs/promises'
 
-import type { ExportStudyMaterialPdfResult } from '../../shared/contracts/study'
+import type { ExportStudyMaterialPdfResult } from '../../shared/contracts/study-pdf'
 
 const WINDOWS_RESERVED_FILE_NAMES = /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])$/i
 
@@ -26,11 +31,11 @@ export async function exportStudyMaterialPdf({
   webContents: WebContents
   parentWindow: BrowserWindow | null
 }): Promise<ExportStudyMaterialPdfResult> {
-  const options = {
+  const options: SaveDialogOptions = {
     title: 'Экспорт материала в PDF',
     defaultPath: createStudyPdfFileName(title),
     filters: [{ name: 'PDF', extensions: ['pdf'] }],
-    properties: ['showOverwriteConfirmation', 'createDirectory'] as const
+    properties: ['showOverwriteConfirmation', 'createDirectory']
   }
 
   const selection = parentWindow
