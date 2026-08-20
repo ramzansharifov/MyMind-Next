@@ -8,15 +8,19 @@ import { writeFile } from 'node:fs/promises'
 
 import type { ExportStudyMaterialPdfResult } from '../../shared/contracts/study-pdf'
 
-const WINDOWS_RESERVED_FILE_NAMES = /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])$/i
+const WINDOWS_RESERVED_FILE_NAMES = /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\..*)?$/i
 
 export function createStudyPdfFileName(title: string): string {
-  const normalized = title
+  let normalized = title
     .replace(/[<>:"/\\|?*\u0000-\u001f]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
-    .replace(/[. ]+$/g, '')
     .slice(0, 120)
+    .replace(/[. ]+$/g, '')
+
+  if (/\.pdf$/i.test(normalized)) {
+    normalized = normalized.slice(0, -4).trimEnd().replace(/[. ]+$/g, '')
+  }
 
   const safeStem = normalized && !WINDOWS_RESERVED_FILE_NAMES.test(normalized) ? normalized : 'Материал'
   return `${safeStem}.pdf`
