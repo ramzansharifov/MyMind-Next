@@ -34,6 +34,31 @@ class MockIntersectionObserver {
   }
 }
 
+function emitIntersection(target: Element, isIntersecting: boolean): void {
+  const callback = intersectionCallbacks.get(target)
+
+  if (!callback) {
+    throw new Error('IntersectionObserver callback is not registered for the block')
+  }
+
+  act(() => {
+    callback(
+      [
+        {
+          target,
+          isIntersecting,
+          intersectionRatio: isIntersecting ? 1 : 0,
+          time: 0,
+          boundingClientRect: target.getBoundingClientRect(),
+          intersectionRect: target.getBoundingClientRect(),
+          rootBounds: null
+        } as IntersectionObserverEntry
+      ],
+      {} as IntersectionObserver
+    )
+  })
+}
+
 afterEach(() => {
   intersectionCallbacks.clear()
   vi.unstubAllGlobals()
@@ -41,7 +66,7 @@ afterEach(() => {
 
 describe('StudyBlockEditor virtualization', () => {
   it(
-    'keeps distant blocks as lightweight placeholders and mounts them before they enter view',
+    'mounts distant blocks near the viewport and unmounts them again after they leave overscan',
     async () => {
       vi.stubGlobal('IntersectionObserver', MockIntersectionObserver)
 
@@ -77,28 +102,15 @@ describe('StudyBlockEditor virtualization', () => {
       ).toBeInTheDocument()
       expect(distantBlock?.style.height).not.toBe('')
 
-      const callback = distantBlock ? intersectionCallbacks.get(distantBlock) : undefined
-      expect(callback).toBeDefined()
-
-      act(() => {
-        callback?.(
-          [
-            {
-              target: distantBlock!,
-              isIntersecting: true,
-              intersectionRatio: 1,
-              time: 0,
-              boundingClientRect: distantBlock!.getBoundingClientRect(),
-              intersectionRect: distantBlock!.getBoundingClientRect(),
-              rootBounds: null
-            } as IntersectionObserverEntry
-          ],
-          {} as IntersectionObserver
-        )
-      })
+      emitIntersection(distantBlock!, true)
 
       await waitFor(() => expect(screen.getByDisplayValue('Заголовок 20')).toBeInTheDocument())
       expect(distantBlock).toHaveAttribute('data-study-block-viewport', 'mounted')
+
+      emitIntersection(distantBlock!, false)
+
+      await waitFor(() => expect(screen.queryByDisplayValue('Заголовок 20')).not.toBeInTheDocument())
+      expect(distantBlock).toHaveAttribute('data-study-block-viewport', 'placeholder')
     }
   )
 })
