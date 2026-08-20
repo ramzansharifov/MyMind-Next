@@ -1,4 +1,10 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type RefObject
+} from 'react'
 
 import type { StudyBlock } from '../../../../../shared/contracts/study'
 
@@ -14,8 +20,8 @@ interface StudyEditBlockVirtualizationInput {
 }
 
 interface StudyEditBlockVirtualizationResult {
-  containerRef: React.RefObject<HTMLDivElement | null>
-  contentRef: React.RefObject<HTMLDivElement | null>
+  containerRef: RefObject<HTMLDivElement | null>
+  contentRef: RefObject<HTMLDivElement | null>
   shouldRenderContent: boolean
   placeholderHeight: number
 }
