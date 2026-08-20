@@ -1,8 +1,3 @@
-.study-edit-block-viewport[data-study-block-viewport='mounted'] {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 280px;
-}
-
 .study-edit-block-placeholder {
   contain: layout paint style;
 }
