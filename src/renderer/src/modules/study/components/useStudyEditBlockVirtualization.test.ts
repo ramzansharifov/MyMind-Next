@@ -9,9 +9,13 @@ import {
 
 describe('study edit block virtualization', () => {
   it('enables virtualization only for sufficiently large documents with IntersectionObserver', () => {
-    expect(shouldVirtualizeStudyEditBlocks(STUDY_EDIT_VIRTUALIZATION_THRESHOLD - 1, true)).toBe(false)
+    expect(
+      shouldVirtualizeStudyEditBlocks(STUDY_EDIT_VIRTUALIZATION_THRESHOLD - 1, true)
+    ).toBe(false)
     expect(shouldVirtualizeStudyEditBlocks(STUDY_EDIT_VIRTUALIZATION_THRESHOLD, true)).toBe(true)
-    expect(shouldVirtualizeStudyEditBlocks(STUDY_EDIT_VIRTUALIZATION_THRESHOLD + 20, false)).toBe(false)
+    expect(
+      shouldVirtualizeStudyEditBlocks(STUDY_EDIT_VIRTUALIZATION_THRESHOLD + 20, false)
+    ).toBe(false)
   })
 
   it('uses content-aware placeholder estimates instead of one height for every block', () => {
