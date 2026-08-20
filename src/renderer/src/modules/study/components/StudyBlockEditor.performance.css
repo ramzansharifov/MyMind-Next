@@ -1,3 +1,17 @@
 .study-edit-block-placeholder {
   contain: layout paint style;
 }
+
+textarea[aria-label='Текст заголовка'],
+section:has(textarea[aria-label='Текст заголовка']),
+button:has([data-study-heading-id]),
+[data-study-heading-id] {
+  border-radius: 0 !important;
+}
+
+[data-study-heading-id] {
+  display: inline;
+  padding: 0 !important;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
