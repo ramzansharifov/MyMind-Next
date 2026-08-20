@@ -30,8 +30,7 @@ import {
 } from '../shared/contracts/study'
 import {
   STUDY_PDF_IPC_CHANNELS,
-  type ExportStudyMaterialPdfResult,
-  type StudyPdfApi
+  type ExportStudyMaterialPdfResult
 } from '../shared/contracts/study-pdf'
 import {
   IPC_CHANNELS,
@@ -43,7 +42,7 @@ import { TASKS_IPC_CHANNELS } from '../shared/contracts/tasks'
 import { WORKOUTS_IPC_CHANNELS } from '../shared/contracts/workouts'
 import { parseShutdownRequest } from './shutdown-request'
 
-const api: MyMindApi & { study: MyMindApi['study'] & StudyPdfApi } = {
+const api: MyMindApi = {
   system: {
     getHealth: () => ipcRenderer.invoke(IPC_CHANNELS.systemHealth) as Promise<SystemHealth>,
     getWindowState: () =>
