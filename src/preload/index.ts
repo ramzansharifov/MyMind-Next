@@ -29,6 +29,11 @@ import {
   type StudyNode
 } from '../shared/contracts/study'
 import {
+  STUDY_PDF_IPC_CHANNELS,
+  type ExportStudyMaterialPdfResult,
+  type StudyPdfApi
+} from '../shared/contracts/study-pdf'
+import {
   IPC_CHANNELS,
   type MyMindApi,
   type SystemHealth,
@@ -38,7 +43,7 @@ import { TASKS_IPC_CHANNELS } from '../shared/contracts/tasks'
 import { WORKOUTS_IPC_CHANNELS } from '../shared/contracts/workouts'
 import { parseShutdownRequest } from './shutdown-request'
 
-const api: MyMindApi = {
+const api: MyMindApi & { study: MyMindApi['study'] & StudyPdfApi } = {
   system: {
     getHealth: () => ipcRenderer.invoke(IPC_CHANNELS.systemHealth) as Promise<SystemHealth>,
     getWindowState: () =>
@@ -133,7 +138,9 @@ const api: MyMindApi = {
       ) as Promise<StudyInternalLinkTarget | null>,
     importAsset: (input) =>
       ipcRenderer.invoke(STUDY_IPC_CHANNELS.importAsset, input) as Promise<StudyLocalAsset | null>,
-    openAsset: (input) => ipcRenderer.invoke(STUDY_IPC_CHANNELS.openAsset, input) as Promise<void>
+    openAsset: (input) => ipcRenderer.invoke(STUDY_IPC_CHANNELS.openAsset, input) as Promise<void>,
+    exportMaterial: (input) =>
+      ipcRenderer.invoke(STUDY_PDF_IPC_CHANNELS.exportMaterial, input) as Promise<ExportStudyMaterialPdfResult>
   },
 
   notes: {
