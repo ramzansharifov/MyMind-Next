@@ -1,7 +1,7 @@
 import { createPortal } from 'react-dom'
 
 import type { StudyDocument } from '../../../../../shared/contracts/study'
-import '../../../../assets/study-material-pdf-export.css'
+import '../../../assets/study-material-pdf-export.css'
 import { StudyBlockEditor } from './StudyBlockEditor'
 
 interface StudyMaterialPdfExportProps {
