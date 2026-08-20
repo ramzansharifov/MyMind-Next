@@ -10,19 +10,23 @@ class MockIntersectionObserver {
   readonly root = null
   readonly rootMargin = '0px'
   readonly thresholds = [0]
+  private readonly targets = new Set<Element>()
 
   constructor(private readonly callback: IntersectionObserverCallback) {}
 
   observe(target: Element): void {
+    this.targets.add(target)
     intersectionCallbacks.set(target, this.callback)
   }
 
   unobserve(target: Element): void {
+    this.targets.delete(target)
     intersectionCallbacks.delete(target)
   }
 
   disconnect(): void {
-    intersectionCallbacks.clear()
+    this.targets.forEach((target) => intersectionCallbacks.delete(target))
+    this.targets.clear()
   }
 
   takeRecords(): IntersectionObserverEntry[] {
