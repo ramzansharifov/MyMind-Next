@@ -29,6 +29,7 @@ import {
   Fragment,
   lazy,
   Suspense,
+  useCallback,
   useContext,
   useEffect,
   useRef,
@@ -74,6 +75,11 @@ import { useStudyBlockAssetClient } from './study-block-asset-context'
 import { StudyDivider } from './StudyDivider'
 import { StudyFileBlockView } from './file/StudyFileBlockView'
 import { RichTextBlockEditor, RichTextViewer } from './rich-text/RichTextBlockEditor'
+import './StudyBlockEditor.performance.css'
+import {
+  shouldVirtualizeStudyEditBlocks,
+  useStudyEditBlockVirtualization
+} from './useStudyEditBlockVirtualization'
 
 const StudyCodeBlock = lazy(() =>
   import('./code/StudyCodeBlock').then((module) => ({ default: module.StudyCodeBlock }))
@@ -210,6 +216,7 @@ function StudyBlockEditorContent({
   const activeBlock =
     document.blocks.find((block) => block.id === activeBlockId) ?? document.blocks[0] ?? null
   const draggedBlock = document.blocks.find((block) => block.id === draggedBlockId) ?? null
+  const virtualizeEditBlocks = shouldVirtualizeStudyEditBlocks(document.blocks.length)
 
   if (mode === 'read') {
     return (
@@ -358,6 +365,8 @@ function StudyBlockEditorContent({
               <Fragment key={block.id}>
                 <StudyBlockDragItem
                   block={block}
+                  index={index}
+                  virtualize={virtualizeEditBlocks}
                   materialId={materialId}
                   dragDisabled={document.blocks.length < 2}
                   isDragging={draggedBlockId === block.id}
@@ -608,6 +617,8 @@ interface StudyBlockDragItemProps extends Omit<
   StudyBlockCardProps,
   'dragDisabled' | 'dragHandleAttributes' | 'dragHandleListeners' | 'isDragging'
 > {
+  index: number
+  virtualize: boolean
   dragDisabled: boolean
   isDragging: boolean
   dropPlacement: StudyBlockDropPlacement | null
@@ -615,6 +626,8 @@ interface StudyBlockDragItemProps extends Omit<
 
 function StudyBlockDragItem({
   block,
+  index,
+  virtualize,
   dragDisabled,
   isDragging,
   dropPlacement,
@@ -649,11 +662,33 @@ function StudyBlockDragItem({
     } satisfies StudyBlockDropData
   })
 
+  const {
+    containerRef,
+    contentRef,
+    shouldRenderContent,
+    placeholderHeight
+  } = useStudyEditBlockVirtualization({
+    block,
+    index,
+    enabled: virtualize,
+    pinned: cardProps.isActive || isDragging
+  })
+
+  const setViewportRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      containerRef.current = node
+      setDraggableRef(node)
+    },
+    [containerRef, setDraggableRef]
+  )
+
   return (
     <div
-      ref={setDraggableRef}
+      ref={setViewportRef}
       data-study-block-id={block.id}
-      className={cn('relative', isDragging && 'opacity-35')}
+      data-study-block-viewport={shouldRenderContent ? 'mounted' : 'placeholder'}
+      className={cn('study-edit-block-viewport relative', isDragging && 'opacity-35')}
+      style={shouldRenderContent ? undefined : { height: placeholderHeight }}
     >
       <span
         ref={setBeforeDropRef}
@@ -669,16 +704,36 @@ function StudyBlockDragItem({
 
       {dropPlacement === 'before' && <StudyBlockDropIndicator position="before" />}
 
-      <StudyBlockCard
-        {...cardProps}
-        block={block}
-        dragDisabled={dragDisabled}
-        dragHandleAttributes={attributes}
-        dragHandleListeners={listeners}
-        isDragging={isDragging}
-      />
+      {shouldRenderContent ? (
+        <div ref={contentRef}>
+          <StudyBlockCard
+            {...cardProps}
+            block={block}
+            dragDisabled={dragDisabled}
+            dragHandleAttributes={attributes}
+            dragHandleListeners={listeners}
+            isDragging={isDragging}
+          />
+        </div>
+      ) : (
+        <StudyVirtualizedBlockPlaceholder block={block} />
+      )}
 
       {dropPlacement === 'after' && <StudyBlockDropIndicator position="after" />}
+    </div>
+  )
+}
+
+function StudyVirtualizedBlockPlaceholder({ block }: { block: StudyBlock }): React.JSX.Element {
+  return (
+    <div
+      data-study-block-placeholder
+      aria-hidden="true"
+      className="study-edit-block-placeholder flex h-full min-h-16 items-start rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-3"
+    >
+      <span className="text-[10px] font-semibold tracking-[0.08em] text-[var(--app-muted)]/55 uppercase">
+        {getBlockLabel(block.type)}
+      </span>
     </div>
   )
 }
