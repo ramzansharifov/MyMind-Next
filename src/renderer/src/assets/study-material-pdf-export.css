@@ -1,0 +1,143 @@
+[data-study-pdf-export-root] {
+  --app-workspace: #ffffff;
+  --app-reader-surface: #ffffff;
+  --app-surface: #ffffff;
+  --app-surface-raised: #f8fafc;
+  --app-code-surface: #f8fafc;
+  --app-border: #d9dee7;
+  --app-border-strong: #b9c1ce;
+  --app-text: #111827;
+  --app-muted: #6b7280;
+
+  position: fixed;
+  top: 0;
+  left: -100000px;
+  z-index: -1;
+  width: 210mm;
+  visibility: hidden;
+  pointer-events: none;
+  background: #ffffff;
+  color: #111827;
+}
+
+[data-study-pdf-export-document] {
+  width: 100%;
+  background: #ffffff;
+  color: #111827;
+}
+
+[data-study-pdf-export-title] {
+  margin: 0 0 9mm;
+  padding-bottom: 6mm;
+  border-bottom: 1px solid #d9dee7;
+}
+
+[data-study-pdf-export-title] > p {
+  margin: 0 0 2mm;
+  color: #6b7280;
+  font-size: 9pt;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+[data-study-pdf-export-title] > h1 {
+  margin: 0;
+  color: #111827;
+  font-size: 24pt;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm 16mm 16mm;
+  }
+
+  html,
+  body {
+    min-width: 0 !important;
+    width: auto !important;
+    height: auto !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+  }
+
+  body > #root {
+    display: none !important;
+  }
+
+  [data-study-pdf-export-root] {
+    position: static !important;
+    z-index: auto !important;
+    width: auto !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  [data-study-pdf-export-root] [aria-hidden='true'] {
+    visibility: visible;
+  }
+
+  [data-study-pdf-export-root] [aria-label='Содержимое материала'] {
+    min-height: 0 !important;
+    padding: 0 !important;
+  }
+
+  [data-study-pdf-export-root] [aria-label='Содержимое материала'] > * {
+    break-inside: auto;
+  }
+
+  [data-study-pdf-export-root] h1,
+  [data-study-pdf-export-root] h2,
+  [data-study-pdf-export-root] h3 {
+    break-after: avoid-page;
+  }
+
+  [data-study-pdf-export-root] img,
+  [data-study-pdf-export-root] svg,
+  [data-study-pdf-export-root] canvas {
+    max-width: 100% !important;
+  }
+
+  [data-study-pdf-export-root] img {
+    object-fit: contain !important;
+  }
+
+  [data-study-pdf-export-root] [data-study-mermaid-block],
+  [data-study-pdf-export-root] [data-study-latex-block],
+  [data-study-pdf-export-root] [data-study-code-block] {
+    break-inside: avoid-page;
+  }
+
+  [data-study-pdf-export-root] [data-study-code-scroll],
+  [data-study-pdf-export-root] .study-source-editor-scroll {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  [data-study-pdf-export-root] pre,
+  [data-study-pdf-export-root] code {
+    white-space: pre-wrap !important;
+    overflow-wrap: anywhere;
+  }
+
+  [data-study-pdf-export-root] [data-mermaid-viewport-controls],
+  [data-study-pdf-export-root] [aria-label='Скачать Mermaid как SVG'],
+  [data-study-pdf-export-root] [aria-label^='Развернуть '],
+  [data-study-pdf-export-root] [aria-label^='Свернуть '] > svg {
+    display: none !important;
+  }
+
+  [data-study-pdf-export-root] button {
+    color: inherit !important;
+  }
+
+  [data-study-pdf-export-root] video,
+  [data-study-pdf-export-root] audio {
+    max-width: 100% !important;
+  }
+}
