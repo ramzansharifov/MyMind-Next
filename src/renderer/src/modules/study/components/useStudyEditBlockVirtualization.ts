@@ -68,7 +68,7 @@ export function useStudyEditBlockVirtualization({
   const shouldRenderContent = !enabled || pinned || nearViewport
 
   useLayoutEffect(() => {
-    if (!shouldRenderContent) {
+    if (!enabled || !shouldRenderContent) {
       return undefined
     }
 
@@ -104,7 +104,7 @@ export function useStudyEditBlockVirtualization({
     resizeObserver.observe(node)
 
     return () => resizeObserver.disconnect()
-  }, [block.id, shouldRenderContent])
+  }, [block.id, enabled, shouldRenderContent])
 
   return {
     containerRef,
