@@ -31,7 +31,7 @@ export function AutoGrowTextarea({
       value={value}
       className={cn(
         'block resize-none overflow-hidden',
-        inlineBackgroundColor && 'relative z-10 bg-transparent!',
+        inlineBackgroundColor && 'relative z-10',
         className
       )}
       style={
