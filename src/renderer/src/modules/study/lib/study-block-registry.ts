@@ -49,7 +49,14 @@ export const studyBlockRegistry = {
     type: 'heading',
     label: 'Заголовок',
     icon: Heading,
-    factory: (id) => ({ id, type: 'heading', text: '', level: 1 }),
+    factory: (id) => ({
+      id,
+      type: 'heading',
+      text: '',
+      level: 1,
+      alignment: 'left',
+      backgroundScope: 'container'
+    }),
     editStrategy: 'heading',
     readStrategy: 'heading',
     settingsStrategy: 'heading'
