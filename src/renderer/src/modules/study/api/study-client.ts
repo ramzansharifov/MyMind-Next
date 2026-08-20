@@ -20,13 +20,18 @@ import type {
   StudyMaterial,
   StudyNode
 } from '../../../../../shared/contracts/study'
+import type {
+  ExportStudyMaterialPdfInput,
+  ExportStudyMaterialPdfResult,
+  StudyPdfApi
+} from '../../../../../shared/contracts/study-pdf'
 
-function getStudyApi(): StudyApi {
+function getStudyApi(): StudyApi & StudyPdfApi {
   if (!window.api?.study) {
     throw new Error('Study API is unavailable')
   }
 
-  return window.api.study
+  return window.api.study as StudyApi & StudyPdfApi
 }
 
 export const studyClient = {
@@ -104,5 +109,13 @@ export const studyClient = {
 
   openAsset(input: OpenStudyAssetInput): Promise<void> {
     return getStudyApi().openAsset(input)
+  },
+
+  exportMaterialPdf(input: ExportStudyMaterialPdfInput): Promise<ExportStudyMaterialPdfResult> {
+    const api = getStudyApi()
+    if (typeof api.exportMaterial !== 'function') {
+      throw new Error('API экспорта PDF не загружен. Полностью перезапусти приложение MyMind.')
+    }
+    return api.exportMaterial(input)
   }
 }

@@ -5,6 +5,7 @@ import {
   Braces,
   Check,
   Edit3,
+  FileDown,
   LoaderCircle,
   Maximize2,
   Minimize2,
@@ -40,6 +41,10 @@ import {
 import { StudyActionButton } from './StudyActionButton'
 import { StudyBlockEditor } from './StudyBlockEditor'
 import { StudyCodeWorkspace } from './code-mode/StudyCodeWorkspace'
+import {
+  StudyMaterialPdfExport,
+  waitForStudyMaterialPdfReady
+} from './StudyMaterialPdfExport'
 import { StudyReadNavigation } from './StudyReadNavigation'
 
 type StudyMaterialMode = 'read' | 'edit' | 'code'
@@ -71,6 +76,10 @@ export function StudyMaterialEditor({
   const [isLoading, setIsLoading] = useState(true)
   const [codeDirty, setCodeDirty] = useState(false)
   const [pendingMode, setPendingMode] = useState<Exclude<StudyMaterialMode, 'code'> | null>(null)
+  const [pdfExportActive, setPdfExportActive] = useState(false)
+  const [pdfExporting, setPdfExporting] = useState(false)
+  const [pdfExportSaved, setPdfExportSaved] = useState(false)
+  const [pdfExportError, setPdfExportError] = useState<string | null>(null)
 
   const activeMode: StudyMaterialMode = focusMode ? 'read' : mode
 
@@ -318,6 +327,30 @@ export function StudyMaterialEditor({
     await onCodeApplied?.(result)
   }
 
+  async function handlePdfExport(): Promise<void> {
+    if (pdfExporting || (activeMode === 'code' && codeDirty)) return
+
+    setPdfExporting(true)
+    setPdfExportSaved(false)
+    setPdfExportError(null)
+    setPdfExportActive(true)
+
+    try {
+      await waitForStudyMaterialPdfReady()
+      const result = await studyClient.exportMaterialPdf({ nodeId: node.id })
+
+      if (result.status === 'saved') {
+        setPdfExportSaved(true)
+        window.setTimeout(() => setPdfExportSaved(false), 1400)
+      }
+    } catch (reason: unknown) {
+      setPdfExportError(reason instanceof Error ? reason.message : 'Не удалось экспортировать PDF')
+    } finally {
+      setPdfExportActive(false)
+      setPdfExporting(false)
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center text-sm text-[var(--app-muted)]">
@@ -326,6 +359,8 @@ export function StudyMaterialEditor({
       </div>
     )
   }
+
+  const pdfBlockedByCodeChanges = activeMode === 'code' && codeDirty
 
   return (
     <section
@@ -386,6 +421,33 @@ export function StudyMaterialEditor({
               })
             }}
           />
+        )}
+
+        {!focusMode && (
+          <Tooltip
+            content={
+              pdfBlockedByCodeChanges
+                ? 'Сначала сохраните изменения DSL'
+                : 'Экспортировать материал в PDF'
+            }
+            side="bottom"
+          >
+            <StudyActionButton
+              type="button"
+              aria-label="Экспортировать материал в PDF"
+              className="w-10 shrink-0 px-0"
+              disabled={pdfExporting || pdfBlockedByCodeChanges}
+              onClick={() => void handlePdfExport()}
+            >
+              {pdfExporting ? (
+                <LoaderCircle aria-hidden="true" className="animate-spin" />
+              ) : pdfExportSaved ? (
+                <Check aria-hidden="true" className="text-emerald-300" />
+              ) : (
+                <FileDown aria-hidden="true" />
+              )}
+            </StudyActionButton>
+          </Tooltip>
         )}
 
         {!focusMode && (
@@ -471,6 +533,10 @@ export function StudyMaterialEditor({
         </div>
       )}
 
+      {pdfExportActive && (
+        <StudyMaterialPdfExport materialId={node.id} title={node.title} studyDocument={document} />
+      )}
+
       <AppDialog
         open={pendingMode !== null}
         onOpenChange={(open) => {
@@ -499,6 +565,26 @@ export function StudyMaterialEditor({
         }
       >
         <p className="text-sm text-[var(--app-muted)]">Сохраните DSL, если хотите применить изменения.</p>
+      </AppDialog>
+
+      <AppDialog
+        open={pdfExportError !== null}
+        onOpenChange={(open) => {
+          if (!open) setPdfExportError(null)
+        }}
+        title="Не удалось экспортировать PDF"
+        description="Материал остался без изменений. Можно закрыть окно и попробовать снова."
+        footer={
+          <button
+            type="button"
+            className="rounded-lg bg-violet-500/15 px-3 py-2 text-sm font-medium text-violet-200"
+            onClick={() => setPdfExportError(null)}
+          >
+            Закрыть
+          </button>
+        }
+      >
+        <p className="text-sm text-red-300">{pdfExportError}</p>
       </AppDialog>
     </section>
   )

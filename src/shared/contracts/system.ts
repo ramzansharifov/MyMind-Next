@@ -9,6 +9,7 @@ import type { NutritionApi } from './nutrition'
 import type { PasswordsApi } from './passwords'
 import type { PreferencesApi } from './preferences'
 import type { StudyApi } from './study'
+import type { StudyPdfApi } from './study-pdf'
 import type { TasksApi } from './tasks'
 import type { WorkoutsApi } from './workouts'
 
@@ -52,7 +53,7 @@ export interface MyMindApi {
     respondToShutdown(response: ShutdownResponse): Promise<void>
   }
 
-  study: StudyApi
+  study: StudyApi & StudyPdfApi
   boards: BoardApi
   notes: NotesApi
   diary: DiaryApi

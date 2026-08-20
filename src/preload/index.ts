@@ -29,6 +29,10 @@ import {
   type StudyNode
 } from '../shared/contracts/study'
 import {
+  STUDY_PDF_IPC_CHANNELS,
+  type ExportStudyMaterialPdfResult
+} from '../shared/contracts/study-pdf'
+import {
   IPC_CHANNELS,
   type MyMindApi,
   type SystemHealth,
@@ -133,7 +137,9 @@ const api: MyMindApi = {
       ) as Promise<StudyInternalLinkTarget | null>,
     importAsset: (input) =>
       ipcRenderer.invoke(STUDY_IPC_CHANNELS.importAsset, input) as Promise<StudyLocalAsset | null>,
-    openAsset: (input) => ipcRenderer.invoke(STUDY_IPC_CHANNELS.openAsset, input) as Promise<void>
+    openAsset: (input) => ipcRenderer.invoke(STUDY_IPC_CHANNELS.openAsset, input) as Promise<void>,
+    exportMaterial: (input) =>
+      ipcRenderer.invoke(STUDY_PDF_IPC_CHANNELS.exportMaterial, input) as Promise<ExportStudyMaterialPdfResult>
   },
 
   notes: {
