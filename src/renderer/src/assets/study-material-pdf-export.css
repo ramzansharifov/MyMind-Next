@@ -10,6 +10,7 @@
   --app-text: #111827;
   --app-muted: #6b7280;
   --app-accent-300: #7c3aed;
+  --app-accent-400: #8b5cf6;
   --app-accent-500: #8b5cf6;
 
   position: fixed;
@@ -25,20 +26,21 @@
 
 [data-study-pdf-export-document] {
   width: 100%;
+  max-width: 100%;
   background: #ffffff;
   color: #111827;
 }
 
 [data-study-pdf-export-title] {
-  margin: 0 0 9mm;
-  padding-bottom: 6mm;
+  margin: 0 0 6mm;
+  padding-bottom: 4mm;
   border-bottom: 1px solid #d9dee7;
 }
 
 [data-study-pdf-export-title] > p {
-  margin: 0 0 2mm;
+  margin: 0 0 1.5mm;
   color: #6b7280;
-  font-size: 9pt;
+  font-size: 8pt;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -47,23 +49,28 @@
 [data-study-pdf-export-title] > h1 {
   margin: 0;
   color: #111827;
-  font-size: 24pt;
-  line-height: 1.15;
-  letter-spacing: -0.025em;
+  font-size: 18pt;
+  font-weight: 650;
+  line-height: 1.18;
+  letter-spacing: -0.02em;
 }
 
 @media print {
   @page {
-    size: A4;
-    margin: 14mm 16mm 16mm;
+    size: A4 portrait;
+    margin: 10mm 11mm 12mm;
+    background: #ffffff;
   }
 
+  :root,
   html,
   body {
     min-width: 0 !important;
-    width: auto !important;
+    width: 100% !important;
     height: auto !important;
+    margin: 0 !important;
     overflow: visible !important;
+    color-scheme: light !important;
     background: #ffffff !important;
   }
 
@@ -73,56 +80,112 @@
 
   [data-study-pdf-export-root] {
     position: static !important;
+    inset: auto !important;
     z-index: auto !important;
-    width: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
     visibility: visible !important;
+    overflow: visible !important;
     pointer-events: auto !important;
+    background: #ffffff !important;
+    color: #111827 !important;
+    font-size: 9.5pt;
+    line-height: 1.5;
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
   }
 
-  [data-study-pdf-export-root] [aria-label='Содержимое материала'] {
-    min-height: 0 !important;
-    padding: 0 !important;
+  [data-study-pdf-export-root] *,
+  [data-study-pdf-export-root] *::before,
+  [data-study-pdf-export-root] *::after {
+    box-sizing: border-box;
   }
 
-  [data-study-pdf-export-root] [aria-label='Содержимое материала'] > * {
-    break-inside: auto;
-  }
-
-  [data-study-pdf-export-root] h1,
-  [data-study-pdf-export-root] h2,
-  [data-study-pdf-export-root] h3 {
-    break-after: avoid-page;
-  }
-
-  [data-study-pdf-export-root] img,
-  [data-study-pdf-export-root] svg,
-  [data-study-pdf-export-root] canvas,
-  [data-study-pdf-export-root] iframe {
+  [data-study-pdf-export-document],
+  [data-study-pdf-export-content] {
+    width: 100% !important;
     max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    background: #ffffff !important;
   }
 
-  [data-study-pdf-export-root] img {
-    object-fit: contain !important;
+  [data-study-pdf-export-content] > div {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
   }
 
-  [data-study-pdf-export-root] [data-study-mermaid-block],
-  [data-study-pdf-export-root] [data-study-latex-block],
-  [data-study-pdf-export-root] [data-study-code-block] {
-    break-inside: avoid-page;
+  [data-study-pdf-export-root] [aria-label='Содержимое материала'] {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    font-size: 9.5pt;
+    line-height: 1.5;
   }
 
-  [data-study-pdf-export-root] [data-study-code-scroll],
-  [data-study-pdf-export-root] .study-source-editor-scroll {
-    max-height: none !important;
+  [data-study-pdf-export-root] [aria-label='Содержимое материала'] > * + * {
+    margin-top: 4.5mm !important;
+  }
+
+  [data-study-pdf-export-root] .study-read-collapsible-content {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
     overflow: visible !important;
   }
 
-  [data-study-pdf-export-root] pre,
-  [data-study-pdf-export-root] code {
-    white-space: pre-wrap !important;
+  [data-study-pdf-export-root] .study-read-collapsible-content > div {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 2.5mm 0 0 !important;
+    padding-left: 3mm !important;
+    border-left: 1px solid #e5e7eb !important;
+    overflow: visible !important;
+  }
+
+  [data-study-pdf-export-root] .study-read-collapsible-content > div > * + * {
+    margin-top: 4mm !important;
+  }
+
+  [data-study-pdf-export-root] h1[data-study-heading-id],
+  [data-study-pdf-export-root] h2[data-study-heading-id],
+  [data-study-pdf-export-root] h3[data-study-heading-id] {
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 1.5mm 2mm !important;
+    line-height: 1.2 !important;
     overflow-wrap: anywhere;
+    break-after: avoid-page;
+  }
+
+  [data-study-pdf-export-root] h1[data-study-heading-id] {
+    font-size: 18pt !important;
+    letter-spacing: -0.02em !important;
+  }
+
+  [data-study-pdf-export-root] h2[data-study-heading-id] {
+    font-size: 14pt !important;
+    letter-spacing: -0.015em !important;
+  }
+
+  [data-study-pdf-export-root] h3[data-study-heading-id] {
+    font-size: 11.5pt !important;
+    letter-spacing: -0.01em !important;
   }
 
   [data-study-pdf-export-root] button:not([aria-label^='Свернуть раздел']):not([aria-label^='Развернуть раздел']):not([aria-label^='Открыть файл']) {
@@ -133,9 +196,12 @@
   [data-study-pdf-export-root] button[aria-label^='Развернуть раздел'] {
     display: block !important;
     width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
     padding: 0 !important;
     background: transparent !important;
     color: inherit !important;
+    text-align: left !important;
   }
 
   [data-study-pdf-export-root] button[aria-label^='Свернуть раздел'] > svg,
@@ -147,6 +213,7 @@
   [data-study-pdf-export-root] button[aria-label^='Открыть файл'] {
     display: flex !important;
     width: 100% !important;
+    min-width: 0 !important;
     cursor: default !important;
   }
 
@@ -154,8 +221,201 @@
     display: none !important;
   }
 
+  [data-study-pdf-export-root] .mymind-rich-text-editor,
+  [data-study-pdf-export-root] .study-markdown-preview {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    font-size: 9.5pt !important;
+    line-height: 1.5 !important;
+    overflow: visible !important;
+    overflow-wrap: anywhere;
+  }
+
+  [data-study-pdf-export-root] .mymind-rich-text-editor > * + *,
+  [data-study-pdf-export-root] .study-markdown-preview > * + * {
+    margin-top: 2.5mm !important;
+  }
+
+  [data-study-pdf-export-root] .study-markdown-preview h1 {
+    font-size: 16pt !important;
+  }
+
+  [data-study-pdf-export-root] .study-markdown-preview h2 {
+    font-size: 13pt !important;
+  }
+
+  [data-study-pdf-export-root] .study-markdown-preview h3 {
+    font-size: 11.5pt !important;
+  }
+
+  [data-study-pdf-export-root] table {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    table-layout: fixed !important;
+    border-collapse: collapse !important;
+    font-size: 8.5pt !important;
+  }
+
+  [data-study-pdf-export-root] .study-markdown-table-wrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow: visible !important;
+    border-radius: 3mm !important;
+  }
+
+  [data-study-pdf-export-root] th,
+  [data-study-pdf-export-root] td {
+    min-width: 0 !important;
+    padding: 1.5mm 2mm !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
+  }
+
+  [data-study-pdf-export-root] thead {
+    display: table-header-group;
+  }
+
+  [data-study-pdf-export-root] tr {
+    break-inside: avoid-page;
+  }
+
+  [data-study-pdf-export-root] [data-study-mermaid-block] {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow: visible !important;
+    border-color: #d9dee7 !important;
+    background: #ffffff !important;
+    break-inside: avoid-page;
+  }
+
+  [data-study-pdf-export-root] [data-study-mermaid-block] > header {
+    display: none !important;
+  }
+
+  [data-study-pdf-export-root] .study-mermaid-preview {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    padding: 3mm !important;
+    overflow: visible !important;
+  }
+
+  [data-study-pdf-export-root] .study-mermaid-viewport {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  [data-study-pdf-export-root] .study-mermaid-svg {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  [data-study-pdf-export-root] .study-mermaid-svg svg {
+    display: block !important;
+    width: auto !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: 225mm !important;
+    margin: 0 auto !important;
+  }
+
+  [data-study-pdf-export-root] [data-study-latex-block],
+  [data-study-pdf-export-root] .study-latex-preview {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+  }
+
+  [data-study-pdf-export-root] .study-latex-preview {
+    min-height: 0 !important;
+    padding: 2.5mm !important;
+  }
+
+  [data-study-pdf-export-root] .study-latex-render {
+    max-width: 100% !important;
+    font-size: 0.9rem !important;
+  }
+
+  [data-study-pdf-export-root] .study-latex-render .katex-display {
+    max-width: 100% !important;
+    overflow: visible !important;
+  }
+
+  [data-study-pdf-export-root] [data-study-code-block] {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    break-inside: auto;
+  }
+
+  [data-study-pdf-export-root] [data-study-code-scroll],
+  [data-study-pdf-export-root] .study-source-editor-scroll,
+  [data-study-pdf-export-root] .study-code-block__body,
+  [data-study-pdf-export-root] .study-code-block__editor {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  [data-study-pdf-export-root] .study-code-block__line-numbers,
+  [data-study-pdf-export-root] .study-source-line-numbers {
+    display: none !important;
+  }
+
+  [data-study-pdf-export-root] pre,
+  [data-study-pdf-export-root] code {
+    max-width: 100% !important;
+    white-space: pre-wrap !important;
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
+  }
+
+  [data-study-pdf-export-root] pre {
+    font-size: 8.25pt !important;
+    line-height: 1.4 !important;
+  }
+
+  [data-study-pdf-export-root] img,
+  [data-study-pdf-export-root] svg,
+  [data-study-pdf-export-root] canvas,
+  [data-study-pdf-export-root] iframe,
   [data-study-pdf-export-root] video,
   [data-study-pdf-export-root] audio {
     max-width: 100% !important;
+  }
+
+  [data-study-pdf-export-root] img {
+    width: auto !important;
+    height: auto !important;
+    max-height: 225mm !important;
+    object-fit: contain !important;
+    break-inside: avoid-page;
+  }
+
+  [data-study-pdf-export-root] figure,
+  [data-study-pdf-export-root] [data-study-board-block] {
+    max-width: 100% !important;
+    break-inside: avoid-page;
+  }
+
+  [data-study-pdf-export-root] hr {
+    break-after: avoid-page;
   }
 }

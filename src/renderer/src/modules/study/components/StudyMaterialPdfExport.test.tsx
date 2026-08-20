@@ -15,10 +15,13 @@ describe('StudyMaterialPdfExport', () => {
 
     const exportRoot = document.body.querySelector('[data-study-pdf-export-root]')
     const exportDocument = document.body.querySelector('[data-study-pdf-export-document]')
+    const exportContent = document.body.querySelector('[data-study-pdf-export-content]')
 
     expect(exportRoot).toBeInTheDocument()
     expect(exportDocument).toHaveTextContent('MyMind · Обучение')
     expect(exportDocument).toHaveTextContent('Экспортируемый материал')
+    expect(exportContent).toBeInTheDocument()
+    expect(exportContent?.querySelector('[aria-label="Содержимое материала"]')).toBeInTheDocument()
 
     unmount()
     expect(document.body.querySelector('[data-study-pdf-export-root]')).not.toBeInTheDocument()
