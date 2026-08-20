@@ -78,10 +78,6 @@
     -webkit-print-color-adjust: exact;
   }
 
-  [data-study-pdf-export-root] [aria-hidden='true'] {
-    visibility: visible;
-  }
-
   [data-study-pdf-export-root] [aria-label='Содержимое материала'] {
     min-height: 0 !important;
     padding: 0 !important;
@@ -125,15 +121,23 @@
     overflow-wrap: anywhere;
   }
 
-  [data-study-pdf-export-root] [data-mermaid-viewport-controls],
-  [data-study-pdf-export-root] [aria-label='Скачать Mermaid как SVG'],
-  [data-study-pdf-export-root] [aria-label^='Развернуть '],
-  [data-study-pdf-export-root] [aria-label^='Свернуть '] > svg {
+  [data-study-pdf-export-root] button:not([aria-label^='Свернуть раздел']):not([aria-label^='Развернуть раздел']) {
     display: none !important;
   }
 
-  [data-study-pdf-export-root] button {
+  [data-study-pdf-export-root] button[aria-label^='Свернуть раздел'],
+  [data-study-pdf-export-root] button[aria-label^='Развернуть раздел'] {
+    display: block !important;
+    width: 100% !important;
+    padding: 0 !important;
+    background: transparent !important;
     color: inherit !important;
+  }
+
+  [data-study-pdf-export-root] button[aria-label^='Свернуть раздел'] > svg,
+  [data-study-pdf-export-root] button[aria-label^='Развернуть раздел'] > svg,
+  [data-study-pdf-export-root] [data-mermaid-viewport-controls] {
+    display: none !important;
   }
 
   [data-study-pdf-export-root] video,
