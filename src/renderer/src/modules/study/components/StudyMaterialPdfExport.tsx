@@ -23,13 +23,15 @@ export function StudyMaterialPdfExport({
           <h1>{title}</h1>
         </header>
 
-        <StudyBlockEditor
-          materialId={materialId}
-          document={studyDocument}
-          mode="read"
-          focusMode
-          onChange={() => undefined}
-        />
+        <section data-study-pdf-export-content>
+          <StudyBlockEditor
+            materialId={materialId}
+            document={studyDocument}
+            mode="read"
+            focusMode
+            onChange={() => undefined}
+          />
+        </section>
       </main>
     </div>,
     window.document.body
