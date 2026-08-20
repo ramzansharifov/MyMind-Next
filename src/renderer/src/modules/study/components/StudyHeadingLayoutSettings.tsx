@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react'
+
 import type { StudyBlock, StudyHeadingBlock } from '../../../../../shared/contracts/study'
 import { SegmentedChoice } from './settings/SegmentedChoice'
 
@@ -58,13 +60,7 @@ export function StudyHeadingLayoutSettings({
   )
 }
 
-function SettingsField({
-  label,
-  children
-}: {
-  label: string
-  children: React.ReactNode
-}): React.JSX.Element {
+function SettingsField({ label, children }: { label: string; children: ReactNode }): React.JSX.Element {
   return (
     <label className="grid gap-2">
       <span className="text-xs font-medium text-(--app-muted)">{label}</span>
