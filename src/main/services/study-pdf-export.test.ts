@@ -27,6 +27,9 @@ describe('study PDF export', () => {
   it('creates a safe PDF file name from a material title', () => {
     expect(createStudyPdfFileName('  Теория: свет / тень?  ')).toBe('Теория свет тень.pdf')
     expect(createStudyPdfFileName('CON')).toBe('Материал.pdf')
+    expect(createStudyPdfFileName('CON.txt')).toBe('Материал.pdf')
+    expect(createStudyPdfFileName('COM1.log')).toBe('Материал.pdf')
+    expect(createStudyPdfFileName('Лекция.pdf')).toBe('Лекция.pdf')
     expect(createStudyPdfFileName('...')).toBe('Материал.pdf')
   })
 
