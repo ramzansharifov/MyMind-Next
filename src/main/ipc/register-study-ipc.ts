@@ -1,6 +1,8 @@
 import { BrowserWindow, ipcMain } from 'electron'
 
+import { STUDY_PDF_IPC_CHANNELS } from '../../shared/contracts/study-pdf'
 import { STUDY_IPC_CHANNELS } from '../../shared/contracts/study'
+import { exportStudyMaterialPdfInputSchema } from '../../shared/validation/study-pdf'
 import {
   applyStudyCodeInputSchema,
   getStudyCodeSnapshotInputSchema,
@@ -36,9 +38,13 @@ import {
 import { importStudyAsset, openStudyAsset } from '../services/study-assets'
 import { applyStudyCode, getStudyCodeSnapshot, previewStudyCode } from '../services/study-code-service'
 import { mainOperationTracker } from '../services/main-operation-tracker'
+import { exportStudyMaterialPdf } from '../services/study-pdf-export'
 
 export function registerStudyIpcHandlers(): void {
   Object.values(STUDY_IPC_CHANNELS).forEach((channel) => {
+    ipcMain.removeHandler(channel)
+  })
+  Object.values(STUDY_PDF_IPC_CHANNELS).forEach((channel) => {
     ipcMain.removeHandler(channel)
   })
 
@@ -164,6 +170,29 @@ export function registerStudyIpcHandlers(): void {
       }
       const input = openStudyAssetInputSchema.parse(rawInput)
       return openStudyAsset(input)
+    })
+  )
+
+  ipcMain.handle(STUDY_PDF_IPC_CHANNELS.exportMaterial, (event, rawInput: unknown) =>
+    mainOperationTracker.run(async () => {
+      if (!event.senderFrame || event.senderFrame !== event.sender.mainFrame) {
+        throw new Error('Untrusted study PDF export request')
+      }
+
+      const input = exportStudyMaterialPdfInputSchema.parse(rawInput)
+      const node = listStudyNodes().find(
+        (candidate) => candidate.id === input.nodeId && candidate.type === 'material'
+      )
+
+      if (!node) throw new Error('Материал для экспорта не найден')
+
+      getStudyMaterial(input.nodeId)
+
+      return exportStudyMaterialPdf({
+        title: node.title,
+        webContents: event.sender,
+        parentWindow: BrowserWindow.fromWebContents(event.sender)
+      })
     })
   )
 }
