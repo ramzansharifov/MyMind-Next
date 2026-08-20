@@ -40,58 +40,65 @@ afterEach(() => {
 })
 
 describe('StudyBlockEditor virtualization', () => {
-  it('keeps distant blocks as lightweight placeholders and mounts them before they enter view', async () => {
-    vi.stubGlobal('IntersectionObserver', MockIntersectionObserver)
+  it(
+    'keeps distant blocks as lightweight placeholders and mounts them before they enter view',
+    async () => {
+      vi.stubGlobal('IntersectionObserver', MockIntersectionObserver)
 
-    const document: StudyDocument = {
-      version: 1,
-      blocks: Array.from({ length: 20 }, (_, index) => ({
-        id: `heading-${index + 1}`,
-        type: 'heading' as const,
-        text: `Заголовок ${index + 1}`,
-        level: 1 as const
-      }))
-    }
+      const document: StudyDocument = {
+        version: 1,
+        blocks: Array.from({ length: 20 }, (_, index) => ({
+          id: `heading-${index + 1}`,
+          type: 'heading' as const,
+          text: `Заголовок ${index + 1}`,
+          level: 1 as const
+        }))
+      }
 
-    const { container } = render(
-      <StudyBlockEditor
-        materialId="large-material"
-        document={document}
-        mode="edit"
-        onChange={vi.fn()}
-      />
-    )
-
-    expect(screen.getByDisplayValue('Заголовок 1')).toBeInTheDocument()
-    expect(screen.queryByDisplayValue('Заголовок 20')).not.toBeInTheDocument()
-
-    const distantBlock = container.querySelector<HTMLElement>('[data-study-block-id="heading-20"]')
-
-    expect(distantBlock).toHaveAttribute('data-study-block-viewport', 'placeholder')
-    expect(distantBlock?.querySelector('[data-study-block-placeholder]')).toBeInTheDocument()
-    expect(distantBlock?.style.height).not.toBe('')
-
-    const callback = distantBlock ? intersectionCallbacks.get(distantBlock) : undefined
-    expect(callback).toBeDefined()
-
-    act(() => {
-      callback?.(
-        [
-          {
-            target: distantBlock!,
-            isIntersecting: true,
-            intersectionRatio: 1,
-            time: 0,
-            boundingClientRect: distantBlock!.getBoundingClientRect(),
-            intersectionRect: distantBlock!.getBoundingClientRect(),
-            rootBounds: null
-          } as IntersectionObserverEntry
-        ],
-        {} as IntersectionObserver
+      const { container } = render(
+        <StudyBlockEditor
+          materialId="large-material"
+          document={document}
+          mode="edit"
+          onChange={vi.fn()}
+        />
       )
-    })
 
-    await waitFor(() => expect(screen.getByDisplayValue('Заголовок 20')).toBeInTheDocument())
-    expect(distantBlock).toHaveAttribute('data-study-block-viewport', 'mounted')
-  })
+      expect(screen.getByDisplayValue('Заголовок 1')).toBeInTheDocument()
+      expect(screen.queryByDisplayValue('Заголовок 20')).not.toBeInTheDocument()
+
+      const distantBlock = container.querySelector<HTMLElement>(
+        '[data-study-block-id="heading-20"]'
+      )
+
+      expect(distantBlock).toHaveAttribute('data-study-block-viewport', 'placeholder')
+      expect(
+        distantBlock?.querySelector('[data-study-block-placeholder]')
+      ).toBeInTheDocument()
+      expect(distantBlock?.style.height).not.toBe('')
+
+      const callback = distantBlock ? intersectionCallbacks.get(distantBlock) : undefined
+      expect(callback).toBeDefined()
+
+      act(() => {
+        callback?.(
+          [
+            {
+              target: distantBlock!,
+              isIntersecting: true,
+              intersectionRatio: 1,
+              time: 0,
+              boundingClientRect: distantBlock!.getBoundingClientRect(),
+              intersectionRect: distantBlock!.getBoundingClientRect(),
+              rootBounds: null
+            } as IntersectionObserverEntry
+          ],
+          {} as IntersectionObserver
+        )
+      })
+
+      await waitFor(() => expect(screen.getByDisplayValue('Заголовок 20')).toBeInTheDocument())
+      expect(distantBlock).toHaveAttribute('data-study-block-viewport', 'mounted')
+    }
+  )
 })
