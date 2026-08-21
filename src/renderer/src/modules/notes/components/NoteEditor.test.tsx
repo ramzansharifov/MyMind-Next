@@ -86,6 +86,25 @@ beforeEach(() => {
 })
 
 describe('NoteEditor reading mode', () => {
+  it('uses the same flat workspace layout as the study material editor', async () => {
+    const { container } = render(
+      <NoteEditor noteId={note.id} onBack={vi.fn()} onNoteUpdated={vi.fn()} />
+    )
+
+    await screen.findByRole('heading', { name: note.title })
+
+    const workspace = container.querySelector<HTMLElement>('[data-note-editor-mode="edit"]')
+    const header = container.querySelector<HTMLElement>('[data-note-editor-header]')
+    const scrollContainer = container.querySelector<HTMLElement>('[data-note-editor-scroll-container]')
+
+    expect(workspace).toHaveClass('flex', 'h-full', 'min-h-0', 'flex-col')
+    expect(header).toHaveClass('min-h-20', 'border-b', 'px-6')
+    expect(scrollContainer).toHaveClass('min-h-0', 'flex-1', 'overflow-y-auto', 'px-6', 'py-6')
+    expect(scrollContainer).not.toHaveClass('rounded-[28px]')
+    expect(scrollContainer).not.toHaveClass('shadow-[var(--app-shadow-card)]')
+    expect(screen.getByRole('tablist', { name: 'Режим заметки' })).toHaveClass('rounded-lg')
+  })
+
   it('switches between editing and reading through the shared block editor', async () => {
     const user = userEvent.setup()
 
@@ -99,7 +118,7 @@ describe('NoteEditor reading mode', () => {
       expect(screen.getByTestId('note-block-editor-mode')).toHaveTextContent('read')
     })
 
-    await user.click(screen.getByRole('tab', { name: 'Правка' }))
+    await user.click(screen.getByRole('tab', { name: 'Редактирование' }))
     expect(screen.getByTestId('note-block-editor-mode')).toHaveTextContent('edit')
   })
 
