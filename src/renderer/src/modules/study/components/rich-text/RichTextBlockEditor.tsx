@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { StudyInternalLinkTarget } from '../../../../../../shared/contracts/study'
 import { studyClient } from '../../api/study-client'
 import { STUDY_OPEN_INTERNAL_LINK_PICKER_EVENT } from '../../lib/study-internal-link'
+import { useRichTextInternalLinksEnabled } from './RichTextCapabilities'
 import { createRichTextExtensions } from './extensions'
 import {
   StudyInternalLinkPicker,
@@ -34,6 +35,7 @@ export function RichTextBlockEditor({
   onReady,
   onDispose
 }: RichTextBlockEditorProps): React.JSX.Element {
+  const internalLinksEnabled = useRichTextInternalLinksEnabled()
   const editorInstanceRef = useRef<Editor | null>(null)
 
   const onChangeRef = useRef(onChange)
@@ -68,7 +70,7 @@ export function RichTextBlockEditor({
       current = pickerStateRef.current,
       currentEditor = editorInstanceRef.current
     ): void => {
-      if (!currentEditor || currentEditor.isDestroyed || !current) {
+      if (!internalLinksEnabled || !currentEditor || currentEditor.isDestroyed || !current) {
         return
       }
 
@@ -111,10 +113,19 @@ export function RichTextBlockEditor({
       setTargets([])
       setIsSearching(false)
     },
-    []
+    [internalLinksEnabled]
   )
 
   function synchronizeTriggerPicker(currentEditor: Editor): void {
+    if (!internalLinksEnabled) {
+      if (pickerStateRef.current) {
+        setPickerState(null)
+        setTargets([])
+        setIsSearching(false)
+      }
+      return
+    }
+
     const trigger = findWikiLinkTrigger(currentEditor)
 
     if (!trigger) {
@@ -140,7 +151,7 @@ export function RichTextBlockEditor({
   }
 
   const editor = useEditor({
-    extensions: createRichTextExtensions(false),
+    extensions: createRichTextExtensions(false, { internalLinks: internalLinksEnabled }),
     content: html,
     immediatelyRender: true,
     shouldRerenderOnTransaction: false,
@@ -151,6 +162,10 @@ export function RichTextBlockEditor({
       },
 
       handleKeyDown: (_view, event) => {
+        if (!internalLinksEnabled) {
+          return false
+        }
+
         const current = pickerStateRef.current
 
         if (!current || current.mode !== 'trigger') {
@@ -303,7 +318,7 @@ export function RichTextBlockEditor({
   }, [editor, html])
 
   useEffect(() => {
-    if (!editor || editor.isDestroyed) {
+    if (!internalLinksEnabled || !editor || editor.isDestroyed) {
       return
     }
 
@@ -339,7 +354,7 @@ export function RichTextBlockEditor({
     return () => {
       editorElement.removeEventListener(STUDY_OPEN_INTERNAL_LINK_PICKER_EVENT, openToolbarPicker)
     }
-  }, [editor])
+  }, [editor, internalLinksEnabled])
 
   const pickerMode = pickerState?.mode ?? null
 
@@ -348,7 +363,7 @@ export function RichTextBlockEditor({
   const pickerOpen = pickerState !== null
 
   useEffect(() => {
-    if (!pickerMode) {
+    if (!internalLinksEnabled || !pickerMode) {
       return
     }
 
@@ -399,10 +414,10 @@ export function RichTextBlockEditor({
 
       window.clearTimeout(timeout)
     }
-  }, [materialId, pickerMode, pickerQuery])
+  }, [internalLinksEnabled, materialId, pickerMode, pickerQuery])
 
   useEffect(() => {
-    if (!editor || !pickerOpen) {
+    if (!internalLinksEnabled || !editor || !pickerOpen) {
       return
     }
 
@@ -428,7 +443,7 @@ export function RichTextBlockEditor({
 
       document.removeEventListener('scroll', reposition, true)
     }
-  }, [editor, pickerOpen])
+  }, [editor, internalLinksEnabled, pickerOpen])
 
   if (!editor) {
     return <div className="min-h-7 animate-pulse rounded-lg bg-white/[0.025]" />
@@ -438,7 +453,7 @@ export function RichTextBlockEditor({
     <>
       <EditorContent editor={editor} className="min-h-0" />
 
-      {pickerState && (
+      {internalLinksEnabled && pickerState && (
         <StudyInternalLinkPicker
           state={pickerState}
           targets={targets}
@@ -486,8 +501,9 @@ interface RichTextViewerProps {
 }
 
 export function RichTextViewer({ html, plainText }: RichTextViewerProps): React.JSX.Element {
+  const internalLinksEnabled = useRichTextInternalLinksEnabled()
   const editor = useEditor({
-    extensions: createRichTextExtensions(true),
+    extensions: createRichTextExtensions(true, { internalLinks: internalLinksEnabled }),
     content: html,
     editable: false,
     immediatelyRender: true,
