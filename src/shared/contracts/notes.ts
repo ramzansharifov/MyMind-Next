@@ -9,9 +9,13 @@ import type {
 export const NOTE_BLOCK_TYPES = [
   'text',
   'heading',
+  'code',
+  'markdown',
+  'latex',
+  'mermaid',
   'image',
-  'audio',
   'video',
+  'audio',
   'file',
   'divider',
   'board'
