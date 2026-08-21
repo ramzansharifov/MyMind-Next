@@ -98,11 +98,43 @@ describe('NoteEditor reading mode', () => {
     const scrollContainer = container.querySelector<HTMLElement>('[data-note-editor-scroll-container]')
 
     expect(workspace).toHaveClass('flex', 'h-full', 'min-h-0', 'flex-col')
-    expect(header).toHaveClass('min-h-20', 'border-b', 'px-6')
-    expect(scrollContainer).toHaveClass('min-h-0', 'flex-1', 'overflow-y-auto', 'px-6', 'py-6')
+    expect(header).toHaveClass('min-h-20', 'border-b', 'px-8')
+    expect(scrollContainer).toHaveClass('min-h-0', 'flex-1', 'overflow-y-auto', 'px-8', 'py-6')
     expect(scrollContainer).not.toHaveClass('rounded-[28px]')
     expect(scrollContainer).not.toHaveClass('shadow-[var(--app-shadow-card)]')
     expect(screen.getByRole('tablist', { name: 'Режим заметки' })).toHaveClass('rounded-lg')
+  })
+
+  it('uses the standard Notes content width in both editing and reading modes', async () => {
+    const user = userEvent.setup()
+    const { container } = render(
+      <NoteEditor noteId={note.id} onBack={vi.fn()} onNoteUpdated={vi.fn()} />
+    )
+
+    await screen.findByRole('heading', { name: note.title })
+
+    const headerContent = container.querySelector<HTMLElement>('[data-note-editor-header-content]')
+    const content = container.querySelector<HTMLElement>('[data-note-editor-content]')
+
+    expect(headerContent).toHaveClass(
+      'mx-auto',
+      'w-full',
+      'max-w-[var(--app-standard-content-width)]'
+    )
+    expect(content).toHaveClass(
+      'mx-auto',
+      'w-full',
+      'max-w-[var(--app-standard-content-width)]'
+    )
+
+    await user.click(screen.getByRole('tab', { name: 'Чтение' }))
+    await waitFor(() => {
+      expect(screen.getByTestId('note-block-editor-mode')).toHaveTextContent('read')
+    })
+
+    expect(container.querySelector('[data-note-editor-content]')).toHaveClass(
+      'max-w-[var(--app-standard-content-width)]'
+    )
   })
 
   it('switches between editing and reading through the shared block editor', async () => {
