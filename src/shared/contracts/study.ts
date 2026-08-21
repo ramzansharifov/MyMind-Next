@@ -91,6 +91,9 @@ export interface StudyTextBlock {
   html?: string
 }
 
+export type StudyHeadingAlignment = 'left' | 'center' | 'right'
+export type StudyHeadingBackgroundScope = 'text' | 'container'
+
 export interface StudyHeadingBlock {
   id: string
   type: 'heading'
@@ -98,6 +101,8 @@ export interface StudyHeadingBlock {
   level: 1 | 2 | 3
   color?: string
   backgroundColor?: string
+  alignment?: StudyHeadingAlignment
+  backgroundScope?: StudyHeadingBackgroundScope
 }
 
 export interface StudyCodeBlock {

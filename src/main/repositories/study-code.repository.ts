@@ -327,7 +327,12 @@ function serializeBlock(block: StudyBlock): StudyCodeTreeMaterial['blocks'][numb
         type: block.type,
         headingLevel: block.level,
         title: block.text,
-        attributes: compactAttributes({ color: block.color, background: block.backgroundColor })
+        attributes: compactAttributes({
+          color: block.color,
+          background: block.backgroundColor,
+          align: block.alignment,
+          backgroundScope: block.backgroundScope
+        })
       }
     case 'code':
       return {
@@ -418,7 +423,9 @@ function compactAttributes(
   values: Record<string, StudyCodeAttributeValue | undefined>
 ): Record<string, StudyCodeAttributeValue> {
   return Object.fromEntries(
-    Object.entries(values).filter((entry): entry is [string, StudyCodeAttributeValue] => entry[1] !== undefined)
+    Object.entries(values).filter(
+      (entry): entry is [string, StudyCodeAttributeValue] => entry[1] !== undefined
+    )
   )
 }
 
@@ -574,7 +581,8 @@ function resolveBlockId(
   usedIds: ReadonlySet<string>,
   outsideBlockOwners: ReadonlyMap<string, string>
 ): string {
-  if (!ast.id) return createUniqueId(new Set([...oldBlocks.keys(), ...usedIds, ...outsideBlockOwners.keys()]))
+  if (!ast.id)
+    return createUniqueId(new Set([...oldBlocks.keys(), ...usedIds, ...outsideBlockOwners.keys()]))
   if (!STUDY_SAFE_ID_PATTERN.test(ast.id)) semanticFail(ast, 'Некорректный @id блока')
   if (usedIds.has(ast.id)) semanticFail(ast, `Идентификатор блока ${ast.id} используется несколько раз`)
 
@@ -610,14 +618,21 @@ function buildBlock(
       return compactObject({ id, type: 'text' as const, text, html })
     }
     case 'heading':
-      assertAllowedAttributes(ast, ['color', 'background'])
+      assertAllowedAttributes(ast, ['color', 'background', 'align', 'backgroundScope'])
       return compactObject({
         id,
         type: 'heading' as const,
         text: ast.title ?? '',
         level: ast.headingLevel ?? 1,
         color: optionalString(attributes, 'color', ast),
-        backgroundColor: optionalString(attributes, 'background', ast)
+        backgroundColor: optionalString(attributes, 'background', ast),
+        alignment: optionalEnum(attributes, 'align', ['left', 'center', 'right'], ast),
+        backgroundScope: optionalEnum(
+          attributes,
+          'backgroundScope',
+          ['text', 'container'],
+          ast
+        )
       })
     case 'code':
       assertAllowedAttributes(ast, ['language'])
@@ -790,8 +805,12 @@ function calculateSummary(scope: ScopeState, desired: DesiredNode[]): StudyCodeC
         if (!newById.has(block.id)) summary.deletedBlocks += 1
       })
 
-      const oldCommon = oldDocument.blocks.filter((block) => newById.has(block.id)).map((block) => block.id)
-      const newCommon = node.document.blocks.filter((block) => oldById.has(block.id)).map((block) => block.id)
+      const oldCommon = oldDocument.blocks
+        .filter((block) => newById.has(block.id))
+        .map((block) => block.id)
+      const newCommon = node.document.blocks
+        .filter((block) => oldById.has(block.id))
+        .map((block) => block.id)
       oldCommon.forEach((id, index) => {
         if (newCommon[index] !== id) summary.reorderedBlocks += 1
       })
@@ -890,7 +909,13 @@ function applyPlanTransaction(plan: StudyCodePlan): void {
         } else {
           transaction
             .insert(studyMaterials)
-            .values({ nodeId: node.id, document: node.document, plainText, createdAt: now, updatedAt: now })
+            .values({
+              nodeId: node.id,
+              document: node.document,
+              plainText,
+              createdAt: now,
+              updatedAt: now
+            })
             .run()
         }
 
@@ -975,7 +1000,10 @@ function buildLinkTargets(
 
 function getFolderPath(
   parentId: string | null,
-  nodesById: ReadonlyMap<string, { id: string; type: string; parentId: string | null; title: string }>
+  nodesById: ReadonlyMap<
+    string,
+    { id: string; type: string; parentId: string | null; title: string }
+  >
 ): string[] {
   const path: string[] = []
   const visited = new Set<string>()

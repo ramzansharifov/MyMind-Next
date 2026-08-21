@@ -20,7 +20,7 @@ const folderIconSet = new Set<string>(STUDY_FOLDER_ICON_NAMES)
 
 const blockAttributes: Record<StudyBlockType, readonly string[]> = {
   text: [],
-  heading: ['color', 'background'],
+  heading: ['color', 'background', 'align', 'backgroundScope'],
   code: ['language'],
   markdown: ['view'],
   latex: ['view', 'display', 'align', 'scale'],
@@ -88,10 +88,7 @@ export function validateStudyCodeConstraints(source: string): StudyCodeConstrain
   return diagnostics
 }
 
-function validateNode(
-  node: StudyCodeTreeAst,
-  report: ReportDiagnostic
-): void {
+function validateNode(node: StudyCodeTreeAst, report: ReportDiagnostic): void {
   const title = node.title.trim()
   if (!title) report(node, 'Название не может быть пустым')
   if (title.length > STUDY_DOCUMENT_LIMITS.maxTitleLength) {
@@ -115,9 +112,21 @@ function validateBlock(block: StudyCodeBlockAst, report: ReportDiagnostic): void
 
   switch (block.blockType) {
     case 'text':
-      validateMaxLength(block, block.body ?? '', STUDY_DOCUMENT_LIMITS.maxTextLength, `${label}: текст`, report)
+      validateMaxLength(
+        block,
+        block.body ?? '',
+        STUDY_DOCUMENT_LIMITS.maxTextLength,
+        `${label}: текст`,
+        report
+      )
       if (block.html !== undefined) {
-        validateMaxLength(block, block.html, STUDY_DOCUMENT_LIMITS.maxHtmlLength, `${label}: HTML`, report)
+        validateMaxLength(
+          block,
+          block.html,
+          STUDY_DOCUMENT_LIMITS.maxHtmlLength,
+          `${label}: HTML`,
+          report
+        )
       }
       return
     case 'heading':
@@ -130,9 +139,17 @@ function validateBlock(block: StudyCodeBlockAst, report: ReportDiagnostic): void
       )
       validateColor(block, 'color', report)
       validateColor(block, 'background', report)
+      validateEnum(block, 'align', ['left', 'center', 'right'], report)
+      validateEnum(block, 'backgroundScope', ['text', 'container'], report)
       return
     case 'code': {
-      validateMaxLength(block, block.body ?? '', STUDY_DOCUMENT_LIMITS.maxSourceLength, `${label}: исходник`, report)
+      validateMaxLength(
+        block,
+        block.body ?? '',
+        STUDY_DOCUMENT_LIMITS.maxSourceLength,
+        `${label}: исходник`,
+        report
+      )
       const language = optionalStringAttribute(block, 'language', report)
       if (language !== undefined && language.length > 80) {
         report(block, 'Код: параметр language не должен быть длиннее 80 символов', 'language')
@@ -140,7 +157,13 @@ function validateBlock(block: StudyCodeBlockAst, report: ReportDiagnostic): void
       return
     }
     case 'markdown':
-      validateMaxLength(block, block.body ?? '', STUDY_DOCUMENT_LIMITS.maxSourceLength, `${label}: исходник`, report)
+      validateMaxLength(
+        block,
+        block.body ?? '',
+        STUDY_DOCUMENT_LIMITS.maxSourceLength,
+        `${label}: исходник`,
+        report
+      )
       validateEnum(block, 'view', ['write', 'split', 'preview'], report)
       return
     case 'latex':
@@ -154,7 +177,14 @@ function validateBlock(block: StudyCodeBlockAst, report: ReportDiagnostic): void
       validateEnum(block, 'view', ['write', 'split', 'preview'], report)
       validateEnum(block, 'display', ['display', 'inline'], report)
       validateEnum(block, 'align', ['left', 'center', 'right'], report)
-      validateIntegerRange(block, 'scale', 70, 180, 'LaTeX: масштаб должен быть от 70 до 180%', report)
+      validateIntegerRange(
+        block,
+        'scale',
+        70,
+        180,
+        'LaTeX: масштаб должен быть от 70 до 180%',
+        report
+      )
       return
     case 'mermaid':
       validateMaxLength(
@@ -166,7 +196,14 @@ function validateBlock(block: StudyCodeBlockAst, report: ReportDiagnostic): void
       )
       validateEnum(block, 'view', ['write', 'split', 'preview'], report)
       validateEnum(block, 'theme', ['dark', 'default', 'neutral', 'forest'], report)
-      validateIntegerRange(block, 'scale', 60, 180, 'Mermaid: масштаб должен быть от 60 до 180%', report)
+      validateIntegerRange(
+        block,
+        'scale',
+        60,
+        180,
+        'Mermaid: масштаб должен быть от 60 до 180%',
+        report
+      )
       return
     case 'image':
       validateAssetBlock(block, true, report)

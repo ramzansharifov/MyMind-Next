@@ -6,18 +6,21 @@ import './AutoGrowTextarea.css'
 interface AutoGrowTextareaProps extends Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'value'> {
   value: string
   resizeKey?: string | number
+  backgroundMode?: 'inline' | 'container'
 }
 
 export function AutoGrowTextarea({
   value,
   resizeKey,
+  backgroundMode = 'container',
   className,
   onInput,
   style,
   ...props
 }: AutoGrowTextareaProps): React.JSX.Element {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
-  const inlineBackgroundColor = resolveInlineBackgroundColor(style)
+  const inlineBackgroundColor =
+    backgroundMode === 'inline' ? resolveInlineBackgroundColor(style) : null
 
   useLayoutEffect(() => {
     resizeTextarea(textareaRef.current)

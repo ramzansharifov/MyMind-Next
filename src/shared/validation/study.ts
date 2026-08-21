@@ -33,7 +33,9 @@ export const studyHeadingBlockSchema = z.object({
   backgroundColor: z
     .string()
     .regex(/^#[0-9a-fA-F]{6}$/)
-    .optional()
+    .optional(),
+  alignment: z.enum(['left', 'center', 'right']).optional(),
+  backgroundScope: z.enum(['text', 'container']).optional()
 })
 
 export const studyCodeBlockSchema = z.object({
