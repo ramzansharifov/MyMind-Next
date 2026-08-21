@@ -12,7 +12,7 @@ const emptyDocument: StudyDocument = {
 }
 
 describe('StudyBlockEditor note configuration', () => {
-  it('shows only the eight block types supported by notes', async () => {
+  it('shows the same twelve block types as study', async () => {
     const user = userEvent.setup()
 
     render(
@@ -32,17 +32,17 @@ describe('StudyBlockEditor note configuration', () => {
       'Текст',
       'Заголовок',
       'Доска',
+      'Разделитель',
+      'Код',
+      'Markdown',
+      'LaTeX',
+      'Mermaid',
       'Фото',
-      'Аудио',
       'Видео',
-      'Файл',
-      'Разделитель'
+      'Аудио',
+      'Файл'
     ]) {
       expect(screen.getByRole('menuitem', { name: label })).toBeInTheDocument()
-    }
-
-    for (const label of ['Код', 'Markdown', 'LaTeX', 'Mermaid']) {
-      expect(screen.queryByRole('menuitem', { name: label })).not.toBeInTheDocument()
     }
   })
 })

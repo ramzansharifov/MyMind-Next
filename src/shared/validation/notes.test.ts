@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { noteDocumentSchema, saveNoteInputSchema } from './notes'
 
 describe('notes validation', () => {
-  it('accepts the eight block types supported by notes', () => {
+  it('accepts the same twelve block types as study', () => {
     expect(
       noteDocumentSchema
         .parse({
@@ -11,23 +11,58 @@ describe('notes validation', () => {
           blocks: [
             { id: 'text-one', type: 'text', text: '' },
             { id: 'heading-one', type: 'heading', text: 'Раздел', level: 1 },
+            {
+              id: 'code-one',
+              type: 'code',
+              source: 'const value = 1',
+              language: 'typescript'
+            },
+            {
+              id: 'markdown-one',
+              type: 'markdown',
+              source: '# Markdown',
+              viewMode: 'preview'
+            },
+            {
+              id: 'latex-one',
+              type: 'latex',
+              source: 'E = mc^2',
+              viewMode: 'preview',
+              displayMode: 'display',
+              alignment: 'center',
+              scale: 100
+            },
+            {
+              id: 'mermaid-one',
+              type: 'mermaid',
+              source: 'flowchart LR\n  A --> B',
+              viewMode: 'preview',
+              theme: 'dark',
+              scale: 100
+            },
             { id: 'image-one', type: 'image', source: { type: 'local' } },
-            { id: 'audio-one', type: 'audio', source: { type: 'local' } },
             { id: 'video-one', type: 'video', source: { type: 'local' } },
+            { id: 'audio-one', type: 'audio', source: { type: 'local' } },
             { id: 'file-one', type: 'file', source: { type: 'local' } },
             { id: 'divider-one', type: 'divider' },
             { id: 'board-one', type: 'board' }
           ]
         })
         .blocks.map((block) => block.type)
-    ).toEqual(['text', 'heading', 'image', 'audio', 'video', 'file', 'divider', 'board'])
-
-    expect(() =>
-      noteDocumentSchema.parse({
-        version: 1,
-        blocks: [{ id: 'code-one', type: 'code', source: 'const value = 1', language: 'ts' }]
-      })
-    ).toThrow()
+    ).toEqual([
+      'text',
+      'heading',
+      'code',
+      'markdown',
+      'latex',
+      'mermaid',
+      'image',
+      'video',
+      'audio',
+      'file',
+      'divider',
+      'board'
+    ])
   })
 
   it('rejects duplicate block ids', () => {

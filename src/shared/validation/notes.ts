@@ -6,11 +6,15 @@ import {
   openStudyAssetInputSchema,
   studyAudioBlockSchema,
   studyBoardBlockSchema,
+  studyCodeBlockSchema,
   studyDividerBlockSchema,
   studyFileBlockSchema,
   studyFolderIconSchema,
   studyHeadingBlockSchema,
   studyImageBlockSchema,
+  studyLatexBlockSchema,
+  studyMarkdownBlockSchema,
+  studyMermaidBlockSchema,
   studyTextBlockSchema,
   studyVideoBlockSchema
 } from './study'
@@ -24,6 +28,10 @@ export const noteBlockTypeSchema = z.enum(NOTE_BLOCK_TYPES)
 export const noteBlockSchema = z.discriminatedUnion('type', [
   studyTextBlockSchema,
   studyHeadingBlockSchema,
+  studyCodeBlockSchema,
+  studyMarkdownBlockSchema,
+  studyLatexBlockSchema,
+  studyMermaidBlockSchema,
   studyImageBlockSchema,
   studyAudioBlockSchema,
   studyVideoBlockSchema,

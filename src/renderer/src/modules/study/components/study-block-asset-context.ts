@@ -7,9 +7,14 @@ import type {
 } from '../../../../../shared/contracts/study'
 import { studyClient } from '../api/study-client'
 
+export interface StudyBlockEditorCapabilities {
+  internalLinks?: boolean
+}
+
 export interface StudyBlockAssetClient {
   importAsset(input: ImportStudyAssetInput): Promise<StudyLocalAsset | null>
   openAsset(input: OpenStudyAssetInput): Promise<void>
+  capabilities?: StudyBlockEditorCapabilities
 }
 
 const defaultStudyBlockAssetClient: StudyBlockAssetClient = {
