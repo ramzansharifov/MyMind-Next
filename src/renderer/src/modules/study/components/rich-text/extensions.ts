@@ -7,7 +7,14 @@ import StarterKit from '@tiptap/starter-kit'
 
 import { StudyInternalLinkExtension } from './StudyInternalLinkExtension'
 
-export function createRichTextExtensions(readOnly: boolean): Extensions {
+interface RichTextExtensionOptions {
+  internalLinks?: boolean
+}
+
+export function createRichTextExtensions(
+  readOnly: boolean,
+  { internalLinks = true }: RichTextExtensionOptions = {}
+): Extensions {
   return [
     StarterKit.configure({
       heading: false,
@@ -26,7 +33,7 @@ export function createRichTextExtensions(readOnly: boolean): Extensions {
       }
     }),
 
-    StudyInternalLinkExtension,
+    ...(internalLinks ? [StudyInternalLinkExtension] : []),
 
     TextAlign.configure({
       types: ['paragraph'],
