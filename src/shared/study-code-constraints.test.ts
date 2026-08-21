@@ -59,6 +59,25 @@ describe('study Code Mode constraint diagnostics', () => {
     )
   })
 
+  it('validates heading alignment and background scope values', () => {
+    const source = `@version(1)\n\nmaterial "Лекция" {\n  heading 1 "Заголовок" align="middle" backgroundScope="line"\n}\n`
+
+    const diagnostics = validateStudyCodeConstraints(source)
+
+    expect(diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          line: 4,
+          message: 'Параметр align: допустимые значения — left, center, right'
+        }),
+        expect.objectContaining({
+          line: 4,
+          message: 'Параметр backgroundScope: допустимые значения — text, container'
+        })
+      ])
+    )
+  })
+
   it('does not silently ignore detached local-asset metadata or unknown attributes', () => {
     const source = `@version(1)\n\nmaterial "Лекция" {\n  image name="photo.png" mime="image/png" size=100\n\n  divider opacity=0.5\n}\n`
 
@@ -76,7 +95,7 @@ describe('study Code Mode constraint diagnostics', () => {
   })
 
   it('accepts the values used by normal visual blocks', () => {
-    const source = `@version(1)\n\nmaterial "Лекция" {\n  heading 1 "Заголовок" color="#FFFFFF" background="#7C3AED"\n\n  latex view="preview" display="display" align="center" scale=100 """\n    x^2\n  """\n\n  mermaid view="preview" theme="forest" scale=100 """\n    flowchart LR\n      A --> B\n  """\n\n  image url="https://example.com/image.png" fit="contain" height=360\n  divider variant="tapered" thickness=4 color="#A78BFA"\n}\n`
+    const source = `@version(1)\n\nmaterial "Лекция" {\n  heading 1 "Заголовок" color="#FFFFFF" background="#7C3AED" align="center" backgroundScope="text"\n\n  latex view="preview" display="display" align="center" scale=100 """\n    x^2\n  """\n\n  mermaid view="preview" theme="forest" scale=100 """\n    flowchart LR\n      A --> B\n  """\n\n  image url="https://example.com/image.png" fit="contain" height=360\n  divider variant="tapered" thickness=4 color="#A78BFA"\n}\n`
 
     expect(validateStudyCodeConstraints(source)).toEqual([])
   })
