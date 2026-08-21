@@ -2,10 +2,12 @@
   display: none;
 }
 
-[data-rich-text-internal-links='disabled'] [data-testid='link-actions'] {
+[data-rich-text-internal-links='disabled']
+  div:has(> button[aria-label='Создать внутреннюю ссылку']) {
   grid-template-columns: minmax(0, 1fr);
 }
 
-[data-rich-text-internal-links='disabled'] [data-testid='link-actions'] + p {
+[data-rich-text-internal-links='disabled']
+  div:has(> button[aria-label='Создать внутреннюю ссылку']) + p {
   display: none;
 }
