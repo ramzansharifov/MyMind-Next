@@ -1,3 +1,8 @@
 .study-edit-block-placeholder {
   contain: layout paint style;
 }
+
+[data-study-heading-id] {
+  display: block;
+  width: 100%;
+}
