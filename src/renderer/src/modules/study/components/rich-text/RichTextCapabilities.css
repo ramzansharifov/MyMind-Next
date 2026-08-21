@@ -1,0 +1,11 @@
+[data-rich-text-internal-links='disabled'] button[aria-label='Создать внутреннюю ссылку'] {
+  display: none;
+}
+
+[data-rich-text-internal-links='disabled'] [data-testid='link-actions'] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+[data-rich-text-internal-links='disabled'] [data-testid='link-actions'] + p {
+  display: none;
+}
