@@ -1,0 +1,4 @@
+[data-note-editor-content] .max-w-\[1320px\],
+[data-note-editor-content] .max-w-5xl {
+  max-width: 100%;
+}
