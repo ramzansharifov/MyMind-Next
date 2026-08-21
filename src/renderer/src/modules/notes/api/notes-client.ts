@@ -81,6 +81,10 @@ export const notesClient = {
 }
 
 export const notesBlockAssetClient = {
+  capabilities: {
+    internalLinks: false
+  },
+
   importAsset(input: ImportStudyAssetInput): Promise<StudyLocalAsset | null> {
     return notesClient.importAsset({
       noteId: input.nodeId,
