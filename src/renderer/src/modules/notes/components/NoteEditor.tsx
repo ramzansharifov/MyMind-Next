@@ -17,6 +17,7 @@ import { StudyBlockEditor } from '../../study/components/StudyBlockEditor'
 import { StudyAutosaveQueue, type StudyAutosaveState } from '../../study/lib/study-autosave-queue'
 import { notesBlockAssetClient, notesClient } from '../api/notes-client'
 import { registerNotesDraftHandle } from '../lib/notes-draft-lifecycle'
+import './NoteEditor.css'
 import { NoteNameDialog } from './NoteNameDialog'
 
 interface NoteEditorProps {
@@ -178,105 +179,117 @@ export function NoteEditor({ noteId, onBack, onNoteUpdated }: NoteEditorProps): 
     >
       <header
         data-note-editor-header
-        className="flex min-h-20 shrink-0 items-center gap-4 border-b border-[var(--app-border)] bg-[var(--app-workspace)] px-6 max-[640px]:gap-2 max-[640px]:px-3"
+        className="min-h-20 shrink-0 border-b border-[var(--app-border)] bg-[var(--app-workspace)] px-8 max-[700px]:px-4"
       >
-        <Tooltip content="Вернуться к заметкам" side="bottom">
-          <StudyActionButton
-            type="button"
-            aria-label="Вернуться к списку заметок"
-            className="w-10 shrink-0 px-0"
-            onClick={() => void handleBack()}
-          >
-            <ArrowLeft aria-hidden="true" />
-          </StudyActionButton>
-        </Tooltip>
+        <div
+          data-note-editor-header-content
+          className="mx-auto flex min-h-20 w-full max-w-[var(--app-standard-content-width)] items-center gap-4 max-[640px]:gap-2"
+        >
+          <Tooltip content="Вернуться к заметкам" side="bottom">
+            <StudyActionButton
+              type="button"
+              aria-label="Вернуться к списку заметок"
+              className="w-10 shrink-0 px-0"
+              onClick={() => void handleBack()}
+            >
+              <ArrowLeft aria-hidden="true" />
+            </StudyActionButton>
+          </Tooltip>
 
-        <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-semibold tracking-[0.08em] text-violet-300 uppercase">
-            Заметка
-          </p>
-          <h1 className="mt-1 truncate text-xl font-semibold tracking-tight text-[var(--app-text)]">
-            {note.title}
-          </h1>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-semibold tracking-[0.08em] text-violet-300 uppercase">
+              Заметка
+            </p>
+            <h1 className="mt-1 truncate text-xl font-semibold tracking-tight text-[var(--app-text)]">
+              {note.title}
+            </h1>
+          </div>
+
+          <Tooltip content="Переименовать заметку" side="bottom">
+            <StudyActionButton
+              type="button"
+              aria-label="Переименовать заметку"
+              className="w-auto shrink-0 px-3 max-[760px]:w-10 max-[760px]:px-0"
+              onClick={() => setRenameOpen(true)}
+            >
+              <Pencil aria-hidden="true" />
+              <span className="max-[760px]:hidden">Переименовать</span>
+            </StudyActionButton>
+          </Tooltip>
+
+          <SaveStatus
+            state={saveState}
+            onRetry={() => {
+              void autosaveQueue.flushLatestDraft().catch(() => undefined)
+            }}
+          />
+
+          <Tabs.Root value={mode} onValueChange={handleModeChange}>
+            <Tabs.List
+              aria-label="Режим заметки"
+              className="inline-flex rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] p-1"
+            >
+              <Tabs.Trigger
+                value="read"
+                disabled={isModeChanging}
+                className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-[var(--app-muted)] transition-colors outline-none hover:text-[var(--app-text)] disabled:cursor-wait disabled:opacity-60 data-[state=active]:bg-[var(--app-surface-raised)] data-[state=active]:text-[var(--app-text)]"
+              >
+                {isModeChanging ? (
+                  <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
+                ) : (
+                  <BookOpen aria-hidden="true" className="size-4" />
+                )}
+                <span className="max-[760px]:hidden">Чтение</span>
+              </Tabs.Trigger>
+
+              <Tabs.Trigger
+                value="edit"
+                disabled={isModeChanging}
+                className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-[var(--app-muted)] transition-colors outline-none hover:text-[var(--app-text)] disabled:cursor-wait disabled:opacity-60 data-[state=active]:bg-[var(--app-surface-raised)] data-[state=active]:text-[var(--app-text)]"
+              >
+                <Edit3 aria-hidden="true" className="size-4" />
+                <span className="max-[760px]:hidden">Редактирование</span>
+              </Tabs.Trigger>
+            </Tabs.List>
+          </Tabs.Root>
         </div>
-
-        <Tooltip content="Переименовать заметку" side="bottom">
-          <StudyActionButton
-            type="button"
-            aria-label="Переименовать заметку"
-            className="w-auto shrink-0 px-3 max-[760px]:w-10 max-[760px]:px-0"
-            onClick={() => setRenameOpen(true)}
-          >
-            <Pencil aria-hidden="true" />
-            <span className="max-[760px]:hidden">Переименовать</span>
-          </StudyActionButton>
-        </Tooltip>
-
-        <SaveStatus
-          state={saveState}
-          onRetry={() => {
-            void autosaveQueue.flushLatestDraft().catch(() => undefined)
-          }}
-        />
-
-        <Tabs.Root value={mode} onValueChange={handleModeChange}>
-          <Tabs.List
-            aria-label="Режим заметки"
-            className="inline-flex rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] p-1"
-          >
-            <Tabs.Trigger
-              value="read"
-              disabled={isModeChanging}
-              className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-[var(--app-muted)] transition-colors outline-none hover:text-[var(--app-text)] disabled:cursor-wait disabled:opacity-60 data-[state=active]:bg-[var(--app-surface-raised)] data-[state=active]:text-[var(--app-text)]"
-            >
-              {isModeChanging ? (
-                <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
-              ) : (
-                <BookOpen aria-hidden="true" className="size-4" />
-              )}
-              <span className="max-[760px]:hidden">Чтение</span>
-            </Tabs.Trigger>
-
-            <Tabs.Trigger
-              value="edit"
-              disabled={isModeChanging}
-              className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-[var(--app-muted)] transition-colors outline-none hover:text-[var(--app-text)] disabled:cursor-wait disabled:opacity-60 data-[state=active]:bg-[var(--app-surface-raised)] data-[state=active]:text-[var(--app-text)]"
-            >
-              <Edit3 aria-hidden="true" className="size-4" />
-              <span className="max-[760px]:hidden">Редактирование</span>
-            </Tabs.Trigger>
-          </Tabs.List>
-        </Tabs.Root>
       </header>
 
       {(backError || modeError) && (
-        <div
-          role="alert"
-          className="mx-6 mt-4 shrink-0 rounded-xl border border-red-500/15 bg-red-500/[0.05] px-4 py-3 text-xs text-red-300 max-[640px]:mx-3"
-        >
-          {backError ?? modeError}
+        <div className="shrink-0 px-8 pt-4 max-[700px]:px-4">
+          <div
+            role="alert"
+            className="mx-auto w-full max-w-[var(--app-standard-content-width)] rounded-xl border border-red-500/15 bg-red-500/[0.05] px-4 py-3 text-xs text-red-300"
+          >
+            {backError ?? modeError}
+          </div>
         </div>
       )}
 
       <div
         data-note-editor-scroll-container
         className={cn(
-          'min-h-0 flex-1 overflow-y-auto px-6 py-6',
-          'max-[640px]:px-3 max-[640px]:py-4',
+          'min-h-0 flex-1 overflow-y-auto px-8 py-6',
+          'max-[700px]:px-4 max-[640px]:py-4',
           mode === 'read' && '[scrollbar-gutter:stable] bg-[var(--app-reader-surface)]'
         )}
       >
-        <StudyBlockAssetProvider client={notesBlockAssetClient}>
-          <StudyBlockEditor
-            materialId={note.id}
-            document={note.document as StudyDocument}
-            mode={mode}
-            boardSource="notes"
-            allowedBlockTypes={NOTE_BLOCK_TYPES}
-            documentLabel="заметки"
-            onChange={(document) => updateDocument(document as NoteDocument)}
-          />
-        </StudyBlockAssetProvider>
+        <div
+          data-note-editor-content
+          className="mx-auto w-full max-w-[var(--app-standard-content-width)]"
+        >
+          <StudyBlockAssetProvider client={notesBlockAssetClient}>
+            <StudyBlockEditor
+              materialId={note.id}
+              document={note.document as StudyDocument}
+              mode={mode}
+              boardSource="notes"
+              allowedBlockTypes={NOTE_BLOCK_TYPES}
+              documentLabel="заметки"
+              onChange={(document) => updateDocument(document as NoteDocument)}
+            />
+          </StudyBlockAssetProvider>
+        </div>
       </div>
 
       <NoteNameDialog
