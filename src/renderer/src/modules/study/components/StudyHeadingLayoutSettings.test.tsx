@@ -29,15 +29,19 @@ describe('StudyHeadingLayoutSettings', () => {
 
   it('switches between text-only and full-container background', () => {
     const onChange = vi.fn()
-
-    render(<StudyHeadingLayoutSettings block={heading} onChange={onChange} />)
+    const { rerender } = render(
+      <StudyHeadingLayoutSettings block={heading} onChange={onChange} />
+    )
 
     expect(screen.getByText('Область фона')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Весь блок' }))
     expect(onChange).toHaveBeenCalledWith({ ...heading, backgroundScope: 'container' })
 
+    const containerHeading = { ...heading, backgroundScope: 'container' as const }
+    rerender(<StudyHeadingLayoutSettings block={containerHeading} onChange={onChange} />)
+
     fireEvent.click(screen.getByRole('button', { name: 'Текст' }))
-    expect(onChange).toHaveBeenCalledWith({ ...heading, backgroundScope: 'text' })
+    expect(onChange).toHaveBeenCalledWith({ ...containerHeading, backgroundScope: 'text' })
   })
 })
