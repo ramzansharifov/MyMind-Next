@@ -174,8 +174,7 @@ function habitCreatedDateKey(habit: Pick<HabitRecord, 'createdAt'>): string {
 
 function findGroup(id: string): HabitGroupRecord | null {
   const row = getSqlite().prepare(`${HABIT_GROUP_SELECT} WHERE id = ?`).get(id) as
-    | HabitGroupRow
-    | undefined
+    HabitGroupRow | undefined
   return row ? mapGroup(row) : null
 }
 
@@ -193,8 +192,7 @@ function ensureUniqueGroupName(name: string, ignoredId: string | null = null): v
   const normalizedName = name.trim().toLocaleLowerCase('ru-RU')
   const rows = getSqlite().prepare('SELECT id, name FROM habit_groups').all() as HabitGroupNameRow[]
   const duplicate = rows.some(
-    (row) =>
-      row.id !== ignoredId && row.name.trim().toLocaleLowerCase('ru-RU') === normalizedName
+    (row) => row.id !== ignoredId && row.name.trim().toLocaleLowerCase('ru-RU') === normalizedName
   )
   if (duplicate) throw new Error('Группа с таким названием уже существует')
 }
@@ -335,9 +333,7 @@ export function updateHabitGroup(input: UpdateHabitGroupInput): HabitGroupRecord
   const now = Date.now()
 
   getSqlite()
-    .prepare(
-      `UPDATE habit_groups SET name = ?, icon = ?, color = ?, updated_at = ? WHERE id = ?`
-    )
+    .prepare(`UPDATE habit_groups SET name = ?, icon = ?, color = ?, updated_at = ? WHERE id = ?`)
     .run(input.name, input.icon, input.color, now, group.id)
 
   return requireGroup(group.id)
@@ -433,7 +429,15 @@ export function upsertHabitEntry(input: UpsertHabitEntryInput): HabitEntryRecord
          skipped = excluded.skipped,
          updated_at = excluded.updated_at`
     )
-    .run(id, input.habitId, input.date, value, input.skipped ? 1 : 0, existing?.createdAt ?? now, now)
+    .run(
+      id,
+      input.habitId,
+      input.date,
+      value,
+      input.skipped ? 1 : 0,
+      existing?.createdAt ?? now,
+      now
+    )
 
   const entry = findEntry(input.habitId, input.date)
   if (!entry) throw new Error('Не удалось сохранить отметку привычки')
@@ -451,9 +455,9 @@ export function deleteHabitEntry(input: DeleteHabitEntryInput): boolean {
 export function getHabitsReport(input: HabitReportInput): HabitReport {
   const sqlite = getSqlite()
   const today = localDateKey()
-  const allHabits = (sqlite
-    .prepare(`${HABIT_SELECT} ORDER BY title COLLATE NOCASE ASC`)
-    .all() as HabitRow[]).map(mapHabit)
+  const allHabits = (
+    sqlite.prepare(`${HABIT_SELECT} ORDER BY title COLLATE NOCASE ASC`).all() as HabitRow[]
+  ).map(mapHabit)
 
   const habits = allHabits.filter((habit) => {
     if (input.ungroupedOnly && habit.groupId !== null) return false
@@ -463,9 +467,11 @@ export function getHabitsReport(input: HabitReportInput): HabitReport {
 
   if (input.groupId !== null) requireGroup(input.groupId)
 
-  const entries = (sqlite
-    .prepare(`${HABIT_ENTRY_SELECT} WHERE date >= ? AND date <= ? ORDER BY date ASC`)
-    .all(input.dateFrom, input.dateTo) as HabitEntryRow[]).map(mapEntry)
+  const entries = (
+    sqlite
+      .prepare(`${HABIT_ENTRY_SELECT} WHERE date >= ? AND date <= ? ORDER BY date ASC`)
+      .all(input.dateFrom, input.dateTo) as HabitEntryRow[]
+  ).map(mapEntry)
 
   const habitIds = new Set(habits.map((habit) => habit.id))
   const relevantEntries = entries.filter((entry) => habitIds.has(entry.habitId))
@@ -537,7 +543,8 @@ export function getHabitsReport(input: HabitReportInput): HabitReport {
     summary,
     days,
     habits: habitReports.sort((left, right) => {
-      if (right.completionRate !== left.completionRate) return right.completionRate - left.completionRate
+      if (right.completionRate !== left.completionRate)
+        return right.completionRate - left.completionRate
       if (right.completed !== left.completed) return right.completed - left.completed
       return left.title.localeCompare(right.title, 'ru-RU')
     })

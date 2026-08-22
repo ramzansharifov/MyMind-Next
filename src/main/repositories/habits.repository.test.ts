@@ -69,7 +69,9 @@ describe('habits repository', () => {
     })
     expect(updated.title).toBe('Пить воду регулярно')
 
-    const columns = getSqlite().prepare('PRAGMA table_info(habits)').all() as Array<{ name: string }>
+    const columns = getSqlite().prepare('PRAGMA table_info(habits)').all() as Array<{
+      name: string
+    }>
     const names = columns.map((column) => column.name)
     expect(names).not.toContain('description')
     expect(names).not.toContain('status')
@@ -89,7 +91,12 @@ describe('habits repository', () => {
       preferredTime: null
     })
 
-    const entry = upsertHabitEntry({ habitId: habit.id, date: '2026-01-04', value: 1, skipped: false })
+    const entry = upsertHabitEntry({
+      habitId: habit.id,
+      date: '2026-01-04',
+      value: 1,
+      skipped: false
+    })
     expect(entry).toMatchObject({ habitId: habit.id, date: '2026-01-04', value: 1, skipped: false })
 
     expect(() =>

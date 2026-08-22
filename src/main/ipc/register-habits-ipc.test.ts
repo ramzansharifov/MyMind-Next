@@ -49,15 +49,18 @@ describe('registerHabitsIpcHandlers', () => {
     )?.[1]
 
     await expect(
-      handler({}, {
-        title: 'Читать',
-        groupId: null,
-        trackingType: 'check',
-        targetValue: 1,
-        unit: '',
-        repeatEveryDays: 0,
-        preferredTime: null
-      })
+      handler(
+        {},
+        {
+          title: 'Читать',
+          groupId: null,
+          trackingType: 'check',
+          targetValue: 1,
+          unit: '',
+          repeatEveryDays: 0,
+          preferredTime: null
+        }
+      )
     ).rejects.toThrow()
   })
 
@@ -68,20 +71,23 @@ describe('registerHabitsIpcHandlers', () => {
     )?.[1]
 
     await expect(
-      handler({}, {
-        title: 'Читать',
-        groupId: null,
-        trackingType: 'check',
-        targetValue: 1,
-        unit: '',
-        repeatEveryDays: 1,
-        preferredTime: null,
-        description: 'legacy',
-        status: 'active',
-        startDate: '2026-08-23',
-        endDate: null,
-        archivedOn: null
-      })
+      handler(
+        {},
+        {
+          title: 'Читать',
+          groupId: null,
+          trackingType: 'check',
+          targetValue: 1,
+          unit: '',
+          repeatEveryDays: 1,
+          preferredTime: null,
+          description: 'legacy',
+          status: 'active',
+          startDate: '2026-08-23',
+          endDate: null,
+          archivedOn: null
+        }
+      )
     ).rejects.toThrow()
   })
 })

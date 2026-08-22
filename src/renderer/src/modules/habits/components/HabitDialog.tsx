@@ -141,7 +141,7 @@ export function HabitDialog({
               value={title}
               maxLength={240}
               placeholder="Например, Читать 20 минут"
-              className="h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm text-[var(--app-text)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
+              className="h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm text-[var(--app-text)] transition-[border-color,box-shadow] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
               onChange={(event) => setTitle(event.target.value)}
             />
           </label>
@@ -213,7 +213,8 @@ export function HabitDialog({
             <Repeat2 className="size-4 text-violet-300" /> Повторение
           </div>
           <p className="mb-3 text-xs leading-5 text-[var(--app-muted)]">
-            Период отсчитывается от дня создания привычки. Например, 10 означает один запланированный день каждые 10 дней.
+            Период отсчитывается от дня создания привычки. Например, 10 означает один
+            запланированный день каждые 10 дней.
           </p>
           <div className="flex flex-wrap gap-2">
             {recurrencePresets.map((days) => (

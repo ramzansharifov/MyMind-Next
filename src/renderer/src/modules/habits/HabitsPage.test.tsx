@@ -135,9 +135,7 @@ describe('HabitsPage', () => {
     const user = userEvent.setup()
     render(<HabitsPage />)
 
-    await user.click(
-      await screen.findByRole('button', { name: 'Выполнить привычку «Пить воду»' })
-    )
+    await user.click(await screen.findByRole('button', { name: 'Выполнить привычку «Пить воду»' }))
 
     await waitFor(() =>
       expect(mocks.upsertEntry).toHaveBeenCalledWith({

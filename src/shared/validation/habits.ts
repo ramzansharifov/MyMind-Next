@@ -1,10 +1,6 @@
 import { z } from 'zod'
 
-import {
-  HABIT_GROUP_COLORS,
-  HABIT_GROUP_ICONS,
-  HABIT_TRACKING_TYPES
-} from '../contracts/habits'
+import { HABIT_GROUP_COLORS, HABIT_GROUP_ICONS, HABIT_TRACKING_TYPES } from '../contracts/habits'
 
 const HABIT_SAFE_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/
 const MAX_GROUP_NAME_LENGTH = 80

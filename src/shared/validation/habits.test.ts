@@ -25,9 +25,9 @@ describe('habit validation', () => {
   })
 
   it('keeps check habits binary and lets count habits define a target and unit', () => {
-    expect(() =>
-      createHabitInputSchema.parse({ ...baseHabit, targetValue: 2 })
-    ).toThrow('Для привычки с отметкой целевое значение должно быть равно 1')
+    expect(() => createHabitInputSchema.parse({ ...baseHabit, targetValue: 2 })).toThrow(
+      'Для привычки с отметкой целевое значение должно быть равно 1'
+    )
 
     const countHabit = createHabitInputSchema.parse({
       ...baseHabit,
