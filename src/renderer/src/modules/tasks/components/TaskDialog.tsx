@@ -1,17 +1,15 @@
-import { CalendarDays, ListTodo } from 'lucide-react'
+import { ListTodo } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import type {
   CreateTaskInput,
   TaskGroupRecord,
-  TaskPriority,
   TaskRecord,
   TaskStatus,
   UpdateTaskInput
 } from '../../../../../shared/contracts/tasks'
 import { AppDialog } from '../../../shared/ui/AppDialog'
 import { AppSelect } from '../../../shared/ui/AppSelect'
-import { TASK_PRIORITY_OPTIONS } from '../task-options'
 
 const NO_GROUP_VALUE = '__none__'
 const TASK_FORM_ID = 'task-editor-form'
@@ -36,12 +34,8 @@ export function TaskDialog({
   onSave
 }: TaskDialogProps): React.JSX.Element {
   const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
   const [groupId, setGroupId] = useState(NO_GROUP_VALUE)
   const [status, setStatus] = useState<TaskStatus>('active')
-  const [priority, setPriority] = useState<TaskPriority>('normal')
-  const [dueDate, setDueDate] = useState('')
-  const [dueTime, setDueTime] = useState('')
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -56,12 +50,8 @@ export function TaskDialog({
         : NO_GROUP_VALUE
 
     setTitle(task?.title ?? '')
-    setDescription(task?.description ?? '')
     setGroupId(initialGroup)
     setStatus(task?.status ?? 'active')
-    setPriority(task?.priority ?? 'normal')
-    setDueDate(task?.dueDate ?? '')
-    setDueTime(task?.dueTime ?? '')
     setError(null)
   }, [groups, initialGroupId, open, task])
 
@@ -73,12 +63,12 @@ export function TaskDialog({
     setError(null)
     const input: CreateTaskInput = {
       title: normalizedTitle,
-      description: description.trim(),
+      description: task?.description ?? '',
       groupId: groupId === NO_GROUP_VALUE ? null : groupId,
       status,
-      priority,
-      dueDate: dueDate || null,
-      dueTime: dueDate && dueTime ? dueTime : null
+      priority: task?.priority ?? 'normal',
+      dueDate: task?.dueDate ?? null,
+      dueTime: task?.dueTime ?? null
     }
 
     try {
@@ -94,9 +84,9 @@ export function TaskDialog({
       open={open}
       onOpenChange={onOpenChange}
       title={task ? 'Изменить задачу' : 'Новая задача'}
-      description="Настройте задачу, её группу, срок и приоритет."
+      description="Название, группа и статус — ничего лишнего."
       icon={<ListTodo />}
-      size="lg"
+      size="md"
       busy={busy}
       footer={
         <>
@@ -132,73 +122,17 @@ export function TaskDialog({
           />
         </label>
 
-        <label className="block space-y-1.5">
-          <span className="text-xs font-medium text-[var(--app-muted)]">Описание</span>
-          <textarea
-            value={description}
-            maxLength={5000}
-            rows={4}
-            placeholder="Детали, заметки, полезный контекст…"
-            className="w-full resize-y rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 py-3 text-sm leading-6 text-[var(--app-text)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
-            onChange={(event) => setDescription(event.target.value)}
+        <div className="space-y-1.5">
+          <span className="block text-xs font-medium text-[var(--app-muted)]">Группа</span>
+          <AppSelect
+            ariaLabel="Группа задачи"
+            value={groupId}
+            options={[
+              { value: NO_GROUP_VALUE, label: 'Без группы' },
+              ...groups.map((group) => ({ value: group.id, label: group.name }))
+            ]}
+            onValueChange={setGroupId}
           />
-        </label>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <span className="block text-xs font-medium text-[var(--app-muted)]">Группа</span>
-            <AppSelect
-              ariaLabel="Группа задачи"
-              value={groupId}
-              options={[
-                { value: NO_GROUP_VALUE, label: 'Без группы' },
-                ...groups.map((group) => ({ value: group.id, label: group.name }))
-              ]}
-              onValueChange={setGroupId}
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <span className="block text-xs font-medium text-[var(--app-muted)]">Приоритет</span>
-            <AppSelect
-              ariaLabel="Приоритет задачи"
-              value={priority}
-              options={TASK_PRIORITY_OPTIONS}
-              onValueChange={(value) => setPriority(value as TaskPriority)}
-            />
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-4">
-          <div className="mb-3 flex items-center gap-2 text-sm font-medium text-[var(--app-text)]">
-            <CalendarDays className="size-4 text-violet-300" /> Срок
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="space-y-1.5">
-              <span className="block text-xs text-[var(--app-muted)]">Дата</span>
-              <input
-                type="date"
-                value={dueDate}
-                min="1900-01-01"
-                max="2200-12-31"
-                className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
-                onChange={(event) => {
-                  setDueDate(event.target.value)
-                  if (!event.target.value) setDueTime('')
-                }}
-              />
-            </label>
-            <label className="space-y-1.5">
-              <span className="block text-xs text-[var(--app-muted)]">Время</span>
-              <input
-                type="time"
-                value={dueTime}
-                disabled={!dueDate}
-                className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15 disabled:cursor-not-allowed disabled:opacity-40"
-                onChange={(event) => setDueTime(event.target.value)}
-              />
-            </label>
-          </div>
         </div>
 
         <div className="space-y-1.5">

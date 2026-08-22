@@ -58,6 +58,13 @@ describe('tasks validation', () => {
         color: 'blue'
       })
     ).toEqual({ name: 'Работа', icon: 'briefcase', color: 'blue' })
+    expect(
+      createTaskGroupInputSchema.parse({
+        name: 'Без собственного цвета',
+        icon: 'folder',
+        color: 'accent'
+      })
+    ).toEqual({ name: 'Без собственного цвета', icon: 'folder', color: 'accent' })
     expect(() =>
       createTaskGroupInputSchema.parse({
         name: 'Работа',

@@ -36,14 +36,14 @@ export function TaskGroupDialog({
 }: TaskGroupDialogProps): React.JSX.Element {
   const [name, setName] = useState('')
   const [icon, setIcon] = useState<TaskGroupIcon>('folder')
-  const [color, setColor] = useState<TaskGroupColor>('violet')
+  const [color, setColor] = useState<TaskGroupColor>('accent')
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!open) return
     setName(group?.name ?? '')
     setIcon(group?.icon ?? 'folder')
-    setColor(group?.color ?? 'violet')
+    setColor(group?.color ?? 'accent')
     setError(null)
   }, [group, open])
 
@@ -130,8 +130,11 @@ export function TaskGroupDialog({
         </div>
 
         <div className="space-y-2">
-          <span className="block text-xs font-medium text-[var(--app-muted)]">Цвет</span>
-          <div className="grid grid-cols-8 gap-2 max-[520px]:grid-cols-4">
+          <div className="flex items-center justify-between gap-3">
+            <span className="block text-xs font-medium text-[var(--app-muted)]">Цвет</span>
+            <span className="text-[11px] text-[var(--app-muted)]">Без цвета = акцент приложения</span>
+          </div>
+          <div className="grid grid-cols-9 gap-2 max-[620px]:grid-cols-5 max-[440px]:grid-cols-3">
             {TASK_GROUP_COLOR_OPTIONS.map((option) => {
               const classes = taskGroupColorClasses[option.value]
               return (
@@ -140,9 +143,12 @@ export function TaskGroupDialog({
                   type="button"
                   aria-label={`Цвет: ${option.label}`}
                   aria-pressed={color === option.value}
+                  title={option.label}
                   className={cn(
                     'flex aspect-square items-center justify-center rounded-xl border bg-[var(--app-workspace)] outline-none transition-transform hover:scale-105',
-                    color === option.value ? `${classes.border} ring-2 ring-white/10` : 'border-[var(--app-border)]'
+                    color === option.value
+                      ? `${classes.border} ring-2 ring-white/10`
+                      : 'border-[var(--app-border)]'
                   )}
                   onClick={() => setColor(option.value)}
                 >
@@ -169,13 +175,20 @@ export function TaskGroupDialog({
               <div className="truncate text-sm font-semibold text-[var(--app-text)]">
                 {name.trim() || 'Название группы'}
               </div>
-              <div className="mt-0.5 text-xs text-[var(--app-muted)]">Так группа будет выглядеть в списке</div>
+              <div className="mt-0.5 text-xs text-[var(--app-muted)]">
+                {color === 'accent'
+                  ? 'Группа будет использовать акцентный цвет приложения'
+                  : 'Так группа будет выглядеть в списке'}
+              </div>
             </div>
           </div>
         </div>
 
         {error && (
-          <div role="alert" className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+          <div
+            role="alert"
+            className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-300"
+          >
             {error}
           </div>
         )}

@@ -31,12 +31,12 @@ const workGroup: TaskGroupRecord = {
 const task: TaskRecord = {
   id: 'task-1',
   title: 'Подготовить отчёт',
-  description: 'Проверить итоговые цифры.',
+  description: 'Старое скрытое описание.',
   groupId: workGroup.id,
   status: 'active',
   priority: 'high',
-  dueDate: null,
-  dueTime: null,
+  dueDate: '2026-08-25',
+  dueTime: '12:30',
   completedAt: null,
   createdAt: 2,
   updatedAt: 2
@@ -58,15 +58,13 @@ beforeEach(() => {
     completedAt: input.status === 'completed' ? 6 : null,
     updatedAt: 6
   }))
-  mocks.createGroup.mockResolvedValue({
-    id: 'group-home',
-    name: 'Дом',
-    icon: 'home',
-    color: 'emerald',
+  mocks.createGroup.mockImplementation(async (input) => ({
+    ...input,
+    id: 'group-created',
     position: 1,
     createdAt: 7,
     updatedAt: 7
-  })
+  }))
   mocks.updateGroup.mockImplementation(async (input) => ({
     ...workGroup,
     ...input,
@@ -77,20 +75,22 @@ beforeEach(() => {
 })
 
 describe('TasksPage', () => {
-  it('shows status filters, task groups and grouped tasks', async () => {
+  it('puts search and simple status filters in the header without priority or date filters', async () => {
     render(<TasksPage />)
 
     expect(await screen.findByRole('heading', { name: 'Задачи' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Все задачи 1' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Работа 1' })).toBeInTheDocument()
+    expect(screen.getByRole('searchbox', { name: 'Поиск по задачам' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Все' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Активные' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Сегодня' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Просрочено' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Выполненные' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Сегодня' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Просрочено' })).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Фильтр по приоритету')).not.toBeInTheDocument()
+    expect(screen.queryByText('Высокий')).not.toBeInTheDocument()
     expect(screen.getByText('Подготовить отчёт')).toBeInTheDocument()
-    expect(screen.getByText('Высокий')).toBeInTheDocument()
   })
 
-  it('quick-adds a task into the selected group', async () => {
+  it('quick-adds a task into the selected group with neutral legacy metadata', async () => {
     const user = userEvent.setup()
     render(<TasksPage />)
 
@@ -114,7 +114,7 @@ describe('TasksPage', () => {
     )
   })
 
-  it('marks an active task as completed without rebuilding its metadata', async () => {
+  it('marks a task as completed by clicking the task itself and preserves old hidden metadata', async () => {
     const user = userEvent.setup()
     render(<TasksPage />)
 
@@ -136,21 +136,51 @@ describe('TasksPage', () => {
     )
   })
 
-  it('creates custom groups with icon and color', async () => {
+  it('keeps edit and delete actions visible without hover-only opacity', async () => {
+    render(<TasksPage />)
+
+    const edit = await screen.findByRole('button', { name: 'Изменить задачу «Подготовить отчёт»' })
+    const remove = screen.getByRole('button', { name: 'Удалить задачу «Подготовить отчёт»' })
+    const actions = edit.parentElement
+
+    expect(edit).toBeInTheDocument()
+    expect(remove).toBeInTheDocument()
+    expect(actions).not.toHaveClass('opacity-0')
+    expect(actions).not.toHaveClass('group-hover/task:opacity-100')
+  })
+
+  it('shows only title, group and status in the task dialog', async () => {
+    const user = userEvent.setup()
+    render(<TasksPage />)
+
+    await user.click(await screen.findByRole('button', { name: 'Новая задача' }))
+
+    expect(screen.getByRole('heading', { name: 'Новая задача' })).toBeInTheDocument()
+    expect(screen.getByText('Название')).toBeInTheDocument()
+    expect(screen.getByText('Группа')).toBeInTheDocument()
+    expect(screen.getByText('Статус')).toBeInTheDocument()
+    expect(screen.queryByText('Описание')).not.toBeInTheDocument()
+    expect(screen.queryByText('Приоритет')).not.toBeInTheDocument()
+    expect(screen.queryByText('Срок')).not.toBeInTheDocument()
+  })
+
+  it('creates a group without a custom color by using the app accent', async () => {
     const user = userEvent.setup()
     render(<TasksPage />)
 
     await user.click(await screen.findByRole('button', { name: 'Новая группа' }))
     await user.type(screen.getByLabelText('Название'), 'Дом')
-    await user.click(screen.getByRole('button', { name: 'Иконка: Дом' }))
-    await user.click(screen.getByRole('button', { name: 'Цвет: Изумрудный' }))
+
+    const noColor = screen.getByRole('button', { name: 'Цвет: Без цвета' })
+    expect(noColor).toHaveAttribute('aria-pressed', 'true')
+
     await user.click(screen.getByRole('button', { name: 'Создать группу' }))
 
     await waitFor(() =>
       expect(mocks.createGroup).toHaveBeenCalledWith({
         name: 'Дом',
-        icon: 'home',
-        color: 'emerald'
+        icon: 'folder',
+        color: 'accent'
       })
     )
   })
@@ -159,9 +189,7 @@ describe('TasksPage', () => {
     const user = userEvent.setup()
     render(<TasksPage />)
 
-    await user.click(
-      await screen.findByRole('button', { name: 'Удалить группу «Работа»' })
-    )
+    await user.click(await screen.findByRole('button', { name: 'Удалить группу «Работа»' }))
 
     expect(screen.getByRole('heading', { name: 'Удалить группу?' })).toBeInTheDocument()
     expect(
