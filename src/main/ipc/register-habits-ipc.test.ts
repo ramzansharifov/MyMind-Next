@@ -42,13 +42,13 @@ describe('registerHabitsIpcHandlers', () => {
     )
   })
 
-  it('validates recurrence before creating a habit', async () => {
+  it('validates recurrence before creating a habit', () => {
     registerHabitsIpcHandlers()
     const handler = mocks.handle.mock.calls.find(
       ([channel]) => channel === HABITS_IPC_CHANNELS.createHabit
     )?.[1]
 
-    await expect(
+    expect(() =>
       handler(
         {},
         {
@@ -61,16 +61,16 @@ describe('registerHabitsIpcHandlers', () => {
           preferredTime: null
         }
       )
-    ).rejects.toThrow()
+    ).toThrow()
   })
 
-  it('rejects removed legacy habit fields', async () => {
+  it('rejects removed legacy habit fields', () => {
     registerHabitsIpcHandlers()
     const handler = mocks.handle.mock.calls.find(
       ([channel]) => channel === HABITS_IPC_CHANNELS.createHabit
     )?.[1]
 
-    await expect(
+    expect(() =>
       handler(
         {},
         {
@@ -88,6 +88,6 @@ describe('registerHabitsIpcHandlers', () => {
           archivedOn: null
         }
       )
-    ).rejects.toThrow()
+    ).toThrow()
   })
 })
