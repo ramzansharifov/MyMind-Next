@@ -16,5 +16,7 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci --ignore-scripts
+      - name: Verify Framer Motion
+        run: npm ls framer-motion
       - name: Build renderer bundle
         run: npm run build:bundle
