@@ -42,19 +42,14 @@ function makeHabit(): HabitRecord {
   return {
     id: 'habit-water',
     title: 'Пить воду',
-    description: 'Не забывать про воду.',
     groupId: healthGroup.id,
-    status: 'active',
     trackingType: 'check',
     targetValue: 1,
     unit: '',
     repeatEveryDays: 1,
-    startDate: todayKey(),
-    endDate: null,
     preferredTime: '09:00',
-    archivedOn: null,
-    createdAt: 2,
-    updatedAt: 2
+    createdAt: Date.now(),
+    updatedAt: Date.now()
   }
 }
 
@@ -150,6 +145,8 @@ describe('HabitsPage', () => {
 
     expect(await screen.findByText('Календарь выполнения')).toBeInTheDocument()
     expect(screen.getAllByText('100%').length).toBeGreaterThan(0)
-    expect(mocks.getReport).toHaveBeenCalled()
+    expect(mocks.getReport).toHaveBeenCalledWith(
+      expect.not.objectContaining({ includeArchived: expect.anything() })
+    )
   })
 })
