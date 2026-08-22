@@ -60,4 +60,28 @@ describe('registerHabitsIpcHandlers', () => {
       })
     ).rejects.toThrow()
   })
+
+  it('rejects removed legacy habit fields', async () => {
+    registerHabitsIpcHandlers()
+    const handler = mocks.handle.mock.calls.find(
+      ([channel]) => channel === HABITS_IPC_CHANNELS.createHabit
+    )?.[1]
+
+    await expect(
+      handler({}, {
+        title: 'Читать',
+        groupId: null,
+        trackingType: 'check',
+        targetValue: 1,
+        unit: '',
+        repeatEveryDays: 1,
+        preferredTime: null,
+        description: 'legacy',
+        status: 'active',
+        startDate: '2026-08-23',
+        endDate: null,
+        archivedOn: null
+      })
+    ).rejects.toThrow()
+  })
 })
