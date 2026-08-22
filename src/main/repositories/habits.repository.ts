@@ -16,7 +16,6 @@ import type {
   HabitReportHabit,
   HabitReportInput,
   HabitReportSummary,
-  HabitStatus,
   HabitTrackingType,
   HabitsOverview,
   HabitsOverviewInput,
@@ -44,17 +43,12 @@ interface HabitGroupNameRow {
 interface HabitRow {
   id: string
   title: string
-  description: string
   group_id: string | null
-  status: HabitStatus
   tracking_type: HabitTrackingType
   target_value: number
   unit: string
   repeat_every_days: number
-  start_date: string
-  end_date: string | null
   preferred_time: string | null
-  archived_on: string | null
   created_at: number
   updated_at: number
 }
@@ -84,17 +78,12 @@ FROM habit_groups`
 const HABIT_SELECT = `SELECT
   id,
   title,
-  description,
   group_id,
-  status,
   tracking_type,
   target_value,
   unit,
   repeat_every_days,
-  start_date,
-  end_date,
   preferred_time,
-  archived_on,
   created_at,
   updated_at
 FROM habits`
@@ -125,17 +114,12 @@ function mapHabit(row: HabitRow): HabitRecord {
   return {
     id: row.id,
     title: row.title,
-    description: row.description,
     groupId: row.group_id,
-    status: row.status,
     trackingType: row.tracking_type,
     targetValue: row.target_value,
     unit: row.unit,
     repeatEveryDays: row.repeat_every_days,
-    startDate: row.start_date,
-    endDate: row.end_date,
     preferredTime: row.preferred_time,
-    archivedOn: row.archived_on,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   }
@@ -182,6 +166,10 @@ function localDateKey(date = new Date()): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
     date.getDate()
   ).padStart(2, '0')}`
+}
+
+function habitCreatedDateKey(habit: Pick<HabitRecord, 'createdAt'>): string {
+  return localDateKey(new Date(habit.createdAt))
 }
 
 function findGroup(id: string): HabitGroupRecord | null {
@@ -237,10 +225,9 @@ function nextGroupPosition(): number {
 }
 
 export function isHabitScheduledOn(habit: HabitRecord, date: string): boolean {
-  if (date < habit.startDate) return false
-  if (habit.endDate !== null && date > habit.endDate) return false
-  if (habit.archivedOn !== null && date > habit.archivedOn) return false
-  const delta = daysBetween(habit.startDate, date)
+  const anchor = habitCreatedDateKey(habit)
+  if (date < anchor) return false
+  const delta = daysBetween(anchor, date)
   return delta >= 0 && delta % habit.repeatEveryDays === 0
 }
 
@@ -313,10 +300,7 @@ export function listHabitsOverview(input: HabitsOverviewInput): HabitsOverview {
     .prepare(`${HABIT_GROUP_SELECT} ORDER BY position ASC, created_at ASC`)
     .all() as HabitGroupRow[]
   const habits = sqlite
-    .prepare(
-      `${HABIT_SELECT}
-       ORDER BY CASE status WHEN 'active' THEN 0 ELSE 1 END ASC, updated_at DESC, created_at DESC`
-    )
+    .prepare(`${HABIT_SELECT} ORDER BY updated_at DESC, created_at DESC`)
     .all() as HabitRow[]
   const entries = sqlite
     .prepare(`${HABIT_ENTRY_SELECT} WHERE date = ? ORDER BY updated_at DESC`)
@@ -369,29 +353,23 @@ export function createHabit(input: CreateHabitInput): HabitRecord {
   ensureGroupExists(input.groupId)
   const id = randomUUID()
   const now = Date.now()
-  const archivedOn = input.status === 'archived' ? localDateKey() : null
 
   getSqlite()
     .prepare(
       `INSERT INTO habits (
-        id, title, description, group_id, status, tracking_type, target_value, unit,
-        repeat_every_days, start_date, end_date, preferred_time, archived_on, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        id, title, group_id, tracking_type, target_value, unit,
+        repeat_every_days, preferred_time, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
       id,
       input.title,
-      input.description,
       input.groupId,
-      input.status,
       input.trackingType,
       input.targetValue,
       input.unit,
       input.repeatEveryDays,
-      input.startDate,
-      input.endDate,
       input.preferredTime,
-      archivedOn,
       now,
       now
     )
@@ -400,37 +378,25 @@ export function createHabit(input: CreateHabitInput): HabitRecord {
 }
 
 export function updateHabit(input: UpdateHabitInput): HabitRecord {
-  const previous = requireHabit(input.id)
+  requireHabit(input.id)
   ensureGroupExists(input.groupId)
   const now = Date.now()
-  const archivedOn =
-    input.status === 'archived'
-      ? previous.status === 'archived' && previous.archivedOn !== null
-        ? previous.archivedOn
-        : localDateKey()
-      : null
 
   getSqlite()
     .prepare(
       `UPDATE habits SET
-        title = ?, description = ?, group_id = ?, status = ?, tracking_type = ?, target_value = ?,
-        unit = ?, repeat_every_days = ?, start_date = ?, end_date = ?, preferred_time = ?,
-        archived_on = ?, updated_at = ?
+        title = ?, group_id = ?, tracking_type = ?, target_value = ?, unit = ?,
+        repeat_every_days = ?, preferred_time = ?, updated_at = ?
        WHERE id = ?`
     )
     .run(
       input.title,
-      input.description,
       input.groupId,
-      input.status,
       input.trackingType,
       input.targetValue,
       input.unit,
       input.repeatEveryDays,
-      input.startDate,
-      input.endDate,
       input.preferredTime,
-      archivedOn,
       now,
       input.id
     )
@@ -486,14 +452,10 @@ export function getHabitsReport(input: HabitReportInput): HabitReport {
   const sqlite = getSqlite()
   const today = localDateKey()
   const allHabits = (sqlite
-    .prepare(
-      `${HABIT_SELECT}
-       ORDER BY CASE status WHEN 'active' THEN 0 ELSE 1 END ASC, title COLLATE NOCASE ASC`
-    )
+    .prepare(`${HABIT_SELECT} ORDER BY title COLLATE NOCASE ASC`)
     .all() as HabitRow[]).map(mapHabit)
 
   const habits = allHabits.filter((habit) => {
-    if (!input.includeArchived && habit.status === 'archived') return false
     if (input.ungroupedOnly && habit.groupId !== null) return false
     if (input.groupId !== null && habit.groupId !== input.groupId) return false
     return true
