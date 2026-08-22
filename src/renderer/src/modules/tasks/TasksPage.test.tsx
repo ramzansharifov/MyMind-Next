@@ -104,7 +104,10 @@ describe('TasksPage', () => {
     const user = userEvent.setup()
     render(<TasksPage />)
 
-    await user.click(await screen.findByRole('button', { name: 'Работа 1' }))
+    const workLabels = await screen.findAllByText('Работа')
+    const workGroupButton = workLabels[0].closest('button')
+    if (!workGroupButton) throw new Error('Не найдена кнопка фильтра группы «Работа»')
+    await user.click(workGroupButton)
     await user.type(
       screen.getByRole('textbox', { name: 'Быстро добавить задачу' }),
       'Позвонить клиенту'
@@ -124,7 +127,7 @@ describe('TasksPage', () => {
     )
   })
 
-  it('marks a task as completed by clicking the task itself and preserves old hidden metadata', async () => {
+  it('marks a task as completed with a clear completed state and preserves old hidden metadata', async () => {
     const user = userEvent.setup()
     render(<TasksPage />)
 
@@ -144,6 +147,17 @@ describe('TasksPage', () => {
         dueTime: task.dueTime
       })
     )
+
+    await waitFor(() => {
+      expect(screen.getByText('Выполнено')).toBeInTheDocument()
+      expect(document.querySelector('[data-task-row="task-1"]')).toHaveAttribute(
+        'data-completed',
+        'true'
+      )
+      expect(
+        screen.getByRole('button', { name: 'Вернуть задачу «Подготовить отчёт»' })
+      ).toHaveAttribute('aria-pressed', 'true')
+    })
   })
 
   it('moves a task through a fixed scrollable group menu and toggles the current group off', async () => {

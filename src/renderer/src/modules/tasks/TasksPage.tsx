@@ -1,6 +1,6 @@
+import { AnimatePresence } from 'framer-motion'
 import {
   CheckCircle2,
-  Circle,
   FolderPlus,
   Inbox,
   ListTodo,
@@ -27,7 +27,7 @@ import { StandardModulePage } from '../../shared/ui/StandardModulePage'
 import { tasksClient } from './api/tasks-client'
 import { TaskDialog } from './components/TaskDialog'
 import { TaskGroupDialog } from './components/TaskGroupDialog'
-import { TaskMoveGroupMenu } from './components/TaskMoveGroupMenu'
+import { TaskRow } from './components/TaskRow'
 import { TaskGroupIconGlyph, taskGroupColorClasses } from './task-options'
 
 type TaskViewFilter = 'all' | 'active' | 'completed'
@@ -167,7 +167,7 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
         if (viewFilter !== 'all' && task.status !== viewFilter) return false
 
         if (!normalizedQuery) return true
-        const groupName = task.groupId ? groupById.get(task.groupId)?.name ?? '' : ''
+        const groupName = task.groupId ? (groupById.get(task.groupId)?.name ?? '') : ''
         return [task.title, groupName]
           .join(' ')
           .toLocaleLowerCase('ru-RU')
@@ -206,9 +206,7 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
     }
   }
 
-  async function saveGroup(
-    input: CreateTaskGroupInput | UpdateTaskGroupInput
-  ): Promise<void> {
+  async function saveGroup(input: CreateTaskGroupInput | UpdateTaskGroupInput): Promise<void> {
     setIsSaving(true)
     setError(null)
     try {
@@ -261,9 +259,7 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
     if (isSaving) return
 
     try {
-      await saveTask(
-        toUpdateTaskInput(task, task.status === 'completed' ? 'active' : 'completed')
-      )
+      await saveTask(toUpdateTaskInput(task, task.status === 'completed' ? 'active' : 'completed'))
     } catch {
       return
     }
@@ -416,7 +412,7 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
       <div className="mt-5 grid gap-5 lg:grid-cols-[250px_minmax(0,1fr)]">
         <aside className="self-start rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 shadow-[var(--app-shadow-card)] lg:sticky lg:top-5">
           <div className="flex items-center justify-between px-2 py-1.5">
-            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--app-muted)]">
+            <span className="text-xs font-semibold tracking-[0.12em] text-[var(--app-muted)] uppercase">
               Группы
             </span>
             <button
@@ -583,95 +579,28 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
           ) : (
             <div className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--app-shadow-card)]">
               <div className="divide-y divide-[var(--app-border)]">
-                {visibleTasks.map((task) => {
-                  const group = task.groupId ? groupById.get(task.groupId) ?? null : null
-                  const completed = task.status === 'completed'
-                  const StatusIcon = completed ? CheckCircle2 : Circle
+                <AnimatePresence initial={false} mode="popLayout">
+                  {visibleTasks.map((task) => {
+                    const group = task.groupId ? (groupById.get(task.groupId) ?? null) : null
 
-                  return (
-                    <article
-                      key={task.id}
-                      className={cn(
-                        'flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-[var(--app-control-hover)]',
-                        completed && 'opacity-65'
-                      )}
-                    >
-                      <button
-                        type="button"
-                        aria-label={
-                          completed
-                            ? `Вернуть задачу «${task.title}»`
-                            : `Выполнить задачу «${task.title}»`
-                        }
-                        aria-pressed={completed}
-                        disabled={isSaving}
-                        className="flex min-w-0 flex-1 items-center gap-3 text-left outline-none disabled:cursor-wait"
-                        onClick={() => void toggleTask(task)}
-                      >
-                        <StatusIcon
-                          aria-hidden="true"
-                          className={cn(
-                            'size-5 shrink-0',
-                            completed ? 'text-emerald-300' : 'text-[var(--app-muted)]'
-                          )}
-                        />
-
-                        <span className="min-w-0 flex-1">
-                          <span
-                            className={cn(
-                              'block truncate text-sm font-semibold leading-5 text-[var(--app-text)]',
-                              completed && 'line-through decoration-[var(--app-muted)]/70'
-                            )}
-                          >
-                            {task.title}
-                          </span>
-
-                          {group && (
-                            <span
-                              className={cn(
-                                'mt-1.5 inline-flex h-6 max-w-full items-center gap-1.5 rounded-lg border px-2 text-[11px] font-medium',
-                                taskGroupColorClasses[group.color].soft,
-                                taskGroupColorClasses[group.color].text,
-                                taskGroupColorClasses[group.color].border
-                              )}
-                            >
-                              <TaskGroupIconGlyph icon={group.icon} className="size-3 shrink-0" />
-                              <span className="truncate">{group.name}</span>
-                            </span>
-                          )}
-                        </span>
-                      </button>
-
-                      <div className="flex shrink-0 items-center">
-                        <TaskMoveGroupMenu
-                          task={task}
-                          groups={groups}
-                          disabled={isSaving}
-                          onMove={(groupId) => moveTaskToGroup(task, groupId)}
-                        />
-                        <button
-                          type="button"
-                          aria-label={`Изменить задачу «${task.title}»`}
-                          className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control)] hover:text-[var(--app-text)]"
-                          onClick={() => {
-                            setEditingTask(task)
-                            setTaskDialogOpen(true)
-                          }}
-                        >
-                          <Pencil className="size-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          aria-label={`Удалить задачу «${task.title}»`}
-                          className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
-                          onClick={() => setDeleteTaskTarget(task)}
-                        >
-                          <Trash2 className="size-3.5" />
-                        </button>
-                      </div>
-                    </article>
-                  )
-                })}
+                    return (
+                      <TaskRow
+                        key={task.id}
+                        task={task}
+                        group={group}
+                        groups={groups}
+                        busy={isSaving}
+                        onToggle={() => toggleTask(task)}
+                        onMove={(groupId) => moveTaskToGroup(task, groupId)}
+                        onEdit={() => {
+                          setEditingTask(task)
+                          setTaskDialogOpen(true)
+                        }}
+                        onDelete={() => setDeleteTaskTarget(task)}
+                      />
+                    )
+                  })}
+                </AnimatePresence>
               </div>
             </div>
           )}
