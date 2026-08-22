@@ -1,7 +1,7 @@
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { closeDatabase, getSqlite, initializeDatabaseForTesting } from '../database/client'
 import { runDatabaseMigrationsFrom } from '../database/migrate'
@@ -24,7 +24,13 @@ beforeAll(async () => {
 })
 
 beforeEach(() => {
+  vi.useFakeTimers()
+  vi.setSystemTime(new Date(2026, 0, 1, 12, 0, 0))
   getSqlite().exec('DELETE FROM habit_entries; DELETE FROM habits; DELETE FROM habit_groups;')
+})
+
+afterEach(() => {
+  vi.useRealTimers()
 })
 
 afterAll(async () => {
@@ -33,19 +39,15 @@ afterAll(async () => {
 })
 
 describe('habits repository', () => {
-  it('persists groups and broad habit metadata', () => {
+  it('persists only the simplified habit model', () => {
     const health = createHabitGroup({ name: 'Здоровье', icon: 'heart-pulse', color: 'emerald' })
     const habit = createHabit({
       title: 'Пить воду',
-      description: 'Следить за объёмом воды.',
       groupId: health.id,
-      status: 'active',
       trackingType: 'count',
       targetValue: 8,
       unit: 'стаканов',
       repeatEveryDays: 1,
-      startDate: '2026-01-01',
-      endDate: null,
       preferredTime: '09:00'
     })
 
@@ -55,36 +57,35 @@ describe('habits repository', () => {
       entries: []
     })
 
-    const archived = updateHabit({
+    const updated = updateHabit({
       id: habit.id,
-      title: habit.title,
-      description: habit.description,
+      title: 'Пить воду регулярно',
       groupId: habit.groupId,
-      status: 'archived',
       trackingType: habit.trackingType,
       targetValue: habit.targetValue,
       unit: habit.unit,
       repeatEveryDays: habit.repeatEveryDays,
-      startDate: habit.startDate,
-      endDate: habit.endDate,
       preferredTime: habit.preferredTime
     })
-    expect(archived.status).toBe('archived')
-    expect(archived.archivedOn).not.toBeNull()
+    expect(updated.title).toBe('Пить воду регулярно')
+
+    const columns = getSqlite().prepare('PRAGMA table_info(habits)').all() as Array<{ name: string }>
+    const names = columns.map((column) => column.name)
+    expect(names).not.toContain('description')
+    expect(names).not.toContain('status')
+    expect(names).not.toContain('start_date')
+    expect(names).not.toContain('end_date')
+    expect(names).not.toContain('archived_on')
   })
 
-  it('allows entries only on scheduled days', () => {
+  it('anchors recurrence to the creation day and allows entries only on scheduled days', () => {
     const habit = createHabit({
       title: 'Тренировка',
-      description: '',
       groupId: null,
-      status: 'active',
       trackingType: 'check',
       targetValue: 1,
       unit: '',
       repeatEveryDays: 3,
-      startDate: '2026-01-01',
-      endDate: null,
       preferredTime: null
     })
 
@@ -99,28 +100,24 @@ describe('habits repository', () => {
   it('builds reports with completion, misses, skips and streaks', () => {
     const habit = createHabit({
       title: 'Читать',
-      description: '',
       groupId: null,
-      status: 'active',
       trackingType: 'check',
       targetValue: 1,
       unit: '',
       repeatEveryDays: 3,
-      startDate: '2026-01-01',
-      endDate: null,
       preferredTime: null
     })
 
     upsertHabitEntry({ habitId: habit.id, date: '2026-01-01', value: 1, skipped: false })
     upsertHabitEntry({ habitId: habit.id, date: '2026-01-04', value: 1, skipped: false })
     upsertHabitEntry({ habitId: habit.id, date: '2026-01-07', value: 0, skipped: true })
+    vi.setSystemTime(new Date(2026, 0, 10, 12, 0, 0))
 
     const report = getHabitsReport({
       dateFrom: '2026-01-01',
       dateTo: '2026-01-10',
       groupId: null,
-      ungroupedOnly: false,
-      includeArchived: true
+      ungroupedOnly: false
     })
 
     expect(report.summary).toEqual({
@@ -146,15 +143,11 @@ describe('habits repository', () => {
     const group = createHabitGroup({ name: 'Развитие', icon: 'sparkles', color: 'violet' })
     const habit = createHabit({
       title: 'Практика',
-      description: '',
       groupId: group.id,
-      status: 'active',
       trackingType: 'check',
       targetValue: 1,
       unit: '',
       repeatEveryDays: 1,
-      startDate: '2026-01-01',
-      endDate: null,
       preferredTime: null
     })
     upsertHabitEntry({ habitId: habit.id, date: '2026-01-01', value: 1, skipped: false })
