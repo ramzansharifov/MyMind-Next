@@ -1,4 +1,3 @@
-export const HABIT_STATUSES = ['active', 'archived'] as const
 export const HABIT_TRACKING_TYPES = ['check', 'count'] as const
 export const HABIT_GROUP_ICONS = [
   'folder',
@@ -29,7 +28,6 @@ export const HABIT_GROUP_COLORS = [
   'pink'
 ] as const
 
-export type HabitStatus = (typeof HABIT_STATUSES)[number]
 export type HabitTrackingType = (typeof HABIT_TRACKING_TYPES)[number]
 export type HabitGroupIcon = (typeof HABIT_GROUP_ICONS)[number]
 export type HabitGroupColor = (typeof HABIT_GROUP_COLORS)[number]
@@ -47,17 +45,12 @@ export interface HabitGroupRecord {
 export interface HabitRecord {
   id: string
   title: string
-  description: string
   groupId: string | null
-  status: HabitStatus
   trackingType: HabitTrackingType
   targetValue: number
   unit: string
   repeatEveryDays: number
-  startDate: string
-  endDate: string | null
   preferredTime: string | null
-  archivedOn: string | null
   createdAt: number
   updatedAt: number
 }
@@ -98,15 +91,11 @@ export interface DeleteHabitGroupInput {
 
 export interface CreateHabitInput {
   title: string
-  description: string
   groupId: string | null
-  status: HabitStatus
   trackingType: HabitTrackingType
   targetValue: number
   unit: string
   repeatEveryDays: number
-  startDate: string
-  endDate: string | null
   preferredTime: string | null
 }
 
@@ -135,7 +124,6 @@ export interface HabitReportInput {
   dateTo: string
   groupId: string | null
   ungroupedOnly: boolean
-  includeArchived: boolean
 }
 
 export interface HabitReportSummary {
