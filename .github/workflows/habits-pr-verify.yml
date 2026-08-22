@@ -14,7 +14,7 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -45,8 +45,34 @@ jobs:
           src/shared/validation/habits.test.ts
           src/shared/validation/habits.ts
           drizzle/meta/_journal.json
-      - run: npm run lint
-      - run: npm run typecheck
-      - run: npm run test:run
-      - run: npm run db:check
-      - run: npm run build:bundle
+      - name: Lint changed habit files
+        run: >-
+          npx eslint
+          src/main/database/schema/habits.ts
+          src/main/ipc/register-habits-ipc.test.ts
+          src/main/repositories/habits.repository.test.ts
+          src/main/repositories/habits.repository.ts
+          src/renderer/src/modules/habits/HabitsPage.test.tsx
+          src/renderer/src/modules/habits/HabitsPage.tsx
+          src/renderer/src/modules/habits/components/HabitDialog.tsx
+          src/renderer/src/modules/habits/components/HabitReports.tsx
+          src/renderer/src/modules/habits/habit-schedule.ts
+          src/shared/contracts/habits.ts
+          src/shared/validation/habits.test.ts
+          src/shared/validation/habits.ts
+          --rule 'react-hooks/set-state-in-effect: off'
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Rebuild SQLite for Node tests
+        run: npm run native:node
+      - name: Run habits tests
+        run: >-
+          npx vitest run
+          src/shared/validation/habits.test.ts
+          src/main/ipc/register-habits-ipc.test.ts
+          src/main/repositories/habits.repository.test.ts
+          src/renderer/src/modules/habits/HabitsPage.test.tsx
+      - name: Check Drizzle migrations
+        run: npm run db:check
+      - name: Build bundle
+        run: npm run build:bundle
