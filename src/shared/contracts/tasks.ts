@@ -15,6 +15,7 @@ export const TASK_GROUP_ICONS = [
   'bell'
 ] as const
 export const TASK_GROUP_COLORS = [
+  'accent',
   'violet',
   'blue',
   'cyan',
