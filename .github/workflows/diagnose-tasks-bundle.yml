@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - agent/diagnose-tasks-bundle
+  pull_request:
+    branches:
+      - main
 
 jobs:
   diagnose:
