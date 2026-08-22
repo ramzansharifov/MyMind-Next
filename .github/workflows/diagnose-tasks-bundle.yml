@@ -1,0 +1,20 @@
+name: Diagnose tasks bundle
+
+on:
+  push:
+    branches:
+      - agent/diagnose-tasks-bundle
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+      - name: Build renderer bundle
+        run: npm run build:bundle
