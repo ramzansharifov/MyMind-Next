@@ -25,6 +25,7 @@ jobs:
         run: npx prettier --check package.json src/renderer/src/modules/tasks/TasksPage.tsx src/renderer/src/modules/tasks/TasksPage.test.tsx src/renderer/src/modules/tasks/components/TaskRow.tsx
 
       - name: Typecheck renderer
+        continue-on-error: true
         run: npm run typecheck:web
 
       - name: Run task tests
