@@ -39,7 +39,6 @@ export function HabitReports({
   const [period, setPeriod] = useState<ReportPeriod>('30')
   const [customFrom, setCustomFrom] = useState(addDays(today, -29))
   const [customTo, setCustomTo] = useState(today)
-  const [includeArchived, setIncludeArchived] = useState(true)
   const [report, setReport] = useState<HabitReport | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -65,8 +64,7 @@ export function HabitReports({
         dateFrom: range.dateFrom,
         dateTo: range.dateTo,
         groupId,
-        ungroupedOnly,
-        includeArchived
+        ungroupedOnly
       })
       setReport(next)
     } catch (reason) {
@@ -75,7 +73,7 @@ export function HabitReports({
     } finally {
       setIsLoading(false)
     }
-  }, [groupId, includeArchived, range.dateFrom, range.dateTo, ungroupedOnly])
+  }, [groupId, range.dateFrom, range.dateTo, ungroupedOnly])
 
   useEffect(() => {
     let cancelled = false
@@ -134,16 +132,6 @@ export function HabitReports({
               </label>
             </>
           )}
-
-          <label className="ml-auto flex h-10 cursor-pointer items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-muted)]">
-            <input
-              type="checkbox"
-              checked={includeArchived}
-              className="accent-violet-500"
-              onChange={(event) => setIncludeArchived(event.target.checked)}
-            />
-            Учитывать архив
-          </label>
         </div>
       </section>
 
