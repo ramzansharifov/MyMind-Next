@@ -51,15 +51,11 @@ describe('registerHabitsIpcHandlers', () => {
     await expect(
       handler({}, {
         title: 'Читать',
-        description: '',
         groupId: null,
-        status: 'active',
         trackingType: 'check',
         targetValue: 1,
         unit: '',
         repeatEveryDays: 0,
-        startDate: '2026-08-16',
-        endDate: null,
         preferredTime: null
       })
     ).rejects.toThrow()
