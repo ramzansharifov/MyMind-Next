@@ -340,7 +340,8 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
             <Search className="size-4 shrink-0 text-[var(--app-muted)]" />
             <input
               value={query}
-              type="search"
+              type="text"
+              role="searchbox"
               aria-label="Поиск по задачам"
               placeholder="Найти задачу…"
               className="min-w-0 flex-1 bg-transparent text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60"
