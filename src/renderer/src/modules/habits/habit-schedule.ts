@@ -20,6 +20,10 @@ export function localDateKey(date = new Date()): string {
   ).padStart(2, '0')}`
 }
 
+export function habitCreatedDateKey(habit: Pick<HabitRecord, 'createdAt'>): string {
+  return localDateKey(new Date(habit.createdAt))
+}
+
 export function addDays(value: string, days: number): string {
   return utcToDateKey(dateToUtc(value) + days * DAY_MS)
 }
@@ -29,22 +33,18 @@ export function daysBetween(from: string, to: string): number {
 }
 
 export function isHabitScheduledOn(habit: HabitRecord, date: string): boolean {
-  if (habit.status !== 'active') return false
-  if (date < habit.startDate) return false
-  if (habit.endDate !== null && date > habit.endDate) return false
-  const delta = daysBetween(habit.startDate, date)
+  const anchor = habitCreatedDateKey(habit)
+  if (date < anchor) return false
+  const delta = daysBetween(anchor, date)
   return delta >= 0 && delta % habit.repeatEveryDays === 0
 }
 
-export function nextHabitDate(habit: HabitRecord, from: string): string | null {
-  if (habit.status !== 'active') return null
-  const effectiveFrom = from < habit.startDate ? habit.startDate : from
-  const delta = daysBetween(habit.startDate, effectiveFrom)
+export function nextHabitDate(habit: HabitRecord, from: string): string {
+  const anchor = habitCreatedDateKey(habit)
+  const effectiveFrom = from < anchor ? anchor : from
+  const delta = daysBetween(anchor, effectiveFrom)
   const remainder = delta % habit.repeatEveryDays
-  const next = remainder === 0 ? effectiveFrom : addDays(effectiveFrom, habit.repeatEveryDays - remainder)
-
-  if (habit.endDate !== null && next > habit.endDate) return null
-  return next
+  return remainder === 0 ? effectiveFrom : addDays(effectiveFrom, habit.repeatEveryDays - remainder)
 }
 
 export function formatHabitDate(value: string, today = localDateKey()): string {
