@@ -157,8 +157,11 @@ describe('HabitsPage', () => {
 
     expect(await screen.findByText('Календарь выполнения')).toBeInTheDocument()
     expect(screen.getAllByText('100%').length).toBeGreaterThan(0)
-    expect(mocks.getReport).toHaveBeenCalledWith(
-      expect.not.objectContaining({ includeArchived: expect.anything() })
-    )
+    expect(mocks.getReport).toHaveBeenCalledWith({
+      dateFrom: expect.any(String),
+      dateTo: expect.any(String),
+      groupId: null,
+      ungroupedOnly: false
+    })
   })
 })
