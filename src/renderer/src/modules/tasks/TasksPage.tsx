@@ -1,5 +1,15 @@
 import { AnimatePresence } from 'framer-motion'
-import { CheckCircle2, FolderPlus, Inbox, ListTodo, Pencil, Plus, Search, Trash2, X } from 'lucide-react'
+import {
+  CheckCircle2,
+  FolderPlus,
+  Inbox,
+  ListTodo,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+  X
+} from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type {
@@ -157,7 +167,7 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
         if (viewFilter !== 'all' && task.status !== viewFilter) return false
 
         if (!normalizedQuery) return true
-        const groupName = task.groupId ? groupById.get(task.groupId)?.name ?? '' : ''
+        const groupName = task.groupId ? (groupById.get(task.groupId)?.name ?? '') : ''
         return [task.title, groupName]
           .join(' ')
           .toLocaleLowerCase('ru-RU')
@@ -196,9 +206,7 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
     }
   }
 
-  async function saveGroup(
-    input: CreateTaskGroupInput | UpdateTaskGroupInput
-  ): Promise<void> {
+  async function saveGroup(input: CreateTaskGroupInput | UpdateTaskGroupInput): Promise<void> {
     setIsSaving(true)
     setError(null)
     try {
@@ -251,9 +259,7 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
     if (isSaving) return
 
     try {
-      await saveTask(
-        toUpdateTaskInput(task, task.status === 'completed' ? 'active' : 'completed')
-      )
+      await saveTask(toUpdateTaskInput(task, task.status === 'completed' ? 'active' : 'completed'))
     } catch {
       return
     }
@@ -406,7 +412,7 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
       <div className="mt-5 grid gap-5 lg:grid-cols-[250px_minmax(0,1fr)]">
         <aside className="self-start rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 shadow-[var(--app-shadow-card)] lg:sticky lg:top-5">
           <div className="flex items-center justify-between px-2 py-1.5">
-            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--app-muted)]">
+            <span className="text-xs font-semibold tracking-[0.12em] text-[var(--app-muted)] uppercase">
               Группы
             </span>
             <button
@@ -575,7 +581,7 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
               <div className="divide-y divide-[var(--app-border)]">
                 <AnimatePresence initial={false} mode="popLayout">
                   {visibleTasks.map((task) => {
-                    const group = task.groupId ? groupById.get(task.groupId) ?? null : null
+                    const group = task.groupId ? (groupById.get(task.groupId) ?? null) : null
 
                     return (
                       <TaskRow

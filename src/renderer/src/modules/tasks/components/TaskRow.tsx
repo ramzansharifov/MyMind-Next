@@ -98,7 +98,7 @@ export function TaskRow({
           <span className="relative block w-fit max-w-full">
             <span
               className={cn(
-                'block max-w-full truncate text-sm font-semibold leading-5 transition-colors',
+                'block max-w-full truncate text-sm leading-5 font-semibold transition-colors',
                 completed ? 'text-[var(--app-muted)]' : 'text-[var(--app-text)]'
               )}
             >
@@ -106,7 +106,7 @@ export function TaskRow({
             </span>
             <motion.span
               aria-hidden="true"
-              className="absolute left-0 right-0 top-1/2 h-px origin-left bg-emerald-300/65"
+              className="absolute top-1/2 right-0 left-0 h-px origin-left bg-emerald-300/65"
               initial={false}
               animate={{ opacity: completed ? 1 : 0, scaleX: completed ? 1 : 0 }}
               transition={transition}
