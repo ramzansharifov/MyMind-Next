@@ -1,18 +1,16 @@
-import { CalendarDays, Clock3, Repeat2, Sparkles, Target } from 'lucide-react'
+import { Clock3, Repeat2, Sparkles, Target } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import type {
   CreateHabitInput,
   HabitGroupRecord,
   HabitRecord,
-  HabitStatus,
   HabitTrackingType,
   UpdateHabitInput
 } from '../../../../../shared/contracts/habits'
 import { AppDialog } from '../../../shared/ui/AppDialog'
 import { AppSelect } from '../../../shared/ui/AppSelect'
 import { HABIT_TRACKING_OPTIONS } from '../habit-options'
-import { localDateKey } from '../habit-schedule'
 
 const NO_GROUP_VALUE = '__none__'
 const HABIT_FORM_ID = 'habit-editor-form'
@@ -38,15 +36,11 @@ export function HabitDialog({
   onSave
 }: HabitDialogProps): React.JSX.Element {
   const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
   const [groupId, setGroupId] = useState(NO_GROUP_VALUE)
-  const [status, setStatus] = useState<HabitStatus>('active')
   const [trackingType, setTrackingType] = useState<HabitTrackingType>('check')
   const [targetValue, setTargetValue] = useState('1')
   const [unit, setUnit] = useState('')
   const [repeatEveryDays, setRepeatEveryDays] = useState('1')
-  const [startDate, setStartDate] = useState(localDateKey())
-  const [endDate, setEndDate] = useState('')
   const [preferredTime, setPreferredTime] = useState('')
   const [error, setError] = useState<string | null>(null)
 
@@ -56,15 +50,11 @@ export function HabitDialog({
       initialGroupId !== null && groups.some((group) => group.id === initialGroupId)
 
     setTitle(habit?.title ?? '')
-    setDescription(habit?.description ?? '')
     setGroupId(habit?.groupId ?? (initialGroupExists ? initialGroupId : NO_GROUP_VALUE))
-    setStatus(habit?.status ?? 'active')
     setTrackingType(habit?.trackingType ?? 'check')
     setTargetValue(String(habit?.targetValue ?? 1))
     setUnit(habit?.unit ?? '')
     setRepeatEveryDays(String(habit?.repeatEveryDays ?? 1))
-    setStartDate(habit?.startDate ?? localDateKey())
-    setEndDate(habit?.endDate ?? '')
     setPreferredTime(habit?.preferredTime ?? '')
     setError(null)
   }, [groups, habit, initialGroupId, open])
@@ -92,22 +82,14 @@ export function HabitDialog({
       setError('Целевое значение должно быть положительным целым числом')
       return
     }
-    if (endDate && endDate < startDate) {
-      setError('Дата окончания не может быть раньше даты начала')
-      return
-    }
 
     const input: CreateHabitInput = {
       title: title.trim(),
-      description: description.trim(),
       groupId: groupId === NO_GROUP_VALUE ? null : groupId,
-      status,
       trackingType,
       targetValue: parsedTarget,
       unit: trackingType === 'check' ? '' : unit.trim(),
       repeatEveryDays: parsedRepeat,
-      startDate,
-      endDate: endDate || null,
       preferredTime: preferredTime || null
     }
 
@@ -125,7 +107,7 @@ export function HabitDialog({
       open={open}
       onOpenChange={onOpenChange}
       title={habit ? 'Изменить привычку' : 'Новая привычка'}
-      description="Настройте способ отслеживания, период повторения и временные границы привычки."
+      description="Настройте способ отслеживания и период повторения привычки."
       icon={<Sparkles />}
       size="xl"
       busy={busy}
@@ -177,18 +159,6 @@ export function HabitDialog({
             />
           </div>
         </div>
-
-        <label className="block space-y-1.5">
-          <span className="text-xs font-medium text-[var(--app-muted)]">Описание</span>
-          <textarea
-            value={description}
-            maxLength={5000}
-            rows={3}
-            placeholder="Зачем нужна эта привычка, правила выполнения, полезный контекст…"
-            className="w-full resize-y rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 py-3 text-sm leading-6 text-[var(--app-text)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
-            onChange={(event) => setDescription(event.target.value)}
-          />
-        </label>
 
         <div className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-4">
           <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-[var(--app-text)]">
@@ -243,7 +213,7 @@ export function HabitDialog({
             <Repeat2 className="size-4 text-violet-300" /> Повторение
           </div>
           <p className="mb-3 text-xs leading-5 text-[var(--app-muted)]">
-            Период отсчитывается от даты начала. Например, 10 означает один запланированный день каждые 10 дней.
+            Период отсчитывается от дня создания привычки. Например, 10 означает один запланированный день каждые 10 дней.
           </p>
           <div className="flex flex-wrap gap-2">
             {recurrencePresets.map((days) => (
@@ -276,60 +246,17 @@ export function HabitDialog({
           </label>
         </div>
 
-        <div className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-4">
-          <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-[var(--app-text)]">
-            <CalendarDays className="size-4 text-violet-300" /> Период действия
-          </div>
-          <div className="grid gap-3 md:grid-cols-3">
-            <label className="space-y-1.5">
-              <span className="block text-xs text-[var(--app-muted)]">Начать</span>
-              <input
-                type="date"
-                value={startDate}
-                min="1900-01-01"
-                max="2200-12-31"
-                required
-                className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
-                onChange={(event) => setStartDate(event.target.value)}
-              />
-            </label>
-            <label className="space-y-1.5">
-              <span className="block text-xs text-[var(--app-muted)]">Закончить</span>
-              <input
-                type="date"
-                value={endDate}
-                min={startDate}
-                max="2200-12-31"
-                className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
-                onChange={(event) => setEndDate(event.target.value)}
-              />
-            </label>
-            <label className="space-y-1.5">
-              <span className="flex items-center gap-1 text-xs text-[var(--app-muted)]">
-                <Clock3 className="size-3" /> Предпочтительное время
-              </span>
-              <input
-                type="time"
-                value={preferredTime}
-                className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
-                onChange={(event) => setPreferredTime(event.target.value)}
-              />
-            </label>
-          </div>
-        </div>
-
-        <div className="space-y-1.5">
-          <span className="block text-xs font-medium text-[var(--app-muted)]">Состояние</span>
-          <AppSelect
-            ariaLabel="Состояние привычки"
-            value={status}
-            options={[
-              { value: 'active', label: 'Активная' },
-              { value: 'archived', label: 'В архиве' }
-            ]}
-            onValueChange={(value) => setStatus(value as HabitStatus)}
+        <label className="block max-w-xs space-y-1.5">
+          <span className="flex items-center gap-1 text-xs font-medium text-[var(--app-muted)]">
+            <Clock3 className="size-3" /> Предпочтительное время
+          </span>
+          <input
+            type="time"
+            value={preferredTime}
+            className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
+            onChange={(event) => setPreferredTime(event.target.value)}
           />
-        </div>
+        </label>
 
         {error && (
           <div
