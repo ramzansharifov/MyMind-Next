@@ -1,9 +1,6 @@
 import {
-  CalendarClock,
-  Check,
   CheckCircle2,
   Circle,
-  Clock3,
   FolderPlus,
   Inbox,
   ListTodo,
@@ -11,7 +8,6 @@ import {
   Plus,
   Search,
   Trash2,
-  TriangleAlert,
   X
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -20,28 +16,20 @@ import type {
   CreateTaskGroupInput,
   CreateTaskInput,
   TaskGroupRecord,
-  TaskPriority,
   TaskRecord,
   UpdateTaskGroupInput,
   UpdateTaskInput
 } from '../../../../shared/contracts/tasks'
 import { cn } from '../../shared/lib/cn'
-import { AppSelect } from '../../shared/ui/AppSelect'
 import { DeleteConfirmationDialog } from '../../shared/ui/DeleteConfirmationDialog'
 import { ModuleHeader } from '../../shared/ui/ModuleHeader'
 import { StandardModulePage } from '../../shared/ui/StandardModulePage'
 import { tasksClient } from './api/tasks-client'
 import { TaskDialog } from './components/TaskDialog'
 import { TaskGroupDialog } from './components/TaskGroupDialog'
-import {
-  TASK_PRIORITY_OPTIONS,
-  TaskGroupIconGlyph,
-  taskGroupColorClasses,
-  taskPriorityClassName,
-  taskPriorityLabel
-} from './task-options'
+import { TaskGroupIconGlyph, taskGroupColorClasses } from './task-options'
 
-type TaskViewFilter = 'all' | 'active' | 'today' | 'overdue' | 'completed'
+type TaskViewFilter = 'all' | 'active' | 'completed'
 type TaskGroupFilter = 'all' | 'ungrouped' | string
 
 interface TasksPageProps {
@@ -49,63 +37,14 @@ interface TasksPageProps {
   onResourceHandled?: () => void
 }
 
-interface TaskSection {
-  id: string
-  title: string
-  tasks: TaskRecord[]
-  icon: React.ReactNode
-  tone?: 'danger' | 'success' | 'default'
-}
-
-const PRIORITY_ALL = 'all'
-
 const viewFilters: Array<{ id: TaskViewFilter; label: string }> = [
   { id: 'all', label: 'Все' },
   { id: 'active', label: 'Активные' },
-  { id: 'today', label: 'Сегодня' },
-  { id: 'overdue', label: 'Просрочено' },
   { id: 'completed', label: 'Выполненные' }
 ]
 
 function errorMessage(reason: unknown): string {
   return reason instanceof Error ? reason.message : 'Не удалось выполнить действие'
-}
-
-function localDateKey(date = new Date()): string {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
-
-function localTimeKey(date = new Date()): string {
-  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
-}
-
-function isTaskOverdue(task: TaskRecord, today: string, nowTime: string): boolean {
-  if (task.status !== 'active' || task.dueDate === null) return false
-  if (task.dueDate < today) return true
-  return task.dueDate === today && task.dueTime !== null && task.dueTime < nowTime
-}
-
-function parseLocalDate(value: string): Date {
-  const [year, month, day] = value.split('-').map(Number)
-  return new Date(year ?? 0, (month ?? 1) - 1, day ?? 1)
-}
-
-function formatDueDate(value: string, today: string): string {
-  if (value === today) return 'Сегодня'
-
-  const todayDate = parseLocalDate(today)
-  const tomorrowDate = new Date(todayDate)
-  tomorrowDate.setDate(tomorrowDate.getDate() + 1)
-  if (value === localDateKey(tomorrowDate)) return 'Завтра'
-
-  return new Intl.DateTimeFormat('ru-RU', {
-    day: 'numeric',
-    month: 'short',
-    year: parseLocalDate(value).getFullYear() === todayDate.getFullYear() ? undefined : 'numeric'
-  }).format(parseLocalDate(value))
 }
 
 function toUpdateTaskInput(task: TaskRecord, status = task.status): UpdateTaskInput {
@@ -121,30 +60,18 @@ function toUpdateTaskInput(task: TaskRecord, status = task.status): UpdateTaskIn
   }
 }
 
-function sortActiveTasks(tasks: TaskRecord[]): TaskRecord[] {
-  const priorityRank: Record<TaskPriority, number> = { high: 0, normal: 1, low: 2 }
-
+function sortTasks(tasks: TaskRecord[]): TaskRecord[] {
   return [...tasks].sort((left, right) => {
-    const leftDate = left.dueDate ?? '9999-99-99'
-    const rightDate = right.dueDate ?? '9999-99-99'
-    if (leftDate !== rightDate) return leftDate.localeCompare(rightDate)
+    if (left.status !== right.status) return left.status === 'active' ? -1 : 1
 
-    const leftTime = left.dueTime ?? '99:99'
-    const rightTime = right.dueTime ?? '99:99'
-    if (leftTime !== rightTime) return leftTime.localeCompare(rightTime)
+    const leftActivity =
+      left.status === 'completed' ? (left.completedAt ?? left.updatedAt) : left.updatedAt
+    const rightActivity =
+      right.status === 'completed' ? (right.completedAt ?? right.updatedAt) : right.updatedAt
 
-    if (priorityRank[left.priority] !== priorityRank[right.priority]) {
-      return priorityRank[left.priority] - priorityRank[right.priority]
-    }
-
-    return right.updatedAt - left.updatedAt
+    if (leftActivity !== rightActivity) return rightActivity - leftActivity
+    return right.createdAt - left.createdAt
   })
-}
-
-function sortCompletedTasks(tasks: TaskRecord[]): TaskRecord[] {
-  return [...tasks].sort(
-    (left, right) => (right.completedAt ?? right.updatedAt) - (left.completedAt ?? left.updatedAt)
-  )
 }
 
 export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): React.JSX.Element {
@@ -152,7 +79,6 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
   const [tasks, setTasks] = useState<TaskRecord[]>([])
   const [viewFilter, setViewFilter] = useState<TaskViewFilter>('all')
   const [groupFilter, setGroupFilter] = useState<TaskGroupFilter>('all')
-  const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all')
   const [query, setQuery] = useState('')
   const [quickTitle, setQuickTitle] = useState('')
   const [taskDialogOpen, setTaskDialogOpen] = useState(false)
@@ -165,11 +91,7 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [clock, setClock] = useState(() => new Date())
   const handledResourceIdRef = useRef<string | null>(null)
-
-  const today = localDateKey(clock)
-  const nowTime = localTimeKey(clock)
 
   const loadOverview = useCallback(async (): Promise<void> => {
     setError(null)
@@ -195,11 +117,6 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
   }, [loadOverview])
 
   useEffect(() => {
-    const interval = window.setInterval(() => setClock(new Date()), 30_000)
-    return () => window.clearInterval(interval)
-  }, [])
-
-  useEffect(() => {
     if (!resourceId) {
       handledResourceIdRef.current = null
       return
@@ -217,22 +134,11 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
 
   const groupById = useMemo(() => new Map(groups.map((group) => [group.id, group])), [groups])
 
-  const stats = useMemo(() => {
-    const active = tasks.filter((task) => task.status === 'active')
-    return {
-      active: active.length,
-      today: active.filter((task) => task.dueDate === today).length,
-      overdue: active.filter((task) => isTaskOverdue(task, today, nowTime)).length,
-      completed: tasks.filter((task) => task.status === 'completed').length
-    }
-  }, [nowTime, tasks, today])
-
-  const groupActiveCounts = useMemo(() => {
+  const groupTaskCounts = useMemo(() => {
     const counts = new Map<string, number>()
     let ungrouped = 0
 
     for (const task of tasks) {
-      if (task.status !== 'active') continue
       if (task.groupId === null) {
         ungrouped += 1
       } else {
@@ -246,114 +152,25 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
   const visibleTasks = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase('ru-RU')
 
-    return tasks.filter((task) => {
-      if (groupFilter === 'ungrouped' && task.groupId !== null) return false
-      if (groupFilter !== 'all' && groupFilter !== 'ungrouped' && task.groupId !== groupFilter) {
-        return false
-      }
-      if (priorityFilter !== PRIORITY_ALL && task.priority !== priorityFilter) return false
-
-      if (viewFilter === 'active' && task.status !== 'active') return false
-      if (viewFilter === 'completed' && task.status !== 'completed') return false
-      if (viewFilter === 'today' && !(task.status === 'active' && task.dueDate === today)) {
-        return false
-      }
-      if (viewFilter === 'overdue' && !isTaskOverdue(task, today, nowTime)) return false
-
-      if (!normalizedQuery) return true
-      const groupName = task.groupId ? groupById.get(task.groupId)?.name ?? '' : ''
-      return [task.title, task.description, groupName]
-        .join(' ')
-        .toLocaleLowerCase('ru-RU')
-        .includes(normalizedQuery)
-    })
-  }, [groupById, groupFilter, nowTime, priorityFilter, query, tasks, today, viewFilter])
-
-  const sections = useMemo<TaskSection[]>(() => {
-    if (viewFilter === 'completed') {
-      return [
-        {
-          id: 'completed',
-          title: 'Выполненные',
-          tasks: sortCompletedTasks(visibleTasks),
-          icon: <CheckCircle2 className="size-4" />,
-          tone: 'success'
+    return sortTasks(
+      tasks.filter((task) => {
+        if (groupFilter === 'ungrouped' && task.groupId !== null) return false
+        if (groupFilter !== 'all' && groupFilter !== 'ungrouped' && task.groupId !== groupFilter) {
+          return false
         }
-      ]
-    }
 
-    if (viewFilter === 'today') {
-      return [
-        {
-          id: 'today',
-          title: 'Сегодня',
-          tasks: sortActiveTasks(visibleTasks),
-          icon: <CalendarClock className="size-4" />
-        }
-      ]
-    }
+        if (viewFilter !== 'all' && task.status !== viewFilter) return false
 
-    if (viewFilter === 'overdue') {
-      return [
-        {
-          id: 'overdue',
-          title: 'Просрочено',
-          tasks: sortActiveTasks(visibleTasks),
-          icon: <TriangleAlert className="size-4" />,
-          tone: 'danger'
-        }
-      ]
-    }
-
-    const active = visibleTasks.filter((task) => task.status === 'active')
-    const overdue = active.filter((task) => isTaskOverdue(task, today, nowTime))
-    const todayTasks = active.filter(
-      (task) => task.dueDate === today && !isTaskOverdue(task, today, nowTime)
-    )
-    const upcoming = active.filter((task) => task.dueDate !== null && task.dueDate > today)
-    const noDueDate = active.filter((task) => task.dueDate === null)
-    const result: TaskSection[] = [
-      {
-        id: 'overdue',
-        title: 'Просрочено',
-        tasks: sortActiveTasks(overdue),
-        icon: <TriangleAlert className="size-4" />,
-        tone: 'danger'
-      },
-      {
-        id: 'today',
-        title: 'Сегодня',
-        tasks: sortActiveTasks(todayTasks),
-        icon: <CalendarClock className="size-4" />
-      },
-      {
-        id: 'upcoming',
-        title: 'Предстоящие',
-        tasks: sortActiveTasks(upcoming),
-        icon: <Clock3 className="size-4" />
-      },
-      {
-        id: 'without-date',
-        title: 'Без срока',
-        tasks: sortActiveTasks(noDueDate),
-        icon: <Inbox className="size-4" />
-      }
-    ]
-
-    if (viewFilter === 'all') {
-      result.push({
-        id: 'completed',
-        title: 'Выполненные',
-        tasks: sortCompletedTasks(visibleTasks.filter((task) => task.status === 'completed')),
-        icon: <CheckCircle2 className="size-4" />,
-        tone: 'success'
+        if (!normalizedQuery) return true
+        const groupName = task.groupId ? groupById.get(task.groupId)?.name ?? '' : ''
+        return [task.title, groupName]
+          .join(' ')
+          .toLocaleLowerCase('ru-RU')
+          .includes(normalizedQuery)
       })
-    }
+    )
+  }, [groupById, groupFilter, query, tasks, viewFilter])
 
-    return result
-  }, [nowTime, today, viewFilter, visibleTasks])
-
-  const nonEmptySections = sections.filter((section) => section.tasks.length > 0)
   const selectedGroupForNewTask =
     groupFilter !== 'all' && groupFilter !== 'ungrouped' && groupById.has(groupFilter)
       ? groupFilter
@@ -436,6 +253,8 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
   }
 
   async function toggleTask(task: TaskRecord): Promise<void> {
+    if (isSaving) return
+
     try {
       await saveTask(
         toUpdateTaskInput(task, task.status === 'completed' ? 'active' : 'completed')
@@ -496,7 +315,7 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
       <ModuleHeader
         icon={ListTodo}
         title="Задачи"
-        description="Дела по контекстам, срокам и приоритетам — без лишней сложности."
+        description="Простой список дел: название, группа и статус."
         actions={
           <>
             <button
@@ -516,64 +335,46 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
           </>
         }
       >
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {[
-            { id: 'active' as const, label: 'Активные', value: stats.active, icon: Circle },
-            {
-              id: 'today' as const,
-              label: 'Сегодня',
-              value: stats.today,
-              icon: CalendarClock
-            },
-            {
-              id: 'overdue' as const,
-              label: 'Просроченные',
-              value: stats.overdue,
-              icon: TriangleAlert
-            },
-            {
-              id: 'completed' as const,
-              label: 'Выполненные',
-              value: stats.completed,
-              icon: CheckCircle2
-            }
-          ].map((stat) => {
-            const Icon = stat.icon
-            const danger = stat.id === 'overdue' && stat.value > 0
-            return (
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+          <label className="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 focus-within:border-violet-500/45 focus-within:ring-2 focus-within:ring-violet-500/10">
+            <Search className="size-4 shrink-0 text-[var(--app-muted)]" />
+            <input
+              value={query}
+              type="search"
+              aria-label="Поиск по задачам"
+              placeholder="Найти задачу…"
+              className="min-w-0 flex-1 bg-transparent text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60"
+              onChange={(event) => setQuery(event.target.value)}
+            />
+            {query && (
               <button
-                key={stat.id}
                 type="button"
-                className={cn(
-                  'flex items-center justify-between rounded-2xl border bg-[var(--app-workspace)] px-4 py-3 text-left transition-colors',
-                  viewFilter === stat.id
-                    ? 'border-violet-400/30 bg-violet-500/10'
-                    : danger
-                      ? 'border-rose-400/20 hover:bg-rose-500/[0.06]'
-                      : 'border-[var(--app-border)] hover:bg-[var(--app-control-hover)]'
-                )}
-                onClick={() => setViewFilter(stat.id)}
+                aria-label="Очистить поиск задач"
+                className="text-[var(--app-muted)] hover:text-[var(--app-text)]"
+                onClick={() => setQuery('')}
               >
-                <span>
-                  <span className="block text-xs font-medium text-[var(--app-muted)]">
-                    {stat.label}
-                  </span>
-                  <span
-                    className={cn(
-                      'mt-1 block text-2xl font-semibold text-[var(--app-text)]',
-                      danger && 'text-rose-200'
-                    )}
-                  >
-                    {stat.value}
-                  </span>
-                </span>
-                <Icon
-                  aria-hidden="true"
-                  className={cn('size-5 text-[var(--app-muted)]', danger && 'text-rose-300')}
-                />
+                <X className="size-4" />
               </button>
-            )
-          })}
+            )}
+          </label>
+
+          <div className="flex shrink-0 gap-1 overflow-x-auto rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-1">
+            {viewFilters.map((filter) => (
+              <button
+                key={filter.id}
+                type="button"
+                aria-pressed={viewFilter === filter.id}
+                className={
+                  viewFilter === filter.id
+                    ? 'h-9 shrink-0 rounded-lg bg-violet-500 px-3.5 text-sm font-semibold text-white'
+                    : 'h-9 shrink-0 rounded-lg px-3.5 text-sm font-medium text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
+                }
+                onClick={() => setViewFilter(filter.id)}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
         </div>
       </ModuleHeader>
 
@@ -623,7 +424,7 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
             >
               <ListTodo className="size-4" />
               <span className="min-w-0 flex-1 truncate text-left">Все задачи</span>
-              <span className="text-xs opacity-70">{stats.active}</span>
+              <span className="text-xs opacity-70">{tasks.length}</span>
             </button>
 
             <button
@@ -638,7 +439,7 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
             >
               <Inbox className="size-4" />
               <span className="min-w-0 flex-1 truncate text-left">Без группы</span>
-              <span className="text-xs opacity-70">{groupActiveCounts.ungrouped}</span>
+              <span className="text-xs opacity-70">{groupTaskCounts.ungrouped}</span>
             </button>
           </div>
 
@@ -653,7 +454,7 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
                 <div
                   key={group.id}
                   className={cn(
-                    'group flex items-center rounded-xl',
+                    'flex items-center rounded-xl',
                     selected && 'bg-[var(--app-control)]'
                   )}
                 >
@@ -679,15 +480,10 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
                     </span>
                     <span className="min-w-0 flex-1 truncate text-left">{group.name}</span>
                     <span className="text-xs opacity-60">
-                      {groupActiveCounts.counts.get(group.id) ?? 0}
+                      {groupTaskCounts.counts.get(group.id) ?? 0}
                     </span>
                   </button>
-                  <div
-                    className={cn(
-                      'mr-1 flex shrink-0 items-center',
-                      selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                    )}
-                  >
+                  <div className="mr-1 flex shrink-0 items-center">
                     <button
                       type="button"
                       aria-label={`Изменить группу «${group.name}»`}
@@ -715,62 +511,6 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
         </aside>
 
         <section className="min-w-0 space-y-4">
-          <div className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)]">
-            <div className="flex flex-wrap gap-2">
-              <label className="flex h-11 min-w-[240px] flex-1 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 focus-within:border-violet-500/45 focus-within:ring-2 focus-within:ring-violet-500/10">
-                <Search className="size-4 shrink-0 text-[var(--app-muted)]" />
-                <input
-                  value={query}
-                  type="search"
-                  aria-label="Поиск по задачам"
-                  placeholder="Найти задачу…"
-                  className="min-w-0 flex-1 bg-transparent text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60"
-                  onChange={(event) => setQuery(event.target.value)}
-                />
-                {query && (
-                  <button
-                    type="button"
-                    aria-label="Очистить поиск задач"
-                    className="text-[var(--app-muted)] hover:text-[var(--app-text)]"
-                    onClick={() => setQuery('')}
-                  >
-                    <X className="size-4" />
-                  </button>
-                )}
-              </label>
-
-              <div className="min-w-[150px]">
-                <AppSelect
-                  ariaLabel="Фильтр по приоритету"
-                  value={priorityFilter}
-                  options={[
-                    { value: PRIORITY_ALL, label: 'Все приоритеты' },
-                    ...TASK_PRIORITY_OPTIONS
-                  ]}
-                  onValueChange={(value) => setPriorityFilter(value as TaskPriority | 'all')}
-                />
-              </div>
-            </div>
-
-            <div className="mt-3 flex gap-1 overflow-x-auto rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-1">
-              {viewFilters.map((filter) => (
-                <button
-                  key={filter.id}
-                  type="button"
-                  aria-pressed={viewFilter === filter.id}
-                  className={
-                    viewFilter === filter.id
-                      ? 'h-9 shrink-0 rounded-lg bg-violet-500 px-3.5 text-sm font-semibold text-white'
-                      : 'h-9 shrink-0 rounded-lg px-3.5 text-sm font-medium text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
-                  }
-                  onClick={() => setViewFilter(filter.id)}
-                >
-                  {filter.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
           <form
             className="flex items-center gap-2 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 shadow-[var(--app-shadow-card)]"
             onSubmit={(event) => void quickAdd(event)}
@@ -799,7 +539,7 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
             </button>
           </form>
 
-          {nonEmptySections.length === 0 ? (
+          {visibleTasks.length === 0 ? (
             <div className="flex min-h-72 flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface)] px-6 text-center">
               <span className="flex size-14 items-center justify-center rounded-2xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
                 <CheckCircle2 className="size-7" />
@@ -809,8 +549,8 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
               </h2>
               <p className="mt-2 max-w-md text-sm leading-6 text-[var(--app-muted)]">
                 {tasks.length === 0
-                  ? 'Добавьте первую задачу или сначала создайте группы вроде «Работа» и «Дом».'
-                  : 'Измените группу, статус, приоритет или строку поиска.'}
+                  ? 'Добавьте первую задачу или сначала создайте группу.'
+                  : 'Измените группу, статус или строку поиска.'}
               </p>
               {tasks.length === 0 && (
                 <button
@@ -823,160 +563,93 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
               )}
             </div>
           ) : (
-            nonEmptySections.map((section) => (
-              <div
-                key={section.id}
-                className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--app-shadow-card)]"
-              >
-                <div className="flex items-center gap-2 border-b border-[var(--app-border)] px-4 py-3">
-                  <span
-                    className={cn(
-                      'text-[var(--app-muted)]',
-                      section.tone === 'danger' && 'text-rose-300',
-                      section.tone === 'success' && 'text-emerald-300'
-                    )}
-                  >
-                    {section.icon}
-                  </span>
-                  <h2
-                    className={cn(
-                      'text-sm font-semibold text-[var(--app-text)]',
-                      section.tone === 'danger' && 'text-rose-200'
-                    )}
-                  >
-                    {section.title}
-                  </h2>
-                  <span className="ml-auto rounded-lg bg-[var(--app-control)] px-2 py-0.5 text-xs text-[var(--app-muted)]">
-                    {section.tasks.length}
-                  </span>
-                </div>
+            <div className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--app-shadow-card)]">
+              <div className="divide-y divide-[var(--app-border)]">
+                {visibleTasks.map((task) => {
+                  const group = task.groupId ? groupById.get(task.groupId) ?? null : null
+                  const completed = task.status === 'completed'
+                  const StatusIcon = completed ? CheckCircle2 : Circle
 
-                <div className="divide-y divide-[var(--app-border)]">
-                  {section.tasks.map((task) => {
-                    const group = task.groupId ? groupById.get(task.groupId) ?? null : null
-                    const overdue = isTaskOverdue(task, today, nowTime)
-
-                    return (
-                      <article
-                        key={task.id}
-                        className={cn(
-                          'group/task flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-[var(--app-control-hover)]',
-                          task.status === 'completed' && 'opacity-65'
-                        )}
+                  return (
+                    <article
+                      key={task.id}
+                      className={cn(
+                        'flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-[var(--app-control-hover)]',
+                        completed && 'opacity-65'
+                      )}
+                    >
+                      <button
+                        type="button"
+                        aria-label={
+                          completed
+                            ? `Вернуть задачу «${task.title}»`
+                            : `Выполнить задачу «${task.title}»`
+                        }
+                        aria-pressed={completed}
+                        disabled={isSaving}
+                        className="flex min-w-0 flex-1 items-center gap-3 text-left outline-none disabled:cursor-wait"
+                        onClick={() => void toggleTask(task)}
                       >
-                        <button
-                          type="button"
-                          aria-label={
-                            task.status === 'completed'
-                              ? `Вернуть задачу «${task.title}»`
-                              : `Выполнить задачу «${task.title}»`
-                          }
-                          aria-pressed={task.status === 'completed'}
-                          disabled={isSaving}
+                        <StatusIcon
+                          aria-hidden="true"
                           className={cn(
-                            'mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full border transition-colors',
-                            task.status === 'completed'
-                              ? 'border-emerald-400/40 bg-emerald-500/15 text-emerald-300'
-                              : 'border-[var(--app-border-strong)] text-transparent hover:border-violet-400/50 hover:bg-violet-500/10 hover:text-violet-300'
+                            'size-5 shrink-0',
+                            completed ? 'text-emerald-300' : 'text-[var(--app-muted)]'
                           )}
-                          onClick={() => void toggleTask(task)}
-                        >
-                          <Check className="size-3.5" />
-                        </button>
+                        />
 
+                        <span className="min-w-0 flex-1">
+                          <span
+                            className={cn(
+                              'block truncate text-sm font-semibold leading-5 text-[var(--app-text)]',
+                              completed && 'line-through decoration-[var(--app-muted)]/70'
+                            )}
+                          >
+                            {task.title}
+                          </span>
+
+                          {group && (
+                            <span
+                              className={cn(
+                                'mt-1.5 inline-flex h-6 max-w-full items-center gap-1.5 rounded-lg border px-2 text-[11px] font-medium',
+                                taskGroupColorClasses[group.color].soft,
+                                taskGroupColorClasses[group.color].text,
+                                taskGroupColorClasses[group.color].border
+                              )}
+                            >
+                              <TaskGroupIconGlyph icon={group.icon} className="size-3 shrink-0" />
+                              <span className="truncate">{group.name}</span>
+                            </span>
+                          )}
+                        </span>
+                      </button>
+
+                      <div className="flex shrink-0 items-center">
                         <button
                           type="button"
-                          className="min-w-0 flex-1 text-left outline-none"
+                          aria-label={`Изменить задачу «${task.title}»`}
+                          className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control)] hover:text-[var(--app-text)]"
                           onClick={() => {
                             setEditingTask(task)
                             setTaskDialogOpen(true)
                           }}
                         >
-                          <div
-                            className={cn(
-                              'text-sm font-semibold leading-5 text-[var(--app-text)]',
-                              task.status === 'completed' &&
-                                'line-through decoration-[var(--app-muted)]/70'
-                            )}
-                          >
-                            {task.title}
-                          </div>
-                          {task.description && (
-                            <p className="mt-1 line-clamp-2 text-xs leading-5 text-[var(--app-muted)]">
-                              {task.description}
-                            </p>
-                          )}
-
-                          <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                            {group && (
-                              <span
-                                className={cn(
-                                  'inline-flex h-6 items-center gap-1.5 rounded-lg border px-2 text-[11px] font-medium',
-                                  taskGroupColorClasses[group.color].soft,
-                                  taskGroupColorClasses[group.color].text,
-                                  taskGroupColorClasses[group.color].border
-                                )}
-                              >
-                                <TaskGroupIconGlyph icon={group.icon} className="size-3" />
-                                {group.name}
-                              </span>
-                            )}
-                            {task.dueDate && (
-                              <span
-                                className={cn(
-                                  'inline-flex h-6 items-center gap-1 rounded-lg border px-2 text-[11px] font-medium',
-                                  overdue
-                                    ? 'border-rose-400/25 bg-rose-500/10 text-rose-200'
-                                    : task.dueDate === today
-                                      ? 'border-violet-400/25 bg-violet-500/10 text-violet-200'
-                                      : 'border-[var(--app-border)] bg-[var(--app-control)] text-[var(--app-muted)]'
-                                )}
-                              >
-                                <CalendarClock className="size-3" />
-                                {formatDueDate(task.dueDate, today)}
-                                {task.dueTime ? ` · ${task.dueTime}` : ''}
-                              </span>
-                            )}
-                            {task.priority !== 'normal' && (
-                              <span
-                                className={cn(
-                                  'inline-flex h-6 items-center rounded-lg border px-2 text-[11px] font-medium',
-                                  taskPriorityClassName(task.priority)
-                                )}
-                              >
-                                {taskPriorityLabel(task.priority)}
-                              </span>
-                            )}
-                          </div>
+                          <Pencil className="size-3.5" />
                         </button>
-
-                        <div className="flex shrink-0 items-center opacity-0 transition-opacity group-hover/task:opacity-100 focus-within:opacity-100">
-                          <button
-                            type="button"
-                            aria-label={`Изменить задачу «${task.title}»`}
-                            className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control)] hover:text-[var(--app-text)]"
-                            onClick={() => {
-                              setEditingTask(task)
-                              setTaskDialogOpen(true)
-                            }}
-                          >
-                            <Pencil className="size-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            aria-label={`Удалить задачу «${task.title}»`}
-                            className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
-                            onClick={() => setDeleteTaskTarget(task)}
-                          >
-                            <Trash2 className="size-3.5" />
-                          </button>
-                        </div>
-                      </article>
-                    )
-                  })}
-                </div>
+                        <button
+                          type="button"
+                          aria-label={`Удалить задачу «${task.title}»`}
+                          className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
+                          onClick={() => setDeleteTaskTarget(task)}
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      </div>
+                    </article>
+                  )
+                })}
               </div>
-            ))
+            </div>
           )}
         </section>
       </div>
