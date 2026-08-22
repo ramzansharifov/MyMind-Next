@@ -1,0 +1,29 @@
+name: Habits PR verify
+
+on:
+  push:
+    branches:
+      - agent/simplify-habits-model
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Verify removed habit fields stay removed
+        shell: bash
+        run: |
+          if git grep -nE 'HABIT_STATUSES|HabitStatus|includeArchived|habit\.(description|status|startDate|endDate|archivedOn)' -- src/shared src/main src/renderer/src/modules/habits; then
+            echo 'Found a legacy habit field reference.'
+            exit 1
+          fi
+      - run: npm run check
