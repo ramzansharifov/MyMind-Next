@@ -25,7 +25,7 @@ export function TaskMoveGroupMenu({
           type="button"
           aria-label={`Перенести задачу «${task.title}»`}
           disabled={disabled}
-          className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] outline-none transition-colors hover:bg-[var(--app-control)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 disabled:cursor-wait disabled:opacity-40"
+          className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors outline-none hover:bg-[var(--app-control)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 disabled:cursor-wait disabled:opacity-40"
         >
           <MoreHorizontal className="size-4" />
         </button>
@@ -39,11 +39,8 @@ export function TaskMoveGroupMenu({
           collisionPadding={12}
           className="z-[130] flex h-72 w-64 flex-col overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-1.5 shadow-2xl outline-none"
         >
-          <div className="shrink-0 px-2.5 pb-2 pt-1.5">
+          <div className="shrink-0 px-2.5 pt-1.5 pb-2">
             <div className="text-xs font-semibold text-[var(--app-text)]">Перенести в группу</div>
-            <div className="mt-0.5 text-[11px] leading-4 text-[var(--app-muted)]">
-              Повторный выбор текущей группы уберёт задачу из неё.
-            </div>
           </div>
 
           <div className="mx-1 border-t border-[var(--app-border)]" />
@@ -70,7 +67,7 @@ export function TaskMoveGroupMenu({
                         : `Перенести задачу в группу «${group.name}»`
                     }
                     className={cn(
-                      'mx-1 flex h-10 cursor-default select-none items-center gap-2.5 rounded-lg px-2.5 text-sm outline-none transition-colors data-[highlighted]:bg-[var(--app-control-hover)]',
+                      'mx-1 flex h-10 cursor-default items-center gap-2.5 rounded-lg px-2.5 text-sm transition-colors outline-none select-none data-[highlighted]:bg-[var(--app-control-hover)]',
                       selected ? 'text-[var(--app-text)]' : 'text-[var(--app-muted)]'
                     )}
                     onSelect={() => void onMove(group.id)}
