@@ -27,6 +27,7 @@ import { StandardModulePage } from '../../shared/ui/StandardModulePage'
 import { tasksClient } from './api/tasks-client'
 import { TaskDialog } from './components/TaskDialog'
 import { TaskGroupDialog } from './components/TaskGroupDialog'
+import { TaskMoveGroupMenu } from './components/TaskMoveGroupMenu'
 import { TaskGroupIconGlyph, taskGroupColorClasses } from './task-options'
 
 type TaskViewFilter = 'all' | 'active' | 'completed'
@@ -47,12 +48,16 @@ function errorMessage(reason: unknown): string {
   return reason instanceof Error ? reason.message : 'Не удалось выполнить действие'
 }
 
-function toUpdateTaskInput(task: TaskRecord, status = task.status): UpdateTaskInput {
+function toUpdateTaskInput(
+  task: TaskRecord,
+  status = task.status,
+  groupId = task.groupId
+): UpdateTaskInput {
   return {
     id: task.id,
     title: task.title,
     description: task.description,
-    groupId: task.groupId,
+    groupId,
     status,
     priority: task.priority,
     dueDate: task.dueDate,
@@ -259,6 +264,18 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
       await saveTask(
         toUpdateTaskInput(task, task.status === 'completed' ? 'active' : 'completed')
       )
+    } catch {
+      return
+    }
+  }
+
+  async function moveTaskToGroup(task: TaskRecord, groupId: string): Promise<void> {
+    if (isSaving) return
+
+    const nextGroupId = task.groupId === groupId ? null : groupId
+
+    try {
+      await saveTask(toUpdateTaskInput(task, task.status, nextGroupId))
     } catch {
       return
     }
@@ -626,6 +643,12 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
                       </button>
 
                       <div className="flex shrink-0 items-center">
+                        <TaskMoveGroupMenu
+                          task={task}
+                          groups={groups}
+                          disabled={isSaving}
+                          onMove={(groupId) => moveTaskToGroup(task, groupId)}
+                        />
                         <button
                           type="button"
                           aria-label={`Изменить задачу «${task.title}»`}

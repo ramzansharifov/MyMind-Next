@@ -28,6 +28,16 @@ const workGroup: TaskGroupRecord = {
   updatedAt: 1
 }
 
+const homeGroup: TaskGroupRecord = {
+  id: 'group-home',
+  name: 'Дом',
+  icon: 'home',
+  color: 'emerald',
+  position: 1,
+  createdAt: 1,
+  updatedAt: 1
+}
+
 const task: TaskRecord = {
   id: 'task-1',
   title: 'Подготовить отчёт',
@@ -129,6 +139,53 @@ describe('TasksPage', () => {
         description: task.description,
         groupId: task.groupId,
         status: 'completed',
+        priority: task.priority,
+        dueDate: task.dueDate,
+        dueTime: task.dueTime
+      })
+    )
+  })
+
+  it('moves a task through a fixed scrollable group menu and toggles the current group off', async () => {
+    mocks.listOverview.mockResolvedValue({ groups: [workGroup, homeGroup], tasks: [task] })
+    const user = userEvent.setup()
+    render(<TasksPage />)
+
+    const moveButton = await screen.findByRole('button', {
+      name: 'Перенести задачу «Подготовить отчёт»'
+    })
+    await user.click(moveButton)
+
+    expect(screen.getByTestId('task-group-move-menu')).toHaveClass('h-72', 'w-64')
+    expect(screen.getByTestId('task-group-move-scroll')).toHaveClass('overflow-y-auto')
+
+    await user.click(screen.getByRole('menuitem', { name: 'Перенести задачу в группу «Дом»' }))
+
+    await waitFor(() =>
+      expect(mocks.updateTask).toHaveBeenLastCalledWith({
+        id: task.id,
+        title: task.title,
+        description: task.description,
+        groupId: homeGroup.id,
+        status: task.status,
+        priority: task.priority,
+        dueDate: task.dueDate,
+        dueTime: task.dueTime
+      })
+    )
+
+    await user.click(
+      await screen.findByRole('button', { name: 'Перенести задачу «Подготовить отчёт»' })
+    )
+    await user.click(screen.getByRole('menuitem', { name: 'Убрать задачу из группы «Дом»' }))
+
+    await waitFor(() =>
+      expect(mocks.updateTask).toHaveBeenLastCalledWith({
+        id: task.id,
+        title: task.title,
+        description: task.description,
+        groupId: null,
+        status: task.status,
         priority: task.priority,
         dueDate: task.dueDate,
         dueTime: task.dueTime
