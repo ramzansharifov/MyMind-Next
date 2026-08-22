@@ -1,0 +1,48 @@
+name: Habits PR format
+
+on:
+  push:
+    branches:
+      - agent/simplify-habits-model
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: ${{ !contains(github.event.head_commit.message, '[habits-formatted]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/simplify-habits-model
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Format changed habit files
+        run: >-
+          npx prettier --write
+          src/main/database/schema/habits.ts
+          src/main/ipc/register-habits-ipc.test.ts
+          src/main/repositories/habits.repository.test.ts
+          src/main/repositories/habits.repository.ts
+          src/renderer/src/modules/habits/HabitsPage.test.tsx
+          src/renderer/src/modules/habits/HabitsPage.tsx
+          src/renderer/src/modules/habits/components/HabitDialog.tsx
+          src/renderer/src/modules/habits/components/HabitReports.tsx
+          src/renderer/src/modules/habits/habit-schedule.ts
+          src/shared/contracts/habits.ts
+          src/shared/validation/habits.test.ts
+          src/shared/validation/habits.ts
+          drizzle/meta/_journal.json
+      - name: Commit formatting
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/main/database/schema/habits.ts src/main/ipc/register-habits-ipc.test.ts src/main/repositories/habits.repository.test.ts src/main/repositories/habits.repository.ts src/renderer/src/modules/habits/HabitsPage.test.tsx src/renderer/src/modules/habits/HabitsPage.tsx src/renderer/src/modules/habits/components/HabitDialog.tsx src/renderer/src/modules/habits/components/HabitReports.tsx src/renderer/src/modules/habits/habit-schedule.ts src/shared/contracts/habits.ts src/shared/validation/habits.test.ts src/shared/validation/habits.ts drizzle/meta/_journal.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Отформатировать изменения привычек [habits-formatted]"
+          git push origin HEAD:agent/simplify-habits-model
