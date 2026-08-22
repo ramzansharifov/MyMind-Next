@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - agent/animate-completed-tasks
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: write
