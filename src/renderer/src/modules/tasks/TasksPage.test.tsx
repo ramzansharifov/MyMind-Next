@@ -104,7 +104,10 @@ describe('TasksPage', () => {
     const user = userEvent.setup()
     render(<TasksPage />)
 
-    await user.click(await screen.findByRole('button', { name: 'Работа 1' }))
+    const workLabels = await screen.findAllByText('Работа')
+    const workGroupButton = workLabels[0].closest('button')
+    if (!workGroupButton) throw new Error('Не найдена кнопка фильтра группы «Работа»')
+    await user.click(workGroupButton)
     await user.type(
       screen.getByRole('textbox', { name: 'Быстро добавить задачу' }),
       'Позвонить клиенту'
