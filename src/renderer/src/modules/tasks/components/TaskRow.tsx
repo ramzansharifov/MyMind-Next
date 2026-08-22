@@ -40,16 +40,20 @@ export function TaskRow({
       data-task-row={task.id}
       data-completed={completed ? 'true' : 'false'}
       initial={false}
-      animate={{
-        backgroundColor: completed ? 'rgba(16, 185, 129, 0.055)' : 'rgba(0, 0, 0, 0)'
-      }}
       exit={reduceMotion ? undefined : { opacity: 0, y: -5, scale: 0.992 }}
       transition={transition}
-      className="relative flex items-center gap-3 overflow-hidden px-4 py-3.5 hover:bg-[var(--app-control-hover)]"
+      className="relative flex items-center gap-3 overflow-hidden px-4 py-3.5 transition-colors hover:bg-[var(--app-control-hover)]"
     >
       <motion.span
         aria-hidden="true"
-        className="absolute inset-y-2 left-0 w-0.5 origin-center rounded-full bg-emerald-400"
+        className="pointer-events-none absolute inset-0 bg-emerald-500/[0.055]"
+        initial={false}
+        animate={{ opacity: completed ? 1 : 0 }}
+        transition={transition}
+      />
+      <motion.span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-y-2 left-0 w-0.5 origin-center rounded-full bg-emerald-400"
         initial={false}
         animate={{ opacity: completed ? 1 : 0, scaleY: completed ? 1 : 0.3 }}
         transition={transition}
@@ -62,7 +66,7 @@ export function TaskRow({
         }
         aria-pressed={completed}
         disabled={busy}
-        className="flex min-w-0 flex-1 items-center gap-3 text-left outline-none disabled:cursor-wait"
+        className="relative z-[1] flex min-w-0 flex-1 items-center gap-3 text-left outline-none disabled:cursor-wait"
         onClick={() => void onToggle()}
       >
         <motion.span
@@ -134,7 +138,7 @@ export function TaskRow({
             animate={{ opacity: 1, x: 0, scale: 1 }}
             exit={reduceMotion ? undefined : { opacity: 0, x: 6, scale: 0.94 }}
             transition={transition}
-            className="hidden h-7 shrink-0 items-center gap-1.5 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-2.5 text-[11px] font-semibold text-emerald-300 sm:inline-flex"
+            className="relative z-[1] hidden h-7 shrink-0 items-center gap-1.5 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-2.5 text-[11px] font-semibold text-emerald-300 sm:inline-flex"
           >
             <Check className="size-3" strokeWidth={2.75} />
             Выполнено
@@ -142,7 +146,7 @@ export function TaskRow({
         )}
       </AnimatePresence>
 
-      <div className="flex shrink-0 items-center">
+      <div className="relative z-[1] flex shrink-0 items-center">
         <TaskMoveGroupMenu task={task} groups={groups} disabled={busy} onMove={onMove} />
         <button
           type="button"
