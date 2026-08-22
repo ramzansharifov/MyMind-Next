@@ -119,6 +119,18 @@ describe('HabitsPage', () => {
     expect(screen.getByText('Каждый день')).toBeInTheDocument()
   })
 
+  it('does not expose removed habit fields in the editor', async () => {
+    const user = userEvent.setup()
+    render(<HabitsPage />)
+
+    await user.click(await screen.findByRole('button', { name: 'Новая привычка' }))
+
+    expect(await screen.findByText('Предпочтительное время')).toBeInTheDocument()
+    expect(screen.queryByText('Описание')).not.toBeInTheDocument()
+    expect(screen.queryByText('Состояние')).not.toBeInTheDocument()
+    expect(screen.queryByText('Период действия')).not.toBeInTheDocument()
+  })
+
   it('marks a check habit complete for the selected date', async () => {
     const user = userEvent.setup()
     render(<HabitsPage />)
