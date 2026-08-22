@@ -29,4 +29,24 @@ jobs:
             echo 'Found a legacy habit field reference.'
             exit 1
           fi
-      - run: npm run check
+      - name: Check formatting of changed files
+        run: >-
+          npx prettier --check
+          src/main/database/schema/habits.ts
+          src/main/ipc/register-habits-ipc.test.ts
+          src/main/repositories/habits.repository.test.ts
+          src/main/repositories/habits.repository.ts
+          src/renderer/src/modules/habits/HabitsPage.test.tsx
+          src/renderer/src/modules/habits/HabitsPage.tsx
+          src/renderer/src/modules/habits/components/HabitDialog.tsx
+          src/renderer/src/modules/habits/components/HabitReports.tsx
+          src/renderer/src/modules/habits/habit-schedule.ts
+          src/shared/contracts/habits.ts
+          src/shared/validation/habits.test.ts
+          src/shared/validation/habits.ts
+          drizzle/meta/_journal.json
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:run
+      - run: npm run db:check
+      - run: npm run build:bundle
