@@ -232,6 +232,13 @@
       "when": 1787441809306,
       "tag": "0032_habits_simplify_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "6",
+      "when": 1787442191469,
+      "tag": "0033_habits_simplify_fields",
+      "breakpoints": true
     }
   ]
 }
