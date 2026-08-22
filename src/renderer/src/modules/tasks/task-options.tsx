@@ -46,6 +46,7 @@ export const TASK_GROUP_ICON_OPTIONS: Array<{
 ]
 
 export const TASK_GROUP_COLOR_OPTIONS: Array<{ value: TaskGroupColor; label: string }> = [
+  { value: 'accent', label: 'Без цвета' },
   { value: 'violet', label: 'Фиолетовый' },
   { value: 'blue', label: 'Синий' },
   { value: 'cyan', label: 'Голубой' },
@@ -64,6 +65,12 @@ export const taskGroupColorClasses: Record<
   TaskGroupColor,
   { soft: string; text: string; dot: string; border: string }
 > = {
+  accent: {
+    soft: 'bg-violet-500/12',
+    text: 'text-violet-300',
+    dot: 'bg-violet-400',
+    border: 'border-violet-400/25'
+  },
   violet: {
     soft: 'bg-violet-500/12',
     text: 'text-violet-300',
