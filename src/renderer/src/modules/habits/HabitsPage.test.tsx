@@ -58,6 +58,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   const habit = makeHabit()
   mocks.listOverview.mockResolvedValue({ groups: [healthGroup], habits: [habit], entries: [] })
+  mocks.deleteHabit.mockResolvedValue(true)
   mocks.upsertEntry.mockImplementation(async (input) => ({
     id: 'entry-1',
     ...input,
@@ -171,7 +172,7 @@ describe('HabitsPage', () => {
         'true'
       )
     )
-    expect(screen.getByText('Выполнено')).toBeInTheDocument()
+    expect(screen.queryByText('Выполнено')).not.toBeInTheDocument()
   })
 
   it('adds one count unit per habit click and becomes completed at the target', async () => {
@@ -231,6 +232,21 @@ describe('HabitsPage', () => {
       )
     )
     expect(screen.getByText('3 / 3 приёма')).toBeInTheDocument()
+  })
+
+  it('deletes a habit directly from the today list after confirmation', async () => {
+    const user = userEvent.setup()
+    render(<HabitsPage />)
+
+    await user.click(
+      await screen.findByRole('button', { name: 'Удалить привычку «Пить воду»' })
+    )
+
+    expect(await screen.findByRole('heading', { name: 'Удалить привычку?' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Удалить' }))
+
+    await waitFor(() => expect(mocks.deleteHabit).toHaveBeenCalledWith({ id: 'habit-water' }))
+    await waitFor(() => expect(screen.queryByText('Пить воду')).not.toBeInTheDocument())
   })
 
   it('opens a dedicated reports page with completion analytics', async () => {
