@@ -5,6 +5,9 @@ on:
     branches:
       - agent/stack-habit-meta-under-title
 
+permissions:
+  contents: read
+
 jobs:
   habit-layout:
     runs-on: ubuntu-latest
