@@ -390,9 +390,7 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
                     { value: 'check', label: 'Простая отметка' },
                     { value: 'count', label: 'Количество / прогресс' }
                   ]}
-                  onValueChange={(value) =>
-                    setTrackingFilter(value as HabitTrackingType | 'all')
-                  }
+                  onValueChange={(value) => setTrackingFilter(value as HabitTrackingType | 'all')}
                 />
               </div>
             )}

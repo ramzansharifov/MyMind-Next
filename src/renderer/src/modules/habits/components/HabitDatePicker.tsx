@@ -116,7 +116,9 @@ export function HabitDatePicker({ value, max, onChange }: HabitDatePickerProps):
             >
               <ChevronLeft className="size-4" />
             </button>
-            <div className="text-sm font-semibold text-[var(--app-text)]">{formatMonth(visibleMonth)}</div>
+            <div className="text-sm font-semibold text-[var(--app-text)]">
+              {formatMonth(visibleMonth)}
+            </div>
             <button
               type="button"
               aria-label="Следующий месяц"
