@@ -68,7 +68,13 @@ export function HabitPreferredTimesEditor({
         )}
       </div>
 
-      <div className={trackingType === 'check' ? 'mt-4 max-w-xs' : 'mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3'}>
+      <div
+        className={
+          trackingType === 'check'
+            ? 'mt-4 max-w-xs'
+            : 'mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3'
+        }
+      >
         {units.map((unit) => (
           <label key={unit} className="block space-y-1.5">
             <span className="text-xs font-medium text-[var(--app-muted)]">

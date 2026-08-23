@@ -45,7 +45,8 @@ export function HabitTodayRow({
   const skipped = Boolean(entry?.skipped)
   const color = group ? habitGroupColorClasses[group.color] : null
   const preferredTime = completed ? null : nextPreferredTime(habit, currentValue)
-  const progress = habit.trackingType === 'count' ? currentValue / habit.targetValue : completed ? 1 : 0
+  const progress =
+    habit.trackingType === 'count' ? currentValue / habit.targetValue : completed ? 1 : 0
   const countCompleted = habit.trackingType === 'count' && completed
 
   const actionLabel =
@@ -179,7 +180,9 @@ export function HabitTodayRow({
               {preferredTime && (
                 <span className="inline-flex h-6 items-center gap-1 rounded-lg border border-[var(--app-border)] bg-[var(--app-control)] px-2 text-[11px] text-[var(--app-muted)]">
                   <Clock3 className="size-3" />
-                  {habit.trackingType === 'count' ? `${currentValue + 1} · ${preferredTime}` : preferredTime}
+                  {habit.trackingType === 'count'
+                    ? `${currentValue + 1} · ${preferredTime}`
+                    : preferredTime}
                 </span>
               )}
             </span>
@@ -279,7 +282,10 @@ export function HabitTodayRow({
         <div className="relative z-[1] h-0.5 overflow-hidden bg-[var(--app-workspace)]">
           <motion.div
             aria-hidden="true"
-            className={cn('h-full origin-left', completed ? 'bg-emerald-400/70' : 'bg-violet-400/60')}
+            className={cn(
+              'h-full origin-left',
+              completed ? 'bg-emerald-400/70' : 'bg-violet-400/60'
+            )}
             initial={false}
             animate={{ scaleX: Math.max(0, Math.min(1, progress)) }}
             transition={transition}
