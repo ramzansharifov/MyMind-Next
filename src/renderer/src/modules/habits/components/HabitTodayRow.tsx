@@ -145,7 +145,7 @@ export function HabitTodayRow({
 
           <span
             className={cn(
-              'min-w-0 flex-1 whitespace-normal break-words py-1 text-sm leading-5 font-semibold transition-colors',
+              'min-w-0 flex-1 py-1 text-sm leading-5 font-semibold break-words whitespace-normal transition-colors',
               completed
                 ? 'text-[var(--app-muted)] line-through decoration-emerald-300/65'
                 : 'text-[var(--app-text)]'
@@ -230,7 +230,9 @@ export function HabitTodayRow({
                             key={`${item.unit}-${item.time}`}
                             className="inline-flex h-6 items-center rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] px-2 text-[11px] text-[var(--app-text)]"
                           >
-                            {habit.trackingType === 'count' ? `${item.unit} · ${item.time}` : item.time}
+                            {habit.trackingType === 'count'
+                              ? `${item.unit} · ${item.time}`
+                              : item.time}
                           </span>
                         ))}
                       </div>
@@ -286,7 +288,10 @@ export function HabitTodayRow({
               </div>
 
               <div className="mt-3 flex items-center justify-end gap-1 border-t border-[var(--app-border)] pt-3">
-                <Tooltip content={skipped ? 'Отменить пропуск' : 'Пропустить на этот день'} side="top">
+                <Tooltip
+                  content={skipped ? 'Отменить пропуск' : 'Пропустить на этот день'}
+                  side="top"
+                >
                   <button
                     type="button"
                     aria-label={
