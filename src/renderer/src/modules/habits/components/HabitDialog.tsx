@@ -71,7 +71,12 @@ export function HabitDialog({
     if (next === 'check') {
       setTargetValue('1')
       setUnit('')
-      setPreferredTimes((current) => (current[1] ? { 1: current[1] } : {}))
+      setPreferredTimes((current) => {
+        const first = current[1]
+        const nextPreferredTimes: Record<number, string> = {}
+        if (first) nextPreferredTimes[1] = first
+        return nextPreferredTimes
+      })
     }
   }
 
