@@ -121,13 +121,37 @@ beforeEach(() => {
 })
 
 describe('HabitsPage', () => {
-  it('shows groups, recurrence and habits scheduled for today', async () => {
+  it('shows the habit cleanly and moves metadata into the details popover', async () => {
+    const user = userEvent.setup()
     renderHabitsPage()
 
     expect(await screen.findByRole('heading', { name: 'Привычки' })).toBeInTheDocument()
-    expect(screen.getAllByRole('button', { name: /Здоровье/ }).length).toBeGreaterThan(0)
     expect(screen.getByText('Пить воду')).toBeInTheDocument()
-    expect(screen.getByText('Каждый день')).toBeInTheDocument()
+    expect(screen.queryByText('Каждый день')).not.toBeInTheDocument()
+    expect(screen.queryByText('09:00')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Подробнее о привычке «Пить воду»' }))
+
+    const popover = await screen.findByTestId('habit-details-popover')
+    expect(popover).toHaveTextContent('Здоровье')
+    expect(popover).toHaveTextContent('Каждый день')
+    expect(popover).toHaveTextContent('09:00')
+  })
+
+  it('does not truncate a long habit title', async () => {
+    const longTitle =
+      'Пить креатин и ещё что-нибудь делать потом там например по дому и обязательно дописать привычку полностью'
+    mocks.listOverview.mockResolvedValue({
+      groups: [healthGroup],
+      habits: [makeHabit({ title: longTitle })],
+      entries: []
+    })
+
+    renderHabitsPage()
+
+    const title = await screen.findByText(longTitle)
+    expect(title).not.toHaveClass('truncate')
+    expect(title).toHaveClass('whitespace-normal')
   })
 
   it('keeps search, views and date navigation in the header and opens the custom calendar', async () => {
@@ -184,7 +208,7 @@ describe('HabitsPage', () => {
     expect(screen.queryByText('Выполнено')).not.toBeInTheDocument()
   })
 
-  it('adds one count unit per habit click and becomes completed at the target', async () => {
+  it('adds one count unit per habit click and keeps progress controls in the details popover', async () => {
     const user = userEvent.setup()
     const habit = makeHabit({
       trackingType: 'count',
@@ -240,14 +264,23 @@ describe('HabitsPage', () => {
         'true'
       )
     )
-    expect(screen.getByText('3 / 3 приёма')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Подробнее о привычке «Пить воду»' }))
+    const popover = await screen.findByTestId('habit-details-popover')
+    expect(popover).toHaveTextContent('3 / 3 приёма')
+    expect(popover).toHaveTextContent('1 · 09:00')
+    expect(popover).toHaveTextContent('2 · 15:00')
+    expect(popover).toHaveTextContent('3 · 21:00')
   })
 
-  it('deletes a habit directly from the today list after confirmation', async () => {
+  it('deletes a habit from the details popover after confirmation', async () => {
     const user = userEvent.setup()
     renderHabitsPage()
 
-    await user.click(await screen.findByRole('button', { name: 'Удалить привычку «Пить воду»' }))
+    await user.click(
+      await screen.findByRole('button', { name: 'Подробнее о привычке «Пить воду»' })
+    )
+    await user.click(screen.getByRole('button', { name: 'Удалить привычку «Пить воду»' }))
 
     expect(await screen.findByRole('heading', { name: 'Удалить привычку?' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Удалить' }))
