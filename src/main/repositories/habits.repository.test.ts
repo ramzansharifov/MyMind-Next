@@ -120,7 +120,7 @@ describe('habits repository', () => {
     upsertHabitEntry({ habitId: habit.id, date: '2026-01-01', value: 1, skipped: false })
     upsertHabitEntry({ habitId: habit.id, date: '2026-01-04', value: 1, skipped: false })
     upsertHabitEntry({ habitId: habit.id, date: '2026-01-07', value: 0, skipped: true })
-    vi.setSystemTime(new Date(2026, 0, 10, 12, 0, 0))
+    vi.setSystemTime(new Date(2026, 0, 11, 12, 0, 0))
 
     const report = getHabitsReport({
       dateFrom: '2026-01-01',
