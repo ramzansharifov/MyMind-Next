@@ -8,6 +8,7 @@ const MAX_TITLE_LENGTH = 240
 const MAX_UNIT_LENGTH = 32
 const MAX_REPEAT_DAYS = 3_650
 const MAX_TRACK_VALUE = 1_000_000_000
+const MAX_PREFERRED_TIMES = 100_000
 const MAX_REPORT_DAYS = 730
 
 export const habitSafeIdSchema = z
@@ -32,10 +33,16 @@ export const habitDateSchema = z
     )
   }, 'Введите корректную дату')
 
-const habitNullableTimeSchema = z
+const habitTimeSchema = z
   .string()
   .regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Время должно быть в формате ЧЧ:ММ')
-  .nullable()
+
+const habitPreferredTimeSchema = z
+  .object({
+    unit: z.number().int().min(1).max(MAX_TRACK_VALUE),
+    time: habitTimeSchema
+  })
+  .strict()
 
 export const habitsOverviewInputSchema = z.object({ date: habitDateSchema }).strict()
 
@@ -61,7 +68,7 @@ const habitBaseInputSchema = z
     targetValue: z.number().int().min(1).max(MAX_TRACK_VALUE),
     unit: z.string().trim().max(MAX_UNIT_LENGTH),
     repeatEveryDays: z.number().int().min(1).max(MAX_REPEAT_DAYS),
-    preferredTime: habitNullableTimeSchema
+    preferredTimes: z.array(habitPreferredTimeSchema).max(MAX_PREFERRED_TIMES)
   })
   .strict()
 
@@ -83,6 +90,26 @@ function validateHabitInput(
       path: ['unit'],
       message: 'Для привычки с отметкой единица измерения не используется'
     })
+  }
+
+  const seenUnits = new Set<number>()
+  for (let index = 0; index < input.preferredTimes.length; index += 1) {
+    const preferredTime = input.preferredTimes[index]
+    if (preferredTime.unit > input.targetValue) {
+      context.addIssue({
+        code: 'custom',
+        path: ['preferredTimes', index, 'unit'],
+        message: 'Номер единицы для времени не может превышать целевое значение'
+      })
+    }
+    if (seenUnits.has(preferredTime.unit)) {
+      context.addIssue({
+        code: 'custom',
+        path: ['preferredTimes', index, 'unit'],
+        message: 'Для одной единицы можно указать только одно предпочтительное время'
+      })
+    }
+    seenUnits.add(preferredTime.unit)
   }
 }
 

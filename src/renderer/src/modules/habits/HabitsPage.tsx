@@ -1,18 +1,14 @@
 import {
   BarChart3,
   CalendarDays,
-  Check,
   ChevronLeft,
   ChevronRight,
-  Clock3,
   FolderPlus,
   Inbox,
-  Minus,
   Pencil,
   Plus,
   Repeat2,
   Search,
-  SkipForward,
   Sparkles,
   Target,
   Trash2,
@@ -39,6 +35,7 @@ import { habitsClient } from './api/habits-client'
 import { HabitDatePicker } from './components/HabitDatePicker'
 import { HabitDialog } from './components/HabitDialog'
 import { HabitGroupDialog } from './components/HabitGroupDialog'
+import { HabitTodayRow } from './components/HabitTodayRow'
 import { HabitReports } from './components/HabitReports'
 import { HabitGroupIconGlyph, habitGroupColorClasses, habitRepeatLabel } from './habit-options'
 import {
@@ -268,13 +265,21 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
   async function changeCount(habit: HabitRecord, delta: number): Promise<void> {
     const entry = entryByHabitId.get(habit.id)
     const current = entry?.skipped ? 0 : (entry?.value ?? 0)
-    const next = Math.max(0, current + delta)
+    const next = Math.min(habit.targetValue, Math.max(0, current + delta))
     if (next === 0) await clearEntry(habit)
     else await setEntry(habit, next, false)
   }
 
-  async function completeCount(habit: HabitRecord): Promise<void> {
-    await setEntry(habit, habit.targetValue, false)
+  async function advanceHabit(habit: HabitRecord): Promise<void> {
+    if (habit.trackingType === 'check') {
+      await toggleChecked(habit)
+      return
+    }
+
+    const entry = entryByHabitId.get(habit.id)
+    const current = entry?.skipped ? 0 : (entry?.value ?? 0)
+    if (current >= habit.targetValue) return
+    await setEntry(habit, current + 1, false)
   }
 
   async function toggleSkipped(habit: HabitRecord): Promise<void> {
@@ -632,160 +637,22 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {visibleScheduledHabits.map((habit) => {
-                    const group = habit.groupId ? (groupById.get(habit.groupId) ?? null) : null
-                    const entry = entryByHabitId.get(habit.id)
-                    const completed = Boolean(
-                      entry && !entry.skipped && entry.value >= habit.targetValue
-                    )
-                    const skipped = Boolean(entry?.skipped)
-                    const color = group ? habitGroupColorClasses[group.color] : null
-
-                    return (
-                      <article
-                        key={habit.id}
-                        className={cn(
-                          'rounded-2xl border bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)] transition-colors',
-                          completed
-                            ? 'border-emerald-400/20'
-                            : skipped
-                              ? 'border-amber-400/20 opacity-75'
-                              : 'border-[var(--app-border)]'
-                        )}
-                      >
-                        <div className="flex flex-wrap items-start gap-4">
-                          <button
-                            type="button"
-                            className={cn(
-                              'mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-xl border transition-colors',
-                              completed
-                                ? 'border-emerald-400/35 bg-emerald-500/15 text-emerald-300'
-                                : skipped
-                                  ? 'border-amber-400/30 bg-amber-500/10 text-amber-300'
-                                  : 'border-violet-400/20 bg-violet-500/10 text-violet-300'
-                            )}
-                            onClick={() => {
-                              if (habit.trackingType === 'check') void toggleChecked(habit)
-                              else void completeCount(habit)
-                            }}
-                            aria-label={
-                              habit.trackingType === 'check'
-                                ? completed
-                                  ? `Снять выполнение «${habit.title}»`
-                                  : `Выполнить привычку «${habit.title}»`
-                                : `Выполнить цель «${habit.title}»`
-                            }
-                          >
-                            {completed ? (
-                              <Check className="size-5" />
-                            ) : (
-                              <Target className="size-5" />
-                            )}
-                          </button>
-
-                          <button
-                            type="button"
-                            className="min-w-0 flex-1 text-left outline-none"
-                            onClick={() => {
-                              setEditingHabit(habit)
-                              setHabitDialogOpen(true)
-                            }}
-                          >
-                            <div className="flex flex-wrap items-center gap-2">
-                              <h2
-                                className={cn(
-                                  'font-semibold text-[var(--app-text)]',
-                                  completed && 'text-emerald-100',
-                                  skipped && 'line-through decoration-[var(--app-muted)]/60'
-                                )}
-                              >
-                                {habit.title}
-                              </h2>
-                              {group && color && (
-                                <span
-                                  className={cn(
-                                    'inline-flex h-6 items-center gap-1.5 rounded-lg border px-2 text-[11px] font-medium',
-                                    color.soft,
-                                    color.text,
-                                    color.border
-                                  )}
-                                >
-                                  <HabitGroupIconGlyph icon={group.icon} className="size-3" />
-                                  {group.name}
-                                </span>
-                              )}
-                              <span className="inline-flex h-6 items-center gap-1 rounded-lg border border-violet-400/20 bg-violet-500/10 px-2 text-[11px] font-medium text-violet-200">
-                                <Repeat2 className="size-3" />
-                                {habitRepeatLabel(habit.repeatEveryDays)}
-                              </span>
-                              {habit.preferredTime && (
-                                <span className="inline-flex h-6 items-center gap-1 rounded-lg border border-[var(--app-border)] bg-[var(--app-control)] px-2 text-[11px] text-[var(--app-muted)]">
-                                  <Clock3 className="size-3" /> {habit.preferredTime}
-                                </span>
-                              )}
-                            </div>
-                          </button>
-
-                          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-                            {habit.trackingType === 'count' && !skipped && (
-                              <div className="flex h-10 items-center rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-1">
-                                <button
-                                  type="button"
-                                  aria-label={`Уменьшить прогресс «${habit.title}»`}
-                                  disabled={isSaving || (entry?.value ?? 0) <= 0}
-                                  className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:opacity-30"
-                                  onClick={() => void changeCount(habit, -1)}
-                                >
-                                  <Minus className="size-3.5" />
-                                </button>
-                                <span className="min-w-24 px-2 text-center text-sm font-semibold text-[var(--app-text)]">
-                                  {entry?.value ?? 0} / {habit.targetValue}
-                                  {habit.unit ? ` ${habit.unit}` : ''}
-                                </span>
-                                <button
-                                  type="button"
-                                  aria-label={`Увеличить прогресс «${habit.title}»`}
-                                  disabled={isSaving}
-                                  className="flex size-8 items-center justify-center rounded-lg text-violet-300 hover:bg-violet-500/10 disabled:opacity-30"
-                                  onClick={() => void changeCount(habit, 1)}
-                                >
-                                  <Plus className="size-3.5" />
-                                </button>
-                              </div>
-                            )}
-
-                            <button
-                              type="button"
-                              aria-pressed={skipped}
-                              disabled={isSaving}
-                              className={cn(
-                                'inline-flex h-10 items-center gap-2 rounded-xl border px-3 text-xs font-medium transition-colors disabled:opacity-40',
-                                skipped
-                                  ? 'border-amber-400/30 bg-amber-500/10 text-amber-200'
-                                  : 'border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
-                              )}
-                              onClick={() => void toggleSkipped(habit)}
-                            >
-                              <SkipForward className="size-3.5" />
-                              {skipped ? 'Пропущено' : 'Пропустить'}
-                            </button>
-
-                            <button
-                              type="button"
-                              aria-label={`Изменить привычку «${habit.title}»`}
-                              className="flex size-10 items-center justify-center rounded-xl text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-                              onClick={() => {
-                                setEditingHabit(habit)
-                                setHabitDialogOpen(true)
-                              }}
-                            >
-                              <Pencil className="size-4" />
-                            </button>
-                          </div>
-                        </div>
-                      </article>
-                    )
-                  })}
+                  {visibleScheduledHabits.map((habit) => (
+                    <HabitTodayRow
+                      key={habit.id}
+                      habit={habit}
+                      group={habit.groupId ? (groupById.get(habit.groupId) ?? null) : null}
+                      entry={entryByHabitId.get(habit.id)}
+                      busy={isSaving}
+                      onAdvance={() => advanceHabit(habit)}
+                      onChangeCount={(delta) => changeCount(habit, delta)}
+                      onToggleSkipped={() => toggleSkipped(habit)}
+                      onEdit={() => {
+                        setEditingHabit(habit)
+                        setHabitDialogOpen(true)
+                      }}
+                    />
+                  ))}
                 </div>
               )}
             </>

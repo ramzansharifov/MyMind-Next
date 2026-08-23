@@ -32,6 +32,11 @@ export type HabitTrackingType = (typeof HABIT_TRACKING_TYPES)[number]
 export type HabitGroupIcon = (typeof HABIT_GROUP_ICONS)[number]
 export type HabitGroupColor = (typeof HABIT_GROUP_COLORS)[number]
 
+export interface HabitPreferredTime {
+  unit: number
+  time: string
+}
+
 export interface HabitGroupRecord {
   id: string
   name: string
@@ -50,7 +55,7 @@ export interface HabitRecord {
   targetValue: number
   unit: string
   repeatEveryDays: number
-  preferredTime: string | null
+  preferredTimes: HabitPreferredTime[]
   createdAt: number
   updatedAt: number
 }
@@ -96,7 +101,7 @@ export interface CreateHabitInput {
   targetValue: number
   unit: string
   repeatEveryDays: number
-  preferredTime: string | null
+  preferredTimes: HabitPreferredTime[]
 }
 
 export interface UpdateHabitInput extends CreateHabitInput {

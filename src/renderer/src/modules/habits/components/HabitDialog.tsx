@@ -1,4 +1,4 @@
-import { Clock3, Repeat2, Sparkles, Target } from 'lucide-react'
+import { Repeat2, Sparkles, Target } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import type {
@@ -11,6 +11,7 @@ import type {
 import { AppDialog } from '../../../shared/ui/AppDialog'
 import { AppSelect } from '../../../shared/ui/AppSelect'
 import { HABIT_TRACKING_OPTIONS } from '../habit-options'
+import { HabitPreferredTimesEditor } from './HabitPreferredTimesEditor'
 
 const NO_GROUP_VALUE = '__none__'
 const HABIT_FORM_ID = 'habit-editor-form'
@@ -24,6 +25,11 @@ interface HabitDialogProps {
   busy: boolean
   onOpenChange: (open: boolean) => void
   onSave: (input: CreateHabitInput | UpdateHabitInput) => Promise<void>
+}
+
+function preferredTimesToRecord(habit: HabitRecord | null): Record<number, string> {
+  if (!habit) return {}
+  return Object.fromEntries(habit.preferredTimes.map((item) => [item.unit, item.time]))
 }
 
 export function HabitDialog({
@@ -41,7 +47,7 @@ export function HabitDialog({
   const [targetValue, setTargetValue] = useState('1')
   const [unit, setUnit] = useState('')
   const [repeatEveryDays, setRepeatEveryDays] = useState('1')
-  const [preferredTime, setPreferredTime] = useState('')
+  const [preferredTimes, setPreferredTimes] = useState<Record<number, string>>({})
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -55,7 +61,7 @@ export function HabitDialog({
     setTargetValue(String(habit?.targetValue ?? 1))
     setUnit(habit?.unit ?? '')
     setRepeatEveryDays(String(habit?.repeatEveryDays ?? 1))
-    setPreferredTime(habit?.preferredTime ?? '')
+    setPreferredTimes(preferredTimesToRecord(habit))
     setError(null)
   }, [groups, habit, initialGroupId, open])
 
@@ -65,7 +71,22 @@ export function HabitDialog({
     if (next === 'check') {
       setTargetValue('1')
       setUnit('')
+      setPreferredTimes((current) => {
+        const first = current[1]
+        const nextPreferredTimes: Record<number, string> = {}
+        if (first) nextPreferredTimes[1] = first
+        return nextPreferredTimes
+      })
     }
+  }
+
+  function changePreferredTime(unitNumber: number, value: string): void {
+    setPreferredTimes((current) => {
+      const next = { ...current }
+      if (value) next[unitNumber] = value
+      else delete next[unitNumber]
+      return next
+    })
   }
 
   async function submit(event: React.FormEvent<HTMLFormElement>): Promise<void> {
@@ -83,6 +104,11 @@ export function HabitDialog({
       return
     }
 
+    const normalizedPreferredTimes = Object.entries(preferredTimes)
+      .map(([unitNumber, time]) => ({ unit: Number(unitNumber), time }))
+      .filter((item) => item.unit >= 1 && item.unit <= parsedTarget && item.time)
+      .sort((left, right) => left.unit - right.unit)
+
     const input: CreateHabitInput = {
       title: title.trim(),
       groupId: groupId === NO_GROUP_VALUE ? null : groupId,
@@ -90,7 +116,7 @@ export function HabitDialog({
       targetValue: parsedTarget,
       unit: trackingType === 'check' ? '' : unit.trim(),
       repeatEveryDays: parsedRepeat,
-      preferredTime: preferredTime || null
+      preferredTimes: normalizedPreferredTimes
     }
 
     setError(null)
@@ -101,6 +127,12 @@ export function HabitDialog({
       setError(reason instanceof Error ? reason.message : 'Не удалось сохранить привычку')
     }
   }
+
+  const parsedTargetForTimes = Number(targetValue)
+  const preferredTimeTarget =
+    trackingType === 'check' || !Number.isInteger(parsedTargetForTimes) || parsedTargetForTimes < 1
+      ? 1
+      : parsedTargetForTimes
 
   return (
     <AppDialog
@@ -247,17 +279,12 @@ export function HabitDialog({
           </label>
         </div>
 
-        <label className="block max-w-xs space-y-1.5">
-          <span className="flex items-center gap-1 text-xs font-medium text-[var(--app-muted)]">
-            <Clock3 className="size-3" /> Предпочтительное время
-          </span>
-          <input
-            type="time"
-            value={preferredTime}
-            className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
-            onChange={(event) => setPreferredTime(event.target.value)}
-          />
-        </label>
+        <HabitPreferredTimesEditor
+          trackingType={trackingType}
+          targetValue={preferredTimeTarget}
+          values={preferredTimes}
+          onChange={changePreferredTime}
+        />
 
         {error && (
           <div

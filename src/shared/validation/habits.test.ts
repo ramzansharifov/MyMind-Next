@@ -13,7 +13,7 @@ const baseHabit = {
   targetValue: 1,
   unit: '',
   repeatEveryDays: 1,
-  preferredTime: null
+  preferredTimes: []
 }
 
 describe('habit validation', () => {
@@ -36,6 +36,45 @@ describe('habit validation', () => {
       unit: 'стаканов'
     })
     expect(countHabit).toMatchObject({ trackingType: 'count', targetValue: 8, unit: 'стаканов' })
+  })
+
+  it('supports one preferred time per target unit', () => {
+    const parsed = createHabitInputSchema.parse({
+      ...baseHabit,
+      trackingType: 'count',
+      targetValue: 3,
+      unit: 'приёма',
+      preferredTimes: [
+        { unit: 1, time: '09:00' },
+        { unit: 2, time: '15:00' },
+        { unit: 3, time: '21:00' }
+      ]
+    })
+
+    expect(parsed.preferredTimes).toEqual([
+      { unit: 1, time: '09:00' },
+      { unit: 2, time: '15:00' },
+      { unit: 3, time: '21:00' }
+    ])
+    expect(() =>
+      createHabitInputSchema.parse({
+        ...baseHabit,
+        trackingType: 'count',
+        targetValue: 2,
+        preferredTimes: [{ unit: 3, time: '09:00' }]
+      })
+    ).toThrow('Номер единицы для времени не может превышать целевое значение')
+    expect(() =>
+      createHabitInputSchema.parse({
+        ...baseHabit,
+        trackingType: 'count',
+        targetValue: 2,
+        preferredTimes: [
+          { unit: 1, time: '09:00' },
+          { unit: 1, time: '10:00' }
+        ]
+      })
+    ).toThrow('Для одной единицы можно указать только одно предпочтительное время')
   })
 
   it('rejects legacy fields removed from the habit model', () => {

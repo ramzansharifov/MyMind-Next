@@ -41,16 +41,20 @@ afterAll(async () => {
 })
 
 describe('habits repository', () => {
-  it('persists only the simplified habit model', () => {
+  it('persists the simplified habit model with per-unit preferred times', () => {
     const health = createHabitGroup({ name: 'Здоровье', icon: 'heart-pulse', color: 'emerald' })
     const habit = createHabit({
       title: 'Пить воду',
       groupId: health.id,
       trackingType: 'count',
-      targetValue: 8,
-      unit: 'стаканов',
+      targetValue: 3,
+      unit: 'стакана',
       repeatEveryDays: 1,
-      preferredTime: '09:00'
+      preferredTimes: [
+        { unit: 1, time: '09:00' },
+        { unit: 2, time: '15:00' },
+        { unit: 3, time: '21:00' }
+      ]
     })
 
     expect(listHabitsOverview({ date: '2026-01-01' })).toMatchObject({
@@ -58,6 +62,22 @@ describe('habits repository', () => {
       habits: [habit],
       entries: []
     })
+    expect(habit.preferredTimes).toEqual([
+      { unit: 1, time: '09:00' },
+      { unit: 2, time: '15:00' },
+      { unit: 3, time: '21:00' }
+    ])
+
+    const stored = getSqlite()
+      .prepare('SELECT preferred_time FROM habits WHERE id = ?')
+      .get(habit.id) as { preferred_time: string | null }
+    expect(stored.preferred_time).toBe(
+      JSON.stringify([
+        { unit: 1, time: '09:00' },
+        { unit: 2, time: '15:00' },
+        { unit: 3, time: '21:00' }
+      ])
+    )
 
     const updated = updateHabit({
       id: habit.id,
@@ -67,7 +87,7 @@ describe('habits repository', () => {
       targetValue: habit.targetValue,
       unit: habit.unit,
       repeatEveryDays: habit.repeatEveryDays,
-      preferredTime: habit.preferredTime
+      preferredTimes: habit.preferredTimes
     })
     expect(updated.title).toBe('Пить воду регулярно')
 
@@ -82,6 +102,24 @@ describe('habits repository', () => {
     expect(names).not.toContain('archived_on')
   })
 
+  it('reads legacy single preferred_time as the first unit without a migration', () => {
+    const habit = createHabit({
+      title: 'Витамины',
+      groupId: null,
+      trackingType: 'count',
+      targetValue: 3,
+      unit: 'приёма',
+      repeatEveryDays: 1,
+      preferredTimes: []
+    })
+
+    getSqlite().prepare('UPDATE habits SET preferred_time = ? WHERE id = ?').run('08:30', habit.id)
+
+    expect(listHabitsOverview({ date: '2026-01-01' }).habits[0]?.preferredTimes).toEqual([
+      { unit: 1, time: '08:30' }
+    ])
+  })
+
   it('anchors recurrence to the creation day and allows entries only on scheduled days', () => {
     const habit = createHabit({
       title: 'Тренировка',
@@ -90,7 +128,7 @@ describe('habits repository', () => {
       targetValue: 1,
       unit: '',
       repeatEveryDays: 3,
-      preferredTime: null
+      preferredTimes: []
     })
 
     const entry = upsertHabitEntry({
@@ -114,7 +152,7 @@ describe('habits repository', () => {
       targetValue: 1,
       unit: '',
       repeatEveryDays: 3,
-      preferredTime: null
+      preferredTimes: []
     })
 
     upsertHabitEntry({ habitId: habit.id, date: '2026-01-01', value: 1, skipped: false })
@@ -157,7 +195,7 @@ describe('habits repository', () => {
       targetValue: 1,
       unit: '',
       repeatEveryDays: 1,
-      preferredTime: null
+      preferredTimes: []
     })
     upsertHabitEntry({ habitId: habit.id, date: '2026-01-01', value: 1, skipped: false })
 
