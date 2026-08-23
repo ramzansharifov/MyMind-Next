@@ -245,7 +245,9 @@ describe('HabitsPage', () => {
     expect(await screen.findByRole('heading', { name: 'Удалить привычку?' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Удалить' }))
 
-    await waitFor(() => expect(mocks.deleteHabit).toHaveBeenCalledWith({ id: 'habit-water' }))
+    await waitFor(() =>
+      expect(mocks.deleteHabit).toHaveBeenCalledWith({ id: 'habit-water' })
+    )
     await waitFor(() => expect(screen.queryByText('Пить воду')).not.toBeInTheDocument())
   })
 
