@@ -2,7 +2,6 @@ import {
   BarChart3,
   CalendarDays,
   Check,
-  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Clock3,
@@ -37,6 +36,7 @@ import { DeleteConfirmationDialog } from '../../shared/ui/DeleteConfirmationDial
 import { ModuleHeader } from '../../shared/ui/ModuleHeader'
 import { StandardModulePage } from '../../shared/ui/StandardModulePage'
 import { habitsClient } from './api/habits-client'
+import { HabitDatePicker } from './components/HabitDatePicker'
 import { HabitDialog } from './components/HabitDialog'
 import { HabitGroupDialog } from './components/HabitGroupDialog'
 import { HabitReports } from './components/HabitReports'
@@ -133,15 +133,6 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
     () => habits.filter((habit) => isHabitScheduledOn(habit, selectedDate)),
     [habits, selectedDate]
   )
-  const completedOnSelectedDate = useMemo(
-    () =>
-      scheduledHabits.filter((habit) => {
-        const entry = entryByHabitId.get(habit.id)
-        return Boolean(entry && !entry.skipped && entry.value >= habit.targetValue)
-      }).length,
-    [entryByHabitId, scheduledHabits]
-  )
-
   const groupHabitCounts = useMemo(() => {
     const counts = new Map<string, number>()
     let ungrouped = 0
@@ -364,60 +355,116 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
           </>
         }
       >
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {[
-            { label: 'Привычки', value: habits.length, icon: Sparkles },
-            {
-              label: formatHabitDate(selectedDate, today),
-              value: scheduledHabits.length,
-              icon: CalendarDays
-            },
-            { label: 'Выполнено', value: completedOnSelectedDate, icon: CheckCircle2 },
-            { label: 'Группы', value: groups.length, icon: FolderPlus }
-          ].map((stat) => {
-            const Icon = stat.icon
-            return (
-              <div
-                key={stat.label}
-                className="flex items-center justify-between rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 py-3"
-              >
-                <span>
-                  <span className="block text-xs font-medium text-[var(--app-muted)]">
-                    {stat.label}
-                  </span>
-                  <span className="mt-1 block text-2xl font-semibold text-[var(--app-text)]">
-                    {stat.value}
-                  </span>
-                </span>
-                <Icon className="size-5 text-violet-300" />
-              </div>
-            )
-          })}
-        </div>
+        {view !== 'reports' && (
+          <div className="flex flex-wrap gap-2">
+            <label className="flex h-10 min-w-[260px] flex-1 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 focus-within:border-violet-500/45 focus-within:ring-2 focus-within:ring-violet-500/10">
+              <Search className="size-4 shrink-0 text-[var(--app-muted)]" />
+              <input
+                value={query}
+                type="text"
+                role="searchbox"
+                aria-label="Поиск по привычкам"
+                placeholder="Найти привычку…"
+                className="min-w-0 flex-1 bg-transparent text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60"
+                onChange={(event) => setQuery(event.target.value)}
+              />
+              {query && (
+                <button
+                  type="button"
+                  aria-label="Очистить поиск привычек"
+                  className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+                  onClick={() => setQuery('')}
+                >
+                  <X className="size-4" />
+                </button>
+              )}
+            </label>
 
-        <div className="mt-4 flex gap-1 overflow-x-auto rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-1">
-          {[
-            { id: 'today' as const, label: 'Сегодня', icon: CalendarDays },
-            { id: 'all' as const, label: 'Все привычки', icon: Target },
-            { id: 'reports' as const, label: 'Отчёты', icon: BarChart3 }
-          ].map((item) => {
-            const Icon = item.icon
-            return (
+            {view === 'all' && (
+              <div className="min-w-[190px]">
+                <AppSelect
+                  ariaLabel="Фильтр по типу отслеживания"
+                  value={trackingFilter}
+                  options={[
+                    { value: 'all', label: 'Все типы' },
+                    { value: 'check', label: 'Простая отметка' },
+                    { value: 'count', label: 'Количество / прогресс' }
+                  ]}
+                  onValueChange={(value) =>
+                    setTrackingFilter(value as HabitTrackingType | 'all')
+                  }
+                />
+              </div>
+            )}
+          </div>
+        )}
+
+        <div
+          className={cn(
+            'flex flex-wrap items-center justify-between gap-3',
+            view !== 'reports' && 'mt-3'
+          )}
+        >
+          <div className="flex gap-1 overflow-x-auto rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-1">
+            {[
+              { id: 'today' as const, label: 'Сегодня', icon: CalendarDays },
+              { id: 'all' as const, label: 'Все привычки', icon: Target },
+              { id: 'reports' as const, label: 'Отчёты', icon: BarChart3 }
+            ].map((item) => {
+              const Icon = item.icon
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  aria-pressed={view === item.id}
+                  className={
+                    view === item.id
+                      ? 'inline-flex h-9 shrink-0 items-center gap-2 rounded-lg bg-violet-500 px-3.5 text-sm font-semibold text-white'
+                      : 'inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3.5 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
+                  }
+                  onClick={() => setView(item.id)}
+                >
+                  <Icon className="size-4" /> {item.label}
+                </button>
+              )
+            })}
+          </div>
+
+          {view === 'today' && (
+            <div className="flex items-center gap-1.5">
               <button
-                key={item.id}
                 type="button"
-                aria-pressed={view === item.id}
-                className={
-                  view === item.id
-                    ? 'inline-flex h-9 shrink-0 items-center gap-2 rounded-lg bg-violet-500 px-3.5 text-sm font-semibold text-white'
-                    : 'inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3.5 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
-                }
-                onClick={() => setView(item.id)}
+                aria-label="Предыдущий день"
+                className="flex size-10 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+                onClick={() => setSelectedDate((current) => addDays(current, -1))}
               >
-                <Icon className="size-4" /> {item.label}
+                <ChevronLeft className="size-4" />
               </button>
-            )
-          })}
+              <HabitDatePicker value={selectedDate} max={today} onChange={setSelectedDate} />
+              <button
+                type="button"
+                disabled={selectedDate === today}
+                className="h-10 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:cursor-default disabled:opacity-45 disabled:hover:bg-[var(--app-workspace)]"
+                onClick={() => setSelectedDate(today)}
+              >
+                Сегодня
+              </button>
+              <button
+                type="button"
+                aria-label="Следующий день"
+                disabled={selectedDate >= today}
+                className="flex size-10 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-[var(--app-workspace)]"
+                onClick={() =>
+                  setSelectedDate((current) => {
+                    const next = addDays(current, 1)
+                    return next > today ? today : next
+                  })
+                }
+              >
+                <ChevronRight className="size-4" />
+              </button>
+            </div>
+          )}
         </div>
       </ModuleHeader>
 
@@ -558,98 +605,8 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
         </aside>
 
         <section className="min-w-0 space-y-4">
-          {view !== 'reports' && (
-            <div className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)]">
-              <div className="flex flex-wrap gap-2">
-                <label className="flex h-11 min-w-[240px] flex-1 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 focus-within:border-violet-500/45 focus-within:ring-2 focus-within:ring-violet-500/10">
-                  <Search className="size-4 shrink-0 text-[var(--app-muted)]" />
-                  <input
-                    value={query}
-                    type="search"
-                    aria-label="Поиск по привычкам"
-                    placeholder="Найти привычку…"
-                    className="min-w-0 flex-1 bg-transparent text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60"
-                    onChange={(event) => setQuery(event.target.value)}
-                  />
-                  {query && (
-                    <button
-                      type="button"
-                      aria-label="Очистить поиск привычек"
-                      className="text-[var(--app-muted)] hover:text-[var(--app-text)]"
-                      onClick={() => setQuery('')}
-                    >
-                      <X className="size-4" />
-                    </button>
-                  )}
-                </label>
-
-                {view === 'all' && (
-                  <>
-                    <div className="min-w-[180px]">
-                      <AppSelect
-                        ariaLabel="Фильтр по типу отслеживания"
-                        value={trackingFilter}
-                        options={[
-                          { value: 'all', label: 'Все типы' },
-                          { value: 'check', label: 'Простая отметка' },
-                          { value: 'count', label: 'Количество / прогресс' }
-                        ]}
-                        onValueChange={(value) =>
-                          setTrackingFilter(value as HabitTrackingType | 'all')
-                        }
-                      />
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          )}
-
           {view === 'today' && (
             <>
-              <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 shadow-[var(--app-shadow-card)]">
-                <button
-                  type="button"
-                  aria-label="Предыдущий день"
-                  className="flex size-10 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-                  onClick={() => setSelectedDate((current) => addDays(current, -1))}
-                >
-                  <ChevronLeft className="size-4" />
-                </button>
-                <input
-                  type="date"
-                  value={selectedDate}
-                  max={today}
-                  aria-label="Дата привычек"
-                  className="h-10 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
-                  onChange={(event) => setSelectedDate(event.target.value)}
-                />
-                <button
-                  type="button"
-                  className="h-10 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm font-medium text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-                  onClick={() => setSelectedDate(today)}
-                >
-                  Сегодня
-                </button>
-                <button
-                  type="button"
-                  aria-label="Следующий день"
-                  disabled={selectedDate >= today}
-                  className="flex size-10 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-[var(--app-workspace)]"
-                  onClick={() =>
-                    setSelectedDate((current) => {
-                      const next = addDays(current, 1)
-                      return next > today ? today : next
-                    })
-                  }
-                >
-                  <ChevronRight className="size-4" />
-                </button>
-                <div className="ml-auto text-sm text-[var(--app-muted)]">
-                  {completedOnSelectedDate} / {scheduledHabits.length} выполнено
-                </div>
-              </div>
-
               {visibleScheduledHabits.length === 0 ? (
                 <div className="flex min-h-72 flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface)] px-6 text-center">
                   <span className="flex size-14 items-center justify-center rounded-2xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
