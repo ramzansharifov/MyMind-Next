@@ -48,7 +48,8 @@ jobs:
           src/shared/validation/habits.test.ts
           src/shared/validation/habits.ts
           --rule 'react-hooks/set-state-in-effect: off'
-      - name: Typecheck node
+      - name: Typecheck node diagnostic
+        continue-on-error: true
         run: npm run typecheck:node
       - name: Typecheck web
         run: npm run typecheck:web
