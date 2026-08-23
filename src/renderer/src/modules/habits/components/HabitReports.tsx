@@ -39,7 +39,6 @@ export function HabitReports({
   const [period, setPeriod] = useState<ReportPeriod>('30')
   const [customFrom, setCustomFrom] = useState(addDays(today, -29))
   const [customTo, setCustomTo] = useState(today)
-  const [includeArchived, setIncludeArchived] = useState(true)
   const [report, setReport] = useState<HabitReport | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -65,8 +64,7 @@ export function HabitReports({
         dateFrom: range.dateFrom,
         dateTo: range.dateTo,
         groupId,
-        ungroupedOnly,
-        includeArchived
+        ungroupedOnly
       })
       setReport(next)
     } catch (reason) {
@@ -75,7 +73,7 @@ export function HabitReports({
     } finally {
       setIsLoading(false)
     }
-  }, [groupId, includeArchived, range.dateFrom, range.dateTo, ungroupedOnly])
+  }, [groupId, range.dateFrom, range.dateTo, ungroupedOnly])
 
   useEffect(() => {
     let cancelled = false
@@ -134,16 +132,6 @@ export function HabitReports({
               </label>
             </>
           )}
-
-          <label className="ml-auto flex h-10 cursor-pointer items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-muted)]">
-            <input
-              type="checkbox"
-              checked={includeArchived}
-              className="accent-violet-500"
-              onChange={(event) => setIncludeArchived(event.target.checked)}
-            />
-            Учитывать архив
-          </label>
         </div>
       </section>
 
@@ -200,10 +188,14 @@ export function HabitReports({
                   className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)]"
                 >
                   <div className="flex items-center justify-between gap-3">
-                    <span className="text-xs font-medium text-[var(--app-muted)]">{stat.label}</span>
+                    <span className="text-xs font-medium text-[var(--app-muted)]">
+                      {stat.label}
+                    </span>
                     <Icon className={cn('size-4', stat.tone)} />
                   </div>
-                  <div className="mt-2 text-2xl font-semibold text-[var(--app-text)]">{stat.value}</div>
+                  <div className="mt-2 text-2xl font-semibold text-[var(--app-text)]">
+                    {stat.value}
+                  </div>
                   <div className="mt-1 text-xs text-[var(--app-muted)]">{stat.detail}</div>
                 </div>
               )
@@ -213,9 +205,12 @@ export function HabitReports({
           <section className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)]">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2 className="text-sm font-semibold text-[var(--app-text)]">Календарь выполнения</h2>
+                <h2 className="text-sm font-semibold text-[var(--app-text)]">
+                  Календарь выполнения
+                </h2>
                 <p className="mt-1 text-xs text-[var(--app-muted)]">
-                  Цвет показывает долю выполненных привычек среди тех, по которым уже можно оценить результат.
+                  Цвет показывает долю выполненных привычек среди тех, по которым уже можно оценить
+                  результат.
                 </p>
               </div>
               <div className="text-xs text-[var(--app-muted)]">
@@ -303,7 +298,9 @@ export function HabitReports({
                             <div className="text-[10px] text-[var(--app-muted)]">серия</div>
                           </div>
                           <div className="min-w-16 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-2 py-2">
-                            <div className="text-lg font-semibold text-amber-200">{habit.bestStreak}</div>
+                            <div className="text-lg font-semibold text-amber-200">
+                              {habit.bestStreak}
+                            </div>
                             <div className="text-[10px] text-[var(--app-muted)]">рекорд</div>
                           </div>
                         </div>

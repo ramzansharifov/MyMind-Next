@@ -42,19 +42,14 @@ function makeHabit(): HabitRecord {
   return {
     id: 'habit-water',
     title: 'Пить воду',
-    description: 'Не забывать про воду.',
     groupId: healthGroup.id,
-    status: 'active',
     trackingType: 'check',
     targetValue: 1,
     unit: '',
     repeatEveryDays: 1,
-    startDate: todayKey(),
-    endDate: null,
     preferredTime: '09:00',
-    archivedOn: null,
-    createdAt: 2,
-    updatedAt: 2
+    createdAt: Date.now(),
+    updatedAt: Date.now()
   }
 }
 
@@ -119,18 +114,28 @@ describe('HabitsPage', () => {
     render(<HabitsPage />)
 
     expect(await screen.findByRole('heading', { name: 'Привычки' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Здоровье/ })).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: /Здоровье/ }).length).toBeGreaterThan(0)
     expect(screen.getByText('Пить воду')).toBeInTheDocument()
     expect(screen.getByText('Каждый день')).toBeInTheDocument()
+  })
+
+  it('does not expose removed habit fields in the editor', async () => {
+    const user = userEvent.setup()
+    render(<HabitsPage />)
+
+    await user.click(await screen.findByRole('button', { name: 'Новая привычка' }))
+
+    expect(await screen.findByText('Предпочтительное время')).toBeInTheDocument()
+    expect(screen.queryByText('Описание')).not.toBeInTheDocument()
+    expect(screen.queryByText('Состояние')).not.toBeInTheDocument()
+    expect(screen.queryByText('Период действия')).not.toBeInTheDocument()
   })
 
   it('marks a check habit complete for the selected date', async () => {
     const user = userEvent.setup()
     render(<HabitsPage />)
 
-    await user.click(
-      await screen.findByRole('button', { name: 'Выполнить привычку «Пить воду»' })
-    )
+    await user.click(await screen.findByRole('button', { name: 'Выполнить привычку «Пить воду»' }))
 
     await waitFor(() =>
       expect(mocks.upsertEntry).toHaveBeenCalledWith({
@@ -150,6 +155,11 @@ describe('HabitsPage', () => {
 
     expect(await screen.findByText('Календарь выполнения')).toBeInTheDocument()
     expect(screen.getAllByText('100%').length).toBeGreaterThan(0)
-    expect(mocks.getReport).toHaveBeenCalled()
+    expect(mocks.getReport).toHaveBeenCalledWith({
+      dateFrom: expect.any(String),
+      dateTo: expect.any(String),
+      groupId: null,
+      ungroupedOnly: false
+    })
   })
 })

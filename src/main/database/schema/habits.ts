@@ -3,7 +3,6 @@ import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqli
 import type {
   HabitGroupColor,
   HabitGroupIcon,
-  HabitStatus,
   HabitTrackingType
 } from '../../../shared/contracts/habits'
 
@@ -29,23 +28,17 @@ export const habits = sqliteTable(
   {
     id: text('id').primaryKey(),
     title: text('title').notNull(),
-    description: text('description').notNull().default(''),
     groupId: text('group_id').references(() => habitGroups.id, { onDelete: 'set null' }),
-    status: text('status').$type<HabitStatus>().notNull().default('active'),
     trackingType: text('tracking_type').$type<HabitTrackingType>().notNull().default('check'),
     targetValue: integer('target_value').notNull().default(1),
     unit: text('unit').notNull().default(''),
     repeatEveryDays: integer('repeat_every_days').notNull().default(1),
-    startDate: text('start_date').notNull(),
-    endDate: text('end_date'),
     preferredTime: text('preferred_time'),
-    archivedOn: text('archived_on'),
     createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
     updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull()
   },
   (table) => [
-    index('habits_group_status_idx').on(table.groupId, table.status),
-    index('habits_status_start_idx').on(table.status, table.startDate),
+    index('habits_group_updated_idx').on(table.groupId, table.updatedAt),
     index('habits_updated_idx').on(table.updatedAt)
   ]
 )

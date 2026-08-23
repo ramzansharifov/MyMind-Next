@@ -42,26 +42,52 @@ describe('registerHabitsIpcHandlers', () => {
     )
   })
 
-  it('validates recurrence before creating a habit', async () => {
+  it('validates recurrence before creating a habit', () => {
     registerHabitsIpcHandlers()
     const handler = mocks.handle.mock.calls.find(
       ([channel]) => channel === HABITS_IPC_CHANNELS.createHabit
     )?.[1]
 
-    await expect(
-      handler({}, {
-        title: 'Читать',
-        description: '',
-        groupId: null,
-        status: 'active',
-        trackingType: 'check',
-        targetValue: 1,
-        unit: '',
-        repeatEveryDays: 0,
-        startDate: '2026-08-16',
-        endDate: null,
-        preferredTime: null
-      })
-    ).rejects.toThrow()
+    expect(() =>
+      handler(
+        {},
+        {
+          title: 'Читать',
+          groupId: null,
+          trackingType: 'check',
+          targetValue: 1,
+          unit: '',
+          repeatEveryDays: 0,
+          preferredTime: null
+        }
+      )
+    ).toThrow()
+  })
+
+  it('rejects removed legacy habit fields', () => {
+    registerHabitsIpcHandlers()
+    const handler = mocks.handle.mock.calls.find(
+      ([channel]) => channel === HABITS_IPC_CHANNELS.createHabit
+    )?.[1]
+
+    expect(() =>
+      handler(
+        {},
+        {
+          title: 'Читать',
+          groupId: null,
+          trackingType: 'check',
+          targetValue: 1,
+          unit: '',
+          repeatEveryDays: 1,
+          preferredTime: null,
+          description: 'legacy',
+          status: 'active',
+          startDate: '2026-08-23',
+          endDate: null,
+          archivedOn: null
+        }
+      )
+    ).toThrow()
   })
 })
