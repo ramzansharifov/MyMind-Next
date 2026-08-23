@@ -3,6 +3,8 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
+vi.mock('electron', () => ({ app: { getPath: () => '' } }))
+
 import { closeDatabase, getSqlite, initializeDatabaseForTesting } from '../database/client'
 import { runDatabaseMigrationsFrom } from '../database/migrate'
 import {
