@@ -25,8 +25,7 @@ jobs:
           page = Path('src/renderer/src/modules/habits/HabitsPage.tsx')
           source = page.read_text(encoding='utf-8')
           needle = "import { HabitTodayRow } from './components/HabitTodayRow'\n"
-          count = source.count(needle)
-          if count < 1:
+          if source.count(needle) < 1:
               raise SystemExit('HabitTodayRow import not found')
           source = source.replace(needle, '')
           anchor = "import { HabitGroupDialog } from './components/HabitGroupDialog'\n"
@@ -44,8 +43,6 @@ jobs:
           source = source.replace(old, new, 1)
           dialog.write_text(source, encoding='utf-8')
           PY
-      - name: Format changed files
-        run: npx prettier --write src/renderer/src/modules/habits/HabitsPage.tsx src/renderer/src/modules/habits/components/HabitDialog.tsx
       - name: Commit fix
         shell: bash
         run: |
