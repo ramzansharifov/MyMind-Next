@@ -1,0 +1,40 @@
+name: Habits header verify
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Check formatting
+        run: >-
+          npx prettier --check
+          src/renderer/src/modules/habits/HabitsPage.tsx
+          src/renderer/src/modules/habits/HabitsPage.test.tsx
+          src/renderer/src/modules/habits/components/HabitDatePicker.tsx
+      - name: Lint changed files
+        run: >-
+          npx eslint
+          src/renderer/src/modules/habits/HabitsPage.tsx
+          src/renderer/src/modules/habits/HabitsPage.test.tsx
+          src/renderer/src/modules/habits/components/HabitDatePicker.tsx
+      - name: Web typecheck diagnostic
+        continue-on-error: true
+        run: npm run typecheck:web
+      - name: Run habits UI tests
+        run: npx vitest run src/renderer/src/modules/habits/HabitsPage.test.tsx
+      - name: Build production bundle
+        run: npm run build:bundle
