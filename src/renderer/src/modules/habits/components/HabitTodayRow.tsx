@@ -1,5 +1,15 @@
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { Check, Clock3, Minus, Pencil, Plus, Repeat2, SkipForward, Target } from 'lucide-react'
+import {
+  Check,
+  Clock3,
+  Minus,
+  Pencil,
+  Plus,
+  Repeat2,
+  SkipForward,
+  Target,
+  Trash2
+} from 'lucide-react'
 
 import type {
   HabitEntryRecord,
@@ -7,6 +17,7 @@ import type {
   HabitRecord
 } from '../../../../../shared/contracts/habits'
 import { cn } from '../../../shared/lib/cn'
+import { Tooltip } from '../../../shared/ui/tooltip'
 import { HabitGroupIconGlyph, habitGroupColorClasses, habitRepeatLabel } from '../habit-options'
 
 interface HabitTodayRowProps {
@@ -18,6 +29,7 @@ interface HabitTodayRowProps {
   onChangeCount: (delta: number) => void | Promise<void>
   onToggleSkipped: () => void | Promise<void>
   onEdit: () => void
+  onDelete: () => void
 }
 
 const quickTransition = { duration: 0.2, ease: [0.22, 1, 0.36, 1] as const }
@@ -36,7 +48,8 @@ export function HabitTodayRow({
   onAdvance,
   onChangeCount,
   onToggleSkipped,
-  onEdit
+  onEdit,
+  onDelete
 }: HabitTodayRowProps): React.JSX.Element {
   const reduceMotion = useReducedMotion()
   const transition = reduceMotion ? { duration: 0 } : quickTransition
@@ -198,15 +211,17 @@ export function HabitTodayRow({
                 : 'border-[var(--app-border)] bg-[var(--app-workspace)]'
             )}
           >
-            <button
-              type="button"
-              aria-label={`Уменьшить прогресс «${habit.title}»`}
-              disabled={busy || currentValue <= 0}
-              className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:opacity-30"
-              onClick={() => void onChangeCount(-1)}
-            >
-              <Minus className="size-3.5" />
-            </button>
+            <Tooltip content="Уменьшить прогресс" side="top">
+              <button
+                type="button"
+                aria-label={`Уменьшить прогресс «${habit.title}»`}
+                disabled={busy || currentValue <= 0}
+                className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:opacity-30"
+                onClick={() => void onChangeCount(-1)}
+              >
+                <Minus className="size-3.5" />
+              </button>
+            </Tooltip>
             <AnimatePresence initial={false} mode="popLayout">
               <motion.span
                 key={currentValue}
@@ -224,58 +239,65 @@ export function HabitTodayRow({
                 {habit.unit ? ` ${habit.unit}` : ''}
               </motion.span>
             </AnimatePresence>
-            <button
-              type="button"
-              aria-label={`Увеличить прогресс «${habit.title}»`}
-              disabled={busy || completed}
-              className="flex size-8 items-center justify-center rounded-lg text-violet-300 transition-colors hover:bg-violet-500/10 disabled:opacity-30"
-              onClick={() => void onAdvance()}
-            >
-              <Plus className="size-3.5" />
-            </button>
+            <Tooltip content="Увеличить прогресс" side="top">
+              <button
+                type="button"
+                aria-label={`Увеличить прогресс «${habit.title}»`}
+                disabled={busy || completed}
+                className="flex size-8 items-center justify-center rounded-lg text-violet-300 transition-colors hover:bg-violet-500/10 disabled:opacity-30"
+                onClick={() => void onAdvance()}
+              >
+                <Plus className="size-3.5" />
+              </button>
+            </Tooltip>
           </div>
         )}
 
-        <AnimatePresence initial={false}>
-          {completed && (
-            <motion.span
-              data-habit-completed-badge
-              initial={reduceMotion ? false : { opacity: 0, x: 6, scale: 0.94 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={reduceMotion ? undefined : { opacity: 0, x: 6, scale: 0.94 }}
-              transition={transition}
-              className="hidden h-8 shrink-0 items-center gap-1.5 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-2.5 text-[11px] font-semibold text-emerald-300 xl:inline-flex"
+        <div className="flex shrink-0 items-center gap-1">
+          <Tooltip content={skipped ? 'Отменить пропуск' : 'Пропустить на этот день'} side="top">
+            <button
+              type="button"
+              aria-label={
+                skipped
+                  ? `Отменить пропуск привычки «${habit.title}»`
+                  : `Пропустить привычку «${habit.title}»`
+              }
+              aria-pressed={skipped}
+              disabled={busy}
+              className={cn(
+                'flex size-9 items-center justify-center rounded-lg transition-colors disabled:opacity-40',
+                skipped
+                  ? 'bg-amber-500/10 text-amber-200 hover:bg-amber-500/15'
+                  : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
+              )}
+              onClick={() => void onToggleSkipped()}
             >
-              <Check className="size-3" strokeWidth={2.75} />
-              Выполнено
-            </motion.span>
-          )}
-        </AnimatePresence>
+              <SkipForward className="size-4" />
+            </button>
+          </Tooltip>
 
-        <button
-          type="button"
-          aria-pressed={skipped}
-          disabled={busy}
-          className={cn(
-            'inline-flex h-10 items-center gap-2 rounded-xl border px-3 text-xs font-medium transition-colors disabled:opacity-40',
-            skipped
-              ? 'border-amber-400/30 bg-amber-500/10 text-amber-200'
-              : 'border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
-          )}
-          onClick={() => void onToggleSkipped()}
-        >
-          <SkipForward className="size-3.5" />
-          {skipped ? 'Пропущено' : 'Пропустить'}
-        </button>
+          <Tooltip content="Изменить привычку" side="top">
+            <button
+              type="button"
+              aria-label={`Изменить привычку «${habit.title}»`}
+              className="flex size-9 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+              onClick={onEdit}
+            >
+              <Pencil className="size-4" />
+            </button>
+          </Tooltip>
 
-        <button
-          type="button"
-          aria-label={`Изменить привычку «${habit.title}»`}
-          className="flex size-10 items-center justify-center rounded-xl text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-          onClick={onEdit}
-        >
-          <Pencil className="size-4" />
-        </button>
+          <Tooltip content="Удалить привычку" side="top">
+            <button
+              type="button"
+              aria-label={`Удалить привычку «${habit.title}»`}
+              className="flex size-9 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors hover:bg-red-500/10 hover:text-red-300"
+              onClick={onDelete}
+            >
+              <Trash2 className="size-4" />
+            </button>
+          </Tooltip>
+        </div>
       </div>
 
       {habit.trackingType === 'count' && (

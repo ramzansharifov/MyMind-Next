@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { HabitGroupRecord, HabitRecord } from '../../../../shared/contracts/habits'
+import { TooltipProvider } from '../../shared/ui/tooltip'
 
 const mocks = vi.hoisted(() => ({
   listOverview: vi.fn(),
@@ -26,6 +27,14 @@ function todayKey(): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
     date.getDate()
   ).padStart(2, '0')}`
+}
+
+function renderHabitsPage(): ReturnType<typeof render> {
+  return render(
+    <TooltipProvider>
+      <HabitsPage />
+    </TooltipProvider>
+  )
 }
 
 const healthGroup: HabitGroupRecord = {
@@ -58,6 +67,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   const habit = makeHabit()
   mocks.listOverview.mockResolvedValue({ groups: [healthGroup], habits: [habit], entries: [] })
+  mocks.deleteHabit.mockResolvedValue(true)
   mocks.upsertEntry.mockImplementation(async (input) => ({
     id: 'entry-1',
     ...input,
@@ -112,7 +122,7 @@ beforeEach(() => {
 
 describe('HabitsPage', () => {
   it('shows groups, recurrence and habits scheduled for today', async () => {
-    render(<HabitsPage />)
+    renderHabitsPage()
 
     expect(await screen.findByRole('heading', { name: 'Привычки' })).toBeInTheDocument()
     expect(screen.getAllByRole('button', { name: /Здоровье/ }).length).toBeGreaterThan(0)
@@ -122,7 +132,7 @@ describe('HabitsPage', () => {
 
   it('keeps search, views and date navigation in the header and opens the custom calendar', async () => {
     const user = userEvent.setup()
-    render(<HabitsPage />)
+    renderHabitsPage()
 
     expect(await screen.findByRole('searchbox', { name: 'Поиск по привычкам' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Сегодня', pressed: true })).toBeInTheDocument()
@@ -141,7 +151,7 @@ describe('HabitsPage', () => {
 
   it('does not expose removed habit fields in the editor', async () => {
     const user = userEvent.setup()
-    render(<HabitsPage />)
+    renderHabitsPage()
 
     await user.click(await screen.findByRole('button', { name: 'Новая привычка' }))
 
@@ -153,7 +163,7 @@ describe('HabitsPage', () => {
 
   it('marks a check habit complete when the habit itself is clicked', async () => {
     const user = userEvent.setup()
-    render(<HabitsPage />)
+    renderHabitsPage()
 
     await user.click(await screen.findByRole('button', { name: 'Выполнить привычку «Пить воду»' }))
 
@@ -171,7 +181,7 @@ describe('HabitsPage', () => {
         'true'
       )
     )
-    expect(screen.getByText('Выполнено')).toBeInTheDocument()
+    expect(screen.queryByText('Выполнено')).not.toBeInTheDocument()
   })
 
   it('adds one count unit per habit click and becomes completed at the target', async () => {
@@ -188,7 +198,7 @@ describe('HabitsPage', () => {
     })
     mocks.listOverview.mockResolvedValue({ groups: [healthGroup], habits: [habit], entries: [] })
 
-    render(<HabitsPage />)
+    renderHabitsPage()
 
     await user.click(
       await screen.findByRole('button', {
@@ -233,9 +243,22 @@ describe('HabitsPage', () => {
     expect(screen.getByText('3 / 3 приёма')).toBeInTheDocument()
   })
 
+  it('deletes a habit directly from the today list after confirmation', async () => {
+    const user = userEvent.setup()
+    renderHabitsPage()
+
+    await user.click(await screen.findByRole('button', { name: 'Удалить привычку «Пить воду»' }))
+
+    expect(await screen.findByRole('heading', { name: 'Удалить привычку?' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Удалить' }))
+
+    await waitFor(() => expect(mocks.deleteHabit).toHaveBeenCalledWith({ id: 'habit-water' }))
+    await waitFor(() => expect(screen.queryByText('Пить воду')).not.toBeInTheDocument())
+  })
+
   it('opens a dedicated reports page with completion analytics', async () => {
     const user = userEvent.setup()
-    render(<HabitsPage />)
+    renderHabitsPage()
 
     await user.click(await screen.findByRole('button', { name: /Отчёты/ }))
 

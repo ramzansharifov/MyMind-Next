@@ -546,7 +546,7 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
                 <div
                   key={group.id}
                   className={cn(
-                    'group flex items-center rounded-xl',
+                    'flex items-center rounded-xl',
                     selected && 'bg-[var(--app-control)]'
                   )}
                 >
@@ -575,12 +575,7 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
                       {groupHabitCounts.counts.get(group.id) ?? 0}
                     </span>
                   </button>
-                  <div
-                    className={cn(
-                      'mr-1 flex shrink-0 items-center',
-                      selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                    )}
-                  >
+                  <div className="mr-1 flex shrink-0 items-center">
                     <button
                       type="button"
                       aria-label={`Изменить группу «${group.name}»`}
@@ -651,6 +646,7 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
                         setEditingHabit(habit)
                         setHabitDialogOpen(true)
                       }}
+                      onDelete={() => setDeleteHabitTarget(habit)}
                     />
                   ))}
                 </div>
