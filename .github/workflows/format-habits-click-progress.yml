@@ -1,0 +1,39 @@
+name: Format habits click progress
+
+on:
+  push:
+    branches:
+      - agent/habits-click-progress-times
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: ${{ !contains(github.event.head_commit.message, '[habits-progress-formatted]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/habits-click-progress-times
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: >-
+          npx prettier --write
+          src/renderer/src/modules/habits/components/HabitPreferredTimesEditor.tsx
+          src/renderer/src/modules/habits/components/HabitTodayRow.tsx
+      - name: Commit formatting
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo "No changes"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/renderer/src/modules/habits/components/HabitPreferredTimesEditor.tsx src/renderer/src/modules/habits/components/HabitTodayRow.tsx
+          git commit -m "Отформатировать компоненты привычек [habits-progress-formatted]"
+          git push origin HEAD:agent/habits-click-progress-times
