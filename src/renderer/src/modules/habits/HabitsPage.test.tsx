@@ -119,6 +119,25 @@ describe('HabitsPage', () => {
     expect(screen.getByText('Каждый день')).toBeInTheDocument()
   })
 
+  it('keeps search, views and date navigation in the header and opens the custom calendar', async () => {
+    const user = userEvent.setup()
+    render(<HabitsPage />)
+
+    expect(await screen.findByRole('searchbox', { name: 'Поиск по привычкам' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Сегодня', pressed: true })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Все привычки', pressed: false })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Отчёты', pressed: false })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Предыдущий день' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Следующий день' })).toBeDisabled()
+    expect(document.querySelector('input[type="date"]')).not.toBeInTheDocument()
+    expect(screen.queryByText('Выполнено')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Открыть календарь привычек' }))
+    expect(await screen.findByTestId('habit-date-picker-popover')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Предыдущий месяц' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Следующий месяц' })).toBeDisabled()
+  })
+
   it('does not expose removed habit fields in the editor', async () => {
     const user = userEvent.setup()
     render(<HabitsPage />)
