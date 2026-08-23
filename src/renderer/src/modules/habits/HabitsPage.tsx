@@ -9,7 +9,6 @@ import {
   Plus,
   Repeat2,
   Search,
-  SkipForward,
   Sparkles,
   Target,
   Trash2,
