@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - agent/habit-details-popover
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: read
@@ -36,4 +39,3 @@ jobs:
 
       - name: Production bundle
         run: npm run build:bundle
-
