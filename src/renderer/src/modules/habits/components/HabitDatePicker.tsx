@@ -1,6 +1,6 @@
 import * as Popover from '@radix-ui/react-popover'
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import { cn } from '../../../shared/lib/cn'
 
@@ -77,16 +77,17 @@ export function HabitDatePicker({ value, max, onChange }: HabitDatePickerProps):
   const [open, setOpen] = useState(false)
   const [visibleMonth, setVisibleMonth] = useState(() => monthStart(parseDateKey(value)))
   const maxDate = useMemo(() => parseDateKey(max), [max])
-  const selectedDate = useMemo(() => parseDateKey(value), [value])
   const days = useMemo(() => buildCalendarDays(visibleMonth), [visibleMonth])
   const nextMonthDisabled = shiftMonth(visibleMonth, 1) > monthStart(maxDate)
 
-  useEffect(() => {
-    setVisibleMonth(monthStart(selectedDate))
-  }, [selectedDate])
-
   return (
-    <Popover.Root open={open} onOpenChange={setOpen}>
+    <Popover.Root
+      open={open}
+      onOpenChange={(nextOpen) => {
+        setOpen(nextOpen)
+        if (nextOpen) setVisibleMonth(monthStart(parseDateKey(value)))
+      }}
+    >
       <Popover.Trigger asChild>
         <button
           type="button"
