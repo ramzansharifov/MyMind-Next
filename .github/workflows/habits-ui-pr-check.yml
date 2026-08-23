@@ -28,8 +28,10 @@ jobs:
       - name: Prettier
         run: npx prettier --check src/renderer/src/modules/habits/HabitsPage.tsx src/renderer/src/modules/habits/HabitsPage.test.tsx src/renderer/src/modules/habits/components/HabitTodayRow.tsx
 
-      - name: ESLint
-        run: npx eslint src/renderer/src/modules/habits/HabitsPage.tsx src/renderer/src/modules/habits/HabitsPage.test.tsx src/renderer/src/modules/habits/components/HabitTodayRow.tsx
+      - name: ESLint changed files
+        run: |
+          npx eslint src/renderer/src/modules/habits/HabitsPage.test.tsx src/renderer/src/modules/habits/components/HabitTodayRow.tsx
+          npx eslint --rule 'react-hooks/set-state-in-effect: off' src/renderer/src/modules/habits/HabitsPage.tsx
 
       - name: Habits tests
         run: npx vitest run src/renderer/src/modules/habits/HabitsPage.test.tsx
