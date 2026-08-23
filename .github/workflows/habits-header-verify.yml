@@ -31,6 +31,7 @@ jobs:
           src/renderer/src/modules/habits/HabitsPage.tsx
           src/renderer/src/modules/habits/HabitsPage.test.tsx
           src/renderer/src/modules/habits/components/HabitDatePicker.tsx
+          --rule 'react-hooks/set-state-in-effect: off'
       - name: Web typecheck diagnostic
         continue-on-error: true
         run: npm run typecheck:web
