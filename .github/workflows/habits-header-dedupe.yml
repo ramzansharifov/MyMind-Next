@@ -16,19 +16,24 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: agent/habits-header-calendar
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
       - name: Collapse duplicate import
+        shell: bash
         run: |
-          node - <<'NODE'
-          const fs = require('node:fs')
-          const path = 'src/renderer/src/modules/habits/HabitsPage.tsx'
-          let source = fs.readFileSync(path, 'utf8')
-          const line = "import { HabitDatePicker } from './components/HabitDatePicker'\n"
-          source = source.replace(new RegExp(`(?:${line.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')})+`), line)
-          fs.writeFileSync(path, source)
-          NODE
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('src/renderer/src/modules/habits/HabitsPage.tsx')
+          target = "import { HabitDatePicker } from './components/HabitDatePicker'\n"
+          lines = path.read_text(encoding='utf-8').splitlines(keepends=True)
+          seen = False
+          result = []
+          for line in lines:
+              if line == target:
+                  if seen:
+                      continue
+                  seen = True
+              result.append(line)
+          path.write_text(''.join(result), encoding='utf-8')
+          PY
       - name: Commit fix
         shell: bash
         run: |
