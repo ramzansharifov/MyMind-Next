@@ -1,0 +1,40 @@
+name: Format habits header files
+
+on:
+  push:
+    branches:
+      - agent/habits-header-calendar
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: ${{ !contains(github.event.head_commit.message, '[habits-header-formatted]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/habits-header-calendar
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: >-
+          npx prettier --write
+          src/renderer/src/modules/habits/HabitsPage.tsx
+          src/renderer/src/modules/habits/HabitsPage.test.tsx
+          src/renderer/src/modules/habits/components/HabitDatePicker.tsx
+      - name: Commit formatting
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo "No changes"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/renderer/src/modules/habits/HabitsPage.tsx src/renderer/src/modules/habits/HabitsPage.test.tsx src/renderer/src/modules/habits/components/HabitDatePicker.tsx
+          git commit -m "Отформатировать шапку привычек [habits-header-formatted]"
+          git push origin HEAD:agent/habits-header-calendar
