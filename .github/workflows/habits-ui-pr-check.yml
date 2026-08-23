@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - agent/clean-habits-actions-groups
+  pull_request:
+    branches:
+      - main
 
 jobs:
   habits-ui:
