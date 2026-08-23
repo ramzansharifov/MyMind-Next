@@ -38,7 +38,7 @@ const healthGroup: HabitGroupRecord = {
   updatedAt: 1
 }
 
-function makeHabit(): HabitRecord {
+function makeHabit(overrides: Partial<HabitRecord> = {}): HabitRecord {
   return {
     id: 'habit-water',
     title: 'Пить воду',
@@ -47,9 +47,10 @@ function makeHabit(): HabitRecord {
     targetValue: 1,
     unit: '',
     repeatEveryDays: 1,
-    preferredTime: '09:00',
+    preferredTimes: [{ unit: 1, time: '09:00' }],
     createdAt: Date.now(),
-    updatedAt: Date.now()
+    updatedAt: Date.now(),
+    ...overrides
   }
 }
 
@@ -150,7 +151,7 @@ describe('HabitsPage', () => {
     expect(screen.queryByText('Период действия')).not.toBeInTheDocument()
   })
 
-  it('marks a check habit complete for the selected date', async () => {
+  it('marks a check habit complete when the habit itself is clicked', async () => {
     const user = userEvent.setup()
     render(<HabitsPage />)
 
@@ -164,6 +165,72 @@ describe('HabitsPage', () => {
         skipped: false
       })
     )
+    await waitFor(() =>
+      expect(document.querySelector('[data-habit-row="habit-water"]')).toHaveAttribute(
+        'data-completed',
+        'true'
+      )
+    )
+    expect(screen.getByText('Выполнено')).toBeInTheDocument()
+  })
+
+  it('adds one count unit per habit click and becomes completed at the target', async () => {
+    const user = userEvent.setup()
+    const habit = makeHabit({
+      trackingType: 'count',
+      targetValue: 3,
+      unit: 'приёма',
+      preferredTimes: [
+        { unit: 1, time: '09:00' },
+        { unit: 2, time: '15:00' },
+        { unit: 3, time: '21:00' }
+      ]
+    })
+    mocks.listOverview.mockResolvedValue({ groups: [healthGroup], habits: [habit], entries: [] })
+
+    render(<HabitsPage />)
+
+    await user.click(
+      await screen.findByRole('button', {
+        name: 'Добавить выполнение привычки «Пить воду»: 0 из 3'
+      })
+    )
+    await user.click(
+      await screen.findByRole('button', {
+        name: 'Добавить выполнение привычки «Пить воду»: 1 из 3'
+      })
+    )
+    await user.click(
+      await screen.findByRole('button', {
+        name: 'Добавить выполнение привычки «Пить воду»: 2 из 3'
+      })
+    )
+
+    expect(mocks.upsertEntry).toHaveBeenNthCalledWith(1, {
+      habitId: 'habit-water',
+      date: todayKey(),
+      value: 1,
+      skipped: false
+    })
+    expect(mocks.upsertEntry).toHaveBeenNthCalledWith(2, {
+      habitId: 'habit-water',
+      date: todayKey(),
+      value: 2,
+      skipped: false
+    })
+    expect(mocks.upsertEntry).toHaveBeenNthCalledWith(3, {
+      habitId: 'habit-water',
+      date: todayKey(),
+      value: 3,
+      skipped: false
+    })
+    await waitFor(() =>
+      expect(document.querySelector('[data-habit-row="habit-water"]')).toHaveAttribute(
+        'data-completed',
+        'true'
+      )
+    )
+    expect(screen.getByText('3 / 3 приёма')).toBeInTheDocument()
   })
 
   it('opens a dedicated reports page with completion analytics', async () => {
