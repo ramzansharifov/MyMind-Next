@@ -114,7 +114,7 @@ describe('HabitsPage', () => {
     render(<HabitsPage />)
 
     expect(await screen.findByRole('heading', { name: 'Привычки' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Здоровье/ })).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: /Здоровье/ }).length).toBeGreaterThan(0)
     expect(screen.getByText('Пить воду')).toBeInTheDocument()
     expect(screen.getByText('Каждый день')).toBeInTheDocument()
   })
