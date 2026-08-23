@@ -1,9 +1,9 @@
 name: Habit layout PR check
 
 on:
-  push:
+  pull_request:
     branches:
-      - agent/stack-habit-meta-under-title
+      - main
 
 permissions:
   contents: read
