@@ -145,26 +145,26 @@ export function HabitTodayRow({
             </AnimatePresence>
           </motion.span>
 
-          <span className="min-w-0 flex-1">
-            <span className="flex flex-wrap items-center gap-2">
-              <span className="relative block w-fit max-w-full">
-                <span
-                  className={cn(
-                    'block max-w-full truncate text-sm font-semibold transition-colors',
-                    completed ? 'text-[var(--app-muted)]' : 'text-[var(--app-text)]'
-                  )}
-                >
-                  {habit.title}
-                </span>
-                <motion.span
-                  aria-hidden="true"
-                  className="absolute top-1/2 right-0 left-0 h-px origin-left bg-emerald-300/65"
-                  initial={false}
-                  animate={{ opacity: completed ? 1 : 0, scaleX: completed ? 1 : 0 }}
-                  transition={transition}
-                />
+          <span className="min-w-0 flex-1 py-0.5">
+            <span className="relative block w-fit max-w-full">
+              <span
+                className={cn(
+                  'block max-w-full truncate text-sm font-semibold transition-colors',
+                  completed ? 'text-[var(--app-muted)]' : 'text-[var(--app-text)]'
+                )}
+              >
+                {habit.title}
               </span>
+              <motion.span
+                aria-hidden="true"
+                className="absolute top-1/2 right-0 left-0 h-px origin-left bg-emerald-300/65"
+                initial={false}
+                animate={{ opacity: completed ? 1 : 0, scaleX: completed ? 1 : 0 }}
+                transition={transition}
+              />
+            </span>
 
+            <span className="mt-1.5 flex min-w-0 flex-wrap items-center gap-1.5">
               {group && color && (
                 <span
                   className={cn(
