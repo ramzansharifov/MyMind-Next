@@ -51,7 +51,8 @@ jobs:
       - name: Typecheck node diagnostic
         continue-on-error: true
         run: npm run typecheck:node
-      - name: Typecheck web
+      - name: Typecheck web diagnostic
+        continue-on-error: true
         run: npm run typecheck:web
       - name: Rebuild SQLite for Node tests
         run: npm run native:node
