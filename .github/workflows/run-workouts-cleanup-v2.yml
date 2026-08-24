@@ -1,0 +1,376 @@
+name: Run workouts cleanup v2
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/workouts-cleanup-muscles
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Apply source changes
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+          import re
+
+          def read(path):
+              return Path(path).read_text(encoding='utf-8')
+
+          def write(path, text):
+              Path(path).write_text(text, encoding='utf-8')
+
+          def must_replace(text, old, new, label):
+              if old not in text:
+                  raise SystemExit(f'Pattern not found: {label}')
+              return text.replace(old, new, 1)
+
+          # Shared contract: expand muscle targets, preserve legacy broad values for old data.
+          path = 'src/shared/contracts/workouts.ts'
+          text = read(path)
+          text = must_replace(
+              text,
+              "export const WORKOUT_MUSCLE_GROUPS = ['arms', 'back', 'chest', 'abs', 'legs', 'shoulders'] as const",
+              "export const WORKOUT_MUSCLE_GROUPS = [\n  'arms',\n  'shoulders',\n  'biceps',\n  'triceps',\n  'forearms',\n  'back',\n  'lats',\n  'traps',\n  'lower_back',\n  'chest',\n  'abs',\n  'legs',\n  'glutes',\n  'quadriceps',\n  'hamstrings',\n  'calves'\n] as const",
+              'muscle groups contract',
+          )
+          write(path, text)
+
+          # Central options: family + concrete area. Broad values remain only for legacy/general exercises.
+          write('src/renderer/src/modules/workouts/workout-options.tsx', '''import {
+            Activity,
+            CircleDot,
+            Dumbbell,
+            Footprints,
+            HeartPulse,
+            Shield,
+            type LucideIcon
+          } from 'lucide-react'
+
+          import type { WorkoutMuscleGroup } from '../../../../shared/contracts/workouts'
+
+          export type WorkoutMuscleFamily = 'arms' | 'back' | 'chest' | 'abs' | 'legs'
+
+          interface WorkoutMuscleGroupOption {
+            value: WorkoutMuscleGroup
+            label: string
+            shortLabel: string
+            family: WorkoutMuscleFamily
+            icon: LucideIcon
+          }
+
+          export const WORKOUT_MUSCLE_FAMILY_OPTIONS: Array<{
+            value: WorkoutMuscleFamily
+            label: string
+          }> = [
+            { value: 'arms', label: 'Руки' },
+            { value: 'back', label: 'Спина' },
+            { value: 'legs', label: 'Ноги' },
+            { value: 'chest', label: 'Грудные мышцы' },
+            { value: 'abs', label: 'Пресс' }
+          ]
+
+          export const WORKOUT_MUSCLE_GROUP_OPTIONS: WorkoutMuscleGroupOption[] = [
+            { value: 'arms', label: 'Руки', shortLabel: 'Вся группа', family: 'arms', icon: Dumbbell },
+            { value: 'shoulders', label: 'Руки · Плечи', shortLabel: 'Плечи', family: 'arms', icon: Activity },
+            { value: 'biceps', label: 'Руки · Бицепс', shortLabel: 'Бицепс', family: 'arms', icon: Dumbbell },
+            { value: 'triceps', label: 'Руки · Трицепс', shortLabel: 'Трицепс', family: 'arms', icon: Dumbbell },
+            { value: 'forearms', label: 'Руки · Предплечье', shortLabel: 'Предплечье', family: 'arms', icon: Dumbbell },
+            { value: 'back', label: 'Спина', shortLabel: 'Вся спина', family: 'back', icon: Shield },
+            { value: 'lats', label: 'Спина · Широчайшие', shortLabel: 'Широчайшие', family: 'back', icon: Shield },
+            { value: 'traps', label: 'Спина · Трапеции', shortLabel: 'Трапеции', family: 'back', icon: Shield },
+            { value: 'lower_back', label: 'Спина · Поясница', shortLabel: 'Поясница', family: 'back', icon: Shield },
+            { value: 'legs', label: 'Ноги', shortLabel: 'Все ноги', family: 'legs', icon: Footprints },
+            { value: 'glutes', label: 'Ноги · Ягодицы', shortLabel: 'Ягодицы', family: 'legs', icon: Footprints },
+            { value: 'quadriceps', label: 'Ноги · Квадрицепсы', shortLabel: 'Квадрицепсы', family: 'legs', icon: Footprints },
+            { value: 'hamstrings', label: 'Ноги · Задняя поверхность бедра', shortLabel: 'Задняя поверхность бедра', family: 'legs', icon: Footprints },
+            { value: 'calves', label: 'Ноги · Икры', shortLabel: 'Икры', family: 'legs', icon: Footprints },
+            { value: 'chest', label: 'Грудные мышцы', shortLabel: 'Грудные мышцы', family: 'chest', icon: HeartPulse },
+            { value: 'abs', label: 'Пресс', shortLabel: 'Пресс', family: 'abs', icon: CircleDot }
+          ]
+
+          const armsClasses = {
+            soft: 'bg-violet-500/10',
+            text: 'text-violet-300',
+            border: 'border-violet-400/20',
+            bar: 'bg-violet-400'
+          }
+          const backClasses = {
+            soft: 'bg-blue-500/10',
+            text: 'text-blue-300',
+            border: 'border-blue-400/20',
+            bar: 'bg-blue-400'
+          }
+          const chestClasses = {
+            soft: 'bg-rose-500/10',
+            text: 'text-rose-300',
+            border: 'border-rose-400/20',
+            bar: 'bg-rose-400'
+          }
+          const absClasses = {
+            soft: 'bg-amber-500/10',
+            text: 'text-amber-300',
+            border: 'border-amber-400/20',
+            bar: 'bg-amber-400'
+          }
+          const legsClasses = {
+            soft: 'bg-emerald-500/10',
+            text: 'text-emerald-300',
+            border: 'border-emerald-400/20',
+            bar: 'bg-emerald-400'
+          }
+
+          export const workoutMuscleGroupClasses: Record<
+            WorkoutMuscleGroup,
+            { soft: string; text: string; border: string; bar: string }
+          > = {
+            arms: armsClasses,
+            shoulders: armsClasses,
+            biceps: armsClasses,
+            triceps: armsClasses,
+            forearms: armsClasses,
+            back: backClasses,
+            lats: backClasses,
+            traps: backClasses,
+            lower_back: backClasses,
+            chest: chestClasses,
+            abs: absClasses,
+            legs: legsClasses,
+            glutes: legsClasses,
+            quadriceps: legsClasses,
+            hamstrings: legsClasses,
+            calves: legsClasses
+          }
+
+          export function workoutMuscleFamilyForGroup(group: WorkoutMuscleGroup): WorkoutMuscleFamily {
+            return WORKOUT_MUSCLE_GROUP_OPTIONS.find((option) => option.value === group)?.family ?? 'arms'
+          }
+
+          export function workoutMuscleGroupOptionsForFamily(
+            family: WorkoutMuscleFamily
+          ): WorkoutMuscleGroupOption[] {
+            return WORKOUT_MUSCLE_GROUP_OPTIONS.filter((option) => option.family === family)
+          }
+
+          export function workoutMuscleGroupLabel(group: WorkoutMuscleGroup): string {
+            return WORKOUT_MUSCLE_GROUP_OPTIONS.find((option) => option.value === group)?.label ?? group
+          }
+
+          export function WorkoutMuscleGroupIcon({
+            group,
+            className
+          }: {
+            group: WorkoutMuscleGroup
+            className?: string
+          }): React.JSX.Element {
+            const Icon =
+              WORKOUT_MUSCLE_GROUP_OPTIONS.find((option) => option.value === group)?.icon ?? Dumbbell
+            return <Icon aria-hidden="true" className={className} />
+          }
+          ''')
+
+          # Exercise editor.
+          path = 'src/renderer/src/modules/workouts/components/WorkoutExerciseDialog.tsx'
+          text = read(path)
+          text = must_replace(
+              text,
+              "import { WORKOUT_MUSCLE_GROUP_OPTIONS } from '../workout-options'",
+              "import {\n  WORKOUT_MUSCLE_FAMILY_OPTIONS,\n  workoutMuscleFamilyForGroup,\n  workoutMuscleGroupOptionsForFamily,\n  type WorkoutMuscleFamily\n} from '../workout-options'",
+              'exercise options import',
+          )
+          text = text.replace("  const [muscleGroup, setMuscleGroup] = useState<WorkoutMuscleGroup>('arms')", "  const [muscleGroup, setMuscleGroup] = useState<WorkoutMuscleGroup>('shoulders')")
+          text = text.replace("    setMuscleGroup(exercise?.muscleGroup ?? 'arms')", "    setMuscleGroup(exercise?.muscleGroup ?? 'shoulders')")
+          text = text.replace("  const [archived, setArchived] = useState(false)\n", '')
+          text = text.replace("    setArchived(exercise?.status === 'archived')\n", '')
+          text = text.replace("      status: archived ? 'archived' : 'active'", "      status: 'active'")
+          selector_pattern = re.compile(
+              r'''        <div className="space-y-1\.5">\n          <span className="text-xs font-medium text-\[var\(--app-muted\)\]">Основная группа мышц</span>\n          <AppSelect\n            ariaLabel="Группа мышц"\n            value=\{muscleGroup\}\n            options=\{WORKOUT_MUSCLE_GROUP_OPTIONS\.map\(\(\{ value, label \}\) => \(\{ value, label \}\)\)\}\n            onValueChange=\{\(value\) => setMuscleGroup\(value as WorkoutMuscleGroup\)\}\n          />\n        </div>'''
+          )
+          selector_replacement = '''        <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <span className="text-xs font-medium text-[var(--app-muted)]">Группа мышц</span>
+              <AppSelect
+                ariaLabel="Группа мышц"
+                value={workoutMuscleFamilyForGroup(muscleGroup)}
+                options={WORKOUT_MUSCLE_FAMILY_OPTIONS}
+                onValueChange={(value) => {
+                  const family = value as WorkoutMuscleFamily
+                  const familyOptions = workoutMuscleGroupOptionsForFamily(family)
+                  const next = familyOptions.find((option) => option.value !== family) ?? familyOptions[0]
+                  if (next) setMuscleGroup(next.value)
+                }}
+              />
+            </div>
+            {workoutMuscleGroupOptionsForFamily(workoutMuscleFamilyForGroup(muscleGroup)).length > 1 && (
+              <div className="space-y-1.5">
+                <span className="text-xs font-medium text-[var(--app-muted)]">Область</span>
+                <AppSelect
+                  ariaLabel="Область группы мышц"
+                  value={muscleGroup}
+                  options={workoutMuscleGroupOptionsForFamily(workoutMuscleFamilyForGroup(muscleGroup)).map(
+                    ({ value, shortLabel }) => ({ value, label: shortLabel })
+                  )}
+                  onValueChange={(value) => setMuscleGroup(value as WorkoutMuscleGroup)}
+                />
+              </div>
+            )}
+          </div>'''
+          text, count = selector_pattern.subn(selector_replacement, text, count=1)
+          if count != 1:
+              raise SystemExit('Exercise muscle selector not found')
+          text, count = re.subn(
+              r'''\n        \{exercise && \(\n          <label className="flex items-center justify-between gap-4 rounded-xl border border-\[var\(--app-border\)\] bg-\[var\(--app-workspace\)\] px-4 py-3">.*?Архивировать.*?</label>\n        \)\}\n''',
+              '\n',
+              text,
+              count=1,
+              flags=re.S,
+          )
+          if count != 1:
+              raise SystemExit('Exercise archive control not found')
+          write(path, text)
+
+          # Program editor.
+          path = 'src/renderer/src/modules/workouts/components/WorkoutProgramDialog.tsx'
+          text = read(path)
+          text = text.replace("  const [archived, setArchived] = useState(false)\n", '')
+          text = text.replace("    setArchived(program?.status === 'archived')\n", '')
+          text = text.replace("      status: archived ? 'archived' : 'active',", "      status: 'active',")
+          text = text.replace(
+              "  const availableExercises = exercises.filter(\n    (exercise) =>\n      exercise.status === 'active' && !items.some((item) => item.exerciseId === exercise.id)\n  )",
+              "  const availableExercises = exercises.filter(\n    (exercise) => !items.some((item) => item.exerciseId === exercise.id)\n  )",
+          )
+          text, count = re.subn(
+              r'''\n        \{program && \(\n          <label className="flex items-center justify-between gap-4 rounded-xl border border-\[var\(--app-border\)\] bg-\[var\(--app-workspace\)\] px-4 py-3">.*?Архивировать программу.*?</label>\n        \)\}\n''',
+              '\n',
+              text,
+              count=1,
+              flags=re.S,
+          )
+          if count != 1:
+              raise SystemExit('Program archive control not found')
+          write(path, text)
+
+          # Session / progress editors: legacy archived items are normal selectable items now.
+          path = 'src/renderer/src/modules/workouts/components/WorkoutSessionDialog.tsx'
+          text = read(path)
+          text = text.replace(
+              "  const availableExercises = exercises.filter(\n    (exercise) =>\n      exercise.status === 'active' && !items.some((item) => item.exerciseId === exercise.id)\n  )",
+              "  const availableExercises = exercises.filter(\n    (exercise) => !items.some((item) => item.exerciseId === exercise.id)\n  )",
+          )
+          text = text.replace(
+              "                ...programs\n                  .filter((program) => program.status === 'active' || program.id === session?.programId)\n                  .map((program) => ({ value: program.id, label: program.name }))",
+              "                ...programs.map((program) => ({ value: program.id, label: program.name }))",
+          )
+          write(path, text)
+
+          path = 'src/renderer/src/modules/workouts/components/WorkoutProgressDialog.tsx'
+          text = read(path)
+          text = text.replace(
+              "  const availableExercises = exercises.filter(\n    (exercise) =>\n      exercise.status === 'active' && !metrics.some((metric) => metric.exerciseId === exercise.id)\n  )",
+              "  const availableExercises = exercises.filter(\n    (exercise) => !metrics.some((metric) => metric.exerciseId === exercise.id)\n  )",
+          )
+          write(path, text)
+
+          # Main workouts UI: no archive controls, filters or badges; actions always visible.
+          path = 'src/renderer/src/modules/workouts/WorkoutsPage.tsx'
+          text = read(path)
+          text = text.replace("  const [showArchived, setShowArchived] = useState(false)\n", '')
+          text = text.replace("      if (!showArchived && exercise.status === 'archived') return false\n", '')
+          text = text.replace("      if (!showArchived && program.status === 'archived') return false\n", '')
+          text = text.replace("  }, [exercises, muscleFilter, query, showArchived])", "  }, [exercises, muscleFilter, query])")
+          text = text.replace("  }, [exerciseMap, programs, query, showArchived])", "  }, [exerciseMap, programs, query])")
+          text = text.replace("exercises.filter((exercise) => exercise.status === 'active').length === 0", "exercises.length === 0")
+          text, count = re.subn(
+              r'''\n\s*<label className="inline-flex h-10 items-center gap-2 rounded-xl border border-\[var\(--app-border\)\] bg-\[var\(--app-workspace\)\] px-3 text-xs font-medium text-\[var\(--app-muted\)\]">\s*<input\s*type="checkbox"\s*checked=\{showArchived\}.*?Показывать архив\s*</label>''',
+              '',
+              text,
+              flags=re.S,
+          )
+          if count != 2:
+              raise SystemExit(f'Expected 2 archive filters, got {count}')
+          text = re.sub(
+              r'''\n\s*\{exercise\.status === 'archived' && \(\s*<span className="rounded-md bg-\[var\(--app-control\)\] px-1\.5 py-0\.5 text-\[10px\] text-\[var\(--app-muted\)\]">\s*Архив\s*</span>\s*\)\}''',
+              '',
+              text,
+          )
+          text = re.sub(
+              r'''\n\s*\{program\.status === 'archived' && \(\s*<span className="rounded-md bg-\[var\(--app-control\)\] px-1\.5 py-0\.5 text-\[10px\] text-\[var\(--app-muted\)\]">\s*Архив\s*</span>\s*\)\}''',
+              '',
+              text,
+          )
+          text = text.replace(
+              'className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100"',
+              'className="flex items-center gap-1"',
+          )
+          text = text.replace(
+              'className="flex shrink-0 gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100"',
+              'className="flex shrink-0 gap-1"',
+          )
+          text = text.replace(
+              'className="flex gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100"',
+              'className="flex gap-1"',
+          )
+          text = text.replace(
+              'description="Удаление возможно только если упражнение не используется в программах или истории. Для сохранения связей лучше архивировать его."',
+              'description="Удаление возможно только если упражнение не используется в программах или истории."',
+          )
+          text = text.replace(
+              'notice="Исторические данные не должны терять связь с упражнением"',
+              'notice="Если упражнение используется в программе, сначала удалите его из этой программы."',
+          )
+          if 'showArchived' in text or 'Показывать архив' in text or '>Архив<' in text:
+              raise SystemExit('Archive UI remains in WorkoutsPage')
+          write(path, text)
+
+          # Runtime ReferenceError: this is a value, so it must not be imported with `import type`.
+          path = 'src/main/repositories/workouts.repository.ts'
+          text = read(path)
+          text = must_replace(
+              text,
+              "  WorkoutSessionRecord,\n  WorkoutSetRecord,\n  WorkoutsOverview,\n  WORKOUT_MUSCLE_GROUPS\n} from '../../shared/contracts/workouts'",
+              "  WorkoutSessionRecord,\n  WorkoutSetRecord,\n  WorkoutsOverview\n} from '../../shared/contracts/workouts'\nimport { WORKOUT_MUSCLE_GROUPS } from '../../shared/contracts/workouts'",
+              'runtime muscle group import',
+          )
+          text = text.replace(
+              "throw new Error('Упражнение используется в программе. Сначала удалите его из программы или архивируйте.')",
+              "throw new Error('Упражнение используется в программе. Сначала удалите его из программы.')",
+          )
+          write(path, text)
+          PY
+
+          npm ci
+          npx prettier --write \
+            src/shared/contracts/workouts.ts \
+            src/renderer/src/modules/workouts/workout-options.tsx \
+            src/renderer/src/modules/workouts/WorkoutsPage.tsx \
+            src/renderer/src/modules/workouts/components/WorkoutExerciseDialog.tsx \
+            src/renderer/src/modules/workouts/components/WorkoutProgramDialog.tsx \
+            src/renderer/src/modules/workouts/components/WorkoutSessionDialog.tsx \
+            src/renderer/src/modules/workouts/components/WorkoutProgressDialog.tsx \
+            src/main/repositories/workouts.repository.ts
+
+          rm -f \
+            .github/workflows/apply-workouts-cleanup.yml \
+            .github/workflows/run-workouts-cleanup-pr.yml \
+            .github/workflows/run-workouts-cleanup-v2.yml
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Упростить тренировки и расширить группы мышц"
+          git push origin HEAD:agent/workouts-cleanup-muscles
