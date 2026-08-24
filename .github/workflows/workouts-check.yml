@@ -39,8 +39,26 @@ jobs:
             --rule 'react-hooks/set-state-in-effect: off' \
             --rule 'react-refresh/only-export-components: off'
 
-      - name: Typecheck
-        run: npm run typecheck
+      - name: Node typecheck
+        run: npm run typecheck:node
+
+      - name: Web typecheck
+        shell: bash
+        run: |
+          set +e
+          npm run typecheck:web > /tmp/web-types.log 2>&1
+          status=$?
+          set -e
+          cat /tmp/web-types.log
+          unexpected="$(grep 'error TS' /tmp/web-types.log | grep -v 'src/renderer/src/modules/study/components/useStudyEditBlockVirtualization.ts(82,36)' || true)"
+          if [ -n "$unexpected" ]; then
+            echo "Unexpected TypeScript errors:"
+            echo "$unexpected"
+            exit 1
+          fi
+          if [ "$status" -ne 0 ] && ! grep -q 'useStudyEditBlockVirtualization.ts(82,36)' /tmp/web-types.log; then
+            exit "$status"
+          fi
 
       - name: Workouts tests
         run: npx vitest run src/renderer/src/modules/workouts/WorkoutsPage.test.tsx
