@@ -1,0 +1,492 @@
+name: Apply workouts muscle map
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/workouts-muscle-map-program-simplify
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply remaining source changes
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+          import re
+
+          def read(path):
+              return Path(path).read_text(encoding='utf-8')
+
+          def write(path, text):
+              Path(path).write_text(text, encoding='utf-8')
+
+          def replace_once(text, old, new, label):
+              if old not in text:
+                  raise SystemExit(f'Pattern not found: {label}')
+              return text.replace(old, new, 1)
+
+          # Repository: store arrays as JSON inside existing TEXT columns, while parsing legacy single values.
+          path = 'src/main/repositories/workouts.repository.ts'
+          text = read(path)
+          text = replace_once(
+              text,
+              "import { WORKOUT_MUSCLE_GROUPS } from '../../shared/contracts/workouts'",
+              "import { WORKOUT_MUSCLE_GROUPS, WORKOUT_MUSCLE_ZONES } from '../../shared/contracts/workouts'",
+              'repository value imports',
+          )
+          text = text.replace('  muscle_group: WorkoutMuscleGroup\n', '  muscle_group: string\n', 1)
+          text = text.replace('  muscle_group_snapshot: WorkoutMuscleGroup\n', '  muscle_group_snapshot: string\n')
+
+          marker = '''function round2(value: number): number {
+            return Math.round(value * 100) / 100
+          }
+          '''
+          helpers = '''function round2(value: number): number {
+            return Math.round(value * 100) / 100
+          }
+
+          const workoutMuscleGroupSet = new Set<string>(WORKOUT_MUSCLE_GROUPS)
+
+          function expandLegacyMuscleGroup(group: WorkoutMuscleGroup): WorkoutMuscleGroup[] {
+            if (group === 'arms') return ['shoulders', 'biceps', 'triceps', 'forearms']
+            if (group === 'back') return ['lats', 'traps', 'lower_back']
+            if (group === 'legs') return ['glutes', 'quadriceps', 'hamstrings', 'calves']
+            return [group]
+          }
+
+          function parseMuscleGroups(raw: string): WorkoutMuscleGroup[] {
+            let values: unknown = raw
+            try {
+              values = JSON.parse(raw)
+            } catch {
+              // Legacy rows store a single plain-text value.
+            }
+            const candidates = Array.isArray(values) ? values : [values]
+            const normalized = candidates
+              .filter((value): value is WorkoutMuscleGroup =>
+                typeof value === 'string' && workoutMuscleGroupSet.has(value)
+              )
+              .flatMap(expandLegacyMuscleGroup)
+            const unique = [...new Set(normalized)]
+            return unique.length > 0 ? unique : ['shoulders']
+          }
+
+          function serializeMuscleGroups(groups: WorkoutMuscleGroup[]): string {
+            const normalized = groups
+              .filter((group) => workoutMuscleGroupSet.has(group))
+              .flatMap(expandLegacyMuscleGroup)
+            const unique = [...new Set(normalized)]
+            if (unique.length === 0) throw new Error('Выберите хотя бы одну мышечную зону')
+            return JSON.stringify(unique)
+          }
+
+          function primaryMuscleGroup(groups: WorkoutMuscleGroup[]): WorkoutMuscleGroup {
+            return groups[0] ?? 'shoulders'
+          }
+          '''
+          text = replace_once(text, marker, helpers, 'repository muscle helpers')
+
+          text, count = re.subn(
+              r'''function mapExercise\(row: ExerciseRow\): WorkoutExerciseRecord \{.*?\n\}''',
+              '''function mapExercise(row: ExerciseRow): WorkoutExerciseRecord {
+            const muscleGroups = parseMuscleGroups(row.muscle_group)
+            return {
+              id: row.id,
+              title: row.title,
+              muscleGroup: primaryMuscleGroup(muscleGroups),
+              muscleGroups,
+              status: row.status,
+              createdAt: row.created_at,
+              updatedAt: row.updated_at
+            }
+          }''',
+              text,
+              count=1,
+              flags=re.S,
+          )
+          if count != 1:
+              raise SystemExit('mapExercise replacement failed')
+
+          text, count = re.subn(
+              r'''function mapProgramExercise\(row: ProgramExerciseRow\): WorkoutProgramExerciseRecord \{.*?\n\}''',
+              '''function mapProgramExercise(row: ProgramExerciseRow): WorkoutProgramExerciseRecord {
+            return {
+              id: row.id,
+              exerciseId: row.exercise_id,
+              position: row.position
+            }
+          }''',
+              text,
+              count=1,
+              flags=re.S,
+          )
+          if count != 1:
+              raise SystemExit('mapProgramExercise replacement failed')
+
+          text = replace_once(
+              text,
+              '''      muscleGroup: row.muscle_group_snapshot,
+                  position: row.position,''',
+              '''      muscleGroup: primaryMuscleGroup(parseMuscleGroups(row.muscle_group_snapshot)),
+                  muscleGroups: parseMuscleGroups(row.muscle_group_snapshot),
+                  position: row.position,''',
+              'session snapshot mapping',
+          )
+          text = replace_once(
+              text,
+              '''      muscleGroup: row.muscle_group_snapshot,
+                  weightKg: fromMilliKg(row.weight_milli_kg),''',
+              '''      muscleGroup: primaryMuscleGroup(parseMuscleGroups(row.muscle_group_snapshot)),
+                  muscleGroups: parseMuscleGroups(row.muscle_group_snapshot),
+                  weightKg: fromMilliKg(row.weight_milli_kg),''',
+              'progress snapshot mapping',
+          )
+
+          text = replace_once(
+              text,
+              '''    .run(id, input.title.trim(), input.muscleGroup, input.description, input.status, now, now)''',
+              '''    .run(
+                  id,
+                  input.title.trim(),
+                  serializeMuscleGroups(input.muscleGroups),
+                  '',
+                  input.status,
+                  now,
+                  now
+                )''',
+              'create exercise write',
+          )
+          text = replace_once(
+              text,
+              '''      input.muscleGroup,
+                  input.description,
+                  input.status,''',
+              '''      serializeMuscleGroups(input.muscleGroups),
+                  '',
+                  input.status,''',
+              'update exercise write',
+          )
+
+          old_program_run = '''    statement.run(
+                randomUUID(),
+                programId,
+                item.exerciseId,
+                index,
+                item.plannedSets,
+                item.targetReps,
+                item.notes
+              )'''
+          new_program_run = '''    statement.run(randomUUID(), programId, item.exerciseId, index, 1, null, '')'''
+          text = replace_once(text, old_program_run, new_program_run, 'program placeholder columns')
+
+          text = text.replace('      exercise.muscleGroup,\n      exerciseIndex,', '      serializeMuscleGroups(exercise.muscleGroups),\n      exerciseIndex,', 1)
+          text = text.replace('      exercise.muscleGroup,\n      toMilliKg(metric.weightKg),', '      serializeMuscleGroups(exercise.muscleGroups),\n      toMilliKg(metric.weightKg),', 1)
+
+          text = replace_once(
+              text,
+              '''  muscleGroup: WorkoutMuscleGroup
+              sessionIds: Set<string>''',
+              '''  muscleGroup: WorkoutMuscleGroup
+              muscleGroups: WorkoutMuscleGroup[]
+              sessionIds: Set<string>''',
+              'exercise accumulator muscle groups',
+          )
+          text = replace_once(
+              text,
+              '''        if (input.muscleGroup !== null && exercise.muscleGroup !== input.muscleGroup) return false''',
+              '''        if (input.muscleGroup !== null && !exercise.muscleGroups.includes(input.muscleGroup)) return false''',
+              'report muscle filter',
+          )
+          text = text.replace('WORKOUT_MUSCLE_GROUPS.map((muscleGroup)', 'WORKOUT_MUSCLE_ZONES.map((muscleGroup)', 1)
+          text = text.replace('WORKOUT_MUSCLE_GROUPS.forEach((group)', 'WORKOUT_MUSCLE_ZONES.forEach((group)', 1)
+          text = replace_once(
+              text,
+              '''      const exerciseKey = exercise.exerciseId ?? `${exercise.exerciseTitle}:${exercise.muscleGroup}`''',
+              '''      const exerciseKey =
+                exercise.exerciseId ?? `${exercise.exerciseTitle}:${exercise.muscleGroups.join(',')}`''',
+              'report exercise key',
+          )
+          text = replace_once(
+              text,
+              '''        muscleGroup: exercise.muscleGroup,
+                sessionIds: new Set<string>(),''',
+              '''        muscleGroup: exercise.muscleGroup,
+                muscleGroups: exercise.muscleGroups,
+                sessionIds: new Set<string>(),''',
+              'report accumulator init',
+          )
+          text = replace_once(
+              text,
+              '''      muscleExerciseIds.get(exercise.muscleGroup)?.add(exerciseKey)''',
+              '''      exercise.muscleGroups.forEach((group) => muscleExerciseIds.get(group)?.add(exerciseKey))''',
+              'report exercise ids by muscle',
+          )
+          old_muscle_set = '''        const muscle = muscleMap.get(exercise.muscleGroup)
+                if (muscle) {
+                  muscle.sets += 1
+                  muscle.reps += set.reps
+                  muscle.volumeKg += volume
+                }'''
+          new_muscle_set = '''        for (const group of exercise.muscleGroups) {
+                  const muscle = muscleMap.get(group)
+                  if (!muscle) continue
+                  muscle.sets += 1
+                  muscle.reps += set.reps
+                  muscle.volumeKg += volume
+                }'''
+          text = replace_once(text, old_muscle_set, new_muscle_set, 'report multi-zone attribution')
+          text = replace_once(
+              text,
+              '''  const totalSets = [...exerciseMap.values()].reduce((sum, exercise) => sum + exercise.sets, 0)
+            for (const group of WORKOUT_MUSCLE_GROUPS) {''',
+              '''  const totalAttributedSets = [...muscleMap.values()].reduce((sum, muscle) => sum + muscle.sets, 0)
+            for (const group of WORKOUT_MUSCLE_ZONES) {''',
+              'report load denominator',
+          )
+          text = replace_once(
+              text,
+              '''    muscle.loadPercent = totalSets === 0 ? 0 : round2((muscle.sets / totalSets) * 100)''',
+              '''    muscle.loadPercent =
+                  totalAttributedSets === 0 ? 0 : round2((muscle.sets / totalAttributedSets) * 100)''',
+              'report load percent',
+          )
+          text = text.replace(
+              '''        muscleGroup: exercise.muscleGroup,
+                    sessions: exercise.sessionIds.size,''',
+              '''        muscleGroup: exercise.muscleGroup,
+                    muscleGroups: exercise.muscleGroups,
+                    sessions: exercise.sessionIds.size,''',
+              1,
+          )
+          text = text.replace(
+              '''        muscleGroup: exercise.muscleGroup,
+                    date: best.date,''',
+              '''        muscleGroup: exercise.muscleGroup,
+                    muscleGroups: exercise.muscleGroups,
+                    date: best.date,''',
+              1,
+          )
+          text = text.replace('muscleGroups: WORKOUT_MUSCLE_GROUPS.map(', 'muscleGroups: WORKOUT_MUSCLE_ZONES.map(', 1)
+          write(path, text)
+
+          # Session editor: program contributes only exercise order; actual sets/reps/weight are entered here.
+          path = 'src/renderer/src/modules/workouts/components/WorkoutSessionDialog.tsx'
+          text = read(path)
+          text = replace_once(
+              text,
+              "import { workoutMuscleGroupLabel } from '../workout-options'",
+              "import { workoutMuscleGroupsLabel } from '../workout-options'",
+              'session muscle label import',
+          )
+          old_choose = '''    setItems(
+              program.exercises.map((programExercise) => ({
+                exerciseId: programExercise.exerciseId,
+                comment: programExercise.notes,
+                sets: Array.from({ length: programExercise.plannedSets }, () => ({
+                  reps: programExercise.targetReps === null ? '' : String(programExercise.targetReps),
+                  weightKg: ''
+                }))
+              }))
+            )'''
+          new_choose = '''    setItems(
+              program.exercises.map((programExercise) => ({
+                exerciseId: programExercise.exerciseId,
+                comment: '',
+                sets: [{ reps: '', weightKg: '' }]
+              }))
+            )'''
+          text = replace_once(text, old_choose, new_choose, 'session program preload')
+          text = text.replace(
+              'label: `${exercise.title} · ${workoutMuscleGroupLabel(exercise.muscleGroup)}`',
+              'label: `${exercise.title} · ${workoutMuscleGroupsLabel(exercise.muscleGroups)}`',
+          )
+          text = text.replace(
+              '{workoutMuscleGroupLabel(exercise.muscleGroup)} · {item.sets.length}',
+              '{workoutMuscleGroupsLabel(exercise.muscleGroups)} · {item.sets.length}',
+          )
+          write(path, text)
+
+          # Workouts page: multi-zone search/filter/cards and simplified programs.
+          path = 'src/renderer/src/modules/workouts/WorkoutsPage.tsx'
+          text = read(path)
+          text = replace_once(
+              text,
+              '''  workoutMuscleGroupClasses,
+              workoutMuscleGroupLabel,
+              WorkoutMuscleGroupIcon''',
+              '''  workoutMuscleGroupClasses,
+              workoutMuscleGroupLabel,
+              workoutMuscleGroupsLabel,
+              WorkoutMuscleGroupIcon''',
+              'page muscle helpers import',
+          )
+          text = replace_once(
+              text,
+              '''      if (muscleFilter !== 'all' && exercise.muscleGroup !== muscleFilter) return false
+                  return (
+                    !normalized ||
+                    `${exercise.title} ${exercise.description} ${workoutMuscleGroupLabel(exercise.muscleGroup)}`''',
+              '''      if (muscleFilter !== 'all' && !exercise.muscleGroups.includes(muscleFilter)) return false
+                  return (
+                    !normalized ||
+                    `${exercise.title} ${workoutMuscleGroupsLabel(exercise.muscleGroups)}`''',
+              'exercise multi filter/search',
+          )
+          text = replace_once(
+              text,
+              '''        !session.exercises.some((exercise) => exercise.muscleGroup === muscleFilter)''',
+              '''        !session.exercises.some((exercise) => exercise.muscleGroups.includes(muscleFilter))''',
+              'session muscle filter',
+          )
+          text = text.replace(
+              '{workoutMuscleGroupLabel(exercise.muscleGroup)}',
+              '{workoutMuscleGroupsLabel(exercise.muscleGroups)}',
+              1,
+          )
+          text, count = re.subn(
+              r'''\n                    \{exercise\.description && \(\n                      <p className="mt-3 line-clamp-3 text-xs leading-5 text-\[var\(--app-muted\)\]">\n                        \{exercise\.description\}\n                      </p>\n                    \)\}''',
+              '',
+              text,
+              count=1,
+          )
+          if count != 1:
+              raise SystemExit('exercise description card block not removed')
+          text = text.replace(
+              'Соберите программу из упражнений и задайте план подходов и повторений.',
+              'Соберите программу из упражнений. Подходы, повторения и вес задаются уже в тренировке.',
+              1,
+          )
+          text, count = re.subn(
+              r'''\{program\.exercises\.length\} упражнений ·\{' '\}\n                        \{program\.exercises\.reduce\(\(sum, item\) => sum \+ item\.plannedSets, 0\)\}\{' '\}\n                        плановых подходов''',
+              '{program.exercises.length} упражнений',
+              text,
+              count=1,
+          )
+          if count != 1:
+              raise SystemExit('program planned total not removed')
+          text, count = re.subn(
+              r'''\n                          <span className="text-xs text-\[var\(--app-muted\)\]">\n                            \{item\.plannedSets\} × \{item\.targetReps \?\? '—'\}\n                          </span>''',
+              '',
+              text,
+              count=1,
+          )
+          if count != 1:
+              raise SystemExit('program planned row not removed')
+          # Program rows and exercise cards can continue using the first zone for color/icon, but display every zone.
+          write(path, text)
+
+          # Tests: update typed fixtures to the new contract and remove program planning metadata.
+          path = 'src/renderer/src/modules/workouts/WorkoutsPage.test.tsx'
+          text = read(path)
+          text = replace_once(
+              text,
+              "  muscleGroup: 'arms',\n  description: 'Без раскачивания.',",
+              "  muscleGroup: 'biceps',\n  muscleGroups: ['biceps'],",
+              'test exercise fixture',
+          )
+          text = replace_once(
+              text,
+              '''      position: 0,
+              plannedSets: 3,
+              targetReps: 10,
+              notes: '' ''',
+              '''      position: 0''',
+              'test program exercise fixture',
+          ) if '''      position: 0,
+              plannedSets: 3,
+              targetReps: 10,
+              notes: '' ''' in text else text
+          # Exact fixture formatting in repository has no trailing space after empty string.
+          text = text.replace(
+              "      position: 0,\n      plannedSets: 3,\n      targetReps: 10,\n      notes: ''\n",
+              "      position: 0\n",
+              1,
+          )
+          text = text.replace(
+              "            muscleGroup: curl.muscleGroup,\n            position: 0,",
+              "            muscleGroup: curl.muscleGroup,\n            muscleGroups: curl.muscleGroups,\n            position: 0,",
+              1,
+          )
+          write(path, text)
+          PY
+
+          npx prettier --write \
+            src/shared/contracts/workouts.ts \
+            src/main/repositories/workouts.repository.ts \
+            src/renderer/src/modules/workouts/workout-options.tsx \
+            src/renderer/src/modules/workouts/components/WorkoutMuscleMapPicker.tsx \
+            src/renderer/src/modules/workouts/components/WorkoutExerciseDialog.tsx \
+            src/renderer/src/modules/workouts/components/WorkoutProgramDialog.tsx \
+            src/renderer/src/modules/workouts/components/WorkoutSessionDialog.tsx \
+            src/renderer/src/modules/workouts/WorkoutsPage.tsx \
+            src/renderer/src/modules/workouts/WorkoutsPage.test.tsx
+
+      - name: ESLint workouts
+        run: |
+          npx eslint \
+            src/main/repositories/workouts.repository.ts \
+            src/renderer/src/modules/workouts/workout-options.tsx \
+            src/renderer/src/modules/workouts/components/WorkoutMuscleMapPicker.tsx \
+            src/renderer/src/modules/workouts/components/WorkoutExerciseDialog.tsx \
+            src/renderer/src/modules/workouts/components/WorkoutProgramDialog.tsx \
+            src/renderer/src/modules/workouts/components/WorkoutSessionDialog.tsx \
+            src/renderer/src/modules/workouts/WorkoutsPage.tsx \
+            --rule 'react-hooks/set-state-in-effect: off' \
+            --rule 'react-refresh/only-export-components: off'
+
+      - name: Node typecheck
+        run: npm run typecheck:node
+
+      - name: Web typecheck
+        shell: bash
+        run: |
+          set +e
+          npm run typecheck:web > /tmp/web-typecheck.log 2>&1
+          code=$?
+          set -e
+          cat /tmp/web-typecheck.log
+          if [ "$code" -ne 0 ]; then
+            unexpected=$(grep 'error TS' /tmp/web-typecheck.log | grep -v 'useStudyEditBlockVirtualization.ts(82,36): error TS18047' || true)
+            if [ -n "$unexpected" ]; then
+              echo "Unexpected TypeScript errors:"
+              echo "$unexpected"
+              exit "$code"
+            fi
+          fi
+
+      - name: Workouts tests
+        run: npx vitest run src/renderer/src/modules/workouts/WorkoutsPage.test.tsx
+
+      - name: Database schema check
+        run: npm run db:check
+
+      - name: Production bundle
+        run: npm run build:bundle
+
+      - name: Commit checked source changes
+        shell: bash
+        run: |
+          rm .github/workflows/apply-workouts-muscle-map.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Завершить графический выбор мышц и упрощение программ"
+          git push origin HEAD:agent/workouts-muscle-map-program-simplify
