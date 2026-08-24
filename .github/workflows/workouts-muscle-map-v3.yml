@@ -1,0 +1,270 @@
+name: Workouts muscle map v3
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  apply-check-commit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/workouts-muscle-map-program-simplify
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply remaining source changes
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+          import re
+
+          def read(path): return Path(path).read_text(encoding='utf-8')
+          def write(path, text): Path(path).write_text(text, encoding='utf-8')
+          def req(text, old, new, label):
+              if old not in text:
+                  raise SystemExit(f'Pattern not found: {label}')
+              return text.replace(old, new, 1)
+
+          p = 'src/main/repositories/workouts.repository.ts'
+          s = read(p)
+          s = req(s,
+              "import { WORKOUT_MUSCLE_GROUPS } from '../../shared/contracts/workouts'",
+              "import { WORKOUT_MUSCLE_GROUPS, WORKOUT_MUSCLE_ZONES } from '../../shared/contracts/workouts'",
+              'imports')
+          s = s.replace('muscle_group: WorkoutMuscleGroup', 'muscle_group: string', 1)
+          s = s.replace('muscle_group_snapshot: WorkoutMuscleGroup', 'muscle_group_snapshot: string')
+
+          s = req(s, '''function round2(value: number): number {
+            return Math.round(value * 100) / 100
+          }
+          ''', '''function round2(value: number): number {
+            return Math.round(value * 100) / 100
+          }
+
+          const workoutMuscleGroupSet = new Set<string>(WORKOUT_MUSCLE_GROUPS)
+
+          function expandLegacyMuscleGroup(group: WorkoutMuscleGroup): WorkoutMuscleGroup[] {
+            if (group === 'arms') return ['shoulders', 'biceps', 'triceps', 'forearms']
+            if (group === 'back') return ['lats', 'traps', 'lower_back']
+            if (group === 'legs') return ['glutes', 'quadriceps', 'hamstrings', 'calves']
+            return [group]
+          }
+
+          function parseMuscleGroups(raw: string): WorkoutMuscleGroup[] {
+            let value: unknown = raw
+            try {
+              value = JSON.parse(raw)
+            } catch {
+              // Legacy rows contain one plain-text group.
+            }
+            const candidates = Array.isArray(value) ? value : [value]
+            const groups = candidates
+              .filter(
+                (candidate): candidate is WorkoutMuscleGroup =>
+                  typeof candidate === 'string' && workoutMuscleGroupSet.has(candidate)
+              )
+              .flatMap(expandLegacyMuscleGroup)
+            const unique = [...new Set(groups)]
+            return unique.length > 0 ? unique : ['shoulders']
+          }
+
+          function serializeMuscleGroups(groups: WorkoutMuscleGroup[]): string {
+            const normalized = groups
+              .filter((group) => workoutMuscleGroupSet.has(group))
+              .flatMap(expandLegacyMuscleGroup)
+            const unique = [...new Set(normalized)]
+            if (unique.length === 0) throw new Error('Выберите хотя бы одну мышечную зону')
+            return JSON.stringify(unique)
+          }
+
+          function primaryMuscleGroup(groups: WorkoutMuscleGroup[]): WorkoutMuscleGroup {
+            return groups[0] ?? 'shoulders'
+          }
+          ''', 'helpers')
+
+          s, n = re.subn(r'function mapExercise\(row: ExerciseRow\): WorkoutExerciseRecord \{.*?\n\}', '''function mapExercise(row: ExerciseRow): WorkoutExerciseRecord {
+            const muscleGroups = parseMuscleGroups(row.muscle_group)
+            return {
+              id: row.id,
+              title: row.title,
+              muscleGroup: primaryMuscleGroup(muscleGroups),
+              muscleGroups,
+              status: row.status,
+              createdAt: row.created_at,
+              updatedAt: row.updated_at
+            }
+          }''', s, count=1, flags=re.S)
+          if n != 1: raise SystemExit('mapExercise')
+
+          s, n = re.subn(r'function mapProgramExercise\(row: ProgramExerciseRow\): WorkoutProgramExerciseRecord \{.*?\n\}', '''function mapProgramExercise(row: ProgramExerciseRow): WorkoutProgramExerciseRecord {
+            return {
+              id: row.id,
+              exerciseId: row.exercise_id,
+              position: row.position
+            }
+          }''', s, count=1, flags=re.S)
+          if n != 1: raise SystemExit('mapProgramExercise')
+
+          s = req(s,
+              'muscleGroup: row.muscle_group_snapshot,\n      position: row.position,',
+              'muscleGroup: primaryMuscleGroup(parseMuscleGroups(row.muscle_group_snapshot)),\n      muscleGroups: parseMuscleGroups(row.muscle_group_snapshot),\n      position: row.position,',
+              'session mapping')
+          s = req(s,
+              'muscleGroup: row.muscle_group_snapshot,\n      weightKg: fromMilliKg(row.weight_milli_kg),',
+              'muscleGroup: primaryMuscleGroup(parseMuscleGroups(row.muscle_group_snapshot)),\n      muscleGroups: parseMuscleGroups(row.muscle_group_snapshot),\n      weightKg: fromMilliKg(row.weight_milli_kg),',
+              'metric mapping')
+
+          s = req(s,
+              '.run(id, input.title.trim(), input.muscleGroup, input.description, input.status, now, now)',
+              ".run(id, input.title.trim(), serializeMuscleGroups(input.muscleGroups), '', input.status, now, now)",
+              'create exercise')
+          s = req(s,
+              '''      input.muscleGroup,
+                  input.description,
+                  input.status,'''.replace('        input.description', '      input.description').replace('        input.status', '      input.status'),
+              '''      serializeMuscleGroups(input.muscleGroups),
+                  '',
+                  input.status,'''.replace("        '',", "      '',").replace('        input.status', '      input.status'),
+              'update exercise')
+
+          s, n = re.subn(r'''statement\.run\(\s*randomUUID\(\),\s*programId,\s*item\.exerciseId,\s*index,\s*item\.plannedSets,\s*item\.targetReps,\s*item\.notes\s*\)''',
+              "statement.run(randomUUID(), programId, item.exerciseId, index, 1, null, '')", s, count=1, flags=re.S)
+          if n != 1: raise SystemExit('program items persistence')
+
+          s = req(s, '      exercise.muscleGroup,\n      exerciseIndex,', '      serializeMuscleGroups(exercise.muscleGroups),\n      exerciseIndex,', 'session snapshot write')
+          s = req(s, '      exercise.muscleGroup,\n      toMilliKg(metric.weightKg),', '      serializeMuscleGroups(exercise.muscleGroups),\n      toMilliKg(metric.weightKg),', 'metric snapshot write')
+
+          s = req(s, '  muscleGroup: WorkoutMuscleGroup\n  sessionIds: Set<string>', '  muscleGroup: WorkoutMuscleGroup\n  muscleGroups: WorkoutMuscleGroup[]\n  sessionIds: Set<string>', 'accumulator type')
+          s = req(s, 'if (input.muscleGroup !== null && exercise.muscleGroup !== input.muscleGroup) return false', 'if (input.muscleGroup !== null && !exercise.muscleGroups.includes(input.muscleGroup)) return false', 'report filter')
+          s = req(s, 'WORKOUT_MUSCLE_GROUPS.map((muscleGroup)', 'WORKOUT_MUSCLE_ZONES.map((muscleGroup)', 'muscle map zones')
+          s = req(s, 'WORKOUT_MUSCLE_GROUPS.forEach((group)', 'WORKOUT_MUSCLE_ZONES.forEach((group)', 'muscle id zones')
+          s = req(s, 'const exerciseKey = exercise.exerciseId ?? `${exercise.exerciseTitle}:${exercise.muscleGroup}`', "const exerciseKey = exercise.exerciseId ?? `${exercise.exerciseTitle}:${exercise.muscleGroups.join(',')}`", 'exercise key')
+          s = req(s, 'muscleGroup: exercise.muscleGroup,\n        sessionIds: new Set<string>(),', 'muscleGroup: exercise.muscleGroup,\n        muscleGroups: exercise.muscleGroups,\n        sessionIds: new Set<string>(),', 'accumulator init')
+          s = req(s, 'muscleExerciseIds.get(exercise.muscleGroup)?.add(exerciseKey)', 'exercise.muscleGroups.forEach((group) => muscleExerciseIds.get(group)?.add(exerciseKey))', 'zone exercise ids')
+          s = req(s, '''        const muscle = muscleMap.get(exercise.muscleGroup)
+                if (muscle) {
+                  muscle.sets += 1
+                  muscle.reps += set.reps
+                  muscle.volumeKg += volume
+                }'''.replace('        if', '        if').replace('          muscle', '          muscle').replace('        }', '        }'), '''        for (const group of exercise.muscleGroups) {
+                  const muscle = muscleMap.get(group)
+                  if (!muscle) continue
+                  muscle.sets += 1
+                  muscle.reps += set.reps
+                  muscle.volumeKg += volume
+                }'''.replace('          const', '          const').replace('          if', '          if').replace('          muscle', '          muscle').replace('        }', '        }'), 'zone attribution')
+          s = req(s, 'const totalSets = [...exerciseMap.values()].reduce((sum, exercise) => sum + exercise.sets, 0)\n  for (const group of WORKOUT_MUSCLE_GROUPS) {', 'const totalAttributedSets = [...muscleMap.values()].reduce((sum, muscle) => sum + muscle.sets, 0)\n  for (const group of WORKOUT_MUSCLE_ZONES) {', 'zone percentage denominator')
+          s = req(s, 'muscle.loadPercent = totalSets === 0 ? 0 : round2((muscle.sets / totalSets) * 100)', 'muscle.loadPercent =\n      totalAttributedSets === 0 ? 0 : round2((muscle.sets / totalAttributedSets) * 100)', 'zone percentage')
+          s = req(s, 'muscleGroup: exercise.muscleGroup,\n        sessions: exercise.sessionIds.size,', 'muscleGroup: exercise.muscleGroup,\n        muscleGroups: exercise.muscleGroups,\n        sessions: exercise.sessionIds.size,', 'report exercise groups')
+          s = req(s, 'muscleGroup: exercise.muscleGroup,\n        date: best.date,', 'muscleGroup: exercise.muscleGroup,\n        muscleGroups: exercise.muscleGroups,\n        date: best.date,', 'personal record groups')
+          s = req(s, 'muscleGroups: WORKOUT_MUSCLE_GROUPS.map(', 'muscleGroups: WORKOUT_MUSCLE_ZONES.map(', 'report result zones')
+          write(p, s)
+
+          p = 'src/renderer/src/modules/workouts/components/WorkoutSessionDialog.tsx'
+          s = read(p)
+          s = req(s, "import { workoutMuscleGroupLabel } from '../workout-options'", "import { workoutMuscleGroupsLabel } from '../workout-options'", 'session label import')
+          s, n = re.subn(r'''setItems\(\s*program\.exercises\.map\(\(programExercise\) => \(\{\s*exerciseId: programExercise\.exerciseId,\s*comment: programExercise\.notes,\s*sets: Array\.from\(\{ length: programExercise\.plannedSets \}, \(\) => \(\{\s*reps: programExercise\.targetReps === null \? '' : String\(programExercise\.targetReps\),\s*weightKg: ''\s*\}\)\)\s*\}\)\)\s*\)''', '''setItems(
+              program.exercises.map((programExercise) => ({
+                exerciseId: programExercise.exerciseId,
+                comment: '',
+                sets: [{ reps: '', weightKg: '' }]
+              }))
+            )''', s, count=1, flags=re.S)
+          if n != 1: raise SystemExit('program preload')
+          s = s.replace('label: `${exercise.title} · ${workoutMuscleGroupLabel(exercise.muscleGroup)}`', 'label: `${exercise.title} · ${workoutMuscleGroupsLabel(exercise.muscleGroups)}`')
+          s = s.replace('{workoutMuscleGroupLabel(exercise.muscleGroup)} · {item.sets.length}', '{workoutMuscleGroupsLabel(exercise.muscleGroups)} · {item.sets.length}')
+          write(p, s)
+
+          p = 'src/renderer/src/modules/workouts/WorkoutsPage.tsx'
+          s = read(p)
+          s = req(s, '  workoutMuscleGroupLabel,\n  WorkoutMuscleGroupIcon', '  workoutMuscleGroupLabel,\n  workoutMuscleGroupsLabel,\n  WorkoutMuscleGroupIcon', 'page import')
+          s = req(s, "if (muscleFilter !== 'all' && exercise.muscleGroup !== muscleFilter) return false", "if (muscleFilter !== 'all' && !exercise.muscleGroups.includes(muscleFilter)) return false", 'exercise filter')
+          s = req(s, '`${exercise.title} ${exercise.description} ${workoutMuscleGroupLabel(exercise.muscleGroup)}`', '`${exercise.title} ${workoutMuscleGroupsLabel(exercise.muscleGroups)}`', 'exercise search')
+          s = req(s, '!session.exercises.some((exercise) => exercise.muscleGroup === muscleFilter)', '!session.exercises.some((exercise) => exercise.muscleGroups.includes(muscleFilter))', 'session filter')
+          s = s.replace('{workoutMuscleGroupLabel(exercise.muscleGroup)}', '{workoutMuscleGroupsLabel(exercise.muscleGroups)}', 1)
+          s, n = re.subn(r'''\n\s*\{exercise\.description && \(\s*<p className="mt-3 line-clamp-3 text-xs leading-5 text-\[var\(--app-muted\)\]">\s*\{exercise\.description\}\s*</p>\s*\)\}''', '', s, count=1, flags=re.S)
+          if n != 1: raise SystemExit('description card')
+          s = s.replace('Соберите программу из упражнений и задайте план подходов и повторений.', 'Соберите программу из упражнений. Подходы, повторения и вес задаются уже в тренировке.', 1)
+          s, n = re.subn(r'''\{program\.exercises\.length\} упражнений ·\s*\{' '\}\s*\{program\.exercises\.reduce\(\(sum, item\) => sum \+ item\.plannedSets, 0\)\}\s*\{' '\}\s*плановых подходов''', '{program.exercises.length} упражнений', s, count=1, flags=re.S)
+          if n != 1: raise SystemExit('program summary')
+          s, n = re.subn(r'''\s*<span className="text-xs text-\[var\(--app-muted\)\]">\s*\{item\.plannedSets\} × \{item\.targetReps \?\? '—'\}\s*</span>''', '', s, count=1, flags=re.S)
+          if n != 1: raise SystemExit('program row plan')
+          write(p, s)
+
+          p = 'src/renderer/src/modules/workouts/WorkoutsPage.test.tsx'
+          s = read(p)
+          s = req(s, "  muscleGroup: 'arms',\n  description: 'Без раскачивания.',", "  muscleGroup: 'biceps',\n  muscleGroups: ['biceps'],", 'test exercise')
+          s, n = re.subn(r'''(exerciseId: curl\.id,\s*position: 0),\s*plannedSets: 3,\s*targetReps: 10,\s*notes: ''\s*''', r'\1', s, count=1, flags=re.S)
+          if n != 1: raise SystemExit('test program')
+          s = req(s, 'muscleGroup: curl.muscleGroup,\n            position: 0,', 'muscleGroup: curl.muscleGroup,\n            muscleGroups: curl.muscleGroups,\n            position: 0,', 'test session')
+          s = s.replace("expect(screen.getByText('Руки')).toBeInTheDocument()", "expect(screen.getByText('Бицепс')).toBeInTheDocument()", 1)
+          write(p, s)
+          PY
+
+          npx prettier --write \
+            src/shared/contracts/workouts.ts \
+            src/main/repositories/workouts.repository.ts \
+            src/renderer/src/modules/workouts/workout-options.tsx \
+            src/renderer/src/modules/workouts/components/WorkoutMuscleMapPicker.tsx \
+            src/renderer/src/modules/workouts/components/WorkoutExerciseDialog.tsx \
+            src/renderer/src/modules/workouts/components/WorkoutProgramDialog.tsx \
+            src/renderer/src/modules/workouts/components/WorkoutSessionDialog.tsx \
+            src/renderer/src/modules/workouts/WorkoutsPage.tsx \
+            src/renderer/src/modules/workouts/WorkoutsPage.test.tsx
+
+      - name: ESLint workouts
+        run: |
+          npx eslint src/main/repositories/workouts.repository.ts src/renderer/src/modules/workouts \
+            --rule 'react-hooks/set-state-in-effect: off' \
+            --rule 'react-refresh/only-export-components: off'
+
+      - name: Node typecheck
+        run: npm run typecheck:node
+
+      - name: Web typecheck
+        shell: bash
+        run: |
+          set +e
+          npm run typecheck:web > /tmp/web-typecheck.log 2>&1
+          code=$?
+          set -e
+          cat /tmp/web-typecheck.log
+          if [ "$code" -ne 0 ]; then
+            unexpected=$(grep 'error TS' /tmp/web-typecheck.log | grep -v 'useStudyEditBlockVirtualization.ts(82,36): error TS18047' || true)
+            if [ -n "$unexpected" ]; then
+              echo "$unexpected"
+              exit "$code"
+            fi
+          fi
+
+      - name: Workouts tests
+        run: npx vitest run src/renderer/src/modules/workouts/WorkoutsPage.test.tsx
+
+      - name: Database schema check
+        run: npm run db:check
+
+      - name: Production bundle
+        run: npm run build:bundle
+
+      - name: Commit checked source changes
+        run: |
+          rm .github/workflows/workouts-muscle-map-v3.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Завершить карту мышц и простые программы"
+          git push origin HEAD:agent/workouts-muscle-map-program-simplify
