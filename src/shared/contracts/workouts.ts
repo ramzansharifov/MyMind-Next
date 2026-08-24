@@ -1,4 +1,21 @@
-export const WORKOUT_MUSCLE_GROUPS = ['arms', 'back', 'chest', 'abs', 'legs', 'shoulders'] as const
+export const WORKOUT_MUSCLE_GROUPS = [
+  'arms',
+  'shoulders',
+  'biceps',
+  'triceps',
+  'forearms',
+  'back',
+  'lats',
+  'traps',
+  'lower_back',
+  'chest',
+  'abs',
+  'legs',
+  'glutes',
+  'quadriceps',
+  'hamstrings',
+  'calves'
+] as const
 export const WORKOUT_ENTITY_STATUSES = ['active', 'archived'] as const
 
 export type WorkoutMuscleGroup = (typeof WORKOUT_MUSCLE_GROUPS)[number]
@@ -330,7 +347,9 @@ export interface WorkoutsApi {
   createProgressEntry(input: CreateWorkoutProgressEntryInput): Promise<WorkoutProgressEntryRecord>
   updateProgressEntry(input: UpdateWorkoutProgressEntryInput): Promise<WorkoutProgressEntryRecord>
   deleteProgressEntry(input: DeleteWorkoutProgressEntryInput): Promise<boolean>
-  importProgressPhoto(input: ImportWorkoutProgressPhotoInput): Promise<WorkoutProgressPhotoRecord | null>
+  importProgressPhoto(
+    input: ImportWorkoutProgressPhotoInput
+  ): Promise<WorkoutProgressPhotoRecord | null>
   deleteProgressPhoto(input: DeleteWorkoutProgressPhotoInput): Promise<boolean>
   getReport(input: WorkoutReportInput): Promise<WorkoutReport>
 }

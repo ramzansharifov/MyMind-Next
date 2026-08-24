@@ -71,7 +71,9 @@ export function WorkoutSessionDialog({
     setProgramId(session?.programId ?? CUSTOM)
     setTitle(session?.title ?? '')
     setDate(session?.date ?? todayKey())
-    setDuration(session?.durationMinutes === null || !session ? '' : String(session.durationMinutes))
+    setDuration(
+      session?.durationMinutes === null || !session ? '' : String(session.durationMinutes)
+    )
     setComment(session?.comment ?? '')
     setItems(
       session?.exercises.map((exercise) => ({
@@ -88,8 +90,7 @@ export function WorkoutSessionDialog({
   }, [open, session])
 
   const availableExercises = exercises.filter(
-    (exercise) =>
-      exercise.status === 'active' && !items.some((item) => item.exerciseId === exercise.id)
+    (exercise) => !items.some((item) => item.exerciseId === exercise.id)
   )
 
   function chooseProgram(value: string): void {
@@ -127,11 +128,7 @@ export function WorkoutSessionDialog({
     )
   }
 
-  function updateSet(
-    exerciseIndex: number,
-    setIndex: number,
-    patch: Partial<EditableSet>
-  ): void {
+  function updateSet(exerciseIndex: number, setIndex: number, patch: Partial<EditableSet>): void {
     setItems((current) =>
       current.map((item, itemIndex) =>
         itemIndex === exerciseIndex
@@ -218,9 +215,7 @@ export function WorkoutSessionDialog({
               value={programId}
               options={[
                 { value: CUSTOM, label: 'Свободная тренировка' },
-                ...programs
-                  .filter((program) => program.status === 'active' || program.id === session?.programId)
-                  .map((program) => ({ value: program.id, label: program.name }))
+                ...programs.map((program) => ({ value: program.id, label: program.name }))
               ]}
               onValueChange={chooseProgram}
             />
@@ -271,12 +266,19 @@ export function WorkoutSessionDialog({
         <section className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-3.5">
           <div className="flex flex-wrap items-end gap-2">
             <div className="min-w-[260px] flex-1 space-y-1.5">
-              <span className="text-xs font-medium text-[var(--app-muted)]">Добавить упражнение</span>
+              <span className="text-xs font-medium text-[var(--app-muted)]">
+                Добавить упражнение
+              </span>
               <AppSelect
                 ariaLabel="Добавить упражнение в тренировку"
                 value={exerciseToAdd}
                 options={[
-                  { value: NONE, label: availableExercises.length ? 'Выберите упражнение' : 'Нет доступных упражнений' },
+                  {
+                    value: NONE,
+                    label: availableExercises.length
+                      ? 'Выберите упражнение'
+                      : 'Нет доступных упражнений'
+                  },
                   ...availableExercises.map((exercise) => ({
                     value: exercise.id,
                     label: `${exercise.title} · ${workoutMuscleGroupLabel(exercise.muscleGroup)}`
@@ -328,14 +330,16 @@ export function WorkoutSessionDialog({
                       type="button"
                       aria-label="Удалить упражнение из тренировки"
                       className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
-                      onClick={() => setItems((current) => current.filter((_, index) => index !== exerciseIndex))}
+                      onClick={() =>
+                        setItems((current) => current.filter((_, index) => index !== exerciseIndex))
+                      }
                     >
                       <Trash2 className="size-4" />
                     </button>
                   </div>
 
                   <div className="mt-4 overflow-hidden rounded-xl border border-[var(--app-border)]">
-                    <div className="grid grid-cols-[52px_minmax(100px,1fr)_minmax(100px,1fr)_42px] gap-2 bg-[var(--app-workspace)] px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--app-muted)]">
+                    <div className="grid grid-cols-[52px_minmax(100px,1fr)_minmax(100px,1fr)_42px] gap-2 bg-[var(--app-workspace)] px-3 py-2 text-[11px] font-semibold tracking-[0.08em] text-[var(--app-muted)] uppercase">
                       <span>№</span>
                       <span>Повторы</span>
                       <span>Вес, кг</span>
@@ -347,14 +351,18 @@ export function WorkoutSessionDialog({
                           key={setIndex}
                           className="grid grid-cols-[52px_minmax(100px,1fr)_minmax(100px,1fr)_42px] items-center gap-2 px-3 py-2.5"
                         >
-                          <span className="text-xs font-semibold text-[var(--app-muted)]">{setIndex + 1}</span>
+                          <span className="text-xs font-semibold text-[var(--app-muted)]">
+                            {setIndex + 1}
+                          </span>
                           <input
                             type="number"
                             min={1}
                             value={set.reps}
                             aria-label={`Повторения, подход ${setIndex + 1}`}
                             className="h-9 rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] px-2.5 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/45"
-                            onChange={(event) => updateSet(exerciseIndex, setIndex, { reps: event.target.value })}
+                            onChange={(event) =>
+                              updateSet(exerciseIndex, setIndex, { reps: event.target.value })
+                            }
                           />
                           <input
                             type="number"
@@ -364,7 +372,9 @@ export function WorkoutSessionDialog({
                             placeholder="0"
                             aria-label={`Вес, подход ${setIndex + 1}`}
                             className="h-9 rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] px-2.5 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45"
-                            onChange={(event) => updateSet(exerciseIndex, setIndex, { weightKg: event.target.value })}
+                            onChange={(event) =>
+                              updateSet(exerciseIndex, setIndex, { weightKg: event.target.value })
+                            }
                           />
                           <button
                             type="button"
@@ -408,7 +418,9 @@ export function WorkoutSessionDialog({
                       maxLength={4000}
                       placeholder="Комментарий к упражнению…"
                       className="h-9 min-w-[220px] flex-1 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-xs text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45"
-                      onChange={(event) => updateExercise(exerciseIndex, { comment: event.target.value })}
+                      onChange={(event) =>
+                        updateExercise(exerciseIndex, { comment: event.target.value })
+                      }
                     />
                   </div>
                 </article>
@@ -418,7 +430,10 @@ export function WorkoutSessionDialog({
         </div>
 
         {error && (
-          <div role="alert" className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+          <div
+            role="alert"
+            className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-300"
+          >
             {error}
           </div>
         )}

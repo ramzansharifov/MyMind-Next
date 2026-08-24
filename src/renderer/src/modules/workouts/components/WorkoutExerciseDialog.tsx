@@ -9,7 +9,12 @@ import type {
 } from '../../../../../shared/contracts/workouts'
 import { AppDialog } from '../../../shared/ui/AppDialog'
 import { AppSelect } from '../../../shared/ui/AppSelect'
-import { WORKOUT_MUSCLE_GROUP_OPTIONS } from '../workout-options'
+import {
+  WORKOUT_MUSCLE_FAMILY_OPTIONS,
+  workoutMuscleFamilyForGroup,
+  workoutMuscleGroupOptionsForFamily,
+  type WorkoutMuscleFamily
+} from '../workout-options'
 
 const FORM_ID = 'workout-exercise-form'
 
@@ -29,17 +34,15 @@ export function WorkoutExerciseDialog({
   onSave
 }: WorkoutExerciseDialogProps): React.JSX.Element {
   const [title, setTitle] = useState('')
-  const [muscleGroup, setMuscleGroup] = useState<WorkoutMuscleGroup>('arms')
+  const [muscleGroup, setMuscleGroup] = useState<WorkoutMuscleGroup>('shoulders')
   const [description, setDescription] = useState('')
-  const [archived, setArchived] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!open) return
     setTitle(exercise?.title ?? '')
-    setMuscleGroup(exercise?.muscleGroup ?? 'arms')
+    setMuscleGroup(exercise?.muscleGroup ?? 'shoulders')
     setDescription(exercise?.description ?? '')
-    setArchived(exercise?.status === 'archived')
     setError(null)
   }, [exercise, open])
 
@@ -50,7 +53,7 @@ export function WorkoutExerciseDialog({
       title: title.trim(),
       muscleGroup,
       description,
-      status: archived ? 'archived' : 'active'
+      status: 'active'
     }
     try {
       await onSave(exercise ? { ...payload, id: exercise.id } : payload)
@@ -103,14 +106,36 @@ export function WorkoutExerciseDialog({
           />
         </label>
 
-        <div className="space-y-1.5">
-          <span className="text-xs font-medium text-[var(--app-muted)]">Основная группа мышц</span>
-          <AppSelect
-            ariaLabel="Группа мышц"
-            value={muscleGroup}
-            options={WORKOUT_MUSCLE_GROUP_OPTIONS.map(({ value, label }) => ({ value, label }))}
-            onValueChange={(value) => setMuscleGroup(value as WorkoutMuscleGroup)}
-          />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <span className="text-xs font-medium text-[var(--app-muted)]">Группа мышц</span>
+            <AppSelect
+              ariaLabel="Группа мышц"
+              value={workoutMuscleFamilyForGroup(muscleGroup)}
+              options={WORKOUT_MUSCLE_FAMILY_OPTIONS}
+              onValueChange={(value) => {
+                const family = value as WorkoutMuscleFamily
+                const familyOptions = workoutMuscleGroupOptionsForFamily(family)
+                const next =
+                  familyOptions.find((option) => option.value !== family) ?? familyOptions[0]
+                if (next) setMuscleGroup(next.value)
+              }}
+            />
+          </div>
+          {workoutMuscleGroupOptionsForFamily(workoutMuscleFamilyForGroup(muscleGroup)).length >
+            1 && (
+            <div className="space-y-1.5">
+              <span className="text-xs font-medium text-[var(--app-muted)]">Область</span>
+              <AppSelect
+                ariaLabel="Область группы мышц"
+                value={muscleGroup}
+                options={workoutMuscleGroupOptionsForFamily(
+                  workoutMuscleFamilyForGroup(muscleGroup)
+                ).map(({ value, shortLabel }) => ({ value, label: shortLabel }))}
+                onValueChange={(value) => setMuscleGroup(value as WorkoutMuscleGroup)}
+              />
+            </div>
+          )}
         </div>
 
         <label className="block space-y-1.5">
@@ -125,25 +150,11 @@ export function WorkoutExerciseDialog({
           />
         </label>
 
-        {exercise && (
-          <label className="flex items-center justify-between gap-4 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 py-3">
-            <span>
-              <span className="block text-sm font-medium text-[var(--app-text)]">Архивировать</span>
-              <span className="mt-0.5 block text-xs text-[var(--app-muted)]">
-                История сохранится, но упражнение исчезнет из обычного выбора.
-              </span>
-            </span>
-            <input
-              type="checkbox"
-              checked={archived}
-              className="size-4 accent-violet-500"
-              onChange={(event) => setArchived(event.target.checked)}
-            />
-          </label>
-        )}
-
         {error && (
-          <div role="alert" className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+          <div
+            role="alert"
+            className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-300"
+          >
             {error}
           </div>
         )}

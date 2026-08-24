@@ -40,7 +40,6 @@ export function WorkoutProgramDialog({
 }: WorkoutProgramDialogProps): React.JSX.Element {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [archived, setArchived] = useState(false)
   const [items, setItems] = useState<EditableProgramExercise[]>([])
   const [exerciseToAdd, setExerciseToAdd] = useState(NONE)
   const [error, setError] = useState<string | null>(null)
@@ -49,7 +48,6 @@ export function WorkoutProgramDialog({
     if (!open) return
     setName(program?.name ?? '')
     setDescription(program?.description ?? '')
-    setArchived(program?.status === 'archived')
     setItems(
       program?.exercises.map((item) => ({
         exerciseId: item.exerciseId,
@@ -67,8 +65,7 @@ export function WorkoutProgramDialog({
     [exercises]
   )
   const availableExercises = exercises.filter(
-    (exercise) =>
-      exercise.status === 'active' && !items.some((item) => item.exerciseId === exercise.id)
+    (exercise) => !items.some((item) => item.exerciseId === exercise.id)
   )
 
   function addExercise(): void {
@@ -103,7 +100,7 @@ export function WorkoutProgramDialog({
     const payload: CreateWorkoutProgramInput = {
       name: name.trim(),
       description,
-      status: archived ? 'archived' : 'active',
+      status: 'active',
       exercises: items.map((item) => ({
         exerciseId: item.exerciseId,
         plannedSets: item.plannedSets,
@@ -178,12 +175,19 @@ export function WorkoutProgramDialog({
         <section className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-3.5">
           <div className="flex flex-wrap items-end gap-2">
             <div className="min-w-[260px] flex-1 space-y-1.5">
-              <span className="text-xs font-medium text-[var(--app-muted)]">Добавить упражнение</span>
+              <span className="text-xs font-medium text-[var(--app-muted)]">
+                Добавить упражнение
+              </span>
               <AppSelect
                 ariaLabel="Упражнение для программы"
                 value={exerciseToAdd}
                 options={[
-                  { value: NONE, label: availableExercises.length ? 'Выберите упражнение' : 'Все упражнения добавлены' },
+                  {
+                    value: NONE,
+                    label: availableExercises.length
+                      ? 'Выберите упражнение'
+                      : 'Все упражнения добавлены'
+                  },
                   ...availableExercises.map((exercise) => ({
                     value: exercise.id,
                     label: `${exercise.title} · ${workoutMuscleGroupLabel(exercise.muscleGroup)}`
@@ -253,7 +257,11 @@ export function WorkoutProgramDialog({
                         type="button"
                         aria-label="Удалить упражнение из программы"
                         className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
-                        onClick={() => setItems((current) => current.filter((_, itemIndex) => itemIndex !== index))}
+                        onClick={() =>
+                          setItems((current) =>
+                            current.filter((_, itemIndex) => itemIndex !== index)
+                          )
+                        }
                       >
                         <Trash2 className="size-4" />
                       </button>
@@ -270,7 +278,9 @@ export function WorkoutProgramDialog({
                         value={item.plannedSets}
                         className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/45"
                         onChange={(event) =>
-                          updateItem(index, { plannedSets: Math.max(1, Number(event.target.value) || 1) })
+                          updateItem(index, {
+                            plannedSets: Math.max(1, Number(event.target.value) || 1)
+                          })
                         }
                       />
                     </label>
@@ -286,7 +296,9 @@ export function WorkoutProgramDialog({
                       />
                     </label>
                     <label className="space-y-1.5">
-                      <span className="text-xs text-[var(--app-muted)]">Комментарий к упражнению</span>
+                      <span className="text-xs text-[var(--app-muted)]">
+                        Комментарий к упражнению
+                      </span>
                       <input
                         value={item.notes}
                         maxLength={4000}
@@ -302,18 +314,11 @@ export function WorkoutProgramDialog({
           )}
         </div>
 
-        {program && (
-          <label className="flex items-center justify-between gap-4 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 py-3">
-            <span>
-              <span className="block text-sm font-medium text-[var(--app-text)]">Архивировать программу</span>
-              <span className="mt-0.5 block text-xs text-[var(--app-muted)]">Старые записи тренировок сохранятся.</span>
-            </span>
-            <input type="checkbox" checked={archived} className="size-4 accent-violet-500" onChange={(event) => setArchived(event.target.checked)} />
-          </label>
-        )}
-
         {error && (
-          <div role="alert" className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+          <div
+            role="alert"
+            className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-300"
+          >
             {error}
           </div>
         )}
