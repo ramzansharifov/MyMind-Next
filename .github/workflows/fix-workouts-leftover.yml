@@ -16,24 +16,19 @@ jobs:
         with:
           ref: agent/workouts-cleanup-muscles
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-
       - name: Remove stale archive setter
         run: |
           python <<'PY'
           from pathlib import Path
+          import re
           path = Path('src/renderer/src/modules/workouts/WorkoutsPage.tsx')
           text = path.read_text(encoding='utf-8')
-          old = "                  setShowArchived(false)\n"
-          if old not in text:
+          text, count = re.subn(r'^\s*setShowArchived\(false\)\s*\n', '', text, count=1, flags=re.M)
+          if count != 1:
               raise SystemExit('stale setShowArchived call not found')
-          path.write_text(text.replace(old, '', 1), encoding='utf-8')
+          path.write_text(text, encoding='utf-8')
           PY
-          npx prettier --write src/renderer/src/modules/workouts/WorkoutsPage.tsx
-          rm .github/workflows/fix-workouts-leftover.yml .github/workouts-check-trigger
+          rm -f .github/workflows/fix-workouts-leftover.yml .github/workouts-check-trigger
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
