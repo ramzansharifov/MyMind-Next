@@ -1,0 +1,42 @@
+name: Workouts cleanup check
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  workouts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prettier
+        run: npx prettier --check src/shared/contracts/workouts.ts src/main/repositories/workouts.repository.ts src/renderer/src/modules/workouts
+
+      - name: ESLint workouts
+        run: npx eslint src/main/repositories/workouts.repository.ts src/renderer/src/modules/workouts
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Workouts tests
+        run: npx vitest run src/renderer/src/modules/workouts/WorkoutsPage.test.tsx
+
+      - name: Database schema check
+        run: npm run db:check
+
+      - name: Production bundle
+        run: npm run build:bundle
