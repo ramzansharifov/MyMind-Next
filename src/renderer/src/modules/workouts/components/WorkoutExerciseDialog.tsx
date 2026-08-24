@@ -8,13 +8,7 @@ import type {
   WorkoutMuscleGroup
 } from '../../../../../shared/contracts/workouts'
 import { AppDialog } from '../../../shared/ui/AppDialog'
-import { AppSelect } from '../../../shared/ui/AppSelect'
-import {
-  WORKOUT_MUSCLE_FAMILY_OPTIONS,
-  workoutMuscleFamilyForGroup,
-  workoutMuscleGroupOptionsForFamily,
-  type WorkoutMuscleFamily
-} from '../workout-options'
+import { WorkoutMuscleMapPicker } from './WorkoutMuscleMapPicker'
 
 const FORM_ID = 'workout-exercise-form'
 
@@ -26,6 +20,13 @@ interface WorkoutExerciseDialogProps {
   onSave: (input: CreateWorkoutExerciseInput | UpdateWorkoutExerciseInput) => Promise<void>
 }
 
+function legacyGroups(group: WorkoutMuscleGroup): WorkoutMuscleGroup[] {
+  if (group === 'arms') return ['shoulders', 'biceps', 'triceps', 'forearms']
+  if (group === 'back') return ['lats', 'traps', 'lower_back']
+  if (group === 'legs') return ['glutes', 'quadriceps', 'hamstrings', 'calves']
+  return [group]
+}
+
 export function WorkoutExerciseDialog({
   open,
   exercise,
@@ -34,25 +35,28 @@ export function WorkoutExerciseDialog({
   onSave
 }: WorkoutExerciseDialogProps): React.JSX.Element {
   const [title, setTitle] = useState('')
-  const [muscleGroup, setMuscleGroup] = useState<WorkoutMuscleGroup>('shoulders')
-  const [description, setDescription] = useState('')
+  const [muscleGroups, setMuscleGroups] = useState<WorkoutMuscleGroup[]>([])
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!open) return
     setTitle(exercise?.title ?? '')
-    setMuscleGroup(exercise?.muscleGroup ?? 'shoulders')
-    setDescription(exercise?.description ?? '')
+    setMuscleGroups(
+      exercise
+        ? exercise.muscleGroups?.length
+          ? exercise.muscleGroups
+          : legacyGroups(exercise.muscleGroup)
+        : []
+    )
     setError(null)
   }, [exercise, open])
 
   async function submit(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault()
-    if (!title.trim() || busy) return
+    if (!title.trim() || muscleGroups.length === 0 || busy) return
     const payload: CreateWorkoutExerciseInput = {
       title: title.trim(),
-      muscleGroup,
-      description,
+      muscleGroups,
       status: 'active'
     }
     try {
@@ -68,9 +72,9 @@ export function WorkoutExerciseDialog({
       open={open}
       onOpenChange={onOpenChange}
       title={exercise ? 'Изменить упражнение' : 'Новое упражнение'}
-      description="Упражнения — базовый справочник для программ, тренировок, прогресса и отчётов."
+      description="Назовите упражнение и отметьте все мышечные зоны, которые участвуют в движении."
       icon={<Dumbbell />}
-      size="md"
+      size="xl"
       busy={busy}
       footer={
         <>
@@ -85,7 +89,7 @@ export function WorkoutExerciseDialog({
           <button
             type="submit"
             form={FORM_ID}
-            disabled={busy || !title.trim()}
+            disabled={busy || !title.trim() || muscleGroups.length === 0}
             className="h-10 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-45"
           >
             {busy ? 'Сохраняем…' : exercise ? 'Сохранить' : 'Добавить упражнение'}
@@ -93,7 +97,7 @@ export function WorkoutExerciseDialog({
         </>
       }
     >
-      <form id={FORM_ID} className="space-y-4" onSubmit={(event) => void submit(event)}>
+      <form id={FORM_ID} className="space-y-5" onSubmit={(event) => void submit(event)}>
         <label className="block space-y-1.5">
           <span className="text-xs font-medium text-[var(--app-muted)]">Название</span>
           <input
@@ -106,49 +110,11 @@ export function WorkoutExerciseDialog({
           />
         </label>
 
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <span className="text-xs font-medium text-[var(--app-muted)]">Группа мышц</span>
-            <AppSelect
-              ariaLabel="Группа мышц"
-              value={workoutMuscleFamilyForGroup(muscleGroup)}
-              options={WORKOUT_MUSCLE_FAMILY_OPTIONS}
-              onValueChange={(value) => {
-                const family = value as WorkoutMuscleFamily
-                const familyOptions = workoutMuscleGroupOptionsForFamily(family)
-                const next =
-                  familyOptions.find((option) => option.value !== family) ?? familyOptions[0]
-                if (next) setMuscleGroup(next.value)
-              }}
-            />
-          </div>
-          {workoutMuscleGroupOptionsForFamily(workoutMuscleFamilyForGroup(muscleGroup)).length >
-            1 && (
-            <div className="space-y-1.5">
-              <span className="text-xs font-medium text-[var(--app-muted)]">Область</span>
-              <AppSelect
-                ariaLabel="Область группы мышц"
-                value={muscleGroup}
-                options={workoutMuscleGroupOptionsForFamily(
-                  workoutMuscleFamilyForGroup(muscleGroup)
-                ).map(({ value, shortLabel }) => ({ value, label: shortLabel }))}
-                onValueChange={(value) => setMuscleGroup(value as WorkoutMuscleGroup)}
-              />
-            </div>
-          )}
-        </div>
+        <WorkoutMuscleMapPicker value={muscleGroups} onChange={setMuscleGroups} />
 
-        <label className="block space-y-1.5">
-          <span className="text-xs font-medium text-[var(--app-muted)]">Описание / техника</span>
-          <textarea
-            value={description}
-            rows={5}
-            maxLength={10000}
-            placeholder="Техника выполнения, особенности хвата, амплитуда и другие заметки…"
-            className="w-full resize-y rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 py-3 text-sm leading-6 text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
-            onChange={(event) => setDescription(event.target.value)}
-          />
-        </label>
+        {muscleGroups.length === 0 && (
+          <p className="text-xs text-amber-300/90">Выберите хотя бы одну активную мышечную зону.</p>
+        )}
 
         {error && (
           <div
