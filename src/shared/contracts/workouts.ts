@@ -16,16 +16,35 @@ export const WORKOUT_MUSCLE_GROUPS = [
   'hamstrings',
   'calves'
 ] as const
+
+export const WORKOUT_MUSCLE_ZONES = [
+  'shoulders',
+  'biceps',
+  'triceps',
+  'forearms',
+  'lats',
+  'traps',
+  'lower_back',
+  'chest',
+  'abs',
+  'glutes',
+  'quadriceps',
+  'hamstrings',
+  'calves'
+] as const
+
 export const WORKOUT_ENTITY_STATUSES = ['active', 'archived'] as const
 
 export type WorkoutMuscleGroup = (typeof WORKOUT_MUSCLE_GROUPS)[number]
+export type WorkoutMuscleZone = (typeof WORKOUT_MUSCLE_ZONES)[number]
 export type WorkoutEntityStatus = (typeof WORKOUT_ENTITY_STATUSES)[number]
 
 export interface WorkoutExerciseRecord {
   id: string
   title: string
+  /** Primary zone kept for backwards-compatible rendering and old consumers. */
   muscleGroup: WorkoutMuscleGroup
-  description: string
+  muscleGroups: WorkoutMuscleGroup[]
   status: WorkoutEntityStatus
   createdAt: number
   updatedAt: number
@@ -35,9 +54,6 @@ export interface WorkoutProgramExerciseRecord {
   id: string
   exerciseId: string
   position: number
-  plannedSets: number
-  targetReps: number | null
-  notes: string
 }
 
 export interface WorkoutProgramRecord {
@@ -61,7 +77,9 @@ export interface WorkoutSessionExerciseRecord {
   id: string
   exerciseId: string | null
   exerciseTitle: string
+  /** Primary zone kept for backwards-compatible rendering and old consumers. */
   muscleGroup: WorkoutMuscleGroup
+  muscleGroups: WorkoutMuscleGroup[]
   position: number
   comment: string
   sets: WorkoutSetRecord[]
@@ -87,7 +105,9 @@ export interface WorkoutProgressMetricRecord {
   id: string
   exerciseId: string | null
   exerciseTitle: string
+  /** Primary zone kept for backwards-compatible rendering and old consumers. */
   muscleGroup: WorkoutMuscleGroup
+  muscleGroups: WorkoutMuscleGroup[]
   weightKg: number
   reps: number
   comment: string
@@ -125,8 +145,7 @@ export interface WorkoutsOverview {
 
 export interface CreateWorkoutExerciseInput {
   title: string
-  muscleGroup: WorkoutMuscleGroup
-  description: string
+  muscleGroups: WorkoutMuscleGroup[]
   status: WorkoutEntityStatus
 }
 
@@ -140,9 +159,6 @@ export interface DeleteWorkoutExerciseInput {
 
 export interface WorkoutProgramExerciseInput {
   exerciseId: string
-  plannedSets: number
-  targetReps: number | null
-  notes: string
 }
 
 export interface CreateWorkoutProgramInput {
@@ -260,6 +276,7 @@ export interface WorkoutReportExercise {
   exerciseId: string | null
   title: string
   muscleGroup: WorkoutMuscleGroup
+  muscleGroups: WorkoutMuscleGroup[]
   sessions: number
   sets: number
   reps: number
@@ -295,6 +312,7 @@ export interface WorkoutPersonalRecord {
   exerciseId: string | null
   title: string
   muscleGroup: WorkoutMuscleGroup
+  muscleGroups: WorkoutMuscleGroup[]
   date: string
   weightKg: number
   reps: number
