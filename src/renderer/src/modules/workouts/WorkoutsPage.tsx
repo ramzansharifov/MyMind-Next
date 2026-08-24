@@ -524,7 +524,6 @@ export function WorkoutsPage({
                   setQuery('')
                   setMuscleFilter('all')
                   setProgramFilter('all')
-                  setShowArchived(false)
                 }}
               >
                 <Icon className="size-4" /> {item.label}
