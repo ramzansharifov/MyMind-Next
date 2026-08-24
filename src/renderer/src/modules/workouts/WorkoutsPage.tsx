@@ -96,13 +96,15 @@ function errorMessage(reason: unknown): string {
   return reason instanceof Error ? reason.message : 'Не удалось выполнить действие'
 }
 
-export function WorkoutsPage({ resourceId, onResourceHandled }: WorkoutsPageProps): React.JSX.Element {
+export function WorkoutsPage({
+  resourceId,
+  onResourceHandled
+}: WorkoutsPageProps): React.JSX.Element {
   const [overview, setOverview] = useState<WorkoutsOverview | null>(null)
   const [tab, setTab] = useState<WorkoutTab>('journal')
   const [query, setQuery] = useState('')
   const [muscleFilter, setMuscleFilter] = useState<MuscleFilter>('all')
   const [programFilter, setProgramFilter] = useState('all')
-  const [showArchived, setShowArchived] = useState(false)
   const [exerciseDialogOpen, setExerciseDialogOpen] = useState(false)
   const [editingExercise, setEditingExercise] = useState<WorkoutExerciseRecord | null>(null)
   const [programDialogOpen, setProgramDialogOpen] = useState(false)
@@ -113,10 +115,13 @@ export function WorkoutsPage({ resourceId, onResourceHandled }: WorkoutsPageProp
   const [selectedSession, setSelectedSession] = useState<WorkoutSessionRecord | null>(null)
   const [progressDialogOpen, setProgressDialogOpen] = useState(false)
   const [editingProgress, setEditingProgress] = useState<WorkoutProgressEntryRecord | null>(null)
-  const [deleteExerciseTarget, setDeleteExerciseTarget] = useState<WorkoutExerciseRecord | null>(null)
+  const [deleteExerciseTarget, setDeleteExerciseTarget] = useState<WorkoutExerciseRecord | null>(
+    null
+  )
   const [deleteProgramTarget, setDeleteProgramTarget] = useState<WorkoutProgramRecord | null>(null)
   const [deleteSessionTarget, setDeleteSessionTarget] = useState<WorkoutSessionRecord | null>(null)
-  const [deleteProgressTarget, setDeleteProgressTarget] = useState<WorkoutProgressEntryRecord | null>(null)
+  const [deleteProgressTarget, setDeleteProgressTarget] =
+    useState<WorkoutProgressEntryRecord | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isBusy, setIsBusy] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -176,7 +181,6 @@ export function WorkoutsPage({ resourceId, onResourceHandled }: WorkoutsPageProp
   const filteredExercises = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase('ru-RU')
     return exercises.filter((exercise) => {
-      if (!showArchived && exercise.status === 'archived') return false
       if (muscleFilter !== 'all' && exercise.muscleGroup !== muscleFilter) return false
       return (
         !normalized ||
@@ -185,12 +189,11 @@ export function WorkoutsPage({ resourceId, onResourceHandled }: WorkoutsPageProp
           .includes(normalized)
       )
     })
-  }, [exercises, muscleFilter, query, showArchived])
+  }, [exercises, muscleFilter, query])
 
   const filteredPrograms = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase('ru-RU')
     return programs.filter((program) => {
-      if (!showArchived && program.status === 'archived') return false
       if (!normalized) return true
       const names = program.exercises
         .map((item) => exerciseMap.get(item.exerciseId)?.title ?? '')
@@ -199,7 +202,7 @@ export function WorkoutsPage({ resourceId, onResourceHandled }: WorkoutsPageProp
         .toLocaleLowerCase('ru-RU')
         .includes(normalized)
     })
-  }, [exerciseMap, programs, query, showArchived])
+  }, [exerciseMap, programs, query])
 
   const filteredSessions = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase('ru-RU')
@@ -413,14 +416,7 @@ export function WorkoutsPage({ resourceId, onResourceHandled }: WorkoutsPageProp
     } finally {
       setReportLoading(false)
     }
-  }, [
-    reportDateFrom,
-    reportDateTo,
-    reportExerciseId,
-    reportMuscleGroup,
-    reportProgramId,
-    tab
-  ])
+  }, [reportDateFrom, reportDateTo, reportExerciseId, reportMuscleGroup, reportProgramId, tab])
 
   useEffect(() => {
     if (tab !== 'reports') return
@@ -451,7 +447,7 @@ export function WorkoutsPage({ resourceId, onResourceHandled }: WorkoutsPageProp
       {tab === 'journal' && (
         <button
           type="button"
-          disabled={exercises.filter((exercise) => exercise.status === 'active').length === 0}
+          disabled={exercises.length === 0}
           className="inline-flex h-11 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-45"
           onClick={() => {
             setEditingSession(null)
@@ -476,7 +472,7 @@ export function WorkoutsPage({ resourceId, onResourceHandled }: WorkoutsPageProp
       {tab === 'programs' && (
         <button
           type="button"
-          disabled={exercises.filter((exercise) => exercise.status === 'active').length === 0}
+          disabled={exercises.length === 0}
           className="inline-flex h-11 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-45"
           onClick={() => {
             setEditingProgram(null)
@@ -528,7 +524,6 @@ export function WorkoutsPage({ resourceId, onResourceHandled }: WorkoutsPageProp
                   setQuery('')
                   setMuscleFilter('all')
                   setProgramFilter('all')
-                  setShowArchived(false)
                 }}
               >
                 <Icon className="size-4" /> {item.label}
@@ -711,7 +706,7 @@ export function WorkoutsPage({ resourceId, onResourceHandled }: WorkoutsPageProp
                           })}
                         </div>
                       </button>
-                      <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                      <div className="flex items-center gap-1">
                         <button
                           type="button"
                           aria-label="Изменить тренировку"
@@ -766,15 +761,6 @@ export function WorkoutsPage({ resourceId, onResourceHandled }: WorkoutsPageProp
                   onValueChange={(value) => setMuscleFilter(value as MuscleFilter)}
                 />
               </div>
-              <label className="inline-flex h-10 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-xs font-medium text-[var(--app-muted)]">
-                <input
-                  type="checkbox"
-                  checked={showArchived}
-                  className="accent-violet-500"
-                  onChange={(event) => setShowArchived(event.target.checked)}
-                />{' '}
-                Показывать архив
-              </label>
             </div>
           </div>
 
@@ -813,17 +799,12 @@ export function WorkoutsPage({ resourceId, onResourceHandled }: WorkoutsPageProp
                           <h3 className="truncate font-semibold text-[var(--app-text)]">
                             {exercise.title}
                           </h3>
-                          {exercise.status === 'archived' && (
-                            <span className="rounded-md bg-[var(--app-control)] px-1.5 py-0.5 text-[10px] text-[var(--app-muted)]">
-                              Архив
-                            </span>
-                          )}
                         </div>
                         <span className={cn('mt-1 inline-block text-xs font-medium', classes.text)}>
                           {workoutMuscleGroupLabel(exercise.muscleGroup)}
                         </span>
                       </div>
-                      <div className="flex shrink-0 gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100">
+                      <div className="flex shrink-0 gap-1">
                         <button
                           type="button"
                           aria-label={`Изменить «${exercise.title}»`}
@@ -872,22 +853,15 @@ export function WorkoutsPage({ resourceId, onResourceHandled }: WorkoutsPageProp
                   onChange={(event) => setQuery(event.target.value)}
                 />
               </label>
-              <label className="inline-flex h-10 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-xs font-medium text-[var(--app-muted)]">
-                <input
-                  type="checkbox"
-                  checked={showArchived}
-                  className="accent-violet-500"
-                  onChange={(event) => setShowArchived(event.target.checked)}
-                />{' '}
-                Показывать архив
-              </label>
             </div>
           </div>
 
           {filteredPrograms.length === 0 ? (
             <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface)] text-center">
               <FileText className="size-8 text-violet-300" />
-              <h2 className="mt-3 text-lg font-semibold text-[var(--app-text)]">Программ пока нет</h2>
+              <h2 className="mt-3 text-lg font-semibold text-[var(--app-text)]">
+                Программ пока нет
+              </h2>
               <p className="mt-1 max-w-md text-sm text-[var(--app-muted)]">
                 Соберите программу из упражнений и задайте план подходов и повторений.
               </p>
@@ -908,19 +882,14 @@ export function WorkoutsPage({ resourceId, onResourceHandled }: WorkoutsPageProp
                         <h3 className="text-base font-semibold text-[var(--app-text)]">
                           {program.name}
                         </h3>
-                        {program.status === 'archived' && (
-                          <span className="rounded-md bg-[var(--app-control)] px-1.5 py-0.5 text-[10px] text-[var(--app-muted)]">
-                            Архив
-                          </span>
-                        )}
                       </div>
                       <p className="mt-1 text-xs text-[var(--app-muted)]">
                         {program.exercises.length} упражнений ·{' '}
-                        {program.exercises.reduce((sum, item) => sum + item.plannedSets, 0)} плановых
-                        подходов
+                        {program.exercises.reduce((sum, item) => sum + item.plannedSets, 0)}{' '}
+                        плановых подходов
                       </p>
                     </div>
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100">
+                    <div className="flex gap-1">
                       <button
                         type="button"
                         aria-label="Изменить программу"
@@ -968,7 +937,10 @@ export function WorkoutsPage({ resourceId, onResourceHandled }: WorkoutsPageProp
                               classes.border
                             )}
                           >
-                            <WorkoutMuscleGroupIcon group={exercise.muscleGroup} className="size-3.5" />
+                            <WorkoutMuscleGroupIcon
+                              group={exercise.muscleGroup}
+                              className="size-3.5"
+                            />
                           </span>
                           <span className="min-w-0 flex-1 truncate text-sm font-medium text-[var(--app-text)]">
                             {exercise.title}
@@ -1054,7 +1026,7 @@ export function WorkoutsPage({ resourceId, onResourceHandled }: WorkoutsPageProp
                   </div>
                   {entry.wellbeing && (
                     <div className="mt-4 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 py-3">
-                      <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--app-muted)]">
+                      <div className="text-[11px] font-semibold tracking-[0.08em] text-[var(--app-muted)] uppercase">
                         Самочувствие
                       </div>
                       <p className="mt-1.5 text-sm leading-6 text-[var(--app-text)]">
@@ -1093,7 +1065,9 @@ export function WorkoutsPage({ resourceId, onResourceHandled }: WorkoutsPageProp
                               {metric.weightKg} кг × {metric.reps}
                             </div>
                             {metric.comment && (
-                              <p className="mt-1 text-xs text-[var(--app-muted)]">{metric.comment}</p>
+                              <p className="mt-1 text-xs text-[var(--app-muted)]">
+                                {metric.comment}
+                              </p>
                             )}
                           </div>
                         )
@@ -1290,7 +1264,10 @@ export function WorkoutsPage({ resourceId, onResourceHandled }: WorkoutsPageProp
                             </div>
                             <div className="h-2 overflow-hidden rounded-full bg-[var(--app-workspace)]">
                               <div
-                                className={cn('h-full rounded-full transition-[width]', classes.bar)}
+                                className={cn(
+                                  'h-full rounded-full transition-[width]',
+                                  classes.bar
+                                )}
                                 style={{ width: `${Math.min(100, item.loadPercent)}%` }}
                               />
                             </div>
@@ -1359,7 +1336,9 @@ export function WorkoutsPage({ resourceId, onResourceHandled }: WorkoutsPageProp
                   <div className="flex items-center gap-2 border-b border-[var(--app-border)] px-5 py-4">
                     <Target className="size-5 text-violet-300" />
                     <div>
-                      <h2 className="text-sm font-semibold text-[var(--app-text)]">По упражнениям</h2>
+                      <h2 className="text-sm font-semibold text-[var(--app-text)]">
+                        По упражнениям
+                      </h2>
                       <p className="mt-0.5 text-xs text-[var(--app-muted)]">
                         Объём, вес и изменение лучшего рабочего веса между первой и последней
                         тренировкой периода.
@@ -1430,7 +1409,9 @@ export function WorkoutsPage({ resourceId, onResourceHandled }: WorkoutsPageProp
                   <section className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--app-shadow-card)]">
                     <div className="flex items-center gap-2 border-b border-[var(--app-border)] px-5 py-4">
                       <FileText className="size-5 text-violet-300" />
-                      <h2 className="text-sm font-semibold text-[var(--app-text)]">По программам</h2>
+                      <h2 className="text-sm font-semibold text-[var(--app-text)]">
+                        По программам
+                      </h2>
                     </div>
                     <div className="divide-y divide-[var(--app-border)]">
                       {report.programs.length === 0 ? (
@@ -1607,8 +1588,8 @@ export function WorkoutsPage({ resourceId, onResourceHandled }: WorkoutsPageProp
         open={deleteExerciseTarget !== null}
         title="Удалить упражнение?"
         subject={deleteExerciseTarget?.title}
-        description="Удаление возможно только если упражнение не используется в программах или истории. Для сохранения связей лучше архивировать его."
-        notice="Исторические данные не должны терять связь с упражнением"
+        description="Удаление возможно только если упражнение не используется в программах или истории."
+        notice="Если упражнение используется в программе, сначала удалите его из этой программы."
         isSubmitting={isDeleting}
         error={error}
         onOpenChange={(open) => {
@@ -1633,7 +1614,9 @@ export function WorkoutsPage({ resourceId, onResourceHandled }: WorkoutsPageProp
         open={deleteSessionTarget !== null}
         title="Удалить тренировку?"
         subject={
-          deleteSessionTarget?.title || deleteSessionTarget?.programName || deleteSessionTarget?.date
+          deleteSessionTarget?.title ||
+          deleteSessionTarget?.programName ||
+          deleteSessionTarget?.date
         }
         description="Будут удалены все упражнения, подходы, повторения и веса этой записи."
         notice="Это изменит статистику и отчёты"

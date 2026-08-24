@@ -78,8 +78,7 @@ export function WorkoutProgressDialog({
   }, [entry, open])
 
   const availableExercises = exercises.filter(
-    (exercise) =>
-      exercise.status === 'active' && !metrics.some((metric) => metric.exerciseId === exercise.id)
+    (exercise) => !metrics.some((metric) => metric.exerciseId === exercise.id)
   )
 
   function addMetric(): void {
@@ -193,7 +192,9 @@ export function WorkoutProgressDialog({
             />
           </label>
           <label className="space-y-1.5 sm:col-span-2">
-            <span className="text-xs font-medium text-[var(--app-muted)]">Дополнительные заметки</span>
+            <span className="text-xs font-medium text-[var(--app-muted)]">
+              Дополнительные заметки
+            </span>
             <textarea
               value={notes}
               rows={2}
@@ -218,7 +219,12 @@ export function WorkoutProgressDialog({
                 ariaLabel="Добавить показатель упражнения"
                 value={exerciseToAdd}
                 options={[
-                  { value: NONE, label: availableExercises.length ? 'Выберите упражнение' : 'Нет доступных упражнений' },
+                  {
+                    value: NONE,
+                    label: availableExercises.length
+                      ? 'Выберите упражнение'
+                      : 'Нет доступных упражнений'
+                  },
                   ...availableExercises.map((exercise) => ({
                     value: exercise.id,
                     label: `${exercise.title} · ${workoutMuscleGroupLabel(exercise.muscleGroup)}`
@@ -261,7 +267,11 @@ export function WorkoutProgressDialog({
                     type="button"
                     aria-label="Удалить показатель"
                     className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
-                    onClick={() => setMetrics((current) => current.filter((_, metricIndex) => metricIndex !== index))}
+                    onClick={() =>
+                      setMetrics((current) =>
+                        current.filter((_, metricIndex) => metricIndex !== index)
+                      )
+                    }
                   >
                     <Trash2 className="size-4" />
                   </button>
@@ -306,7 +316,10 @@ export function WorkoutProgressDialog({
         </div>
 
         {error && (
-          <div role="alert" className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+          <div
+            role="alert"
+            className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-300"
+          >
             {error}
           </div>
         )}
