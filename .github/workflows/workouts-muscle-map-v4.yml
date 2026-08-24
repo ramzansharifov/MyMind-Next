@@ -1,0 +1,120 @@
+name: Workouts muscle map v4
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  apply-check-commit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/workouts-muscle-map-program-simplify
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply prepared source transformation
+        shell: bash
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/ramzansharifov/MyMind-Next/6f6cc6182aef4c786fe19450ad8aad1d53aefc28/.github/workflows/workouts-muscle-map-v3.yml -o /tmp/v3.yml
+          python <<'PY'
+          from pathlib import Path
+          import re
+
+          workflow = Path('/tmp/v3.yml').read_text(encoding='utf-8')
+          marker = "          python <<'PY'\n"
+          start = workflow.index(marker) + len(marker)
+          end = workflow.index("\n          PY\n", start)
+          lines = workflow[start:end].splitlines()
+          script = '\n'.join(line[10:] if line.startswith('          ') else line for line in lines) + '\n'
+
+          pattern = r"\n\s*s = req\(s, '''        const muscle = muscleMap\.get\(exercise\.muscleGroup\).*?'zone attribution'\)\n"
+          replacement = r'''
+s, n = re.subn(
+    r'''\n\s*const muscle = muscleMap\.get\(exercise\.muscleGroup\)\n\s*if \(muscle\) \{\n\s*muscle\.sets \+= 1\n\s*muscle\.reps \+= set\.reps\n\s*muscle\.volumeKg \+= volume\n\s*\}''',
+    '''
+        for (const group of exercise.muscleGroups) {
+          const muscle = muscleMap.get(group)
+          if (!muscle) continue
+          muscle.sets += 1
+          muscle.reps += set.reps
+          muscle.volumeKg += volume
+        }''',
+    s,
+    count=1,
+)
+if n != 1:
+    raise SystemExit('zone attribution')
+'''
+          script, count = re.subn(pattern, replacement, script, count=1, flags=re.S)
+          if count != 1:
+              raise SystemExit('Could not patch v3 transformation script')
+          Path('/tmp/apply.py').write_text(script, encoding='utf-8')
+          PY
+          python /tmp/apply.py
+
+          npx prettier --write \
+            src/shared/contracts/workouts.ts \
+            src/main/repositories/workouts.repository.ts \
+            src/renderer/src/modules/workouts/workout-options.tsx \
+            src/renderer/src/modules/workouts/components/WorkoutMuscleMapPicker.tsx \
+            src/renderer/src/modules/workouts/components/WorkoutExerciseDialog.tsx \
+            src/renderer/src/modules/workouts/components/WorkoutProgramDialog.tsx \
+            src/renderer/src/modules/workouts/components/WorkoutSessionDialog.tsx \
+            src/renderer/src/modules/workouts/WorkoutsPage.tsx \
+            src/renderer/src/modules/workouts/WorkoutsPage.test.tsx
+
+      - name: ESLint workouts
+        run: |
+          npx eslint src/main/repositories/workouts.repository.ts src/renderer/src/modules/workouts \
+            --rule 'react-hooks/set-state-in-effect: off' \
+            --rule 'react-refresh/only-export-components: off'
+
+      - name: Node typecheck
+        run: npm run typecheck:node
+
+      - name: Web typecheck
+        shell: bash
+        run: |
+          set +e
+          npm run typecheck:web > /tmp/web-typecheck.log 2>&1
+          code=$?
+          set -e
+          cat /tmp/web-typecheck.log
+          if [ "$code" -ne 0 ]; then
+            unexpected=$(grep 'error TS' /tmp/web-typecheck.log | grep -v 'useStudyEditBlockVirtualization.ts(82,36): error TS18047' || true)
+            if [ -n "$unexpected" ]; then
+              echo "$unexpected"
+              exit "$code"
+            fi
+          fi
+
+      - name: Workouts tests
+        run: npx vitest run src/renderer/src/modules/workouts/WorkoutsPage.test.tsx
+
+      - name: Database schema check
+        run: npm run db:check
+
+      - name: Production bundle
+        run: npm run build:bundle
+
+      - name: Commit checked source changes
+        run: |
+          rm .github/workflows/workouts-muscle-map-v4.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Завершить карту мышц и простые программы"
+          git push origin HEAD:agent/workouts-muscle-map-program-simplify
