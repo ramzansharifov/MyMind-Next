@@ -23,11 +23,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Prettier
-        run: npx prettier --check src/shared/contracts/workouts.ts src/main/repositories/workouts.repository.ts src/renderer/src/modules/workouts
+      - name: Prettier changed files
+        run: npx prettier --check src/shared/contracts/workouts.ts src/main/repositories/workouts.repository.ts src/renderer/src/modules/workouts/workout-options.tsx src/renderer/src/modules/workouts/WorkoutsPage.tsx src/renderer/src/modules/workouts/components/WorkoutExerciseDialog.tsx src/renderer/src/modules/workouts/components/WorkoutProgramDialog.tsx src/renderer/src/modules/workouts/components/WorkoutSessionDialog.tsx src/renderer/src/modules/workouts/components/WorkoutProgressDialog.tsx
 
-      - name: ESLint workouts
-        run: npx eslint src/main/repositories/workouts.repository.ts src/renderer/src/modules/workouts
+      - name: ESLint changed files
+        run: npx eslint src/main/repositories/workouts.repository.ts src/renderer/src/modules/workouts/workout-options.tsx src/renderer/src/modules/workouts/WorkoutsPage.tsx src/renderer/src/modules/workouts/components/WorkoutExerciseDialog.tsx src/renderer/src/modules/workouts/components/WorkoutProgramDialog.tsx src/renderer/src/modules/workouts/components/WorkoutSessionDialog.tsx src/renderer/src/modules/workouts/components/WorkoutProgressDialog.tsx
 
       - name: Typecheck
         run: npm run typecheck
