@@ -27,7 +27,17 @@ jobs:
         run: npx prettier --check src/shared/contracts/workouts.ts src/main/repositories/workouts.repository.ts src/renderer/src/modules/workouts/workout-options.tsx src/renderer/src/modules/workouts/WorkoutsPage.tsx src/renderer/src/modules/workouts/components/WorkoutExerciseDialog.tsx src/renderer/src/modules/workouts/components/WorkoutProgramDialog.tsx src/renderer/src/modules/workouts/components/WorkoutSessionDialog.tsx src/renderer/src/modules/workouts/components/WorkoutProgressDialog.tsx
 
       - name: ESLint changed files
-        run: npx eslint src/main/repositories/workouts.repository.ts src/renderer/src/modules/workouts/workout-options.tsx src/renderer/src/modules/workouts/WorkoutsPage.tsx src/renderer/src/modules/workouts/components/WorkoutExerciseDialog.tsx src/renderer/src/modules/workouts/components/WorkoutProgramDialog.tsx src/renderer/src/modules/workouts/components/WorkoutSessionDialog.tsx src/renderer/src/modules/workouts/components/WorkoutProgressDialog.tsx --rule 'react-hooks/set-state-in-effect: off' --rule 'react-refresh/only-export-components: off'
+        run: |
+          npx eslint \
+            src/main/repositories/workouts.repository.ts \
+            src/renderer/src/modules/workouts/workout-options.tsx \
+            src/renderer/src/modules/workouts/WorkoutsPage.tsx \
+            src/renderer/src/modules/workouts/components/WorkoutExerciseDialog.tsx \
+            src/renderer/src/modules/workouts/components/WorkoutProgramDialog.tsx \
+            src/renderer/src/modules/workouts/components/WorkoutSessionDialog.tsx \
+            src/renderer/src/modules/workouts/components/WorkoutProgressDialog.tsx \
+            --rule 'react-hooks/set-state-in-effect: off' \
+            --rule 'react-refresh/only-export-components: off'
 
       - name: Typecheck
         run: npm run typecheck
