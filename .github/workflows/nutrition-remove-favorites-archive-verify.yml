@@ -26,6 +26,7 @@ jobs:
 
       - name: Apply nutrition cleanup
         run: |
+          python .github/nutrition-remove-favorites-archive.fix.py
           python .github/nutrition-remove-favorites-archive.patch.py
           python .github/nutrition-remove-favorites-archive.tests.py
 
@@ -129,6 +130,7 @@ jobs:
       - name: Commit verified changes
         run: |
           rm -f \
+            .github/nutrition-remove-favorites-archive.fix.py \
             .github/nutrition-remove-favorites-archive.patch.py \
             .github/nutrition-remove-favorites-archive.tests.py \
             .github/nutrition-remove-favorites-archive.trigger \
