@@ -159,7 +159,7 @@ export const workoutReportInputSchema = z
   .object({
     dateFrom: dateSchema,
     dateTo: dateSchema,
-    programId: idSchema.nullable(),
+    programId: z.union([idSchema, z.literal('custom')]).nullable(),
     exerciseId: idSchema.nullable(),
     muscleGroup: z.enum(WORKOUT_MUSCLE_GROUPS).nullable()
   })
