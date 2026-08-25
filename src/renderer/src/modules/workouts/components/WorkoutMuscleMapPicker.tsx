@@ -239,7 +239,7 @@ function MuscleZoneCard({
       aria-pressed={selected}
       aria-label={`${selected ? 'Убрать' : 'Выбрать'}: ${label}`}
       className={cn(
-        'group relative flex min-h-[190px] flex-col items-center overflow-hidden rounded-2xl border p-2.5 text-center outline-none transition-all duration-200',
+        'group relative flex min-h-[190px] flex-col items-center overflow-hidden rounded-2xl border p-2.5 text-center transition-all duration-200 outline-none',
         'focus-visible:ring-2 focus-visible:ring-violet-400/55 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--app-workspace)]',
         selected
           ? 'border-violet-400/45 bg-violet-500/[0.09] shadow-[0_10px_28px_rgba(0,0,0,0.14)]'
