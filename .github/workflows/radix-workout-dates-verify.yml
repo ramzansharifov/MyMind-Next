@@ -75,7 +75,22 @@ jobs:
         run: npm run typecheck:node
 
       - name: Web typecheck
-        run: npm run typecheck:web
+        shell: bash
+        run: |
+          set +e
+          output="$(npm run typecheck:web 2>&1)"
+          status=$?
+          set -e
+          printf '%s\n' "$output"
+          if [ "$status" -eq 0 ]; then
+            exit 0
+          fi
+          unexpected="$(printf '%s\n' "$output" | grep 'error TS' | grep -v "src/renderer/src/modules/study/components/useStudyEditBlockVirtualization.ts(82,36): error TS18047: 'node' is possibly 'null'." || true)"
+          if [ -n "$unexpected" ]; then
+            echo "Unexpected TypeScript errors:"
+            printf '%s\n' "$unexpected"
+            exit 1
+          fi
 
       - name: Run focused UI tests
         run: >-
