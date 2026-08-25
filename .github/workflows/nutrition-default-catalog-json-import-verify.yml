@@ -25,7 +25,9 @@ jobs:
           cache: npm
 
       - name: Apply nutrition changes
-        run: python .github/nutrition-default-catalog-json-import.patch.py
+        run: |
+          python .github/nutrition-default-catalog-json-import.patch.py
+          python .github/nutrition-default-catalog-json-import.lint.py
 
       - name: Install dependencies
         run: npm ci
@@ -145,6 +147,7 @@ jobs:
         run: |
           rm -f \
             .github/nutrition-default-catalog-json-import.patch.py \
+            .github/nutrition-default-catalog-json-import.lint.py \
             .github/nutrition-default-catalog-json-import.trigger \
             .github/workflows/nutrition-default-catalog-json-import-verify.yml
           git config user.name "github-actions[bot]"
