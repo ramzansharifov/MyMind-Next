@@ -1,4 +1,4 @@
-import { Apple, CookingPot, Heart, Pencil, Search, Star, Trash2 } from 'lucide-react'
+import { Apple, CookingPot, Pencil, Search, Trash2 } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import type {
@@ -6,7 +6,6 @@ import type {
   NutritionFoodRecord,
   NutritionRecipeRecord
 } from '../../../../../shared/contracts/nutrition'
-import { cn } from '../../../shared/lib/cn'
 import { AppSelect } from '../../../shared/ui/AppSelect'
 import {
   NUTRITION_CATEGORY_OPTIONS,
@@ -15,17 +14,11 @@ import {
 } from '../nutrition-options'
 import { formatNutritionNumber, nutritionValuesLine } from '../nutrition-utils'
 
-export type NutritionEntityFilter = 'active' | 'archived' | 'all'
-
 interface CatalogToolbarProps {
   query: string
   onQueryChange: (query: string) => void
   category?: 'all' | NutritionFoodCategory
   onCategoryChange?: (category: 'all' | NutritionFoodCategory) => void
-  status: NutritionEntityFilter
-  onStatusChange: (status: NutritionEntityFilter) => void
-  favoritesOnly: boolean
-  onFavoritesChange: (favoritesOnly: boolean) => void
   children: ReactNode
 }
 
@@ -34,10 +27,6 @@ export function NutritionCatalogToolbar({
   onQueryChange,
   category,
   onCategoryChange,
-  status,
-  onStatusChange,
-  favoritesOnly,
-  onFavoritesChange,
   children
 }: CatalogToolbarProps): React.JSX.Element {
   return (
@@ -62,40 +51,10 @@ export function NutritionCatalogToolbar({
                 ariaLabel="Категория продукта"
                 value={category}
                 options={[{ value: 'all', label: 'Все категории' }, ...NUTRITION_CATEGORY_OPTIONS]}
-                onValueChange={(value) =>
-                  onCategoryChange(value as 'all' | NutritionFoodCategory)
-                }
+                onValueChange={(value) => onCategoryChange(value as 'all' | NutritionFoodCategory)}
               />
             </div>
           )}
-
-          <div className="min-w-[150px]">
-            <AppSelect
-              ariaLabel="Статус каталога"
-              value={status}
-              options={[
-                { value: 'active', label: 'Активные' },
-                { value: 'archived', label: 'Архив' },
-                { value: 'all', label: 'Все' }
-              ]}
-              onValueChange={(value) => onStatusChange(value as NutritionEntityFilter)}
-            />
-          </div>
-
-          <button
-            type="button"
-            aria-pressed={favoritesOnly}
-            className={cn(
-              'inline-flex h-10 items-center gap-2 rounded-xl border px-3 text-xs font-medium',
-              favoritesOnly
-                ? 'border-amber-400/25 bg-amber-500/10 text-amber-200'
-                : 'border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] hover:bg-[var(--app-control-hover)]'
-            )}
-            onClick={() => onFavoritesChange(!favoritesOnly)}
-          >
-            <Star className={cn('size-3.5', favoritesOnly && 'fill-current')} />
-            Избранное
-          </button>
         </div>
       </div>
       {children}
@@ -107,14 +66,12 @@ export function NutritionFoodsGrid({
   foods,
   hasAnyFoods,
   onEdit,
-  onDelete,
-  onToggleFavorite
+  onDelete
 }: {
   foods: NutritionFoodRecord[]
   hasAnyFoods: boolean
   onEdit: (food: NutritionFoodRecord) => void
   onDelete: (food: NutritionFoodRecord) => void
-  onToggleFavorite: (food: NutritionFoodRecord) => void
 }): React.JSX.Element {
   if (foods.length === 0) {
     return (
@@ -139,27 +96,11 @@ export function NutritionFoodsGrid({
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <h3 className="truncate font-semibold text-[var(--app-text)]">{food.name}</h3>
-                {food.status === 'archived' && (
-                  <span className="rounded-md bg-[var(--app-control)] px-1.5 py-0.5 text-[10px] text-[var(--app-muted)]">
-                    Архив
-                  </span>
-                )}
               </div>
               <p className="mt-0.5 truncate text-xs text-[var(--app-muted)]">
                 {food.brand || nutritionCategoryLabel(food.category)}
               </p>
             </div>
-            <button
-              type="button"
-              aria-label={food.favorite ? 'Убрать из избранного' : 'Добавить в избранное'}
-              className={cn(
-                'flex size-8 items-center justify-center rounded-lg',
-                food.favorite ? 'text-amber-300' : 'text-[var(--app-muted)]'
-              )}
-              onClick={() => onToggleFavorite(food)}
-            >
-              <Star className={cn('size-4', food.favorite && 'fill-current')} />
-            </button>
           </div>
 
           <div className="mt-4 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-3">
@@ -204,14 +145,12 @@ export function NutritionRecipesGrid({
   recipes,
   hasAnyRecipes,
   onEdit,
-  onDelete,
-  onToggleFavorite
+  onDelete
 }: {
   recipes: NutritionRecipeRecord[]
   hasAnyRecipes: boolean
   onEdit: (recipe: NutritionRecipeRecord) => void
   onDelete: (recipe: NutritionRecipeRecord) => void
-  onToggleFavorite: (recipe: NutritionRecipeRecord) => void
 }): React.JSX.Element {
   if (recipes.length === 0) {
     return (
@@ -236,28 +175,12 @@ export function NutritionRecipesGrid({
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <h3 className="text-base font-semibold text-[var(--app-text)]">{recipe.name}</h3>
-                {recipe.status === 'archived' && (
-                  <span className="rounded-md bg-[var(--app-control)] px-1.5 py-0.5 text-[10px] text-[var(--app-muted)]">
-                    Архив
-                  </span>
-                )}
               </div>
               <p className="mt-1 text-xs text-[var(--app-muted)]">
                 {formatNutritionNumber(recipe.servings)} порц. · {recipe.ingredients.length}{' '}
                 ингредиентов
               </p>
             </div>
-            <button
-              type="button"
-              aria-label={recipe.favorite ? 'Убрать из избранного' : 'Добавить в избранное'}
-              className={cn(
-                'flex size-8 items-center justify-center rounded-lg',
-                recipe.favorite ? 'text-amber-300' : 'text-[var(--app-muted)]'
-              )}
-              onClick={() => onToggleFavorite(recipe)}
-            >
-              <Heart className={cn('size-4', recipe.favorite && 'fill-current')} />
-            </button>
           </div>
 
           {recipe.description && (

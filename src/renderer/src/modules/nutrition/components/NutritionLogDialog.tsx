@@ -1,4 +1,4 @@
-import { CookingPot, Search, Star, Utensils } from 'lucide-react'
+import { CookingPot, Search, Utensils } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 import type {
@@ -76,57 +76,54 @@ export function NutritionLogDialog({
   })
   const [notes, setNotes] = useState('')
 
-  const activeFoods = useMemo(() => foods.filter((food) => food.status === 'active'), [foods])
-  const activeRecipes = useMemo(
-    () => recipes.filter((recipe) => recipe.status === 'active'),
-    [recipes]
-  )
-
   useEffect(() => {
     if (!open) return
-    setSourceQuery('')
+    const timerId = window.setTimeout(() => {
+      setSourceQuery('')
 
-    if (entry) {
-      setMealType(entry.mealType)
-      setCustomMealName(entry.customMealName)
-      setSourceType(entry.sourceType)
-      setSourceId(entry.sourceId)
-      setAmount(entry.amount)
-      setCustomTitle(entry.sourceType === 'custom' ? entry.title : '')
-      setCustomUnit(entry.unit)
-      setCustomNutrients(entry.nutrients)
-      setNotes(entry.notes)
-      return
-    }
+      if (entry) {
+        setMealType(entry.mealType)
+        setCustomMealName(entry.customMealName)
+        setSourceType(entry.sourceType)
+        setSourceId(entry.sourceId)
+        setAmount(entry.amount)
+        setCustomTitle(entry.sourceType === 'custom' ? entry.title : '')
+        setCustomUnit(entry.unit)
+        setCustomNutrients(entry.nutrients)
+        setNotes(entry.notes)
+        return
+      }
 
-    const initialSource: NutritionLogSourceType =
-      activeFoods.length > 0 ? 'food' : activeRecipes.length > 0 ? 'recipe' : 'custom'
-    setMealType(initialMeal)
-    setCustomMealName('')
-    setSourceType(initialSource)
-    setSourceId(
-      initialSource === 'food'
-        ? activeFoods[0]?.id ?? null
-        : initialSource === 'recipe'
-          ? activeRecipes[0]?.id ?? null
-          : null
-    )
-    setAmount(initialSource === 'food' ? activeFoods[0]?.baseAmount ?? 100 : 1)
-    setCustomTitle('')
-    setCustomUnit('g')
-    setCustomNutrients({ ...EMPTY_NUTRITION_VALUES })
-    setNotes('')
-  }, [activeFoods, activeRecipes, entry, initialMeal, open])
+      const initialSource: NutritionLogSourceType =
+        foods.length > 0 ? 'food' : recipes.length > 0 ? 'recipe' : 'custom'
+      setMealType(initialMeal)
+      setCustomMealName('')
+      setSourceType(initialSource)
+      setSourceId(
+        initialSource === 'food'
+          ? (foods[0]?.id ?? null)
+          : initialSource === 'recipe'
+            ? (recipes[0]?.id ?? null)
+            : null
+      )
+      setAmount(initialSource === 'food' ? (foods[0]?.baseAmount ?? 100) : 1)
+      setCustomTitle('')
+      setCustomUnit('g')
+      setCustomNutrients({ ...EMPTY_NUTRITION_VALUES })
+      setNotes('')
+    }, 0)
+    return () => window.clearTimeout(timerId)
+  }, [entry, foods, initialMeal, open, recipes])
 
   const selectedFood =
-    sourceType === 'food' ? foods.find((food) => food.id === sourceId) ?? null : null
+    sourceType === 'food' ? (foods.find((food) => food.id === sourceId) ?? null) : null
   const selectedRecipe =
-    sourceType === 'recipe' ? recipes.find((recipe) => recipe.id === sourceId) ?? null : null
+    sourceType === 'recipe' ? (recipes.find((recipe) => recipe.id === sourceId) ?? null) : null
 
   const sourceCandidates = useMemo(() => {
     const normalized = sourceQuery.trim().toLocaleLowerCase('ru-RU')
     if (sourceType === 'food') {
-      return activeFoods
+      return foods
         .filter((food) =>
           !normalized
             ? true
@@ -137,32 +134,28 @@ export function NutritionLogDialog({
           id: food.id,
           title: food.name,
           subtitle: food.brand || `${food.baseAmount} ${nutritionUnitLabel(food.baseUnit)}`,
-          favorite: food.favorite,
           kind: 'food' as const
         }))
     }
 
     if (sourceType === 'recipe') {
-      return activeRecipes
+      return recipes
         .filter((recipe) =>
           !normalized
             ? true
-            : `${recipe.name} ${recipe.description}`
-                .toLocaleLowerCase('ru-RU')
-                .includes(normalized)
+            : `${recipe.name} ${recipe.description}`.toLocaleLowerCase('ru-RU').includes(normalized)
         )
         .slice(0, 12)
         .map((recipe) => ({
           id: recipe.id,
           title: recipe.name,
           subtitle: `${recipe.servings} порц. · ${recipe.ingredients.length} ингредиентов`,
-          favorite: recipe.favorite,
           kind: 'recipe' as const
         }))
     }
 
     return []
-  }, [activeFoods, activeRecipes, sourceQuery, sourceType])
+  }, [foods, recipes, sourceQuery, sourceType])
 
   const preview = selectedFood
     ? scaleNutritionValues(selectedFood.nutrients, amount / selectedFood.baseAmount)
@@ -174,13 +167,13 @@ export function NutritionLogDialog({
     setSourceType(value)
     setSourceQuery('')
     if (value === 'food') {
-      const food = activeFoods[0]
+      const food = foods[0]
       setSourceId(food?.id ?? null)
       setAmount(food?.baseAmount ?? 100)
       return
     }
     if (value === 'recipe') {
-      setSourceId(activeRecipes[0]?.id ?? null)
+      setSourceId(recipes[0]?.id ?? null)
       setAmount(1)
       return
     }
@@ -333,10 +326,9 @@ export function NutritionLogDialog({
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="flex items-center gap-1.5">
-                          <strong className="truncate text-sm font-medium">{candidate.title}</strong>
-                          {candidate.favorite && (
-                            <Star className="size-3 fill-amber-300 text-amber-300" />
-                          )}
+                          <strong className="truncate text-sm font-medium">
+                            {candidate.title}
+                          </strong>
                         </span>
                         <span className="mt-0.5 block truncate text-[11px] opacity-75">
                           {candidate.subtitle}
@@ -394,9 +386,7 @@ export function NutritionLogDialog({
           </section>
         )}
 
-        <NutritionFormField
-          label={sourceType === 'recipe' ? 'Количество порций' : 'Количество'}
-        >
+        <NutritionFormField label={sourceType === 'recipe' ? 'Количество порций' : 'Количество'}>
           <div className="relative">
             <input
               type="number"

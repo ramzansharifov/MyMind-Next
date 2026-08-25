@@ -71,8 +71,6 @@ function normalizedCandidate(value: unknown): unknown {
       sugarG: firstDefined(nutrients.sugarG, source.sugarG, source.sugar, 0),
       sodiumMg: firstDefined(nutrients.sodiumMg, source.sodiumMg, source.sodium, 0)
     },
-    favorite: source.favorite ?? false,
-    status: source.status ?? 'active',
     notes: source.notes ?? ''
   }
 }

@@ -1,7 +1,6 @@
 import { z } from 'zod'
 
 import {
-  NUTRITION_ENTITY_STATUSES,
   NUTRITION_FOOD_CATEGORIES,
   NUTRITION_LOG_SOURCE_TYPES,
   NUTRITION_MEAL_TYPES,
@@ -45,8 +44,6 @@ const foodPayloadSchema = z.object({
   baseAmount: z.number().finite().positive('Количество должно быть больше нуля').max(100_000),
   baseUnit: z.enum(['g', 'ml', 'piece']),
   nutrients: nutritionValuesSchema,
-  favorite: z.boolean(),
-  status: z.enum(NUTRITION_ENTITY_STATUSES),
   notes: z.string().max(10_000)
 })
 
@@ -74,8 +71,6 @@ const recipePayloadSchema = z
     name: z.string().trim().min(1, 'Введите название рецепта').max(180),
     description: z.string().max(10_000),
     servings: z.number().finite().positive('Количество порций должно быть больше нуля').max(1000),
-    favorite: z.boolean(),
-    status: z.enum(NUTRITION_ENTITY_STATUSES),
     ingredients: z.array(recipeIngredientSchema).min(1, 'Добавьте хотя бы один ингредиент').max(200)
   })
   .superRefine((input, context) => {
