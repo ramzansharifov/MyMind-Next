@@ -25,4 +25,22 @@ if source.count(day_block) != 1:
     raise RuntimeError(f'Expected one day patch block, got {source.count(day_block)}')
 source = source.replace(day_block, day_replacement, 1)
 
+program_fixture_block = '''s = replace_once(
+    s,
+    "        sets: 2,\\n        reps: 22,\\n        volumeKg: 328,\\n        durationMinutes: 60\\n",
+    "        sets: 2,\\n        reps: 22,\\n        externalWeightSets: 2,\\n        bodyweightSets: 0,\\n        volumeKg: 328,\\n        durationMinutes: 60\\n",
+    'UI program report mode fixture',
+)'''
+program_fixture_replacement = '''s = replace_once(
+    s,
+    "        programId: program.id,\\n        name: program.name,\\n        sessions: 1,\\n        sets: 2,\\n        reps: 22,\\n        volumeKg: 328,\\n        durationMinutes: 60\\n",
+    "        programId: program.id,\\n        name: program.name,\\n        sessions: 1,\\n        sets: 2,\\n        reps: 22,\\n        externalWeightSets: 2,\\n        bodyweightSets: 0,\\n        volumeKg: 328,\\n        durationMinutes: 60\\n",
+    'UI program report mode fixture',
+)'''
+if source.count(program_fixture_block) != 1:
+    raise RuntimeError(
+        f'Expected one program fixture patch block, got {source.count(program_fixture_block)}'
+    )
+source = source.replace(program_fixture_block, program_fixture_replacement, 1)
+
 path.write_text(source, encoding='utf-8')
