@@ -2,6 +2,12 @@ from pathlib import Path
 
 path = Path('.github/scripts/workouts-progress-visual-patch.py')
 source = path.read_text(encoding='utf-8')
+
+scale_removal = "s = replace_once(s, '  Scale,\\n', '', 'remove inline progress scale import')\n"
+if source.count(scale_removal) != 1:
+    raise RuntimeError(f'Expected one Scale removal patch, got {source.count(scale_removal)}')
+source = source.replace(scale_removal, '', 1)
+
 old = '''start_marker = "      {tab === 'progress' && (\\n"
 end_marker = "      {tab === 'reports' && (\\n"
 start = s.find(start_marker)
@@ -30,4 +36,6 @@ if end < 0:
 '''
 if source.count(old) != 1:
     raise RuntimeError(f'Expected one Progress marker block, got {source.count(old)}')
-path.write_text(source.replace(old, new, 1), encoding='utf-8')
+source = source.replace(old, new, 1)
+
+path.write_text(source, encoding='utf-8')
