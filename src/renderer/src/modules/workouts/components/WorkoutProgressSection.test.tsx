@@ -2,14 +2,17 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { WorkoutProgressEntryRecord } from '../../../../../shared/contracts/workouts'
+import type {
+  WorkoutProgressEntryRecord,
+  WorkoutProgressPhotoRecord
+} from '../../../../../shared/contracts/workouts'
 import { WorkoutProgressSection } from './WorkoutProgressSection'
 
 function photo(
   id: string,
   entryId: string,
   view: 'front' | 'left' | 'right' | 'back' | 'custom'
-) {
+): WorkoutProgressPhotoRecord {
   return {
     id,
     entryId,
