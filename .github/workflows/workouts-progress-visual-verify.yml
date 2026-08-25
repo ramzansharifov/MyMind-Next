@@ -25,7 +25,9 @@ jobs:
           cache: npm
 
       - name: Apply Progress changes
-        run: python .github/scripts/workouts-progress-visual-patch.py
+        run: |
+          python .github/scripts/workouts-progress-visual-patch-fix.py
+          python .github/scripts/workouts-progress-visual-patch.py
 
       - name: Install dependencies
         run: npm ci
@@ -120,6 +122,7 @@ jobs:
       - name: Commit verified Progress changes
         run: |
           rm -f .github/scripts/workouts-progress-visual-patch.py
+          rm -f .github/scripts/workouts-progress-visual-patch-fix.py
           rm -f .github/workflows/workouts-progress-visual-verify.yml
           rm -f .github/workouts-progress-visual-verify
           git config user.name "github-actions[bot]"
