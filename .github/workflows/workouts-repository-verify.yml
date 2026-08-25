@@ -1,0 +1,41 @@
+name: Workouts repository verification
+
+on:
+  push:
+    branches:
+      - agent/workouts-muscle-map-program-simplify
+    paths:
+      - .github/workouts-repository-verify-trigger
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/workouts-muscle-map-program-simplify
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run workouts repository tests
+        run: npx vitest run src/main/repositories/workouts.repository.test.ts
+
+      - name: Clean temporary verification files
+        shell: bash
+        run: |
+          rm -f .github/workouts-repository-verify-trigger .github/workflows/workouts-repository-verify.yml
+          git add -A
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Убрать временную проверку тренировок"
+          git push origin HEAD:agent/workouts-muscle-map-program-simplify
