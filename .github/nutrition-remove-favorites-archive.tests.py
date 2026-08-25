@@ -20,6 +20,13 @@ if anchor not in text:
     raise SystemExit('NutritionPage test anchor not found')
 page.write_text(text.replace(anchor, test + anchor, 1), encoding='utf-8')
 
+json_test = Path('src/renderer/src/modules/nutrition/components/NutritionFoodJsonImportDialog.test.tsx')
+text = json_test.read_text(encoding='utf-8')
+legacy_defaults = "        favorite: false,\n        status: 'active',\n"
+if text.count(legacy_defaults) != 1:
+    raise SystemExit(f'expected one JSON test legacy defaults block, got {text.count(legacy_defaults)}')
+json_test.write_text(text.replace(legacy_defaults, '', 1), encoding='utf-8')
+
 repo = Path('src/main/repositories/nutrition.repository.test.ts')
 text = repo.read_text(encoding='utf-8')
 anchor = "  it('calculates recipes from reusable foods and logs them by servings', () => {"
@@ -40,4 +47,4 @@ if anchor not in text:
     raise SystemExit('nutrition repository test anchor not found')
 repo.write_text(text.replace(anchor, test + anchor, 1), encoding='utf-8')
 
-print('Added nutrition favorite/archive regression tests')
+print('Added nutrition favorite/archive regression tests and cleaned JSON expectations')
