@@ -36,6 +36,7 @@ const curl: WorkoutExerciseRecord = {
   title: 'Сгибания на бицепс с гантелями',
   muscleGroup: 'biceps',
   muscleGroups: ['biceps'],
+  usesExternalWeight: true,
   status: 'active',
   createdAt: 1,
   updatedAt: 1
@@ -67,7 +68,6 @@ beforeEach(() => {
         id: 'session-1',
         programId: program.id,
         programName: program.name,
-        title: '',
         date: '2026-08-17',
         durationMinutes: 60,
         comment: '',
@@ -78,6 +78,7 @@ beforeEach(() => {
             exerciseTitle: curl.title,
             muscleGroup: curl.muscleGroup,
             muscleGroups: curl.muscleGroups,
+            usesExternalWeight: curl.usesExternalWeight,
             position: 0,
             comment: '',
             sets: [

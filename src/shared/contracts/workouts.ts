@@ -45,6 +45,7 @@ export interface WorkoutExerciseRecord {
   /** Primary zone kept for backwards-compatible rendering and old consumers. */
   muscleGroup: WorkoutMuscleGroup
   muscleGroups: WorkoutMuscleGroup[]
+  usesExternalWeight: boolean
   status: WorkoutEntityStatus
   createdAt: number
   updatedAt: number
@@ -80,6 +81,7 @@ export interface WorkoutSessionExerciseRecord {
   /** Primary zone kept for backwards-compatible rendering and old consumers. */
   muscleGroup: WorkoutMuscleGroup
   muscleGroups: WorkoutMuscleGroup[]
+  usesExternalWeight: boolean
   position: number
   comment: string
   sets: WorkoutSetRecord[]
@@ -89,7 +91,6 @@ export interface WorkoutSessionRecord {
   id: string
   programId: string | null
   programName: string | null
-  title: string
   date: string
   durationMinutes: number | null
   comment: string
@@ -146,6 +147,7 @@ export interface WorkoutsOverview {
 export interface CreateWorkoutExerciseInput {
   title: string
   muscleGroups: WorkoutMuscleGroup[]
+  usesExternalWeight: boolean
   status: WorkoutEntityStatus
 }
 
@@ -189,7 +191,6 @@ export interface WorkoutSessionExerciseInput {
 
 export interface CreateWorkoutSessionInput {
   programId: string | null
-  title: string
   date: string
   durationMinutes: number | null
   comment: string

@@ -55,7 +55,6 @@ export function WorkoutSessionDialog({
   onSave
 }: WorkoutSessionDialogProps): React.JSX.Element {
   const [programId, setProgramId] = useState(CUSTOM)
-  const [title, setTitle] = useState('')
   const [date, setDate] = useState(todayKey())
   const [duration, setDuration] = useState('')
   const [comment, setComment] = useState('')
@@ -71,7 +70,6 @@ export function WorkoutSessionDialog({
   useEffect(() => {
     if (!open) return
     setProgramId(session?.programId ?? CUSTOM)
-    setTitle(session?.title ?? '')
     setDate(session?.date ?? todayKey())
     setDuration(
       session?.durationMinutes === null || !session ? '' : String(session.durationMinutes)
@@ -142,19 +140,24 @@ export function WorkoutSessionDialog({
 
   const valid =
     items.length > 0 &&
-    items.every(
-      (item) =>
-        item.exerciseId &&
+    items.every((item) => {
+      const exercise = exerciseMap.get(item.exerciseId)
+      return (
+        exercise !== undefined &&
         item.sets.length > 0 &&
-        item.sets.every((set) => Number(set.reps) >= 1 && Number(set.weightKg || 0) >= 0)
-    )
+        item.sets.every(
+          (set) =>
+            Number(set.reps) >= 1 &&
+            (!exercise.usesExternalWeight || Number(set.weightKg || 0) >= 0)
+        )
+      )
+    })
 
   async function submit(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault()
     if (!valid || !date || busy) return
     const payload: CreateWorkoutSessionInput = {
       programId: programId === CUSTOM ? null : programId,
-      title: title.trim(),
       date,
       durationMinutes: duration.trim() ? Number(duration) : null,
       comment,
@@ -163,7 +166,9 @@ export function WorkoutSessionDialog({
         comment: item.comment,
         sets: item.sets.map((set) => ({
           reps: Number(set.reps),
-          weightKg: Number(set.weightKg || 0)
+          weightKg: exerciseMap.get(item.exerciseId)?.usesExternalWeight
+            ? Number(set.weightKg || 0)
+            : 0
         }))
       }))
     }
@@ -235,18 +240,8 @@ export function WorkoutSessionDialog({
               onChange={(event) => setDuration(event.target.value)}
             />
           </label>
-          <label className="space-y-1.5 sm:col-span-2">
-            <span className="text-xs font-medium text-[var(--app-muted)]">Название записи</span>
-            <input
-              value={title}
-              maxLength={160}
-              placeholder="Необязательно — например, Тяжёлая тренировка ног"
-              className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45"
-              onChange={(event) => setTitle(event.target.value)}
-            />
-          </label>
-          <label className="space-y-1.5 sm:col-span-2">
-            <span className="text-xs font-medium text-[var(--app-muted)]">Общий комментарий</span>
+          <label className="space-y-1.5 sm:col-span-2 lg:col-span-4">
+            <span className="text-xs font-medium text-[var(--app-muted)]">Комментарий</span>
             <input
               value={comment}
               maxLength={10000}
@@ -322,8 +317,9 @@ export function WorkoutSessionDialog({
                       </div>
                       {exercise && (
                         <div className="mt-0.5 text-xs text-[var(--app-muted)]">
-                          {workoutMuscleGroupsLabel(exercise.muscleGroups)} · {item.sets.length}{' '}
-                          {item.sets.length === 1 ? 'подход' : 'подходов'}
+                          {workoutMuscleGroupsLabel(exercise.muscleGroups)} ·{' '}
+                          {exercise.usesExternalWeight ? 'С доп. весом' : 'Без доп. веса'} ·{' '}
+                          {item.sets.length} {item.sets.length === 1 ? 'подход' : 'подходов'}
                         </div>
                       )}
                     </div>
@@ -340,17 +336,27 @@ export function WorkoutSessionDialog({
                   </div>
 
                   <div className="mt-4 overflow-hidden rounded-xl border border-[var(--app-border)]">
-                    <div className="grid grid-cols-[52px_minmax(100px,1fr)_minmax(100px,1fr)_42px] gap-2 bg-[var(--app-workspace)] px-3 py-2 text-[11px] font-semibold tracking-[0.08em] text-[var(--app-muted)] uppercase">
+                    <div
+                      className={`grid gap-2 bg-[var(--app-workspace)] px-3 py-2 text-[11px] font-semibold tracking-[0.08em] text-[var(--app-muted)] uppercase ${
+                        exercise?.usesExternalWeight
+                          ? 'grid-cols-[52px_minmax(100px,1fr)_minmax(100px,1fr)_42px]'
+                          : 'grid-cols-[52px_minmax(100px,1fr)_42px]'
+                      }`}
+                    >
                       <span>№</span>
                       <span>Повторы</span>
-                      <span>Вес, кг</span>
+                      {exercise?.usesExternalWeight && <span>Вес, кг</span>}
                       <span />
                     </div>
                     <div className="divide-y divide-[var(--app-border)]">
                       {item.sets.map((set, setIndex) => (
                         <div
                           key={setIndex}
-                          className="grid grid-cols-[52px_minmax(100px,1fr)_minmax(100px,1fr)_42px] items-center gap-2 px-3 py-2.5"
+                          className={`grid items-center gap-2 px-3 py-2.5 ${
+                            exercise?.usesExternalWeight
+                              ? 'grid-cols-[52px_minmax(100px,1fr)_minmax(100px,1fr)_42px]'
+                              : 'grid-cols-[52px_minmax(100px,1fr)_42px]'
+                          }`}
                         >
                           <span className="text-xs font-semibold text-[var(--app-muted)]">
                             {setIndex + 1}
@@ -365,23 +371,25 @@ export function WorkoutSessionDialog({
                               updateSet(exerciseIndex, setIndex, { reps: event.target.value })
                             }
                           />
-                          <input
-                            type="number"
-                            min={0}
-                            step="0.25"
-                            value={set.weightKg}
-                            placeholder="0"
-                            aria-label={`Вес, подход ${setIndex + 1}`}
-                            className="h-9 rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] px-2.5 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45"
-                            onChange={(event) =>
-                              updateSet(exerciseIndex, setIndex, { weightKg: event.target.value })
-                            }
-                          />
+                          {exercise?.usesExternalWeight && (
+                            <input
+                              type="number"
+                              min={0}
+                              step="0.25"
+                              value={set.weightKg}
+                              placeholder="0"
+                              aria-label={`Вес, подход ${setIndex + 1}`}
+                              className="h-9 rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] px-2.5 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45"
+                              onChange={(event) =>
+                                updateSet(exerciseIndex, setIndex, { weightKg: event.target.value })
+                              }
+                            />
+                          )}
                           <button
                             type="button"
                             aria-label={`Удалить подход ${setIndex + 1}`}
                             disabled={item.sets.length === 1}
-                            className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300 disabled:opacity-20"
+                            className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-30"
                             onClick={() =>
                               updateExercise(exerciseIndex, {
                                 sets: item.sets.filter((_, index) => index !== setIndex)
@@ -394,7 +402,6 @@ export function WorkoutSessionDialog({
                       ))}
                     </div>
                   </div>
-
                   <div className="mt-3 flex flex-wrap items-center gap-2">
                     <button
                       type="button"

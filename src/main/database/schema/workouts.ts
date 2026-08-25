@@ -8,6 +8,9 @@ export const workoutExercises = sqliteTable(
     id: text('id').primaryKey(),
     title: text('title').notNull(),
     muscleGroup: text('muscle_group').$type<WorkoutMuscleGroup>().notNull(),
+    usesExternalWeight: integer('uses_external_weight', { mode: 'boolean' })
+      .notNull()
+      .default(true),
     description: text('description').notNull().default(''),
     status: text('status').$type<WorkoutEntityStatus>().notNull().default('active'),
     createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
@@ -84,6 +87,9 @@ export const workoutSessionExercises = sqliteTable(
     }),
     exerciseTitleSnapshot: text('exercise_title_snapshot').notNull(),
     muscleGroupSnapshot: text('muscle_group_snapshot').$type<WorkoutMuscleGroup>().notNull(),
+    usesExternalWeightSnapshot: integer('uses_external_weight_snapshot', { mode: 'boolean' })
+      .notNull()
+      .default(true),
     position: integer('position').notNull(),
     comment: text('comment').notNull().default('')
   },

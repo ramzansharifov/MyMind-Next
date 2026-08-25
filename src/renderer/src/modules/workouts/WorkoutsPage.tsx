@@ -222,7 +222,7 @@ export function WorkoutsPage({
       }
       if (!normalized) return true
       const exerciseNames = session.exercises.map((exercise) => exercise.exerciseTitle).join(' ')
-      return `${session.title} ${session.programName ?? ''} ${session.comment} ${exerciseNames}`
+      return `${session.programName ?? ''} ${session.comment} ${exerciseNames}`
         .toLocaleLowerCase('ru-RU')
         .includes(normalized)
     })
@@ -666,13 +666,8 @@ export function WorkoutsPage({
                       >
                         <div className="flex flex-wrap items-center gap-2">
                           <h3 className="text-base font-semibold text-[var(--app-text)]">
-                            {session.title || session.programName || 'Свободная тренировка'}
+                            {session.programName || 'Свободная тренировка'}
                           </h3>
-                          {session.programName && (
-                            <span className="rounded-lg border border-violet-400/15 bg-violet-500/10 px-2 py-0.5 text-[11px] font-medium text-violet-300">
-                              {session.programName}
-                            </span>
-                          )}
                         </div>
                         <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[var(--app-muted)]">
                           <span className="inline-flex items-center gap-1.5">
@@ -1579,11 +1574,7 @@ export function WorkoutsPage({
       <DeleteConfirmationDialog
         open={deleteSessionTarget !== null}
         title="Удалить тренировку?"
-        subject={
-          deleteSessionTarget?.title ||
-          deleteSessionTarget?.programName ||
-          deleteSessionTarget?.date
-        }
+        subject={deleteSessionTarget?.programName || deleteSessionTarget?.date}
         description="Будут удалены все упражнения, подходы, повторения и веса этой записи."
         notice="Это изменит статистику и отчёты"
         isSubmitting={isDeleting}

@@ -47,11 +47,13 @@ describe('workouts repository', () => {
     const curl = createWorkoutExercise({
       title: 'Сгибания на бицепс с гантелями',
       muscleGroups: ['biceps'],
+      usesExternalWeight: true,
       status: 'active'
     })
     const row = createWorkoutExercise({
       title: 'Тяга штанги в наклоне',
       muscleGroups: ['lats', 'traps'],
+      usesExternalWeight: true,
       status: 'active'
     })
     const program = createWorkoutProgram({
@@ -63,7 +65,6 @@ describe('workouts repository', () => {
 
     const session = createWorkoutSession({
       programId: program.id,
-      title: '',
       date: '2026-08-17',
       durationMinutes: 65,
       comment: 'Хорошая тренировка',
@@ -114,11 +115,11 @@ describe('workouts repository', () => {
     const exercise = createWorkoutExercise({
       title: 'Жим гантелей',
       muscleGroups: ['chest'],
+      usesExternalWeight: true,
       status: 'active'
     })
     createWorkoutSession({
       programId: null,
-      title: 'Грудь',
       date: '2026-08-10',
       durationMinutes: null,
       comment: '',
@@ -135,6 +136,7 @@ describe('workouts repository', () => {
       id: exercise.id,
       title: 'Жим гантелей лёжа',
       muscleGroups: ['chest'],
+      usesExternalWeight: true,
       status: 'active'
     })
 
@@ -155,17 +157,68 @@ describe('workouts repository', () => {
       )
       .run('legacy-arms', 'Старое упражнение', 'arms', '', 'active', now, now)
 
-    const legacy = listWorkoutsOverview().exercises.find((exercise) => exercise.id === 'legacy-arms')
+    const legacy = listWorkoutsOverview().exercises.find(
+      (exercise) => exercise.id === 'legacy-arms'
+    )
     expect(legacy).toMatchObject({
       muscleGroup: 'shoulders',
-      muscleGroups: ['shoulders', 'biceps', 'triceps', 'forearms']
+      muscleGroups: ['shoulders', 'biceps', 'triceps', 'forearms'],
+      usesExternalWeight: true
     })
+  })
+
+  it('keeps bodyweight exercises free of additional weight and snapshots the mode', () => {
+    const pullUp = createWorkoutExercise({
+      title: 'Подтягивания',
+      muscleGroups: ['lats', 'biceps'],
+      usesExternalWeight: false,
+      status: 'active'
+    })
+
+    const session = createWorkoutSession({
+      programId: null,
+      date: '2026-08-12',
+      durationMinutes: 45,
+      comment: 'Работа с собственным весом',
+      exercises: [
+        {
+          exerciseId: pullUp.id,
+          comment: '',
+          sets: [
+            { reps: 10, weightKg: 25 },
+            { reps: 8, weightKg: 25 }
+          ]
+        }
+      ]
+    })
+
+    expect(pullUp.usesExternalWeight).toBe(false)
+    expect(session).not.toHaveProperty('title')
+    expect(session.exercises[0]).toMatchObject({
+      usesExternalWeight: false,
+      sets: [
+        expect.objectContaining({ reps: 10, weightKg: 0 }),
+        expect.objectContaining({ reps: 8, weightKg: 0 })
+      ]
+    })
+    expect(session.totalVolumeKg).toBe(0)
+
+    updateWorkoutExercise({
+      id: pullUp.id,
+      title: 'Подтягивания',
+      muscleGroups: ['lats', 'biceps'],
+      usesExternalWeight: true,
+      status: 'active'
+    })
+
+    expect(listWorkoutsOverview().sessions[0]?.exercises[0]?.usesExternalWeight).toBe(false)
   })
 
   it('stores progress indicators independently from workout sessions', () => {
     const squat = createWorkoutExercise({
       title: 'Присед со штангой',
       muscleGroups: ['quadriceps', 'glutes'],
+      usesExternalWeight: true,
       status: 'active'
     })
     const entry = createWorkoutProgressEntry({
@@ -194,11 +247,13 @@ describe('workouts repository', () => {
     const bench = createWorkoutExercise({
       title: 'Жим лёжа',
       muscleGroups: ['chest'],
+      usesExternalWeight: true,
       status: 'active'
     })
     const curl = createWorkoutExercise({
       title: 'Сгибания на бицепс',
       muscleGroups: ['biceps'],
+      usesExternalWeight: true,
       status: 'active'
     })
     const program = createWorkoutProgram({
@@ -210,7 +265,6 @@ describe('workouts repository', () => {
 
     createWorkoutSession({
       programId: program.id,
-      title: '',
       date: '2026-08-01',
       durationMinutes: 60,
       comment: '',
@@ -235,7 +289,6 @@ describe('workouts repository', () => {
     })
     createWorkoutSession({
       programId: program.id,
-      title: '',
       date: '2026-08-15',
       durationMinutes: 70,
       comment: '',

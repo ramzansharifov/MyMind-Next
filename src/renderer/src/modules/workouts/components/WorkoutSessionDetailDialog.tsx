@@ -18,11 +18,14 @@ export function WorkoutSessionDetailDialog({
   onOpenChange,
   onEdit
 }: WorkoutSessionDetailDialogProps): React.JSX.Element {
+  const hasExternalWeight =
+    session?.exercises.some((exercise) => exercise.usesExternalWeight) ?? false
+
   return (
     <AppDialog
       open={open}
       onOpenChange={onOpenChange}
-      title={session?.title || session?.programName || 'Тренировка'}
+      title={session?.programName || 'Тренировка'}
       description={
         session
           ? `${session.date}${session.programName ? ` · ${session.programName}` : ' · Свободная тренировка'}`
@@ -74,7 +77,9 @@ export function WorkoutSessionDetailDialog({
                 <Scale className="size-3.5" /> Тоннаж
               </div>
               <div className="mt-1.5 text-sm font-semibold text-[var(--app-text)]">
-                {session.totalVolumeKg.toLocaleString('ru-RU')} кг
+                {hasExternalWeight
+                  ? `${session.totalVolumeKg.toLocaleString('ru-RU')} кг`
+                  : 'Не используется'}
               </div>
             </div>
           </div>
@@ -104,28 +109,45 @@ export function WorkoutSessionDetailDialog({
                       </div>
                       <div className="mt-0.5 text-xs text-[var(--app-muted)]">
                         {workoutMuscleGroupLabel(exercise.muscleGroup)} · {exercise.sets.length}{' '}
-                        подх. · {Math.round(volume * 100) / 100} кг объёма
+                        подх.
+                        {exercise.usesExternalWeight
+                          ? ` · ${Math.round(volume * 100) / 100} кг объёма`
+                          : ' · Без доп. веса'}
                       </div>
                     </div>
                   </div>
-                  <div className="grid grid-cols-[52px_1fr_1fr_1fr] bg-[var(--app-workspace)] px-4 py-2 text-[11px] font-semibold tracking-[0.08em] text-[var(--app-muted)] uppercase">
+                  <div
+                    className={`grid bg-[var(--app-workspace)] px-4 py-2 text-[11px] font-semibold tracking-[0.08em] text-[var(--app-muted)] uppercase ${
+                      exercise.usesExternalWeight
+                        ? 'grid-cols-[52px_1fr_1fr_1fr]'
+                        : 'grid-cols-[52px_1fr]'
+                    }`}
+                  >
                     <span>№</span>
                     <span>Повторы</span>
-                    <span>Вес</span>
-                    <span>Объём</span>
+                    {exercise.usesExternalWeight && <span>Вес</span>}
+                    {exercise.usesExternalWeight && <span>Объём</span>}
                   </div>
                   <div className="divide-y divide-[var(--app-border)]">
                     {exercise.sets.map((set) => (
                       <div
                         key={set.id}
-                        className="grid grid-cols-[52px_1fr_1fr_1fr] px-4 py-2.5 text-sm"
+                        className={`grid px-4 py-2.5 text-sm ${
+                          exercise.usesExternalWeight
+                            ? 'grid-cols-[52px_1fr_1fr_1fr]'
+                            : 'grid-cols-[52px_1fr]'
+                        }`}
                       >
                         <span className="text-[var(--app-muted)]">{set.position + 1}</span>
                         <span className="font-medium text-[var(--app-text)]">{set.reps}</span>
-                        <span className="text-[var(--app-text)]">{set.weightKg} кг</span>
-                        <span className="text-[var(--app-muted)]">
-                          {Math.round(set.reps * set.weightKg * 100) / 100} кг
-                        </span>
+                        {exercise.usesExternalWeight && (
+                          <span className="text-[var(--app-text)]">{set.weightKg} кг</span>
+                        )}
+                        {exercise.usesExternalWeight && (
+                          <span className="text-[var(--app-muted)]">
+                            {Math.round(set.reps * set.weightKg * 100) / 100} кг
+                          </span>
+                        )}
                       </div>
                     ))}
                   </div>
