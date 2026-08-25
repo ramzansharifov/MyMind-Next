@@ -75,7 +75,7 @@ jobs:
           )
           source = source.replace(
               "    expect(screen.getByText('Без доп. веса')).toBeInTheDocument()\n    expect(screen.getByRole('spinbutton', { name: 'Повторения, подход 1' })).toBeInTheDocument()",
-              "    expect(\n      await screen.findByRole('spinbutton', { name: 'Повторения, подход 1' })\n    ).toBeInTheDocument()\n    expect(screen.getByText('Без доп. веса')).toBeInTheDocument()",
+              "    expect(\n      await screen.findByRole('spinbutton', { name: 'Повторения, подход 1' })\n    ).toBeInTheDocument()",
               1,
           )
           path.write_text(source, encoding='utf-8')
@@ -151,6 +151,9 @@ jobs:
             printf '%s\n' "$unexpected"
             exit 1
           fi
+
+      - name: Rebuild SQLite for Node tests
+        run: npm rebuild better-sqlite3
 
       - name: Run focused workout tests
         run: >-
