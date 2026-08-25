@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto'
 
 import type {
   CreateNutritionFoodInput,
+  CreateNutritionFoodsInput,
+  CreateNutritionFoodsResult,
   CreateNutritionLogEntryInput,
   CreateNutritionRecipeInput,
   DeleteNutritionFoodInput,
@@ -156,16 +158,18 @@ function localDateKey(date = new Date()): string {
   return local.toISOString().slice(0, 10)
 }
 
-function nutrientsFromRow(row: Pick<
-  LogRow,
-  | 'calories_milli'
-  | 'protein_milli_g'
-  | 'fat_milli_g'
-  | 'carbs_milli_g'
-  | 'fiber_milli_g'
-  | 'sugar_milli_g'
-  | 'sodium_milli_mg'
->): NutritionValues {
+function nutrientsFromRow(
+  row: Pick<
+    LogRow,
+    | 'calories_milli'
+    | 'protein_milli_g'
+    | 'fat_milli_g'
+    | 'carbs_milli_g'
+    | 'fiber_milli_g'
+    | 'sugar_milli_g'
+    | 'sodium_milli_mg'
+  >
+): NutritionValues {
   return {
     calories: fromMilli(row.calories_milli),
     proteinG: fromMilli(row.protein_milli_g),
@@ -214,10 +218,9 @@ function scaleNutrients(value: NutritionValues, factor: number): NutritionValues
 }
 
 function sumNutrients(entries: NutritionLogEntryRecord[]): NutritionValues {
-  return entries.reduce(
-    (total, entry) => addNutrients(total, entry.nutrients),
-    { ...ZERO_NUTRIENTS }
-  )
+  return entries.reduce((total, entry) => addNutrients(total, entry.nutrients), {
+    ...ZERO_NUTRIENTS
+  })
 }
 
 function mapFood(row: FoodRow): NutritionFoodRecord {
@@ -394,7 +397,7 @@ export function listNutritionOverview(date: string): NutritionOverview {
   }
 }
 
-export function createNutritionFood(input: CreateNutritionFoodInput): NutritionFoodRecord {
+function insertNutritionFood(input: CreateNutritionFoodInput): NutritionFoodRecord {
   const id = randomUUID()
   const now = Date.now()
   getSqlite()
@@ -420,6 +423,46 @@ export function createNutritionFood(input: CreateNutritionFoodInput): NutritionF
       now
     )
   return requireFood(id)
+}
+
+function normalizeFoodIdentity(value: string): string {
+  return value.trim().toLocaleLowerCase('ru-RU')
+}
+
+function foodIdentityKey(input: Pick<CreateNutritionFoodInput, 'name' | 'brand'>): string {
+  return `${normalizeFoodIdentity(input.name)} ${normalizeFoodIdentity(input.brand)}`
+}
+
+export function createNutritionFood(input: CreateNutritionFoodInput): NutritionFoodRecord {
+  return insertNutritionFood(input)
+}
+
+export function createNutritionFoods(input: CreateNutritionFoodsInput): CreateNutritionFoodsResult {
+  const existingRows = getSqlite()
+    .prepare('SELECT name, brand FROM nutrition_foods')
+    .all() as Array<{ name: string; brand: string }>
+  const seen = new Set(existingRows.map(foodIdentityKey))
+  const pending: CreateNutritionFoodInput[] = []
+  const skippedNames: string[] = []
+
+  for (const food of input.foods) {
+    const key = foodIdentityKey(food)
+    if (seen.has(key)) {
+      skippedNames.push(food.name.trim())
+      continue
+    }
+    seen.add(key)
+    pending.push(food)
+  }
+
+  const transaction = getSqlite().transaction((foods: CreateNutritionFoodInput[]) =>
+    foods.map(insertNutritionFood)
+  )
+
+  return {
+    created: transaction(pending),
+    skippedNames
+  }
 }
 
 export function updateNutritionFood(input: UpdateNutritionFoodInput): NutritionFoodRecord {
@@ -452,9 +495,7 @@ export function deleteNutritionFood(input: DeleteNutritionFoodInput): boolean {
     .prepare('SELECT 1 AS found FROM nutrition_recipe_ingredients WHERE food_id = ? LIMIT 1')
     .get(input.id)
   if (referenced) {
-    throw new Error(
-      'Продукт используется в рецепте. Архивируйте его или сначала измените рецепты.'
-    )
+    throw new Error('Продукт используется в рецепте. Архивируйте его или сначала измените рецепты.')
   }
   return getSqlite().prepare('DELETE FROM nutrition_foods WHERE id = ?').run(input.id).changes > 0
 }
@@ -635,8 +676,9 @@ export function updateNutritionLogEntry(
 }
 
 export function deleteNutritionLogEntry(input: DeleteNutritionLogEntryInput): boolean {
-  return getSqlite().prepare('DELETE FROM nutrition_log_entries WHERE id = ?').run(input.id)
-    .changes > 0
+  return (
+    getSqlite().prepare('DELETE FROM nutrition_log_entries WHERE id = ?').run(input.id).changes > 0
+  )
 }
 
 export function setNutritionWater(input: SetNutritionWaterInput): NutritionDaySummary {
@@ -782,10 +824,9 @@ export function getNutritionReport(input: NutritionReportInput): NutritionReport
   })
 
   const loggedDays = timeline.filter((day) => (filteredByDate.get(day.date)?.length ?? 0) > 0)
-  const totalNutrients = loggedDays.reduce(
-    (total, day) => addNutrients(total, day.nutrients),
-    { ...ZERO_NUTRIENTS }
-  )
+  const totalNutrients = loggedDays.reduce((total, day) => addNutrients(total, day.nutrients), {
+    ...ZERO_NUTRIENTS
+  })
   const nutrientDivisor = Math.max(1, loggedDays.length)
 
   // Goal adherence intentionally uses complete daily intake, even when the visible report is filtered.
@@ -825,10 +866,7 @@ export function getNutritionReport(input: NutritionReportInput): NutritionReport
     }
   ]
 
-  const filteredCalories = filteredEntries.reduce(
-    (sum, entry) => sum + entry.nutrients.calories,
-    0
-  )
+  const filteredCalories = filteredEntries.reduce((sum, entry) => sum + entry.nutrients.calories, 0)
   const meals: NutritionReportMeal[] = NUTRITION_MEAL_TYPES.map((mealType) => {
     const entries = filteredEntries.filter((entry) => entry.mealType === mealType)
     const nutrients = sumNutrients(entries)
@@ -884,9 +922,7 @@ export function getNutritionReport(input: NutritionReportInput): NutritionReport
       ),
       calorieGoalDays: goalDays.length,
       calorieGoalHitDays: hitDays.length,
-      calorieGoalHitPercent: goalDays.length
-        ? round2((hitDays.length / goalDays.length) * 100)
-        : 0,
+      calorieGoalHitPercent: goalDays.length ? round2((hitDays.length / goalDays.length) * 100) : 0,
       daysAboveCalories: aboveDays.length,
       daysBelowCalories: belowDays.length
     },

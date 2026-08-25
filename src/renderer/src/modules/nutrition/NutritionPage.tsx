@@ -1,6 +1,7 @@
 import {
   Apple,
   BarChart3,
+  Braces,
   CookingPot,
   Plus,
   Settings2,
@@ -12,6 +13,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type {
   CreateNutritionFoodInput,
+  CreateNutritionFoodsResult,
   CreateNutritionLogEntryInput,
   CreateNutritionRecipeInput,
   NutritionFoodCategory,
@@ -40,13 +42,11 @@ import {
 } from './components/NutritionCatalogViews'
 import { NutritionDiaryView } from './components/NutritionDiaryView'
 import { NutritionFoodDialog } from './components/NutritionFoodDialog'
+import { NutritionFoodJsonImportDialog } from './components/NutritionFoodJsonImportDialog'
 import { NutritionGoalsView } from './components/NutritionGoalsView'
 import { NutritionLogDialog } from './components/NutritionLogDialog'
 import { NutritionRecipeDialog } from './components/NutritionRecipeDialog'
-import {
-  NutritionReportsView,
-  type NutritionReportPeriod
-} from './components/NutritionReportsView'
+import { NutritionReportsView, type NutritionReportPeriod } from './components/NutritionReportsView'
 import { NutritionTargetsDialog } from './components/NutritionTargetsDialog'
 import { nutritionCategoryLabel } from './nutrition-options'
 import {
@@ -88,6 +88,7 @@ export function NutritionPage({
   const [favoritesOnly, setFavoritesOnly] = useState(false)
 
   const [foodDialogOpen, setFoodDialogOpen] = useState(false)
+  const [foodJsonDialogOpen, setFoodJsonDialogOpen] = useState(false)
   const [editingFood, setEditingFood] = useState<NutritionFoodRecord | null>(null)
   const [recipeDialogOpen, setRecipeDialogOpen] = useState(false)
   const [editingRecipe, setEditingRecipe] = useState<NutritionRecipeRecord | null>(null)
@@ -101,6 +102,7 @@ export function NutritionPage({
   const [isBusy, setIsBusy] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [importNotice, setImportNotice] = useState<string | null>(null)
   const handledResourceRef = useRef<string | null>(null)
 
   const [reportPeriod, setReportPeriod] = useState<NutritionReportPeriod>('30')
@@ -125,26 +127,33 @@ export function NutritionPage({
   }, [selectedDate])
 
   useEffect(() => {
-    setIsLoading(true)
-    void loadOverview()
+    const timerId = window.setTimeout(() => {
+      setIsLoading(true)
+      void loadOverview()
+    }, 0)
+    return () => window.clearTimeout(timerId)
   }, [loadOverview])
 
   useEffect(() => {
     if (!overview || !resourceId || handledResourceRef.current === resourceId) return
 
-    handledResourceRef.current = resourceId
-    const entry = overview.entries.find((candidate) => candidate.id === resourceId)
-    if (entry) {
-      setTab('diary')
-      setEditingLog(entry)
-      setInitialMeal(entry.mealType)
-      setLogDialogOpen(true)
-    }
-    onResourceHandled?.()
+    const timerId = window.setTimeout(() => {
+      if (handledResourceRef.current === resourceId) return
+      handledResourceRef.current = resourceId
+      const entry = overview.entries.find((candidate) => candidate.id === resourceId)
+      if (entry) {
+        setTab('diary')
+        setEditingLog(entry)
+        setInitialMeal(entry.mealType)
+        setLogDialogOpen(true)
+      }
+      onResourceHandled?.()
+    }, 0)
+    return () => window.clearTimeout(timerId)
   }, [onResourceHandled, overview, resourceId])
 
-  const foods = overview?.foods ?? []
-  const recipes = overview?.recipes ?? []
+  const foods = useMemo(() => overview?.foods ?? [], [overview])
+  const recipes = useMemo(() => overview?.recipes ?? [], [overview])
 
   const filteredFoods = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase('ru-RU')
@@ -195,6 +204,29 @@ export function NutritionPage({
     )
   }
 
+  async function importFoods(
+    foodsToImport: CreateNutritionFoodInput[]
+  ): Promise<CreateNutritionFoodsResult> {
+    setIsBusy(true)
+    setError(null)
+    setImportNotice(null)
+    try {
+      const result = await nutritionClient.createFoods({ foods: foodsToImport })
+      await loadOverview()
+      setImportNotice(
+        result.skippedNames.length > 0
+          ? `Добавлено: ${result.created.length}. Пропущено дубликатов: ${result.skippedNames.length}.`
+          : `Добавлено продуктов: ${result.created.length}.`
+      )
+      return result
+    } catch (reason) {
+      setError(nutritionErrorMessage(reason))
+      throw reason
+    } finally {
+      setIsBusy(false)
+    }
+  }
+
   async function saveRecipe(
     input: CreateNutritionRecipeInput | UpdateNutritionRecipeInput
   ): Promise<void> {
@@ -207,9 +239,7 @@ export function NutritionPage({
     input: CreateNutritionLogEntryInput | UpdateNutritionLogEntryInput
   ): Promise<void> {
     await withBusy(() =>
-      'id' in input
-        ? nutritionClient.updateLogEntry(input)
-        : nutritionClient.createLogEntry(input)
+      'id' in input ? nutritionClient.updateLogEntry(input) : nutritionClient.createLogEntry(input)
     )
   }
 
@@ -282,8 +312,7 @@ export function NutritionPage({
 
     setReportLoading(true)
     try {
-      const foodId =
-        reportSourceType === 'food' && reportSourceId !== 'all' ? reportSourceId : null
+      const foodId = reportSourceType === 'food' && reportSourceId !== 'all' ? reportSourceId : null
       const recipeId =
         reportSourceType === 'recipe' && reportSourceId !== 'all' ? reportSourceId : null
 
@@ -302,14 +331,7 @@ export function NutritionPage({
     } finally {
       setReportLoading(false)
     }
-  }, [
-    reportDateFrom,
-    reportDateTo,
-    reportMealType,
-    reportSourceId,
-    reportSourceType,
-    tab
-  ])
+  }, [reportDateFrom, reportDateTo, reportMealType, reportSourceId, reportSourceType, tab])
 
   useEffect(() => {
     if (tab !== 'reports') return
@@ -329,14 +351,23 @@ export function NutritionPage({
 
   const headerAction =
     tab === 'foods' ? (
-      <PrimaryAction
-        onClick={() => {
-          setEditingFood(null)
-          setFoodDialogOpen(true)
-        }}
-      >
-        <Plus className="size-4" /> Добавить продукт
-      </PrimaryAction>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          className="inline-flex h-10 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+          onClick={() => setFoodJsonDialogOpen(true)}
+        >
+          <Braces className="size-4" /> Из JSON
+        </button>
+        <PrimaryAction
+          onClick={() => {
+            setEditingFood(null)
+            setFoodDialogOpen(true)
+          }}
+        >
+          <Plus className="size-4" /> Добавить продукт
+        </PrimaryAction>
+      </div>
     ) : tab === 'recipes' ? (
       <PrimaryAction
         disabled={foods.every((food) => food.status !== 'active')}
@@ -403,6 +434,23 @@ export function NutritionPage({
             aria-label="Закрыть ошибку"
             className="flex size-7 items-center justify-center rounded-lg hover:bg-red-500/10"
             onClick={() => setError(null)}
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+      )}
+
+      {importNotice && (
+        <div
+          role="status"
+          className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300"
+        >
+          <span>{importNotice}</span>
+          <button
+            type="button"
+            aria-label="Закрыть сообщение об импорте"
+            className="flex size-7 items-center justify-center rounded-lg hover:bg-emerald-500/10"
+            onClick={() => setImportNotice(null)}
           >
             <X className="size-4" />
           </button>
@@ -535,6 +583,13 @@ export function NutritionPage({
           onEdit={() => setTargetsDialogOpen(true)}
         />
       )}
+
+      <NutritionFoodJsonImportDialog
+        open={foodJsonDialogOpen}
+        busy={isBusy}
+        onOpenChange={setFoodJsonDialogOpen}
+        onImport={importFoods}
+      />
 
       <NutritionFoodDialog
         open={foodDialogOpen}

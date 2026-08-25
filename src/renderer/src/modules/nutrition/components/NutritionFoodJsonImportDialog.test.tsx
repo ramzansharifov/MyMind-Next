@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { parseNutritionFoodsJson } from './NutritionFoodJsonImportDialog'
+import { parseNutritionFoodsJson } from '../nutrition-food-json'
 
 describe('parseNutritionFoodsJson', () => {
   it('accepts an array and fills safe defaults', () => {
