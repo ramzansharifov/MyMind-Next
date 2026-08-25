@@ -42,12 +42,27 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           import re
+
           path = Path('src/main/repositories/workouts.repository.test.ts')
           source = path.read_text(encoding='utf-8')
           source = re.sub(
               r"(\n(?P<indent>\s+)muscleGroups: \[[^\n]+\],\n)(?P=indent)status: 'active'",
               lambda match: f"{match.group(1)}{match.group('indent')}usesExternalWeight: true,\n{match.group('indent')}status: 'active'",
               source,
+          )
+          path.write_text(source, encoding='utf-8')
+
+          path = Path('src/renderer/src/modules/workouts/components/WorkoutSessionDialog.tsx')
+          source = path.read_text(encoding='utf-8')
+          source = source.replace('        Boolean(exercise) &&\n', '        exercise !== undefined &&\n', 1)
+          path.write_text(source, encoding='utf-8')
+
+          path = Path('src/renderer/src/modules/workouts/WorkoutsPage.tsx')
+          source = path.read_text(encoding='utf-8')
+          source = source.replace(
+              "        subject={\n          deleteSessionTarget?.title ||\n          deleteSessionTarget?.programName ||\n          deleteSessionTarget?.date\n        }\n",
+              "        subject={deleteSessionTarget?.programName || deleteSessionTarget?.date}\n",
+              1,
           )
           path.write_text(source, encoding='utf-8')
           PY
