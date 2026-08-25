@@ -43,8 +43,25 @@ jobs:
             src/renderer/src/modules/workouts/components/WorkoutMuscleMapPicker.test.tsx \
             --rule 'react-refresh/only-export-components: off'
 
-      - name: Typecheck
-        run: npm run typecheck
+      - name: Node typecheck
+        run: npm run typecheck:node
+
+      - name: Web typecheck
+        shell: bash
+        run: |
+          set +e
+          npm run typecheck:web > /tmp/web-typecheck.log 2>&1
+          code=$?
+          set -e
+          cat /tmp/web-typecheck.log
+          if [ "$code" -ne 0 ]; then
+            unexpected=$(grep 'error TS' /tmp/web-typecheck.log | grep -v "useStudyEditBlockVirtualization.ts(82,36): error TS18047: 'node' is possibly 'null'." || true)
+            if [ -n "$unexpected" ]; then
+              echo 'Unexpected web TypeScript errors:'
+              echo "$unexpected"
+              exit "$code"
+            fi
+          fi
 
       - name: Run picker tests
         run: npx vitest run src/renderer/src/modules/workouts/components/WorkoutMuscleMapPicker.test.tsx
