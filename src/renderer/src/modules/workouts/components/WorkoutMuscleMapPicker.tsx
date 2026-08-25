@@ -3,11 +3,11 @@ import { Check } from 'lucide-react'
 import type { WorkoutMuscleGroup } from '../../../../../shared/contracts/workouts'
 import { cn } from '../../../shared/lib/cn'
 import { workoutMuscleGroupLabel } from '../workout-options'
+import { WorkoutMuscleArtwork } from './WorkoutMuscleArtwork'
 import {
   type ConcreteWorkoutMuscleZone,
-  WorkoutMuscleArtwork,
   WORKOUT_MUSCLE_ZONE_HINTS
-} from './WorkoutMuscleArtwork'
+} from './workout-muscle-artwork-model'
 
 interface WorkoutMuscleMapPickerProps {
   value: WorkoutMuscleGroup[]
