@@ -39,6 +39,7 @@ const exercisePayloadSchema = z.object({
     .min(1, 'Введите название упражнения')
     .max(160, 'Название слишком длинное'),
   muscleGroups: muscleGroupsSchema,
+  usesExternalWeight: z.boolean(),
   status: z.enum(WORKOUT_ENTITY_STATUSES)
 })
 
@@ -96,7 +97,6 @@ const sessionExerciseSchema = z.object({
 const sessionPayloadSchema = z
   .object({
     programId: idSchema.nullable(),
-    title: z.string().trim().max(160, 'Название слишком длинное'),
     date: dateSchema,
     durationMinutes: z.number().int().min(1).max(1440).nullable(),
     comment: z.string().max(10_000, 'Комментарий слишком длинный'),

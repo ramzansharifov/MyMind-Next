@@ -44,6 +44,7 @@ interface ExerciseRow {
   id: string
   title: string
   muscle_group: string
+  uses_external_weight: number
   description: string
   status: WorkoutEntityStatus
   created_at: number
@@ -73,7 +74,6 @@ interface SessionRow {
   id: string
   program_id: string | null
   program_name_snapshot: string | null
-  title: string
   date: string
   duration_minutes: number | null
   comment: string
@@ -87,6 +87,7 @@ interface SessionExerciseRow {
   exercise_id: string | null
   exercise_title_snapshot: string
   muscle_group_snapshot: string
+  uses_external_weight_snapshot: number
   position: number
   comment: string
 }
@@ -132,11 +133,11 @@ interface ProgressPhotoRow {
   created_at: number
 }
 
-const EXERCISE_SELECT = `SELECT id, title, muscle_group, description, status, created_at, updated_at FROM workout_exercises`
+const EXERCISE_SELECT = `SELECT id, title, muscle_group, uses_external_weight, description, status, created_at, updated_at FROM workout_exercises`
 const PROGRAM_SELECT = `SELECT id, name, description, status, created_at, updated_at FROM workout_programs`
 const PROGRAM_EXERCISE_SELECT = `SELECT id, program_id, exercise_id, position, planned_sets, target_reps, notes FROM workout_program_exercises`
-const SESSION_SELECT = `SELECT id, program_id, program_name_snapshot, title, date, duration_minutes, comment, created_at, updated_at FROM workout_sessions`
-const SESSION_EXERCISE_SELECT = `SELECT id, session_id, exercise_id, exercise_title_snapshot, muscle_group_snapshot, position, comment FROM workout_session_exercises`
+const SESSION_SELECT = `SELECT id, program_id, program_name_snapshot, date, duration_minutes, comment, created_at, updated_at FROM workout_sessions`
+const SESSION_EXERCISE_SELECT = `SELECT id, session_id, exercise_id, exercise_title_snapshot, muscle_group_snapshot, uses_external_weight_snapshot, position, comment FROM workout_session_exercises`
 const SET_SELECT = `SELECT id, session_exercise_id, position, reps, weight_milli_kg FROM workout_sets`
 const PROGRESS_ENTRY_SELECT = `SELECT id, date, body_weight_milli_kg, wellbeing, notes, created_at, updated_at FROM workout_progress_entries`
 const PROGRESS_METRIC_SELECT = `SELECT id, entry_id, exercise_id, exercise_title_snapshot, muscle_group_snapshot, weight_milli_kg, reps, comment, position FROM workout_progress_metrics`
@@ -201,6 +202,7 @@ function mapExercise(row: ExerciseRow): WorkoutExerciseRecord {
     title: row.title,
     muscleGroup: primaryMuscleGroup(muscleGroups),
     muscleGroups,
+    usesExternalWeight: Boolean(row.uses_external_weight),
     status: row.status,
     createdAt: row.created_at,
     updatedAt: row.updated_at
@@ -350,6 +352,7 @@ function loadSessions(): WorkoutSessionRecord[] {
       exerciseTitle: row.exercise_title_snapshot,
       muscleGroup: primaryMuscleGroup(parseMuscleGroups(row.muscle_group_snapshot)),
       muscleGroups: parseMuscleGroups(row.muscle_group_snapshot),
+      usesExternalWeight: Boolean(row.uses_external_weight_snapshot),
       position: row.position,
       comment: row.comment,
       sets: setsByExercise.get(row.id) ?? []
@@ -364,7 +367,6 @@ function loadSessions(): WorkoutSessionRecord[] {
       id: row.id,
       programId: row.program_id,
       programName: row.program_name_snapshot,
-      title: row.title,
       date: row.date,
       durationMinutes: row.duration_minutes,
       comment: row.comment,
@@ -459,13 +461,14 @@ export function createWorkoutExercise(input: CreateWorkoutExerciseInput): Workou
   const now = Date.now()
   getSqlite()
     .prepare(
-      `INSERT INTO workout_exercises (id, title, muscle_group, description, status, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO workout_exercises (id, title, muscle_group, uses_external_weight, description, status, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
       id,
       input.title.trim(),
       serializeMuscleGroups(input.muscleGroups),
+      input.usesExternalWeight ? 1 : 0,
       '',
       input.status,
       now,
@@ -480,12 +483,13 @@ export function updateWorkoutExercise(input: UpdateWorkoutExerciseInput): Workou
   getSqlite()
     .prepare(
       `UPDATE workout_exercises
-       SET title = ?, muscle_group = ?, description = ?, status = ?, updated_at = ?
+       SET title = ?, muscle_group = ?, uses_external_weight = ?, description = ?, status = ?, updated_at = ?
        WHERE id = ?`
     )
     .run(
       input.title.trim(),
       serializeMuscleGroups(input.muscleGroups),
+      input.usesExternalWeight ? 1 : 0,
       '',
       input.status,
       Date.now(),
@@ -562,8 +566,8 @@ export function deleteWorkoutProgram(input: DeleteWorkoutProgramInput): boolean 
 function insertSessionExercises(sessionId: string, exercises: WorkoutSessionExerciseInput[]): void {
   const exerciseStatement = getSqlite().prepare(
     `INSERT INTO workout_session_exercises
-      (id, session_id, exercise_id, exercise_title_snapshot, muscle_group_snapshot, position, comment)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`
+      (id, session_id, exercise_id, exercise_title_snapshot, muscle_group_snapshot, uses_external_weight_snapshot, position, comment)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
   )
   const setStatement = getSqlite().prepare(
     `INSERT INTO workout_sets (id, session_exercise_id, position, reps, weight_milli_kg)
@@ -579,11 +583,13 @@ function insertSessionExercises(sessionId: string, exercises: WorkoutSessionExer
       exercise.id,
       exercise.title,
       serializeMuscleGroups(exercise.muscleGroups),
+      exercise.usesExternalWeight ? 1 : 0,
       exerciseIndex,
       item.comment
     )
     item.sets.forEach((set, setIndex) => {
-      setStatement.run(randomUUID(), sessionExerciseId, setIndex, set.reps, toMilliKg(set.weightKg))
+      const weightKg = exercise.usesExternalWeight ? set.weightKg : 0
+      setStatement.run(randomUUID(), sessionExerciseId, setIndex, set.reps, toMilliKg(weightKg))
     })
   })
 }
@@ -608,7 +614,7 @@ export function createWorkoutSession(input: CreateWorkoutSessionInput): WorkoutS
         id,
         input.programId,
         programName,
-        input.title.trim(),
+        '',
         input.date,
         input.durationMinutes,
         input.comment,
@@ -635,7 +641,7 @@ export function updateWorkoutSession(input: UpdateWorkoutSessionInput): WorkoutS
       .run(
         input.programId,
         programName,
-        input.title.trim(),
+        '',
         input.date,
         input.durationMinutes,
         input.comment,

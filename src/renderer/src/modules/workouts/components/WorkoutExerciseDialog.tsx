@@ -36,6 +36,7 @@ export function WorkoutExerciseDialog({
 }: WorkoutExerciseDialogProps): React.JSX.Element {
   const [title, setTitle] = useState('')
   const [muscleGroups, setMuscleGroups] = useState<WorkoutMuscleGroup[]>([])
+  const [usesExternalWeight, setUsesExternalWeight] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -48,6 +49,7 @@ export function WorkoutExerciseDialog({
           : legacyGroups(exercise.muscleGroup)
         : []
     )
+    setUsesExternalWeight(exercise?.usesExternalWeight ?? true)
     setError(null)
   }, [exercise, open])
 
@@ -57,6 +59,7 @@ export function WorkoutExerciseDialog({
     const payload: CreateWorkoutExerciseInput = {
       title: title.trim(),
       muscleGroups,
+      usesExternalWeight,
       status: 'active'
     }
     try {
@@ -109,6 +112,48 @@ export function WorkoutExerciseDialog({
             onChange={(event) => setTitle(event.target.value)}
           />
         </label>
+
+        <fieldset className="space-y-2">
+          <legend className="text-xs font-medium text-[var(--app-muted)]">
+            Дополнительный вес
+          </legend>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <button
+              type="button"
+              aria-pressed={usesExternalWeight}
+              className={`rounded-2xl border px-4 py-3 text-left transition-colors ${
+                usesExternalWeight
+                  ? 'border-violet-400/35 bg-violet-500/10'
+                  : 'border-[var(--app-border)] bg-[var(--app-workspace)] hover:bg-[var(--app-control-hover)]'
+              }`}
+              onClick={() => setUsesExternalWeight(true)}
+            >
+              <span className="block text-sm font-semibold text-[var(--app-text)]">
+                С дополнительным весом
+              </span>
+              <span className="mt-1 block text-xs leading-5 text-[var(--app-muted)]">
+                Гантели, штанга, тренажёр или другой внешний вес.
+              </span>
+            </button>
+            <button
+              type="button"
+              aria-pressed={!usesExternalWeight}
+              className={`rounded-2xl border px-4 py-3 text-left transition-colors ${
+                !usesExternalWeight
+                  ? 'border-violet-400/35 bg-violet-500/10'
+                  : 'border-[var(--app-border)] bg-[var(--app-workspace)] hover:bg-[var(--app-control-hover)]'
+              }`}
+              onClick={() => setUsesExternalWeight(false)}
+            >
+              <span className="block text-sm font-semibold text-[var(--app-text)]">
+                Без дополнительного веса
+              </span>
+              <span className="mt-1 block text-xs leading-5 text-[var(--app-muted)]">
+                При записи тренировки указываются только подходы и повторения.
+              </span>
+            </button>
+          </div>
+        </fieldset>
 
         <WorkoutMuscleMapPicker value={muscleGroups} onChange={setMuscleGroups} />
 
