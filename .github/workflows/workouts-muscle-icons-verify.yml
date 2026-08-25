@@ -1,0 +1,53 @@
+name: Workouts muscle icons verification
+
+on:
+  push:
+    branches:
+      - agent/workouts-muscle-icons-redesign
+    paths:
+      - .github/workouts-muscle-icons-verify
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/workouts-muscle-icons-redesign
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check formatting
+        run: npx prettier --check src/renderer/src/modules/workouts/components/WorkoutMuscleMapPicker.tsx src/renderer/src/modules/workouts/components/WorkoutMuscleMapPicker.test.tsx
+
+      - name: Lint changed source
+        run: npx eslint src/renderer/src/modules/workouts/components/WorkoutMuscleMapPicker.tsx src/renderer/src/modules/workouts/components/WorkoutMuscleMapPicker.test.tsx --rule 'react-refresh/only-export-components: off'
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Run picker tests
+        run: npx vitest run src/renderer/src/modules/workouts/components/WorkoutMuscleMapPicker.test.tsx
+
+      - name: Production bundle
+        run: npm run build:bundle
+
+      - name: Remove temporary verification files
+        shell: bash
+        run: |
+          rm -f .github/workouts-muscle-icons-verify .github/workflows/workouts-muscle-icons-verify.yml
+          git add -A
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Убрать временную проверку иконок мышц"
+          git push origin HEAD:agent/workouts-muscle-icons-redesign
