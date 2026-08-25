@@ -81,35 +81,49 @@ jobs:
           path.write_text(source, encoding='utf-8')
           PY
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Create compatible SQLite migration
+        run: |
+          cat > drizzle/0033_workouts_external_weight.sql <<'SQL'
+          ALTER TABLE `workout_exercises` ADD `uses_external_weight` integer DEFAULT true NOT NULL;
+          --> statement-breakpoint
+          ALTER TABLE `workout_session_exercises` ADD `uses_external_weight_snapshot` integer DEFAULT true NOT NULL;
+          SQL
+          python - <<'PY'
+          from pathlib import Path
+          import json
 
-      - name: Generate SQLite migration
-        run: npx drizzle-kit generate --name workouts_external_weight
+          path = Path('drizzle/meta/_journal.json')
+          journal = json.loads(path.read_text(encoding='utf-8'))
+          entries = journal['entries']
+          if entries[-1]['idx'] != 32 or entries[-1]['tag'] != '0032_habits_simplify_fields':
+              raise RuntimeError(f"Unexpected migration tail: {entries[-1]}")
+          entries.append({
+              'idx': 33,
+              'version': '6',
+              'when': 1787647800000,
+              'tag': '0033_workouts_external_weight',
+              'breakpoints': True,
+          })
+          path.write_text(json.dumps(journal, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+          PY
 
-      - name: Verify SQLite migration compatibility
+      - name: Verify migration against the previous workout schema
         run: |
           python - <<'PY'
           from pathlib import Path
           import sqlite3
 
-          migrations = list(Path('drizzle').glob('*_workouts_external_weight.sql'))
-          if len(migrations) != 1:
-              raise RuntimeError(f'Expected one workouts migration, got {len(migrations)}')
-
-          migration = migrations[0].read_text(encoding='utf-8')
           db = sqlite3.connect(':memory:')
-          db.executescript('''
-            CREATE TABLE workout_exercises (
-              id TEXT PRIMARY KEY NOT NULL
-            );
-            CREATE TABLE workout_session_exercises (
-              id TEXT PRIMARY KEY NOT NULL
-            );
-            INSERT INTO workout_exercises (id) VALUES ('existing-exercise');
-            INSERT INTO workout_session_exercises (id) VALUES ('existing-session-exercise');
-          ''')
-          db.executescript(migration)
+          db.executescript(Path('drizzle/0029_workouts_module.sql').read_text(encoding='utf-8'))
+          db.execute(
+              "INSERT INTO workout_exercises (id, title, muscle_group, description, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+              ('existing-exercise', 'Подтягивания', 'lats', '', 'active', 1, 1),
+          )
+          db.execute(
+              "INSERT INTO workout_session_exercises (id, session_id, exercise_id, exercise_title_snapshot, muscle_group_snapshot, position, comment) VALUES (?, ?, ?, ?, ?, ?, ?)",
+              ('existing-session-exercise', 'legacy-session', None, 'Подтягивания', 'lats', 0, ''),
+          )
+          db.executescript(Path('drizzle/0033_workouts_external_weight.sql').read_text(encoding='utf-8'))
 
           exercise_mode = db.execute(
               "SELECT uses_external_weight FROM workout_exercises WHERE id = 'existing-exercise'"
@@ -117,58 +131,30 @@ jobs:
           snapshot_mode = db.execute(
               "SELECT uses_external_weight_snapshot FROM workout_session_exercises WHERE id = 'existing-session-exercise'"
           ).fetchone()
-
           if exercise_mode != (1,):
               raise RuntimeError(f'Legacy exercise default is not true: {exercise_mode}')
           if snapshot_mode != (1,):
               raise RuntimeError(f'Legacy session exercise default is not true: {snapshot_mode}')
-
-          print(f'Validated migration: {migrations[0]}')
+          print('0033 migration preserves existing workout rows with external weight enabled.')
           PY
 
+      - name: Install dependencies
+        run: npm ci
+
       - name: Format changed sources
+        shell: bash
         run: |
-          npx prettier --write \
-            src/shared/contracts/workouts.ts \
-            src/shared/validation/workouts.ts \
-            src/main/database/schema/workouts.ts \
-            src/main/repositories/workouts.repository.ts \
-            src/main/repositories/workouts.repository.test.ts \
-            src/renderer/src/modules/workouts/WorkoutsPage.tsx \
-            src/renderer/src/modules/workouts/WorkoutsPage.test.tsx \
-            src/renderer/src/modules/workouts/components/WorkoutExerciseDialog.tsx \
-            src/renderer/src/modules/workouts/components/WorkoutSessionDialog.tsx \
-            src/renderer/src/modules/workouts/components/WorkoutSessionDialog.test.tsx \
-            src/renderer/src/modules/workouts/components/WorkoutSessionDetailDialog.tsx
-          npx prettier --check \
-            src/shared/contracts/workouts.ts \
-            src/shared/validation/workouts.ts \
-            src/main/database/schema/workouts.ts \
-            src/main/repositories/workouts.repository.ts \
-            src/main/repositories/workouts.repository.test.ts \
-            src/renderer/src/modules/workouts/WorkoutsPage.tsx \
-            src/renderer/src/modules/workouts/WorkoutsPage.test.tsx \
-            src/renderer/src/modules/workouts/components/WorkoutExerciseDialog.tsx \
-            src/renderer/src/modules/workouts/components/WorkoutSessionDialog.tsx \
-            src/renderer/src/modules/workouts/components/WorkoutSessionDialog.test.tsx \
-            src/renderer/src/modules/workouts/components/WorkoutSessionDetailDialog.tsx
+          mapfile -t files < <(git diff --name-only -- '*.ts' '*.tsx')
+          npx prettier --write "${files[@]}"
+          npx prettier --check "${files[@]}"
 
       - name: Lint changed sources
-        run: >-
-          npx eslint
-          src/shared/contracts/workouts.ts
-          src/shared/validation/workouts.ts
-          src/main/database/schema/workouts.ts
-          src/main/repositories/workouts.repository.ts
-          src/main/repositories/workouts.repository.test.ts
-          src/renderer/src/modules/workouts/WorkoutsPage.tsx
-          src/renderer/src/modules/workouts/WorkoutsPage.test.tsx
-          src/renderer/src/modules/workouts/components/WorkoutExerciseDialog.tsx
-          src/renderer/src/modules/workouts/components/WorkoutSessionDialog.tsx
-          src/renderer/src/modules/workouts/components/WorkoutSessionDialog.test.tsx
-          src/renderer/src/modules/workouts/components/WorkoutSessionDetailDialog.tsx
-          --rule 'react-hooks/set-state-in-effect: off'
-          --rule 'react-refresh/only-export-components: off'
+        shell: bash
+        run: |
+          mapfile -t files < <(git diff --name-only -- '*.ts' '*.tsx')
+          npx eslint "${files[@]}" \
+            --rule 'react-hooks/set-state-in-effect: off' \
+            --rule 'react-refresh/only-export-components: off'
 
       - name: Node typecheck
         run: npm run typecheck:node
@@ -191,6 +177,66 @@ jobs:
             exit 1
           fi
 
+      - name: Verify repository bodyweight invariant
+        run: |
+          cat > src/main/repositories/workouts.bodyweight.tmp.test.ts <<'TEST'
+          import { mkdtemp, readFile, rm } from 'node:fs/promises'
+          import { tmpdir } from 'node:os'
+          import { join, resolve } from 'node:path'
+          import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+
+          import { closeDatabase, getSqlite, initializeDatabaseForTesting } from '../database/client'
+          import { createWorkoutExercise, createWorkoutSession } from './workouts.repository'
+
+          let root = ''
+
+          beforeAll(async () => {
+            root = await mkdtemp(join(tmpdir(), 'mymind-bodyweight-'))
+            initializeDatabaseForTesting(join(root, 'workouts.sqlite'))
+            const base = await readFile(resolve(process.cwd(), 'drizzle/0029_workouts_module.sql'), 'utf-8')
+            const migration = await readFile(
+              resolve(process.cwd(), 'drizzle/0033_workouts_external_weight.sql'),
+              'utf-8'
+            )
+            getSqlite().exec(`${base}\n${migration}`)
+          })
+
+          afterAll(async () => {
+            closeDatabase()
+            await rm(root, { recursive: true, force: true })
+          })
+
+          describe('bodyweight workout repository invariant', () => {
+            it('forces extra weight to zero and snapshots the exercise mode', () => {
+              const exercise = createWorkoutExercise({
+                title: 'Подтягивания',
+                muscleGroups: ['lats', 'biceps'],
+                usesExternalWeight: false,
+                status: 'active'
+              })
+              const session = createWorkoutSession({
+                programId: null,
+                date: '2026-08-25',
+                durationMinutes: null,
+                comment: '',
+                exercises: [
+                  {
+                    exerciseId: exercise.id,
+                    comment: '',
+                    sets: [{ reps: 10, weightKg: 42 }]
+                  }
+                ]
+              })
+
+              expect(session.exercises[0]?.usesExternalWeight).toBe(false)
+              expect(session.exercises[0]?.sets[0]?.weightKg).toBe(0)
+            })
+          })
+          TEST
+          npm rebuild better-sqlite3
+          npx vitest run src/main/repositories/workouts.bodyweight.tmp.test.ts
+          rm -f src/main/repositories/workouts.bodyweight.tmp.test.ts
+
       - name: Run focused workout UI tests
         run: >-
           npx vitest run
@@ -202,6 +248,7 @@ jobs:
 
       - name: Commit verified changes
         run: |
+          rm -f src/main/repositories/workouts.bodyweight.tmp.test.ts
           rm -f .github/scripts/workouts-bodyweight-patch.py
           rm -f .github/workflows/workouts-bodyweight-verify.yml
           rm -f .github/workouts-bodyweight-verify
