@@ -25,18 +25,7 @@ jobs:
           cache: npm
 
       - name: Apply thumbnail integration patches
-        run: |
-          python .github/scripts/workouts-muscle-thumbnails-patch.py
-          python - <<'PY'
-          from pathlib import Path
-          path = Path('src/renderer/src/modules/workouts/components/WorkoutMuscleArtwork.tsx')
-          text = path.read_text(encoding='utf-8')
-          old = "    update()\n    if (typeof MutationObserver === 'undefined') return\n"
-          new = "    if (typeof MutationObserver === 'undefined') return\n"
-          if old not in text:
-              raise SystemExit('Accent observer cleanup pattern not found')
-          path.write_text(text.replace(old, new), encoding='utf-8')
-          PY
+        run: python .github/scripts/workouts-muscle-thumbnails-patch.py
 
       - name: Install dependencies
         run: npm ci --ignore-scripts
@@ -47,6 +36,7 @@ jobs:
             src/renderer/src/modules/workouts/WorkoutsPage.tsx \
             src/renderer/src/modules/workouts/workout-options.tsx \
             src/renderer/src/modules/workouts/components/WorkoutMuscleArtwork.tsx \
+            src/renderer/src/modules/workouts/components/workout-muscle-artwork-model.ts \
             src/renderer/src/modules/workouts/components/WorkoutMuscleMapPicker.tsx \
             src/renderer/src/modules/workouts/components/WorkoutProgramDialog.tsx \
             src/renderer/src/modules/workouts/components/WorkoutSessionDialog.tsx \
@@ -56,14 +46,15 @@ jobs:
             src/renderer/src/modules/workouts/WorkoutsPage.tsx \
             src/renderer/src/modules/workouts/workout-options.tsx \
             src/renderer/src/modules/workouts/components/WorkoutMuscleArtwork.tsx \
+            src/renderer/src/modules/workouts/components/workout-muscle-artwork-model.ts \
             src/renderer/src/modules/workouts/components/WorkoutMuscleMapPicker.tsx \
             src/renderer/src/modules/workouts/components/WorkoutProgramDialog.tsx \
             src/renderer/src/modules/workouts/components/WorkoutSessionDialog.tsx \
             src/renderer/src/modules/workouts/components/WorkoutSessionDetailDialog.tsx \
             src/renderer/src/modules/workouts/components/WorkoutProgressDialog.tsx
 
-      - name: Lint new artwork and picker
-        run: npx eslint src/renderer/src/modules/workouts/components/WorkoutMuscleArtwork.tsx src/renderer/src/modules/workouts/components/WorkoutMuscleMapPicker.tsx
+      - name: Lint new anatomy modules
+        run: npx eslint src/renderer/src/modules/workouts/components/WorkoutMuscleArtwork.tsx src/renderer/src/modules/workouts/components/workout-muscle-artwork-model.ts src/renderer/src/modules/workouts/components/WorkoutMuscleMapPicker.tsx
 
       - name: Lint touched workout views
         run: >-
