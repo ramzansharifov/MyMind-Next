@@ -1,18 +1,44 @@
 import { z } from 'zod'
 
-import { WORKOUT_ENTITY_STATUSES, WORKOUT_MUSCLE_GROUPS } from '../contracts/workouts'
+import {
+  WORKOUT_ENTITY_STATUSES,
+  WORKOUT_MUSCLE_GROUPS,
+  WORKOUT_MUSCLE_ZONES
+} from '../contracts/workouts'
 
 const idSchema = z.string().uuid('Некорректный идентификатор')
-const dateSchema = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Дата должна быть в формате ГГГГ-ММ-ДД')
-const weightSchema = z.number().finite().min(0, 'Вес не может быть отрицательным').max(1000, 'Слишком большой вес')
-const repsSchema = z.number().int().min(1, 'Минимум одно повторение').max(10000, 'Слишком много повторений')
+const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Дата должна быть в формате ГГГГ-ММ-ДД')
+const weightSchema = z
+  .number()
+  .finite()
+  .min(0, 'Вес не может быть отрицательным')
+  .max(1000, 'Слишком большой вес')
+const repsSchema = z
+  .number()
+  .int()
+  .min(1, 'Минимум одно повторение')
+  .max(10000, 'Слишком много повторений')
+
+const muscleGroupsSchema = z
+  .array(z.enum(WORKOUT_MUSCLE_ZONES))
+  .min(1, 'Выберите хотя бы одну мышечную зону')
+  .max(WORKOUT_MUSCLE_ZONES.length, 'Слишком много мышечных зон')
+  .superRefine((groups, context) => {
+    if (new Set(groups).size !== groups.length) {
+      context.addIssue({
+        code: 'custom',
+        message: 'Мышечную зону нельзя выбирать несколько раз'
+      })
+    }
+  })
 
 const exercisePayloadSchema = z.object({
-  title: z.string().trim().min(1, 'Введите название упражнения').max(160, 'Название слишком длинное'),
-  muscleGroup: z.enum(WORKOUT_MUSCLE_GROUPS),
-  description: z.string().max(10_000, 'Описание слишком длинное'),
+  title: z
+    .string()
+    .trim()
+    .min(1, 'Введите название упражнения')
+    .max(160, 'Название слишком длинное'),
+  muscleGroups: muscleGroupsSchema,
   status: z.enum(WORKOUT_ENTITY_STATUSES)
 })
 
@@ -21,18 +47,22 @@ export const updateWorkoutExerciseInputSchema = exercisePayloadSchema.extend({ i
 export const deleteWorkoutExerciseInputSchema = z.object({ id: idSchema })
 
 const programExerciseSchema = z.object({
-  exerciseId: idSchema,
-  plannedSets: z.number().int().min(1, 'Минимум один подход').max(50, 'Слишком много подходов'),
-  targetReps: z.number().int().min(1).max(10000).nullable(),
-  notes: z.string().max(4000, 'Комментарий слишком длинный')
+  exerciseId: idSchema
 })
 
 const programPayloadSchema = z
   .object({
-    name: z.string().trim().min(1, 'Введите название программы').max(160, 'Название слишком длинное'),
+    name: z
+      .string()
+      .trim()
+      .min(1, 'Введите название программы')
+      .max(160, 'Название слишком длинное'),
     description: z.string().max(10_000, 'Описание слишком длинное'),
     status: z.enum(WORKOUT_ENTITY_STATUSES),
-    exercises: z.array(programExerciseSchema).min(1, 'Добавьте хотя бы одно упражнение').max(80, 'Слишком много упражнений')
+    exercises: z
+      .array(programExerciseSchema)
+      .min(1, 'Добавьте хотя бы одно упражнение')
+      .max(80, 'Слишком много упражнений')
   })
   .superRefine((input, context) => {
     const ids = input.exercises.map((exercise) => exercise.exerciseId)
@@ -57,7 +87,10 @@ const workoutSetSchema = z.object({
 const sessionExerciseSchema = z.object({
   exerciseId: idSchema,
   comment: z.string().max(4000, 'Комментарий слишком длинный'),
-  sets: z.array(workoutSetSchema).min(1, 'Добавьте хотя бы один подход').max(100, 'Слишком много подходов')
+  sets: z
+    .array(workoutSetSchema)
+    .min(1, 'Добавьте хотя бы один подход')
+    .max(100, 'Слишком много подходов')
 })
 
 const sessionPayloadSchema = z
@@ -67,7 +100,10 @@ const sessionPayloadSchema = z
     date: dateSchema,
     durationMinutes: z.number().int().min(1).max(1440).nullable(),
     comment: z.string().max(10_000, 'Комментарий слишком длинный'),
-    exercises: z.array(sessionExerciseSchema).min(1, 'Добавьте хотя бы одно упражнение').max(100, 'Слишком много упражнений')
+    exercises: z
+      .array(sessionExerciseSchema)
+      .min(1, 'Добавьте хотя бы одно упражнение')
+      .max(100, 'Слишком много упражнений')
   })
   .superRefine((input, context) => {
     const ids = input.exercises.map((exercise) => exercise.exerciseId)
@@ -112,7 +148,9 @@ const progressPayloadSchema = z
   })
 
 export const createWorkoutProgressEntryInputSchema = progressPayloadSchema
-export const updateWorkoutProgressEntryInputSchema = progressPayloadSchema.safeExtend({ id: idSchema })
+export const updateWorkoutProgressEntryInputSchema = progressPayloadSchema.safeExtend({
+  id: idSchema
+})
 export const deleteWorkoutProgressEntryInputSchema = z.object({ id: idSchema })
 export const importWorkoutProgressPhotoInputSchema = z.object({ entryId: idSchema })
 export const deleteWorkoutProgressPhotoInputSchema = z.object({ id: idSchema })

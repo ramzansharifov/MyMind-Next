@@ -46,24 +46,19 @@ describe('workouts repository', () => {
   it('persists exercises, programs and a program-based workout with weight per set', () => {
     const curl = createWorkoutExercise({
       title: 'Сгибания на бицепс с гантелями',
-      muscleGroup: 'arms',
-      description: 'Без раскачивания корпуса.',
+      muscleGroups: ['biceps'],
       status: 'active'
     })
     const row = createWorkoutExercise({
       title: 'Тяга штанги в наклоне',
-      muscleGroup: 'back',
-      description: '',
+      muscleGroups: ['lats', 'traps'],
       status: 'active'
     })
     const program = createWorkoutProgram({
       name: 'Pull',
       description: 'Спина и бицепс',
       status: 'active',
-      exercises: [
-        { exerciseId: row.id, plannedSets: 3, targetReps: 8, notes: '' },
-        { exerciseId: curl.id, plannedSets: 3, targetReps: 10, notes: 'Контроль негатива' }
-      ]
+      exercises: [{ exerciseId: row.id }, { exerciseId: curl.id }]
     })
 
     const session = createWorkoutSession({
@@ -94,12 +89,19 @@ describe('workouts repository', () => {
       ]
     })
 
+    expect(curl).toMatchObject({ muscleGroup: 'biceps', muscleGroups: ['biceps'] })
+    expect(row).toMatchObject({ muscleGroup: 'lats', muscleGroups: ['lats', 'traps'] })
+    expect(program.exercises).toEqual([
+      expect.objectContaining({ exerciseId: row.id, position: 0 }),
+      expect.objectContaining({ exerciseId: curl.id, position: 1 })
+    ])
     expect(session).toMatchObject({
       programId: program.id,
       programName: 'Pull',
       totalSets: 6,
       totalReps: 53
     })
+    expect(session.exercises[0]).toMatchObject({ muscleGroups: ['lats', 'traps'] })
     expect(session.exercises[0]?.sets[1]).toMatchObject({ reps: 8, weightKg: 62.5 })
     expect(listWorkoutsOverview()).toMatchObject({
       exercises: expect.arrayContaining([expect.objectContaining({ id: curl.id })]),
@@ -111,8 +113,7 @@ describe('workouts repository', () => {
   it('keeps historical exercise snapshots after an exercise is renamed', () => {
     const exercise = createWorkoutExercise({
       title: 'Жим гантелей',
-      muscleGroup: 'chest',
-      description: '',
+      muscleGroups: ['chest'],
       status: 'active'
     })
     createWorkoutSession({
@@ -133,22 +134,38 @@ describe('workouts repository', () => {
     updateWorkoutExercise({
       id: exercise.id,
       title: 'Жим гантелей лёжа',
-      muscleGroup: 'chest',
-      description: '',
+      muscleGroups: ['chest'],
       status: 'active'
     })
 
     expect(listWorkoutsOverview().sessions[0]?.exercises[0]).toMatchObject({
       exerciseTitle: 'Жим гантелей',
-      muscleGroup: 'chest'
+      muscleGroup: 'chest',
+      muscleGroups: ['chest']
+    })
+  })
+
+  it('reads legacy broad muscle groups without losing compatibility', () => {
+    const now = Date.now()
+    getSqlite()
+      .prepare(
+        `INSERT INTO workout_exercises
+          (id, title, muscle_group, description, status, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`
+      )
+      .run('legacy-arms', 'Старое упражнение', 'arms', '', 'active', now, now)
+
+    const legacy = listWorkoutsOverview().exercises.find((exercise) => exercise.id === 'legacy-arms')
+    expect(legacy).toMatchObject({
+      muscleGroup: 'shoulders',
+      muscleGroups: ['shoulders', 'biceps', 'triceps', 'forearms']
     })
   })
 
   it('stores progress indicators independently from workout sessions', () => {
     const squat = createWorkoutExercise({
       title: 'Присед со штангой',
-      muscleGroup: 'legs',
-      description: '',
+      muscleGroups: ['quadriceps', 'glutes'],
       status: 'active'
     })
     const entry = createWorkoutProgressEntry({
@@ -161,7 +178,14 @@ describe('workouts repository', () => {
 
     expect(entry).toMatchObject({
       bodyWeightKg: 78.4,
-      metrics: [expect.objectContaining({ exerciseId: squat.id, weightKg: 110, reps: 5 })],
+      metrics: [
+        expect.objectContaining({
+          exerciseId: squat.id,
+          muscleGroups: ['quadriceps', 'glutes'],
+          weightKg: 110,
+          reps: 5
+        })
+      ],
       photos: []
     })
   })
@@ -169,24 +193,19 @@ describe('workouts repository', () => {
   it('builds broad reports by muscle group, exercise, program and workload', () => {
     const bench = createWorkoutExercise({
       title: 'Жим лёжа',
-      muscleGroup: 'chest',
-      description: '',
+      muscleGroups: ['chest'],
       status: 'active'
     })
     const curl = createWorkoutExercise({
       title: 'Сгибания на бицепс',
-      muscleGroup: 'arms',
-      description: '',
+      muscleGroups: ['biceps'],
       status: 'active'
     })
     const program = createWorkoutProgram({
       name: 'Верх тела',
       description: '',
       status: 'active',
-      exercises: [
-        { exerciseId: bench.id, plannedSets: 2, targetReps: 8, notes: '' },
-        { exerciseId: curl.id, plannedSets: 2, targetReps: 10, notes: '' }
-      ]
+      exercises: [{ exerciseId: bench.id }, { exerciseId: curl.id }]
     })
 
     createWorkoutSession({
@@ -258,11 +277,12 @@ describe('workouts repository', () => {
       sets: 4,
       loadPercent: 50
     })
-    expect(report.muscleGroups.find((item) => item.muscleGroup === 'arms')).toMatchObject({
+    expect(report.muscleGroups.find((item) => item.muscleGroup === 'biceps')).toMatchObject({
       sets: 4,
       loadPercent: 50
     })
     expect(report.exercises.find((item) => item.exerciseId === bench.id)).toMatchObject({
+      muscleGroups: ['chest'],
       sessions: 2,
       sets: 4,
       firstBestWeightKg: 70,

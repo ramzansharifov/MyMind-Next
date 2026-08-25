@@ -20,94 +20,111 @@ interface WorkoutMuscleGroupOption {
   icon: LucideIcon
 }
 
+const MUSCLE_GROUP_LABELS: Record<WorkoutMuscleGroup, string> = {
+  arms: 'Руки',
+  shoulders: 'Плечи',
+  biceps: 'Бицепс',
+  triceps: 'Трицепс',
+  forearms: 'Предплечья',
+  back: 'Спина',
+  lats: 'Широчайшие',
+  traps: 'Трапеции',
+  lower_back: 'Поясница',
+  chest: 'Грудные мышцы',
+  abs: 'Пресс',
+  legs: 'Ноги',
+  glutes: 'Ягодицы',
+  quadriceps: 'Квадрицепсы',
+  hamstrings: 'Задняя поверхность бедра',
+  calves: 'Икры'
+}
+
 export const WORKOUT_MUSCLE_FAMILY_OPTIONS: Array<{
   value: WorkoutMuscleFamily
   label: string
 }> = [
   { value: 'arms', label: 'Руки' },
   { value: 'back', label: 'Спина' },
-  { value: 'legs', label: 'Ноги' },
   { value: 'chest', label: 'Грудные мышцы' },
-  { value: 'abs', label: 'Пресс' }
+  { value: 'abs', label: 'Пресс' },
+  { value: 'legs', label: 'Ноги' }
 ]
 
+/** Only concrete selectable zones. Legacy broad groups are intentionally omitted. */
 export const WORKOUT_MUSCLE_GROUP_OPTIONS: WorkoutMuscleGroupOption[] = [
-  { value: 'arms', label: 'Руки', shortLabel: 'Вся группа', family: 'arms', icon: Dumbbell },
   {
     value: 'shoulders',
-    label: 'Руки · Плечи',
+    label: 'Плечи',
     shortLabel: 'Плечи',
     family: 'arms',
     icon: Activity
   },
-  { value: 'biceps', label: 'Руки · Бицепс', shortLabel: 'Бицепс', family: 'arms', icon: Dumbbell },
+  { value: 'biceps', label: 'Бицепс', shortLabel: 'Бицепс', family: 'arms', icon: Dumbbell },
   {
     value: 'triceps',
-    label: 'Руки · Трицепс',
+    label: 'Трицепс',
     shortLabel: 'Трицепс',
     family: 'arms',
     icon: Dumbbell
   },
   {
     value: 'forearms',
-    label: 'Руки · Предплечье',
-    shortLabel: 'Предплечье',
+    label: 'Предплечья',
+    shortLabel: 'Предплечья',
     family: 'arms',
     icon: Dumbbell
   },
-  { value: 'back', label: 'Спина', shortLabel: 'Вся спина', family: 'back', icon: Shield },
   {
     value: 'lats',
-    label: 'Спина · Широчайшие',
+    label: 'Широчайшие',
     shortLabel: 'Широчайшие',
     family: 'back',
     icon: Shield
   },
   {
     value: 'traps',
-    label: 'Спина · Трапеции',
+    label: 'Трапеции',
     shortLabel: 'Трапеции',
     family: 'back',
     icon: Shield
   },
   {
     value: 'lower_back',
-    label: 'Спина · Поясница',
+    label: 'Поясница',
     shortLabel: 'Поясница',
     family: 'back',
     icon: Shield
   },
-  { value: 'legs', label: 'Ноги', shortLabel: 'Все ноги', family: 'legs', icon: Footprints },
+  {
+    value: 'chest',
+    label: 'Грудные мышцы',
+    shortLabel: 'Грудь',
+    family: 'chest',
+    icon: HeartPulse
+  },
+  { value: 'abs', label: 'Пресс', shortLabel: 'Пресс', family: 'abs', icon: CircleDot },
   {
     value: 'glutes',
-    label: 'Ноги · Ягодицы',
+    label: 'Ягодицы',
     shortLabel: 'Ягодицы',
     family: 'legs',
     icon: Footprints
   },
   {
     value: 'quadriceps',
-    label: 'Ноги · Квадрицепсы',
+    label: 'Квадрицепсы',
     shortLabel: 'Квадрицепсы',
     family: 'legs',
     icon: Footprints
   },
   {
     value: 'hamstrings',
-    label: 'Ноги · Задняя поверхность бедра',
-    shortLabel: 'Задняя поверхность бедра',
+    label: 'Задняя поверхность бедра',
+    shortLabel: 'Бицепс бедра',
     family: 'legs',
     icon: Footprints
   },
-  { value: 'calves', label: 'Ноги · Икры', shortLabel: 'Икры', family: 'legs', icon: Footprints },
-  {
-    value: 'chest',
-    label: 'Грудные мышцы',
-    shortLabel: 'Грудные мышцы',
-    family: 'chest',
-    icon: HeartPulse
-  },
-  { value: 'abs', label: 'Пресс', shortLabel: 'Пресс', family: 'abs', icon: CircleDot }
+  { value: 'calves', label: 'Икры', shortLabel: 'Икры', family: 'legs', icon: Footprints }
 ]
 
 const armsClasses = {
@@ -164,6 +181,9 @@ export const workoutMuscleGroupClasses: Record<
 }
 
 export function workoutMuscleFamilyForGroup(group: WorkoutMuscleGroup): WorkoutMuscleFamily {
+  if (group === 'arms') return 'arms'
+  if (group === 'back') return 'back'
+  if (group === 'legs') return 'legs'
   return WORKOUT_MUSCLE_GROUP_OPTIONS.find((option) => option.value === group)?.family ?? 'arms'
 }
 
@@ -174,7 +194,12 @@ export function workoutMuscleGroupOptionsForFamily(
 }
 
 export function workoutMuscleGroupLabel(group: WorkoutMuscleGroup): string {
-  return WORKOUT_MUSCLE_GROUP_OPTIONS.find((option) => option.value === group)?.label ?? group
+  return MUSCLE_GROUP_LABELS[group] ?? group
+}
+
+export function workoutMuscleGroupsLabel(groups: WorkoutMuscleGroup[]): string {
+  const unique = [...new Set(groups)]
+  return unique.length ? unique.map(workoutMuscleGroupLabel).join(' · ') : 'Зоны не выбраны'
 }
 
 export function WorkoutMuscleGroupIcon({
@@ -184,7 +209,17 @@ export function WorkoutMuscleGroupIcon({
   group: WorkoutMuscleGroup
   className?: string
 }): React.JSX.Element {
+  const family = workoutMuscleFamilyForGroup(group)
   const Icon =
-    WORKOUT_MUSCLE_GROUP_OPTIONS.find((option) => option.value === group)?.icon ?? Dumbbell
+    WORKOUT_MUSCLE_GROUP_OPTIONS.find((option) => option.value === group)?.icon ??
+    (family === 'back'
+      ? Shield
+      : family === 'legs'
+        ? Footprints
+        : family === 'chest'
+          ? HeartPulse
+          : family === 'abs'
+            ? CircleDot
+            : Dumbbell)
   return <Icon aria-hidden="true" className={className} />
 }

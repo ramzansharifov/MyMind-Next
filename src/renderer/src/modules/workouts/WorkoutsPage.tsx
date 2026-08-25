@@ -53,6 +53,7 @@ import {
   WORKOUT_MUSCLE_GROUP_OPTIONS,
   workoutMuscleGroupClasses,
   workoutMuscleGroupLabel,
+  workoutMuscleGroupsLabel,
   WorkoutMuscleGroupIcon
 } from './workout-options'
 
@@ -181,10 +182,10 @@ export function WorkoutsPage({
   const filteredExercises = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase('ru-RU')
     return exercises.filter((exercise) => {
-      if (muscleFilter !== 'all' && exercise.muscleGroup !== muscleFilter) return false
+      if (muscleFilter !== 'all' && !exercise.muscleGroups.includes(muscleFilter)) return false
       return (
         !normalized ||
-        `${exercise.title} ${exercise.description} ${workoutMuscleGroupLabel(exercise.muscleGroup)}`
+        `${exercise.title} ${workoutMuscleGroupsLabel(exercise.muscleGroups)}`
           .toLocaleLowerCase('ru-RU')
           .includes(normalized)
       )
@@ -213,7 +214,7 @@ export function WorkoutsPage({
       }
       if (
         muscleFilter !== 'all' &&
-        !session.exercises.some((exercise) => exercise.muscleGroup === muscleFilter)
+        !session.exercises.some((exercise) => exercise.muscleGroups.includes(muscleFilter))
       ) {
         return false
       }
@@ -801,7 +802,7 @@ export function WorkoutsPage({
                           </h3>
                         </div>
                         <span className={cn('mt-1 inline-block text-xs font-medium', classes.text)}>
-                          {workoutMuscleGroupLabel(exercise.muscleGroup)}
+                          {workoutMuscleGroupsLabel(exercise.muscleGroups)}
                         </span>
                       </div>
                       <div className="flex shrink-0 gap-1">
@@ -826,11 +827,6 @@ export function WorkoutsPage({
                         </button>
                       </div>
                     </div>
-                    {exercise.description && (
-                      <p className="mt-3 line-clamp-3 text-xs leading-5 text-[var(--app-muted)]">
-                        {exercise.description}
-                      </p>
-                    )}
                   </article>
                 )
               })}
@@ -863,7 +859,8 @@ export function WorkoutsPage({
                 Программ пока нет
               </h2>
               <p className="mt-1 max-w-md text-sm text-[var(--app-muted)]">
-                Соберите программу из упражнений и задайте план подходов и повторений.
+                Соберите программу из упражнений. Подходы, повторения и вес задаются уже в
+                тренировке.
               </p>
             </div>
           ) : (
@@ -884,9 +881,7 @@ export function WorkoutsPage({
                         </h3>
                       </div>
                       <p className="mt-1 text-xs text-[var(--app-muted)]">
-                        {program.exercises.length} упражнений ·{' '}
-                        {program.exercises.reduce((sum, item) => sum + item.plannedSets, 0)}{' '}
-                        плановых подходов
+                        {program.exercises.length} упражнений
                       </p>
                     </div>
                     <div className="flex gap-1">
@@ -944,9 +939,6 @@ export function WorkoutsPage({
                           </span>
                           <span className="min-w-0 flex-1 truncate text-sm font-medium text-[var(--app-text)]">
                             {exercise.title}
-                          </span>
-                          <span className="text-xs text-[var(--app-muted)]">
-                            {item.plannedSets} × {item.targetReps ?? '—'}
                           </span>
                         </div>
                       )

@@ -9,16 +9,13 @@ import type {
 } from '../../../../../shared/contracts/workouts'
 import { AppDialog } from '../../../shared/ui/AppDialog'
 import { AppSelect } from '../../../shared/ui/AppSelect'
-import { workoutMuscleGroupLabel } from '../workout-options'
+import { workoutMuscleGroupsLabel } from '../workout-options'
 
 const FORM_ID = 'workout-program-form'
 const NONE = '__none__'
 
 interface EditableProgramExercise {
   exerciseId: string
-  plannedSets: number
-  targetReps: string
-  notes: string
 }
 
 interface WorkoutProgramDialogProps {
@@ -48,14 +45,7 @@ export function WorkoutProgramDialog({
     if (!open) return
     setName(program?.name ?? '')
     setDescription(program?.description ?? '')
-    setItems(
-      program?.exercises.map((item) => ({
-        exerciseId: item.exerciseId,
-        plannedSets: item.plannedSets,
-        targetReps: item.targetReps === null ? '' : String(item.targetReps),
-        notes: item.notes
-      })) ?? []
-    )
+    setItems(program?.exercises.map((item) => ({ exerciseId: item.exerciseId })) ?? [])
     setExerciseToAdd(NONE)
     setError(null)
   }, [open, program])
@@ -70,10 +60,7 @@ export function WorkoutProgramDialog({
 
   function addExercise(): void {
     if (exerciseToAdd === NONE) return
-    setItems((current) => [
-      ...current,
-      { exerciseId: exerciseToAdd, plannedSets: 3, targetReps: '', notes: '' }
-    ])
+    setItems((current) => [...current, { exerciseId: exerciseToAdd }])
     setExerciseToAdd(NONE)
   }
 
@@ -88,12 +75,6 @@ export function WorkoutProgramDialog({
     })
   }
 
-  function updateItem(index: number, patch: Partial<EditableProgramExercise>): void {
-    setItems((current) =>
-      current.map((item, itemIndex) => (itemIndex === index ? { ...item, ...patch } : item))
-    )
-  }
-
   async function submit(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault()
     if (!name.trim() || items.length === 0 || busy) return
@@ -101,12 +82,7 @@ export function WorkoutProgramDialog({
       name: name.trim(),
       description,
       status: 'active',
-      exercises: items.map((item) => ({
-        exerciseId: item.exerciseId,
-        plannedSets: item.plannedSets,
-        targetReps: item.targetReps.trim() ? Number(item.targetReps) : null,
-        notes: item.notes
-      }))
+      exercises: items.map((item) => ({ exerciseId: item.exerciseId }))
     }
     try {
       await onSave(program ? { ...payload, id: program.id } : payload)
@@ -121,9 +97,9 @@ export function WorkoutProgramDialog({
       open={open}
       onOpenChange={onOpenChange}
       title={program ? 'Изменить программу' : 'Новая программа'}
-      description="Соберите порядок упражнений. План подходов и повторений будет использован как заготовка новой тренировки."
+      description="Программа хранит только состав и порядок упражнений. Подходы, повторения и вес фиксируются уже в конкретной тренировке."
       icon={<ListPlus />}
-      size="xl"
+      size="lg"
       busy={busy}
       footer={
         <>
@@ -147,8 +123,8 @@ export function WorkoutProgramDialog({
       }
     >
       <form id={FORM_ID} className="space-y-5" onSubmit={(event) => void submit(event)}>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className="block space-y-1.5 sm:col-span-2">
+        <div className="space-y-4">
+          <label className="block space-y-1.5">
             <span className="text-xs font-medium text-[var(--app-muted)]">Название программы</span>
             <input
               autoFocus
@@ -159,13 +135,13 @@ export function WorkoutProgramDialog({
               onChange={(event) => setName(event.target.value)}
             />
           </label>
-          <label className="block space-y-1.5 sm:col-span-2">
+          <label className="block space-y-1.5">
             <span className="text-xs font-medium text-[var(--app-muted)]">Описание</span>
             <textarea
               value={description}
-              rows={3}
+              rows={2}
               maxLength={10000}
-              placeholder="Цель программы, период, особенности…"
+              placeholder="Необязательно — цель или особенности программы"
               className="w-full resize-y rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 py-3 text-sm leading-6 text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
               onChange={(event) => setDescription(event.target.value)}
             />
@@ -190,7 +166,7 @@ export function WorkoutProgramDialog({
                   },
                   ...availableExercises.map((exercise) => ({
                     value: exercise.id,
-                    label: `${exercise.title} · ${workoutMuscleGroupLabel(exercise.muscleGroup)}`
+                    label: `${exercise.title} · ${workoutMuscleGroupsLabel(exercise.muscleGroups)}`
                   }))
                 ]}
                 onValueChange={setExerciseToAdd}
@@ -207,7 +183,7 @@ export function WorkoutProgramDialog({
           </div>
         </section>
 
-        <div className="space-y-2.5">
+        <div className="space-y-2">
           {items.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-[var(--app-border)] px-5 py-8 text-center text-sm text-[var(--app-muted)]">
               Сначала добавьте упражнения в программу.
@@ -218,95 +194,50 @@ export function WorkoutProgramDialog({
               return (
                 <article
                   key={item.exerciseId}
-                  className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4"
+                  className="flex items-center gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] px-4 py-3"
                 >
-                  <div className="flex items-start gap-3">
-                    <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-xs font-semibold text-violet-300">
-                      {index + 1}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="font-semibold text-[var(--app-text)]">
-                        {exercise?.title ?? 'Удалённое упражнение'}
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-xs font-semibold text-violet-300">
+                    {index + 1}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-semibold text-[var(--app-text)]">
+                      {exercise?.title ?? 'Удалённое упражнение'}
+                    </div>
+                    {exercise && (
+                      <div className="mt-0.5 truncate text-xs text-[var(--app-muted)]">
+                        {workoutMuscleGroupsLabel(exercise.muscleGroups)}
                       </div>
-                      {exercise && (
-                        <div className="mt-0.5 text-xs text-[var(--app-muted)]">
-                          {workoutMuscleGroupLabel(exercise.muscleGroup)}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        aria-label="Поднять упражнение"
-                        disabled={index === 0}
-                        className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:opacity-25"
-                        onClick={() => move(index, -1)}
-                      >
-                        <ArrowUp className="size-4" />
-                      </button>
-                      <button
-                        type="button"
-                        aria-label="Опустить упражнение"
-                        disabled={index === items.length - 1}
-                        className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:opacity-25"
-                        onClick={() => move(index, 1)}
-                      >
-                        <ArrowDown className="size-4" />
-                      </button>
-                      <button
-                        type="button"
-                        aria-label="Удалить упражнение из программы"
-                        className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
-                        onClick={() =>
-                          setItems((current) =>
-                            current.filter((_, itemIndex) => itemIndex !== index)
-                          )
-                        }
-                      >
-                        <Trash2 className="size-4" />
-                      </button>
-                    </div>
+                    )}
                   </div>
-
-                  <div className="mt-4 grid gap-3 sm:grid-cols-[140px_160px_minmax(0,1fr)]">
-                    <label className="space-y-1.5">
-                      <span className="text-xs text-[var(--app-muted)]">План подходов</span>
-                      <input
-                        type="number"
-                        min={1}
-                        max={50}
-                        value={item.plannedSets}
-                        className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/45"
-                        onChange={(event) =>
-                          updateItem(index, {
-                            plannedSets: Math.max(1, Number(event.target.value) || 1)
-                          })
-                        }
-                      />
-                    </label>
-                    <label className="space-y-1.5">
-                      <span className="text-xs text-[var(--app-muted)]">Цель повторений</span>
-                      <input
-                        type="number"
-                        min={1}
-                        value={item.targetReps}
-                        placeholder="Не задано"
-                        className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45"
-                        onChange={(event) => updateItem(index, { targetReps: event.target.value })}
-                      />
-                    </label>
-                    <label className="space-y-1.5">
-                      <span className="text-xs text-[var(--app-muted)]">
-                        Комментарий к упражнению
-                      </span>
-                      <input
-                        value={item.notes}
-                        maxLength={4000}
-                        placeholder="Темп, техника, отдых…"
-                        className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45"
-                        onChange={(event) => updateItem(index, { notes: event.target.value })}
-                      />
-                    </label>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      aria-label="Поднять упражнение"
+                      disabled={index === 0}
+                      className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:opacity-25"
+                      onClick={() => move(index, -1)}
+                    >
+                      <ArrowUp className="size-4" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Опустить упражнение"
+                      disabled={index === items.length - 1}
+                      className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:opacity-25"
+                      onClick={() => move(index, 1)}
+                    >
+                      <ArrowDown className="size-4" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Удалить упражнение из программы"
+                      className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
+                      onClick={() =>
+                        setItems((current) => current.filter((_, itemIndex) => itemIndex !== index))
+                      }
+                    >
+                      <Trash2 className="size-4" />
+                    </button>
                   </div>
                 </article>
               )
