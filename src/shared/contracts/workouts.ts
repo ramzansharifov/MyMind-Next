@@ -35,9 +35,12 @@ export const WORKOUT_MUSCLE_ZONES = [
 
 export const WORKOUT_ENTITY_STATUSES = ['active', 'archived'] as const
 
+export const WORKOUT_PROGRESS_PHOTO_VIEWS = ['front', 'left', 'right', 'back', 'custom'] as const
+
 export type WorkoutMuscleGroup = (typeof WORKOUT_MUSCLE_GROUPS)[number]
 export type WorkoutMuscleZone = (typeof WORKOUT_MUSCLE_ZONES)[number]
 export type WorkoutEntityStatus = (typeof WORKOUT_ENTITY_STATUSES)[number]
+export type WorkoutProgressPhotoView = (typeof WORKOUT_PROGRESS_PHOTO_VIEWS)[number]
 
 export interface WorkoutExerciseRecord {
   id: string
@@ -109,6 +112,7 @@ export interface WorkoutProgressMetricRecord {
   /** Primary zone kept for backwards-compatible rendering and old consumers. */
   muscleGroup: WorkoutMuscleGroup
   muscleGroups: WorkoutMuscleGroup[]
+  usesExternalWeight: boolean
   weightKg: number
   reps: number
   comment: string
@@ -122,6 +126,7 @@ export interface WorkoutProgressPhotoRecord {
   mimeType: string
   size: number
   url: string
+  view: WorkoutProgressPhotoView
   createdAt: number
 }
 
@@ -234,6 +239,7 @@ export interface DeleteWorkoutProgressEntryInput {
 
 export interface ImportWorkoutProgressPhotoInput {
   entryId: string
+  view: WorkoutProgressPhotoView
 }
 
 export interface DeleteWorkoutProgressPhotoInput {

@@ -6,6 +6,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { closeDatabase, getSqlite, initializeDatabaseForTesting } from '../database/client'
 import { runDatabaseMigrationsFrom } from '../database/migrate'
 import {
+  addWorkoutProgressPhoto,
   createWorkoutExercise,
   createWorkoutProgram,
   createWorkoutProgressEntry,
@@ -262,12 +263,60 @@ describe('workouts repository', () => {
         expect.objectContaining({
           exerciseId: squat.id,
           muscleGroups: ['quadriceps', 'glutes'],
+          usesExternalWeight: true,
           weightKg: 110,
           reps: 5
         })
       ],
       photos: []
     })
+  })
+
+  it('stores bodyweight progress without fake weight and keeps photo angles', () => {
+    const pullUp = createWorkoutExercise({
+      title: 'Подтягивания для прогресса',
+      muscleGroups: ['lats', 'biceps'],
+      usesExternalWeight: false,
+      status: 'active'
+    })
+    const entry = createWorkoutProgressEntry({
+      date: '2026-08-20',
+      bodyWeightKg: 77.8,
+      wellbeing: '',
+      notes: '',
+      metrics: [{ exerciseId: pullUp.id, weightKg: 30, reps: 12, comment: '' }]
+    })
+
+    const front = addWorkoutProgressPhoto(entry.id, 'front', {
+      id: 'asset-front',
+      name: 'front.jpg',
+      mimeType: 'image/jpeg',
+      size: 1200,
+      url: 'mymind-asset://workout-progress/front.jpg'
+    })
+    const custom = addWorkoutProgressPhoto(entry.id, 'custom', {
+      id: 'asset-custom',
+      name: 'custom.jpg',
+      mimeType: 'image/jpeg',
+      size: 900,
+      url: 'mymind-asset://workout-progress/custom.jpg'
+    })
+
+    const stored = listWorkoutsOverview().progressEntries[0]
+    expect(stored?.metrics[0]).toMatchObject({
+      exerciseId: pullUp.id,
+      usesExternalWeight: false,
+      weightKg: 0,
+      reps: 12
+    })
+    expect(front.view).toBe('front')
+    expect(custom.view).toBe('custom')
+    expect(stored?.photos).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: front.id, view: 'front' }),
+        expect.objectContaining({ id: custom.id, view: 'custom' })
+      ])
+    )
   })
 
   it('builds broad reports by muscle group, exercise, program and workload', () => {

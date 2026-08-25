@@ -81,7 +81,11 @@ function formatDelta(value: number): string {
   return `${value > 0 ? '+' : '−'}${formatWeight(Math.abs(value))} кг`
 }
 
-function BodyWeightChart({ entries }: { entries: WorkoutProgressEntryRecord[] }): React.JSX.Element {
+function BodyWeightChart({
+  entries
+}: {
+  entries: WorkoutProgressEntryRecord[]
+}): React.JSX.Element {
   const points = entries
     .filter((entry): entry is WorkoutProgressEntryRecord & { bodyWeightKg: number } =>
       Number.isFinite(entry.bodyWeightKg)
@@ -348,11 +352,7 @@ export function WorkoutProgressSection({
 
           {comparisonFirst ? (
             <div className="mt-4 grid min-h-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
-              <PhotoPreview
-                item={comparisonFirst}
-                label="Было"
-                onOpen={setViewer}
-              />
+              <PhotoPreview item={comparisonFirst} label="Было" onOpen={setViewer} />
               <ArrowRight className="size-5 shrink-0 text-[var(--app-muted)]" />
               {hasComparison && comparisonLast ? (
                 <PhotoPreview item={comparisonLast} label="Стало" onOpen={setViewer} />
@@ -364,8 +364,8 @@ export function WorkoutProgressSection({
             </div>
           ) : (
             <div className="mt-4 flex min-h-52 items-center justify-center rounded-xl border border-dashed border-[var(--app-border)] bg-[var(--app-workspace)] px-6 text-center text-sm leading-6 text-[var(--app-muted)]">
-              Для ракурса «{PHOTO_VIEW_LABELS[comparisonView]}» пока нет фотографий. Добавьте
-              снимок в одной из контрольных точек ниже.
+              Для ракурса «{PHOTO_VIEW_LABELS[comparisonView]}» пока нет фотографий. Добавьте снимок
+              в одной из контрольных точек ниже.
             </div>
           )}
         </section>

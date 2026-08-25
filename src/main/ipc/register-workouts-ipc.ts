@@ -147,7 +147,7 @@ export function registerWorkoutsIpcHandlers(): void {
       }
       const input = importWorkoutProgressPhotoInputSchema.parse(rawInput)
       const parentWindow = BrowserWindow.fromWebContents(event.sender)
-      return importWorkoutProgressPhoto(input.entryId, parentWindow)
+      return importWorkoutProgressPhoto(input.entryId, input.view, parentWindow)
     })
   )
   ipcMain.handle(WORKOUTS_IPC_CHANNELS.deleteProgressPhoto, (_event, rawInput: unknown) =>

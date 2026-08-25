@@ -57,10 +57,7 @@ const entries: WorkoutProgressEntryRecord[] = [
         comment: 'Уверенно'
       }
     ],
-    photos: [
-      photo('front-new', 'entry-new', 'front'),
-      photo('custom-new', 'entry-new', 'custom')
-    ],
+    photos: [photo('front-new', 'entry-new', 'front'), photo('custom-new', 'entry-new', 'custom')],
     createdAt: 2,
     updatedAt: 2
   },

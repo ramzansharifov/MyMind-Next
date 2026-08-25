@@ -1,6 +1,10 @@
 import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
-import type { WorkoutEntityStatus, WorkoutMuscleGroup } from '../../../shared/contracts/workouts'
+import type {
+  WorkoutEntityStatus,
+  WorkoutMuscleGroup,
+  WorkoutProgressPhotoView
+} from '../../../shared/contracts/workouts'
 
 export const workoutExercises = sqliteTable(
   'workout_exercises',
@@ -140,6 +144,9 @@ export const workoutProgressMetrics = sqliteTable(
     }),
     exerciseTitleSnapshot: text('exercise_title_snapshot').notNull(),
     muscleGroupSnapshot: text('muscle_group_snapshot').$type<WorkoutMuscleGroup>().notNull(),
+    usesExternalWeightSnapshot: integer('uses_external_weight_snapshot', { mode: 'boolean' })
+      .notNull()
+      .default(true),
     weightMilliKg: integer('weight_milli_kg').notNull().default(0),
     reps: integer('reps').notNull(),
     comment: text('comment').notNull().default(''),
@@ -163,7 +170,11 @@ export const workoutProgressPhotos = sqliteTable(
     mimeType: text('mime_type').notNull(),
     size: integer('size').notNull(),
     url: text('url').notNull(),
+    view: text('view').$type<WorkoutProgressPhotoView>().notNull().default('custom'),
     createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull()
   },
-  (table) => [index('workout_progress_photos_entry_idx').on(table.entryId, table.createdAt)]
+  (table) => [
+    index('workout_progress_photos_entry_idx').on(table.entryId, table.createdAt),
+    index('workout_progress_photos_entry_view_idx').on(table.entryId, table.view, table.createdAt)
+  ]
 )

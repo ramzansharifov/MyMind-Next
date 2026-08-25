@@ -239,6 +239,13 @@
       "when": 1787647800000,
       "tag": "0033_workouts_external_weight",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "6",
+      "when": 1787667600000,
+      "tag": "0034_workouts_progress_visual_tracking",
+      "breakpoints": true
     }
   ]
 }

@@ -2,7 +2,10 @@ import { app, type BrowserWindow } from 'electron'
 import { rm } from 'node:fs/promises'
 import { join } from 'node:path'
 
-import type { WorkoutProgressPhotoRecord } from '../../shared/contracts/workouts'
+import type {
+  WorkoutProgressPhotoRecord,
+  WorkoutProgressPhotoView
+} from '../../shared/contracts/workouts'
 import {
   addWorkoutProgressPhoto,
   deleteWorkoutProgressPhoto,
@@ -28,16 +31,23 @@ async function removeAssetDirectory(entryId: string, assetId: string): Promise<v
 
 export async function importWorkoutProgressPhoto(
   entryId: string,
+  view: WorkoutProgressPhotoView,
   parentWindow: BrowserWindow | null
 ): Promise<WorkoutProgressPhotoRecord | null> {
-  getWorkoutProgressEntry(entryId)
+  const entry = getWorkoutProgressEntry(entryId)
+  const previousPhotos =
+    view === 'custom' ? [] : entry.photos.filter((photo) => photo.view === view)
   const owner = progressAssetOwner(entryId)
   const prepared = await selectStudyAssetForImport({ nodeId: owner, kind: 'image' }, parentWindow)
   if (!prepared) return null
 
   const asset = await persistPreparedStudyAssetImport(owner, prepared)
   try {
-    return addWorkoutProgressPhoto(entryId, asset)
+    const imported = addWorkoutProgressPhoto(entryId, view, asset)
+    for (const previous of previousPhotos) {
+      await removeWorkoutProgressPhoto(previous.id)
+    }
+    return imported
   } catch (reason) {
     await removeAssetDirectory(entryId, asset.id).catch(() => undefined)
     throw reason
