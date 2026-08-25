@@ -28,6 +28,7 @@ jobs:
         run: |
           python .github/nutrition-remove-favorites-archive.fix.py
           python .github/nutrition-remove-favorites-archive.patch.py
+          python .github/nutrition-remove-favorites-archive.dialog-fix.py
           python .github/nutrition-remove-favorites-archive.tests.py
 
       - name: Install dependencies
@@ -63,17 +64,41 @@ jobs:
             src/renderer/src/modules/nutrition/nutrition-food-json.ts
 
       - name: Verify concepts are removed from nutrition source
-        shell: bash
         run: |
-          if rg -n "NutritionEntityStatus|NUTRITION_ENTITY_STATUSES|favorite|archived|Избранное|В архиве|Статус каталога" \
-            src/shared/contracts/nutrition.ts \
-            src/shared/validation/nutrition.ts \
-            src/main/repositories/nutrition.repository.ts \
-            src/renderer/src/modules/nutrition \
-            --glob '!*.test.ts' --glob '!*.test.tsx'; then
-            echo "Found leftover favorite/archive application logic"
-            exit 1
-          fi
+          python <<'PY'
+          from pathlib import Path
+
+          forbidden = (
+              'NutritionEntityStatus',
+              'NUTRITION_ENTITY_STATUSES',
+              'favorite',
+              'archived',
+              'Избранное',
+              'В архиве',
+              'Статус каталога',
+          )
+          files = [
+              Path('src/shared/contracts/nutrition.ts'),
+              Path('src/shared/validation/nutrition.ts'),
+              Path('src/main/repositories/nutrition.repository.ts'),
+          ]
+          files.extend(
+              path
+              for path in Path('src/renderer/src/modules/nutrition').rglob('*')
+              if path.is_file()
+              and path.suffix in {'.ts', '.tsx'}
+              and '.test.' not in path.name
+          )
+          leftovers = []
+          for path in files:
+              text = path.read_text(encoding='utf-8')
+              for token in forbidden:
+                  if token in text:
+                      leftovers.append(f'{path}: {token}')
+          if leftovers:
+              raise SystemExit('Found leftover favorite/archive application logic:\n' + '\n'.join(leftovers))
+          print('No favorite/archive application concepts remain in Nutrition')
+          PY
 
       - name: Lint changed sources
         run: |
@@ -132,6 +157,7 @@ jobs:
           rm -f \
             .github/nutrition-remove-favorites-archive.fix.py \
             .github/nutrition-remove-favorites-archive.patch.py \
+            .github/nutrition-remove-favorites-archive.dialog-fix.py \
             .github/nutrition-remove-favorites-archive.tests.py \
             .github/nutrition-remove-favorites-archive.trigger \
             .github/workflows/nutrition-remove-favorites-archive-verify.yml
