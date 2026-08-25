@@ -7,8 +7,8 @@ import { useEffect, useId, useState } from 'react'
 
 import type { WorkoutMuscleGroup } from '../../../../../shared/contracts/workouts'
 import { cn } from '../../../shared/lib/cn'
+import type { ConcreteWorkoutMuscleZone } from './workout-muscle-artwork-model'
 
-export type ConcreteWorkoutMuscleZone = Exclude<WorkoutMuscleGroup, 'arms' | 'back' | 'legs'>
 type AnatomyView = 'FRONT' | 'BACK'
 type MuscleFamily = 'arms' | 'back' | 'torso' | 'legs'
 
@@ -17,22 +17,6 @@ interface AnatomyConfig {
   family: MuscleFamily
   groups: AnatomyMuscleGroup[]
   cropViewBox: string
-}
-
-export const WORKOUT_MUSCLE_ZONE_HINTS: Record<ConcreteWorkoutMuscleZone, string> = {
-  shoulders: 'Дельтовидные',
-  biceps: 'Передняя часть плеча',
-  triceps: 'Задняя часть плеча',
-  forearms: 'Предплечья',
-  traps: 'Верх спины',
-  lats: 'Боковая часть спины',
-  lower_back: 'Нижняя часть спины',
-  chest: 'Грудные мышцы',
-  abs: 'Прямая мышца живота',
-  glutes: 'Ягодичные мышцы',
-  quadriceps: 'Передняя поверхность бедра',
-  hamstrings: 'Задняя поверхность бедра',
-  calves: 'Икроножные мышцы'
 }
 
 const LEGACY_GROUP_EXPANSIONS: Partial<Record<WorkoutMuscleGroup, ConcreteWorkoutMuscleZone[]>> = {
@@ -161,7 +145,6 @@ function useAccentColor(): string {
     const root = document.documentElement
     const update = (): void => setAccentColor(readAccentColor())
 
-    update()
     if (typeof MutationObserver === 'undefined') return
 
     const observer = new MutationObserver(update)
@@ -172,7 +155,7 @@ function useAccentColor(): string {
   return accentColor
 }
 
-export function expandWorkoutMuscleGroups(
+function expandWorkoutMuscleGroups(
   groups: readonly WorkoutMuscleGroup[]
 ): ConcreteWorkoutMuscleZone[] {
   const result: ConcreteWorkoutMuscleZone[] = []
@@ -220,7 +203,8 @@ function artworkCrop(
   const includesUpperBody = visibleZones.some((zone) => ANATOMY_CONFIG[zone].family !== 'legs')
 
   if (includesLegs && !includesUpperBody) return FAMILY_CROPS.legs[view]
-  if (!includesLegs && includesUpperBody) return view === 'FRONT' ? '170 39 680 729' : '180 34 663 750'
+  if (!includesLegs && includesUpperBody)
+    return view === 'FRONT' ? '170 39 680 729' : '180 34 663 750'
   return view === 'FRONT' ? '170 39 680 1411' : '180 34 663 1440'
 }
 
@@ -241,7 +225,8 @@ export function WorkoutMuscleArtwork({
   const reactId = useId().replace(/:/g, '')
   const zones = expandWorkoutMuscleGroups(groups)
   const view = preferredView(zones)
-  const primary = zones.find((zone) => ANATOMY_CONFIG[zone].view === view) ?? zones[0] ?? 'shoulders'
+  const primary =
+    zones.find((zone) => ANATOMY_CONFIG[zone].view === view) ?? zones[0] ?? 'shoulders'
   const visibleZones = zones.filter((zone) => ANATOMY_CONFIG[zone].view === view)
   const anatomyGroups = [
     ...new Set(visibleZones.flatMap((zone) => ANATOMY_CONFIG[zone].groups))
@@ -258,8 +243,7 @@ export function WorkoutMuscleArtwork({
       aria-hidden="true"
       className={cn(
         'pointer-events-none grid place-items-center overflow-hidden [&>svg]:h-full [&>svg]:w-full',
-        variant === 'card' &&
-          'h-[132px] w-full rounded-xl transition-all duration-200',
+        variant === 'card' && 'h-[132px] w-full rounded-xl transition-all duration-200',
         variant === 'card' &&
           (selected
             ? 'bg-[radial-gradient(circle_at_50%_48%,color-mix(in_srgb,var(--app-accent-500)_13%,transparent),transparent_68%)]'
