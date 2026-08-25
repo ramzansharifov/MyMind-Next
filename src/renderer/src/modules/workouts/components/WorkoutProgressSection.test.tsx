@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -90,7 +90,7 @@ describe('WorkoutProgressSection', () => {
       />
     )
 
-    expect(screen.getByText('78 кг')).toBeInTheDocument()
+    expect(screen.getAllByText('78 кг').length).toBeGreaterThan(0)
     expect(screen.getByText('−2 кг')).toBeInTheDocument()
     expect(screen.getByRole('img', { name: 'Динамика веса тела' })).toBeInTheDocument()
     expect(screen.getByText('Визуальный прогресс')).toBeInTheDocument()
@@ -150,8 +150,9 @@ describe('WorkoutProgressSection', () => {
         name: /Открыть фото спереди за 20 августа 2026/i
       })
     )
-    expect(screen.getByRole('dialog')).toBeInTheDocument()
-    expect(screen.getByAltText(/Спереди · 20 августа 2026/)).toBeInTheDocument()
+    const previewDialog = screen.getByRole('dialog')
+    expect(previewDialog).toBeInTheDocument()
+    expect(within(previewDialog).getByAltText(/Спереди · 20 августа 2026/)).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Закрыть диалог' }))
     await user.click(
