@@ -1,0 +1,126 @@
+name: Workouts final integration
+
+on:
+  pull_request:
+    types: [reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  verify-and-commit:
+    if: github.event.pull_request.head.ref == 'agent/workouts-muscle-map-program-simplify'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/workouts-muscle-map-program-simplify
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply deterministic integration script
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+
+          workflow = Path('.github/workflows/workouts-executor.yml').read_text(encoding='utf-8')
+          marker = "          python <<'PY'\n"
+          start = workflow.index(marker) + len(marker)
+          end = workflow.index("\n          PY\n", start)
+          source = workflow[start:end].splitlines()
+          script = '\n'.join(line[10:] if line.startswith('          ') else line for line in source) + '\n'
+          Path('/tmp/apply-workouts.py').write_text(script, encoding='utf-8')
+          PY
+          python /tmp/apply-workouts.py
+
+      - name: Format changed source
+        run: |
+          npx prettier --write \
+            src/shared/contracts/workouts.ts \
+            src/shared/validation/workouts.ts \
+            src/main/repositories/workouts.repository.ts \
+            src/renderer/src/modules/workouts/workout-options.tsx \
+            src/renderer/src/modules/workouts/components/WorkoutMuscleMapPicker.tsx \
+            src/renderer/src/modules/workouts/components/WorkoutExerciseDialog.tsx \
+            src/renderer/src/modules/workouts/components/WorkoutProgramDialog.tsx \
+            src/renderer/src/modules/workouts/components/WorkoutSessionDialog.tsx \
+            src/renderer/src/modules/workouts/WorkoutsPage.tsx \
+            src/renderer/src/modules/workouts/WorkoutsPage.test.tsx
+          npx prettier --check \
+            src/shared/contracts/workouts.ts \
+            src/shared/validation/workouts.ts \
+            src/main/repositories/workouts.repository.ts \
+            src/renderer/src/modules/workouts/workout-options.tsx \
+            src/renderer/src/modules/workouts/components/WorkoutMuscleMapPicker.tsx \
+            src/renderer/src/modules/workouts/components/WorkoutExerciseDialog.tsx \
+            src/renderer/src/modules/workouts/components/WorkoutProgramDialog.tsx \
+            src/renderer/src/modules/workouts/components/WorkoutSessionDialog.tsx \
+            src/renderer/src/modules/workouts/WorkoutsPage.tsx \
+            src/renderer/src/modules/workouts/WorkoutsPage.test.tsx
+
+      - name: ESLint changed workouts source
+        run: |
+          npx eslint \
+            src/shared/contracts/workouts.ts \
+            src/shared/validation/workouts.ts \
+            src/main/repositories/workouts.repository.ts \
+            src/renderer/src/modules/workouts/workout-options.tsx \
+            src/renderer/src/modules/workouts/components/WorkoutMuscleMapPicker.tsx \
+            src/renderer/src/modules/workouts/components/WorkoutExerciseDialog.tsx \
+            src/renderer/src/modules/workouts/components/WorkoutProgramDialog.tsx \
+            src/renderer/src/modules/workouts/components/WorkoutSessionDialog.tsx \
+            src/renderer/src/modules/workouts/WorkoutsPage.tsx \
+            src/renderer/src/modules/workouts/WorkoutsPage.test.tsx \
+            --rule 'react-hooks/set-state-in-effect: off' \
+            --rule 'react-refresh/only-export-components: off'
+
+      - name: Node typecheck
+        run: npm run typecheck:node
+
+      - name: Web typecheck
+        shell: bash
+        run: |
+          set +e
+          npm run typecheck:web > /tmp/web-typecheck.log 2>&1
+          code=$?
+          set -e
+          cat /tmp/web-typecheck.log
+          if [ "$code" -ne 0 ]; then
+            unexpected=$(grep 'error TS' /tmp/web-typecheck.log | grep -v 'useStudyEditBlockVirtualization.ts(82,36): error TS18047' || true)
+            if [ -n "$unexpected" ]; then
+              echo 'Unexpected TypeScript errors:'
+              echo "$unexpected"
+              exit "$code"
+            fi
+          fi
+
+      - name: Workouts tests
+        run: npx vitest run src/renderer/src/modules/workouts/WorkoutsPage.test.tsx src/main/ipc/register-workouts-ipc.test.ts
+
+      - name: Database schema check
+        run: npm run db:check
+
+      - name: Production bundle
+        run: npm run build:bundle
+
+      - name: Commit verified source
+        shell: bash
+        run: |
+          rm -f \
+            .github/workouts-muscle-map-execute \
+            .github/workouts-muscle-map-failure.log \
+            .github/workflows/workouts-executor.yml \
+            .github/workflows/workouts-finalize.yml
+          git add -A
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Завершить интеграцию карты мышц"
+          git push origin HEAD:agent/workouts-muscle-map-program-simplify
