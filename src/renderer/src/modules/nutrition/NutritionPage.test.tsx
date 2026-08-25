@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -11,6 +11,7 @@ import type {
 const mocks = vi.hoisted(() => ({
   listOverview: vi.fn(),
   createFood: vi.fn(),
+  createFoods: vi.fn(),
   updateFood: vi.fn(),
   deleteFood: vi.fn(),
   createRecipe: vi.fn(),
@@ -98,6 +99,7 @@ function overview(): NutritionOverview {
 beforeEach(() => {
   vi.clearAllMocks()
   mocks.listOverview.mockResolvedValue(overview())
+  mocks.createFoods.mockResolvedValue({ created: [chicken], skippedNames: [] })
   mocks.setWater.mockImplementation(async ({ date, waterMl }) => ({
     ...overview().day,
     date,
@@ -116,6 +118,50 @@ describe('NutritionPage', () => {
     await user.click(screen.getByRole('button', { name: 'Продукты' }))
     expect(screen.getByText('Куриная грудка')).toBeInTheDocument()
     expect(screen.getByText(/165 ккал/)).toBeInTheDocument()
+  })
+
+  it('imports a list of foods from JSON', async () => {
+    const user = userEvent.setup()
+    render(<NutritionPage />)
+
+    await screen.findByRole('heading', { name: 'Питание' })
+    await user.click(screen.getByRole('button', { name: 'Продукты' }))
+    await user.click(screen.getByRole('button', { name: 'Из JSON' }))
+
+    const dialog = screen.getByRole('dialog')
+    const textarea = within(dialog).getByRole('textbox', { name: 'JSON продуктов' })
+    await user.click(textarea)
+    await user.paste(
+      '[{"name":"Картофель","category":"vegetables","calories":77,"proteinG":2,"fatG":0.1,"carbsG":17.5}]'
+    )
+    await user.click(within(dialog).getByRole('button', { name: 'Добавить' }))
+
+    await waitFor(() => {
+      expect(mocks.createFoods).toHaveBeenCalledWith({
+        foods: [
+          {
+            name: 'Картофель',
+            brand: '',
+            category: 'vegetables',
+            baseAmount: 100,
+            baseUnit: 'g',
+            nutrients: {
+              calories: 77,
+              proteinG: 2,
+              fatG: 0.1,
+              carbsG: 17.5,
+              fiberG: 0,
+              sugarG: 0,
+              sodiumMg: 0
+            },
+            favorite: false,
+            status: 'active',
+            notes: ''
+          }
+        ]
+      })
+    })
+    expect(screen.getByRole('status')).toHaveTextContent('Добавлено продуктов: 1')
   })
 
   it('updates water for the currently selected day', async () => {

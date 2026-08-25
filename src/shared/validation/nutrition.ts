@@ -16,9 +16,7 @@ function isCalendarDate(value: string): boolean {
   const [year, month, day] = value.split('-').map(Number)
   const date = new Date(Date.UTC(year, month - 1, day))
   return (
-    date.getUTCFullYear() === year &&
-    date.getUTCMonth() === month - 1 &&
-    date.getUTCDate() === day
+    date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day
   )
 }
 
@@ -27,7 +25,7 @@ const dateSchema = z
   .regex(datePattern, 'Дата должна быть в формате ГГГГ-ММ-ДД')
   .refine(isCalendarDate, 'Укажите существующую календарную дату')
 const nonNegativeNumber = z.number().finite().min(0, 'Значение не может быть отрицательным')
-const targetSchema = (maximum: number) =>
+const targetSchema = (maximum: number): z.ZodNullable<z.ZodNumber> =>
   z.number().finite().positive('Цель должна быть больше нуля').max(maximum).nullable()
 
 export const nutritionValuesSchema = z.object({
@@ -53,6 +51,12 @@ const foodPayloadSchema = z.object({
 })
 
 export const createNutritionFoodInputSchema = foodPayloadSchema
+export const createNutritionFoodsInputSchema = z.object({
+  foods: z
+    .array(createNutritionFoodInputSchema)
+    .min(1, 'Добавьте хотя бы один продукт')
+    .max(300, 'За один раз можно добавить до 300 продуктов')
+})
 export const updateNutritionFoodInputSchema = foodPayloadSchema.extend({ id: idSchema })
 export const deleteNutritionFoodInputSchema = z.object({ id: idSchema })
 
@@ -72,10 +76,7 @@ const recipePayloadSchema = z
     servings: z.number().finite().positive('Количество порций должно быть больше нуля').max(1000),
     favorite: z.boolean(),
     status: z.enum(NUTRITION_ENTITY_STATUSES),
-    ingredients: z
-      .array(recipeIngredientSchema)
-      .min(1, 'Добавьте хотя бы один ингредиент')
-      .max(200)
+    ingredients: z.array(recipeIngredientSchema).min(1, 'Добавьте хотя бы один ингредиент').max(200)
   })
   .superRefine((input, context) => {
     const ids = input.ingredients.map((ingredient) => ingredient.foodId)

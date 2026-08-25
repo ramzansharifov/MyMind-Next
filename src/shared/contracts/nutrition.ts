@@ -127,6 +127,15 @@ export interface CreateNutritionFoodInput {
   notes: string
 }
 
+export interface CreateNutritionFoodsInput {
+  foods: CreateNutritionFoodInput[]
+}
+
+export interface CreateNutritionFoodsResult {
+  created: NutritionFoodRecord[]
+  skippedNames: string[]
+}
+
 export interface UpdateNutritionFoodInput extends CreateNutritionFoodInput {
   id: string
 }
@@ -271,6 +280,7 @@ export interface NutritionReport {
 export const NUTRITION_IPC_CHANNELS = {
   listOverview: 'nutrition:list-overview',
   createFood: 'nutrition:create-food',
+  createFoods: 'nutrition:create-foods',
   updateFood: 'nutrition:update-food',
   deleteFood: 'nutrition:delete-food',
   createRecipe: 'nutrition:create-recipe',
@@ -287,6 +297,7 @@ export const NUTRITION_IPC_CHANNELS = {
 export interface NutritionApi {
   listOverview(input: NutritionOverviewInput): Promise<NutritionOverview>
   createFood(input: CreateNutritionFoodInput): Promise<NutritionFoodRecord>
+  createFoods(input: CreateNutritionFoodsInput): Promise<CreateNutritionFoodsResult>
   updateFood(input: UpdateNutritionFoodInput): Promise<NutritionFoodRecord>
   deleteFood(input: DeleteNutritionFoodInput): Promise<boolean>
   createRecipe(input: CreateNutritionRecipeInput): Promise<NutritionRecipeRecord>

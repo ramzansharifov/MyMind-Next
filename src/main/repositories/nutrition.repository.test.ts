@@ -7,6 +7,7 @@ import { closeDatabase, getSqlite, initializeDatabaseForTesting } from '../datab
 import { runDatabaseMigrationsFrom } from '../database/migrate'
 import {
   createNutritionFood,
+  createNutritionFoods,
   createNutritionLogEntry,
   createNutritionRecipe,
   getNutritionReport,
@@ -40,7 +41,7 @@ afterAll(async () => {
   await rm(root, { recursive: true, force: true })
 })
 
-function createChicken() {
+function createChicken(): ReturnType<typeof createNutritionFood> {
   return createNutritionFood({
     name: 'Куриная грудка',
     brand: '',
@@ -115,6 +116,62 @@ describe('nutrition repository', () => {
 
     expect(entry).toMatchObject({ title: 'Курица с рисом', unit: 'serving' })
     expect(entry.nutrients.calories).toBe(540)
+  })
+
+  it('bulk creates products transactionally and skips exact catalog duplicates', () => {
+    createChicken()
+    const apple = {
+      name: 'Яблоко',
+      brand: '',
+      category: 'fruits' as const,
+      baseAmount: 100,
+      baseUnit: 'g' as const,
+      nutrients: {
+        calories: 52,
+        proteinG: 0.3,
+        fatG: 0.2,
+        carbsG: 13.8,
+        fiberG: 2.4,
+        sugarG: 10.4,
+        sodiumMg: 1
+      },
+      favorite: false,
+      status: 'active' as const,
+      notes: ''
+    }
+
+    const result = createNutritionFoods({
+      foods: [
+        {
+          name: 'Куриная грудка',
+          brand: '',
+          category: 'protein',
+          baseAmount: 100,
+          baseUnit: 'g',
+          nutrients: {
+            calories: 165,
+            proteinG: 31,
+            fatG: 3.6,
+            carbsG: 0,
+            fiberG: 0,
+            sugarG: 0,
+            sodiumMg: 74
+          },
+          favorite: false,
+          status: 'active',
+          notes: ''
+        },
+        apple,
+        apple
+      ]
+    })
+
+    expect(result.created.map((food) => food.name)).toEqual(['Яблоко'])
+    expect(result.skippedNames).toEqual(['Куриная грудка', 'Яблоко'])
+    expect(listNutritionOverview('2026-08-17').foods.map((food) => food.name)).toEqual([
+      'Куриная грудка',
+      'Яблоко'
+    ])
   })
 
   it('keeps historical nutrient snapshots after a food is edited', () => {
