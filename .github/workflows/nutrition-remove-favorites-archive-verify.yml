@@ -29,6 +29,7 @@ jobs:
           python .github/nutrition-remove-favorites-archive.fix.py
           python .github/nutrition-remove-favorites-archive.patch.py
           python .github/nutrition-remove-favorites-archive.dialog-fix.py
+          python .github/nutrition-remove-favorites-archive.schema-fix.py
           python .github/nutrition-remove-favorites-archive.tests.py
 
       - name: Install dependencies
@@ -39,6 +40,7 @@ jobs:
           npx prettier --write \
             src/shared/contracts/nutrition.ts \
             src/shared/validation/nutrition.ts \
+            src/main/database/schema/nutrition.ts \
             src/main/repositories/nutrition.repository.ts \
             src/main/repositories/nutrition.repository.test.ts \
             src/renderer/src/modules/nutrition/NutritionPage.tsx \
@@ -52,6 +54,7 @@ jobs:
           npx prettier --check \
             src/shared/contracts/nutrition.ts \
             src/shared/validation/nutrition.ts \
+            src/main/database/schema/nutrition.ts \
             src/main/repositories/nutrition.repository.ts \
             src/main/repositories/nutrition.repository.test.ts \
             src/renderer/src/modules/nutrition/NutritionPage.tsx \
@@ -63,7 +66,7 @@ jobs:
             src/renderer/src/modules/nutrition/components/NutritionFoodJsonImportDialog.test.tsx \
             src/renderer/src/modules/nutrition/nutrition-food-json.ts
 
-      - name: Verify concepts are removed from nutrition source
+      - name: Verify concepts are removed from nutrition application source
         run: |
           python <<'PY'
           from pathlib import Path
@@ -100,11 +103,24 @@ jobs:
           print('No favorite/archive application concepts remain in Nutrition')
           PY
 
+      - name: Verify legacy columns are DB-only
+        run: |
+          python <<'PY'
+          from pathlib import Path
+          text = Path('src/main/database/schema/nutrition.ts').read_text(encoding='utf-8')
+          if text.count("type LegacyNutritionEntityStatus = 'active' | 'archived'") != 1:
+              raise SystemExit('Legacy status type is missing or duplicated')
+          if text.count("favorite: integer('favorite'") != 2 or text.count("status: text('status')") != 2:
+              raise SystemExit('Expected legacy favorite/status DB columns to remain exactly on foods and recipes')
+          print('Legacy DB columns remain isolated from the Nutrition application model')
+          PY
+
       - name: Lint changed sources
         run: |
           npx eslint \
             src/shared/contracts/nutrition.ts \
             src/shared/validation/nutrition.ts \
+            src/main/database/schema/nutrition.ts \
             src/main/repositories/nutrition.repository.ts \
             src/main/repositories/nutrition.repository.test.ts \
             src/renderer/src/modules/nutrition/NutritionPage.tsx \
@@ -158,6 +174,7 @@ jobs:
             .github/nutrition-remove-favorites-archive.fix.py \
             .github/nutrition-remove-favorites-archive.patch.py \
             .github/nutrition-remove-favorites-archive.dialog-fix.py \
+            .github/nutrition-remove-favorites-archive.schema-fix.py \
             .github/nutrition-remove-favorites-archive.tests.py \
             .github/nutrition-remove-favorites-archive.trigger \
             .github/workflows/nutrition-remove-favorites-archive-verify.yml
