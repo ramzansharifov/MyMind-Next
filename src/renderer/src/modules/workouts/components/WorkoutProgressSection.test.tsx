@@ -75,7 +75,8 @@ const entries: WorkoutProgressEntryRecord[] = [
 ]
 
 describe('WorkoutProgressSection', () => {
-  it('shows weight trend, mode-aware metrics and visual comparison', () => {
+  it('shows weight trend, mode-aware metrics and visual comparison', async () => {
+    const user = userEvent.setup()
     render(
       <WorkoutProgressSection
         entries={entries}
@@ -93,6 +94,12 @@ describe('WorkoutProgressSection', () => {
     expect(screen.getByText('Визуальный прогресс')).toBeInTheDocument()
     expect(screen.getByAltText(/Было · 1 августа 2026/)).toBeInTheDocument()
     expect(screen.getByAltText(/Стало · 20 августа 2026/)).toBeInTheDocument()
+    expect(screen.queryByText('12 повторений')).not.toBeInTheDocument()
+    await user.click(
+      screen.getByRole('button', {
+        name: /Развернуть или свернуть запись прогресса за 20 августа 2026/i
+      })
+    )
     expect(screen.getByText('12 повторений')).toBeInTheDocument()
     expect(screen.getByText('80 кг × 8')).toBeInTheDocument()
   })
@@ -112,6 +119,11 @@ describe('WorkoutProgressSection', () => {
       />
     )
 
+    await user.click(
+      screen.getByRole('button', {
+        name: /Развернуть или свернуть запись прогресса за 20 августа 2026/i
+      })
+    )
     await user.click(
       screen.getByRole('button', {
         name: /Добавить фото сзади за 20 августа 2026/i
@@ -142,6 +154,11 @@ describe('WorkoutProgressSection', () => {
       />
     )
 
+    await user.click(
+      screen.getByRole('button', {
+        name: /Развернуть или свернуть запись прогресса за 20 августа 2026/i
+      })
+    )
     await user.click(
       screen.getByRole('button', {
         name: /Открыть фото спереди за 20 августа 2026/i

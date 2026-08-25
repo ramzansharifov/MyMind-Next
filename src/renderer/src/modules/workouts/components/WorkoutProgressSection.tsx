@@ -1,7 +1,10 @@
+import * as Collapsible from '@radix-ui/react-collapsible'
+
 import {
   ArrowRight,
   CalendarDays,
   Camera,
+  ChevronDown,
   Images,
   Pencil,
   Plus,
@@ -385,243 +388,255 @@ export function WorkoutProgressSection({
         {entries.map((entry) => {
           const customPhotos = entry.photos.filter((photo) => photo.view === 'custom')
           return (
-            <article
-              key={entry.id}
-              className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-5 shadow-[var(--app-shadow-card)]"
-            >
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="size-5 text-violet-300" />
-                    <h3 className="text-base font-semibold text-[var(--app-text)]">
-                      {formatDate(entry.date)}
-                    </h3>
-                  </div>
-                  <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--app-muted)]">
-                    {entry.bodyWeightKg !== null && (
+            <Collapsible.Root key={entry.id} defaultOpen={false} asChild>
+              <article className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-5 shadow-[var(--app-shadow-card)]">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="size-5 text-violet-300" />
+                      <h3 className="text-base font-semibold text-[var(--app-text)]">
+                        {formatDate(entry.date)}
+                      </h3>
+                    </div>
+                    <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--app-muted)]">
+                      {entry.bodyWeightKg !== null && (
+                        <span className="inline-flex items-center gap-1.5">
+                          <Scale className="size-3.5" /> {formatWeight(entry.bodyWeightKg)} кг
+                        </span>
+                      )}
                       <span className="inline-flex items-center gap-1.5">
-                        <Scale className="size-3.5" /> {formatWeight(entry.bodyWeightKg)} кг
+                        <Images className="size-3.5" /> {entry.photos.length} фото
                       </span>
-                    )}
-                    <span className="inline-flex items-center gap-1.5">
-                      <Images className="size-3.5" /> {entry.photos.length} фото
-                    </span>
-                    <span>{entry.metrics.length} показателей</span>
+                      <span>{entry.metrics.length} показателей</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-1">
+                    <Collapsible.Trigger asChild>
+                      <button
+                        type="button"
+                        aria-label={`Развернуть или свернуть запись прогресса за ${formatDate(entry.date)}`}
+                        className="group flex size-9 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+                      >
+                        <ChevronDown className="size-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                      </button>
+                    </Collapsible.Trigger>
+                    <button
+                      type="button"
+                      aria-label={`Изменить прогресс за ${formatDate(entry.date)}`}
+                      className="flex size-9 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+                      onClick={() => onEdit(entry)}
+                    >
+                      <Pencil className="size-4" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={`Удалить прогресс за ${formatDate(entry.date)}`}
+                      className="flex size-9 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
+                      onClick={() => onDelete(entry)}
+                    >
+                      <Trash2 className="size-4" />
+                    </button>
                   </div>
                 </div>
-                <div className="flex gap-1">
-                  <button
-                    type="button"
-                    aria-label={`Изменить прогресс за ${formatDate(entry.date)}`}
-                    className="flex size-9 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-                    onClick={() => onEdit(entry)}
-                  >
-                    <Pencil className="size-4" />
-                  </button>
-                  <button
-                    type="button"
-                    aria-label={`Удалить прогресс за ${formatDate(entry.date)}`}
-                    className="flex size-9 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
-                    onClick={() => onDelete(entry)}
-                  >
-                    <Trash2 className="size-4" />
-                  </button>
-                </div>
-              </div>
 
-              {(entry.wellbeing || entry.notes) && (
-                <div className="mt-4 grid gap-2 md:grid-cols-2">
-                  {entry.wellbeing && (
-                    <div className="rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 py-3">
-                      <div className="text-[10px] font-semibold tracking-[0.08em] text-[var(--app-muted)] uppercase">
-                        Самочувствие
-                      </div>
-                      <p className="mt-1.5 text-sm leading-6 text-[var(--app-text)]">
-                        {entry.wellbeing}
-                      </p>
-                    </div>
-                  )}
-                  {entry.notes && (
-                    <div className="rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 py-3">
-                      <div className="text-[10px] font-semibold tracking-[0.08em] text-[var(--app-muted)] uppercase">
-                        Наблюдения
-                      </div>
-                      <p className="mt-1.5 text-sm leading-6 text-[var(--app-text)]">
-                        {entry.notes}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {entry.metrics.length > 0 && (
-                <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                  {entry.metrics.map((metric) => (
-                    <div
-                      key={metric.id}
-                      className="rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-3"
-                    >
-                      <div className="flex items-center gap-2">
-                        <WorkoutMuscleArtwork
-                          groups={metric.muscleGroups}
-                          className="size-9 shrink-0 rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] p-0.5"
-                        />
-                        <div className="min-w-0 flex-1">
-                          <div className="truncate text-xs font-semibold text-[var(--app-text)]">
-                            {metric.exerciseTitle}
+                <Collapsible.Content className="overflow-hidden">
+                  {(entry.wellbeing || entry.notes) && (
+                    <div className="mt-4 grid gap-2 md:grid-cols-2">
+                      {entry.wellbeing && (
+                        <div className="rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 py-3">
+                          <div className="text-[10px] font-semibold tracking-[0.08em] text-[var(--app-muted)] uppercase">
+                            Самочувствие
                           </div>
-                          <div className="mt-0.5 text-[10px] text-[var(--app-muted)]">
-                            {metric.usesExternalWeight
-                              ? 'С дополнительным весом'
-                              : 'Без дополнительного веса'}
-                          </div>
+                          <p className="mt-1.5 text-sm leading-6 text-[var(--app-text)]">
+                            {entry.wellbeing}
+                          </p>
                         </div>
-                      </div>
-                      <div className="mt-2 text-lg font-semibold text-[var(--app-text)]">
-                        {metric.usesExternalWeight
-                          ? `${formatWeight(metric.weightKg)} кг × ${metric.reps}`
-                          : `${metric.reps} повторений`}
-                      </div>
-                      {metric.comment && (
-                        <p className="mt-1 text-xs leading-5 text-[var(--app-muted)]">
-                          {metric.comment}
-                        </p>
+                      )}
+                      {entry.notes && (
+                        <div className="rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 py-3">
+                          <div className="text-[10px] font-semibold tracking-[0.08em] text-[var(--app-muted)] uppercase">
+                            Наблюдения
+                          </div>
+                          <p className="mt-1.5 text-sm leading-6 text-[var(--app-text)]">
+                            {entry.notes}
+                          </p>
+                        </div>
                       )}
                     </div>
-                  ))}
-                </div>
-              )}
+                  )}
 
-              <div className="mt-5">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <h4 className="text-sm font-semibold text-[var(--app-text)]">
-                      Фотографии формы
-                    </h4>
-                    <p className="mt-0.5 text-xs text-[var(--app-muted)]">
-                      Для точного сравнения сохраняйте похожее расстояние, позу и освещение.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4">
-                  {FIXED_PHOTO_VIEWS.map((option) => {
-                    const photo = entry.photos.find((candidate) => candidate.view === option.value)
-                    if (!photo) {
-                      return (
-                        <button
-                          key={option.value}
-                          type="button"
-                          aria-label={`Добавить фото ${option.label.toLocaleLowerCase('ru-RU')} за ${formatDate(entry.date)}`}
-                          disabled={busy}
-                          className="flex aspect-[4/5] flex-col items-center justify-center rounded-xl border border-dashed border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-center text-[var(--app-muted)] transition-colors hover:border-violet-500/35 hover:bg-violet-500/5 hover:text-violet-200 disabled:opacity-45"
-                          onClick={() => void onImportPhoto(entry.id, option.value)}
+                  {entry.metrics.length > 0 && (
+                    <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                      {entry.metrics.map((metric) => (
+                        <div
+                          key={metric.id}
+                          className="rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-3"
                         >
-                          <Camera className="size-6" />
-                          <span className="mt-2 text-xs font-semibold">{option.label}</span>
-                          <span className="mt-1 text-[10px]">Добавить фото</span>
-                        </button>
-                      )
-                    }
+                          <div className="flex items-center gap-2">
+                            <WorkoutMuscleArtwork
+                              groups={metric.muscleGroups}
+                              className="size-9 shrink-0 rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] p-0.5"
+                            />
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate text-xs font-semibold text-[var(--app-text)]">
+                                {metric.exerciseTitle}
+                              </div>
+                              <div className="mt-0.5 text-[10px] text-[var(--app-muted)]">
+                                {metric.usesExternalWeight
+                                  ? 'С дополнительным весом'
+                                  : 'Без дополнительного веса'}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="mt-2 text-lg font-semibold text-[var(--app-text)]">
+                            {metric.usesExternalWeight
+                              ? `${formatWeight(metric.weightKg)} кг × ${metric.reps}`
+                              : `${metric.reps} повторений`}
+                          </div>
+                          {metric.comment && (
+                            <p className="mt-1 text-xs leading-5 text-[var(--app-muted)]">
+                              {metric.comment}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
-                    const item = { photo, date: entry.date }
-                    return (
-                      <div
-                        key={option.value}
-                        className="group/photo relative aspect-[4/5] overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)]"
-                      >
-                        <button
-                          type="button"
-                          className="size-full"
-                          aria-label={`Открыть фото ${option.label.toLocaleLowerCase('ru-RU')} за ${formatDate(entry.date)}`}
-                          onClick={() => setViewer(item)}
-                        >
-                          <img
-                            src={photo.url}
-                            alt={`${option.label} · ${formatDate(entry.date)}`}
-                            className="size-full object-cover"
-                          />
-                        </button>
-                        <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-gradient-to-t from-black/85 via-black/55 to-transparent px-2.5 pt-8 pb-2 text-white">
-                          <span className="text-[11px] font-semibold">{option.label}</span>
-                          <div className="flex gap-1 opacity-0 transition-opacity group-hover/photo:opacity-100 focus-within:opacity-100">
+                  <div className="mt-5">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <h4 className="text-sm font-semibold text-[var(--app-text)]">
+                          Фотографии формы
+                        </h4>
+                        <p className="mt-0.5 text-xs text-[var(--app-muted)]">
+                          Для точного сравнения сохраняйте похожее расстояние, позу и освещение.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4">
+                      {FIXED_PHOTO_VIEWS.map((option) => {
+                        const photo = entry.photos.find(
+                          (candidate) => candidate.view === option.value
+                        )
+                        if (!photo) {
+                          return (
                             <button
+                              key={option.value}
                               type="button"
-                              aria-label={`Заменить фото ${option.label.toLocaleLowerCase('ru-RU')} за ${formatDate(entry.date)}`}
+                              aria-label={`Добавить фото ${option.label.toLocaleLowerCase('ru-RU')} за ${formatDate(entry.date)}`}
                               disabled={busy}
-                              className="flex size-7 items-center justify-center rounded-lg bg-black/55 text-white backdrop-blur hover:bg-black/75 disabled:opacity-45"
+                              className="flex aspect-[4/5] flex-col items-center justify-center rounded-xl border border-dashed border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-center text-[var(--app-muted)] transition-colors hover:border-violet-500/35 hover:bg-violet-500/5 hover:text-violet-200 disabled:opacity-45"
                               onClick={() => void onImportPhoto(entry.id, option.value)}
                             >
-                              <RefreshCw className="size-3.5" />
+                              <Camera className="size-6" />
+                              <span className="mt-2 text-xs font-semibold">{option.label}</span>
+                              <span className="mt-1 text-[10px]">Добавить фото</span>
+                            </button>
+                          )
+                        }
+
+                        const item = { photo, date: entry.date }
+                        return (
+                          <div
+                            key={option.value}
+                            className="group/photo relative aspect-[4/5] overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)]"
+                          >
+                            <button
+                              type="button"
+                              className="size-full"
+                              aria-label={`Открыть фото ${option.label.toLocaleLowerCase('ru-RU')} за ${formatDate(entry.date)}`}
+                              onClick={() => setViewer(item)}
+                            >
+                              <img
+                                src={photo.url}
+                                alt={`${option.label} · ${formatDate(entry.date)}`}
+                                className="size-full object-cover"
+                              />
+                            </button>
+                            <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-gradient-to-t from-black/85 via-black/55 to-transparent px-2.5 pt-8 pb-2 text-white">
+                              <span className="text-[11px] font-semibold">{option.label}</span>
+                              <div className="flex gap-1 opacity-0 transition-opacity group-hover/photo:opacity-100 focus-within:opacity-100">
+                                <button
+                                  type="button"
+                                  aria-label={`Заменить фото ${option.label.toLocaleLowerCase('ru-RU')} за ${formatDate(entry.date)}`}
+                                  disabled={busy}
+                                  className="flex size-7 items-center justify-center rounded-lg bg-black/55 text-white backdrop-blur hover:bg-black/75 disabled:opacity-45"
+                                  onClick={() => void onImportPhoto(entry.id, option.value)}
+                                >
+                                  <RefreshCw className="size-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  aria-label={`Удалить фото ${option.label.toLocaleLowerCase('ru-RU')} за ${formatDate(entry.date)}`}
+                                  disabled={busy}
+                                  className="flex size-7 items-center justify-center rounded-lg bg-black/55 text-white backdrop-blur hover:bg-red-500/80 disabled:opacity-45"
+                                  onClick={() => setPhotoToDelete(item)}
+                                >
+                                  <Trash2 className="size-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+
+                    <div className="mt-3 flex items-center gap-2">
+                      <div className="h-px flex-1 bg-[var(--app-border)]" />
+                      <span className="text-[10px] font-semibold tracking-[0.08em] text-[var(--app-muted)] uppercase">
+                        Другие ракурсы
+                      </span>
+                      <div className="h-px flex-1 bg-[var(--app-border)]" />
+                    </div>
+                    <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+                      {customPhotos.map((photo) => {
+                        const item = { photo, date: entry.date }
+                        return (
+                          <div
+                            key={photo.id}
+                            className="group/photo relative aspect-[4/5] overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)]"
+                          >
+                            <button
+                              type="button"
+                              className="size-full"
+                              aria-label={`Открыть другой ракурс за ${formatDate(entry.date)}`}
+                              onClick={() => setViewer(item)}
+                            >
+                              <img
+                                src={photo.url}
+                                alt={`Другой ракурс · ${formatDate(entry.date)}`}
+                                className="size-full object-cover"
+                              />
                             </button>
                             <button
                               type="button"
-                              aria-label={`Удалить фото ${option.label.toLocaleLowerCase('ru-RU')} за ${formatDate(entry.date)}`}
+                              aria-label={`Удалить другой ракурс за ${formatDate(entry.date)}`}
                               disabled={busy}
-                              className="flex size-7 items-center justify-center rounded-lg bg-black/55 text-white backdrop-blur hover:bg-red-500/80 disabled:opacity-45"
+                              className="absolute top-2 right-2 flex size-8 items-center justify-center rounded-lg bg-black/60 text-white opacity-0 backdrop-blur transition-opacity group-hover/photo:opacity-100 focus:opacity-100 disabled:opacity-45"
                               onClick={() => setPhotoToDelete(item)}
                             >
-                              <Trash2 className="size-3.5" />
+                              <Trash2 className="size-4" />
                             </button>
                           </div>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-
-                <div className="mt-3 flex items-center gap-2">
-                  <div className="h-px flex-1 bg-[var(--app-border)]" />
-                  <span className="text-[10px] font-semibold tracking-[0.08em] text-[var(--app-muted)] uppercase">
-                    Другие ракурсы
-                  </span>
-                  <div className="h-px flex-1 bg-[var(--app-border)]" />
-                </div>
-                <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-                  {customPhotos.map((photo) => {
-                    const item = { photo, date: entry.date }
-                    return (
-                      <div
-                        key={photo.id}
-                        className="group/photo relative aspect-[4/5] overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)]"
+                        )
+                      })}
+                      <button
+                        type="button"
+                        aria-label={`Добавить другой ракурс за ${formatDate(entry.date)}`}
+                        disabled={busy}
+                        className="flex aspect-[4/5] min-h-28 flex-col items-center justify-center rounded-xl border border-dashed border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-center text-[var(--app-muted)] transition-colors hover:border-violet-500/35 hover:bg-violet-500/5 hover:text-violet-200 disabled:opacity-45"
+                        onClick={() => void onImportPhoto(entry.id, 'custom')}
                       >
-                        <button
-                          type="button"
-                          className="size-full"
-                          aria-label={`Открыть другой ракурс за ${formatDate(entry.date)}`}
-                          onClick={() => setViewer(item)}
-                        >
-                          <img
-                            src={photo.url}
-                            alt={`Другой ракурс · ${formatDate(entry.date)}`}
-                            className="size-full object-cover"
-                          />
-                        </button>
-                        <button
-                          type="button"
-                          aria-label={`Удалить другой ракурс за ${formatDate(entry.date)}`}
-                          disabled={busy}
-                          className="absolute top-2 right-2 flex size-8 items-center justify-center rounded-lg bg-black/60 text-white opacity-0 backdrop-blur transition-opacity group-hover/photo:opacity-100 focus:opacity-100 disabled:opacity-45"
-                          onClick={() => setPhotoToDelete(item)}
-                        >
-                          <Trash2 className="size-4" />
-                        </button>
-                      </div>
-                    )
-                  })}
-                  <button
-                    type="button"
-                    aria-label={`Добавить другой ракурс за ${formatDate(entry.date)}`}
-                    disabled={busy}
-                    className="flex aspect-[4/5] min-h-28 flex-col items-center justify-center rounded-xl border border-dashed border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-center text-[var(--app-muted)] transition-colors hover:border-violet-500/35 hover:bg-violet-500/5 hover:text-violet-200 disabled:opacity-45"
-                    onClick={() => void onImportPhoto(entry.id, 'custom')}
-                  >
-                    <Plus className="size-5" />
-                    <span className="mt-2 text-xs font-semibold">Другой ракурс</span>
-                  </button>
-                </div>
-              </div>
-            </article>
+                        <Plus className="size-5" />
+                        <span className="mt-2 text-xs font-semibold">Другой ракурс</span>
+                      </button>
+                    </div>
+                  </div>
+                </Collapsible.Content>
+              </article>
+            </Collapsible.Root>
           )
         })}
       </div>
