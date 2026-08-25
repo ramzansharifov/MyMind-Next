@@ -31,6 +31,11 @@ jobs:
           path = Path('.github/scripts/workouts-bodyweight-patch.py')
           source = path.read_text(encoding='utf-8')
           source = source.replace('if count != 1:', 'if count < 1:', 1)
+          source = source.replace(
+              "end_marker = '                  </div>\\n\\n                  <label className=\"mt-3 block space-y-1.5\">'",
+              "end_marker = '                  <div className=\"mt-3 flex flex-wrap items-center gap-2\">'",
+              1,
+          )
           path.write_text(source, encoding='utf-8')
           PY
           python .github/scripts/workouts-bodyweight-patch.py
