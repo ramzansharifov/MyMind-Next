@@ -3,6 +3,7 @@ import { z } from 'zod'
 import {
   WORKOUT_ENTITY_STATUSES,
   WORKOUT_MUSCLE_GROUPS,
+  WORKOUT_PROGRESS_PHOTO_VIEWS,
   WORKOUT_MUSCLE_ZONES
 } from '../contracts/workouts'
 
@@ -152,7 +153,10 @@ export const updateWorkoutProgressEntryInputSchema = progressPayloadSchema.safeE
   id: idSchema
 })
 export const deleteWorkoutProgressEntryInputSchema = z.object({ id: idSchema })
-export const importWorkoutProgressPhotoInputSchema = z.object({ entryId: idSchema })
+export const importWorkoutProgressPhotoInputSchema = z.object({
+  entryId: idSchema,
+  view: z.enum(WORKOUT_PROGRESS_PHOTO_VIEWS)
+})
 export const deleteWorkoutProgressPhotoInputSchema = z.object({ id: idSchema })
 
 export const workoutReportInputSchema = z

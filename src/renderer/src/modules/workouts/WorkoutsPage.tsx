@@ -2,7 +2,6 @@ import {
   Activity,
   BarChart3,
   CalendarDays,
-  Camera,
   Clock3,
   Dumbbell,
   FileText,
@@ -34,6 +33,7 @@ import type {
   WorkoutMuscleGroup,
   WorkoutProgramRecord,
   WorkoutProgressEntryRecord,
+  WorkoutProgressPhotoView,
   WorkoutReport,
   WorkoutSessionRecord,
   WorkoutsOverview
@@ -49,6 +49,7 @@ import { WorkoutExerciseDialog } from './components/WorkoutExerciseDialog'
 import { WorkoutMuscleArtwork } from './components/WorkoutMuscleArtwork'
 import { WorkoutProgramDialog } from './components/WorkoutProgramDialog'
 import { WorkoutProgressDialog } from './components/WorkoutProgressDialog'
+import { WorkoutProgressSection } from './components/WorkoutProgressSection'
 import { WorkoutSessionDetailDialog } from './components/WorkoutSessionDetailDialog'
 import { WorkoutSessionDialog } from './components/WorkoutSessionDialog'
 import {
@@ -307,14 +308,15 @@ export function WorkoutsPage({
     }
   }
 
-  async function importPhoto(entryId: string): Promise<void> {
+  async function importPhoto(entryId: string, view: WorkoutProgressPhotoView): Promise<void> {
     setIsBusy(true)
     setError(null)
     try {
-      await workoutsClient.importProgressPhoto({ entryId })
+      await workoutsClient.importProgressPhoto({ entryId, view })
       await loadOverview()
     } catch (reason) {
       setError(errorMessage(reason))
+      throw reason
     } finally {
       setIsBusy(false)
     }
@@ -933,142 +935,17 @@ export function WorkoutsPage({
       )}
 
       {tab === 'progress' && (
-        <section className="mt-5 space-y-4">
-          {progressEntries.length === 0 ? (
-            <div className="flex min-h-72 flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface)] px-6 text-center">
-              <TrendingUp className="size-9 text-violet-300" />
-              <h2 className="mt-4 text-lg font-semibold text-[var(--app-text)]">
-                Начните фиксировать прогресс
-              </h2>
-              <p className="mt-2 max-w-lg text-sm leading-6 text-[var(--app-muted)]">
-                Записывайте вес тела, самочувствие, контрольные показатели в упражнениях и
-                прикрепляйте фотографии формы.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {progressEntries.map((entry) => (
-                <article
-                  key={entry.id}
-                  className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-5 shadow-[var(--app-shadow-card)]"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <TrendingUp className="size-5 text-violet-300" />
-                        <h3 className="text-base font-semibold text-[var(--app-text)]">
-                          {formatDate(entry.date)}
-                        </h3>
-                      </div>
-                      {entry.bodyWeightKg !== null && (
-                        <div className="mt-1.5 inline-flex items-center gap-1.5 text-xs text-[var(--app-muted)]">
-                          <Scale className="size-3.5" />
-                          Вес тела: {entry.bodyWeightKg} кг
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex gap-1">
-                      <button
-                        type="button"
-                        disabled={isBusy}
-                        className="inline-flex h-9 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-xs font-medium text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:opacity-45"
-                        onClick={() => void importPhoto(entry.id)}
-                      >
-                        <Camera className="size-3.5" /> Добавить фото
-                      </button>
-                      <button
-                        type="button"
-                        aria-label="Изменить прогресс"
-                        className="flex size-9 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-                        onClick={() => {
-                          setEditingProgress(entry)
-                          setProgressDialogOpen(true)
-                        }}
-                      >
-                        <Pencil className="size-4" />
-                      </button>
-                      <button
-                        type="button"
-                        aria-label="Удалить запись прогресса"
-                        className="flex size-9 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
-                        onClick={() => setDeleteProgressTarget(entry)}
-                      >
-                        <Trash2 className="size-4" />
-                      </button>
-                    </div>
-                  </div>
-                  {entry.wellbeing && (
-                    <div className="mt-4 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 py-3">
-                      <div className="text-[11px] font-semibold tracking-[0.08em] text-[var(--app-muted)] uppercase">
-                        Самочувствие
-                      </div>
-                      <p className="mt-1.5 text-sm leading-6 text-[var(--app-text)]">
-                        {entry.wellbeing}
-                      </p>
-                    </div>
-                  )}
-                  {entry.metrics.length > 0 && (
-                    <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                      {entry.metrics.map((metric) => {
-                        return (
-                          <div
-                            key={metric.id}
-                            className="rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-3"
-                          >
-                            <div className="flex items-center gap-2">
-                              <WorkoutMuscleArtwork
-                                groups={metric.muscleGroups}
-                                className="size-9 shrink-0 rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] p-0.5"
-                              />
-                              <span className="min-w-0 flex-1 truncate text-xs font-semibold text-[var(--app-text)]">
-                                {metric.exerciseTitle}
-                              </span>
-                            </div>
-                            <div className="mt-2 text-lg font-semibold text-[var(--app-text)]">
-                              {metric.weightKg} кг × {metric.reps}
-                            </div>
-                            {metric.comment && (
-                              <p className="mt-1 text-xs text-[var(--app-muted)]">
-                                {metric.comment}
-                              </p>
-                            )}
-                          </div>
-                        )
-                      })}
-                    </div>
-                  )}
-                  {entry.photos.length > 0 && (
-                    <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                      {entry.photos.map((photo) => (
-                        <div
-                          key={photo.id}
-                          className="group/photo relative aspect-[4/5] overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)]"
-                        >
-                          <img
-                            src={photo.url}
-                            alt={`Прогресс ${entry.date}`}
-                            className="size-full object-cover"
-                          />
-                          <button
-                            type="button"
-                            aria-label="Удалить фотографию"
-                            className="absolute top-2 right-2 flex size-8 items-center justify-center rounded-lg bg-black/60 text-white opacity-0 backdrop-blur transition-opacity group-hover/photo:opacity-100"
-                            onClick={() => void removePhoto(photo.id)}
-                          >
-                            <Trash2 className="size-4" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {entry.notes && (
-                    <p className="mt-4 text-sm leading-6 text-[var(--app-muted)]">{entry.notes}</p>
-                  )}
-                </article>
-              ))}
-            </div>
-          )}
-        </section>
+        <WorkoutProgressSection
+          entries={progressEntries}
+          busy={isBusy}
+          onEdit={(entry) => {
+            setEditingProgress(entry)
+            setProgressDialogOpen(true)
+          }}
+          onDelete={setDeleteProgressTarget}
+          onImportPhoto={importPhoto}
+          onRemovePhoto={removePhoto}
+        />
       )}
 
       {tab === 'reports' && (

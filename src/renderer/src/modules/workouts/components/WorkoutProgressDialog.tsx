@@ -115,7 +115,9 @@ export function WorkoutProgressDialog({
       notes,
       metrics: metrics.map((metric) => ({
         exerciseId: metric.exerciseId,
-        weightKg: Number(metric.weightKg || 0),
+        weightKg: exerciseMap.get(metric.exerciseId)?.usesExternalWeight
+          ? Number(metric.weightKg || 0)
+          : 0,
         reps: Number(metric.reps),
         comment: metric.comment
       }))
@@ -133,7 +135,7 @@ export function WorkoutProgressDialog({
       open={open}
       onOpenChange={onOpenChange}
       title={entry ? 'Изменить запись прогресса' : 'Новая запись прогресса'}
-      description="Зафиксируйте текущую форму, вес и контрольные показатели в ключевых упражнениях. Фото можно добавить после сохранения записи."
+      description="Зафиксируйте вес, самочувствие и контрольные показатели. После сохранения добавьте фотографии формы по стандартным ракурсам для визуального сравнения."
       icon={<TrendingUp />}
       size="lg"
       busy={busy}
@@ -207,7 +209,8 @@ export function WorkoutProgressDialog({
           <div className="mb-3">
             <h3 className="text-sm font-semibold text-[var(--app-text)]">Текущие показатели</h3>
             <p className="mt-1 text-xs text-[var(--app-muted)]">
-              Например: жим лёжа — 80 кг × 8, присед — 100 кг × 5.
+              Для упражнений с дополнительным весом фиксируются вес и повторения, для упражнений с
+              собственным весом — повторения.
             </p>
           </div>
           <div className="flex flex-wrap items-end gap-2">
@@ -281,19 +284,27 @@ export function WorkoutProgressDialog({
                     <Trash2 className="size-4" />
                   </button>
                 </div>
-                <div className="mt-3 grid gap-3 sm:grid-cols-[140px_140px_minmax(0,1fr)]">
-                  <label className="space-y-1.5">
-                    <span className="text-xs text-[var(--app-muted)]">Вес, кг</span>
-                    <input
-                      type="number"
-                      min={0}
-                      step="0.25"
-                      value={metric.weightKg}
-                      placeholder="0"
-                      className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45"
-                      onChange={(event) => updateMetric(index, { weightKg: event.target.value })}
-                    />
-                  </label>
+                <div
+                  className={`mt-3 grid gap-3 ${
+                    exercise?.usesExternalWeight
+                      ? 'sm:grid-cols-[140px_140px_minmax(0,1fr)]'
+                      : 'sm:grid-cols-[140px_minmax(0,1fr)]'
+                  }`}
+                >
+                  {exercise?.usesExternalWeight && (
+                    <label className="space-y-1.5">
+                      <span className="text-xs text-[var(--app-muted)]">Вес, кг</span>
+                      <input
+                        type="number"
+                        min={0}
+                        step="0.25"
+                        value={metric.weightKg}
+                        placeholder="0"
+                        className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45"
+                        onChange={(event) => updateMetric(index, { weightKg: event.target.value })}
+                      />
+                    </label>
+                  )}
                   <label className="space-y-1.5">
                     <span className="text-xs text-[var(--app-muted)]">Повторения</span>
                     <input

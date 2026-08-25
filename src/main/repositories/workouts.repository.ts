@@ -26,6 +26,7 @@ import type {
   WorkoutProgressMetricInput,
   WorkoutProgressMetricRecord,
   WorkoutProgressPhotoRecord,
+  WorkoutProgressPhotoView,
   WorkoutReport,
   WorkoutReportDay,
   WorkoutReportExercise,
@@ -117,6 +118,7 @@ interface ProgressMetricRow {
   exercise_id: string | null
   exercise_title_snapshot: string
   muscle_group_snapshot: string
+  uses_external_weight_snapshot: number
   weight_milli_kg: number
   reps: number
   comment: string
@@ -131,6 +133,7 @@ interface ProgressPhotoRow {
   mime_type: string
   size: number
   url: string
+  view: WorkoutProgressPhotoView
   created_at: number
 }
 
@@ -141,8 +144,8 @@ const SESSION_SELECT = `SELECT id, program_id, program_name_snapshot, date, dura
 const SESSION_EXERCISE_SELECT = `SELECT id, session_id, exercise_id, exercise_title_snapshot, muscle_group_snapshot, uses_external_weight_snapshot, position, comment FROM workout_session_exercises`
 const SET_SELECT = `SELECT id, session_exercise_id, position, reps, weight_milli_kg FROM workout_sets`
 const PROGRESS_ENTRY_SELECT = `SELECT id, date, body_weight_milli_kg, wellbeing, notes, created_at, updated_at FROM workout_progress_entries`
-const PROGRESS_METRIC_SELECT = `SELECT id, entry_id, exercise_id, exercise_title_snapshot, muscle_group_snapshot, weight_milli_kg, reps, comment, position FROM workout_progress_metrics`
-const PROGRESS_PHOTO_SELECT = `SELECT id, entry_id, asset_id, file_name, mime_type, size, url, created_at FROM workout_progress_photos`
+const PROGRESS_METRIC_SELECT = `SELECT id, entry_id, exercise_id, exercise_title_snapshot, muscle_group_snapshot, uses_external_weight_snapshot, weight_milli_kg, reps, comment, position FROM workout_progress_metrics`
+const PROGRESS_PHOTO_SELECT = `SELECT id, entry_id, asset_id, file_name, mime_type, size, url, view, created_at FROM workout_progress_photos`
 
 function toMilliKg(value: number): number {
   return Math.round(value * 1000)
@@ -227,6 +230,7 @@ function mapProgressPhoto(row: ProgressPhotoRow): WorkoutProgressPhotoRecord {
     mimeType: row.mime_type,
     size: row.size,
     url: row.url,
+    view: row.view,
     createdAt: row.created_at
   }
 }
@@ -408,6 +412,7 @@ function loadProgressEntries(): WorkoutProgressEntryRecord[] {
       exerciseTitle: row.exercise_title_snapshot,
       muscleGroup: primaryMuscleGroup(parseMuscleGroups(row.muscle_group_snapshot)),
       muscleGroups: parseMuscleGroups(row.muscle_group_snapshot),
+      usesExternalWeight: Boolean(row.uses_external_weight_snapshot),
       weightKg: fromMilliKg(row.weight_milli_kg),
       reps: row.reps,
       comment: row.comment
@@ -665,8 +670,8 @@ export function deleteWorkoutSession(input: DeleteWorkoutSessionInput): boolean 
 function insertProgressMetrics(entryId: string, metrics: WorkoutProgressMetricInput[]): void {
   const statement = getSqlite().prepare(
     `INSERT INTO workout_progress_metrics
-      (id, entry_id, exercise_id, exercise_title_snapshot, muscle_group_snapshot, weight_milli_kg, reps, comment, position)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      (id, entry_id, exercise_id, exercise_title_snapshot, muscle_group_snapshot, uses_external_weight_snapshot, weight_milli_kg, reps, comment, position)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   )
   metrics.forEach((metric, index) => {
     const exercise = requireExercise(metric.exerciseId)
@@ -676,7 +681,8 @@ function insertProgressMetrics(entryId: string, metrics: WorkoutProgressMetricIn
       exercise.id,
       exercise.title,
       serializeMuscleGroups(exercise.muscleGroups),
-      toMilliKg(metric.weightKg),
+      exercise.usesExternalWeight ? 1 : 0,
+      toMilliKg(exercise.usesExternalWeight ? metric.weightKg : 0),
       metric.reps,
       metric.comment,
       index
@@ -749,6 +755,7 @@ export function deleteWorkoutProgressEntry(input: DeleteWorkoutProgressEntryInpu
 
 export function addWorkoutProgressPhoto(
   entryId: string,
+  view: WorkoutProgressPhotoView,
   asset: { id: string; name: string; mimeType: string; size: number; url: string }
 ): WorkoutProgressPhotoRecord {
   requireProgressEntryRow(entryId)
@@ -757,10 +764,10 @@ export function addWorkoutProgressPhoto(
   getSqlite()
     .prepare(
       `INSERT INTO workout_progress_photos
-        (id, entry_id, asset_id, file_name, mime_type, size, url, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+        (id, entry_id, asset_id, file_name, mime_type, size, url, view, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
-    .run(id, entryId, asset.id, asset.name, asset.mimeType, asset.size, asset.url, createdAt)
+    .run(id, entryId, asset.id, asset.name, asset.mimeType, asset.size, asset.url, view, createdAt)
   const row = getSqlite()
     .prepare(`${PROGRESS_PHOTO_SELECT} WHERE id = ?`)
     .get(id) as ProgressPhotoRow
