@@ -28,10 +28,17 @@ jobs:
         run: npm ci
 
       - name: Check formatting
-        run: npx prettier --check src/renderer/src/modules/workouts/components/WorkoutMuscleMapPicker.tsx src/renderer/src/modules/workouts/components/WorkoutMuscleMapPicker.test.tsx
+        run: |
+          npx prettier --check \
+            src/renderer/src/modules/workouts/components/WorkoutMuscleMapPicker.tsx \
+            src/renderer/src/modules/workouts/components/WorkoutMuscleMapPicker.test.tsx
 
       - name: Lint changed source
-        run: npx eslint src/renderer/src/modules/workouts/components/WorkoutMuscleMapPicker.tsx src/renderer/src/modules/workouts/components/WorkoutMuscleMapPicker.test.tsx --rule 'react-refresh/only-export-components: off'
+        run: |
+          npx eslint \
+            src/renderer/src/modules/workouts/components/WorkoutMuscleMapPicker.tsx \
+            src/renderer/src/modules/workouts/components/WorkoutMuscleMapPicker.test.tsx \
+            --rule 'react-refresh/only-export-components: off'
 
       - name: Typecheck
         run: npm run typecheck
