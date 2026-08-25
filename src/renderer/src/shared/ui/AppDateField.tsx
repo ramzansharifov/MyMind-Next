@@ -24,11 +24,7 @@ function parseDateKey(value?: string): Date | null {
 
   const [year, month, day] = value.split('-').map(Number)
   const date = new Date(year, month - 1, day, 12)
-  if (
-    date.getFullYear() !== year ||
-    date.getMonth() !== month - 1 ||
-    date.getDate() !== day
-  ) {
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
     return null
   }
   return date
@@ -127,7 +123,7 @@ export function AppDateField({
         disabled={disabled}
         aria-label={ariaLabel}
         className={cn(
-          'app-date-field-input h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 pr-11 text-sm text-[var(--app-text)] outline-none transition-colors focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/10 disabled:cursor-not-allowed disabled:opacity-45',
+          'app-date-field-input h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 pr-11 text-sm text-[var(--app-text)] transition-colors outline-none focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/10 disabled:cursor-not-allowed disabled:opacity-45',
           inputClassName
         )}
         onChange={(event) => onChange(event.target.value)}

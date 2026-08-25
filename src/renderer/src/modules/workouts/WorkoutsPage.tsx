@@ -39,6 +39,7 @@ import type {
   WorkoutsOverview
 } from '../../../../shared/contracts/workouts'
 import { cn } from '../../shared/lib/cn'
+import { AppDateField } from '../../shared/ui/AppDateField'
 import { AppSelect } from '../../shared/ui/AppSelect'
 import { DeleteConfirmationDialog } from '../../shared/ui/DeleteConfirmationDialog'
 import { ModuleHeader } from '../../shared/ui/ModuleHeader'
@@ -1093,24 +1094,22 @@ export function WorkoutsPage({
                   onValueChange={(value) => applyReportPeriod(value as ReportPeriod)}
                 />
               </div>
-              <input
-                type="date"
-                aria-label="Начало периода"
+              <AppDateField
                 value={reportDateFrom}
-                className="h-10 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/45"
-                onChange={(event) => {
+                ariaLabel="Начало периода"
+                className="w-[155px]"
+                onChange={(value) => {
                   setReportPeriod('custom')
-                  setReportDateFrom(event.target.value)
+                  setReportDateFrom(value)
                 }}
               />
-              <input
-                type="date"
-                aria-label="Конец периода"
+              <AppDateField
                 value={reportDateTo}
-                className="h-10 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/45"
-                onChange={(event) => {
+                ariaLabel="Конец периода"
+                className="w-[155px]"
+                onChange={(value) => {
                   setReportPeriod('custom')
-                  setReportDateTo(event.target.value)
+                  setReportDateTo(value)
                 }}
               />
               <div className="min-w-[190px] flex-1">

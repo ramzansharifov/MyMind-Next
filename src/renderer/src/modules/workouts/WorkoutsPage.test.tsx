@@ -248,5 +248,12 @@ describe('WorkoutsPage', () => {
     expect(screen.getByText('По упражнениям')).toBeInTheDocument()
     expect(screen.getByText('Лучшие показатели')).toBeInTheDocument()
     expect(screen.getByText('100% · 2 подх. · 22 повт.')).toBeInTheDocument()
+    expect(screen.getByLabelText('Начало периода')).toHaveAttribute('type', 'date')
+    expect(screen.getByLabelText('Конец периода')).toHaveAttribute('type', 'date')
+
+    await user.click(
+      screen.getByRole('button', { name: 'Открыть календарь для поля «Начало периода»' })
+    )
+    expect(await screen.findByTestId('app-date-field-popover')).toBeInTheDocument()
   })
 })

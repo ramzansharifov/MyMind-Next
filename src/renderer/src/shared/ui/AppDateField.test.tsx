@@ -9,13 +9,7 @@ describe('AppDateField', () => {
     const user = userEvent.setup()
     const onChange = vi.fn()
 
-    render(
-      <AppDateField
-        value="2026-08-25"
-        ariaLabel="Дата тренировки"
-        onChange={onChange}
-      />
-    )
+    render(<AppDateField value="2026-08-25" ariaLabel="Дата тренировки" onChange={onChange} />)
 
     const input = screen.getByLabelText('Дата тренировки')
     expect(input).toHaveAttribute('type', 'date')
@@ -34,13 +28,7 @@ describe('AppDateField', () => {
     const user = userEvent.setup()
     const onChange = vi.fn()
 
-    render(
-      <AppDateField
-        value="2026-08-25"
-        ariaLabel="Дата тренировки"
-        onChange={onChange}
-      />
-    )
+    render(<AppDateField value="2026-08-25" ariaLabel="Дата тренировки" onChange={onChange} />)
 
     await user.click(
       screen.getByRole('button', { name: 'Открыть календарь для поля «Дата тренировки»' })
