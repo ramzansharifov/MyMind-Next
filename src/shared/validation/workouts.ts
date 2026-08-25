@@ -7,9 +7,7 @@ import {
 } from '../contracts/workouts'
 
 const idSchema = z.string().uuid('Некорректный идентификатор')
-const dateSchema = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Дата должна быть в формате ГГГГ-ММ-ДД')
+const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Дата должна быть в формате ГГГГ-ММ-ДД')
 const weightSchema = z
   .number()
   .finite()
@@ -150,7 +148,9 @@ const progressPayloadSchema = z
   })
 
 export const createWorkoutProgressEntryInputSchema = progressPayloadSchema
-export const updateWorkoutProgressEntryInputSchema = progressPayloadSchema.safeExtend({ id: idSchema })
+export const updateWorkoutProgressEntryInputSchema = progressPayloadSchema.safeExtend({
+  id: idSchema
+})
 export const deleteWorkoutProgressEntryInputSchema = z.object({ id: idSchema })
 export const importWorkoutProgressPhotoInputSchema = z.object({ entryId: idSchema })
 export const deleteWorkoutProgressPhotoInputSchema = z.object({ id: idSchema })

@@ -2,7 +2,10 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { WorkoutExerciseRecord, WorkoutProgramRecord } from '../../../../shared/contracts/workouts'
+import type {
+  WorkoutExerciseRecord,
+  WorkoutProgramRecord
+} from '../../../../shared/contracts/workouts'
 
 const mocks = vi.hoisted(() => ({
   listOverview: vi.fn(),
@@ -31,8 +34,8 @@ import { WorkoutsPage } from './WorkoutsPage'
 const curl: WorkoutExerciseRecord = {
   id: 'exercise-curl',
   title: 'Сгибания на бицепс с гантелями',
-  muscleGroup: 'arms',
-  description: 'Без раскачивания.',
+  muscleGroup: 'biceps',
+  muscleGroups: ['biceps'],
   status: 'active',
   createdAt: 1,
   updatedAt: 1
@@ -47,10 +50,7 @@ const program: WorkoutProgramRecord = {
     {
       id: 'program-exercise-curl',
       exerciseId: curl.id,
-      position: 0,
-      plannedSets: 3,
-      targetReps: 10,
-      notes: ''
+      position: 0
     }
   ],
   createdAt: 2,
@@ -77,6 +77,7 @@ beforeEach(() => {
             exerciseId: curl.id,
             exerciseTitle: curl.title,
             muscleGroup: curl.muscleGroup,
+            muscleGroups: curl.muscleGroups,
             position: 0,
             comment: '',
             sets: [
@@ -166,7 +167,8 @@ beforeEach(() => {
       {
         exerciseId: curl.id,
         title: curl.title,
-        muscleGroup: 'arms',
+        muscleGroup: 'biceps',
+        muscleGroups: ['biceps'],
         sessions: 1,
         sets: 2,
         reps: 22,
@@ -204,7 +206,8 @@ beforeEach(() => {
       {
         exerciseId: curl.id,
         title: curl.title,
-        muscleGroup: 'arms',
+        muscleGroup: 'biceps',
+        muscleGroups: ['biceps'],
         date: '2026-08-17',
         weightKg: 16,
         reps: 10,
@@ -231,7 +234,7 @@ describe('WorkoutsPage', () => {
     await user.click(await screen.findByRole('button', { name: /Упражнения/ }))
 
     expect(screen.getByText('Сгибания на бицепс с гантелями')).toBeInTheDocument()
-    expect(screen.getByText('Руки')).toBeInTheDocument()
+    expect(screen.getByText('Бицепс')).toBeInTheDocument()
   })
 
   it('opens extensive reports with muscle distribution and exercise analytics', async () => {

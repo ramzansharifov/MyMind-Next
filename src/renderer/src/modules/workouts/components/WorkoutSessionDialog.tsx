@@ -10,7 +10,7 @@ import type {
 } from '../../../../../shared/contracts/workouts'
 import { AppDialog } from '../../../shared/ui/AppDialog'
 import { AppSelect } from '../../../shared/ui/AppSelect'
-import { workoutMuscleGroupLabel } from '../workout-options'
+import { workoutMuscleGroupsLabel } from '../workout-options'
 
 const FORM_ID = 'workout-session-form'
 const CUSTOM = '__custom__'
@@ -104,11 +104,8 @@ export function WorkoutSessionDialog({
     setItems(
       program.exercises.map((programExercise) => ({
         exerciseId: programExercise.exerciseId,
-        comment: programExercise.notes,
-        sets: Array.from({ length: programExercise.plannedSets }, () => ({
-          reps: programExercise.targetReps === null ? '' : String(programExercise.targetReps),
-          weightKg: ''
-        }))
+        comment: '',
+        sets: [{ reps: '', weightKg: '' }]
       }))
     )
   }
@@ -281,7 +278,7 @@ export function WorkoutSessionDialog({
                   },
                   ...availableExercises.map((exercise) => ({
                     value: exercise.id,
-                    label: `${exercise.title} · ${workoutMuscleGroupLabel(exercise.muscleGroup)}`
+                    label: `${exercise.title} · ${workoutMuscleGroupsLabel(exercise.muscleGroups)}`
                   }))
                 ]}
                 onValueChange={setExerciseToAdd}
@@ -321,7 +318,7 @@ export function WorkoutSessionDialog({
                       </div>
                       {exercise && (
                         <div className="mt-0.5 text-xs text-[var(--app-muted)]">
-                          {workoutMuscleGroupLabel(exercise.muscleGroup)} · {item.sets.length}{' '}
+                          {workoutMuscleGroupsLabel(exercise.muscleGroups)} · {item.sets.length}{' '}
                           {item.sets.length === 1 ? 'подход' : 'подходов'}
                         </div>
                       )}

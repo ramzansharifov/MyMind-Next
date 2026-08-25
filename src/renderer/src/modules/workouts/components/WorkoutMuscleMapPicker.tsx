@@ -402,7 +402,9 @@ export function WorkoutMuscleMapPicker({
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <span className="text-xs font-medium text-[var(--app-muted)]">Активные мышечные зоны</span>
+          <span className="text-xs font-medium text-[var(--app-muted)]">
+            Активные мышечные зоны
+          </span>
           <p className="mt-1 text-[11px] leading-5 text-[var(--app-muted)]/80">
             Нажмите прямо на область рисунка или на название. Можно выбрать несколько зон.
           </p>

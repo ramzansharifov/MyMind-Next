@@ -151,7 +151,9 @@ export function WorkoutProgramDialog({
         <section className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-3.5">
           <div className="flex flex-wrap items-end gap-2">
             <div className="min-w-[260px] flex-1 space-y-1.5">
-              <span className="text-xs font-medium text-[var(--app-muted)]">Добавить упражнение</span>
+              <span className="text-xs font-medium text-[var(--app-muted)]">
+                Добавить упражнение
+              </span>
               <AppSelect
                 ariaLabel="Упражнение для программы"
                 value={exerciseToAdd}

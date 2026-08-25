@@ -37,13 +37,13 @@ import type {
   WorkoutSetRecord,
   WorkoutsOverview
 } from '../../shared/contracts/workouts'
-import { WORKOUT_MUSCLE_GROUPS } from '../../shared/contracts/workouts'
+import { WORKOUT_MUSCLE_GROUPS, WORKOUT_MUSCLE_ZONES } from '../../shared/contracts/workouts'
 import { getSqlite } from '../database/client'
 
 interface ExerciseRow {
   id: string
   title: string
-  muscle_group: WorkoutMuscleGroup
+  muscle_group: string
   description: string
   status: WorkoutEntityStatus
   created_at: number
@@ -86,7 +86,7 @@ interface SessionExerciseRow {
   session_id: string
   exercise_id: string | null
   exercise_title_snapshot: string
-  muscle_group_snapshot: WorkoutMuscleGroup
+  muscle_group_snapshot: string
   position: number
   comment: string
 }
@@ -114,7 +114,7 @@ interface ProgressMetricRow {
   entry_id: string
   exercise_id: string | null
   exercise_title_snapshot: string
-  muscle_group_snapshot: WorkoutMuscleGroup
+  muscle_group_snapshot: string
   weight_milli_kg: number
   reps: number
   comment: string
@@ -154,12 +154,53 @@ function round2(value: number): number {
   return Math.round(value * 100) / 100
 }
 
+const workoutMuscleGroupSet = new Set<string>(WORKOUT_MUSCLE_GROUPS)
+
+function expandLegacyMuscleGroup(group: WorkoutMuscleGroup): WorkoutMuscleGroup[] {
+  if (group === 'arms') return ['shoulders', 'biceps', 'triceps', 'forearms']
+  if (group === 'back') return ['lats', 'traps', 'lower_back']
+  if (group === 'legs') return ['glutes', 'quadriceps', 'hamstrings', 'calves']
+  return [group]
+}
+
+function parseMuscleGroups(raw: string): WorkoutMuscleGroup[] {
+  let value: unknown = raw
+  try {
+    value = JSON.parse(raw)
+  } catch {
+    // Existing databases store one plain-text muscle group in this column.
+  }
+  const values = Array.isArray(value) ? value : [value]
+  const normalized = values
+    .filter(
+      (candidate): candidate is WorkoutMuscleGroup =>
+        typeof candidate === 'string' && workoutMuscleGroupSet.has(candidate)
+    )
+    .flatMap(expandLegacyMuscleGroup)
+  const unique = [...new Set(normalized)]
+  return unique.length > 0 ? unique : ['shoulders']
+}
+
+function serializeMuscleGroups(groups: WorkoutMuscleGroup[]): string {
+  const normalized = groups
+    .filter((group) => workoutMuscleGroupSet.has(group))
+    .flatMap(expandLegacyMuscleGroup)
+  const unique = [...new Set(normalized)]
+  if (unique.length === 0) throw new Error('Выберите хотя бы одну мышечную зону')
+  return JSON.stringify(unique)
+}
+
+function primaryMuscleGroup(groups: WorkoutMuscleGroup[]): WorkoutMuscleGroup {
+  return groups[0] ?? 'shoulders'
+}
+
 function mapExercise(row: ExerciseRow): WorkoutExerciseRecord {
+  const muscleGroups = parseMuscleGroups(row.muscle_group)
   return {
     id: row.id,
     title: row.title,
-    muscleGroup: row.muscle_group,
-    description: row.description,
+    muscleGroup: primaryMuscleGroup(muscleGroups),
+    muscleGroups,
     status: row.status,
     createdAt: row.created_at,
     updatedAt: row.updated_at
@@ -170,10 +211,7 @@ function mapProgramExercise(row: ProgramExerciseRow): WorkoutProgramExerciseReco
   return {
     id: row.id,
     exerciseId: row.exercise_id,
-    position: row.position,
-    plannedSets: row.planned_sets,
-    targetReps: row.target_reps,
-    notes: row.notes
+    position: row.position
   }
 }
 
@@ -310,7 +348,8 @@ function loadSessions(): WorkoutSessionRecord[] {
       id: row.id,
       exerciseId: row.exercise_id,
       exerciseTitle: row.exercise_title_snapshot,
-      muscleGroup: row.muscle_group_snapshot,
+      muscleGroup: primaryMuscleGroup(parseMuscleGroups(row.muscle_group_snapshot)),
+      muscleGroups: parseMuscleGroups(row.muscle_group_snapshot),
       position: row.position,
       comment: row.comment,
       sets: setsByExercise.get(row.id) ?? []
@@ -364,7 +403,8 @@ function loadProgressEntries(): WorkoutProgressEntryRecord[] {
       id: row.id,
       exerciseId: row.exercise_id,
       exerciseTitle: row.exercise_title_snapshot,
-      muscleGroup: row.muscle_group_snapshot,
+      muscleGroup: primaryMuscleGroup(parseMuscleGroups(row.muscle_group_snapshot)),
+      muscleGroups: parseMuscleGroups(row.muscle_group_snapshot),
       weightKg: fromMilliKg(row.weight_milli_kg),
       reps: row.reps,
       comment: row.comment
@@ -422,7 +462,15 @@ export function createWorkoutExercise(input: CreateWorkoutExerciseInput): Workou
       `INSERT INTO workout_exercises (id, title, muscle_group, description, status, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?)`
     )
-    .run(id, input.title.trim(), input.muscleGroup, input.description, input.status, now, now)
+    .run(
+      id,
+      input.title.trim(),
+      serializeMuscleGroups(input.muscleGroups),
+      '',
+      input.status,
+      now,
+      now
+    )
   return requireExercise(id)
 }
 
@@ -437,8 +485,8 @@ export function updateWorkoutExercise(input: UpdateWorkoutExerciseInput): Workou
     )
     .run(
       input.title.trim(),
-      input.muscleGroup,
-      input.description,
+      serializeMuscleGroups(input.muscleGroups),
+      '',
       input.status,
       Date.now(),
       input.id
@@ -466,15 +514,7 @@ function insertProgramItems(programId: string, exercises: WorkoutProgramExercise
   )
   exercises.forEach((item, index) => {
     requireExercise(item.exerciseId)
-    statement.run(
-      randomUUID(),
-      programId,
-      item.exerciseId,
-      index,
-      item.plannedSets,
-      item.targetReps,
-      item.notes
-    )
+    statement.run(randomUUID(), programId, item.exerciseId, index, 1, null, '')
   })
 }
 
@@ -538,7 +578,7 @@ function insertSessionExercises(sessionId: string, exercises: WorkoutSessionExer
       sessionId,
       exercise.id,
       exercise.title,
-      exercise.muscleGroup,
+      serializeMuscleGroups(exercise.muscleGroups),
       exerciseIndex,
       item.comment
     )
@@ -628,7 +668,7 @@ function insertProgressMetrics(entryId: string, metrics: WorkoutProgressMetricIn
       entryId,
       exercise.id,
       exercise.title,
-      exercise.muscleGroup,
+      serializeMuscleGroups(exercise.muscleGroups),
       toMilliKg(metric.weightKg),
       metric.reps,
       metric.comment,
@@ -744,6 +784,7 @@ interface ExerciseAccumulator {
   exerciseId: string | null
   title: string
   muscleGroup: WorkoutMuscleGroup
+  muscleGroups: WorkoutMuscleGroup[]
   sessionIds: Set<string>
   sets: number
   reps: number
@@ -764,20 +805,21 @@ export function getWorkoutReport(input: WorkoutReportInput): WorkoutReport {
       ...session,
       exercises: session.exercises.filter((exercise) => {
         if (input.exerciseId !== null && exercise.exerciseId !== input.exerciseId) return false
-        if (input.muscleGroup !== null && exercise.muscleGroup !== input.muscleGroup) return false
+        if (input.muscleGroup !== null && !exercise.muscleGroups.includes(input.muscleGroup))
+          return false
         return true
       })
     }))
     .filter((session) => session.exercises.length > 0)
 
   const muscleMap = new Map<WorkoutMuscleGroup, WorkoutReportMuscleGroup>(
-    WORKOUT_MUSCLE_GROUPS.map((muscleGroup) => [
+    WORKOUT_MUSCLE_ZONES.map((muscleGroup) => [
       muscleGroup,
       { muscleGroup, exercises: 0, sets: 0, reps: 0, volumeKg: 0, loadPercent: 0 }
     ])
   )
   const muscleExerciseIds = new Map<WorkoutMuscleGroup, Set<string>>()
-  WORKOUT_MUSCLE_GROUPS.forEach((group) => muscleExerciseIds.set(group, new Set()))
+  WORKOUT_MUSCLE_ZONES.forEach((group) => muscleExerciseIds.set(group, new Set()))
 
   const exerciseMap = new Map<string, ExerciseAccumulator>()
   const programMap = new Map<string, WorkoutReportProgram>()
@@ -814,11 +856,13 @@ export function getWorkoutReport(input: WorkoutReportInput): WorkoutReport {
     programMap.set(programKey, program)
 
     for (const exercise of session.exercises) {
-      const exerciseKey = exercise.exerciseId ?? `${exercise.exerciseTitle}:${exercise.muscleGroup}`
+      const exerciseKey =
+        exercise.exerciseId ?? `${exercise.exerciseTitle}:${exercise.muscleGroups.join(',')}`
       const accumulator = exerciseMap.get(exerciseKey) ?? {
         exerciseId: exercise.exerciseId,
         title: exercise.exerciseTitle,
         muscleGroup: exercise.muscleGroup,
+        muscleGroups: exercise.muscleGroups,
         sessionIds: new Set<string>(),
         sets: 0,
         reps: 0,
@@ -829,7 +873,7 @@ export function getWorkoutReport(input: WorkoutReportInput): WorkoutReport {
         observations: []
       }
       accumulator.sessionIds.add(session.id)
-      muscleExerciseIds.get(exercise.muscleGroup)?.add(exerciseKey)
+      exercise.muscleGroups.forEach((group) => muscleExerciseIds.get(group)?.add(exerciseKey))
 
       for (const set of exercise.sets) {
         const volume = set.reps * set.weightKg
@@ -847,9 +891,9 @@ export function getWorkoutReport(input: WorkoutReportInput): WorkoutReport {
           weightKg: set.weightKg,
           reps: set.reps
         })
-
-        const muscle = muscleMap.get(exercise.muscleGroup)
-        if (muscle) {
+        for (const group of exercise.muscleGroups) {
+          const muscle = muscleMap.get(group)
+          if (!muscle) continue
           muscle.sets += 1
           muscle.reps += set.reps
           muscle.volumeKg += volume
@@ -868,13 +912,14 @@ export function getWorkoutReport(input: WorkoutReportInput): WorkoutReport {
     }
   }
 
-  const totalSets = [...exerciseMap.values()].reduce((sum, exercise) => sum + exercise.sets, 0)
-  for (const group of WORKOUT_MUSCLE_GROUPS) {
+  const totalAttributedSets = [...muscleMap.values()].reduce((sum, muscle) => sum + muscle.sets, 0)
+  for (const group of WORKOUT_MUSCLE_ZONES) {
     const muscle = muscleMap.get(group)
     if (!muscle) continue
     muscle.exercises = muscleExerciseIds.get(group)?.size ?? 0
     muscle.volumeKg = round2(muscle.volumeKg)
-    muscle.loadPercent = totalSets === 0 ? 0 : round2((muscle.sets / totalSets) * 100)
+    muscle.loadPercent =
+      totalAttributedSets === 0 ? 0 : round2((muscle.sets / totalAttributedSets) * 100)
   }
 
   const reportExercises: WorkoutReportExercise[] = [...exerciseMap.values()]
@@ -896,6 +941,7 @@ export function getWorkoutReport(input: WorkoutReportInput): WorkoutReport {
         exerciseId: exercise.exerciseId,
         title: exercise.title,
         muscleGroup: exercise.muscleGroup,
+        muscleGroups: exercise.muscleGroups,
         sessions: exercise.sessionIds.size,
         sets: exercise.sets,
         reps: exercise.reps,
@@ -927,6 +973,7 @@ export function getWorkoutReport(input: WorkoutReportInput): WorkoutReport {
         exerciseId: exercise.exerciseId,
         title: exercise.title,
         muscleGroup: exercise.muscleGroup,
+        muscleGroups: exercise.muscleGroups,
         date: best.date,
         weightKg: best.weightKg,
         reps: best.reps,
@@ -964,7 +1011,7 @@ export function getWorkoutReport(input: WorkoutReportInput): WorkoutReport {
         totalSetCountForWeight === 0 ? 0 : round2(totalWeight / totalSetCountForWeight),
       maxWeightKg: round2(maxWeightKg)
     },
-    muscleGroups: WORKOUT_MUSCLE_GROUPS.map(
+    muscleGroups: WORKOUT_MUSCLE_ZONES.map(
       (group) => muscleMap.get(group) as WorkoutReportMuscleGroup
     ),
     exercises: reportExercises,
