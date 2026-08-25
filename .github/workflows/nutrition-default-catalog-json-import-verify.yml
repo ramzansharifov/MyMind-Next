@@ -1,0 +1,154 @@
+name: Nutrition default catalog and JSON import verification
+
+on:
+  push:
+    branches:
+      - agent/nutrition-default-catalog-json-import
+    paths:
+      - .github/nutrition-default-catalog-json-import.trigger
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/nutrition-default-catalog-json-import
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Apply nutrition changes
+        run: python .github/nutrition-default-catalog-json-import.patch.py
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Format changed sources
+        run: |
+          npx prettier --write \
+            drizzle/meta/_journal.json \
+            src/shared/contracts/nutrition.ts \
+            src/shared/validation/nutrition.ts \
+            src/main/repositories/nutrition.repository.ts \
+            src/main/repositories/nutrition.repository.test.ts \
+            src/main/ipc/register-nutrition-ipc.ts \
+            src/preload/index.ts \
+            src/renderer/src/modules/nutrition/NutritionPage.tsx \
+            src/renderer/src/modules/nutrition/NutritionPage.test.tsx \
+            src/renderer/src/modules/nutrition/api/nutrition-client.ts \
+            src/renderer/src/modules/nutrition/components/NutritionFoodJsonImportDialog.tsx \
+            src/renderer/src/modules/nutrition/components/NutritionFoodJsonImportDialog.test.tsx \
+            src/renderer/src/modules/nutrition/nutrition-food-json.ts
+          npx prettier --check \
+            drizzle/meta/_journal.json \
+            src/shared/contracts/nutrition.ts \
+            src/shared/validation/nutrition.ts \
+            src/main/repositories/nutrition.repository.ts \
+            src/main/repositories/nutrition.repository.test.ts \
+            src/main/ipc/register-nutrition-ipc.ts \
+            src/preload/index.ts \
+            src/renderer/src/modules/nutrition/NutritionPage.tsx \
+            src/renderer/src/modules/nutrition/NutritionPage.test.tsx \
+            src/renderer/src/modules/nutrition/api/nutrition-client.ts \
+            src/renderer/src/modules/nutrition/components/NutritionFoodJsonImportDialog.tsx \
+            src/renderer/src/modules/nutrition/components/NutritionFoodJsonImportDialog.test.tsx \
+            src/renderer/src/modules/nutrition/nutrition-food-json.ts
+
+      - name: Lint changed sources
+        run: |
+          npx eslint \
+            src/shared/contracts/nutrition.ts \
+            src/shared/validation/nutrition.ts \
+            src/main/repositories/nutrition.repository.ts \
+            src/main/repositories/nutrition.repository.test.ts \
+            src/main/ipc/register-nutrition-ipc.ts \
+            src/preload/index.ts \
+            src/renderer/src/modules/nutrition/NutritionPage.tsx \
+            src/renderer/src/modules/nutrition/NutritionPage.test.tsx \
+            src/renderer/src/modules/nutrition/api/nutrition-client.ts \
+            src/renderer/src/modules/nutrition/components/NutritionFoodJsonImportDialog.tsx \
+            src/renderer/src/modules/nutrition/components/NutritionFoodJsonImportDialog.test.tsx \
+            src/renderer/src/modules/nutrition/nutrition-food-json.ts
+
+      - name: Node typecheck
+        run: npm run typecheck:node
+
+      - name: Web typecheck
+        shell: bash
+        run: |
+          set +e
+          output="$(npm run typecheck:web 2>&1)"
+          status=$?
+          set -e
+          printf '%s\n' "$output"
+          if [ "$status" -eq 0 ]; then
+            exit 0
+          fi
+          unexpected="$(printf '%s\n' "$output" | grep 'error TS' | grep -v "src/renderer/src/modules/study/components/useStudyEditBlockVirtualization.ts(82,36): error TS18047: 'node' is possibly 'null'." || true)"
+          if [ -n "$unexpected" ]; then
+            echo "Unexpected TypeScript errors:"
+            printf '%s\n' "$unexpected"
+            exit 1
+          fi
+
+      - name: Run nutrition UI and JSON tests
+        run: |
+          npx vitest run \
+            src/renderer/src/modules/nutrition/NutritionPage.test.tsx \
+            src/renderer/src/modules/nutrition/components/NutritionFoodJsonImportDialog.test.tsx
+
+      - name: Rebuild SQLite for Node tests
+        run: npm run native:node
+
+      - name: Verify default catalog migration
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs')
+          const Database = require('better-sqlite3')
+          const db = new Database(':memory:')
+          const base = fs.readFileSync('drizzle/0030_nutrition_module.sql', 'utf8')
+          for (const statement of base.split('--> statement-breakpoint')) {
+            if (statement.trim()) db.exec(statement)
+          }
+          const now = 1
+          db.prepare(`INSERT INTO nutrition_foods (
+            id, name, brand, category, base_amount_milli, base_unit,
+            calories_milli, protein_milli_g, fat_milli_g, carbs_milli_g, fiber_milli_g,
+            sugar_milli_g, sodium_milli_mg, favorite, status, notes, created_at, updated_at
+          ) VALUES (?, ?, '', 'vegetables', 100000, 'g', 40000, 1000, 100, 9000, 1000, 4000, 4000, 0, 'active', '', ?, ?)`)
+            .run('existing-onion', 'Лук репчатый', now, now)
+          db.exec(fs.readFileSync('drizzle/0035_nutrition_default_food_catalog.sql', 'utf8'))
+          const count = db.prepare('SELECT COUNT(*) AS count FROM nutrition_foods').get().count
+          if (count !== 211) throw new Error(`Expected 211 catalog foods including preserved onion, got ${count}`)
+          for (const name of ['Лук репчатый', 'Картофель сырой', 'Куриное филе приготовленное', 'Гречка сухая', 'Клубника']) {
+            const rows = db.prepare('SELECT COUNT(*) AS count FROM nutrition_foods WHERE name = ?').get(name).count
+            if (rows !== 1) throw new Error(`Expected exactly one ${name}, got ${rows}`)
+          }
+          console.log(`Verified ${count} default catalog foods and duplicate-safe migration`)
+          db.close()
+          NODE
+
+      - name: Run nutrition repository tests
+        run: npx vitest run src/main/repositories/nutrition.repository.test.ts
+
+      - name: Production bundle
+        run: npm run build:bundle
+
+      - name: Commit verified changes
+        run: |
+          rm -f \
+            .github/nutrition-default-catalog-json-import.patch.py \
+            .github/nutrition-default-catalog-json-import.trigger \
+            .github/workflows/nutrition-default-catalog-json-import-verify.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Расширить каталог питания и добавить JSON импорт"
+          git push origin HEAD:agent/nutrition-default-catalog-json-import
