@@ -11,6 +11,7 @@ import type {
 import { AppDialog } from '../../../shared/ui/AppDialog'
 import { AppSelect } from '../../../shared/ui/AppSelect'
 import { workoutMuscleGroupsLabel } from '../workout-options'
+import { WorkoutMuscleArtwork } from './WorkoutMuscleArtwork'
 
 const FORM_ID = 'workout-session-form'
 const CUSTOM = '__custom__'
@@ -309,9 +310,16 @@ export function WorkoutSessionDialog({
                   className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4"
                 >
                   <div className="flex items-start gap-3">
-                    <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-violet-400/15 bg-violet-500/10 text-violet-300">
-                      <Dumbbell className="size-4" />
-                    </span>
+                    {exercise ? (
+                      <WorkoutMuscleArtwork
+                        groups={exercise.muscleGroups}
+                        className="size-11 shrink-0 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-0.5"
+                      />
+                    ) : (
+                      <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-violet-400/15 bg-violet-500/10 text-violet-300">
+                        <Dumbbell className="size-4" />
+                      </span>
+                    )}
                     <div className="min-w-0 flex-1">
                       <div className="font-semibold text-[var(--app-text)]">
                         {exercise?.title ?? 'Упражнение недоступно'}

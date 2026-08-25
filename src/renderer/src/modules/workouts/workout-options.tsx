@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 
 import type { WorkoutMuscleGroup } from '../../../../shared/contracts/workouts'
+import { WorkoutMuscleArtwork } from './components/WorkoutMuscleArtwork'
 
 export type WorkoutMuscleFamily = 'arms' | 'back' | 'chest' | 'abs' | 'legs'
 
@@ -209,17 +210,5 @@ export function WorkoutMuscleGroupIcon({
   group: WorkoutMuscleGroup
   className?: string
 }): React.JSX.Element {
-  const family = workoutMuscleFamilyForGroup(group)
-  const Icon =
-    WORKOUT_MUSCLE_GROUP_OPTIONS.find((option) => option.value === group)?.icon ??
-    (family === 'back'
-      ? Shield
-      : family === 'legs'
-        ? Footprints
-        : family === 'chest'
-          ? HeartPulse
-          : family === 'abs'
-            ? CircleDot
-            : Dumbbell)
-  return <Icon aria-hidden="true" className={className} />
+  return <WorkoutMuscleArtwork groups={[group]} className={className} />
 }

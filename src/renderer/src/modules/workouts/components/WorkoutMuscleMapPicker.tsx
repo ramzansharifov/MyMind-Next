@@ -1,34 +1,24 @@
-import { getBodyDiagram } from '@musclemap/assets'
-import maleBack from '@musclemap/assets/bodies/male-back.webp'
-import maleFront from '@musclemap/assets/bodies/male-front.webp'
-import type { MuscleGroup as AnatomyMuscleGroup, MuscleMapValues } from '@musclemap/core'
-import { BodyFigure } from '@musclemap/react'
 import { Check } from 'lucide-react'
-import { useEffect, useState } from 'react'
 
 import type { WorkoutMuscleGroup } from '../../../../../shared/contracts/workouts'
 import { cn } from '../../../shared/lib/cn'
 import { workoutMuscleGroupLabel } from '../workout-options'
+import { WorkoutMuscleArtwork } from './WorkoutMuscleArtwork'
+import {
+  type ConcreteWorkoutMuscleZone,
+  WORKOUT_MUSCLE_ZONE_HINTS
+} from './workout-muscle-artwork-model'
 
 interface WorkoutMuscleMapPickerProps {
   value: WorkoutMuscleGroup[]
   onChange: (value: WorkoutMuscleGroup[]) => void
 }
 
-type ConcreteMuscleZone = Exclude<WorkoutMuscleGroup, 'arms' | 'back' | 'legs'>
-type AnatomyView = 'FRONT' | 'BACK'
-
-interface AnatomyConfig {
-  view: AnatomyView
-  groups: AnatomyMuscleGroup[]
-  cropViewBox: string
-}
-
 const MUSCLE_SECTIONS: Array<{
   id: string
   title: string
   subtitle: string
-  zones: ConcreteMuscleZone[]
+  zones: ConcreteWorkoutMuscleZone[]
 }> = [
   {
     id: 'arms',
@@ -56,180 +46,14 @@ const MUSCLE_SECTIONS: Array<{
   }
 ]
 
-const ZONE_HINTS: Record<ConcreteMuscleZone, string> = {
-  shoulders: 'Дельтовидные',
-  biceps: 'Передняя часть плеча',
-  triceps: 'Задняя часть плеча',
-  forearms: 'Предплечья',
-  traps: 'Верх спины',
-  lats: 'Боковая часть спины',
-  lower_back: 'Нижняя часть спины',
-  chest: 'Грудные мышцы',
-  abs: 'Прямая мышца живота',
-  glutes: 'Ягодичные мышцы',
-  quadriceps: 'Передняя поверхность бедра',
-  hamstrings: 'Задняя поверхность бедра',
-  calves: 'Икроножные мышцы'
-}
-
-const ANATOMY_CONFIG: Record<ConcreteMuscleZone, AnatomyConfig> = {
-  shoulders: {
-    view: 'FRONT',
-    groups: ['SHOULDERS_FRONT', 'SHOULDERS_SIDE'],
-    cropViewBox: '120 135 470 610'
-  },
-  biceps: {
-    view: 'FRONT',
-    groups: ['BICEPS'],
-    cropViewBox: '120 175 470 590'
-  },
-  triceps: {
-    view: 'BACK',
-    groups: ['TRICEPS'],
-    cropViewBox: '115 165 470 610'
-  },
-  forearms: {
-    view: 'FRONT',
-    groups: ['FOREARMS'],
-    cropViewBox: '105 235 500 610'
-  },
-  traps: {
-    view: 'BACK',
-    groups: ['TRAPEZIUS'],
-    cropViewBox: '250 105 525 565'
-  },
-  lats: {
-    view: 'BACK',
-    groups: ['LATS'],
-    cropViewBox: '245 190 535 590'
-  },
-  lower_back: {
-    view: 'BACK',
-    groups: ['BACK_LOWER'],
-    cropViewBox: '285 350 455 500'
-  },
-  chest: {
-    view: 'FRONT',
-    groups: ['CHEST'],
-    cropViewBox: '270 180 485 520'
-  },
-  abs: {
-    view: 'FRONT',
-    groups: ['CORE'],
-    cropViewBox: '300 310 430 500'
-  },
-  glutes: {
-    view: 'BACK',
-    groups: ['GLUTES'],
-    cropViewBox: '265 565 495 560'
-  },
-  quadriceps: {
-    view: 'FRONT',
-    groups: ['QUADS'],
-    cropViewBox: '245 585 535 760'
-  },
-  hamstrings: {
-    view: 'BACK',
-    groups: ['HAMSTRINGS'],
-    cropViewBox: '245 585 535 760'
-  },
-  calves: {
-    view: 'BACK',
-    groups: ['CALVES'],
-    cropViewBox: '245 760 535 690'
-  }
-}
-
-const FALLBACK_ACCENT = '#8b5cf6'
-
-function readAccentColor(): string {
-  if (typeof document === 'undefined' || typeof window === 'undefined') return FALLBACK_ACCENT
-
-  const value = window
-    .getComputedStyle(document.documentElement)
-    .getPropertyValue('--app-accent-500')
-    .trim()
-
-  return /^#[0-9a-f]{3}([0-9a-f]{3})?$/i.test(value) ? value : FALLBACK_ACCENT
-}
-
-function useAccentColor(): string {
-  const [accentColor, setAccentColor] = useState(readAccentColor)
-
-  useEffect(() => {
-    const root = document.documentElement
-    const update = (): void => setAccentColor(readAccentColor())
-
-    update()
-    if (typeof MutationObserver === 'undefined') return
-
-    const observer = new MutationObserver(update)
-    observer.observe(root, { attributes: true, attributeFilter: ['data-accent'] })
-    return () => observer.disconnect()
-  }, [])
-
-  return accentColor
-}
-
-function MuscleIllustration({
-  zone,
-  selected,
-  accentColor
-}: {
-  zone: ConcreteMuscleZone
-  selected: boolean
-  accentColor: string
-}): React.JSX.Element {
-  const config = ANATOMY_CONFIG[zone]
-  const diagram = getBodyDiagram('MALE', config.view)
-  const values = Object.fromEntries(
-    config.groups.map((group) => [group, { score: selected ? 100 : 68 }])
-  ) as MuscleMapValues
-  const visibleGroups = new Set<AnatomyMuscleGroup>(config.groups)
-
-  return (
-    <div
-      aria-hidden="true"
-      className={cn(
-        'pointer-events-none grid h-[132px] w-full place-items-center overflow-hidden rounded-xl transition-all duration-200',
-        selected
-          ? 'bg-[radial-gradient(circle_at_50%_48%,color-mix(in_srgb,var(--app-accent-500)_13%,transparent),transparent_68%)]'
-          : 'bg-[radial-gradient(circle_at_50%_48%,color-mix(in_srgb,var(--app-accent-500)_5%,transparent),transparent_68%)] group-hover:bg-[radial-gradient(circle_at_50%_48%,color-mix(in_srgb,var(--app-accent-500)_8%,transparent),transparent_68%)]'
-      )}
-    >
-      <BodyFigure
-        diagram={diagram}
-        values={values}
-        colorModel="LOAD"
-        monochromeColor={accentColor}
-        monochromeBaseColor="#475569"
-        visibleGroups={visibleGroups}
-        activeGroup={null}
-        glow={selected}
-        idPrefix={`workout-muscle-${zone}`}
-        width={176}
-        cropViewBox={config.cropViewBox}
-        backgroundImage={config.view === 'FRONT' ? maleFront : maleBack}
-        backgroundOpacity={0.78}
-        backgroundGrayscale
-        backgroundBrightness={0.78}
-        onHover={() => undefined}
-        onSelect={() => undefined}
-      />
-    </div>
-  )
-}
-
 function MuscleZoneCard({
   zone,
   selected,
-  accentColor,
   onToggle
 }: {
-  zone: ConcreteMuscleZone
+  zone: ConcreteWorkoutMuscleZone
   selected: boolean
-  accentColor: string
-  onToggle: (zone: ConcreteMuscleZone) => void
+  onToggle: (zone: ConcreteWorkoutMuscleZone) => void
 }): React.JSX.Element {
   const label = workoutMuscleGroupLabel(zone)
 
@@ -259,7 +83,7 @@ function MuscleZoneCard({
         <Check className="size-3.5" strokeWidth={2.5} />
       </span>
 
-      <MuscleIllustration zone={zone} selected={selected} accentColor={accentColor} />
+      <WorkoutMuscleArtwork groups={[zone]} selected={selected} variant="card" />
 
       <span
         className={cn(
@@ -270,7 +94,7 @@ function MuscleZoneCard({
         {label}
       </span>
       <span className="mt-0.5 text-[10px] leading-4 text-[var(--app-muted)]">
-        {ZONE_HINTS[zone]}
+        {WORKOUT_MUSCLE_ZONE_HINTS[zone]}
       </span>
     </button>
   )
@@ -280,9 +104,7 @@ export function WorkoutMuscleMapPicker({
   value,
   onChange
 }: WorkoutMuscleMapPickerProps): React.JSX.Element {
-  const accentColor = useAccentColor()
-
-  function toggle(zone: ConcreteMuscleZone): void {
+  function toggle(zone: ConcreteWorkoutMuscleZone): void {
     onChange(value.includes(zone) ? value.filter((item) => item !== zone) : [...value, zone])
   }
 
@@ -325,7 +147,6 @@ export function WorkoutMuscleMapPicker({
                   key={zone}
                   zone={zone}
                   selected={value.includes(zone)}
-                  accentColor={accentColor}
                   onToggle={toggle}
                 />
               ))}
