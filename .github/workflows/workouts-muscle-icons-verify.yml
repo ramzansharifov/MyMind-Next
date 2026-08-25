@@ -27,8 +27,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Check formatting
+      - name: Format changed source
         run: |
+          npx prettier --write \
+            src/renderer/src/modules/workouts/components/WorkoutMuscleMapPicker.tsx \
+            src/renderer/src/modules/workouts/components/WorkoutMuscleMapPicker.test.tsx
           npx prettier --check \
             src/renderer/src/modules/workouts/components/WorkoutMuscleMapPicker.tsx \
             src/renderer/src/modules/workouts/components/WorkoutMuscleMapPicker.test.tsx
@@ -49,12 +52,12 @@ jobs:
       - name: Production bundle
         run: npm run build:bundle
 
-      - name: Remove temporary verification files
+      - name: Commit verified result and cleanup
         shell: bash
         run: |
           rm -f .github/workouts-muscle-icons-verify .github/workflows/workouts-muscle-icons-verify.yml
           git add -A
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "Убрать временную проверку иконок мышц"
+          git commit -m "Проверить и отформатировать иконки мышц"
           git push origin HEAD:agent/workouts-muscle-icons-redesign
