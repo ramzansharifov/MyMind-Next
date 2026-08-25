@@ -105,6 +105,10 @@ beforeEach(() => {
       exercises: 1,
       sets: 2,
       reps: 22,
+      externalWeightSets: 2,
+      externalWeightReps: 22,
+      bodyweightSets: 0,
+      bodyweightReps: 0,
       volumeKg: 328,
       durationMinutes: 60,
       averageDurationMinutes: 60,
@@ -170,6 +174,7 @@ beforeEach(() => {
         title: curl.title,
         muscleGroup: 'biceps',
         muscleGroups: ['biceps'],
+        usesExternalWeight: true,
         sessions: 1,
         sets: 2,
         reps: 22,
@@ -179,7 +184,11 @@ beforeEach(() => {
         estimatedOneRepMax: 21.33,
         firstBestWeightKg: 16,
         lastBestWeightKg: 16,
-        weightChangeKg: 0
+        weightChangeKg: 0,
+        bestSetReps: 12,
+        firstBestReps: 12,
+        lastBestReps: 12,
+        repsChange: 0
       }
     ],
     programs: [
@@ -189,6 +198,8 @@ beforeEach(() => {
         sessions: 1,
         sets: 2,
         reps: 22,
+        externalWeightSets: 2,
+        bodyweightSets: 0,
         volumeKg: 328,
         durationMinutes: 60
       }
@@ -199,6 +210,8 @@ beforeEach(() => {
         sessions: 1,
         sets: 2,
         reps: 22,
+        externalWeightSets: 2,
+        bodyweightSets: 0,
         volumeKg: 328,
         durationMinutes: 60
       }
@@ -214,7 +227,8 @@ beforeEach(() => {
         reps: 10,
         estimatedOneRepMax: 21.33
       }
-    ]
+    ],
+    bodyweightRecords: []
   })
 })
 
@@ -248,7 +262,9 @@ describe('WorkoutsPage', () => {
     expect(screen.getByText('Распределение нагрузки')).toBeInTheDocument()
     expect(screen.getByText('По упражнениям')).toBeInTheDocument()
     expect(screen.getByText('Лучшие показатели')).toBeInTheDocument()
-    expect(screen.getByText('100% · 2 подх. · 22 повт.')).toBeInTheDocument()
+    expect(screen.getByText('2 с весом · 0 без веса')).toBeInTheDocument()
+    expect(screen.getByText('Тоннаж с весом')).toBeInTheDocument()
+    expect(screen.getAllByText('С дополнительным весом').length).toBeGreaterThan(0)
     expect(screen.getByLabelText('Начало периода')).toHaveAttribute('type', 'date')
     expect(screen.getByLabelText('Конец периода')).toHaveAttribute('type', 'date')
 

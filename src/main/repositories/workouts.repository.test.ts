@@ -203,6 +203,33 @@ describe('workouts repository', () => {
     })
     expect(session.totalVolumeKg).toBe(0)
 
+    const bodyweightReport = getWorkoutReport({
+      dateFrom: '2026-08-01',
+      dateTo: '2026-08-31',
+      programId: null,
+      exerciseId: null,
+      muscleGroup: null
+    })
+    expect(bodyweightReport.summary).toMatchObject({
+      externalWeightSets: 0,
+      bodyweightSets: 2,
+      bodyweightReps: 18,
+      averageWeightKg: 0,
+      volumeKg: 0
+    })
+    expect(bodyweightReport.exercises[0]).toMatchObject({
+      usesExternalWeight: false,
+      bestSetReps: 10,
+      firstBestReps: 10,
+      lastBestReps: 10,
+      repsChange: 0
+    })
+    expect(bodyweightReport.personalRecords).toEqual([])
+    expect(bodyweightReport.bodyweightRecords[0]).toMatchObject({
+      exerciseId: pullUp.id,
+      reps: 10
+    })
+
     updateWorkoutExercise({
       id: pullUp.id,
       title: 'Подтягивания',
@@ -324,6 +351,8 @@ describe('workouts repository', () => {
       sessions: 2,
       activeDays: 2,
       sets: 8,
+      externalWeightSets: 8,
+      bodyweightSets: 0,
       durationMinutes: 130
     })
     expect(report.muscleGroups.find((item) => item.muscleGroup === 'chest')).toMatchObject({
@@ -336,6 +365,7 @@ describe('workouts repository', () => {
     })
     expect(report.exercises.find((item) => item.exerciseId === bench.id)).toMatchObject({
       muscleGroups: ['chest'],
+      usesExternalWeight: true,
       sessions: 2,
       sets: 4,
       firstBestWeightKg: 70,

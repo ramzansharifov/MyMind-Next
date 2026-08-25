@@ -254,6 +254,10 @@ export interface WorkoutReportSummary {
   exercises: number
   sets: number
   reps: number
+  externalWeightSets: number
+  externalWeightReps: number
+  bodyweightSets: number
+  bodyweightReps: number
   volumeKg: number
   durationMinutes: number
   averageDurationMinutes: number
@@ -278,6 +282,7 @@ export interface WorkoutReportExercise {
   title: string
   muscleGroup: WorkoutMuscleGroup
   muscleGroups: WorkoutMuscleGroup[]
+  usesExternalWeight: boolean
   sessions: number
   sets: number
   reps: number
@@ -288,6 +293,10 @@ export interface WorkoutReportExercise {
   firstBestWeightKg: number
   lastBestWeightKg: number
   weightChangeKg: number
+  bestSetReps: number
+  firstBestReps: number
+  lastBestReps: number
+  repsChange: number
 }
 
 export interface WorkoutReportProgram {
@@ -296,6 +305,8 @@ export interface WorkoutReportProgram {
   sessions: number
   sets: number
   reps: number
+  externalWeightSets: number
+  bodyweightSets: number
   volumeKg: number
   durationMinutes: number
 }
@@ -305,6 +316,8 @@ export interface WorkoutReportDay {
   sessions: number
   sets: number
   reps: number
+  externalWeightSets: number
+  bodyweightSets: number
   volumeKg: number
   durationMinutes: number
 }
@@ -320,6 +333,15 @@ export interface WorkoutPersonalRecord {
   estimatedOneRepMax: number
 }
 
+export interface WorkoutBodyweightRecord {
+  exerciseId: string | null
+  title: string
+  muscleGroup: WorkoutMuscleGroup
+  muscleGroups: WorkoutMuscleGroup[]
+  date: string
+  reps: number
+}
+
 export interface WorkoutReport {
   dateFrom: string
   dateTo: string
@@ -329,6 +351,7 @@ export interface WorkoutReport {
   programs: WorkoutReportProgram[]
   timeline: WorkoutReportDay[]
   personalRecords: WorkoutPersonalRecord[]
+  bodyweightRecords: WorkoutBodyweightRecord[]
 }
 
 export const WORKOUTS_IPC_CHANNELS = {

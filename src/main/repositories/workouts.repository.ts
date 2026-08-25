@@ -14,6 +14,7 @@ import type {
   UpdateWorkoutProgramInput,
   UpdateWorkoutProgressEntryInput,
   UpdateWorkoutSessionInput,
+  WorkoutBodyweightRecord,
   WorkoutEntityStatus,
   WorkoutExerciseRecord,
   WorkoutMuscleGroup,
@@ -786,11 +787,16 @@ function estimatedOneRepMax(weightKg: number, reps: number): number {
   return round2(weightKg * (1 + reps / 30))
 }
 
+function reportExerciseIdentity(exercise: WorkoutSessionExerciseRecord): string {
+  return exercise.exerciseId ?? `${exercise.exerciseTitle}:${exercise.muscleGroups.join(',')}`
+}
+
 interface ExerciseAccumulator {
   exerciseId: string | null
   title: string
   muscleGroup: WorkoutMuscleGroup
   muscleGroups: WorkoutMuscleGroup[]
+  usesExternalWeight: boolean
   sessionIds: Set<string>
   sets: number
   reps: number
@@ -804,7 +810,13 @@ interface ExerciseAccumulator {
 export function getWorkoutReport(input: WorkoutReportInput): WorkoutReport {
   const sessions = loadSessions()
     .filter((session) => session.date >= input.dateFrom && session.date <= input.dateTo)
-    .filter((session) => input.programId === null || session.programId === input.programId)
+    .filter((session) =>
+      input.programId === null
+        ? true
+        : input.programId === 'custom'
+          ? session.programId === null
+          : session.programId === input.programId
+    )
 
   const filteredSessions = sessions
     .map((session) => ({
@@ -833,6 +845,10 @@ export function getWorkoutReport(input: WorkoutReportInput): WorkoutReport {
   let totalWeight = 0
   let totalSetCountForWeight = 0
   let maxWeightKg = 0
+  let externalWeightSets = 0
+  let externalWeightReps = 0
+  let bodyweightSets = 0
+  let bodyweightReps = 0
 
   for (const session of filteredSessions) {
     const day = dayMap.get(session.date) ?? {
@@ -840,6 +856,8 @@ export function getWorkoutReport(input: WorkoutReportInput): WorkoutReport {
       sessions: 0,
       sets: 0,
       reps: 0,
+      externalWeightSets: 0,
+      bodyweightSets: 0,
       volumeKg: 0,
       durationMinutes: 0
     }
@@ -854,6 +872,8 @@ export function getWorkoutReport(input: WorkoutReportInput): WorkoutReport {
       sessions: 0,
       sets: 0,
       reps: 0,
+      externalWeightSets: 0,
+      bodyweightSets: 0,
       volumeKg: 0,
       durationMinutes: 0
     }
@@ -862,13 +882,14 @@ export function getWorkoutReport(input: WorkoutReportInput): WorkoutReport {
     programMap.set(programKey, program)
 
     for (const exercise of session.exercises) {
-      const exerciseKey =
-        exercise.exerciseId ?? `${exercise.exerciseTitle}:${exercise.muscleGroups.join(',')}`
+      const exerciseIdentity = reportExerciseIdentity(exercise)
+      const exerciseKey = `${exerciseIdentity}:${exercise.usesExternalWeight ? 'external' : 'bodyweight'}`
       const accumulator = exerciseMap.get(exerciseKey) ?? {
         exerciseId: exercise.exerciseId,
         title: exercise.exerciseTitle,
         muscleGroup: exercise.muscleGroup,
         muscleGroups: exercise.muscleGroups,
+        usesExternalWeight: exercise.usesExternalWeight,
         sessionIds: new Set<string>(),
         sets: 0,
         reps: 0,
@@ -879,19 +900,33 @@ export function getWorkoutReport(input: WorkoutReportInput): WorkoutReport {
         observations: []
       }
       accumulator.sessionIds.add(session.id)
-      exercise.muscleGroups.forEach((group) => muscleExerciseIds.get(group)?.add(exerciseKey))
+      exercise.muscleGroups.forEach((group) => muscleExerciseIds.get(group)?.add(exerciseIdentity))
 
       for (const set of exercise.sets) {
-        const volume = set.reps * set.weightKg
+        const volume = exercise.usesExternalWeight ? set.reps * set.weightKg : 0
         accumulator.sets += 1
         accumulator.reps += set.reps
         accumulator.volumeKg += volume
-        accumulator.weightTotal += set.weightKg
-        accumulator.maxWeightKg = Math.max(accumulator.maxWeightKg, set.weightKg)
-        accumulator.estimatedOneRepMax = Math.max(
-          accumulator.estimatedOneRepMax,
-          estimatedOneRepMax(set.weightKg, set.reps)
-        )
+        if (exercise.usesExternalWeight) {
+          accumulator.weightTotal += set.weightKg
+          accumulator.maxWeightKg = Math.max(accumulator.maxWeightKg, set.weightKg)
+          accumulator.estimatedOneRepMax = Math.max(
+            accumulator.estimatedOneRepMax,
+            estimatedOneRepMax(set.weightKg, set.reps)
+          )
+          totalWeight += set.weightKg
+          totalSetCountForWeight += 1
+          maxWeightKg = Math.max(maxWeightKg, set.weightKg)
+          externalWeightSets += 1
+          externalWeightReps += set.reps
+          program.externalWeightSets += 1
+          day.externalWeightSets += 1
+        } else {
+          bodyweightSets += 1
+          bodyweightReps += set.reps
+          program.bodyweightSets += 1
+          day.bodyweightSets += 1
+        }
         accumulator.observations.push({
           date: session.date,
           weightKg: set.weightKg,
@@ -910,9 +945,6 @@ export function getWorkoutReport(input: WorkoutReportInput): WorkoutReport {
         day.sets += 1
         day.reps += set.reps
         day.volumeKg += volume
-        totalWeight += set.weightKg
-        totalSetCountForWeight += 1
-        maxWeightKg = Math.max(maxWeightKg, set.weightKg)
       }
       exerciseMap.set(exerciseKey, accumulator)
     }
@@ -943,26 +975,43 @@ export function getWorkoutReport(input: WorkoutReportInput): WorkoutReport {
         0,
         ...sorted.filter((entry) => entry.date === lastDate).map((entry) => entry.weightKg)
       )
+      const firstBestReps = Math.max(
+        0,
+        ...sorted.filter((entry) => entry.date === firstDate).map((entry) => entry.reps)
+      )
+      const lastBestReps = Math.max(
+        0,
+        ...sorted.filter((entry) => entry.date === lastDate).map((entry) => entry.reps)
+      )
       return {
         exerciseId: exercise.exerciseId,
         title: exercise.title,
         muscleGroup: exercise.muscleGroup,
         muscleGroups: exercise.muscleGroups,
+        usesExternalWeight: exercise.usesExternalWeight,
         sessions: exercise.sessionIds.size,
         sets: exercise.sets,
         reps: exercise.reps,
         volumeKg: round2(exercise.volumeKg),
-        averageWeightKg: exercise.sets === 0 ? 0 : round2(exercise.weightTotal / exercise.sets),
+        averageWeightKg:
+          !exercise.usesExternalWeight || exercise.sets === 0
+            ? 0
+            : round2(exercise.weightTotal / exercise.sets),
         maxWeightKg: round2(exercise.maxWeightKg),
         estimatedOneRepMax: round2(exercise.estimatedOneRepMax),
         firstBestWeightKg: round2(firstBest),
         lastBestWeightKg: round2(lastBest),
-        weightChangeKg: round2(lastBest - firstBest)
+        weightChangeKg: round2(lastBest - firstBest),
+        bestSetReps: Math.max(0, ...sorted.map((entry) => entry.reps)),
+        firstBestReps,
+        lastBestReps,
+        repsChange: lastBestReps - firstBestReps
       }
     })
     .sort((left, right) => right.volumeKg - left.volumeKg || right.sets - left.sets)
 
   const personalRecords: WorkoutPersonalRecord[] = [...exerciseMap.values()]
+    .filter((exercise) => exercise.usesExternalWeight)
     .map((exercise) => {
       const best = exercise.observations.reduce<{
         date: string
@@ -974,7 +1023,7 @@ export function getWorkoutReport(input: WorkoutReportInput): WorkoutReport {
         if (!current || score > current.score) return { ...observation, score }
         return current
       }, null)
-      if (!best) return null
+      if (!best || best.score <= 0) return null
       return {
         exerciseId: exercise.exerciseId,
         title: exercise.title,
@@ -989,6 +1038,29 @@ export function getWorkoutReport(input: WorkoutReportInput): WorkoutReport {
     .filter((record): record is WorkoutPersonalRecord => record !== null)
     .sort((left, right) => right.estimatedOneRepMax - left.estimatedOneRepMax)
 
+  const bodyweightRecords: WorkoutBodyweightRecord[] = [...exerciseMap.values()]
+    .filter((exercise) => !exercise.usesExternalWeight)
+    .map((exercise) => {
+      const best = exercise.observations.reduce<{ date: string; reps: number } | null>(
+        (current, observation) =>
+          !current || observation.reps > current.reps
+            ? { date: observation.date, reps: observation.reps }
+            : current,
+        null
+      )
+      if (!best) return null
+      return {
+        exerciseId: exercise.exerciseId,
+        title: exercise.title,
+        muscleGroup: exercise.muscleGroup,
+        muscleGroups: exercise.muscleGroups,
+        date: best.date,
+        reps: best.reps
+      }
+    })
+    .filter((record): record is WorkoutBodyweightRecord => record !== null)
+    .sort((left, right) => right.reps - left.reps)
+
   const sets = reportExercises.reduce((sum, exercise) => sum + exercise.sets, 0)
   const reps = reportExercises.reduce((sum, exercise) => sum + exercise.reps, 0)
   const volumeKg = round2(reportExercises.reduce((sum, exercise) => sum + exercise.volumeKg, 0))
@@ -997,6 +1069,9 @@ export function getWorkoutReport(input: WorkoutReportInput): WorkoutReport {
     0
   )
   const sessionCount = filteredSessions.length
+  const exerciseCount = new Set(
+    filteredSessions.flatMap((session) => session.exercises.map(reportExerciseIdentity))
+  ).size
 
   return {
     dateFrom: input.dateFrom,
@@ -1004,9 +1079,13 @@ export function getWorkoutReport(input: WorkoutReportInput): WorkoutReport {
     summary: {
       sessions: sessionCount,
       activeDays: new Set(filteredSessions.map((session) => session.date)).size,
-      exercises: reportExercises.length,
+      exercises: exerciseCount,
       sets,
       reps,
+      externalWeightSets,
+      externalWeightReps,
+      bodyweightSets,
+      bodyweightReps,
       volumeKg,
       durationMinutes,
       averageDurationMinutes: sessionCount === 0 ? 0 : round2(durationMinutes / sessionCount),
@@ -1027,6 +1106,7 @@ export function getWorkoutReport(input: WorkoutReportInput): WorkoutReport {
     timeline: [...dayMap.values()]
       .map((day) => ({ ...day, volumeKg: round2(day.volumeKg) }))
       .sort((left, right) => left.date.localeCompare(right.date)),
-    personalRecords
+    personalRecords,
+    bodyweightRecords
   }
 }

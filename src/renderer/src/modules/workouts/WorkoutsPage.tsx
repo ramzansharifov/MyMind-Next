@@ -1113,6 +1113,7 @@ export function WorkoutsPage({
                   value={reportProgramId}
                   options={[
                     { value: 'all', label: 'Все программы' },
+                    { value: 'custom', label: 'Свободные тренировки' },
                     ...programs.map((program) => ({ value: program.id, label: program.name }))
                   ]}
                   onValueChange={setReportProgramId}
@@ -1152,19 +1153,41 @@ export function WorkoutsPage({
               <>
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                   {[
-                    { label: 'Тренировки', value: report.summary.sessions, icon: Dumbbell },
-                    { label: 'Активные дни', value: report.summary.activeDays, icon: CalendarDays },
-                    { label: 'Подходы', value: report.summary.sets, icon: Sigma },
-                    { label: 'Повторения', value: report.summary.reps, icon: Activity },
                     {
-                      label: 'Тоннаж',
+                      label: 'Тренировки',
+                      value: report.summary.sessions,
+                      icon: Dumbbell,
+                      meta: `${report.summary.exercises} упражн.`
+                    },
+                    {
+                      label: 'Активные дни',
+                      value: report.summary.activeDays,
+                      icon: CalendarDays,
+                      meta: `${report.summary.durationMinutes} мин всего`
+                    },
+                    {
+                      label: 'Подходы',
+                      value: report.summary.sets,
+                      icon: Sigma,
+                      meta: `${report.summary.externalWeightSets} с весом · ${report.summary.bodyweightSets} без веса`
+                    },
+                    {
+                      label: 'Повторения',
+                      value: report.summary.reps,
+                      icon: Activity,
+                      meta: `${report.summary.externalWeightReps} с весом · ${report.summary.bodyweightReps} без веса`
+                    },
+                    {
+                      label: 'Тоннаж с весом',
                       value: `${formatNumber(report.summary.volumeKg)} кг`,
-                      icon: Scale
+                      icon: Scale,
+                      meta: 'Без упражнений с собственным весом'
                     },
                     {
                       label: 'Среднее время',
                       value: `${formatNumber(report.summary.averageDurationMinutes, 0)} мин`,
-                      icon: Clock3
+                      icon: Clock3,
+                      meta: 'На одну тренировку'
                     }
                   ].map((stat) => {
                     const Icon = stat.icon
@@ -1181,6 +1204,9 @@ export function WorkoutsPage({
                         </div>
                         <div className="mt-2 text-xl font-semibold text-[var(--app-text)]">
                           {stat.value}
+                        </div>
+                        <div className="mt-1 text-[10px] leading-4 text-[var(--app-muted)]">
+                          {stat.meta}
                         </div>
                       </div>
                     )
@@ -1201,40 +1227,42 @@ export function WorkoutsPage({
                       </div>
                     </div>
                     <div className="mt-5 space-y-4">
-                      {report.muscleGroups.map((item) => {
-                        const classes = workoutMuscleGroupClasses[item.muscleGroup]
-                        return (
-                          <div key={item.muscleGroup}>
-                            <div className="mb-1.5 flex items-center justify-between gap-3 text-xs">
-                              <span
-                                className={cn(
-                                  'inline-flex items-center gap-1.5 font-semibold',
-                                  classes.text
-                                )}
-                              >
-                                <WorkoutMuscleGroupIcon
-                                  group={item.muscleGroup}
-                                  className="size-3.5"
+                      {report.muscleGroups
+                        .filter((item) => item.sets > 0)
+                        .map((item) => {
+                          const classes = workoutMuscleGroupClasses[item.muscleGroup]
+                          return (
+                            <div key={item.muscleGroup}>
+                              <div className="mb-1.5 flex items-center justify-between gap-3 text-xs">
+                                <span
+                                  className={cn(
+                                    'inline-flex items-center gap-2 font-semibold',
+                                    classes.text
+                                  )}
+                                >
+                                  <WorkoutMuscleArtwork
+                                    groups={[item.muscleGroup]}
+                                    className="size-8 shrink-0 rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] p-0.5"
+                                  />
+                                  {workoutMuscleGroupLabel(item.muscleGroup)}
+                                </span>
+                                <span className="text-[var(--app-muted)]">
+                                  {formatNumber(item.loadPercent)}% · {item.sets} подх. ·{' '}
+                                  {item.reps} повт.
+                                </span>
+                              </div>
+                              <div className="h-2 overflow-hidden rounded-full bg-[var(--app-workspace)]">
+                                <div
+                                  className={cn(
+                                    'h-full rounded-full transition-[width]',
+                                    classes.bar
+                                  )}
+                                  style={{ width: `${Math.min(100, item.loadPercent)}%` }}
                                 />
-                                {workoutMuscleGroupLabel(item.muscleGroup)}
-                              </span>
-                              <span className="text-[var(--app-muted)]">
-                                {formatNumber(item.loadPercent)}% · {item.sets} подх. · {item.reps}{' '}
-                                повт.
-                              </span>
+                              </div>
                             </div>
-                            <div className="h-2 overflow-hidden rounded-full bg-[var(--app-workspace)]">
-                              <div
-                                className={cn(
-                                  'h-full rounded-full transition-[width]',
-                                  classes.bar
-                                )}
-                                style={{ width: `${Math.min(100, item.loadPercent)}%` }}
-                              />
-                            </div>
-                          </div>
-                        )
-                      })}
+                          )
+                        })}
                     </div>
                   </section>
 
@@ -1246,7 +1274,8 @@ export function WorkoutsPage({
                           Динамика нагрузки
                         </h2>
                         <p className="mt-0.5 text-xs text-[var(--app-muted)]">
-                          Тоннаж и объём по дням с тренировками.
+                          Подходы и повторения по дням; тоннаж показывается только для упражнений с
+                          весом.
                         </p>
                       </div>
                     </div>
@@ -1257,10 +1286,7 @@ export function WorkoutsPage({
                     ) : (
                       <div className="mt-5 space-y-2.5">
                         {report.timeline.slice(-18).map((day) => {
-                          const maxVolume = Math.max(
-                            1,
-                            ...report.timeline.map((item) => item.volumeKg)
-                          )
+                          const maxSets = Math.max(1, ...report.timeline.map((item) => item.sets))
                           return (
                             <div
                               key={day.date}
@@ -1274,17 +1300,24 @@ export function WorkoutsPage({
                                   className="flex h-full items-center rounded-lg bg-violet-500/20 px-2 text-[10px] font-medium text-violet-200"
                                   style={{
                                     width: `${Math.max(
-                                      day.volumeKg > 0 ? 8 : 0,
-                                      (day.volumeKg / maxVolume) * 100
+                                      day.sets > 0 ? 8 : 0,
+                                      (day.sets / maxSets) * 100
                                     )}%`
                                   }}
                                 >
                                   {day.sets} подх.
                                 </div>
                               </div>
-                              <span className="text-right text-xs text-[var(--app-muted)]">
-                                {formatNumber(day.volumeKg)} кг
-                              </span>
+                              <div className="text-right text-xs text-[var(--app-muted)]">
+                                <div>{day.reps} повт.</div>
+                                <div className="mt-0.5 text-[10px]">
+                                  {day.externalWeightSets > 0 && `${formatNumber(day.volumeKg)} кг`}
+                                  {day.externalWeightSets > 0 && day.bodyweightSets > 0
+                                    ? ' · '
+                                    : ''}
+                                  {day.bodyweightSets > 0 && `${day.bodyweightSets} без веса`}
+                                </div>
+                              </div>
                             </div>
                           )
                         })}
@@ -1301,8 +1334,8 @@ export function WorkoutsPage({
                         По упражнениям
                       </h2>
                       <p className="mt-0.5 text-xs text-[var(--app-muted)]">
-                        Объём, вес и изменение лучшего рабочего веса между первой и последней
-                        тренировкой периода.
+                        Для упражнений с весом — тоннаж и рабочий вес; без дополнительного веса —
+                        прогресс по повторениям.
                       </p>
                     </div>
                   </div>
@@ -1311,57 +1344,138 @@ export function WorkoutsPage({
                       Нет упражнений за выбранный период
                     </div>
                   ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full min-w-[900px] text-left text-xs">
-                        <thead className="bg-[var(--app-workspace)] text-[var(--app-muted)]">
-                          <tr>
-                            <th className="px-4 py-3 font-semibold">Упражнение</th>
-                            <th className="px-3 py-3 font-semibold">Тренировки</th>
-                            <th className="px-3 py-3 font-semibold">Подходы</th>
-                            <th className="px-3 py-3 font-semibold">Повторы</th>
-                            <th className="px-3 py-3 font-semibold">Тоннаж</th>
-                            <th className="px-3 py-3 font-semibold">Макс. вес</th>
-                            <th className="px-3 py-3 font-semibold">Расч. 1ПМ</th>
-                            <th className="px-3 py-3 font-semibold">Изменение</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-[var(--app-border)]">
-                          {report.exercises.map((item) => (
-                            <tr
-                              key={`${item.exerciseId}-${item.title}`}
-                              className="text-[var(--app-text)]"
-                            >
-                              <td className="px-4 py-3">
-                                <div className="font-semibold">{item.title}</div>
-                                <div className="mt-0.5 text-[11px] text-[var(--app-muted)]">
-                                  {workoutMuscleGroupLabel(item.muscleGroup)}
+                    <div className="grid gap-3 p-4 lg:grid-cols-2">
+                      {report.exercises.map((item) => {
+                        const change = item.usesExternalWeight
+                          ? item.weightChangeKg
+                          : item.repsChange
+                        return (
+                          <article
+                            key={`${item.exerciseId}-${item.title}-${item.usesExternalWeight ? 'weight' : 'bodyweight'}`}
+                            className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-4"
+                          >
+                            <div className="flex items-start gap-3">
+                              <WorkoutMuscleArtwork
+                                groups={item.muscleGroups}
+                                className="size-12 shrink-0 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-0.5"
+                              />
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <h3 className="font-semibold text-[var(--app-text)]">
+                                    {item.title}
+                                  </h3>
+                                  <span
+                                    className={cn(
+                                      'rounded-lg border px-2 py-0.5 text-[10px] font-semibold',
+                                      item.usesExternalWeight
+                                        ? 'border-violet-400/25 bg-violet-500/10 text-violet-200'
+                                        : 'border-emerald-400/25 bg-emerald-500/10 text-emerald-200'
+                                    )}
+                                  >
+                                    {item.usesExternalWeight
+                                      ? 'С дополнительным весом'
+                                      : 'Без дополнительного веса'}
+                                  </span>
                                 </div>
-                              </td>
-                              <td className="px-3 py-3">{item.sessions}</td>
-                              <td className="px-3 py-3">{item.sets}</td>
-                              <td className="px-3 py-3">{item.reps}</td>
-                              <td className="px-3 py-3">{formatNumber(item.volumeKg)} кг</td>
-                              <td className="px-3 py-3">{formatNumber(item.maxWeightKg)} кг</td>
-                              <td className="px-3 py-3">
-                                {formatNumber(item.estimatedOneRepMax)} кг
-                              </td>
-                              <td
-                                className={cn(
-                                  'px-3 py-3 font-semibold',
-                                  item.weightChangeKg > 0
-                                    ? 'text-emerald-300'
-                                    : item.weightChangeKg < 0
-                                      ? 'text-rose-300'
-                                      : 'text-[var(--app-muted)]'
-                                )}
-                              >
-                                {item.weightChangeKg > 0 ? '+' : ''}
-                                {formatNumber(item.weightChangeKg)} кг
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                                <div className="mt-1 text-[11px] text-[var(--app-muted)]">
+                                  {workoutMuscleGroupsLabel(item.muscleGroups)}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="mt-4 grid grid-cols-3 gap-2">
+                              {[
+                                ['Тренировки', item.sessions],
+                                ['Подходы', item.sets],
+                                ['Повторы', item.reps]
+                              ].map(([label, value]) => (
+                                <div
+                                  key={String(label)}
+                                  className="rounded-xl bg-[var(--app-surface)] p-2.5"
+                                >
+                                  <div className="text-[10px] text-[var(--app-muted)]">{label}</div>
+                                  <div className="mt-1 text-sm font-semibold text-[var(--app-text)]">
+                                    {value}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+
+                            {item.usesExternalWeight ? (
+                              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-5">
+                                {[
+                                  ['Тоннаж', `${formatNumber(item.volumeKg)} кг`],
+                                  ['Средний вес', `${formatNumber(item.averageWeightKg)} кг`],
+                                  ['Максимум', `${formatNumber(item.maxWeightKg)} кг`],
+                                  ['Расч. 1ПМ', `${formatNumber(item.estimatedOneRepMax)} кг`],
+                                  [
+                                    'Изменение',
+                                    `${item.weightChangeKg > 0 ? '+' : ''}${formatNumber(item.weightChangeKg)} кг`
+                                  ]
+                                ].map(([label, value]) => (
+                                  <div
+                                    key={String(label)}
+                                    className="rounded-xl bg-[var(--app-surface)] p-2.5"
+                                  >
+                                    <div className="text-[10px] text-[var(--app-muted)]">
+                                      {label}
+                                    </div>
+                                    <div
+                                      className={cn(
+                                        'mt-1 text-xs font-semibold',
+                                        label === 'Изменение'
+                                          ? change > 0
+                                            ? 'text-emerald-300'
+                                            : change < 0
+                                              ? 'text-rose-300'
+                                              : 'text-[var(--app-muted)]'
+                                          : 'text-[var(--app-text)]'
+                                      )}
+                                    >
+                                      {value}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                                {[
+                                  ['Лучший подход', `${item.bestSetReps} повт.`],
+                                  ['Первая трен.', `${item.firstBestReps} повт.`],
+                                  ['Последняя трен.', `${item.lastBestReps} повт.`],
+                                  [
+                                    'Изменение',
+                                    `${item.repsChange > 0 ? '+' : ''}${item.repsChange} повт.`
+                                  ]
+                                ].map(([label, value]) => (
+                                  <div
+                                    key={String(label)}
+                                    className="rounded-xl bg-[var(--app-surface)] p-2.5"
+                                  >
+                                    <div className="text-[10px] text-[var(--app-muted)]">
+                                      {label}
+                                    </div>
+                                    <div
+                                      className={cn(
+                                        'mt-1 text-xs font-semibold',
+                                        label === 'Изменение'
+                                          ? change > 0
+                                            ? 'text-emerald-300'
+                                            : change < 0
+                                              ? 'text-rose-300'
+                                              : 'text-[var(--app-muted)]'
+                                          : 'text-[var(--app-text)]'
+                                      )}
+                                    >
+                                      {value}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </article>
+                        )
+                      })}
                     </div>
                   )}
                 </section>
@@ -1396,9 +1510,16 @@ export function WorkoutsPage({
                                 {item.sessions} трен. · {item.sets} подх. · {item.reps} повт.
                               </div>
                             </div>
-                            <span className="text-xs font-medium text-[var(--app-muted)]">
-                              {formatNumber(item.volumeKg)} кг
-                            </span>
+                            <div className="shrink-0 text-right text-xs font-medium text-[var(--app-muted)]">
+                              {item.externalWeightSets > 0 && (
+                                <div>{formatNumber(item.volumeKg)} кг</div>
+                              )}
+                              {item.bodyweightSets > 0 && (
+                                <div className="mt-0.5 text-[10px]">
+                                  {item.bodyweightSets} подх. без веса
+                                </div>
+                              )}
+                            </div>
                           </div>
                         ))
                       )}
@@ -1413,39 +1534,86 @@ export function WorkoutsPage({
                           Лучшие показатели
                         </h2>
                         <p className="mt-0.5 text-xs text-[var(--app-muted)]">
-                          Оценочный 1ПМ по формуле Эпли.
+                          Силовые рекорды и лучшие подходы без дополнительного веса считаются
+                          отдельно.
                         </p>
                       </div>
                     </div>
-                    <div className="divide-y divide-[var(--app-border)]">
-                      {report.personalRecords.length === 0 ? (
-                        <div className="px-5 py-10 text-center text-sm text-[var(--app-muted)]">
-                          Добавьте тренировки с рабочим весом
-                        </div>
-                      ) : (
-                        report.personalRecords.slice(0, 12).map((record, index) => (
-                          <div
-                            key={`${record.exerciseId}-${record.title}`}
-                            className="flex items-center gap-3 px-5 py-3.5"
-                          >
-                            <span className="flex size-8 items-center justify-center rounded-lg bg-amber-500/10 text-xs font-bold text-amber-300">
-                              {index + 1}
-                            </span>
-                            <div className="min-w-0 flex-1">
-                              <div className="truncate text-sm font-semibold text-[var(--app-text)]">
-                                {record.title}
-                              </div>
-                              <div className="mt-0.5 text-xs text-[var(--app-muted)]">
-                                {record.weightKg} кг × {record.reps} · {record.date}
-                              </div>
+                    {report.personalRecords.length === 0 &&
+                    report.bodyweightRecords.length === 0 ? (
+                      <div className="px-5 py-10 text-center text-sm text-[var(--app-muted)]">
+                        Добавьте тренировки, чтобы появились рекорды
+                      </div>
+                    ) : (
+                      <div>
+                        {report.personalRecords.length > 0 && (
+                          <div>
+                            <div className="border-b border-[var(--app-border)] px-5 py-2 text-[10px] font-semibold tracking-[0.08em] text-[var(--app-muted)] uppercase">
+                              С дополнительным весом
                             </div>
-                            <span className="text-sm font-semibold text-amber-200">
-                              ≈ {formatNumber(record.estimatedOneRepMax)} кг
-                            </span>
+                            <div className="divide-y divide-[var(--app-border)]">
+                              {report.personalRecords.slice(0, 8).map((record, index) => (
+                                <div
+                                  key={`${record.exerciseId}-${record.title}`}
+                                  className="flex items-center gap-3 px-5 py-3.5"
+                                >
+                                  <WorkoutMuscleArtwork
+                                    groups={record.muscleGroups}
+                                    className="size-9 shrink-0 rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] p-0.5"
+                                  />
+                                  <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-[10px] font-bold text-amber-300">
+                                    {index + 1}
+                                  </span>
+                                  <div className="min-w-0 flex-1">
+                                    <div className="truncate text-sm font-semibold text-[var(--app-text)]">
+                                      {record.title}
+                                    </div>
+                                    <div className="mt-0.5 text-xs text-[var(--app-muted)]">
+                                      {record.weightKg} кг × {record.reps} ·{' '}
+                                      {formatDate(record.date)}
+                                    </div>
+                                  </div>
+                                  <span className="text-sm font-semibold text-amber-200">
+                                    ≈ {formatNumber(record.estimatedOneRepMax)} кг
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                        ))
-                      )}
-                    </div>
+                        )}
+                        {report.bodyweightRecords.length > 0 && (
+                          <div>
+                            <div className="border-y border-[var(--app-border)] px-5 py-2 text-[10px] font-semibold tracking-[0.08em] text-[var(--app-muted)] uppercase">
+                              Без дополнительного веса
+                            </div>
+                            <div className="divide-y divide-[var(--app-border)]">
+                              {report.bodyweightRecords.slice(0, 8).map((record) => (
+                                <div
+                                  key={`${record.exerciseId}-${record.title}`}
+                                  className="flex items-center gap-3 px-5 py-3.5"
+                                >
+                                  <WorkoutMuscleArtwork
+                                    groups={record.muscleGroups}
+                                    className="size-9 shrink-0 rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] p-0.5"
+                                  />
+                                  <div className="min-w-0 flex-1">
+                                    <div className="truncate text-sm font-semibold text-[var(--app-text)]">
+                                      {record.title}
+                                    </div>
+                                    <div className="mt-0.5 text-xs text-[var(--app-muted)]">
+                                      Лучший подход · {formatDate(record.date)}
+                                    </div>
+                                  </div>
+                                  <span className="text-sm font-semibold text-emerald-200">
+                                    {record.reps} повт.
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </section>
                 </div>
 
@@ -1464,9 +1632,12 @@ export function WorkoutsPage({
                         'Тоннаж / трен.',
                         `${formatNumber(report.summary.averageVolumeKgPerSession)} кг`
                       ],
-                      ['Средний вес подхода', `${formatNumber(report.summary.averageWeightKg)} кг`],
-                      ['Максимальный вес', `${formatNumber(report.summary.maxWeightKg)} кг`],
-                      ['Упражнений', report.summary.exercises]
+                      [
+                        'Средний вес (с весом)',
+                        `${formatNumber(report.summary.averageWeightKg)} кг`
+                      ],
+                      ['Подходов с весом', report.summary.externalWeightSets],
+                      ['Без доп. веса', report.summary.bodyweightSets]
                     ].map(([label, value]) => (
                       <div
                         key={String(label)}
