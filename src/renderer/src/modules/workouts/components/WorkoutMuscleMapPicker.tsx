@@ -166,10 +166,7 @@ function TorsoIcon({
   selected: boolean
 }): React.JSX.Element {
   const targets: Record<typeof zone, string[]> = {
-    chest: [
-      'M27 34c6-7 13-10 20-8v18c-8 3-16 2-23-3Z',
-      'M69 34c-6-7-13-10-20-8v18c8 3 16 2 23-3Z'
-    ],
+    chest: ['M27 34c6-7 13-10 20-8v18c-8 3-16 2-23-3Z', 'M69 34c-6-7-13-10-20-8v18c8 3 16 2 23-3Z'],
     abs: [
       'M39 45h8v10h-9Z',
       'M49 45h8l1 10h-9Z',
@@ -208,10 +205,7 @@ function LegIcon({
   selected: boolean
 }): React.JSX.Element {
   const targets: Record<typeof zone, string[]> = {
-    glutes: [
-      'M28 25c5-6 11-8 18-5v16c-6 5-13 5-20 1Z',
-      'M68 25c-5-6-11-8-18-5v16c6 5 13 5 20 1Z'
-    ],
+    glutes: ['M28 25c5-6 11-8 18-5v16c-6 5-13 5-20 1Z', 'M68 25c-5-6-11-8-18-5v16c6 5 13 5 20 1Z'],
     quadriceps: [
       'M27 38c6-2 12-1 17 2l-3 25c-5 4-10 5-15 2Z',
       'M69 38c-6-2-12-1-17 2l3 25c5 4 10 5 15 2Z'
@@ -282,7 +276,7 @@ function MuscleZoneCard({
       aria-pressed={selected}
       aria-label={`${selected ? 'Убрать' : 'Выбрать'}: ${label}`}
       className={cn(
-        'group relative flex min-h-[154px] flex-col items-center overflow-hidden rounded-2xl border p-3 text-center outline-none transition-all duration-200',
+        'group relative flex min-h-[154px] flex-col items-center overflow-hidden rounded-2xl border p-3 text-center transition-all duration-200 outline-none',
         'focus-visible:ring-2 focus-visible:ring-violet-400/55 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--app-workspace)]',
         selected
           ? 'border-violet-400/45 bg-violet-500/[0.09] shadow-[0_10px_28px_rgba(124,58,237,0.09)]'
@@ -292,7 +286,7 @@ function MuscleZoneCard({
     >
       <span
         className={cn(
-          'absolute right-2.5 top-2.5 grid size-6 place-items-center rounded-full border transition-all',
+          'absolute top-2.5 right-2.5 grid size-6 place-items-center rounded-full border transition-all',
           selected
             ? 'border-violet-300/45 bg-violet-500 text-white shadow-[0_0_14px_rgba(139,92,246,0.28)]'
             : 'border-[var(--app-border)] bg-[var(--app-surface)] text-transparent group-hover:border-violet-400/25'
@@ -342,7 +336,8 @@ export function WorkoutMuscleMapPicker({
         <div>
           <span className="text-xs font-medium text-[var(--app-muted)]">Работающие мышцы</span>
           <p className="mt-1 max-w-2xl text-[11px] leading-5 text-[var(--app-muted)]/80">
-            Каждая иконка показывает конкретную мышцу. Нажмите на карточку, чтобы добавить или убрать её из упражнения.
+            Каждая иконка показывает конкретную мышцу. Нажмите на карточку, чтобы добавить или
+            убрать её из упражнения.
           </p>
         </div>
         <span

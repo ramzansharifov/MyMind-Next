@@ -46,9 +46,7 @@ describe('WorkoutMuscleMapPicker', () => {
   })
 
   it('keeps multiple selected muscle zones visible at the same time', () => {
-    render(
-      <WorkoutMuscleMapPicker value={['biceps', 'lats', 'quadriceps']} onChange={vi.fn()} />
-    )
+    render(<WorkoutMuscleMapPicker value={['biceps', 'lats', 'quadriceps']} onChange={vi.fn()} />)
 
     expect(screen.getByText('3 выбрано')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Убрать: Бицепс' })).toHaveAttribute(
