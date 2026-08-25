@@ -10,6 +10,7 @@ import type {
 import { AppDialog } from '../../../shared/ui/AppDialog'
 import { AppSelect } from '../../../shared/ui/AppSelect'
 import { workoutMuscleGroupLabel } from '../workout-options'
+import { WorkoutMuscleArtwork } from './WorkoutMuscleArtwork'
 
 const FORM_ID = 'workout-progress-form'
 const NONE = '__none__'
@@ -253,15 +254,23 @@ export function WorkoutProgressDialog({
                 className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4"
               >
                 <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="font-semibold text-[var(--app-text)]">
-                      {exercise?.title ?? 'Упражнение недоступно'}
-                    </div>
+                  <div className="flex min-w-0 items-start gap-3">
                     {exercise && (
-                      <div className="mt-0.5 text-xs text-[var(--app-muted)]">
-                        {workoutMuscleGroupLabel(exercise.muscleGroup)}
-                      </div>
+                      <WorkoutMuscleArtwork
+                        groups={exercise.muscleGroups}
+                        className="size-11 shrink-0 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-0.5"
+                      />
                     )}
+                    <div className="min-w-0">
+                      <div className="font-semibold text-[var(--app-text)]">
+                        {exercise?.title ?? 'Упражнение недоступно'}
+                      </div>
+                      {exercise && (
+                        <div className="mt-0.5 text-xs text-[var(--app-muted)]">
+                          {workoutMuscleGroupLabel(exercise.muscleGroup)}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <button
                     type="button"

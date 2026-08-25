@@ -45,6 +45,7 @@ import { ModuleHeader } from '../../shared/ui/ModuleHeader'
 import { StandardModulePage } from '../../shared/ui/StandardModulePage'
 import { workoutsClient } from './api/workouts-client'
 import { WorkoutExerciseDialog } from './components/WorkoutExerciseDialog'
+import { WorkoutMuscleArtwork } from './components/WorkoutMuscleArtwork'
 import { WorkoutProgramDialog } from './components/WorkoutProgramDialog'
 import { WorkoutProgressDialog } from './components/WorkoutProgressDialog'
 import { WorkoutSessionDetailDialog } from './components/WorkoutSessionDetailDialog'
@@ -636,7 +637,7 @@ export function WorkoutsPage({
             <div className="space-y-3">
               {filteredSessions.map((session) => {
                 const groups = [
-                  ...new Set(session.exercises.map((exercise) => exercise.muscleGroup))
+                  ...new Set(session.exercises.flatMap((exercise) => exercise.muscleGroups))
                 ]
                 return (
                   <article
@@ -646,13 +647,13 @@ export function WorkoutsPage({
                     <div className="flex flex-wrap items-start gap-4">
                       <button
                         type="button"
-                        className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-violet-400/15 bg-violet-500/10 text-violet-300"
+                        className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-1"
                         onClick={() => {
                           setSelectedSession(session)
                           setSessionDetailOpen(true)
                         }}
                       >
-                        <Dumbbell className="size-5" />
+                        <WorkoutMuscleArtwork groups={groups} className="size-9 rounded-lg" />
                       </button>
                       <button
                         type="button"
@@ -785,16 +786,10 @@ export function WorkoutsPage({
                     className="group rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)]"
                   >
                     <div className="flex items-start gap-3">
-                      <span
-                        className={cn(
-                          'flex size-10 shrink-0 items-center justify-center rounded-xl border',
-                          classes.soft,
-                          classes.text,
-                          classes.border
-                        )}
-                      >
-                        <WorkoutMuscleGroupIcon group={exercise.muscleGroup} className="size-5" />
-                      </span>
+                      <WorkoutMuscleArtwork
+                        groups={exercise.muscleGroups}
+                        className="size-12 shrink-0 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-0.5"
+                      />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
                           <h3 className="truncate font-semibold text-[var(--app-text)]">
@@ -915,7 +910,6 @@ export function WorkoutsPage({
                     {program.exercises.map((item, index) => {
                       const exercise = exerciseMap.get(item.exerciseId)
                       if (!exercise) return null
-                      const classes = workoutMuscleGroupClasses[exercise.muscleGroup]
                       return (
                         <div
                           key={item.id}
@@ -924,19 +918,10 @@ export function WorkoutsPage({
                           <span className="w-5 text-xs font-semibold text-[var(--app-muted)]">
                             {index + 1}
                           </span>
-                          <span
-                            className={cn(
-                              'flex size-7 items-center justify-center rounded-lg border',
-                              classes.soft,
-                              classes.text,
-                              classes.border
-                            )}
-                          >
-                            <WorkoutMuscleGroupIcon
-                              group={exercise.muscleGroup}
-                              className="size-3.5"
-                            />
-                          </span>
+                          <WorkoutMuscleArtwork
+                            groups={exercise.muscleGroups}
+                            className="size-9 shrink-0 rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] p-0.5"
+                          />
                           <span className="min-w-0 flex-1 truncate text-sm font-medium text-[var(--app-text)]">
                             {exercise.title}
                           </span>
@@ -1029,26 +1014,16 @@ export function WorkoutsPage({
                   {entry.metrics.length > 0 && (
                     <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
                       {entry.metrics.map((metric) => {
-                        const classes = workoutMuscleGroupClasses[metric.muscleGroup]
                         return (
                           <div
                             key={metric.id}
                             className="rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-3"
                           >
                             <div className="flex items-center gap-2">
-                              <span
-                                className={cn(
-                                  'flex size-7 items-center justify-center rounded-lg border',
-                                  classes.soft,
-                                  classes.text,
-                                  classes.border
-                                )}
-                              >
-                                <WorkoutMuscleGroupIcon
-                                  group={metric.muscleGroup}
-                                  className="size-3.5"
-                                />
-                              </span>
+                              <WorkoutMuscleArtwork
+                                groups={metric.muscleGroups}
+                                className="size-9 shrink-0 rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] p-0.5"
+                              />
                               <span className="min-w-0 flex-1 truncate text-xs font-semibold text-[var(--app-text)]">
                                 {metric.exerciseTitle}
                               </span>

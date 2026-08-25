@@ -10,6 +10,7 @@ import type {
 import { AppDialog } from '../../../shared/ui/AppDialog'
 import { AppSelect } from '../../../shared/ui/AppSelect'
 import { workoutMuscleGroupsLabel } from '../workout-options'
+import { WorkoutMuscleArtwork } from './WorkoutMuscleArtwork'
 
 const FORM_ID = 'workout-program-form'
 const NONE = '__none__'
@@ -199,6 +200,12 @@ export function WorkoutProgramDialog({
                   <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-xs font-semibold text-violet-300">
                     {index + 1}
                   </span>
+                  {exercise && (
+                    <WorkoutMuscleArtwork
+                      groups={exercise.muscleGroups}
+                      className="size-10 shrink-0 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-0.5"
+                    />
+                  )}
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-semibold text-[var(--app-text)]">
                       {exercise?.title ?? 'Удалённое упражнение'}
