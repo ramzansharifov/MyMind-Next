@@ -25,6 +25,7 @@ describe('AppDialog', () => {
     render(<ControlledDialog />)
 
     expect(screen.getByRole('dialog', { name: 'Общий диалог' })).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Общий диалог' })).toHaveClass('max-h-[85vh]')
     expect(screen.getByText('Единая оболочка')).toHaveClass('sr-only')
     expect(document.querySelector('[data-app-dialog-overlay]')).toBeInTheDocument()
     expect(document.querySelector('[data-app-dialog-overlay]')).toHaveClass('inset-0')
@@ -48,6 +49,7 @@ describe('AppDialog', () => {
     expect(closeButton).toBeDisabled()
     await user.click(closeButton)
     expect(screen.getByRole('dialog', { name: 'Общий диалог' })).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Общий диалог' })).toHaveClass('max-h-[85vh]')
   })
 
   it('supports a nested layer for dialogs opened from another modal', () => {

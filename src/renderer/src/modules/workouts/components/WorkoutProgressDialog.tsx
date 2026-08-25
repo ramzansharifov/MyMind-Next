@@ -7,6 +7,7 @@ import type {
   WorkoutExerciseRecord,
   WorkoutProgressEntryRecord
 } from '../../../../../shared/contracts/workouts'
+import { AppDateField } from '../../../shared/ui/AppDateField'
 import { AppDialog } from '../../../shared/ui/AppDialog'
 import { AppSelect } from '../../../shared/ui/AppSelect'
 import { workoutMuscleGroupLabel } from '../workout-options'
@@ -161,12 +162,7 @@ export function WorkoutProgressDialog({
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="space-y-1.5">
             <span className="text-xs font-medium text-[var(--app-muted)]">Дата</span>
-            <input
-              type="date"
-              value={date}
-              className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/45"
-              onChange={(event) => setDate(event.target.value)}
-            />
+            <AppDateField value={date} ariaLabel="Дата прогресса" onChange={setDate} />
           </label>
           <label className="space-y-1.5">
             <span className="text-xs font-medium text-[var(--app-muted)]">Вес тела, кг</span>
