@@ -108,7 +108,7 @@ export function AppDialog({
               layerClasses.content,
               fullscreen
                 ? 'rounded-none border-0 bg-[var(--app-workspace)]'
-                : 'top-1/2 left-1/2 flex max-h-[calc(100vh-32px)] -translate-x-1/2 -translate-y-1/2 flex-col rounded-2xl',
+                : 'top-1/2 left-1/2 flex max-h-[85vh] -translate-x-1/2 -translate-y-1/2 flex-col rounded-2xl',
               sizeClassNames[size],
               tone === 'danger' && !fullscreen && 'border-red-500/20',
               tone === 'warning' && !fullscreen && 'border-amber-500/20',
