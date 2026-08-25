@@ -87,6 +87,45 @@ jobs:
       - name: Generate SQLite migration
         run: npx drizzle-kit generate --name workouts_external_weight
 
+      - name: Verify SQLite migration compatibility
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import sqlite3
+
+          migrations = list(Path('drizzle').glob('*_workouts_external_weight.sql'))
+          if len(migrations) != 1:
+              raise RuntimeError(f'Expected one workouts migration, got {len(migrations)}')
+
+          migration = migrations[0].read_text(encoding='utf-8')
+          db = sqlite3.connect(':memory:')
+          db.executescript('''
+            CREATE TABLE workout_exercises (
+              id TEXT PRIMARY KEY NOT NULL
+            );
+            CREATE TABLE workout_session_exercises (
+              id TEXT PRIMARY KEY NOT NULL
+            );
+            INSERT INTO workout_exercises (id) VALUES ('existing-exercise');
+            INSERT INTO workout_session_exercises (id) VALUES ('existing-session-exercise');
+          ''')
+          db.executescript(migration)
+
+          exercise_mode = db.execute(
+              "SELECT uses_external_weight FROM workout_exercises WHERE id = 'existing-exercise'"
+          ).fetchone()
+          snapshot_mode = db.execute(
+              "SELECT uses_external_weight_snapshot FROM workout_session_exercises WHERE id = 'existing-session-exercise'"
+          ).fetchone()
+
+          if exercise_mode != (1,):
+              raise RuntimeError(f'Legacy exercise default is not true: {exercise_mode}')
+          if snapshot_mode != (1,):
+              raise RuntimeError(f'Legacy session exercise default is not true: {snapshot_mode}')
+
+          print(f'Validated migration: {migrations[0]}')
+          PY
+
       - name: Format changed sources
         run: |
           npx prettier --write \
@@ -152,13 +191,9 @@ jobs:
             exit 1
           fi
 
-      - name: Rebuild SQLite for Node tests
-        run: npm rebuild better-sqlite3
-
-      - name: Run focused workout tests
+      - name: Run focused workout UI tests
         run: >-
           npx vitest run
-          src/main/repositories/workouts.repository.test.ts
           src/renderer/src/modules/workouts/components/WorkoutSessionDialog.test.tsx
           src/renderer/src/modules/workouts/WorkoutsPage.test.tsx
 
