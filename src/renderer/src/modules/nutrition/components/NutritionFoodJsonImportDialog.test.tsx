@@ -32,8 +32,6 @@ describe('parseNutritionFoodsJson', () => {
           sugarG: 0,
           sodiumMg: 0
         },
-        favorite: false,
-        status: 'active',
         notes: ''
       }
     ])

@@ -10,7 +10,6 @@ import type {
   DeleteNutritionLogEntryInput,
   DeleteNutritionRecipeInput,
   NutritionDaySummary,
-  NutritionEntityStatus,
   NutritionFoodCategory,
   NutritionFoodRecord,
   NutritionLogEntryRecord,
@@ -50,8 +49,6 @@ interface FoodRow {
   fiber_milli_g: number
   sugar_milli_g: number
   sodium_milli_mg: number
-  favorite: number
-  status: NutritionEntityStatus
   notes: string
   created_at: number
   updated_at: number
@@ -62,8 +59,6 @@ interface RecipeRow {
   name: string
   description: string
   servings_milli: number
-  favorite: number
-  status: NutritionEntityStatus
   created_at: number
   updated_at: number
 }
@@ -118,9 +113,9 @@ interface WaterRow {
 
 const FOOD_SELECT = `SELECT id, name, brand, category, base_amount_milli, base_unit,
   calories_milli, protein_milli_g, fat_milli_g, carbs_milli_g, fiber_milli_g,
-  sugar_milli_g, sodium_milli_mg, favorite, status, notes, created_at, updated_at
+  sugar_milli_g, sodium_milli_mg, notes, created_at, updated_at
   FROM nutrition_foods`
-const RECIPE_SELECT = `SELECT id, name, description, servings_milli, favorite, status,
+const RECIPE_SELECT = `SELECT id, name, description, servings_milli,
   created_at, updated_at FROM nutrition_recipes`
 const INGREDIENT_SELECT = `SELECT id, recipe_id, food_id, amount_milli, position
   FROM nutrition_recipe_ingredients`
@@ -232,8 +227,6 @@ function mapFood(row: FoodRow): NutritionFoodRecord {
     baseAmount: fromMilli(row.base_amount_milli),
     baseUnit: row.base_unit,
     nutrients: nutrientsFromRow(row),
-    favorite: Boolean(row.favorite),
-    status: row.status,
     notes: row.notes,
     createdAt: row.created_at,
     updatedAt: row.updated_at
@@ -318,8 +311,6 @@ function mapRecipe(row: RecipeRow): NutritionRecipeRecord {
     name: row.name,
     description: row.description,
     servings,
-    favorite: Boolean(row.favorite),
-    status: row.status,
     ingredients,
     totalNutrients,
     perServingNutrients: scaleNutrients(totalNutrients, 1 / servings),
@@ -377,14 +368,10 @@ function makeDaySummary(date: string): NutritionDaySummary {
 
 export function listNutritionOverview(date: string): NutritionOverview {
   const foods = (
-    getSqlite()
-      .prepare(`${FOOD_SELECT} ORDER BY favorite DESC, name COLLATE NOCASE ASC`)
-      .all() as FoodRow[]
+    getSqlite().prepare(`${FOOD_SELECT} ORDER BY name COLLATE NOCASE ASC`).all() as FoodRow[]
   ).map(mapFood)
   const recipes = (
-    getSqlite()
-      .prepare(`${RECIPE_SELECT} ORDER BY favorite DESC, name COLLATE NOCASE ASC`)
-      .all() as RecipeRow[]
+    getSqlite().prepare(`${RECIPE_SELECT} ORDER BY name COLLATE NOCASE ASC`).all() as RecipeRow[]
   ).map(mapRecipe)
 
   return {
@@ -405,8 +392,8 @@ function insertNutritionFood(input: CreateNutritionFoodInput): NutritionFoodReco
       `INSERT INTO nutrition_foods (
         id, name, brand, category, base_amount_milli, base_unit,
         calories_milli, protein_milli_g, fat_milli_g, carbs_milli_g, fiber_milli_g,
-        sugar_milli_g, sodium_milli_mg, favorite, status, notes, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        sugar_milli_g, sodium_milli_mg, notes, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
       id,
@@ -416,8 +403,6 @@ function insertNutritionFood(input: CreateNutritionFoodInput): NutritionFoodReco
       toMilli(input.baseAmount),
       input.baseUnit,
       ...nutrientColumns(input.nutrients),
-      input.favorite ? 1 : 0,
-      input.status,
       input.notes,
       now,
       now
@@ -471,7 +456,7 @@ export function updateNutritionFood(input: UpdateNutritionFoodInput): NutritionF
     .prepare(
       `UPDATE nutrition_foods SET name = ?, brand = ?, category = ?, base_amount_milli = ?,
        base_unit = ?, calories_milli = ?, protein_milli_g = ?, fat_milli_g = ?, carbs_milli_g = ?,
-       fiber_milli_g = ?, sugar_milli_g = ?, sodium_milli_mg = ?, favorite = ?, status = ?,
+       fiber_milli_g = ?, sugar_milli_g = ?, sodium_milli_mg = ?,
        notes = ?, updated_at = ? WHERE id = ?`
     )
     .run(
@@ -481,8 +466,6 @@ export function updateNutritionFood(input: UpdateNutritionFoodInput): NutritionF
       toMilli(input.baseAmount),
       input.baseUnit,
       ...nutrientColumns(input.nutrients),
-      input.favorite ? 1 : 0,
-      input.status,
       input.notes,
       Date.now(),
       input.id
@@ -495,7 +478,7 @@ export function deleteNutritionFood(input: DeleteNutritionFoodInput): boolean {
     .prepare('SELECT 1 AS found FROM nutrition_recipe_ingredients WHERE food_id = ? LIMIT 1')
     .get(input.id)
   if (referenced) {
-    throw new Error('Продукт используется в рецепте. Архивируйте его или сначала измените рецепты.')
+    throw new Error('Продукт используется в рецепте. Сначала измените или удалите рецепт.')
   }
   return getSqlite().prepare('DELETE FROM nutrition_foods WHERE id = ?').run(input.id).changes > 0
 }
@@ -524,18 +507,9 @@ export function createNutritionRecipe(input: CreateNutritionRecipeInput): Nutrit
   db.transaction(() => {
     db.prepare(
       `INSERT INTO nutrition_recipes
-       (id, name, description, servings_milli, favorite, status, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-    ).run(
-      id,
-      input.name.trim(),
-      input.description,
-      toMilli(input.servings),
-      input.favorite ? 1 : 0,
-      input.status,
-      now,
-      now
-    )
+       (id, name, description, servings_milli, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?)`
+    ).run(id, input.name.trim(), input.description, toMilli(input.servings), now, now)
     replaceRecipeIngredients(id, input.ingredients)
   })()
   return requireRecipe(id)
@@ -546,17 +520,9 @@ export function updateNutritionRecipe(input: UpdateNutritionRecipeInput): Nutrit
   const db = getSqlite()
   db.transaction(() => {
     db.prepare(
-      `UPDATE nutrition_recipes SET name = ?, description = ?, servings_milli = ?, favorite = ?,
-       status = ?, updated_at = ? WHERE id = ?`
-    ).run(
-      input.name.trim(),
-      input.description,
-      toMilli(input.servings),
-      input.favorite ? 1 : 0,
-      input.status,
-      Date.now(),
-      input.id
-    )
+      `UPDATE nutrition_recipes SET name = ?, description = ?, servings_milli = ?,
+       updated_at = ? WHERE id = ?`
+    ).run(input.name.trim(), input.description, toMilli(input.servings), Date.now(), input.id)
     replaceRecipeIngredients(input.id, input.ingredients)
   })()
   return requireRecipe(input.id)

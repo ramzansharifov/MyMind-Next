@@ -57,13 +57,23 @@ function createChicken(): ReturnType<typeof createNutritionFood> {
       sugarG: 0,
       sodiumMg: 74
     },
-    favorite: true,
-    status: 'active',
     notes: ''
   })
 }
 
 describe('nutrition repository', () => {
+  it('ignores legacy favorite and archive columns in catalog records', () => {
+    const chicken = createChicken()
+    getSqlite()
+      .prepare("UPDATE nutrition_foods SET favorite = 1, status = 'archived' WHERE id = ?")
+      .run(chicken.id)
+
+    const stored = listNutritionOverview('2026-08-17').foods.find((food) => food.id === chicken.id)
+    expect(stored).toBeDefined()
+    expect(stored).not.toHaveProperty('favorite')
+    expect(stored).not.toHaveProperty('status')
+  })
+
   it('calculates recipes from reusable foods and logs them by servings', () => {
     const chicken = createChicken()
     const rice = createNutritionFood({
@@ -81,8 +91,6 @@ describe('nutrition repository', () => {
         sugarG: 0.1,
         sodiumMg: 1
       },
-      favorite: false,
-      status: 'active',
       notes: ''
     })
 
@@ -90,8 +98,6 @@ describe('nutrition repository', () => {
       name: 'Курица с рисом',
       description: '',
       servings: 2,
-      favorite: true,
-      status: 'active',
       ingredients: [
         { foodId: chicken.id, amount: 200 },
         { foodId: rice.id, amount: 300 }
@@ -157,8 +163,6 @@ describe('nutrition repository', () => {
             sugarG: 0,
             sodiumMg: 74
           },
-          favorite: false,
-          status: 'active',
           notes: ''
         },
         apple,

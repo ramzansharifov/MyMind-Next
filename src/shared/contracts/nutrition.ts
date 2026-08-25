@@ -11,13 +11,11 @@ export const NUTRITION_FOOD_CATEGORIES = [
   'other'
 ] as const
 export const NUTRITION_UNITS = ['g', 'ml', 'piece', 'serving'] as const
-export const NUTRITION_ENTITY_STATUSES = ['active', 'archived'] as const
 export const NUTRITION_MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack', 'other'] as const
 export const NUTRITION_LOG_SOURCE_TYPES = ['food', 'recipe', 'custom'] as const
 
 export type NutritionFoodCategory = (typeof NUTRITION_FOOD_CATEGORIES)[number]
 export type NutritionUnit = (typeof NUTRITION_UNITS)[number]
-export type NutritionEntityStatus = (typeof NUTRITION_ENTITY_STATUSES)[number]
 export type NutritionMealType = (typeof NUTRITION_MEAL_TYPES)[number]
 export type NutritionLogSourceType = (typeof NUTRITION_LOG_SOURCE_TYPES)[number]
 
@@ -39,8 +37,6 @@ export interface NutritionFoodRecord {
   baseAmount: number
   baseUnit: Exclude<NutritionUnit, 'serving'>
   nutrients: NutritionValues
-  favorite: boolean
-  status: NutritionEntityStatus
   notes: string
   createdAt: number
   updatedAt: number
@@ -61,8 +57,6 @@ export interface NutritionRecipeRecord {
   name: string
   description: string
   servings: number
-  favorite: boolean
-  status: NutritionEntityStatus
   ingredients: NutritionRecipeIngredientRecord[]
   totalNutrients: NutritionValues
   perServingNutrients: NutritionValues
@@ -122,8 +116,6 @@ export interface CreateNutritionFoodInput {
   baseAmount: number
   baseUnit: Exclude<NutritionUnit, 'serving'>
   nutrients: NutritionValues
-  favorite: boolean
-  status: NutritionEntityStatus
   notes: string
 }
 
@@ -153,8 +145,6 @@ export interface CreateNutritionRecipeInput {
   name: string
   description: string
   servings: number
-  favorite: boolean
-  status: NutritionEntityStatus
   ingredients: NutritionRecipeIngredientInput[]
 }
 

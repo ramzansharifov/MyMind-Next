@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react'
 
 import type {
   CreateNutritionFoodInput,
-  NutritionEntityStatus,
   NutritionFoodCategory,
   NutritionFoodRecord,
   NutritionUnit,
@@ -18,11 +17,7 @@ import {
   NUTRITION_INPUT_CLASS_NAME,
   NUTRITION_TEXTAREA_CLASS_NAME
 } from '../nutrition-utils'
-import {
-  NutritionCheckField,
-  NutritionFormField,
-  NutritionSecondaryButton
-} from './NutritionFormPrimitives'
+import { NutritionFormField, NutritionSecondaryButton } from './NutritionFormPrimitives'
 
 const NUTRIENT_FIELDS: Array<{
   key: keyof NutritionValues
@@ -59,21 +54,20 @@ export function NutritionFoodDialog({
   const [baseAmount, setBaseAmount] = useState(100)
   const [baseUnit, setBaseUnit] = useState<Exclude<NutritionUnit, 'serving'>>('g')
   const [nutrients, setNutrients] = useState<NutritionValues>({ ...EMPTY_NUTRITION_VALUES })
-  const [favorite, setFavorite] = useState(false)
-  const [status, setStatus] = useState<NutritionEntityStatus>('active')
   const [notes, setNotes] = useState('')
 
   useEffect(() => {
     if (!open) return
-    setName(food?.name ?? '')
-    setBrand(food?.brand ?? '')
-    setCategory(food?.category ?? 'other')
-    setBaseAmount(food?.baseAmount ?? 100)
-    setBaseUnit(food?.baseUnit ?? 'g')
-    setNutrients(food?.nutrients ?? { ...EMPTY_NUTRITION_VALUES })
-    setFavorite(food?.favorite ?? false)
-    setStatus(food?.status ?? 'active')
-    setNotes(food?.notes ?? '')
+    const timerId = window.setTimeout(() => {
+      setName(food?.name ?? '')
+      setBrand(food?.brand ?? '')
+      setCategory(food?.category ?? 'other')
+      setBaseAmount(food?.baseAmount ?? 100)
+      setBaseUnit(food?.baseUnit ?? 'g')
+      setNutrients(food?.nutrients ?? { ...EMPTY_NUTRITION_VALUES })
+      setNotes(food?.notes ?? '')
+    }, 0)
+    return () => window.clearTimeout(timerId)
   }, [food, open])
 
   function updateNutrient(key: keyof NutritionValues, value: string): void {
@@ -95,8 +89,6 @@ export function NutritionFoodDialog({
       baseAmount,
       baseUnit,
       nutrients,
-      favorite,
-      status,
       notes
     }
     await onSave(food ? { ...payload, id: food.id } : payload)
@@ -181,9 +173,7 @@ export function NutritionFoodDialog({
               ariaLabel="Единица продукта"
               value={baseUnit}
               options={NUTRITION_UNIT_OPTIONS.filter((option) => option.value !== 'serving')}
-              onValueChange={(value) =>
-                setBaseUnit(value as Exclude<NutritionUnit, 'serving'>)
-              }
+              onValueChange={(value) => setBaseUnit(value as Exclude<NutritionUnit, 'serving'>)}
             />
           </NutritionFormField>
         </div>
@@ -220,15 +210,6 @@ export function NutritionFoodDialog({
             onChange={(event) => setNotes(event.target.value)}
           />
         </NutritionFormField>
-
-        <div className="flex flex-wrap gap-5">
-          <NutritionCheckField label="Избранное" checked={favorite} onChange={setFavorite} />
-          <NutritionCheckField
-            label="В архиве"
-            checked={status === 'archived'}
-            onChange={(checked) => setStatus(checked ? 'archived' : 'active')}
-          />
-        </div>
       </form>
     </AppDialog>
   )

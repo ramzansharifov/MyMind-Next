@@ -1,12 +1,13 @@
 import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
 import type {
-  NutritionEntityStatus,
   NutritionFoodCategory,
   NutritionLogSourceType,
   NutritionMealType,
   NutritionUnit
 } from '../../../shared/contracts/nutrition'
+
+type LegacyNutritionEntityStatus = 'active' | 'archived'
 
 export const nutritionFoods = sqliteTable(
   'nutrition_foods',
@@ -25,7 +26,7 @@ export const nutritionFoods = sqliteTable(
     sugarMilliG: integer('sugar_milli_g').notNull().default(0),
     sodiumMilliMg: integer('sodium_milli_mg').notNull().default(0),
     favorite: integer('favorite', { mode: 'boolean' }).notNull().default(false),
-    status: text('status').$type<NutritionEntityStatus>().notNull().default('active'),
+    status: text('status').$type<LegacyNutritionEntityStatus>().notNull().default('active'),
     notes: text('notes').notNull().default(''),
     createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
     updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull()
@@ -45,7 +46,7 @@ export const nutritionRecipes = sqliteTable(
     description: text('description').notNull().default(''),
     servingsMilli: integer('servings_milli').notNull(),
     favorite: integer('favorite', { mode: 'boolean' }).notNull().default(false),
-    status: text('status').$type<NutritionEntityStatus>().notNull().default('active'),
+    status: text('status').$type<LegacyNutritionEntityStatus>().notNull().default('active'),
     createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
     updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull()
   },

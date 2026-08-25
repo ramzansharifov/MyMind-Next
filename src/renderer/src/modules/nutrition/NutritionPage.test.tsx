@@ -64,8 +64,6 @@ const chicken: NutritionFoodRecord = {
     sugarG: 0,
     sodiumMg: 74
   },
-  favorite: true,
-  status: 'active',
   notes: '',
   createdAt: 1,
   updatedAt: 1
@@ -154,14 +152,24 @@ describe('NutritionPage', () => {
               sugarG: 0,
               sodiumMg: 0
             },
-            favorite: false,
-            status: 'active',
             notes: ''
           }
         ]
       })
     })
     expect(screen.getByRole('status')).toHaveTextContent('Добавлено продуктов: 1')
+  })
+
+  it('does not expose favorites or archive controls in the food catalog', async () => {
+    const user = userEvent.setup()
+    render(<NutritionPage />)
+
+    await screen.findByRole('heading', { name: 'Питание' })
+    await user.click(screen.getByRole('button', { name: 'Продукты' }))
+
+    expect(screen.queryByRole('button', { name: 'Избранное' })).not.toBeInTheDocument()
+    expect(screen.queryByText('Архив')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Статус каталога')).not.toBeInTheDocument()
   })
 
   it('updates water for the currently selected day', async () => {

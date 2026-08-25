@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from 'react'
 
 import type {
   CreateNutritionRecipeInput,
-  NutritionEntityStatus,
   NutritionFoodRecord,
   NutritionRecipeRecord,
   UpdateNutritionRecipeInput
@@ -11,15 +10,8 @@ import type {
 import { AppDialog } from '../../../shared/ui/AppDialog'
 import { AppSelect } from '../../../shared/ui/AppSelect'
 import { nutritionUnitLabel } from '../nutrition-options'
-import {
-  NUTRITION_INPUT_CLASS_NAME,
-  NUTRITION_TEXTAREA_CLASS_NAME
-} from '../nutrition-utils'
-import {
-  NutritionCheckField,
-  NutritionFormField,
-  NutritionSecondaryButton
-} from './NutritionFormPrimitives'
+import { NUTRITION_INPUT_CLASS_NAME, NUTRITION_TEXTAREA_CLASS_NAME } from '../nutrition-utils'
+import { NutritionFormField, NutritionSecondaryButton } from './NutritionFormPrimitives'
 
 interface RecipeIngredientDraft {
   foodId: string
@@ -46,52 +38,44 @@ export function NutritionRecipeDialog({
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [servings, setServings] = useState(1)
-  const [favorite, setFavorite] = useState(false)
-  const [status, setStatus] = useState<NutritionEntityStatus>('active')
   const [ingredients, setIngredients] = useState<RecipeIngredientDraft[]>([])
 
   const foodsById = useMemo(() => new Map(foods.map((food) => [food.id, food])), [foods])
-  const activeFoods = useMemo(() => foods.filter((food) => food.status === 'active'), [foods])
 
   useEffect(() => {
     if (!open) return
-    setName(recipe?.name ?? '')
-    setDescription(recipe?.description ?? '')
-    setServings(recipe?.servings ?? 1)
-    setFavorite(recipe?.favorite ?? false)
-    setStatus(recipe?.status ?? 'active')
+    const timerId = window.setTimeout(() => {
+      setName(recipe?.name ?? '')
+      setDescription(recipe?.description ?? '')
+      setServings(recipe?.servings ?? 1)
 
-    if (recipe) {
-      setIngredients(
-        recipe.ingredients.map((ingredient) => ({
-          foodId: ingredient.foodId,
-          amount: ingredient.amount
-        }))
-      )
-      return
-    }
+      if (recipe) {
+        setIngredients(
+          recipe.ingredients.map((ingredient) => ({
+            foodId: ingredient.foodId,
+            amount: ingredient.amount
+          }))
+        )
+        return
+      }
 
-    const firstFood = activeFoods[0]
-    setIngredients(firstFood ? [{ foodId: firstFood.id, amount: firstFood.baseAmount }] : [])
-  }, [activeFoods, open, recipe])
+      const firstFood = foods[0]
+      setIngredients(firstFood ? [{ foodId: firstFood.id, amount: firstFood.baseAmount }] : [])
+    }, 0)
+    return () => window.clearTimeout(timerId)
+  }, [foods, open, recipe])
 
   const usedFoodIds = useMemo(
     () => new Set(ingredients.map((ingredient) => ingredient.foodId)),
     [ingredients]
   )
-  const addableFoods = activeFoods.filter((food) => !usedFoodIds.has(food.id))
+  const addableFoods = foods.filter((food) => !usedFoodIds.has(food.id))
 
   function optionsForIngredient(index: number): Array<{ value: string; label: string }> {
     const currentId = ingredients[index]?.foodId
     return foods
-      .filter(
-        (food) =>
-          food.id === currentId || (food.status === 'active' && !usedFoodIds.has(food.id))
-      )
-      .map((food) => ({
-        value: food.id,
-        label: food.status === 'archived' ? `${food.name} · архив` : food.name
-      }))
+      .filter((food) => food.id === currentId || !usedFoodIds.has(food.id))
+      .map((food) => ({ value: food.id, label: food.name }))
   }
 
   function addIngredient(): void {
@@ -129,8 +113,6 @@ export function NutritionRecipeDialog({
       name: name.trim(),
       description,
       servings,
-      favorite,
-      status,
       ingredients
     }
     await onSave(recipe ? { ...payload, id: recipe.id } : payload)
@@ -206,7 +188,7 @@ export function NutritionRecipeDialog({
             <div>
               <h3 className="text-sm font-semibold text-[var(--app-text)]">Ингредиенты</h3>
               <p className="mt-1 text-xs leading-5 text-[var(--app-muted)]">
-                Количество указывается в базовой единице продукта. Архивный продукт остаётся доступен в уже существующем рецепте, но его нельзя добавить заново.
+                Количество указывается в базовой единице продукта.
               </p>
             </div>
             <NutritionSecondaryButton
@@ -219,7 +201,7 @@ export function NutritionRecipeDialog({
 
           {ingredients.length === 0 ? (
             <div className="mt-4 rounded-xl border border-dashed border-[var(--app-border)] px-4 py-8 text-center text-sm text-[var(--app-muted)]">
-              Сначала добавьте хотя бы один активный продукт в каталог.
+              Сначала добавьте хотя бы один продукт в каталог.
             </div>
           ) : (
             <div className="mt-4 space-y-2">
@@ -279,15 +261,6 @@ export function NutritionRecipeDialog({
             </div>
           )}
         </section>
-
-        <div className="flex flex-wrap gap-5">
-          <NutritionCheckField label="Избранное" checked={favorite} onChange={setFavorite} />
-          <NutritionCheckField
-            label="В архиве"
-            checked={status === 'archived'}
-            onChange={(checked) => setStatus(checked ? 'archived' : 'active')}
-          />
-        </div>
       </form>
     </AppDialog>
   )

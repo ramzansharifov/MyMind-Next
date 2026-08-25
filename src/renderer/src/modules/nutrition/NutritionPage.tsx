@@ -37,8 +37,7 @@ import { nutritionClient } from './api/nutrition-client'
 import {
   NutritionCatalogToolbar,
   NutritionFoodsGrid,
-  NutritionRecipesGrid,
-  type NutritionEntityFilter
+  NutritionRecipesGrid
 } from './components/NutritionCatalogViews'
 import { NutritionDiaryView } from './components/NutritionDiaryView'
 import { NutritionFoodDialog } from './components/NutritionFoodDialog'
@@ -84,8 +83,6 @@ export function NutritionPage({
   const [overview, setOverview] = useState<NutritionOverview | null>(null)
   const [query, setQuery] = useState('')
   const [foodCategory, setFoodCategory] = useState<'all' | NutritionFoodCategory>('all')
-  const [entityStatus, setEntityStatus] = useState<NutritionEntityFilter>('active')
-  const [favoritesOnly, setFavoritesOnly] = useState(false)
 
   const [foodDialogOpen, setFoodDialogOpen] = useState(false)
   const [foodJsonDialogOpen, setFoodJsonDialogOpen] = useState(false)
@@ -158,29 +155,25 @@ export function NutritionPage({
   const filteredFoods = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase('ru-RU')
     return foods.filter((food) => {
-      if (entityStatus !== 'all' && food.status !== entityStatus) return false
       if (foodCategory !== 'all' && food.category !== foodCategory) return false
-      if (favoritesOnly && !food.favorite) return false
       if (!normalizedQuery) return true
 
       return `${food.name} ${food.brand} ${nutritionCategoryLabel(food.category)}`
         .toLocaleLowerCase('ru-RU')
         .includes(normalizedQuery)
     })
-  }, [entityStatus, favoritesOnly, foodCategory, foods, query])
+  }, [foodCategory, foods, query])
 
   const filteredRecipes = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase('ru-RU')
     return recipes.filter((recipe) => {
-      if (entityStatus !== 'all' && recipe.status !== entityStatus) return false
-      if (favoritesOnly && !recipe.favorite) return false
       if (!normalizedQuery) return true
 
       return `${recipe.name} ${recipe.description} ${recipe.ingredients.map((item) => item.foodName).join(' ')}`
         .toLocaleLowerCase('ru-RU')
         .includes(normalizedQuery)
     })
-  }, [entityStatus, favoritesOnly, query, recipes])
+  }, [query, recipes])
 
   async function withBusy(action: () => Promise<unknown>): Promise<void> {
     setIsBusy(true)
@@ -293,8 +286,6 @@ export function NutritionPage({
 
   function resetCatalogFilters(): void {
     setQuery('')
-    setEntityStatus('active')
-    setFavoritesOnly(false)
     setFoodCategory('all')
   }
 
@@ -370,7 +361,7 @@ export function NutritionPage({
       </div>
     ) : tab === 'recipes' ? (
       <PrimaryAction
-        disabled={foods.every((food) => food.status !== 'active')}
+        disabled={foods.length === 0}
         onClick={() => {
           setEditingRecipe(null)
           setRecipeDialogOpen(true)
@@ -481,10 +472,6 @@ export function NutritionPage({
           onQueryChange={setQuery}
           category={foodCategory}
           onCategoryChange={setFoodCategory}
-          status={entityStatus}
-          onStatusChange={setEntityStatus}
-          favoritesOnly={favoritesOnly}
-          onFavoritesChange={setFavoritesOnly}
         >
           <NutritionFoodsGrid
             foods={filteredFoods}
@@ -494,33 +481,12 @@ export function NutritionPage({
               setFoodDialogOpen(true)
             }}
             onDelete={(food) => setDeleteTarget({ kind: 'food', record: food })}
-            onToggleFavorite={(food) => {
-              void saveFood({
-                id: food.id,
-                name: food.name,
-                brand: food.brand,
-                category: food.category,
-                baseAmount: food.baseAmount,
-                baseUnit: food.baseUnit,
-                nutrients: food.nutrients,
-                favorite: !food.favorite,
-                status: food.status,
-                notes: food.notes
-              }).catch(() => undefined)
-            }}
           />
         </NutritionCatalogToolbar>
       )}
 
       {tab === 'recipes' && (
-        <NutritionCatalogToolbar
-          query={query}
-          onQueryChange={setQuery}
-          status={entityStatus}
-          onStatusChange={setEntityStatus}
-          favoritesOnly={favoritesOnly}
-          onFavoritesChange={setFavoritesOnly}
-        >
+        <NutritionCatalogToolbar query={query} onQueryChange={setQuery}>
           <NutritionRecipesGrid
             recipes={filteredRecipes}
             hasAnyRecipes={recipes.length > 0}
@@ -529,20 +495,6 @@ export function NutritionPage({
               setRecipeDialogOpen(true)
             }}
             onDelete={(recipe) => setDeleteTarget({ kind: 'recipe', record: recipe })}
-            onToggleFavorite={(recipe) => {
-              void saveRecipe({
-                id: recipe.id,
-                name: recipe.name,
-                description: recipe.description,
-                servings: recipe.servings,
-                favorite: !recipe.favorite,
-                status: recipe.status,
-                ingredients: recipe.ingredients.map((ingredient) => ({
-                  foodId: ingredient.foodId,
-                  amount: ingredient.amount
-                }))
-              }).catch(() => undefined)
-            }}
           />
         </NutritionCatalogToolbar>
       )}
@@ -688,7 +640,7 @@ function deleteSubject(target: DeleteTarget): string | undefined {
 
 function deleteDescription(target: DeleteTarget): string {
   if (target?.kind === 'food') {
-    return 'История дневника сохранится благодаря снимкам значений. Продукт, используемый в рецепте, удалить нельзя — его лучше архивировать.'
+    return 'История дневника сохранится благодаря снимкам значений. Продукт, используемый в рецепте, удалить нельзя — сначала измените или удалите рецепт.'
   }
   if (target?.kind === 'recipe') {
     return 'Старые записи дневника сохранят название и пищевую ценность рецепта.'
