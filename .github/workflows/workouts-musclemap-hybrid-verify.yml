@@ -27,6 +27,9 @@ jobs:
       - name: Update dependency lockfile
         run: npm install --package-lock-only --ignore-scripts
 
+      - name: Install formatting dependencies
+        run: npm install --ignore-scripts
+
       - name: Format changed sources
         run: |
           npx prettier --write package.json src/renderer/src/modules/workouts/components/WorkoutMuscleMapPicker.tsx
