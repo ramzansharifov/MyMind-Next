@@ -1,0 +1,140 @@
+name: Nutrition remove favorites and archive verification
+
+on:
+  push:
+    branches:
+      - agent/nutrition-remove-favorites-archive
+    paths:
+      - .github/nutrition-remove-favorites-archive.trigger
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/nutrition-remove-favorites-archive
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Apply nutrition cleanup
+        run: |
+          python .github/nutrition-remove-favorites-archive.patch.py
+          python .github/nutrition-remove-favorites-archive.tests.py
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Format changed sources
+        run: |
+          npx prettier --write \
+            src/shared/contracts/nutrition.ts \
+            src/shared/validation/nutrition.ts \
+            src/main/repositories/nutrition.repository.ts \
+            src/main/repositories/nutrition.repository.test.ts \
+            src/renderer/src/modules/nutrition/NutritionPage.tsx \
+            src/renderer/src/modules/nutrition/NutritionPage.test.tsx \
+            src/renderer/src/modules/nutrition/components/NutritionCatalogViews.tsx \
+            src/renderer/src/modules/nutrition/components/NutritionFoodDialog.tsx \
+            src/renderer/src/modules/nutrition/components/NutritionRecipeDialog.tsx \
+            src/renderer/src/modules/nutrition/components/NutritionLogDialog.tsx \
+            src/renderer/src/modules/nutrition/components/NutritionFoodJsonImportDialog.test.tsx \
+            src/renderer/src/modules/nutrition/nutrition-food-json.ts
+          npx prettier --check \
+            src/shared/contracts/nutrition.ts \
+            src/shared/validation/nutrition.ts \
+            src/main/repositories/nutrition.repository.ts \
+            src/main/repositories/nutrition.repository.test.ts \
+            src/renderer/src/modules/nutrition/NutritionPage.tsx \
+            src/renderer/src/modules/nutrition/NutritionPage.test.tsx \
+            src/renderer/src/modules/nutrition/components/NutritionCatalogViews.tsx \
+            src/renderer/src/modules/nutrition/components/NutritionFoodDialog.tsx \
+            src/renderer/src/modules/nutrition/components/NutritionRecipeDialog.tsx \
+            src/renderer/src/modules/nutrition/components/NutritionLogDialog.tsx \
+            src/renderer/src/modules/nutrition/components/NutritionFoodJsonImportDialog.test.tsx \
+            src/renderer/src/modules/nutrition/nutrition-food-json.ts
+
+      - name: Verify concepts are removed from nutrition source
+        shell: bash
+        run: |
+          if rg -n "NutritionEntityStatus|NUTRITION_ENTITY_STATUSES|favorite|archived|Избранное|В архиве|Статус каталога" \
+            src/shared/contracts/nutrition.ts \
+            src/shared/validation/nutrition.ts \
+            src/main/repositories/nutrition.repository.ts \
+            src/renderer/src/modules/nutrition \
+            --glob '!*.test.ts' --glob '!*.test.tsx'; then
+            echo "Found leftover favorite/archive application logic"
+            exit 1
+          fi
+
+      - name: Lint changed sources
+        run: |
+          npx eslint \
+            src/shared/contracts/nutrition.ts \
+            src/shared/validation/nutrition.ts \
+            src/main/repositories/nutrition.repository.ts \
+            src/main/repositories/nutrition.repository.test.ts \
+            src/renderer/src/modules/nutrition/NutritionPage.tsx \
+            src/renderer/src/modules/nutrition/NutritionPage.test.tsx \
+            src/renderer/src/modules/nutrition/components/NutritionCatalogViews.tsx \
+            src/renderer/src/modules/nutrition/components/NutritionFoodDialog.tsx \
+            src/renderer/src/modules/nutrition/components/NutritionRecipeDialog.tsx \
+            src/renderer/src/modules/nutrition/components/NutritionLogDialog.tsx \
+            src/renderer/src/modules/nutrition/components/NutritionFoodJsonImportDialog.test.tsx \
+            src/renderer/src/modules/nutrition/nutrition-food-json.ts
+
+      - name: Node typecheck
+        run: npm run typecheck:node
+
+      - name: Web typecheck
+        shell: bash
+        run: |
+          set +e
+          output="$(npm run typecheck:web 2>&1)"
+          status=$?
+          set -e
+          printf '%s\n' "$output"
+          if [ "$status" -eq 0 ]; then
+            exit 0
+          fi
+          unexpected="$(printf '%s\n' "$output" | grep 'error TS' | grep -v "src/renderer/src/modules/study/components/useStudyEditBlockVirtualization.ts(82,36): error TS18047: 'node' is possibly 'null'." || true)"
+          if [ -n "$unexpected" ]; then
+            echo "Unexpected TypeScript errors:"
+            printf '%s\n' "$unexpected"
+            exit 1
+          fi
+
+      - name: Run nutrition UI tests
+        run: |
+          npx vitest run \
+            src/renderer/src/modules/nutrition/NutritionPage.test.tsx \
+            src/renderer/src/modules/nutrition/components/NutritionFoodJsonImportDialog.test.tsx
+
+      - name: Rebuild SQLite for Node tests
+        run: npm run native:node
+
+      - name: Run nutrition repository tests
+        run: npx vitest run src/main/repositories/nutrition.repository.test.ts
+
+      - name: Production bundle
+        run: npm run build:bundle
+
+      - name: Commit verified changes
+        run: |
+          rm -f \
+            .github/nutrition-remove-favorites-archive.patch.py \
+            .github/nutrition-remove-favorites-archive.tests.py \
+            .github/nutrition-remove-favorites-archive.trigger \
+            .github/workflows/nutrition-remove-favorites-archive-verify.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Убрать избранное и архив из питания"
+          git push origin HEAD:agent/nutrition-remove-favorites-archive
