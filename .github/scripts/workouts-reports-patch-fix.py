@@ -51,4 +51,14 @@ if source.count(program_fixture_block) != 1:
     )
 source = source.replace(program_fixture_block, program_fixture_replacement, 1)
 
+single_label_assertion = "    expect(screen.getByText('С дополнительным весом')).toBeInTheDocument()"
+multiple_label_assertion = (
+    "    expect(screen.getAllByText('С дополнительным весом').length).toBeGreaterThan(0)"
+)
+if source.count(single_label_assertion) != 1:
+    raise RuntimeError(
+        f'Expected one load-mode UI assertion, got {source.count(single_label_assertion)}'
+    )
+source = source.replace(single_label_assertion, multiple_label_assertion, 1)
+
 path.write_text(source, encoding='utf-8')
