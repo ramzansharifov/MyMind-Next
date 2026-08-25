@@ -9,6 +9,14 @@ if source.count(summary_needle) != 1:
     raise RuntimeError(f'Expected one summary patch argument, got {source.count(summary_needle)}')
 source = source.replace(summary_needle, summary_replacement, 1)
 
+summary_new_needle = '    "  sets: number\\n  reps: number\\n  externalWeightSets: number\\n  externalWeightReps: number\\n  bodyweightSets: number\\n  bodyweightReps: number\\n  volumeKg: number\\n",'
+summary_new_replacement = '    "export interface WorkoutReportSummary {\\n  sessions: number\\n  activeDays: number\\n  exercises: number\\n  sets: number\\n  reps: number\\n  externalWeightSets: number\\n  externalWeightReps: number\\n  bodyweightSets: number\\n  bodyweightReps: number\\n  volumeKg: number\\n",'
+if source.count(summary_new_needle) != 1:
+    raise RuntimeError(
+        f'Expected one summary replacement argument, got {source.count(summary_new_needle)}'
+    )
+source = source.replace(summary_new_needle, summary_new_replacement, 1)
+
 day_block = '''s = replace_once(
     s,
     "      reps: 0,\\n      volumeKg: 0,\\n      durationMinutes: 0\\n",
