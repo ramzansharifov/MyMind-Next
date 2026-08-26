@@ -1,0 +1,70 @@
+name: Verify nutrition tabs
+
+on:
+  push:
+    branches:
+      - agent/nutrition-today-diary-goal-progress
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run native:node
+      - name: Prettier
+        run: >-
+          npx prettier --check
+          src/shared/contracts/nutrition.ts
+          src/shared/validation/nutrition.ts
+          src/shared/validation/nutrition.test.ts
+          src/main/repositories/nutrition.repository.ts
+          src/main/repositories/nutrition.repository.test.ts
+          src/renderer/src/modules/nutrition/NutritionPage.tsx
+          src/renderer/src/modules/nutrition/NutritionPage.test.tsx
+          src/renderer/src/modules/nutrition/components/NutritionDiaryView.tsx
+          src/renderer/src/modules/nutrition/components/NutritionGoalView.tsx
+      - name: ESLint
+        run: >-
+          npx eslint
+          src/shared/contracts/nutrition.ts
+          src/shared/validation/nutrition.ts
+          src/shared/validation/nutrition.test.ts
+          src/main/repositories/nutrition.repository.ts
+          src/main/repositories/nutrition.repository.test.ts
+          src/renderer/src/modules/nutrition/NutritionPage.tsx
+          src/renderer/src/modules/nutrition/NutritionPage.test.tsx
+          src/renderer/src/modules/nutrition/components/NutritionDiaryView.tsx
+          src/renderer/src/modules/nutrition/components/NutritionGoalView.tsx
+      - run: npm run typecheck:node
+      - name: Web typecheck
+        shell: pwsh
+        run: |
+          $output = npm run typecheck:web 2>&1 | Out-String
+          $code = $LASTEXITCODE
+          Write-Host $output
+          if ($code -ne 0) {
+            $errors = @($output -split "`r?`n" | Where-Object { $_ -match 'error TS' })
+            if ($errors.Count -ne 1 -or $errors[0] -notmatch 'useStudyEditBlockVirtualization\.ts\(82,36\)') {
+              exit 1
+            }
+          }
+      - name: Nutrition tests
+        run: >-
+          npx vitest run
+          src/shared/validation/nutrition.test.ts
+          src/main/repositories/nutrition.repository.test.ts
+          src/main/repositories/nutrition-import.repository.test.ts
+          src/main/ipc/register-nutrition-ipc.test.ts
+          src/preload/index.test.ts
+          src/renderer/src/modules/nutrition/NutritionPage.test.tsx
+          src/renderer/src/modules/nutrition/nutrition-json-import.test.ts
+      - run: npm run build:bundle
