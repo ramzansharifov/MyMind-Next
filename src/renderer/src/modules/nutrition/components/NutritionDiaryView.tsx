@@ -1,11 +1,11 @@
 import * as Collapsible from '@radix-ui/react-collapsible'
 import {
+  Braces,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   Droplets,
   Pencil,
-  Plus,
   Settings2,
   Trash2
 } from 'lucide-react'
@@ -34,7 +34,7 @@ interface NutritionDiaryViewProps {
   target: NutritionTargetRecord | null
   busy: boolean
   onDateChange: (date: string) => void
-  onAdd: (mealType: NutritionMealType) => void
+  onImportJson: () => void
   onEdit: (entry: NutritionLogEntryRecord) => void
   onDelete: (entry: NutritionLogEntryRecord) => void
   onWaterChange: (delta: number) => void
@@ -54,7 +54,7 @@ export function NutritionDiaryView({
   target,
   busy,
   onDateChange,
-  onAdd,
+  onImportJson,
   onEdit,
   onDelete,
   onWaterChange,
@@ -62,6 +62,7 @@ export function NutritionDiaryView({
 }: NutritionDiaryViewProps): React.JSX.Element {
   const nutrients = overview.day.nutrients
   const otherEntries = overview.entries.filter((entry) => entry.mealType === 'other')
+  const hasEntries = overview.entries.length > 0
 
   return (
     <section className="mt-5 space-y-4">
@@ -115,29 +116,48 @@ export function NutritionDiaryView({
         onEditTargets={onEditTargets}
       />
 
-      <div className="space-y-2">
-        {STANDARD_MEALS.map((meal) => (
-          <MealRow
-            key={meal.value}
-            mealType={meal.value}
-            label={meal.label}
-            entries={overview.entries.filter((entry) => entry.mealType === meal.value)}
-            onAdd={() => onAdd(meal.value)}
-            onEdit={onEdit}
-            onDelete={onDelete}
-          />
-        ))}
-        {otherEntries.length > 0 && (
-          <MealRow
-            mealType="other"
-            label="Другие приёмы пищи"
-            entries={otherEntries}
-            onAdd={() => onAdd('other')}
-            onEdit={onEdit}
-            onDelete={onDelete}
-          />
-        )}
-      </div>
+      {!hasEntries && (
+        <div className="rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface)] px-5 py-10 text-center">
+          <span className="mx-auto flex size-11 items-center justify-center rounded-2xl bg-violet-500/10 text-violet-300">
+            <Braces className="size-5" />
+          </span>
+          <h2 className="mt-3 text-sm font-semibold text-[var(--app-text)]">Питание пока не добавлено</h2>
+          <p className="mx-auto mt-1 max-w-md text-xs leading-5 text-[var(--app-muted)]">
+            Получите JSON у вашего GPT, вставьте его в MyMind и проверьте данные перед сохранением.
+          </p>
+          <button
+            type="button"
+            className="mt-4 inline-flex h-10 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400"
+            onClick={onImportJson}
+          >
+            <Braces className="size-4" /> Добавить из JSON
+          </button>
+        </div>
+      )}
+
+      {hasEntries && (
+        <div className="space-y-2">
+          {STANDARD_MEALS.map((meal) => (
+            <MealRow
+              key={meal.value}
+              mealType={meal.value}
+              label={meal.label}
+              entries={overview.entries.filter((entry) => entry.mealType === meal.value)}
+              onEdit={onEdit}
+              onDelete={onDelete}
+            />
+          ))}
+          {otherEntries.length > 0 && (
+            <MealRow
+              mealType="other"
+              label="Другие приёмы пищи"
+              entries={otherEntries}
+              onEdit={onEdit}
+              onDelete={onDelete}
+            />
+          )}
+        </div>
+      )}
     </section>
   )
 }
@@ -299,14 +319,12 @@ function MealRow({
   mealType,
   label,
   entries,
-  onAdd,
   onEdit,
   onDelete
 }: {
   mealType: NutritionMealType
   label: string
   entries: NutritionLogEntryRecord[]
-  onAdd: () => void
   onEdit: (entry: NutritionLogEntryRecord) => void
   onDelete: (entry: NutritionLogEntryRecord) => void
 }): React.JSX.Element {
@@ -320,17 +338,9 @@ function MealRow({
           <p className="mt-0.5 text-[11px] text-[var(--app-muted)]">
             {entries.length > 0
               ? `${formatNutritionNumber(calories, 0)} ккал`
-              : 'Пока ничего не добавлено'}
+              : 'Нет записей'}
           </p>
         </div>
-        <button
-          type="button"
-          aria-label={`Добавить в ${label.toLowerCase()}`}
-          className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-violet-500/10 px-2.5 text-xs font-medium text-violet-300 hover:bg-violet-500/15"
-          onClick={onAdd}
-        >
-          <Plus className="size-3.5" /> Добавить
-        </button>
       </header>
 
       {entries.length > 0 && (
