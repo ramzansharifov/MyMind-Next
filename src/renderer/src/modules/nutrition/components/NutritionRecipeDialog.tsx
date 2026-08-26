@@ -181,7 +181,8 @@ export function NutritionRecipeDialog({
             <div>
               <h3 className="text-sm font-semibold text-[var(--app-text)]">Ингредиенты</h3>
               <p className="mt-1 text-xs leading-5 text-[var(--app-muted)]">
-                Добавьте продукты и укажите их количество. Пищевая ценность рассчитается автоматически.
+                Добавьте продукты и укажите их количество. Пищевая ценность рассчитается
+                автоматически.
               </p>
             </div>
             <NutritionSecondaryButton
@@ -262,7 +263,9 @@ export function NutritionRecipeDialog({
               className="inline-flex h-9 items-center gap-2 rounded-xl px-2.5 text-sm font-medium text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
             >
               Добавить описание
-              <ChevronDown className={`size-4 transition-transform ${advancedOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown
+                className={`size-4 transition-transform ${advancedOpen ? 'rotate-180' : ''}`}
+              />
             </button>
           </Collapsible.Trigger>
           <Collapsible.Content>

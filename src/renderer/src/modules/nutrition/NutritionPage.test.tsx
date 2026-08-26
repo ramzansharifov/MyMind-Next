@@ -154,7 +154,9 @@ describe('NutritionPage', () => {
     await user.click(screen.getByRole('button', { name: 'Добавить еду' }))
 
     const dialog = screen.getByRole('dialog')
-    expect(within(dialog).getByRole('textbox', { name: 'Поиск продукта или рецепта' })).toBeInTheDocument()
+    expect(
+      within(dialog).getByRole('searchbox', { name: 'Поиск продукта или рецепта' })
+    ).toBeInTheDocument()
     expect(within(dialog).queryByLabelText('Тип записи')).not.toBeInTheDocument()
 
     await user.click(within(dialog).getByRole('button', { name: /Куриная грудка/ }))

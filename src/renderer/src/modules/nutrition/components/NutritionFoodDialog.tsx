@@ -70,12 +70,12 @@ export function NutritionFoodDialog({
       setAdvancedOpen(
         Boolean(
           food &&
-            (food.brand ||
-              food.category !== 'other' ||
-              food.nutrients.fiberG ||
-              food.nutrients.sugarG ||
-              food.nutrients.sodiumMg ||
-              food.notes)
+          (food.brand ||
+            food.category !== 'other' ||
+            food.nutrients.fiberG ||
+            food.nutrients.sugarG ||
+            food.nutrients.sodiumMg ||
+            food.notes)
         )
       )
     }, 0)
@@ -195,7 +195,9 @@ export function NutritionFoodDialog({
               className="inline-flex h-9 items-center gap-2 rounded-xl px-2.5 text-sm font-medium text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
             >
               Дополнительные параметры
-              <ChevronDown className={`size-4 transition-transform ${advancedOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown
+                className={`size-4 transition-transform ${advancedOpen ? 'rotate-180' : ''}`}
+              />
             </button>
           </Collapsible.Trigger>
           <Collapsible.Content>

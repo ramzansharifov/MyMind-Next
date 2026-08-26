@@ -1,4 +1,4 @@
-import { Apple, ArrowLeft, CookingPot, Plus, Search, Utensils } from 'lucide-react'
+import { Apple, ArrowLeft, CookingPot, Search, Utensils } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 import type {
@@ -157,7 +157,9 @@ export function NutritionLogDialog({
     if (!selectedFood) return []
     if (selectedFood.baseUnit === 'piece') return [1, 2, 3]
     const base = selectedFood.baseAmount
-    return Array.from(new Set([base, base * 1.5, base * 2].map((value) => Number(value.toFixed(3)))))
+    return Array.from(
+      new Set([base, base * 1.5, base * 2].map((value) => Number(value.toFixed(3))))
+    )
   }, [selectedFood, selectedRecipe])
 
   function selectSource(kind: 'food' | 'recipe', id: string): void {
@@ -343,7 +345,9 @@ export function NutritionLogDialog({
                           )}
                         </span>
                         <span className="min-w-0 flex-1">
-                          <strong className="block truncate text-sm font-medium">{candidate.title}</strong>
+                          <strong className="block truncate text-sm font-medium">
+                            {candidate.title}
+                          </strong>
                           <span className="mt-0.5 block truncate text-[11px] opacity-75">
                             {candidate.subtitle}
                           </span>
@@ -401,7 +405,8 @@ export function NutritionLogDialog({
                   <strong className="font-semibold text-[var(--app-text)]">
                     {formatNutritionNumber(preview.calories, 0)} ккал
                   </strong>{' '}
-                  · Б {formatNutritionNumber(preview.proteinG)} · Ж {formatNutritionNumber(preview.fatG)} · У {formatNutritionNumber(preview.carbsG)}
+                  · Б {formatNutritionNumber(preview.proteinG)} · Ж{' '}
+                  {formatNutritionNumber(preview.fatG)} · У {formatNutritionNumber(preview.carbsG)}
                 </div>
               </section>
             )}

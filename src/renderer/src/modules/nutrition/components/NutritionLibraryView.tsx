@@ -1,5 +1,14 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
-import { Apple, Braces, CookingPot, MoreHorizontal, Pencil, Plus, Search, Trash2 } from 'lucide-react'
+import {
+  Apple,
+  Braces,
+  CookingPot,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  Search,
+  Trash2
+} from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import type {
@@ -130,11 +139,13 @@ export function NutritionLibraryView({
         </div>
 
         <div className="mt-3 flex flex-wrap gap-1.5">
-          {([
-            ['all', 'Все'],
-            ['foods', 'Продукты'],
-            ['recipes', 'Рецепты']
-          ] as const).map(([value, label]) => (
+          {(
+            [
+              ['all', 'Все'],
+              ['foods', 'Продукты'],
+              ['recipes', 'Рецепты']
+            ] as const
+          ).map(([value, label]) => (
             <button
               key={value}
               type="button"
@@ -207,7 +218,11 @@ function FoodRow({
           <span className="text-[10px] text-[var(--app-muted)]">Продукт</span>
         </div>
         <p className="mt-1 truncate text-xs text-[var(--app-muted)]">
-          {formatNutritionNumber(food.nutrients.calories, 0)} ккал · Б {formatNutritionNumber(food.nutrients.proteinG)} · Ж {formatNutritionNumber(food.nutrients.fatG)} · У {formatNutritionNumber(food.nutrients.carbsG)} · {formatNutritionNumber(food.baseAmount)} {nutritionUnitLabel(food.baseUnit)}
+          {formatNutritionNumber(food.nutrients.calories, 0)} ккал · Б{' '}
+          {formatNutritionNumber(food.nutrients.proteinG)} · Ж{' '}
+          {formatNutritionNumber(food.nutrients.fatG)} · У{' '}
+          {formatNutritionNumber(food.nutrients.carbsG)} · {formatNutritionNumber(food.baseAmount)}{' '}
+          {nutritionUnitLabel(food.baseUnit)}
         </p>
         {(food.brand || food.category !== 'other') && (
           <p className="mt-0.5 truncate text-[10px] text-[var(--app-muted)]/75">
@@ -240,7 +255,10 @@ function RecipeRow({
           <span className="text-[10px] text-[var(--app-muted)]">Рецепт</span>
         </div>
         <p className="mt-1 truncate text-xs text-[var(--app-muted)]">
-          {formatNutritionNumber(recipe.perServingNutrients.calories, 0)} ккал на порцию · Б {formatNutritionNumber(recipe.perServingNutrients.proteinG)} · Ж {formatNutritionNumber(recipe.perServingNutrients.fatG)} · У {formatNutritionNumber(recipe.perServingNutrients.carbsG)}
+          {formatNutritionNumber(recipe.perServingNutrients.calories, 0)} ккал на порцию · Б{' '}
+          {formatNutritionNumber(recipe.perServingNutrients.proteinG)} · Ж{' '}
+          {formatNutritionNumber(recipe.perServingNutrients.fatG)} · У{' '}
+          {formatNutritionNumber(recipe.perServingNutrients.carbsG)}
         </p>
         <p className="mt-0.5 truncate text-[10px] text-[var(--app-muted)]/75">
           {formatNutritionNumber(recipe.servings)} порц. · {recipe.ingredients.length} ингредиентов

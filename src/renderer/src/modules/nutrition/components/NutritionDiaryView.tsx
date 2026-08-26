@@ -80,11 +80,13 @@ export function NutritionDiaryView({
             className="min-w-56 rounded-xl px-3 py-2 text-left hover:bg-[var(--app-control-hover)] max-[520px]:min-w-0"
             onClick={() => onDateChange(nutritionLocalDateKey())}
           >
-            <div className="text-sm font-semibold capitalize text-[var(--app-text)]">
+            <div className="text-sm font-semibold text-[var(--app-text)] capitalize">
               {formatNutritionDate(selectedDate)}
             </div>
             <div className="mt-0.5 text-[11px] text-[var(--app-muted)]">
-              {selectedDate === nutritionLocalDateKey() ? 'Сегодня' : 'Вернуться к сегодняшнему дню'}
+              {selectedDate === nutritionLocalDateKey()
+                ? 'Сегодня'
+                : 'Вернуться к сегодняшнему дню'}
             </div>
           </button>
           <button
@@ -236,14 +238,19 @@ function DaySummary({
             className="mt-3 inline-flex h-8 items-center gap-1.5 rounded-lg px-2 text-xs text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
           >
             Подробнее
-            <ChevronDown className={`size-3.5 transition-transform ${detailsOpen ? 'rotate-180' : ''}`} />
+            <ChevronDown
+              className={`size-3.5 transition-transform ${detailsOpen ? 'rotate-180' : ''}`}
+            />
           </button>
         </Collapsible.Trigger>
         <Collapsible.Content>
           <div className="mt-2 grid gap-2 sm:grid-cols-3">
             <SmallStat label="Клетчатка" value={`${formatNutritionNumber(nutrients.fiberG)} г`} />
             <SmallStat label="Сахар" value={`${formatNutritionNumber(nutrients.sugarG)} г`} />
-            <SmallStat label="Натрий" value={`${formatNutritionNumber(nutrients.sodiumMg, 0)} мг`} />
+            <SmallStat
+              label="Натрий"
+              value={`${formatNutritionNumber(nutrients.sodiumMg, 0)} мг`}
+            />
           </div>
         </Collapsible.Content>
       </Collapsible.Root>
@@ -265,7 +272,8 @@ function MacroStat({
       <div className="flex items-baseline justify-between gap-2 text-xs">
         <span className="font-medium text-[var(--app-text)]">{label}</span>
         <span className="text-[var(--app-muted)]">
-          {formatNutritionNumber(value)}{target ? ` / ${formatNutritionNumber(target)}` : ''} г
+          {formatNutritionNumber(value)}
+          {target ? ` / ${formatNutritionNumber(target)}` : ''} г
         </span>
       </div>
       <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[var(--app-workspace)]">
@@ -310,7 +318,9 @@ function MealRow({
         <div className="min-w-0 flex-1">
           <h2 className="text-sm font-semibold text-[var(--app-text)]">{label}</h2>
           <p className="mt-0.5 text-[11px] text-[var(--app-muted)]">
-            {entries.length > 0 ? `${formatNutritionNumber(calories, 0)} ккал` : 'Пока ничего не добавлено'}
+            {entries.length > 0
+              ? `${formatNutritionNumber(calories, 0)} ккал`
+              : 'Пока ничего не добавлено'}
           </p>
         </div>
         <button
@@ -331,9 +341,15 @@ function MealRow({
               className="group flex items-center gap-3 border-b border-[var(--app-border)] px-4 py-2.5 last:border-b-0"
             >
               <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-medium text-[var(--app-text)]">{entry.title}</div>
+                <div className="truncate text-sm font-medium text-[var(--app-text)]">
+                  {entry.title}
+                </div>
                 <p className="mt-0.5 truncate text-[11px] text-[var(--app-muted)]">
-                  {formatNutritionNumber(entry.amount)} {nutritionUnitLabel(entry.unit)} · {formatNutritionNumber(entry.nutrients.calories, 0)} ккал · Б {formatNutritionNumber(entry.nutrients.proteinG)} · Ж {formatNutritionNumber(entry.nutrients.fatG)} · У {formatNutritionNumber(entry.nutrients.carbsG)}
+                  {formatNutritionNumber(entry.amount)} {nutritionUnitLabel(entry.unit)} ·{' '}
+                  {formatNutritionNumber(entry.nutrients.calories, 0)} ккал · Б{' '}
+                  {formatNutritionNumber(entry.nutrients.proteinG)} · Ж{' '}
+                  {formatNutritionNumber(entry.nutrients.fatG)} · У{' '}
+                  {formatNutritionNumber(entry.nutrients.carbsG)}
                   {mealType === 'other' && entry.customMealName ? ` · ${entry.customMealName}` : ''}
                 </p>
               </div>
