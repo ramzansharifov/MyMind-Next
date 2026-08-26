@@ -214,7 +214,6 @@ export interface SetNutritionWaterInput {
 }
 
 export interface SetNutritionTargetsInput {
-  effectiveFrom: string
   calories: number | null
   proteinG: number | null
   fatG: number | null
