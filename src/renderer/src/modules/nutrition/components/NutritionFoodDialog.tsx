@@ -1,4 +1,5 @@
-import { Apple } from 'lucide-react'
+import * as Collapsible from '@radix-ui/react-collapsible'
+import { Apple, ChevronDown } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import type {
@@ -19,15 +20,14 @@ import {
 } from '../nutrition-utils'
 import { NutritionFormField, NutritionSecondaryButton } from './NutritionFormPrimitives'
 
-const NUTRIENT_FIELDS: Array<{
-  key: keyof NutritionValues
-  label: string
-  unit: string
-}> = [
+const BASIC_NUTRIENTS: Array<{ key: keyof NutritionValues; label: string; unit: string }> = [
   { key: 'calories', label: 'Калории', unit: 'ккал' },
   { key: 'proteinG', label: 'Белки', unit: 'г' },
   { key: 'fatG', label: 'Жиры', unit: 'г' },
-  { key: 'carbsG', label: 'Углеводы', unit: 'г' },
+  { key: 'carbsG', label: 'Углеводы', unit: 'г' }
+]
+
+const EXTRA_NUTRIENTS: Array<{ key: keyof NutritionValues; label: string; unit: string }> = [
   { key: 'fiberG', label: 'Клетчатка', unit: 'г' },
   { key: 'sugarG', label: 'Сахар', unit: 'г' },
   { key: 'sodiumMg', label: 'Натрий', unit: 'мг' }
@@ -55,6 +55,7 @@ export function NutritionFoodDialog({
   const [baseUnit, setBaseUnit] = useState<Exclude<NutritionUnit, 'serving'>>('g')
   const [nutrients, setNutrients] = useState<NutritionValues>({ ...EMPTY_NUTRITION_VALUES })
   const [notes, setNotes] = useState('')
+  const [advancedOpen, setAdvancedOpen] = useState(false)
 
   useEffect(() => {
     if (!open) return
@@ -66,6 +67,17 @@ export function NutritionFoodDialog({
       setBaseUnit(food?.baseUnit ?? 'g')
       setNutrients(food?.nutrients ?? { ...EMPTY_NUTRITION_VALUES })
       setNotes(food?.notes ?? '')
+      setAdvancedOpen(
+        Boolean(
+          food &&
+          (food.brand ||
+            food.category !== 'other' ||
+            food.nutrients.fiberG ||
+            food.nutrients.sugarG ||
+            food.nutrients.sodiumMg ||
+            food.notes)
+        )
+      )
     }, 0)
     return () => window.clearTimeout(timerId)
   }, [food, open])
@@ -100,7 +112,7 @@ export function NutritionFoodDialog({
       open={open}
       onOpenChange={onOpenChange}
       title={food ? 'Изменить продукт' : 'Новый продукт'}
-      description="Добавьте продукт один раз — затем его можно быстро использовать в дневнике и рецептах."
+      description="Для большинства продуктов достаточно названия, количества и КБЖУ. Остальные параметры можно заполнить при необходимости."
       icon={<Apple />}
       size="lg"
       busy={busy}
@@ -136,28 +148,8 @@ export function NutritionFoodDialog({
           />
         </NutritionFormField>
 
-        <div className="grid gap-3 sm:grid-cols-2">
-          <NutritionFormField label="Бренд / производитель" hint="необязательно">
-            <input
-              value={brand}
-              maxLength={160}
-              placeholder="Например, Простоквашино"
-              className={NUTRITION_INPUT_CLASS_NAME}
-              onChange={(event) => setBrand(event.target.value)}
-            />
-          </NutritionFormField>
-          <NutritionFormField label="Категория">
-            <AppSelect
-              ariaLabel="Категория продукта"
-              value={category}
-              options={NUTRITION_CATEGORY_OPTIONS}
-              onValueChange={(value) => setCategory(value as NutritionFoodCategory)}
-            />
-          </NutritionFormField>
-        </div>
-
         <div className="grid grid-cols-[minmax(0,1fr)_160px] gap-3 max-[560px]:grid-cols-1">
-          <NutritionFormField label="Пищевая ценность указана на">
+          <NutritionFormField label="Значения указаны на">
             <input
               type="number"
               min="0.001"
@@ -179,14 +171,9 @@ export function NutritionFoodDialog({
         </div>
 
         <section className="rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-4">
-          <div>
-            <h3 className="text-xs font-semibold text-[var(--app-text)]">Пищевая ценность</h3>
-            <p className="mt-1 text-[11px] text-[var(--app-muted)]">
-              Значения относятся к количеству, указанному выше.
-            </p>
-          </div>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {NUTRIENT_FIELDS.map((field) => (
+          <h3 className="text-xs font-semibold text-[var(--app-text)]">КБЖУ</h3>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {BASIC_NUTRIENTS.map((field) => (
               <NutritionFormField key={field.key} label={`${field.label}, ${field.unit}`}>
                 <input
                   type="number"
@@ -201,15 +188,67 @@ export function NutritionFoodDialog({
           </div>
         </section>
 
-        <NutritionFormField label="Заметка" hint="необязательно">
-          <textarea
-            value={notes}
-            rows={3}
-            maxLength={10000}
-            className={NUTRITION_TEXTAREA_CLASS_NAME}
-            onChange={(event) => setNotes(event.target.value)}
-          />
-        </NutritionFormField>
+        <Collapsible.Root open={advancedOpen} onOpenChange={setAdvancedOpen}>
+          <Collapsible.Trigger asChild>
+            <button
+              type="button"
+              className="inline-flex h-9 items-center gap-2 rounded-xl px-2.5 text-sm font-medium text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+            >
+              Дополнительные параметры
+              <ChevronDown
+                className={`size-4 transition-transform ${advancedOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+          </Collapsible.Trigger>
+          <Collapsible.Content>
+            <div className="mt-2 space-y-4 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-4">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <NutritionFormField label="Бренд / производитель" hint="необязательно">
+                  <input
+                    value={brand}
+                    maxLength={160}
+                    placeholder="Например, Простоквашино"
+                    className={NUTRITION_INPUT_CLASS_NAME}
+                    onChange={(event) => setBrand(event.target.value)}
+                  />
+                </NutritionFormField>
+                <NutritionFormField label="Категория">
+                  <AppSelect
+                    ariaLabel="Категория продукта"
+                    value={category}
+                    options={NUTRITION_CATEGORY_OPTIONS}
+                    onValueChange={(value) => setCategory(value as NutritionFoodCategory)}
+                  />
+                </NutritionFormField>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                {EXTRA_NUTRIENTS.map((field) => (
+                  <NutritionFormField key={field.key} label={`${field.label}, ${field.unit}`}>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={nutrients[field.key]}
+                      className={NUTRITION_INPUT_CLASS_NAME}
+                      onChange={(event) => updateNutrient(field.key, event.target.value)}
+                    />
+                  </NutritionFormField>
+                ))}
+              </div>
+
+              <NutritionFormField label="Заметка" hint="необязательно">
+                <textarea
+                  value={notes}
+                  rows={3}
+                  maxLength={10000}
+                  className={NUTRITION_TEXTAREA_CLASS_NAME}
+                  onChange={(event) => setNotes(event.target.value)}
+                />
+              </NutritionFormField>
+            </div>
+          </Collapsible.Content>
+        </Collapsible.Root>
       </form>
     </AppDialog>
   )

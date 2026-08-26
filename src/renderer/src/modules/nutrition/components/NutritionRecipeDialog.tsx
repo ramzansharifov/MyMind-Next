@@ -1,4 +1,5 @@
-import { CookingPot, Plus, Trash2 } from 'lucide-react'
+import * as Collapsible from '@radix-ui/react-collapsible'
+import { ChevronDown, CookingPot, Plus, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 import type {
@@ -39,6 +40,7 @@ export function NutritionRecipeDialog({
   const [description, setDescription] = useState('')
   const [servings, setServings] = useState(1)
   const [ingredients, setIngredients] = useState<RecipeIngredientDraft[]>([])
+  const [advancedOpen, setAdvancedOpen] = useState(false)
 
   const foodsById = useMemo(() => new Map(foods.map((food) => [food.id, food])), [foods])
 
@@ -48,6 +50,7 @@ export function NutritionRecipeDialog({
       setName(recipe?.name ?? '')
       setDescription(recipe?.description ?? '')
       setServings(recipe?.servings ?? 1)
+      setAdvancedOpen(Boolean(recipe?.description))
 
       if (recipe) {
         setIngredients(
@@ -124,7 +127,7 @@ export function NutritionRecipeDialog({
       open={open}
       onOpenChange={onOpenChange}
       title={recipe ? 'Изменить рецепт' : 'Новый рецепт'}
-      description="Соберите блюдо из своей базы продуктов — пищевая ценность рассчитается автоматически."
+      description="Название, количество порций и ингредиенты — всё необходимое для расчёта пищевой ценности."
       icon={<CookingPot />}
       size="xl"
       busy={busy}
@@ -160,7 +163,7 @@ export function NutritionRecipeDialog({
               onChange={(event) => setName(event.target.value)}
             />
           </NutritionFormField>
-          <NutritionFormField label="Порций в блюде">
+          <NutritionFormField label="Порций">
             <input
               type="number"
               min="0.1"
@@ -173,22 +176,13 @@ export function NutritionRecipeDialog({
           </NutritionFormField>
         </div>
 
-        <NutritionFormField label="Описание" hint="необязательно">
-          <textarea
-            rows={3}
-            value={description}
-            maxLength={10000}
-            className={NUTRITION_TEXTAREA_CLASS_NAME}
-            onChange={(event) => setDescription(event.target.value)}
-          />
-        </NutritionFormField>
-
         <section className="rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-4">
           <div className="flex items-start justify-between gap-4">
             <div>
               <h3 className="text-sm font-semibold text-[var(--app-text)]">Ингредиенты</h3>
               <p className="mt-1 text-xs leading-5 text-[var(--app-muted)]">
-                Количество указывается в базовой единице продукта.
+                Добавьте продукты и укажите их количество. Пищевая ценность рассчитается
+                автоматически.
               </p>
             </div>
             <NutritionSecondaryButton
@@ -201,7 +195,7 @@ export function NutritionRecipeDialog({
 
           {ingredients.length === 0 ? (
             <div className="mt-4 rounded-xl border border-dashed border-[var(--app-border)] px-4 py-8 text-center text-sm text-[var(--app-muted)]">
-              Сначала добавьте хотя бы один продукт в каталог.
+              Сначала добавьте хотя бы один продукт в библиотеку.
             </div>
           ) : (
             <div className="mt-4 space-y-2">
@@ -261,6 +255,33 @@ export function NutritionRecipeDialog({
             </div>
           )}
         </section>
+
+        <Collapsible.Root open={advancedOpen} onOpenChange={setAdvancedOpen}>
+          <Collapsible.Trigger asChild>
+            <button
+              type="button"
+              className="inline-flex h-9 items-center gap-2 rounded-xl px-2.5 text-sm font-medium text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+            >
+              Добавить описание
+              <ChevronDown
+                className={`size-4 transition-transform ${advancedOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+          </Collapsible.Trigger>
+          <Collapsible.Content>
+            <div className="mt-2">
+              <NutritionFormField label="Описание" hint="необязательно">
+                <textarea
+                  rows={3}
+                  value={description}
+                  maxLength={10000}
+                  className={NUTRITION_TEXTAREA_CLASS_NAME}
+                  onChange={(event) => setDescription(event.target.value)}
+                />
+              </NutritionFormField>
+            </div>
+          </Collapsible.Content>
+        </Collapsible.Root>
       </form>
     </AppDialog>
   )

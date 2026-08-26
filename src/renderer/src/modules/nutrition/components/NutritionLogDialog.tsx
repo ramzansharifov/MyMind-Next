@@ -1,4 +1,4 @@
-import { CookingPot, Search, Utensils } from 'lucide-react'
+import { Apple, ArrowLeft, CookingPot, Search, Utensils } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 import type {
@@ -17,7 +17,6 @@ import { AppDialog } from '../../../shared/ui/AppDialog'
 import { AppSelect } from '../../../shared/ui/AppSelect'
 import {
   NUTRITION_MEAL_OPTIONS,
-  NUTRITION_SOURCE_OPTIONS,
   NUTRITION_UNIT_OPTIONS,
   nutritionUnitLabel
 } from '../nutrition-options'
@@ -25,7 +24,7 @@ import {
   EMPTY_NUTRITION_VALUES,
   NUTRITION_INPUT_CLASS_NAME,
   NUTRITION_TEXTAREA_CLASS_NAME,
-  nutritionValuesLine,
+  formatNutritionNumber,
   scaleNutritionValues
 } from '../nutrition-utils'
 import { NutritionFormField, NutritionSecondaryButton } from './NutritionFormPrimitives'
@@ -49,6 +48,8 @@ interface NutritionLogDialogProps {
   recipes: NutritionRecipeRecord[]
   busy: boolean
   onOpenChange: (open: boolean) => void
+  onCreateFood: () => void
+  onCreateRecipe: () => void
   onSave: (input: CreateNutritionLogEntryInput | UpdateNutritionLogEntryInput) => Promise<void>
 }
 
@@ -61,6 +62,8 @@ export function NutritionLogDialog({
   recipes,
   busy,
   onOpenChange,
+  onCreateFood,
+  onCreateRecipe,
   onSave
 }: NutritionLogDialogProps): React.JSX.Element {
   const [mealType, setMealType] = useState<NutritionMealType>('breakfast')
@@ -82,31 +85,30 @@ export function NutritionLogDialog({
       setSourceQuery('')
 
       if (entry) {
+        const sourceStillExists =
+          entry.sourceType === 'food'
+            ? foods.some((food) => food.id === entry.sourceId)
+            : entry.sourceType === 'recipe'
+              ? recipes.some((recipe) => recipe.id === entry.sourceId)
+              : true
+
         setMealType(entry.mealType)
         setCustomMealName(entry.customMealName)
-        setSourceType(entry.sourceType)
-        setSourceId(entry.sourceId)
+        setSourceType(sourceStillExists ? entry.sourceType : 'custom')
+        setSourceId(sourceStillExists && entry.sourceType !== 'custom' ? entry.sourceId : null)
         setAmount(entry.amount)
-        setCustomTitle(entry.sourceType === 'custom' ? entry.title : '')
+        setCustomTitle(entry.sourceType === 'custom' || !sourceStillExists ? entry.title : '')
         setCustomUnit(entry.unit)
         setCustomNutrients(entry.nutrients)
         setNotes(entry.notes)
         return
       }
 
-      const initialSource: NutritionLogSourceType =
-        foods.length > 0 ? 'food' : recipes.length > 0 ? 'recipe' : 'custom'
       setMealType(initialMeal)
       setCustomMealName('')
-      setSourceType(initialSource)
-      setSourceId(
-        initialSource === 'food'
-          ? (foods[0]?.id ?? null)
-          : initialSource === 'recipe'
-            ? (recipes[0]?.id ?? null)
-            : null
-      )
-      setAmount(initialSource === 'food' ? (foods[0]?.baseAmount ?? 100) : 1)
+      setSourceType(foods.length > 0 ? 'food' : recipes.length > 0 ? 'recipe' : 'custom')
+      setSourceId(null)
+      setAmount(100)
       setCustomTitle('')
       setCustomUnit('g')
       setCustomNutrients({ ...EMPTY_NUTRITION_VALUES })
@@ -122,40 +124,27 @@ export function NutritionLogDialog({
 
   const sourceCandidates = useMemo(() => {
     const normalized = sourceQuery.trim().toLocaleLowerCase('ru-RU')
-    if (sourceType === 'food') {
-      return foods
-        .filter((food) =>
-          !normalized
-            ? true
-            : `${food.name} ${food.brand}`.toLocaleLowerCase('ru-RU').includes(normalized)
-        )
-        .slice(0, 12)
-        .map((food) => ({
-          id: food.id,
-          title: food.name,
-          subtitle: food.brand || `${food.baseAmount} ${nutritionUnitLabel(food.baseUnit)}`,
-          kind: 'food' as const
-        }))
-    }
+    const candidates = [
+      ...foods.map((food) => ({
+        id: food.id,
+        kind: 'food' as const,
+        title: food.name,
+        subtitle: `${formatNutritionNumber(food.nutrients.calories, 0)} ккал · ${formatNutritionNumber(food.baseAmount)} ${nutritionUnitLabel(food.baseUnit)}`,
+        search: `${food.name} ${food.brand}`.toLocaleLowerCase('ru-RU')
+      })),
+      ...recipes.map((recipe) => ({
+        id: recipe.id,
+        kind: 'recipe' as const,
+        title: recipe.name,
+        subtitle: `${formatNutritionNumber(recipe.perServingNutrients.calories, 0)} ккал · 1 порц.`,
+        search: `${recipe.name} ${recipe.description}`.toLocaleLowerCase('ru-RU')
+      }))
+    ].filter((candidate) => !normalized || candidate.search.includes(normalized))
 
-    if (sourceType === 'recipe') {
-      return recipes
-        .filter((recipe) =>
-          !normalized
-            ? true
-            : `${recipe.name} ${recipe.description}`.toLocaleLowerCase('ru-RU').includes(normalized)
-        )
-        .slice(0, 12)
-        .map((recipe) => ({
-          id: recipe.id,
-          title: recipe.name,
-          subtitle: `${recipe.servings} порц. · ${recipe.ingredients.length} ингредиентов`,
-          kind: 'recipe' as const
-        }))
-    }
-
-    return []
-  }, [foods, recipes, sourceQuery, sourceType])
+    return candidates
+      .sort((a, b) => Number(b.id === sourceId) - Number(a.id === sourceId))
+      .slice(0, 16)
+  }, [foods, recipes, sourceId, sourceQuery])
 
   const preview = selectedFood
     ? scaleNutritionValues(selectedFood.nutrients, amount / selectedFood.baseAmount)
@@ -163,31 +152,37 @@ export function NutritionLogDialog({
       ? scaleNutritionValues(selectedRecipe.perServingNutrients, amount)
       : customNutrients
 
-  function changeSourceType(value: NutritionLogSourceType): void {
-    setSourceType(value)
-    setSourceQuery('')
-    if (value === 'food') {
-      const food = foods[0]
-      setSourceId(food?.id ?? null)
-      setAmount(food?.baseAmount ?? 100)
-      return
-    }
-    if (value === 'recipe') {
-      setSourceId(recipes[0]?.id ?? null)
-      setAmount(1)
-      return
-    }
-    setSourceId(null)
-    setAmount(1)
-  }
+  const quickAmounts = useMemo(() => {
+    if (selectedRecipe) return [0.5, 1, 1.5, 2]
+    if (!selectedFood) return []
+    if (selectedFood.baseUnit === 'piece') return [1, 2, 3]
+    const base = selectedFood.baseAmount
+    return Array.from(
+      new Set([base, base * 1.5, base * 2].map((value) => Number(value.toFixed(3))))
+    )
+  }, [selectedFood, selectedRecipe])
 
-  function selectSource(id: string): void {
+  function selectSource(kind: 'food' | 'recipe', id: string): void {
+    setSourceType(kind)
     setSourceId(id)
-    if (sourceType === 'food') {
+    if (kind === 'food') {
       setAmount(foods.find((food) => food.id === id)?.baseAmount ?? 100)
     } else {
       setAmount(1)
     }
+  }
+
+  function enableCustomEntry(): void {
+    setSourceType('custom')
+    setSourceId(null)
+    setAmount(1)
+  }
+
+  function returnToSearch(): void {
+    setSourceType(foods.length > 0 ? 'food' : recipes.length > 0 ? 'recipe' : 'custom')
+    setSourceId(null)
+    setSourceQuery('')
+    setAmount(100)
   }
 
   function updateCustomNutrient(key: keyof NutritionValues, rawValue: string): void {
@@ -221,12 +216,19 @@ export function NutritionLogDialog({
     onOpenChange(false)
   }
 
+  const hasSelectedSource = Boolean(selectedFood || selectedRecipe)
+  const amountUnit = selectedRecipe
+    ? 'порц.'
+    : selectedFood
+      ? nutritionUnitLabel(selectedFood.baseUnit)
+      : nutritionUnitLabel(customUnit)
+
   return (
     <AppDialog
       open={open}
       onOpenChange={onOpenChange}
-      title={entry ? 'Изменить запись' : 'Добавить в дневник'}
-      description="Быстро найдите продукт или рецепт. Если нужного нет — сохраните разовую запись без пополнения каталога."
+      title={entry ? 'Изменить запись' : 'Добавить еду'}
+      description="Найдите продукт или рецепт, укажите количество и сохраните."
       icon={<Utensils />}
       size="lg"
       busy={busy}
@@ -238,10 +240,16 @@ export function NutritionLogDialog({
           <button
             type="submit"
             form="nutrition-log-form"
-            disabled={busy || !Number.isFinite(amount) || amount <= 0}
+            disabled={
+              busy ||
+              !Number.isFinite(amount) ||
+              amount <= 0 ||
+              (sourceType !== 'custom' && !sourceId) ||
+              (sourceType === 'custom' && !customTitle.trim())
+            }
             className="h-10 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400 disabled:opacity-45"
           >
-            Сохранить
+            {entry ? 'Сохранить' : 'Добавить'}
           </button>
         </>
       }
@@ -251,103 +259,207 @@ export function NutritionLogDialog({
         className="space-y-4"
         onSubmit={(event) => void submit(event).catch(() => undefined)}
       >
-        <div className="grid gap-3 sm:grid-cols-2">
-          <NutritionFormField label="Приём пищи">
-            <AppSelect
-              ariaLabel="Приём пищи"
-              value={mealType}
-              options={NUTRITION_MEAL_OPTIONS}
-              onValueChange={(value) => setMealType(value as NutritionMealType)}
-            />
-          </NutritionFormField>
-          {mealType === 'other' && (
-            <NutritionFormField label="Название приёма">
-              <input
-                value={customMealName}
-                maxLength={80}
-                placeholder="Например, после тренировки"
-                className={NUTRITION_INPUT_CLASS_NAME}
-                onChange={(event) => setCustomMealName(event.target.value)}
-              />
-            </NutritionFormField>
-          )}
+        <div>
+          <div className="mb-2 text-xs font-medium text-[var(--app-muted)]">Приём пищи</div>
+          <div className="flex flex-wrap gap-1.5">
+            {NUTRITION_MEAL_OPTIONS.map((meal) => (
+              <button
+                key={meal.value}
+                type="button"
+                aria-pressed={mealType === meal.value}
+                className={cn(
+                  'h-9 rounded-xl px-3 text-xs font-medium transition-colors',
+                  mealType === meal.value
+                    ? 'bg-violet-500/15 text-violet-200'
+                    : 'bg-[var(--app-workspace)] text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
+                )}
+                onClick={() => setMealType(meal.value)}
+              >
+                {meal.label}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <NutritionFormField label="Что добавляем">
-          <AppSelect
-            ariaLabel="Тип записи"
-            value={sourceType}
-            options={NUTRITION_SOURCE_OPTIONS}
-            onValueChange={(value) => changeSourceType(value as NutritionLogSourceType)}
-          />
-        </NutritionFormField>
-
-        {sourceType !== 'custom' && (
-          <section className="rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-3">
-            <label className="flex h-10 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 focus-within:border-violet-500/45">
-              <Search className="size-4 text-[var(--app-muted)]" />
-              <input
-                value={sourceQuery}
-                type="search"
-                aria-label={sourceType === 'food' ? 'Поиск продукта' : 'Поиск рецепта'}
-                placeholder={sourceType === 'food' ? 'Найти продукт…' : 'Найти рецепт…'}
-                className="min-w-0 flex-1 bg-transparent text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60"
-                onChange={(event) => setSourceQuery(event.target.value)}
-              />
-            </label>
-
-            <div className="mt-2 max-h-52 space-y-1 overflow-y-auto">
-              {sourceCandidates.length === 0 ? (
-                <p className="px-3 py-6 text-center text-xs text-[var(--app-muted)]">
-                  Ничего не найдено. Можно выбрать «Своя запись» или добавить элемент в каталог.
-                </p>
-              ) : (
-                sourceCandidates.map((candidate) => {
-                  const selected = sourceId === candidate.id
-                  return (
-                    <button
-                      key={candidate.id}
-                      type="button"
-                      aria-pressed={selected}
-                      className={cn(
-                        'flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors',
-                        selected
-                          ? 'bg-violet-500/12 text-[var(--app-text)]'
-                          : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
-                      )}
-                      onClick={() => selectSource(candidate.id)}
-                    >
-                      <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-300">
-                        {candidate.kind === 'food' ? (
-                          <Utensils className="size-4" />
-                        ) : (
-                          <CookingPot className="size-4" />
-                        )}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="flex items-center gap-1.5">
-                          <strong className="truncate text-sm font-medium">
-                            {candidate.title}
-                          </strong>
-                        </span>
-                        <span className="mt-0.5 block truncate text-[11px] opacity-75">
-                          {candidate.subtitle}
-                        </span>
-                      </span>
-                    </button>
-                  )
-                })
-              )}
-            </div>
-          </section>
+        {mealType === 'other' && (
+          <NutritionFormField label="Название приёма">
+            <input
+              value={customMealName}
+              maxLength={80}
+              placeholder="Например, после тренировки"
+              className={NUTRITION_INPUT_CLASS_NAME}
+              onChange={(event) => setCustomMealName(event.target.value)}
+            />
+          </NutritionFormField>
         )}
 
-        {sourceType === 'custom' && (
+        {sourceType !== 'custom' ? (
+          <>
+            <section className="rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-3">
+              <label className="flex h-11 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 focus-within:border-violet-500/45">
+                <Search className="size-4 text-[var(--app-muted)]" />
+                <input
+                  autoFocus={!entry}
+                  value={sourceQuery}
+                  type="search"
+                  aria-label="Поиск продукта или рецепта"
+                  placeholder="Что вы съели?"
+                  className="min-w-0 flex-1 bg-transparent text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60"
+                  onChange={(event) => setSourceQuery(event.target.value)}
+                />
+              </label>
+
+              <div className="mt-2 max-h-64 space-y-1 overflow-y-auto">
+                {sourceCandidates.length === 0 ? (
+                  <p className="px-3 py-7 text-center text-xs text-[var(--app-muted)]">
+                    Ничего не найдено
+                  </p>
+                ) : (
+                  sourceCandidates.map((candidate) => {
+                    const selected = sourceId === candidate.id && sourceType === candidate.kind
+                    return (
+                      <button
+                        key={`${candidate.kind}-${candidate.id}`}
+                        type="button"
+                        aria-pressed={selected}
+                        className={cn(
+                          'flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors',
+                          selected
+                            ? 'bg-violet-500/12 text-[var(--app-text)]'
+                            : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
+                        )}
+                        onClick={() => selectSource(candidate.kind, candidate.id)}
+                      >
+                        <span
+                          className={cn(
+                            'flex size-8 shrink-0 items-center justify-center rounded-lg',
+                            candidate.kind === 'food'
+                              ? 'bg-emerald-500/10 text-emerald-300'
+                              : 'bg-violet-500/10 text-violet-300'
+                          )}
+                        >
+                          {candidate.kind === 'food' ? (
+                            <Apple className="size-4" />
+                          ) : (
+                            <CookingPot className="size-4" />
+                          )}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <strong className="block truncate text-sm font-medium">
+                            {candidate.title}
+                          </strong>
+                          <span className="mt-0.5 block truncate text-[11px] opacity-75">
+                            {candidate.subtitle}
+                          </span>
+                        </span>
+                        <span className="text-[10px] opacity-60">
+                          {candidate.kind === 'food' ? 'Продукт' : 'Рецепт'}
+                        </span>
+                      </button>
+                    )
+                  })
+                )}
+              </div>
+            </section>
+
+            {hasSelectedSource && (
+              <section className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-4">
+                <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_120px] sm:items-end">
+                  <NutritionFormField label={selectedRecipe ? 'Порций' : 'Количество'}>
+                    <input
+                      type="number"
+                      min="0.001"
+                      max="100000"
+                      step="0.001"
+                      value={amount}
+                      className={NUTRITION_INPUT_CLASS_NAME}
+                      onChange={(event) => setAmount(Number(event.target.value))}
+                    />
+                  </NutritionFormField>
+                  <div className="h-10 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 py-2.5 text-sm text-[var(--app-muted)]">
+                    {amountUnit}
+                  </div>
+                </div>
+
+                {quickAmounts.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {quickAmounts.map((value) => (
+                      <button
+                        key={value}
+                        type="button"
+                        className={cn(
+                          'h-8 rounded-lg px-2.5 text-xs transition-colors',
+                          amount === value
+                            ? 'bg-violet-500/15 text-violet-200'
+                            : 'bg-[var(--app-workspace)] text-[var(--app-muted)] hover:text-[var(--app-text)]'
+                        )}
+                        onClick={() => setAmount(value)}
+                      >
+                        {formatNutritionNumber(value)} {amountUnit}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <div className="mt-3 text-xs text-[var(--app-muted)]">
+                  <strong className="font-semibold text-[var(--app-text)]">
+                    {formatNutritionNumber(preview.calories, 0)} ккал
+                  </strong>{' '}
+                  · Б {formatNutritionNumber(preview.proteinG)} · Ж{' '}
+                  {formatNutritionNumber(preview.fatG)} · У {formatNutritionNumber(preview.carbsG)}
+                </div>
+              </section>
+            )}
+
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <span className="text-[var(--app-muted)]">Не нашли?</span>
+              <button
+                type="button"
+                className="font-medium text-violet-300 hover:text-violet-200"
+                onClick={() => {
+                  onOpenChange(false)
+                  onCreateFood()
+                }}
+              >
+                Создать продукт
+              </button>
+              <span className="text-[var(--app-muted)]/50">·</span>
+              <button
+                type="button"
+                disabled={foods.length === 0}
+                className="font-medium text-violet-300 hover:text-violet-200 disabled:cursor-not-allowed disabled:opacity-40"
+                onClick={() => {
+                  onOpenChange(false)
+                  onCreateRecipe()
+                }}
+              >
+                Создать рецепт
+              </button>
+              <span className="text-[var(--app-muted)]/50">·</span>
+              <button
+                type="button"
+                className="font-medium text-violet-300 hover:text-violet-200"
+                onClick={enableCustomEntry}
+              >
+                Своя запись
+              </button>
+            </div>
+          </>
+        ) : (
           <section className="space-y-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-4">
+            {(foods.length > 0 || recipes.length > 0) && (
+              <button
+                type="button"
+                className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2 text-xs text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+                onClick={returnToSearch}
+              >
+                <ArrowLeft className="size-3.5" /> Найти продукт или рецепт
+              </button>
+            )}
             <div>
-              <h3 className="text-xs font-semibold text-[var(--app-text)]">Своя запись</h3>
+              <h3 className="text-sm font-semibold text-[var(--app-text)]">Своя запись</h3>
               <p className="mt-1 text-[11px] leading-5 text-[var(--app-muted)]">
-                Пищевая ценность ниже считается итогом всей записи. Она не умножается на количество.
+                Для блюда, которого нет в библиотеке. Укажите итоговую пищевую ценность всей записи.
               </p>
             </div>
             <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_150px]">
@@ -369,7 +481,18 @@ export function NutritionLogDialog({
                 />
               </NutritionFormField>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <NutritionFormField label="Количество">
+              <input
+                type="number"
+                min="0.001"
+                max="100000"
+                step="0.001"
+                value={amount}
+                className={NUTRITION_INPUT_CLASS_NAME}
+                onChange={(event) => setAmount(Number(event.target.value))}
+              />
+            </NutritionFormField>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {CUSTOM_NUTRIENTS.map((field) => (
                 <NutritionFormField key={field.key} label={field.label}>
                   <input
@@ -386,39 +509,11 @@ export function NutritionLogDialog({
           </section>
         )}
 
-        <NutritionFormField label={sourceType === 'recipe' ? 'Количество порций' : 'Количество'}>
-          <div className="relative">
-            <input
-              type="number"
-              min="0.001"
-              max="100000"
-              step="0.001"
-              value={amount}
-              className={`${NUTRITION_INPUT_CLASS_NAME} pr-16`}
-              onChange={(event) => setAmount(Number(event.target.value))}
-            />
-            <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs text-[var(--app-muted)]">
-              {selectedFood
-                ? nutritionUnitLabel(selectedFood.baseUnit)
-                : sourceType === 'recipe'
-                  ? 'порц.'
-                  : nutritionUnitLabel(customUnit)}
-            </span>
-          </div>
-        </NutritionFormField>
-
-        <div className="rounded-xl border border-violet-400/15 bg-violet-500/[0.06] p-3">
-          <span className="text-xs text-violet-200/70">Итого для записи</span>
-          <div className="mt-1 text-sm font-semibold text-violet-100">
-            {nutritionValuesLine(preview)}
-          </div>
-        </div>
-
         <NutritionFormField label="Комментарий" hint="необязательно">
           <textarea
-            rows={2}
-            maxLength={4000}
             value={notes}
+            rows={2}
+            maxLength={10000}
             className={NUTRITION_TEXTAREA_CLASS_NAME}
             onChange={(event) => setNotes(event.target.value)}
           />

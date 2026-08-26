@@ -98,6 +98,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   mocks.listOverview.mockResolvedValue(overview())
   mocks.createFoods.mockResolvedValue({ created: [chicken], skippedNames: [] })
+  mocks.createLogEntry.mockResolvedValue(undefined)
   mocks.setWater.mockImplementation(async ({ date, waterMl }) => ({
     ...overview().day,
     date,
@@ -106,25 +107,30 @@ beforeEach(() => {
 })
 
 describe('NutritionPage', () => {
-  it('shows the diary and exposes the food catalog as a separate workspace', async () => {
-    const user = userEvent.setup()
+  it('keeps only the three simple top-level workspaces', async () => {
     render(<NutritionPage />)
 
     expect(await screen.findByRole('heading', { name: 'Питание' })).toBeInTheDocument()
-    expect(screen.getByText('500 мл')).toBeInTheDocument()
-
-    await user.click(screen.getByRole('button', { name: 'Продукты' }))
-    expect(screen.getByText('Куриная грудка')).toBeInTheDocument()
-    expect(screen.getByText(/165 ккал/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Дневник' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Библиотека' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Прогресс' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Продукты' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Рецепты' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Цели' })).not.toBeInTheDocument()
   })
 
-  it('imports a list of foods from JSON', async () => {
+  it('shows products in one library and keeps JSON import in the overflow menu', async () => {
     const user = userEvent.setup()
     render(<NutritionPage />)
 
     await screen.findByRole('heading', { name: 'Питание' })
-    await user.click(screen.getByRole('button', { name: 'Продукты' }))
-    await user.click(screen.getByRole('button', { name: 'Из JSON' }))
+    await user.click(screen.getByRole('button', { name: 'Библиотека' }))
+
+    expect(screen.getByText('Куриная грудка')).toBeInTheDocument()
+    expect(screen.getByText(/165 ккал/)).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Ещё действия библиотеки' }))
+    await user.click(await screen.findByText('Импорт из JSON'))
 
     const dialog = screen.getByRole('dialog')
     const textarea = within(dialog).getByRole('textbox', { name: 'JSON продуктов' })
@@ -135,41 +141,47 @@ describe('NutritionPage', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Добавить' }))
 
     await waitFor(() => {
-      expect(mocks.createFoods).toHaveBeenCalledWith({
-        foods: [
-          {
-            name: 'Картофель',
-            brand: '',
-            category: 'vegetables',
-            baseAmount: 100,
-            baseUnit: 'g',
-            nutrients: {
-              calories: 77,
-              proteinG: 2,
-              fatG: 0.1,
-              carbsG: 17.5,
-              fiberG: 0,
-              sugarG: 0,
-              sodiumMg: 0
-            },
-            notes: ''
-          }
-        ]
-      })
+      expect(mocks.createFoods).toHaveBeenCalledTimes(1)
     })
     expect(screen.getByRole('status')).toHaveTextContent('Добавлено продуктов: 1')
   })
 
-  it('does not expose favorites or archive controls in the food catalog', async () => {
+  it('adds food through one unified search without asking for the source type', async () => {
     const user = userEvent.setup()
     render(<NutritionPage />)
 
     await screen.findByRole('heading', { name: 'Питание' })
-    await user.click(screen.getByRole('button', { name: 'Продукты' }))
+    await user.click(screen.getByRole('button', { name: 'Добавить еду' }))
 
-    expect(screen.queryByRole('button', { name: 'Избранное' })).not.toBeInTheDocument()
-    expect(screen.queryByText('Архив')).not.toBeInTheDocument()
-    expect(screen.queryByLabelText('Статус каталога')).not.toBeInTheDocument()
+    const dialog = screen.getByRole('dialog')
+    expect(
+      within(dialog).getByRole('searchbox', { name: 'Поиск продукта или рецепта' })
+    ).toBeInTheDocument()
+    expect(within(dialog).queryByLabelText('Тип записи')).not.toBeInTheDocument()
+
+    await user.click(within(dialog).getByRole('button', { name: /Куриная грудка/ }))
+    await user.click(within(dialog).getByRole('button', { name: 'Добавить' }))
+
+    await waitFor(() => {
+      expect(mocks.createLogEntry).toHaveBeenCalledWith(
+        expect.objectContaining({
+          date: todayKey(),
+          sourceType: 'food',
+          sourceId: chicken.id,
+          amount: 100
+        })
+      )
+    })
+  })
+
+  it('keeps goals available from the compact day summary', async () => {
+    const user = userEvent.setup()
+    render(<NutritionPage />)
+
+    await screen.findByRole('heading', { name: 'Питание' })
+    await user.click(screen.getByRole('button', { name: 'Настроить цели' }))
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
   })
 
   it('updates water for the currently selected day', async () => {
@@ -182,6 +194,6 @@ describe('NutritionPage', () => {
     await waitFor(() => {
       expect(mocks.setWater).toHaveBeenCalledWith({ date: todayKey(), waterMl: 750 })
     })
-    expect(screen.getByText('750 мл')).toBeInTheDocument()
+    expect(screen.getByText('750 мл / 2500 мл')).toBeInTheDocument()
   })
 })

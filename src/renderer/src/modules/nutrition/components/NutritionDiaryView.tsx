@@ -1,18 +1,15 @@
+import * as Collapsible from '@radix-ui/react-collapsible'
 import {
-  Apple,
-  Beef,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Droplets,
-  Flame,
-  Leaf,
   Pencil,
   Plus,
-  Trash2,
-  Utensils,
-  Wheat,
-  type LucideIcon
+  Settings2,
+  Trash2
 } from 'lucide-react'
+import { useState } from 'react'
 
 import type {
   NutritionLogEntryRecord,
@@ -21,16 +18,15 @@ import type {
   NutritionTargetRecord,
   NutritionValues
 } from '../../../../../shared/contracts/nutrition'
-import { NUTRITION_MEAL_OPTIONS, nutritionUnitLabel } from '../nutrition-options'
+import { AppDateField } from '../../../shared/ui/AppDateField'
+import { nutritionUnitLabel } from '../nutrition-options'
 import {
   formatNutritionDate,
   formatNutritionNumber,
   nutritionLocalDateKey,
   nutritionProgress,
-  nutritionValuesLine,
   shiftNutritionDate
 } from '../nutrition-utils'
-import { NutritionSecondaryButton } from './NutritionFormPrimitives'
 
 interface NutritionDiaryViewProps {
   overview: NutritionOverview
@@ -42,7 +38,15 @@ interface NutritionDiaryViewProps {
   onEdit: (entry: NutritionLogEntryRecord) => void
   onDelete: (entry: NutritionLogEntryRecord) => void
   onWaterChange: (delta: number) => void
+  onEditTargets: () => void
 }
+
+const STANDARD_MEALS: Array<{ value: NutritionMealType; label: string }> = [
+  { value: 'breakfast', label: 'Завтрак' },
+  { value: 'lunch', label: 'Обед' },
+  { value: 'dinner', label: 'Ужин' },
+  { value: 'snack', label: 'Перекусы' }
+]
 
 export function NutritionDiaryView({
   overview,
@@ -53,13 +57,11 @@ export function NutritionDiaryView({
   onAdd,
   onEdit,
   onDelete,
-  onWaterChange
+  onWaterChange,
+  onEditTargets
 }: NutritionDiaryViewProps): React.JSX.Element {
   const nutrients = overview.day.nutrients
-  const meals = NUTRITION_MEAL_OPTIONS.map((meal) => ({
-    ...meal,
-    entries: overview.entries.filter((entry) => entry.mealType === meal.value)
-  }))
+  const otherEntries = overview.entries.filter((entry) => entry.mealType === 'other')
 
   return (
     <section className="mt-5 space-y-4">
@@ -75,10 +77,10 @@ export function NutritionDiaryView({
           </button>
           <button
             type="button"
-            className="min-w-64 rounded-xl px-3 py-2 text-left hover:bg-[var(--app-control-hover)] max-[520px]:min-w-0"
+            className="min-w-56 rounded-xl px-3 py-2 text-left hover:bg-[var(--app-control-hover)] max-[520px]:min-w-0"
             onClick={() => onDateChange(nutritionLocalDateKey())}
           >
-            <div className="text-sm font-semibold capitalize text-[var(--app-text)]">
+            <div className="text-sm font-semibold text-[var(--app-text)] capitalize">
               {formatNutritionDate(selectedDate)}
             </div>
             <div className="mt-0.5 text-[11px] text-[var(--app-muted)]">
@@ -96,170 +98,204 @@ export function NutritionDiaryView({
             <ChevronRight className="size-4" />
           </button>
         </div>
-        <input
-          type="date"
-          aria-label="Дата дневника питания"
+        <AppDateField
           value={selectedDate}
-          className="h-10 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none"
-          onChange={(event) => onDateChange(event.target.value)}
+          ariaLabel="Дата дневника питания"
+          className="w-[155px]"
+          onChange={onDateChange}
         />
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <NutrientProgressCard
-          label="Калории"
-          value={nutrients.calories}
-          target={target?.calories ?? null}
-          unit="ккал"
-          icon={Flame}
-        />
-        <NutrientProgressCard
-          label="Белки"
-          value={nutrients.proteinG}
-          target={target?.proteinG ?? null}
-          unit="г"
-          icon={Beef}
-        />
-        <NutrientProgressCard
-          label="Жиры"
-          value={nutrients.fatG}
-          target={target?.fatG ?? null}
-          unit="г"
-          icon={Leaf}
-        />
-        <NutrientProgressCard
-          label="Углеводы"
-          value={nutrients.carbsG}
-          target={target?.carbsG ?? null}
-          unit="г"
-          icon={Wheat}
-        />
-        <NutrientProgressCard
-          label="Клетчатка"
-          value={nutrients.fiberG}
-          target={target?.fiberG ?? null}
-          unit="г"
-          icon={Apple}
-        />
-      </div>
-
-      <WaterCard
-        value={overview.day.waterMl}
-        target={target?.waterMl ?? null}
+      <DaySummary
+        nutrients={nutrients}
+        target={target}
+        waterMl={overview.day.waterMl}
         busy={busy}
-        onChange={onWaterChange}
+        onWaterChange={onWaterChange}
+        onEditTargets={onEditTargets}
       />
 
-      <div className="grid items-start gap-4 xl:grid-cols-2">
-        {meals.map((meal) => (
-          <MealCard
+      <div className="space-y-2">
+        {STANDARD_MEALS.map((meal) => (
+          <MealRow
             key={meal.value}
             mealType={meal.value}
             label={meal.label}
-            entries={meal.entries}
+            entries={overview.entries.filter((entry) => entry.mealType === meal.value)}
             onAdd={() => onAdd(meal.value)}
             onEdit={onEdit}
             onDelete={onDelete}
           />
         ))}
+        {otherEntries.length > 0 && (
+          <MealRow
+            mealType="other"
+            label="Другие приёмы пищи"
+            entries={otherEntries}
+            onAdd={() => onAdd('other')}
+            onEdit={onEdit}
+            onDelete={onDelete}
+          />
+        )}
       </div>
     </section>
   )
 }
 
-function NutrientProgressCard({
-  label,
-  value,
+function DaySummary({
+  nutrients,
   target,
-  unit,
-  icon: Icon
+  waterMl,
+  busy,
+  onWaterChange,
+  onEditTargets
 }: {
-  label: string
-  value: number
-  target: number | null
-  unit: string
-  icon: LucideIcon
+  nutrients: NutritionValues
+  target: NutritionTargetRecord | null
+  waterMl: number
+  busy: boolean
+  onWaterChange: (delta: number) => void
+  onEditTargets: () => void
 }): React.JSX.Element {
+  const [detailsOpen, setDetailsOpen] = useState(false)
+  const calorieTarget = target?.calories ?? null
+
   return (
-    <article className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)]">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-xs font-medium text-[var(--app-muted)]">{label}</span>
-        <Icon className="size-4 text-violet-300" />
+    <article className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-5 shadow-[var(--app-shadow-card)]">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="text-xs font-medium text-[var(--app-muted)]">За день</div>
+          <div className="mt-1 flex items-baseline gap-2">
+            <strong className="text-3xl font-semibold tracking-tight text-[var(--app-text)]">
+              {formatNutritionNumber(nutrients.calories, 0)}
+            </strong>
+            <span className="text-sm text-[var(--app-muted)]">
+              {calorieTarget ? `/ ${formatNutritionNumber(calorieTarget, 0)} ккал` : 'ккал'}
+            </span>
+          </div>
+        </div>
+        <button
+          type="button"
+          className="inline-flex h-9 items-center gap-2 rounded-xl px-3 text-xs font-medium text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+          onClick={onEditTargets}
+        >
+          <Settings2 className="size-4" /> Настроить цели
+        </button>
       </div>
-      <div className="mt-2 flex items-baseline gap-1.5">
-        <strong className="text-xl font-semibold text-[var(--app-text)]">
-          {formatNutritionNumber(value, label === 'Калории' ? 0 : 1)}
-        </strong>
-        <span className="text-xs text-[var(--app-muted)]">{unit}</span>
+
+      <div className="mt-4 h-2 overflow-hidden rounded-full bg-[var(--app-workspace)]">
+        <div
+          className="h-full rounded-full bg-violet-400 transition-[width]"
+          style={{ width: `${nutritionProgress(nutrients.calories, calorieTarget)}%` }}
+        />
       </div>
-      {target ? (
-        <>
-          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[var(--app-workspace)]">
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+        <MacroStat label="Белки" value={nutrients.proteinG} target={target?.proteinG ?? null} />
+        <MacroStat label="Жиры" value={nutrients.fatG} target={target?.fatG ?? null} />
+        <MacroStat label="Углеводы" value={nutrients.carbsG} target={target?.carbsG ?? null} />
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-[var(--app-border)] pt-4">
+        <span className="flex size-9 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-300">
+          <Droplets className="size-4" />
+        </span>
+        <div className="min-w-36 flex-1">
+          <div className="text-sm font-semibold text-[var(--app-text)]">
+            {waterMl} мл{target?.waterMl ? ` / ${target.waterMl} мл` : ''}
+          </div>
+          <div className="mt-1.5 h-1.5 max-w-sm overflow-hidden rounded-full bg-[var(--app-workspace)]">
             <div
-              className="h-full rounded-full bg-violet-400"
-              style={{ width: `${nutritionProgress(value, target)}%` }}
+              className="h-full rounded-full bg-cyan-400"
+              style={{ width: `${nutritionProgress(waterMl, target?.waterMl ?? null)}%` }}
             />
           </div>
-          <div className="mt-1.5 text-[10px] text-[var(--app-muted)]">
-            Цель {formatNutritionNumber(target, 0)} {unit}
+        </div>
+        <button
+          type="button"
+          disabled={busy}
+          className="h-9 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-xs font-medium text-[var(--app-text)] hover:bg-[var(--app-control-hover)] disabled:opacity-45"
+          onClick={() => onWaterChange(250)}
+        >
+          +250 мл
+        </button>
+        {waterMl > 0 && (
+          <button
+            type="button"
+            disabled={busy}
+            className="h-9 rounded-xl px-2.5 text-xs text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] disabled:opacity-45"
+            onClick={() => onWaterChange(-250)}
+          >
+            −250
+          </button>
+        )}
+      </div>
+
+      <Collapsible.Root open={detailsOpen} onOpenChange={setDetailsOpen}>
+        <Collapsible.Trigger asChild>
+          <button
+            type="button"
+            className="mt-3 inline-flex h-8 items-center gap-1.5 rounded-lg px-2 text-xs text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+          >
+            Подробнее
+            <ChevronDown
+              className={`size-3.5 transition-transform ${detailsOpen ? 'rotate-180' : ''}`}
+            />
+          </button>
+        </Collapsible.Trigger>
+        <Collapsible.Content>
+          <div className="mt-2 grid gap-2 sm:grid-cols-3">
+            <SmallStat label="Клетчатка" value={`${formatNutritionNumber(nutrients.fiberG)} г`} />
+            <SmallStat label="Сахар" value={`${formatNutritionNumber(nutrients.sugarG)} г`} />
+            <SmallStat
+              label="Натрий"
+              value={`${formatNutritionNumber(nutrients.sodiumMg, 0)} мг`}
+            />
           </div>
-        </>
-      ) : (
-        <div className="mt-3 text-[10px] text-[var(--app-muted)]">Цель не задана</div>
-      )}
+        </Collapsible.Content>
+      </Collapsible.Root>
     </article>
   )
 }
 
-function WaterCard({
+function MacroStat({
+  label,
   value,
-  target,
-  busy,
-  onChange
+  target
 }: {
+  label: string
   value: number
   target: number | null
-  busy: boolean
-  onChange: (delta: number) => void
 }): React.JSX.Element {
   return (
-    <section className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)]">
-      <div className="flex flex-wrap items-center gap-4">
-        <span className="flex size-10 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-300">
-          <Droplets className="size-5" />
+    <div>
+      <div className="flex items-baseline justify-between gap-2 text-xs">
+        <span className="font-medium text-[var(--app-text)]">{label}</span>
+        <span className="text-[var(--app-muted)]">
+          {formatNutritionNumber(value)}
+          {target ? ` / ${formatNutritionNumber(target)}` : ''} г
         </span>
-        <div className="min-w-40 flex-1">
-          <div className="flex items-baseline gap-2">
-            <span className="text-lg font-semibold text-[var(--app-text)]">{value} мл</span>
-            {target && <span className="text-xs text-[var(--app-muted)]">из {target} мл</span>}
-          </div>
-          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--app-workspace)]">
-            <div
-              className="h-full rounded-full bg-cyan-400"
-              style={{ width: `${nutritionProgress(value, target)}%` }}
-            />
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <NutritionSecondaryButton
-            disabled={busy || value === 0}
-            onClick={() => onChange(-250)}
-          >
-            −250 мл
-          </NutritionSecondaryButton>
-          <NutritionSecondaryButton disabled={busy} onClick={() => onChange(250)}>
-            +250 мл
-          </NutritionSecondaryButton>
-          <NutritionSecondaryButton disabled={busy} onClick={() => onChange(500)}>
-            +500 мл
-          </NutritionSecondaryButton>
-        </div>
       </div>
-    </section>
+      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[var(--app-workspace)]">
+        <div
+          className="h-full rounded-full bg-violet-400/80"
+          style={{ width: `${nutritionProgress(value, target)}%` }}
+        />
+      </div>
+    </div>
   )
 }
 
-function MealCard({
+function SmallStat({ label, value }: { label: string; value: string }): React.JSX.Element {
+  return (
+    <div className="rounded-xl bg-[var(--app-workspace)] px-3 py-2.5">
+      <div className="text-[10px] text-[var(--app-muted)]">{label}</div>
+      <div className="mt-0.5 text-sm font-medium text-[var(--app-text)]">{value}</div>
+    </div>
+  )
+}
+
+function MealRow({
   mealType,
   label,
   entries,
@@ -274,71 +310,47 @@ function MealCard({
   onEdit: (entry: NutritionLogEntryRecord) => void
   onDelete: (entry: NutritionLogEntryRecord) => void
 }): React.JSX.Element {
-  const totals: NutritionValues = entries.reduce(
-    (sum, entry) => ({
-      calories: sum.calories + entry.nutrients.calories,
-      proteinG: sum.proteinG + entry.nutrients.proteinG,
-      fatG: sum.fatG + entry.nutrients.fatG,
-      carbsG: sum.carbsG + entry.nutrients.carbsG,
-      fiberG: sum.fiberG + entry.nutrients.fiberG,
-      sugarG: sum.sugarG + entry.nutrients.sugarG,
-      sodiumMg: sum.sodiumMg + entry.nutrients.sodiumMg
-    }),
-    {
-      calories: 0,
-      proteinG: 0,
-      fatG: 0,
-      carbsG: 0,
-      fiberG: 0,
-      sugarG: 0,
-      sodiumMg: 0
-    }
-  )
+  const calories = entries.reduce((sum, entry) => sum + entry.nutrients.calories, 0)
 
   return (
     <section className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--app-shadow-card)]">
-      <header className="flex items-center gap-3 border-b border-[var(--app-border)] px-4 py-3">
-        <span className="flex size-8 items-center justify-center rounded-lg bg-violet-500/10 text-violet-300">
-          <Utensils className="size-4" />
-        </span>
+      <header className="flex items-center gap-3 px-4 py-3">
         <div className="min-w-0 flex-1">
           <h2 className="text-sm font-semibold text-[var(--app-text)]">{label}</h2>
           <p className="mt-0.5 text-[11px] text-[var(--app-muted)]">
-            {formatNutritionNumber(totals.calories, 0)} ккал · {entries.length} поз.
+            {entries.length > 0
+              ? `${formatNutritionNumber(calories, 0)} ккал`
+              : 'Пока ничего не добавлено'}
           </p>
         </div>
         <button
           type="button"
           aria-label={`Добавить в ${label.toLowerCase()}`}
-          className="flex size-8 items-center justify-center rounded-lg bg-violet-500/10 text-violet-300 hover:bg-violet-500/15"
+          className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-violet-500/10 px-2.5 text-xs font-medium text-violet-300 hover:bg-violet-500/15"
           onClick={onAdd}
         >
-          <Plus className="size-4" />
+          <Plus className="size-3.5" /> Добавить
         </button>
       </header>
 
-      {entries.length === 0 ? (
-        <div className="px-4 py-8 text-center text-xs text-[var(--app-muted)]">
-          Пока ничего не добавлено
-        </div>
-      ) : (
-        <div className="divide-y divide-[var(--app-border)]">
+      {entries.length > 0 && (
+        <div className="border-t border-[var(--app-border)]">
           {entries.map((entry) => (
-            <div key={entry.id} className="group flex items-center gap-3 px-4 py-3">
+            <div
+              key={entry.id}
+              className="group flex items-center gap-3 border-b border-[var(--app-border)] px-4 py-2.5 last:border-b-0"
+            >
               <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="truncate text-sm font-semibold text-[var(--app-text)]">
-                    {entry.title}
-                  </span>
-                  {mealType === 'other' && entry.customMealName && (
-                    <span className="rounded-md bg-[var(--app-control)] px-1.5 py-0.5 text-[10px] text-[var(--app-muted)]">
-                      {entry.customMealName}
-                    </span>
-                  )}
+                <div className="truncate text-sm font-medium text-[var(--app-text)]">
+                  {entry.title}
                 </div>
-                <p className="mt-1 text-xs text-[var(--app-muted)]">
+                <p className="mt-0.5 truncate text-[11px] text-[var(--app-muted)]">
                   {formatNutritionNumber(entry.amount)} {nutritionUnitLabel(entry.unit)} ·{' '}
-                  {nutritionValuesLine(entry.nutrients)}
+                  {formatNutritionNumber(entry.nutrients.calories, 0)} ккал · Б{' '}
+                  {formatNutritionNumber(entry.nutrients.proteinG)} · Ж{' '}
+                  {formatNutritionNumber(entry.nutrients.fatG)} · У{' '}
+                  {formatNutritionNumber(entry.nutrients.carbsG)}
+                  {mealType === 'other' && entry.customMealName ? ` · ${entry.customMealName}` : ''}
                 </p>
               </div>
               <div className="flex gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100">
