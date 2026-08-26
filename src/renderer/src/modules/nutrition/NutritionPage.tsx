@@ -1,14 +1,4 @@
-import {
-  Apple,
-  BarChart3,
-  Braces,
-  CookingPot,
-  Plus,
-  Settings2,
-  Utensils,
-  X,
-  type LucideIcon
-} from 'lucide-react'
+import { BarChart3, BookOpen, Plus, Utensils, X, type LucideIcon } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type {
@@ -16,7 +6,6 @@ import type {
   CreateNutritionFoodsResult,
   CreateNutritionLogEntryInput,
   CreateNutritionRecipeInput,
-  NutritionFoodCategory,
   NutritionFoodRecord,
   NutritionLogEntryRecord,
   NutritionLogSourceType,
@@ -34,27 +23,21 @@ import { DeleteConfirmationDialog } from '../../shared/ui/DeleteConfirmationDial
 import { ModuleHeader } from '../../shared/ui/ModuleHeader'
 import { StandardModulePage } from '../../shared/ui/StandardModulePage'
 import { nutritionClient } from './api/nutrition-client'
-import {
-  NutritionCatalogToolbar,
-  NutritionFoodsGrid,
-  NutritionRecipesGrid
-} from './components/NutritionCatalogViews'
 import { NutritionDiaryView } from './components/NutritionDiaryView'
 import { NutritionFoodDialog } from './components/NutritionFoodDialog'
 import { NutritionFoodJsonImportDialog } from './components/NutritionFoodJsonImportDialog'
-import { NutritionGoalsView } from './components/NutritionGoalsView'
+import { NutritionLibraryView } from './components/NutritionLibraryView'
 import { NutritionLogDialog } from './components/NutritionLogDialog'
 import { NutritionRecipeDialog } from './components/NutritionRecipeDialog'
 import { NutritionReportsView, type NutritionReportPeriod } from './components/NutritionReportsView'
 import { NutritionTargetsDialog } from './components/NutritionTargetsDialog'
-import { nutritionCategoryLabel } from './nutrition-options'
 import {
   nutritionDaysAgoKey,
   nutritionErrorMessage,
   nutritionLocalDateKey
 } from './nutrition-utils'
 
-type NutritionTab = 'diary' | 'foods' | 'recipes' | 'reports' | 'goals'
+type NutritionTab = 'diary' | 'library' | 'progress'
 type DeleteTarget =
   | { kind: 'food'; record: NutritionFoodRecord }
   | { kind: 'recipe'; record: NutritionRecipeRecord }
@@ -63,10 +46,8 @@ type DeleteTarget =
 
 const TABS: Array<{ id: NutritionTab; label: string; icon: LucideIcon }> = [
   { id: 'diary', label: 'Дневник', icon: Utensils },
-  { id: 'foods', label: 'Продукты', icon: Apple },
-  { id: 'recipes', label: 'Рецепты', icon: CookingPot },
-  { id: 'reports', label: 'Отчёты', icon: BarChart3 },
-  { id: 'goals', label: 'Цели', icon: Settings2 }
+  { id: 'library', label: 'Библиотека', icon: BookOpen },
+  { id: 'progress', label: 'Прогресс', icon: BarChart3 }
 ]
 
 interface NutritionPageProps {
@@ -81,8 +62,6 @@ export function NutritionPage({
   const [tab, setTab] = useState<NutritionTab>('diary')
   const [selectedDate, setSelectedDate] = useState(nutritionLocalDateKey())
   const [overview, setOverview] = useState<NutritionOverview | null>(null)
-  const [query, setQuery] = useState('')
-  const [foodCategory, setFoodCategory] = useState<'all' | NutritionFoodCategory>('all')
 
   const [foodDialogOpen, setFoodDialogOpen] = useState(false)
   const [foodJsonDialogOpen, setFoodJsonDialogOpen] = useState(false)
@@ -151,29 +130,6 @@ export function NutritionPage({
 
   const foods = useMemo(() => overview?.foods ?? [], [overview])
   const recipes = useMemo(() => overview?.recipes ?? [], [overview])
-
-  const filteredFoods = useMemo(() => {
-    const normalizedQuery = query.trim().toLocaleLowerCase('ru-RU')
-    return foods.filter((food) => {
-      if (foodCategory !== 'all' && food.category !== foodCategory) return false
-      if (!normalizedQuery) return true
-
-      return `${food.name} ${food.brand} ${nutritionCategoryLabel(food.category)}`
-        .toLocaleLowerCase('ru-RU')
-        .includes(normalizedQuery)
-    })
-  }, [foodCategory, foods, query])
-
-  const filteredRecipes = useMemo(() => {
-    const normalizedQuery = query.trim().toLocaleLowerCase('ru-RU')
-    return recipes.filter((recipe) => {
-      if (!normalizedQuery) return true
-
-      return `${recipe.name} ${recipe.description} ${recipe.ingredients.map((item) => item.foodName).join(' ')}`
-        .toLocaleLowerCase('ru-RU')
-        .includes(normalizedQuery)
-    })
-  }, [query, recipes])
 
   async function withBusy(action: () => Promise<unknown>): Promise<void> {
     setIsBusy(true)
@@ -284,9 +240,18 @@ export function NutritionPage({
     setLogDialogOpen(true)
   }
 
-  function resetCatalogFilters(): void {
-    setQuery('')
-    setFoodCategory('all')
+  function openSuggestedLog(): void {
+    openNewLog(suggestMealForCurrentTime())
+  }
+
+  function openNewFood(): void {
+    setEditingFood(null)
+    setFoodDialogOpen(true)
+  }
+
+  function openNewRecipe(): void {
+    setEditingRecipe(null)
+    setRecipeDialogOpen(true)
   }
 
   function applyReportPeriod(period: NutritionReportPeriod): void {
@@ -299,7 +264,7 @@ export function NutritionPage({
   }
 
   const loadReport = useCallback(async (): Promise<void> => {
-    if (tab !== 'reports') return
+    if (tab !== 'progress') return
 
     setReportLoading(true)
     try {
@@ -325,7 +290,7 @@ export function NutritionPage({
   }, [reportDateFrom, reportDateTo, reportMealType, reportSourceId, reportSourceType, tab])
 
   useEffect(() => {
-    if (tab !== 'reports') return
+    if (tab !== 'progress') return
     const timerId = window.setTimeout(() => void loadReport(), 80)
     return () => window.clearTimeout(timerId)
   }, [loadReport, tab])
@@ -341,40 +306,8 @@ export function NutritionPage({
   }
 
   const headerAction =
-    tab === 'foods' ? (
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          className="inline-flex h-10 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-          onClick={() => setFoodJsonDialogOpen(true)}
-        >
-          <Braces className="size-4" /> Из JSON
-        </button>
-        <PrimaryAction
-          onClick={() => {
-            setEditingFood(null)
-            setFoodDialogOpen(true)
-          }}
-        >
-          <Plus className="size-4" /> Добавить продукт
-        </PrimaryAction>
-      </div>
-    ) : tab === 'recipes' ? (
-      <PrimaryAction
-        disabled={foods.length === 0}
-        onClick={() => {
-          setEditingRecipe(null)
-          setRecipeDialogOpen(true)
-        }}
-      >
-        <Plus className="size-4" /> Новый рецепт
-      </PrimaryAction>
-    ) : tab === 'goals' ? (
-      <PrimaryAction onClick={() => setTargetsDialogOpen(true)}>
-        <Settings2 className="size-4" /> Изменить цели
-      </PrimaryAction>
-    ) : tab === 'diary' ? (
-      <PrimaryAction onClick={() => openNewLog('breakfast')}>
+    tab === 'diary' ? (
+      <PrimaryAction onClick={openSuggestedLog}>
         <Plus className="size-4" /> Добавить еду
       </PrimaryAction>
     ) : undefined
@@ -384,7 +317,7 @@ export function NutritionPage({
       <ModuleHeader
         icon={Utensils}
         title="Питание"
-        description="Дневник рациона, собственная база продуктов и рецептов, вода, цели и подробные отчёты."
+        description="Записывайте еду, следите за дневной нормой и прогрессом без лишних действий."
         actions={headerAction}
       >
         <div className="flex gap-1 overflow-x-auto rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-1">
@@ -401,10 +334,7 @@ export function NutritionPage({
                     ? 'bg-violet-500 font-semibold text-white'
                     : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
                 )}
-                onClick={() => {
-                  setTab(item.id)
-                  resetCatalogFilters()
-                }}
+                onClick={() => setTab(item.id)}
               >
                 <Icon className="size-4" />
                 {item.label}
@@ -463,43 +393,31 @@ export function NutritionPage({
           }}
           onDelete={(entry) => setDeleteTarget({ kind: 'log', record: entry })}
           onWaterChange={(delta) => void changeWater(delta)}
+          onEditTargets={() => setTargetsDialogOpen(true)}
         />
       )}
 
-      {tab === 'foods' && (
-        <NutritionCatalogToolbar
-          query={query}
-          onQueryChange={setQuery}
-          category={foodCategory}
-          onCategoryChange={setFoodCategory}
-        >
-          <NutritionFoodsGrid
-            foods={filteredFoods}
-            hasAnyFoods={foods.length > 0}
-            onEdit={(food) => {
-              setEditingFood(food)
-              setFoodDialogOpen(true)
-            }}
-            onDelete={(food) => setDeleteTarget({ kind: 'food', record: food })}
-          />
-        </NutritionCatalogToolbar>
+      {tab === 'library' && (
+        <NutritionLibraryView
+          foods={foods}
+          recipes={recipes}
+          onAddFood={openNewFood}
+          onAddRecipe={openNewRecipe}
+          onImportJson={() => setFoodJsonDialogOpen(true)}
+          onEditFood={(food) => {
+            setEditingFood(food)
+            setFoodDialogOpen(true)
+          }}
+          onDeleteFood={(food) => setDeleteTarget({ kind: 'food', record: food })}
+          onEditRecipe={(recipe) => {
+            setEditingRecipe(recipe)
+            setRecipeDialogOpen(true)
+          }}
+          onDeleteRecipe={(recipe) => setDeleteTarget({ kind: 'recipe', record: recipe })}
+        />
       )}
 
-      {tab === 'recipes' && (
-        <NutritionCatalogToolbar query={query} onQueryChange={setQuery}>
-          <NutritionRecipesGrid
-            recipes={filteredRecipes}
-            hasAnyRecipes={recipes.length > 0}
-            onEdit={(recipe) => {
-              setEditingRecipe(recipe)
-              setRecipeDialogOpen(true)
-            }}
-            onDelete={(recipe) => setDeleteTarget({ kind: 'recipe', record: recipe })}
-          />
-        </NutritionCatalogToolbar>
-      )}
-
-      {tab === 'reports' && (
+      {tab === 'progress' && (
         <NutritionReportsView
           report={report}
           loading={reportLoading}
@@ -526,13 +444,6 @@ export function NutritionPage({
             setReportSourceId('all')
           }}
           onSourceIdChange={setReportSourceId}
-        />
-      )}
-
-      {tab === 'goals' && (
-        <NutritionGoalsView
-          target={overview.currentTarget}
-          onEdit={() => setTargetsDialogOpen(true)}
         />
       )}
 
@@ -578,6 +489,8 @@ export function NutritionPage({
           setLogDialogOpen(open)
           if (!open) setEditingLog(null)
         }}
+        onCreateFood={openNewFood}
+        onCreateRecipe={openNewRecipe}
         onSave={saveLog}
       />
 
@@ -613,23 +526,28 @@ export function NutritionPage({
 
 function PrimaryAction({
   children,
-  disabled = false,
   onClick
 }: {
   children: React.ReactNode
-  disabled?: boolean
   onClick: () => void
 }): React.JSX.Element {
   return (
     <button
       type="button"
-      disabled={disabled}
-      className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-45"
+      className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-400"
       onClick={onClick}
     >
       {children}
     </button>
   )
+}
+
+function suggestMealForCurrentTime(): NutritionMealType {
+  const hour = new Date().getHours()
+  if (hour < 11) return 'breakfast'
+  if (hour < 16) return 'lunch'
+  if (hour < 21) return 'dinner'
+  return 'snack'
 }
 
 function deleteSubject(target: DeleteTarget): string | undefined {
@@ -645,5 +563,5 @@ function deleteDescription(target: DeleteTarget): string {
   if (target?.kind === 'recipe') {
     return 'Старые записи дневника сохранят название и пищевую ценность рецепта.'
   }
-  return 'Запись будет удалена из дневника и перестанет учитываться в отчётах.'
+  return 'Запись будет удалена из дневника и перестанет учитываться в прогрессе.'
 }
