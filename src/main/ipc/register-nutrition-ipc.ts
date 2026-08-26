@@ -18,6 +18,7 @@ import {
   updateNutritionLogEntryInputSchema,
   updateNutritionRecipeInputSchema
 } from '../../shared/validation/nutrition'
+import { importNutritionMeals } from '../repositories/nutrition-import.repository'
 import {
   createNutritionFood,
   createNutritionFoods,
@@ -27,7 +28,6 @@ import {
   deleteNutritionLogEntry,
   deleteNutritionRecipe,
   getNutritionReport,
-  importNutritionMeals,
   listNutritionOverview,
   setNutritionTargets,
   setNutritionWater,
