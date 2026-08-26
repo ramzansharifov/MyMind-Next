@@ -24,6 +24,20 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: Apply tiny cleanup
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('src/renderer/src/modules/nutrition/components/NutritionLogDialog.tsx')
+          text = path.read_text(encoding='utf-8')
+          text = text.replace(
+              "import { Apple, ArrowLeft, CookingPot, Plus, Search, Utensils } from 'lucide-react'",
+              "import { Apple, ArrowLeft, CookingPot, Search, Utensils } from 'lucide-react'",
+              1,
+          )
+          path.write_text(text, encoding='utf-8')
+          PY
+
       - name: Install dependencies
         run: npm ci
 
