@@ -177,6 +177,33 @@ export interface DeleteNutritionLogEntryInput {
   id: string
 }
 
+export interface NutritionImportItemInput {
+  name: string
+  amount: number
+  unit: NutritionUnit
+  nutrients: NutritionValues
+  notes: string
+}
+
+export interface NutritionImportMealInput {
+  mealType: NutritionMealType
+  customMealName: string
+  items: NutritionImportItemInput[]
+}
+
+export interface ImportNutritionMealsInput {
+  schemaVersion: 1
+  date: string
+  meals: NutritionImportMealInput[]
+}
+
+export interface ImportNutritionMealsResult {
+  date: string
+  mealCount: number
+  itemCount: number
+  created: NutritionLogEntryRecord[]
+}
+
 export interface NutritionOverviewInput {
   date: string
 }
@@ -277,6 +304,7 @@ export const NUTRITION_IPC_CHANNELS = {
   updateRecipe: 'nutrition:update-recipe',
   deleteRecipe: 'nutrition:delete-recipe',
   createLogEntry: 'nutrition:create-log-entry',
+  importMeals: 'nutrition:import-meals',
   updateLogEntry: 'nutrition:update-log-entry',
   deleteLogEntry: 'nutrition:delete-log-entry',
   setWater: 'nutrition:set-water',
@@ -294,6 +322,7 @@ export interface NutritionApi {
   updateRecipe(input: UpdateNutritionRecipeInput): Promise<NutritionRecipeRecord>
   deleteRecipe(input: DeleteNutritionRecipeInput): Promise<boolean>
   createLogEntry(input: CreateNutritionLogEntryInput): Promise<NutritionLogEntryRecord>
+  importMeals(input: ImportNutritionMealsInput): Promise<ImportNutritionMealsResult>
   updateLogEntry(input: UpdateNutritionLogEntryInput): Promise<NutritionLogEntryRecord>
   deleteLogEntry(input: DeleteNutritionLogEntryInput): Promise<boolean>
   setWater(input: SetNutritionWaterInput): Promise<NutritionDaySummary>
