@@ -1,9 +1,6 @@
 import { BarChart3, CalendarDays, Droplets, Flame, Leaf, Utensils } from 'lucide-react'
 
-import type {
-  NutritionMealType,
-  NutritionReport
-} from '../../../../../shared/contracts/nutrition'
+import type { NutritionMealType, NutritionReport } from '../../../../../shared/contracts/nutrition'
 import { AppSelect } from '../../../shared/ui/AppSelect'
 import { NUTRITION_MEAL_OPTIONS, nutritionMealLabel } from '../nutrition-options'
 import { formatNutritionNumber } from '../nutrition-utils'

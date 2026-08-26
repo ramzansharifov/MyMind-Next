@@ -12,10 +12,7 @@ import type {
 import { cn } from '../../../shared/lib/cn'
 import { AppDialog } from '../../../shared/ui/AppDialog'
 import { AppSelect } from '../../../shared/ui/AppSelect'
-import {
-  NUTRITION_MEAL_OPTIONS,
-  NUTRITION_UNIT_OPTIONS
-} from '../nutrition-options'
+import { NUTRITION_MEAL_OPTIONS, NUTRITION_UNIT_OPTIONS } from '../nutrition-options'
 import { NUTRITION_INPUT_CLASS_NAME, NUTRITION_TEXTAREA_CLASS_NAME } from '../nutrition-utils'
 import { NutritionFormField, NutritionSecondaryButton } from './NutritionFormPrimitives'
 
@@ -211,7 +208,9 @@ export function NutritionEntryEditDialog({
               className="inline-flex h-9 items-center gap-2 rounded-xl px-3 text-xs font-medium text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
             >
               Дополнительные показатели
-              <ChevronDown className={cn('size-3.5 transition-transform', detailsOpen && 'rotate-180')} />
+              <ChevronDown
+                className={cn('size-3.5 transition-transform', detailsOpen && 'rotate-180')}
+              />
             </button>
           </Collapsible.Trigger>
           <Collapsible.Content className="mt-3 space-y-3">

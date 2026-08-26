@@ -6,9 +6,7 @@ import type {
 import { getSqlite } from '../database/client'
 import { createNutritionLogEntry } from './nutrition.repository'
 
-export function importNutritionMeals(
-  input: ImportNutritionMealsInput
-): ImportNutritionMealsResult {
+export function importNutritionMeals(input: ImportNutritionMealsInput): ImportNutritionMealsResult {
   const transaction = getSqlite().transaction((payload: ImportNutritionMealsInput) => {
     const created: NutritionLogEntryRecord[] = []
 

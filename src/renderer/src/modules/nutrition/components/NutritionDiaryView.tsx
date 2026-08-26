@@ -34,7 +34,6 @@ interface NutritionDiaryViewProps {
   target: NutritionTargetRecord | null
   busy: boolean
   onDateChange: (date: string) => void
-  onImportJson: () => void
   onEdit: (entry: NutritionLogEntryRecord) => void
   onDelete: (entry: NutritionLogEntryRecord) => void
   onWaterChange: (delta: number) => void
@@ -54,7 +53,6 @@ export function NutritionDiaryView({
   target,
   busy,
   onDateChange,
-  onImportJson,
   onEdit,
   onDelete,
   onWaterChange,
@@ -121,17 +119,12 @@ export function NutritionDiaryView({
           <span className="mx-auto flex size-11 items-center justify-center rounded-2xl bg-violet-500/10 text-violet-300">
             <Braces className="size-5" />
           </span>
-          <h2 className="mt-3 text-sm font-semibold text-[var(--app-text)]">Питание пока не добавлено</h2>
+          <h2 className="mt-3 text-sm font-semibold text-[var(--app-text)]">
+            Питание пока не добавлено
+          </h2>
           <p className="mx-auto mt-1 max-w-md text-xs leading-5 text-[var(--app-muted)]">
             Получите JSON у вашего GPT, вставьте его в MyMind и проверьте данные перед сохранением.
           </p>
-          <button
-            type="button"
-            className="mt-4 inline-flex h-10 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400"
-            onClick={onImportJson}
-          >
-            <Braces className="size-4" /> Добавить из JSON
-          </button>
         </div>
       )}
 
@@ -336,9 +329,7 @@ function MealRow({
         <div className="min-w-0 flex-1">
           <h2 className="text-sm font-semibold text-[var(--app-text)]">{label}</h2>
           <p className="mt-0.5 text-[11px] text-[var(--app-muted)]">
-            {entries.length > 0
-              ? `${formatNutritionNumber(calories, 0)} ккал`
-              : 'Нет записей'}
+            {entries.length > 0 ? `${formatNutritionNumber(calories, 0)} ккал` : 'Нет записей'}
           </p>
         </div>
       </header>

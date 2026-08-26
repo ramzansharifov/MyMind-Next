@@ -11,10 +11,7 @@ import { AppDialog } from '../../../shared/ui/AppDialog'
 import { cn } from '../../../shared/lib/cn'
 import { nutritionMealLabel, nutritionUnitLabel } from '../nutrition-options'
 import { formatNutritionNumber } from '../nutrition-utils'
-import {
-  NUTRITION_JSON_EXAMPLE,
-  parseNutritionMealsJson
-} from '../nutrition-json-import'
+import { NUTRITION_JSON_EXAMPLE, parseNutritionMealsJson } from '../nutrition-json-import'
 import { NutritionSecondaryButton } from './NutritionFormPrimitives'
 
 interface NutritionMealsJsonImportDialogProps {
@@ -158,7 +155,9 @@ export function NutritionMealsJsonImportDialog({
       {step === 'input' ? (
         <div className="space-y-4">
           <label className="block">
-            <span className="mb-2 block text-xs font-medium text-[var(--app-muted)]">JSON питания</span>
+            <span className="mb-2 block text-xs font-medium text-[var(--app-muted)]">
+              JSON питания
+            </span>
             <textarea
               autoFocus
               value={rawJson}
@@ -179,7 +178,8 @@ export function NutritionMealsJsonImportDialog({
               <div>
                 <h3 className="text-sm font-semibold text-[var(--app-text)]">Формат для GPT</h3>
                 <p className="mt-1 text-xs leading-5 text-[var(--app-muted)]">
-                  schemaVersion всегда 1. КБЖУ каждой позиции указывается для её фактического количества.
+                  schemaVersion всегда 1. КБЖУ каждой позиции указывается для её фактического
+                  количества.
                 </p>
               </div>
               <button
@@ -204,7 +204,8 @@ export function NutritionMealsJsonImportDialog({
         <div className="space-y-4">
           {preview.date !== selectedDate && (
             <div className="rounded-xl border border-amber-500/20 bg-amber-500/8 px-4 py-3 text-xs text-amber-200">
-              В JSON указана дата {preview.date}. После добавления дневник автоматически откроет этот день.
+              В JSON указана дата {preview.date}. После добавления дневник автоматически откроет
+              этот день.
             </div>
           )}
 
@@ -235,7 +236,11 @@ export function NutritionMealsJsonImportDialog({
   )
 }
 
-function MealPreview({ meal }: { meal: ImportNutritionMealsInput['meals'][number] }): React.JSX.Element {
+function MealPreview({
+  meal
+}: {
+  meal: ImportNutritionMealsInput['meals'][number]
+}): React.JSX.Element {
   const calories = meal.items.reduce((sum, item) => sum + item.nutrients.calories, 0)
   const label =
     meal.mealType === 'other' && meal.customMealName
@@ -280,7 +285,10 @@ function MealPreview({ meal }: { meal: ImportNutritionMealsInput['meals'][number
 
 function ImportError({ message }: { message: string }): React.JSX.Element {
   return (
-    <div role="alert" className="rounded-xl border border-red-500/20 bg-red-500/8 px-4 py-3 text-xs text-red-300">
+    <div
+      role="alert"
+      className="rounded-xl border border-red-500/20 bg-red-500/8 px-4 py-3 text-xs text-red-300"
+    >
       {message}
     </div>
   )

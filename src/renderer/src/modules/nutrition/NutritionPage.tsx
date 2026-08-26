@@ -118,15 +118,15 @@ export function NutritionPage({
     }
   }
 
-  async function importMeals(input: ImportNutritionMealsInput): Promise<ImportNutritionMealsResult> {
+  async function importMeals(
+    input: ImportNutritionMealsInput
+  ): Promise<ImportNutritionMealsResult> {
     setIsBusy(true)
     setError(null)
     setImportNotice(null)
     try {
       const result = await nutritionClient.importMeals(input)
-      setImportNotice(
-        `Добавлено позиций: ${result.itemCount}. Приёмов пищи: ${result.mealCount}.`
-      )
+      setImportNotice(`Добавлено позиций: ${result.itemCount}. Приёмов пищи: ${result.mealCount}.`)
       if (input.date === selectedDate) {
         await loadOverview()
       } else {
@@ -312,7 +312,6 @@ export function NutritionPage({
           target={overview.day.target}
           busy={isBusy}
           onDateChange={setSelectedDate}
-          onImportJson={() => setJsonDialogOpen(true)}
           onEdit={setEditingLog}
           onDelete={setDeleteTarget}
           onWaterChange={(delta) => void changeWater(delta)}

@@ -57,18 +57,21 @@ describe('registerNutritionIpcHandlers', () => {
     )?.[1]
 
     await expect(
-      handler({}, {
-        date: '2026-08-17',
-        mealType: 'lunch',
-        customMealName: '',
-        sourceType: 'custom',
-        sourceId: null,
-        amount: 0,
-        customTitle: '',
-        customUnit: 'serving',
-        customNutrients: null,
-        notes: ''
-      })
+      handler(
+        {},
+        {
+          date: '2026-08-17',
+          mealType: 'lunch',
+          customMealName: '',
+          sourceType: 'custom',
+          sourceId: null,
+          amount: 0,
+          customTitle: '',
+          customUnit: 'serving',
+          customNutrients: null,
+          notes: ''
+        }
+      )
     ).rejects.toThrow()
   })
 
@@ -79,11 +82,14 @@ describe('registerNutritionIpcHandlers', () => {
     )?.[1]
 
     await expect(
-      handler({}, {
-        schemaVersion: 1,
-        date: '2026-08-17',
-        meals: [{ mealType: 'lunch', customMealName: '', items: [] }]
-      })
+      handler(
+        {},
+        {
+          schemaVersion: 1,
+          date: '2026-08-17',
+          meals: [{ mealType: 'lunch', customMealName: '', items: [] }]
+        }
+      )
     ).rejects.toThrow()
   })
 
@@ -94,14 +100,17 @@ describe('registerNutritionIpcHandlers', () => {
     )?.[1]
 
     await expect(
-      handler({}, {
-        dateFrom: '2026-08-18',
-        dateTo: '2026-08-17',
-        mealType: null,
-        sourceType: null,
-        foodId: null,
-        recipeId: null
-      })
+      handler(
+        {},
+        {
+          dateFrom: '2026-08-18',
+          dateTo: '2026-08-17',
+          mealType: null,
+          sourceType: null,
+          foodId: null,
+          recipeId: null
+        }
+      )
     ).rejects.toThrow()
   })
 })

@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -152,7 +152,9 @@ describe('NutritionPage JSON-only flow', () => {
       ]
     })
 
-    await user.type(within(dialog).getByRole('textbox', { name: 'JSON питания' }), json)
+    fireEvent.change(within(dialog).getByRole('textbox', { name: 'JSON питания' }), {
+      target: { value: json }
+    })
     expect(mocks.importMeals).not.toHaveBeenCalled()
 
     await user.click(within(dialog).getByRole('button', { name: 'Проверить' }))

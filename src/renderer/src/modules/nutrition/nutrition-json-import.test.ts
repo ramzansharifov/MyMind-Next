@@ -79,9 +79,7 @@ describe('parseNutritionMealsJson', () => {
 
   it('rejects unsupported schema versions', () => {
     expect(() =>
-      parseNutritionMealsJson(
-        JSON.stringify({ schemaVersion: 2, date: '2026-08-26', meals: [] })
-      )
+      parseNutritionMealsJson(JSON.stringify({ schemaVersion: 2, date: '2026-08-26', meals: [] }))
     ).toThrow()
   })
 
@@ -113,6 +111,8 @@ describe('parseNutritionMealsJson', () => {
   })
 
   it('rejects malformed JSON', () => {
-    expect(() => parseNutritionMealsJson('{"schemaVersion": 1,')).toThrow(/Не удалось разобрать JSON/)
+    expect(() => parseNutritionMealsJson('{"schemaVersion": 1,')).toThrow(
+      /Не удалось разобрать JSON/
+    )
   })
 })
