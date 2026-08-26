@@ -17,12 +17,14 @@ vi.mock('../services/main-operation-tracker', () => ({
 vi.mock('../repositories/nutrition.repository', () => ({
   listNutritionOverview: vi.fn(),
   createNutritionFood: vi.fn(),
+  createNutritionFoods: vi.fn(),
   updateNutritionFood: vi.fn(),
   deleteNutritionFood: vi.fn(),
   createNutritionRecipe: vi.fn(),
   updateNutritionRecipe: vi.fn(),
   deleteNutritionRecipe: vi.fn(),
   createNutritionLogEntry: vi.fn(),
+  importNutritionMeals: vi.fn(),
   updateNutritionLogEntry: vi.fn(),
   deleteNutritionLogEntry: vi.fn(),
   setNutritionWater: vi.fn(),
@@ -66,6 +68,21 @@ describe('registerNutritionIpcHandlers', () => {
         customUnit: 'serving',
         customNutrients: null,
         notes: ''
+      })
+    ).rejects.toThrow()
+  })
+
+  it('validates imported meals before they reach the repository', async () => {
+    registerNutritionIpcHandlers()
+    const handler = mocks.handle.mock.calls.find(
+      ([channel]) => channel === NUTRITION_IPC_CHANNELS.importMeals
+    )?.[1]
+
+    await expect(
+      handler({}, {
+        schemaVersion: 1,
+        date: '2026-08-17',
+        meals: [{ mealType: 'lunch', customMealName: '', items: [] }]
       })
     ).rejects.toThrow()
   })
