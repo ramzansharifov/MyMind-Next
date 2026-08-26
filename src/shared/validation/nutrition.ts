@@ -140,6 +140,54 @@ const logPayloadSchema = z
 export const createNutritionLogEntryInputSchema = logPayloadSchema
 export const updateNutritionLogEntryInputSchema = logPayloadSchema.safeExtend({ id: idSchema })
 export const deleteNutritionLogEntryInputSchema = z.object({ id: idSchema })
+
+const nutritionImportItemSchema = z.object({
+  name: z.string().trim().min(1, 'Укажите название позиции').max(180),
+  amount: z.number().finite().positive('Количество должно быть больше нуля').max(100_000),
+  unit: z.enum(NUTRITION_UNITS),
+  nutrients: nutritionValuesSchema,
+  notes: z.string().max(4000)
+})
+
+const nutritionImportMealSchema = z.object({
+  mealType: z.enum(NUTRITION_MEAL_TYPES),
+  customMealName: z.string().trim().max(80),
+  items: z
+    .array(nutritionImportItemSchema)
+    .min(1, 'В приёме пищи должна быть хотя бы одна позиция')
+    .max(100, 'В одном приёме пищи может быть не более 100 позиций')
+})
+
+export const importNutritionMealsInputSchema = z
+  .object({
+    schemaVersion: z.literal(1),
+    date: dateSchema,
+    meals: z
+      .array(nutritionImportMealSchema)
+      .min(1, 'Добавьте хотя бы один приём пищи')
+      .max(20, 'За один раз можно импортировать не более 20 приёмов пищи')
+  })
+  .superRefine((input, context) => {
+    const totalItems = input.meals.reduce((sum, meal) => sum + meal.items.length, 0)
+    if (totalItems > 300) {
+      context.addIssue({
+        code: 'custom',
+        message: 'За один раз можно импортировать не более 300 позиций',
+        path: ['meals']
+      })
+    }
+
+    input.meals.forEach((meal, index) => {
+      if (meal.mealType === 'other' && !meal.customMealName) {
+        context.addIssue({
+          code: 'custom',
+          message: 'Для другого приёма пищи укажите customMealName',
+          path: ['meals', index, 'customMealName']
+        })
+      }
+    })
+  })
+
 export const nutritionOverviewInputSchema = z.object({ date: dateSchema })
 
 export const setNutritionWaterInputSchema = z.object({
