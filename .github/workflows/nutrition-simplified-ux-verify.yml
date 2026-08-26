@@ -28,14 +28,24 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
-          path = Path('src/renderer/src/modules/nutrition/components/NutritionLogDialog.tsx')
-          text = path.read_text(encoding='utf-8')
+
+          log_dialog = Path('src/renderer/src/modules/nutrition/components/NutritionLogDialog.tsx')
+          text = log_dialog.read_text(encoding='utf-8')
           text = text.replace(
               "import { Apple, ArrowLeft, CookingPot, Plus, Search, Utensils } from 'lucide-react'",
               "import { Apple, ArrowLeft, CookingPot, Search, Utensils } from 'lucide-react'",
               1,
           )
-          path.write_text(text, encoding='utf-8')
+          log_dialog.write_text(text, encoding='utf-8')
+
+          page_test = Path('src/renderer/src/modules/nutrition/NutritionPage.test.tsx')
+          text = page_test.read_text(encoding='utf-8')
+          text = text.replace(
+              "within(dialog).getByRole('textbox', { name: 'Поиск продукта или рецепта' })",
+              "within(dialog).getByRole('searchbox', { name: 'Поиск продукта или рецепта' })",
+              1,
+          )
+          page_test.write_text(text, encoding='utf-8')
           PY
 
       - name: Install dependencies
