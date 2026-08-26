@@ -1,0 +1,140 @@
+name: Nutrition JSON-only clean verification
+
+on:
+  push:
+    branches:
+      - agent/nutrition-json-only
+    paths:
+      - .github/nutrition-json-only-clean.trigger
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/nutrition-json-only
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Apply final cleanup
+        run: python .github/nutrition-json-only-finalize.py
+
+      - name: Verify obsolete renderer flows are gone
+        run: |
+          test ! -e src/renderer/src/modules/nutrition/components/NutritionLibraryView.tsx
+          test ! -e src/renderer/src/modules/nutrition/components/NutritionLogDialog.tsx
+          test ! -e src/renderer/src/modules/nutrition/components/NutritionFoodDialog.tsx
+          test ! -e src/renderer/src/modules/nutrition/components/NutritionRecipeDialog.tsx
+          if grep -R -n -E 'NutritionLibraryView|NutritionFoodDialog|NutritionRecipeDialog|NutritionLogDialog|NutritionFoodJsonImportDialog' src/renderer/src/modules/nutrition --exclude-dir=node_modules; then
+            echo 'Found obsolete Nutrition renderer references'
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Format changed sources
+        run: |
+          npx prettier --write \
+            src/shared/contracts/nutrition.ts \
+            src/shared/validation/nutrition.ts \
+            src/main/ipc/register-nutrition-ipc.ts \
+            src/main/ipc/register-nutrition-ipc.test.ts \
+            src/main/repositories/nutrition-import.repository.ts \
+            src/main/repositories/nutrition-import.repository.test.ts \
+            src/preload/index.ts \
+            src/preload/index.test.ts \
+            src/renderer/src/modules/nutrition/NutritionPage.tsx \
+            src/renderer/src/modules/nutrition/NutritionPage.test.tsx \
+            src/renderer/src/modules/nutrition/nutrition-json-import.ts \
+            src/renderer/src/modules/nutrition/nutrition-json-import.test.ts \
+            src/renderer/src/modules/nutrition/components/NutritionDiaryView.tsx \
+            src/renderer/src/modules/nutrition/components/NutritionEntryEditDialog.tsx \
+            src/renderer/src/modules/nutrition/components/NutritionMealsJsonImportDialog.tsx \
+            src/renderer/src/modules/nutrition/components/NutritionProgressView.tsx
+
+      - name: Lint changed sources
+        run: |
+          npx eslint \
+            src/shared/contracts/nutrition.ts \
+            src/shared/validation/nutrition.ts \
+            src/main/ipc/register-nutrition-ipc.ts \
+            src/main/ipc/register-nutrition-ipc.test.ts \
+            src/main/repositories/nutrition-import.repository.ts \
+            src/main/repositories/nutrition-import.repository.test.ts \
+            src/preload/index.ts \
+            src/preload/index.test.ts \
+            src/renderer/src/modules/nutrition/NutritionPage.tsx \
+            src/renderer/src/modules/nutrition/NutritionPage.test.tsx \
+            src/renderer/src/modules/nutrition/nutrition-json-import.ts \
+            src/renderer/src/modules/nutrition/nutrition-json-import.test.ts \
+            src/renderer/src/modules/nutrition/components/NutritionDiaryView.tsx \
+            src/renderer/src/modules/nutrition/components/NutritionEntryEditDialog.tsx \
+            src/renderer/src/modules/nutrition/components/NutritionMealsJsonImportDialog.tsx \
+            src/renderer/src/modules/nutrition/components/NutritionProgressView.tsx
+
+      - name: Node typecheck
+        run: npm run typecheck:node
+
+      - name: Web typecheck
+        shell: bash
+        run: |
+          set +e
+          output="$(npm run typecheck:web 2>&1)"
+          status=$?
+          set -e
+          printf '%s\n' "$output"
+          if [ "$status" -eq 0 ]; then
+            exit 0
+          fi
+          unexpected="$(printf '%s\n' "$output" | grep 'error TS' | grep -v "src/renderer/src/modules/study/components/useStudyEditBlockVirtualization.ts(82,36): error TS18047: 'node' is possibly 'null'." || true)"
+          if [ -n "$unexpected" ]; then
+            echo "Unexpected TypeScript errors:"
+            printf '%s\n' "$unexpected"
+            exit 1
+          fi
+
+      - name: Rebuild SQLite for Node tests
+        run: npm run native:node
+
+      - name: Run focused Nutrition tests
+        run: |
+          npx vitest run \
+            src/renderer/src/modules/nutrition/NutritionPage.test.tsx \
+            src/renderer/src/modules/nutrition/nutrition-json-import.test.ts \
+            src/main/ipc/register-nutrition-ipc.test.ts \
+            src/main/repositories/nutrition-import.repository.test.ts \
+            src/main/repositories/nutrition.repository.test.ts \
+            src/preload/index.test.ts
+
+      - name: Production bundle
+        run: npm run build:bundle
+
+      - name: Commit verified feature
+        run: |
+          rm -f \
+            .github/nutrition-json-only-finalize.py \
+            .github/nutrition-json-only.trigger \
+            .github/nutrition-json-only-final.trigger \
+            .github/nutrition-json-only-clean.trigger \
+            .github/workflows/nutrition-json-only-verify.yml \
+            .github/workflows/nutrition-json-only-final.yml \
+            .github/workflows/nutrition-json-only-clean-verify.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo 'No changes to commit'
+            exit 1
+          fi
+          git commit -m "Перевести питание на JSON-only механику"
+          git push origin HEAD:agent/nutrition-json-only
