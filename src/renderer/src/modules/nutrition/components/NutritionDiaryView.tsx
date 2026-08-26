@@ -6,7 +6,6 @@ import {
   ChevronRight,
   Droplets,
   Pencil,
-  Settings2,
   Trash2
 } from 'lucide-react'
 import { useState } from 'react'
@@ -33,11 +32,11 @@ interface NutritionDiaryViewProps {
   selectedDate: string
   target: NutritionTargetRecord | null
   busy: boolean
+  showDateNavigation?: boolean
   onDateChange: (date: string) => void
   onEdit: (entry: NutritionLogEntryRecord) => void
   onDelete: (entry: NutritionLogEntryRecord) => void
   onWaterChange: (delta: number) => void
-  onEditTargets: () => void
 }
 
 const STANDARD_MEALS: Array<{ value: NutritionMealType; label: string }> = [
@@ -52,11 +51,11 @@ export function NutritionDiaryView({
   selectedDate,
   target,
   busy,
+  showDateNavigation = true,
   onDateChange,
   onEdit,
   onDelete,
-  onWaterChange,
-  onEditTargets
+  onWaterChange
 }: NutritionDiaryViewProps): React.JSX.Element {
   const nutrients = overview.day.nutrients
   const otherEntries = overview.entries.filter((entry) => entry.mealType === 'other')
@@ -64,54 +63,56 @@ export function NutritionDiaryView({
 
   return (
     <section className="mt-5 space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 shadow-[var(--app-shadow-card)]">
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            aria-label="Предыдущий день"
-            className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] hover:bg-[var(--app-control-hover)]"
-            onClick={() => onDateChange(shiftNutritionDate(selectedDate, -1))}
-          >
-            <ChevronLeft className="size-4" />
-          </button>
-          <button
-            type="button"
-            className="min-w-56 rounded-xl px-3 py-2 text-left hover:bg-[var(--app-control-hover)] max-[520px]:min-w-0"
-            onClick={() => onDateChange(nutritionLocalDateKey())}
-          >
-            <div className="text-sm font-semibold text-[var(--app-text)] capitalize">
-              {formatNutritionDate(selectedDate)}
-            </div>
-            <div className="mt-0.5 text-[11px] text-[var(--app-muted)]">
-              {selectedDate === nutritionLocalDateKey()
-                ? 'Сегодня'
-                : 'Вернуться к сегодняшнему дню'}
-            </div>
-          </button>
-          <button
-            type="button"
-            aria-label="Следующий день"
-            className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] hover:bg-[var(--app-control-hover)]"
-            onClick={() => onDateChange(shiftNutritionDate(selectedDate, 1))}
-          >
-            <ChevronRight className="size-4" />
-          </button>
+      {showDateNavigation && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 shadow-[var(--app-shadow-card)]">
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              aria-label="Предыдущий день"
+              className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] hover:bg-[var(--app-control-hover)]"
+              onClick={() => onDateChange(shiftNutritionDate(selectedDate, -1))}
+            >
+              <ChevronLeft className="size-4" />
+            </button>
+            <button
+              type="button"
+              className="min-w-56 rounded-xl px-3 py-2 text-left hover:bg-[var(--app-control-hover)] max-[520px]:min-w-0"
+              onClick={() => onDateChange(nutritionLocalDateKey())}
+            >
+              <div className="text-sm font-semibold text-[var(--app-text)] capitalize">
+                {formatNutritionDate(selectedDate)}
+              </div>
+              <div className="mt-0.5 text-[11px] text-[var(--app-muted)]">
+                {selectedDate === nutritionLocalDateKey()
+                  ? 'Сегодня'
+                  : 'Вернуться к сегодняшнему дню'}
+              </div>
+            </button>
+            <button
+              type="button"
+              aria-label="Следующий день"
+              className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] hover:bg-[var(--app-control-hover)]"
+              onClick={() => onDateChange(shiftNutritionDate(selectedDate, 1))}
+            >
+              <ChevronRight className="size-4" />
+            </button>
+          </div>
+          <AppDateField
+            value={selectedDate}
+            ariaLabel="Дата дневника питания"
+            className="w-[155px]"
+            onChange={onDateChange}
+          />
         </div>
-        <AppDateField
-          value={selectedDate}
-          ariaLabel="Дата дневника питания"
-          className="w-[155px]"
-          onChange={onDateChange}
-        />
-      </div>
+      )}
 
       <DaySummary
         nutrients={nutrients}
         target={target}
         waterMl={overview.day.waterMl}
         busy={busy}
+        label={showDateNavigation ? 'За день' : 'Сегодня'}
         onWaterChange={onWaterChange}
-        onEditTargets={onEditTargets}
       />
 
       {!hasEntries && (
@@ -160,40 +161,31 @@ function DaySummary({
   target,
   waterMl,
   busy,
-  onWaterChange,
-  onEditTargets
+  label,
+  onWaterChange
 }: {
   nutrients: NutritionValues
   target: NutritionTargetRecord | null
   waterMl: number
   busy: boolean
+  label: string
   onWaterChange: (delta: number) => void
-  onEditTargets: () => void
 }): React.JSX.Element {
   const [detailsOpen, setDetailsOpen] = useState(false)
   const calorieTarget = target?.calories ?? null
 
   return (
     <article className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-5 shadow-[var(--app-shadow-card)]">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <div className="text-xs font-medium text-[var(--app-muted)]">За день</div>
-          <div className="mt-1 flex items-baseline gap-2">
-            <strong className="text-3xl font-semibold tracking-tight text-[var(--app-text)]">
-              {formatNutritionNumber(nutrients.calories, 0)}
-            </strong>
-            <span className="text-sm text-[var(--app-muted)]">
-              {calorieTarget ? `/ ${formatNutritionNumber(calorieTarget, 0)} ккал` : 'ккал'}
-            </span>
-          </div>
+      <div>
+        <div className="text-xs font-medium text-[var(--app-muted)]">{label}</div>
+        <div className="mt-1 flex items-baseline gap-2">
+          <strong className="text-3xl font-semibold tracking-tight text-[var(--app-text)]">
+            {formatNutritionNumber(nutrients.calories, 0)}
+          </strong>
+          <span className="text-sm text-[var(--app-muted)]">
+            {calorieTarget ? `/ ${formatNutritionNumber(calorieTarget, 0)} ккал` : 'ккал'}
+          </span>
         </div>
-        <button
-          type="button"
-          className="inline-flex h-9 items-center gap-2 rounded-xl px-3 text-xs font-medium text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-          onClick={onEditTargets}
-        >
-          <Settings2 className="size-4" /> Настроить цели
-        </button>
       </div>
 
       <div className="mt-4 h-2 overflow-hidden rounded-full bg-[var(--app-workspace)]">
