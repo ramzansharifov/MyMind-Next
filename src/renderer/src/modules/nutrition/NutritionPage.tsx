@@ -1,4 +1,12 @@
-import { BarChart3, Braces, Utensils, X, type LucideIcon } from 'lucide-react'
+import {
+  BarChart3,
+  Braces,
+  CalendarDays,
+  Target,
+  Utensils,
+  X,
+  type LucideIcon
+} from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import type {
@@ -18,22 +26,24 @@ import { StandardModulePage } from '../../shared/ui/StandardModulePage'
 import { nutritionClient } from './api/nutrition-client'
 import { NutritionDiaryView } from './components/NutritionDiaryView'
 import { NutritionEntryEditDialog } from './components/NutritionEntryEditDialog'
+import { NutritionGoalView } from './components/NutritionGoalView'
 import { NutritionMealsJsonImportDialog } from './components/NutritionMealsJsonImportDialog'
 import {
   NutritionProgressView,
   type NutritionProgressPeriod
 } from './components/NutritionProgressView'
-import { NutritionTargetsDialog } from './components/NutritionTargetsDialog'
 import {
   nutritionDaysAgoKey,
   nutritionErrorMessage,
   nutritionLocalDateKey
 } from './nutrition-utils'
 
-type NutritionTab = 'diary' | 'progress'
+type NutritionTab = 'today' | 'diary' | 'goal' | 'progress'
 
 const TABS: Array<{ id: NutritionTab; label: string; icon: LucideIcon }> = [
-  { id: 'diary', label: 'Дневник', icon: Utensils },
+  { id: 'today', label: 'Сегодня', icon: Utensils },
+  { id: 'diary', label: 'Дневник', icon: CalendarDays },
+  { id: 'goal', label: 'Цель', icon: Target },
   { id: 'progress', label: 'Прогресс', icon: BarChart3 }
 ]
 
@@ -46,12 +56,13 @@ export function NutritionPage({
   resourceId,
   onResourceHandled
 }: NutritionPageProps): React.JSX.Element {
-  const [tab, setTab] = useState<NutritionTab>('diary')
-  const [selectedDate, setSelectedDate] = useState(nutritionLocalDateKey())
+  const [tab, setTab] = useState<NutritionTab>('today')
+  const [diaryDate, setDiaryDate] = useState(nutritionLocalDateKey())
+  const todayDate = nutritionLocalDateKey()
+  const overviewDate = tab === 'today' ? todayDate : diaryDate
   const [overview, setOverview] = useState<NutritionOverview | null>(null)
   const [jsonDialogOpen, setJsonDialogOpen] = useState(false)
   const [editingLog, setEditingLog] = useState<NutritionLogEntryRecord | null>(null)
-  const [targetsDialogOpen, setTargetsDialogOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<NutritionLogEntryRecord | null>(null)
 
   const [isLoading, setIsLoading] = useState(true)
@@ -70,7 +81,7 @@ export function NutritionPage({
 
   const loadOverview = useCallback(async (): Promise<void> => {
     try {
-      const nextOverview = await nutritionClient.listOverview({ date: selectedDate })
+      const nextOverview = await nutritionClient.listOverview({ date: overviewDate })
       setOverview(nextOverview)
       setError(null)
     } catch (reason) {
@@ -78,7 +89,7 @@ export function NutritionPage({
     } finally {
       setIsLoading(false)
     }
-  }, [selectedDate])
+  }, [overviewDate])
 
   useEffect(() => {
     const timerId = window.setTimeout(() => {
@@ -96,8 +107,13 @@ export function NutritionPage({
       handledResourceRef.current = resourceId
       const entry = overview.entries.find((candidate) => candidate.id === resourceId)
       if (entry) {
-        setTab('diary')
         setEditingLog(entry)
+        if (entry.date === nutritionLocalDateKey()) {
+          setTab('today')
+        } else {
+          setDiaryDate(entry.date)
+          setTab('diary')
+        }
       }
       onResourceHandled?.()
     }, 0)
@@ -127,10 +143,14 @@ export function NutritionPage({
     try {
       const result = await nutritionClient.importMeals(input)
       setImportNotice(`Добавлено позиций: ${result.itemCount}. Приёмов пищи: ${result.mealCount}.`)
-      if (input.date === selectedDate) {
+
+      if (input.date === overviewDate) {
         await loadOverview()
+      } else if (input.date === nutritionLocalDateKey()) {
+        setTab('today')
       } else {
-        setSelectedDate(input.date)
+        setDiaryDate(input.date)
+        setTab('diary')
       }
       return result
     } catch (reason) {
@@ -156,7 +176,7 @@ export function NutritionPage({
     setIsBusy(true)
     setError(null)
     try {
-      const day = await nutritionClient.setWater({ date: selectedDate, waterMl })
+      const day = await nutritionClient.setWater({ date: overview.day.date, waterMl })
       setOverview((current) => (current ? { ...current, day } : current))
     } catch (reason) {
       setError(nutritionErrorMessage(reason))
@@ -222,14 +242,14 @@ export function NutritionPage({
     return (
       <StandardModulePage>
         <div className="flex min-h-72 items-center justify-center text-sm text-[var(--app-muted)]">
-          Загружаем дневник питания…
+          Загружаем питание…
         </div>
       </StandardModulePage>
     )
   }
 
   const headerAction =
-    tab === 'diary' ? (
+    tab === 'today' || tab === 'diary' ? (
       <button
         type="button"
         className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-400"
@@ -244,7 +264,7 @@ export function NutritionPage({
       <ModuleHeader
         icon={Utensils}
         title="Питание"
-        description="GPT формирует данные о еде, MyMind хранит их, считает КБЖУ и показывает прогресс."
+        description="Сегодняшнее питание, дневник по датам, общая цель и динамика прогресса."
         actions={headerAction}
       >
         <div className="flex gap-1 overflow-x-auto rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-1">
@@ -305,17 +325,42 @@ export function NutritionPage({
         </div>
       )}
 
-      {tab === 'diary' && (
+      {tab === 'today' && (
         <NutritionDiaryView
           overview={overview}
-          selectedDate={selectedDate}
-          target={overview.day.target}
+          selectedDate={todayDate}
+          target={overview.currentTarget}
           busy={isBusy}
-          onDateChange={setSelectedDate}
+          showDateNavigation={false}
+          onDateChange={(date) => {
+            setDiaryDate(date)
+            setTab('diary')
+          }}
           onEdit={setEditingLog}
           onDelete={setDeleteTarget}
           onWaterChange={(delta) => void changeWater(delta)}
-          onEditTargets={() => setTargetsDialogOpen(true)}
+        />
+      )}
+
+      {tab === 'diary' && (
+        <NutritionDiaryView
+          overview={overview}
+          selectedDate={diaryDate}
+          target={overview.currentTarget}
+          busy={isBusy}
+          onDateChange={setDiaryDate}
+          onEdit={setEditingLog}
+          onDelete={setDeleteTarget}
+          onWaterChange={(delta) => void changeWater(delta)}
+        />
+      )}
+
+      {tab === 'goal' && (
+        <NutritionGoalView
+          key={overview.currentTarget?.id ?? 'nutrition-goal-empty'}
+          target={overview.currentTarget}
+          busy={isBusy}
+          onSave={saveTargets}
         />
       )}
 
@@ -343,7 +388,7 @@ export function NutritionPage({
       <NutritionMealsJsonImportDialog
         open={jsonDialogOpen}
         busy={isBusy}
-        selectedDate={selectedDate}
+        selectedDate={tab === 'today' ? todayDate : diaryDate}
         onOpenChange={setJsonDialogOpen}
         onImport={importMeals}
       />
@@ -356,14 +401,6 @@ export function NutritionPage({
           if (!open) setEditingLog(null)
         }}
         onSave={saveLog}
-      />
-
-      <NutritionTargetsDialog
-        open={targetsDialogOpen}
-        target={overview.currentTarget}
-        busy={isBusy}
-        onOpenChange={setTargetsDialogOpen}
-        onSave={saveTargets}
       />
 
       <DeleteConfirmationDialog
