@@ -9,6 +9,7 @@ import {
   deleteNutritionFoodInputSchema,
   deleteNutritionLogEntryInputSchema,
   deleteNutritionRecipeInputSchema,
+  importNutritionMealsInputSchema,
   nutritionOverviewInputSchema,
   nutritionReportInputSchema,
   setNutritionTargetsInputSchema,
@@ -26,6 +27,7 @@ import {
   deleteNutritionLogEntry,
   deleteNutritionRecipe,
   getNutritionReport,
+  importNutritionMeals,
   listNutritionOverview,
   setNutritionTargets,
   setNutritionWater,
@@ -82,6 +84,11 @@ export function registerNutritionIpcHandlers(): void {
   ipcMain.handle(NUTRITION_IPC_CHANNELS.createLogEntry, (_event, rawInput: unknown) =>
     mainOperationTracker.run(() =>
       createNutritionLogEntry(createNutritionLogEntryInputSchema.parse(rawInput))
+    )
+  )
+  ipcMain.handle(NUTRITION_IPC_CHANNELS.importMeals, (_event, rawInput: unknown) =>
+    mainOperationTracker.run(() =>
+      importNutritionMeals(importNutritionMealsInputSchema.parse(rawInput))
     )
   )
   ipcMain.handle(NUTRITION_IPC_CHANNELS.updateLogEntry, (_event, rawInput: unknown) =>
