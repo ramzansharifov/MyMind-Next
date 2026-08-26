@@ -196,7 +196,6 @@ export const setNutritionWaterInputSchema = z.object({
 })
 
 export const setNutritionTargetsInputSchema = z.object({
-  effectiveFrom: dateSchema,
   calories: targetSchema(100_000),
   proteinG: targetSchema(10_000),
   fatG: targetSchema(10_000),

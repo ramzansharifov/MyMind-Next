@@ -31,7 +31,7 @@ function todayKey(): string {
 
 const target: NutritionTargetRecord = {
   id: 'target-1',
-  effectiveFrom: '2026-08-01',
+  effectiveFrom: '0001-01-01',
   effectiveTo: null,
   calories: 2200,
   proteinG: 150,
@@ -109,18 +109,59 @@ beforeEach(() => {
     waterMl
   }))
   mocks.updateLogEntry.mockResolvedValue(chickenEntry)
+  mocks.setTargets.mockResolvedValue(target)
 })
 
 describe('NutritionPage JSON-only flow', () => {
-  it('exposes only diary and progress workspaces', async () => {
+  it('exposes today, diary, goal and progress workspaces', async () => {
     render(<NutritionPage />)
 
     expect(await screen.findByRole('heading', { name: 'Питание' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Сегодня' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Дневник' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Цель' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Прогресс' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Библиотека' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Продукты' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Рецепты' })).not.toBeInTheDocument()
+  })
+
+  it('keeps today fixed and date navigation inside diary', async () => {
+    const user = userEvent.setup()
+    render(<NutritionPage />)
+
+    await screen.findByRole('heading', { name: 'Питание' })
+    expect(screen.queryByLabelText('Дата дневника питания')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Дневник' }))
+    expect(await screen.findByLabelText('Дата дневника питания')).toBeInTheDocument()
+  })
+
+  it('edits one global goal without choosing an effective date', async () => {
+    const user = userEvent.setup()
+    render(<NutritionPage />)
+
+    await screen.findByRole('heading', { name: 'Питание' })
+    await user.click(screen.getByRole('button', { name: 'Цель' }))
+
+    expect(await screen.findByRole('heading', { name: 'Общая цель питания' })).toBeInTheDocument()
+    expect(screen.queryByText('Действует с')).not.toBeInTheDocument()
+
+    const caloriesInput = screen.getByRole('spinbutton', { name: /Калории/ })
+    await user.clear(caloriesInput)
+    await user.type(caloriesInput, '2300')
+    await user.click(screen.getByRole('button', { name: 'Сохранить цель' }))
+
+    await waitFor(() => {
+      expect(mocks.setTargets).toHaveBeenCalledWith({
+        calories: 2300,
+        proteinG: 150,
+        fatG: 70,
+        carbsG: 250,
+        fiberG: 30,
+        waterMl: 2500
+      })
+    })
   })
 
   it('previews JSON before importing the whole meal transaction', async () => {
