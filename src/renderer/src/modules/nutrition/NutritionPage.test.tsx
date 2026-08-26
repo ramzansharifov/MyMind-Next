@@ -1,23 +1,17 @@
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
-  NutritionFoodRecord,
+  ImportNutritionMealsInput,
+  NutritionLogEntryRecord,
   NutritionOverview,
   NutritionTargetRecord
 } from '../../../../shared/contracts/nutrition'
 
 const mocks = vi.hoisted(() => ({
   listOverview: vi.fn(),
-  createFood: vi.fn(),
-  createFoods: vi.fn(),
-  updateFood: vi.fn(),
-  deleteFood: vi.fn(),
-  createRecipe: vi.fn(),
-  updateRecipe: vi.fn(),
-  deleteRecipe: vi.fn(),
-  createLogEntry: vi.fn(),
+  importMeals: vi.fn(),
   updateLogEntry: vi.fn(),
   deleteLogEntry: vi.fn(),
   setWater: vi.fn(),
@@ -48,45 +42,51 @@ const target: NutritionTargetRecord = {
   createdAt: 1
 }
 
-const chicken: NutritionFoodRecord = {
-  id: 'food-1',
-  name: 'Куриная грудка',
-  brand: '',
-  category: 'protein',
-  baseAmount: 100,
-  baseUnit: 'g',
+const chickenEntry: NutritionLogEntryRecord = {
+  id: 'entry-1',
+  date: todayKey(),
+  mealType: 'lunch',
+  customMealName: '',
+  sourceType: 'custom',
+  sourceId: null,
+  title: 'Куриная грудка',
+  amount: 200,
+  unit: 'g',
   nutrients: {
-    calories: 165,
-    proteinG: 31,
-    fatG: 3.6,
+    calories: 330,
+    proteinG: 62,
+    fatG: 7.2,
     carbsG: 0,
     fiberG: 0,
     sugarG: 0,
-    sodiumMg: 74
+    sodiumMg: 148
   },
   notes: '',
   createdAt: 1,
   updatedAt: 1
 }
 
-function overview(): NutritionOverview {
+function overview(entries: NutritionLogEntryRecord[] = []): NutritionOverview {
   const date = todayKey()
   return {
     date,
-    foods: [chicken],
+    foods: [],
     recipes: [],
-    entries: [],
+    entries,
     day: {
       date,
-      nutrients: {
-        calories: 0,
-        proteinG: 0,
-        fatG: 0,
-        carbsG: 0,
-        fiberG: 0,
-        sugarG: 0,
-        sodiumMg: 0
-      },
+      nutrients: entries.reduce(
+        (sum, entry) => ({
+          calories: sum.calories + entry.nutrients.calories,
+          proteinG: sum.proteinG + entry.nutrients.proteinG,
+          fatG: sum.fatG + entry.nutrients.fatG,
+          carbsG: sum.carbsG + entry.nutrients.carbsG,
+          fiberG: sum.fiberG + entry.nutrients.fiberG,
+          sugarG: sum.sugarG + entry.nutrients.sugarG,
+          sodiumMg: sum.sodiumMg + entry.nutrients.sodiumMg
+        }),
+        { calories: 0, proteinG: 0, fatG: 0, carbsG: 0, fiberG: 0, sugarG: 0, sodiumMg: 0 }
+      ),
       waterMl: 500,
       target
     },
@@ -97,94 +97,105 @@ function overview(): NutritionOverview {
 beforeEach(() => {
   vi.clearAllMocks()
   mocks.listOverview.mockResolvedValue(overview())
-  mocks.createFoods.mockResolvedValue({ created: [chicken], skippedNames: [] })
-  mocks.createLogEntry.mockResolvedValue(undefined)
+  mocks.importMeals.mockImplementation(async (input: ImportNutritionMealsInput) => ({
+    date: input.date,
+    mealCount: input.meals.length,
+    itemCount: input.meals.reduce((sum, meal) => sum + meal.items.length, 0),
+    created: []
+  }))
   mocks.setWater.mockImplementation(async ({ date, waterMl }) => ({
     ...overview().day,
     date,
     waterMl
   }))
+  mocks.updateLogEntry.mockResolvedValue(chickenEntry)
 })
 
-describe('NutritionPage', () => {
-  it('keeps only the three simple top-level workspaces', async () => {
+describe('NutritionPage JSON-only flow', () => {
+  it('exposes only diary and progress workspaces', async () => {
     render(<NutritionPage />)
 
     expect(await screen.findByRole('heading', { name: 'Питание' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Дневник' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Библиотека' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Прогресс' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Библиотека' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Продукты' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Рецепты' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Цели' })).not.toBeInTheDocument()
   })
 
-  it('shows products in one library and keeps JSON import in the overflow menu', async () => {
+  it('previews JSON before importing the whole meal transaction', async () => {
     const user = userEvent.setup()
     render(<NutritionPage />)
 
     await screen.findByRole('heading', { name: 'Питание' })
-    await user.click(screen.getByRole('button', { name: 'Библиотека' }))
-
-    expect(screen.getByText('Куриная грудка')).toBeInTheDocument()
-    expect(screen.getByText(/165 ккал/)).toBeInTheDocument()
-
-    await user.click(screen.getByRole('button', { name: 'Ещё действия библиотеки' }))
-    await user.click(await screen.findByText('Импорт из JSON'))
+    await user.click(screen.getByRole('button', { name: 'Добавить из JSON' }))
 
     const dialog = screen.getByRole('dialog')
-    const textarea = within(dialog).getByRole('textbox', { name: 'JSON продуктов' })
-    await user.click(textarea)
-    await user.paste(
-      '[{"name":"Картофель","category":"vegetables","calories":77,"proteinG":2,"fatG":0.1,"carbsG":17.5}]'
-    )
-    await user.click(within(dialog).getByRole('button', { name: 'Добавить' }))
+    const json = JSON.stringify({
+      schemaVersion: 1,
+      date: todayKey(),
+      meals: [
+        {
+          mealType: 'lunch',
+          items: [
+            {
+              name: 'Плов',
+              amount: 250,
+              unit: 'g',
+              calories: 575,
+              proteinG: 17,
+              fatG: 24,
+              carbsG: 73
+            }
+          ]
+        }
+      ]
+    })
+
+    fireEvent.change(within(dialog).getByRole('textbox', { name: 'JSON питания' }), {
+      target: { value: json }
+    })
+    expect(mocks.importMeals).not.toHaveBeenCalled()
+
+    await user.click(within(dialog).getByRole('button', { name: 'Проверить' }))
+    expect(within(dialog).getByText('Плов')).toBeInTheDocument()
+    expect(within(dialog).getAllByText(/575 ккал/).length).toBeGreaterThan(0)
+    expect(mocks.importMeals).not.toHaveBeenCalled()
+
+    await user.click(within(dialog).getByRole('button', { name: 'Добавить (1)' }))
 
     await waitFor(() => {
-      expect(mocks.createFoods).toHaveBeenCalledTimes(1)
-    })
-    expect(screen.getByRole('status')).toHaveTextContent('Добавлено продуктов: 1')
-  })
-
-  it('adds food through one unified search without asking for the source type', async () => {
-    const user = userEvent.setup()
-    render(<NutritionPage />)
-
-    await screen.findByRole('heading', { name: 'Питание' })
-    await user.click(screen.getByRole('button', { name: 'Добавить еду' }))
-
-    const dialog = screen.getByRole('dialog')
-    expect(
-      within(dialog).getByRole('searchbox', { name: 'Поиск продукта или рецепта' })
-    ).toBeInTheDocument()
-    expect(within(dialog).queryByLabelText('Тип записи')).not.toBeInTheDocument()
-
-    await user.click(within(dialog).getByRole('button', { name: /Куриная грудка/ }))
-    await user.click(within(dialog).getByRole('button', { name: 'Добавить' }))
-
-    await waitFor(() => {
-      expect(mocks.createLogEntry).toHaveBeenCalledWith(
-        expect.objectContaining({
-          date: todayKey(),
-          sourceType: 'food',
-          sourceId: chicken.id,
-          amount: 100
-        })
-      )
+      expect(mocks.importMeals).toHaveBeenCalledWith({
+        schemaVersion: 1,
+        date: todayKey(),
+        meals: [
+          {
+            mealType: 'lunch',
+            customMealName: '',
+            items: [
+              {
+                name: 'Плов',
+                amount: 250,
+                unit: 'g',
+                nutrients: {
+                  calories: 575,
+                  proteinG: 17,
+                  fatG: 24,
+                  carbsG: 73,
+                  fiberG: 0,
+                  sugarG: 0,
+                  sodiumMg: 0
+                },
+                notes: ''
+              }
+            ]
+          }
+        ]
+      })
     })
   })
 
-  it('keeps goals available from the compact day summary', async () => {
-    const user = userEvent.setup()
-    render(<NutritionPage />)
-
-    await screen.findByRole('heading', { name: 'Питание' })
-    await user.click(screen.getByRole('button', { name: 'Настроить цели' }))
-
-    expect(screen.getByRole('dialog')).toBeInTheDocument()
-  })
-
-  it('updates water for the currently selected day', async () => {
+  it('keeps water as a direct mechanical action', async () => {
     const user = userEvent.setup()
     render(<NutritionPage />)
 
@@ -195,5 +206,19 @@ describe('NutritionPage', () => {
       expect(mocks.setWater).toHaveBeenCalledWith({ date: todayKey(), waterMl: 750 })
     })
     expect(screen.getByText('750 мл / 2500 мл')).toBeInTheDocument()
+  })
+
+  it('allows correcting an imported snapshot manually but has no manual create flow', async () => {
+    const user = userEvent.setup()
+    mocks.listOverview.mockResolvedValue(overview([chickenEntry]))
+    render(<NutritionPage />)
+
+    await screen.findByText('Куриная грудка')
+    expect(screen.queryByRole('button', { name: /Добавить в/ })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Изменить «Куриная грудка»' }))
+    const dialog = screen.getByRole('dialog')
+    expect(within(dialog).getByRole('heading', { name: 'Изменить запись' })).toBeInTheDocument()
+    expect(within(dialog).getByDisplayValue('Куриная грудка')).toBeInTheDocument()
   })
 })

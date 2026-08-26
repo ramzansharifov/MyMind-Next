@@ -159,6 +159,23 @@ describe('preload API contract', () => {
       'deleteProgressPhoto',
       'getReport'
     ])
+    expect(Object.keys(api.nutrition)).toEqual([
+      'listOverview',
+      'createFood',
+      'createFoods',
+      'updateFood',
+      'deleteFood',
+      'createRecipe',
+      'updateRecipe',
+      'deleteRecipe',
+      'createLogEntry',
+      'importMeals',
+      'updateLogEntry',
+      'deleteLogEntry',
+      'setWater',
+      'setTargets',
+      'getReport'
+    ])
     expect(Object.keys(api.finance)).toEqual([
       'getSettings',
       'setBaseCurrency',
@@ -310,6 +327,61 @@ describe('preload API contract', () => {
       programId: null,
       exerciseId: null,
       muscleGroup: null
+    })
+
+    await api.nutrition.importMeals({
+      schemaVersion: 1,
+      date: '2026-08-26',
+      meals: [
+        {
+          mealType: 'lunch',
+          customMealName: '',
+          items: [
+            {
+              name: 'Плов',
+              amount: 250,
+              unit: 'g',
+              nutrients: {
+                calories: 575,
+                proteinG: 17,
+                fatG: 24,
+                carbsG: 73,
+                fiberG: 0,
+                sugarG: 0,
+                sodiumMg: 0
+              },
+              notes: ''
+            }
+          ]
+        }
+      ]
+    })
+    expect(electronMocks.invoke).toHaveBeenCalledWith('nutrition:import-meals', {
+      schemaVersion: 1,
+      date: '2026-08-26',
+      meals: [
+        {
+          mealType: 'lunch',
+          customMealName: '',
+          items: [
+            {
+              name: 'Плов',
+              amount: 250,
+              unit: 'g',
+              nutrients: {
+                calories: 575,
+                proteinG: 17,
+                fatG: 24,
+                carbsG: 73,
+                fiberG: 0,
+                sugarG: 0,
+                sodiumMg: 0
+              },
+              notes: ''
+            }
+          ]
+        }
+      ]
     })
 
     await api.finance.createAccount({

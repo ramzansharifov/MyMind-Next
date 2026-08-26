@@ -6,6 +6,7 @@ import type {
   DeleteNutritionFoodInput,
   DeleteNutritionLogEntryInput,
   DeleteNutritionRecipeInput,
+  ImportNutritionMealsInput,
   NutritionOverviewInput,
   NutritionReportInput,
   SetNutritionTargetsInput,
@@ -26,6 +27,7 @@ export const nutritionClient = {
   deleteRecipe: (input: DeleteNutritionRecipeInput) => window.api.nutrition.deleteRecipe(input),
   createLogEntry: (input: CreateNutritionLogEntryInput) =>
     window.api.nutrition.createLogEntry(input),
+  importMeals: (input: ImportNutritionMealsInput) => window.api.nutrition.importMeals(input),
   updateLogEntry: (input: UpdateNutritionLogEntryInput) =>
     window.api.nutrition.updateLogEntry(input),
   deleteLogEntry: (input: DeleteNutritionLogEntryInput) =>

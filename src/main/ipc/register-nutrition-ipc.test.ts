@@ -17,12 +17,14 @@ vi.mock('../services/main-operation-tracker', () => ({
 vi.mock('../repositories/nutrition.repository', () => ({
   listNutritionOverview: vi.fn(),
   createNutritionFood: vi.fn(),
+  createNutritionFoods: vi.fn(),
   updateNutritionFood: vi.fn(),
   deleteNutritionFood: vi.fn(),
   createNutritionRecipe: vi.fn(),
   updateNutritionRecipe: vi.fn(),
   deleteNutritionRecipe: vi.fn(),
   createNutritionLogEntry: vi.fn(),
+  importNutritionMeals: vi.fn(),
   updateNutritionLogEntry: vi.fn(),
   deleteNutritionLogEntry: vi.fn(),
   setNutritionWater: vi.fn(),
@@ -55,18 +57,39 @@ describe('registerNutritionIpcHandlers', () => {
     )?.[1]
 
     await expect(
-      handler({}, {
-        date: '2026-08-17',
-        mealType: 'lunch',
-        customMealName: '',
-        sourceType: 'custom',
-        sourceId: null,
-        amount: 0,
-        customTitle: '',
-        customUnit: 'serving',
-        customNutrients: null,
-        notes: ''
-      })
+      handler(
+        {},
+        {
+          date: '2026-08-17',
+          mealType: 'lunch',
+          customMealName: '',
+          sourceType: 'custom',
+          sourceId: null,
+          amount: 0,
+          customTitle: '',
+          customUnit: 'serving',
+          customNutrients: null,
+          notes: ''
+        }
+      )
+    ).rejects.toThrow()
+  })
+
+  it('validates imported meals before they reach the repository', async () => {
+    registerNutritionIpcHandlers()
+    const handler = mocks.handle.mock.calls.find(
+      ([channel]) => channel === NUTRITION_IPC_CHANNELS.importMeals
+    )?.[1]
+
+    await expect(
+      handler(
+        {},
+        {
+          schemaVersion: 1,
+          date: '2026-08-17',
+          meals: [{ mealType: 'lunch', customMealName: '', items: [] }]
+        }
+      )
     ).rejects.toThrow()
   })
 
@@ -77,14 +100,17 @@ describe('registerNutritionIpcHandlers', () => {
     )?.[1]
 
     await expect(
-      handler({}, {
-        dateFrom: '2026-08-18',
-        dateTo: '2026-08-17',
-        mealType: null,
-        sourceType: null,
-        foodId: null,
-        recipeId: null
-      })
+      handler(
+        {},
+        {
+          dateFrom: '2026-08-18',
+          dateTo: '2026-08-17',
+          mealType: null,
+          sourceType: null,
+          foodId: null,
+          recipeId: null
+        }
+      )
     ).rejects.toThrow()
   })
 })

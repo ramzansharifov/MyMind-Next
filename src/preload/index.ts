@@ -297,6 +297,7 @@ const api: MyMindApi = {
     updateRecipe: (input) => ipcRenderer.invoke(NUTRITION_IPC_CHANNELS.updateRecipe, input),
     deleteRecipe: (input) => ipcRenderer.invoke(NUTRITION_IPC_CHANNELS.deleteRecipe, input),
     createLogEntry: (input) => ipcRenderer.invoke(NUTRITION_IPC_CHANNELS.createLogEntry, input),
+    importMeals: (input) => ipcRenderer.invoke(NUTRITION_IPC_CHANNELS.importMeals, input),
     updateLogEntry: (input) => ipcRenderer.invoke(NUTRITION_IPC_CHANNELS.updateLogEntry, input),
     deleteLogEntry: (input) => ipcRenderer.invoke(NUTRITION_IPC_CHANNELS.deleteLogEntry, input),
     setWater: (input) => ipcRenderer.invoke(NUTRITION_IPC_CHANNELS.setWater, input),
