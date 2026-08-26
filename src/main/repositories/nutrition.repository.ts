@@ -125,6 +125,7 @@ const LOG_SELECT = `SELECT id, date, meal_type, custom_meal_name, source_type, s
   FROM nutrition_log_entries`
 const TARGET_SELECT = `SELECT id, effective_from, effective_to, calories_milli, protein_milli_g,
   fat_milli_g, carbs_milli_g, fiber_milli_g, water_ml, created_at FROM nutrition_targets`
+const GLOBAL_TARGET_EFFECTIVE_FROM = '0001-01-01'
 
 const ZERO_NUTRIENTS: NutritionValues = {
   calories: 0,
@@ -329,16 +330,23 @@ function requireLog(id: string): NutritionLogEntryRecord {
   return mapLog(row)
 }
 
-function getTargetForDate(date: string): NutritionTargetRecord | null {
-  const row = getSqlite()
+function getGlobalTarget(): NutritionTargetRecord | null {
+  const db = getSqlite()
+  const today = localDateKey()
+  const activeRow = db
     .prepare(
       `${TARGET_SELECT} WHERE effective_from <= ?
        AND (effective_to IS NULL OR effective_to >= ?)
-       ORDER BY effective_from DESC LIMIT 1`
+       ORDER BY effective_from DESC, created_at DESC LIMIT 1`
     )
-    .get(date, date) as TargetRow | undefined
+    .get(today, today) as TargetRow | undefined
 
-  return row ? mapTarget(row) : null
+  if (activeRow) return mapTarget(activeRow)
+
+  const latestRow = db
+    .prepare(`${TARGET_SELECT} ORDER BY effective_from DESC, created_at DESC LIMIT 1`)
+    .get() as TargetRow | undefined
+  return latestRow ? mapTarget(latestRow) : null
 }
 
 function getWater(date: string): number {
@@ -362,7 +370,7 @@ function makeDaySummary(date: string): NutritionDaySummary {
     date,
     nutrients: sumNutrients(entries),
     waterMl: getWater(date),
-    target: getTargetForDate(date)
+    target: getGlobalTarget()
   }
 }
 
@@ -373,14 +381,18 @@ export function listNutritionOverview(date: string): NutritionOverview {
   const recipes = (
     getSqlite().prepare(`${RECIPE_SELECT} ORDER BY name COLLATE NOCASE ASC`).all() as RecipeRow[]
   ).map(mapRecipe)
+  const currentTarget = getGlobalTarget()
 
   return {
     date,
     foods,
     recipes,
     entries: listEntriesForDate(date),
-    day: makeDaySummary(date),
-    currentTarget: getTargetForDate(localDateKey())
+    day: {
+      ...makeDaySummary(date),
+      target: currentTarget
+    },
+    currentTarget
   }
 }
 
@@ -658,49 +670,23 @@ export function setNutritionWater(input: SetNutritionWaterInput): NutritionDaySu
   return makeDaySummary(input.date)
 }
 
-function previousDate(date: string): string {
-  const value = new Date(`${date}T12:00:00Z`)
-  value.setUTCDate(value.getUTCDate() - 1)
-  return value.toISOString().slice(0, 10)
-}
-
 export function setNutritionTargets(input: SetNutritionTargetsInput): NutritionTargetRecord {
   const db = getSqlite()
   const id = randomUUID()
   const now = Date.now()
 
   db.transaction(() => {
-    const sameDate = db
-      .prepare(`${TARGET_SELECT} WHERE effective_from = ? LIMIT 1`)
-      .get(input.effectiveFrom) as TargetRow | undefined
-    if (sameDate) {
-      db.prepare('DELETE FROM nutrition_targets WHERE id = ?').run(sameDate.id)
-    }
-
-    const previous = db
-      .prepare(`${TARGET_SELECT} WHERE effective_from < ? ORDER BY effective_from DESC LIMIT 1`)
-      .get(input.effectiveFrom) as TargetRow | undefined
-    if (previous) {
-      db.prepare('UPDATE nutrition_targets SET effective_to = ? WHERE id = ?').run(
-        previousDate(input.effectiveFrom),
-        previous.id
-      )
-    }
-
-    const next = db
-      .prepare(`${TARGET_SELECT} WHERE effective_from > ? ORDER BY effective_from ASC LIMIT 1`)
-      .get(input.effectiveFrom) as TargetRow | undefined
-    const effectiveTo = next ? previousDate(next.effective_from) : null
-
+    // `nutrition_targets` historically stored dated periods. Keep the table shape for
+    // local-database compatibility, but collapse writes to one row that applies globally.
+    db.prepare('DELETE FROM nutrition_targets').run()
     db.prepare(
       `INSERT INTO nutrition_targets (
         id, effective_from, effective_to, calories_milli, protein_milli_g, fat_milli_g,
         carbs_milli_g, fiber_milli_g, water_ml, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ) VALUES (?, ?, NULL, ?, ?, ?, ?, ?, ?, ?)`
     ).run(
       id,
-      input.effectiveFrom,
-      effectiveTo,
+      GLOBAL_TARGET_EFFECTIVE_FROM,
       input.calories === null ? null : toMilli(input.calories),
       input.proteinG === null ? null : toMilli(input.proteinG),
       input.fatG === null ? null : toMilli(input.fatG),
@@ -777,17 +763,15 @@ export function getNutritionReport(input: NutritionReportInput): NutritionReport
     .prepare('SELECT date, water_ml FROM nutrition_water_days WHERE date >= ? AND date <= ?')
     .all(input.dateFrom, input.dateTo) as WaterRow[]
   const waterByDate = new Map(waterRows.map((row) => [row.date, row.water_ml]))
+  const target = getGlobalTarget()
 
-  const timeline: NutritionReportDay[] = dates.map((date) => {
-    const target = getTargetForDate(date)
-    return {
-      date,
-      nutrients: sumNutrients(filteredByDate.get(date) ?? []),
-      waterMl: waterByDate.get(date) ?? 0,
-      targetCalories: target?.calories ?? null,
-      targetWaterMl: target?.waterMl ?? null
-    }
-  })
+  const timeline: NutritionReportDay[] = dates.map((date) => ({
+    date,
+    nutrients: sumNutrients(filteredByDate.get(date) ?? []),
+    waterMl: waterByDate.get(date) ?? 0,
+    targetCalories: target?.calories ?? null,
+    targetWaterMl: target?.waterMl ?? null
+  }))
 
   const loggedDays = timeline.filter((day) => (filteredByDate.get(day.date)?.length ?? 0) > 0)
   const totalNutrients = loggedDays.reduce((total, day) => addNutrients(total, day.nutrients), {
@@ -798,7 +782,6 @@ export function getNutritionReport(input: NutritionReportInput): NutritionReport
   // Goal adherence intentionally uses complete daily intake, even when the visible report is filtered.
   const goalDays = dates.flatMap((date) => {
     const entries = allByDate.get(date) ?? []
-    const target = getTargetForDate(date)
     if (entries.length === 0 || target?.calories === null || target?.calories === undefined) {
       return []
     }
