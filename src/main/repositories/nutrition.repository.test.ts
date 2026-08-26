@@ -204,9 +204,8 @@ describe('nutrition repository', () => {
     expect(stored?.nutrients.calories).toBe(330)
   })
 
-  it('preserves target history and uses the target active on each report day', () => {
+  it('keeps one global target and applies it to every day and report date', () => {
     setNutritionTargets({
-      effectiveFrom: '2026-08-01',
       calories: 2000,
       proteinG: 140,
       fatG: 70,
@@ -215,7 +214,6 @@ describe('nutrition repository', () => {
       waterMl: 2500
     })
     setNutritionTargets({
-      effectiveFrom: '2026-08-15',
       calories: 2400,
       proteinG: 160,
       fatG: 80,
@@ -223,6 +221,11 @@ describe('nutrition repository', () => {
       fiberG: 32,
       waterMl: 3000
     })
+
+    const targetRows = getSqlite()
+      .prepare('SELECT COUNT(*) AS count FROM nutrition_targets')
+      .get() as { count: number }
+    expect(targetRows.count).toBe(1)
 
     createNutritionLogEntry({
       date: '2026-08-10',
@@ -266,6 +269,8 @@ describe('nutrition repository', () => {
     })
     setNutritionWater({ date: '2026-08-16', waterMl: 3000 })
 
+    expect(listNutritionOverview('2026-08-10').day.target?.calories).toBe(2400)
+
     const report = getNutritionReport({
       dateFrom: '2026-08-10',
       dateTo: '2026-08-16',
@@ -276,8 +281,9 @@ describe('nutrition repository', () => {
     })
 
     expect(report.summary.calorieGoalDays).toBe(2)
-    expect(report.summary.calorieGoalHitDays).toBe(2)
-    expect(report.timeline.find((day) => day.date === '2026-08-10')?.targetCalories).toBe(2000)
+    expect(report.summary.calorieGoalHitDays).toBe(1)
+    expect(report.summary.daysBelowCalories).toBe(1)
+    expect(report.timeline.find((day) => day.date === '2026-08-10')?.targetCalories).toBe(2400)
     expect(report.timeline.find((day) => day.date === '2026-08-16')?.targetCalories).toBe(2400)
   })
 })
