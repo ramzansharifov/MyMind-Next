@@ -61,10 +61,9 @@ describe('nutrition validation', () => {
     expect(nutritionOverviewInputSchema.safeParse({ date: '2028-02-29' }).success).toBe(true)
   })
 
-  it('accepts optional targets and rejects negative values', () => {
+  it('accepts optional global targets and rejects negative values', () => {
     expect(
       setNutritionTargetsInputSchema.safeParse({
-        effectiveFrom: '2026-08-17',
         calories: null,
         proteinG: 150,
         fatG: null,
@@ -76,7 +75,6 @@ describe('nutrition validation', () => {
 
     expect(
       setNutritionTargetsInputSchema.safeParse({
-        effectiveFrom: '2026-08-17',
         calories: -1,
         proteinG: null,
         fatG: null,
