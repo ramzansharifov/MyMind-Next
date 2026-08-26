@@ -28,6 +28,7 @@ jobs:
           src/shared/validation/nutrition.test.ts
           src/main/repositories/nutrition.repository.ts
           src/main/repositories/nutrition.repository.test.ts
+          src/main/repositories/nutrition-global-target.repository.test.ts
           src/renderer/src/modules/nutrition/NutritionPage.tsx
           src/renderer/src/modules/nutrition/NutritionPage.test.tsx
           src/renderer/src/modules/nutrition/components/NutritionDiaryView.tsx
@@ -39,7 +40,7 @@ jobs:
           if ($changes) {
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add src/shared/contracts/nutrition.ts src/shared/validation/nutrition.ts src/shared/validation/nutrition.test.ts src/main/repositories/nutrition.repository.ts src/main/repositories/nutrition.repository.test.ts src/renderer/src/modules/nutrition/NutritionPage.tsx src/renderer/src/modules/nutrition/NutritionPage.test.tsx src/renderer/src/modules/nutrition/components/NutritionDiaryView.tsx src/renderer/src/modules/nutrition/components/NutritionGoalView.tsx
+            git add src/shared/contracts/nutrition.ts src/shared/validation/nutrition.ts src/shared/validation/nutrition.test.ts src/main/repositories/nutrition.repository.ts src/main/repositories/nutrition.repository.test.ts src/main/repositories/nutrition-global-target.repository.test.ts src/renderer/src/modules/nutrition/NutritionPage.tsx src/renderer/src/modules/nutrition/NutritionPage.test.tsx src/renderer/src/modules/nutrition/components/NutritionDiaryView.tsx src/renderer/src/modules/nutrition/components/NutritionGoalView.tsx
             git commit -m "Отформатировать изменения питания"
             git push
           }
@@ -51,6 +52,7 @@ jobs:
           src/shared/validation/nutrition.test.ts
           src/main/repositories/nutrition.repository.ts
           src/main/repositories/nutrition.repository.test.ts
+          src/main/repositories/nutrition-global-target.repository.test.ts
           src/renderer/src/modules/nutrition/NutritionPage.tsx
           src/renderer/src/modules/nutrition/NutritionPage.test.tsx
           src/renderer/src/modules/nutrition/components/NutritionDiaryView.tsx
@@ -63,6 +65,7 @@ jobs:
           src/shared/validation/nutrition.test.ts
           src/main/repositories/nutrition.repository.ts
           src/main/repositories/nutrition.repository.test.ts
+          src/main/repositories/nutrition-global-target.repository.test.ts
           src/renderer/src/modules/nutrition/NutritionPage.tsx
           src/renderer/src/modules/nutrition/NutritionPage.test.tsx
           src/renderer/src/modules/nutrition/components/NutritionDiaryView.tsx
@@ -85,6 +88,7 @@ jobs:
           npx vitest run
           src/shared/validation/nutrition.test.ts
           src/main/repositories/nutrition.repository.test.ts
+          src/main/repositories/nutrition-global-target.repository.test.ts
           src/main/repositories/nutrition-import.repository.test.ts
           src/main/ipc/register-nutrition-ipc.test.ts
           src/preload/index.test.ts
