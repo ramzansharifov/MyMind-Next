@@ -1,12 +1,4 @@
-import {
-  BarChart3,
-  Braces,
-  CalendarDays,
-  Target,
-  Utensils,
-  X,
-  type LucideIcon
-} from 'lucide-react'
+import { BarChart3, Braces, CalendarDays, Target, Utensils, X, type LucideIcon } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import type {

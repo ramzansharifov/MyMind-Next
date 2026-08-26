@@ -144,9 +144,7 @@ describe('NutritionPage JSON-only flow', () => {
     await screen.findByRole('heading', { name: 'Питание' })
     await user.click(screen.getByRole('button', { name: 'Цель' }))
 
-    expect(
-      await screen.findByRole('heading', { name: 'Общая цель питания' })
-    ).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Общая цель питания' })).toBeInTheDocument()
     expect(screen.queryByText('Действует с')).not.toBeInTheDocument()
 
     const caloriesInput = screen.getByRole('spinbutton', { name: /Калории/ })

@@ -82,8 +82,8 @@ export function NutritionGoalView({
           <div className="min-w-0">
             <h2 className="text-base font-semibold text-[var(--app-text)]">Общая цель питания</h2>
             <p className="mt-1 max-w-2xl text-xs leading-5 text-[var(--app-muted)]">
-              Это единые ориентиры для питания. Они не привязаны к конкретному дню и применяются
-              в «Сегодня», «Дневнике» и «Прогрессе» ко всем датам.
+              Это единые ориентиры для питания. Они не привязаны к конкретному дню и применяются в
+              «Сегодня», «Дневнике» и «Прогрессе» ко всем датам.
             </p>
           </div>
         </div>
