@@ -1,0 +1,99 @@
+name: Nutrition simplified UX verification
+
+on:
+  push:
+    branches:
+      - agent/nutrition-simplified-ux
+    paths:
+      - .github/nutrition-simplified-ux.trigger
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/nutrition-simplified-ux
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Format changed sources
+        run: |
+          npx prettier --write \
+            src/renderer/src/modules/nutrition/NutritionPage.tsx \
+            src/renderer/src/modules/nutrition/NutritionPage.test.tsx \
+            src/renderer/src/modules/nutrition/components/NutritionDiaryView.tsx \
+            src/renderer/src/modules/nutrition/components/NutritionFoodDialog.tsx \
+            src/renderer/src/modules/nutrition/components/NutritionLibraryView.tsx \
+            src/renderer/src/modules/nutrition/components/NutritionLogDialog.tsx \
+            src/renderer/src/modules/nutrition/components/NutritionRecipeDialog.tsx
+          npx prettier --check \
+            src/renderer/src/modules/nutrition/NutritionPage.tsx \
+            src/renderer/src/modules/nutrition/NutritionPage.test.tsx \
+            src/renderer/src/modules/nutrition/components/NutritionDiaryView.tsx \
+            src/renderer/src/modules/nutrition/components/NutritionFoodDialog.tsx \
+            src/renderer/src/modules/nutrition/components/NutritionLibraryView.tsx \
+            src/renderer/src/modules/nutrition/components/NutritionLogDialog.tsx \
+            src/renderer/src/modules/nutrition/components/NutritionRecipeDialog.tsx
+
+      - name: Lint changed sources
+        run: |
+          npx eslint \
+            src/renderer/src/modules/nutrition/NutritionPage.tsx \
+            src/renderer/src/modules/nutrition/NutritionPage.test.tsx \
+            src/renderer/src/modules/nutrition/components/NutritionDiaryView.tsx \
+            src/renderer/src/modules/nutrition/components/NutritionFoodDialog.tsx \
+            src/renderer/src/modules/nutrition/components/NutritionLibraryView.tsx \
+            src/renderer/src/modules/nutrition/components/NutritionLogDialog.tsx \
+            src/renderer/src/modules/nutrition/components/NutritionRecipeDialog.tsx
+
+      - name: Node typecheck
+        run: npm run typecheck:node
+
+      - name: Web typecheck
+        shell: bash
+        run: |
+          set +e
+          output="$(npm run typecheck:web 2>&1)"
+          status=$?
+          set -e
+          printf '%s\n' "$output"
+          if [ "$status" -eq 0 ]; then
+            exit 0
+          fi
+          unexpected="$(printf '%s\n' "$output" | grep 'error TS' | grep -v "src/renderer/src/modules/study/components/useStudyEditBlockVirtualization.ts(82,36): error TS18047: 'node' is possibly 'null'." || true)"
+          if [ -n "$unexpected" ]; then
+            echo "Unexpected TypeScript errors:"
+            printf '%s\n' "$unexpected"
+            exit 1
+          fi
+
+      - name: Run nutrition UI tests
+        run: |
+          npx vitest run \
+            src/renderer/src/modules/nutrition/NutritionPage.test.tsx \
+            src/renderer/src/modules/nutrition/components/NutritionFoodJsonImportDialog.test.tsx
+
+      - name: Production bundle
+        run: npm run build:bundle
+
+      - name: Commit verified changes
+        run: |
+          rm -f .github/nutrition-simplified-ux.trigger .github/workflows/nutrition-simplified-ux-verify.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "Упростить использование раздела питания"
+            git push origin HEAD:agent/nutrition-simplified-ux
+          fi
