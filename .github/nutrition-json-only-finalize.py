@@ -117,6 +117,18 @@ replace_once(
     '',
     'diary import prop use'
 )
+replace_once(
+    'src/renderer/src/modules/nutrition/NutritionPage.test.tsx',
+    "import { render, screen, waitFor, within } from '@testing-library/react'\n",
+    "import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'\n",
+    'testing library fireEvent import'
+)
+replace_once(
+    'src/renderer/src/modules/nutrition/NutritionPage.test.tsx',
+    "    await user.type(within(dialog).getByRole('textbox', { name: 'JSON питания' }), json)\n",
+    "    fireEvent.change(within(dialog).getByRole('textbox', { name: 'JSON питания' }), {\n      target: { value: json }\n    })\n",
+    'JSON textarea input'
+)
 
 obsolete_paths = [
     'src/renderer/src/modules/nutrition/components/NutritionCatalogViews.tsx',
