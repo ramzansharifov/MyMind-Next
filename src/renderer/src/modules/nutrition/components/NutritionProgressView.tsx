@@ -2,8 +2,7 @@ import { BarChart3, CalendarDays, Droplets, Flame, Leaf, Utensils } from 'lucide
 
 import type {
   NutritionMealType,
-  NutritionReport,
-  NutritionValues
+  NutritionReport
 } from '../../../../../shared/contracts/nutrition'
 import { AppSelect } from '../../../shared/ui/AppSelect'
 import { NUTRITION_MEAL_OPTIONS, nutritionMealLabel } from '../nutrition-options'
@@ -311,19 +310,4 @@ function Panel({
 
 function EmptyText({ children }: { children: React.ReactNode }): React.JSX.Element {
   return <div className="py-8 text-center text-sm text-[var(--app-muted)]">{children}</div>
-}
-
-export function sumNutritionValues(values: NutritionValues[]): NutritionValues {
-  return values.reduce(
-    (sum, value) => ({
-      calories: sum.calories + value.calories,
-      proteinG: sum.proteinG + value.proteinG,
-      fatG: sum.fatG + value.fatG,
-      carbsG: sum.carbsG + value.carbsG,
-      fiberG: sum.fiberG + value.fiberG,
-      sugarG: sum.sugarG + value.sugarG,
-      sodiumMg: sum.sodiumMg + value.sodiumMg
-    }),
-    { calories: 0, proteinG: 0, fatG: 0, carbsG: 0, fiberG: 0, sugarG: 0, sodiumMg: 0 }
-  )
 }
