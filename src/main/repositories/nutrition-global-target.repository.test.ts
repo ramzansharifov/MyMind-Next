@@ -35,6 +35,12 @@ function setTarget(calories: number): void {
   })
 }
 
+function localYear(): number {
+  const now = new Date()
+  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60_000)
+  return local.getUTCFullYear()
+}
+
 describe('global nutrition target', () => {
   it('keeps only the latest global target and applies it independently of diary date', () => {
     setTarget(2000)
@@ -62,6 +68,7 @@ describe('global nutrition target', () => {
   })
 
   it('uses the currently active legacy period as the global target before the first new save', () => {
+    const year = localYear()
     getSqlite()
       .prepare(
         `INSERT INTO nutrition_targets (
@@ -72,12 +79,12 @@ describe('global nutrition target', () => {
       )
       .run(
         'legacy-current',
-        '2026-01-01',
-        '2026-12-31',
+        `${year}-01-01`,
+        `${year}-12-31`,
         2_100_000,
         1,
         'legacy-future',
-        '2027-01-01',
+        `${year + 1}-01-01`,
         2_600_000,
         2
       )
