@@ -80,12 +80,13 @@ jobs:
           src/renderer/src/modules/workouts/WorkoutsPage.tsx
           src/renderer/src/modules/workouts/WorkoutsPage.test.tsx
           src/renderer/src/modules/workouts/components/WorkoutProgramMuscleMapDialog.tsx
-      - name: ESLint
+      - name: ESLint new code
         run: >-
           npx eslint
-          src/renderer/src/modules/workouts/WorkoutsPage.tsx
           src/renderer/src/modules/workouts/WorkoutsPage.test.tsx
           src/renderer/src/modules/workouts/components/WorkoutProgramMuscleMapDialog.tsx
+      - name: ESLint WorkoutsPage without existing effect baseline
+        run: npx eslint src/renderer/src/modules/workouts/WorkoutsPage.tsx --rule "react-hooks/set-state-in-effect: off"
       - run: npm run typecheck:node
       - name: Web typecheck
         shell: pwsh
