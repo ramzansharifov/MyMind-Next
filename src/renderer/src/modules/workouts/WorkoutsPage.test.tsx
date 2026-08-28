@@ -252,6 +252,22 @@ describe('WorkoutsPage', () => {
     expect(screen.getByText('Бицепс')).toBeInTheDocument()
   })
 
+  it('opens the muscle map for a workout program', async () => {
+    const user = userEvent.setup()
+    render(<WorkoutsPage />)
+
+    await user.click(await screen.findByRole('button', { name: /Программы/ }))
+    await user.click(screen.getByRole('button', { name: 'Открыть карту мышц «Pull»' }))
+
+    expect(await screen.findByText('Карта мышц · Pull')).toBeInTheDocument()
+    expect(screen.getByText('Задействованные мышцы')).toBeInTheDocument()
+    expect(screen.getByText('Бицепс')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Спереди' })).toHaveAttribute('aria-pressed', 'true')
+
+    await user.click(screen.getByRole('button', { name: 'Повернуть модель' }))
+    expect(screen.getByRole('button', { name: 'Сзади' })).toHaveAttribute('aria-pressed', 'true')
+  })
+
   it('opens extensive reports with muscle distribution and exercise analytics', async () => {
     const user = userEvent.setup()
     render(<WorkoutsPage />)

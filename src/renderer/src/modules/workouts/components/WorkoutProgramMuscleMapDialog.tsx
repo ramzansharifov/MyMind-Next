@@ -248,7 +248,7 @@ export function WorkoutProgramMuscleMapDialog({
                       maxCount={analysis.maxCount}
                     />
                   </div>
-                  <div className="absolute inset-0 grid place-items-center p-4 [backface-visibility:hidden] [transform:rotateY(180deg)] [&>svg]:max-h-full [&>svg]:w-full">
+                  <div className="absolute inset-0 grid [transform:rotateY(180deg)] place-items-center p-4 [backface-visibility:hidden] [&>svg]:max-h-full [&>svg]:w-full">
                     <ProgramBody
                       view="BACK"
                       zoneCounts={analysis.zoneCounts}
@@ -261,7 +261,9 @@ export function WorkoutProgramMuscleMapDialog({
           </section>
 
           <section className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4">
-            <div className="text-sm font-semibold text-[var(--app-text)]">Задействованные мышцы</div>
+            <div className="text-sm font-semibold text-[var(--app-text)]">
+              Задействованные мышцы
+            </div>
             <p className="mt-1 text-xs leading-5 text-[var(--app-muted)]">
               Чем больше упражнений затрагивает мышцу, тем ярче она выделена на карте.
             </p>
