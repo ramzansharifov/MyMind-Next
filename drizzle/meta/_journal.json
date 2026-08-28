@@ -253,6 +253,13 @@
       "when": 1787668200000,
       "tag": "0035_nutrition_default_food_catalog",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "6",
+      "when": 1787916600000,
+      "tag": "0036_calendar_module",
+      "breakpoints": true
     }
   ]
 }
