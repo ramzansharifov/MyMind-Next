@@ -55,17 +55,27 @@ describe('calendar repository', () => {
       startDate: '2022-05-15'
     })
     expect(listCalendarOccurrences({ from: '2021-01-01', to: '2021-12-31' })).toHaveLength(0)
-    expect(listCalendarOccurrences({ from: '2025-01-01', to: '2027-12-31' }).map((item) => item.occurrenceDate)).toEqual([
-      '2025-05-15',
-      '2026-05-15',
-      '2027-05-15'
-    ])
+    expect(
+      listCalendarOccurrences({ from: '2025-01-01', to: '2027-12-31' }).map(
+        (item) => item.occurrenceDate
+      )
+    ).toEqual(['2025-05-15', '2026-05-15', '2027-05-15'])
   })
 
   it('keeps notes attached to one annual occurrence only', () => {
-    const event = createCalendarEvent({ title: 'День рождения', kind: 'annual', date: '2026-03-10' })
-    setCalendarOccurrenceNote({ eventId: event.id, occurrenceDate: '2026-03-10', note: 'Купить часы' })
-    expect(listCalendarOccurrences({ from: '2026-03-10', to: '2026-03-10' })[0]?.note).toBe('Купить часы')
+    const event = createCalendarEvent({
+      title: 'День рождения',
+      kind: 'annual',
+      date: '2026-03-10'
+    })
+    setCalendarOccurrenceNote({
+      eventId: event.id,
+      occurrenceDate: '2026-03-10',
+      note: 'Купить часы'
+    })
+    expect(listCalendarOccurrences({ from: '2026-03-10', to: '2026-03-10' })[0]?.note).toBe(
+      'Купить часы'
+    )
     expect(listCalendarOccurrences({ from: '2027-03-10', to: '2027-03-10' })[0]?.note).toBe('')
   })
 
@@ -85,7 +95,9 @@ describe('calendar repository', () => {
       reminderOffsets: [1440, 180, 30]
     })
     const reminders = listCalendarReminderTriggers({ from: '2026-08-31', to: '2026-09-01' })
-    expect(reminders.filter((item) => item.eventId === event.id).map((item) => item.offsetMinutes)).toEqual([1440, 180, 30])
+    expect(
+      reminders.filter((item) => item.eventId === event.id).map((item) => item.offsetMinutes)
+    ).toEqual([1440, 180, 30])
     const first = reminders[0]
     expect(first).toBeDefined()
     expect(markCalendarReminderDelivered(first!.reminderId, first!.occurrenceDate)).toBe(true)
@@ -93,6 +105,10 @@ describe('calendar repository', () => {
   })
 
   it('calculates calendar-aware elapsed years, months and days', () => {
-    expect(calculateCalendarElapsed('2021-05-15', '2026-08-28')).toEqual({ years: 5, months: 3, days: 13 })
+    expect(calculateCalendarElapsed('2021-05-15', '2026-08-28')).toEqual({
+      years: 5,
+      months: 3,
+      days: 13
+    })
   })
 })

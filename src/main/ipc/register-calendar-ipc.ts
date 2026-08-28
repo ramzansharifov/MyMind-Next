@@ -24,7 +24,9 @@ export function registerCalendarIpcHandlers(): void {
   for (const channel of Object.values(CALENDAR_IPC_CHANNELS)) ipcMain.removeHandler(channel)
 
   ipcMain.handle(CALENDAR_IPC_CHANNELS.listRange, (_event, rawInput: unknown) =>
-    mainOperationTracker.run(() => listCalendarOccurrences(calendarRangeInputSchema.parse(rawInput)))
+    mainOperationTracker.run(() =>
+      listCalendarOccurrences(calendarRangeInputSchema.parse(rawInput))
+    )
   )
   ipcMain.handle(CALENDAR_IPC_CHANNELS.listUpcomingReminders, (_event, rawInput: unknown) =>
     mainOperationTracker.run(() =>
@@ -32,10 +34,14 @@ export function registerCalendarIpcHandlers(): void {
     )
   )
   ipcMain.handle(CALENDAR_IPC_CHANNELS.createEvent, (_event, rawInput: unknown) =>
-    mainOperationTracker.run(() => createCalendarEvent(calendarCreateEventInputSchema.parse(rawInput)))
+    mainOperationTracker.run(() =>
+      createCalendarEvent(calendarCreateEventInputSchema.parse(rawInput))
+    )
   )
   ipcMain.handle(CALENDAR_IPC_CHANNELS.updateEvent, (_event, rawInput: unknown) =>
-    mainOperationTracker.run(() => updateCalendarEvent(calendarUpdateEventInputSchema.parse(rawInput)))
+    mainOperationTracker.run(() =>
+      updateCalendarEvent(calendarUpdateEventInputSchema.parse(rawInput))
+    )
   )
   ipcMain.handle(CALENDAR_IPC_CHANNELS.deleteEvent, (_event, rawInput: unknown) =>
     mainOperationTracker.run(() => {

@@ -4,7 +4,11 @@ const dateKeySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
 const timeSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/)
 const titleSchema = z.string().trim().min(1).max(160)
 const noteSchema = z.string().max(10_000)
-const reminderOffsetSchema = z.number().int().min(0).max(525_600 * 10)
+const reminderOffsetSchema = z
+  .number()
+  .int()
+  .min(0)
+  .max(525_600 * 10)
 
 export const calendarRangeInputSchema = z
   .object({

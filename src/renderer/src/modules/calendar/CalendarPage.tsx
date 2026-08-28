@@ -168,7 +168,8 @@ export function CalendarPage(): React.JSX.Element {
   }, [range.from, range.to])
 
   useEffect(() => {
-    void load()
+    const initialLoad = window.setTimeout(() => void load(), 0)
+    return () => window.clearTimeout(initialLoad)
   }, [load])
 
   const eventsByDay = useMemo(() => {
@@ -191,7 +192,10 @@ export function CalendarPage(): React.JSX.Element {
     const multiplier = { minutes: 1, hours: 60, days: 1440, weeks: 10_080 }[reminderUnit]
     const offset = Math.max(0, Math.round(reminderAmount)) * multiplier
     if (!editor || editor.reminderOffsets.includes(offset)) return
-    setEditor({ ...editor, reminderOffsets: [...editor.reminderOffsets, offset].sort((a, b) => b - a) })
+    setEditor({
+      ...editor,
+      reminderOffsets: [...editor.reminderOffsets, offset].sort((a, b) => b - a)
+    })
   }
 
   async function saveEvent(): Promise<void> {
@@ -254,9 +258,10 @@ export function CalendarPage(): React.JSX.Element {
   }
 
   const editorOccurrence = editor?.eventId
-    ? events.find(
-        (event) => event.eventId === editor.eventId && event.occurrenceDate === editor.occurrenceDate
-      ) ?? null
+    ? (events.find(
+        (event) =>
+          event.eventId === editor.eventId && event.occurrenceDate === editor.occurrenceDate
+      ) ?? null)
     : null
 
   return (
@@ -301,7 +306,7 @@ export function CalendarPage(): React.JSX.Element {
               <ChevronRight className="size-4" />
             </button>
           </div>
-          <strong className="px-3 text-sm capitalize text-[var(--app-text)]">
+          <strong className="px-3 text-sm text-[var(--app-text)] capitalize">
             {MONTH_FORMATTER.format(parseDate(month))}
           </strong>
         </div>
@@ -316,7 +321,10 @@ export function CalendarPage(): React.JSX.Element {
       <section className="mt-5 overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--app-shadow-card)]">
         <div className="grid grid-cols-7 border-b border-[var(--app-border)] bg-[var(--app-workspace)]">
           {WEEKDAYS.map((weekday) => (
-            <div key={weekday} className="px-2 py-2.5 text-center text-xs font-semibold text-[var(--app-muted)]">
+            <div
+              key={weekday}
+              className="px-2 py-2.5 text-center text-xs font-semibold text-[var(--app-muted)]"
+            >
               {weekday}
             </div>
           ))}
@@ -361,18 +369,25 @@ export function CalendarPage(): React.JSX.Element {
                       onClick={() => setEditor(editorFromOccurrence(event))}
                     >
                       {event.kind === 'annual' && <Repeat2 className="size-3 shrink-0" />}
-                      <span className="truncate">{event.time ? `${event.time} ` : ''}{event.title}</span>
+                      <span className="truncate">
+                        {event.time ? `${event.time} ` : ''}
+                        {event.title}
+                      </span>
                     </button>
                   ))}
                   {dayEvents.length > 4 && (
-                    <div className="px-1 text-[10px] text-[var(--app-muted)]">+{dayEvents.length - 4} ещё</div>
+                    <div className="px-1 text-[10px] text-[var(--app-muted)]">
+                      +{dayEvents.length - 4} ещё
+                    </div>
                   )}
                 </div>
               </div>
             )
           })}
         </div>
-        {loading && <div className="px-4 py-3 text-xs text-[var(--app-muted)]">Обновление календаря…</div>}
+        {loading && (
+          <div className="px-4 py-3 text-xs text-[var(--app-muted)]">Обновление календаря…</div>
+        )}
       </section>
 
       <AppDialog
@@ -421,7 +436,9 @@ export function CalendarPage(): React.JSX.Element {
         {editor && (
           <div className="space-y-5">
             <label className="block">
-              <span className="mb-1.5 block text-xs font-medium text-[var(--app-muted)]">Название</span>
+              <span className="mb-1.5 block text-xs font-medium text-[var(--app-muted)]">
+                Название
+              </span>
               <input
                 autoFocus
                 value={editor.title}
@@ -434,7 +451,9 @@ export function CalendarPage(): React.JSX.Element {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block">
-                <span className="mb-1.5 block text-xs font-medium text-[var(--app-muted)]">Тип события</span>
+                <span className="mb-1.5 block text-xs font-medium text-[var(--app-muted)]">
+                  Тип события
+                </span>
                 <select
                   value={editor.kind}
                   className="h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none"
@@ -447,7 +466,9 @@ export function CalendarPage(): React.JSX.Element {
                 </select>
               </label>
               <label className="block">
-                <span className="mb-1.5 block text-xs font-medium text-[var(--app-muted)]">Дата</span>
+                <span className="mb-1.5 block text-xs font-medium text-[var(--app-muted)]">
+                  Дата
+                </span>
                 <input
                   type="date"
                   value={editor.date}
@@ -459,7 +480,9 @@ export function CalendarPage(): React.JSX.Element {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block">
-                <span className="mb-1.5 block text-xs font-medium text-[var(--app-muted)]">Время, необязательно</span>
+                <span className="mb-1.5 block text-xs font-medium text-[var(--app-muted)]">
+                  Время, необязательно
+                </span>
                 <input
                   type="time"
                   value={editor.time}
@@ -469,7 +492,9 @@ export function CalendarPage(): React.JSX.Element {
               </label>
               {editor.kind === 'annual' && (
                 <label className="block">
-                  <span className="mb-1.5 block text-xs font-medium text-[var(--app-muted)]">Начало даты, необязательно</span>
+                  <span className="mb-1.5 block text-xs font-medium text-[var(--app-muted)]">
+                    Начало даты, необязательно
+                  </span>
                   <input
                     type="date"
                     value={editor.startDate}
@@ -483,7 +508,9 @@ export function CalendarPage(): React.JSX.Element {
             {editorOccurrence && elapsedLabel(editorOccurrence) && (
               <div className="rounded-xl border border-violet-500/15 bg-violet-500/8 px-4 py-3">
                 <div className="text-xs text-[var(--app-muted)]">Прошло с начала</div>
-                <div className="mt-1 font-semibold text-[var(--app-text)]">{elapsedLabel(editorOccurrence)}</div>
+                <div className="mt-1 font-semibold text-[var(--app-text)]">
+                  {elapsedLabel(editorOccurrence)}
+                </div>
               </div>
             )}
 
@@ -507,7 +534,10 @@ export function CalendarPage(): React.JSX.Element {
               </div>
               <div className="space-y-2">
                 {editor.reminderOffsets.map((offset) => (
-                  <div key={offset} className="flex items-center justify-between rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 py-2">
+                  <div
+                    key={offset}
+                    className="flex items-center justify-between rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 py-2"
+                  >
                     <span className="flex items-center gap-2 text-sm text-[var(--app-text)]">
                       <Clock3 className="size-4 text-[var(--app-muted)]" /> {reminderLabel(offset)}
                     </span>
@@ -527,7 +557,9 @@ export function CalendarPage(): React.JSX.Element {
                   </div>
                 ))}
                 {editor.reminderOffsets.length === 0 && (
-                  <div className="rounded-xl border border-dashed border-[var(--app-border)] px-3 py-3 text-xs text-[var(--app-muted)]">Напоминаний пока нет</div>
+                  <div className="rounded-xl border border-dashed border-[var(--app-border)] px-3 py-3 text-xs text-[var(--app-muted)]">
+                    Напоминаний пока нет
+                  </div>
                 )}
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
@@ -558,7 +590,9 @@ export function CalendarPage(): React.JSX.Element {
                 </button>
               </div>
               {!editor.time && editor.reminderOffsets.length > 0 && (
-                <p className="mt-2 text-xs text-[var(--app-muted)]">Для события без времени напоминания рассчитываются от 09:00 дня события.</p>
+                <p className="mt-2 text-xs text-[var(--app-muted)]">
+                  Для события без времени напоминания рассчитываются от 09:00 дня события.
+                </p>
               )}
             </div>
           </div>

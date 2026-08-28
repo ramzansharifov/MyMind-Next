@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
 import { BOARD_IPC_CHANNELS, type BoardDocument, type BoardNode } from '../shared/contracts/boards'
+import { CALENDAR_IPC_CHANNELS } from '../shared/contracts/calendar'
 import { DIARY_IPC_CHANNELS } from '../shared/contracts/diary'
 import { FINANCE_IPC_CHANNELS } from '../shared/contracts/finance'
 import { HABITS_IPC_CHANNELS } from '../shared/contracts/habits'
@@ -182,6 +183,19 @@ const api: MyMindApi = {
     importAsset: (input) =>
       ipcRenderer.invoke(NOTES_IPC_CHANNELS.importAsset, input) as Promise<NoteLocalAsset | null>,
     openAsset: (input) => ipcRenderer.invoke(NOTES_IPC_CHANNELS.openAsset, input) as Promise<void>
+  },
+
+  calendar: {
+    listRange: (input) => ipcRenderer.invoke(CALENDAR_IPC_CHANNELS.listRange, input),
+    listUpcomingReminders: (input) =>
+      ipcRenderer.invoke(CALENDAR_IPC_CHANNELS.listUpcomingReminders, input),
+    createEvent: (input) => ipcRenderer.invoke(CALENDAR_IPC_CHANNELS.createEvent, input),
+    updateEvent: (input) => ipcRenderer.invoke(CALENDAR_IPC_CHANNELS.updateEvent, input),
+    deleteEvent: (input) => ipcRenderer.invoke(CALENDAR_IPC_CHANNELS.deleteEvent, input),
+    setOccurrenceNote: (input) =>
+      ipcRenderer.invoke(CALENDAR_IPC_CHANNELS.setOccurrenceNote, input),
+    setOccurrenceHidden: (input) =>
+      ipcRenderer.invoke(CALENDAR_IPC_CHANNELS.setOccurrenceHidden, input)
   },
 
   diary: {

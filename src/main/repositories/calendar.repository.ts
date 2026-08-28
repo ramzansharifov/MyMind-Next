@@ -90,7 +90,9 @@ function normalizedOffsets(values: number[] | undefined): number[] {
 }
 
 function getReminderRows(): ReminderRow[] {
-  return getSqlite().prepare(`${REMINDER_SELECT} ORDER BY offset_minutes DESC`).all() as ReminderRow[]
+  return getSqlite()
+    .prepare(`${REMINDER_SELECT} ORDER BY offset_minutes DESC`)
+    .all() as ReminderRow[]
 }
 
 function reminderMap(rows = getReminderRows()): Map<string, number[]> {
@@ -104,7 +106,9 @@ function reminderMap(rows = getReminderRows()): Map<string, number[]> {
 }
 
 function getEventRows(): EventRow[] {
-  return getSqlite().prepare(`${EVENT_SELECT} ORDER BY event_date, title COLLATE NOCASE`).all() as EventRow[]
+  return getSqlite()
+    .prepare(`${EVENT_SELECT} ORDER BY event_date, title COLLATE NOCASE`)
+    .all() as EventRow[]
 }
 
 function requireEvent(id: string): EventRow {
@@ -171,7 +175,12 @@ export function calculateCalendarElapsed(
   return { years, months, days }
 }
 
-function upsertOccurrence(eventId: string, occurrenceDate: string, note: string, hidden: boolean): void {
+function upsertOccurrence(
+  eventId: string,
+  occurrenceDate: string,
+  note: string,
+  hidden: boolean
+): void {
   const now = Date.now()
   const existing = getSqlite()
     .prepare(`${OCCURRENCE_SELECT} WHERE event_id = ? AND occurrence_date = ?`)
@@ -179,7 +188,9 @@ function upsertOccurrence(eventId: string, occurrenceDate: string, note: string,
 
   if (existing) {
     getSqlite()
-      .prepare('UPDATE calendar_event_occurrences SET note = ?, hidden = ?, updated_at = ? WHERE id = ?')
+      .prepare(
+        'UPDATE calendar_event_occurrences SET note = ?, hidden = ?, updated_at = ? WHERE id = ?'
+      )
       .run(note, hidden ? 1 : 0, now, existing.id)
     return
   }
@@ -205,7 +216,9 @@ export function listCalendarOccurrences(input: CalendarRangeInput): CalendarOccu
   const events = getEventRows()
   const reminders = reminderMap()
   const overrides = getSqlite().prepare(OCCURRENCE_SELECT).all() as OccurrenceRow[]
-  const overrideMap = new Map(overrides.map((row) => [`${row.event_id}:${row.occurrence_date}`, row]))
+  const overrideMap = new Map(
+    overrides.map((row) => [`${row.event_id}:${row.occurrence_date}`, row])
+  )
   const today = localDateKey()
   const result: CalendarOccurrenceRecord[] = []
 
@@ -293,7 +306,10 @@ export function deleteCalendarEvent(id: string): boolean {
   return getSqlite().prepare('DELETE FROM calendar_events WHERE id = ?').run(id).changes > 0
 }
 
-function findResolvedOccurrence(eventId: string, occurrenceDate: string): CalendarOccurrenceRecord | null {
+function findResolvedOccurrence(
+  eventId: string,
+  occurrenceDate: string
+): CalendarOccurrenceRecord | null {
   return (
     listCalendarOccurrences({ from: occurrenceDate, to: occurrenceDate }).find(
       (item) => item.eventId === eventId
@@ -366,7 +382,7 @@ export function listCalendarReminderTriggers(input: CalendarRangeInput): Calenda
 export function listDueCalendarReminders(sinceMs: number, nowMs: number): CalendarReminderRecord[] {
   const sinceDate = localDateKey(new Date(sinceMs))
   const nowDate = localDateKey(new Date(nowMs))
-  return listCalendarReminderTriggers({ from: sinceDate, to: addDays(nowDate, 3650) }).filter(
+  return listCalendarReminderTriggers({ from: sinceDate, to: nowDate }).filter(
     (item) => item.triggerAt >= sinceMs && item.triggerAt <= nowMs
   )
 }

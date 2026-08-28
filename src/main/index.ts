@@ -14,6 +14,7 @@ import { runStudyLinkTargetsMaintenance } from './repositories/study.repository'
 import { installContentSecurityPolicy } from './security/content-security-policy'
 import { installPermissionPolicy } from './security/permissions'
 import { focusExistingAppWindow } from './security/single-instance'
+import { CalendarReminderScheduler } from './services/calendar-reminder-scheduler'
 import { mainOperationTracker } from './services/main-operation-tracker'
 import { clearTrackedPasswordClipboard } from './services/password-clipboard'
 import {
@@ -26,6 +27,7 @@ import { registerStudyAssetProtocol, registerStudyAssetScheme } from './services
 import { runStudyPlainTextMaintenance } from './services/study-plain-text-maintenance'
 
 let mainWindow: BrowserWindow | null = null
+const calendarReminderScheduler = new CalendarReminderScheduler(() => mainWindow)
 
 const shutdownFallbackCopy: Record<
   ShutdownFallbackReason,
@@ -98,6 +100,7 @@ async function resolveShutdownFallback(
 }
 
 function closeApplicationResources(): void {
+  calendarReminderScheduler.stop()
   clearTrackedPasswordClipboard()
   lockPasswordVault()
   closeDatabase()
@@ -301,6 +304,7 @@ if (!hasSingleInstanceLock) {
     })
 
     createWindow()
+    calendarReminderScheduler.start()
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) {
