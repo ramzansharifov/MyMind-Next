@@ -76,7 +76,7 @@ new_first = '''  it('keeps workout cards compact and reveals full details on cli
     expect(await screen.findByRole('heading', { name: 'Тренировки' })).toBeInTheDocument()
     const toggle = await screen.findByRole('button', { name: 'Раскрыть тренировку «Pull»' })
     expect(toggle).toHaveAttribute('aria-expanded', 'false')
-    expect(screen.queryByText(/10 повт\\. × 16 кг/)).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Изменить тренировку' })).not.toBeInTheDocument()
 
     await user.click(toggle)
 
