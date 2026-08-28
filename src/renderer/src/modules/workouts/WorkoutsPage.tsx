@@ -238,17 +238,6 @@ export function WorkoutsPage({
     })
   }, [muscleFilter, programFilter, query, sessions])
 
-  const recentStats = useMemo(() => {
-    const from = daysAgoKey(29)
-    const recent = sessions.filter((session) => session.date >= from && session.date <= todayKey())
-    return {
-      sessions: recent.length,
-      sets: recent.reduce((sum, session) => sum + session.totalSets, 0),
-      reps: recent.reduce((sum, session) => sum + session.totalReps, 0),
-      volume: recent.reduce((sum, session) => sum + session.totalVolumeKg, 0)
-    }
-  }, [sessions])
-
   async function saveExercise(
     input: CreateWorkoutExerciseInput | UpdateWorkoutExerciseInput
   ): Promise<void> {
@@ -511,6 +500,93 @@ export function WorkoutsPage({
     </>
   )
 
+  const headerToolbar = (() => {
+    if (tab === 'journal') {
+      return (
+        <div className="flex flex-wrap gap-2">
+          <label className="flex h-10 min-w-[260px] flex-1 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 focus-within:border-violet-500/45">
+            <Search className="size-4 text-[var(--app-muted)]" />
+            <input
+              type="search"
+              value={query}
+              placeholder="Поиск по тренировкам и упражнениям…"
+              className="min-w-0 flex-1 bg-transparent text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60"
+              onChange={(event) => setQuery(event.target.value)}
+            />
+          </label>
+          <div className="min-w-[190px]">
+            <AppSelect
+              ariaLabel="Фильтр по программе"
+              value={programFilter}
+              options={[
+                { value: 'all', label: 'Все программы' },
+                { value: 'custom', label: 'Свободные тренировки' },
+                ...programs.map((program) => ({ value: program.id, label: program.name }))
+              ]}
+              onValueChange={setProgramFilter}
+            />
+          </div>
+          <div className="min-w-[180px]">
+            <AppSelect
+              ariaLabel="Фильтр по группе мышц"
+              value={muscleFilter}
+              options={[
+                { value: 'all', label: 'Все группы мышц' },
+                ...WORKOUT_MUSCLE_GROUP_OPTIONS.map(({ value, label }) => ({ value, label }))
+              ]}
+              onValueChange={(value) => setMuscleFilter(value as MuscleFilter)}
+            />
+          </div>
+        </div>
+      )
+    }
+
+    if (tab === 'exercises') {
+      return (
+        <div className="flex flex-wrap gap-2">
+          <label className="flex h-10 min-w-[260px] flex-1 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 focus-within:border-violet-500/45">
+            <Search className="size-4 text-[var(--app-muted)]" />
+            <input
+              type="search"
+              value={query}
+              placeholder="Найти упражнение…"
+              className="min-w-0 flex-1 bg-transparent text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60"
+              onChange={(event) => setQuery(event.target.value)}
+            />
+          </label>
+          <div className="min-w-[190px]">
+            <AppSelect
+              ariaLabel="Группа мышц"
+              value={muscleFilter}
+              options={[
+                { value: 'all', label: 'Все группы мышц' },
+                ...WORKOUT_MUSCLE_GROUP_OPTIONS.map(({ value, label }) => ({ value, label }))
+              ]}
+              onValueChange={(value) => setMuscleFilter(value as MuscleFilter)}
+            />
+          </div>
+        </div>
+      )
+    }
+
+    if (tab === 'programs') {
+      return (
+        <label className="flex h-10 w-full items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 focus-within:border-violet-500/45">
+          <Search className="size-4 text-[var(--app-muted)]" />
+          <input
+            type="search"
+            value={query}
+            placeholder="Найти программу…"
+            className="min-w-0 flex-1 bg-transparent text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60"
+            onChange={(event) => setQuery(event.target.value)}
+          />
+        </label>
+      )
+    }
+
+    return null
+  })()
+
   return (
     <StandardModulePage>
       <ModuleHeader
@@ -545,6 +621,7 @@ export function WorkoutsPage({
             )
           })}
         </div>
+        {headerToolbar && <div className="mt-3">{headerToolbar}</div>}
       </ModuleHeader>
 
       {error && (
@@ -566,71 +643,6 @@ export function WorkoutsPage({
 
       {tab === 'journal' && (
         <section className="mt-5 space-y-4">
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {[
-              { label: 'Тренировок за 30 дней', value: recentStats.sessions, icon: Dumbbell },
-              { label: 'Подходов', value: recentStats.sets, icon: Sigma },
-              { label: 'Повторений', value: recentStats.reps, icon: Activity },
-              { label: 'Тоннаж', value: `${formatNumber(recentStats.volume)} кг`, icon: Scale }
-            ].map((stat) => {
-              const Icon = stat.icon
-              return (
-                <div
-                  key={stat.label}
-                  className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)]"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-xs font-medium text-[var(--app-muted)]">
-                      {stat.label}
-                    </span>
-                    <Icon className="size-4 text-violet-300" />
-                  </div>
-                  <div className="mt-2 text-2xl font-semibold text-[var(--app-text)]">
-                    {stat.value}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-
-          <div className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)]">
-            <div className="flex flex-wrap gap-2">
-              <label className="flex h-10 min-w-[240px] flex-1 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 focus-within:border-violet-500/45">
-                <Search className="size-4 text-[var(--app-muted)]" />
-                <input
-                  type="search"
-                  value={query}
-                  placeholder="Поиск по тренировкам и упражнениям…"
-                  className="min-w-0 flex-1 bg-transparent text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60"
-                  onChange={(event) => setQuery(event.target.value)}
-                />
-              </label>
-              <div className="min-w-[190px]">
-                <AppSelect
-                  ariaLabel="Фильтр по программе"
-                  value={programFilter}
-                  options={[
-                    { value: 'all', label: 'Все программы' },
-                    { value: 'custom', label: 'Свободные тренировки' },
-                    ...programs.map((program) => ({ value: program.id, label: program.name }))
-                  ]}
-                  onValueChange={setProgramFilter}
-                />
-              </div>
-              <div className="min-w-[170px]">
-                <AppSelect
-                  ariaLabel="Фильтр по группе мышц"
-                  value={muscleFilter}
-                  options={[
-                    { value: 'all', label: 'Все группы мышц' },
-                    ...WORKOUT_MUSCLE_GROUP_OPTIONS.map(({ value, label }) => ({ value, label }))
-                  ]}
-                  onValueChange={(value) => setMuscleFilter(value as MuscleFilter)}
-                />
-              </div>
-            </div>
-          </div>
-
           {filteredSessions.length === 0 ? (
             <div className="flex min-h-72 flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface)] px-6 text-center">
               <Dumbbell className="size-9 text-violet-300" />
@@ -669,32 +681,6 @@ export function WorkoutsPage({
 
       {tab === 'exercises' && (
         <section className="mt-5 space-y-4">
-          <div className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)]">
-            <div className="flex flex-wrap gap-2">
-              <label className="flex h-10 min-w-[240px] flex-1 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 focus-within:border-violet-500/45">
-                <Search className="size-4 text-[var(--app-muted)]" />
-                <input
-                  type="search"
-                  value={query}
-                  placeholder="Найти упражнение…"
-                  className="min-w-0 flex-1 bg-transparent text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60"
-                  onChange={(event) => setQuery(event.target.value)}
-                />
-              </label>
-              <div className="min-w-[190px]">
-                <AppSelect
-                  ariaLabel="Группа мышц"
-                  value={muscleFilter}
-                  options={[
-                    { value: 'all', label: 'Все группы мышц' },
-                    ...WORKOUT_MUSCLE_GROUP_OPTIONS.map(({ value, label }) => ({ value, label }))
-                  ]}
-                  onValueChange={(value) => setMuscleFilter(value as MuscleFilter)}
-                />
-              </div>
-            </div>
-          </div>
-
           {filteredExercises.length === 0 ? (
             <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface)] text-center">
               <Target className="size-8 text-violet-300" />
@@ -761,21 +747,6 @@ export function WorkoutsPage({
 
       {tab === 'programs' && (
         <section className="mt-5 space-y-4">
-          <div className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)]">
-            <div className="flex flex-wrap gap-2">
-              <label className="flex h-10 min-w-[240px] flex-1 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 focus-within:border-violet-500/45">
-                <Search className="size-4 text-[var(--app-muted)]" />
-                <input
-                  type="search"
-                  value={query}
-                  placeholder="Найти программу…"
-                  className="min-w-0 flex-1 bg-transparent text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60"
-                  onChange={(event) => setQuery(event.target.value)}
-                />
-              </label>
-            </div>
-          </div>
-
           {filteredPrograms.length === 0 ? (
             <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface)] text-center">
               <FileText className="size-8 text-violet-300" />

@@ -253,6 +253,32 @@ describe('WorkoutsPage', () => {
     expect(screen.getByRole('button', { name: 'Удалить тренировку' })).toBeInTheDocument()
   })
 
+  it('keeps searchable workout controls in the module header and analytics out of the journal', async () => {
+    const user = userEvent.setup()
+    render(<WorkoutsPage />)
+
+    const title = await screen.findByRole('heading', { name: 'Тренировки' })
+    const moduleHeader = title.closest('[data-module-header]')
+    expect(moduleHeader).not.toBeNull()
+
+    const journalSearch = screen.getByPlaceholderText('Поиск по тренировкам и упражнениям…')
+    expect(moduleHeader).toContainElement(journalSearch)
+    expect(moduleHeader).toContainElement(
+      screen.getByRole('combobox', { name: 'Фильтр по программе' })
+    )
+    expect(moduleHeader).toContainElement(
+      screen.getByRole('combobox', { name: 'Фильтр по группе мышц' })
+    )
+    expect(screen.queryByText('Тренировок за 30 дней')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /Упражнения/ }))
+    expect(moduleHeader).toContainElement(screen.getByPlaceholderText('Найти упражнение…'))
+    expect(moduleHeader).toContainElement(screen.getByRole('combobox', { name: 'Группа мышц' }))
+
+    await user.click(screen.getByRole('button', { name: /Программы/ }))
+    expect(moduleHeader).toContainElement(screen.getByPlaceholderText('Найти программу…'))
+  })
+
   it('opens the full muscle model from the workout journal', async () => {
     const user = userEvent.setup()
     render(<WorkoutsPage />)
