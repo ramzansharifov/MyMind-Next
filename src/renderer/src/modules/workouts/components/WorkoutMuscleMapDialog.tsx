@@ -323,7 +323,7 @@ export function WorkoutMuscleMapDialog({
           data-pan-y={Math.round(pan.y)}
           data-view={view}
           className={cn(
-            'relative isolate h-full min-h-0 w-full select-none overflow-hidden bg-[var(--app-workspace)] [perspective:1800px]',
+            'relative isolate h-full min-h-0 w-full overflow-hidden bg-[var(--app-workspace)] select-none [perspective:1800px]',
             zoom > 1 && (dragState ? 'cursor-grabbing' : 'cursor-grab')
           )}
           style={{ touchAction: 'none' }}

@@ -256,9 +256,39 @@ describe('WorkoutsPage', () => {
     expect(screen.getByRole('button', { name: 'Закрыть модель мышц' })).toBeInTheDocument()
 
     const viewer = screen.getByRole('region', { name: 'Интерактивная карта мышц' })
+    vi.spyOn(viewer, 'getBoundingClientRect').mockReturnValue({
+      x: 0,
+      y: 0,
+      top: 0,
+      left: 0,
+      right: 1000,
+      bottom: 700,
+      width: 1000,
+      height: 700,
+      toJSON: () => ({})
+    } as DOMRect)
+
     expect(viewer).toHaveAttribute('data-zoom', '1.00')
+    expect(viewer).toHaveAttribute('data-view', 'FRONT')
+    expect(viewer).toHaveAttribute('data-pan-x', '0')
+    expect(viewer).toHaveAttribute('data-pan-y', '0')
+
     fireEvent.wheel(viewer, { deltaY: -100 })
     expect(viewer).toHaveAttribute('data-zoom', '1.10')
+
+    fireEvent.pointerDown(viewer, { button: 0, pointerId: 1, clientX: 500, clientY: 350 })
+    fireEvent.pointerMove(viewer, { pointerId: 1, clientX: 540, clientY: 380 })
+    fireEvent.pointerUp(viewer, { button: 0, pointerId: 1, clientX: 540, clientY: 380 })
+    expect(viewer).toHaveAttribute('data-pan-x', '40')
+    expect(viewer).toHaveAttribute('data-pan-y', '30')
+
+    fireEvent.contextMenu(viewer)
+    expect(viewer).toHaveAttribute('data-view', 'BACK')
+
+    fireEvent.wheel(viewer, { deltaY: 100 })
+    expect(viewer).toHaveAttribute('data-zoom', '1.00')
+    expect(viewer).toHaveAttribute('data-pan-x', '0')
+    expect(viewer).toHaveAttribute('data-pan-y', '0')
   })
 
   it('shows the fixed muscle tag in the exercise library', async () => {
