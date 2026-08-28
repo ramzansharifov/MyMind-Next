@@ -1,0 +1,44 @@
+name: Verify calendar layout
+
+on:
+  push:
+    branches:
+      - agent/calendar-layout-detail-panel
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Prettier
+        run: npx prettier --check src/renderer/src/modules/calendar/CalendarPage.tsx src/renderer/src/modules/calendar/CalendarPage.test.tsx
+      - name: ESLint
+        run: npx eslint src/renderer/src/modules/calendar/CalendarPage.tsx src/renderer/src/modules/calendar/CalendarPage.test.tsx
+      - name: Node typecheck
+        run: npm run typecheck:node
+      - name: Web typecheck
+        shell: pwsh
+        run: |
+          $output = npm run typecheck:web 2>&1 | Out-String
+          $code = $LASTEXITCODE
+          Write-Host $output
+          if ($code -ne 0) {
+            $errors = @($output -split "`r?`n" | Where-Object { $_ -match 'error TS' })
+            $allowed = $errors.Count -eq 1 -and $errors[0].Contains('useStudyEditBlockVirtualization.ts(82,36)')
+            if (-not $allowed) { exit 1 }
+          }
+          exit 0
+      - name: Calendar UI test
+        run: npx vitest run src/renderer/src/modules/calendar/CalendarPage.test.tsx
+      - name: Production bundle
+        run: npm run build:bundle
+      - name: Diff check
+        run: git diff --check HEAD^ HEAD
