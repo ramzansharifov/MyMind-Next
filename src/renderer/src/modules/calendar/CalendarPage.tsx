@@ -16,7 +16,9 @@ import type {
   CalendarOccurrenceRecord
 } from '../../../../shared/contracts/calendar'
 import { cn } from '../../shared/lib/cn'
+import { AppDateField } from '../../shared/ui/AppDateField'
 import { AppDialog } from '../../shared/ui/AppDialog'
+import { AppSelect } from '../../shared/ui/AppSelect'
 import { ModuleHeader } from '../../shared/ui/ModuleHeader'
 import { StandardModulePage } from '../../shared/ui/StandardModulePage'
 
@@ -33,6 +35,42 @@ const DATE_FORMATTER = new Intl.DateTimeFormat('ru-RU', {
   month: 'long',
   year: 'numeric'
 })
+const NO_TIME_VALUE = '__none__'
+const EVENT_KIND_OPTIONS = [
+  { value: 'one_time', label: 'Одноразовое' },
+  { value: 'annual', label: 'Ежегодное' }
+] as const
+const REMINDER_UNIT_OPTIONS = [
+  { value: 'minutes', label: 'минут' },
+  { value: 'hours', label: 'часов' },
+  { value: 'days', label: 'дней' },
+  { value: 'weeks', label: 'недель' }
+] as const
+const ANNUAL_MONTH_OPTIONS = [
+  { value: '01', label: 'января' },
+  { value: '02', label: 'февраля' },
+  { value: '03', label: 'марта' },
+  { value: '04', label: 'апреля' },
+  { value: '05', label: 'мая' },
+  { value: '06', label: 'июня' },
+  { value: '07', label: 'июля' },
+  { value: '08', label: 'августа' },
+  { value: '09', label: 'сентября' },
+  { value: '10', label: 'октября' },
+  { value: '11', label: 'ноября' },
+  { value: '12', label: 'декабря' }
+] as const
+const TIME_HOUR_OPTIONS = [
+  { value: NO_TIME_VALUE, label: 'Без времени' },
+  ...Array.from({ length: 24 }, (_, hour) => ({
+    value: String(hour).padStart(2, '0'),
+    label: String(hour).padStart(2, '0')
+  }))
+]
+const TIME_MINUTE_OPTIONS = Array.from({ length: 60 }, (_, minute) => ({
+  value: String(minute).padStart(2, '0'),
+  label: String(minute).padStart(2, '0')
+}))
 
 function pad(value: number): string {
   return String(value).padStart(2, '0')
@@ -75,6 +113,32 @@ function formatDate(value: string): string {
 
 function occurrenceKey(event: CalendarOccurrenceRecord): string {
   return `${event.eventId}:${event.occurrenceDate}`
+}
+
+function annualDayOptions(value: string): { value: string; label: string }[] {
+  const month = Number(value.slice(5, 7)) || 1
+  const days = new Date(2024, month, 0, 12).getDate()
+  return Array.from({ length: days }, (_, index) => {
+    const day = pad(index + 1)
+    return { value: day, label: String(index + 1) }
+  })
+}
+
+function withAnnualMonth(value: string, month: string): string {
+  const year = value.slice(0, 4) || String(new Date().getFullYear())
+  const currentDay = Number(value.slice(8, 10)) || 1
+  const maxDay = new Date(2024, Number(month), 0, 12).getDate()
+  return `${year}-${month}-${pad(Math.min(currentDay, maxDay))}`
+}
+
+function withAnnualDay(value: string, day: string): string {
+  const year = value.slice(0, 4) || String(new Date().getFullYear())
+  const month = value.slice(5, 7) || '01'
+  return `${year}-${month}-${day}`
+}
+
+function annualOccurrenceDate(occurrenceDate: string, templateDate: string): string {
+  return `${occurrenceDate.slice(0, 4)}-${templateDate.slice(5)}`
 }
 
 function plural(value: number, forms: [string, string, string]): string {
@@ -124,7 +188,7 @@ interface EditorState {
   kind: CalendarEventKind
   date: string
   time: string
-  startDate: string
+  startYear: string
   note: string
   reminderOffsets: number[]
 }
@@ -137,7 +201,7 @@ function emptyEditor(date: string): EditorState {
     kind: 'one_time',
     date,
     time: '',
-    startDate: '',
+    startYear: String(new Date().getFullYear()),
     note: '',
     reminderOffsets: []
   }
@@ -151,7 +215,7 @@ function editorFromOccurrence(event: CalendarOccurrenceRecord): EditorState {
     kind: event.kind,
     date: event.occurrenceDate,
     time: event.time ?? '',
-    startDate: event.startDate ?? '',
+    startYear: event.startDate?.slice(0, 4) ?? '',
     note: event.note,
     reminderOffsets: event.reminderOffsets
   }
@@ -231,6 +295,13 @@ export function CalendarPage(): React.JSX.Element {
     setSelectedEventKey(null)
   }
 
+  function goToDate(value: string): void {
+    if (!value) return
+    setMonth(monthKey(parseDate(value)))
+    setSelectedDate(value)
+    setSelectedEventKey(null)
+  }
+
   function openCreate(date = selectedDate): void {
     setEditor(emptyEditor(date))
   }
@@ -249,26 +320,37 @@ export function CalendarPage(): React.JSX.Element {
     if (!editor || !editor.title.trim()) return
     setSaving(true)
     try {
+      const occurrenceDate =
+        editor.kind === 'annual'
+          ? annualOccurrenceDate(editor.occurrenceDate, editor.date)
+          : editor.date
+      const startDate =
+        editor.kind === 'annual' && editor.startYear.trim()
+          ? `${editor.startYear.trim()}-${editor.date.slice(5)}`
+          : null
       const input = {
         title: editor.title.trim(),
         kind: editor.kind,
         date: editor.date,
         time: editor.time || null,
-        startDate: editor.kind === 'annual' && editor.startDate ? editor.startDate : null,
+        startDate,
         note: editor.note,
         reminderOffsets: editor.reminderOffsets
       }
+      let eventId = editor.eventId
       if (editor.eventId) {
         await window.api.calendar.updateEvent({
           ...input,
           id: editor.eventId,
-          occurrenceDate: editor.occurrenceDate
+          occurrenceDate
         })
       } else {
         const created = await window.api.calendar.createEvent(input)
-        setSelectedDate(editor.date)
-        setSelectedEventKey(`${created.id}:${editor.date}`)
+        eventId = created.id
       }
+      setSelectedDate(occurrenceDate)
+      setSelectedEventKey(eventId ? `${eventId}:${occurrenceDate}` : null)
+      setMonth(monthKey(parseDate(occurrenceDate)))
       setEditor(null)
       await load()
     } catch (reason: unknown) {
@@ -347,39 +429,44 @@ export function CalendarPage(): React.JSX.Element {
           className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--app-shadow-card)]"
         >
           <div className="grid min-h-14 grid-cols-[1fr_auto_1fr] items-center gap-3 border-b border-[var(--app-border)] bg-[var(--app-workspace)] px-3 py-2">
-            <div className="flex items-center gap-1 justify-self-start">
+            <button
+              type="button"
+              className="h-9 justify-self-start rounded-lg border border-[var(--app-border)] bg-[var(--app-card)] px-3 text-xs font-medium text-[var(--app-text)] transition-colors hover:bg-[var(--app-control-hover)]"
+              onClick={goToday}
+            >
+              Сегодня
+            </button>
+
+            <div className="flex min-w-0 items-center justify-center gap-2 sm:gap-3">
               <button
                 type="button"
                 aria-label="Предыдущий месяц"
-                className="flex size-9 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+                className="flex size-9 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
                 onClick={() => shiftMonth(-1)}
               >
                 <ChevronLeft className="size-4" />
               </button>
+              <strong className="min-w-[150px] text-center text-sm font-semibold text-[var(--app-text)] capitalize sm:min-w-[180px] sm:text-base">
+                {MONTH_FORMATTER.format(parseDate(month))}
+              </strong>
               <button
                 type="button"
                 aria-label="Следующий месяц"
-                className="flex size-9 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+                className="flex size-9 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
                 onClick={() => shiftMonth(1)}
               >
                 <ChevronRight className="size-4" />
               </button>
-              <button
-                type="button"
-                className="ml-1 h-9 rounded-lg border border-[var(--app-border)] bg-[var(--app-card)] px-3 text-xs font-medium text-[var(--app-text)] transition-colors hover:bg-[var(--app-control-hover)]"
-                onClick={goToday}
-              >
-                Сегодня
-              </button>
             </div>
 
-            <strong className="text-sm font-semibold text-[var(--app-text)] capitalize sm:text-base">
-              {MONTH_FORMATTER.format(parseDate(month))}
-            </strong>
-
-            <div className="justify-self-end rounded-lg border border-violet-500/15 bg-violet-500/10 px-3 py-1.5 text-xs font-semibold text-violet-200">
-              Месяц
-            </div>
+            <AppDateField
+              value={selectedDate}
+              onChange={goToDate}
+              ariaLabel="Точная дата календаря"
+              calendarButtonLabel="Выбрать точную дату календаря"
+              className="w-[176px] justify-self-end"
+              inputClassName="h-9 rounded-lg bg-[var(--app-card)] text-xs"
+            />
           </div>
 
           <div className="grid grid-cols-7 border-b border-[var(--app-border)] bg-[var(--app-workspace)]/70">
@@ -410,10 +497,18 @@ export function CalendarPage(): React.JSX.Element {
                     hasRightBorder && 'border-r border-[var(--app-border)]',
                     hasBottomBorder && 'border-b border-[var(--app-border)]',
                     !inMonth && 'bg-[var(--app-workspace)]/40',
-                    isSelected
-                      ? 'bg-violet-500/[0.07] shadow-[inset_0_0_0_1px_rgba(139,92,246,0.32)]'
-                      : 'hover:bg-[var(--app-card-hover)]'
+                    !isSelected && 'hover:bg-[var(--app-card-hover)]'
                   )}
+                  style={
+                    isSelected
+                      ? {
+                          backgroundColor:
+                            'color-mix(in srgb, var(--app-accent-500) 7%, transparent)',
+                          boxShadow:
+                            'inset 0 0 0 1px color-mix(in srgb, var(--app-accent-500) 48%, transparent)'
+                        }
+                      : undefined
+                  }
                   onClick={() => selectDay(day)}
                   onDoubleClick={() => openCreate(day)}
                 >
@@ -583,7 +678,7 @@ export function CalendarPage(): React.JSX.Element {
                       Существует с
                     </div>
                     <div className="mt-1 text-sm font-medium text-[var(--app-text)]">
-                      {formatDate(selectedEvent.startDate)}
+                      {selectedEvent.startDate.slice(0, 4)} год
                     </div>
                     {elapsedLabel(selectedEvent) && (
                       <div className="mt-2 text-xs text-violet-200">
@@ -724,56 +819,112 @@ export function CalendarPage(): React.JSX.Element {
             </label>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block">
+              <div>
                 <span className="mb-1.5 block text-xs font-medium text-[var(--app-muted)]">
                   Тип события
                 </span>
-                <select
+                <AppSelect
                   value={editor.kind}
-                  className="h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none"
-                  onChange={(event) =>
-                    setEditor({ ...editor, kind: event.target.value as CalendarEventKind })
+                  options={EVENT_KIND_OPTIONS}
+                  ariaLabel="Тип события"
+                  triggerClassName="h-11 border border-[var(--app-border)]"
+                  onValueChange={(value) =>
+                    setEditor({ ...editor, kind: value as CalendarEventKind })
                   }
-                >
-                  <option value="one_time">Одноразовое</option>
-                  <option value="annual">Ежегодное</option>
-                </select>
-              </label>
-              <label className="block">
+                />
+              </div>
+
+              <div>
                 <span className="mb-1.5 block text-xs font-medium text-[var(--app-muted)]">
                   Дата
                 </span>
-                <input
-                  type="date"
-                  value={editor.date}
-                  className="h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none"
-                  onChange={(event) => setEditor({ ...editor, date: event.target.value })}
-                />
-              </label>
+                {editor.kind === 'one_time' ? (
+                  <AppDateField
+                    value={editor.date}
+                    onChange={(value) => setEditor({ ...editor, date: value })}
+                    ariaLabel="Дата события"
+                    calendarButtonLabel="Выбрать дату события"
+                    inputClassName="h-11"
+                  />
+                ) : (
+                  <div className="grid grid-cols-[0.8fr_1.2fr] gap-2">
+                    <AppSelect
+                      value={editor.date.slice(8, 10)}
+                      options={annualDayOptions(editor.date)}
+                      ariaLabel="День ежегодного события"
+                      triggerClassName="h-11 border border-[var(--app-border)]"
+                      onValueChange={(value) =>
+                        setEditor({ ...editor, date: withAnnualDay(editor.date, value) })
+                      }
+                    />
+                    <AppSelect
+                      value={editor.date.slice(5, 7)}
+                      options={ANNUAL_MONTH_OPTIONS}
+                      ariaLabel="Месяц ежегодного события"
+                      triggerClassName="h-11 border border-[var(--app-border)]"
+                      onValueChange={(value) =>
+                        setEditor({ ...editor, date: withAnnualMonth(editor.date, value) })
+                      }
+                    />
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block">
+              <div>
                 <span className="mb-1.5 block text-xs font-medium text-[var(--app-muted)]">
                   Время, необязательно
                 </span>
-                <input
-                  type="time"
-                  value={editor.time}
-                  className="h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none"
-                  onChange={(event) => setEditor({ ...editor, time: event.target.value })}
-                />
-              </label>
+                <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+                  <AppSelect
+                    value={editor.time ? editor.time.slice(0, 2) : NO_TIME_VALUE}
+                    options={TIME_HOUR_OPTIONS}
+                    ariaLabel="Часы события"
+                    triggerClassName="h-11 border border-[var(--app-border)]"
+                    onValueChange={(value) =>
+                      setEditor({
+                        ...editor,
+                        time:
+                          value === NO_TIME_VALUE
+                            ? ''
+                            : `${value}:${editor.time ? editor.time.slice(3, 5) : '00'}`
+                      })
+                    }
+                  />
+                  <span className="text-sm font-semibold text-[var(--app-muted)]">:</span>
+                  <AppSelect
+                    value={editor.time ? editor.time.slice(3, 5) : '00'}
+                    options={TIME_MINUTE_OPTIONS}
+                    ariaLabel="Минуты события"
+                    disabled={!editor.time}
+                    triggerClassName="h-11 border border-[var(--app-border)]"
+                    onValueChange={(value) =>
+                      setEditor({ ...editor, time: `${editor.time.slice(0, 2)}:${value}` })
+                    }
+                  />
+                </div>
+              </div>
+
               {editor.kind === 'annual' && (
                 <label className="block">
                   <span className="mb-1.5 block text-xs font-medium text-[var(--app-muted)]">
-                    Начало даты, необязательно
+                    Год начала, необязательно
                   </span>
                   <input
-                    type="date"
-                    value={editor.startDate}
-                    className="h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none"
-                    onChange={(event) => setEditor({ ...editor, startDate: event.target.value })}
+                    type="number"
+                    min={1}
+                    max={9999}
+                    value={editor.startYear}
+                    placeholder={String(new Date().getFullYear())}
+                    aria-label="Год начала"
+                    className="h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-[var(--app-accent-500)]"
+                    onChange={(event) =>
+                      setEditor({
+                        ...editor,
+                        startYear: event.target.value.replace(/\D/g, '').slice(0, 4)
+                      })
+                    }
                   />
                 </label>
               )}
@@ -790,7 +941,12 @@ export function CalendarPage(): React.JSX.Element {
 
             <label className="block">
               <span className="mb-1.5 block text-xs font-medium text-[var(--app-muted)]">
-                Заметка именно на {formatOccurrenceDate(editor.occurrenceDate)}
+                Заметка именно на{' '}
+                {formatOccurrenceDate(
+                  editor.kind === 'annual'
+                    ? annualOccurrenceDate(editor.occurrenceDate, editor.date)
+                    : editor.date
+                )}
               </span>
               <textarea
                 value={editor.note}
@@ -845,16 +1001,15 @@ export function CalendarPage(): React.JSX.Element {
                   className="h-10 w-24 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none"
                   onChange={(event) => setReminderAmount(Number(event.target.value))}
                 />
-                <select
-                  value={reminderUnit}
-                  className="h-10 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none"
-                  onChange={(event) => setReminderUnit(event.target.value as typeof reminderUnit)}
-                >
-                  <option value="minutes">минут</option>
-                  <option value="hours">часов</option>
-                  <option value="days">дней</option>
-                  <option value="weeks">недель</option>
-                </select>
+                <div className="w-32">
+                  <AppSelect
+                    value={reminderUnit}
+                    options={REMINDER_UNIT_OPTIONS}
+                    ariaLabel="Единица напоминания"
+                    triggerClassName="h-10 border border-[var(--app-border)]"
+                    onValueChange={(value) => setReminderUnit(value as typeof reminderUnit)}
+                  />
+                </div>
                 <button
                   type="button"
                   className="h-10 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm font-medium text-[var(--app-text)] hover:bg-[var(--app-control-hover)]"

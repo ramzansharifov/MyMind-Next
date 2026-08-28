@@ -68,6 +68,7 @@ describe('CalendarPage', () => {
     expect(calendarGrid).toContainElement(screen.getByRole('button', { name: 'Предыдущий месяц' }))
     expect(calendarGrid).toContainElement(screen.getByRole('button', { name: 'Следующий месяц' }))
     expect(calendarGrid).toContainElement(screen.getByRole('button', { name: 'Сегодня' }))
+    expect(calendarGrid).toContainElement(screen.getByLabelText('Точная дата календаря'))
     expect(moduleHeader).not.toContainElement(
       screen.getByRole('button', { name: 'Предыдущий месяц' })
     )
@@ -80,8 +81,16 @@ describe('CalendarPage', () => {
     expect(within(detailPanel).getByText('За 1 день')).toBeInTheDocument()
     expect(within(detailPanel).getByText('За 2 часа')).toBeInTheDocument()
     expect(within(detailPanel).getByText('Прошло 5 лет, 0 дней')).toBeInTheDocument()
-    expect(
-      within(detailPanel).getByRole('button', { name: 'Редактировать событие' })
-    ).toBeInTheDocument()
+    const editButton = within(detailPanel).getByRole('button', { name: 'Редактировать событие' })
+    expect(editButton).toBeInTheDocument()
+
+    await user.click(editButton)
+
+    expect(screen.getByLabelText('День ежегодного события')).toBeInTheDocument()
+    expect(screen.getByLabelText('Месяц ежегодного события')).toBeInTheDocument()
+    expect(screen.getByLabelText('Год начала')).toHaveValue(Number(todayKey().slice(0, 4)) - 5)
+    expect(screen.getByLabelText('Часы события')).toBeInTheDocument()
+    expect(screen.getByLabelText('Минуты события')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Дата события')).not.toBeInTheDocument()
   })
 })
