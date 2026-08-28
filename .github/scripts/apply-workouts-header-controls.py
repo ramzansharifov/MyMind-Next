@@ -168,15 +168,17 @@ new_test = r'''  it('keeps searchable workout controls in the module header and 
 
     const journalSearch = screen.getByPlaceholderText('Поиск по тренировкам и упражнениям…')
     expect(moduleHeader).toContainElement(journalSearch)
-    expect(moduleHeader).toContainElement(screen.getByRole('button', { name: 'Фильтр по программе' }))
     expect(moduleHeader).toContainElement(
-      screen.getByRole('button', { name: 'Фильтр по группе мышц' })
+      screen.getByRole('combobox', { name: 'Фильтр по программе' })
+    )
+    expect(moduleHeader).toContainElement(
+      screen.getByRole('combobox', { name: 'Фильтр по группе мышц' })
     )
     expect(screen.queryByText('Тренировок за 30 дней')).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /Упражнения/ }))
     expect(moduleHeader).toContainElement(screen.getByPlaceholderText('Найти упражнение…'))
-    expect(moduleHeader).toContainElement(screen.getByRole('button', { name: 'Группа мышц' }))
+    expect(moduleHeader).toContainElement(screen.getByRole('combobox', { name: 'Группа мышц' }))
 
     await user.click(screen.getByRole('button', { name: /Программы/ }))
     expect(moduleHeader).toContainElement(screen.getByPlaceholderText('Найти программу…'))
