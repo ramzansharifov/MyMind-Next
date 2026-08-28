@@ -21,6 +21,11 @@ interface ZoneConfig {
   groups: AnatomyMuscleGroup[]
 }
 
+interface HoverPosition {
+  x: number
+  y: number
+}
+
 export interface WorkoutMuscleMapExercise {
   title: string
   muscleGroups: readonly WorkoutMuscleGroup[]
@@ -36,6 +41,9 @@ interface WorkoutMuscleMapDialogProps {
 }
 
 const FALLBACK_ACCENT = '#8b5cf6'
+const TOOLTIP_WIDTH = 280
+const TOOLTIP_HEIGHT = 164
+const TOOLTIP_GAP = 16
 
 const LEGACY_GROUP_EXPANSIONS: Partial<Record<WorkoutMuscleGroup, WorkoutMuscleZone[]>> = {
   arms: ['shoulders', 'biceps', 'triceps', 'forearms'],
@@ -103,14 +111,26 @@ function exerciseCountLabel(count: number): string {
   return 'упражнений'
 }
 
+function zoneForAnatomyGroup(group: AnatomyMuscleGroup | null): WorkoutMuscleZone | null {
+  if (!group) return null
+  for (const zone of Object.keys(ZONE_CONFIG) as WorkoutMuscleZone[]) {
+    if (ZONE_CONFIG[zone].groups.includes(group)) return zone
+  }
+  return null
+}
+
 function MuscleMapBody({
   view,
   zoneCounts,
-  maxCount
+  maxCount,
+  activeGroup,
+  onHover
 }: {
   view: AnatomyView
   zoneCounts: Map<WorkoutMuscleZone, number>
   maxCount: number
+  activeGroup: AnatomyMuscleGroup | null
+  onHover: (group: AnatomyMuscleGroup | null) => void
 }): React.JSX.Element {
   const accentColor = useAccentColor()
   const id = useId().replace(/:/g, '')
@@ -138,15 +158,15 @@ function MuscleMapBody({
       monochromeColor={accentColor}
       monochromeBaseColor="#475569"
       visibleGroups={visibleGroups}
-      activeGroup={null}
+      activeGroup={activeGroup}
       glow
       idPrefix={`workout-muscle-map-${view.toLowerCase()}-${id}`}
-      width={340}
+      width={440}
       backgroundImage={view === 'FRONT' ? maleFront : maleBack}
-      backgroundOpacity={0.84}
+      backgroundOpacity={0.86}
       backgroundGrayscale
       backgroundBrightness={0.76}
-      onHover={() => undefined}
+      onHover={onHover}
       onSelect={() => undefined}
     />
   )
@@ -161,6 +181,8 @@ export function WorkoutMuscleMapDialog({
   onOpenChange
 }: WorkoutMuscleMapDialogProps): React.JSX.Element {
   const [view, setView] = useState<AnatomyView>('FRONT')
+  const [hoveredGroup, setHoveredGroup] = useState<AnatomyMuscleGroup | null>(null)
+  const [hoverPosition, setHoverPosition] = useState<HoverPosition | null>(null)
 
   const analysis = useMemo(() => {
     const zoneCounts = new Map<WorkoutMuscleZone, number>()
@@ -193,6 +215,21 @@ export function WorkoutMuscleMapDialog({
     }
   }, [exercises])
 
+  const hoveredZone = zoneForAnatomyGroup(hoveredGroup)
+  const hoveredInfo = hoveredZone
+    ? (analysis.rows.find((row) => row.zone === hoveredZone) ?? null)
+    : null
+
+  function clearHover(): void {
+    setHoveredGroup(null)
+    setHoverPosition(null)
+  }
+
+  function changeView(nextView: AnatomyView): void {
+    clearHover()
+    setView(nextView)
+  }
+
   return (
     <AppDialog
       open={open}
@@ -202,105 +239,122 @@ export function WorkoutMuscleMapDialog({
       icon={<Activity />}
       size="xl"
     >
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(300px,0.9fr)]">
-        <section className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)]">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--app-border)] px-4 py-3">
-            <div>
-              <div className="text-sm font-semibold text-[var(--app-text)]">
-                Анатомическая карта
-              </div>
-              <div className="mt-0.5 text-xs text-[var(--app-muted)]">
-                {exercises.length} {exerciseCountLabel(exercises.length)} · {analysis.rows.length}{' '}
-                мышечных зон
-              </div>
-            </div>
-            <div className="flex items-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-1">
-              {(['FRONT', 'BACK'] as const).map((side) => (
-                <button
-                  key={side}
-                  type="button"
-                  aria-pressed={view === side}
-                  className={cn(
-                    'h-8 rounded-lg px-3 text-xs font-medium transition-colors',
-                    view === side
-                      ? 'bg-violet-500 text-white'
-                      : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
-                  )}
-                  onClick={() => setView(side)}
-                >
-                  {side === 'FRONT' ? 'Спереди' : 'Сзади'}
-                </button>
-              ))}
+      {analysis.rows.length === 0 ? (
+        <div className="flex min-h-[560px] items-center justify-center rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-6 text-center text-sm text-[var(--app-muted)]">
+          {emptyMessage}
+        </div>
+      ) : (
+        <section
+          aria-label="Интерактивная карта мышц"
+          className="relative isolate h-[620px] overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] [perspective:1400px]"
+          onPointerMove={(event) => {
+            if (!hoveredGroup) return
+            const bounds = event.currentTarget.getBoundingClientRect()
+            const relativeX = event.clientX - bounds.left + TOOLTIP_GAP
+            const relativeY = event.clientY - bounds.top + TOOLTIP_GAP
+            setHoverPosition({
+              x: Math.min(
+                Math.max(relativeX, TOOLTIP_GAP),
+                Math.max(TOOLTIP_GAP, bounds.width - TOOLTIP_WIDTH - TOOLTIP_GAP)
+              ),
+              y: Math.min(
+                Math.max(relativeY, TOOLTIP_GAP),
+                Math.max(TOOLTIP_GAP, bounds.height - TOOLTIP_HEIGHT - TOOLTIP_GAP)
+              )
+            })
+          }}
+          onPointerLeave={clearHover}
+        >
+          <div className="sr-only">
+            <span>Задействованные мышцы</span>
+            {analysis.rows.map((row) => (
+              <span key={row.zone}>{workoutMuscleGroupLabel(row.zone)}</span>
+            ))}
+          </div>
+
+          <div className="absolute top-4 left-1/2 z-20 flex -translate-x-1/2 items-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)]/90 p-1 shadow-[var(--app-shadow-card)] backdrop-blur-xl">
+            {(['FRONT', 'BACK'] as const).map((side) => (
               <button
+                key={side}
                 type="button"
-                aria-label="Повернуть модель"
-                className="ml-1 flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-                onClick={() => setView((current) => (current === 'FRONT' ? 'BACK' : 'FRONT'))}
+                aria-pressed={view === side}
+                className={cn(
+                  'h-8 rounded-lg px-3 text-xs font-medium transition-colors',
+                  view === side
+                    ? 'bg-violet-500 text-white'
+                    : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
+                )}
+                onClick={() => changeView(side)}
               >
-                <RotateCcw className="size-4" />
+                {side === 'FRONT' ? 'Спереди' : 'Сзади'}
               </button>
+            ))}
+            <button
+              type="button"
+              aria-label="Повернуть модель"
+              className="ml-1 flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+              onClick={() => changeView(view === 'FRONT' ? 'BACK' : 'FRONT')}
+            >
+              <RotateCcw className="size-4" />
+            </button>
+          </div>
+
+          <div
+            className={cn(
+              'relative h-full w-full transition-transform duration-500 [transform-style:preserve-3d]',
+              view === 'BACK' && '[transform:rotateY(180deg)]'
+            )}
+          >
+            <div className="absolute inset-0 flex items-start justify-center px-5 pt-10 pb-12 [backface-visibility:hidden] [&>svg]:max-h-full [&>svg]:w-full">
+              <MuscleMapBody
+                view="FRONT"
+                zoneCounts={analysis.zoneCounts}
+                maxCount={analysis.maxCount}
+                activeGroup={view === 'FRONT' ? hoveredGroup : null}
+                onHover={setHoveredGroup}
+              />
+            </div>
+            <div className="absolute inset-0 flex [transform:rotateY(180deg)] items-start justify-center px-5 pt-10 pb-12 [backface-visibility:hidden] [&>svg]:max-h-full [&>svg]:w-full">
+              <MuscleMapBody
+                view="BACK"
+                zoneCounts={analysis.zoneCounts}
+                maxCount={analysis.maxCount}
+                activeGroup={view === 'BACK' ? hoveredGroup : null}
+                onHover={setHoveredGroup}
+              />
             </div>
           </div>
 
-          {analysis.rows.length === 0 ? (
-            <div className="flex min-h-[440px] items-center justify-center px-6 text-center text-sm text-[var(--app-muted)]">
-              {emptyMessage}
-            </div>
-          ) : (
-            <div className="relative mx-auto h-[500px] w-full max-w-[390px] [perspective:1200px]">
-              <div
-                className={cn(
-                  'relative h-full w-full transition-transform duration-500 [transform-style:preserve-3d]',
-                  view === 'BACK' && '[transform:rotateY(180deg)]'
+          {hoveredInfo && hoverPosition && (
+            <div
+              role="status"
+              className="pointer-events-none absolute z-30 w-[280px] rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)]/95 p-3.5 shadow-[var(--app-shadow-card)] backdrop-blur-xl transition-opacity"
+              style={{ left: hoverPosition.x, top: hoverPosition.y }}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="text-sm font-semibold text-[var(--app-text)]">
+                  {workoutMuscleGroupLabel(hoveredInfo.zone)}
+                </div>
+                <span className="shrink-0 rounded-lg bg-violet-500/10 px-2 py-1 text-[10px] font-semibold text-violet-300">
+                  {hoveredInfo.count} {exerciseCountLabel(hoveredInfo.count)}
+                </span>
+              </div>
+              <div className="mt-2 space-y-1 text-xs leading-5 text-[var(--app-muted)]">
+                {hoveredInfo.exercises.slice(0, 4).map((exercise) => (
+                  <div key={exercise} className="truncate">
+                    {exercise}
+                  </div>
+                ))}
+                {hoveredInfo.exercises.length > 4 && (
+                  <div className="text-[var(--app-muted)]/75">
+                    + ещё {hoveredInfo.exercises.length - 4}
+                  </div>
                 )}
-              >
-                <div className="absolute inset-0 flex items-start justify-center px-4 pt-1 pb-8 [backface-visibility:hidden] [&>svg]:max-h-full [&>svg]:w-full">
-                  <MuscleMapBody
-                    view="FRONT"
-                    zoneCounts={analysis.zoneCounts}
-                    maxCount={analysis.maxCount}
-                  />
-                </div>
-                <div className="absolute inset-0 flex [transform:rotateY(180deg)] items-start justify-center px-4 pt-1 pb-8 [backface-visibility:hidden] [&>svg]:max-h-full [&>svg]:w-full">
-                  <MuscleMapBody
-                    view="BACK"
-                    zoneCounts={analysis.zoneCounts}
-                    maxCount={analysis.maxCount}
-                  />
-                </div>
               </div>
             </div>
           )}
         </section>
-
-        <section className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4">
-          <div className="text-sm font-semibold text-[var(--app-text)]">Задействованные мышцы</div>
-          <p className="mt-1 text-xs leading-5 text-[var(--app-muted)]">
-            Чем больше упражнений затрагивает мышцу, тем ярче она выделена на карте.
-          </p>
-
-          <div className="mt-4 space-y-2">
-            {analysis.rows.map((row) => (
-              <div
-                key={row.zone}
-                className="rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 py-2.5"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-sm font-semibold text-[var(--app-text)]">
-                    {workoutMuscleGroupLabel(row.zone)}
-                  </span>
-                  <span className="rounded-lg bg-violet-500/10 px-2 py-1 text-[11px] font-semibold text-violet-300">
-                    {row.count} {exerciseCountLabel(row.count)}
-                  </span>
-                </div>
-                <div className="mt-1.5 text-xs leading-5 text-[var(--app-muted)]">
-                  {row.exercises.join(' · ')}
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      </div>
+      )}
     </AppDialog>
   )
 }
