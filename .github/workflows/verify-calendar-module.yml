@@ -28,9 +28,10 @@ jobs:
       - name: Generate calendar migration
         shell: pwsh
         run: |
-          $existing = Get-ChildItem drizzle -Filter *.sql | Select-String -Pattern 'calendar_events' -Quiet
+          $existing = Get-ChildItem drizzle -Filter *.sql | Select-String -Pattern 'calendar_events' | Select-Object -First 1
           if (-not $existing) {
             npx drizzle-kit generate --name calendar_module
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
       - name: Format calendar changes
         run: >-
