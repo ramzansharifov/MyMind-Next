@@ -146,10 +146,6 @@ export function WorkoutProgramMuscleMapDialog({
 }: WorkoutProgramMuscleMapDialogProps): React.JSX.Element {
   const [view, setView] = useState<AnatomyView>('FRONT')
 
-  useEffect(() => {
-    if (open) setView('FRONT')
-  }, [open, program?.id])
-
   const analysis = useMemo(() => {
     const exerciseMap = new Map(exercises.map((exercise) => [exercise.id, exercise]))
     const zoneCounts = new Map<WorkoutMuscleZone, number>()
@@ -168,7 +164,14 @@ export function WorkoutProgramMuscleMapDialog({
 
     const rows = [...zoneCounts.entries()]
       .map(([zone, count]) => ({ zone, count, exercises: zoneExercises.get(zone) ?? [] }))
-      .sort((left, right) => right.count - left.count || workoutMuscleGroupLabel(left.zone).localeCompare(workoutMuscleGroupLabel(right.zone), 'ru'))
+      .sort(
+        (left, right) =>
+          right.count - left.count ||
+          workoutMuscleGroupLabel(left.zone).localeCompare(
+            workoutMuscleGroupLabel(right.zone),
+            'ru'
+          )
+      )
 
     return {
       zoneCounts,
@@ -191,7 +194,9 @@ export function WorkoutProgramMuscleMapDialog({
           <section className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)]">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--app-border)] px-4 py-3">
               <div>
-                <div className="text-sm font-semibold text-[var(--app-text)]">Анатомическая карта</div>
+                <div className="text-sm font-semibold text-[var(--app-text)]">
+                  Анатомическая карта
+                </div>
                 <div className="mt-0.5 text-xs text-[var(--app-muted)]">
                   {program.exercises.length} упражнений · {analysis.rows.length} мышечных зон
                 </div>
@@ -237,10 +242,18 @@ export function WorkoutProgramMuscleMapDialog({
                   )}
                 >
                   <div className="absolute inset-0 grid place-items-center p-4 [backface-visibility:hidden] [&>svg]:max-h-full [&>svg]:w-full">
-                    <ProgramBody view="FRONT" zoneCounts={analysis.zoneCounts} maxCount={analysis.maxCount} />
+                    <ProgramBody
+                      view="FRONT"
+                      zoneCounts={analysis.zoneCounts}
+                      maxCount={analysis.maxCount}
+                    />
                   </div>
                   <div className="absolute inset-0 grid place-items-center p-4 [backface-visibility:hidden] [transform:rotateY(180deg)] [&>svg]:max-h-full [&>svg]:w-full">
-                    <ProgramBody view="BACK" zoneCounts={analysis.zoneCounts} maxCount={analysis.maxCount} />
+                    <ProgramBody
+                      view="BACK"
+                      zoneCounts={analysis.zoneCounts}
+                      maxCount={analysis.maxCount}
+                    />
                   </div>
                 </div>
               </div>
