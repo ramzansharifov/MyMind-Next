@@ -119,7 +119,7 @@ text = (
 )
 
 # Remove the journal dashboard tiles and the duplicated standalone discovery card.
-journal_start = text.find("      {tab === 'journal' && (")
+journal_start = text.find("      {tab === 'journal' && (\n        <section")
 journal_list = text.find('          {filteredSessions.length === 0 ? (', journal_start)
 if journal_start == -1 or journal_list == -1:
     raise SystemExit('journal list marker not found')
@@ -129,7 +129,7 @@ if journal_section_open_end <= 0:
 text = text[:journal_section_open_end] + text[journal_list:]
 
 # Exercise discovery now lives under the module tabs in the header.
-exercise_start = text.find("      {tab === 'exercises' && (")
+exercise_start = text.find("      {tab === 'exercises' && (\n        <section")
 exercise_list = text.find('          {filteredExercises.length === 0 ? (', exercise_start)
 if exercise_start == -1 or exercise_list == -1:
     raise SystemExit('exercise list marker not found')
@@ -139,7 +139,7 @@ if exercise_section_open_end <= 0:
 text = text[:exercise_section_open_end] + text[exercise_list:]
 
 # Program discovery now lives under the module tabs in the header.
-program_start = text.find("      {tab === 'programs' && (")
+program_start = text.find("      {tab === 'programs' && (\n        <section")
 program_list = text.find('          {filteredPrograms.length === 0 ? (', program_start)
 if program_start == -1 or program_list == -1:
     raise SystemExit('program list marker not found')
