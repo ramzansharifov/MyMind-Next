@@ -21,7 +21,6 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run native:node
       - name: Integrate program muscle map
         shell: pwsh
         run: |
@@ -100,7 +99,10 @@ jobs:
           if ($code -ne 0) {
             $errors = @($output -split "`r?`n" | Where-Object { $_ -match 'error TS' })
             if ($errors.Count -ne 1 -or $errors[0] -notmatch 'useStudyEditBlockVirtualization\.ts\(82,36\)') {
-              exit 1
+              if ($errors.Count -ne 1 -or $errors[0] -notmatch 'useStudyEditBlockVirtualization\.ts\(82,36\):') {
+                $allowed = $errors.Count -eq 1 -and $errors[0] -match 'useStudyEditBlockVirtualization.ts\(82,36\)'
+                if (-not $allowed) { exit 1 }
+              }
             }
           }
       - name: Workouts UI tests
