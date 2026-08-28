@@ -3,7 +3,7 @@ import maleBack from '@musclemap/assets/bodies/male-back.webp'
 import maleFront from '@musclemap/assets/bodies/male-front.webp'
 import type { MuscleGroup as AnatomyMuscleGroup, MuscleMapValues } from '@musclemap/core'
 import { BodyFigure } from '@musclemap/react'
-import { Activity, RotateCcw } from 'lucide-react'
+import { RotateCcw, X } from 'lucide-react'
 import { useEffect, useId, useMemo, useState } from 'react'
 
 import type {
@@ -43,7 +43,10 @@ interface WorkoutMuscleMapDialogProps {
 const FALLBACK_ACCENT = '#8b5cf6'
 const TOOLTIP_WIDTH = 280
 const TOOLTIP_HEIGHT = 164
-const TOOLTIP_GAP = 16
+const TOOLTIP_GAP = 18
+const MIN_ZOOM = 0.65
+const MAX_ZOOM = 2.2
+const ZOOM_STEP = 0.1
 
 const LEGACY_GROUP_EXPANSIONS: Partial<Record<WorkoutMuscleGroup, WorkoutMuscleZone[]>> = {
   arms: ['shoulders', 'biceps', 'triceps', 'forearms'],
@@ -119,6 +122,10 @@ function zoneForAnatomyGroup(group: AnatomyMuscleGroup | null): WorkoutMuscleZon
   return null
 }
 
+function clampZoom(value: number): number {
+  return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.round(value * 100) / 100))
+}
+
 function MuscleMapBody({
   view,
   zoneCounts,
@@ -161,9 +168,9 @@ function MuscleMapBody({
       activeGroup={activeGroup}
       glow
       idPrefix={`workout-muscle-map-${view.toLowerCase()}-${id}`}
-      width={440}
+      width={620}
       backgroundImage={view === 'FRONT' ? maleFront : maleBack}
-      backgroundOpacity={0.86}
+      backgroundOpacity={0.88}
       backgroundGrayscale
       backgroundBrightness={0.76}
       onHover={onHover}
@@ -181,6 +188,7 @@ export function WorkoutMuscleMapDialog({
   onOpenChange
 }: WorkoutMuscleMapDialogProps): React.JSX.Element {
   const [view, setView] = useState<AnatomyView>('FRONT')
+  const [zoom, setZoom] = useState(1)
   const [hoveredGroup, setHoveredGroup] = useState<AnatomyMuscleGroup | null>(null)
   const [hoverPosition, setHoverPosition] = useState<HoverPosition | null>(null)
 
@@ -225,28 +233,56 @@ export function WorkoutMuscleMapDialog({
     setHoverPosition(null)
   }
 
-  function changeView(nextView: AnatomyView): void {
+  function rotateModel(): void {
     clearHover()
-    setView(nextView)
+    setView((current) => (current === 'FRONT' ? 'BACK' : 'FRONT'))
+  }
+
+  function requestOpenChange(nextOpen: boolean): void {
+    if (!nextOpen) {
+      clearHover()
+      setView('FRONT')
+      setZoom(1)
+    }
+    onOpenChange(nextOpen)
   }
 
   return (
     <AppDialog
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={requestOpenChange}
       title={title}
       description={description}
-      icon={<Activity />}
-      size="xl"
+      size="fullscreen"
+      showHeader={false}
+      showClose={false}
+      contentClassName="bg-[var(--app-workspace)]"
+      bodyClassName="relative p-0"
     >
+      <button
+        type="button"
+        aria-label="Закрыть модель мышц"
+        className="absolute top-5 right-5 z-50 flex size-10 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)]/88 text-[var(--app-muted)] shadow-[var(--app-shadow-card)] backdrop-blur-xl transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40"
+        onClick={() => requestOpenChange(false)}
+      >
+        <X className="size-5" aria-hidden="true" />
+      </button>
+
       {analysis.rows.length === 0 ? (
-        <div className="flex min-h-[560px] items-center justify-center rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-6 text-center text-sm text-[var(--app-muted)]">
+        <div className="flex h-full min-h-0 items-center justify-center px-8 text-center text-sm text-[var(--app-muted)]">
           {emptyMessage}
         </div>
       ) : (
         <section
           aria-label="Интерактивная карта мышц"
-          className="relative isolate h-[620px] overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] [perspective:1400px]"
+          data-zoom={zoom.toFixed(2)}
+          className="relative isolate h-full min-h-0 w-full overflow-hidden bg-[var(--app-workspace)] [perspective:1800px]"
+          onWheel={(event) => {
+            event.preventDefault()
+            clearHover()
+            const direction = event.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP
+            setZoom((current) => clampZoom(current + direction))
+          }}
           onPointerMove={(event) => {
             if (!hoveredGroup) return
             const bounds = event.currentTarget.getBoundingClientRect()
@@ -272,58 +308,45 @@ export function WorkoutMuscleMapDialog({
             ))}
           </div>
 
-          <div className="absolute top-4 left-1/2 z-20 flex -translate-x-1/2 items-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)]/90 p-1 shadow-[var(--app-shadow-card)] backdrop-blur-xl">
-            {(['FRONT', 'BACK'] as const).map((side) => (
-              <button
-                key={side}
-                type="button"
-                aria-pressed={view === side}
-                className={cn(
-                  'h-8 rounded-lg px-3 text-xs font-medium transition-colors',
-                  view === side
-                    ? 'bg-violet-500 text-white'
-                    : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
-                )}
-                onClick={() => changeView(side)}
-              >
-                {side === 'FRONT' ? 'Спереди' : 'Сзади'}
-              </button>
-            ))}
-            <button
-              type="button"
-              aria-label="Повернуть модель"
-              className="ml-1 flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-              onClick={() => changeView(view === 'FRONT' ? 'BACK' : 'FRONT')}
+          <div
+            className="absolute inset-0 origin-center transition-transform duration-150 ease-out"
+            style={{ transform: `scale(${zoom})` }}
+          >
+            <div
+              className={cn(
+                'relative h-full w-full transition-transform duration-500 [transform-style:preserve-3d]',
+                view === 'BACK' && '[transform:rotateY(180deg)]'
+              )}
             >
-              <RotateCcw className="size-4" />
-            </button>
+              <div className="absolute inset-0 flex items-center justify-center px-10 py-8 [backface-visibility:hidden] [&>svg]:max-h-full [&>svg]:w-auto [&>svg]:max-w-[72vw]">
+                <MuscleMapBody
+                  view="FRONT"
+                  zoneCounts={analysis.zoneCounts}
+                  maxCount={analysis.maxCount}
+                  activeGroup={view === 'FRONT' ? hoveredGroup : null}
+                  onHover={setHoveredGroup}
+                />
+              </div>
+              <div className="absolute inset-0 flex [transform:rotateY(180deg)] items-center justify-center px-10 py-8 [backface-visibility:hidden] [&>svg]:max-h-full [&>svg]:w-auto [&>svg]:max-w-[72vw]">
+                <MuscleMapBody
+                  view="BACK"
+                  zoneCounts={analysis.zoneCounts}
+                  maxCount={analysis.maxCount}
+                  activeGroup={view === 'BACK' ? hoveredGroup : null}
+                  onHover={setHoveredGroup}
+                />
+              </div>
+            </div>
           </div>
 
-          <div
-            className={cn(
-              'relative h-full w-full transition-transform duration-500 [transform-style:preserve-3d]',
-              view === 'BACK' && '[transform:rotateY(180deg)]'
-            )}
+          <button
+            type="button"
+            aria-label="Повернуть модель"
+            className="absolute right-5 bottom-5 z-40 flex size-12 items-center justify-center rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)]/88 text-[var(--app-text)] shadow-[var(--app-shadow-card)] backdrop-blur-xl transition-all hover:bg-[var(--app-control-hover)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40"
+            onClick={rotateModel}
           >
-            <div className="absolute inset-0 flex items-start justify-center px-5 pt-10 pb-12 [backface-visibility:hidden] [&>svg]:max-h-full [&>svg]:w-full">
-              <MuscleMapBody
-                view="FRONT"
-                zoneCounts={analysis.zoneCounts}
-                maxCount={analysis.maxCount}
-                activeGroup={view === 'FRONT' ? hoveredGroup : null}
-                onHover={setHoveredGroup}
-              />
-            </div>
-            <div className="absolute inset-0 flex [transform:rotateY(180deg)] items-start justify-center px-5 pt-10 pb-12 [backface-visibility:hidden] [&>svg]:max-h-full [&>svg]:w-full">
-              <MuscleMapBody
-                view="BACK"
-                zoneCounts={analysis.zoneCounts}
-                maxCount={analysis.maxCount}
-                activeGroup={view === 'BACK' ? hoveredGroup : null}
-                onHover={setHoveredGroup}
-              />
-            </div>
-          </div>
+            <RotateCcw className="size-5" aria-hidden="true" />
+          </button>
 
           {hoveredInfo && hoverPosition && (
             <div
