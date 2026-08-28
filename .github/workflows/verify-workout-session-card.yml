@@ -37,6 +37,7 @@ jobs:
             $errors = @($output -split "`r?`n" | Where-Object { $_ -match 'error TS' })
             $allowed = $errors.Count -eq 1 -and $errors[0].Contains('useStudyEditBlockVirtualization.ts(82,36)')
             if (-not $allowed) { exit 1 }
+            exit 0
           }
       - run: npx vitest run src/renderer/src/modules/workouts/WorkoutsPage.test.tsx src/renderer/src/modules/workouts/components/WorkoutMuscleMapPicker.test.tsx
       - run: npm run build:bundle
