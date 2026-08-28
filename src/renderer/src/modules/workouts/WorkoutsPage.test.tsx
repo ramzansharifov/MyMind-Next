@@ -254,6 +254,14 @@ describe('WorkoutsPage', () => {
     expect(screen.getAllByText('Бицепс').length).toBeGreaterThan(0)
     expect(screen.getByRole('button', { name: 'Повернуть модель' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Закрыть модель мышц' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Мужская модель' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    )
+    expect(screen.getByRole('button', { name: 'Женская модель' })).toHaveAttribute(
+      'aria-pressed',
+      'false'
+    )
 
     const viewer = screen.getByRole('region', { name: 'Интерактивная карта мышц' })
     vi.spyOn(viewer, 'getBoundingClientRect').mockReturnValue({
@@ -270,8 +278,16 @@ describe('WorkoutsPage', () => {
 
     expect(viewer).toHaveAttribute('data-zoom', '1.00')
     expect(viewer).toHaveAttribute('data-view', 'FRONT')
+    expect(viewer).toHaveAttribute('data-sex', 'MALE')
     expect(viewer).toHaveAttribute('data-pan-x', '0')
     expect(viewer).toHaveAttribute('data-pan-y', '0')
+
+    await user.click(screen.getByRole('button', { name: 'Женская модель' }))
+    expect(viewer).toHaveAttribute('data-sex', 'FEMALE')
+    expect(screen.getByRole('button', { name: 'Женская модель' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    )
 
     fireEvent.wheel(viewer, { deltaY: -100 })
     expect(viewer).toHaveAttribute('data-zoom', '1.10')
@@ -284,6 +300,7 @@ describe('WorkoutsPage', () => {
 
     fireEvent.contextMenu(viewer)
     expect(viewer).toHaveAttribute('data-view', 'BACK')
+    expect(viewer).toHaveAttribute('data-sex', 'FEMALE')
 
     fireEvent.wheel(viewer, { deltaY: 100 })
     expect(viewer).toHaveAttribute('data-zoom', '1.00')
@@ -313,6 +330,8 @@ describe('WorkoutsPage', () => {
     expect(screen.getByText('Бицепс')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Повернуть модель' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Закрыть модель мышц' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Мужская модель' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Женская модель' })).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Повернуть модель' }))
     expect(screen.getByRole('button', { name: 'Повернуть модель' })).toBeInTheDocument()
