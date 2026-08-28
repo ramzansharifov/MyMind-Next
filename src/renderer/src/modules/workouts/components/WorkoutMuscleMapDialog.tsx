@@ -265,6 +265,13 @@ export function WorkoutMuscleMapDialog({
           }}
           onPointerLeave={clearHover}
         >
+          <div className="sr-only">
+            <span>Задействованные мышцы</span>
+            {analysis.rows.map((row) => (
+              <span key={row.zone}>{workoutMuscleGroupLabel(row.zone)}</span>
+            ))}
+          </div>
+
           <div className="absolute top-4 left-1/2 z-20 flex -translate-x-1/2 items-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)]/90 p-1 shadow-[var(--app-shadow-card)] backdrop-blur-xl">
             {(['FRONT', 'BACK'] as const).map((side) => (
               <button
