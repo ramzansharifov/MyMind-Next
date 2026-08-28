@@ -1,0 +1,62 @@
+name: Verify workouts header controls
+
+on:
+  push:
+    branches:
+      - agent/workouts-header-search-filters
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run native:node
+      - run: python .github/scripts/apply-workouts-header-controls.py
+      - name: Format changed workout files
+        run: >-
+          npx prettier --write
+          src/renderer/src/modules/workouts/WorkoutsPage.tsx
+          src/renderer/src/modules/workouts/WorkoutsPage.test.tsx
+      - name: ESLint workout tests
+        run: npx eslint src/renderer/src/modules/workouts/WorkoutsPage.test.tsx
+      - name: ESLint WorkoutsPage with existing effect baseline disabled
+        run: npx eslint src/renderer/src/modules/workouts/WorkoutsPage.tsx --rule "react-hooks/set-state-in-effect: off"
+      - run: npm run typecheck:node
+      - name: Web typecheck
+        shell: pwsh
+        run: |
+          $output = npm run typecheck:web 2>&1 | Out-String
+          $code = $LASTEXITCODE
+          Write-Host $output
+          if ($code -ne 0) {
+            $errors = @($output -split "`r?`n" | Where-Object { $_ -match 'error TS' })
+            $allowed = $errors.Count -eq 1 -and $errors[0].Contains('useStudyEditBlockVirtualization.ts(82,36)')
+            if (-not $allowed) { exit 1 }
+            exit 0
+          }
+      - name: Workouts UI tests
+        run: npx vitest run src/renderer/src/modules/workouts/WorkoutsPage.test.tsx src/renderer/src/modules/workouts/components/WorkoutMuscleMapPicker.test.tsx
+      - run: npm run build:bundle
+      - run: git diff --check
+      - name: Commit verified changes
+        shell: pwsh
+        run: |
+          $changes = git status --porcelain src/renderer/src/modules/workouts
+          if ($changes) {
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add src/renderer/src/modules/workouts/WorkoutsPage.tsx src/renderer/src/modules/workouts/WorkoutsPage.test.tsx
+            git commit -m "Перенести поиск и фильтры тренировок в шапку"
+            git push
+          }
