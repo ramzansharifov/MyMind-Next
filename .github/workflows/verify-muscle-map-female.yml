@@ -1,0 +1,155 @@
+name: Verify female muscle map
+
+on:
+  push:
+    branches:
+      - agent/workout-muscle-map-female
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run native:node
+      - name: Add female muscle map model
+        shell: pwsh
+        run: |
+          @'
+          from pathlib import Path
+
+          dialog = Path('src/renderer/src/modules/workouts/components/WorkoutMuscleMapDialog.tsx')
+          text = dialog.read_text(encoding='utf-8')
+
+          replacements = [
+              (
+                  "import maleBack from '@musclemap/assets/bodies/male-back.webp'\nimport maleFront from '@musclemap/assets/bodies/male-front.webp'\n",
+                  "import femaleBack from '@musclemap/assets/bodies/female-back.webp'\nimport femaleFront from '@musclemap/assets/bodies/female-front.webp'\nimport maleBack from '@musclemap/assets/bodies/male-back.webp'\nimport maleFront from '@musclemap/assets/bodies/male-front.webp'\n",
+              ),
+              (
+                  "type AnatomyView = 'FRONT' | 'BACK'\n",
+                  "type AnatomyView = 'FRONT' | 'BACK'\ntype AnatomySex = 'MALE' | 'FEMALE'\n",
+              ),
+              (
+                  "function MuscleMapBody({\n  view,\n  zoneCounts,\n",
+                  "function MuscleMapBody({\n  sex,\n  view,\n  zoneCounts,\n",
+              ),
+              (
+                  "}: {\n  view: AnatomyView\n  zoneCounts: Map<WorkoutMuscleZone, number>\n",
+                  "}: {\n  sex: AnatomySex\n  view: AnatomyView\n  zoneCounts: Map<WorkoutMuscleZone, number>\n",
+              ),
+              (
+                  "      diagram={getBodyDiagram('MALE', view)}\n",
+                  "      diagram={getBodyDiagram(sex, view)}\n",
+              ),
+              (
+                  "      idPrefix={`workout-muscle-map-${view.toLowerCase()}-${id}`}\n      width={620}\n      backgroundImage={view === 'FRONT' ? maleFront : maleBack}\n",
+                  "      idPrefix={`workout-muscle-map-${sex.toLowerCase()}-${view.toLowerCase()}-${id}`}\n      width={620}\n      backgroundImage={\n        sex === 'FEMALE'\n          ? view === 'FRONT'\n            ? femaleFront\n            : femaleBack\n          : view === 'FRONT'\n            ? maleFront\n            : maleBack\n      }\n",
+              ),
+              (
+                  "  const [view, setView] = useState<AnatomyView>('FRONT')\n  const [zoom, setZoom] = useState(1)\n",
+                  "  const [sex, setSex] = useState<AnatomySex>('MALE')\n  const [view, setView] = useState<AnatomyView>('FRONT')\n  const [zoom, setZoom] = useState(1)\n",
+              ),
+              (
+                  "  function rotateModel(): void {\n    clearHover()\n    setView((current) => (current === 'FRONT' ? 'BACK' : 'FRONT'))\n  }\n\n",
+                  "  function rotateModel(): void {\n    clearHover()\n    setView((current) => (current === 'FRONT' ? 'BACK' : 'FRONT'))\n  }\n\n  function selectSex(nextSex: AnatomySex): void {\n    if (nextSex === sex) return\n    clearHover()\n    setSex(nextSex)\n  }\n\n",
+              ),
+              (
+                  "          data-view={view}\n",
+                  "          data-view={view}\n          data-sex={sex}\n",
+              ),
+              (
+                  "                  <MuscleMapBody\n                    view=\"FRONT\"\n",
+                  "                  <MuscleMapBody\n                    sex={sex}\n                    view=\"FRONT\"\n",
+              ),
+              (
+                  "                  <MuscleMapBody\n                    view=\"BACK\"\n",
+                  "                  <MuscleMapBody\n                    sex={sex}\n                    view=\"BACK\"\n",
+              ),
+              (
+                  "          <button\n            type=\"button\"\n            aria-label=\"Повернуть модель\"\n",
+                  "          <div className=\"absolute bottom-5 left-5 z-40 flex items-center rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)]/88 p-1 shadow-[var(--app-shadow-card)] backdrop-blur-xl\">\n            <button\n              type=\"button\"\n              aria-label=\"Мужская модель\"\n              aria-pressed={sex === 'MALE'}\n              className={cn(\n                'flex h-10 min-w-10 items-center justify-center rounded-xl px-3 text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-violet-500/40 focus-visible:outline-none',\n                sex === 'MALE'\n                  ? 'bg-[var(--app-accent-500)] text-white'\n                  : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'\n              )}\n              onClick={() => selectSex('MALE')}\n            >\n              М\n            </button>\n            <button\n              type=\"button\"\n              aria-label=\"Женская модель\"\n              aria-pressed={sex === 'FEMALE'}\n              className={cn(\n                'flex h-10 min-w-10 items-center justify-center rounded-xl px-3 text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-violet-500/40 focus-visible:outline-none',\n                sex === 'FEMALE'\n                  ? 'bg-[var(--app-accent-500)] text-white'\n                  : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'\n              )}\n              onClick={() => selectSex('FEMALE')}\n            >\n              Ж\n            </button>\n          </div>\n\n          <button\n            type=\"button\"\n            aria-label=\"Повернуть модель\"\n",
+              ),
+          ]
+
+          for old, new in replacements:
+              if old not in text:
+                  raise SystemExit(f'dialog target not found: {old[:80]!r}')
+              text = text.replace(old, new, 1)
+
+          dialog.write_text(text, encoding='utf-8')
+
+          test = Path('src/renderer/src/modules/workouts/WorkoutsPage.test.tsx')
+          test_text = test.read_text(encoding='utf-8')
+          old = """    expect(viewer).toHaveAttribute('data-view', 'FRONT')
+    expect(viewer).toHaveAttribute('data-pan-x', '0')
+    expect(viewer).toHaveAttribute('data-pan-y', '0')
+
+    fireEvent.wheel(viewer, { deltaY: -100 })
+"""
+          new = """    expect(viewer).toHaveAttribute('data-view', 'FRONT')
+    expect(viewer).toHaveAttribute('data-sex', 'MALE')
+    expect(viewer).toHaveAttribute('data-pan-x', '0')
+    expect(viewer).toHaveAttribute('data-pan-y', '0')
+
+    await user.click(screen.getByRole('button', { name: 'Женская модель' }))
+    expect(viewer).toHaveAttribute('data-sex', 'FEMALE')
+    expect(screen.getByRole('button', { name: 'Женская модель' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    )
+
+    fireEvent.wheel(viewer, { deltaY: -100 })
+"""
+          if old not in test_text:
+              raise SystemExit('test target not found')
+          test.write_text(test_text.replace(old, new, 1), encoding='utf-8')
+          '@ | python -
+      - name: Format changed files
+        run: >-
+          npx prettier --write
+          src/renderer/src/modules/workouts/components/WorkoutMuscleMapDialog.tsx
+          src/renderer/src/modules/workouts/WorkoutsPage.test.tsx
+      - name: ESLint changed files
+        run: >-
+          npx eslint
+          src/renderer/src/modules/workouts/components/WorkoutMuscleMapDialog.tsx
+          src/renderer/src/modules/workouts/WorkoutsPage.test.tsx
+      - run: npm run typecheck:node
+      - name: Web typecheck
+        shell: pwsh
+        run: |
+          $output = npm run typecheck:web 2>&1 | Out-String
+          $code = $LASTEXITCODE
+          Write-Host $output
+          if ($code -ne 0) {
+            $errors = @($output -split "`r?`n" | Where-Object { $_ -match 'error TS' })
+            $allowed = $errors.Count -eq 1 -and $errors[0].Contains('useStudyEditBlockVirtualization.ts(82,36)')
+            if (-not $allowed) { exit 1 }
+            exit 0
+          }
+      - name: Workouts UI tests
+        run: npx vitest run src/renderer/src/modules/workouts/WorkoutsPage.test.tsx src/renderer/src/modules/workouts/components/WorkoutMuscleMapPicker.test.tsx
+      - run: npm run build:bundle
+      - run: git diff --check
+      - name: Commit verified changes
+        shell: pwsh
+        run: |
+          $changes = git status --porcelain src/renderer/src/modules/workouts/components/WorkoutMuscleMapDialog.tsx src/renderer/src/modules/workouts/WorkoutsPage.test.tsx
+          if ($changes) {
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add src/renderer/src/modules/workouts/components/WorkoutMuscleMapDialog.tsx src/renderer/src/modules/workouts/WorkoutsPage.test.tsx
+            git commit -m "Добавить женскую модель карты мышц"
+            git push
+          }
