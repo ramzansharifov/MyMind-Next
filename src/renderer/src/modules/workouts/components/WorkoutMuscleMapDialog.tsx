@@ -26,6 +26,19 @@ interface HoverPosition {
   y: number
 }
 
+interface PanOffset {
+  x: number
+  y: number
+}
+
+interface DragState {
+  pointerId: number
+  startX: number
+  startY: number
+  originX: number
+  originY: number
+}
+
 export interface WorkoutMuscleMapExercise {
   title: string
   muscleGroups: readonly WorkoutMuscleGroup[]
@@ -47,6 +60,7 @@ const TOOLTIP_GAP = 18
 const MIN_ZOOM = 0.65
 const MAX_ZOOM = 2.2
 const ZOOM_STEP = 0.1
+const DEFAULT_PAN: PanOffset = { x: 0, y: 0 }
 
 const LEGACY_GROUP_EXPANSIONS: Partial<Record<WorkoutMuscleGroup, WorkoutMuscleZone[]>> = {
   arms: ['shoulders', 'biceps', 'triceps', 'forearms'],
@@ -126,6 +140,23 @@ function clampZoom(value: number): number {
   return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.round(value * 100) / 100))
 }
 
+function clampPan(
+  offset: PanOffset,
+  zoom: number,
+  viewportWidth: number,
+  viewportHeight: number
+): PanOffset {
+  if (zoom <= 1) return DEFAULT_PAN
+
+  const maxX = Math.max(0, (viewportWidth * (zoom - 1)) / 2)
+  const maxY = Math.max(0, (viewportHeight * (zoom - 1)) / 2)
+
+  return {
+    x: Math.min(maxX, Math.max(-maxX, offset.x)),
+    y: Math.min(maxY, Math.max(-maxY, offset.y))
+  }
+}
+
 function MuscleMapBody({
   view,
   zoneCounts,
@@ -189,6 +220,8 @@ export function WorkoutMuscleMapDialog({
 }: WorkoutMuscleMapDialogProps): React.JSX.Element {
   const [view, setView] = useState<AnatomyView>('FRONT')
   const [zoom, setZoom] = useState(1)
+  const [pan, setPan] = useState<PanOffset>(DEFAULT_PAN)
+  const [dragState, setDragState] = useState<DragState | null>(null)
   const [hoveredGroup, setHoveredGroup] = useState<AnatomyMuscleGroup | null>(null)
   const [hoverPosition, setHoverPosition] = useState<HoverPosition | null>(null)
 
@@ -238,11 +271,21 @@ export function WorkoutMuscleMapDialog({
     setView((current) => (current === 'FRONT' ? 'BACK' : 'FRONT'))
   }
 
+  function stopDragging(): void {
+    setDragState(null)
+  }
+
+  function resetViewport(): void {
+    setZoom(1)
+    setPan(DEFAULT_PAN)
+    stopDragging()
+  }
+
   function requestOpenChange(nextOpen: boolean): void {
     if (!nextOpen) {
       clearHover()
       setView('FRONT')
-      setZoom(1)
+      resetViewport()
     }
     onOpenChange(nextOpen)
   }
@@ -276,14 +319,62 @@ export function WorkoutMuscleMapDialog({
         <section
           aria-label="Интерактивная карта мышц"
           data-zoom={zoom.toFixed(2)}
-          className="relative isolate h-full min-h-0 w-full overflow-hidden bg-[var(--app-workspace)] [perspective:1800px]"
+          data-pan-x={Math.round(pan.x)}
+          data-pan-y={Math.round(pan.y)}
+          data-view={view}
+          className={cn(
+            'relative isolate h-full min-h-0 w-full select-none overflow-hidden bg-[var(--app-workspace)] [perspective:1800px]',
+            zoom > 1 && (dragState ? 'cursor-grabbing' : 'cursor-grab')
+          )}
+          style={{ touchAction: 'none' }}
+          onContextMenu={(event) => {
+            event.preventDefault()
+            rotateModel()
+          }}
           onWheel={(event) => {
             event.preventDefault()
             clearHover()
             const direction = event.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP
-            setZoom((current) => clampZoom(current + direction))
+            const nextZoom = clampZoom(zoom + direction)
+            const bounds = event.currentTarget.getBoundingClientRect()
+            setZoom(nextZoom)
+            setPan((current) => clampPan(current, nextZoom, bounds.width, bounds.height))
+            if (nextZoom <= 1) stopDragging()
+          }}
+          onPointerDown={(event) => {
+            if (event.button !== 0 || zoom <= 1) return
+            event.preventDefault()
+            clearHover()
+            if (typeof event.currentTarget.setPointerCapture === 'function') {
+              event.currentTarget.setPointerCapture(event.pointerId)
+            }
+            setDragState({
+              pointerId: event.pointerId,
+              startX: event.clientX,
+              startY: event.clientY,
+              originX: pan.x,
+              originY: pan.y
+            })
           }}
           onPointerMove={(event) => {
+            if (dragState?.pointerId === event.pointerId) {
+              event.preventDefault()
+              const bounds = event.currentTarget.getBoundingClientRect()
+              setPan(
+                clampPan(
+                  {
+                    x: dragState.originX + event.clientX - dragState.startX,
+                    y: dragState.originY + event.clientY - dragState.startY
+                  },
+                  zoom,
+                  bounds.width,
+                  bounds.height
+                )
+              )
+              clearHover()
+              return
+            }
+
             if (!hoveredGroup) return
             const bounds = event.currentTarget.getBoundingClientRect()
             const relativeX = event.clientX - bounds.left + TOOLTIP_GAP
@@ -299,6 +390,18 @@ export function WorkoutMuscleMapDialog({
               )
             })
           }}
+          onPointerUp={(event) => {
+            if (dragState?.pointerId !== event.pointerId) return
+            if (
+              typeof event.currentTarget.hasPointerCapture === 'function' &&
+              event.currentTarget.hasPointerCapture(event.pointerId)
+            ) {
+              event.currentTarget.releasePointerCapture(event.pointerId)
+            }
+            stopDragging()
+          }}
+          onPointerCancel={stopDragging}
+          onLostPointerCapture={stopDragging}
           onPointerLeave={clearHover}
         >
           <div className="sr-only">
@@ -309,32 +412,37 @@ export function WorkoutMuscleMapDialog({
           </div>
 
           <div
-            className="absolute inset-0 origin-center transition-transform duration-150 ease-out"
-            style={{ transform: `scale(${zoom})` }}
+            className="absolute inset-0 will-change-transform"
+            style={{ transform: `translate3d(${pan.x}px, ${pan.y}px, 0)` }}
           >
             <div
-              className={cn(
-                'relative h-full w-full transition-transform duration-500 [transform-style:preserve-3d]',
-                view === 'BACK' && '[transform:rotateY(180deg)]'
-              )}
+              className="absolute inset-0 origin-center transition-transform duration-150 ease-out will-change-transform"
+              style={{ transform: `scale(${zoom})` }}
             >
-              <div className="absolute inset-0 flex items-center justify-center px-10 py-8 [backface-visibility:hidden] [&>svg]:max-h-full [&>svg]:w-auto [&>svg]:max-w-[72vw]">
-                <MuscleMapBody
-                  view="FRONT"
-                  zoneCounts={analysis.zoneCounts}
-                  maxCount={analysis.maxCount}
-                  activeGroup={view === 'FRONT' ? hoveredGroup : null}
-                  onHover={setHoveredGroup}
-                />
-              </div>
-              <div className="absolute inset-0 flex [transform:rotateY(180deg)] items-center justify-center px-10 py-8 [backface-visibility:hidden] [&>svg]:max-h-full [&>svg]:w-auto [&>svg]:max-w-[72vw]">
-                <MuscleMapBody
-                  view="BACK"
-                  zoneCounts={analysis.zoneCounts}
-                  maxCount={analysis.maxCount}
-                  activeGroup={view === 'BACK' ? hoveredGroup : null}
-                  onHover={setHoveredGroup}
-                />
+              <div
+                className={cn(
+                  'relative h-full w-full transition-transform duration-500 [transform-style:preserve-3d]',
+                  view === 'BACK' && '[transform:rotateY(180deg)]'
+                )}
+              >
+                <div className="absolute inset-0 flex items-center justify-center px-10 py-8 [backface-visibility:hidden] [&>svg]:max-h-full [&>svg]:w-auto [&>svg]:max-w-[72vw]">
+                  <MuscleMapBody
+                    view="FRONT"
+                    zoneCounts={analysis.zoneCounts}
+                    maxCount={analysis.maxCount}
+                    activeGroup={view === 'FRONT' ? hoveredGroup : null}
+                    onHover={setHoveredGroup}
+                  />
+                </div>
+                <div className="absolute inset-0 flex [transform:rotateY(180deg)] items-center justify-center px-10 py-8 [backface-visibility:hidden] [&>svg]:max-h-full [&>svg]:w-auto [&>svg]:max-w-[72vw]">
+                  <MuscleMapBody
+                    view="BACK"
+                    zoneCounts={analysis.zoneCounts}
+                    maxCount={analysis.maxCount}
+                    activeGroup={view === 'BACK' ? hoveredGroup : null}
+                    onHover={setHoveredGroup}
+                  />
+                </div>
               </div>
             </div>
           </div>
