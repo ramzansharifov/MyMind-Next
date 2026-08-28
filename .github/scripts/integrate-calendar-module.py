@@ -15,6 +15,14 @@ replace(
     "  useEffect(() => {\n    const initialLoad = window.setTimeout(() => void load(), 0)\n    return () => window.clearTimeout(initialLoad)\n  }, [load])\n",
 )
 
+# A due-reminder query only needs the current trigger window. listCalendarReminderTriggers expands
+# the occurrence range itself based on the largest configured offset.
+replace(
+    'src/main/repositories/calendar.repository.ts',
+    "  return listCalendarReminderTriggers({ from: sinceDate, to: addDays(nowDate, 3650) }).filter(\n",
+    "  return listCalendarReminderTriggers({ from: sinceDate, to: nowDate }).filter(\n",
+)
+
 # IPC registration
 replace(
     'src/main/ipc/register-ipc.ts',
@@ -115,11 +123,16 @@ export function HomeModule(): React.JSX.Element {
     const to = new Date(from)
     to.setDate(to.getDate() + 14)
     try {
+      const now = Date.now()
       setReminders(
-        (await window.api.calendar.listUpcomingReminders({
-          from: localDateKey(from),
-          to: localDateKey(to)
-        })).slice(0, 6)
+        (
+          await window.api.calendar.listUpcomingReminders({
+            from: localDateKey(from),
+            to: localDateKey(to)
+          })
+        )
+          .filter((reminder) => reminder.triggerAt >= now)
+          .slice(0, 6)
       )
     } catch (reason: unknown) {
       console.error('Failed to load calendar reminders for Home', reason)
