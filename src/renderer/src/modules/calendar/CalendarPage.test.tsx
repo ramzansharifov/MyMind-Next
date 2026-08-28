@@ -61,12 +61,16 @@ describe('CalendarPage', () => {
     const eventButton = await screen.findByRole('button', { name: 'Открыть событие Годовщина' })
     const calendarGrid = screen.getByTestId('calendar-grid')
     const detailPanel = screen.getByTestId('calendar-detail-panel')
-    const moduleHeader = screen.getByRole('heading', { name: 'Календарь' }).closest('[data-module-header]')
+    const moduleHeader = screen
+      .getByRole('heading', { name: 'Календарь' })
+      .closest('[data-module-header]')
 
     expect(calendarGrid).toContainElement(screen.getByRole('button', { name: 'Предыдущий месяц' }))
     expect(calendarGrid).toContainElement(screen.getByRole('button', { name: 'Следующий месяц' }))
     expect(calendarGrid).toContainElement(screen.getByRole('button', { name: 'Сегодня' }))
-    expect(moduleHeader).not.toContainElement(screen.getByRole('button', { name: 'Предыдущий месяц' }))
+    expect(moduleHeader).not.toContainElement(
+      screen.getByRole('button', { name: 'Предыдущий месяц' })
+    )
 
     await user.click(eventButton)
 
@@ -76,6 +80,8 @@ describe('CalendarPage', () => {
     expect(within(detailPanel).getByText('За 1 день')).toBeInTheDocument()
     expect(within(detailPanel).getByText('За 2 часа')).toBeInTheDocument()
     expect(within(detailPanel).getByText('Прошло 5 лет, 0 дней')).toBeInTheDocument()
-    expect(within(detailPanel).getByRole('button', { name: 'Редактировать событие' })).toBeInTheDocument()
+    expect(
+      within(detailPanel).getByRole('button', { name: 'Редактировать событие' })
+    ).toBeInTheDocument()
   })
 })

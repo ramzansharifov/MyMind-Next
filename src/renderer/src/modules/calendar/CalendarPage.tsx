@@ -460,7 +460,9 @@ export function CalendarPage(): React.JSX.Element {
                           }}
                         >
                           <span className="size-1.5 shrink-0 rounded-full bg-violet-400" />
-                          {event.kind === 'annual' && <Repeat2 className="size-3 shrink-0 opacity-70" />}
+                          {event.kind === 'annual' && (
+                            <Repeat2 className="size-3 shrink-0 opacity-70" />
+                          )}
                           <span className="truncate">
                             {event.time ? `${event.time} ` : ''}
                             {event.title}
@@ -492,7 +494,7 @@ export function CalendarPage(): React.JSX.Element {
         >
           <div className="flex items-start justify-between gap-3 border-b border-[var(--app-border)] px-4 py-4">
             <div className="min-w-0">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--app-muted)]">
+              <div className="text-[11px] font-semibold tracking-[0.12em] text-[var(--app-muted)] uppercase">
                 Выбранный день
               </div>
               <div className="mt-1 text-sm font-semibold text-[var(--app-text)] first-letter:uppercase">
@@ -543,7 +545,9 @@ export function CalendarPage(): React.JSX.Element {
                           )}
                         </div>
                         {event.time && (
-                          <div className="mt-1 pl-4 text-xs text-[var(--app-muted)]">{event.time}</div>
+                          <div className="mt-1 pl-4 text-xs text-[var(--app-muted)]">
+                            {event.time}
+                          </div>
                         )}
                       </button>
                     )
@@ -565,7 +569,7 @@ export function CalendarPage(): React.JSX.Element {
                       </span>
                     )}
                   </div>
-                  <h2 className="mt-3 text-lg font-semibold leading-snug text-[var(--app-text)]">
+                  <h2 className="mt-3 text-lg leading-snug font-semibold text-[var(--app-text)]">
                     {selectedEvent.title}
                   </h2>
                   <div className="mt-1 text-xs text-[var(--app-muted)]">
@@ -575,7 +579,9 @@ export function CalendarPage(): React.JSX.Element {
 
                 {selectedEvent.kind === 'annual' && selectedEvent.startDate && (
                   <div className="rounded-xl border border-violet-500/15 bg-violet-500/[0.07] p-3">
-                    <div className="text-[11px] font-medium text-[var(--app-muted)]">Существует с</div>
+                    <div className="text-[11px] font-medium text-[var(--app-muted)]">
+                      Существует с
+                    </div>
                     <div className="mt-1 text-sm font-medium text-[var(--app-text)]">
                       {formatDate(selectedEvent.startDate)}
                     </div>
@@ -629,7 +635,9 @@ export function CalendarPage(): React.JSX.Element {
             ) : selectedDayEvents.length > 0 ? (
               <div className="flex min-h-52 flex-col items-center justify-center rounded-xl border border-dashed border-[var(--app-border)] px-5 text-center">
                 <CalendarDays className="size-8 text-[var(--app-muted)]/55" />
-                <div className="mt-3 text-sm font-medium text-[var(--app-text)]">Выберите событие</div>
+                <div className="mt-3 text-sm font-medium text-[var(--app-text)]">
+                  Выберите событие
+                </div>
                 <p className="mt-1 max-w-52 text-xs leading-5 text-[var(--app-muted)]">
                   Справа появятся его заметка, напоминания и информация о повторении.
                 </p>
@@ -702,7 +710,9 @@ export function CalendarPage(): React.JSX.Element {
         {editor && (
           <div className="space-y-5">
             <label className="block">
-              <span className="mb-1.5 block text-xs font-medium text-[var(--app-muted)]">Название</span>
+              <span className="mb-1.5 block text-xs font-medium text-[var(--app-muted)]">
+                Название
+              </span>
               <input
                 autoFocus
                 value={editor.title}
@@ -715,7 +725,9 @@ export function CalendarPage(): React.JSX.Element {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block">
-                <span className="mb-1.5 block text-xs font-medium text-[var(--app-muted)]">Тип события</span>
+                <span className="mb-1.5 block text-xs font-medium text-[var(--app-muted)]">
+                  Тип события
+                </span>
                 <select
                   value={editor.kind}
                   className="h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none"
@@ -728,7 +740,9 @@ export function CalendarPage(): React.JSX.Element {
                 </select>
               </label>
               <label className="block">
-                <span className="mb-1.5 block text-xs font-medium text-[var(--app-muted)]">Дата</span>
+                <span className="mb-1.5 block text-xs font-medium text-[var(--app-muted)]">
+                  Дата
+                </span>
                 <input
                   type="date"
                   value={editor.date}
@@ -740,7 +754,9 @@ export function CalendarPage(): React.JSX.Element {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block">
-                <span className="mb-1.5 block text-xs font-medium text-[var(--app-muted)]">Время, необязательно</span>
+                <span className="mb-1.5 block text-xs font-medium text-[var(--app-muted)]">
+                  Время, необязательно
+                </span>
                 <input
                   type="time"
                   value={editor.time}
@@ -750,7 +766,9 @@ export function CalendarPage(): React.JSX.Element {
               </label>
               {editor.kind === 'annual' && (
                 <label className="block">
-                  <span className="mb-1.5 block text-xs font-medium text-[var(--app-muted)]">Начало даты, необязательно</span>
+                  <span className="mb-1.5 block text-xs font-medium text-[var(--app-muted)]">
+                    Начало даты, необязательно
+                  </span>
                   <input
                     type="date"
                     value={editor.startDate}
