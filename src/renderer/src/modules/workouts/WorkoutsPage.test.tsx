@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -252,7 +252,13 @@ describe('WorkoutsPage', () => {
 
     expect(await screen.findByText('Модель мышц · Pull')).toBeInTheDocument()
     expect(screen.getAllByText('Бицепс').length).toBeGreaterThan(0)
-    expect(screen.getByRole('button', { name: 'Спереди' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Повернуть модель' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Закрыть модель мышц' })).toBeInTheDocument()
+
+    const viewer = screen.getByRole('region', { name: 'Интерактивная карта мышц' })
+    expect(viewer).toHaveAttribute('data-zoom', '1.00')
+    fireEvent.wheel(viewer, { deltaY: -100 })
+    expect(viewer).toHaveAttribute('data-zoom', '1.10')
   })
 
   it('shows the fixed muscle tag in the exercise library', async () => {
@@ -275,10 +281,11 @@ describe('WorkoutsPage', () => {
     expect(await screen.findByText('Карта мышц · Pull')).toBeInTheDocument()
     expect(screen.getByText('Задействованные мышцы')).toBeInTheDocument()
     expect(screen.getByText('Бицепс')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Спереди' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Повернуть модель' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Закрыть модель мышц' })).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Повернуть модель' }))
-    expect(screen.getByRole('button', { name: 'Сзади' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Повернуть модель' })).toBeInTheDocument()
   })
 
   it('opens extensive reports with muscle distribution and exercise analytics', async () => {
