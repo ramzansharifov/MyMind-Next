@@ -70,7 +70,7 @@ describe('CalendarPage', () => {
 
     await user.click(eventButton)
 
-    expect(within(detailPanel).getByText('Годовщина')).toBeInTheDocument()
+    expect(within(detailPanel).getByRole('heading', { name: 'Годовщина' })).toBeInTheDocument()
     expect(within(detailPanel).getByText('Ежегодное')).toBeInTheDocument()
     expect(within(detailPanel).getByText('Заказать столик на этот год')).toBeInTheDocument()
     expect(within(detailPanel).getByText('За 1 день')).toBeInTheDocument()
