@@ -48,6 +48,7 @@ import { workoutsClient } from './api/workouts-client'
 import { WorkoutExerciseDialog } from './components/WorkoutExerciseDialog'
 import { WorkoutMuscleArtwork } from './components/WorkoutMuscleArtwork'
 import { WorkoutProgramDialog } from './components/WorkoutProgramDialog'
+import { WorkoutProgramMuscleMapDialog } from './components/WorkoutProgramMuscleMapDialog'
 import { WorkoutProgressDialog } from './components/WorkoutProgressDialog'
 import { WorkoutProgressSection } from './components/WorkoutProgressSection'
 import { WorkoutSessionDetailDialog } from './components/WorkoutSessionDetailDialog'
@@ -113,6 +114,10 @@ export function WorkoutsPage({
   const [editingExercise, setEditingExercise] = useState<WorkoutExerciseRecord | null>(null)
   const [programDialogOpen, setProgramDialogOpen] = useState(false)
   const [editingProgram, setEditingProgram] = useState<WorkoutProgramRecord | null>(null)
+  const [programMuscleMapOpen, setProgramMuscleMapOpen] = useState(false)
+  const [selectedProgramForMap, setSelectedProgramForMap] = useState<WorkoutProgramRecord | null>(
+    null
+  )
   const [sessionDialogOpen, setSessionDialogOpen] = useState(false)
   const [editingSession, setEditingSession] = useState<WorkoutSessionRecord | null>(null)
   const [sessionDetailOpen, setSessionDetailOpen] = useState(false)
@@ -880,6 +885,17 @@ export function WorkoutsPage({
                     <div className="flex gap-1">
                       <button
                         type="button"
+                        aria-label={`Открыть карту мышц «${program.name}»`}
+                        className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-violet-500/10 hover:text-violet-300"
+                        onClick={() => {
+                          setSelectedProgramForMap(program)
+                          setProgramMuscleMapOpen(true)
+                        }}
+                      >
+                        <Activity className="size-4" />
+                      </button>
+                      <button
+                        type="button"
                         aria-label="Изменить программу"
                         className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
                         onClick={() => {
@@ -1554,6 +1570,15 @@ export function WorkoutsPage({
           if (!open) setEditingProgram(null)
         }}
         onSave={saveProgram}
+      />
+      <WorkoutProgramMuscleMapDialog
+        open={programMuscleMapOpen}
+        program={selectedProgramForMap}
+        exercises={exercises}
+        onOpenChange={(open) => {
+          setProgramMuscleMapOpen(open)
+          if (!open) setSelectedProgramForMap(null)
+        }}
       />
       <WorkoutSessionDialog
         open={sessionDialogOpen}
