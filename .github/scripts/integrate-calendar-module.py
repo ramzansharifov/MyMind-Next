@@ -8,6 +8,13 @@ def replace(path: str, old: str, new: str) -> None:
         raise SystemExit(f'marker not found in {path}: {old[:80]!r}')
     file.write_text(text.replace(old, new, 1), encoding='utf-8')
 
+# Calendar loading is deferred to the next task so React effects only synchronize with the external API.
+replace(
+    'src/renderer/src/modules/calendar/CalendarPage.tsx',
+    "  useEffect(() => {\n    void load()\n  }, [load])\n",
+    "  useEffect(() => {\n    const initialLoad = window.setTimeout(() => void load(), 0)\n    return () => window.clearTimeout(initialLoad)\n  }, [load])\n",
+)
+
 # IPC registration
 replace(
     'src/main/ipc/register-ipc.ts',
@@ -120,11 +127,12 @@ export function HomeModule(): React.JSX.Element {
   }, [])
 
   useEffect(() => {
-    void loadReminders()
+    const initialLoad = window.setTimeout(() => void loadReminders(), 0)
     const interval = window.setInterval(() => void loadReminders(), 60_000)
     const handleFocus = (): void => void loadReminders()
     window.addEventListener('focus', handleFocus)
     return () => {
+      window.clearTimeout(initialLoad)
       window.clearInterval(interval)
       window.removeEventListener('focus', handleFocus)
     }
