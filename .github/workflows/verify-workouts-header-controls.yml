@@ -31,7 +31,9 @@ jobs:
       - name: ESLint workout tests
         run: npx eslint src/renderer/src/modules/workouts/WorkoutsPage.test.tsx
       - name: ESLint WorkoutsPage with existing effect baseline disabled
-        run: npx eslint src/renderer/src/modules/workouts/WorkoutsPage.tsx --rule "react-hooks/set-state-in-effect: off"
+        run: >-
+          npx eslint src/renderer/src/modules/workouts/WorkoutsPage.tsx
+          --rule "react-hooks/set-state-in-effect: off"
       - run: npm run typecheck:node
       - name: Web typecheck
         shell: pwsh
@@ -46,7 +48,10 @@ jobs:
             exit 0
           }
       - name: Workouts UI tests
-        run: npx vitest run src/renderer/src/modules/workouts/WorkoutsPage.test.tsx src/renderer/src/modules/workouts/components/WorkoutMuscleMapPicker.test.tsx
+        run: >-
+          npx vitest run
+          src/renderer/src/modules/workouts/WorkoutsPage.test.tsx
+          src/renderer/src/modules/workouts/components/WorkoutMuscleMapPicker.test.tsx
       - run: npm run build:bundle
       - run: git diff --check
       - name: Commit verified changes
