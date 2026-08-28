@@ -5,6 +5,7 @@ import { shutdownResponseSchema, systemHealthSchema } from '../../shared/validat
 import { getSqlite } from '../database/client'
 import { mainOperationTracker } from '../services/main-operation-tracker'
 import { registerBoardsIpcHandlers } from './register-boards-ipc'
+import { registerCalendarIpcHandlers } from './register-calendar-ipc'
 import { registerDiaryIpcHandlers } from './register-diary-ipc'
 import { registerFinanceIpcHandlers } from './register-finance-ipc'
 import { registerHabitsIpcHandlers } from './register-habits-ipc'
@@ -61,6 +62,7 @@ function getWindowState(window: BrowserWindow): SystemWindowState {
 export function registerIpcHandlers(options: RegisterIpcHandlersOptions): void {
   registerStudyIpcHandlers()
   registerBoardsIpcHandlers()
+  registerCalendarIpcHandlers()
   registerNotesIpcHandlers()
   registerDiaryIpcHandlers()
   registerFinanceIpcHandlers()

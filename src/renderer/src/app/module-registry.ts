@@ -1,6 +1,7 @@
 import { lazy, type ComponentType } from 'react'
 import {
   BookHeart,
+  CalendarDays,
   Disc3,
   Dumbbell,
   Film,
@@ -72,6 +73,9 @@ const NutritionModule = lazy(() =>
     default: NutritionPage
   }))
 ) as ComponentType<AppModuleProps>
+const CalendarModule = lazy(() =>
+  import('../modules/calendar/CalendarPage').then(({ CalendarPage }) => ({ default: CalendarPage }))
+) as ComponentType<AppModuleProps>
 const DiaryModule = lazy(() =>
   import('../modules/diary/DiaryPage').then(({ DiaryPage }) => ({ default: DiaryPage }))
 ) as ComponentType<AppModuleProps>
@@ -85,7 +89,9 @@ const FinanceModule = lazy(() =>
   import('../modules/finance/FinancePage').then(({ FinancePage }) => ({ default: FinancePage }))
 ) as ComponentType<AppModuleProps>
 const PasswordsModule = lazy(() =>
-  import('../modules/passwords/PasswordsPage').then(({ PasswordsPage }) => ({ default: PasswordsPage }))
+  import('../modules/passwords/PasswordsPage').then(({ PasswordsPage }) => ({
+    default: PasswordsPage
+  }))
 ) as ComponentType<AppModuleProps>
 const SettingsModule = lazy(() =>
   import('../modules/settings/SettingsModule').then(({ SettingsModule }) => ({
@@ -165,6 +171,15 @@ export const appModuleRegistry = defineAppModules({
     navigationGroup: 'primary',
     workspaceLayout: 'standard',
     component: NutritionModule
+  },
+  calendar: {
+    id: 'calendar',
+    label: 'Календарь',
+    loadingLabel: 'Загрузка календаря',
+    icon: CalendarDays,
+    navigationGroup: 'primary',
+    workspaceLayout: 'standard',
+    component: CalendarModule
   },
   diary: {
     id: 'diary',

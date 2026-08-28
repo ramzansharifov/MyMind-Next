@@ -1,5 +1,6 @@
 import {
   BookHeart,
+  CalendarDays,
   Disc3,
   Dumbbell,
   Film,
@@ -26,6 +27,7 @@ describe('app module registry', () => {
     expect(getAppModule('habits')).toBe(appModuleRegistry.habits)
     expect(getAppModule('workouts')).toBe(appModuleRegistry.workouts)
     expect(getAppModule('nutrition')).toBe(appModuleRegistry.nutrition)
+    expect(getAppModule('calendar')).toBe(appModuleRegistry.calendar)
     expect(getAppModule('diary')).toBe(appModuleRegistry.diary)
     expect(getAppModule('movies')).toBe(appModuleRegistry.movies)
     expect(getAppModule('music')).toBe(appModuleRegistry.music)
@@ -38,6 +40,7 @@ describe('app module registry', () => {
     expect(appModuleRegistry.habits.icon).toBe(Repeat2)
     expect(appModuleRegistry.workouts.icon).toBe(Dumbbell)
     expect(appModuleRegistry.nutrition.icon).toBe(Utensils)
+    expect(appModuleRegistry.calendar.icon).toBe(CalendarDays)
     expect(appModuleRegistry.diary.icon).toBe(BookHeart)
     expect(appModuleRegistry.movies.icon).toBe(Film)
     expect(appModuleRegistry.music.icon).toBe(Disc3)
@@ -58,6 +61,7 @@ describe('app module registry', () => {
       'habits',
       'workouts',
       'nutrition',
+      'calendar',
       'diary',
       'movies',
       'music',
