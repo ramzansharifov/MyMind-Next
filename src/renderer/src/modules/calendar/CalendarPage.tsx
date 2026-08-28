@@ -4,6 +4,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock3,
+  Pencil,
   Plus,
   Repeat2,
   Trash2
@@ -14,15 +15,20 @@ import type {
   CalendarEventKind,
   CalendarOccurrenceRecord
 } from '../../../../shared/contracts/calendar'
+import { cn } from '../../shared/lib/cn'
+import { AppDialog } from '../../shared/ui/AppDialog'
 import { ModuleHeader } from '../../shared/ui/ModuleHeader'
 import { StandardModulePage } from '../../shared/ui/StandardModulePage'
-import { AppDialog } from '../../shared/ui/AppDialog'
-import { cn } from '../../shared/lib/cn'
 
 const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 const MONTH_FORMATTER = new Intl.DateTimeFormat('ru-RU', { month: 'long', year: 'numeric' })
 const DAY_FORMATTER = new Intl.DateTimeFormat('ru-RU', {
   weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric'
+})
+const DATE_FORMATTER = new Intl.DateTimeFormat('ru-RU', {
   day: 'numeric',
   month: 'long',
   year: 'numeric'
@@ -61,6 +67,14 @@ function gridRange(month: string): { from: string; to: string; days: string[] } 
 
 function formatOccurrenceDate(value: string): string {
   return DAY_FORMATTER.format(parseDate(value))
+}
+
+function formatDate(value: string): string {
+  return DATE_FORMATTER.format(parseDate(value))
+}
+
+function occurrenceKey(event: CalendarOccurrenceRecord): string {
+  return `${event.eventId}:${event.occurrenceDate}`
 }
 
 function plural(value: number, forms: [string, string, string]): string {
@@ -146,6 +160,8 @@ function editorFromOccurrence(event: CalendarOccurrenceRecord): EditorState {
 export function CalendarPage(): React.JSX.Element {
   const today = dateKey(new Date())
   const [month, setMonth] = useState(() => monthKey(new Date()))
+  const [selectedDate, setSelectedDate] = useState(today)
+  const [selectedEventKey, setSelectedEventKey] = useState<string | null>(null)
   const range = useMemo(() => gridRange(month), [month])
   const [events, setEvents] = useState<CalendarOccurrenceRecord[]>([])
   const [loading, setLoading] = useState(true)
@@ -179,13 +195,44 @@ export function CalendarPage(): React.JSX.Element {
       items.push(event)
       map.set(event.occurrenceDate, items)
     }
+    for (const items of map.values()) {
+      items.sort((left, right) => (left.time ?? '99:99').localeCompare(right.time ?? '99:99'))
+    }
     return map
   }, [events])
+
+  const selectedDayEvents = eventsByDay.get(selectedDate) ?? []
+  const selectedEvent = selectedEventKey
+    ? (events.find((event) => occurrenceKey(event) === selectedEventKey) ?? null)
+    : null
+
+  function selectDay(day: string): void {
+    setSelectedDate(day)
+    setSelectedEventKey(null)
+  }
+
+  function selectEvent(event: CalendarOccurrenceRecord): void {
+    setSelectedDate(event.occurrenceDate)
+    setSelectedEventKey(occurrenceKey(event))
+  }
 
   function shiftMonth(delta: number): void {
     const date = parseDate(month)
     date.setMonth(date.getMonth() + delta)
-    setMonth(monthKey(date))
+    const nextMonth = monthKey(date)
+    setMonth(nextMonth)
+    setSelectedDate(nextMonth)
+    setSelectedEventKey(null)
+  }
+
+  function goToday(): void {
+    setMonth(monthKey(new Date()))
+    setSelectedDate(today)
+    setSelectedEventKey(null)
+  }
+
+  function openCreate(date = selectedDate): void {
+    setEditor(emptyEditor(date))
   }
 
   function addReminder(): void {
@@ -218,7 +265,9 @@ export function CalendarPage(): React.JSX.Element {
           occurrenceDate: editor.occurrenceDate
         })
       } else {
-        await window.api.calendar.createEvent(input)
+        const created = await window.api.calendar.createEvent(input)
+        setSelectedDate(editor.date)
+        setSelectedEventKey(`${created.id}:${editor.date}`)
       }
       setEditor(null)
       await load()
@@ -234,6 +283,7 @@ export function CalendarPage(): React.JSX.Element {
     setSaving(true)
     try {
       await window.api.calendar.deleteEvent({ id: editor.eventId })
+      setSelectedEventKey(null)
       setEditor(null)
       await load()
     } finally {
@@ -250,6 +300,7 @@ export function CalendarPage(): React.JSX.Element {
         occurrenceDate: editor.occurrenceDate,
         hidden: true
       })
+      setSelectedEventKey(null)
       setEditor(null)
       await load()
     } finally {
@@ -269,48 +320,17 @@ export function CalendarPage(): React.JSX.Element {
       <ModuleHeader
         icon={CalendarDays}
         title="Календарь"
-        description="События, ежегодные даты и гибкие напоминания."
+        description="Планируйте события и не пропускайте важные даты."
         actions={
           <button
             type="button"
             className="inline-flex h-11 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-400"
-            onClick={() => setEditor(emptyEditor(today))}
+            onClick={() => openCreate()}
           >
             <Plus className="size-4" /> Новое событие
           </button>
         }
-      >
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-1.5">
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              aria-label="Предыдущий месяц"
-              className="flex size-9 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-              onClick={() => shiftMonth(-1)}
-            >
-              <ChevronLeft className="size-4" />
-            </button>
-            <button
-              type="button"
-              className="h-9 rounded-lg px-3 text-sm font-medium text-[var(--app-text)] hover:bg-[var(--app-control-hover)]"
-              onClick={() => setMonth(monthKey(new Date()))}
-            >
-              Сегодня
-            </button>
-            <button
-              type="button"
-              aria-label="Следующий месяц"
-              className="flex size-9 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-              onClick={() => shiftMonth(1)}
-            >
-              <ChevronRight className="size-4" />
-            </button>
-          </div>
-          <strong className="px-3 text-sm text-[var(--app-text)] capitalize">
-            {MONTH_FORMATTER.format(parseDate(month))}
-          </strong>
-        </div>
-      </ModuleHeader>
+      />
 
       {error && (
         <div className="mt-4 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
@@ -318,77 +338,331 @@ export function CalendarPage(): React.JSX.Element {
         </div>
       )}
 
-      <section className="mt-5 overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--app-shadow-card)]">
-        <div className="grid grid-cols-7 border-b border-[var(--app-border)] bg-[var(--app-workspace)]">
-          {WEEKDAYS.map((weekday) => (
-            <div
-              key={weekday}
-              className="px-2 py-2.5 text-center text-xs font-semibold text-[var(--app-muted)]"
-            >
-              {weekday}
-            </div>
-          ))}
-        </div>
-        <div className="grid grid-cols-7">
-          {range.days.map((day) => {
-            const inMonth = day.slice(0, 7) === month.slice(0, 7)
-            const dayEvents = eventsByDay.get(day) ?? []
-            const isToday = day === today
-            return (
-              <div
-                key={day}
-                className={cn(
-                  'group min-h-28 border-r border-b border-[var(--app-border)] p-2 transition-colors last:border-r-0 hover:bg-[var(--app-card-hover)]',
-                  !inMonth && 'bg-[var(--app-workspace)]/45'
-                )}
-                onDoubleClick={() => setEditor(emptyEditor(day))}
+      <div
+        data-testid="calendar-layout"
+        className="mt-5 grid items-stretch gap-4 xl:grid-cols-[minmax(0,1fr)_320px]"
+      >
+        <section
+          data-testid="calendar-grid"
+          className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--app-shadow-card)]"
+        >
+          <div className="grid min-h-14 grid-cols-[1fr_auto_1fr] items-center gap-3 border-b border-[var(--app-border)] bg-[var(--app-workspace)] px-3 py-2">
+            <div className="flex items-center gap-1 justify-self-start">
+              <button
+                type="button"
+                aria-label="Предыдущий месяц"
+                className="flex size-9 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+                onClick={() => shiftMonth(-1)}
               >
-                <div className="mb-1.5 flex items-center justify-between">
-                  <button
-                    type="button"
-                    aria-label={`Добавить событие ${formatOccurrenceDate(day)}`}
-                    className={cn(
-                      'flex size-7 items-center justify-center rounded-full text-xs font-medium',
-                      isToday
-                        ? 'bg-violet-500 font-semibold text-white'
-                        : inMonth
-                          ? 'text-[var(--app-text)] hover:bg-[var(--app-control-hover)]'
-                          : 'text-[var(--app-muted)]'
-                    )}
-                    onClick={() => setEditor(emptyEditor(day))}
-                  >
-                    {Number(day.slice(-2))}
-                  </button>
-                </div>
-                <div className="space-y-1">
-                  {dayEvents.slice(0, 4).map((event) => (
-                    <button
-                      key={`${event.eventId}:${event.occurrenceDate}`}
-                      type="button"
-                      className="flex w-full items-center gap-1.5 rounded-lg border border-violet-500/15 bg-violet-500/10 px-2 py-1 text-left text-[11px] text-violet-200 transition-colors hover:bg-violet-500/15"
-                      onClick={() => setEditor(editorFromOccurrence(event))}
-                    >
-                      {event.kind === 'annual' && <Repeat2 className="size-3 shrink-0" />}
-                      <span className="truncate">
-                        {event.time ? `${event.time} ` : ''}
-                        {event.title}
-                      </span>
-                    </button>
-                  ))}
-                  {dayEvents.length > 4 && (
-                    <div className="px-1 text-[10px] text-[var(--app-muted)]">
-                      +{dayEvents.length - 4} ещё
-                    </div>
+                <ChevronLeft className="size-4" />
+              </button>
+              <button
+                type="button"
+                aria-label="Следующий месяц"
+                className="flex size-9 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+                onClick={() => shiftMonth(1)}
+              >
+                <ChevronRight className="size-4" />
+              </button>
+              <button
+                type="button"
+                className="ml-1 h-9 rounded-lg border border-[var(--app-border)] bg-[var(--app-card)] px-3 text-xs font-medium text-[var(--app-text)] transition-colors hover:bg-[var(--app-control-hover)]"
+                onClick={goToday}
+              >
+                Сегодня
+              </button>
+            </div>
+
+            <strong className="text-sm font-semibold text-[var(--app-text)] capitalize sm:text-base">
+              {MONTH_FORMATTER.format(parseDate(month))}
+            </strong>
+
+            <div className="justify-self-end rounded-lg border border-violet-500/15 bg-violet-500/10 px-3 py-1.5 text-xs font-semibold text-violet-200">
+              Месяц
+            </div>
+          </div>
+
+          <div className="grid grid-cols-7 border-b border-[var(--app-border)] bg-[var(--app-workspace)]/70">
+            {WEEKDAYS.map((weekday) => (
+              <div
+                key={weekday}
+                className="px-2 py-2.5 text-center text-xs font-semibold text-[var(--app-muted)]"
+              >
+                {weekday}
+              </div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-7">
+            {range.days.map((day, index) => {
+              const inMonth = day.slice(0, 7) === month.slice(0, 7)
+              const dayEvents = eventsByDay.get(day) ?? []
+              const isToday = day === today
+              const isSelected = day === selectedDate
+              const hasRightBorder = index % 7 !== 6
+              const hasBottomBorder = index < 35
+
+              return (
+                <div
+                  key={day}
+                  className={cn(
+                    'group min-h-[118px] cursor-default p-2 transition-colors',
+                    hasRightBorder && 'border-r border-[var(--app-border)]',
+                    hasBottomBorder && 'border-b border-[var(--app-border)]',
+                    !inMonth && 'bg-[var(--app-workspace)]/40',
+                    isSelected
+                      ? 'bg-violet-500/[0.07] shadow-[inset_0_0_0_1px_rgba(139,92,246,0.32)]'
+                      : 'hover:bg-[var(--app-card-hover)]'
                   )}
+                  onClick={() => selectDay(day)}
+                  onDoubleClick={() => openCreate(day)}
+                >
+                  <div className="mb-1.5 flex items-center justify-between">
+                    <button
+                      type="button"
+                      aria-label={`Выбрать ${formatOccurrenceDate(day)}`}
+                      className={cn(
+                        'flex size-7 items-center justify-center rounded-lg text-xs font-semibold transition-colors',
+                        isToday
+                          ? 'bg-violet-500 text-white shadow-sm shadow-violet-500/20'
+                          : isSelected
+                            ? 'bg-violet-500/15 text-violet-200'
+                            : inMonth
+                              ? 'text-[var(--app-text)]'
+                              : 'text-[var(--app-muted)]'
+                      )}
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        selectDay(day)
+                      }}
+                    >
+                      {Number(day.slice(-2))}
+                    </button>
+                  </div>
+
+                  <div className="space-y-1">
+                    {dayEvents.slice(0, 3).map((event) => {
+                      const active = selectedEventKey === occurrenceKey(event)
+                      return (
+                        <button
+                          key={occurrenceKey(event)}
+                          type="button"
+                          aria-label={`Открыть событие ${event.title}`}
+                          className={cn(
+                            'flex w-full items-center gap-1.5 rounded-md px-1.5 py-1 text-left text-[11px] transition-colors',
+                            active
+                              ? 'bg-violet-500/20 text-violet-100'
+                              : 'bg-violet-500/8 text-[var(--app-text)] hover:bg-violet-500/14'
+                          )}
+                          onClick={(clickEvent) => {
+                            clickEvent.stopPropagation()
+                            selectEvent(event)
+                          }}
+                        >
+                          <span className="size-1.5 shrink-0 rounded-full bg-violet-400" />
+                          {event.kind === 'annual' && (
+                            <Repeat2 className="size-3 shrink-0 opacity-70" />
+                          )}
+                          <span className="truncate">
+                            {event.time ? `${event.time} ` : ''}
+                            {event.title}
+                          </span>
+                        </button>
+                      )
+                    })}
+                    {dayEvents.length > 3 && (
+                      <div className="px-1.5 text-[10px] text-[var(--app-muted)]">
+                        +{dayEvents.length - 3} ещё
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {loading && (
+            <div className="border-t border-[var(--app-border)] px-4 py-2 text-xs text-[var(--app-muted)]">
+              Обновление календаря…
+            </div>
+          )}
+        </section>
+
+        <aside
+          data-testid="calendar-detail-panel"
+          className="flex min-h-[520px] flex-col overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--app-shadow-card)]"
+        >
+          <div className="flex items-start justify-between gap-3 border-b border-[var(--app-border)] px-4 py-4">
+            <div className="min-w-0">
+              <div className="text-[11px] font-semibold tracking-[0.12em] text-[var(--app-muted)] uppercase">
+                Выбранный день
+              </div>
+              <div className="mt-1 text-sm font-semibold text-[var(--app-text)] first-letter:uppercase">
+                {formatOccurrenceDate(selectedDate)}
+              </div>
+            </div>
+            <button
+              type="button"
+              aria-label={`Добавить событие ${formatOccurrenceDate(selectedDate)}`}
+              className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] transition-colors hover:border-violet-500/30 hover:bg-violet-500/10 hover:text-violet-200"
+              onClick={() => openCreate(selectedDate)}
+            >
+              <Plus className="size-4" />
+            </button>
+          </div>
+
+          <div className="min-h-0 flex-1 overflow-y-auto p-4">
+            {selectedDayEvents.length > 0 && (
+              <div className="mb-4">
+                <div className="mb-2 flex items-center justify-between text-xs font-medium text-[var(--app-muted)]">
+                  <span>События дня</span>
+                  <span>{selectedDayEvents.length}</span>
+                </div>
+                <div className="space-y-1.5">
+                  {selectedDayEvents.map((event) => {
+                    const active = selectedEventKey === occurrenceKey(event)
+                    return (
+                      <button
+                        key={occurrenceKey(event)}
+                        type="button"
+                        aria-label={`Выбрать событие ${event.title}`}
+                        aria-pressed={active}
+                        className={cn(
+                          'w-full rounded-xl border px-3 py-2.5 text-left transition-colors',
+                          active
+                            ? 'border-violet-500/30 bg-violet-500/10'
+                            : 'border-[var(--app-border)] bg-[var(--app-workspace)] hover:bg-[var(--app-card-hover)]'
+                        )}
+                        onClick={() => selectEvent(event)}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="size-2 shrink-0 rounded-full bg-violet-400" />
+                          <span className="min-w-0 flex-1 truncate text-sm font-medium text-[var(--app-text)]">
+                            {event.title}
+                          </span>
+                          {event.kind === 'annual' && (
+                            <Repeat2 className="size-3.5 shrink-0 text-[var(--app-muted)]" />
+                          )}
+                        </div>
+                        {event.time && (
+                          <div className="mt-1 pl-4 text-xs text-[var(--app-muted)]">
+                            {event.time}
+                          </div>
+                        )}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
-            )
-          })}
-        </div>
-        {loading && (
-          <div className="px-4 py-3 text-xs text-[var(--app-muted)]">Обновление календаря…</div>
-        )}
-      </section>
+            )}
+
+            {selectedEvent ? (
+              <div className="space-y-4 border-t border-[var(--app-border)] pt-4">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-full border border-violet-500/20 bg-violet-500/10 px-2 py-1 text-[10px] font-semibold text-violet-200">
+                      {selectedEvent.kind === 'annual' ? 'Ежегодное' : 'Одноразовое'}
+                    </span>
+                    {selectedEvent.time && (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-[var(--app-border)] bg-[var(--app-workspace)] px-2 py-1 text-[10px] text-[var(--app-muted)]">
+                        <Clock3 className="size-3" /> {selectedEvent.time}
+                      </span>
+                    )}
+                  </div>
+                  <h2 className="mt-3 text-lg leading-snug font-semibold text-[var(--app-text)]">
+                    {selectedEvent.title}
+                  </h2>
+                  <div className="mt-1 text-xs text-[var(--app-muted)]">
+                    {formatDate(selectedEvent.occurrenceDate)}
+                  </div>
+                </div>
+
+                {selectedEvent.kind === 'annual' && selectedEvent.startDate && (
+                  <div className="rounded-xl border border-violet-500/15 bg-violet-500/[0.07] p-3">
+                    <div className="text-[11px] font-medium text-[var(--app-muted)]">
+                      Существует с
+                    </div>
+                    <div className="mt-1 text-sm font-medium text-[var(--app-text)]">
+                      {formatDate(selectedEvent.startDate)}
+                    </div>
+                    {elapsedLabel(selectedEvent) && (
+                      <div className="mt-2 text-xs text-violet-200">
+                        Прошло {elapsedLabel(selectedEvent)}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div>
+                  <div className="mb-2 text-xs font-semibold text-[var(--app-muted)]">Заметка</div>
+                  <div className="rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 py-3 text-sm leading-6 text-[var(--app-text)]">
+                    {selectedEvent.note.trim() ? (
+                      <p className="whitespace-pre-wrap">{selectedEvent.note}</p>
+                    ) : (
+                      <span className="text-[var(--app-muted)]">Для этого дня заметки нет.</span>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-[var(--app-muted)]">
+                    <Bell className="size-3.5" /> Напоминания
+                  </div>
+                  {selectedEvent.reminderOffsets.length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5">
+                      {selectedEvent.reminderOffsets.map((offset) => (
+                        <span
+                          key={offset}
+                          className="rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] px-2.5 py-1.5 text-xs text-[var(--app-text)]"
+                        >
+                          {reminderLabel(offset)}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-xs text-[var(--app-muted)]">Напоминания не настроены.</div>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] text-sm font-medium text-[var(--app-text)] transition-colors hover:bg-[var(--app-control-hover)]"
+                  onClick={() => setEditor(editorFromOccurrence(selectedEvent))}
+                >
+                  <Pencil className="size-4" /> Редактировать событие
+                </button>
+              </div>
+            ) : selectedDayEvents.length > 0 ? (
+              <div className="flex min-h-52 flex-col items-center justify-center rounded-xl border border-dashed border-[var(--app-border)] px-5 text-center">
+                <CalendarDays className="size-8 text-[var(--app-muted)]/55" />
+                <div className="mt-3 text-sm font-medium text-[var(--app-text)]">
+                  Выберите событие
+                </div>
+                <p className="mt-1 max-w-52 text-xs leading-5 text-[var(--app-muted)]">
+                  Справа появятся его заметка, напоминания и информация о повторении.
+                </p>
+              </div>
+            ) : (
+              <div className="flex min-h-72 flex-col items-center justify-center text-center">
+                <div className="flex size-12 items-center justify-center rounded-2xl border border-violet-500/15 bg-violet-500/8">
+                  <CalendarDays className="size-6 text-violet-300" />
+                </div>
+                <div className="mt-4 text-sm font-semibold text-[var(--app-text)]">Событий нет</div>
+                <p className="mt-1 max-w-52 text-xs leading-5 text-[var(--app-muted)]">
+                  Добавьте событие на выбранный день — оно появится прямо в календаре.
+                </p>
+                <button
+                  type="button"
+                  className="mt-4 inline-flex h-9 items-center gap-2 rounded-xl bg-violet-500 px-3 text-xs font-semibold text-white hover:bg-violet-400"
+                  onClick={() => openCreate(selectedDate)}
+                >
+                  <Plus className="size-3.5" /> Добавить событие
+                </button>
+              </div>
+            )}
+          </div>
+        </aside>
+      </div>
 
       <AppDialog
         open={editor !== null}
