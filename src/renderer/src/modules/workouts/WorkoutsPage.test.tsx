@@ -242,6 +242,19 @@ describe('WorkoutsPage', () => {
     expect(screen.getByText(/22 повт/)).toBeInTheDocument()
   })
 
+  it('opens the full muscle model from the workout journal', async () => {
+    const user = userEvent.setup()
+    render(<WorkoutsPage />)
+
+    await user.click(
+      await screen.findByRole('button', { name: 'Посмотреть модель мышц тренировки «Pull»' })
+    )
+
+    expect(await screen.findByText('Модель мышц · Pull')).toBeInTheDocument()
+    expect(screen.getAllByText('Бицепс').length).toBeGreaterThan(0)
+    expect(screen.getByRole('button', { name: 'Спереди' })).toHaveAttribute('aria-pressed', 'true')
+  })
+
   it('shows the fixed muscle tag in the exercise library', async () => {
     const user = userEvent.setup()
     render(<WorkoutsPage />)
