@@ -262,7 +262,7 @@ export function WorkoutMuscleMapDialog({
       <button
         type="button"
         aria-label="Закрыть модель мышц"
-        className="absolute top-5 right-5 z-50 flex size-10 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)]/88 text-[var(--app-muted)] shadow-[var(--app-shadow-card)] backdrop-blur-xl transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40"
+        className="absolute top-5 right-5 z-50 flex size-10 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)]/88 text-[var(--app-muted)] shadow-[var(--app-shadow-card)] backdrop-blur-xl transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/40 focus-visible:outline-none"
         onClick={() => requestOpenChange(false)}
       >
         <X className="size-5" aria-hidden="true" />
@@ -342,7 +342,7 @@ export function WorkoutMuscleMapDialog({
           <button
             type="button"
             aria-label="Повернуть модель"
-            className="absolute right-5 bottom-5 z-40 flex size-12 items-center justify-center rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)]/88 text-[var(--app-text)] shadow-[var(--app-shadow-card)] backdrop-blur-xl transition-all hover:bg-[var(--app-control-hover)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40"
+            className="absolute right-5 bottom-5 z-40 flex size-12 items-center justify-center rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)]/88 text-[var(--app-text)] shadow-[var(--app-shadow-card)] backdrop-blur-xl transition-all hover:bg-[var(--app-control-hover)] focus-visible:ring-2 focus-visible:ring-violet-500/40 focus-visible:outline-none active:scale-95"
             onClick={rotateModel}
           >
             <RotateCcw className="size-5" aria-hidden="true" />
