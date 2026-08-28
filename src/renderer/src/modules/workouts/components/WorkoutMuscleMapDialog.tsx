@@ -1,4 +1,6 @@
 import { getBodyDiagram } from '@musclemap/assets'
+import femaleBack from '@musclemap/assets/bodies/female-back.webp'
+import femaleFront from '@musclemap/assets/bodies/female-front.webp'
 import maleBack from '@musclemap/assets/bodies/male-back.webp'
 import maleFront from '@musclemap/assets/bodies/male-front.webp'
 import type { MuscleGroup as AnatomyMuscleGroup, MuscleMapValues } from '@musclemap/core'
@@ -15,6 +17,7 @@ import { AppDialog } from '../../../shared/ui/AppDialog'
 import { workoutMuscleGroupLabel } from '../workout-options'
 
 type AnatomyView = 'FRONT' | 'BACK'
+type AnatomySex = 'MALE' | 'FEMALE'
 
 interface ZoneConfig {
   view: AnatomyView
@@ -157,13 +160,20 @@ function clampPan(
   }
 }
 
+function bodyBackgroundImage(sex: AnatomySex, view: AnatomyView): string {
+  if (sex === 'FEMALE') return view === 'FRONT' ? femaleFront : femaleBack
+  return view === 'FRONT' ? maleFront : maleBack
+}
+
 function MuscleMapBody({
+  sex,
   view,
   zoneCounts,
   maxCount,
   activeGroup,
   onHover
 }: {
+  sex: AnatomySex
   view: AnatomyView
   zoneCounts: Map<WorkoutMuscleZone, number>
   maxCount: number
@@ -190,7 +200,7 @@ function MuscleMapBody({
 
   return (
     <BodyFigure
-      diagram={getBodyDiagram('MALE', view)}
+      diagram={getBodyDiagram(sex, view)}
       values={values}
       colorModel="LOAD"
       monochromeColor={accentColor}
@@ -198,9 +208,9 @@ function MuscleMapBody({
       visibleGroups={visibleGroups}
       activeGroup={activeGroup}
       glow
-      idPrefix={`workout-muscle-map-${view.toLowerCase()}-${id}`}
+      idPrefix={`workout-muscle-map-${sex.toLowerCase()}-${view.toLowerCase()}-${id}`}
       width={620}
-      backgroundImage={view === 'FRONT' ? maleFront : maleBack}
+      backgroundImage={bodyBackgroundImage(sex, view)}
       backgroundOpacity={0.88}
       backgroundGrayscale
       backgroundBrightness={0.76}
@@ -218,6 +228,7 @@ export function WorkoutMuscleMapDialog({
   emptyMessage,
   onOpenChange
 }: WorkoutMuscleMapDialogProps): React.JSX.Element {
+  const [sex, setSex] = useState<AnatomySex>('MALE')
   const [view, setView] = useState<AnatomyView>('FRONT')
   const [zoom, setZoom] = useState(1)
   const [pan, setPan] = useState<PanOffset>(DEFAULT_PAN)
@@ -271,6 +282,12 @@ export function WorkoutMuscleMapDialog({
     setView((current) => (current === 'FRONT' ? 'BACK' : 'FRONT'))
   }
 
+  function selectSex(nextSex: AnatomySex): void {
+    if (nextSex === sex) return
+    clearHover()
+    setSex(nextSex)
+  }
+
   function stopDragging(): void {
     setDragState(null)
   }
@@ -322,6 +339,7 @@ export function WorkoutMuscleMapDialog({
           data-pan-x={Math.round(pan.x)}
           data-pan-y={Math.round(pan.y)}
           data-view={view}
+          data-sex={sex}
           className={cn(
             'relative isolate h-full min-h-0 w-full overflow-hidden bg-[var(--app-workspace)] select-none [perspective:1800px]',
             zoom > 1 && (dragState ? 'cursor-grabbing' : 'cursor-grab')
@@ -427,6 +445,7 @@ export function WorkoutMuscleMapDialog({
               >
                 <div className="absolute inset-0 flex items-center justify-center px-10 py-8 [backface-visibility:hidden] [&>svg]:max-h-full [&>svg]:w-auto [&>svg]:max-w-[72vw]">
                   <MuscleMapBody
+                    sex={sex}
                     view="FRONT"
                     zoneCounts={analysis.zoneCounts}
                     maxCount={analysis.maxCount}
@@ -436,6 +455,7 @@ export function WorkoutMuscleMapDialog({
                 </div>
                 <div className="absolute inset-0 flex [transform:rotateY(180deg)] items-center justify-center px-10 py-8 [backface-visibility:hidden] [&>svg]:max-h-full [&>svg]:w-auto [&>svg]:max-w-[72vw]">
                   <MuscleMapBody
+                    sex={sex}
                     view="BACK"
                     zoneCounts={analysis.zoneCounts}
                     maxCount={analysis.maxCount}
@@ -445,6 +465,37 @@ export function WorkoutMuscleMapDialog({
                 </div>
               </div>
             </div>
+          </div>
+
+          <div className="absolute bottom-5 left-5 z-40 flex items-center rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)]/88 p-1 shadow-[var(--app-shadow-card)] backdrop-blur-xl">
+            <button
+              type="button"
+              aria-label="Мужская модель"
+              aria-pressed={sex === 'MALE'}
+              className={cn(
+                'flex h-10 min-w-10 items-center justify-center rounded-xl px-3 text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-violet-500/40 focus-visible:outline-none',
+                sex === 'MALE'
+                  ? 'bg-[var(--app-accent-500)] text-white'
+                  : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
+              )}
+              onClick={() => selectSex('MALE')}
+            >
+              М
+            </button>
+            <button
+              type="button"
+              aria-label="Женская модель"
+              aria-pressed={sex === 'FEMALE'}
+              className={cn(
+                'flex h-10 min-w-10 items-center justify-center rounded-xl px-3 text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-violet-500/40 focus-visible:outline-none',
+                sex === 'FEMALE'
+                  ? 'bg-[var(--app-accent-500)] text-white'
+                  : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
+              )}
+              onClick={() => selectSex('FEMALE')}
+            >
+              Ж
+            </button>
           </div>
 
           <button
