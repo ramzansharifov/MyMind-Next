@@ -66,7 +66,7 @@ export function WorkoutSessionCard({
         aria-expanded={expanded}
         aria-controls={detailsId}
         aria-label={`${expanded ? 'Свернуть' : 'Раскрыть'} тренировку «${title}»`}
-        className="flex w-full items-center gap-4 px-4 py-3.5 text-left focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-500/35 focus-visible:outline-none"
+        className="flex w-full items-center gap-4 px-4 py-3.5 text-left focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:outline-none focus-visible:ring-inset"
         onClick={() => setExpanded((current) => !current)}
       >
         <div className="min-w-0 flex-1">
@@ -92,6 +92,8 @@ export function WorkoutSessionCard({
 
       <div
         id={detailsId}
+        aria-hidden={!expanded}
+        inert={!expanded}
         className={cn(
           'grid transition-[grid-template-rows,opacity] duration-200 ease-out',
           expanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
@@ -129,7 +131,9 @@ export function WorkoutSessionCard({
                   <Scale className="size-3.5" aria-hidden="true" /> Тоннаж
                 </div>
                 <div className="mt-1 text-sm font-semibold text-[var(--app-text)]">
-                  {hasExternalWeight ? `${formatNumber(session.totalVolumeKg)} кг` : 'Без доп. веса'}
+                  {hasExternalWeight
+                    ? `${formatNumber(session.totalVolumeKg)} кг`
+                    : 'Без доп. веса'}
                 </div>
               </div>
             </div>
@@ -164,10 +168,7 @@ export function WorkoutSessionCard({
 
             <div className="mt-4 space-y-2">
               {session.exercises.map((exercise, exerciseIndex) => {
-                const volume = exercise.sets.reduce(
-                  (sum, set) => sum + set.reps * set.weightKg,
-                  0
-                )
+                const volume = exercise.sets.reduce((sum, set) => sum + set.reps * set.weightKg, 0)
                 return (
                   <section
                     key={exercise.id}
@@ -202,7 +203,9 @@ export function WorkoutSessionCard({
                               {set.position + 1}.
                             </strong>
                             {set.reps} повт.
-                            {exercise.usesExternalWeight ? ` × ${formatNumber(set.weightKg)} кг` : ''}
+                            {exercise.usesExternalWeight
+                              ? ` × ${formatNumber(set.weightKg)} кг`
+                              : ''}
                           </span>
                         ))}
                       </div>

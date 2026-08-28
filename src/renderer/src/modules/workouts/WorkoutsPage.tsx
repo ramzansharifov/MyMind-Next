@@ -52,13 +52,13 @@ import { WorkoutMuscleMapDialog } from './components/WorkoutMuscleMapDialog'
 import { WorkoutProgressDialog } from './components/WorkoutProgressDialog'
 import { WorkoutProgressSection } from './components/WorkoutProgressSection'
 import { WorkoutSessionDetailDialog } from './components/WorkoutSessionDetailDialog'
+import { WorkoutSessionCard } from './components/WorkoutSessionCard'
 import { WorkoutSessionDialog } from './components/WorkoutSessionDialog'
 import {
   WORKOUT_MUSCLE_GROUP_OPTIONS,
   workoutMuscleGroupClasses,
   workoutMuscleGroupLabel,
-  workoutMuscleGroupsLabel,
-  WorkoutMuscleGroupIcon
+  workoutMuscleGroupsLabel
 } from './workout-options'
 
 type WorkoutTab = 'journal' | 'exercises' | 'programs' | 'progress' | 'reports'
@@ -646,101 +646,22 @@ export function WorkoutsPage({
               </p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {filteredSessions.map((session) => {
-                const groups = [
-                  ...new Set(session.exercises.flatMap((exercise) => exercise.muscleGroups))
-                ]
-                return (
-                  <article
-                    key={session.id}
-                    className="group rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)] transition-colors hover:bg-[var(--app-card-hover)]"
-                  >
-                    <div className="flex flex-wrap items-start gap-4">
-                      <button
-                        type="button"
-                        className="min-w-0 flex-1 text-left"
-                        onClick={() => {
-                          setSelectedSession(session)
-                          setSessionDetailOpen(true)
-                        }}
-                      >
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="text-base font-semibold text-[var(--app-text)]">
-                            {session.programName || 'Свободная тренировка'}
-                          </h3>
-                        </div>
-                        <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[var(--app-muted)]">
-                          <span className="inline-flex items-center gap-1.5">
-                            <CalendarDays className="size-3.5" />
-                            {formatDate(session.date)}
-                          </span>
-                          {session.durationMinutes && (
-                            <span className="inline-flex items-center gap-1.5">
-                              <Clock3 className="size-3.5" />
-                              {session.durationMinutes} мин
-                            </span>
-                          )}
-                          <span>{session.totalSets} подх.</span>
-                          <span>{session.totalReps} повт.</span>
-                          <span>{formatNumber(session.totalVolumeKg)} кг</span>
-                        </div>
-                        <div className="mt-2 flex flex-wrap gap-1.5">
-                          {groups.map((group) => {
-                            const classes = workoutMuscleGroupClasses[group]
-                            return (
-                              <span
-                                key={group}
-                                className={cn(
-                                  'inline-flex h-6 items-center gap-1 rounded-lg border px-2 text-[11px] font-medium',
-                                  classes.soft,
-                                  classes.text,
-                                  classes.border
-                                )}
-                              >
-                                <WorkoutMuscleGroupIcon group={group} className="size-3" />
-                                {workoutMuscleGroupLabel(group)}
-                              </span>
-                            )
-                          })}
-                        </div>
-                      </button>
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          aria-label={`Посмотреть модель мышц тренировки «${session.programName || formatDate(session.date)}»`}
-                          className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-violet-500/10 hover:text-violet-300"
-                          onClick={() => {
-                            setSelectedSessionForMap(session)
-                            setSessionMuscleMapOpen(true)
-                          }}
-                        >
-                          <Activity className="size-4" />
-                        </button>
-                        <button
-                          type="button"
-                          aria-label="Изменить тренировку"
-                          className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control)] hover:text-[var(--app-text)]"
-                          onClick={() => {
-                            setEditingSession(session)
-                            setSessionDialogOpen(true)
-                          }}
-                        >
-                          <Pencil className="size-4" />
-                        </button>
-                        <button
-                          type="button"
-                          aria-label="Удалить тренировку"
-                          className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
-                          onClick={() => setDeleteSessionTarget(session)}
-                        >
-                          <Trash2 className="size-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </article>
-                )
-              })}
+            <div className="space-y-2.5">
+              {filteredSessions.map((session) => (
+                <WorkoutSessionCard
+                  key={session.id}
+                  session={session}
+                  onOpenMuscleMap={() => {
+                    setSelectedSessionForMap(session)
+                    setSessionMuscleMapOpen(true)
+                  }}
+                  onEdit={() => {
+                    setEditingSession(session)
+                    setSessionDialogOpen(true)
+                  }}
+                  onDelete={() => setDeleteSessionTarget(session)}
+                />
+              ))}
             </div>
           )}
         </section>

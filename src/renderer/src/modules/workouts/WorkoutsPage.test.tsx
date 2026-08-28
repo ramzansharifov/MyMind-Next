@@ -233,21 +233,33 @@ beforeEach(() => {
 })
 
 describe('WorkoutsPage', () => {
-  it('shows the workout journal with program and set totals', async () => {
+  it('keeps workout cards compact and reveals full details on click', async () => {
+    const user = userEvent.setup()
     render(<WorkoutsPage />)
 
     expect(await screen.findByRole('heading', { name: 'Тренировки' })).toBeInTheDocument()
-    expect(screen.getAllByText('Pull').length).toBeGreaterThan(0)
-    expect(screen.getByText(/2 подх/)).toBeInTheDocument()
-    expect(screen.getByText(/22 повт/)).toBeInTheDocument()
+    const toggle = await screen.findByRole('button', { name: 'Раскрыть тренировку «Pull»' })
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByRole('button', { name: 'Изменить тренировку' })).not.toBeInTheDocument()
+
+    await user.click(toggle)
+
+    expect(screen.getByRole('button', { name: 'Свернуть тренировку «Pull»' })).toHaveAttribute(
+      'aria-expanded',
+      'true'
+    )
+    expect(screen.getByText(/10 повт\. × 16 кг/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Изменить тренировку' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Удалить тренировку' })).toBeInTheDocument()
   })
 
   it('opens the full muscle model from the workout journal', async () => {
     const user = userEvent.setup()
     render(<WorkoutsPage />)
 
+    await user.click(await screen.findByRole('button', { name: 'Раскрыть тренировку «Pull»' }))
     await user.click(
-      await screen.findByRole('button', { name: 'Посмотреть модель мышц тренировки «Pull»' })
+      screen.getByRole('button', { name: 'Посмотреть модель мышц тренировки «Pull»' })
     )
 
     expect(await screen.findByText('Модель мышц · Pull')).toBeInTheDocument()
