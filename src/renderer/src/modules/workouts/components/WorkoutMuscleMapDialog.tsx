@@ -206,7 +206,9 @@ export function WorkoutMuscleMapDialog({
         <section className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)]">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--app-border)] px-4 py-3">
             <div>
-              <div className="text-sm font-semibold text-[var(--app-text)]">Анатомическая карта</div>
+              <div className="text-sm font-semibold text-[var(--app-text)]">
+                Анатомическая карта
+              </div>
               <div className="mt-0.5 text-xs text-[var(--app-muted)]">
                 {exercises.length} {exerciseCountLabel(exercises.length)} · {analysis.rows.length}{' '}
                 мышечных зон
@@ -259,7 +261,7 @@ export function WorkoutMuscleMapDialog({
                     maxCount={analysis.maxCount}
                   />
                 </div>
-                <div className="absolute inset-0 flex items-start justify-center px-4 pt-1 pb-8 [backface-visibility:hidden] [transform:rotateY(180deg)] [&>svg]:max-h-full [&>svg]:w-full">
+                <div className="absolute inset-0 flex [transform:rotateY(180deg)] items-start justify-center px-4 pt-1 pb-8 [backface-visibility:hidden] [&>svg]:max-h-full [&>svg]:w-full">
                   <MuscleMapBody
                     view="BACK"
                     zoneCounts={analysis.zoneCounts}

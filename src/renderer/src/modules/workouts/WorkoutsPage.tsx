@@ -48,7 +48,7 @@ import { workoutsClient } from './api/workouts-client'
 import { WorkoutExerciseDialog } from './components/WorkoutExerciseDialog'
 import { WorkoutMuscleArtwork } from './components/WorkoutMuscleArtwork'
 import { WorkoutProgramDialog } from './components/WorkoutProgramDialog'
-import { WorkoutProgramMuscleMapDialog } from './components/WorkoutProgramMuscleMapDialog'
+import { WorkoutMuscleMapDialog } from './components/WorkoutMuscleMapDialog'
 import { WorkoutProgressDialog } from './components/WorkoutProgressDialog'
 import { WorkoutProgressSection } from './components/WorkoutProgressSection'
 import { WorkoutSessionDetailDialog } from './components/WorkoutSessionDetailDialog'
@@ -116,6 +116,10 @@ export function WorkoutsPage({
   const [editingProgram, setEditingProgram] = useState<WorkoutProgramRecord | null>(null)
   const [programMuscleMapOpen, setProgramMuscleMapOpen] = useState(false)
   const [selectedProgramForMap, setSelectedProgramForMap] = useState<WorkoutProgramRecord | null>(
+    null
+  )
+  const [sessionMuscleMapOpen, setSessionMuscleMapOpen] = useState(false)
+  const [selectedSessionForMap, setSelectedSessionForMap] = useState<WorkoutSessionRecord | null>(
     null
   )
   const [sessionDialogOpen, setSessionDialogOpen] = useState(false)
@@ -655,16 +659,6 @@ export function WorkoutsPage({
                     <div className="flex flex-wrap items-start gap-4">
                       <button
                         type="button"
-                        className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-1"
-                        onClick={() => {
-                          setSelectedSession(session)
-                          setSessionDetailOpen(true)
-                        }}
-                      >
-                        <WorkoutMuscleArtwork groups={groups} className="size-9 rounded-lg" />
-                      </button>
-                      <button
-                        type="button"
                         className="min-w-0 flex-1 text-left"
                         onClick={() => {
                           setSelectedSession(session)
@@ -712,6 +706,17 @@ export function WorkoutsPage({
                         </div>
                       </button>
                       <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          aria-label={`Посмотреть модель мышц тренировки «${session.programName || formatDate(session.date)}»`}
+                          className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-violet-500/10 hover:text-violet-300"
+                          onClick={() => {
+                            setSelectedSessionForMap(session)
+                            setSessionMuscleMapOpen(true)
+                          }}
+                        >
+                          <Activity className="size-4" />
+                        </button>
                         <button
                           type="button"
                           aria-label="Изменить тренировку"
@@ -1571,13 +1576,48 @@ export function WorkoutsPage({
         }}
         onSave={saveProgram}
       />
-      <WorkoutProgramMuscleMapDialog
+      <WorkoutMuscleMapDialog
         open={programMuscleMapOpen}
-        program={selectedProgramForMap}
-        exercises={exercises}
+        title={
+          selectedProgramForMap
+            ? `Карта мышц · ${selectedProgramForMap.name}`
+            : 'Карта мышц программы'
+        }
+        description="Поверните модель и посмотрите, какие группы мышц задействует программа. Яркость показывает, в скольких упражнениях встречается зона."
+        exercises={
+          selectedProgramForMap?.exercises.flatMap((item) => {
+            const exercise = exerciseMap.get(item.exerciseId)
+            return exercise ? [{ title: exercise.title, muscleGroups: exercise.muscleGroups }] : []
+          }) ?? []
+        }
+        emptyMessage="В программе пока нет упражнений с указанными группами мышц."
         onOpenChange={(open) => {
           setProgramMuscleMapOpen(open)
           if (!open) setSelectedProgramForMap(null)
+        }}
+      />
+      <WorkoutMuscleMapDialog
+        open={sessionMuscleMapOpen}
+        title={
+          selectedSessionForMap
+            ? `Модель мышц · ${selectedSessionForMap.programName || 'Свободная тренировка'}`
+            : 'Модель мышц тренировки'
+        }
+        description={
+          selectedSessionForMap
+            ? `Мышцы, задействованные в тренировке за ${formatDate(selectedSessionForMap.date)}. Яркость показывает, в скольких упражнениях встречается зона.`
+            : 'Посмотрите, какие мышцы были задействованы в выбранной тренировке.'
+        }
+        exercises={
+          selectedSessionForMap?.exercises.map((exercise) => ({
+            title: exercise.exerciseTitle,
+            muscleGroups: exercise.muscleGroups
+          })) ?? []
+        }
+        emptyMessage="В этой тренировке нет упражнений с указанными группами мышц."
+        onOpenChange={(open) => {
+          setSessionMuscleMapOpen(open)
+          if (!open) setSelectedSessionForMap(null)
         }}
       />
       <WorkoutSessionDialog
