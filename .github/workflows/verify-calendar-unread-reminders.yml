@@ -19,7 +19,9 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Apply unread reminder implementation
-        run: python .github/scripts/implement-calendar-unread-reminders.py
+        run: |
+          python .github/scripts/implement-calendar-unread-reminders.py
+          python .github/scripts/fix-calendar-unread-reminders.py
       - name: Format changed files
         run: >-
           npx prettier --write
