@@ -73,6 +73,8 @@ jobs:
             if (-not $allowed) { exit 1 }
           }
           exit 0
+      - name: Rebuild SQLite for Node tests
+        run: npm rebuild better-sqlite3
       - name: Calendar repository tests
         run: npx vitest run src/main/repositories/calendar.repository.test.ts
       - name: Calendar renderer tests
