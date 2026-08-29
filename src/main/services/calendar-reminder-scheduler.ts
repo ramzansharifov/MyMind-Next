@@ -1,5 +1,6 @@
 import { Notification, type BrowserWindow } from 'electron'
 
+import { CALENDAR_IPC_CHANNELS } from '../../shared/contracts/calendar'
 import {
   listDueCalendarReminders,
   markCalendarReminderDelivered
@@ -44,19 +45,26 @@ export class CalendarReminderScheduler {
       const due = listDueCalendarReminders(this.lastCheck, now)
       for (const reminder of due) {
         if (!markCalendarReminderDelivered(reminder)) continue
+
+        const window = this.getWindow()
+        if (window && !window.isDestroyed() && !window.webContents.isDestroyed()) {
+          window.webContents.send(CALENDAR_IPC_CHANNELS.remindersChanged)
+        }
+
         if (!Notification.isSupported()) continue
 
         const notification = new Notification({
           title: reminder.title,
           body: `Событие: ${formatEventDate(reminder.occurrenceDate, reminder.eventTime)}`,
-          silent: false
+          silent: false,
+          timeoutType: 'default'
         })
         notification.on('click', () => {
-          const window = this.getWindow()
-          if (!window || window.isDestroyed()) return
-          if (window.isMinimized()) window.restore()
-          window.show()
-          window.focus()
+          const currentWindow = this.getWindow()
+          if (!currentWindow || currentWindow.isDestroyed()) return
+          if (currentWindow.isMinimized()) currentWindow.restore()
+          currentWindow.show()
+          currentWindow.focus()
         })
         notification.show()
       }
