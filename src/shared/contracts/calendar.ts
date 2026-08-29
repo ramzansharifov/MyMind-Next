@@ -41,6 +41,15 @@ export interface CalendarReminderRecord {
   triggerAt: number
 }
 
+export interface CalendarUnreadReminderRecord extends CalendarReminderRecord {
+  deliveryId: string
+  deliveredAt: number
+}
+
+export interface CalendarAcknowledgeReminderInput {
+  deliveryId: string
+}
+
 export interface CalendarRangeInput {
   from: string
   to: string
@@ -81,6 +90,9 @@ export interface CalendarDeleteEventInput {
 export const CALENDAR_IPC_CHANNELS = {
   listRange: 'calendar:list-range',
   listUpcomingReminders: 'calendar:list-upcoming-reminders',
+  listUnreadReminders: 'calendar:list-unread-reminders',
+  acknowledgeReminder: 'calendar:acknowledge-reminder',
+  remindersChanged: 'calendar:reminders-changed',
   createEvent: 'calendar:create-event',
   updateEvent: 'calendar:update-event',
   deleteEvent: 'calendar:delete-event',
@@ -91,6 +103,9 @@ export const CALENDAR_IPC_CHANNELS = {
 export interface CalendarApi {
   listRange(input: CalendarRangeInput): Promise<CalendarOccurrenceRecord[]>
   listUpcomingReminders(input: CalendarRangeInput): Promise<CalendarReminderRecord[]>
+  listUnreadReminders(): Promise<CalendarUnreadReminderRecord[]>
+  acknowledgeReminder(input: CalendarAcknowledgeReminderInput): Promise<boolean>
+  onRemindersChanged(listener: () => void): () => void
   createEvent(input: CalendarCreateEventInput): Promise<CalendarEventRecord>
   updateEvent(input: CalendarUpdateEventInput): Promise<CalendarEventRecord>
   deleteEvent(input: CalendarDeleteEventInput): Promise<boolean>

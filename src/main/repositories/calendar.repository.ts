@@ -1,12 +1,14 @@
 import { randomUUID } from 'node:crypto'
 
 import type {
+  CalendarAcknowledgeReminderInput,
   CalendarCreateEventInput,
   CalendarElapsedDuration,
   CalendarEventRecord,
   CalendarOccurrenceRecord,
   CalendarRangeInput,
   CalendarReminderRecord,
+  CalendarUnreadReminderRecord,
   CalendarSetOccurrenceHiddenInput,
   CalendarSetOccurrenceNoteInput,
   CalendarUpdateEventInput
@@ -387,16 +389,69 @@ export function listDueCalendarReminders(sinceMs: number, nowMs: number): Calend
   )
 }
 
-export function markCalendarReminderDelivered(reminderId: string, occurrenceDate: string): boolean {
+export function markCalendarReminderDelivered(reminder: CalendarReminderRecord): boolean {
   try {
     getSqlite()
       .prepare(
-        'INSERT INTO calendar_reminder_deliveries (id, reminder_id, occurrence_date, delivered_at) VALUES (?, ?, ?, ?)'
+        'INSERT INTO calendar_reminder_deliveries (id, reminder_id, event_id, occurrence_date, title, event_time, offset_minutes, delivered_at, acknowledged_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL)'
       )
-      .run(randomUUID(), reminderId, occurrenceDate, Date.now())
+      .run(
+        randomUUID(),
+        reminder.reminderId,
+        reminder.eventId,
+        reminder.occurrenceDate,
+        reminder.title,
+        reminder.eventTime,
+        reminder.offsetMinutes,
+        Date.now()
+      )
     return true
   } catch (reason: unknown) {
     if (reason instanceof Error && /UNIQUE constraint failed/.test(reason.message)) return false
     throw reason
   }
+}
+
+interface UnreadReminderRow {
+  id: string
+  reminder_id: string
+  event_id: string
+  occurrence_date: string
+  title: string
+  event_time: string | null
+  offset_minutes: number
+  delivered_at: number
+}
+
+export function listUnreadCalendarReminders(): CalendarUnreadReminderRecord[] {
+  const rows = getSqlite()
+    .prepare(
+      `SELECT id, reminder_id, event_id, occurrence_date, title, event_time, offset_minutes, delivered_at
+       FROM calendar_reminder_deliveries
+       WHERE acknowledged_at IS NULL
+       ORDER BY delivered_at DESC, occurrence_date DESC`
+    )
+    .all() as UnreadReminderRow[]
+
+  return rows.map((row) => ({
+    deliveryId: row.id,
+    reminderId: row.reminder_id,
+    eventId: row.event_id,
+    title: row.title,
+    occurrenceDate: row.occurrence_date,
+    eventTime: row.event_time,
+    offsetMinutes: row.offset_minutes,
+    triggerAt: dateTimeMs(row.occurrence_date, row.event_time) - row.offset_minutes * 60_000,
+    deliveredAt: row.delivered_at
+  }))
+}
+
+export function acknowledgeCalendarReminder(input: CalendarAcknowledgeReminderInput): boolean {
+  return (
+    getSqlite()
+      .prepare(
+        'UPDATE calendar_reminder_deliveries SET acknowledged_at = ? WHERE id = ? AND acknowledged_at IS NULL'
+      )
+      .run(Date.now(), input.deliveryId).changes > 0
+  )
 }

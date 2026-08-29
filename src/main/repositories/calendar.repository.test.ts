@@ -8,10 +8,12 @@ vi.mock('electron', () => ({ app: { getPath: () => '' } }))
 import { closeDatabase, getSqlite, initializeDatabaseForTesting } from '../database/client'
 import { runDatabaseMigrationsFrom } from '../database/migrate'
 import {
+  acknowledgeCalendarReminder,
   calculateCalendarElapsed,
   createCalendarEvent,
   listCalendarOccurrences,
   listCalendarReminderTriggers,
+  listUnreadCalendarReminders,
   markCalendarReminderDelivered,
   setCalendarOccurrenceHidden,
   setCalendarOccurrenceNote
@@ -100,8 +102,21 @@ describe('calendar repository', () => {
     ).toEqual([1440, 180, 30])
     const first = reminders[0]
     expect(first).toBeDefined()
-    expect(markCalendarReminderDelivered(first!.reminderId, first!.occurrenceDate)).toBe(true)
-    expect(markCalendarReminderDelivered(first!.reminderId, first!.occurrenceDate)).toBe(false)
+    expect(markCalendarReminderDelivered(first!)).toBe(true)
+    expect(markCalendarReminderDelivered(first!)).toBe(false)
+
+    const unread = listUnreadCalendarReminders()
+    expect(unread).toHaveLength(1)
+    expect(unread[0]).toMatchObject({
+      reminderId: first!.reminderId,
+      eventId: event.id,
+      title: 'Встреча',
+      occurrenceDate: first!.occurrenceDate
+    })
+    expect(listUnreadCalendarReminders()).toHaveLength(1)
+    expect(acknowledgeCalendarReminder({ deliveryId: unread[0]!.deliveryId })).toBe(true)
+    expect(listUnreadCalendarReminders()).toHaveLength(0)
+    expect(acknowledgeCalendarReminder({ deliveryId: unread[0]!.deliveryId })).toBe(false)
   })
 
   it('calculates calendar-aware elapsed years, months and days', () => {
