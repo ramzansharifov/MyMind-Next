@@ -2,6 +2,7 @@ import { cva } from 'class-variance-authority'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 
+import { useCalendarReminderInbox } from '../modules/calendar/useCalendarReminderInbox'
 import { cn } from '../shared/lib/cn'
 import { Tooltip, TooltipProvider } from '../shared/ui/tooltip'
 import { AppTitleBar } from './AppTitleBar'
@@ -25,6 +26,7 @@ interface NavigationButtonProps {
   activeView: AppViewId
   isCollapsed: boolean
   onSelect: (view: AppViewId) => void
+  hasNotification?: boolean
 }
 
 const navigationButtonVariants = cva(
@@ -61,7 +63,8 @@ function NavigationButton({
   item,
   activeView,
   isCollapsed,
-  onSelect
+  onSelect,
+  hasNotification = false
 }: NavigationButtonProps): React.JSX.Element {
   const Icon = item.icon
   const isActive = item.id === activeView
@@ -84,15 +87,23 @@ function NavigationButton({
         />
       )}
 
-      <Icon
-        aria-hidden="true"
-        className={cn(
-          'size-5 shrink-0 transition-colors',
-          isActive
-            ? 'text-violet-300'
-            : ['text-[var(--app-muted)]', 'group-hover:text-[var(--app-text)]']
+      <span className="relative flex size-5 shrink-0 items-center justify-center">
+        <Icon
+          aria-hidden="true"
+          className={cn(
+            'size-5 transition-colors',
+            isActive
+              ? 'text-violet-300'
+              : ['text-[var(--app-muted)]', 'group-hover:text-[var(--app-text)]']
+          )}
+        />
+        {hasNotification && (
+          <span
+            aria-label="Есть непрочитанные напоминания календаря"
+            className="absolute -top-1 -right-1 size-2.5 rounded-full bg-red-500 ring-2 ring-[var(--app-sidebar)]"
+          />
         )}
-      />
+      </span>
 
       <span
         aria-hidden={isCollapsed || undefined}
@@ -123,6 +134,7 @@ export function AppShell({
   children
 }: AppShellProps): React.JSX.Element {
   const [isCollapsed, setIsCollapsed] = useState(() => activeView === 'study')
+  const { reminders: calendarReminders } = useCalendarReminderInbox()
 
   useEffect(() => {
     const root = document.documentElement
@@ -232,6 +244,7 @@ export function AppShell({
                     activeView={activeView}
                     isCollapsed={isCollapsed}
                     onSelect={handleViewChange}
+                    hasNotification={item.id === 'calendar' && calendarReminders.length > 0}
                   />
                 ))}
               </nav>

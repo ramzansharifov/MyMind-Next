@@ -189,6 +189,14 @@ const api: MyMindApi = {
     listRange: (input) => ipcRenderer.invoke(CALENDAR_IPC_CHANNELS.listRange, input),
     listUpcomingReminders: (input) =>
       ipcRenderer.invoke(CALENDAR_IPC_CHANNELS.listUpcomingReminders, input),
+    listUnreadReminders: () => ipcRenderer.invoke(CALENDAR_IPC_CHANNELS.listUnreadReminders),
+    acknowledgeReminder: (input) =>
+      ipcRenderer.invoke(CALENDAR_IPC_CHANNELS.acknowledgeReminder, input),
+    onRemindersChanged: (listener) => {
+      const handler = (): void => listener()
+      ipcRenderer.on(CALENDAR_IPC_CHANNELS.remindersChanged, handler)
+      return () => ipcRenderer.removeListener(CALENDAR_IPC_CHANNELS.remindersChanged, handler)
+    },
     createEvent: (input) => ipcRenderer.invoke(CALENDAR_IPC_CHANNELS.createEvent, input),
     updateEvent: (input) => ipcRenderer.invoke(CALENDAR_IPC_CHANNELS.updateEvent, input),
     deleteEvent: (input) => ipcRenderer.invoke(CALENDAR_IPC_CHANNELS.deleteEvent, input),

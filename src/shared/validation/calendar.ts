@@ -48,3 +48,7 @@ export const calendarSetOccurrenceNoteInputSchema = calendarOccurrenceInputSchem
 export const calendarSetOccurrenceHiddenInputSchema = calendarOccurrenceInputSchema.extend({
   hidden: z.boolean()
 })
+
+export const calendarAcknowledgeReminderInputSchema = z.object({
+  deliveryId: z.string().uuid()
+})

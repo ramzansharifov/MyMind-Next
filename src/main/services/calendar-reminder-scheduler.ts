@@ -43,7 +43,7 @@ export class CalendarReminderScheduler {
     try {
       const due = listDueCalendarReminders(this.lastCheck, now)
       for (const reminder of due) {
-        if (!markCalendarReminderDelivered(reminder.reminderId, reminder.occurrenceDate)) continue
+        if (!markCalendarReminderDelivered(reminder)) continue
         if (!Notification.isSupported()) continue
 
         const notification = new Notification({

@@ -59,17 +59,21 @@ export const calendarReminderDeliveries = sqliteTable(
   'calendar_reminder_deliveries',
   {
     id: text('id').primaryKey(),
-    reminderId: text('reminder_id')
-      .notNull()
-      .references(() => calendarEventReminders.id, { onDelete: 'cascade' }),
+    reminderId: text('reminder_id').notNull(),
+    eventId: text('event_id').notNull(),
     occurrenceDate: text('occurrence_date').notNull(),
-    deliveredAt: integer('delivered_at', { mode: 'timestamp_ms' }).notNull()
+    title: text('title').notNull(),
+    eventTime: text('event_time'),
+    offsetMinutes: integer('offset_minutes').notNull(),
+    deliveredAt: integer('delivered_at', { mode: 'timestamp_ms' }).notNull(),
+    acknowledgedAt: integer('acknowledged_at', { mode: 'timestamp_ms' })
   },
   (table) => [
     uniqueIndex('calendar_deliveries_reminder_date_unique').on(
       table.reminderId,
       table.occurrenceDate
     ),
-    index('calendar_deliveries_delivered_idx').on(table.deliveredAt)
+    index('calendar_deliveries_delivered_idx').on(table.deliveredAt),
+    index('calendar_deliveries_acknowledged_idx').on(table.acknowledgedAt)
   ]
 )

@@ -2,6 +2,7 @@ import { ipcMain } from 'electron'
 
 import { CALENDAR_IPC_CHANNELS } from '../../shared/contracts/calendar'
 import {
+  calendarAcknowledgeReminderInputSchema,
   calendarCreateEventInputSchema,
   calendarDeleteEventInputSchema,
   calendarRangeInputSchema,
@@ -10,10 +11,12 @@ import {
   calendarUpdateEventInputSchema
 } from '../../shared/validation/calendar'
 import {
+  acknowledgeCalendarReminder,
   createCalendarEvent,
   deleteCalendarEvent,
   listCalendarOccurrences,
   listCalendarReminderTriggers,
+  listUnreadCalendarReminders,
   setCalendarOccurrenceHidden,
   setCalendarOccurrenceNote,
   updateCalendarEvent
@@ -31,6 +34,14 @@ export function registerCalendarIpcHandlers(): void {
   ipcMain.handle(CALENDAR_IPC_CHANNELS.listUpcomingReminders, (_event, rawInput: unknown) =>
     mainOperationTracker.run(() =>
       listCalendarReminderTriggers(calendarRangeInputSchema.parse(rawInput))
+    )
+  )
+  ipcMain.handle(CALENDAR_IPC_CHANNELS.listUnreadReminders, () =>
+    mainOperationTracker.run(() => listUnreadCalendarReminders())
+  )
+  ipcMain.handle(CALENDAR_IPC_CHANNELS.acknowledgeReminder, (_event, rawInput: unknown) =>
+    mainOperationTracker.run(() =>
+      acknowledgeCalendarReminder(calendarAcknowledgeReminderInputSchema.parse(rawInput))
     )
   )
   ipcMain.handle(CALENDAR_IPC_CHANNELS.createEvent, (_event, rawInput: unknown) =>

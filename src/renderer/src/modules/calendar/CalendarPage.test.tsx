@@ -8,6 +8,9 @@ import { CalendarPage } from './CalendarPage'
 const mocks = vi.hoisted(() => ({
   listRange: vi.fn(),
   listUpcomingReminders: vi.fn(),
+  listUnreadReminders: vi.fn(),
+  acknowledgeReminder: vi.fn(),
+  onRemindersChanged: vi.fn(),
   createEvent: vi.fn(),
   updateEvent: vi.fn(),
   deleteEvent: vi.fn(),
@@ -43,6 +46,9 @@ beforeEach(() => {
 
   mocks.listRange.mockResolvedValue([annualEvent])
   mocks.listUpcomingReminders.mockResolvedValue([])
+  mocks.listUnreadReminders.mockResolvedValue([])
+  mocks.acknowledgeReminder.mockResolvedValue(true)
+  mocks.onRemindersChanged.mockReturnValue(() => undefined)
   mocks.deleteEvent.mockResolvedValue(true)
   mocks.setOccurrenceNote.mockResolvedValue(null)
   mocks.setOccurrenceHidden.mockResolvedValue(null)

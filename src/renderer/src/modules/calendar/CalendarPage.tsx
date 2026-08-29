@@ -21,6 +21,8 @@ import { AppDialog } from '../../shared/ui/AppDialog'
 import { AppSelect } from '../../shared/ui/AppSelect'
 import { ModuleHeader } from '../../shared/ui/ModuleHeader'
 import { StandardModulePage } from '../../shared/ui/StandardModulePage'
+import { CalendarReminderInbox } from './CalendarReminderInbox'
+import { useCalendarReminderInbox } from './useCalendarReminderInbox'
 
 const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 const MONTH_FORMATTER = new Intl.DateTimeFormat('ru-RU', { month: 'long', year: 'numeric' })
@@ -234,6 +236,8 @@ export function CalendarPage(): React.JSX.Element {
   const [saving, setSaving] = useState(false)
   const [reminderAmount, setReminderAmount] = useState(1)
   const [reminderUnit, setReminderUnit] = useState<'minutes' | 'hours' | 'days' | 'weeks'>('days')
+  const { reminders: unreadReminders, acknowledge: acknowledgeReminder } =
+    useCalendarReminderInbox()
 
   const load = useCallback(async (): Promise<void> => {
     setLoading(true)
@@ -758,6 +762,12 @@ export function CalendarPage(): React.JSX.Element {
           </div>
         </aside>
       </div>
+
+      <CalendarReminderInbox
+        reminders={unreadReminders}
+        onAcknowledge={acknowledgeReminder}
+        className="mt-4"
+      />
 
       <AppDialog
         open={editor !== null}
