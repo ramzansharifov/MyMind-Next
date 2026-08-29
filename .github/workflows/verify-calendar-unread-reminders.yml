@@ -18,10 +18,6 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Apply unread reminder implementation
-        run: |
-          python .github/scripts/implement-calendar-unread-reminders.py
-          python .github/scripts/fix-calendar-unread-reminders.py
       - name: Format changed files
         run: >-
           npx prettier --write
@@ -85,7 +81,7 @@ jobs:
         run: npm run build:bundle
       - name: Diff check
         run: git diff --check
-      - name: Commit verified changes
+      - name: Commit formatting if needed
         shell: pwsh
         run: |
           git config user.name "github-actions[bot]"
@@ -110,6 +106,6 @@ jobs:
             src/renderer/src/app/AppShell.tsx
           git diff --cached --quiet
           if ($LASTEXITCODE -ne 0) {
-            git commit -m "Сделать напоминания календаря непрочитанными до подтверждения"
+            git commit -m "Отформатировать непрочитанные напоминания календаря"
             git push
           }
