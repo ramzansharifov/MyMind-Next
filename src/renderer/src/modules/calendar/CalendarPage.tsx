@@ -539,42 +539,37 @@ export function CalendarPage(): React.JSX.Element {
                     </button>
                   </div>
 
-                  <div className="space-y-1">
-                    {dayEvents.slice(0, 3).map((event) => {
-                      const active = selectedEventKey === occurrenceKey(event)
-                      return (
-                        <button
-                          key={occurrenceKey(event)}
-                          type="button"
-                          aria-label={`Открыть событие ${event.title}`}
-                          className={cn(
-                            'flex w-full items-center gap-1.5 rounded-md px-1.5 py-1 text-left text-[11px] transition-colors',
-                            active
-                              ? 'bg-violet-500/20 text-violet-100'
-                              : 'bg-violet-500/8 text-[var(--app-text)] hover:bg-violet-500/14'
-                          )}
-                          onClick={(clickEvent) => {
-                            clickEvent.stopPropagation()
-                            selectEvent(event)
-                          }}
-                        >
-                          <span className="size-1.5 shrink-0 rounded-full bg-violet-400" />
-                          {event.kind === 'annual' && (
-                            <Repeat2 className="size-3 shrink-0 opacity-70" />
-                          )}
-                          <span className="truncate">
-                            {event.time ? `${event.time} ` : ''}
-                            {event.title}
-                          </span>
-                        </button>
-                      )
-                    })}
-                    {dayEvents.length > 3 && (
-                      <div className="px-1.5 text-[10px] text-[var(--app-muted)]">
-                        +{dayEvents.length - 3} ещё
-                      </div>
-                    )}
-                  </div>
+                  {dayEvents.length > 0 && (
+                    <div
+                      data-testid={`calendar-event-dots-${day}`}
+                      className="flex flex-wrap items-center gap-1.5 px-1 pt-1"
+                    >
+                      {dayEvents.map((event) => {
+                        const active = selectedEventKey === occurrenceKey(event)
+                        return (
+                          <button
+                            key={occurrenceKey(event)}
+                            type="button"
+                            aria-label={`Открыть событие ${event.title}`}
+                            className={cn(
+                              'size-2 rounded-full transition-transform hover:scale-125 focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--app-surface)] focus-visible:outline-none',
+                              active && 'scale-125'
+                            )}
+                            style={{
+                              backgroundColor: 'var(--app-accent-500)',
+                              boxShadow: active
+                                ? '0 0 0 2px color-mix(in srgb, var(--app-accent-500) 28%, transparent)'
+                                : undefined
+                            }}
+                            onClick={(clickEvent) => {
+                              clickEvent.stopPropagation()
+                              selectEvent(event)
+                            }}
+                          />
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
               )
             })}
