@@ -64,8 +64,10 @@ describe('CalendarPage', () => {
     const user = userEvent.setup()
     render(<CalendarPage />)
 
-    const eventButton = await screen.findByRole('button', { name: 'Открыть событие Годовщина' })
     const calendarGrid = screen.getByTestId('calendar-grid')
+    const eventButton = await within(calendarGrid).findByRole('button', {
+      name: 'Открыть событие Годовщина'
+    })
     const detailPanel = screen.getByTestId('calendar-detail-panel')
     const moduleHeader = screen
       .getByRole('heading', { name: 'Календарь' })
@@ -75,6 +77,7 @@ describe('CalendarPage', () => {
     expect(calendarGrid).toContainElement(screen.getByRole('button', { name: 'Следующий месяц' }))
     expect(calendarGrid).toContainElement(screen.getByRole('button', { name: 'Сегодня' }))
     expect(calendarGrid).toContainElement(screen.getByLabelText('Точная дата календаря'))
+    expect(within(calendarGrid).queryByText('Годовщина')).not.toBeInTheDocument()
     expect(moduleHeader).not.toContainElement(
       screen.getByRole('button', { name: 'Предыдущий месяц' })
     )
