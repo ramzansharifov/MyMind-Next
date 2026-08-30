@@ -22,11 +22,11 @@ jobs:
         shell: pwsh
         run: |
           $path = '.github/scripts/implement-ai-chat-panel.py'
-          $text = Get-Content -Raw $path
+          $text = (Get-Content -Raw $path).TrimEnd()
           if ($text.EndsWith("'''")) {
-            $text = $text.Substring(0, $text.Length - 3)
-            Set-Content -Path $path -Value $text -NoNewline
+            $text = $text.Substring(0, $text.Length - 3).TrimEnd()
           }
+          Set-Content -Path $path -Value $text -NoNewline
           python $path
       - name: Format changed files
         run: >-
