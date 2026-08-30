@@ -4,6 +4,7 @@ import type { AiChatBounds, SetAiChatOpenInput } from '../../shared/contracts/ai
 
 const CHATGPT_URL = 'https://chatgpt.com/'
 const CHATGPT_PARTITION = 'persist:mymind-chatgpt'
+const CHATGPT_VIEW_BORDER_RADIUS = 14
 
 function isEmbeddedNavigation(url: string): boolean {
   try {
@@ -116,6 +117,8 @@ export class AiChatViewController {
         sandbox: true
       }
     })
+
+    view.setBorderRadius(CHATGPT_VIEW_BORDER_RADIUS)
 
     view.webContents.setWindowOpenHandler(({ url }) => {
       if (isEmbeddedNavigation(url)) return { action: 'allow' }
