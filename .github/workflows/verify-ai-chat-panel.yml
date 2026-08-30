@@ -19,7 +19,15 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Apply AI chat implementation
-        run: python .github/scripts/implement-ai-chat-panel.py
+        shell: pwsh
+        run: |
+          $path = '.github/scripts/implement-ai-chat-panel.py'
+          $text = Get-Content -Raw $path
+          if ($text.EndsWith("'''")) {
+            $text = $text.Substring(0, $text.Length - 3)
+            Set-Content -Path $path -Value $text -NoNewline
+          }
+          python $path
       - name: Format changed files
         run: >-
           npx prettier --write
