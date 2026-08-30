@@ -14,6 +14,7 @@ import { runStudyLinkTargetsMaintenance } from './repositories/study.repository'
 import { installContentSecurityPolicy } from './security/content-security-policy'
 import { installPermissionPolicy } from './security/permissions'
 import { focusExistingAppWindow } from './security/single-instance'
+import { AiChatViewController } from './services/ai-chat-view-controller'
 import { CalendarReminderScheduler } from './services/calendar-reminder-scheduler'
 import { mainOperationTracker } from './services/main-operation-tracker'
 import { clearTrackedPasswordClipboard } from './services/password-clipboard'
@@ -27,6 +28,7 @@ import { registerStudyAssetProtocol, registerStudyAssetScheme } from './services
 import { runStudyPlainTextMaintenance } from './services/study-plain-text-maintenance'
 
 let mainWindow: BrowserWindow | null = null
+const aiChatViewController = new AiChatViewController(() => mainWindow)
 const calendarReminderScheduler = new CalendarReminderScheduler(() => mainWindow)
 
 const shutdownFallbackCopy: Record<
@@ -100,6 +102,7 @@ async function resolveShutdownFallback(
 }
 
 function closeApplicationResources(): void {
+  aiChatViewController.destroy()
   calendarReminderScheduler.stop()
   clearTrackedPasswordClipboard()
   lockPasswordVault()
@@ -202,6 +205,7 @@ function createWindow(): void {
   })
 
   window.on('closed', () => {
+    aiChatViewController.onWindowClosed(window)
     if (mainWindow === window) {
       mainWindow = null
     }
@@ -300,6 +304,11 @@ if (!hasSingleInstanceLock) {
 
     registerIpcHandlers({
       getTrustedWebContents: () => mainWindow?.webContents ?? null,
+      aiChat: {
+        setOpen: (input) => aiChatViewController.setOpen(input),
+        setBounds: (bounds) => aiChatViewController.setBounds(bounds),
+        reload: () => aiChatViewController.reload()
+      },
       onShutdownResponse: (response) => shutdownCoordinator.respond(response)
     })
 

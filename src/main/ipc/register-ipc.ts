@@ -1,6 +1,12 @@
 import { BrowserWindow, ipcMain, type IpcMainInvokeEvent, type WebContents } from 'electron'
 
+import {
+  AI_CHAT_IPC_CHANNELS,
+  type AiChatBounds,
+  type SetAiChatOpenInput
+} from '../../shared/contracts/ai-chat'
 import { IPC_CHANNELS, type SystemWindowState } from '../../shared/contracts/system'
+import { aiChatBoundsSchema, setAiChatOpenInputSchema } from '../../shared/validation/ai-chat'
 import { shutdownResponseSchema, systemHealthSchema } from '../../shared/validation/system'
 import { getSqlite } from '../database/client'
 import { mainOperationTracker } from '../services/main-operation-tracker'
@@ -25,6 +31,11 @@ interface SQLiteVersionRow {
 
 interface RegisterIpcHandlersOptions {
   getTrustedWebContents(): WebContents | null
+  aiChat: {
+    setOpen(input: SetAiChatOpenInput): void
+    setBounds(bounds: AiChatBounds): void
+    reload(): void
+  }
   onShutdownResponse(
     response: ReturnType<typeof shutdownResponseSchema.parse>
   ): void | Promise<void>
@@ -75,12 +86,30 @@ export function registerIpcHandlers(options: RegisterIpcHandlersOptions): void {
   registerNutritionIpcHandlers()
   registerPreferencesIpcHandlers()
 
+  ipcMain.removeHandler(AI_CHAT_IPC_CHANNELS.setOpen)
+  ipcMain.removeHandler(AI_CHAT_IPC_CHANNELS.setBounds)
+  ipcMain.removeHandler(AI_CHAT_IPC_CHANNELS.reload)
   ipcMain.removeHandler(IPC_CHANNELS.systemHealth)
   ipcMain.removeHandler(IPC_CHANNELS.respondToShutdown)
   ipcMain.removeHandler(IPC_CHANNELS.windowGetState)
   ipcMain.removeHandler(IPC_CHANNELS.windowMinimize)
   ipcMain.removeHandler(IPC_CHANNELS.windowToggleMaximize)
   ipcMain.removeHandler(IPC_CHANNELS.windowClose)
+
+  ipcMain.handle(AI_CHAT_IPC_CHANNELS.setOpen, (event, rawInput: unknown) => {
+    getTrustedWindow(event, options.getTrustedWebContents)
+    options.aiChat.setOpen(setAiChatOpenInputSchema.parse(rawInput))
+  })
+
+  ipcMain.handle(AI_CHAT_IPC_CHANNELS.setBounds, (event, rawBounds: unknown) => {
+    getTrustedWindow(event, options.getTrustedWebContents)
+    options.aiChat.setBounds(aiChatBoundsSchema.parse(rawBounds))
+  })
+
+  ipcMain.handle(AI_CHAT_IPC_CHANNELS.reload, (event) => {
+    getTrustedWindow(event, options.getTrustedWebContents)
+    options.aiChat.reload()
+  })
 
   ipcMain.handle(IPC_CHANNELS.systemHealth, () =>
     mainOperationTracker.run(() => {

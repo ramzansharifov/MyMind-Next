@@ -1,3 +1,4 @@
+import type { AiChatApi } from './ai-chat'
 import type { BoardApi } from './boards'
 import type { CalendarApi } from './calendar'
 import type { DiaryApi } from './diary'
@@ -43,6 +44,8 @@ export interface ShutdownResponse extends ShutdownRequest {
 }
 
 export interface MyMindApi {
+  aiChat: AiChatApi
+
   system: {
     getHealth(): Promise<SystemHealth>
     getWindowState(): Promise<SystemWindowState>
