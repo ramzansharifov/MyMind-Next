@@ -5,6 +5,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { useCalendarReminderInbox } from '../modules/calendar/useCalendarReminderInbox'
 import { cn } from '../shared/lib/cn'
 import { Tooltip, TooltipProvider } from '../shared/ui/tooltip'
+import { AiChatOverlay } from './AiChatOverlay'
 import { AppTitleBar } from './AppTitleBar'
 import {
   homeNavigationItem,
@@ -271,6 +272,8 @@ export function AppShell({
             {children}
           </main>
         </div>
+
+        <AiChatOverlay />
       </div>
     </TooltipProvider>
   )

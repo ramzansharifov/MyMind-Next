@@ -41,6 +41,7 @@ describe('preload API contract', () => {
     const [key, api] = electronMocks.exposeInMainWorld.mock.calls[0]
 
     expect(key).toBe('api')
+    expect(Object.keys(api.aiChat)).toEqual(['setOpen', 'setBounds', 'reload'])
     expect(Object.keys(api.boards)).toEqual([
       'listNodes',
       'createNode',
@@ -211,6 +212,15 @@ describe('preload API contract', () => {
       'getDashboard',
       'getReport'
     ])
+
+    await api.aiChat.setOpen({
+      open: true,
+      bounds: { x: 700, y: 80, width: 480, height: 720 }
+    })
+    expect(electronMocks.invoke).toHaveBeenCalledWith('ai-chat:set-open', {
+      open: true,
+      bounds: { x: 700, y: 80, width: 480, height: 720 }
+    })
 
     await api.boards.listNodes()
     expect(electronMocks.invoke).toHaveBeenCalledWith('boards:list-nodes')

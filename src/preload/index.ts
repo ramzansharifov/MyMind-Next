@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
+import { AI_CHAT_IPC_CHANNELS } from '../shared/contracts/ai-chat'
 import { BOARD_IPC_CHANNELS, type BoardDocument, type BoardNode } from '../shared/contracts/boards'
 import { CALENDAR_IPC_CHANNELS } from '../shared/contracts/calendar'
 import { DIARY_IPC_CHANNELS } from '../shared/contracts/diary'
@@ -44,6 +45,12 @@ import { WORKOUTS_IPC_CHANNELS } from '../shared/contracts/workouts'
 import { parseShutdownRequest } from './shutdown-request'
 
 const api: MyMindApi = {
+  aiChat: {
+    setOpen: (input) => ipcRenderer.invoke(AI_CHAT_IPC_CHANNELS.setOpen, input),
+    setBounds: (bounds) => ipcRenderer.invoke(AI_CHAT_IPC_CHANNELS.setBounds, bounds),
+    reload: () => ipcRenderer.invoke(AI_CHAT_IPC_CHANNELS.reload)
+  },
+
   system: {
     getHealth: () => ipcRenderer.invoke(IPC_CHANNELS.systemHealth) as Promise<SystemHealth>,
     getWindowState: () =>
