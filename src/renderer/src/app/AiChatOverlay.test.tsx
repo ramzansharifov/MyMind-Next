@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -12,7 +12,7 @@ const aiChat = {
 }
 
 describe('AiChatOverlay', () => {
-  it('opens the native ChatGPT viewport and closes it explicitly', async () => {
+  it('opens, resizes and closes the native ChatGPT viewport', async () => {
     Object.defineProperty(window, 'api', {
       configurable: true,
       value: { aiChat }
@@ -26,6 +26,7 @@ describe('AiChatOverlay', () => {
     )
 
     await user.click(screen.getByRole('button', { name: 'Открыть ИИ-чат' }))
+    const panel = screen.getByTestId('ai-chat-panel')
     const viewport = screen.getByTestId('ai-chat-viewport')
     vi.spyOn(viewport, 'getBoundingClientRect').mockReturnValue({
       x: 700,
@@ -46,6 +47,21 @@ describe('AiChatOverlay', () => {
         bounds: { x: 700, y: 84, width: 480, height: 736 }
       })
     })
+
+    expect(panel).toHaveStyle({ width: '480px' })
+    await user.click(screen.getByRole('button', { name: 'Расширить ИИ-чат' }))
+    expect(panel).toHaveStyle({ width: '800px' })
+    await user.click(screen.getByRole('button', { name: 'Сузить ИИ-чат' }))
+    expect(panel).toHaveStyle({ width: '480px' })
+
+    const resizeHandle = screen.getByRole('separator', { name: 'Изменить ширину ИИ-чата' })
+    fireEvent.pointerDown(resizeHandle, { button: 0, clientX: 700 })
+    fireEvent.pointerMove(window, { clientX: 620 })
+    expect(panel).toHaveStyle({ width: '560px' })
+    fireEvent.pointerUp(window)
+
+    fireEvent.keyDown(resizeHandle, { key: 'ArrowLeft' })
+    expect(panel).toHaveStyle({ width: '592px' })
 
     await user.click(screen.getByRole('button', { name: 'Перезагрузить ChatGPT' }))
     expect(aiChat.reload).toHaveBeenCalledOnce()
