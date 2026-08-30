@@ -254,12 +254,17 @@ export function AiChatOverlay(): React.JSX.Element {
           </header>
 
           <div
-            ref={viewportRef}
-            data-testid="ai-chat-viewport"
-            className="relative min-h-0 flex-1 rounded-b-[15px] bg-[#0b0d10]"
+            data-testid="ai-chat-frame"
+            className="relative min-h-0 flex-1 rounded-b-[15px] bg-[var(--app-border)] pr-px pb-px"
           >
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-b-[15px] p-6 text-center text-xs text-[var(--app-muted)]">
-              Загрузка ChatGPT…
+            <div
+              ref={viewportRef}
+              data-testid="ai-chat-viewport"
+              className="relative h-full min-h-0 rounded-b-[14px] bg-[#0b0d10]"
+            >
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-b-[14px] p-6 text-center text-xs text-[var(--app-muted)]">
+                Загрузка ChatGPT…
+              </div>
             </div>
           </div>
         </aside>
