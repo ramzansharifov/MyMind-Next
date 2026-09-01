@@ -1,16 +1,5 @@
 import * as Tabs from '@radix-ui/react-tabs'
-import {
-  ArrowLeft,
-  Heart,
-  Image as ImageIcon,
-  ListMusic,
-  Music2,
-  Pencil,
-  Plus,
-  Search,
-  Trash2,
-  X
-} from 'lucide-react'
+import { ArrowLeft, Heart, ListMusic, Music2, Pencil, Plus, Search, Trash2, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import type {
@@ -138,6 +127,51 @@ export function MusicLibraryNavigation({
   )
 }
 
+function LibrarySection({
+  section,
+  title,
+  icon,
+  backAction,
+  toolbar,
+  children
+}: {
+  section: string
+  title: string
+  icon: React.ReactNode
+  backAction?: {
+    label: string
+    onBack: () => void
+  }
+  toolbar?: React.ReactNode
+  children: React.ReactNode
+}): React.JSX.Element {
+  return (
+    <section
+      data-music-library-section={section}
+      className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)]"
+    >
+      <header className="flex min-h-12 items-center gap-3 border-b border-[var(--app-border)] px-5 py-3 max-[620px]:flex-wrap">
+        {backAction && (
+          <button
+            type="button"
+            aria-label={backAction.label}
+            className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] outline-none hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)]/35"
+            onClick={backAction.onBack}
+          >
+            <ArrowLeft aria-hidden="true" className="size-4" />
+          </button>
+        )}
+        <span data-music-section-icon className="text-[var(--app-accent-500)]">
+          {icon}
+        </span>
+        <h2 className="min-w-0 truncate text-base font-semibold text-[var(--app-text)]">{title}</h2>
+        {toolbar && <div className="ml-auto flex items-center gap-2">{toolbar}</div>}
+      </header>
+      <div className="p-3">{children}</div>
+    </section>
+  )
+}
+
 function TrackGrid({
   items,
   isSaving,
@@ -151,7 +185,7 @@ function TrackGrid({
   items: MusicItemRecord[]
   isSaving: boolean
   emptyTitle: string
-  emptyDescription: string
+  emptyDescription?: string
   onOpenTrack: (itemId: string) => void
   onToggleFavorite: (item: MusicItemRecord) => void
   onDeleteTrack: (item: MusicItemRecord) => void
@@ -160,7 +194,7 @@ function TrackGrid({
   if (items.length === 0) {
     return (
       <EmptyState
-        icon={<Music2 className="size-7" />}
+        icon={<Music2 className="size-5" />}
         title={emptyTitle}
         description={emptyDescription}
         actionLabel="Добавить трек"
@@ -170,7 +204,7 @@ function TrackGrid({
   }
 
   return (
-    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+    <div className="grid grid-cols-3 gap-3 max-[960px]:grid-cols-2 max-[620px]:grid-cols-1">
       {items.map((item) => {
         const artist = item.artists[0] || 'Исполнитель не указан'
         const duration = formatDuration(item.durationSeconds)
@@ -179,26 +213,29 @@ function TrackGrid({
           <article
             key={item.id}
             data-music-track-card
-            className="group flex min-w-0 items-start gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-3.5 transition-colors hover:border-[var(--app-border-strong)] hover:bg-[var(--app-control-hover)]"
+            className="group min-w-0 rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-4 transition-colors hover:border-[var(--app-border-strong)] hover:bg-[var(--app-control-hover)]"
           >
-            <button
-              type="button"
-              aria-label={`Редактировать трек «${item.title}»`}
-              className="flex min-w-0 flex-1 items-start gap-3 text-left outline-none"
-              onClick={() => onOpenTrack(item.id)}
-            >
-              <span className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-[color-mix(in_srgb,var(--app-accent-500)_20%,transparent)] bg-[color-mix(in_srgb,var(--app-accent-500)_10%,transparent)] text-[var(--app-accent-500)]">
-                <Music2 className="size-5" />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-semibold text-[var(--app-text)] group-hover:text-[var(--app-accent-500)]">
-                  {item.title}
+            <div className="flex min-w-0 items-start gap-2">
+              <button
+                type="button"
+                aria-label={`Редактировать трек «${item.title}»`}
+                className="min-w-0 flex-1 text-left outline-none"
+                onClick={() => onOpenTrack(item.id)}
+              >
+                <span className="flex min-w-0 items-center gap-2">
+                  <Music2
+                    aria-hidden="true"
+                    className="size-3.5 shrink-0 text-[var(--app-accent-500)]"
+                  />
+                  <span className="block truncate text-sm font-semibold text-[var(--app-text)] group-hover:text-[var(--app-accent-500)]">
+                    {item.title}
+                  </span>
                 </span>
-                <span className="mt-0.5 block truncate text-xs text-[var(--app-muted)]">
+                <span className="mt-1 block truncate pl-[22px] text-xs text-[var(--app-muted)]">
                   {artist}
                 </span>
                 {(item.year !== null || duration) && (
-                  <span className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] text-[var(--app-muted)]">
+                  <span className="mt-3 flex flex-wrap items-center gap-1.5 pl-[22px] text-[10px] text-[var(--app-muted)]">
                     {item.year !== null && (
                       <span className="rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-2 py-1">
                         {item.year}
@@ -211,32 +248,32 @@ function TrackGrid({
                     )}
                   </span>
                 )}
-              </span>
-            </button>
+              </button>
 
-            <div className="flex shrink-0 items-center gap-1">
-              <button
-                type="button"
-                aria-label={item.favorite ? 'Убрать из избранного' : 'Добавить в избранное'}
-                aria-pressed={item.favorite}
-                disabled={isSaving}
-                className={
-                  item.favorite
-                    ? 'flex size-8 items-center justify-center rounded-lg bg-rose-500/10 text-rose-300 hover:bg-rose-500/15 disabled:opacity-50'
-                    : 'flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-surface)] hover:text-[var(--app-text)] disabled:opacity-50'
-                }
-                onClick={() => onToggleFavorite(item)}
-              >
-                <Heart className={`size-3.5 ${item.favorite ? 'fill-current' : ''}`} />
-              </button>
-              <button
-                type="button"
-                aria-label={`Удалить трек «${item.title}»`}
-                className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
-                onClick={() => onDeleteTrack(item)}
-              >
-                <Trash2 className="size-3.5" />
-              </button>
+              <div className="flex shrink-0 items-center gap-1">
+                <button
+                  type="button"
+                  aria-label={item.favorite ? 'Убрать из избранного' : 'Добавить в избранное'}
+                  aria-pressed={item.favorite}
+                  disabled={isSaving}
+                  className={
+                    item.favorite
+                      ? 'flex size-8 items-center justify-center rounded-lg bg-rose-500/10 text-rose-300 hover:bg-rose-500/15 disabled:opacity-50'
+                      : 'flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-surface)] hover:text-[var(--app-text)] disabled:opacity-50'
+                  }
+                  onClick={() => onToggleFavorite(item)}
+                >
+                  <Heart className={`size-3.5 ${item.favorite ? 'fill-current' : ''}`} />
+                </button>
+                <button
+                  type="button"
+                  aria-label={`Удалить трек «${item.title}»`}
+                  className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
+                  onClick={() => onDeleteTrack(item)}
+                >
+                  <Trash2 className="size-3.5" />
+                </button>
+              </div>
             </div>
           </article>
         )
@@ -282,6 +319,8 @@ function PlaylistCover({
 function PlaylistGrid({
   playlists,
   overview,
+  emptyTitle,
+  emptyDescription,
   onOpenPlaylist,
   onEditPlaylist,
   onDeletePlaylist,
@@ -289,6 +328,8 @@ function PlaylistGrid({
 }: {
   playlists: MusicPlaylistRecord[]
   overview: MusicOverview
+  emptyTitle: string
+  emptyDescription?: string
   onOpenPlaylist: (playlistId: string) => void
   onEditPlaylist: (playlist: MusicPlaylistRecord) => void
   onDeletePlaylist: (playlist: MusicPlaylistRecord) => void
@@ -297,9 +338,9 @@ function PlaylistGrid({
   if (playlists.length === 0) {
     return (
       <EmptyState
-        icon={<ListMusic className="size-7" />}
-        title="Плейлистов пока нет"
-        description="Создайте плейлист, чтобы собрать отдельную подборку треков."
+        icon={<ListMusic className="size-5" />}
+        title={emptyTitle}
+        description={emptyDescription}
         actionLabel="Новый плейлист"
         onAction={onCreatePlaylist}
       />
@@ -307,7 +348,7 @@ function PlaylistGrid({
   }
 
   return (
-    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+    <div className="grid grid-cols-3 gap-3 max-[960px]:grid-cols-2 max-[620px]:grid-cols-1">
       {playlists.map((playlist) => {
         const tracks = playlist.trackIds
           .map((id) => overview.items.find((item) => item.id === id))
@@ -316,14 +357,14 @@ function PlaylistGrid({
         return (
           <article
             key={playlist.id}
-            className="group flex min-w-0 items-start gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-3.5 transition-colors hover:border-[var(--app-border-strong)] hover:bg-[var(--app-control-hover)]"
+            className="group flex min-w-0 items-start gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-4 transition-colors hover:border-[var(--app-border-strong)] hover:bg-[var(--app-control-hover)]"
           >
             <button
               type="button"
               className="flex min-w-0 flex-1 items-center gap-3 text-left outline-none"
               onClick={() => onOpenPlaylist(playlist.id)}
             >
-              <PlaylistCover playlist={playlist} />
+              <PlaylistCover playlist={playlist} className="size-12" />
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-semibold text-[var(--app-text)] group-hover:text-[var(--app-accent-500)]">
                   {playlist.name}
@@ -335,15 +376,6 @@ function PlaylistGrid({
                     : tracks.length >= 2 && tracks.length <= 4
                       ? 'трека'
                       : 'треков'}
-                </span>
-                <span className="mt-2 inline-flex items-center gap-1 text-[10px] text-[var(--app-muted)]/80">
-                  {playlist.coverUrl ? (
-                    <>
-                      <ImageIcon className="size-3" /> Обложка добавлена
-                    </>
-                  ) : (
-                    'Без обложки'
-                  )}
                 </span>
               </span>
             </button>
@@ -382,23 +414,25 @@ function EmptyState({
 }: {
   icon: React.ReactNode
   title: string
-  description: string
+  description?: string
   actionLabel: string
   onAction: () => void
 }): React.JSX.Element {
   return (
-    <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-workspace)] px-6 text-center">
-      <span className="flex size-14 items-center justify-center rounded-2xl border border-[color-mix(in_srgb,var(--app-accent-500)_20%,transparent)] bg-[color-mix(in_srgb,var(--app-accent-500)_10%,transparent)] text-[var(--app-accent-500)]">
+    <div className="flex min-h-40 flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-empty-surface)] px-6 py-6 text-center">
+      <span className="flex size-10 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-control)] text-[var(--app-accent-500)]">
         {icon}
       </span>
-      <h2 className="mt-4 text-base font-semibold text-[var(--app-text)]">{title}</h2>
-      <p className="mt-2 max-w-md text-sm leading-6 text-[var(--app-muted)]">{description}</p>
+      <h3 className="mt-3 text-sm font-semibold text-[var(--app-text)]">{title}</h3>
+      {description && (
+        <p className="mt-1 max-w-md text-xs leading-5 text-[var(--app-muted)]">{description}</p>
+      )}
       <button
         type="button"
-        className="mt-5 inline-flex h-10 items-center gap-2 rounded-xl bg-[var(--app-accent-500)] px-4 text-sm font-semibold text-white hover:brightness-110"
+        className="mt-4 inline-flex h-9 items-center gap-2 rounded-xl bg-[var(--app-accent-500)] px-3.5 text-sm font-medium text-white hover:brightness-110"
         onClick={onAction}
       >
-        <Plus className="size-4" /> {actionLabel}
+        <Plus className="size-3.5" /> {actionLabel}
       </button>
     </div>
   )
@@ -450,31 +484,22 @@ export function MusicLibraryContent({
 
   if (scope.kind === 'playlists') {
     return (
-      <section className="rounded-[24px] border border-[var(--app-border)] bg-[var(--app-surface)] p-5 shadow-[var(--app-shadow-card)]">
-        <div className="mb-4 flex items-center justify-between gap-4">
-          <div>
-            <h2 className="text-base font-semibold text-[var(--app-text)]">Плейлисты</h2>
-            <p className="mt-1 text-xs text-[var(--app-muted)]">
-              Подборки с собственной обложкой. Один трек может быть сразу в нескольких плейлистах.
-            </p>
-          </div>
-          <button
-            type="button"
-            className="inline-flex h-9 shrink-0 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-xs font-medium text-[var(--app-text)] hover:bg-[var(--app-control-hover)]"
-            onClick={onCreatePlaylist}
-          >
-            <Plus className="size-3.5" /> Новый плейлист
-          </button>
-        </div>
+      <LibrarySection
+        section="playlists"
+        title="Плейлисты"
+        icon={<ListMusic aria-hidden="true" className="size-5" />}
+      >
         <PlaylistGrid
           playlists={visiblePlaylists}
           overview={overview}
+          emptyTitle={search ? 'Ничего не найдено' : 'Плейлистов пока нет'}
+          emptyDescription={search ? undefined : 'Создайте первую подборку треков.'}
           onOpenPlaylist={(playlistId) => onScopeChange({ kind: 'playlist', playlistId })}
           onEditPlaylist={onEditPlaylist}
           onDeletePlaylist={onDeletePlaylist}
           onCreatePlaylist={onCreatePlaylist}
         />
-      </section>
+      </LibrarySection>
     )
   }
 
@@ -482,9 +507,8 @@ export function MusicLibraryContent({
     if (!selectedPlaylist) {
       return (
         <EmptyState
-          icon={<ListMusic className="size-7" />}
+          icon={<ListMusic className="size-5" />}
           title="Плейлист не найден"
-          description="Возможно, он был удалён. Вернитесь к списку плейлистов."
           actionLabel="К плейлистам"
           onAction={() => onScopeChange({ kind: 'playlists' })}
         />
@@ -492,96 +516,84 @@ export function MusicLibraryContent({
     }
 
     return (
-      <section className="rounded-[24px] border border-[var(--app-border)] bg-[var(--app-surface)] p-5 shadow-[var(--app-shadow-card)]">
-        <div className="mb-5 flex items-start justify-between gap-4 max-[720px]:flex-col">
-          <div className="flex min-w-0 items-center gap-3">
-            <button
-              type="button"
-              aria-label="К списку плейлистов"
-              className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-              onClick={() => onScopeChange({ kind: 'playlists' })}
-            >
-              <ArrowLeft className="size-4" />
-            </button>
-            <PlaylistCover playlist={selectedPlaylist} className="size-16" />
-            <div className="min-w-0">
-              <p className="text-[10px] font-semibold tracking-[0.12em] text-[var(--app-accent-500)] uppercase">
-                Плейлист
-              </p>
-              <h2 className="truncate text-lg font-semibold text-[var(--app-text)]">
-                {selectedPlaylist.name}
-              </h2>
-              <p className="mt-0.5 text-xs text-[var(--app-muted)]">
-                {selectedPlaylist.trackIds.length} треков
-              </p>
-            </div>
-          </div>
-
-          <div className="flex shrink-0 items-center gap-2">
+      <LibrarySection
+        section="playlist"
+        title={selectedPlaylist.name}
+        icon={<ListMusic aria-hidden="true" className="size-5" />}
+        backAction={{
+          label: 'К списку плейлистов',
+          onBack: () => onScopeChange({ kind: 'playlists' })
+        }}
+        toolbar={
+          <>
             <button
               type="button"
               aria-label={`Редактировать плейлист «${selectedPlaylist.name}»`}
-              className="flex size-9 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+              className="flex size-8 items-center justify-center rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] hover:text-[var(--app-text)]"
               onClick={() => onEditPlaylist(selectedPlaylist)}
             >
-              <Pencil className="size-4" />
+              <Pencil className="size-3.5" />
             </button>
             <button
               type="button"
               aria-label={`Удалить плейлист «${selectedPlaylist.name}»`}
-              className="flex size-9 items-center justify-center rounded-xl border border-red-500/15 bg-red-500/5 text-red-300 hover:bg-red-500/10"
+              className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
               onClick={() => onDeletePlaylist(selectedPlaylist)}
             >
-              <Trash2 className="size-4" />
+              <Trash2 className="size-3.5" />
             </button>
-          </div>
-        </div>
-
+          </>
+        }
+      >
         <TrackGrid
           items={visibleItems}
           isSaving={isSaving}
-          emptyTitle="В плейлисте пока нет треков"
-          emptyDescription="Добавьте новый трек или отредактируйте существующий и отметьте этот плейлист."
+          emptyTitle={search ? 'Ничего не найдено' : 'В плейлисте пока нет треков'}
+          emptyDescription={search ? undefined : 'Добавьте трек в эту подборку.'}
           onOpenTrack={onOpenTrack}
           onToggleFavorite={onToggleFavorite}
           onDeleteTrack={onDeleteTrack}
           onAddTrack={onAddTrack}
         />
-      </section>
+      </LibrarySection>
     )
   }
 
   const isFavorites = scope.kind === 'favorites'
   return (
-    <section className="rounded-[24px] border border-[var(--app-border)] bg-[var(--app-surface)] p-5 shadow-[var(--app-shadow-card)]">
-      <div className="mb-4">
-        <h2 className="text-base font-semibold text-[var(--app-text)]">
-          {isFavorites ? 'Избранное' : 'Все треки'}
-        </h2>
-        <p className="mt-1 text-xs text-[var(--app-muted)]">
-          {isFavorites
-            ? 'Треки, которые вы отметили сердцем.'
-            : 'Все сохранённые треки без лишних обложек и отдельных страниц.'}
-        </p>
-      </div>
+    <LibrarySection
+      section={isFavorites ? 'favorites' : 'all'}
+      title={isFavorites ? 'Избранное' : 'Все треки'}
+      icon={
+        isFavorites ? (
+          <Heart aria-hidden="true" className="size-5" />
+        ) : (
+          <Music2 aria-hidden="true" className="size-5" />
+        )
+      }
+    >
       <TrackGrid
         items={visibleItems}
         isSaving={isSaving}
         emptyTitle={
-          isFavorites ? 'В избранном пока ничего нет' : 'Музыкальная библиотека пока пустая'
+          search
+            ? 'Ничего не найдено'
+            : isFavorites
+              ? 'В избранном пока ничего нет'
+              : 'Треков пока нет'
         }
         emptyDescription={
           search
-            ? 'По этому запросу ничего не найдено.'
+            ? undefined
             : isFavorites
-              ? 'Отмечайте любимые треки сердцем — они появятся здесь.'
-              : 'Добавьте первый трек через компактное модальное окно.'
+              ? 'Отмечайте любимые треки сердцем.'
+              : 'Добавьте первый трек в библиотеку.'
         }
         onOpenTrack={onOpenTrack}
         onToggleFavorite={onToggleFavorite}
         onDeleteTrack={onDeleteTrack}
         onAddTrack={onAddTrack}
       />
-    </section>
+    </LibrarySection>
   )
 }
