@@ -27,6 +27,7 @@ export interface MusicItemRecord {
 export interface MusicPlaylistRecord {
   id: string
   name: string
+  coverUrl: string | null
   trackIds: string[]
   createdAt: number
   updatedAt: number
@@ -72,11 +73,13 @@ export interface DeleteMusicItemInput {
 
 export interface CreateMusicPlaylistInput {
   name: string
+  coverUrl?: string | null
 }
 
 export interface UpdateMusicPlaylistInput {
   id: string
   name: string
+  coverUrl?: string | null
 }
 
 export interface DeleteMusicPlaylistInput {

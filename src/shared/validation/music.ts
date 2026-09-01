@@ -93,9 +93,14 @@ const musicPlaylistNameSchema = z
   .min(1, 'Введите название плейлиста')
   .max(120, 'Название плейлиста слишком длинное')
 
-export const createMusicPlaylistInputSchema = z.object({ name: musicPlaylistNameSchema }).strict()
-export const updateMusicPlaylistInputSchema = z
-  .object({ id: musicSafeIdSchema, name: musicPlaylistNameSchema })
+const musicPlaylistFieldsSchema = z.object({
+  name: musicPlaylistNameSchema,
+  coverUrl: coverUrlSchema.optional().default(null)
+})
+
+export const createMusicPlaylistInputSchema = musicPlaylistFieldsSchema.strict()
+export const updateMusicPlaylistInputSchema = musicPlaylistFieldsSchema
+  .extend({ id: musicSafeIdSchema })
   .strict()
 export const deleteMusicPlaylistInputSchema = z.object({ id: musicSafeIdSchema }).strict()
 export const setMusicItemPlaylistsInputSchema = z

@@ -30,6 +30,7 @@ const overview: MusicOverview = {
     {
       id: 'playlist-1',
       name: 'Ночная дорога',
+      coverUrl: 'https://example.com/night-road.jpg',
       trackIds: ['track-1'],
       createdAt: 1,
       updatedAt: 1
@@ -49,8 +50,8 @@ const handlers = {
 }
 
 describe('MusicLibraryView', () => {
-  it('показывает поиск и отдельные разделы библиотеки как в заметках', () => {
-    render(
+  it('показывает поиск и вкладки в отдельном блоке как у заметок', () => {
+    const { container } = render(
       <MusicLibraryNavigation
         scope={{ kind: 'all' }}
         query=""
@@ -59,13 +60,14 @@ describe('MusicLibraryView', () => {
       />
     )
 
+    expect(container.querySelector('[data-music-library-navigation]')).toBeInTheDocument()
     expect(screen.getByRole('searchbox', { name: 'Поиск по музыке' })).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: 'Все треки' })).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: 'Избранное' })).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: 'Плейлисты' })).toBeInTheDocument()
   })
 
-  it('показывает страницу плейлистов с прямыми действиями', () => {
+  it('показывает плейлисты с собственной обложкой и прямыми действиями', () => {
     render(
       <MusicLibraryContent
         overview={overview}
@@ -78,6 +80,7 @@ describe('MusicLibraryView', () => {
 
     expect(screen.getByRole('heading', { name: 'Плейлисты' })).toBeInTheDocument()
     expect(screen.getByText('Ночная дорога')).toBeInTheDocument()
+    expect(screen.getByAltText('Обложка плейлиста «Ночная дорога»')).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: 'Редактировать плейлист «Ночная дорога»' })
     ).toBeInTheDocument()
@@ -86,8 +89,8 @@ describe('MusicLibraryView', () => {
     ).toBeInTheDocument()
   })
 
-  it('показывает страницу конкретного плейлиста с действиями трека', () => {
-    render(
+  it('показывает треки компактными карточками без обложек', () => {
+    const { container } = render(
       <MusicLibraryContent
         overview={overview}
         scope={{ kind: 'playlist', playlistId: 'playlist-1' }}
@@ -100,6 +103,8 @@ describe('MusicLibraryView', () => {
     expect(screen.getByText('Плейлист')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Ночная дорога' })).toBeInTheDocument()
     expect(screen.getByText('Blinding Lights')).toBeInTheDocument()
+    expect(container.querySelector('[data-music-track-card]')).toBeInTheDocument()
+    expect(screen.queryByAltText('Обложка «Blinding Lights»')).not.toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: 'Редактировать трек «Blinding Lights»' })
     ).toBeInTheDocument()

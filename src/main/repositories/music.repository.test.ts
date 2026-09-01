@@ -127,7 +127,7 @@ describe('music repository', () => {
     expect(updated.rating).toBeNull()
   })
 
-  it('stores zero, one or many playlists independently from tracks', () => {
+  it('stores playlists, covers and track membership independently from tracks', () => {
     const trackA = createMusicItem({
       title: 'Track A',
       type: 'track',
@@ -161,8 +161,13 @@ describe('music repository', () => {
       comments: ''
     })
 
-    const road = createMusicPlaylist({ name: 'Дорога' })
-    const focus = createMusicPlaylist({ name: 'Фокус' })
+    const road = createMusicPlaylist({
+      name: 'Дорога',
+      coverUrl: 'https://example.com/road.jpg'
+    })
+    const focus = createMusicPlaylist({ name: 'Фокус', coverUrl: null })
+
+    expect(road.coverUrl).toBe('https://example.com/road.jpg')
 
     setMusicItemPlaylists({ itemId: trackA.id, playlistIds: [road.id, focus.id] })
     setMusicItemPlaylists({ itemId: trackB.id, playlistIds: [focus.id] })
@@ -176,8 +181,13 @@ describe('music repository', () => {
       overview.playlists.find((playlist) => playlist.id === focus.id)?.trackIds.sort()
     ).toEqual([trackA.id, trackB.id].sort())
 
-    const renamed = updateMusicPlaylist({ id: road.id, name: 'В дорогу' })
+    const renamed = updateMusicPlaylist({
+      id: road.id,
+      name: 'В дорогу',
+      coverUrl: 'https://example.com/road-updated.jpg'
+    })
     expect(renamed.name).toBe('В дорогу')
+    expect(renamed.coverUrl).toBe('https://example.com/road-updated.jpg')
 
     expect(deleteMusicPlaylist({ id: focus.id })).toBe(true)
     overview = listMusicOverview()
