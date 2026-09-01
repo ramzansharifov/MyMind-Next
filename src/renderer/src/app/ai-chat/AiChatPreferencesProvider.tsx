@@ -1,20 +1,11 @@
+import { type PropsWithChildren, useCallback, useMemo, useState } from 'react'
+
 import {
-  createContext,
-  type PropsWithChildren,
-  useCallback,
-  useContext,
-  useMemo,
-  useState
-} from 'react'
+  AiChatPreferencesContext,
+  type AiChatPreferencesContextValue
+} from './ai-chat-preferences-context'
 
 const AI_CHAT_LAUNCHER_VISIBLE_STORAGE_KEY = 'mymind.ai-chat.launcher-visible'
-
-interface AiChatPreferencesContextValue {
-  showLauncher: boolean
-  setShowLauncher: (showLauncher: boolean) => void
-}
-
-const AiChatPreferencesContext = createContext<AiChatPreferencesContextValue | null>(null)
 
 function readShowLauncherPreference(): boolean {
   try {
@@ -48,14 +39,4 @@ export function AiChatPreferencesProvider({ children }: PropsWithChildren): Reac
   return (
     <AiChatPreferencesContext.Provider value={value}>{children}</AiChatPreferencesContext.Provider>
   )
-}
-
-export function useAiChatPreferences(): AiChatPreferencesContextValue {
-  const context = useContext(AiChatPreferencesContext)
-
-  if (!context) {
-    throw new Error('useAiChatPreferences must be used inside AiChatPreferencesProvider')
-  }
-
-  return context
 }
