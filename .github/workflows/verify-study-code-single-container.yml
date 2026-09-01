@@ -40,46 +40,22 @@ jobs:
           text = text.replace(old_scroll, new_scroll, 1)
           workspace.write_text(text, encoding='utf-8')
 
-          test_file = Path('src/renderer/src/modules/study/components/code-mode/StudyCodeWorkspace.test.tsx')
-          test = test_file.read_text(encoding='utf-8')
-
-          import_marker = "import { beforeEach, describe, expect, it, vi } from 'vitest'\n"
-          if import_marker not in test:
-              raise SystemExit('vitest import marker not found')
-          test = test.replace(import_marker, import_marker + "import type { ReactNode } from 'react'\n", 1)
-
-          contract_import = "import type { StudyCodeChangeSummary, StudyNode } from '../../../../../../shared/contracts/study'\n"
-          if contract_import not in test:
-              raise SystemExit('contract import marker not found')
-          test = test.replace(contract_import, contract_import + "import { TooltipProvider } from '../../../../shared/ui/tooltip'\n", 1)
-
-          before_each_marker = "beforeEach(() => {\n"
-          helper = "function renderWithTooltip(children: ReactNode): ReturnType<typeof render> {\n  return render(<TooltipProvider>{children}</TooltipProvider>)\n}\n\n"
-          if before_each_marker not in test:
-              raise SystemExit('beforeEach marker not found')
-          test = test.replace(before_each_marker, helper + before_each_marker, 1)
-          test = test.replace('render(<StudyCodeWorkspace', 'renderWithTooltip(<StudyCodeWorkspace')
-
-          marker = "    expect(container.querySelector('.study-code-editor__root')).toBeInTheDocument()\n"
-          addition = marker + "    const editorSurface = container.querySelector('[data-study-code-editor-surface]')\n    const editorScroll = container.querySelector('[data-study-code-editor-scroll]')\n    expect(editorSurface).toBeInTheDocument()\n    expect(editorSurface).not.toHaveClass('p-4')\n    expect(editorScroll).not.toHaveClass('rounded-xl')\n    expect(editorScroll).not.toHaveClass('border')\n"
-          if marker not in test:
-              raise SystemExit('test marker not found')
-          test = test.replace(marker, addition, 1)
-          test_file.write_text(test, encoding='utf-8')
+          test_file = Path('src/renderer/src/modules/study/components/code-mode/StudyCodeWorkspace.layout.test.tsx')
+          test_file.write_text('''import { render } from '@testing-library/react'\nimport { describe, expect, it, vi } from 'vitest'\n\nimport type { StudyNode } from '../../../../../../shared/contracts/study'\nimport { TooltipProvider } from '../../../../shared/ui/tooltip'\nimport { StudyCodeWorkspace } from './StudyCodeWorkspace'\n\nconst mocks = vi.hoisted(() => ({\n  getCodeSnapshot: vi.fn(),\n  previewCode: vi.fn(),\n  applyCode: vi.fn()\n}))\n\nvi.mock('../../api/study-client', () => ({\n  studyClient: mocks\n}))\n\nvi.mock('../../lib/study-draft-lifecycle', () => ({\n  registerStudyDraftHandle: () => () => undefined\n}))\n\nconst folderNode: StudyNode = {\n  id: '7fe46e6d-c5c3-45ef-99b4-937377034475',\n  type: 'folder',\n  parentId: null,\n  title: 'Курс',\n  position: 0,\n  isExpanded: true,\n  createdAt: 1,\n  updatedAt: 1\n}\n\ndescribe('StudyCodeWorkspace layout', () => {\n  it('uses the workspace itself as the visual code container', () => {\n    mocks.getCodeSnapshot.mockResolvedValue({\n      nodeId: folderNode.id,\n      nodeType: 'folder',\n      title: folderNode.title,\n      source: '@version(1)\\n\\nfolder Folder1 "Курс" {\\n}',\n      revision: 'a'.repeat(64)\n    })\n\n    const { container } = render(\n      <TooltipProvider>\n        <StudyCodeWorkspace node={folderNode} onApplied={vi.fn()} />\n      </TooltipProvider>\n    )\n\n    const workspace = container.querySelector('[data-study-code-workspace]')\n    const editorSurface = container.querySelector('[data-study-code-editor-surface]')\n    const editorScroll = container.querySelector('[data-study-code-editor-scroll]')\n\n    expect(workspace).toBeInTheDocument()\n    expect(editorSurface).toBeInTheDocument()\n    expect(editorScroll).toBeInTheDocument()\n    expect(editorSurface).not.toHaveClass('p-4')\n    expect(editorScroll).not.toHaveClass('rounded-xl')\n    expect(editorScroll).not.toHaveClass('border')\n    expect(editorSurface?.parentElement).toBe(workspace)\n  })\n})\n''', encoding='utf-8')
           '@ | python -
 
       - name: Prettier
         run: >-
           npx prettier --write
           src/renderer/src/modules/study/components/code-mode/StudyCodeWorkspace.tsx
-          src/renderer/src/modules/study/components/code-mode/StudyCodeWorkspace.test.tsx
+          src/renderer/src/modules/study/components/code-mode/StudyCodeWorkspace.layout.test.tsx
 
       - name: ESLint
         shell: pwsh
         run: |
           npx eslint `
             src/renderer/src/modules/study/components/code-mode/StudyCodeWorkspace.tsx `
-            src/renderer/src/modules/study/components/code-mode/StudyCodeWorkspace.test.tsx `
+            src/renderer/src/modules/study/components/code-mode/StudyCodeWorkspace.layout.test.tsx `
             --format json --output-file eslint-result.json
           $code = $LASTEXITCODE
           $results = Get-Content eslint-result.json -Raw | ConvertFrom-Json
@@ -120,8 +96,8 @@ jobs:
           }
           exit 0
 
-      - name: Study code UI tests
-        run: npx vitest run src/renderer/src/modules/study/components/code-mode/StudyCodeWorkspace.test.tsx
+      - name: Study code layout regression
+        run: npx vitest run src/renderer/src/modules/study/components/code-mode/StudyCodeWorkspace.layout.test.tsx
 
       - name: Production bundle
         run: npm run build:bundle
@@ -135,6 +111,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git rm .github/workflows/verify-study-code-single-container.yml
-          git add src/renderer/src/modules/study/components/code-mode/StudyCodeWorkspace.tsx src/renderer/src/modules/study/components/code-mode/StudyCodeWorkspace.test.tsx
+          git add src/renderer/src/modules/study/components/code-mode/StudyCodeWorkspace.tsx src/renderer/src/modules/study/components/code-mode/StudyCodeWorkspace.layout.test.tsx
           git commit -m "Объединить визуальный контейнер режима кода"
           git push
