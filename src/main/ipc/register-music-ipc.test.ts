@@ -20,7 +20,11 @@ vi.mock('../repositories/music.repository', () => ({
   createMusicItem: vi.fn(),
   createMusicItems: vi.fn(),
   updateMusicItem: vi.fn(),
-  deleteMusicItem: vi.fn()
+  deleteMusicItem: vi.fn(),
+  createMusicPlaylist: vi.fn(),
+  updateMusicPlaylist: vi.fn(),
+  deleteMusicPlaylist: vi.fn(),
+  setMusicItemPlaylists: vi.fn()
 }))
 
 import { registerMusicIpcHandlers } from './register-music-ipc'

@@ -8,6 +8,7 @@ const MAX_TEXT_LENGTH = 10_000
 const MAX_DESCRIPTION_LENGTH = 5_000
 const MAX_ARTISTS = 32
 const MAX_GENRES = 16
+const MAX_PLAYLISTS_PER_TRACK = 100
 
 export const musicSafeIdSchema = z
   .string()
@@ -85,6 +86,27 @@ export const updateMusicItemInputSchema = musicBaseInputSchema
 
 export const getMusicItemInputSchema = z.object({ id: musicSafeIdSchema }).strict()
 export const deleteMusicItemInputSchema = getMusicItemInputSchema
+
+const musicPlaylistNameSchema = z
+  .string()
+  .trim()
+  .min(1, 'Введите название плейлиста')
+  .max(120, 'Название плейлиста слишком длинное')
+
+export const createMusicPlaylistInputSchema = z.object({ name: musicPlaylistNameSchema }).strict()
+export const updateMusicPlaylistInputSchema = z
+  .object({ id: musicSafeIdSchema, name: musicPlaylistNameSchema })
+  .strict()
+export const deleteMusicPlaylistInputSchema = z.object({ id: musicSafeIdSchema }).strict()
+export const setMusicItemPlaylistsInputSchema = z
+  .object({
+    itemId: musicSafeIdSchema,
+    playlistIds: z
+      .array(musicSafeIdSchema)
+      .max(MAX_PLAYLISTS_PER_TRACK)
+      .transform((ids) => Array.from(new Set(ids)))
+  })
+  .strict()
 
 export const musicWebSearchInputSchema = z
   .object({ query: z.string().trim().min(1).max(300) })

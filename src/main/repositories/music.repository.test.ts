@@ -8,10 +8,14 @@ import { runDatabaseMigrationsFrom } from '../database/migrate'
 import {
   createMusicItem,
   createMusicItems,
+  createMusicPlaylist,
   deleteMusicItem,
+  deleteMusicPlaylist,
   getMusicItem,
   listMusicOverview,
-  updateMusicItem
+  setMusicItemPlaylists,
+  updateMusicItem,
+  updateMusicPlaylist
 } from './music.repository'
 
 let root = ''
@@ -23,7 +27,11 @@ beforeAll(async () => {
 })
 
 beforeEach(() => {
-  getSqlite().exec('DELETE FROM music_items;')
+  getSqlite().exec(`
+    DELETE FROM music_playlist_items;
+    DELETE FROM music_playlists;
+    DELETE FROM music_items;
+  `)
 })
 
 afterAll(async () => {
@@ -117,6 +125,67 @@ describe('music repository', () => {
     const updated = updateMusicItem({ ...item, status: 'want_to_listen', rating: 8 })
     expect(updated.status).toBe('want_to_listen')
     expect(updated.rating).toBeNull()
+  })
+
+  it('stores zero, one or many playlists independently from tracks', () => {
+    const trackA = createMusicItem({
+      title: 'Track A',
+      type: 'track',
+      year: 2026,
+      coverUrl: null,
+      artists: ['Artist A'],
+      album: '',
+      durationSeconds: 180,
+      trackCount: null,
+      genres: [],
+      description: '',
+      status: 'listened',
+      favorite: false,
+      rating: null,
+      comments: ''
+    })
+    const trackB = createMusicItem({
+      title: 'Track B',
+      type: 'track',
+      year: null,
+      coverUrl: null,
+      artists: ['Artist B'],
+      album: '',
+      durationSeconds: null,
+      trackCount: null,
+      genres: [],
+      description: '',
+      status: 'listened',
+      favorite: true,
+      rating: null,
+      comments: ''
+    })
+
+    const road = createMusicPlaylist({ name: 'Дорога' })
+    const focus = createMusicPlaylist({ name: 'Фокус' })
+
+    setMusicItemPlaylists({ itemId: trackA.id, playlistIds: [road.id, focus.id] })
+    setMusicItemPlaylists({ itemId: trackB.id, playlistIds: [focus.id] })
+
+    let overview = listMusicOverview()
+    expect(overview.playlists).toHaveLength(2)
+    expect(overview.playlists.find((playlist) => playlist.id === road.id)?.trackIds).toEqual([
+      trackA.id
+    ])
+    expect(
+      overview.playlists.find((playlist) => playlist.id === focus.id)?.trackIds.sort()
+    ).toEqual([trackA.id, trackB.id].sort())
+
+    const renamed = updateMusicPlaylist({ id: road.id, name: 'В дорогу' })
+    expect(renamed.name).toBe('В дорогу')
+
+    expect(deleteMusicPlaylist({ id: focus.id })).toBe(true)
+    overview = listMusicOverview()
+    expect(overview.playlists.map((playlist) => playlist.name)).toEqual(['В дорогу'])
+    expect(overview.items).toHaveLength(2)
+
+    expect(deleteMusicItem({ id: trackA.id })).toBe(true)
+    expect(listMusicOverview().playlists[0]?.trackIds).toEqual([])
   })
 
   it('deletes music permanently', () => {

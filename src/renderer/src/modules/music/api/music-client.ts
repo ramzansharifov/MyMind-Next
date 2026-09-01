@@ -1,12 +1,17 @@
 import type {
   CreateMusicItemInput,
   CreateMusicItemsInput,
+  CreateMusicPlaylistInput,
   DeleteMusicItemInput,
+  DeleteMusicPlaylistInput,
   GetMusicItemInput,
   MusicItemRecord,
   MusicOverview,
+  MusicPlaylistRecord,
   MusicWebSearchInput,
-  UpdateMusicItemInput
+  SetMusicItemPlaylistsInput,
+  UpdateMusicItemInput,
+  UpdateMusicPlaylistInput
 } from '../../../../../shared/contracts/music'
 
 export const musicClient = {
@@ -27,6 +32,18 @@ export const musicClient = {
   },
   deleteItem(input: DeleteMusicItemInput): Promise<boolean> {
     return window.api.music.deleteItem(input)
+  },
+  createPlaylist(input: CreateMusicPlaylistInput): Promise<MusicPlaylistRecord> {
+    return window.api.music.createPlaylist(input)
+  },
+  updatePlaylist(input: UpdateMusicPlaylistInput): Promise<MusicPlaylistRecord> {
+    return window.api.music.updatePlaylist(input)
+  },
+  deletePlaylist(input: DeleteMusicPlaylistInput): Promise<boolean> {
+    return window.api.music.deletePlaylist(input)
+  },
+  setItemPlaylists(input: SetMusicItemPlaylistsInput): Promise<MusicPlaylistRecord[]> {
+    return window.api.music.setItemPlaylists(input)
   },
   searchWeb(input: MusicWebSearchInput): Promise<void> {
     return window.api.music.searchWeb(input)

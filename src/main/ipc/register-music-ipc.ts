@@ -4,18 +4,26 @@ import { MUSIC_IPC_CHANNELS } from '../../shared/contracts/music'
 import {
   createMusicItemInputSchema,
   createMusicItemsInputSchema,
+  createMusicPlaylistInputSchema,
   deleteMusicItemInputSchema,
+  deleteMusicPlaylistInputSchema,
   getMusicItemInputSchema,
   musicWebSearchInputSchema,
-  updateMusicItemInputSchema
+  setMusicItemPlaylistsInputSchema,
+  updateMusicItemInputSchema,
+  updateMusicPlaylistInputSchema
 } from '../../shared/validation/music'
 import {
   createMusicItem,
   createMusicItems,
+  createMusicPlaylist,
   deleteMusicItem,
+  deleteMusicPlaylist,
   getMusicItem,
   listMusicOverview,
-  updateMusicItem
+  setMusicItemPlaylists,
+  updateMusicItem,
+  updateMusicPlaylist
 } from '../repositories/music.repository'
 import { mainOperationTracker } from '../services/main-operation-tracker'
 
@@ -39,6 +47,26 @@ export function registerMusicIpcHandlers(): void {
   )
   ipcMain.handle(MUSIC_IPC_CHANNELS.deleteItem, (_event, rawInput: unknown) =>
     mainOperationTracker.run(() => deleteMusicItem(deleteMusicItemInputSchema.parse(rawInput)))
+  )
+  ipcMain.handle(MUSIC_IPC_CHANNELS.createPlaylist, (_event, rawInput: unknown) =>
+    mainOperationTracker.run(() =>
+      createMusicPlaylist(createMusicPlaylistInputSchema.parse(rawInput))
+    )
+  )
+  ipcMain.handle(MUSIC_IPC_CHANNELS.updatePlaylist, (_event, rawInput: unknown) =>
+    mainOperationTracker.run(() =>
+      updateMusicPlaylist(updateMusicPlaylistInputSchema.parse(rawInput))
+    )
+  )
+  ipcMain.handle(MUSIC_IPC_CHANNELS.deletePlaylist, (_event, rawInput: unknown) =>
+    mainOperationTracker.run(() =>
+      deleteMusicPlaylist(deleteMusicPlaylistInputSchema.parse(rawInput))
+    )
+  )
+  ipcMain.handle(MUSIC_IPC_CHANNELS.setItemPlaylists, (_event, rawInput: unknown) =>
+    mainOperationTracker.run(() =>
+      setMusicItemPlaylists(setMusicItemPlaylistsInputSchema.parse(rawInput))
+    )
   )
   ipcMain.handle(MUSIC_IPC_CHANNELS.searchWeb, (_event, rawInput: unknown) =>
     mainOperationTracker.run(async () => {
