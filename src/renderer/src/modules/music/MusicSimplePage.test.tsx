@@ -81,7 +81,7 @@ describe('MusicPage dialogs', () => {
 
     expect(header).not.toBeNull()
     expect(navigation).not.toBeNull()
-    expect(header).toContainElement(navigation)
+    expect(header?.contains(navigation)).toBe(true)
   })
 
   it('добавляет трек через модальное окно и всегда сохраняет его без обложки', async () => {
