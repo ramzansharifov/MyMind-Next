@@ -26,19 +26,12 @@ jobs:
           @'
           from pathlib import Path
           import json
+          import re
 
           preload_path = Path('src/preload/index.ts')
           text = preload_path.read_text(encoding='utf-8')
-          old = '''  music: {
-            listOverview: () => ipcRenderer.invoke(MUSIC_IPC_CHANNELS.listOverview),
-            getItem: (input) => ipcRenderer.invoke(MUSIC_IPC_CHANNELS.getItem, input),
-            createItem: (input) => ipcRenderer.invoke(MUSIC_IPC_CHANNELS.createItem, input),
-            createItems: (input) => ipcRenderer.invoke(MUSIC_IPC_CHANNELS.createItems, input),
-            updateItem: (input) => ipcRenderer.invoke(MUSIC_IPC_CHANNELS.updateItem, input),
-            deleteItem: (input) => ipcRenderer.invoke(MUSIC_IPC_CHANNELS.deleteItem, input),
-            searchWeb: (input) => ipcRenderer.invoke(MUSIC_IPC_CHANNELS.searchWeb, input)
-          },'''
-          new = '''  music: {
+          pattern = re.compile(r"  music: \{.*?\n  \},\n\n  tasks:", re.S)
+          replacement = '''  music: {
             listOverview: () => ipcRenderer.invoke(MUSIC_IPC_CHANNELS.listOverview),
             getItem: (input) => ipcRenderer.invoke(MUSIC_IPC_CHANNELS.getItem, input),
             createItem: (input) => ipcRenderer.invoke(MUSIC_IPC_CHANNELS.createItem, input),
@@ -50,10 +43,13 @@ jobs:
             deletePlaylist: (input) => ipcRenderer.invoke(MUSIC_IPC_CHANNELS.deletePlaylist, input),
             setItemPlaylists: (input) => ipcRenderer.invoke(MUSIC_IPC_CHANNELS.setItemPlaylists, input),
             searchWeb: (input) => ipcRenderer.invoke(MUSIC_IPC_CHANNELS.searchWeb, input)
-          },'''
-          if old not in text:
-              raise SystemExit('Music preload block not found')
-          preload_path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          },
+
+          tasks:'''
+          text, count = pattern.subn(replacement, text, count=1)
+          if count != 1:
+              raise SystemExit(f'Expected one music preload block, found {count}')
+          preload_path.write_text(text, encoding='utf-8')
 
           journal_path = Path('drizzle/meta/_journal.json')
           journal = json.loads(journal_path.read_text(encoding='utf-8'))
@@ -115,7 +111,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           Remove-Item .github/workflows/verify-simplified-music.yml
-          git add src/preload/index.ts drizzle/meta/_journal.json .github/workflows/verify-simplified-music.yml
-          git add -u
+          git add -A
           git commit -m "Упростить музыку до треков и плейлистов"
           git push origin HEAD:agent/simplify-music-playlists
