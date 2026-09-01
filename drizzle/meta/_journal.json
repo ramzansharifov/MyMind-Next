@@ -274,6 +274,13 @@
       "when": 1788241260000,
       "tag": "0038_music_playlists",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "6",
+      "when": 1788267900000,
+      "tag": "0039_music_playlist_covers",
+      "breakpoints": true
     }
   ]
 }
