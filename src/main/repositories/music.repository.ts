@@ -41,6 +41,7 @@ interface MusicItemRow {
 interface MusicPlaylistRow {
   id: string
   name: string
+  cover_url: string | null
   created_at: number
   updated_at: number
 }
@@ -107,7 +108,7 @@ function listPlaylists(): MusicPlaylistRecord[] {
   const db = getSqlite()
   const rows = db
     .prepare(
-      `SELECT id, name, created_at, updated_at
+      `SELECT id, name, cover_url, created_at, updated_at
        FROM music_playlists
        ORDER BY updated_at DESC, created_at DESC`
     )
@@ -130,6 +131,7 @@ function listPlaylists(): MusicPlaylistRecord[] {
   return rows.map((row) => ({
     id: row.id,
     name: row.name,
+    coverUrl: row.cover_url,
     trackIds: tracksByPlaylist.get(row.id) ?? [],
     createdAt: row.created_at,
     updatedAt: row.updated_at
@@ -266,18 +268,18 @@ export function createMusicPlaylist(input: CreateMusicPlaylistInput): MusicPlayl
   const now = Date.now()
   getSqlite()
     .prepare(
-      `INSERT INTO music_playlists (id, name, created_at, updated_at)
-       VALUES (?, ?, ?, ?)`
+      `INSERT INTO music_playlists (id, name, cover_url, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?)`
     )
-    .run(id, input.name, now, now)
+    .run(id, input.name, input.coverUrl, now, now)
   return requirePlaylist(id)
 }
 
 export function updateMusicPlaylist(input: UpdateMusicPlaylistInput): MusicPlaylistRecord {
   requirePlaylist(input.id)
   getSqlite()
-    .prepare('UPDATE music_playlists SET name = ?, updated_at = ? WHERE id = ?')
-    .run(input.name, Date.now(), input.id)
+    .prepare('UPDATE music_playlists SET name = ?, cover_url = ?, updated_at = ? WHERE id = ?')
+    .run(input.name, input.coverUrl, Date.now(), input.id)
   return requirePlaylist(input.id)
 }
 
