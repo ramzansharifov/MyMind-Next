@@ -8,6 +8,7 @@ import {
   TriangleAlert,
   type LucideIcon
 } from 'lucide-react'
+import * as Switch from '@radix-ui/react-switch'
 import { useState, type ReactNode } from 'react'
 
 import type { SystemHealth } from '../../../../shared/contracts/system'
@@ -333,28 +334,14 @@ function AiChatSettingsPage(): React.JSX.Element {
                 сочетанию клавиш.
               </p>
             </div>
-
-            <button
-              type="button"
-              role="switch"
+            <Switch.Root
               aria-label="Показывать кнопку ИИ-чата"
-              aria-checked={showLauncher}
-              className={cn(
-                'relative h-7 w-12 shrink-0 rounded-full border transition-colors outline-none focus-visible:ring-2 focus-visible:ring-violet-500/45',
-                showLauncher
-                  ? 'border-[color-mix(in_srgb,var(--app-accent-500)_55%,transparent)] bg-[var(--app-accent-500)]'
-                  : 'border-[var(--app-border-strong)] bg-[var(--app-control-hover)]'
-              )}
-              onClick={() => setShowLauncher(!showLauncher)}
+              checked={showLauncher}
+              className="group inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border border-[var(--app-border-strong)] bg-[var(--app-control-hover)] p-0.5 transition-[background-color,border-color,box-shadow] outline-none focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)]/40 data-[state=checked]:border-[var(--app-accent-500)] data-[state=checked]:bg-[var(--app-accent-500)]"
+              onCheckedChange={setShowLauncher}
             >
-              <span
-                aria-hidden="true"
-                className={cn(
-                  'absolute top-0.5 size-5 rounded-full bg-white shadow-sm transition-transform',
-                  showLauncher ? 'translate-x-[1.35rem]' : 'translate-x-0.5'
-                )}
-              />
-            </button>
+              <Switch.Thumb className="block size-5 rounded-full bg-white shadow-sm transition-transform duration-200 data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0" />
+            </Switch.Root>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 py-3 text-xs text-[var(--app-muted)]">
