@@ -19,6 +19,25 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Normalize dialog keys
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/renderer/src/modules/music/MusicSimplePage.tsx')
+          source = path.read_text()
+          replacements = {
+              "key={`${trackDialogItem?.id ?? 'new'}-${trackDialogOpen ? 'open' : 'closed'}`}":
+                  "key={`track-${trackDialogItem?.id ?? 'new'}-${trackDialogOpen ? 'open' : 'closed'}`}",
+              "key={`${playlistDialogItem?.id ?? 'new'}-${playlistDialogOpen ? 'open' : 'closed'}`}":
+                  "key={`playlist-${playlistDialogItem?.id ?? 'new'}-${playlistDialogOpen ? 'open' : 'closed'}`}",
+          }
+          for old, new in replacements.items():
+              if old in source:
+                  source = source.replace(old, new)
+          path.write_text(source)
+          PY
       - name: Format changed source files
         run: >-
           npx prettier --write
@@ -32,7 +51,7 @@ jobs:
           src/renderer/src/modules/music/MusicSimplePage.test.tsx
           src/renderer/src/modules/music/components/MusicLibraryView.tsx
           src/renderer/src/modules/music/components/MusicLibraryView.test.tsx
-      - name: Persist formatting if needed
+      - name: Persist source normalization if needed
         shell: bash
         run: |
           if git diff --quiet; then
@@ -51,7 +70,7 @@ jobs:
             src/renderer/src/modules/music/MusicSimplePage.test.tsx \
             src/renderer/src/modules/music/components/MusicLibraryView.tsx \
             src/renderer/src/modules/music/components/MusicLibraryView.test.tsx
-          git commit -m "Отформатировать изменения музыки"
+          git commit -m "Нормализовать изменения музыки"
           git push
       - run: npm run native:node
       - name: Prettier
