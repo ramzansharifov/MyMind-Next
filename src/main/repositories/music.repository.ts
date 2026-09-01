@@ -271,7 +271,7 @@ export function createMusicPlaylist(input: CreateMusicPlaylistInput): MusicPlayl
       `INSERT INTO music_playlists (id, name, cover_url, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?)`
     )
-    .run(id, input.name, input.coverUrl, now, now)
+    .run(id, input.name, input.coverUrl ?? null, now, now)
   return requirePlaylist(id)
 }
 
@@ -279,7 +279,7 @@ export function updateMusicPlaylist(input: UpdateMusicPlaylistInput): MusicPlayl
   requirePlaylist(input.id)
   getSqlite()
     .prepare('UPDATE music_playlists SET name = ?, cover_url = ?, updated_at = ? WHERE id = ?')
-    .run(input.name, input.coverUrl, Date.now(), input.id)
+    .run(input.name, input.coverUrl ?? null, Date.now(), input.id)
   return requirePlaylist(input.id)
 }
 
