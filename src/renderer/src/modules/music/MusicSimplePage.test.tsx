@@ -75,7 +75,8 @@ describe('MusicPage dialogs', () => {
     const user = userEvent.setup()
     render(<MusicPage />)
 
-    await user.click(await screen.findByRole('button', { name: 'Добавить трек' }))
+    const addTrackButtons = await screen.findAllByRole('button', { name: 'Добавить трек' })
+    await user.click(addTrackButtons[0]!)
 
     expect(screen.getByRole('dialog')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Новый трек' })).toBeInTheDocument()
