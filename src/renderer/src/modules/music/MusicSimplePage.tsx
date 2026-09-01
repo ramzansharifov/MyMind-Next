@@ -33,9 +33,7 @@ import { musicClient } from './api/music-client'
 import './components/music-interactions.css'
 
 type LibraryScope =
-  | { kind: 'all' }
-  | { kind: 'favorites' }
-  | { kind: 'playlist'; playlistId: string }
+  { kind: 'all' } | { kind: 'favorites' } | { kind: 'playlist'; playlistId: string }
 
 type MusicView = { kind: 'library' } | { kind: 'form'; itemId: string | null }
 
@@ -79,7 +77,9 @@ function parseDuration(value: string): number | null {
 }
 
 function playlistIdsForTrack(playlists: MusicPlaylistRecord[], itemId: string): string[] {
-  return playlists.filter((playlist) => playlist.trackIds.includes(itemId)).map((playlist) => playlist.id)
+  return playlists
+    .filter((playlist) => playlist.trackIds.includes(itemId))
+    .map((playlist) => playlist.id)
 }
 
 function draftFromItem(item: MusicItemRecord | null, playlists: MusicPlaylistRecord[]): TrackDraft {
@@ -140,11 +140,9 @@ function updateInputWithFavorite(item: MusicItemRecord, favorite: boolean): Upda
 }
 
 function TrackCover({ item }: { item: MusicItemRecord }): React.JSX.Element {
-  const [failed, setFailed] = useState(false)
+  const [failedUrl, setFailedUrl] = useState<string | null>(null)
 
-  useEffect(() => setFailed(false), [item.coverUrl])
-
-  if (!item.coverUrl || failed) {
+  if (!item.coverUrl || failedUrl === item.coverUrl) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-2 bg-[var(--app-control)] text-[var(--app-muted)]">
         <Music2 className="size-9 opacity-45" />
@@ -159,7 +157,7 @@ function TrackCover({ item }: { item: MusicItemRecord }): React.JSX.Element {
       alt={`Обложка «${item.title}»`}
       loading="lazy"
       className="h-full w-full object-cover"
-      onError={() => setFailed(true)}
+      onError={() => setFailedUrl(item.coverUrl)}
     />
   )
 }
@@ -179,11 +177,7 @@ function PlaylistDialog({
   onSave: (name: string) => Promise<void>
   onDelete: (playlist: MusicPlaylistRecord) => void
 }): React.JSX.Element {
-  const [name, setName] = useState('')
-
-  useEffect(() => {
-    if (open) setName(playlist?.name ?? '')
-  }, [open, playlist])
+  const [name, setName] = useState(playlist?.name ?? '')
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
@@ -211,7 +205,9 @@ function PlaylistDialog({
           </div>
 
           <label className="mt-5 block">
-            <span className="mb-1.5 block text-xs font-medium text-[var(--app-muted)]">Название</span>
+            <span className="mb-1.5 block text-xs font-medium text-[var(--app-muted)]">
+              Название
+            </span>
             <input
               value={name}
               autoFocus
@@ -244,7 +240,11 @@ function PlaylistDialog({
               className="inline-flex h-9 items-center gap-2 rounded-xl bg-[var(--app-accent-500)] px-4 text-sm font-semibold text-white hover:brightness-110 disabled:opacity-50"
               onClick={() => void onSave(name.trim())}
             >
-              {busy ? <LoaderCircle className="size-4 animate-spin" /> : <Save className="size-4" />}
+              {busy ? (
+                <LoaderCircle className="size-4 animate-spin" />
+              ) : (
+                <Save className="size-4" />
+              )}
               Сохранить
             </button>
           </div>
@@ -309,7 +309,12 @@ function TrackForm({
     'h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm text-[var(--app-text)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--app-muted)]/70 focus:border-[var(--app-accent-500)] focus:ring-2 focus:ring-[var(--app-accent-500)]/15'
 
   return (
-    <form id={formId} className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_280px]" onSubmit={(event) => void submit(event)}>
+    <form
+      id={formId}
+      aria-busy={busy}
+      className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_280px]"
+      onSubmit={(event) => void submit(event)}
+    >
       <div className="space-y-5">
         <section className="rounded-[24px] border border-[var(--app-border)] bg-[var(--app-surface)] p-6 shadow-[var(--app-shadow-card)]">
           <div className="mb-5 flex items-center gap-3">
@@ -321,7 +326,9 @@ function TrackForm({
 
           <div className="grid gap-4 md:grid-cols-2">
             <label>
-              <span className="mb-1.5 block text-xs font-medium text-[var(--app-muted)]">Название *</span>
+              <span className="mb-1.5 block text-xs font-medium text-[var(--app-muted)]">
+                Название *
+              </span>
               <input
                 value={draft.title}
                 autoFocus
@@ -331,7 +338,9 @@ function TrackForm({
               />
             </label>
             <label>
-              <span className="mb-1.5 block text-xs font-medium text-[var(--app-muted)]">Исполнитель *</span>
+              <span className="mb-1.5 block text-xs font-medium text-[var(--app-muted)]">
+                Исполнитель *
+              </span>
               <input
                 value={draft.artist}
                 placeholder="The Weeknd"
@@ -343,7 +352,9 @@ function TrackForm({
 
           <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_140px_160px]">
             <label>
-              <span className="mb-1.5 block text-xs font-medium text-[var(--app-muted)]">Обложка</span>
+              <span className="mb-1.5 block text-xs font-medium text-[var(--app-muted)]">
+                Обложка
+              </span>
               <input
                 value={draft.coverUrl}
                 placeholder="https://example.com/cover.jpg"
@@ -365,7 +376,9 @@ function TrackForm({
               />
             </label>
             <label>
-              <span className="mb-1.5 block text-xs font-medium text-[var(--app-muted)]">Длительность</span>
+              <span className="mb-1.5 block text-xs font-medium text-[var(--app-muted)]">
+                Длительность
+              </span>
               <input
                 value={draft.duration}
                 inputMode="numeric"
@@ -399,7 +412,9 @@ function TrackForm({
               </span>
               <div>
                 <h2 className="text-sm font-semibold text-[var(--app-text)]">Плейлисты</h2>
-                <p className="mt-0.5 text-xs text-[var(--app-muted)]">Необязательно — можно выбрать несколько.</p>
+                <p className="mt-0.5 text-xs text-[var(--app-muted)]">
+                  Необязательно — можно выбрать несколько.
+                </p>
               </div>
             </div>
             <button
@@ -426,7 +441,7 @@ function TrackForm({
                   >
                     <Checkbox.Root
                       checked={checked}
-                      className="flex size-5 shrink-0 items-center justify-center rounded-md border border-[var(--app-border-strong)] bg-[var(--app-surface)] outline-none data-[state=checked]:border-[var(--app-accent-500)] data-[state=checked]:bg-[var(--app-accent-500)] focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)]/35"
+                      className="flex size-5 shrink-0 items-center justify-center rounded-md border border-[var(--app-border-strong)] bg-[var(--app-surface)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)]/35 data-[state=checked]:border-[var(--app-accent-500)] data-[state=checked]:bg-[var(--app-accent-500)]"
                       onCheckedChange={(next) => {
                         patch({
                           playlistIds:
@@ -449,7 +464,10 @@ function TrackForm({
         </section>
 
         {error && (
-          <div role="alert" className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          <div
+            role="alert"
+            className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+          >
             {error}
           </div>
         )}
@@ -478,8 +496,16 @@ function TrackForm({
           {draft.artist.trim() || 'Исполнитель не указан'}
         </p>
         <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-[var(--app-muted)]">
-          {draft.year.trim() && <span className="rounded-lg border border-[var(--app-border)] px-2 py-1">{draft.year.trim()}</span>}
-          {draft.duration.trim() && <span className="rounded-lg border border-[var(--app-border)] px-2 py-1">{draft.duration.trim()}</span>}
+          {draft.year.trim() && (
+            <span className="rounded-lg border border-[var(--app-border)] px-2 py-1">
+              {draft.year.trim()}
+            </span>
+          )}
+          {draft.duration.trim() && (
+            <span className="rounded-lg border border-[var(--app-border)] px-2 py-1">
+              {draft.duration.trim()}
+            </span>
+          )}
         </div>
       </aside>
     </form>
@@ -505,7 +531,7 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
   const activeItem = useMemo(
     () =>
       view.kind === 'form' && view.itemId
-        ? overview.items.find((item) => item.id === view.itemId) ?? null
+        ? (overview.items.find((item) => item.id === view.itemId) ?? null)
         : null,
     [overview.items, view]
   )
@@ -559,7 +585,7 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
 
   const selectedPlaylist =
     scope.kind === 'playlist'
-      ? overview.playlists.find((playlist) => playlist.id === scope.playlistId) ?? null
+      ? (overview.playlists.find((playlist) => playlist.id === scope.playlistId) ?? null)
       : null
 
   const visibleItems = useMemo(() => {
@@ -571,10 +597,7 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
         if (!playlist?.trackIds.includes(item.id)) return false
       }
       if (!normalized) return true
-      return [item.title, ...item.artists]
-        .join(' ')
-        .toLocaleLowerCase('ru-RU')
-        .includes(normalized)
+      return [item.title, ...item.artists].join(' ').toLocaleLowerCase('ru-RU').includes(normalized)
     })
   }, [overview.items, overview.playlists, query, scope])
 
@@ -686,7 +709,8 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
     )
   }
 
-  const headerTitle = view.kind === 'form' ? (activeItem ? 'Редактировать трек' : 'Новый трек') : 'Музыка'
+  const headerTitle =
+    view.kind === 'form' ? (activeItem ? 'Редактировать трек' : 'Новый трек') : 'Музыка'
 
   return (
     <StandardModulePage>
@@ -737,7 +761,11 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
                 disabled={isSaving}
                 className="inline-flex h-10 items-center gap-2 rounded-xl bg-[var(--app-accent-500)] px-4 text-sm font-semibold text-white hover:brightness-110 disabled:opacity-50"
               >
-                {isSaving ? <LoaderCircle className="size-4 animate-spin" /> : <Save className="size-4" />}
+                {isSaving ? (
+                  <LoaderCircle className="size-4 animate-spin" />
+                ) : (
+                  <Save className="size-4" />
+                )}
                 Сохранить
               </button>
             </>
@@ -771,14 +799,22 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
             <div className="flex min-w-0 items-center gap-2 overflow-x-auto pb-0.5">
               <button
                 type="button"
-                className={scope.kind === 'all' ? 'h-9 shrink-0 rounded-xl bg-[var(--app-accent-500)] px-3.5 text-sm font-semibold text-white' : 'h-9 shrink-0 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm font-medium text-[var(--app-muted)] hover:bg-[var(--app-control-hover)]'}
+                className={
+                  scope.kind === 'all'
+                    ? 'h-9 shrink-0 rounded-xl bg-[var(--app-accent-500)] px-3.5 text-sm font-semibold text-white'
+                    : 'h-9 shrink-0 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm font-medium text-[var(--app-muted)] hover:bg-[var(--app-control-hover)]'
+                }
                 onClick={() => setScope({ kind: 'all' })}
               >
                 Все треки
               </button>
               <button
                 type="button"
-                className={scope.kind === 'favorites' ? 'inline-flex h-9 shrink-0 items-center gap-2 rounded-xl bg-[var(--app-accent-500)] px-3.5 text-sm font-semibold text-white' : 'inline-flex h-9 shrink-0 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm font-medium text-[var(--app-muted)] hover:bg-[var(--app-control-hover)]'}
+                className={
+                  scope.kind === 'favorites'
+                    ? 'inline-flex h-9 shrink-0 items-center gap-2 rounded-xl bg-[var(--app-accent-500)] px-3.5 text-sm font-semibold text-white'
+                    : 'inline-flex h-9 shrink-0 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm font-medium text-[var(--app-muted)] hover:bg-[var(--app-control-hover)]'
+                }
                 onClick={() => setScope({ kind: 'favorites' })}
               >
                 <Heart className="size-3.5" /> Избранное
@@ -787,7 +823,11 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
                 <div key={playlist.id} className="flex shrink-0 items-center">
                   <button
                     type="button"
-                    className={scope.kind === 'playlist' && scope.playlistId === playlist.id ? 'h-9 rounded-l-xl bg-[var(--app-accent-500)] px-3.5 text-sm font-semibold text-white' : 'h-9 rounded-l-xl border border-r-0 border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm font-medium text-[var(--app-muted)] hover:bg-[var(--app-control-hover)]'}
+                    className={
+                      scope.kind === 'playlist' && scope.playlistId === playlist.id
+                        ? 'h-9 rounded-l-xl bg-[var(--app-accent-500)] px-3.5 text-sm font-semibold text-white'
+                        : 'h-9 rounded-l-xl border border-r-0 border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm font-medium text-[var(--app-muted)] hover:bg-[var(--app-control-hover)]'
+                    }
                     onClick={() => setScope({ kind: 'playlist', playlistId: playlist.id })}
                   >
                     {playlist.name}
@@ -795,7 +835,11 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
                   <button
                     type="button"
                     aria-label={`Изменить плейлист «${playlist.name}»`}
-                    className={scope.kind === 'playlist' && scope.playlistId === playlist.id ? 'flex size-9 items-center justify-center rounded-r-xl bg-[var(--app-accent-500)] text-white/80 hover:text-white' : 'flex size-9 items-center justify-center rounded-r-xl border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'}
+                    className={
+                      scope.kind === 'playlist' && scope.playlistId === playlist.id
+                        ? 'flex size-9 items-center justify-center rounded-r-xl bg-[var(--app-accent-500)] text-white/80 hover:text-white'
+                        : 'flex size-9 items-center justify-center rounded-r-xl border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
+                    }
                     onClick={() => openPlaylistEditor(playlist)}
                   >
                     <Pencil className="size-3.5" />
@@ -808,7 +852,10 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
       </ModuleHeader>
 
       {error && (
-        <div role="alert" className="mb-5 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+        <div
+          role="alert"
+          className="mb-5 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+        >
           {error}
         </div>
       )}
@@ -829,7 +876,9 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
             <Music2 className="size-7" />
           </span>
           <h2 className="mt-4 text-lg font-semibold text-[var(--app-text)]">
-            {overview.items.length === 0 ? 'Музыкальная библиотека пока пустая' : 'Треков здесь нет'}
+            {overview.items.length === 0
+              ? 'Музыкальная библиотека пока пустая'
+              : 'Треков здесь нет'}
           </h2>
           <p className="mt-2 max-w-md text-sm leading-6 text-[var(--app-muted)]">
             {overview.items.length === 0
@@ -870,7 +919,11 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
                       aria-label={item.favorite ? 'Убрать из избранного' : 'Добавить в избранное'}
                       aria-pressed={item.favorite}
                       disabled={isSaving}
-                      className={item.favorite ? 'absolute top-2.5 right-2.5 z-10 flex size-9 items-center justify-center rounded-xl border border-rose-300/25 bg-black/55 text-rose-300 backdrop-blur-md hover:bg-black/70' : 'absolute top-2.5 right-2.5 z-10 flex size-9 items-center justify-center rounded-xl border border-white/10 bg-black/45 text-white/70 backdrop-blur-md hover:text-white'}
+                      className={
+                        item.favorite
+                          ? 'absolute top-2.5 right-2.5 z-10 flex size-9 items-center justify-center rounded-xl border border-rose-300/25 bg-black/55 text-rose-300 backdrop-blur-md hover:bg-black/70'
+                          : 'absolute top-2.5 right-2.5 z-10 flex size-9 items-center justify-center rounded-xl border border-white/10 bg-black/45 text-white/70 backdrop-blur-md hover:text-white'
+                      }
                       onClick={() => void toggleFavorite(item)}
                     >
                       <Heart className={`size-4 ${item.favorite ? 'fill-current' : ''}`} />
@@ -881,8 +934,12 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
                     className="flex min-h-20 w-full min-w-0 flex-col items-start justify-center border-t border-[var(--app-border)] px-3.5 py-3 text-left outline-none hover:bg-[var(--app-control-hover)]"
                     onClick={() => setView({ kind: 'form', itemId: item.id })}
                   >
-                    <span className="block w-full truncate text-sm font-semibold text-[var(--app-text)] group-hover:text-[var(--app-accent-500)]">{item.title}</span>
-                    <span className="mt-0.5 block w-full truncate text-xs text-[var(--app-muted)]">{artist}</span>
+                    <span className="block w-full truncate text-sm font-semibold text-[var(--app-text)] group-hover:text-[var(--app-accent-500)]">
+                      {item.title}
+                    </span>
+                    <span className="mt-0.5 block w-full truncate text-xs text-[var(--app-muted)]">
+                      {artist}
+                    </span>
                     {(item.year !== null || duration) && (
                       <span className="mt-1 flex items-center gap-2 text-[10px] text-[var(--app-muted)]/80">
                         {item.year !== null && <span>{item.year}</span>}
@@ -899,6 +956,7 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
       )}
 
       <PlaylistDialog
+        key={`${playlistDialogItem?.id ?? 'new'}-${playlistDialogOpen ? 'open' : 'closed'}`}
         open={playlistDialogOpen}
         playlist={playlistDialogItem}
         busy={isSaving}

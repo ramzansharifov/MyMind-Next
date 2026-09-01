@@ -245,6 +245,10 @@ const api: MyMindApi = {
     createItems: (input) => ipcRenderer.invoke(MUSIC_IPC_CHANNELS.createItems, input),
     updateItem: (input) => ipcRenderer.invoke(MUSIC_IPC_CHANNELS.updateItem, input),
     deleteItem: (input) => ipcRenderer.invoke(MUSIC_IPC_CHANNELS.deleteItem, input),
+    createPlaylist: (input) => ipcRenderer.invoke(MUSIC_IPC_CHANNELS.createPlaylist, input),
+    updatePlaylist: (input) => ipcRenderer.invoke(MUSIC_IPC_CHANNELS.updatePlaylist, input),
+    deletePlaylist: (input) => ipcRenderer.invoke(MUSIC_IPC_CHANNELS.deletePlaylist, input),
+    setItemPlaylists: (input) => ipcRenderer.invoke(MUSIC_IPC_CHANNELS.setItemPlaylists, input),
     searchWeb: (input) => ipcRenderer.invoke(MUSIC_IPC_CHANNELS.searchWeb, input)
   },
 

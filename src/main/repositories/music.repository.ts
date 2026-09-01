@@ -148,8 +148,7 @@ function requirePlaylist(id: string): MusicPlaylistRecord {
 
 function findItem(id: string): MusicItemRecord | null {
   const row = getSqlite().prepare(`${MUSIC_SELECT} WHERE id = ?`).get(id) as
-    | MusicItemRow
-    | undefined
+    MusicItemRow | undefined
   return row ? mapItem(row) : null
 }
 

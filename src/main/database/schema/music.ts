@@ -38,7 +38,10 @@ export const musicPlaylists = sqliteTable(
     createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
     updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull()
   },
-  (table) => [index('music_playlists_name_idx').on(table.name), index('music_playlists_updated_idx').on(table.updatedAt)]
+  (table) => [
+    index('music_playlists_name_idx').on(table.name),
+    index('music_playlists_updated_idx').on(table.updatedAt)
+  ]
 )
 
 export const musicPlaylistItems = sqliteTable(
