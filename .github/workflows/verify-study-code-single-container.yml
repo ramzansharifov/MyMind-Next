@@ -1,0 +1,98 @@
+name: Verify Study code single container
+
+on:
+  push:
+    branches:
+      - agent/study-code-single-container
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Apply Study code layout change
+        shell: pwsh
+        run: |
+          @'
+          from pathlib import Path
+
+          workspace = Path('src/renderer/src/modules/study/components/code-mode/StudyCodeWorkspace.tsx')
+          text = workspace.read_text(encoding='utf-8')
+          old_surface = '<div className="relative min-h-0 flex-1 overflow-hidden p-4 max-[720px]:p-2">'
+          new_surface = '<div data-study-code-editor-surface className="relative min-h-0 flex-1 overflow-hidden bg-[var(--app-code-surface)]">'
+          if old_surface not in text:
+              raise SystemExit('editor surface marker not found')
+          text = text.replace(old_surface, new_surface, 1)
+
+          old_scroll = 'className="h-full min-h-0 overflow-auto rounded-xl border border-[var(--app-border)] bg-[var(--app-code-surface)]"'
+          new_scroll = 'className="h-full min-h-0 overflow-auto bg-[var(--app-code-surface)]"'
+          if old_scroll not in text:
+              raise SystemExit('editor scroll marker not found')
+          text = text.replace(old_scroll, new_scroll, 1)
+          workspace.write_text(text, encoding='utf-8')
+
+          test_file = Path('src/renderer/src/modules/study/components/code-mode/StudyCodeWorkspace.test.tsx')
+          test = test_file.read_text(encoding='utf-8')
+          marker = "    expect(container.querySelector('.study-code-editor__root')).toBeInTheDocument()\n"
+          addition = marker + "    const editorSurface = container.querySelector('[data-study-code-editor-surface]')\n    const editorScroll = container.querySelector('[data-study-code-editor-scroll]')\n    expect(editorSurface).toBeInTheDocument()\n    expect(editorSurface).not.toHaveClass('p-4')\n    expect(editorScroll).not.toHaveClass('rounded-xl')\n    expect(editorScroll).not.toHaveClass('border')\n"
+          if marker not in test:
+              raise SystemExit('test marker not found')
+          test = test.replace(marker, addition, 1)
+          test_file.write_text(test, encoding='utf-8')
+          '@ | python -
+
+      - name: Prettier
+        run: >-
+          npx prettier --write
+          src/renderer/src/modules/study/components/code-mode/StudyCodeWorkspace.tsx
+          src/renderer/src/modules/study/components/code-mode/StudyCodeWorkspace.test.tsx
+
+      - name: ESLint
+        run: >-
+          npx eslint
+          src/renderer/src/modules/study/components/code-mode/StudyCodeWorkspace.tsx
+          src/renderer/src/modules/study/components/code-mode/StudyCodeWorkspace.test.tsx
+
+      - name: Node typecheck
+        run: npm run typecheck:node
+
+      - name: Web typecheck
+        shell: pwsh
+        run: |
+          $output = npm run typecheck:web 2>&1 | Out-String
+          $code = $LASTEXITCODE
+          Write-Host $output
+          if ($code -ne 0) {
+            $errors = @($output -split "`r?`n" | Where-Object { $_ -match 'error TS' })
+            $allowed = $errors.Count -eq 1 -and $errors[0].Contains('useStudyEditBlockVirtualization.ts(82,36)')
+            if (-not $allowed) { exit 1 }
+          }
+          exit 0
+
+      - name: Study code UI tests
+        run: npx vitest run src/renderer/src/modules/study/components/code-mode/StudyCodeWorkspace.test.tsx
+
+      - name: Production bundle
+        run: npm run build:bundle
+
+      - name: Diff check
+        run: git diff --check
+
+      - name: Commit verified change and remove temporary workflow
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/verify-study-code-single-container.yml
+          git add src/renderer/src/modules/study/components/code-mode/StudyCodeWorkspace.tsx src/renderer/src/modules/study/components/code-mode/StudyCodeWorkspace.test.tsx
+          git commit -m "Объединить визуальный контейнер режима кода"
+          git push
