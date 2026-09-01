@@ -3,13 +3,18 @@ import { randomUUID } from 'node:crypto'
 import type {
   CreateMusicItemInput,
   CreateMusicItemsInput,
+  CreateMusicPlaylistInput,
   DeleteMusicItemInput,
+  DeleteMusicPlaylistInput,
   GetMusicItemInput,
   MusicItemRecord,
   MusicOverview,
+  MusicPlaylistRecord,
   MusicStatus,
   MusicType,
-  UpdateMusicItemInput
+  SetMusicItemPlaylistsInput,
+  UpdateMusicItemInput,
+  UpdateMusicPlaylistInput
 } from '../../shared/contracts/music'
 import { getSqlite } from '../database/client'
 
@@ -31,6 +36,18 @@ interface MusicItemRow {
   comments: string
   created_at: number
   updated_at: number
+}
+
+interface MusicPlaylistRow {
+  id: string
+  name: string
+  created_at: number
+  updated_at: number
+}
+
+interface MusicPlaylistItemRow {
+  playlist_id: string
+  music_item_id: string
 }
 
 const MUSIC_SELECT = `SELECT
@@ -86,6 +103,49 @@ function mapItem(row: MusicItemRow): MusicItemRecord {
   }
 }
 
+function listPlaylists(): MusicPlaylistRecord[] {
+  const db = getSqlite()
+  const rows = db
+    .prepare(
+      `SELECT id, name, created_at, updated_at
+       FROM music_playlists
+       ORDER BY updated_at DESC, created_at DESC`
+    )
+    .all() as MusicPlaylistRow[]
+  const membershipRows = db
+    .prepare(
+      `SELECT playlist_id, music_item_id
+       FROM music_playlist_items
+       ORDER BY created_at ASC`
+    )
+    .all() as MusicPlaylistItemRow[]
+  const tracksByPlaylist = new Map<string, string[]>()
+
+  membershipRows.forEach((membership) => {
+    const trackIds = tracksByPlaylist.get(membership.playlist_id) ?? []
+    trackIds.push(membership.music_item_id)
+    tracksByPlaylist.set(membership.playlist_id, trackIds)
+  })
+
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    trackIds: tracksByPlaylist.get(row.id) ?? [],
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  }))
+}
+
+function findPlaylist(id: string): MusicPlaylistRecord | null {
+  return listPlaylists().find((playlist) => playlist.id === id) ?? null
+}
+
+function requirePlaylist(id: string): MusicPlaylistRecord {
+  const playlist = findPlaylist(id)
+  if (!playlist) throw new Error('Плейлист не найден')
+  return playlist
+}
+
 function findItem(id: string): MusicItemRecord | null {
   const row = getSqlite().prepare(`${MUSIC_SELECT} WHERE id = ?`).get(id) as
     | MusicItemRow
@@ -122,7 +182,7 @@ export function listMusicOverview(): MusicOverview {
   const rows = getSqlite()
     .prepare(`${MUSIC_SELECT} ORDER BY updated_at DESC, created_at DESC`)
     .all() as MusicItemRow[]
-  return { items: rows.map(mapItem) }
+  return { items: rows.map(mapItem), playlists: listPlaylists() }
 }
 
 export function getMusicItem(input: GetMusicItemInput): MusicItemRecord | null {
@@ -200,4 +260,50 @@ export function deleteMusicItem(input: DeleteMusicItemInput): boolean {
   requireItem(input.id)
   const result = getSqlite().prepare('DELETE FROM music_items WHERE id = ?').run(input.id)
   return result.changes > 0
+}
+
+export function createMusicPlaylist(input: CreateMusicPlaylistInput): MusicPlaylistRecord {
+  const id = randomUUID()
+  const now = Date.now()
+  getSqlite()
+    .prepare(
+      `INSERT INTO music_playlists (id, name, created_at, updated_at)
+       VALUES (?, ?, ?, ?)`
+    )
+    .run(id, input.name, now, now)
+  return requirePlaylist(id)
+}
+
+export function updateMusicPlaylist(input: UpdateMusicPlaylistInput): MusicPlaylistRecord {
+  requirePlaylist(input.id)
+  getSqlite()
+    .prepare('UPDATE music_playlists SET name = ?, updated_at = ? WHERE id = ?')
+    .run(input.name, Date.now(), input.id)
+  return requirePlaylist(input.id)
+}
+
+export function deleteMusicPlaylist(input: DeleteMusicPlaylistInput): boolean {
+  requirePlaylist(input.id)
+  const result = getSqlite().prepare('DELETE FROM music_playlists WHERE id = ?').run(input.id)
+  return result.changes > 0
+}
+
+export function setMusicItemPlaylists(input: SetMusicItemPlaylistsInput): MusicPlaylistRecord[] {
+  requireItem(input.itemId)
+  const db = getSqlite()
+  const uniquePlaylistIds = Array.from(new Set(input.playlistIds))
+  uniquePlaylistIds.forEach((playlistId) => requirePlaylist(playlistId))
+
+  const transaction = db.transaction(() => {
+    db.prepare('DELETE FROM music_playlist_items WHERE music_item_id = ?').run(input.itemId)
+    const insert = db.prepare(
+      `INSERT INTO music_playlist_items (playlist_id, music_item_id, created_at)
+       VALUES (?, ?, ?)`
+    )
+    const now = Date.now()
+    uniquePlaylistIds.forEach((playlistId) => insert.run(playlistId, input.itemId, now))
+  })
+  transaction()
+
+  return listPlaylists()
 }
