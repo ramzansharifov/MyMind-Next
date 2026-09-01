@@ -1,0 +1,31 @@
+name: Verify music header clip
+
+on:
+  push:
+    branches:
+      - agent/fix-music-header-clip
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Prettier
+        run: npx prettier --check src/renderer/src/modules/music/components/music-interactions.css
+      - run: npm run typecheck:node
+      - name: Music renderer tests
+        run: >-
+          npx vitest run
+          src/renderer/src/modules/music/MusicSimplePage.test.tsx
+          src/renderer/src/modules/music/components/MusicLibraryView.test.tsx
+      - run: npm run build:bundle
+      - run: git diff --check
