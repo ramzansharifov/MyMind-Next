@@ -1,15 +1,5 @@
 import * as Tabs from '@radix-ui/react-tabs'
-import {
-  ArrowLeft,
-  Heart,
-  ListMusic,
-  Music2,
-  Pencil,
-  Plus,
-  Search,
-  Trash2,
-  X
-} from 'lucide-react'
+import { ArrowLeft, Heart, ListMusic, Music2, Pencil, Plus, Search, Trash2, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import type {
@@ -233,13 +223,15 @@ function TrackGrid({
 
             <button
               type="button"
-              className="block w-full min-w-0 px-3.5 py-3 text-left outline-none transition-colors hover:bg-[var(--app-control-hover)] focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)] focus-visible:ring-inset"
+              className="block w-full min-w-0 px-3.5 py-3 text-left transition-colors outline-none hover:bg-[var(--app-control-hover)] focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)] focus-visible:ring-inset"
               onClick={() => onOpenTrack(item.id)}
             >
               <span className="block truncate text-sm font-semibold text-[var(--app-text)] group-hover:text-[var(--app-accent-500)]">
                 {item.title}
               </span>
-              <span className="mt-0.5 block truncate text-xs text-[var(--app-muted)]">{artist}</span>
+              <span className="mt-0.5 block truncate text-xs text-[var(--app-muted)]">
+                {artist}
+              </span>
               {(item.year !== null || duration) && (
                 <span className="mt-1.5 flex items-center gap-2 text-[10px] text-[var(--app-muted)]/80">
                   {item.year !== null && <span>{item.year}</span>}
@@ -309,7 +301,12 @@ function PlaylistGrid({
                     {playlist.name}
                   </span>
                   <span className="mt-0.5 block text-xs text-[var(--app-muted)]">
-                    {tracks.length} {tracks.length === 1 ? 'трек' : tracks.length >= 2 && tracks.length <= 4 ? 'трека' : 'треков'}
+                    {tracks.length}{' '}
+                    {tracks.length === 1
+                      ? 'трек'
+                      : tracks.length >= 2 && tracks.length <= 4
+                        ? 'трека'
+                        : 'треков'}
                   </span>
                 </span>
               </button>
@@ -350,7 +347,8 @@ function PlaylistGrid({
                   Плейлист пуст
                 </span>
               )}
-              {preview.length > 0 && preview.length < 4 &&
+              {preview.length > 0 &&
+                preview.length < 4 &&
                 Array.from({ length: 4 - preview.length }).map((_, index) => (
                   <span key={`empty-${index}`} className="rounded-lg bg-[var(--app-control)]" />
                 ))}
@@ -555,7 +553,9 @@ export function MusicLibraryContent({
       <TrackGrid
         items={visibleItems}
         isSaving={isSaving}
-        emptyTitle={isFavorites ? 'В избранном пока ничего нет' : 'Музыкальная библиотека пока пустая'}
+        emptyTitle={
+          isFavorites ? 'В избранном пока ничего нет' : 'Музыкальная библиотека пока пустая'
+        }
         emptyDescription={
           search
             ? 'По этому запросу ничего не найдено.'
