@@ -1,3 +1,29 @@
+/* Музыкальная навигация визуально является продолжением ModuleHeader. */
+[data-module-header]:has(+ [data-music-library-navigation]) {
+  margin-bottom: 0 !important;
+  border-bottom: 0;
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0;
+  box-shadow: none;
+}
+
+[data-module-header] + [data-music-library-navigation] {
+  margin-top: 0;
+  margin-bottom: 1.25rem;
+  padding: 0 1.5rem 1.5rem;
+  border-top: 0;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  background: var(--app-surface);
+  box-shadow: var(--app-shadow-card);
+}
+
+@media (max-width: 700px) {
+  [data-module-header] + [data-music-library-navigation] {
+    padding: 0 1.25rem 1.25rem;
+  }
+}
+
 @media (hover: hover) and (pointer: fine) {
   .music-card-body {
     transform-origin: 50% 80%;
