@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { TooltipProvider } from '../shared/ui/tooltip'
 import { AiChatOverlay } from './AiChatOverlay'
@@ -10,6 +10,10 @@ const aiChat = {
   setBounds: vi.fn().mockResolvedValue(undefined),
   reload: vi.fn().mockResolvedValue(undefined)
 }
+
+beforeEach(() => {
+  vi.clearAllMocks()
+})
 
 describe('AiChatOverlay', () => {
   it('opens, resizes and closes the native ChatGPT viewport', async () => {
@@ -68,5 +72,31 @@ describe('AiChatOverlay', () => {
 
     await user.click(screen.getByRole('button', { name: 'Закрыть ИИ-чат' }))
     await waitFor(() => expect(aiChat.setOpen).toHaveBeenCalledWith({ open: false }))
+  })
+
+  it('hides the launcher but still opens the chat with Ctrl+M', async () => {
+    Object.defineProperty(window, 'api', {
+      configurable: true,
+      value: { aiChat }
+    })
+
+    const user = userEvent.setup()
+    render(
+      <TooltipProvider>
+        <AiChatOverlay showLauncher={false} />
+      </TooltipProvider>
+    )
+
+    expect(screen.queryByRole('button', { name: 'Открыть ИИ-чат' })).not.toBeInTheDocument()
+
+    fireEvent.keyDown(window, { key: 'm', ctrlKey: true })
+
+    expect(await screen.findByTestId('ai-chat-panel')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Открыть ИИ-чат' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Закрыть ИИ-чат' }))
+
+    await waitFor(() => expect(screen.queryByTestId('ai-chat-panel')).not.toBeInTheDocument())
+    expect(screen.queryByRole('button', { name: 'Открыть ИИ-чат' })).not.toBeInTheDocument()
   })
 })

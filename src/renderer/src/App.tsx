@@ -3,6 +3,7 @@ import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
 
 import type { ShutdownRequest } from '../../shared/contracts/system'
 
+import { AiChatPreferencesProvider } from './app/ai-chat/AiChatPreferencesProvider'
 import { AppearanceProvider } from './app/appearance/AppearanceProvider'
 import { AppErrorBoundary } from './app/AppErrorBoundary'
 import { AppShell } from './app/AppShell'
@@ -280,7 +281,9 @@ function App(): React.JSX.Element {
   return (
     <AppErrorBoundary scope="приложение">
       <AppearanceProvider>
-        <AppContent />
+        <AiChatPreferencesProvider>
+          <AppContent />
+        </AiChatPreferencesProvider>
       </AppearanceProvider>
     </AppErrorBoundary>
   )
