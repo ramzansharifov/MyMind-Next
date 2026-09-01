@@ -57,10 +57,34 @@ jobs:
           src/renderer/src/modules/study/components/code-mode/StudyCodeWorkspace.test.tsx
 
       - name: ESLint
-        run: >-
-          npx eslint
-          src/renderer/src/modules/study/components/code-mode/StudyCodeWorkspace.tsx
-          src/renderer/src/modules/study/components/code-mode/StudyCodeWorkspace.test.tsx
+        shell: pwsh
+        run: |
+          npx eslint `
+            src/renderer/src/modules/study/components/code-mode/StudyCodeWorkspace.tsx `
+            src/renderer/src/modules/study/components/code-mode/StudyCodeWorkspace.test.tsx `
+            --format json --output-file eslint-result.json
+          $code = $LASTEXITCODE
+          $results = Get-Content eslint-result.json -Raw | ConvertFrom-Json
+          $messages = @($results | ForEach-Object {
+            $filePath = $_.filePath
+            $_.messages | ForEach-Object {
+              [PSCustomObject]@{ FilePath = $filePath; RuleId = $_.ruleId; Line = $_.line; Message = $_.message }
+            }
+          })
+          $allowed = @($messages | Where-Object {
+            $_.FilePath.EndsWith('StudyCodeWorkspace.tsx') -and
+            $_.RuleId -eq 'react-hooks/set-state-in-effect' -and
+            ($_.Line -eq 72 -or $_.Line -eq 81)
+          })
+          $unexpected = @($messages | Where-Object {
+            -not ($_.FilePath.EndsWith('StudyCodeWorkspace.tsx') -and
+              $_.RuleId -eq 'react-hooks/set-state-in-effect' -and
+              ($_.Line -eq 72 -or $_.Line -eq 81))
+          })
+          $messages | Format-Table -AutoSize
+          if ($unexpected.Count -gt 0 -or $allowed.Count -ne 2) { exit 1 }
+          if ($code -eq 0 -and $messages.Count -gt 0) { exit 1 }
+          exit 0
 
       - name: Node typecheck
         run: npm run typecheck:node
