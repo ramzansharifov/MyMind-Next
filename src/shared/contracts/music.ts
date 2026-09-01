@@ -24,8 +24,17 @@ export interface MusicItemRecord {
   updatedAt: number
 }
 
+export interface MusicPlaylistRecord {
+  id: string
+  name: string
+  trackIds: string[]
+  createdAt: number
+  updatedAt: number
+}
+
 export interface MusicOverview {
   items: MusicItemRecord[]
+  playlists: MusicPlaylistRecord[]
 }
 
 export interface CreateMusicItemInput {
@@ -61,6 +70,24 @@ export interface DeleteMusicItemInput {
   id: string
 }
 
+export interface CreateMusicPlaylistInput {
+  name: string
+}
+
+export interface UpdateMusicPlaylistInput {
+  id: string
+  name: string
+}
+
+export interface DeleteMusicPlaylistInput {
+  id: string
+}
+
+export interface SetMusicItemPlaylistsInput {
+  itemId: string
+  playlistIds: string[]
+}
+
 export interface MusicWebSearchInput {
   query: string
 }
@@ -72,6 +99,10 @@ export const MUSIC_IPC_CHANNELS = {
   createItems: 'music:create-items',
   updateItem: 'music:update-item',
   deleteItem: 'music:delete-item',
+  createPlaylist: 'music:create-playlist',
+  updatePlaylist: 'music:update-playlist',
+  deletePlaylist: 'music:delete-playlist',
+  setItemPlaylists: 'music:set-item-playlists',
   searchWeb: 'music:search-web'
 } as const
 
@@ -82,5 +113,9 @@ export interface MusicApi {
   createItems(input: CreateMusicItemsInput): Promise<MusicItemRecord[]>
   updateItem(input: UpdateMusicItemInput): Promise<MusicItemRecord>
   deleteItem(input: DeleteMusicItemInput): Promise<boolean>
+  createPlaylist(input: CreateMusicPlaylistInput): Promise<MusicPlaylistRecord>
+  updatePlaylist(input: UpdateMusicPlaylistInput): Promise<MusicPlaylistRecord>
+  deletePlaylist(input: DeleteMusicPlaylistInput): Promise<boolean>
+  setItemPlaylists(input: SetMusicItemPlaylistsInput): Promise<MusicPlaylistRecord[]>
   searchWeb(input: MusicWebSearchInput): Promise<void>
 }
