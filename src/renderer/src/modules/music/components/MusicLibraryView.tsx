@@ -1,15 +1,5 @@
 import * as Tabs from '@radix-ui/react-tabs'
-import {
-  ArrowLeft,
-  Heart,
-  ListMusic,
-  Music2,
-  Pencil,
-  Plus,
-  Search,
-  Trash2,
-  X
-} from 'lucide-react'
+import { ArrowLeft, Heart, ListMusic, Music2, Pencil, Plus, Search, Trash2, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import type {
