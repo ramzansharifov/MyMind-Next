@@ -54,7 +54,7 @@ jobs:
           test = test.replace(contract_import, contract_import + "import { TooltipProvider } from '../../../../shared/ui/tooltip'\n", 1)
 
           before_each_marker = "beforeEach(() => {\n"
-          helper = "function renderWithTooltip(children: ReactNode) {\n  return render(<TooltipProvider>{children}</TooltipProvider>)\n}\n\n"
+          helper = "function renderWithTooltip(children: ReactNode): ReturnType<typeof render> {\n  return render(<TooltipProvider>{children}</TooltipProvider>)\n}\n\n"
           if before_each_marker not in test:
               raise SystemExit('beforeEach marker not found')
           test = test.replace(before_each_marker, helper + before_each_marker, 1)
