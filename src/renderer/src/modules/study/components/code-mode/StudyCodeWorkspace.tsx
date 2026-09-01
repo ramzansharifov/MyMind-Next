@@ -358,10 +358,7 @@ export function StudyCodeWorkspace({
             type="button"
             className="flex h-9 items-center gap-2 rounded-lg bg-violet-500/16 px-3 text-xs font-semibold text-violet-200 transition-colors outline-none hover:bg-violet-500/24 focus-visible:ring-2 focus-visible:ring-violet-500/45 disabled:cursor-not-allowed disabled:opacity-40"
             disabled={
-              !dirty ||
-              Boolean(liveDiagnostic) ||
-              saveState === 'loading' ||
-              saveState === 'saving'
+              !dirty || Boolean(liveDiagnostic) || saveState === 'loading' || saveState === 'saving'
             }
             onClick={() => void requestSave()}
           >
@@ -375,7 +372,10 @@ export function StudyCodeWorkspace({
         </div>
       </header>
 
-      <div className="relative min-h-0 flex-1 overflow-hidden p-4 max-[720px]:p-2">
+      <div
+        data-study-code-editor-surface
+        className="relative min-h-0 flex-1 overflow-hidden bg-[var(--app-code-surface)]"
+      >
         <StudyCodeFindReplace
           source={source}
           disabled={saveState === 'loading' || saveState === 'saving'}
@@ -386,7 +386,7 @@ export function StudyCodeWorkspace({
         <div
           ref={editorScrollRef}
           data-study-code-editor-scroll
-          className="h-full min-h-0 overflow-auto rounded-xl border border-[var(--app-border)] bg-[var(--app-code-surface)]"
+          className="h-full min-h-0 overflow-auto bg-[var(--app-code-surface)]"
           onKeyDown={handleEditorKeyDown}
         >
           <div data-study-code-editor-scroll-content>
@@ -406,8 +406,7 @@ export function StudyCodeWorkspace({
               preClassName="study-code-editor__highlight"
               highlight={highlightStudyCodeSource}
               style={{
-                fontFamily:
-                  'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
                 fontSize: '0.875rem',
                 lineHeight: '1.65rem'
               }}
@@ -564,10 +563,7 @@ function ChangeSummary({ summary }: { summary: StudyCodeChangeSummary }): React.
         >
           <span className="text-[var(--app-muted)]">{label}</span>
           <span
-            className={cn(
-              'font-medium',
-              String(label).startsWith('Удалено') && 'text-amber-300'
-            )}
+            className={cn('font-medium', String(label).startsWith('Удалено') && 'text-amber-300')}
           >
             {value}
           </span>
