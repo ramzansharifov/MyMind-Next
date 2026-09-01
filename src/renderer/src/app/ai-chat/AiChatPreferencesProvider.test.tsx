@@ -2,7 +2,8 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { AiChatPreferencesProvider, useAiChatPreferences } from './AiChatPreferencesProvider'
+import { AiChatPreferencesProvider } from './AiChatPreferencesProvider'
+import { useAiChatPreferences } from './ai-chat-preferences-context'
 
 const STORAGE_KEY = 'mymind.ai-chat.launcher-visible'
 
