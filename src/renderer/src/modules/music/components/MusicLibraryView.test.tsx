@@ -1,13 +1,8 @@
-import { fireEvent, render, screen } from '@testing-library/react'
-import { useState } from 'react'
+import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { MusicOverview } from '../../../../../shared/contracts/music'
-import {
-  MusicLibraryContent,
-  MusicLibraryNavigation,
-  type MusicLibraryScope
-} from './MusicLibraryView'
+import { MusicLibraryContent, MusicLibraryNavigation } from './MusicLibraryView'
 
 const overview: MusicOverview = {
   items: [
@@ -42,55 +37,74 @@ const overview: MusicOverview = {
   ]
 }
 
-function Harness(): React.JSX.Element {
-  const [scope, setScope] = useState<MusicLibraryScope>({ kind: 'all' })
-  const [query, setQuery] = useState('')
-
-  return (
-    <>
-      <MusicLibraryNavigation
-        scope={scope}
-        query={query}
-        onQueryChange={setQuery}
-        onScopeChange={setScope}
-      />
-      <MusicLibraryContent
-        overview={overview}
-        scope={scope}
-        query={query}
-        isSaving={false}
-        onScopeChange={setScope}
-        onOpenTrack={vi.fn()}
-        onToggleFavorite={vi.fn()}
-        onDeleteTrack={vi.fn()}
-        onEditPlaylist={vi.fn()}
-        onDeletePlaylist={vi.fn()}
-        onCreatePlaylist={vi.fn()}
-        onAddTrack={vi.fn()}
-      />
-    </>
-  )
+const handlers = {
+  onScopeChange: vi.fn(),
+  onOpenTrack: vi.fn(),
+  onToggleFavorite: vi.fn(),
+  onDeleteTrack: vi.fn(),
+  onEditPlaylist: vi.fn(),
+  onDeletePlaylist: vi.fn(),
+  onCreatePlaylist: vi.fn(),
+  onAddTrack: vi.fn()
 }
 
 describe('MusicLibraryView', () => {
-  it('открывает плейлисты как отдельную страницу и затем страницу конкретного плейлиста', () => {
-    render(<Harness />)
+  it('показывает поиск и отдельные разделы библиотеки как в заметках', () => {
+    render(
+      <MusicLibraryNavigation
+        scope={{ kind: 'all' }}
+        query=""
+        onQueryChange={vi.fn()}
+        onScopeChange={vi.fn()}
+      />
+    )
 
-    expect(screen.getByRole('heading', { name: 'Все треки' })).toBeInTheDocument()
-    expect(screen.getByText('Blinding Lights')).toBeInTheDocument()
+    expect(screen.getByRole('searchbox', { name: 'Поиск по музыке' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Все треки' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Избранное' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Плейлисты' })).toBeInTheDocument()
+  })
 
-    fireEvent.click(screen.getByRole('tab', { name: /Плейлисты/ }))
+  it('показывает страницу плейлистов с прямыми действиями', () => {
+    render(
+      <MusicLibraryContent
+        overview={overview}
+        scope={{ kind: 'playlists' }}
+        query=""
+        isSaving={false}
+        {...handlers}
+      />
+    )
 
     expect(screen.getByRole('heading', { name: 'Плейлисты' })).toBeInTheDocument()
     expect(screen.getByText('Ночная дорога')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Редактировать плейлист «Ночная дорога»' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Удалить плейлист «Ночная дорога»' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Редактировать плейлист «Ночная дорога»' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Удалить плейлист «Ночная дорога»' })
+    ).toBeInTheDocument()
+  })
 
-    fireEvent.click(screen.getByText('Ночная дорога'))
+  it('показывает страницу конкретного плейлиста с действиями трека', () => {
+    render(
+      <MusicLibraryContent
+        overview={overview}
+        scope={{ kind: 'playlist', playlistId: 'playlist-1' }}
+        query=""
+        isSaving={false}
+        {...handlers}
+      />
+    )
 
     expect(screen.getByText('Плейлист')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Ночная дорога' })).toBeInTheDocument()
     expect(screen.getByText('Blinding Lights')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Редактировать трек «Blinding Lights»' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Удалить трек «Blinding Lights»' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Редактировать трек «Blinding Lights»' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Удалить трек «Blinding Lights»' })
+    ).toBeInTheDocument()
   })
 })
