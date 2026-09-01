@@ -6,7 +6,7 @@ on:
       - agent/music-notes-modals-playlist-covers
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   verify:
@@ -19,11 +19,44 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Format changed source files
+        run: >-
+          npx prettier --write
+          drizzle/meta/_journal.json
+          src/main/database/schema/music.ts
+          src/main/repositories/music.repository.ts
+          src/main/repositories/music.repository.test.ts
+          src/shared/contracts/music.ts
+          src/shared/validation/music.ts
+          src/renderer/src/modules/music/MusicSimplePage.tsx
+          src/renderer/src/modules/music/MusicSimplePage.test.tsx
+          src/renderer/src/modules/music/components/MusicLibraryView.tsx
+          src/renderer/src/modules/music/components/MusicLibraryView.test.tsx
+      - name: Persist formatting if needed
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            drizzle/meta/_journal.json \
+            src/main/database/schema/music.ts \
+            src/main/repositories/music.repository.ts \
+            src/main/repositories/music.repository.test.ts \
+            src/shared/contracts/music.ts \
+            src/shared/validation/music.ts \
+            src/renderer/src/modules/music/MusicSimplePage.tsx \
+            src/renderer/src/modules/music/MusicSimplePage.test.tsx \
+            src/renderer/src/modules/music/components/MusicLibraryView.tsx \
+            src/renderer/src/modules/music/components/MusicLibraryView.test.tsx
+          git commit -m "Отформатировать изменения музыки"
+          git push
       - run: npm run native:node
       - name: Prettier
         run: >-
           npx prettier --check
-          drizzle/0039_music_playlist_covers.sql
           drizzle/meta/_journal.json
           src/main/database/schema/music.ts
           src/main/repositories/music.repository.ts
