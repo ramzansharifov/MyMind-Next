@@ -100,6 +100,10 @@ describe('preload API contract', () => {
       'createItems',
       'updateItem',
       'deleteItem',
+      'createPlaylist',
+      'updatePlaylist',
+      'deletePlaylist',
+      'setItemPlaylists',
       'searchWeb'
     ])
     expect(Object.keys(api.tasks)).toEqual([
@@ -252,6 +256,17 @@ describe('preload API contract', () => {
 
     await api.music.getItem({ id: 'music-1' })
     expect(electronMocks.invoke).toHaveBeenCalledWith('music:get-item', { id: 'music-1' })
+
+    await api.music.createPlaylist({ name: 'Для дороги' })
+    expect(electronMocks.invoke).toHaveBeenCalledWith('music:create-playlist', {
+      name: 'Для дороги'
+    })
+
+    await api.music.setItemPlaylists({ itemId: 'music-1', playlistIds: ['playlist-1'] })
+    expect(electronMocks.invoke).toHaveBeenCalledWith('music:set-item-playlists', {
+      itemId: 'music-1',
+      playlistIds: ['playlist-1']
+    })
 
     await api.music.searchWeb({ query: 'Слушать Blinding Lights' })
     expect(electronMocks.invoke).toHaveBeenCalledWith('music:search-web', {
