@@ -801,14 +801,14 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
             </button>
           </>
         }
-      />
-
-      <MusicLibraryNavigation
-        scope={scope}
-        query={query}
-        onQueryChange={setQuery}
-        onScopeChange={setScope}
-      />
+      >
+        <MusicLibraryNavigation
+          scope={scope}
+          query={query}
+          onQueryChange={setQuery}
+          onScopeChange={setScope}
+        />
+      </ModuleHeader>
 
       {error && (
         <div

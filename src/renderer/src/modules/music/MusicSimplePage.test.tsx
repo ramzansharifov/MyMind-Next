@@ -71,6 +71,19 @@ beforeEach(() => {
 })
 
 describe('MusicPage dialogs', () => {
+  it('размещает поиск и вкладки внутри ModuleHeader как в задачах', async () => {
+    const { container } = render(<MusicPage />)
+
+    await screen.findByRole('heading', { name: 'Музыка' })
+
+    const header = container.querySelector('[data-module-header]')
+    const navigation = container.querySelector('[data-music-library-navigation]')
+
+    expect(header).not.toBeNull()
+    expect(navigation).not.toBeNull()
+    expect(header?.contains(navigation)).toBe(true)
+  })
+
   it('добавляет трек через модальное окно и всегда сохраняет его без обложки', async () => {
     const user = userEvent.setup()
     render(<MusicPage />)

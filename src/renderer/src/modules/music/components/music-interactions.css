@@ -1,37 +1,11 @@
-/* Музыкальная навигация визуально является продолжением ModuleHeader. */
-[data-module-header]:has(+ [data-music-library-navigation]) {
-  margin-bottom: 0 !important;
-  border-bottom: 0;
-  border-bottom-right-radius: 0;
-  border-bottom-left-radius: 0;
+/* Навигация музыки размещается внутри ModuleHeader, как в модуле задач. */
+[data-module-header] [data-music-library-navigation] {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   box-shadow: none;
-}
-
-/*
- * Нижний декоративный blur ModuleHeader рассчитан на настоящую нижнюю границу карточки.
- * В музыке эта граница теперь внутренняя: сразу под ней продолжаются поиск и вкладки.
- * Поэтому скрываем только этот blur у объединённой шапки, чтобы не появлялся жёсткий
- * срез свечения на стыке двух частей. Верхний декоративный слой остаётся без изменений.
- */
-[data-module-header]:has(+ [data-music-library-navigation]) > [aria-hidden='true']:nth-of-type(2) {
-  display: none;
-}
-
-[data-module-header] + [data-music-library-navigation] {
-  margin-top: 0;
-  margin-bottom: 1.25rem;
-  padding: 0 1.5rem 1.5rem;
-  border-top: 0;
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
-  background: var(--app-surface);
-  box-shadow: var(--app-shadow-card);
-}
-
-@media (max-width: 700px) {
-  [data-module-header] + [data-music-library-navigation] {
-    padding: 0 1.25rem 1.25rem;
-  }
 }
 
 @media (hover: hover) and (pointer: fine) {
