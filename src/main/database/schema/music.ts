@@ -35,6 +35,7 @@ export const musicPlaylists = sqliteTable(
   {
     id: text('id').primaryKey(),
     name: text('name').notNull(),
+    coverUrl: text('cover_url'),
     createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
     updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull()
   },
