@@ -1,0 +1,190 @@
+name: Verify music pages redesign
+
+on:
+  push:
+    branches:
+      - agent/music-pages-redesign
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Apply music page navigation redesign
+        shell: pwsh
+        run: |
+          @'
+          from pathlib import Path
+          import re
+
+          path = Path('src/renderer/src/modules/music/MusicSimplePage.tsx')
+          text = path.read_text(encoding='utf-8')
+
+          text = text.replace('  Pencil,\n', '', 1)
+          text = text.replace('  Search,\n', '', 1)
+
+          old_type = "type LibraryScope =\n  { kind: 'all' } | { kind: 'favorites' } | { kind: 'playlist'; playlistId: string }\n\n"
+          if old_type not in text:
+              raise SystemExit('LibraryScope marker not found')
+          text = text.replace(old_type, '', 1)
+
+          import_marker = "import { StandardModulePage } from '../../shared/ui/StandardModulePage'\n"
+          import_value = import_marker + "import {\n  MusicLibraryContent,\n  MusicLibraryNavigation,\n  type MusicLibraryScope\n} from './components/MusicLibraryView'\n"
+          if import_marker not in text:
+              raise SystemExit('StandardModulePage import marker not found')
+          text = text.replace(import_marker, import_value, 1)
+
+          text, count = re.subn(
+              r"\nfunction TrackCover\(\{ item \}: \{ item: MusicItemRecord \}\): React\.JSX\.Element \{.*?\n\}\n\nfunction PlaylistDialog",
+              '\nfunction PlaylistDialog',
+              text,
+              count=1,
+              flags=re.S,
+          )
+          if count != 1:
+              raise SystemExit(f'Expected to remove TrackCover once, removed {count}')
+
+          text = text.replace(
+              "const [scope, setScope] = useState<LibraryScope>({ kind: 'all' })",
+              "const [scope, setScope] = useState<MusicLibraryScope>({ kind: 'all' })",
+              1,
+          )
+
+          text, count = re.subn(
+              r"\n  const selectedPlaylist =.*?\n  \}, \[overview\.items, overview\.playlists, query, scope\]\)\n",
+              '\n',
+              text,
+              count=1,
+              flags=re.S,
+          )
+          if count != 1:
+              raise SystemExit(f'Expected to remove old visible-items block once, removed {count}')
+
+          text = text.replace(
+              "      if (scope.kind === 'playlist' && scope.playlistId === playlistDeleteTarget.id) {\n        setScope({ kind: 'all' })\n      }",
+              "      if (scope.kind === 'playlist' && scope.playlistId === playlistDeleteTarget.id) {\n        setScope({ kind: 'playlists' })\n      }",
+              1,
+          )
+
+          navigation = '''      >
+        {view.kind === 'library' && (
+          <MusicLibraryNavigation
+            scope={scope}
+            query={query}
+            onQueryChange={setQuery}
+            onScopeChange={setScope}
+          />
+        )}
+      </ModuleHeader>'''
+          text, count = re.subn(
+              r"      >\n        \{view\.kind === 'library' && \(.*?\n      </ModuleHeader>",
+              navigation,
+              text,
+              count=1,
+              flags=re.S,
+          )
+          if count != 1:
+              raise SystemExit(f'Expected to replace music header navigation once, replaced {count}')
+
+          content = '''      {view.kind === 'form' ? (
+        <TrackForm
+          key={activeItem?.id ?? 'new-track'}
+          item={activeItem}
+          playlists={overview.playlists}
+          busy={isSaving}
+          formId={MUSIC_FORM_ID}
+          onSave={saveTrack}
+          onCreatePlaylist={openNewPlaylist}
+        />
+      ) : (
+        <MusicLibraryContent
+          overview={overview}
+          scope={scope}
+          query={query}
+          isSaving={isSaving}
+          onScopeChange={setScope}
+          onOpenTrack={(itemId) => setView({ kind: 'form', itemId })}
+          onToggleFavorite={(item) => void toggleFavorite(item)}
+          onDeleteTrack={setDeleteTarget}
+          onEditPlaylist={openPlaylistEditor}
+          onDeletePlaylist={setPlaylistDeleteTarget}
+          onCreatePlaylist={openNewPlaylist}
+          onAddTrack={() => setView({ kind: 'form', itemId: null })}
+        />
+      )}
+
+      <PlaylistDialog'''
+          text, count = re.subn(
+              r"      \{view\.kind === 'form' \? \(.*?\n\n      <PlaylistDialog",
+              content,
+              text,
+              count=1,
+              flags=re.S,
+          )
+          if count != 1:
+              raise SystemExit(f'Expected to replace old library body once, replaced {count}')
+
+          path.write_text(text, encoding='utf-8')
+          '@ | python -
+
+      - name: Prettier
+        run: npx prettier --write src/renderer/src/modules/music/MusicSimplePage.tsx src/renderer/src/modules/music/components/MusicLibraryView.tsx src/renderer/src/modules/music/components/MusicLibraryView.test.tsx
+
+      - name: ESLint
+        run: npx eslint src/renderer/src/modules/music/MusicSimplePage.tsx src/renderer/src/modules/music/components/MusicLibraryView.tsx src/renderer/src/modules/music/components/MusicLibraryView.test.tsx
+
+      - name: Node typecheck
+        run: npm run typecheck:node
+
+      - name: Web typecheck without existing Study baseline
+        shell: pwsh
+        run: |
+          @'
+          import re
+          import subprocess
+          import sys
+
+          result = subprocess.run(
+              ['npx.cmd', 'tsc', '--noEmit', '-p', 'tsconfig.web.json', '--composite', 'false'],
+              text=True,
+              capture_output=True,
+          )
+          output = (result.stdout or '') + (result.stderr or '')
+          print(output, end='')
+          if result.returncode != 0:
+              errors = [line for line in output.splitlines() if 'error TS' in line]
+              allowed = re.compile(r'useStudyEditBlockVirtualization\.ts\(82,36\): error TS18047')
+              unexpected = [line for line in errors if not allowed.search(line)]
+              if unexpected or not errors:
+                  print('Web typecheck contains errors outside the known Study baseline.', file=sys.stderr)
+                  sys.exit(1)
+          '@ | python -
+
+      - name: Music page tests
+        run: npx vitest run src/renderer/src/modules/music/components/MusicLibraryView.test.tsx
+
+      - name: Production bundle
+        run: npm run build:bundle
+
+      - name: Diff check
+        run: git diff --check
+
+      - name: Commit verified redesign and remove temporary workflow
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          Remove-Item .github/workflows/verify-music-pages-redesign.yml
+          git add -A
+          git commit -m "Разделить музыку на страницы библиотеки"
+          git push origin HEAD:agent/music-pages-redesign
