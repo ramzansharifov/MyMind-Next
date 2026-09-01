@@ -7,6 +7,16 @@
   box-shadow: none;
 }
 
+/*
+ * Нижний декоративный blur ModuleHeader рассчитан на настоящую нижнюю границу карточки.
+ * В музыке эта граница теперь внутренняя: сразу под ней продолжаются поиск и вкладки.
+ * Поэтому скрываем только этот blur у объединённой шапки, чтобы не появлялся жёсткий
+ * срез свечения на стыке двух частей. Верхний декоративный слой остаётся без изменений.
+ */
+[data-module-header]:has(+ [data-music-library-navigation]) > [aria-hidden='true']:nth-of-type(2) {
+  display: none;
+}
+
 [data-module-header] + [data-music-library-navigation] {
   margin-top: 0;
   margin-bottom: 1.25rem;
