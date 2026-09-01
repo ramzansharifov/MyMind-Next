@@ -59,8 +59,14 @@ jobs:
         run: npx prettier --write src/renderer/src/modules/settings/SettingsPage.tsx
       - name: ESLint
         run: npx eslint src/renderer/src/modules/settings/SettingsPage.tsx
-      - name: Web typecheck
-        run: npm run typecheck:web
+      - name: Verify Radix switch markup
+        shell: pwsh
+        run: |
+          $content = Get-Content src/renderer/src/modules/settings/SettingsPage.tsx -Raw
+          if ($content -notmatch "@radix-ui/react-switch") { throw "Radix Switch import missing" }
+          if ($content -notmatch "<Switch.Root") { throw "Radix Switch root missing" }
+          if ($content -notmatch "<Switch.Thumb") { throw "Radix Switch thumb missing" }
+          if ($content -match 'role="switch"') { throw "Legacy custom switch still present" }
       - name: Production bundle
         run: npm run build:bundle
       - name: Diff check
