@@ -194,7 +194,9 @@ function TrackGrid({
                 <span className="block truncate text-sm font-semibold text-[var(--app-text)] group-hover:text-[var(--app-accent-500)]">
                   {item.title}
                 </span>
-                <span className="mt-0.5 block truncate text-xs text-[var(--app-muted)]">{artist}</span>
+                <span className="mt-0.5 block truncate text-xs text-[var(--app-muted)]">
+                  {artist}
+                </span>
                 {(item.year !== null || duration) && (
                   <span className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] text-[var(--app-muted)]">
                     {item.year !== null && (

@@ -108,10 +108,7 @@ describe('MusicPage dialogs', () => {
     expect(screen.getByLabelText('Обложка плейлиста')).toBeInTheDocument()
 
     await user.type(screen.getByPlaceholderText('Например, Дорога'), 'Дорога')
-    await user.type(
-      screen.getByLabelText('Обложка плейлиста'),
-      'https://example.com/road.jpg'
-    )
+    await user.type(screen.getByLabelText('Обложка плейлиста'), 'https://example.com/road.jpg')
     await user.click(screen.getByRole('button', { name: 'Сохранить' }))
 
     await waitFor(() => {

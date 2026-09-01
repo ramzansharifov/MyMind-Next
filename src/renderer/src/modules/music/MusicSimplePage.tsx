@@ -256,7 +256,9 @@ function TrackDialog({
                   />
                 </label>
                 <label>
-                  <span className="mb-1.5 block text-xs font-medium text-[var(--app-muted)]">Год</span>
+                  <span className="mb-1.5 block text-xs font-medium text-[var(--app-muted)]">
+                    Год
+                  </span>
                   <input
                     value={draft.year}
                     inputMode="numeric"
