@@ -1,0 +1,92 @@
+name: Verify AI chat Radix switch
+
+on:
+  push:
+    branches:
+      - agent/fix-ai-chat-radix-switch
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Replace custom switch with Radix Switch
+        shell: pwsh
+        run: |
+          @'
+          from pathlib import Path
+
+          path = Path('src/renderer/src/modules/settings/SettingsPage.tsx')
+          text = path.read_text(encoding='utf-8')
+
+          import_marker = "} from 'lucide-react'\nimport { useState, type ReactNode } from 'react'"
+          import_replacement = "} from 'lucide-react'\nimport * as Switch from '@radix-ui/react-switch'\nimport { useState, type ReactNode } from 'react'"
+          if import_marker not in text:
+              raise SystemExit('Radix Switch import marker not found')
+          text = text.replace(import_marker, import_replacement, 1)
+
+          old = '''            <button
+              type="button"
+              role="switch"
+              aria-label="Показывать кнопку ИИ-чата"
+              aria-checked={showLauncher}
+              className={cn(
+                'relative h-7 w-12 shrink-0 rounded-full border transition-colors outline-none focus-visible:ring-2 focus-visible:ring-violet-500/45',
+                showLauncher
+                  ? 'border-[color-mix(in_srgb,var(--app-accent-500)_55%,transparent)] bg-[var(--app-accent-500)]'
+                  : 'border-[var(--app-border-strong)] bg-[var(--app-control-hover)]'
+              )}
+              onClick={() => setShowLauncher(!showLauncher)}
+            >
+              <span
+                aria-hidden="true"
+                className={cn(
+                  'absolute top-0.5 size-5 rounded-full bg-white shadow-sm transition-transform',
+                  showLauncher ? 'translate-x-[1.35rem]' : 'translate-x-0.5'
+                )}
+              />
+            </button>'''
+
+          new = '''            <Switch.Root
+              aria-label="Показывать кнопку ИИ-чата"
+              checked={showLauncher}
+              className="group inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border border-[var(--app-border-strong)] bg-[var(--app-control-hover)] p-0.5 outline-none transition-[background-color,border-color,box-shadow] data-[state=checked]:border-[var(--app-accent-500)] data-[state=checked]:bg-[var(--app-accent-500)] focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)]/40"
+              onCheckedChange={setShowLauncher}
+            >
+              <Switch.Thumb className="block size-5 rounded-full bg-white shadow-sm transition-transform duration-200 data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0" />
+            </Switch.Root>'''
+
+          if old not in text:
+              raise SystemExit('Custom AI chat switch block not found')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          '@ | python -
+
+      - name: Prettier
+        run: npx prettier --write src/renderer/src/modules/settings/SettingsPage.tsx
+      - name: ESLint
+        run: npx eslint src/renderer/src/modules/settings/SettingsPage.tsx
+      - name: Web typecheck
+        run: npm run typecheck:web
+      - name: Production bundle
+        run: npm run build:bundle
+      - name: Diff check
+        run: git diff --check
+
+      - name: Commit verified fix and remove temporary workflow
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          Remove-Item .github/workflows/verify-ai-chat-radix-switch.yml
+          git add src/renderer/src/modules/settings/SettingsPage.tsx .github/workflows/verify-ai-chat-radix-switch.yml
+          git commit -m "Использовать Radix Switch в настройках ИИ-чата"
+          git push origin HEAD:agent/fix-ai-chat-radix-switch
