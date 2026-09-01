@@ -95,7 +95,7 @@ const musicPlaylistNameSchema = z
 
 const musicPlaylistFieldsSchema = z.object({
   name: musicPlaylistNameSchema,
-  coverUrl: coverUrlSchema
+  coverUrl: coverUrlSchema.optional().default(null)
 })
 
 export const createMusicPlaylistInputSchema = musicPlaylistFieldsSchema.strict()
