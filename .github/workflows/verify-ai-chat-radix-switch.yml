@@ -24,6 +24,7 @@ jobs:
         run: |
           @'
           from pathlib import Path
+          import re
 
           path = Path('src/renderer/src/modules/settings/SettingsPage.tsx')
           text = path.read_text(encoding='utf-8')
@@ -34,29 +35,12 @@ jobs:
               raise SystemExit('Radix Switch import marker not found')
           text = text.replace(import_marker, import_replacement, 1)
 
-          old = '''            <button
-              type="button"
-              role="switch"
-              aria-label="Показывать кнопку ИИ-чата"
-              aria-checked={showLauncher}
-              className={cn(
-                'relative h-7 w-12 shrink-0 rounded-full border transition-colors outline-none focus-visible:ring-2 focus-visible:ring-violet-500/45',
-                showLauncher
-                  ? 'border-[color-mix(in_srgb,var(--app-accent-500)_55%,transparent)] bg-[var(--app-accent-500)]'
-                  : 'border-[var(--app-border-strong)] bg-[var(--app-control-hover)]'
-              )}
-              onClick={() => setShowLauncher(!showLauncher)}
-            >
-              <span
-                aria-hidden="true"
-                className={cn(
-                  'absolute top-0.5 size-5 rounded-full bg-white shadow-sm transition-transform',
-                  showLauncher ? 'translate-x-[1.35rem]' : 'translate-x-0.5'
-                )}
-              />
-            </button>'''
-
-          new = '''            <Switch.Root
+          pattern = re.compile(
+              r'\n\s*<button\n\s+type="button"\n\s+role="switch"\n\s+aria-label="Показывать кнопку ИИ-чата".*?</button>',
+              re.S,
+          )
+          replacement = '''
+            <Switch.Root
               aria-label="Показывать кнопку ИИ-чата"
               checked={showLauncher}
               className="group inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border border-[var(--app-border-strong)] bg-[var(--app-control-hover)] p-0.5 outline-none transition-[background-color,border-color,box-shadow] data-[state=checked]:border-[var(--app-accent-500)] data-[state=checked]:bg-[var(--app-accent-500)] focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)]/40"
@@ -64,10 +48,11 @@ jobs:
             >
               <Switch.Thumb className="block size-5 rounded-full bg-white shadow-sm transition-transform duration-200 data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0" />
             </Switch.Root>'''
+          text, count = pattern.subn(replacement, text, count=1)
+          if count != 1:
+              raise SystemExit(f'Expected one custom AI chat switch, found {count}')
 
-          if old not in text:
-              raise SystemExit('Custom AI chat switch block not found')
-          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          path.write_text(text, encoding='utf-8')
           '@ | python -
 
       - name: Prettier
