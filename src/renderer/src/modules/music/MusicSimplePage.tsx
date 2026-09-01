@@ -9,10 +9,8 @@ import {
   ListMusic,
   LoaderCircle,
   Music2,
-  Pencil,
   Plus,
   Save,
-  Search,
   Trash2,
   X
 } from 'lucide-react'
@@ -29,11 +27,13 @@ import { createMusicItemInputSchema } from '../../../../shared/validation/music'
 import { DeleteConfirmationDialog } from '../../shared/ui/DeleteConfirmationDialog'
 import { ModuleHeader } from '../../shared/ui/ModuleHeader'
 import { StandardModulePage } from '../../shared/ui/StandardModulePage'
+import {
+  MusicLibraryContent,
+  MusicLibraryNavigation,
+  type MusicLibraryScope
+} from './components/MusicLibraryView'
 import { musicClient } from './api/music-client'
 import './components/music-interactions.css'
-
-type LibraryScope =
-  { kind: 'all' } | { kind: 'favorites' } | { kind: 'playlist'; playlistId: string }
 
 type MusicView = { kind: 'library' } | { kind: 'form'; itemId: string | null }
 
@@ -137,29 +137,6 @@ function updateInputWithFavorite(item: MusicItemRecord, favorite: boolean): Upda
     rating: item.rating,
     comments: item.comments
   }
-}
-
-function TrackCover({ item }: { item: MusicItemRecord }): React.JSX.Element {
-  const [failedUrl, setFailedUrl] = useState<string | null>(null)
-
-  if (!item.coverUrl || failedUrl === item.coverUrl) {
-    return (
-      <div className="flex h-full flex-col items-center justify-center gap-2 bg-[var(--app-control)] text-[var(--app-muted)]">
-        <Music2 className="size-9 opacity-45" />
-        <span className="text-[11px]">Без обложки</span>
-      </div>
-    )
-  }
-
-  return (
-    <img
-      src={item.coverUrl}
-      alt={`Обложка «${item.title}»`}
-      loading="lazy"
-      className="h-full w-full object-cover"
-      onError={() => setFailedUrl(item.coverUrl)}
-    />
-  )
 }
 
 function PlaylistDialog({
@@ -517,7 +494,7 @@ const MUSIC_FORM_ID = 'music-track-form'
 export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): React.JSX.Element {
   const [overview, setOverview] = useState<MusicOverview>({ items: [], playlists: [] })
   const [view, setView] = useState<MusicView>({ kind: 'library' })
-  const [scope, setScope] = useState<LibraryScope>({ kind: 'all' })
+  const [scope, setScope] = useState<MusicLibraryScope>({ kind: 'all' })
   const [query, setQuery] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -582,24 +559,6 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
       cancelled = true
     }
   }, [onResourceHandled, resourceId])
-
-  const selectedPlaylist =
-    scope.kind === 'playlist'
-      ? (overview.playlists.find((playlist) => playlist.id === scope.playlistId) ?? null)
-      : null
-
-  const visibleItems = useMemo(() => {
-    const normalized = query.trim().toLocaleLowerCase('ru-RU')
-    return overview.items.filter((item) => {
-      if (scope.kind === 'favorites' && !item.favorite) return false
-      if (scope.kind === 'playlist') {
-        const playlist = overview.playlists.find((entry) => entry.id === scope.playlistId)
-        if (!playlist?.trackIds.includes(item.id)) return false
-      }
-      if (!normalized) return true
-      return [item.title, ...item.artists].join(' ').toLocaleLowerCase('ru-RU').includes(normalized)
-    })
-  }, [overview.items, overview.playlists, query, scope])
 
   async function toggleFavorite(item: MusicItemRecord): Promise<void> {
     setIsSaving(true)
@@ -687,7 +646,7 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
     try {
       await musicClient.deletePlaylist({ id: playlistDeleteTarget.id })
       if (scope.kind === 'playlist' && scope.playlistId === playlistDeleteTarget.id) {
-        setScope({ kind: 'all' })
+        setScope({ kind: 'playlists' })
       }
       await refreshOverview()
       setPlaylistDeleteTarget(null)
@@ -773,81 +732,12 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
         }
       >
         {view.kind === 'library' && (
-          <div className="space-y-3">
-            <label className="flex h-12 min-w-0 items-center gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 focus-within:border-[var(--app-accent-500)] focus-within:ring-2 focus-within:ring-[var(--app-accent-500)]/10">
-              <Search className="size-4 shrink-0 text-[var(--app-muted)]" />
-              <input
-                value={query}
-                type="search"
-                aria-label="Поиск по музыке"
-                placeholder="Найти по названию или исполнителю"
-                className="min-w-0 flex-1 bg-transparent text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/65"
-                onChange={(event) => setQuery(event.target.value)}
-              />
-              {query && (
-                <button
-                  type="button"
-                  aria-label="Очистить поиск"
-                  className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)]"
-                  onClick={() => setQuery('')}
-                >
-                  <X className="size-4" />
-                </button>
-              )}
-            </label>
-
-            <div className="flex min-w-0 items-center gap-2 overflow-x-auto pb-0.5">
-              <button
-                type="button"
-                className={
-                  scope.kind === 'all'
-                    ? 'h-9 shrink-0 rounded-xl bg-[var(--app-accent-500)] px-3.5 text-sm font-semibold text-white'
-                    : 'h-9 shrink-0 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm font-medium text-[var(--app-muted)] hover:bg-[var(--app-control-hover)]'
-                }
-                onClick={() => setScope({ kind: 'all' })}
-              >
-                Все треки
-              </button>
-              <button
-                type="button"
-                className={
-                  scope.kind === 'favorites'
-                    ? 'inline-flex h-9 shrink-0 items-center gap-2 rounded-xl bg-[var(--app-accent-500)] px-3.5 text-sm font-semibold text-white'
-                    : 'inline-flex h-9 shrink-0 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm font-medium text-[var(--app-muted)] hover:bg-[var(--app-control-hover)]'
-                }
-                onClick={() => setScope({ kind: 'favorites' })}
-              >
-                <Heart className="size-3.5" /> Избранное
-              </button>
-              {overview.playlists.map((playlist) => (
-                <div key={playlist.id} className="flex shrink-0 items-center">
-                  <button
-                    type="button"
-                    className={
-                      scope.kind === 'playlist' && scope.playlistId === playlist.id
-                        ? 'h-9 rounded-l-xl bg-[var(--app-accent-500)] px-3.5 text-sm font-semibold text-white'
-                        : 'h-9 rounded-l-xl border border-r-0 border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm font-medium text-[var(--app-muted)] hover:bg-[var(--app-control-hover)]'
-                    }
-                    onClick={() => setScope({ kind: 'playlist', playlistId: playlist.id })}
-                  >
-                    {playlist.name}
-                  </button>
-                  <button
-                    type="button"
-                    aria-label={`Изменить плейлист «${playlist.name}»`}
-                    className={
-                      scope.kind === 'playlist' && scope.playlistId === playlist.id
-                        ? 'flex size-9 items-center justify-center rounded-r-xl bg-[var(--app-accent-500)] text-white/80 hover:text-white'
-                        : 'flex size-9 items-center justify-center rounded-r-xl border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
-                    }
-                    onClick={() => openPlaylistEditor(playlist)}
-                  >
-                    <Pencil className="size-3.5" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
+          <MusicLibraryNavigation
+            scope={scope}
+            query={query}
+            onQueryChange={setQuery}
+            onScopeChange={setScope}
+          />
         )}
       </ModuleHeader>
 
@@ -870,89 +760,21 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
           onSave={saveTrack}
           onCreatePlaylist={openNewPlaylist}
         />
-      ) : visibleItems.length === 0 ? (
-        <div className="flex min-h-80 flex-col items-center justify-center rounded-[24px] border border-dashed border-[var(--app-border)] bg-[var(--app-surface)] px-6 text-center">
-          <span className="flex size-14 items-center justify-center rounded-2xl border border-[color-mix(in_srgb,var(--app-accent-500)_20%,transparent)] bg-[color-mix(in_srgb,var(--app-accent-500)_10%,transparent)] text-[var(--app-accent-500)]">
-            <Music2 className="size-7" />
-          </span>
-          <h2 className="mt-4 text-lg font-semibold text-[var(--app-text)]">
-            {overview.items.length === 0
-              ? 'Музыкальная библиотека пока пустая'
-              : 'Треков здесь нет'}
-          </h2>
-          <p className="mt-2 max-w-md text-sm leading-6 text-[var(--app-muted)]">
-            {overview.items.length === 0
-              ? 'Добавьте первый трек. Плейлисты можно создавать только если они вам нужны.'
-              : selectedPlaylist
-                ? `В плейлисте «${selectedPlaylist.name}» пока нет треков.`
-                : 'Попробуйте изменить поиск или выбрать другой раздел.'}
-          </p>
-          {overview.items.length === 0 && (
-            <button
-              type="button"
-              className="mt-5 inline-flex h-10 items-center gap-2 rounded-xl bg-[var(--app-accent-500)] px-4 text-sm font-semibold text-white hover:brightness-110"
-              onClick={() => setView({ kind: 'form', itemId: null })}
-            >
-              <Plus className="size-4" /> Добавить трек
-            </button>
-          )}
-        </div>
       ) : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(190px,1fr))] gap-x-4 gap-y-7 sm:grid-cols-[repeat(auto-fill,minmax(205px,1fr))]">
-          {visibleItems.map((item) => {
-            const artist = item.artists[0] || 'Исполнитель не указан'
-            const duration = formatDuration(item.durationSeconds)
-            return (
-              <article key={item.id} className="group min-w-0">
-                <div className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--app-shadow-card)]">
-                  <div className="relative aspect-square overflow-hidden bg-[var(--app-workspace)]">
-                    <button
-                      type="button"
-                      aria-label={`Редактировать трек «${item.title}»`}
-                      className="absolute inset-0 z-0 overflow-hidden text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)] focus-visible:ring-inset"
-                      onClick={() => setView({ kind: 'form', itemId: item.id })}
-                    >
-                      <TrackCover item={item} />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label={item.favorite ? 'Убрать из избранного' : 'Добавить в избранное'}
-                      aria-pressed={item.favorite}
-                      disabled={isSaving}
-                      className={
-                        item.favorite
-                          ? 'absolute top-2.5 right-2.5 z-10 flex size-9 items-center justify-center rounded-xl border border-rose-300/25 bg-black/55 text-rose-300 backdrop-blur-md hover:bg-black/70'
-                          : 'absolute top-2.5 right-2.5 z-10 flex size-9 items-center justify-center rounded-xl border border-white/10 bg-black/45 text-white/70 backdrop-blur-md hover:text-white'
-                      }
-                      onClick={() => void toggleFavorite(item)}
-                    >
-                      <Heart className={`size-4 ${item.favorite ? 'fill-current' : ''}`} />
-                    </button>
-                  </div>
-                  <button
-                    type="button"
-                    className="flex min-h-20 w-full min-w-0 flex-col items-start justify-center border-t border-[var(--app-border)] px-3.5 py-3 text-left outline-none hover:bg-[var(--app-control-hover)]"
-                    onClick={() => setView({ kind: 'form', itemId: item.id })}
-                  >
-                    <span className="block w-full truncate text-sm font-semibold text-[var(--app-text)] group-hover:text-[var(--app-accent-500)]">
-                      {item.title}
-                    </span>
-                    <span className="mt-0.5 block w-full truncate text-xs text-[var(--app-muted)]">
-                      {artist}
-                    </span>
-                    {(item.year !== null || duration) && (
-                      <span className="mt-1 flex items-center gap-2 text-[10px] text-[var(--app-muted)]/80">
-                        {item.year !== null && <span>{item.year}</span>}
-                        {item.year !== null && duration && <span>•</span>}
-                        {duration && <span>{duration}</span>}
-                      </span>
-                    )}
-                  </button>
-                </div>
-              </article>
-            )
-          })}
-        </div>
+        <MusicLibraryContent
+          overview={overview}
+          scope={scope}
+          query={query}
+          isSaving={isSaving}
+          onScopeChange={setScope}
+          onOpenTrack={(itemId) => setView({ kind: 'form', itemId })}
+          onToggleFavorite={(item) => void toggleFavorite(item)}
+          onDeleteTrack={setDeleteTarget}
+          onEditPlaylist={openPlaylistEditor}
+          onDeletePlaylist={setPlaylistDeleteTarget}
+          onCreatePlaylist={openNewPlaylist}
+          onAddTrack={() => setView({ kind: 'form', itemId: null })}
+        />
       )}
 
       <PlaylistDialog
