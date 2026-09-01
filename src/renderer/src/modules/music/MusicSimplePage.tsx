@@ -835,7 +835,7 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
       />
 
       <TrackDialog
-        key={`${trackDialogItem?.id ?? 'new'}-${trackDialogOpen ? 'open' : 'closed'}`}
+        key={`track-${trackDialogItem?.id ?? 'new'}-${trackDialogOpen ? 'open' : 'closed'}`}
         open={trackDialogOpen}
         item={trackDialogItem}
         playlists={overview.playlists}
@@ -850,7 +850,7 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
       />
 
       <PlaylistDialog
-        key={`${playlistDialogItem?.id ?? 'new'}-${playlistDialogOpen ? 'open' : 'closed'}`}
+        key={`playlist-${playlistDialogItem?.id ?? 'new'}-${playlistDialogOpen ? 'open' : 'closed'}`}
         open={playlistDialogOpen}
         playlist={playlistDialogItem}
         busy={isSaving}
