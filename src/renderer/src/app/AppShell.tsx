@@ -5,6 +5,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { useCalendarReminderInbox } from '../modules/calendar/useCalendarReminderInbox'
 import { cn } from '../shared/lib/cn'
 import { Tooltip, TooltipProvider } from '../shared/ui/tooltip'
+import { useAiChatPreferences } from './ai-chat/ai-chat-preferences-context'
 import { AiChatOverlay } from './AiChatOverlay'
 import { AppTitleBar } from './AppTitleBar'
 import {
@@ -135,6 +136,7 @@ export function AppShell({
   children
 }: AppShellProps): React.JSX.Element {
   const [isCollapsed, setIsCollapsed] = useState(() => activeView === 'study')
+  const { showLauncher } = useAiChatPreferences()
   const { reminders: calendarReminders } = useCalendarReminderInbox()
 
   useEffect(() => {
@@ -273,7 +275,7 @@ export function AppShell({
           </main>
         </div>
 
-        <AiChatOverlay />
+        <AiChatOverlay showLauncher={showLauncher} />
       </div>
     </TooltipProvider>
   )

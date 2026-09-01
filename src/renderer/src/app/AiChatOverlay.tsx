@@ -16,6 +16,10 @@ interface ResizeDragState {
   startWidth: number
 }
 
+interface AiChatOverlayProps {
+  showLauncher?: boolean
+}
+
 function elementBounds(element: HTMLElement): AiChatBounds | null {
   const rect = element.getBoundingClientRect()
   const width = Math.round(rect.width)
@@ -38,7 +42,7 @@ function clampPanelWidth(width: number, viewportWidth: number): number {
   return Math.max(MIN_PANEL_WIDTH, Math.min(Math.round(width), maxPanelWidth(viewportWidth)))
 }
 
-export function AiChatOverlay(): React.JSX.Element {
+export function AiChatOverlay({ showLauncher = true }: AiChatOverlayProps): React.JSX.Element {
   const [open, setOpen] = useState(false)
   const [panelWidth, setPanelWidth] = useState(DEFAULT_PANEL_WIDTH)
   const [resizing, setResizing] = useState(false)
@@ -87,6 +91,26 @@ export function AiChatOverlay(): React.JSX.Element {
   }, [resizing])
 
   useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent): void => {
+      if (
+        !event.ctrlKey ||
+        event.altKey ||
+        event.shiftKey ||
+        event.metaKey ||
+        event.key.toLowerCase() !== 'm'
+      ) {
+        return
+      }
+
+      event.preventDefault()
+      setOpen(true)
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
+  useEffect(() => {
     if (!open) return
 
     const viewport = viewportRef.current
@@ -130,7 +154,7 @@ export function AiChatOverlay(): React.JSX.Element {
 
   return (
     <>
-      {!open && (
+      {!open && showLauncher && (
         <Tooltip content="Открыть ИИ-чат" side="left">
           <button
             type="button"
