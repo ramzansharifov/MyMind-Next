@@ -67,8 +67,27 @@ describe('MusicLibraryView', () => {
     expect(screen.getByRole('tab', { name: 'Плейлисты' })).toBeInTheDocument()
   })
 
-  it('показывает плейлисты с собственной обложкой и прямыми действиями', () => {
-    render(
+  it('оформляет раздел треков как лаконичную секцию заметок без поясняющего текста', () => {
+    const { container } = render(
+      <MusicLibraryContent
+        overview={overview}
+        scope={{ kind: 'favorites' }}
+        query=""
+        isSaving={false}
+        {...handlers}
+      />
+    )
+
+    const section = container.querySelector('[data-music-library-section="favorites"]')
+    expect(section).toBeInTheDocument()
+    expect(section?.querySelector('[data-music-section-icon]')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Избранное' })).toBeInTheDocument()
+    expect(screen.queryByText('Треки, которые вы отметили сердцем.')).not.toBeInTheDocument()
+    expect(screen.getByText('Blinding Lights')).toBeInTheDocument()
+  })
+
+  it('показывает плейлисты с собственной обложкой без служебных подписей и дубля кнопки', () => {
+    const { container } = render(
       <MusicLibraryContent
         overview={overview}
         scope={{ kind: 'playlists' }}
@@ -78,9 +97,15 @@ describe('MusicLibraryView', () => {
       />
     )
 
+    const section = container.querySelector('[data-music-library-section="playlists"]')
+    expect(section).toBeInTheDocument()
+    expect(section?.querySelector('[data-music-section-icon]')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Плейлисты' })).toBeInTheDocument()
     expect(screen.getByText('Ночная дорога')).toBeInTheDocument()
     expect(screen.getByAltText('Обложка плейлиста «Ночная дорога»')).toBeInTheDocument()
+    expect(screen.queryByText(/Подборки с собственной обложкой/)).not.toBeInTheDocument()
+    expect(screen.queryByText('Обложка добавлена')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Новый плейлист' })).not.toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: 'Редактировать плейлист «Ночная дорога»' })
     ).toBeInTheDocument()
@@ -89,7 +114,7 @@ describe('MusicLibraryView', () => {
     ).toBeInTheDocument()
   })
 
-  it('показывает треки компактными карточками без обложек', () => {
+  it('показывает открытый плейлист той же компактной секцией и треки без обложек', () => {
     const { container } = render(
       <MusicLibraryContent
         overview={overview}
@@ -100,7 +125,10 @@ describe('MusicLibraryView', () => {
       />
     )
 
-    expect(screen.getByText('Плейлист')).toBeInTheDocument()
+    const section = container.querySelector('[data-music-library-section="playlist"]')
+    expect(section).toBeInTheDocument()
+    expect(section?.querySelector('[data-music-section-icon]')).toBeInTheDocument()
+    expect(screen.queryByText('Плейлист')).not.toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Ночная дорога' })).toBeInTheDocument()
     expect(screen.getByText('Blinding Lights')).toBeInTheDocument()
     expect(container.querySelector('[data-music-track-card]')).toBeInTheDocument()
