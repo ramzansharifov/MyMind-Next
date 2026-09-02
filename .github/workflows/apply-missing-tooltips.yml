@@ -111,7 +111,7 @@ jobs:
             return sf.statements.some((statement) => {
               if (!ts.isImportDeclaration(statement) || !statement.importClause) return false
               const bindings = statement.importClause.namedBindings
-              return ts.isNamedImports(bindings) && bindings.elements.some((item) => item.name.text === 'Tooltip')
+              return Boolean(bindings && ts.isNamedImports(bindings) && bindings.elements.some((item) => item.name.text === 'Tooltip'))
             })
           }
 
@@ -152,10 +152,7 @@ jobs:
 
             let next = source
             for (const candidate of candidates.sort((a, b) => b.start - a.start)) {
-              next =
-                next.slice(0, candidate.end) +
-                '</Tooltip>' +
-                next.slice(candidate.end)
+              next = next.slice(0, candidate.end) + '</Tooltip>' + next.slice(candidate.end)
               next =
                 next.slice(0, candidate.start) +
                 `<Tooltip content=${candidate.content} side="top">` +
