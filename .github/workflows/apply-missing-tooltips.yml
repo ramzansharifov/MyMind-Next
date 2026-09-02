@@ -24,7 +24,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Fix Radix asChild composition and the remaining unlabeled icon action
+      - name: Wrap remaining labeled compact buttons
         shell: bash
         run: |
           node <<'NODE'
@@ -48,53 +48,62 @@ jobs:
             (attr) => ts.isJsxAttribute(attr) && attr.name.text === name
           )
 
-          let movedTooltips = 0
+          function expressionRendersText(expression) {
+            if (!expression) return false
+            if (ts.isStringLiteralLike(expression) || ts.isTemplateExpression(expression)) return true
+            if (ts.isNumericLiteral(expression) || ts.isIdentifier(expression)) return true
+            if (ts.isPropertyAccessExpression(expression) || ts.isElementAccessExpression(expression)) return true
+            if (ts.isCallExpression(expression)) return true
+            if (ts.isParenthesizedExpression(expression)) return expressionRendersText(expression.expression)
+            if (ts.isConditionalExpression(expression)) {
+              const jsx = (v) => ts.isJsxElement(v) || ts.isJsxSelfClosingElement(v) || ts.isJsxFragment(v)
+              if (jsx(expression.whenTrue) && jsx(expression.whenFalse)) return false
+              return expressionRendersText(expression.whenTrue) || expressionRendersText(expression.whenFalse)
+            }
+            if (ts.isBinaryExpression(expression)) {
+              return expressionRendersText(expression.left) || expressionRendersText(expression.right)
+            }
+            return false
+          }
+
+          function hasVisibleText(node) {
+            if (ts.isJsxText(node)) return /[A-Za-zА-Яа-яЁё0-9]{2,}/.test(node.getText())
+            if (ts.isJsxExpression(node)) return expressionRendersText(node.expression)
+            if (ts.isJsxElement(node)) {
+              if (attrByName(node.openingElement.attributes, 'aria-hidden')) return false
+              return node.children.some(hasVisibleText)
+            }
+            if (ts.isJsxFragment(node)) return node.children.some(hasVisibleText)
+            return false
+          }
+
+          function hasTooltipAncestor(node, sf) {
+            let current = node.parent
+            while (current) {
+              if (ts.isJsxElement(current) && tagText(current.openingElement.tagName, sf) === 'Tooltip') return true
+              current = current.parent
+            }
+            return false
+          }
+
+          let wrapped = 0
           let changedFiles = 0
 
           for (const file of files.sort()) {
+            if (file.endsWith(path.join('app', 'AppShell.tsx'))) continue
             const source = fs.readFileSync(file, 'utf8')
             const sf = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
             const replacements = []
 
             function visit(node) {
-              if (ts.isJsxElement(node)) {
-                const asChild = attrByName(node.openingElement.attributes, 'asChild')
-                if (asChild) {
-                  const meaningfulChildren = node.children.filter(
-                    (child) => !(ts.isJsxText(child) && child.getText(sf).trim() === '')
-                  )
-                  if (meaningfulChildren.length === 1 && ts.isJsxElement(meaningfulChildren[0])) {
-                    const tooltip = meaningfulChildren[0]
-                    if (tagText(tooltip.openingElement.tagName, sf) === 'Tooltip') {
-                      const parentOpen = source.slice(
-                        node.openingElement.getStart(sf),
-                        node.openingElement.getEnd()
-                      )
-                      const parentClose = source.slice(
-                        node.closingElement.getStart(sf),
-                        node.closingElement.getEnd()
-                      )
-                      const tooltipOpen = source.slice(
-                        tooltip.openingElement.getStart(sf),
-                        tooltip.openingElement.getEnd()
-                      )
-                      const tooltipClose = source.slice(
-                        tooltip.closingElement.getStart(sf),
-                        tooltip.closingElement.getEnd()
-                      )
-                      const inner = source.slice(
-                        tooltip.openingElement.getEnd(),
-                        tooltip.closingElement.getStart(sf)
-                      )
-                      replacements.push({
-                        start: node.getStart(sf),
-                        end: node.getEnd(),
-                        text: `${tooltipOpen}${parentOpen}${inner}${parentClose}${tooltipClose}`
-                      })
-                      movedTooltips += 1
-                      return
-                    }
-                  }
+              if (ts.isJsxElement(node) && tagText(node.openingElement.tagName, sf) === 'button') {
+                const aria = attrByName(node.openingElement.attributes, 'aria-label')
+                if (aria?.initializer && !hasVisibleText(node) && !hasTooltipAncestor(node, sf)) {
+                  replacements.push({
+                    start: node.getStart(sf),
+                    end: node.getEnd(),
+                    content: aria.initializer.getText(sf)
+                  })
                 }
               }
               ts.forEachChild(node, visit)
@@ -103,74 +112,18 @@ jobs:
 
             if (!replacements.length) continue
             let next = source
-            for (const replacement of replacements.sort((a, b) => b.start - a.start)) {
-              next =
-                next.slice(0, replacement.start) +
-                replacement.text +
-                next.slice(replacement.end)
+            for (const item of replacements.sort((a, b) => b.start - a.start)) {
+              next = next.slice(0, item.end) + '</Tooltip>' + next.slice(item.end)
+              next = next.slice(0, item.start) + `<Tooltip content=${item.content} side="top">` + next.slice(item.start)
             }
             fs.writeFileSync(file, next, 'utf8')
+            wrapped += replacements.length
             changedFiles += 1
           }
 
-          const passwordsFile = path.join(root, 'modules', 'passwords', 'PasswordsPage.tsx')
-          let passwordsSource = fs.readFileSync(passwordsFile, 'utf8')
-          let passwordsSf = ts.createSourceFile(
-            passwordsFile,
-            passwordsSource,
-            ts.ScriptTarget.Latest,
-            true,
-            ts.ScriptKind.TSX
-          )
-          let passwordReplacement = null
-
-          function visitPasswords(node) {
-            if (passwordReplacement) return
-            if (ts.isJsxElement(node) && tagText(node.openingElement.tagName, passwordsSf) === 'button') {
-              const openingText = passwordsSource.slice(
-                node.openingElement.getStart(passwordsSf),
-                node.openingElement.getEnd()
-              )
-              const wholeText = passwordsSource.slice(node.getStart(passwordsSf), node.getEnd())
-              if (
-                !attrByName(node.openingElement.attributes, 'aria-label') &&
-                openingText.includes('border-violet-400/15') &&
-                wholeText.includes('openItem(item.id)') &&
-                wholeText.includes('UserRound') &&
-                wholeText.includes('KeyRound')
-              ) {
-                const openingWithLabel = openingText.replace(
-                  'type="button"',
-                  'type="button" aria-label={`Открыть ${item.title}`}'
-                )
-                const buttonWithLabel =
-                  openingWithLabel +
-                  passwordsSource.slice(node.openingElement.getEnd(), node.getEnd())
-                passwordReplacement = {
-                  start: node.getStart(passwordsSf),
-                  end: node.getEnd(),
-                  text: `<Tooltip content={\`Открыть \${item.title}\`} side="top">${buttonWithLabel}</Tooltip>`
-                }
-                return
-              }
-            }
-            ts.forEachChild(node, visitPasswords)
-          }
-          visitPasswords(passwordsSf)
-
-          if (!passwordReplacement) {
-            throw new Error('Could not find the remaining unlabeled password icon button')
-          }
-
-          passwordsSource =
-            passwordsSource.slice(0, passwordReplacement.start) +
-            passwordReplacement.text +
-            passwordsSource.slice(passwordReplacement.end)
-          fs.writeFileSync(passwordsFile, passwordsSource, 'utf8')
-
-          console.log(`Moved Tooltip outside asChild parents: ${movedTooltips}`)
-          console.log(`Files with asChild composition fixes: ${changedFiles}`)
-          console.log('Labeled and wrapped the remaining password icon action: 1')
+          console.log(`Wrapped remaining compact buttons: ${wrapped}`)
+          console.log(`Changed files: ${changedFiles}`)
+          if (wrapped !== 7) throw new Error(`Expected exactly 7 reviewed buttons, got ${wrapped}`)
           NODE
       - name: Format updated TSX
         shell: bash
@@ -179,15 +132,11 @@ jobs:
           if [ "${#files[@]}" -gt 0 ]; then
             npx prettier --write "${files[@]}"
           fi
-      - name: Commit composition fixes
+      - name: Commit reviewed tooltip additions
         shell: bash
         run: |
-          if git diff --quiet; then
-            echo "No composition fixes required."
-            exit 0
-          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/renderer/src
-          git commit -m "Исправить композицию подсказок с Radix asChild"
+          git commit -m "Добавить подсказки оставшимся компактным действиям"
           git push origin HEAD:agent/tooltips-final-audit
