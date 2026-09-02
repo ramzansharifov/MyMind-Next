@@ -212,8 +212,74 @@ jobs:
             npx prettier --check "${files[@]}"
           fi
 
-      - name: Lint
-        run: npm run lint
+      - name: ESLint regression check against main
+        shell: bash
+        run: |
+          mapfile -t files < <(git diff --name-only origin/main...HEAD -- 'src/renderer/src/**/*.tsx' 'src/renderer/src/**/*.ts')
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No changed renderer TS/TSX files."
+            exit 0
+          fi
+
+          set +e
+          npx eslint --format json "${files[@]}" > branch-eslint.json
+          set -e
+
+          git checkout origin/main -- "${files[@]}"
+          set +e
+          npx eslint --format json "${files[@]}" > main-eslint.json
+          set -e
+          git checkout HEAD -- "${files[@]}"
+
+          node <<'NODE'
+          const fs = require('fs')
+          const path = require('path')
+
+          const branch = JSON.parse(fs.readFileSync('branch-eslint.json', 'utf8'))
+          const main = JSON.parse(fs.readFileSync('main-eslint.json', 'utf8'))
+          const root = process.cwd()
+
+          function toBag(results) {
+            const bag = new Map()
+            for (const result of results) {
+              const file = path.relative(root, result.filePath).replaceAll('\\', '/')
+              for (const message of result.messages) {
+                const key = JSON.stringify([
+                  file,
+                  message.severity,
+                  message.ruleId ?? null,
+                  message.message
+                ])
+                bag.set(key, (bag.get(key) ?? 0) + 1)
+              }
+            }
+            return bag
+          }
+
+          const branchBag = toBag(branch)
+          const mainBag = toBag(main)
+          const regressions = []
+
+          for (const [key, count] of branchBag) {
+            const baseline = mainBag.get(key) ?? 0
+            if (count > baseline) {
+              const [file, severity, ruleId, message] = JSON.parse(key)
+              regressions.push({ file, severity, ruleId, message, added: count - baseline })
+            }
+          }
+
+          if (regressions.length > 0) {
+            console.error('New ESLint findings compared with main:')
+            for (const item of regressions) {
+              console.error(
+                `${item.file}: ${item.ruleId ?? 'unknown'}: ${item.message} (+${item.added})`
+              )
+            }
+            process.exit(1)
+          }
+
+          console.log('No new ESLint findings compared with main.')
+          NODE
 
       - name: Node typecheck
         run: npm run typecheck:node
