@@ -11,6 +11,7 @@ import type {
 } from '../../../../../../shared/contracts/finance'
 import { formatMinorPlain, parseMoneyToMinor } from '../../../../../../shared/finance-money'
 import { AppDialog } from '../../../../shared/ui/AppDialog'
+import { AppSelect } from '../../../../shared/ui/AppSelect'
 import { financeClient } from '../../api/finance-client'
 import { getFinanceErrorMessage } from '../../lib/finance-ui'
 import { FinanceLimitAccountPicker } from '../FinanceLimitAccountPicker'
@@ -261,12 +262,24 @@ function FinanceLimitDialogContent({
 
         <div className="grid grid-cols-2 gap-4 max-[520px]:grid-cols-1">
           <FinanceField label="Период" error={errors.periodType?.message}>
-            <select {...register('periodType')} className={financeInputClassName}>
-              <option value="day">День</option>
-              <option value="week">Неделя</option>
-              <option value="month">Месяц</option>
-              <option value="year">Год</option>
-            </select>
+            <Controller
+              control={control}
+              name="periodType"
+              render={({ field }) => (
+                <AppSelect
+                  ariaLabel="Период лимита"
+                  value={field.value}
+                  triggerClassName={financeInputClassName}
+                  options={[
+                    { value: 'day', label: 'День' },
+                    { value: 'week', label: 'Неделя' },
+                    { value: 'month', label: 'Месяц' },
+                    { value: 'year', label: 'Год' }
+                  ]}
+                  onValueChange={field.onChange}
+                />
+              )}
+            />
           </FinanceField>
           <FinanceField label="Предупреждение, %" error={errors.warningPercent?.message}>
             <input

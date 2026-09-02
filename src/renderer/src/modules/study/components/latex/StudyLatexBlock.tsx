@@ -13,6 +13,7 @@ import type {
   StudyLatexViewMode
 } from '../../../../../../shared/contracts/study'
 import { cn } from '../../../../shared/lib/cn'
+import { Tooltip } from '../../../../shared/ui/tooltip'
 import { StudySourceBlockShell } from '../source/StudySourceBlockShell'
 import { StudySourceLineNumbers } from '../source/StudySourceLineNumbers'
 import './StudyLatexBlock.css'
@@ -111,24 +112,24 @@ export function StudyLatexBlock({
                 }}
               >
                 {latexViewModes.map(({ value, label, Icon }) => (
-                  <ToggleGroup.Item
-                    key={value}
-                    value={value}
-                    aria-label={label}
-                    title={label}
-                    className={cn(
-                      'flex h-7 items-center gap-1.5 rounded-md px-2',
-                      'text-xs text-[var(--app-muted)] outline-none',
-                      'transition-colors',
-                      'hover:bg-white/[0.06] hover:text-[var(--app-text)]',
-                      'focus-visible:ring-2 focus-visible:ring-violet-500/35',
-                      'data-[state=on]:bg-violet-500/15',
-                      'data-[state=on]:text-violet-200'
-                    )}
-                  >
-                    <Icon aria-hidden="true" className="size-3.5" />
-                    <span className="max-[780px]:hidden">{label}</span>
-                  </ToggleGroup.Item>
+                  <Tooltip key={value} content={label} side="top">
+                    <ToggleGroup.Item
+                      value={value}
+                      aria-label={label}
+                      className={cn(
+                        'flex h-7 items-center gap-1.5 rounded-md px-2',
+                        'text-xs text-[var(--app-muted)] outline-none',
+                        'transition-colors',
+                        'hover:bg-white/[0.06] hover:text-[var(--app-text)]',
+                        'focus-visible:ring-2 focus-visible:ring-violet-500/35',
+                        'data-[state=on]:bg-violet-500/15',
+                        'data-[state=on]:text-violet-200'
+                      )}
+                    >
+                      <Icon aria-hidden="true" className="size-3.5" />
+                      <span className="max-[780px]:hidden">{label}</span>
+                    </ToggleGroup.Item>
+                  </Tooltip>
                 ))}
               </ToggleGroup.Root>
 
@@ -215,10 +216,7 @@ function LatexSourceEditor({
           fullscreen ? 'min-h-0 flex-1 overflow-auto' : 'max-h-[36rem] overflow-auto'
         )}
       >
-        <div
-          data-fullscreen={fullscreen ? 'true' : 'false'}
-          className="study-source-editor-body"
-        >
+        <div data-fullscreen={fullscreen ? 'true' : 'false'} className="study-source-editor-body">
           <StudySourceLineNumbers source={source} />
 
           <Editor

@@ -1,6 +1,9 @@
 import { Filter, ReceiptText, Search } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
+import { AppCheckbox } from '../../../shared/ui/AppCheckbox'
+import { AppSelect } from '../../../shared/ui/AppSelect'
+
 import type {
   FinanceAccountSummary,
   FinanceTagSummary,
@@ -120,64 +123,62 @@ export function FinanceTransactions({
               className={`${financeInputClassName} pl-9`}
             />
           </label>
-          <select
-            aria-label="Тип операции"
+          <AppSelect
+            ariaLabel="Тип операции"
             value={type}
-            onChange={(event) => {
-              setType(event.target.value)
+            triggerClassName={financeInputClassName}
+            options={[
+              { value: 'all', label: 'Все типы' },
+              { value: 'income', label: 'Доходы' },
+              { value: 'expense', label: 'Расходы' },
+              { value: 'transfer', label: 'Переводы' },
+              { value: 'adjustment', label: 'Корректировки' }
+            ]}
+            onValueChange={(value) => {
+              setType(value)
               setOffset(0)
             }}
-            className={financeInputClassName}
-          >
-            <option value="all">Все типы</option>
-            <option value="income">Доходы</option>
-            <option value="expense">Расходы</option>
-            <option value="transfer">Переводы</option>
-            <option value="adjustment">Корректировки</option>
-          </select>
-          <select
-            aria-label="Счёт"
+          />
+          <AppSelect
+            ariaLabel="Счёт"
             value={accountId}
-            onChange={(event) => {
-              setAccountId(event.target.value)
+            triggerClassName={financeInputClassName}
+            options={[
+              { value: 'all', label: 'Все счета' },
+              ...accounts.map((account) => ({ value: account.id, label: account.name }))
+            ]}
+            onValueChange={(value) => {
+              setAccountId(value)
               setOffset(0)
             }}
-            className={financeInputClassName}
-          >
-            <option value="all">Все счета</option>
-            {accounts.map((account) => (
-              <option key={account.id} value={account.id}>
-                {account.name}
-              </option>
-            ))}
-          </select>
-          <select
-            aria-label="Тег"
+          />
+          <AppSelect
+            ariaLabel="Тег"
             value={tagId}
-            onChange={(event) => {
-              setTagId(event.target.value)
+            triggerClassName={financeInputClassName}
+            options={[
+              { value: 'all', label: 'Все теги' },
+              ...tags.map((tag) => ({ value: tag.id, label: tag.name }))
+            ]}
+            onValueChange={(value) => {
+              setTagId(value)
               setOffset(0)
             }}
-            className={financeInputClassName}
-          >
-            <option value="all">Все теги</option>
-            {tags.map((tag) => (
-              <option key={tag.id} value={tag.id}>
-                {tag.name}
-              </option>
-            ))}
-          </select>
+          />
         </div>
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-          <label className="flex items-center gap-2 text-sm text-[var(--app-muted)]">
-            <input
-              type="checkbox"
+          <label
+            htmlFor="finance-include-system"
+            className="flex cursor-pointer items-center gap-2 text-sm text-[var(--app-muted)]"
+          >
+            <AppCheckbox
+              id="finance-include-system"
+              ariaLabel="Показывать системные операции"
               checked={includeSystem}
-              onChange={(event) => {
-                setIncludeSystem(event.target.checked)
+              onCheckedChange={(checked) => {
+                setIncludeSystem(checked)
                 setOffset(0)
               }}
-              className="size-4 accent-violet-500"
             />
             Показывать системные операции
           </label>

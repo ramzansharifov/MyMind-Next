@@ -5,6 +5,7 @@ import { Link2, LoaderCircle, Settings2, SquarePlay, Trash2, Upload } from 'luci
 import { useState } from 'react'
 
 import type { StudyAssetKind, StudyBlock } from '../../../../../shared/contracts/study'
+import { Tooltip } from '../../../shared/ui/tooltip'
 import {
   getStudyBlockDefinition,
   type StudyBlockSettingsStrategy
@@ -278,9 +279,11 @@ export function BlockSettingsPanel({
         </div>
 
         <div className="min-w-0 flex-1">
-          <p title={definition.label} className="truncate text-sm font-medium text-(--app-text)">
-            {definition.label}
-          </p>
+          <Tooltip content={definition.label} side="top">
+            <p className="truncate text-sm font-medium text-(--app-text)" tabIndex={0}>
+              {definition.label}
+            </p>
+          </Tooltip>
 
           <p className="mt-0.5 text-[11px] text-(--app-muted)">Настройки блока</p>
         </div>
@@ -872,12 +875,14 @@ function AttachmentSettings({
               <StudyFileSettingsIcon kind={block.type} />
 
               <div className="min-w-0 flex-1 overflow-hidden">
-                <p
-                  title={localAsset.name}
-                  className="block w-full truncate text-xs font-medium text-(--app-text)"
-                >
-                  {localAsset.name}
-                </p>
+                <Tooltip content={localAsset.name} side="top">
+                  <p
+                    className="block w-full truncate text-xs font-medium text-(--app-text)"
+                    tabIndex={0}
+                  >
+                    {localAsset.name}
+                  </p>
+                </Tooltip>
 
                 <p className="mt-1 truncate text-[11px] text-(--app-muted)">
                   {formatStudyFileSize(localAsset.size)}

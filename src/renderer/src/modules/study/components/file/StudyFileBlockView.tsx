@@ -18,6 +18,7 @@ import type {
   StudyBlock
 } from '../../../../../../shared/contracts/study'
 import { cn } from '../../../../shared/lib/cn'
+import { Tooltip } from '../../../../shared/ui/tooltip'
 import { studyClient } from '../../api/study-client'
 import {
   formatStudyFileSize,
@@ -217,23 +218,24 @@ export function StudyFileBlockView({
               onError={handleImageError}
             />
 
-            <Dialog.Trigger asChild>
-              <button
-                type="button"
-                aria-label={expandImageLabel}
-                title={expandImageLabel}
-                className={cn(
-                  'absolute top-3 right-3 z-10 flex size-9 items-center justify-center rounded-lg',
-                  'border border-white/10 bg-black/60 text-white shadow-lg backdrop-blur-sm',
-                  'opacity-80 transition-all',
-                  'hover:scale-[1.03] hover:bg-black/75 hover:opacity-100',
-                  'focus-visible:scale-[1.03] focus-visible:opacity-100',
-                  'outline-none focus-visible:ring-2 focus-visible:ring-violet-400/70'
-                )}
-              >
-                <Maximize2 aria-hidden="true" className="size-4" />
-              </button>
-            </Dialog.Trigger>
+            <Tooltip content={expandImageLabel} side="top">
+              <Dialog.Trigger asChild>
+                <button
+                  type="button"
+                  aria-label={expandImageLabel}
+                  className={cn(
+                    'absolute top-3 right-3 z-10 flex size-9 items-center justify-center rounded-lg',
+                    'border border-white/10 bg-black/60 text-white shadow-lg backdrop-blur-sm',
+                    'opacity-80 transition-all',
+                    'hover:scale-[1.03] hover:bg-black/75 hover:opacity-100',
+                    'focus-visible:scale-[1.03] focus-visible:opacity-100',
+                    'outline-none focus-visible:ring-2 focus-visible:ring-violet-400/70'
+                  )}
+                >
+                  <Maximize2 aria-hidden="true" className="size-4" />
+                </button>
+              </Dialog.Trigger>
+            </Tooltip>
           </div>
         </figure>
 
@@ -249,22 +251,23 @@ export function StudyFileBlockView({
                 {accessibleTitle}
               </Dialog.Title>
 
-              <Dialog.Close asChild>
-                <button
-                  type="button"
-                  aria-label={collapseImageLabel}
-                  aria-keyshortcuts="Escape"
-                  title={collapseImageLabel}
-                  className={cn(
-                    'flex size-8 shrink-0 items-center justify-center rounded-lg',
-                    'text-white/70 transition-colors outline-none',
-                    'hover:bg-white/10 hover:text-white',
-                    'focus-visible:ring-2 focus-visible:ring-violet-400/70'
-                  )}
-                >
-                  <Minimize2 aria-hidden="true" className="size-4" />
-                </button>
-              </Dialog.Close>
+              <Tooltip content={collapseImageLabel} side="bottom">
+                <Dialog.Close asChild>
+                  <button
+                    type="button"
+                    aria-label={collapseImageLabel}
+                    aria-keyshortcuts="Escape"
+                    className={cn(
+                      'flex size-8 shrink-0 items-center justify-center rounded-lg',
+                      'text-white/70 transition-colors outline-none',
+                      'hover:bg-white/10 hover:text-white',
+                      'focus-visible:ring-2 focus-visible:ring-violet-400/70'
+                    )}
+                  >
+                    <Minimize2 aria-hidden="true" className="size-4" />
+                  </button>
+                </Dialog.Close>
+              </Tooltip>
             </header>
 
             <Dialog.Description className="sr-only">

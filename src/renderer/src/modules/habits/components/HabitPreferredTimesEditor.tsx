@@ -2,6 +2,7 @@ import { ChevronLeft, ChevronRight, Clock3 } from 'lucide-react'
 import { useState } from 'react'
 
 import type { HabitTrackingType } from '../../../../../shared/contracts/habits'
+import { AppTimeField } from '../../../shared/ui/AppTimeField'
 
 const PAGE_SIZE = 12
 
@@ -80,16 +81,14 @@ export function HabitPreferredTimesEditor({
             <span className="text-xs font-medium text-[var(--app-muted)]">
               {trackingType === 'check' ? 'Время' : `Единица ${unit}`}
             </span>
-            <input
-              type="time"
+            <AppTimeField
               value={values[unit] ?? ''}
-              aria-label={
+              ariaLabel={
                 trackingType === 'check'
                   ? 'Предпочтительное время привычки'
                   : `Предпочтительное время для единицы ${unit}`
               }
-              className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
-              onChange={(event) => onChange(unit, event.target.value)}
+              onChange={(value) => onChange(unit, value)}
             />
           </label>
         ))}

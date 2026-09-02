@@ -1,3 +1,4 @@
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import {
   ArrowDownLeft,
   ArrowRightLeft,
@@ -115,34 +116,48 @@ export function FinanceTransactionRow({
           )}
       </div>
       {(onEdit || onDelete) && !transaction.isSystem && (
-        <details className="relative">
-          <summary
-            aria-label="Действия с операцией"
-            className="flex size-8 cursor-pointer list-none items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)]"
-          >
-            <MoreHorizontal className="size-4" />
-          </summary>
-          <div className="absolute right-0 z-20 mt-1 w-36 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-1 shadow-xl">
-            {onEdit && (
-              <button
-                type="button"
-                className="w-full rounded-lg px-3 py-2 text-left text-sm text-[var(--app-text)] hover:bg-[var(--app-control-hover)]"
-                onClick={() => onEdit(transaction)}
-              >
-                Изменить
-              </button>
-            )}
-            {onDelete && (
-              <button
-                type="button"
-                className="w-full rounded-lg px-3 py-2 text-left text-sm text-red-300 hover:bg-red-500/10"
-                onClick={() => onDelete(transaction)}
-              >
-                Удалить
-              </button>
-            )}
-          </div>
-        </details>
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger asChild>
+            <button
+              type="button"
+              aria-label="Действия с операцией"
+              className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] outline-none hover:bg-[var(--app-control-hover)] focus-visible:ring-2 focus-visible:ring-violet-500/35"
+            >
+              <MoreHorizontal className="size-4" />
+            </button>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Portal>
+            <DropdownMenu.Content
+              align="end"
+              sideOffset={6}
+              collisionPadding={10}
+              className="z-[100] min-w-36 rounded-xl border border-[var(--app-border)] bg-[var(--app-menu)] p-1 text-sm shadow-[var(--app-shadow-menu)] outline-none"
+            >
+              {onEdit && (
+                <DropdownMenu.Item asChild>
+                  <button
+                    type="button"
+                    className="w-full rounded-lg px-3 py-2 text-left text-[var(--app-text)] outline-none hover:bg-[var(--app-control-hover)] focus:bg-[var(--app-control-hover)]"
+                    onClick={() => onEdit(transaction)}
+                  >
+                    Изменить
+                  </button>
+                </DropdownMenu.Item>
+              )}
+              {onDelete && (
+                <DropdownMenu.Item asChild>
+                  <button
+                    type="button"
+                    className="w-full rounded-lg px-3 py-2 text-left text-red-300 outline-none hover:bg-red-500/10 focus:bg-red-500/10"
+                    onClick={() => onDelete(transaction)}
+                  >
+                    Удалить
+                  </button>
+                </DropdownMenu.Item>
+              )}
+            </DropdownMenu.Content>
+          </DropdownMenu.Portal>
+        </DropdownMenu.Root>
       )}
     </article>
   )

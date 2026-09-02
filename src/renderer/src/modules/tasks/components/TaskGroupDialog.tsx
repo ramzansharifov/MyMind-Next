@@ -10,6 +10,7 @@ import type {
 } from '../../../../../shared/contracts/tasks'
 import { cn } from '../../../shared/lib/cn'
 import { AppDialog } from '../../../shared/ui/AppDialog'
+import { Tooltip } from '../../../shared/ui/tooltip'
 import {
   TASK_GROUP_COLOR_OPTIONS,
   TASK_GROUP_ICON_OPTIONS,
@@ -101,7 +102,7 @@ export function TaskGroupDialog({
             value={name}
             maxLength={80}
             placeholder="Например, Работа"
-            className="h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm text-[var(--app-text)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
+            className="h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm text-[var(--app-text)] transition-[border-color,box-shadow] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
             onChange={(event) => setName(event.target.value)}
           />
         </label>
@@ -132,28 +133,30 @@ export function TaskGroupDialog({
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-3">
             <span className="block text-xs font-medium text-[var(--app-muted)]">Цвет</span>
-            <span className="text-[11px] text-[var(--app-muted)]">Без цвета = акцент приложения</span>
+            <span className="text-[11px] text-[var(--app-muted)]">
+              Без цвета = акцент приложения
+            </span>
           </div>
           <div className="grid grid-cols-9 gap-2 max-[620px]:grid-cols-5 max-[440px]:grid-cols-3">
             {TASK_GROUP_COLOR_OPTIONS.map((option) => {
               const classes = taskGroupColorClasses[option.value]
               return (
-                <button
-                  key={option.value}
-                  type="button"
-                  aria-label={`Цвет: ${option.label}`}
-                  aria-pressed={color === option.value}
-                  title={option.label}
-                  className={cn(
-                    'flex aspect-square items-center justify-center rounded-xl border bg-[var(--app-workspace)] outline-none transition-transform hover:scale-105',
-                    color === option.value
-                      ? `${classes.border} ring-2 ring-white/10`
-                      : 'border-[var(--app-border)]'
-                  )}
-                  onClick={() => setColor(option.value)}
-                >
-                  <span className={cn('size-5 rounded-full shadow-sm', classes.dot)} />
-                </button>
+                <Tooltip key={option.value} content={option.label} side="top">
+                  <button
+                    type="button"
+                    aria-label={`Цвет: ${option.label}`}
+                    aria-pressed={color === option.value}
+                    className={cn(
+                      'flex aspect-square items-center justify-center rounded-xl border bg-[var(--app-workspace)] transition-transform outline-none hover:scale-105',
+                      color === option.value
+                        ? `${classes.border} ring-2 ring-white/10`
+                        : 'border-[var(--app-border)]'
+                    )}
+                    onClick={() => setColor(option.value)}
+                  >
+                    <span className={cn('size-5 rounded-full shadow-sm', classes.dot)} />
+                  </button>
+                </Tooltip>
               )
             })}
           </div>

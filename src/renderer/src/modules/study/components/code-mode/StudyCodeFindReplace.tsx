@@ -51,7 +51,10 @@ export function StudyCodeFindReplace({
     () => ({ matchCase, wholeWord, useRegex }),
     [matchCase, wholeWord, useRegex]
   )
-  const result = useMemo(() => findStudyCodeMatches(source, query, options), [source, query, options])
+  const result = useMemo(
+    () => findStudyCodeMatches(source, query, options),
+    [source, query, options]
+  )
   const activeMatch = activeMatchIndex >= 0 ? result.matches[activeMatchIndex] : undefined
   const activeSegments = useMemo(
     () => (activeMatch ? getStudyCodeMatchSegments(source, activeMatch) : []),
@@ -101,8 +104,9 @@ export function StudyCodeFindReplace({
     }
 
     setHighlightHost(
-      editorScrollRef.current?.querySelector<HTMLElement>('[data-study-code-editor-scroll-content]') ??
-        null
+      editorScrollRef.current?.querySelector<HTMLElement>(
+        '[data-study-code-editor-scroll-content]'
+      ) ?? null
     )
   }, [editorScrollRef, open])
 
@@ -187,9 +191,7 @@ export function StudyCodeFindReplace({
     )
 
     onSourceChange(replaced.source)
-    setActiveMatchIndex(
-      nextResult.matches.length === 0 ? -1 : nextIndex >= 0 ? nextIndex : 0
-    )
+    setActiveMatchIndex(nextResult.matches.length === 0 ? -1 : nextIndex >= 0 ? nextIndex : 0)
   }
 
   function replaceAll(): void {
@@ -258,7 +260,7 @@ export function StudyCodeFindReplace({
         <>
           <div
             data-study-code-find-widget
-            className="absolute right-6 top-6 z-30 w-[min(640px,calc(100%_-_3rem))] rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-2 shadow-2xl shadow-black/35 max-[720px]:right-4 max-[720px]:top-4 max-[720px]:w-[calc(100%_-_2rem)]"
+            className="absolute top-6 right-6 z-30 w-[min(640px,calc(100%_-_3rem))] rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-2 shadow-2xl shadow-black/35 max-[720px]:top-4 max-[720px]:right-4 max-[720px]:w-[calc(100%_-_2rem)]"
           >
             <div className="flex min-w-0 items-center gap-1.5">
               <button
@@ -297,57 +299,68 @@ export function StudyCodeFindReplace({
                   onKeyDown={handleFindKeyDown}
                 />
 
-                <button
-                  type="button"
-                  aria-label="Учитывать регистр"
-                  aria-pressed={matchCase}
-                  title="Учитывать регистр"
-                  className={cn(
-                    optionButtonClassName,
-                    matchCase && 'bg-violet-500/16 text-violet-200'
-                  )}
-                  onClick={() => setMatchCase((current) => !current)}
-                >
-                  Aa
-                </button>
-                <button
-                  type="button"
-                  aria-label="Только целые слова"
-                  aria-pressed={wholeWord}
-                  title="Только целые слова"
-                  className={cn(
-                    optionButtonClassName,
-                    wholeWord && 'bg-violet-500/16 text-violet-200'
-                  )}
-                  onClick={() => setWholeWord((current) => !current)}
-                >
-                  ab
-                </button>
-                <button
-                  type="button"
-                  aria-label="Регулярное выражение"
-                  aria-pressed={useRegex}
-                  title="Регулярное выражение"
-                  className={cn(
-                    optionButtonClassName,
-                    useRegex && 'bg-violet-500/16 text-violet-200'
-                  )}
-                  onClick={() => setUseRegex((current) => !current)}
-                >
-                  .*
-                </button>
+                <Tooltip content="Учитывать регистр" side="top">
+                  <button
+                    type="button"
+                    aria-label="Учитывать регистр"
+                    aria-pressed={matchCase}
+                    className={cn(
+                      optionButtonClassName,
+                      matchCase && 'bg-violet-500/16 text-violet-200'
+                    )}
+                    onClick={() => setMatchCase((current) => !current)}
+                  >
+                    Aa
+                  </button>
+                </Tooltip>
+                <Tooltip content="Только целые слова" side="top">
+                  <button
+                    type="button"
+                    aria-label="Только целые слова"
+                    aria-pressed={wholeWord}
+                    className={cn(
+                      optionButtonClassName,
+                      wholeWord && 'bg-violet-500/16 text-violet-200'
+                    )}
+                    onClick={() => setWholeWord((current) => !current)}
+                  >
+                    ab
+                  </button>
+                </Tooltip>
+                <Tooltip content="Регулярное выражение" side="top">
+                  <button
+                    type="button"
+                    aria-label="Регулярное выражение"
+                    aria-pressed={useRegex}
+                    className={cn(
+                      optionButtonClassName,
+                      useRegex && 'bg-violet-500/16 text-violet-200'
+                    )}
+                    onClick={() => setUseRegex((current) => !current)}
+                  >
+                    .*
+                  </button>
+                </Tooltip>
               </div>
 
-              <span
-                aria-live="polite"
-                className={cn(
-                  'w-[84px] shrink-0 text-center text-[11px]',
-                  result.error ? 'text-red-300' : 'text-[var(--app-muted)]'
-                )}
-                title={result.error ?? undefined}
-              >
-                {resultLabel}
-              </span>
+              {result.error ? (
+                <Tooltip content={result.error} side="top">
+                  <span
+                    aria-live="polite"
+                    tabIndex={0}
+                    className={cn('w-[84px] shrink-0 text-center text-[11px]', 'text-red-300')}
+                  >
+                    {resultLabel}
+                  </span>
+                </Tooltip>
+              ) : (
+                <span
+                  aria-live="polite"
+                  className="w-[84px] shrink-0 text-center text-[11px] text-[var(--app-muted)]"
+                >
+                  {resultLabel}
+                </span>
+              )}
 
               <button
                 type="button"
@@ -410,12 +423,11 @@ export function StudyCodeFindReplace({
             )}
 
             {result.error && (
-              <p
-                className="mt-1.5 truncate pl-[34px] text-[11px] text-red-300"
-                title={result.error}
-              >
-                {result.error}
-              </p>
+              <Tooltip content={result.error} side="bottom">
+                <p className="mt-1.5 truncate pl-[34px] text-[11px] text-red-300" tabIndex={0}>
+                  {result.error}
+                </p>
+              </Tooltip>
             )}
           </div>
 

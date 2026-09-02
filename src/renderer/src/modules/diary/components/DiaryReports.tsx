@@ -13,6 +13,8 @@ import type {
   DiaryReportPoint,
   DiarySummary
 } from '../../../../../shared/contracts/diary'
+import { AppDateField } from '../../../shared/ui/AppDateField'
+import { Tooltip } from '../../../shared/ui/tooltip'
 import { diaryClient } from '../api/diary-client'
 import {
   diaryMoodMeta,
@@ -128,21 +130,11 @@ export function DiaryReports({
         <div className="grid max-w-xl grid-cols-2 gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 max-[520px]:grid-cols-1">
           <label className="text-xs text-[var(--app-muted)]">
             <span className="mb-1.5 block font-medium">С даты</span>
-            <input
-              type="date"
-              value={customFrom}
-              className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-control)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/40 focus:ring-2 focus:ring-violet-500/15"
-              onChange={(event) => setCustomFrom(event.target.value)}
-            />
+            <AppDateField ariaLabel="С даты" value={customFrom} onChange={setCustomFrom} />
           </label>
           <label className="text-xs text-[var(--app-muted)]">
             <span className="mb-1.5 block font-medium">По дату</span>
-            <input
-              type="date"
-              value={customTo}
-              className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-control)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/40 focus:ring-2 focus:ring-violet-500/15"
-              onChange={(event) => setCustomTo(event.target.value)}
-            />
+            <AppDateField ariaLabel="По дату" value={customTo} onChange={setCustomTo} />
           </label>
         </div>
       )}
@@ -222,11 +214,17 @@ export function DiaryReports({
                 {activityTimeline.map((point) => {
                   const level = Math.min(4, point.entryCount)
                   return (
-                    <div
+                    <Tooltip
                       key={point.dayKey}
-                      title={`${point.dayKey}: ${point.entryCount} записей${point.mood ? ` · ${diaryMoodMeta[point.mood].label}` : ''}`}
-                      className={`aspect-square min-h-4 rounded-[5px] border border-violet-500/10 ${level === 0 ? 'bg-[var(--app-overlay-faint)]' : level === 1 ? 'bg-violet-500/20' : level === 2 ? 'bg-violet-500/35' : level === 3 ? 'bg-violet-500/55' : 'bg-violet-500/80'}`}
-                    />
+                      content={`${point.dayKey}: ${point.entryCount} записей${point.mood ? ` · ${diaryMoodMeta[point.mood].label}` : ''}`}
+                      side="top"
+                    >
+                      <div
+                        aria-label={`${point.dayKey}: ${point.entryCount} записей`}
+                        tabIndex={0}
+                        className={`aspect-square min-h-4 rounded-[5px] border border-violet-500/10 ${level === 0 ? 'bg-[var(--app-overlay-faint)]' : level === 1 ? 'bg-violet-500/20' : level === 2 ? 'bg-violet-500/35' : level === 3 ? 'bg-violet-500/55' : 'bg-violet-500/80'}`}
+                      />
+                    </Tooltip>
                   )
                 })}
               </div>

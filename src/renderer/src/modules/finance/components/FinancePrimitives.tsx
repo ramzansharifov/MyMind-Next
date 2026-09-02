@@ -4,6 +4,7 @@ import { cloneElement, isValidElement, useId } from 'react'
 import type { ButtonHTMLAttributes, ReactElement, ReactNode } from 'react'
 
 import { cn } from '../../../shared/lib/cn'
+import { Tooltip } from '../../../shared/ui/tooltip'
 
 export function FinanceSurface({
   children,
@@ -37,9 +38,10 @@ export function FinanceButton({
   size = 'md',
   className,
   children,
+  title,
   ...props
 }: FinanceButtonProps): React.JSX.Element {
-  return (
+  const button = (
     <button
       type="button"
       className={cn(
@@ -60,6 +62,24 @@ export function FinanceButton({
     >
       {children}
     </button>
+  )
+
+  if (!title) return button
+
+  if (props.disabled) {
+    return (
+      <Tooltip content={title} side="top">
+        <span className="inline-flex" tabIndex={0}>
+          {button}
+        </span>
+      </Tooltip>
+    )
+  }
+
+  return (
+    <Tooltip content={title} side="top">
+      {button}
+    </Tooltip>
   )
 }
 

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState, type RefObject } from 'react'
 
 import type { StudyBlock } from '../../../../../shared/contracts/study'
 import { cn } from '../../../shared/lib/cn'
+import { Tooltip } from '../../../shared/ui/tooltip'
 import {
   getStudyHeadingElementId,
   STUDY_REVEAL_HEADING_EVENT,
@@ -198,44 +199,45 @@ export function StudyReadNavigation({
 
               return (
                 <li key={heading.id}>
-                  <button
-                    type="button"
-                    title={title}
-                    aria-current={isActive ? 'location' : undefined}
-                    className={cn(
-                      'group relative flex min-h-9 w-full min-w-0 items-center gap-2 rounded-lg pr-2 text-left outline-none',
-                      'transition-colors',
-                      'focus-visible:ring-2 focus-visible:ring-violet-500/35',
-                      heading.level === 1 && 'pl-3',
-                      heading.level === 2 && 'pl-6',
-                      heading.level === 3 && 'pl-9',
-                      isActive
-                        ? 'bg-violet-500/12 text-violet-200'
-                        : 'text-[var(--app-muted)] hover:bg-white/[0.04] hover:text-[var(--app-text)]'
-                    )}
-                    onClick={() => {
-                      navigateToHeading(heading.id)
-                    }}
-                  >
-                    <span
-                      aria-hidden="true"
+                  <Tooltip content={title} side="right">
+                    <button
+                      type="button"
+                      aria-current={isActive ? 'location' : undefined}
                       className={cn(
-                        'absolute top-2 bottom-2 left-1 w-0.5 rounded-full transition-colors',
-                        isActive ? 'bg-violet-400' : 'bg-transparent'
+                        'group relative flex min-h-9 w-full min-w-0 items-center gap-2 rounded-lg pr-2 text-left outline-none',
+                        'transition-colors',
+                        'focus-visible:ring-2 focus-visible:ring-violet-500/35',
+                        heading.level === 1 && 'pl-3',
+                        heading.level === 2 && 'pl-6',
+                        heading.level === 3 && 'pl-9',
+                        isActive
+                          ? 'bg-violet-500/12 text-violet-200'
+                          : 'text-[var(--app-muted)] hover:bg-white/[0.04] hover:text-[var(--app-text)]'
                       )}
-                    />
-
-                    <span
-                      className={cn(
-                        'w-5 shrink-0 text-[9px] font-semibold tracking-wide',
-                        isActive ? 'text-violet-300' : 'text-[var(--app-muted)]/65'
-                      )}
+                      onClick={() => {
+                        navigateToHeading(heading.id)
+                      }}
                     >
-                      H{heading.level}
-                    </span>
+                      <span
+                        aria-hidden="true"
+                        className={cn(
+                          'absolute top-2 bottom-2 left-1 w-0.5 rounded-full transition-colors',
+                          isActive ? 'bg-violet-400' : 'bg-transparent'
+                        )}
+                      />
 
-                    <span className="min-w-0 flex-1 truncate text-xs leading-5">{title}</span>
-                  </button>
+                      <span
+                        className={cn(
+                          'w-5 shrink-0 text-[9px] font-semibold tracking-wide',
+                          isActive ? 'text-violet-300' : 'text-[var(--app-muted)]/65'
+                        )}
+                      >
+                        H{heading.level}
+                      </span>
+
+                      <span className="min-w-0 flex-1 truncate text-xs leading-5">{title}</span>
+                    </button>
+                  </Tooltip>
                 </li>
               )
             })}

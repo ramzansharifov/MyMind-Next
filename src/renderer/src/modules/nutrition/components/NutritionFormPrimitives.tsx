@@ -1,4 +1,6 @@
-import type { ReactNode } from 'react'
+import { useId, type ReactNode } from 'react'
+
+import { AppCheckbox } from '../../../shared/ui/AppCheckbox'
 
 export function NutritionFormField({
   label,
@@ -29,14 +31,13 @@ export function NutritionCheckField({
   checked: boolean
   onChange: (checked: boolean) => void
 }): React.JSX.Element {
+  const id = useId()
   return (
-    <label className="inline-flex items-center gap-2 text-sm text-[var(--app-muted)]">
-      <input
-        type="checkbox"
-        checked={checked}
-        className="accent-violet-500"
-        onChange={(event) => onChange(event.target.checked)}
-      />
+    <label
+      htmlFor={id}
+      className="inline-flex cursor-pointer items-center gap-2 text-sm text-[var(--app-muted)]"
+    >
+      <AppCheckbox id={id} ariaLabel={label} checked={checked} onCheckedChange={onChange} />
       {label}
     </label>
   )

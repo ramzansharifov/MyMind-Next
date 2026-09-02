@@ -1,6 +1,8 @@
 import { CalendarDays, Check, LoaderCircle, Palette, Pencil, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
+import { Tooltip } from '../../../shared/ui/tooltip'
+
 import {
   DIARY_COVER_TONES,
   DIARY_PAPER_PATTERNS,
@@ -194,28 +196,29 @@ export function DiarySettings({
                   const meta = diaryPaperToneMeta[tone]
                   const selected = paperTone === tone
                   return (
-                    <button
-                      key={tone}
-                      type="button"
-                      aria-pressed={selected}
-                      title={meta.description}
-                      className={`relative flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl border px-2 py-3 text-center transition-colors outline-none disabled:cursor-wait ${selected ? 'border-violet-500/45 bg-violet-500/[0.08]' : 'border-[var(--app-border)] bg-[var(--app-control)] hover:bg-[var(--app-control-hover)]'} focus-visible:ring-2 focus-visible:ring-violet-500/30`}
-                      onClick={() => void saveAppearance(paperPattern, tone, coverTone)}
-                    >
-                      <span
-                        className="size-9 rounded-full border shadow-sm"
-                        style={{ backgroundColor: meta.paper, borderColor: meta.border }}
-                        aria-hidden="true"
-                      />
-                      <span className="text-[11px] leading-4 font-medium text-[var(--app-muted)]">
-                        {meta.label}
-                      </span>
-                      {selected && (
-                        <span className="absolute top-2 right-2 flex size-4 items-center justify-center rounded-full bg-violet-500 text-white">
-                          <Check className="size-2.5" />
+                    <Tooltip key={tone} content={meta.description} side="top">
+                      <button
+                        type="button"
+                        aria-pressed={selected}
+
+                        className={`relative flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl border px-2 py-3 text-center transition-colors outline-none disabled:cursor-wait ${selected ? 'border-violet-500/45 bg-violet-500/[0.08]' : 'border-[var(--app-border)] bg-[var(--app-control)] hover:bg-[var(--app-control-hover)]'} focus-visible:ring-2 focus-visible:ring-violet-500/30`}
+                        onClick={() => void saveAppearance(paperPattern, tone, coverTone)}
+                      >
+                        <span
+                          className="size-9 rounded-full border shadow-sm"
+                          style={{ backgroundColor: meta.paper, borderColor: meta.border }}
+                          aria-hidden="true"
+                        />
+                        <span className="text-[11px] leading-4 font-medium text-[var(--app-muted)]">
+                          {meta.label}
                         </span>
-                      )}
-                    </button>
+                        {selected && (
+                          <span className="absolute top-2 right-2 flex size-4 items-center justify-center rounded-full bg-violet-500 text-white">
+                            <Check className="size-2.5" />
+                          </span>
+                        )}
+                      </button>
+                    </Tooltip>
                   )
                 })}
               </div>
@@ -228,28 +231,29 @@ export function DiarySettings({
                   const meta = diaryCoverToneMeta[tone]
                   const selected = coverTone === tone
                   return (
-                    <button
-                      key={tone}
-                      type="button"
-                      aria-pressed={selected}
-                      title={meta.description}
-                      className={`relative flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl border px-2 py-3 text-center transition-colors outline-none disabled:cursor-wait ${selected ? 'border-violet-500/45 bg-violet-500/[0.08]' : 'border-[var(--app-border)] bg-[var(--app-control)] hover:bg-[var(--app-control-hover)]'} focus-visible:ring-2 focus-visible:ring-violet-500/30`}
-                      onClick={() => void saveAppearance(paperPattern, paperTone, tone)}
-                    >
-                      <span
-                        className="diary-cover-tone-swatch"
-                        style={getDiaryCoverStyle(tone)}
-                        aria-hidden="true"
-                      />
-                      <span className="text-[11px] leading-4 font-medium text-[var(--app-muted)]">
-                        {meta.label}
-                      </span>
-                      {selected && (
-                        <span className="absolute top-2 right-2 flex size-4 items-center justify-center rounded-full bg-violet-500 text-white">
-                          <Check className="size-2.5" />
+                    <Tooltip key={tone} content={meta.description} side="top">
+                      <button
+                        type="button"
+                        aria-pressed={selected}
+
+                        className={`relative flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl border px-2 py-3 text-center transition-colors outline-none disabled:cursor-wait ${selected ? 'border-violet-500/45 bg-violet-500/[0.08]' : 'border-[var(--app-border)] bg-[var(--app-control)] hover:bg-[var(--app-control-hover)]'} focus-visible:ring-2 focus-visible:ring-violet-500/30`}
+                        onClick={() => void saveAppearance(paperPattern, paperTone, tone)}
+                      >
+                        <span
+                          className="diary-cover-tone-swatch"
+                          style={getDiaryCoverStyle(tone)}
+                          aria-hidden="true"
+                        />
+                        <span className="text-[11px] leading-4 font-medium text-[var(--app-muted)]">
+                          {meta.label}
                         </span>
-                      )}
-                    </button>
+                        {selected && (
+                          <span className="absolute top-2 right-2 flex size-4 items-center justify-center rounded-full bg-violet-500 text-white">
+                            <Check className="size-2.5" />
+                          </span>
+                        )}
+                      </button>
+                    </Tooltip>
                   )
                 })}
               </div>
