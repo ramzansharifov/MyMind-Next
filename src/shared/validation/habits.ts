@@ -68,7 +68,8 @@ const habitBaseInputSchema = z
     targetValue: z.number().int().min(1).max(MAX_TRACK_VALUE),
     unit: z.string().trim().max(MAX_UNIT_LENGTH),
     repeatEveryDays: z.number().int().min(1).max(MAX_REPEAT_DAYS),
-    preferredTimes: z.array(habitPreferredTimeSchema).max(MAX_PREFERRED_TIMES)
+    preferredTimes: z.array(habitPreferredTimeSchema).max(MAX_PREFERRED_TIMES),
+    remindersEnabled: z.boolean()
   })
   .strict()
 
@@ -110,6 +111,14 @@ function validateHabitInput(
       })
     }
     seenUnits.add(preferredTime.unit)
+  }
+
+  if (input.remindersEnabled && input.preferredTimes.length === 0) {
+    context.addIssue({
+      code: 'custom',
+      path: ['remindersEnabled'],
+      message: 'Чтобы включить напоминания, укажите предпочтительное время'
+    })
   }
 }
 

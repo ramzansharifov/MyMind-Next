@@ -34,6 +34,7 @@ export const habits = sqliteTable(
     unit: text('unit').notNull().default(''),
     repeatEveryDays: integer('repeat_every_days').notNull().default(1),
     preferredTime: text('preferred_time'),
+    remindersEnabled: integer('reminders_enabled', { mode: 'boolean' }).notNull().default(false),
     createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
     updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull()
   },
@@ -60,5 +61,27 @@ export const habitEntries = sqliteTable(
     uniqueIndex('habit_entries_habit_date_unique').on(table.habitId, table.date),
     index('habit_entries_date_idx').on(table.date),
     index('habit_entries_habit_idx').on(table.habitId)
+  ]
+)
+
+export const habitReminderDeliveries = sqliteTable(
+  'habit_reminder_deliveries',
+  {
+    id: text('id').primaryKey(),
+    habitId: text('habit_id')
+      .notNull()
+      .references(() => habits.id, { onDelete: 'cascade' }),
+    occurrenceDate: text('occurrence_date').notNull(),
+    unit: integer('unit').notNull(),
+    preferredTime: text('preferred_time').notNull(),
+    deliveredAt: integer('delivered_at', { mode: 'timestamp_ms' }).notNull()
+  },
+  (table) => [
+    uniqueIndex('habit_reminder_deliveries_habit_date_unit_unique').on(
+      table.habitId,
+      table.occurrenceDate,
+      table.unit
+    ),
+    index('habit_reminder_deliveries_delivered_idx').on(table.deliveredAt)
   ]
 )

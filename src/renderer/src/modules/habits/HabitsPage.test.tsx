@@ -57,6 +57,7 @@ function makeHabit(overrides: Partial<HabitRecord> = {}): HabitRecord {
     unit: '',
     repeatEveryDays: 1,
     preferredTimes: [{ unit: 1, time: '09:00' }],
+    remindersEnabled: true,
     createdAt: Date.now(),
     updatedAt: Date.now(),
     ...overrides
@@ -136,6 +137,7 @@ describe('HabitsPage', () => {
     expect(popover).toHaveTextContent('Здоровье')
     expect(popover).toHaveTextContent('Каждый день')
     expect(popover).toHaveTextContent('09:00')
+    expect(popover).toHaveTextContent('За 30 минут')
   })
 
   it('does not truncate a long habit title', async () => {

@@ -50,6 +50,7 @@ interface HabitRow {
   unit: string
   repeat_every_days: number
   preferred_time: string | null
+  reminders_enabled: number
   created_at: number
   updated_at: number
 }
@@ -117,6 +118,7 @@ const HABIT_SELECT = `SELECT
   unit,
   repeat_every_days,
   preferred_time,
+  reminders_enabled,
   created_at,
   updated_at
 FROM habits`
@@ -153,6 +155,7 @@ function mapHabit(row: HabitRow): HabitRecord {
     unit: row.unit,
     repeatEveryDays: row.repeat_every_days,
     preferredTimes: parsePreferredTimes(row.preferred_time),
+    remindersEnabled: row.reminders_enabled === 1,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   }
@@ -260,6 +263,107 @@ export function isHabitScheduledOn(habit: HabitRecord, date: string): boolean {
   if (date < anchor) return false
   const delta = daysBetween(anchor, date)
   return delta >= 0 && delta % habit.repeatEveryDays === 0
+}
+
+export interface HabitReminderTrigger {
+  habitId: string
+  title: string
+  occurrenceDate: string
+  unit: number
+  targetValue: number
+  preferredTime: string
+  triggerAt: number
+}
+
+const HABIT_REMINDER_OFFSET_MS = 30 * 60_000
+
+function localDateTimeMs(date: string, time: string): number {
+  const [year, month, day] = dateParts(date)
+  const [hours, minutes] = time.split(':').map(Number)
+  return new Date(year, month - 1, day, hours ?? 0, minutes ?? 0, 0, 0).getTime()
+}
+
+export function listDueHabitReminders(sinceMs: number, nowMs: number): HabitReminderTrigger[] {
+  if (!Number.isFinite(sinceMs) || !Number.isFinite(nowMs) || nowMs < sinceMs) return []
+
+  const sqlite = getSqlite()
+  const habits = (
+    sqlite
+      .prepare(
+        `${HABIT_SELECT} WHERE reminders_enabled = 1 ORDER BY updated_at DESC, created_at DESC`
+      )
+      .all() as HabitRow[]
+  )
+    .map(mapHabit)
+    .filter((habit) => habit.remindersEnabled && habit.preferredTimes.length > 0)
+
+  if (habits.length === 0) return []
+
+  const fromDate = localDateKey(new Date(sinceMs))
+  const throughDate = addDays(localDateKey(new Date(nowMs)), 1)
+  const entryRows = sqlite
+    .prepare(`${HABIT_ENTRY_SELECT} WHERE date >= ? AND date <= ?`)
+    .all(fromDate, throughDate) as HabitEntryRow[]
+  const entries = new Map(entryRows.map((row) => [`${row.habit_id}:${row.date}`, mapEntry(row)]))
+  const result: HabitReminderTrigger[] = []
+
+  for (
+    let occurrenceDate = fromDate;
+    occurrenceDate <= throughDate;
+    occurrenceDate = addDays(occurrenceDate, 1)
+  ) {
+    for (const habit of habits) {
+      if (!isHabitScheduledOn(habit, occurrenceDate)) continue
+
+      const entry = entries.get(`${habit.id}:${occurrenceDate}`)
+      if (entry?.skipped) continue
+      const progress = entry?.value ?? 0
+
+      for (const preferredTime of habit.preferredTimes) {
+        if (progress >= preferredTime.unit) continue
+        const triggerAt =
+          localDateTimeMs(occurrenceDate, preferredTime.time) - HABIT_REMINDER_OFFSET_MS
+        if (triggerAt < sinceMs || triggerAt > nowMs) continue
+
+        result.push({
+          habitId: habit.id,
+          title: habit.title,
+          occurrenceDate,
+          unit: preferredTime.unit,
+          targetValue: habit.targetValue,
+          preferredTime: preferredTime.time,
+          triggerAt
+        })
+      }
+    }
+  }
+
+  return result.sort(
+    (left, right) => left.triggerAt - right.triggerAt || left.title.localeCompare(right.title, 'ru')
+  )
+}
+
+export function markHabitReminderDelivered(reminder: HabitReminderTrigger): boolean {
+  try {
+    getSqlite()
+      .prepare(
+        `INSERT INTO habit_reminder_deliveries (
+id, habit_id, occurrence_date, unit, preferred_time, delivered_at
+        ) VALUES (?, ?, ?, ?, ?, ?)`
+      )
+      .run(
+        randomUUID(),
+        reminder.habitId,
+        reminder.occurrenceDate,
+        reminder.unit,
+        reminder.preferredTime,
+        Date.now()
+      )
+    return true
+  } catch (reason: unknown) {
+    if (reason instanceof Error && /UNIQUE constraint failed/.test(reason.message)) return false
+    throw reason
+  }
 }
 
 function completionRate(summary: Pick<HabitReportSummary, 'completed' | 'missed'>): number {
@@ -387,8 +491,8 @@ export function createHabit(input: CreateHabitInput): HabitRecord {
     .prepare(
       `INSERT INTO habits (
         id, title, group_id, tracking_type, target_value, unit,
-        repeat_every_days, preferred_time, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        repeat_every_days, preferred_time, reminders_enabled, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
       id,
@@ -399,6 +503,7 @@ export function createHabit(input: CreateHabitInput): HabitRecord {
       input.unit,
       input.repeatEveryDays,
       serializePreferredTimes(input.preferredTimes),
+      input.remindersEnabled && input.preferredTimes.length > 0 ? 1 : 0,
       now,
       now
     )
@@ -415,7 +520,7 @@ export function updateHabit(input: UpdateHabitInput): HabitRecord {
     .prepare(
       `UPDATE habits SET
         title = ?, group_id = ?, tracking_type = ?, target_value = ?, unit = ?,
-        repeat_every_days = ?, preferred_time = ?, updated_at = ?
+        repeat_every_days = ?, preferred_time = ?, reminders_enabled = ?, updated_at = ?
        WHERE id = ?`
     )
     .run(
@@ -426,6 +531,7 @@ export function updateHabit(input: UpdateHabitInput): HabitRecord {
       input.unit,
       input.repeatEveryDays,
       serializePreferredTimes(input.preferredTimes),
+      input.remindersEnabled && input.preferredTimes.length > 0 ? 1 : 0,
       now,
       input.id
     )

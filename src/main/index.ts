@@ -16,6 +16,7 @@ import { installPermissionPolicy } from './security/permissions'
 import { focusExistingAppWindow } from './security/single-instance'
 import { AiChatViewController } from './services/ai-chat-view-controller'
 import { CalendarReminderScheduler } from './services/calendar-reminder-scheduler'
+import { HabitReminderScheduler } from './services/habit-reminder-scheduler'
 import { mainOperationTracker } from './services/main-operation-tracker'
 import { clearTrackedPasswordClipboard } from './services/password-clipboard'
 import {
@@ -30,6 +31,7 @@ import { runStudyPlainTextMaintenance } from './services/study-plain-text-mainte
 let mainWindow: BrowserWindow | null = null
 const aiChatViewController = new AiChatViewController(() => mainWindow)
 const calendarReminderScheduler = new CalendarReminderScheduler(() => mainWindow)
+const habitReminderScheduler = new HabitReminderScheduler(() => mainWindow)
 
 const shutdownFallbackCopy: Record<
   ShutdownFallbackReason,
@@ -104,6 +106,7 @@ async function resolveShutdownFallback(
 function closeApplicationResources(): void {
   aiChatViewController.destroy()
   calendarReminderScheduler.stop()
+  habitReminderScheduler.stop()
   clearTrackedPasswordClipboard()
   lockPasswordVault()
   closeDatabase()
@@ -314,6 +317,7 @@ if (!hasSingleInstanceLock) {
 
     createWindow()
     calendarReminderScheduler.start()
+    habitReminderScheduler.start()
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) {

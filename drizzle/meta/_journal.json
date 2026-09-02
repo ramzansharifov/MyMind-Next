@@ -281,6 +281,13 @@
       "when": 1788267900000,
       "tag": "0039_music_playlist_covers",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "6",
+      "when": 1788352948375,
+      "tag": "0040_pretty_cyclops",
+      "breakpoints": true
     }
   ]
 }
