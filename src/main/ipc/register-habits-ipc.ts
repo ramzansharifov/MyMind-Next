@@ -7,6 +7,7 @@ import {
   deleteHabitEntryInputSchema,
   deleteHabitGroupInputSchema,
   deleteHabitInputSchema,
+  habitAcknowledgeReminderInputSchema,
   habitReportInputSchema,
   habitsOverviewInputSchema,
   updateHabitGroupInputSchema,
@@ -14,6 +15,7 @@ import {
   upsertHabitEntryInputSchema
 } from '../../shared/validation/habits'
 import {
+  acknowledgeHabitReminder,
   createHabit,
   createHabitGroup,
   deleteHabit,
@@ -21,6 +23,7 @@ import {
   deleteHabitGroup,
   getHabitsReport,
   listHabitsOverview,
+  listUnreadHabitReminders,
   updateHabit,
   updateHabitGroup,
   upsertHabitEntry
@@ -32,6 +35,14 @@ export function registerHabitsIpcHandlers(): void {
 
   ipcMain.handle(HABITS_IPC_CHANNELS.listOverview, (_event, rawInput: unknown) =>
     mainOperationTracker.run(() => listHabitsOverview(habitsOverviewInputSchema.parse(rawInput)))
+  )
+  ipcMain.handle(HABITS_IPC_CHANNELS.listUnreadReminders, () =>
+    mainOperationTracker.run(() => listUnreadHabitReminders())
+  )
+  ipcMain.handle(HABITS_IPC_CHANNELS.acknowledgeReminder, (_event, rawInput: unknown) =>
+    mainOperationTracker.run(() =>
+      acknowledgeHabitReminder(habitAcknowledgeReminderInputSchema.parse(rawInput))
+    )
   )
   ipcMain.handle(HABITS_IPC_CHANNELS.createGroup, (_event, rawInput: unknown) =>
     mainOperationTracker.run(() => createHabitGroup(createHabitGroupInputSchema.parse(rawInput)))

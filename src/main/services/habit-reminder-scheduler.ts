@@ -1,5 +1,6 @@
 import { Notification, type BrowserWindow } from 'electron'
 
+import { HABITS_IPC_CHANNELS } from '../../shared/contracts/habits'
 import {
   listDueHabitReminders,
   markHabitReminderDelivered
@@ -34,6 +35,12 @@ export class HabitReminderScheduler {
       const due = listDueHabitReminders(this.lastCheck, now)
       for (const reminder of due) {
         if (!markHabitReminderDelivered(reminder)) continue
+
+        const window = this.getWindow()
+        if (window && !window.isDestroyed() && !window.webContents.isDestroyed()) {
+          window.webContents.send(HABITS_IPC_CHANNELS.remindersChanged)
+        }
+
         if (!Notification.isSupported()) {
           console.warn('Habit desktop notifications are not supported', {
             title: reminder.title,

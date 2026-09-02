@@ -37,6 +37,8 @@ import { HabitDatePicker } from './components/HabitDatePicker'
 import { HabitDialog } from './components/HabitDialog'
 import { HabitGroupDialog } from './components/HabitGroupDialog'
 import { HabitTodayRow } from './components/HabitTodayRow'
+import { HabitReminderInbox } from './HabitReminderInbox'
+import { useHabitReminderInbox } from './useHabitReminderInbox'
 import { HabitReports } from './components/HabitReports'
 import { HabitGroupIconGlyph, habitGroupColorClasses, habitRepeatLabel } from './habit-options'
 import {
@@ -79,6 +81,7 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
   const [isDeleting, setIsDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const handledResourceIdRef = useRef<string | null>(null)
+  const { reminders, acknowledge: acknowledgeReminder } = useHabitReminderInbox()
 
   const today = localDateKey()
 
@@ -477,6 +480,12 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
           )}
         </div>
       </ModuleHeader>
+
+      <HabitReminderInbox
+        className="mt-4"
+        reminders={reminders}
+        onAcknowledge={acknowledgeReminder}
+      />
 
       {error && (
         <div

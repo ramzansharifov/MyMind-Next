@@ -74,7 +74,8 @@ export const habitReminderDeliveries = sqliteTable(
     occurrenceDate: text('occurrence_date').notNull(),
     unit: integer('unit').notNull(),
     preferredTime: text('preferred_time').notNull(),
-    deliveredAt: integer('delivered_at', { mode: 'timestamp_ms' }).notNull()
+    deliveredAt: integer('delivered_at', { mode: 'timestamp_ms' }).notNull(),
+    acknowledgedAt: integer('acknowledged_at', { mode: 'timestamp_ms' })
   },
   (table) => [
     uniqueIndex('habit_reminder_deliveries_habit_date_unit_unique').on(
@@ -83,6 +84,7 @@ export const habitReminderDeliveries = sqliteTable(
       table.unit,
       table.preferredTime
     ),
-    index('habit_reminder_deliveries_delivered_idx').on(table.deliveredAt)
+    index('habit_reminder_deliveries_delivered_idx').on(table.deliveredAt),
+    index('habit_reminder_deliveries_acknowledged_idx').on(table.acknowledgedAt)
   ]
 )

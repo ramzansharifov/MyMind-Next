@@ -71,6 +71,26 @@ export interface HabitEntryRecord {
   updatedAt: number
 }
 
+export interface HabitReminderRecord {
+  habitId: string
+  title: string
+  occurrenceDate: string
+  unit: number
+  targetValue: number
+  habitUnit: string
+  preferredTime: string
+  triggerAt: number
+}
+
+export interface HabitUnreadReminderRecord extends HabitReminderRecord {
+  deliveryId: string
+  deliveredAt: number
+}
+
+export interface HabitAcknowledgeReminderInput {
+  deliveryId: string
+}
+
 export interface HabitsOverviewInput {
   date: string
 }
@@ -170,6 +190,9 @@ export interface HabitReport {
 
 export const HABITS_IPC_CHANNELS = {
   listOverview: 'habits:list-overview',
+  listUnreadReminders: 'habits:list-unread-reminders',
+  acknowledgeReminder: 'habits:acknowledge-reminder',
+  remindersChanged: 'habits:reminders-changed',
   createGroup: 'habits:create-group',
   updateGroup: 'habits:update-group',
   deleteGroup: 'habits:delete-group',
@@ -183,6 +206,9 @@ export const HABITS_IPC_CHANNELS = {
 
 export interface HabitsApi {
   listOverview(input: HabitsOverviewInput): Promise<HabitsOverview>
+  listUnreadReminders(): Promise<HabitUnreadReminderRecord[]>
+  acknowledgeReminder(input: HabitAcknowledgeReminderInput): Promise<boolean>
+  onRemindersChanged(listener: () => void): () => void
   createGroup(input: CreateHabitGroupInput): Promise<HabitGroupRecord>
   updateGroup(input: UpdateHabitGroupInput): Promise<HabitGroupRecord>
   deleteGroup(input: DeleteHabitGroupInput): Promise<boolean>

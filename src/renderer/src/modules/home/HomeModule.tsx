@@ -18,6 +18,8 @@ import {
 import { requestAppModuleNavigation } from '../../app/module-navigation'
 import { CalendarReminderInbox } from '../calendar/CalendarReminderInbox'
 import { useCalendarReminderInbox } from '../calendar/useCalendarReminderInbox'
+import { HabitReminderInbox } from '../habits/HabitReminderInbox'
+import { useHabitReminderInbox } from '../habits/useHabitReminderInbox'
 import type { AppViewId } from '../../app/module-registry'
 import { ModuleHeader } from '../../shared/ui/ModuleHeader'
 import { StandardModulePage } from '../../shared/ui/StandardModulePage'
@@ -43,7 +45,10 @@ const HOME_MODULES: Array<{
 ]
 
 export function HomeModule(): React.JSX.Element {
-  const { reminders, acknowledge } = useCalendarReminderInbox()
+  const { reminders: calendarReminders, acknowledge: acknowledgeCalendarReminder } =
+    useCalendarReminderInbox()
+  const { reminders: habitReminders, acknowledge: acknowledgeHabitReminder } =
+    useHabitReminderInbox()
 
   return (
     <StandardModulePage>
@@ -55,9 +60,15 @@ export function HomeModule(): React.JSX.Element {
         />
 
         <CalendarReminderInbox
-          reminders={reminders}
-          onAcknowledge={acknowledge}
+          reminders={calendarReminders}
+          onAcknowledge={acknowledgeCalendarReminder}
           onOpenCalendar={() => requestAppModuleNavigation({ view: 'calendar' })}
+        />
+
+        <HabitReminderInbox
+          reminders={habitReminders}
+          onAcknowledge={acknowledgeHabitReminder}
+          onOpenHabits={() => requestAppModuleNavigation({ view: 'habits' })}
         />
 
         <section className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 shadow-[var(--app-shadow-card)]">
@@ -74,9 +85,15 @@ export function HomeModule(): React.JSX.Element {
                 >
                   <span className="relative flex size-9 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-violet-300 transition-colors group-hover:border-violet-500/25">
                     <Icon aria-hidden="true" className="size-5" />
-                    {module.id === 'calendar' && reminders.length > 0 && (
+                    {module.id === 'calendar' && calendarReminders.length > 0 && (
                       <span
                         aria-label="Есть непрочитанные напоминания"
+                        className="absolute -top-1 -right-1 size-2.5 rounded-full bg-red-500 ring-2 ring-[var(--app-card)]"
+                      />
+                    )}
+                    {module.id === 'habits' && habitReminders.length > 0 && (
+                      <span
+                        aria-label="Есть непрочитанные напоминания привычек"
                         className="absolute -top-1 -right-1 size-2.5 rounded-full bg-red-500 ring-2 ring-[var(--app-card)]"
                       />
                     )}
