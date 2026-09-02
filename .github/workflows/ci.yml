@@ -2,9 +2,6 @@ name: CI (manual)
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - agent/windows-notification-dev-fix
 
 permissions:
   contents: read
@@ -12,16 +9,18 @@ permissions:
 jobs:
   verify:
     runs-on: windows-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - run: npm ci --ignore-scripts
-      - run: npx prettier --check src/main/index.ts src/main/services/calendar-reminder-scheduler.ts src/main/services/habit-reminder-scheduler.ts
-      - run: npx eslint src/main/index.ts src/main/services/calendar-reminder-scheduler.ts src/main/services/habit-reminder-scheduler.ts
-      - run: npm run typecheck:node
+      - run: npm ci
+      - run: npm run native:node
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:coverage
       - run: npm run db:check
       - run: npm run build:bundle
