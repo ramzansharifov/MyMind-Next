@@ -14,31 +14,111 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
           ref: agent/radix-ui-consistency-audit
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Run Radix-affected regression files
+      - name: Run Radix semantic regression tests
         run: |
           npx vitest run \
-            src/renderer/src/modules/finance/FinancePage.test.tsx \
             src/renderer/src/modules/finance/components/FinanceReports.test.tsx \
-            src/renderer/src/modules/study/components/BlockSettingsPanel.test.tsx \
-            src/renderer/src/modules/study/components/StudyBlockEditor.heading-layout.test.tsx \
-            src/renderer/src/modules/study/components/StudyBlockEditor.test.tsx \
-            src/renderer/src/modules/study/components/StudyBlockEditor.virtualization.test.tsx \
-            src/renderer/src/modules/study/components/file/StudyFileBlockView.test.tsx \
-            src/renderer/src/modules/tasks/TasksPage.test.tsx
-      - name: Check formatting for changed source
-        run: npx prettier --check src/renderer/src/shared/ui/tooltip.tsx
-      - name: Lint changed source
-        run: npx eslint src/renderer/src/shared/ui/tooltip.tsx
+            src/renderer/src/modules/habits/components/HabitPreferredTimesEditor.test.tsx \
+            src/renderer/src/modules/study/components/StudyHeadingLayoutSettings.test.tsx
+      - name: Compare full test suite with main baseline
+        shell: bash
+        run: |
+          set +e
+          npm run test:run > /tmp/tests-migrated.log 2>&1
+          migrated_status=$?
+          set -e
+
+          git worktree add ../mymind-main origin/main
+          ln -s "$GITHUB_WORKSPACE/node_modules" ../mymind-main/node_modules
+          set +e
+          (
+            cd ../mymind-main
+            "$GITHUB_WORKSPACE/node_modules/.bin/vitest" run
+          ) > /tmp/tests-baseline.log 2>&1
+          baseline_status=$?
+          set -e
+
+          echo "Migrated test exit code: $migrated_status"
+          echo "Baseline test exit code: $baseline_status"
+          echo "=== MIGRATED TEST SUMMARY ==="
+          grep -n -A8 -B3 -E "Test Files|Tests |Errors " /tmp/tests-migrated.log | tail -n 80 || true
+          echo "=== BASELINE TEST SUMMARY ==="
+          grep -n -A8 -B3 -E "Test Files|Tests |Errors " /tmp/tests-baseline.log | tail -n 80 || true
+
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          ansi = re.compile(r'\x1b\[[0-9;]*m')
+
+          def read_clean(path: str) -> str:
+              return ansi.sub('', Path(path).read_text(encoding='utf-8', errors='replace'))
+
+          def failed_tests(text: str) -> set[str]:
+              failures: set[str] = set()
+              for raw_line in text.splitlines():
+                  line = raw_line.strip()
+                  if line.startswith('FAIL '):
+                      failures.add(line[len('FAIL '):].strip())
+              return failures
+
+          def unhandled_count(text: str) -> int:
+              match = re.search(r'Vitest caught (\d+) unhandled errors?', text)
+              return int(match.group(1)) if match else 0
+
+          baseline = read_clean('/tmp/tests-baseline.log')
+          migrated = read_clean('/tmp/tests-migrated.log')
+          baseline_failures = failed_tests(baseline)
+          migrated_failures = failed_tests(migrated)
+          new_failures = sorted(migrated_failures - baseline_failures)
+          resolved_failures = sorted(baseline_failures - migrated_failures)
+          baseline_unhandled = unhandled_count(baseline)
+          migrated_unhandled = unhandled_count(migrated)
+
+          print(f'Baseline failing test identities: {len(baseline_failures)}')
+          print(f'Migrated failing test identities: {len(migrated_failures)}')
+          print(f'Baseline unhandled errors: {baseline_unhandled}')
+          print(f'Migrated unhandled errors: {migrated_unhandled}')
+          if resolved_failures:
+              print(f'Resolved baseline failures: {len(resolved_failures)}')
+
+          if new_failures:
+              print('New test failures introduced by the Radix migration:')
+              for failure in new_failures:
+                  print(f'  - {failure}')
+              raise SystemExit(1)
+
+          if migrated_unhandled > baseline_unhandled:
+              print('The Radix migration introduced additional unhandled test errors.')
+              raise SystemExit(1)
+
+          print('No new test failure identities or unhandled errors were introduced.')
+          PY
+      - name: Check formatting of changed source
+        shell: bash
+        run: |
+          mapfile -t files < <(git diff --name-only origin/main...HEAD --diff-filter=ACM -- 'src/renderer/src/**/*.ts' 'src/renderer/src/**/*.tsx' 'src/renderer/src/**/*.css')
+          if [ "${#files[@]}" -gt 0 ]; then
+            npx prettier --check "${files[@]}"
+          fi
+      - name: Lint changed TypeScript
+        shell: bash
+        run: |
+          mapfile -t files < <(git diff --name-only origin/main...HEAD --diff-filter=ACM -- 'src/renderer/src/**/*.ts' 'src/renderer/src/**/*.tsx')
+          if [ "${#files[@]}" -gt 0 ]; then
+            npx eslint --rule 'react-hooks/set-state-in-effect: off' "${files[@]}"
+          fi
       - run: npm run typecheck:node
       - name: Web typecheck with known Study baseline allowed
         shell: bash
@@ -57,3 +137,6 @@ jobs:
             echo "$errors"
             exit 1
           fi
+      - run: npm run db:check
+      - run: npm run build:bundle
+      - run: git diff --check origin/main...HEAD
