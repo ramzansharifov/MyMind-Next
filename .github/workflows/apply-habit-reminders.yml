@@ -62,6 +62,33 @@ jobs:
       - name: Generate database migration
         run: npm run db:generate
 
+      - name: Normalize generated habit reminder migration
+        shell: bash
+        run: |
+          mapfile -t migrations < <(find drizzle -maxdepth 1 -type f -name '0040_*.sql' -print)
+          if [ "${#migrations[@]}" -ne 1 ]; then
+            echo "Expected exactly one generated 0040 migration, found ${#migrations[@]}"
+            exit 1
+          fi
+          migration="${migrations[0]}"
+          cat > "$migration" <<'SQL'
+          ALTER TABLE `habits` ADD `reminders_enabled` integer DEFAULT false NOT NULL;
+          --> statement-breakpoint
+          CREATE TABLE `habit_reminder_deliveries` (
+            `id` text PRIMARY KEY NOT NULL,
+            `habit_id` text NOT NULL,
+            `occurrence_date` text NOT NULL,
+            `unit` integer NOT NULL,
+            `preferred_time` text NOT NULL,
+            `delivered_at` integer NOT NULL,
+            FOREIGN KEY (`habit_id`) REFERENCES `habits`(`id`) ON UPDATE no action ON DELETE cascade
+          );
+          --> statement-breakpoint
+          CREATE UNIQUE INDEX `habit_reminder_deliveries_habit_date_unit_unique` ON `habit_reminder_deliveries` (`habit_id`,`occurrence_date`,`unit`);
+          --> statement-breakpoint
+          CREATE INDEX `habit_reminder_deliveries_delivered_idx` ON `habit_reminder_deliveries` (`delivered_at`);
+          SQL
+
       - name: Format changed TypeScript
         run: >-
           npx prettier --write
