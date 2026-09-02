@@ -35,7 +35,15 @@ jobs:
           new = """    '''                    <span className=\"min-w-0 flex-1 truncate text-xs leading-5\">{title}</span>\n                  </button>\n                </li>''',"""
           if text.count(old) != 1:
               raise SystemExit(f'Expected one StudyReadNavigation closing pattern, got {text.count(old)}')
-          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          text = text.replace(old, new, 1)
+
+          old_replacement = """    '''                    </span>\n                    </button>\n                  </Tooltip>\n                </li>'''"""
+          new_replacement = """    '''                    <span className=\"min-w-0 flex-1 truncate text-xs leading-5\">{title}</span>\n                    </button>\n                  </Tooltip>\n                </li>'''"""
+          if text.count(old_replacement) != 1:
+              raise SystemExit(
+                  f'Expected one StudyReadNavigation replacement pattern, got {text.count(old_replacement)}'
+              )
+          path.write_text(text.replace(old_replacement, new_replacement, 1), encoding='utf-8')
           PY
           python .github/scripts/apply_radix_consistency.py
       - name: Format changed source files
