@@ -1,0 +1,138 @@
+name: Verify tooltip test baseline
+
+on:
+  push:
+    branches:
+      - agent/tooltips-final-audit
+    paths:
+      - .github/workflows/verify-tooltips-baseline.yml
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/tooltips-final-audit
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Compare full test suite with main baseline
+        shell: bash
+        run: |
+          npm run native:node
+
+          set +e
+          npx vitest run --reporter=json --outputFile=branch-tests.json
+          branch_status=$?
+          set -e
+
+          mapfile -t changed_source_files < <(git diff --name-only origin/main...HEAD -- src)
+          if [ "${#changed_source_files[@]}" -gt 0 ]; then
+            git checkout origin/main -- "${changed_source_files[@]}"
+          fi
+
+          set +e
+          npx vitest run --reporter=json --outputFile=main-tests.json
+          main_status=$?
+          set -e
+
+          if [ "${#changed_source_files[@]}" -gt 0 ]; then
+            git checkout HEAD -- "${changed_source_files[@]}"
+          fi
+
+          BRANCH_STATUS="$branch_status" MAIN_STATUS="$main_status" node <<'NODE'
+          const fs = require('fs')
+
+          function readReport(file) {
+            if (!fs.existsSync(file)) {
+              throw new Error(`Vitest did not produce ${file}`)
+            }
+            return JSON.parse(fs.readFileSync(file, 'utf8'))
+          }
+
+          function failedIdentities(report) {
+            const failures = new Set()
+            for (const suite of report.testResults ?? []) {
+              let assertionFailureFound = false
+              for (const assertion of suite.assertionResults ?? []) {
+                if (assertion.status !== 'failed') continue
+                assertionFailureFound = true
+                failures.add(assertion.fullName || `${suite.name} :: ${assertion.title}`)
+              }
+              if (suite.status === 'failed' && !assertionFailureFound) {
+                failures.add(`suite:${suite.name}`)
+              }
+            }
+            return failures
+          }
+
+          function unhandledCount(report) {
+            if (Array.isArray(report.unhandledErrors)) return report.unhandledErrors.length
+            if (Array.isArray(report.errors)) return report.errors.length
+            return 0
+          }
+
+          const branch = readReport('branch-tests.json')
+          const main = readReport('main-tests.json')
+          const branchFailures = failedIdentities(branch)
+          const mainFailures = failedIdentities(main)
+          const addedFailures = [...branchFailures].filter((failure) => !mainFailures.has(failure))
+          const branchFailedTests = branch.numFailedTests ?? branchFailures.size
+          const mainFailedTests = main.numFailedTests ?? mainFailures.size
+          const branchFailedSuites = branch.numFailedTestSuites ?? 0
+          const mainFailedSuites = main.numFailedTestSuites ?? 0
+          const branchUnhandled = unhandledCount(branch)
+          const mainUnhandled = unhandledCount(main)
+
+          console.log(`branch exit=${process.env.BRANCH_STATUS}, failed tests=${branchFailedTests}, failed suites=${branchFailedSuites}, unhandled=${branchUnhandled}`)
+          console.log(`main   exit=${process.env.MAIN_STATUS}, failed tests=${mainFailedTests}, failed suites=${mainFailedSuites}, unhandled=${mainUnhandled}`)
+
+          if (addedFailures.length > 0) {
+            console.error('New failing test identities compared with main:')
+            for (const failure of addedFailures) console.error(`- ${failure}`)
+            process.exit(1)
+          }
+
+          if (branchFailedTests > mainFailedTests) {
+            console.error(`Branch has more failed tests than main: ${branchFailedTests} > ${mainFailedTests}`)
+            process.exit(1)
+          }
+
+          if (branchFailedSuites > mainFailedSuites) {
+            console.error(`Branch has more failed suites than main: ${branchFailedSuites} > ${mainFailedSuites}`)
+            process.exit(1)
+          }
+
+          if (branchUnhandled > mainUnhandled) {
+            console.error(`Branch has more unhandled errors than main: ${branchUnhandled} > ${mainUnhandled}`)
+            process.exit(1)
+          }
+
+          if (process.env.BRANCH_STATUS !== '0' && process.env.MAIN_STATUS === '0') {
+            console.error('Branch test suite fails while main is green.')
+            process.exit(1)
+          }
+
+          console.log('No new test regressions compared with main baseline.')
+          NODE
+
+      - name: Database schema check
+        run: npm run db:check
+
+      - name: Production bundle
+        run: npm run build:bundle
+
+      - name: Diff check
+        shell: bash
+        run: git diff --check origin/main...HEAD
