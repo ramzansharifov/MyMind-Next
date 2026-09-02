@@ -146,6 +146,7 @@ function mapGroup(row: HabitGroupRow): HabitGroupRecord {
 }
 
 function mapHabit(row: HabitRow): HabitRecord {
+  const preferredTimes = parsePreferredTimes(row.preferred_time)
   return {
     id: row.id,
     title: row.title,
@@ -154,8 +155,8 @@ function mapHabit(row: HabitRow): HabitRecord {
     targetValue: row.target_value,
     unit: row.unit,
     repeatEveryDays: row.repeat_every_days,
-    preferredTimes: parsePreferredTimes(row.preferred_time),
-    remindersEnabled: row.reminders_enabled === 1,
+    preferredTimes,
+    remindersEnabled: preferredTimes.length > 0,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   }
@@ -283,33 +284,31 @@ function localDateTimeMs(date: string, time: string): number {
   return new Date(year, month - 1, day, hours ?? 0, minutes ?? 0, 0, 0).getTime()
 }
 
-export function listDueHabitReminders(sinceMs: number, nowMs: number): HabitReminderTrigger[] {
-  if (!Number.isFinite(sinceMs) || !Number.isFinite(nowMs) || nowMs < sinceMs) return []
-
+export function listHabitReminderTriggers(input: {
+  from: string
+  to: string
+}): HabitReminderTrigger[] {
   const sqlite = getSqlite()
   const habits = (
-    sqlite
-      .prepare(
-        `${HABIT_SELECT} WHERE reminders_enabled = 1 ORDER BY updated_at DESC, created_at DESC`
-      )
-      .all() as HabitRow[]
+    sqlite.prepare(`${HABIT_SELECT} ORDER BY updated_at DESC, created_at DESC`).all() as HabitRow[]
   )
     .map(mapHabit)
-    .filter((habit) => habit.remindersEnabled && habit.preferredTimes.length > 0)
+    .filter((habit) => habit.preferredTimes.length > 0)
 
   if (habits.length === 0) return []
 
-  const fromDate = localDateKey(new Date(sinceMs))
-  const throughDate = addDays(localDateKey(new Date(nowMs)), 1)
+  const occurrenceTo = addDays(input.to, 1)
   const entryRows = sqlite
     .prepare(`${HABIT_ENTRY_SELECT} WHERE date >= ? AND date <= ?`)
-    .all(fromDate, throughDate) as HabitEntryRow[]
+    .all(input.from, occurrenceTo) as HabitEntryRow[]
   const entries = new Map(entryRows.map((row) => [`${row.habit_id}:${row.date}`, mapEntry(row)]))
+  const fromMs = localDateTimeMs(input.from, '00:00')
+  const toMs = localDateTimeMs(input.to, '23:59') + 59_999
   const result: HabitReminderTrigger[] = []
 
   for (
-    let occurrenceDate = fromDate;
-    occurrenceDate <= throughDate;
+    let occurrenceDate = input.from;
+    occurrenceDate <= occurrenceTo;
     occurrenceDate = addDays(occurrenceDate, 1)
   ) {
     for (const habit of habits) {
@@ -323,7 +322,7 @@ export function listDueHabitReminders(sinceMs: number, nowMs: number): HabitRemi
         if (progress >= preferredTime.unit) continue
         const triggerAt =
           localDateTimeMs(occurrenceDate, preferredTime.time) - HABIT_REMINDER_OFFSET_MS
-        if (triggerAt < sinceMs || triggerAt > nowMs) continue
+        if (triggerAt < fromMs || triggerAt > toMs) continue
 
         result.push({
           habitId: habit.id,
@@ -340,6 +339,16 @@ export function listDueHabitReminders(sinceMs: number, nowMs: number): HabitRemi
 
   return result.sort(
     (left, right) => left.triggerAt - right.triggerAt || left.title.localeCompare(right.title, 'ru')
+  )
+}
+
+export function listDueHabitReminders(sinceMs: number, nowMs: number): HabitReminderTrigger[] {
+  if (!Number.isFinite(sinceMs) || !Number.isFinite(nowMs) || nowMs < sinceMs) return []
+
+  const sinceDate = localDateKey(new Date(sinceMs))
+  const nowDate = localDateKey(new Date(nowMs))
+  return listHabitReminderTriggers({ from: sinceDate, to: nowDate }).filter(
+    (item) => item.triggerAt >= sinceMs && item.triggerAt <= nowMs
   )
 }
 
@@ -503,7 +512,7 @@ export function createHabit(input: CreateHabitInput): HabitRecord {
       input.unit,
       input.repeatEveryDays,
       serializePreferredTimes(input.preferredTimes),
-      input.remindersEnabled && input.preferredTimes.length > 0 ? 1 : 0,
+      input.preferredTimes.length > 0 ? 1 : 0,
       now,
       now
     )
@@ -531,7 +540,7 @@ export function updateHabit(input: UpdateHabitInput): HabitRecord {
       input.unit,
       input.repeatEveryDays,
       serializePreferredTimes(input.preferredTimes),
-      input.remindersEnabled && input.preferredTimes.length > 0 ? 1 : 0,
+      input.preferredTimes.length > 0 ? 1 : 0,
       now,
       input.id
     )
