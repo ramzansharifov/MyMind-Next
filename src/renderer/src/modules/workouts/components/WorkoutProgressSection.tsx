@@ -553,18 +553,23 @@ export function WorkoutProgressSection({
                             key={option.value}
                             className="group/photo relative aspect-[4/5] overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)]"
                           >
-                            <button
-                              type="button"
-                              className="size-full"
-                              aria-label={`Открыть фото ${option.label.toLocaleLowerCase('ru-RU')} за ${formatDate(entry.date)}`}
-                              onClick={() => setViewer(item)}
+                            <Tooltip
+                              content={`Открыть фото ${option.label.toLocaleLowerCase('ru-RU')} за ${formatDate(entry.date)}`}
+                              side="top"
                             >
-                              <img
-                                src={photo.url}
-                                alt={`${option.label} · ${formatDate(entry.date)}`}
-                                className="size-full object-cover"
-                              />
-                            </button>
+                              <button
+                                type="button"
+                                className="size-full"
+                                aria-label={`Открыть фото ${option.label.toLocaleLowerCase('ru-RU')} за ${formatDate(entry.date)}`}
+                                onClick={() => setViewer(item)}
+                              >
+                                <img
+                                  src={photo.url}
+                                  alt={`${option.label} · ${formatDate(entry.date)}`}
+                                  className="size-full object-cover"
+                                />
+                              </button>
+                            </Tooltip>
                             <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-gradient-to-t from-black/85 via-black/55 to-transparent px-2.5 pt-8 pb-2 text-white">
                               <span className="text-[11px] font-semibold">{option.label}</span>
                               <div className="flex gap-1 opacity-0 transition-opacity group-hover/photo:opacity-100 focus-within:opacity-100">
@@ -618,18 +623,23 @@ export function WorkoutProgressSection({
                             key={photo.id}
                             className="group/photo relative aspect-[4/5] overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)]"
                           >
-                            <button
-                              type="button"
-                              className="size-full"
-                              aria-label={`Открыть другой ракурс за ${formatDate(entry.date)}`}
-                              onClick={() => setViewer(item)}
+                            <Tooltip
+                              content={`Открыть другой ракурс за ${formatDate(entry.date)}`}
+                              side="top"
                             >
-                              <img
-                                src={photo.url}
-                                alt={`Другой ракурс · ${formatDate(entry.date)}`}
-                                className="size-full object-cover"
-                              />
-                            </button>
+                              <button
+                                type="button"
+                                className="size-full"
+                                aria-label={`Открыть другой ракурс за ${formatDate(entry.date)}`}
+                                onClick={() => setViewer(item)}
+                              >
+                                <img
+                                  src={photo.url}
+                                  alt={`Другой ракурс · ${formatDate(entry.date)}`}
+                                  className="size-full object-cover"
+                                />
+                              </button>
+                            </Tooltip>
                             <Tooltip
                               content={`Удалить другой ракурс за ${formatDate(entry.date)}`}
                               side="top"

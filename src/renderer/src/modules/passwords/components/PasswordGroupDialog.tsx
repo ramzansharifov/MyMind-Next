@@ -137,21 +137,23 @@ export function PasswordGroupDialog({
             {PASSWORD_GROUP_COLOR_OPTIONS.map((option) => {
               const classes = passwordGroupColorClasses[option.value]
               return (
-                <button
-                  key={option.value}
-                  type="button"
-                  aria-label={`Цвет: ${option.label}`}
-                  aria-pressed={color === option.value}
-                  className={cn(
-                    'flex aspect-square items-center justify-center rounded-xl border bg-[var(--app-workspace)] transition-transform outline-none hover:scale-105',
-                    color === option.value
-                      ? `${classes.border} ring-2 ring-white/10`
-                      : 'border-[var(--app-border)]'
-                  )}
-                  onClick={() => setColor(option.value)}
-                >
-                  <span className={cn('size-5 rounded-full shadow-sm', classes.dot)} />
-                </button>
+                <Tooltip content={`Цвет: ${option.label}`} side="top">
+                  <button
+                    key={option.value}
+                    type="button"
+                    aria-label={`Цвет: ${option.label}`}
+                    aria-pressed={color === option.value}
+                    className={cn(
+                      'flex aspect-square items-center justify-center rounded-xl border bg-[var(--app-workspace)] transition-transform outline-none hover:scale-105',
+                      color === option.value
+                        ? `${classes.border} ring-2 ring-white/10`
+                        : 'border-[var(--app-border)]'
+                    )}
+                    onClick={() => setColor(option.value)}
+                  >
+                    <span className={cn('size-5 rounded-full shadow-sm', classes.dot)} />
+                  </button>
+                </Tooltip>
               )
             })}
           </div>

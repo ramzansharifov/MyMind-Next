@@ -552,25 +552,27 @@ export function CalendarPage(): React.JSX.Element {
                       {dayEvents.map((event) => {
                         const active = selectedEventKey === occurrenceKey(event)
                         return (
-                          <button
-                            key={occurrenceKey(event)}
-                            type="button"
-                            aria-label={`Открыть событие ${event.title}`}
-                            className={cn(
-                              'size-2 rounded-full transition-transform hover:scale-125 focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--app-surface)] focus-visible:outline-none',
-                              active && 'scale-125'
-                            )}
-                            style={{
-                              backgroundColor: 'var(--app-accent-500)',
-                              boxShadow: active
-                                ? '0 0 0 2px color-mix(in srgb, var(--app-accent-500) 28%, transparent)'
-                                : undefined
-                            }}
-                            onClick={(clickEvent) => {
-                              clickEvent.stopPropagation()
-                              selectEvent(event)
-                            }}
-                          />
+                          <Tooltip content={`Открыть событие ${event.title}`} side="top">
+                            <button
+                              key={occurrenceKey(event)}
+                              type="button"
+                              aria-label={`Открыть событие ${event.title}`}
+                              className={cn(
+                                'size-2 rounded-full transition-transform hover:scale-125 focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--app-surface)] focus-visible:outline-none',
+                                active && 'scale-125'
+                              )}
+                              style={{
+                                backgroundColor: 'var(--app-accent-500)',
+                                boxShadow: active
+                                  ? '0 0 0 2px color-mix(in srgb, var(--app-accent-500) 28%, transparent)'
+                                  : undefined
+                              }}
+                              onClick={(clickEvent) => {
+                                clickEvent.stopPropagation()
+                                selectEvent(event)
+                              }}
+                            />
+                          </Tooltip>
                         )
                       })}
                     </div>

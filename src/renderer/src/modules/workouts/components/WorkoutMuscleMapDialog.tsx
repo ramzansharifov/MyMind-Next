@@ -471,34 +471,38 @@ export function WorkoutMuscleMapDialog({
           </div>
 
           <div className="absolute bottom-5 left-5 z-40 flex items-center rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)]/88 p-1 shadow-[var(--app-shadow-card)] backdrop-blur-xl">
-            <button
-              type="button"
-              aria-label="Мужская модель"
-              aria-pressed={sex === 'MALE'}
-              className={cn(
-                'flex h-10 min-w-10 items-center justify-center rounded-xl px-3 text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-violet-500/40 focus-visible:outline-none',
-                sex === 'MALE'
-                  ? 'bg-[var(--app-accent-500)] text-white'
-                  : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
-              )}
-              onClick={() => selectSex('MALE')}
-            >
-              М
-            </button>
-            <button
-              type="button"
-              aria-label="Женская модель"
-              aria-pressed={sex === 'FEMALE'}
-              className={cn(
-                'flex h-10 min-w-10 items-center justify-center rounded-xl px-3 text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-violet-500/40 focus-visible:outline-none',
-                sex === 'FEMALE'
-                  ? 'bg-[var(--app-accent-500)] text-white'
-                  : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
-              )}
-              onClick={() => selectSex('FEMALE')}
-            >
-              Ж
-            </button>
+            <Tooltip content="Мужская модель" side="top">
+              <button
+                type="button"
+                aria-label="Мужская модель"
+                aria-pressed={sex === 'MALE'}
+                className={cn(
+                  'flex h-10 min-w-10 items-center justify-center rounded-xl px-3 text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-violet-500/40 focus-visible:outline-none',
+                  sex === 'MALE'
+                    ? 'bg-[var(--app-accent-500)] text-white'
+                    : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
+                )}
+                onClick={() => selectSex('MALE')}
+              >
+                М
+              </button>
+            </Tooltip>
+            <Tooltip content="Женская модель" side="top">
+              <button
+                type="button"
+                aria-label="Женская модель"
+                aria-pressed={sex === 'FEMALE'}
+                className={cn(
+                  'flex h-10 min-w-10 items-center justify-center rounded-xl px-3 text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-violet-500/40 focus-visible:outline-none',
+                  sex === 'FEMALE'
+                    ? 'bg-[var(--app-accent-500)] text-white'
+                    : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
+                )}
+                onClick={() => selectSex('FEMALE')}
+              >
+                Ж
+              </button>
+            </Tooltip>
           </div>
 
           <Tooltip content="Повернуть модель" side="top">
