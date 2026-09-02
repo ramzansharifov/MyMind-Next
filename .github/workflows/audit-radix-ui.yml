@@ -25,44 +25,62 @@ jobs:
               Path('src/renderer/src/app'),
               Path('src/renderer/src/shared/ui'),
           ]
-          patterns = {
-              'native-title': re.compile(r'\btitle\s*='),
-              'native-select': re.compile(r'<select\b', re.I),
-              'native-option': re.compile(r'<option\b', re.I),
-              'custom-role': re.compile(r'role\s*=\s*["\'](?:menu|menuitem|tooltip|switch|listbox|option)["\']'),
-              'hover-handlers': re.compile(r'onMouseEnter|onMouseLeave'),
-              'context-menu-handler': re.compile(r'onContextMenu'),
-              'aria-popup': re.compile(r'aria-haspopup'),
-          }
-
           files = []
           for root in roots:
               if root.exists():
-                  files.extend(p for p in root.rglob('*') if p.suffix in {'.tsx', '.ts'} and not p.name.endswith('.test.tsx') and not p.name.endswith('.test.ts'))
+                  files.extend(
+                      p for p in root.rglob('*')
+                      if p.suffix == '.tsx'
+                      and not p.name.endswith('.test.tsx')
+                  )
 
-          print('=== UI AUDIT ===')
-          for name, pattern in patterns.items():
-              print(f'\n## {name}')
-              count = 0
-              for path in sorted(files):
-                  text = path.read_text(encoding='utf-8')
-                  for lineno, line in enumerate(text.splitlines(), 1):
-                      if pattern.search(line):
-                          print(f'{path}:{lineno}: {line.strip()}')
-                          count += 1
-              print(f'TOTAL {name}: {count}')
+          intrinsic_title = re.compile(
+              r'<(?P<tag>[a-z][\w:-]*)\b(?P<body>[^<>]*?\btitle\s*=\s*(?:\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}|"[^"]*"|\'[^\']*\'))',
+              re.S,
+          )
+          native_select = re.compile(r'<select\b', re.I)
+          custom_role = re.compile(r'role\s*=\s*["\'](?:menu|menuitem|tooltip|switch)["\']')
 
-          print('\n## radix-imports')
+          print('=== PRECISE UI AUDIT ===')
+          print('\n## intrinsic-title')
+          title_count = 0
           for path in sorted(files):
               text = path.read_text(encoding='utf-8')
-              imports = sorted(set(re.findall(r"@radix-ui/react-[a-z-]+", text)))
-              shared = []
-              if 'shared/ui/tooltip' in text:
-                  shared.append('shared-tooltip')
-              if 'shared/ui/AppSelect' in text:
-                  shared.append('AppSelect')
-              if 'shared/ui/AppDialog' in text:
-                  shared.append('AppDialog')
-              if imports or shared:
-                  print(f'{path}: {", ".join(imports + shared)}')
+              for match in intrinsic_title.finditer(text):
+                  line = text.count('\n', 0, match.start()) + 1
+                  tag = match.group('tag')
+                  snippet = re.sub(r'\s+', ' ', match.group(0))[:240]
+                  print(f'{path}:{line}: <{tag}> {snippet}')
+                  title_count += 1
+          print(f'TOTAL intrinsic-title: {title_count}')
+
+          print('\n## native-select')
+          select_count = 0
+          for path in sorted(files):
+              text = path.read_text(encoding='utf-8')
+              for match in native_select.finditer(text):
+                  # Case-sensitive check prevents Radix <Select.*> false positives.
+                  if not text[match.start():match.start()+7].startswith('<select'):
+                      continue
+                  line = text.count('\n', 0, match.start()) + 1
+                  print(f'{path}:{line}')
+                  select_count += 1
+          print(f'TOTAL native-select: {select_count}')
+
+          print('\n## custom-overlay-role')
+          role_count = 0
+          for path in sorted(files):
+              text = path.read_text(encoding='utf-8')
+              for match in custom_role.finditer(text):
+                  line = text.count('\n', 0, match.start()) + 1
+                  print(f'{path}:{line}: {match.group(0)}')
+                  role_count += 1
+          print(f'TOTAL custom-overlay-role: {role_count}')
+
+          print('\n## context-menu-handler')
+          for path in sorted(files):
+              text = path.read_text(encoding='utf-8')
+              for match in re.finditer(r'onContextMenu\s*=', text):
+                  line = text.count('\n', 0, match.start()) + 1
+                  print(f'{path}:{line}')
           PY
