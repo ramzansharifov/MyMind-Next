@@ -19,14 +19,23 @@ jobs:
           ref: agent/habit-reminders
           fetch-depth: 0
 
-      - name: Extract implementation script from previous revision
+      - name: Extract implementation script from history
         shell: bash
         run: |
-          git show HEAD^:.github/workflows/apply-habit-reminders.yml > /tmp/previous-workflow.yml
+          found=''
+          for rev in $(git rev-list HEAD -- .github/workflows/apply-habit-reminders.yml); do
+            git show "$rev:.github/workflows/apply-habit-reminders.yml" > /tmp/candidate-workflow.yml
+            if grep -Fq "python - <<'PY'" /tmp/candidate-workflow.yml; then
+              cp /tmp/candidate-workflow.yml /tmp/implementation-workflow.yml
+              found=1
+              break
+            fi
+          done
+          test -n "$found"
           python - <<'PYCODE'
           from pathlib import Path
 
-          text = Path('/tmp/previous-workflow.yml').read_text(encoding='utf-8')
+          text = Path('/tmp/implementation-workflow.yml').read_text(encoding='utf-8')
           start_marker = "          python - <<'PY'\n"
           end_marker = "\n          PY\n"
           start = text.find(start_marker)
@@ -39,6 +48,10 @@ jobs:
 
           lines = text[start:end].splitlines()
           code = '\n'.join(line[10:] if line.startswith('          ') else line for line in lines) + '\n'
+          code = code.replace(
+              '"      repeatEveryDays: habit.repeatEveryDays,\\n      preferredTimes: habit.preferredTimes\\n"',
+              '"      repeatEveryDays: habit.repeatEveryDays,\\n      remindersEnabled: false,\\n      preferredTimes: habit.preferredTimes\\n"',
+          )
           Path('/tmp/apply-habit-reminders.py').write_text(code, encoding='utf-8')
           PYCODE
           python /tmp/apply-habit-reminders.py
