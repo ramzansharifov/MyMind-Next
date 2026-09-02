@@ -1,0 +1,198 @@
+name: Apply missing hover tooltips
+
+on:
+  push:
+    branches:
+      - agent/tooltips-final-audit
+    paths:
+      - .github/workflows/apply-missing-tooltips.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/tooltips-final-audit
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Wrap icon-only actions in shared Radix Tooltip
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('fs')
+          const path = require('path')
+          const ts = require('typescript')
+
+          const root = path.join('src', 'renderer', 'src')
+          const tooltipTarget = path.join(root, 'shared', 'ui', 'tooltip')
+          const files = []
+          function walk(dir) {
+            for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+              const full = path.join(dir, entry.name)
+              if (entry.isDirectory()) walk(full)
+              else if (entry.isFile() && full.endsWith('.tsx') && !full.endsWith('.test.tsx')) files.push(full)
+            }
+          }
+          walk(root)
+
+          const tagText = (tagName, sf) => tagName.getText(sf)
+          const attrByName = (attrs, name) => attrs.properties.find(
+            (attr) => ts.isJsxAttribute(attr) && attr.name.text === name
+          )
+
+          function expressionRendersText(expression) {
+            if (!expression) return false
+            if (ts.isStringLiteralLike(expression) || ts.isTemplateExpression(expression)) return true
+            if (ts.isNumericLiteral(expression)) return true
+            if (ts.isIdentifier(expression)) return true
+            if (ts.isPropertyAccessExpression(expression) || ts.isElementAccessExpression(expression)) return true
+            if (ts.isCallExpression(expression)) return true
+            if (ts.isConditionalExpression(expression)) {
+              const branchesAreJsx =
+                (ts.isJsxElement(expression.whenTrue) || ts.isJsxSelfClosingElement(expression.whenTrue) || ts.isJsxFragment(expression.whenTrue)) &&
+                (ts.isJsxElement(expression.whenFalse) || ts.isJsxSelfClosingElement(expression.whenFalse) || ts.isJsxFragment(expression.whenFalse))
+              if (branchesAreJsx) return false
+              return expressionRendersText(expression.whenTrue) || expressionRendersText(expression.whenFalse)
+            }
+            if (ts.isBinaryExpression(expression) && expression.operatorToken.kind === ts.SyntaxKind.PlusToken) {
+              return expressionRendersText(expression.left) || expressionRendersText(expression.right)
+            }
+            return false
+          }
+
+          function hasVisibleText(node) {
+            if (ts.isJsxText(node)) return /[A-Za-zА-Яа-яЁё0-9]{2,}/.test(node.getText())
+            if (ts.isJsxExpression(node)) return expressionRendersText(node.expression)
+            if (ts.isJsxElement(node)) {
+              const hidden = attrByName(node.openingElement.attributes, 'aria-hidden')
+              if (hidden) return false
+              return node.children.some(hasVisibleText)
+            }
+            if (ts.isJsxFragment(node)) return node.children.some(hasVisibleText)
+            return false
+          }
+
+          function containsIconComponent(node, sf) {
+            let found = false
+            function visit(child) {
+              if (found) return
+              if (ts.isJsxSelfClosingElement(child) || ts.isJsxElement(child)) {
+                const opening = ts.isJsxElement(child) ? child.openingElement : child
+                if (/^[A-Z]/.test(tagText(opening.tagName, sf))) {
+                  found = true
+                  return
+                }
+              }
+              ts.forEachChild(child, visit)
+            }
+            visit(node)
+            return found
+          }
+
+          function hasTooltipAncestor(node, sf) {
+            let current = node.parent
+            while (current) {
+              if (ts.isJsxElement(current) && tagText(current.openingElement.tagName, sf) === 'Tooltip') return true
+              current = current.parent
+            }
+            return false
+          }
+
+          function hasTooltipImport(sf) {
+            return sf.statements.some((statement) => {
+              if (!ts.isImportDeclaration(statement) || !statement.importClause) return false
+              const bindings = statement.importClause.namedBindings
+              return ts.isNamedImports(bindings) && bindings.elements.some((item) => item.name.text === 'Tooltip')
+            })
+          }
+
+          let changedFiles = 0
+          let wrappedButtons = 0
+
+          for (const file of files.sort()) {
+            if (file.endsWith(path.join('app', 'AppShell.tsx'))) continue
+
+            const source = fs.readFileSync(file, 'utf8')
+            const sf = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+            const candidates = []
+
+            function visit(node) {
+              if (ts.isJsxElement(node)) {
+                const opening = node.openingElement
+                const name = tagText(opening.tagName, sf)
+                const aria = attrByName(opening.attributes, 'aria-label')
+                if (
+                  name === 'button' &&
+                  aria?.initializer &&
+                  containsIconComponent(node, sf) &&
+                  !hasVisibleText(node) &&
+                  !hasTooltipAncestor(node, sf)
+                ) {
+                  candidates.push({
+                    start: node.getStart(sf),
+                    end: node.getEnd(),
+                    content: aria.initializer.getText(sf)
+                  })
+                }
+              }
+              ts.forEachChild(node, visit)
+            }
+            visit(sf)
+
+            if (!candidates.length) continue
+
+            let next = source
+            for (const candidate of candidates.sort((a, b) => b.start - a.start)) {
+              next =
+                next.slice(0, candidate.end) +
+                '</Tooltip>' +
+                next.slice(candidate.end)
+              next =
+                next.slice(0, candidate.start) +
+                `<Tooltip content=${candidate.content} side="top">` +
+                next.slice(candidate.start)
+            }
+
+            if (!hasTooltipImport(sf)) {
+              let relativeImport = path.relative(path.dirname(file), tooltipTarget).replaceAll('\\', '/')
+              if (!relativeImport.startsWith('.')) relativeImport = `./${relativeImport}`
+              next = `import { Tooltip } from '${relativeImport}'\n` + next
+            }
+
+            fs.writeFileSync(file, next, 'utf8')
+            changedFiles += 1
+            wrappedButtons += candidates.length
+            console.log(`${file}: wrapped ${candidates.length}`)
+          }
+
+          console.log(`Changed files: ${changedFiles}`)
+          console.log(`Wrapped buttons: ${wrappedButtons}`)
+          NODE
+      - name: Format updated TSX
+        shell: bash
+        run: |
+          mapfile -t files < <(git diff --name-only --diff-filter=ACM -- 'src/renderer/src/**/*.tsx')
+          if [ "${#files[@]}" -gt 0 ]; then
+            npx prettier --write "${files[@]}"
+          fi
+      - name: Commit applied tooltips
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo "No tooltip changes required."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/renderer/src
+          git commit -m "Добавить недостающие hover-подсказки"
+          git push origin HEAD:agent/tooltips-final-audit
