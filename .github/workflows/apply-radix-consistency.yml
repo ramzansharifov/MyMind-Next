@@ -6,6 +6,8 @@ on:
       - agent/radix-ui-consistency-audit
     paths:
       - .github/workflows/apply-radix-consistency.yml
+      - src/renderer/src/modules/habits/components/HabitPreferredTimesEditor.test.tsx
+      - src/renderer/src/modules/study/components/StudyHeadingLayoutSettings.test.tsx
 
 permissions:
   contents: write
