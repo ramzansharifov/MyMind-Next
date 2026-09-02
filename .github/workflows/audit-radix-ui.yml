@@ -38,7 +38,12 @@ jobs:
               r'<(?P<tag>[a-z][\w:-]*)\b(?P<body>[^<>]*?\btitle\s*=\s*(?:\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}|"[^"]*"|\'[^\']*\'))',
               re.S,
           )
-          native_select = re.compile(r'<select\b', re.I)
+          native_select = re.compile(r'<select\b')
+          native_input_widget = re.compile(
+              r'<input\b(?P<body>[^<>]*?\btype\s*=\s*["\'](?P<type>checkbox|radio|date|time|range)["\'][^<>]*?)>',
+              re.S | re.I,
+          )
+          native_details = re.compile(r'<details\b', re.I)
           custom_role = re.compile(r'role\s*=\s*["\'](?:menu|menuitem|tooltip|switch)["\']')
 
           print('=== PRECISE UI AUDIT ===')
@@ -59,13 +64,30 @@ jobs:
           for path in sorted(files):
               text = path.read_text(encoding='utf-8')
               for match in native_select.finditer(text):
-                  # Case-sensitive check prevents Radix <Select.*> false positives.
-                  if not text[match.start():match.start()+7].startswith('<select'):
-                      continue
                   line = text.count('\n', 0, match.start()) + 1
                   print(f'{path}:{line}')
                   select_count += 1
           print(f'TOTAL native-select: {select_count}')
+
+          print('\n## native-input-widget')
+          input_count = 0
+          for path in sorted(files):
+              text = path.read_text(encoding='utf-8')
+              for match in native_input_widget.finditer(text):
+                  line = text.count('\n', 0, match.start()) + 1
+                  print(f'{path}:{line}: type={match.group("type").lower()}')
+                  input_count += 1
+          print(f'TOTAL native-input-widget: {input_count}')
+
+          print('\n## native-details')
+          details_count = 0
+          for path in sorted(files):
+              text = path.read_text(encoding='utf-8')
+              for match in native_details.finditer(text):
+                  line = text.count('\n', 0, match.start()) + 1
+                  print(f'{path}:{line}')
+                  details_count += 1
+          print(f'TOTAL native-details: {details_count}')
 
           print('\n## custom-overlay-role')
           role_count = 0
