@@ -1,0 +1,34 @@
+name: Verify tooltip branch build
+
+on:
+  push:
+    branches:
+      - agent/tooltips-final-audit
+    paths:
+      - .github/workflows/verify-tooltips-build.yml
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/tooltips-final-audit
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run native:node
+      - name: Database schema check
+        run: npm run db:check
+      - name: Production bundle
+        run: npm run build:bundle
+      - name: Diff check
+        shell: bash
+        run: git diff --check origin/main...HEAD
