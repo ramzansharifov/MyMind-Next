@@ -45,77 +45,71 @@ jobs:
               raise SystemExit('Unexpected track duration declaration shape')
           tsx = tsx.replace(old_duration, new_duration, 1)
 
-          old_actions_start = '''              <div className="flex shrink-0 items-center gap-1">
-                <Tooltip
-                  content={item.favorite ? 'Убрать из избранного' : 'Добавить в избранное'}
-                  side="top"
-                >'''
-          new_actions_start = '''              <div className="flex shrink-0 items-center gap-1">
-                <Tooltip content={`Открыть «${item.title}» на YouTube`} side="top">
-                  <a
-                    href={youtubeSearchUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    aria-label={`Открыть «${item.title}» на YouTube`}
-                    className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] outline-none hover:bg-[var(--app-surface)] hover:text-[var(--app-accent-500)] focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)]/35"
-                  >
-                    <Play aria-hidden="true" className="size-3.5" />
-                  </a>
-                </Tooltip>
-                <Tooltip content={`Редактировать трек «${item.title}»`} side="top">
-                  <button
-                    type="button"
-                    aria-label={`Редактировать трек «${item.title}»`}
-                    className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] outline-none hover:bg-[var(--app-surface)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)]/35"
-                    onClick={() => onOpenTrack(item.id)}
-                  >
-                    <Pencil aria-hidden="true" className="size-3.5" />
-                  </button>
-                </Tooltip>
-                <Tooltip
-                  content={item.favorite ? 'Убрать из избранного' : 'Добавить в избранное'}
-                  side="top"
-                >'''
+          old_actions_start = (
+              '              <div className="flex shrink-0 items-center gap-1">\n'
+              '                <Tooltip\n'
+              "                  content={item.favorite ? 'Убрать из избранного' : 'Добавить в избранное'}\n"
+              '                  side="top"\n'
+              '                >'
+          )
+          new_actions_start = (
+              '              <div className="flex shrink-0 items-center gap-1">\n'
+              '                <Tooltip content={`Открыть «${item.title}» на YouTube`} side="top">\n'
+              '                  <a\n'
+              '                    href={youtubeSearchUrl}\n'
+              '                    target="_blank"\n'
+              '                    rel="noreferrer"\n'
+              '                    aria-label={`Открыть «${item.title}» на YouTube`}\n'
+              '                    className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] outline-none hover:bg-[var(--app-surface)] hover:text-[var(--app-accent-500)] focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)]/35"\n'
+              '                  >\n'
+              '                    <Play aria-hidden="true" className="size-3.5" />\n'
+              '                  </a>\n'
+              '                </Tooltip>\n'
+              '                <Tooltip content={`Редактировать трек «${item.title}»`} side="top">\n'
+              '                  <button\n'
+              '                    type="button"\n'
+              '                    aria-label={`Редактировать трек «${item.title}»`}\n'
+              '                    className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] outline-none hover:bg-[var(--app-surface)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)]/35"\n'
+              '                    onClick={() => onOpenTrack(item.id)}\n'
+              '                  >\n'
+              '                    <Pencil aria-hidden="true" className="size-3.5" />\n'
+              '                  </button>\n'
+              '                </Tooltip>\n'
+              '                <Tooltip\n'
+              "                  content={item.favorite ? 'Убрать из избранного' : 'Добавить в избранное'}\n"
+              '                  side="top"\n'
+              '                >'
+          )
           if tsx.count(old_actions_start) != 1:
               raise SystemExit('Unexpected track actions shape')
           tsx = tsx.replace(old_actions_start, new_actions_start, 1)
 
-          old_artist_block = '''[data-music-track-card] > div > button:first-child > span:nth-child(2) {
-  min-width: 0;
-  flex: 1 1 auto;
-  margin-top: 0;
-  padding-left: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}'''
-          new_artist_block = '''[data-music-track-card] > div > button:first-child > span:nth-child(2) {
-  min-width: 0;
-  flex: 0 1 auto;
-  margin-top: 0;
-  padding-left: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}'''
+          old_artist_block = (
+              '[data-music-track-card] > div > button:first-child > span:nth-child(2) {\n'
+              '  min-width: 0;\n'
+              '  flex: 1 1 auto;\n'
+              '  margin-top: 0;\n'
+              '  padding-left: 0;\n'
+              '  overflow: hidden;\n'
+              '  text-overflow: ellipsis;\n'
+              '  white-space: nowrap;\n'
+              '}'
+          )
+          new_artist_block = old_artist_block.replace('flex: 1 1 auto;', 'flex: 0 1 auto;')
           if css.count(old_artist_block) != 1:
               raise SystemExit('Unexpected artist layout shape')
           css = css.replace(old_artist_block, new_artist_block, 1)
 
-          old_meta_block = '''[data-music-track-card] > div > button:first-child > span:nth-child(3) {
-  flex: 0 0 auto;
-  margin-top: 0;
-  margin-left: auto;
-  padding-left: 0;
-  flex-wrap: nowrap;
-}'''
-          new_meta_block = '''[data-music-track-card] > div > button:first-child > span:nth-child(3) {
-  flex: 0 0 auto;
-  margin-top: 0;
-  margin-left: 0;
-  padding-left: 0;
-  flex-wrap: nowrap;
-}'''
+          old_meta_block = (
+              '[data-music-track-card] > div > button:first-child > span:nth-child(3) {\n'
+              '  flex: 0 0 auto;\n'
+              '  margin-top: 0;\n'
+              '  margin-left: auto;\n'
+              '  padding-left: 0;\n'
+              '  flex-wrap: nowrap;\n'
+              '}'
+          )
+          new_meta_block = old_meta_block.replace('margin-left: auto;', 'margin-left: 0;')
           if css.count(old_meta_block) != 1:
               raise SystemExit('Unexpected metadata layout shape')
           css = css.replace(old_meta_block, new_meta_block, 1)
