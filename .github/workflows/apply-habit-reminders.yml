@@ -25,7 +25,7 @@ jobs:
           found=''
           for rev in $(git rev-list HEAD -- .github/workflows/apply-habit-reminders.yml); do
             git show "$rev:.github/workflows/apply-habit-reminders.yml" > /tmp/candidate-workflow.yml
-            if grep -Fq "python - <<'PY'" /tmp/candidate-workflow.yml; then
+            if grep -Fxq "          python - <<'PY'" /tmp/candidate-workflow.yml; then
               cp /tmp/candidate-workflow.yml /tmp/implementation-workflow.yml
               found=1
               break
