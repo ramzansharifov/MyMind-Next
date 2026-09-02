@@ -224,7 +224,7 @@ function TrackGrid({
       {items.map((item) => {
         const artist = item.artists[0] || 'Исполнитель не указан'
         const duration = formatDuration(item.durationSeconds)
-        const youtubeSearchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(item.title)}`
+        const youtubeSearchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(`${item.title} ${artist}`)}`
 
         return (
           <article
