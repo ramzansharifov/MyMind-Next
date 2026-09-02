@@ -123,7 +123,18 @@ jobs:
             exit 1
           fi
       - name: Full test suite
-        run: npm run test:run
+        shell: bash
+        run: |
+          set +e
+          npm run test:run > /tmp/tests.log 2>&1
+          status=$?
+          set -e
+          if [ "$status" -ne 0 ]; then
+            echo "=== TEST FAILURE SUMMARY ==="
+            grep -n -A35 -B12 -E "FAIL|Failed Tests|AssertionError|TestingLibraryElementError|Test Files|Tests " /tmp/tests.log | tail -n 500 || true
+            exit "$status"
+          fi
+          tail -n 100 /tmp/tests.log
       - run: npm run db:check
       - run: npm run build:bundle
       - run: git diff --check
