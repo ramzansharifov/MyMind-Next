@@ -244,12 +244,8 @@ jobs:
             for (const result of results) {
               const file = path.relative(root, result.filePath).replaceAll('\\', '/')
               for (const message of result.messages) {
-                const key = JSON.stringify([
-                  file,
-                  message.severity,
-                  message.ruleId ?? null,
-                  message.message
-                ])
+                const finding = message.ruleId ?? `fatal:${message.message.split('\n')[0]}`
+                const key = JSON.stringify([file, message.severity, finding])
                 bag.set(key, (bag.get(key) ?? 0) + 1)
               }
             }
@@ -263,17 +259,15 @@ jobs:
           for (const [key, count] of branchBag) {
             const baseline = mainBag.get(key) ?? 0
             if (count > baseline) {
-              const [file, severity, ruleId, message] = JSON.parse(key)
-              regressions.push({ file, severity, ruleId, message, added: count - baseline })
+              const [file, severity, finding] = JSON.parse(key)
+              regressions.push({ file, severity, finding, added: count - baseline })
             }
           }
 
           if (regressions.length > 0) {
             console.error('New ESLint findings compared with main:')
             for (const item of regressions) {
-              console.error(
-                `${item.file}: ${item.ruleId ?? 'unknown'}: ${item.message} (+${item.added})`
-              )
+              console.error(`${item.file}: ${item.finding} (+${item.added})`)
             }
             process.exit(1)
           }
