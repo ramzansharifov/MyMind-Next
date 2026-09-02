@@ -46,7 +46,7 @@
 
 [data-music-track-card] > div > button:first-child > span:nth-child(2) {
   min-width: 0;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   margin-top: 0;
   padding-left: 0;
   overflow: hidden;
@@ -63,7 +63,7 @@
 [data-music-track-card] > div > button:first-child > span:nth-child(3) {
   flex: 0 0 auto;
   margin-top: 0;
-  margin-left: auto;
+  margin-left: 0;
   padding-left: 0;
   flex-wrap: nowrap;
 }

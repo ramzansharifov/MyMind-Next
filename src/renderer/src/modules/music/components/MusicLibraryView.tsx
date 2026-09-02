@@ -1,6 +1,17 @@
 import { Tooltip } from '../../../shared/ui/tooltip'
 import * as Tabs from '@radix-ui/react-tabs'
-import { ArrowLeft, Heart, ListMusic, Music2, Pencil, Plus, Search, Trash2, X } from 'lucide-react'
+import {
+  ArrowLeft,
+  Heart,
+  ListMusic,
+  Music2,
+  Pencil,
+  Play,
+  Plus,
+  Search,
+  Trash2,
+  X
+} from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import type {
@@ -213,6 +224,7 @@ function TrackGrid({
       {items.map((item) => {
         const artist = item.artists[0] || 'Исполнитель не указан'
         const duration = formatDuration(item.durationSeconds)
+        const youtubeSearchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(item.title)}`
 
         return (
           <article
@@ -256,6 +268,27 @@ function TrackGrid({
               </button>
 
               <div className="flex shrink-0 items-center gap-1">
+                <Tooltip content={`Открыть «${item.title}» на YouTube`} side="top">
+                  <a
+                    href={youtubeSearchUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={`Открыть «${item.title}» на YouTube`}
+                    className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] outline-none hover:bg-[var(--app-surface)] hover:text-[var(--app-accent-500)] focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)]/35"
+                  >
+                    <Play aria-hidden="true" className="size-3.5" />
+                  </a>
+                </Tooltip>
+                <Tooltip content={`Редактировать трек «${item.title}»`} side="top">
+                  <button
+                    type="button"
+                    aria-label={`Редактировать трек «${item.title}»`}
+                    className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] outline-none hover:bg-[var(--app-surface)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)]/35"
+                    onClick={() => onOpenTrack(item.id)}
+                  >
+                    <Pencil aria-hidden="true" className="size-3.5" />
+                  </button>
+                </Tooltip>
                 <Tooltip
                   content={item.favorite ? 'Убрать из избранного' : 'Добавить в избранное'}
                   side="top"
