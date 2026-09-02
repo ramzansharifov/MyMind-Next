@@ -1,0 +1,825 @@
+name: Apply habit in-app reminders
+
+on:
+  push:
+    branches:
+      - agent/habit-in-app-reminders
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/habit-in-app-reminders
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+
+      - name: Implement persistent in-app habit reminders
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+
+          def replace(path_str: str, old: str, new: str) -> None:
+              path = Path(path_str)
+              text = path.read_text()
+              if old not in text:
+                  raise SystemExit(f'marker not found in {path_str}: {old[:100]!r}')
+              path.write_text(text.replace(old, new, 1))
+
+          # Contracts
+          path = Path('src/shared/contracts/habits.ts')
+          text = path.read_text()
+          marker = """export interface HabitEntryRecord {
+  id: string
+  habitId: string
+  date: string
+  value: number
+  skipped: boolean
+  createdAt: number
+  updatedAt: number
+}
+"""
+          addition = marker + """
+export interface HabitReminderRecord {
+  habitId: string
+  title: string
+  occurrenceDate: string
+  unit: number
+  targetValue: number
+  habitUnit: string
+  preferredTime: string
+  triggerAt: number
+}
+
+export interface HabitUnreadReminderRecord extends HabitReminderRecord {
+  deliveryId: string
+  deliveredAt: number
+}
+
+export interface HabitAcknowledgeReminderInput {
+  deliveryId: string
+}
+"""
+          if marker not in text:
+              raise SystemExit('habit contract record marker missing')
+          text = text.replace(marker, addition, 1)
+          text = text.replace(
+              """  listOverview: 'habits:list-overview',
+  createGroup: 'habits:create-group',
+""",
+              """  listOverview: 'habits:list-overview',
+  listUnreadReminders: 'habits:list-unread-reminders',
+  acknowledgeReminder: 'habits:acknowledge-reminder',
+  remindersChanged: 'habits:reminders-changed',
+  createGroup: 'habits:create-group',
+""",
+              1
+          )
+          text = text.replace(
+              """export interface HabitsApi {
+  listOverview(input: HabitsOverviewInput): Promise<HabitsOverview>
+  createGroup(input: CreateHabitGroupInput): Promise<HabitGroupRecord>
+""",
+              """export interface HabitsApi {
+  listOverview(input: HabitsOverviewInput): Promise<HabitsOverview>
+  listUnreadReminders(): Promise<HabitUnreadReminderRecord[]>
+  acknowledgeReminder(input: HabitAcknowledgeReminderInput): Promise<boolean>
+  onRemindersChanged(listener: () => void): () => void
+  createGroup(input: CreateHabitGroupInput): Promise<HabitGroupRecord>
+""",
+              1
+          )
+          path.write_text(text)
+
+          # Validation
+          replace(
+              'src/shared/validation/habits.ts',
+              "export const deleteHabitInputSchema = z.object({ id: habitSafeIdSchema }).strict()\n",
+              """export const deleteHabitInputSchema = z.object({ id: habitSafeIdSchema }).strict()
+
+export const habitAcknowledgeReminderInputSchema = z
+  .object({ deliveryId: habitSafeIdSchema })
+  .strict()
+"""
+          )
+
+          # Database schema
+          replace(
+              'src/main/database/schema/habits.ts',
+              """    preferredTime: text('preferred_time').notNull(),
+    deliveredAt: integer('delivered_at', { mode: 'timestamp_ms' }).notNull()
+""",
+              """    preferredTime: text('preferred_time').notNull(),
+    deliveredAt: integer('delivered_at', { mode: 'timestamp_ms' }).notNull(),
+    acknowledgedAt: integer('acknowledged_at', { mode: 'timestamp_ms' })
+"""
+          )
+          replace(
+              'src/main/database/schema/habits.ts',
+              """    index('habit_reminder_deliveries_delivered_idx').on(table.deliveredAt)
+""",
+              """    index('habit_reminder_deliveries_delivered_idx').on(table.deliveredAt),
+    index('habit_reminder_deliveries_acknowledged_idx').on(table.acknowledgedAt)
+"""
+          )
+
+          # Repository types + unread persistence
+          path = Path('src/main/repositories/habits.repository.ts')
+          text = path.read_text()
+          text = text.replace(
+              """  HabitRecord,
+  HabitReport,
+""",
+              """  HabitRecord,
+  HabitReminderRecord,
+  HabitUnreadReminderRecord,
+  HabitAcknowledgeReminderInput,
+  HabitReport,
+""",
+              1
+          )
+          old_trigger = """export interface HabitReminderTrigger {
+  habitId: string
+  title: string
+  occurrenceDate: string
+  unit: number
+  targetValue: number
+  preferredTime: string
+  triggerAt: number
+}
+"""
+          if old_trigger not in text:
+              raise SystemExit('habit reminder trigger interface marker missing')
+          text = text.replace(old_trigger, "export type HabitReminderTrigger = HabitReminderRecord\n", 1)
+          text = text.replace(
+              """          unit: preferredTime.unit,
+          targetValue: habit.targetValue,
+          preferredTime: preferredTime.time,
+""",
+              """          unit: preferredTime.unit,
+          targetValue: habit.targetValue,
+          habitUnit: habit.unit,
+          preferredTime: preferredTime.time,
+""",
+              1
+          )
+          text = text.replace(
+              """        `INSERT INTO habit_reminder_deliveries (\nid, habit_id, occurrence_date, unit, preferred_time, delivered_at\n        ) VALUES (?, ?, ?, ?, ?, ?)`
+""",
+              """        `INSERT INTO habit_reminder_deliveries (\nid, habit_id, occurrence_date, unit, preferred_time, delivered_at, acknowledged_at\n        ) VALUES (?, ?, ?, ?, ?, ?, NULL)`
+""",
+              1
+          )
+          marker = "\nfunction completionRate(summary: Pick<HabitReportSummary, 'completed' | 'missed'>): number {\n"
+          unread_code = """
+interface HabitUnreadReminderRow {
+  id: string
+  habit_id: string
+  occurrence_date: string
+  unit: number
+  preferred_time: string
+  delivered_at: number
+  title: string
+  target_value: number
+  habit_unit: string
+}
+
+export function listUnreadHabitReminders(): HabitUnreadReminderRecord[] {
+  const rows = getSqlite()
+    .prepare(
+      `SELECT
+        delivery.id,
+        delivery.habit_id,
+        delivery.occurrence_date,
+        delivery.unit,
+        delivery.preferred_time,
+        delivery.delivered_at,
+        habit.title,
+        habit.target_value,
+        habit.unit AS habit_unit
+       FROM habit_reminder_deliveries AS delivery
+       INNER JOIN habits AS habit ON habit.id = delivery.habit_id
+       WHERE delivery.acknowledged_at IS NULL
+       ORDER BY delivery.delivered_at DESC, delivery.occurrence_date DESC, delivery.unit ASC`
+    )
+    .all() as HabitUnreadReminderRow[]
+
+  return rows.map((row) => ({
+    deliveryId: row.id,
+    habitId: row.habit_id,
+    title: row.title,
+    occurrenceDate: row.occurrence_date,
+    unit: row.unit,
+    targetValue: row.target_value,
+    habitUnit: row.habit_unit,
+    preferredTime: row.preferred_time,
+    triggerAt: localDateTimeMs(row.occurrence_date, row.preferred_time) - HABIT_REMINDER_OFFSET_MS,
+    deliveredAt: row.delivered_at
+  }))
+}
+
+export function acknowledgeHabitReminder(input: HabitAcknowledgeReminderInput): boolean {
+  return (
+    getSqlite()
+      .prepare(
+        'UPDATE habit_reminder_deliveries SET acknowledged_at = ? WHERE id = ? AND acknowledged_at IS NULL'
+      )
+      .run(Date.now(), input.deliveryId).changes > 0
+  )
+}
+
+"""
+          if marker not in text:
+              raise SystemExit('completion rate marker missing')
+          text = text.replace(marker, '\n' + unread_code + marker.lstrip('\n'), 1)
+          path.write_text(text)
+
+          # IPC
+          path = Path('src/main/ipc/register-habits-ipc.ts')
+          text = path.read_text()
+          text = text.replace(
+              """  habitReportInputSchema,
+  habitsOverviewInputSchema,
+""",
+              """  habitAcknowledgeReminderInputSchema,
+  habitReportInputSchema,
+  habitsOverviewInputSchema,
+""",
+              1
+          )
+          text = text.replace(
+              """  createHabit,
+  createHabitGroup,
+""",
+              """  acknowledgeHabitReminder,
+  createHabit,
+  createHabitGroup,
+""",
+              1
+          )
+          text = text.replace(
+              """  listHabitsOverview,
+  updateHabit,
+""",
+              """  listHabitsOverview,
+  listUnreadHabitReminders,
+  updateHabit,
+""",
+              1
+          )
+          text = text.replace(
+              """  ipcMain.handle(HABITS_IPC_CHANNELS.listOverview, (_event, rawInput: unknown) =>
+    mainOperationTracker.run(() => listHabitsOverview(habitsOverviewInputSchema.parse(rawInput)))
+  )
+""",
+              """  ipcMain.handle(HABITS_IPC_CHANNELS.listOverview, (_event, rawInput: unknown) =>
+    mainOperationTracker.run(() => listHabitsOverview(habitsOverviewInputSchema.parse(rawInput)))
+  )
+  ipcMain.handle(HABITS_IPC_CHANNELS.listUnreadReminders, () =>
+    mainOperationTracker.run(() => listUnreadHabitReminders())
+  )
+  ipcMain.handle(HABITS_IPC_CHANNELS.acknowledgeReminder, (_event, rawInput: unknown) =>
+    mainOperationTracker.run(() =>
+      acknowledgeHabitReminder(habitAcknowledgeReminderInputSchema.parse(rawInput))
+    )
+  )
+""",
+              1
+          )
+          path.write_text(text)
+
+          # Scheduler broadcast
+          path = Path('src/main/services/habit-reminder-scheduler.ts')
+          text = path.read_text()
+          text = text.replace(
+              "import { Notification, type BrowserWindow } from 'electron'\n\n",
+              "import { Notification, type BrowserWindow } from 'electron'\n\nimport { HABITS_IPC_CHANNELS } from '../../shared/contracts/habits'\n",
+              1
+          )
+          text = text.replace(
+              """        if (!markHabitReminderDelivered(reminder)) continue
+        if (!Notification.isSupported()) {
+""",
+              """        if (!markHabitReminderDelivered(reminder)) continue
+
+        const window = this.getWindow()
+        if (window && !window.isDestroyed() && !window.webContents.isDestroyed()) {
+          window.webContents.send(HABITS_IPC_CHANNELS.remindersChanged)
+        }
+
+        if (!Notification.isSupported()) {
+""",
+              1
+          )
+          path.write_text(text)
+
+          # Preload bridge
+          path = Path('src/preload/index.ts')
+          text = path.read_text()
+          text = text.replace(
+              """  habits: {
+    listOverview: (input) => ipcRenderer.invoke(HABITS_IPC_CHANNELS.listOverview, input),
+    createGroup: (input) => ipcRenderer.invoke(HABITS_IPC_CHANNELS.createGroup, input),
+""",
+              """  habits: {
+    listOverview: (input) => ipcRenderer.invoke(HABITS_IPC_CHANNELS.listOverview, input),
+    listUnreadReminders: () => ipcRenderer.invoke(HABITS_IPC_CHANNELS.listUnreadReminders),
+    acknowledgeReminder: (input) =>
+      ipcRenderer.invoke(HABITS_IPC_CHANNELS.acknowledgeReminder, input),
+    onRemindersChanged: (listener) => {
+      const handler = (): void => listener()
+      ipcRenderer.on(HABITS_IPC_CHANNELS.remindersChanged, handler)
+      return () => ipcRenderer.removeListener(HABITS_IPC_CHANNELS.remindersChanged, handler)
+    },
+    createGroup: (input) => ipcRenderer.invoke(HABITS_IPC_CHANNELS.createGroup, input),
+""",
+              1
+          )
+          path.write_text(text)
+
+          # New hook
+          Path('src/renderer/src/modules/habits/useHabitReminderInbox.ts').write_text("""import { useCallback, useEffect, useState } from 'react'
+
+import type { HabitUnreadReminderRecord } from '../../../../shared/contracts/habits'
+
+const LOCAL_REMINDERS_CHANGED_EVENT = 'mymind:habit-reminders-changed'
+const POLL_INTERVAL_MS = 30_000
+
+function broadcastLocalChange(): void {
+  window.dispatchEvent(new Event(LOCAL_REMINDERS_CHANGED_EVENT))
+}
+
+export function useHabitReminderInbox(): {
+  reminders: HabitUnreadReminderRecord[]
+  acknowledge: (reminder: HabitUnreadReminderRecord) => Promise<void>
+  refresh: () => Promise<void>
+} {
+  const [reminders, setReminders] = useState<HabitUnreadReminderRecord[]>([])
+
+  const refresh = useCallback(async (): Promise<void> => {
+    const habitsApi = window.api?.habits
+    if (!habitsApi?.listUnreadReminders) {
+      setReminders([])
+      return
+    }
+
+    try {
+      setReminders(await habitsApi.listUnreadReminders())
+    } catch (reason: unknown) {
+      console.error('Failed to load unread habit reminders', reason)
+    }
+  }, [])
+
+  useEffect(() => {
+    const initialLoad = window.setTimeout(() => void refresh(), 0)
+    const interval = window.setInterval(() => void refresh(), POLL_INTERVAL_MS)
+    const handleRefresh = (): void => void refresh()
+    const unsubscribeMain = window.api?.habits?.onRemindersChanged?.(handleRefresh)
+
+    window.addEventListener('focus', handleRefresh)
+    window.addEventListener(LOCAL_REMINDERS_CHANGED_EVENT, handleRefresh)
+
+    return () => {
+      window.clearTimeout(initialLoad)
+      window.clearInterval(interval)
+      window.removeEventListener('focus', handleRefresh)
+      window.removeEventListener(LOCAL_REMINDERS_CHANGED_EVENT, handleRefresh)
+      unsubscribeMain?.()
+    }
+  }, [refresh])
+
+  const acknowledge = useCallback(
+    async (reminder: HabitUnreadReminderRecord): Promise<void> => {
+      const habitsApi = window.api?.habits
+      if (!habitsApi?.acknowledgeReminder) return
+      await habitsApi.acknowledgeReminder({ deliveryId: reminder.deliveryId })
+      broadcastLocalChange()
+      await refresh()
+    },
+    [refresh]
+  )
+
+  return { reminders, acknowledge, refresh }
+}
+""")
+
+          # New inbox UI
+          Path('src/renderer/src/modules/habits/HabitReminderInbox.tsx').write_text("""import { Bell, Check, Repeat2 } from 'lucide-react'
+import { useState } from 'react'
+
+import type { HabitUnreadReminderRecord } from '../../../../shared/contracts/habits'
+import { cn } from '../../shared/lib/cn'
+
+function formatDate(value: string): string {
+  const [year, month, day] = value.split('-').map(Number)
+  return new Intl.DateTimeFormat('ru-RU', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  }).format(new Date(year ?? 0, (month ?? 1) - 1, day ?? 1, 12))
+}
+
+function progressLabel(reminder: HabitUnreadReminderRecord): string | null {
+  if (reminder.targetValue <= 1) return null
+  const unit = reminder.habitUnit.trim()
+  return `Шаг ${reminder.unit} из ${reminder.targetValue}${unit ? ` · ${unit}` : ''}`
+}
+
+interface HabitReminderInboxProps {
+  reminders: HabitUnreadReminderRecord[]
+  onAcknowledge: (reminder: HabitUnreadReminderRecord) => Promise<void>
+  onOpenHabits?: () => void
+  className?: string
+}
+
+export function HabitReminderInbox({
+  reminders,
+  onAcknowledge,
+  onOpenHabits,
+  className
+}: HabitReminderInboxProps): React.JSX.Element | null {
+  const [busyDeliveryId, setBusyDeliveryId] = useState<string | null>(null)
+  if (reminders.length === 0) return null
+
+  async function acknowledge(reminder: HabitUnreadReminderRecord): Promise<void> {
+    setBusyDeliveryId(reminder.deliveryId)
+    try {
+      await onAcknowledge(reminder)
+    } finally {
+      setBusyDeliveryId(null)
+    }
+  }
+
+  return (
+    <section
+      data-testid="habit-reminder-inbox"
+      className={cn(
+        'rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)]',
+        className
+      )}
+    >
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <span className="relative flex size-8 items-center justify-center rounded-xl bg-red-500/10 text-red-300">
+            <Bell className="size-4" />
+            <span className="absolute -top-0.5 -right-0.5 size-2.5 rounded-full bg-red-500 ring-2 ring-[var(--app-surface)]" />
+          </span>
+          <div>
+            <div className="text-sm font-semibold text-[var(--app-text)]">
+              Напоминания привычек
+            </div>
+            <div className="text-xs text-[var(--app-muted)]">
+              {reminders.length} непрочитанных · исчезнут только после «Понятно»
+            </div>
+          </div>
+        </div>
+        {onOpenHabits && (
+          <button
+            type="button"
+            className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+            onClick={onOpenHabits}
+          >
+            <Repeat2 className="size-3.5" /> Открыть привычки
+          </button>
+        )}
+      </div>
+
+      <div className="grid gap-2 lg:grid-cols-2 xl:grid-cols-3">
+        {reminders.map((reminder) => {
+          const progress = progressLabel(reminder)
+          return (
+            <article
+              key={reminder.deliveryId}
+              className="flex min-w-0 flex-col gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-card)] p-3"
+            >
+              <div className="min-w-0 flex-1">
+                <div className="flex items-start gap-2">
+                  <span className="mt-1.5 size-2 shrink-0 rounded-full bg-red-500" />
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-semibold text-[var(--app-text)]">
+                      {reminder.title}
+                    </div>
+                    <div className="mt-1 text-xs text-[var(--app-muted)]">
+                      {formatDate(reminder.occurrenceDate)}, {reminder.preferredTime}
+                    </div>
+                    <div className="mt-1 text-xs text-[var(--app-muted)]">
+                      Напоминание за 30 минут
+                    </div>
+                    {progress && (
+                      <div className="mt-1 text-xs text-[var(--app-muted)]">{progress}</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                disabled={busyDeliveryId === reminder.deliveryId}
+                className="inline-flex h-9 items-center justify-center gap-1.5 self-end rounded-xl bg-[var(--app-accent-500)] px-3 text-xs font-semibold text-white transition-opacity disabled:opacity-50"
+                onClick={() => void acknowledge(reminder)}
+              >
+                <Check className="size-3.5" /> Понятно
+              </button>
+            </article>
+          )
+        })}
+      </div>
+    </section>
+  )
+}
+""")
+
+          # Inbox test
+          Path('src/renderer/src/modules/habits/HabitReminderInbox.test.tsx').write_text("""import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { expect, it, vi } from 'vitest'
+
+import type { HabitUnreadReminderRecord } from '../../../../shared/contracts/habits'
+import { HabitReminderInbox } from './HabitReminderInbox'
+
+it('keeps an unread habit reminder visible until the explicit Понятно action is used', async () => {
+  const user = userEvent.setup()
+  const onAcknowledge = vi.fn().mockResolvedValue(undefined)
+  const reminder: HabitUnreadReminderRecord = {
+    deliveryId: '00000000-0000-4000-8000-000000000020',
+    habitId: '00000000-0000-4000-8000-000000000021',
+    title: 'Пить воду',
+    occurrenceDate: '2026-09-02',
+    unit: 2,
+    targetValue: 3,
+    habitUnit: 'стакана',
+    preferredTime: '23:45',
+    triggerAt: Date.now() - 1000,
+    deliveredAt: Date.now()
+  }
+
+  render(<HabitReminderInbox reminders={[reminder]} onAcknowledge={onAcknowledge} />)
+
+  expect(screen.getByText('Пить воду')).toBeInTheDocument()
+  expect(screen.getByText(/исчезнут только после/)).toBeInTheDocument()
+  expect(screen.getByText(/Шаг 2 из 3/)).toBeInTheDocument()
+  expect(onAcknowledge).not.toHaveBeenCalled()
+
+  await user.click(screen.getByRole('button', { name: /Понятно/ }))
+  expect(onAcknowledge).toHaveBeenCalledWith(reminder)
+})
+""")
+
+          # Habits page integration
+          path = Path('src/renderer/src/modules/habits/HabitsPage.tsx')
+          text = path.read_text()
+          text = text.replace(
+              """import { HabitGroupDialog } from './components/HabitGroupDialog'
+import { HabitTodayRow } from './components/HabitTodayRow'
+""",
+              """import { HabitGroupDialog } from './components/HabitGroupDialog'
+import { HabitTodayRow } from './components/HabitTodayRow'
+import { HabitReminderInbox } from './HabitReminderInbox'
+import { useHabitReminderInbox } from './useHabitReminderInbox'
+""",
+              1
+          )
+          text = text.replace(
+              """  const handledResourceIdRef = useRef<string | null>(null)
+
+  const today = localDateKey()
+""",
+              """  const handledResourceIdRef = useRef<string | null>(null)
+  const { reminders, acknowledge: acknowledgeReminder } = useHabitReminderInbox()
+
+  const today = localDateKey()
+""",
+              1
+          )
+          text = text.replace(
+              """      </ModuleHeader>
+
+      {error && (
+""",
+              """      </ModuleHeader>
+
+      <HabitReminderInbox
+        className="mt-4"
+        reminders={reminders}
+        onAcknowledge={acknowledgeReminder}
+      />
+
+      {error && (
+""",
+              1
+          )
+          path.write_text(text)
+
+          # Home integration
+          path = Path('src/renderer/src/modules/home/HomeModule.tsx')
+          text = path.read_text()
+          text = text.replace(
+              """import { CalendarReminderInbox } from '../calendar/CalendarReminderInbox'
+import { useCalendarReminderInbox } from '../calendar/useCalendarReminderInbox'
+""",
+              """import { CalendarReminderInbox } from '../calendar/CalendarReminderInbox'
+import { useCalendarReminderInbox } from '../calendar/useCalendarReminderInbox'
+import { HabitReminderInbox } from '../habits/HabitReminderInbox'
+import { useHabitReminderInbox } from '../habits/useHabitReminderInbox'
+""",
+              1
+          )
+          text = text.replace(
+              """export function HomeModule(): React.JSX.Element {
+  const { reminders, acknowledge } = useCalendarReminderInbox()
+""",
+              """export function HomeModule(): React.JSX.Element {
+  const { reminders: calendarReminders, acknowledge: acknowledgeCalendarReminder } =
+    useCalendarReminderInbox()
+  const { reminders: habitReminders, acknowledge: acknowledgeHabitReminder } =
+    useHabitReminderInbox()
+""",
+              1
+          )
+          text = text.replace(
+              """        <CalendarReminderInbox
+          reminders={reminders}
+          onAcknowledge={acknowledge}
+          onOpenCalendar={() => requestAppModuleNavigation({ view: 'calendar' })}
+        />
+
+        <section""",
+              """        <CalendarReminderInbox
+          reminders={calendarReminders}
+          onAcknowledge={acknowledgeCalendarReminder}
+          onOpenCalendar={() => requestAppModuleNavigation({ view: 'calendar' })}
+        />
+
+        <HabitReminderInbox
+          reminders={habitReminders}
+          onAcknowledge={acknowledgeHabitReminder}
+          onOpenHabits={() => requestAppModuleNavigation({ view: 'habits' })}
+        />
+
+        <section""",
+              1
+          )
+          text = text.replace(
+              """                    {module.id === 'calendar' && reminders.length > 0 && (
+""",
+              """                    {module.id === 'calendar' && calendarReminders.length > 0 && (
+""",
+              1
+          )
+          marker = """                    {module.id === 'calendar' && calendarReminders.length > 0 && (
+                      <span
+                        aria-label="Есть непрочитанные напоминания"
+                        className="absolute -top-1 -right-1 size-2.5 rounded-full bg-red-500 ring-2 ring-[var(--app-card)]"
+                      />
+                    )}
+"""
+          if marker not in text:
+              raise SystemExit('home calendar dot marker missing')
+          text = text.replace(
+              marker,
+              marker + """                    {module.id === 'habits' && habitReminders.length > 0 && (
+                      <span
+                        aria-label="Есть непрочитанные напоминания привычек"
+                        className="absolute -top-1 -right-1 size-2.5 rounded-full bg-red-500 ring-2 ring-[var(--app-card)]"
+                      />
+                    )}
+""",
+              1
+          )
+          path.write_text(text)
+
+          # Repository regression test for unread/acknowledge
+          path = Path('src/main/repositories/habits.repository.test.ts')
+          text = path.read_text()
+          text = text.replace(
+              """  createHabit,
+  createHabitGroup,
+""",
+              """  acknowledgeHabitReminder,
+  createHabit,
+  createHabitGroup,
+""",
+              1
+          )
+          text = text.replace(
+              """  listHabitReminderTriggers,
+  listHabitsOverview,
+""",
+              """  listHabitReminderTriggers,
+  listHabitsOverview,
+  listUnreadHabitReminders,
+""",
+              1
+          )
+          test_marker = """  it('automatically schedules reminders whenever a preferred time exists', () => {
+"""
+          new_test = """  it('persists delivered reminders in the in-app inbox until they are acknowledged', () => {
+    vi.setSystemTime(new Date(2026, 0, 1, 8, 30, 0))
+    const habit = createHabit({
+      title: 'Читать',
+      groupId: null,
+      trackingType: 'check',
+      targetValue: 1,
+      unit: '',
+      repeatEveryDays: 1,
+      preferredTimes: [{ unit: 1, time: '09:00' }]
+    })
+    const triggerAt = new Date(2026, 0, 1, 8, 30, 0).getTime()
+    const [reminder] = listDueHabitReminders(triggerAt - 1_000, triggerAt)
+
+    expect(reminder).toBeTruthy()
+    expect(markHabitReminderDelivered(reminder)).toBe(true)
+    expect(listUnreadHabitReminders()).toMatchObject([
+      {
+        habitId: habit.id,
+        title: 'Читать',
+        occurrenceDate: '2026-01-01',
+        preferredTime: '09:00',
+        unit: 1,
+        targetValue: 1
+      }
+    ])
+
+    const [unread] = listUnreadHabitReminders()
+    expect(acknowledgeHabitReminder({ deliveryId: unread.deliveryId })).toBe(true)
+    expect(listUnreadHabitReminders()).toEqual([])
+    expect(acknowledgeHabitReminder({ deliveryId: unread.deliveryId })).toBe(false)
+  })
+
+"""
+          if test_marker not in text:
+              raise SystemExit('habit repository test insertion marker missing')
+          text = text.replace(test_marker, new_test + test_marker, 1)
+          path.write_text(text)
+          PY
+
+      - name: Generate Drizzle migration
+        run: npx drizzle-kit generate --name habit_unread_reminders
+
+      - name: Format changed source files
+        run: |
+          npx prettier --write \
+            src/shared/contracts/habits.ts \
+            src/shared/validation/habits.ts \
+            src/main/database/schema/habits.ts \
+            src/main/repositories/habits.repository.ts \
+            src/main/repositories/habits.repository.test.ts \
+            src/main/ipc/register-habits-ipc.ts \
+            src/main/services/habit-reminder-scheduler.ts \
+            src/preload/index.ts \
+            src/renderer/src/modules/habits/HabitsPage.tsx \
+            src/renderer/src/modules/habits/HabitReminderInbox.tsx \
+            src/renderer/src/modules/habits/HabitReminderInbox.test.tsx \
+            src/renderer/src/modules/habits/useHabitReminderInbox.ts \
+            src/renderer/src/modules/home/HomeModule.tsx
+
+      - name: Lint changed source files
+        run: |
+          npx eslint \
+            src/shared/contracts/habits.ts \
+            src/shared/validation/habits.ts \
+            src/main/database/schema/habits.ts \
+            src/main/repositories/habits.repository.ts \
+            src/main/repositories/habits.repository.test.ts \
+            src/main/ipc/register-habits-ipc.ts \
+            src/main/services/habit-reminder-scheduler.ts \
+            src/preload/index.ts \
+            src/renderer/src/modules/habits/HabitsPage.tsx \
+            src/renderer/src/modules/habits/HabitReminderInbox.tsx \
+            src/renderer/src/modules/habits/HabitReminderInbox.test.tsx \
+            src/renderer/src/modules/habits/useHabitReminderInbox.ts \
+            src/renderer/src/modules/home/HomeModule.tsx
+
+      - name: Node typecheck
+        run: npm run typecheck:node
+      - name: Web typecheck
+        run: npm run typecheck:web
+      - name: Rebuild native SQLite for tests
+        run: npm run native:node
+      - name: Targeted reminder tests
+        run: npx vitest run src/main/repositories/habits.repository.test.ts src/renderer/src/modules/habits/HabitReminderInbox.test.tsx
+      - name: Check database migrations
+        run: npm run db:check
+      - name: Build production bundle
+        run: npm run build:bundle
+      - name: Check diff whitespace
+        run: git diff --check
+
+      - name: Commit implementation and remove temporary workflow
+        shell: bash
+        run: |
+          rm -f .github/workflows/apply-habit-in-app-reminders.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Добавить внутренние напоминания привычек'
+          git push origin HEAD:agent/habit-in-app-reminders
