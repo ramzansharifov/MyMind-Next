@@ -857,17 +857,20 @@ export function PasswordsPage({
                           key={item.id}
                           className="group/item flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-[var(--app-control-hover)]"
                         >
-                          <button
-                            type="button"
-                            className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-violet-400/15 bg-violet-500/10 text-violet-300"
-                            onClick={() => void openItem(item.id)}
-                          >
-                            {item.type === 'login' ? (
-                              <UserRound className="size-4" />
-                            ) : (
-                              <KeyRound className="size-4" />
-                            )}
-                          </button>
+                          <Tooltip content={`Открыть ${item.title}`} side="top">
+                            <button
+                              type="button"
+                              aria-label={`Открыть ${item.title}`}
+                              className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-violet-400/15 bg-violet-500/10 text-violet-300"
+                              onClick={() => void openItem(item.id)}
+                            >
+                              {item.type === 'login' ? (
+                                <UserRound className="size-4" />
+                              ) : (
+                                <KeyRound className="size-4" />
+                              )}
+                            </button>
+                          </Tooltip>
                           <button
                             type="button"
                             className="min-w-0 flex-1 text-left"

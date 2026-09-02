@@ -578,8 +578,8 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
                             Фильтруйте по типу, людям и метаданным фильма.
                           </p>
                         </div>
-                        <Popover.Close asChild>
-                          <Tooltip content="Закрыть фильтры" side="top">
+                        <Tooltip content="Закрыть фильтры" side="top">
+                          <Popover.Close asChild>
                             <button
                               type="button"
                               aria-label="Закрыть фильтры"
@@ -587,8 +587,8 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
                             >
                               <X className="size-4" />
                             </button>
-                          </Tooltip>
-                        </Popover.Close>
+                          </Popover.Close>
+                        </Tooltip>
                       </div>
 
                       <div className="mt-4 grid gap-3 sm:grid-cols-2">

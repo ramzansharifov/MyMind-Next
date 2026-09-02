@@ -412,11 +412,11 @@ export function WorkoutProgressSection({
                     </div>
                   </div>
                   <div className="flex gap-1">
-                    <Collapsible.Trigger asChild>
-                      <Tooltip
-                        content={`Развернуть или свернуть запись прогресса за ${formatDate(entry.date)}`}
-                        side="top"
-                      >
+                    <Tooltip
+                      content={`Развернуть или свернуть запись прогресса за ${formatDate(entry.date)}`}
+                      side="top"
+                    >
+                      <Collapsible.Trigger asChild>
                         <button
                           type="button"
                           aria-label={`Развернуть или свернуть запись прогресса за ${formatDate(entry.date)}`}
@@ -424,8 +424,8 @@ export function WorkoutProgressSection({
                         >
                           <ChevronDown className="size-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
                         </button>
-                      </Tooltip>
-                    </Collapsible.Trigger>
+                      </Collapsible.Trigger>
+                    </Tooltip>
                     <Tooltip content={`Изменить прогресс за ${formatDate(entry.date)}`} side="top">
                       <button
                         type="button"

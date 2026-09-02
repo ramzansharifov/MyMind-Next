@@ -84,8 +84,8 @@ export function ColorPicker({
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium">Выбор цвета</p>
 
-            <Popover.Close asChild>
-              <Tooltip content="Закрыть выбор цвета" side="top">
+            <Tooltip content="Закрыть выбор цвета" side="top">
+              <Popover.Close asChild>
                 <button
                   type="button"
                   aria-label="Закрыть выбор цвета"
@@ -93,14 +93,14 @@ export function ColorPicker({
                 >
                   <X aria-hidden="true" className="size-4" />
                 </button>
-              </Tooltip>
-            </Popover.Close>
+              </Popover.Close>
+            </Tooltip>
           </div>
 
           <div className="mt-3 grid grid-cols-4 gap-2">
             {colors.map((color) => (
-              <Popover.Close key={color} asChild>
-                <Tooltip content={`Цвет ${color}`} side="top">
+              <Tooltip content={`Цвет ${color}`} side="top">
+                <Popover.Close key={color} asChild>
                   <button
                     type="button"
                     aria-label={`Цвет ${color}`}
@@ -117,8 +117,8 @@ export function ColorPicker({
                       <Check aria-hidden="true" className="size-4 text-white drop-shadow" />
                     )}
                   </button>
-                </Tooltip>
-              </Popover.Close>
+                </Popover.Close>
+              </Tooltip>
             ))}
           </div>
 

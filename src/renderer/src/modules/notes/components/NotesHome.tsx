@@ -980,8 +980,8 @@ function GroupCard({
       </div>
 
       <DropdownMenu.Root>
-        <DropdownMenu.Trigger asChild>
-          <Tooltip content={`Действия группы «${group.title}»`} side="top">
+        <Tooltip content={`Действия группы «${group.title}»`} side="top">
+          <DropdownMenu.Trigger asChild>
             <button
               type="button"
               aria-label={`Действия группы «${group.title}»`}
@@ -989,8 +989,8 @@ function GroupCard({
             >
               <MoreHorizontal aria-hidden="true" className="size-4" />
             </button>
-          </Tooltip>
-        </DropdownMenu.Trigger>
+          </DropdownMenu.Trigger>
+        </Tooltip>
         <MenuContent>
           <MenuItem icon={<Pencil />} onSelect={onRename}>
             Переименовать
@@ -1117,8 +1117,8 @@ function NoteCard({
       </button>
 
       <DropdownMenu.Root>
-        <DropdownMenu.Trigger asChild>
-          <Tooltip content={`Действия заметки «${note.title}»`} side="top">
+        <Tooltip content={`Действия заметки «${note.title}»`} side="top">
+          <DropdownMenu.Trigger asChild>
             <button
               type="button"
               aria-label={`Действия заметки «${note.title}»`}
@@ -1126,8 +1126,8 @@ function NoteCard({
             >
               <MoreHorizontal aria-hidden="true" className="size-4" />
             </button>
-          </Tooltip>
-        </DropdownMenu.Trigger>
+          </DropdownMenu.Trigger>
+        </Tooltip>
         <MenuContent>
           <MenuItem icon={<Pencil />} onSelect={onRename}>
             Переименовать

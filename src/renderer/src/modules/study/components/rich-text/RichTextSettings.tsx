@@ -828,8 +828,8 @@ function LinkPopover({
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium">Ссылка</p>
 
-            <Popover.Close asChild>
-              <Tooltip content="Закрыть" side="top">
+            <Tooltip content="Закрыть" side="top">
+              <Popover.Close asChild>
                 <button
                   type="button"
                   aria-label="Закрыть"
@@ -837,8 +837,8 @@ function LinkPopover({
                 >
                   <X className="size-4" />
                 </button>
-              </Tooltip>
-            </Popover.Close>
+              </Popover.Close>
+            </Tooltip>
           </div>
 
           <form className="mt-3 grid gap-3" onSubmit={handleSubmit}>

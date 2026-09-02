@@ -140,8 +140,8 @@ export function AppDateField({
           }
         }}
       >
-        <Popover.Trigger asChild>
-          <Tooltip content={calendarButtonLabel} side="top">
+        <Tooltip content={calendarButtonLabel} side="top">
+          <Popover.Trigger asChild>
             <button
               type="button"
               aria-label={calendarButtonLabel}
@@ -150,8 +150,8 @@ export function AppDateField({
             >
               <CalendarDays className="size-4" />
             </button>
-          </Tooltip>
-        </Popover.Trigger>
+          </Popover.Trigger>
+        </Tooltip>
 
         <Popover.Portal>
           <Popover.Content

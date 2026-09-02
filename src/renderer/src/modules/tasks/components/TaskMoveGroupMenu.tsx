@@ -21,8 +21,8 @@ export function TaskMoveGroupMenu({
 }: TaskMoveGroupMenuProps): React.JSX.Element {
   return (
     <DropdownMenu.Root>
-      <DropdownMenu.Trigger asChild>
-        <Tooltip content={`Перенести задачу «${task.title}»`} side="top">
+      <Tooltip content={`Перенести задачу «${task.title}»`} side="top">
+        <DropdownMenu.Trigger asChild>
           <button
             type="button"
             aria-label={`Перенести задачу «${task.title}»`}
@@ -31,8 +31,8 @@ export function TaskMoveGroupMenu({
           >
             <MoreHorizontal className="size-4" />
           </button>
-        </Tooltip>
-      </DropdownMenu.Trigger>
+        </DropdownMenu.Trigger>
+      </Tooltip>
 
       <DropdownMenu.Portal>
         <DropdownMenu.Content

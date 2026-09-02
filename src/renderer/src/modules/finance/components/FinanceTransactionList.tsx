@@ -118,8 +118,8 @@ export function FinanceTransactionRow({
       </div>
       {(onEdit || onDelete) && !transaction.isSystem && (
         <DropdownMenu.Root>
-          <DropdownMenu.Trigger asChild>
-            <Tooltip content="Действия с операцией" side="top">
+          <Tooltip content="Действия с операцией" side="top">
+            <DropdownMenu.Trigger asChild>
               <button
                 type="button"
                 aria-label="Действия с операцией"
@@ -127,8 +127,8 @@ export function FinanceTransactionRow({
               >
                 <MoreHorizontal className="size-4" />
               </button>
-            </Tooltip>
-          </DropdownMenu.Trigger>
+            </DropdownMenu.Trigger>
+          </Tooltip>
           <DropdownMenu.Portal>
             <DropdownMenu.Content
               align="end"

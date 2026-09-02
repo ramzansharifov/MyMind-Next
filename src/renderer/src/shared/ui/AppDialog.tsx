@@ -149,8 +149,8 @@ export function AppDialog({
                   <Dialog.Description className="sr-only">{description}</Dialog.Description>
                 </div>
                 {showClose && (
-                  <Dialog.Close asChild disabled={busy}>
-                    <Tooltip content={closeLabel} side="top">
+                  <Tooltip content={closeLabel} side="top">
+                    <Dialog.Close asChild disabled={busy}>
                       <button
                         type="button"
                         aria-label={closeLabel}
@@ -159,8 +159,8 @@ export function AppDialog({
                       >
                         <X aria-hidden="true" className="size-4" />
                       </button>
-                    </Tooltip>
-                  </Dialog.Close>
+                    </Dialog.Close>
+                  </Tooltip>
                 )}
               </header>
             ) : (

@@ -220,8 +220,8 @@ function TrackDialog({
                   </Dialog.Description>
                 </div>
               </div>
-              <Dialog.Close asChild>
-                <Tooltip content="Закрыть" side="top">
+              <Tooltip content="Закрыть" side="top">
+                <Dialog.Close asChild>
                   <button
                     type="button"
                     aria-label="Закрыть"
@@ -229,8 +229,8 @@ function TrackDialog({
                   >
                     <X className="size-4" />
                   </button>
-                </Tooltip>
-              </Dialog.Close>
+                </Dialog.Close>
+              </Tooltip>
             </header>
 
             <div className="space-y-5 p-5">
@@ -468,8 +468,8 @@ function PlaylistDialog({
                   </Dialog.Description>
                 </div>
               </div>
-              <Dialog.Close asChild>
-                <Tooltip content="Закрыть" side="top">
+              <Tooltip content="Закрыть" side="top">
+                <Dialog.Close asChild>
                   <button
                     type="button"
                     aria-label="Закрыть"
@@ -477,8 +477,8 @@ function PlaylistDialog({
                   >
                     <X className="size-4" />
                   </button>
-                </Tooltip>
-              </Dialog.Close>
+                </Dialog.Close>
+              </Tooltip>
             </header>
 
             <div className="grid gap-5 p-5 sm:grid-cols-[minmax(0,1fr)_150px]">

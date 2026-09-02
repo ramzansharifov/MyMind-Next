@@ -156,8 +156,8 @@ export function HabitTodayRow({
         </button>
 
         <Popover.Root open={detailsOpen} onOpenChange={setDetailsOpen}>
-          <Popover.Trigger asChild>
-            <Tooltip content={`Подробнее о привычке «${habit.title}»`} side="top">
+          <Tooltip content={`Подробнее о привычке «${habit.title}»`} side="top">
+            <Popover.Trigger asChild>
               <button
                 type="button"
                 aria-label={`Подробнее о привычке «${habit.title}»`}
@@ -165,8 +165,8 @@ export function HabitTodayRow({
               >
                 <Ellipsis className="size-5" />
               </button>
-            </Tooltip>
-          </Popover.Trigger>
+            </Popover.Trigger>
+          </Tooltip>
 
           <Popover.Portal>
             <Popover.Content

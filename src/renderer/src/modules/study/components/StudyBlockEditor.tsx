@@ -538,8 +538,8 @@ function BlockInsertMenu({
           )}
         />
 
-        <DropdownMenu.Trigger asChild>
-          <Tooltip content="Добавить блок здесь" side="top">
+        <Tooltip content="Добавить блок здесь" side="top">
+          <DropdownMenu.Trigger asChild>
             <button
               type="button"
               aria-label="Добавить блок здесь"
@@ -556,8 +556,8 @@ function BlockInsertMenu({
             >
               <Plus aria-hidden="true" className="size-3.5" />
             </button>
-          </Tooltip>
-        </DropdownMenu.Trigger>
+          </DropdownMenu.Trigger>
+        </Tooltip>
 
         <span
           className={cn(
@@ -848,11 +848,11 @@ function StudyBlockCard({
               <GripVertical aria-hidden="true" className="size-4" />
             </button>
           </Tooltip>
-          <Collapsible.Trigger asChild>
-            <Tooltip
-              content={open ? `Свернуть блок «${blockLabel}»` : `Развернуть блок «${blockLabel}»`}
-              side="top"
-            >
+          <Tooltip
+            content={open ? `Свернуть блок «${blockLabel}»` : `Развернуть блок «${blockLabel}»`}
+            side="top"
+          >
+            <Collapsible.Trigger asChild>
               <button
                 type="button"
                 aria-label={
@@ -874,8 +874,8 @@ function StudyBlockCard({
                   )}
                 />
               </button>
-            </Tooltip>
-          </Collapsible.Trigger>
+            </Collapsible.Trigger>
+          </Tooltip>
 
           <span className="mr-auto text-[11px] font-semibold tracking-[0.08em] text-[var(--app-muted)] uppercase">
             {blockLabel}
@@ -1369,13 +1369,11 @@ function StudyReadSection({
 
   return (
     <Collapsible.Root open={open} onOpenChange={setOpen} className="group/read-section">
-      <Collapsible.Trigger asChild>
-        <Tooltip
-          content={
-            open ? `Свернуть раздел «${headingTitle}»` : `Развернуть раздел «${headingTitle}»`
-          }
-          side="top"
-        >
+      <Tooltip
+        content={open ? `Свернуть раздел «${headingTitle}»` : `Развернуть раздел «${headingTitle}»`}
+        side="top"
+      >
+        <Collapsible.Trigger asChild>
           <button
             type="button"
             disabled={!hasContent}
@@ -1405,8 +1403,8 @@ function StudyReadSection({
               <StudyReadHeading heading={section.heading} />
             </div>
           </button>
-        </Tooltip>
-      </Collapsible.Trigger>
+        </Collapsible.Trigger>
+      </Tooltip>
 
       <Collapsible.Content className="study-read-collapsible-content overflow-hidden">
         <div className="mt-3 ml-[14px] space-y-6 border-l border-[var(--app-border)] pl-3">
