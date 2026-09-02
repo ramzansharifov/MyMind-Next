@@ -8,6 +8,7 @@ vi.mock('electron', () => ({ app: { getPath: () => '' } }))
 import { closeDatabase, getSqlite, initializeDatabaseForTesting } from '../database/client'
 import { runDatabaseMigrationsFrom } from '../database/migrate'
 import {
+  acknowledgeHabitReminder,
   createHabit,
   createHabitGroup,
   deleteHabitGroup,
@@ -15,6 +16,7 @@ import {
   listDueHabitReminders,
   listHabitReminderTriggers,
   listHabitsOverview,
+  listUnreadHabitReminders,
   markHabitReminderDelivered,
   updateHabit,
   upsertHabitEntry
@@ -170,6 +172,39 @@ describe('habits repository', () => {
       skipped: true
     })
     expect(listDueHabitReminders(thirdTrigger - 1_000, thirdTrigger)).toEqual([])
+  })
+
+  it('persists delivered reminders in the in-app inbox until they are acknowledged', () => {
+    vi.setSystemTime(new Date(2026, 0, 1, 8, 30, 0))
+    const habit = createHabit({
+      title: 'Читать',
+      groupId: null,
+      trackingType: 'check',
+      targetValue: 1,
+      unit: '',
+      repeatEveryDays: 1,
+      preferredTimes: [{ unit: 1, time: '09:00' }]
+    })
+    const triggerAt = new Date(2026, 0, 1, 8, 30, 0).getTime()
+    const [reminder] = listDueHabitReminders(triggerAt - 1_000, triggerAt)
+
+    expect(reminder).toBeTruthy()
+    expect(markHabitReminderDelivered(reminder)).toBe(true)
+    expect(listUnreadHabitReminders()).toMatchObject([
+      {
+        habitId: habit.id,
+        title: 'Читать',
+        occurrenceDate: '2026-01-01',
+        preferredTime: '09:00',
+        unit: 1,
+        targetValue: 1
+      }
+    ])
+
+    const [unread] = listUnreadHabitReminders()
+    expect(acknowledgeHabitReminder({ deliveryId: unread.deliveryId })).toBe(true)
+    expect(listUnreadHabitReminders()).toEqual([])
+    expect(acknowledgeHabitReminder({ deliveryId: unread.deliveryId })).toBe(false)
   })
 
   it('automatically schedules reminders whenever a preferred time exists', () => {

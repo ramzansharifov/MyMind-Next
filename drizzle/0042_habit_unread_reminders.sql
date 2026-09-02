@@ -1,0 +1,2 @@
+ALTER TABLE `habit_reminder_deliveries` ADD `acknowledged_at` integer;--> statement-breakpoint
+CREATE INDEX `habit_reminder_deliveries_acknowledged_idx` ON `habit_reminder_deliveries` (`acknowledged_at`);

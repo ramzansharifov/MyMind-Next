@@ -122,6 +122,10 @@ export const updateHabitInputSchema = habitBaseInputSchema
 
 export const deleteHabitInputSchema = z.object({ id: habitSafeIdSchema }).strict()
 
+export const habitAcknowledgeReminderInputSchema = z
+  .object({ deliveryId: habitSafeIdSchema })
+  .strict()
+
 export const upsertHabitEntryInputSchema = z
   .object({
     habitId: habitSafeIdSchema,

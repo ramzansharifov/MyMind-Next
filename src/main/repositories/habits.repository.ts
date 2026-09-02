@@ -12,6 +12,9 @@ import type {
   HabitGroupRecord,
   HabitPreferredTime,
   HabitRecord,
+  HabitReminderRecord,
+  HabitUnreadReminderRecord,
+  HabitAcknowledgeReminderInput,
   HabitReport,
   HabitReportDay,
   HabitReportHabit,
@@ -266,15 +269,7 @@ export function isHabitScheduledOn(habit: HabitRecord, date: string): boolean {
   return delta >= 0 && delta % habit.repeatEveryDays === 0
 }
 
-export interface HabitReminderTrigger {
-  habitId: string
-  title: string
-  occurrenceDate: string
-  unit: number
-  targetValue: number
-  preferredTime: string
-  triggerAt: number
-}
+export type HabitReminderTrigger = HabitReminderRecord
 
 const HABIT_REMINDER_OFFSET_MS = 30 * 60_000
 
@@ -330,6 +325,7 @@ export function listHabitReminderTriggers(input: {
           occurrenceDate,
           unit: preferredTime.unit,
           targetValue: habit.targetValue,
+          habitUnit: habit.unit,
           preferredTime: preferredTime.time,
           triggerAt
         })
@@ -357,8 +353,8 @@ export function markHabitReminderDelivered(reminder: HabitReminderTrigger): bool
     getSqlite()
       .prepare(
         `INSERT INTO habit_reminder_deliveries (
-id, habit_id, occurrence_date, unit, preferred_time, delivered_at
-        ) VALUES (?, ?, ?, ?, ?, ?)`
+id, habit_id, occurrence_date, unit, preferred_time, delivered_at, acknowledged_at
+        ) VALUES (?, ?, ?, ?, ?, ?, NULL)`
       )
       .run(
         randomUUID(),
@@ -373,6 +369,62 @@ id, habit_id, occurrence_date, unit, preferred_time, delivered_at
     if (reason instanceof Error && /UNIQUE constraint failed/.test(reason.message)) return false
     throw reason
   }
+}
+
+interface HabitUnreadReminderRow {
+  id: string
+  habit_id: string
+  occurrence_date: string
+  unit: number
+  preferred_time: string
+  delivered_at: number
+  title: string
+  target_value: number
+  habit_unit: string
+}
+
+export function listUnreadHabitReminders(): HabitUnreadReminderRecord[] {
+  const rows = getSqlite()
+    .prepare(
+      `SELECT
+        delivery.id,
+        delivery.habit_id,
+        delivery.occurrence_date,
+        delivery.unit,
+        delivery.preferred_time,
+        delivery.delivered_at,
+        habit.title,
+        habit.target_value,
+        habit.unit AS habit_unit
+       FROM habit_reminder_deliveries AS delivery
+       INNER JOIN habits AS habit ON habit.id = delivery.habit_id
+       WHERE delivery.acknowledged_at IS NULL
+       ORDER BY delivery.delivered_at DESC, delivery.occurrence_date DESC, delivery.unit ASC`
+    )
+    .all() as HabitUnreadReminderRow[]
+
+  return rows.map((row) => ({
+    deliveryId: row.id,
+    habitId: row.habit_id,
+    title: row.title,
+    occurrenceDate: row.occurrence_date,
+    unit: row.unit,
+    targetValue: row.target_value,
+    habitUnit: row.habit_unit,
+    preferredTime: row.preferred_time,
+    triggerAt: localDateTimeMs(row.occurrence_date, row.preferred_time) - HABIT_REMINDER_OFFSET_MS,
+    deliveredAt: row.delivered_at
+  }))
+}
+
+export function acknowledgeHabitReminder(input: HabitAcknowledgeReminderInput): boolean {
+  return (
+    getSqlite()
+      .prepare(
+        'UPDATE habit_reminder_deliveries SET acknowledged_at = ? WHERE id = ? AND acknowledged_at IS NULL'
+      )
+      .run(Date.now(), input.deliveryId).changes > 0
+  )
 }
 
 function completionRate(summary: Pick<HabitReportSummary, 'completed' | 'missed'>): number {

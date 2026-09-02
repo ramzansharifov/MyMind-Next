@@ -264,6 +264,14 @@ const api: MyMindApi = {
 
   habits: {
     listOverview: (input) => ipcRenderer.invoke(HABITS_IPC_CHANNELS.listOverview, input),
+    listUnreadReminders: () => ipcRenderer.invoke(HABITS_IPC_CHANNELS.listUnreadReminders),
+    acknowledgeReminder: (input) =>
+      ipcRenderer.invoke(HABITS_IPC_CHANNELS.acknowledgeReminder, input),
+    onRemindersChanged: (listener) => {
+      const handler = (): void => listener()
+      ipcRenderer.on(HABITS_IPC_CHANNELS.remindersChanged, handler)
+      return () => ipcRenderer.removeListener(HABITS_IPC_CHANNELS.remindersChanged, handler)
+    },
     createGroup: (input) => ipcRenderer.invoke(HABITS_IPC_CHANNELS.createGroup, input),
     updateGroup: (input) => ipcRenderer.invoke(HABITS_IPC_CHANNELS.updateGroup, input),
     deleteGroup: (input) => ipcRenderer.invoke(HABITS_IPC_CHANNELS.deleteGroup, input),
