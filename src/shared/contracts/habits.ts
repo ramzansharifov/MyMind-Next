@@ -103,7 +103,8 @@ export interface CreateHabitInput {
   unit: string
   repeatEveryDays: number
   preferredTimes: HabitPreferredTime[]
-  remindersEnabled: boolean
+  /** @deprecated Напоминания включаются автоматически при наличии preferredTimes. */
+  remindersEnabled?: boolean
 }
 
 export interface UpdateHabitInput extends CreateHabitInput {
