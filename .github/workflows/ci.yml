@@ -2,6 +2,9 @@ name: CI (manual)
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - agent/windows-notification-dev-fix
 
 permissions:
   contents: read
