@@ -29,9 +29,7 @@ describe('StudyHeadingLayoutSettings', () => {
 
   it('switches between text-only and full-container background', () => {
     const onChange = vi.fn()
-    const { rerender } = render(
-      <StudyHeadingLayoutSettings block={heading} onChange={onChange} />
-    )
+    const { rerender } = render(<StudyHeadingLayoutSettings block={heading} onChange={onChange} />)
 
     expect(screen.getByText('Область фона')).toBeInTheDocument()
 

@@ -27,7 +27,7 @@ export function AppCheckbox({
       disabled={disabled}
       aria-label={ariaLabel}
       className={cn(
-        'flex size-4 shrink-0 items-center justify-center rounded-[5px] border outline-none transition-colors',
+        'flex size-4 shrink-0 items-center justify-center rounded-[5px] border transition-colors outline-none',
         'border-[var(--app-border-strong)] bg-[var(--app-workspace)] text-white',
         'hover:border-violet-400/45 hover:bg-[var(--app-control-hover)]',
         'focus-visible:ring-2 focus-visible:ring-violet-500/35',

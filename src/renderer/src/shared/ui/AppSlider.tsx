@@ -45,7 +45,7 @@ export function AppSlider({
       </Slider.Track>
       <Slider.Thumb
         aria-label={ariaLabel}
-        className="block size-4 rounded-full border-2 border-violet-400 bg-[var(--app-surface-raised)] shadow-sm outline-none transition-transform hover:scale-110 focus-visible:ring-2 focus-visible:ring-violet-500/35"
+        className="block size-4 rounded-full border-2 border-violet-400 bg-[var(--app-surface-raised)] shadow-sm transition-transform outline-none hover:scale-110 focus-visible:ring-2 focus-visible:ring-violet-500/35"
       />
     </Slider.Root>
   )
