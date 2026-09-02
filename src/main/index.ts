@@ -35,16 +35,12 @@ const calendarReminderScheduler = new CalendarReminderScheduler(() => mainWindow
 const habitReminderScheduler = new HabitReminderScheduler(() => mainWindow)
 
 const APP_USER_MODEL_ID = 'com.mymind.desktop'
-const WINDOWS_DEV_TOAST_ACTIVATOR_CLSID = '{D9EAA7A4-8E8F-4CC9-B63B-C074E7DF5597}'
 
 function resolveAppUserModelId(): string {
   return process.platform === 'win32' && is.dev ? process.execPath : APP_USER_MODEL_ID
 }
 
 function configureDesktopNotificationIdentity(): void {
-  if (process.platform === 'win32' && is.dev) {
-    app.setToastActivatorCLSID(WINDOWS_DEV_TOAST_ACTIVATOR_CLSID)
-  }
   electronApp.setAppUserModelId(resolveAppUserModelId())
 }
 
@@ -67,8 +63,7 @@ function ensureWindowsDevelopmentNotificationShortcut(): void {
       cwd: app.getAppPath(),
       args: `"${app.getAppPath()}"`,
       description: 'MyMind development',
-      appUserModelId: resolveAppUserModelId(),
-      toastActivatorClsid: app.toastActivatorCLSID
+      appUserModelId: resolveAppUserModelId()
     })
 
     if (!created) {
