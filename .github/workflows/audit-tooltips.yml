@@ -57,19 +57,27 @@ jobs:
           function expressionRendersText(expression) {
             if (!expression) return false
             if (ts.isStringLiteralLike(expression) || ts.isTemplateExpression(expression)) return true
-            if (ts.isNumericLiteral(expression)) return true
-            if (ts.isIdentifier(expression)) return true
+            if (ts.isNumericLiteral(expression) || ts.isIdentifier(expression)) return true
             if (ts.isPropertyAccessExpression(expression) || ts.isElementAccessExpression(expression)) return true
             if (ts.isCallExpression(expression)) return true
+            if (ts.isParenthesizedExpression(expression)) return expressionRendersText(expression.expression)
             if (ts.isConditionalExpression(expression)) {
-              const branchesAreJsx =
-                (ts.isJsxElement(expression.whenTrue) || ts.isJsxSelfClosingElement(expression.whenTrue) || ts.isJsxFragment(expression.whenTrue)) &&
-                (ts.isJsxElement(expression.whenFalse) || ts.isJsxSelfClosingElement(expression.whenFalse) || ts.isJsxFragment(expression.whenFalse))
-              if (branchesAreJsx) return false
+              const jsx = (value) =>
+                ts.isJsxElement(value) || ts.isJsxSelfClosingElement(value) || ts.isJsxFragment(value)
+              if (jsx(expression.whenTrue) && jsx(expression.whenFalse)) return false
               return expressionRendersText(expression.whenTrue) || expressionRendersText(expression.whenFalse)
             }
-            if (ts.isBinaryExpression(expression) && expression.operatorToken.kind === ts.SyntaxKind.PlusToken) {
-              return expressionRendersText(expression.left) || expressionRendersText(expression.right)
+            if (ts.isBinaryExpression(expression)) {
+              if (expression.operatorToken.kind === ts.SyntaxKind.PlusToken) {
+                return expressionRendersText(expression.left) || expressionRendersText(expression.right)
+              }
+              if (
+                expression.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken ||
+                expression.operatorToken.kind === ts.SyntaxKind.BarBarToken ||
+                expression.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken
+              ) {
+                return expressionRendersText(expression.left) || expressionRendersText(expression.right)
+              }
             }
             return false
           }
@@ -78,29 +86,11 @@ jobs:
             if (ts.isJsxText(node)) return /[A-Za-zА-Яа-яЁё0-9]{2,}/.test(node.getText())
             if (ts.isJsxExpression(node)) return expressionRendersText(node.expression)
             if (ts.isJsxElement(node)) {
-              const hidden = attrByName(node.openingElement.attributes, 'aria-hidden')
-              if (hidden) return false
+              if (attrByName(node.openingElement.attributes, 'aria-hidden')) return false
               return node.children.some(hasVisibleText)
             }
             if (ts.isJsxFragment(node)) return node.children.some(hasVisibleText)
             return false
-          }
-
-          function containsIconComponent(node, sf) {
-            let found = false
-            function visit(child) {
-              if (found) return
-              if (ts.isJsxSelfClosingElement(child) || ts.isJsxElement(child)) {
-                const opening = ts.isJsxElement(child) ? child.openingElement : child
-                if (/^[A-Z]/.test(tagText(opening.tagName, sf))) {
-                  found = true
-                  return
-                }
-              }
-              ts.forEachChild(child, visit)
-            }
-            visit(node)
-            return found
           }
 
           function hasTooltipAncestor(node, sf) {
@@ -116,6 +106,12 @@ jobs:
             if (!attr) return ''
             if (!attr.initializer) return attr.name.text
             return `${attr.name.text}=${attr.initializer.getText(sf)}`
+          }
+
+          function isInteractiveWithoutAsChild(name, attrs) {
+            if (name === 'button' || name === 'a') return true
+            const radixControl = /\.(Trigger|Close)$/.test(name)
+            return radixControl && !attrByName(attrs, 'asChild')
           }
 
           for (const file of files) {
@@ -144,25 +140,27 @@ jobs:
                   nativeTitles.push(`${file}:${line}: <${name}> ${attrText(title, sf)}`)
                 }
 
-                if (
+                const appShellVariablePattern =
+                  file.endsWith(path.join('app', 'AppShell.tsx')) &&
                   name === 'button' &&
-                  containsIconComponent(jsxNode, sf) &&
+                  aria?.initializer?.getText(sf).includes('isCollapsed ? item.label')
+
+                if (
+                  !appShellVariablePattern &&
+                  isInteractiveWithoutAsChild(name, attrs) &&
                   !hasVisibleText(jsxNode) &&
                   !hasTooltipAncestor(node, sf)
                 ) {
                   const target = aria ? missingLabeledTooltips : missingLabelsAndTooltips
-                  target.push(`${file}:${line}: <button> ${aria ? attrText(aria, sf) : 'NO aria-label'}`)
+                  target.push(`${file}:${line}: <${name}> ${aria ? attrText(aria, sf) : 'NO aria-label'}`)
                 }
 
                 if (name === 'Tooltip') {
                   const parent = node.parent
-                  if (ts.isJsxElement(parent)) {
-                    const parentOpening = parent.openingElement
-                    const asChild = attrByName(parentOpening.attributes, 'asChild')
-                    if (asChild) {
-                      const parentName = tagText(parentOpening.tagName, sf)
-                      tooltipInsideAsChild.push(`${file}:${line}: <${parentName} asChild> contains <Tooltip> directly`)
-                    }
+                  if (ts.isJsxElement(parent) && attrByName(parent.openingElement.attributes, 'asChild')) {
+                    tooltipInsideAsChild.push(
+                      `${file}:${line}: <${tagText(parent.openingElement.tagName, sf)} asChild> contains <Tooltip> directly`
+                    )
                   }
                 }
               }
@@ -176,11 +174,11 @@ jobs:
           console.log(`count=${nativeTitles.length}`)
           for (const item of nativeTitles) console.log(item)
 
-          console.log('\n=== LABELED ICON-ONLY BUTTONS WITHOUT TOOLTIP ===')
+          console.log('\n=== LABELED ICON/EMPTY CONTROLS WITHOUT TOOLTIP ===')
           console.log(`count=${missingLabeledTooltips.length}`)
           for (const item of missingLabeledTooltips) console.log(item)
 
-          console.log('\n=== UNLABELED ICON-ONLY BUTTONS WITHOUT TOOLTIP ===')
+          console.log('\n=== UNLABELED ICON/EMPTY CONTROLS WITHOUT TOOLTIP ===')
           console.log(`count=${missingLabelsAndTooltips.length}`)
           for (const item of missingLabelsAndTooltips) console.log(item)
 
