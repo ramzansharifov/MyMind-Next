@@ -1,8 +1,27 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { HabitPreferredTimesEditor } from './HabitPreferredTimesEditor'
+
+beforeAll(() => {
+  Object.defineProperty(HTMLElement.prototype, 'hasPointerCapture', {
+    configurable: true,
+    value: () => false
+  })
+  Object.defineProperty(HTMLElement.prototype, 'setPointerCapture', {
+    configurable: true,
+    value: () => undefined
+  })
+  Object.defineProperty(HTMLElement.prototype, 'releasePointerCapture', {
+    configurable: true,
+    value: () => undefined
+  })
+  Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+    configurable: true,
+    value: () => undefined
+  })
+})
 
 describe('HabitPreferredTimesEditor', () => {
   it('shows one time for a check habit', () => {
@@ -63,7 +82,7 @@ describe('HabitPreferredTimesEditor', () => {
     expect(thirdMinute).toHaveTextContent('—')
 
     await user.click(thirdHour)
-    await user.click(screen.getByRole('option', { name: '21' }))
+    await user.click(await screen.findByRole('option', { name: '21' }))
     expect(onChange).toHaveBeenCalledWith(3, '21:00')
   })
 
