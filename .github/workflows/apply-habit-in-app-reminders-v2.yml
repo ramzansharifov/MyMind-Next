@@ -1,0 +1,102 @@
+name: Apply habit in-app reminders v2
+
+on:
+  push:
+    branches:
+      - agent/habit-in-app-reminders
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/habit-in-app-reminders
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+
+      - name: Extract implementation script
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+          source = Path('.github/workflows/apply-habit-in-app-reminders.yml').read_text().splitlines()
+          start = next(index for index, line in enumerate(source) if line.strip() == "python <<'PY'")
+          end = next(index for index in range(start + 1, len(source)) if source[index].strip() == 'PY')
+          extracted = []
+          for line in source[start + 1:end]:
+              extracted.append(line[10:] if line.startswith('          ') else line)
+          Path('/tmp/apply-habit-in-app-reminders.py').write_text('\n'.join(extracted) + '\n')
+          PY
+          python /tmp/apply-habit-in-app-reminders.py
+
+      - name: Generate Drizzle migration
+        run: npx drizzle-kit generate --name habit_unread_reminders
+
+      - name: Format changed source files
+        run: |
+          npx prettier --write \
+            src/shared/contracts/habits.ts \
+            src/shared/validation/habits.ts \
+            src/main/database/schema/habits.ts \
+            src/main/repositories/habits.repository.ts \
+            src/main/repositories/habits.repository.test.ts \
+            src/main/ipc/register-habits-ipc.ts \
+            src/main/services/habit-reminder-scheduler.ts \
+            src/preload/index.ts \
+            src/renderer/src/modules/habits/HabitsPage.tsx \
+            src/renderer/src/modules/habits/HabitReminderInbox.tsx \
+            src/renderer/src/modules/habits/HabitReminderInbox.test.tsx \
+            src/renderer/src/modules/habits/useHabitReminderInbox.ts \
+            src/renderer/src/modules/home/HomeModule.tsx
+
+      - name: Lint changed source files
+        run: |
+          npx eslint \
+            src/shared/contracts/habits.ts \
+            src/shared/validation/habits.ts \
+            src/main/database/schema/habits.ts \
+            src/main/repositories/habits.repository.ts \
+            src/main/repositories/habits.repository.test.ts \
+            src/main/ipc/register-habits-ipc.ts \
+            src/main/services/habit-reminder-scheduler.ts \
+            src/preload/index.ts \
+            src/renderer/src/modules/habits/HabitsPage.tsx \
+            src/renderer/src/modules/habits/HabitReminderInbox.tsx \
+            src/renderer/src/modules/habits/HabitReminderInbox.test.tsx \
+            src/renderer/src/modules/habits/useHabitReminderInbox.ts \
+            src/renderer/src/modules/home/HomeModule.tsx
+
+      - name: Node typecheck
+        run: npm run typecheck:node
+      - name: Web typecheck
+        run: npm run typecheck:web
+      - name: Rebuild native SQLite for tests
+        run: npm run native:node
+      - name: Targeted reminder tests
+        run: npx vitest run src/main/repositories/habits.repository.test.ts src/renderer/src/modules/habits/HabitReminderInbox.test.tsx
+      - name: Check database migrations
+        run: npm run db:check
+      - name: Build production bundle
+        run: npm run build:bundle
+      - name: Check diff whitespace
+        run: git diff --check
+
+      - name: Commit implementation and remove temporary workflows
+        shell: bash
+        run: |
+          rm -f .github/workflows/apply-habit-in-app-reminders.yml
+          rm -f .github/workflows/apply-habit-in-app-reminders-v2.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Добавить внутренние напоминания привычек'
+          git push origin HEAD:agent/habit-in-app-reminders
