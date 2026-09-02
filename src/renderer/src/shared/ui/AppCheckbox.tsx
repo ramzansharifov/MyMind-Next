@@ -7,6 +7,7 @@ interface AppCheckboxProps {
   checked: boolean
   onCheckedChange: (checked: boolean) => void
   ariaLabel: string
+  id?: string
   disabled?: boolean
   className?: string
 }
@@ -15,11 +16,13 @@ export function AppCheckbox({
   checked,
   onCheckedChange,
   ariaLabel,
+  id,
   disabled = false,
   className
 }: AppCheckboxProps): React.JSX.Element {
   return (
     <Checkbox.Root
+      id={id}
       checked={checked}
       disabled={disabled}
       aria-label={ariaLabel}
