@@ -14,66 +14,117 @@ permissions:
 jobs:
   audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
           ref: agent/tooltips-final-audit
-      - name: Scan hover hints
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Scan hover hints with TypeScript AST
         shell: bash
         run: |
-          python - <<'PY'
-          from pathlib import Path
-          import re
+          node <<'NODE'
+          const fs = require('fs')
+          const path = require('path')
+          const ts = require('typescript')
 
-          root = Path('src/renderer/src')
-          files = sorted(root.rglob('*.tsx'))
+          const root = path.join('src', 'renderer', 'src')
+          const files = []
+          function walk(dir) {
+            for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+              const full = path.join(dir, entry.name)
+              if (entry.isDirectory()) walk(full)
+              else if (entry.isFile() && full.endsWith('.tsx') && !full.endsWith('.test.tsx')) files.push(full)
+            }
+          }
+          walk(root)
+          files.sort()
 
-          title_hits = []
-          aria_hits = []
-          button_candidates = []
+          const nativeTitles = []
+          const missingTooltips = []
 
-          tag_re = re.compile(r'<button\b(?P<attrs>[^>]*)>(?P<body>.*?)</button>', re.S)
-          aria_re = re.compile(r'aria-label\s*=\s*(?:"([^"]+)"|\{([^}]+)\})')
-          title_re = re.compile(r'\btitle\s*=')
-          text_re = re.compile(r'>\s*([^<{][^<{]*)\s*<')
+          const tagText = (tagName, sf) => tagName.getText(sf)
+          const attrByName = (attrs, name) => attrs.properties.find(
+            (attr) => ts.isJsxAttribute(attr) && attr.name.text === name
+          )
 
-          for path in files:
-              text = path.read_text(encoding='utf-8')
-              lines = text.splitlines()
-              for i, line in enumerate(lines, 1):
-                  if re.search(r'\btitle\s*=', line):
-                      title_hits.append((str(path), i, line.strip()))
-                  if 'aria-label' in line:
-                      aria_hits.append((str(path), i, line.strip()))
+          function hasLiteralVisibleText(node) {
+            if (!ts.isJsxElement(node)) return false
+            for (const child of node.children) {
+              if (ts.isJsxText(child) && /[A-Za-zА-Яа-яЁё0-9]{2,}/.test(child.getText())) return true
+              if (ts.isJsxExpression(child) && child.expression) {
+                const expression = child.expression
+                if (ts.isStringLiteralLike(expression) && /\S/.test(expression.text)) return true
+                if (ts.isTemplateExpression(expression) || ts.isNoSubstitutionTemplateLiteral(expression)) return true
+              }
+            }
+            return false
+          }
 
-              for m in tag_re.finditer(text):
-                  attrs = m.group('attrs')
-                  body = m.group('body')
-                  start = text.count('\n', 0, m.start()) + 1
-                  aria = aria_re.search(attrs)
-                  has_tooltip_near = 'TooltipTrigger' in text[max(0, m.start()-600):m.start()] and 'Tooltip' in text[max(0, m.start()-1200):m.start()]
-                  has_native_title = bool(title_re.search(attrs))
-                  # Approximate visible text: strip nested tags / expressions and see whether literal words remain.
-                  stripped = re.sub(r'<[^>]+>', ' ', body)
-                  stripped = re.sub(r'\{[^{}]*\}', ' ', stripped)
-                  literal = ' '.join(stripped.split())
-                  icon_only = not bool(re.search(r'[A-Za-zА-Яа-яЁё0-9]{2,}', literal))
-                  if (aria or has_native_title) and icon_only and not has_tooltip_near:
-                      button_candidates.append((str(path), start, aria.group(0) if aria else 'title=', has_native_title, literal[:60]))
+          function hasTooltipAncestor(node, sf) {
+            let current = node.parent
+            while (current) {
+              if (ts.isJsxElement(current)) {
+                const name = tagText(current.openingElement.tagName, sf)
+                if (name === 'Tooltip') return true
+              }
+              current = current.parent
+            }
+            return false
+          }
 
-          print('=== NATIVE title= ATTRIBUTES ===')
-          print(f'count={len(title_hits)}')
-          for row in title_hits:
-              print(f'{row[0]}:{row[1]}: {row[2]}')
+          function attrText(attr, sf) {
+            if (!attr) return ''
+            if (!attr.initializer) return attr.name.text
+            return `${attr.name.text}=${attr.initializer.getText(sf)}`
+          }
 
-          print('\n=== aria-label OCCURRENCES ===')
-          print(f'count={len(aria_hits)}')
-          for row in aria_hits:
-              print(f'{row[0]}:{row[1]}: {row[2]}')
+          for (const file of files) {
+            const source = fs.readFileSync(file, 'utf8')
+            const sf = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
 
-          print('\n=== ICON-LIKE BUTTONS WITH LABEL/TITLE BUT NO NEARBY TOOLTIP ===')
-          print(f'count={len(button_candidates)}')
-          for row in button_candidates:
-              print(f'{row[0]}:{row[1]}: {row[2]} nativeTitle={row[3]} literal={row[4]!r}')
-          PY
+            function visit(node) {
+              let opening = null
+              let jsxNode = null
+              if (ts.isJsxElement(node)) {
+                opening = node.openingElement
+                jsxNode = node
+              } else if (ts.isJsxSelfClosingElement(node)) {
+                opening = node
+                jsxNode = node
+              }
+
+              if (opening) {
+                const name = tagText(opening.tagName, sf)
+                const attrs = opening.attributes
+                const title = attrByName(attrs, 'title')
+                const aria = attrByName(attrs, 'aria-label')
+                const line = sf.getLineAndCharacterOfPosition(opening.getStart(sf)).line + 1
+
+                if (/^[a-z]/.test(name) && title) {
+                  nativeTitles.push(`${file}:${line}: <${name}> ${attrText(title, sf)}`)
+                }
+
+                const interactive = name === 'button' || name.endsWith('.Trigger')
+                if (interactive && aria && !hasLiteralVisibleText(jsxNode) && !hasTooltipAncestor(node, sf)) {
+                  missingTooltips.push(`${file}:${line}: <${name}> ${attrText(aria, sf)}`)
+                }
+              }
+
+              ts.forEachChild(node, visit)
+            }
+            visit(sf)
+          }
+
+          console.log('=== NATIVE DOM title ATTRIBUTES ===')
+          console.log(`count=${nativeTitles.length}`)
+          for (const item of nativeTitles) console.log(item)
+
+          console.log('\n=== ICON-LIKE INTERACTIVE CONTROLS WITHOUT TOOLTIP ANCESTOR ===')
+          console.log(`count=${missingTooltips.length}`)
+          for (const item of missingTooltips) console.log(item)
+          NODE
