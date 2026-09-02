@@ -32,8 +32,12 @@ jobs:
           start = next(index for index, line in enumerate(source) if line.strip() == "python <<'PY'")
           end = next(index for index in range(start + 1, len(source)) if source[index].strip() == 'PY')
           extracted = []
+          in_triple = False
           for line in source[start + 1:end]:
-              extracted.append(line[10:] if line.startswith('          ') else line)
+              output = line if in_triple else (line[10:] if line.startswith('          ') else line)
+              extracted.append(output)
+              if output.count('"""') % 2 == 1:
+                  in_triple = not in_triple
           Path('/tmp/apply-habit-in-app-reminders.py').write_text('\n'.join(extracted) + '\n')
           PY
           python /tmp/apply-habit-in-app-reminders.py
