@@ -24,7 +24,20 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Apply migration
-        run: python .github/scripts/apply_radix_consistency.py
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('.github/scripts/apply_radix_consistency.py')
+          text = path.read_text(encoding='utf-8')
+          old = """    '''                    </span>\n                  </button>\n                </li>''',"""
+          new = """    '''                    <span className=\"min-w-0 flex-1 truncate text-xs leading-5\">{title}</span>\n                  </button>\n                </li>''',"""
+          if text.count(old) != 1:
+              raise SystemExit(f'Expected one StudyReadNavigation closing pattern, got {text.count(old)}')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+          python .github/scripts/apply_radix_consistency.py
       - name: Format changed source files
         shell: bash
         run: |
