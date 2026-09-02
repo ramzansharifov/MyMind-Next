@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 
 import { useCalendarReminderInbox } from '../modules/calendar/useCalendarReminderInbox'
+import { useHabitReminderInbox } from '../modules/habits/useHabitReminderInbox'
 import { cn } from '../shared/lib/cn'
 import { Tooltip, TooltipProvider } from '../shared/ui/tooltip'
 import { useAiChatPreferences } from './ai-chat/ai-chat-preferences-context'
@@ -101,7 +102,7 @@ function NavigationButton({
         />
         {hasNotification && (
           <span
-            aria-label="Есть непрочитанные напоминания календаря"
+            aria-label={`Есть непрочитанные напоминания: ${item.label}`}
             className="absolute -top-1 -right-1 size-2.5 rounded-full bg-red-500 ring-2 ring-[var(--app-sidebar)]"
           />
         )}
@@ -138,6 +139,7 @@ export function AppShell({
   const [isCollapsed, setIsCollapsed] = useState(() => activeView === 'study')
   const { showLauncher } = useAiChatPreferences()
   const { reminders: calendarReminders } = useCalendarReminderInbox()
+  const { reminders: habitReminders } = useHabitReminderInbox()
 
   useEffect(() => {
     const root = document.documentElement
@@ -247,7 +249,10 @@ export function AppShell({
                     activeView={activeView}
                     isCollapsed={isCollapsed}
                     onSelect={handleViewChange}
-                    hasNotification={item.id === 'calendar' && calendarReminders.length > 0}
+                    hasNotification={
+                      (item.id === 'calendar' && calendarReminders.length > 0) ||
+                      (item.id === 'habits' && habitReminders.length > 0)
+                    }
                   />
                 ))}
               </nav>
