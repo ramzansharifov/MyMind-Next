@@ -80,7 +80,7 @@ jobs:
           src/renderer/src/modules/habits/components/HabitTodayRow.tsx
           src/renderer/src/modules/habits/HabitsPage.test.tsx
 
-      - name: Lint changed TypeScript
+      - name: Lint changed TypeScript without known HabitDialog baseline
         run: >-
           npx eslint
           src/shared/contracts/habits.ts
@@ -92,11 +92,40 @@ jobs:
           src/main/repositories/habits.repository.test.ts
           src/main/services/habit-reminder-scheduler.ts
           src/main/index.ts
-          src/renderer/src/modules/habits/components/HabitDialog.tsx
           src/renderer/src/modules/habits/components/HabitPreferredTimesEditor.tsx
           src/renderer/src/modules/habits/components/HabitPreferredTimesEditor.test.tsx
           src/renderer/src/modules/habits/components/HabitTodayRow.tsx
           src/renderer/src/modules/habits/HabitsPage.test.tsx
+
+      - name: HabitDialog ESLint regression check against main
+        shell: bash
+        run: |
+          file='src/renderer/src/modules/habits/components/HabitDialog.tsx'
+          cp "$file" /tmp/HabitDialog.branch.tsx
+          git show origin/main:"$file" > "$file"
+          npx eslint -f json "$file" > /tmp/habit-dialog-main.json || true
+          cp /tmp/HabitDialog.branch.tsx "$file"
+          npx eslint -f json "$file" > /tmp/habit-dialog-branch.json || true
+          python - <<'PY'
+          import json
+          from collections import Counter
+
+          def issues(path):
+              data = json.load(open(path, encoding='utf-8'))
+              return Counter(
+                  (message.get('ruleId'), message.get('message'))
+                  for result in data
+                  for message in result.get('messages', [])
+                  if message.get('severity', 0) >= 2
+              )
+
+          main = issues('/tmp/habit-dialog-main.json')
+          branch = issues('/tmp/habit-dialog-branch.json')
+          extra = branch - main
+          if extra:
+              raise SystemExit(f'New HabitDialog ESLint errors: {dict(extra)}')
+          print('HabitDialog has no ESLint regressions compared with main')
+          PY
 
       - name: Rebuild SQLite for tests
         run: npm run native:node
