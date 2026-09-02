@@ -108,7 +108,9 @@ export function HabitPreferredTimesEditor({
             <Bell className="size-4" />
           </span>
           <div className="min-w-0 flex-1">
-            <div className="text-sm font-medium text-[var(--app-text)]">Напоминание включено автоматически</div>
+            <div className="text-sm font-medium text-[var(--app-text)]">
+              Напоминание включено автоматически
+            </div>
             <div className="mt-0.5 text-xs leading-5 text-[var(--app-muted)]">
               Оно придёт за 30 минут до каждого указанного предпочтительного времени.
             </div>
