@@ -1,0 +1,138 @@
+name: Audit custom tooltip controls
+
+on:
+  push:
+    branches:
+      - agent/tooltips-final-audit
+    paths:
+      - .github/workflows/audit-custom-tooltip-controls.yml
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/tooltips-final-audit
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Scan custom controls and role buttons
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('fs')
+          const path = require('path')
+          const ts = require('typescript')
+
+          const root = path.join('src', 'renderer', 'src')
+          const files = []
+          function walk(dir) {
+            for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+              const full = path.join(dir, entry.name)
+              if (entry.isDirectory()) walk(full)
+              else if (entry.isFile() && full.endsWith('.tsx') && !full.endsWith('.test.tsx')) files.push(full)
+            }
+          }
+          walk(root)
+
+          const tagText = (tagName, sf) => tagName.getText(sf)
+          const attrByName = (attrs, name) => attrs.properties.find(
+            (attr) => ts.isJsxAttribute(attr) && attr.name.text === name
+          )
+          const attrLiteral = (attr) => {
+            if (!attr?.initializer) return null
+            if (ts.isStringLiteral(attr.initializer)) return attr.initializer.text
+            if (
+              ts.isJsxExpression(attr.initializer) &&
+              attr.initializer.expression &&
+              ts.isStringLiteralLike(attr.initializer.expression)
+            ) return attr.initializer.expression.text
+            return null
+          }
+
+          function expressionRendersText(expression) {
+            if (!expression) return false
+            if (ts.isStringLiteralLike(expression) || ts.isTemplateExpression(expression)) return true
+            if (ts.isNumericLiteral(expression) || ts.isIdentifier(expression)) return true
+            if (ts.isPropertyAccessExpression(expression) || ts.isElementAccessExpression(expression)) return true
+            if (ts.isCallExpression(expression)) return true
+            if (ts.isParenthesizedExpression(expression)) return expressionRendersText(expression.expression)
+            if (ts.isConditionalExpression(expression)) {
+              const jsx = (v) => ts.isJsxElement(v) || ts.isJsxSelfClosingElement(v) || ts.isJsxFragment(v)
+              if (jsx(expression.whenTrue) && jsx(expression.whenFalse)) return false
+              return expressionRendersText(expression.whenTrue) || expressionRendersText(expression.whenFalse)
+            }
+            if (ts.isBinaryExpression(expression)) return expressionRendersText(expression.left) || expressionRendersText(expression.right)
+            return false
+          }
+          function hasVisibleText(node) {
+            if (ts.isJsxSelfClosingElement(node)) return false
+            if (ts.isJsxText(node)) return /[A-Za-zА-Яа-яЁё0-9]{2,}/.test(node.getText())
+            if (ts.isJsxExpression(node)) return expressionRendersText(node.expression)
+            if (ts.isJsxElement(node)) {
+              if (attrByName(node.openingElement.attributes, 'aria-hidden')) return false
+              return node.children.some(hasVisibleText)
+            }
+            if (ts.isJsxFragment(node)) return node.children.some(hasVisibleText)
+            return false
+          }
+          function hasTooltipAncestor(node, sf) {
+            let current = node.parent
+            while (current) {
+              if (ts.isJsxElement(current) && tagText(current.openingElement.tagName, sf) === 'Tooltip') return true
+              current = current.parent
+            }
+            return false
+          }
+
+          const labeledCustom = []
+          const unlabeledCustom = []
+          const roleButtons = []
+
+          for (const file of files.sort()) {
+            const source = fs.readFileSync(file, 'utf8')
+            const sf = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+            function visit(node) {
+              let opening = null
+              let jsxNode = null
+              if (ts.isJsxElement(node)) { opening = node.openingElement; jsxNode = node }
+              else if (ts.isJsxSelfClosingElement(node)) { opening = node; jsxNode = node }
+              if (opening) {
+                const name = tagText(opening.tagName, sf)
+                const attrs = opening.attributes
+                const aria = attrByName(attrs, 'aria-label')
+                const role = attrLiteral(attrByName(attrs, 'role'))
+                const line = sf.getLineAndCharacterOfPosition(opening.getStart(sf)).line + 1
+                const noText = !hasVisibleText(jsxNode)
+                const noTooltip = !hasTooltipAncestor(node, sf)
+
+                if (/^[A-Z][A-Za-z0-9_.]*(Button|Action|IconButton)$/.test(name) && noText && noTooltip) {
+                  const target = aria ? labeledCustom : unlabeledCustom
+                  target.push(`${file}:${line}: <${name}> ${aria ? aria.getText(sf) : 'NO aria-label'}`)
+                }
+                if (role === 'button' && name !== 'button' && noText && noTooltip) {
+                  roleButtons.push(`${file}:${line}: <${name} role="button"> ${aria ? aria.getText(sf) : 'NO aria-label'}`)
+                }
+              }
+              ts.forEachChild(node, visit)
+            }
+            visit(sf)
+          }
+
+          console.log('=== LABELED CUSTOM BUTTON/ACTION COMPONENTS WITHOUT TOOLTIP ===')
+          console.log(`count=${labeledCustom.length}`)
+          labeledCustom.forEach((x) => console.log(x))
+          console.log('\n=== UNLABELED CUSTOM BUTTON/ACTION COMPONENTS WITHOUT TOOLTIP ===')
+          console.log(`count=${unlabeledCustom.length}`)
+          unlabeledCustom.forEach((x) => console.log(x))
+          console.log('\n=== NON-BUTTON ELEMENTS WITH role=button WITHOUT TOOLTIP ===')
+          console.log(`count=${roleButtons.length}`)
+          roleButtons.forEach((x) => console.log(x))
+          NODE
