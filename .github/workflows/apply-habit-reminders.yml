@@ -130,11 +130,13 @@ jobs:
       - name: Rebuild SQLite for tests
         run: npm run native:node
 
-      - name: Run focused habit tests
+      - name: Run habit repository tests
+        run: npx vitest run src/main/repositories/habits.repository.test.ts
+
+      - name: Run habit renderer and validation tests
         run: >-
           npx vitest run
           src/shared/validation/habits.test.ts
-          src/main/repositories/habits.repository.test.ts
           src/renderer/src/modules/habits/components/HabitPreferredTimesEditor.test.tsx
           src/renderer/src/modules/habits/HabitsPage.test.tsx
 
