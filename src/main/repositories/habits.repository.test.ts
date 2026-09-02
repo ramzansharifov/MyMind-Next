@@ -13,6 +13,7 @@ import {
   deleteHabitGroup,
   getHabitsReport,
   listDueHabitReminders,
+  listHabitReminderTriggers,
   listHabitsOverview,
   markHabitReminderDelivered,
   updateHabit,
@@ -171,9 +172,9 @@ describe('habits repository', () => {
     expect(listDueHabitReminders(thirdTrigger - 1_000, thirdTrigger)).toEqual([])
   })
 
-  it('does not schedule reminders when they are disabled or no preferred time exists', () => {
+  it('automatically schedules reminders whenever a preferred time exists', () => {
     vi.setSystemTime(new Date(2026, 0, 1, 8, 0, 0))
-    createHabit({
+    const withTime = createHabit({
       title: 'Читать',
       groupId: null,
       trackingType: 'check',
@@ -183,19 +184,80 @@ describe('habits repository', () => {
       remindersEnabled: false,
       preferredTimes: [{ unit: 1, time: '09:00' }]
     })
-    createHabit({
+    const withoutTime = createHabit({
       title: 'Без времени',
       groupId: null,
       trackingType: 'check',
       targetValue: 1,
       unit: '',
       repeatEveryDays: 1,
-      remindersEnabled: false,
+      remindersEnabled: true,
       preferredTimes: []
     })
 
+    expect(withTime.remindersEnabled).toBe(true)
+    expect(withoutTime.remindersEnabled).toBe(false)
     const trigger = new Date(2026, 0, 1, 8, 30, 0).getTime()
-    expect(listDueHabitReminders(trigger - 1_000, trigger)).toEqual([])
+    expect(listDueHabitReminders(trigger - 1_000, trigger)).toMatchObject([
+      { habitId: withTime.id, preferredTime: '09:00' }
+    ])
+  })
+
+  it('uses the calendar-style range calculation for reminders shortly after midnight', () => {
+    vi.setSystemTime(new Date(2026, 0, 1, 12, 0, 0))
+    const habit = createHabit({
+      title: 'Сон',
+      groupId: null,
+      trackingType: 'check',
+      targetValue: 1,
+      unit: '',
+      repeatEveryDays: 1,
+      preferredTimes: [{ unit: 1, time: '00:15' }]
+    })
+
+    const triggers = listHabitReminderTriggers({ from: '2026-01-01', to: '2026-01-01' })
+    expect(triggers).toMatchObject([
+      {
+        habitId: habit.id,
+        occurrenceDate: '2026-01-02',
+        preferredTime: '00:15',
+        triggerAt: new Date(2026, 0, 1, 23, 45, 0).getTime()
+      }
+    ])
+  })
+
+  it('allows another reminder after the preferred time is changed on the same day', () => {
+    vi.setSystemTime(new Date(2026, 0, 1, 8, 0, 0))
+    const habit = createHabit({
+      title: 'Прогулка',
+      groupId: null,
+      trackingType: 'check',
+      targetValue: 1,
+      unit: '',
+      repeatEveryDays: 1,
+      preferredTimes: [{ unit: 1, time: '09:00' }]
+    })
+
+    const firstTrigger = new Date(2026, 0, 1, 8, 30, 0).getTime()
+    const first = listDueHabitReminders(firstTrigger - 1_000, firstTrigger)[0]
+    expect(first).toBeDefined()
+    expect(markHabitReminderDelivered(first)).toBe(true)
+
+    updateHabit({
+      id: habit.id,
+      title: habit.title,
+      groupId: habit.groupId,
+      trackingType: habit.trackingType,
+      targetValue: habit.targetValue,
+      unit: habit.unit,
+      repeatEveryDays: habit.repeatEveryDays,
+      preferredTimes: [{ unit: 1, time: '10:00' }]
+    })
+
+    const secondTrigger = new Date(2026, 0, 1, 9, 30, 0).getTime()
+    const second = listDueHabitReminders(secondTrigger - 1_000, secondTrigger)[0]
+    expect(second).toMatchObject({ habitId: habit.id, preferredTime: '10:00' })
+    expect(markHabitReminderDelivered(second)).toBe(true)
   })
 
   it('reads legacy single preferred_time as the first unit without a migration', () => {

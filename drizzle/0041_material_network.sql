@@ -1,0 +1,2 @@
+DROP INDEX `habit_reminder_deliveries_habit_date_unit_unique`;--> statement-breakpoint
+CREATE UNIQUE INDEX `habit_reminder_deliveries_habit_date_unit_unique` ON `habit_reminder_deliveries` (`habit_id`,`occurrence_date`,`unit`,`preferred_time`);

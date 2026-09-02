@@ -1,6 +1,5 @@
 import { Notification, type BrowserWindow } from 'electron'
 
-import { getSqlite } from '../database/client'
 import {
   listDueHabitReminders,
   markHabitReminderDelivered
@@ -8,22 +7,6 @@ import {
 
 const CHECK_INTERVAL_MS = 30_000
 const STARTUP_LOOKBACK_MS = 5 * 60_000
-
-function syncAutomaticReminderState(): void {
-  getSqlite()
-    .prepare(
-      `UPDATE habits
-       SET reminders_enabled = CASE
-         WHEN preferred_time IS NOT NULL AND preferred_time <> '' THEN 1
-         ELSE 0
-       END
-       WHERE reminders_enabled <> CASE
-         WHEN preferred_time IS NOT NULL AND preferred_time <> '' THEN 1
-         ELSE 0
-       END`
-    )
-    .run()
-}
 
 export class HabitReminderScheduler {
   private timer: NodeJS.Timeout | null = null
@@ -47,9 +30,7 @@ export class HabitReminderScheduler {
     if (this.running) return
     this.running = true
     const now = Date.now()
-
     try {
-      syncAutomaticReminderState()
       const due = listDueHabitReminders(this.lastCheck, now)
       for (const reminder of due) {
         if (!markHabitReminderDelivered(reminder)) continue
@@ -63,13 +44,12 @@ export class HabitReminderScheduler {
           silent: false,
           timeoutType: 'default'
         })
-
         notification.on('click', () => {
-          const window = this.getWindow()
-          if (!window || window.isDestroyed()) return
-          if (window.isMinimized()) window.restore()
-          window.show()
-          window.focus()
+          const currentWindow = this.getWindow()
+          if (!currentWindow || currentWindow.isDestroyed()) return
+          if (currentWindow.isMinimized()) currentWindow.restore()
+          currentWindow.show()
+          currentWindow.focus()
         })
         notification.show()
       }

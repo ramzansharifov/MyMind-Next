@@ -80,7 +80,8 @@ export const habitReminderDeliveries = sqliteTable(
     uniqueIndex('habit_reminder_deliveries_habit_date_unit_unique').on(
       table.habitId,
       table.occurrenceDate,
-      table.unit
+      table.unit,
+      table.preferredTime
     ),
     index('habit_reminder_deliveries_delivered_idx').on(table.deliveredAt)
   ]
