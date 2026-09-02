@@ -47,26 +47,30 @@ function configureDesktopNotificationIdentity(): void {
 function ensureWindowsDevelopmentNotificationShortcut(): void {
   if (process.platform !== 'win32' || !is.dev) return
 
-  const programsDirectory = join(
-    app.getPath('appData'),
-    'Microsoft',
-    'Windows',
-    'Start Menu',
-    'Programs'
-  )
-  mkdirSync(programsDirectory, { recursive: true })
+  try {
+    const programsDirectory = join(
+      app.getPath('appData'),
+      'Microsoft',
+      'Windows',
+      'Start Menu',
+      'Programs'
+    )
+    mkdirSync(programsDirectory, { recursive: true })
 
-  const shortcutPath = join(programsDirectory, 'MyMind Development.lnk')
-  const created = shell.writeShortcutLink(shortcutPath, 'create', {
-    target: process.execPath,
-    cwd: app.getAppPath(),
-    args: `"${app.getAppPath()}"`,
-    description: 'MyMind development',
-    appUserModelId: resolveAppUserModelId()
-  })
+    const shortcutPath = join(programsDirectory, 'MyMind Development.lnk')
+    const created = shell.writeShortcutLink(shortcutPath, 'create', {
+      target: process.execPath,
+      cwd: app.getAppPath(),
+      args: `"${app.getAppPath()}"`,
+      description: 'MyMind development',
+      appUserModelId: resolveAppUserModelId()
+    })
 
-  if (!created) {
-    console.warn('Failed to create the Windows development notification shortcut', shortcutPath)
+    if (!created) {
+      console.warn('Failed to create the Windows development notification shortcut', shortcutPath)
+    }
+  } catch (reason: unknown) {
+    console.warn('Failed to configure the Windows development notification shortcut', reason)
   }
 }
 
