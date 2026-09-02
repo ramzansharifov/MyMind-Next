@@ -52,15 +52,35 @@ jobs:
             (attr) => ts.isJsxAttribute(attr) && attr.name.text === name
           )
 
-          function hasLiteralVisibleText(node) {
-            if (!ts.isJsxElement(node)) return false
-            for (const child of node.children) {
-              if (ts.isJsxText(child) && /[A-Za-zА-Яа-яЁё0-9]{2,}/.test(child.getText())) return true
-              if (ts.isJsxExpression(child) && child.expression) {
-                const expression = child.expression
-                if (ts.isStringLiteralLike(expression) && /\S/.test(expression.text)) return true
-                if (ts.isTemplateExpression(expression) || ts.isNoSubstitutionTemplateLiteral(expression)) return true
-              }
+          function expressionRendersText(expression) {
+            if (!expression) return false
+            if (ts.isStringLiteralLike(expression) || ts.isTemplateExpression(expression)) return true
+            if (ts.isNumericLiteral(expression)) return true
+            if (ts.isIdentifier(expression)) return true
+            if (ts.isPropertyAccessExpression(expression)) return true
+            if (ts.isConditionalExpression(expression)) {
+              return expressionRendersText(expression.whenTrue) || expressionRendersText(expression.whenFalse)
+            }
+            if (ts.isBinaryExpression(expression) && expression.operatorToken.kind === ts.SyntaxKind.PlusToken) {
+              return expressionRendersText(expression.left) || expressionRendersText(expression.right)
+            }
+            return false
+          }
+
+          function hasVisibleText(node) {
+            if (ts.isJsxText(node)) {
+              return /[A-Za-zА-Яа-яЁё0-9]{2,}/.test(node.getText())
+            }
+            if (ts.isJsxExpression(node)) {
+              return expressionRendersText(node.expression)
+            }
+            if (ts.isJsxElement(node)) {
+              const hidden = attrByName(node.openingElement.attributes, 'aria-hidden')
+              if (hidden) return false
+              return node.children.some(hasVisibleText)
+            }
+            if (ts.isJsxFragment(node)) {
+              return node.children.some(hasVisibleText)
             }
             return false
           }
@@ -110,7 +130,7 @@ jobs:
                 }
 
                 const interactive = name === 'button' || name.endsWith('.Trigger')
-                if (interactive && aria && !hasLiteralVisibleText(jsxNode) && !hasTooltipAncestor(node, sf)) {
+                if (interactive && aria && !hasVisibleText(jsxNode) && !hasTooltipAncestor(node, sf)) {
                   missingTooltips.push(`${file}:${line}: <${name}> ${attrText(aria, sf)}`)
                 }
               }
@@ -124,7 +144,7 @@ jobs:
           console.log(`count=${nativeTitles.length}`)
           for (const item of nativeTitles) console.log(item)
 
-          console.log('\n=== ICON-LIKE INTERACTIVE CONTROLS WITHOUT TOOLTIP ANCESTOR ===')
+          console.log('\n=== ICON-ONLY INTERACTIVE CONTROLS WITHOUT TOOLTIP ANCESTOR ===')
           console.log(`count=${missingTooltips.length}`)
           for (const item of missingTooltips) console.log(item)
           NODE
