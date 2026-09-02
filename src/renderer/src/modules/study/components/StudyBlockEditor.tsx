@@ -538,24 +538,26 @@ function BlockInsertMenu({
           )}
         />
 
-        <DropdownMenu.Trigger asChild>
-          <button
-            type="button"
-            aria-label="Добавить блок здесь"
-            className={cn(
-              'mx-2 flex size-6 shrink-0 items-center justify-center rounded-full',
-              'text-[var(--app-muted)] outline-none',
-              'transition-[opacity,transform,background-color,color] duration-150',
-              'hover:bg-violet-500/15 hover:text-violet-200',
-              'focus-visible:ring-2 focus-visible:ring-violet-500/35',
-              open || persistent
-                ? 'scale-100 opacity-100'
-                : 'scale-75 opacity-0 group-focus-within/insert:scale-100 group-focus-within/insert:opacity-100 group-hover/insert:scale-100 group-hover/insert:opacity-100'
-            )}
-          >
-            <Plus aria-hidden="true" className="size-3.5" />
-          </button>
-        </DropdownMenu.Trigger>
+        <Tooltip content="Добавить блок здесь" side="top">
+          <DropdownMenu.Trigger asChild>
+            <button
+              type="button"
+              aria-label="Добавить блок здесь"
+              className={cn(
+                'mx-2 flex size-6 shrink-0 items-center justify-center rounded-full',
+                'text-[var(--app-muted)] outline-none',
+                'transition-[opacity,transform,background-color,color] duration-150',
+                'hover:bg-violet-500/15 hover:text-violet-200',
+                'focus-visible:ring-2 focus-visible:ring-violet-500/35',
+                open || persistent
+                  ? 'scale-100 opacity-100'
+                  : 'scale-75 opacity-0 group-focus-within/insert:scale-100 group-focus-within/insert:opacity-100 group-hover/insert:scale-100 group-hover/insert:opacity-100'
+              )}
+            >
+              <Plus aria-hidden="true" className="size-3.5" />
+            </button>
+          </DropdownMenu.Trigger>
+        </Tooltip>
 
         <span
           className={cn(
@@ -846,71 +848,84 @@ function StudyBlockCard({
               <GripVertical aria-hidden="true" className="size-4" />
             </button>
           </Tooltip>
-          <Collapsible.Trigger asChild>
-            <button
-              type="button"
-              aria-label={
-                open ? `Свернуть блок «${blockLabel}»` : `Развернуть блок «${blockLabel}»`
-              }
-              className={cn(
-                'flex size-7 shrink-0 items-center justify-center rounded-md',
-                'text-[var(--app-muted)] outline-none',
-                'transition-colors',
-                'hover:bg-white/[0.06] hover:text-[var(--app-text)]',
-                'focus-visible:ring-2 focus-visible:ring-violet-500/35'
-              )}
-            >
-              <ChevronRight
-                aria-hidden="true"
+          <Tooltip
+            content={open ? `Свернуть блок «${blockLabel}»` : `Развернуть блок «${blockLabel}»`}
+            side="top"
+          >
+            <Collapsible.Trigger asChild>
+              <button
+                type="button"
+                aria-label={
+                  open ? `Свернуть блок «${blockLabel}»` : `Развернуть блок «${blockLabel}»`
+                }
                 className={cn(
-                  'size-4 transition-transform duration-200 ease-out',
-                  open && 'rotate-90'
+                  'flex size-7 shrink-0 items-center justify-center rounded-md',
+                  'text-[var(--app-muted)] outline-none',
+                  'transition-colors',
+                  'hover:bg-white/[0.06] hover:text-[var(--app-text)]',
+                  'focus-visible:ring-2 focus-visible:ring-violet-500/35'
                 )}
-              />
-            </button>
-          </Collapsible.Trigger>
+              >
+                <ChevronRight
+                  aria-hidden="true"
+                  className={cn(
+                    'size-4 transition-transform duration-200 ease-out',
+                    open && 'rotate-90'
+                  )}
+                />
+              </button>
+            </Collapsible.Trigger>
+          </Tooltip>
 
           <span className="mr-auto text-[11px] font-semibold tracking-[0.08em] text-[var(--app-muted)] uppercase">
             {blockLabel}
           </span>
 
-          <button
-            type="button"
-            aria-label="Переместить блок вверх"
-            disabled={isFirst}
-            className="flex size-7 items-center justify-center rounded-md text-[var(--app-muted)] hover:bg-white/[0.06] hover:text-[var(--app-text)] disabled:opacity-25"
-            onClick={() => onMove(-1)}
-          >
-            <ArrowUp aria-hidden="true" className="size-4" />
-          </button>
+          <Tooltip content="Переместить блок вверх" side="top">
+            <button
+              type="button"
+              aria-label="Переместить блок вверх"
+              disabled={isFirst}
+              className="flex size-7 items-center justify-center rounded-md text-[var(--app-muted)] hover:bg-white/[0.06] hover:text-[var(--app-text)] disabled:opacity-25"
+              onClick={() => onMove(-1)}
+            >
+              <ArrowUp aria-hidden="true" className="size-4" />
+            </button>
+          </Tooltip>
 
-          <button
-            type="button"
-            aria-label="Переместить блок вниз"
-            disabled={isLast}
-            className="flex size-7 items-center justify-center rounded-md text-[var(--app-muted)] hover:bg-white/[0.06] hover:text-[var(--app-text)] disabled:opacity-25"
-            onClick={() => onMove(1)}
-          >
-            <ArrowDown aria-hidden="true" className="size-4" />
-          </button>
+          <Tooltip content="Переместить блок вниз" side="top">
+            <button
+              type="button"
+              aria-label="Переместить блок вниз"
+              disabled={isLast}
+              className="flex size-7 items-center justify-center rounded-md text-[var(--app-muted)] hover:bg-white/[0.06] hover:text-[var(--app-text)] disabled:opacity-25"
+              onClick={() => onMove(1)}
+            >
+              <ArrowDown aria-hidden="true" className="size-4" />
+            </button>
+          </Tooltip>
 
-          <button
-            type="button"
-            aria-label="Дублировать блок"
-            className="flex size-7 items-center justify-center rounded-md text-[var(--app-muted)] hover:bg-white/[0.06] hover:text-[var(--app-text)]"
-            onClick={onDuplicate}
-          >
-            <CopyPlus aria-hidden="true" className="size-4" />
-          </button>
+          <Tooltip content="Дублировать блок" side="top">
+            <button
+              type="button"
+              aria-label="Дублировать блок"
+              className="flex size-7 items-center justify-center rounded-md text-[var(--app-muted)] hover:bg-white/[0.06] hover:text-[var(--app-text)]"
+              onClick={onDuplicate}
+            >
+              <CopyPlus aria-hidden="true" className="size-4" />
+            </button>
+          </Tooltip>
 
-          <button
-            type="button"
-            aria-label="Удалить блок"
-            className="flex size-7 items-center justify-center rounded-md text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
-            onClick={onDelete}
-          >
-            <Trash2 aria-hidden="true" className="size-4" />
-          </button>
+          <Tooltip content="Удалить блок" side="top">
+            <button
+              type="button"
+              aria-label="Удалить блок"
+              className="flex size-7 items-center justify-center rounded-md text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
+              onClick={onDelete}
+            >
+              <Trash2 aria-hidden="true" className="size-4" />
+            </button>
+          </Tooltip>
         </div>
 
         <Collapsible.Content forceMount className="data-[state=closed]:hidden">
@@ -1354,37 +1369,42 @@ function StudyReadSection({
 
   return (
     <Collapsible.Root open={open} onOpenChange={setOpen} className="group/read-section">
-      <Collapsible.Trigger asChild>
-        <button
-          type="button"
-          disabled={!hasContent}
-          aria-label={
-            open ? `Свернуть раздел «${headingTitle}»` : `Развернуть раздел «${headingTitle}»`
-          }
-          className={cn(
-            'flex w-full items-center gap-1 rounded-xl py-0.5 pr-2 pl-1',
-            'text-left outline-none',
-            'transition-colors duration-150',
-            hasContent && 'hover:bg-white/[0.025]',
-            'focus-visible:ring-2 focus-visible:ring-violet-500/35',
-            !hasContent && 'cursor-default'
-          )}
-        >
-          <ChevronRight
-            aria-hidden="true"
+      <Tooltip
+        content={open ? `Свернуть раздел «${headingTitle}»` : `Развернуть раздел «${headingTitle}»`}
+        side="top"
+      >
+        <Collapsible.Trigger asChild>
+          <button
+            type="button"
+            disabled={!hasContent}
+            aria-label={
+              open ? `Свернуть раздел «${headingTitle}»` : `Развернуть раздел «${headingTitle}»`
+            }
             className={cn(
-              'ml-0.5 size-4 shrink-0 text-[var(--app-muted)]',
-              'transition-transform duration-200 ease-out',
-              open && 'rotate-90',
-              !hasContent && 'opacity-0'
+              'flex w-full items-center gap-1 rounded-xl py-0.5 pr-2 pl-1',
+              'text-left outline-none',
+              'transition-colors duration-150',
+              hasContent && 'hover:bg-white/[0.025]',
+              'focus-visible:ring-2 focus-visible:ring-violet-500/35',
+              !hasContent && 'cursor-default'
             )}
-          />
+          >
+            <ChevronRight
+              aria-hidden="true"
+              className={cn(
+                'ml-0.5 size-4 shrink-0 text-[var(--app-muted)]',
+                'transition-transform duration-200 ease-out',
+                open && 'rotate-90',
+                !hasContent && 'opacity-0'
+              )}
+            />
 
-          <div className="min-w-0 flex-1">
-            <StudyReadHeading heading={section.heading} />
-          </div>
-        </button>
-      </Collapsible.Trigger>
+            <div className="min-w-0 flex-1">
+              <StudyReadHeading heading={section.heading} />
+            </div>
+          </button>
+        </Collapsible.Trigger>
+      </Tooltip>
 
       <Collapsible.Content className="study-read-collapsible-content overflow-hidden">
         <div className="mt-3 ml-[14px] space-y-6 border-l border-[var(--app-border)] pl-3">

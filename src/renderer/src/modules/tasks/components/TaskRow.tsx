@@ -1,3 +1,4 @@
+import { Tooltip } from '../../../shared/ui/tooltip'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { Check, Pencil, Trash2 } from 'lucide-react'
 
@@ -148,22 +149,26 @@ export function TaskRow({
 
       <div className="relative z-[1] flex shrink-0 items-center">
         <TaskMoveGroupMenu task={task} groups={groups} disabled={busy} onMove={onMove} />
-        <button
-          type="button"
-          aria-label={`Изменить задачу «${task.title}»`}
-          className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control)] hover:text-[var(--app-text)]"
-          onClick={onEdit}
-        >
-          <Pencil className="size-3.5" />
-        </button>
-        <button
-          type="button"
-          aria-label={`Удалить задачу «${task.title}»`}
-          className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
-          onClick={onDelete}
-        >
-          <Trash2 className="size-3.5" />
-        </button>
+        <Tooltip content={`Изменить задачу «${task.title}»`} side="top">
+          <button
+            type="button"
+            aria-label={`Изменить задачу «${task.title}»`}
+            className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control)] hover:text-[var(--app-text)]"
+            onClick={onEdit}
+          >
+            <Pencil className="size-3.5" />
+          </button>
+        </Tooltip>
+        <Tooltip content={`Удалить задачу «${task.title}»`} side="top">
+          <button
+            type="button"
+            aria-label={`Удалить задачу «${task.title}»`}
+            className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
+            onClick={onDelete}
+          >
+            <Trash2 className="size-3.5" />
+          </button>
+        </Tooltip>
       </div>
     </motion.article>
   )

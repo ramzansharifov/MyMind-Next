@@ -1,3 +1,4 @@
+import { Tooltip } from '../../../shared/ui/tooltip'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import {
   ArrowDownLeft,
@@ -117,15 +118,17 @@ export function FinanceTransactionRow({
       </div>
       {(onEdit || onDelete) && !transaction.isSystem && (
         <DropdownMenu.Root>
-          <DropdownMenu.Trigger asChild>
-            <button
-              type="button"
-              aria-label="Действия с операцией"
-              className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] outline-none hover:bg-[var(--app-control-hover)] focus-visible:ring-2 focus-visible:ring-violet-500/35"
-            >
-              <MoreHorizontal className="size-4" />
-            </button>
-          </DropdownMenu.Trigger>
+          <Tooltip content="Действия с операцией" side="top">
+            <DropdownMenu.Trigger asChild>
+              <button
+                type="button"
+                aria-label="Действия с операцией"
+                className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] outline-none hover:bg-[var(--app-control-hover)] focus-visible:ring-2 focus-visible:ring-violet-500/35"
+              >
+                <MoreHorizontal className="size-4" />
+              </button>
+            </DropdownMenu.Trigger>
+          </Tooltip>
           <DropdownMenu.Portal>
             <DropdownMenu.Content
               align="end"

@@ -1,3 +1,4 @@
+import { Tooltip } from '../../../shared/ui/tooltip'
 import {
   ClipboardCopy,
   ExternalLink,
@@ -11,7 +12,10 @@ import {
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
-import type { PasswordGroupRecord, PasswordItemRecord } from '../../../../../shared/contracts/passwords'
+import type {
+  PasswordGroupRecord,
+  PasswordItemRecord
+} from '../../../../../shared/contracts/passwords'
 import { cn } from '../../../shared/lib/cn'
 import { AppDialog } from '../../../shared/ui/AppDialog'
 import {
@@ -77,7 +81,12 @@ export function PasswordDetailDialog({
       {item ? (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-2">
-            <span className={cn('rounded-lg border px-2.5 py-1 text-xs font-medium', passwordStrengthClassName(item.strength))}>
+            <span
+              className={cn(
+                'rounded-lg border px-2.5 py-1 text-xs font-medium',
+                passwordStrengthClassName(item.strength)
+              )}
+            >
               {passwordStrengthLabel(item.strength)} пароль
             </span>
             {item.favorite && (
@@ -88,7 +97,10 @@ export function PasswordDetailDialog({
             {item.securityIssues.map((issue) => (
               <span
                 key={issue}
-                className={cn('inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-medium', passwordIssueClassName(issue))}
+                className={cn(
+                  'inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-medium',
+                  passwordIssueClassName(issue)
+                )}
               >
                 <ShieldAlert className="size-3" /> {passwordIssueLabel(issue)}
               </span>
@@ -101,15 +113,19 @@ export function PasswordDetailDialog({
                 <UserRound className="size-3.5" /> Логин / email
               </div>
               <div className="mt-2 flex items-center gap-2">
-                <div className="min-w-0 flex-1 truncate text-sm font-semibold text-[var(--app-text)]">{item.username}</div>
-                <button
-                  type="button"
-                  aria-label="Скопировать логин"
-                  className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-[var(--app-border)] text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-                  onClick={() => void onCopy('username')}
-                >
-                  <ClipboardCopy className="size-4" />
-                </button>
+                <div className="min-w-0 flex-1 truncate text-sm font-semibold text-[var(--app-text)]">
+                  {item.username}
+                </div>
+                <Tooltip content="Скопировать логин" side="top">
+                  <button
+                    type="button"
+                    aria-label="Скопировать логин"
+                    className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-[var(--app-border)] text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+                    onClick={() => void onCopy('username')}
+                  >
+                    <ClipboardCopy className="size-4" />
+                  </button>
+                </Tooltip>
               </div>
             </div>
           )}
@@ -122,25 +138,29 @@ export function PasswordDetailDialog({
               </span>
             </div>
             <div className="mt-2 flex items-center gap-2">
-              <div className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap font-mono text-sm font-semibold text-[var(--app-text)]">
+              <div className="min-w-0 flex-1 overflow-x-auto font-mono text-sm font-semibold whitespace-nowrap text-[var(--app-text)]">
                 {revealed ? item.password : '••••••••••••••••'}
               </div>
-              <button
-                type="button"
-                aria-label={revealed ? 'Скрыть пароль' : 'Показать пароль'}
-                className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-[var(--app-border)] text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-                onClick={() => setRevealed((current) => !current)}
-              >
-                {revealed ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-              </button>
-              <button
-                type="button"
-                aria-label="Скопировать пароль"
-                className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-violet-400/20 bg-violet-500/10 text-violet-300 hover:bg-violet-500/15"
-                onClick={() => void onCopy('password')}
-              >
-                <ClipboardCopy className="size-4" />
-              </button>
+              <Tooltip content={revealed ? 'Скрыть пароль' : 'Показать пароль'} side="top">
+                <button
+                  type="button"
+                  aria-label={revealed ? 'Скрыть пароль' : 'Показать пароль'}
+                  className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-[var(--app-border)] text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+                  onClick={() => setRevealed((current) => !current)}
+                >
+                  {revealed ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                </button>
+              </Tooltip>
+              <Tooltip content="Скопировать пароль" side="top">
+                <button
+                  type="button"
+                  aria-label="Скопировать пароль"
+                  className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-violet-400/20 bg-violet-500/10 text-violet-300 hover:bg-violet-500/15"
+                  onClick={() => void onCopy('password')}
+                >
+                  <ClipboardCopy className="size-4" />
+                </button>
+              </Tooltip>
             </div>
           </div>
 
@@ -151,18 +171,25 @@ export function PasswordDetailDialog({
               onClick={() => void onOpenWebsite()}
             >
               <ExternalLink className="size-4 shrink-0 text-violet-300" />
-              <span className="min-w-0 flex-1 truncate text-sm text-[var(--app-text)]">{item.website}</span>
+              <span className="min-w-0 flex-1 truncate text-sm text-[var(--app-text)]">
+                {item.website}
+              </span>
               <span className="text-xs text-[var(--app-muted)]">Открыть</span>
             </button>
           )}
 
           {item.customFields.length > 0 && (
             <div className="space-y-2 rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-4">
-              <div className="text-xs font-semibold uppercase tracking-[0.1em] text-[var(--app-muted)]">Дополнительные поля</div>
+              <div className="text-xs font-semibold tracking-[0.1em] text-[var(--app-muted)] uppercase">
+                Дополнительные поля
+              </div>
               {item.customFields.map((field, index) => (
-                <div key={`${field.label}-${index}`} className="grid grid-cols-[minmax(100px,0.7fr)_minmax(0,1.3fr)] gap-3 border-t border-[var(--app-border)] pt-2 first:border-0 first:pt-0">
+                <div
+                  key={`${field.label}-${index}`}
+                  className="grid grid-cols-[minmax(100px,0.7fr)_minmax(0,1.3fr)] gap-3 border-t border-[var(--app-border)] pt-2 first:border-0 first:pt-0"
+                >
                   <span className="text-xs text-[var(--app-muted)]">{field.label}</span>
-                  <span className="min-w-0 break-all font-mono text-xs text-[var(--app-text)]">
+                  <span className="min-w-0 font-mono text-xs break-all text-[var(--app-text)]">
                     {revealed ? field.value : '••••••••'}
                   </span>
                 </div>
@@ -173,7 +200,10 @@ export function PasswordDetailDialog({
           {item.tags.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
               {item.tags.map((tag) => (
-                <span key={tag} className="rounded-lg border border-[var(--app-border)] bg-[var(--app-control)] px-2 py-1 text-xs text-[var(--app-muted)]">
+                <span
+                  key={tag}
+                  className="rounded-lg border border-[var(--app-border)] bg-[var(--app-control)] px-2 py-1 text-xs text-[var(--app-muted)]"
+                >
                   {tag}
                 </span>
               ))}
@@ -183,7 +213,9 @@ export function PasswordDetailDialog({
           {item.notes && (
             <div className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-4">
               <div className="text-xs font-medium text-[var(--app-muted)]">Заметки</div>
-              <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[var(--app-text)]">{item.notes}</p>
+              <p className="mt-2 text-sm leading-6 whitespace-pre-wrap text-[var(--app-text)]">
+                {item.notes}
+              </p>
             </div>
           )}
         </div>

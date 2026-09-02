@@ -1,3 +1,4 @@
+import { Tooltip } from '../../../shared/ui/tooltip'
 import {
   Activity,
   CalendarDays,
@@ -226,30 +227,36 @@ export function WorkoutSessionCard({
                 {formatDate(session.date)}
               </div>
               <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  aria-label={`Посмотреть модель мышц тренировки «${title}»`}
-                  className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] transition-colors hover:bg-violet-500/10 hover:text-violet-300"
-                  onClick={onOpenMuscleMap}
-                >
-                  <Activity className="size-4" aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  aria-label="Изменить тренировку"
-                  className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-                  onClick={onEdit}
-                >
-                  <Pencil className="size-4" aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  aria-label="Удалить тренировку"
-                  className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] transition-colors hover:bg-red-500/10 hover:text-red-300"
-                  onClick={onDelete}
-                >
-                  <Trash2 className="size-4" aria-hidden="true" />
-                </button>
+                <Tooltip content={`Посмотреть модель мышц тренировки «${title}»`} side="top">
+                  <button
+                    type="button"
+                    aria-label={`Посмотреть модель мышц тренировки «${title}»`}
+                    className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] transition-colors hover:bg-violet-500/10 hover:text-violet-300"
+                    onClick={onOpenMuscleMap}
+                  >
+                    <Activity className="size-4" aria-hidden="true" />
+                  </button>
+                </Tooltip>
+                <Tooltip content="Изменить тренировку" side="top">
+                  <button
+                    type="button"
+                    aria-label="Изменить тренировку"
+                    className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+                    onClick={onEdit}
+                  >
+                    <Pencil className="size-4" aria-hidden="true" />
+                  </button>
+                </Tooltip>
+                <Tooltip content="Удалить тренировку" side="top">
+                  <button
+                    type="button"
+                    aria-label="Удалить тренировку"
+                    className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] transition-colors hover:bg-red-500/10 hover:text-red-300"
+                    onClick={onDelete}
+                  >
+                    <Trash2 className="size-4" aria-hidden="true" />
+                  </button>
+                </Tooltip>
               </div>
             </div>
           </div>

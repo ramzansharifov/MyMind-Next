@@ -1,3 +1,4 @@
+import { Tooltip } from '../../shared/ui/tooltip'
 import * as Checkbox from '@radix-ui/react-checkbox'
 import * as Dialog from '@radix-ui/react-dialog'
 import {
@@ -219,15 +220,17 @@ function TrackDialog({
                   </Dialog.Description>
                 </div>
               </div>
-              <Dialog.Close asChild>
-                <button
-                  type="button"
-                  aria-label="Закрыть"
-                  className="flex size-8 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)]"
-                >
-                  <X className="size-4" />
-                </button>
-              </Dialog.Close>
+              <Tooltip content="Закрыть" side="top">
+                <Dialog.Close asChild>
+                  <button
+                    type="button"
+                    aria-label="Закрыть"
+                    className="flex size-8 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)]"
+                  >
+                    <X className="size-4" />
+                  </button>
+                </Dialog.Close>
+              </Tooltip>
             </header>
 
             <div className="space-y-5 p-5">
@@ -465,15 +468,17 @@ function PlaylistDialog({
                   </Dialog.Description>
                 </div>
               </div>
-              <Dialog.Close asChild>
-                <button
-                  type="button"
-                  aria-label="Закрыть"
-                  className="flex size-8 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)]"
-                >
-                  <X className="size-4" />
-                </button>
-              </Dialog.Close>
+              <Tooltip content="Закрыть" side="top">
+                <Dialog.Close asChild>
+                  <button
+                    type="button"
+                    aria-label="Закрыть"
+                    className="flex size-8 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)]"
+                  >
+                    <X className="size-4" />
+                  </button>
+                </Dialog.Close>
+              </Tooltip>
             </header>
 
             <div className="grid gap-5 p-5 sm:grid-cols-[minmax(0,1fr)_150px]">

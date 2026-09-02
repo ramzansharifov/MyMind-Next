@@ -7,6 +7,7 @@ import type {
 } from '../../../../../../shared/contracts/finance'
 import { FINANCE_RATE_SCALE } from '../../../../../../shared/finance-money'
 import { AppDialog } from '../../../../shared/ui/AppDialog'
+import { Tooltip } from '../../../../shared/ui/tooltip'
 import { financeClient } from '../../api/finance-client'
 import { getFinanceErrorMessage } from '../../lib/finance-ui'
 import { FinanceButton, FinanceField, financeInputClassName } from '../FinancePrimitives'
@@ -161,30 +162,34 @@ export function FinanceCurrencyDialog({
                     {item.baseCurrencyCode}
                   </div>
                 </div>
-                <FinanceButton
-                  size="sm"
-                  tone="danger"
-                  disabled={isSaving || item.currencyCode === settings.baseCurrencyCode}
-                  aria-label={`Удалить курс ${item.currencyCode}`}
-                  onClick={() =>
-                    void (async () => {
-                      setIsSaving(true)
-                      setError(null)
-                      try {
-                        await financeClient.deleteExchangeRate({
-                          currencyCode: item.currencyCode
-                        })
-                        await onChanged()
-                      } catch (reason) {
-                        setError(getFinanceErrorMessage(reason))
-                      } finally {
-                        setIsSaving(false)
+                <Tooltip content={`Удалить курс ${item.currencyCode}`} side="top">
+                  <span className="inline-flex">
+                    <FinanceButton
+                      size="sm"
+                      tone="danger"
+                      disabled={isSaving || item.currencyCode === settings.baseCurrencyCode}
+                      aria-label={`Удалить курс ${item.currencyCode}`}
+                      onClick={() =>
+                        void (async () => {
+                          setIsSaving(true)
+                          setError(null)
+                          try {
+                            await financeClient.deleteExchangeRate({
+                              currencyCode: item.currencyCode
+                            })
+                            await onChanged()
+                          } catch (reason) {
+                            setError(getFinanceErrorMessage(reason))
+                          } finally {
+                            setIsSaving(false)
+                          }
+                        })()
                       }
-                    })()
-                  }
-                >
-                  <Trash2 className="size-4" />
-                </FinanceButton>
+                    >
+                      <Trash2 className="size-4" />
+                    </FinanceButton>
+                  </span>
+                </Tooltip>
               </div>
             ))}
           </div>

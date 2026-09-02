@@ -1,3 +1,4 @@
+import { Tooltip } from '../../shared/ui/tooltip'
 import {
   BarChart3,
   CalendarDays,
@@ -374,14 +375,16 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
                 onChange={(event) => setQuery(event.target.value)}
               />
               {query && (
-                <button
-                  type="button"
-                  aria-label="Очистить поиск привычек"
-                  className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-                  onClick={() => setQuery('')}
-                >
-                  <X className="size-4" />
-                </button>
+                <Tooltip content="Очистить поиск привычек" side="top">
+                  <button
+                    type="button"
+                    aria-label="Очистить поиск привычек"
+                    className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+                    onClick={() => setQuery('')}
+                  >
+                    <X className="size-4" />
+                  </button>
+                </Tooltip>
               )}
             </label>
 
@@ -435,14 +438,16 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
 
           {view === 'today' && (
             <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                aria-label="Предыдущий день"
-                className="flex size-10 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-                onClick={() => setSelectedDate((current) => addDays(current, -1))}
-              >
-                <ChevronLeft className="size-4" />
-              </button>
+              <Tooltip content="Предыдущий день" side="top">
+                <button
+                  type="button"
+                  aria-label="Предыдущий день"
+                  className="flex size-10 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+                  onClick={() => setSelectedDate((current) => addDays(current, -1))}
+                >
+                  <ChevronLeft className="size-4" />
+                </button>
+              </Tooltip>
               <HabitDatePicker value={selectedDate} max={today} onChange={setSelectedDate} />
               <button
                 type="button"
@@ -452,20 +457,22 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
               >
                 Сегодня
               </button>
-              <button
-                type="button"
-                aria-label="Следующий день"
-                disabled={selectedDate >= today}
-                className="flex size-10 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-[var(--app-workspace)]"
-                onClick={() =>
-                  setSelectedDate((current) => {
-                    const next = addDays(current, 1)
-                    return next > today ? today : next
-                  })
-                }
-              >
-                <ChevronRight className="size-4" />
-              </button>
+              <Tooltip content="Следующий день" side="top">
+                <button
+                  type="button"
+                  aria-label="Следующий день"
+                  disabled={selectedDate >= today}
+                  className="flex size-10 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-[var(--app-workspace)]"
+                  onClick={() =>
+                    setSelectedDate((current) => {
+                      const next = addDays(current, 1)
+                      return next > today ? today : next
+                    })
+                  }
+                >
+                  <ChevronRight className="size-4" />
+                </button>
+              </Tooltip>
             </div>
           )}
         </div>
@@ -477,14 +484,16 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
           className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300"
         >
           <span>{error}</span>
-          <button
-            type="button"
-            aria-label="Закрыть ошибку"
-            className="flex size-7 items-center justify-center rounded-lg hover:bg-red-500/10"
-            onClick={() => setError(null)}
-          >
-            <X className="size-4" />
-          </button>
+          <Tooltip content="Закрыть ошибку" side="top">
+            <button
+              type="button"
+              aria-label="Закрыть ошибку"
+              className="flex size-7 items-center justify-center rounded-lg hover:bg-red-500/10"
+              onClick={() => setError(null)}
+            >
+              <X className="size-4" />
+            </button>
+          </Tooltip>
         </div>
       )}
 
@@ -494,14 +503,16 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
             <span className="text-xs font-semibold tracking-[0.12em] text-[var(--app-muted)] uppercase">
               Группы
             </span>
-            <button
-              type="button"
-              aria-label="Создать группу"
-              className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-              onClick={openNewGroup}
-            >
-              <Plus className="size-4" />
-            </button>
+            <Tooltip content="Создать группу" side="top">
+              <button
+                type="button"
+                aria-label="Создать группу"
+                className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+                onClick={openNewGroup}
+              >
+                <Plus className="size-4" />
+              </button>
+            </Tooltip>
           </div>
 
           <div className="mt-2 space-y-1">
@@ -576,25 +587,29 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
                     </span>
                   </button>
                   <div className="mr-1 flex shrink-0 items-center">
-                    <button
-                      type="button"
-                      aria-label={`Изменить группу «${group.name}»`}
-                      className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-                      onClick={() => {
-                        setEditingGroup(group)
-                        setGroupDialogOpen(true)
-                      }}
-                    >
-                      <Pencil className="size-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label={`Удалить группу «${group.name}»`}
-                      className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
-                      onClick={() => setDeleteGroupTarget(group)}
-                    >
-                      <Trash2 className="size-3.5" />
-                    </button>
+                    <Tooltip content={`Изменить группу «${group.name}»`} side="top">
+                      <button
+                        type="button"
+                        aria-label={`Изменить группу «${group.name}»`}
+                        className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+                        onClick={() => {
+                          setEditingGroup(group)
+                          setGroupDialogOpen(true)
+                        }}
+                      >
+                        <Pencil className="size-3.5" />
+                      </button>
+                    </Tooltip>
+                    <Tooltip content={`Удалить группу «${group.name}»`} side="top">
+                      <button
+                        type="button"
+                        aria-label={`Удалить группу «${group.name}»`}
+                        className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
+                        onClick={() => setDeleteGroupTarget(group)}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </Tooltip>
                   </div>
                 </div>
               )
@@ -724,25 +739,29 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
                         </button>
 
                         <div className="flex shrink-0 items-center gap-1">
-                          <button
-                            type="button"
-                            aria-label={`Изменить привычку «${habit.title}»`}
-                            className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-                            onClick={() => {
-                              setEditingHabit(habit)
-                              setHabitDialogOpen(true)
-                            }}
-                          >
-                            <Pencil className="size-4" />
-                          </button>
-                          <button
-                            type="button"
-                            aria-label={`Удалить привычку «${habit.title}»`}
-                            className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
-                            onClick={() => setDeleteHabitTarget(habit)}
-                          >
-                            <Trash2 className="size-4" />
-                          </button>
+                          <Tooltip content={`Изменить привычку «${habit.title}»`} side="top">
+                            <button
+                              type="button"
+                              aria-label={`Изменить привычку «${habit.title}»`}
+                              className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+                              onClick={() => {
+                                setEditingHabit(habit)
+                                setHabitDialogOpen(true)
+                              }}
+                            >
+                              <Pencil className="size-4" />
+                            </button>
+                          </Tooltip>
+                          <Tooltip content={`Удалить привычку «${habit.title}»`} side="top">
+                            <button
+                              type="button"
+                              aria-label={`Удалить привычку «${habit.title}»`}
+                              className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
+                              onClick={() => setDeleteHabitTarget(habit)}
+                            >
+                              <Trash2 className="size-4" />
+                            </button>
+                          </Tooltip>
                         </div>
                       </div>
                     </article>

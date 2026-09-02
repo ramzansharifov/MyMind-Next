@@ -1,3 +1,4 @@
+import { Tooltip } from '../../../shared/ui/tooltip'
 import { FolderPlus } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
@@ -101,7 +102,7 @@ export function HabitGroupDialog({
             value={name}
             maxLength={80}
             placeholder="Например, Здоровье"
-            className="h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm text-[var(--app-text)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
+            className="h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm text-[var(--app-text)] transition-[border-color,box-shadow] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
             onChange={(event) => setName(event.target.value)}
           />
         </label>
@@ -110,21 +111,22 @@ export function HabitGroupDialog({
           <span className="block text-xs font-medium text-[var(--app-muted)]">Иконка</span>
           <div className="grid grid-cols-8 gap-2 max-[560px]:grid-cols-4">
             {HABIT_GROUP_ICON_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                aria-label={`Иконка: ${option.label}`}
-                aria-pressed={icon === option.value}
-                className={cn(
-                  'flex aspect-square items-center justify-center rounded-xl border text-[var(--app-muted)] transition-colors outline-none',
-                  icon === option.value
-                    ? 'border-violet-400/35 bg-violet-500/15 text-violet-200 ring-2 ring-violet-500/10'
-                    : 'border-[var(--app-border)] bg-[var(--app-workspace)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
-                )}
-                onClick={() => setIcon(option.value)}
-              >
-                <HabitGroupIconGlyph icon={option.value} className="size-5" />
-              </button>
+              <Tooltip content={`Иконка: ${option.label}`} side="top" key={option.value}>
+                <button
+                  type="button"
+                  aria-label={`Иконка: ${option.label}`}
+                  aria-pressed={icon === option.value}
+                  className={cn(
+                    'flex aspect-square items-center justify-center rounded-xl border text-[var(--app-muted)] transition-colors outline-none',
+                    icon === option.value
+                      ? 'border-violet-400/35 bg-violet-500/15 text-violet-200 ring-2 ring-violet-500/10'
+                      : 'border-[var(--app-border)] bg-[var(--app-workspace)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
+                  )}
+                  onClick={() => setIcon(option.value)}
+                >
+                  <HabitGroupIconGlyph icon={option.value} className="size-5" />
+                </button>
+              </Tooltip>
             ))}
           </div>
         </div>
@@ -135,21 +137,22 @@ export function HabitGroupDialog({
             {HABIT_GROUP_COLOR_OPTIONS.map((option) => {
               const classes = habitGroupColorClasses[option.value]
               return (
-                <button
-                  key={option.value}
-                  type="button"
-                  aria-label={`Цвет: ${option.label}`}
-                  aria-pressed={color === option.value}
-                  className={cn(
-                    'flex aspect-square items-center justify-center rounded-xl border bg-[var(--app-workspace)] outline-none transition-transform hover:scale-105',
-                    color === option.value
-                      ? `${classes.border} ring-2 ring-white/10`
-                      : 'border-[var(--app-border)]'
-                  )}
-                  onClick={() => setColor(option.value)}
-                >
-                  <span className={cn('size-5 rounded-full shadow-sm', classes.dot)} />
-                </button>
+                <Tooltip content={`Цвет: ${option.label}`} side="top" key={option.value}>
+                  <button
+                    type="button"
+                    aria-label={`Цвет: ${option.label}`}
+                    aria-pressed={color === option.value}
+                    className={cn(
+                      'flex aspect-square items-center justify-center rounded-xl border bg-[var(--app-workspace)] transition-transform outline-none hover:scale-105',
+                      color === option.value
+                        ? `${classes.border} ring-2 ring-white/10`
+                        : 'border-[var(--app-border)]'
+                    )}
+                    onClick={() => setColor(option.value)}
+                  >
+                    <span className={cn('size-5 rounded-full shadow-sm', classes.dot)} />
+                  </button>
+                </Tooltip>
               )
             })}
           </div>

@@ -1,3 +1,4 @@
+import { Tooltip } from '../../../shared/ui/tooltip'
 import {
   CalendarDays,
   Clock3,
@@ -120,20 +121,25 @@ export function MusicDetail({
                     {item.rating === null ? 'Оценить' : `${item.rating} / 10`}
                   </button>
                 )}
-                <button
-                  type="button"
-                  aria-label={item.favorite ? 'Убрать из избранного' : 'Добавить в избранное'}
-                  aria-pressed={item.favorite}
-                  disabled={busy}
-                  className={
-                    item.favorite
-                      ? 'flex size-11 items-center justify-center rounded-xl border border-rose-400/20 bg-rose-500/10 text-rose-300 transition-colors hover:bg-rose-500/15 disabled:opacity-50'
-                      : 'flex size-11 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-rose-300 disabled:opacity-50'
-                  }
-                  onClick={() => void onUpdate({ ...item, favorite: !item.favorite })}
+                <Tooltip
+                  content={item.favorite ? 'Убрать из избранного' : 'Добавить в избранное'}
+                  side="top"
                 >
-                  <Heart className={`size-5 ${item.favorite ? 'fill-current' : ''}`} />
-                </button>
+                  <button
+                    type="button"
+                    aria-label={item.favorite ? 'Убрать из избранного' : 'Добавить в избранное'}
+                    aria-pressed={item.favorite}
+                    disabled={busy}
+                    className={
+                      item.favorite
+                        ? 'flex size-11 items-center justify-center rounded-xl border border-rose-400/20 bg-rose-500/10 text-rose-300 transition-colors hover:bg-rose-500/15 disabled:opacity-50'
+                        : 'flex size-11 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-rose-300 disabled:opacity-50'
+                    }
+                    onClick={() => void onUpdate({ ...item, favorite: !item.favorite })}
+                  >
+                    <Heart className={`size-5 ${item.favorite ? 'fill-current' : ''}`} />
+                  </button>
+                </Tooltip>
               </div>
             </div>
 
@@ -248,7 +254,7 @@ export function MusicDetail({
             {item.description && (
               <div className="mt-7 rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-5">
                 <h3 className="text-sm font-semibold text-[var(--app-text)]">Описание</h3>
-                <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-[var(--app-muted)]">
+                <p className="mt-3 text-sm leading-7 whitespace-pre-wrap text-[var(--app-muted)]">
                   {item.description}
                 </p>
               </div>
@@ -259,7 +265,7 @@ export function MusicDetail({
                 <h3 className="flex items-center gap-2 text-sm font-semibold text-[var(--app-text)]">
                   <Music2 className="size-4 text-violet-300" /> Личные комментарии
                 </h3>
-                <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-[var(--app-muted)]">
+                <p className="mt-3 text-sm leading-7 whitespace-pre-wrap text-[var(--app-muted)]">
                   {item.comments}
                 </p>
               </div>

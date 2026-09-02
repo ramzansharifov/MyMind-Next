@@ -1,3 +1,4 @@
+import { Tooltip } from './tooltip'
 import * as Popover from '@radix-ui/react-popover'
 import { Check, Eraser, Palette, X } from 'lucide-react'
 
@@ -83,37 +84,41 @@ export function ColorPicker({
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium">Выбор цвета</p>
 
-            <Popover.Close asChild>
-              <button
-                type="button"
-                aria-label="Закрыть выбор цвета"
-                className="flex size-7 items-center justify-center rounded-md text-(--app-muted) hover:bg-(--app-control-hover) hover:text-(--app-text)"
-              >
-                <X aria-hidden="true" className="size-4" />
-              </button>
-            </Popover.Close>
+            <Tooltip content="Закрыть выбор цвета" side="top">
+              <Popover.Close asChild>
+                <button
+                  type="button"
+                  aria-label="Закрыть выбор цвета"
+                  className="flex size-7 items-center justify-center rounded-md text-(--app-muted) hover:bg-(--app-control-hover) hover:text-(--app-text)"
+                >
+                  <X aria-hidden="true" className="size-4" />
+                </button>
+              </Popover.Close>
+            </Tooltip>
           </div>
 
           <div className="mt-3 grid grid-cols-4 gap-2">
             {colors.map((color) => (
-              <Popover.Close key={color} asChild>
-                <button
-                  type="button"
-                  aria-label={`Цвет ${color}`}
-                  className={cn(
-                    'relative flex aspect-square items-center justify-center',
-                    'rounded-lg border border-(--app-border) outline-none',
-                    'shadow-sm transition-transform hover:scale-105',
-                    'focus-visible:ring-2 focus-visible:ring-violet-400'
-                  )}
-                  style={{ backgroundColor: color }}
-                  onClick={() => onChange(color)}
-                >
-                  {color.toLowerCase() === value.toLowerCase() && (
-                    <Check aria-hidden="true" className="size-4 text-white drop-shadow" />
-                  )}
-                </button>
-              </Popover.Close>
+              <Tooltip content={`Цвет ${color}`} side="top" key={color}>
+                <Popover.Close asChild>
+                  <button
+                    type="button"
+                    aria-label={`Цвет ${color}`}
+                    className={cn(
+                      'relative flex aspect-square items-center justify-center',
+                      'rounded-lg border border-(--app-border) outline-none',
+                      'shadow-sm transition-transform hover:scale-105',
+                      'focus-visible:ring-2 focus-visible:ring-violet-400'
+                    )}
+                    style={{ backgroundColor: color }}
+                    onClick={() => onChange(color)}
+                  >
+                    {color.toLowerCase() === value.toLowerCase() && (
+                      <Check aria-hidden="true" className="size-4 text-white drop-shadow" />
+                    )}
+                  </button>
+                </Popover.Close>
+              </Tooltip>
             ))}
           </div>
 

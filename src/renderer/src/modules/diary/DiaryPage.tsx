@@ -1,3 +1,4 @@
+import { Tooltip } from '../../shared/ui/tooltip'
 import {
   BarChart3,
   BookHeart,
@@ -186,25 +187,29 @@ export function DiaryPage({ resourceId, onResourceHandled }: DiaryPageProps): Re
         className="inline-flex h-11 items-center gap-1 rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-1 shadow-inner shadow-black/5"
         aria-label="Выбор месяца календаря"
       >
-        <button
-          type="button"
-          aria-label="Предыдущий месяц"
-          className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:outline-none"
-          onClick={() => shiftCalendarMonth(-1)}
-        >
-          <ChevronLeft aria-hidden="true" className="size-4" />
-        </button>
+        <Tooltip content="Предыдущий месяц" side="top">
+          <button
+            type="button"
+            aria-label="Предыдущий месяц"
+            className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:outline-none"
+            onClick={() => shiftCalendarMonth(-1)}
+          >
+            <ChevronLeft aria-hidden="true" className="size-4" />
+          </button>
+        </Tooltip>
         <div className="min-w-36 px-2 text-center text-sm font-semibold text-[var(--app-text)] capitalize tabular-nums max-[420px]:min-w-28">
           {calendarMonthTitle}
         </div>
-        <button
-          type="button"
-          aria-label="Следующий месяц"
-          className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:outline-none"
-          onClick={() => shiftCalendarMonth(1)}
-        >
-          <ChevronRight aria-hidden="true" className="size-4" />
-        </button>
+        <Tooltip content="Следующий месяц" side="top">
+          <button
+            type="button"
+            aria-label="Следующий месяц"
+            className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:outline-none"
+            onClick={() => shiftCalendarMonth(1)}
+          >
+            <ChevronRight aria-hidden="true" className="size-4" />
+          </button>
+        </Tooltip>
       </div>
     ) : selectedDiary ? (
       <button

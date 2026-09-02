@@ -1,3 +1,4 @@
+import { Tooltip } from '../../../shared/ui/tooltip'
 import * as Tabs from '@radix-ui/react-tabs'
 import { ArrowLeft, Heart, ListMusic, Music2, Pencil, Plus, Search, Trash2, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
@@ -84,14 +85,16 @@ export function MusicLibraryNavigation({
             onChange={(event) => onQueryChange(event.target.value)}
           />
           {query && (
-            <button
-              type="button"
-              aria-label="Очистить поиск"
-              className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-              onClick={() => onQueryChange('')}
-            >
-              <X aria-hidden="true" className="size-4" />
-            </button>
+            <Tooltip content="Очистить поиск" side="top">
+              <button
+                type="button"
+                aria-label="Очистить поиск"
+                className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+                onClick={() => onQueryChange('')}
+              >
+                <X aria-hidden="true" className="size-4" />
+              </button>
+            </Tooltip>
           )}
         </label>
 
@@ -152,14 +155,16 @@ function LibrarySection({
     >
       <header className="flex min-h-12 items-center gap-3 border-b border-[var(--app-border)] px-5 py-3 max-[620px]:flex-wrap">
         {backAction && (
-          <button
-            type="button"
-            aria-label={backAction.label}
-            className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] outline-none hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)]/35"
-            onClick={backAction.onBack}
-          >
-            <ArrowLeft aria-hidden="true" className="size-4" />
-          </button>
+          <Tooltip content={backAction.label} side="top">
+            <button
+              type="button"
+              aria-label={backAction.label}
+              className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] outline-none hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)]/35"
+              onClick={backAction.onBack}
+            >
+              <ArrowLeft aria-hidden="true" className="size-4" />
+            </button>
+          </Tooltip>
         )}
         <span data-music-section-icon className="text-[var(--app-accent-500)]">
           {icon}
@@ -251,28 +256,35 @@ function TrackGrid({
               </button>
 
               <div className="flex shrink-0 items-center gap-1">
-                <button
-                  type="button"
-                  aria-label={item.favorite ? 'Убрать из избранного' : 'Добавить в избранное'}
-                  aria-pressed={item.favorite}
-                  disabled={isSaving}
-                  className={
-                    item.favorite
-                      ? 'flex size-8 items-center justify-center rounded-lg bg-rose-500/10 text-rose-300 hover:bg-rose-500/15 disabled:opacity-50'
-                      : 'flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-surface)] hover:text-[var(--app-text)] disabled:opacity-50'
-                  }
-                  onClick={() => onToggleFavorite(item)}
+                <Tooltip
+                  content={item.favorite ? 'Убрать из избранного' : 'Добавить в избранное'}
+                  side="top"
                 >
-                  <Heart className={`size-3.5 ${item.favorite ? 'fill-current' : ''}`} />
-                </button>
-                <button
-                  type="button"
-                  aria-label={`Удалить трек «${item.title}»`}
-                  className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
-                  onClick={() => onDeleteTrack(item)}
-                >
-                  <Trash2 className="size-3.5" />
-                </button>
+                  <button
+                    type="button"
+                    aria-label={item.favorite ? 'Убрать из избранного' : 'Добавить в избранное'}
+                    aria-pressed={item.favorite}
+                    disabled={isSaving}
+                    className={
+                      item.favorite
+                        ? 'flex size-8 items-center justify-center rounded-lg bg-rose-500/10 text-rose-300 hover:bg-rose-500/15 disabled:opacity-50'
+                        : 'flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-surface)] hover:text-[var(--app-text)] disabled:opacity-50'
+                    }
+                    onClick={() => onToggleFavorite(item)}
+                  >
+                    <Heart className={`size-3.5 ${item.favorite ? 'fill-current' : ''}`} />
+                  </button>
+                </Tooltip>
+                <Tooltip content={`Удалить трек «${item.title}»`} side="top">
+                  <button
+                    type="button"
+                    aria-label={`Удалить трек «${item.title}»`}
+                    className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
+                    onClick={() => onDeleteTrack(item)}
+                  >
+                    <Trash2 className="size-3.5" />
+                  </button>
+                </Tooltip>
               </div>
             </div>
           </article>
@@ -381,22 +393,26 @@ function PlaylistGrid({
             </button>
 
             <div className="flex shrink-0 items-center gap-1">
-              <button
-                type="button"
-                aria-label={`Редактировать плейлист «${playlist.name}»`}
-                className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-surface)] hover:text-[var(--app-text)]"
-                onClick={() => onEditPlaylist(playlist)}
-              >
-                <Pencil className="size-3.5" />
-              </button>
-              <button
-                type="button"
-                aria-label={`Удалить плейлист «${playlist.name}»`}
-                className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
-                onClick={() => onDeletePlaylist(playlist)}
-              >
-                <Trash2 className="size-3.5" />
-              </button>
+              <Tooltip content={`Редактировать плейлист «${playlist.name}»`} side="top">
+                <button
+                  type="button"
+                  aria-label={`Редактировать плейлист «${playlist.name}»`}
+                  className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-surface)] hover:text-[var(--app-text)]"
+                  onClick={() => onEditPlaylist(playlist)}
+                >
+                  <Pencil className="size-3.5" />
+                </button>
+              </Tooltip>
+              <Tooltip content={`Удалить плейлист «${playlist.name}»`} side="top">
+                <button
+                  type="button"
+                  aria-label={`Удалить плейлист «${playlist.name}»`}
+                  className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
+                  onClick={() => onDeletePlaylist(playlist)}
+                >
+                  <Trash2 className="size-3.5" />
+                </button>
+              </Tooltip>
             </div>
           </article>
         )
@@ -526,22 +542,26 @@ export function MusicLibraryContent({
         }}
         toolbar={
           <>
-            <button
-              type="button"
-              aria-label={`Редактировать плейлист «${selectedPlaylist.name}»`}
-              className="flex size-8 items-center justify-center rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] hover:text-[var(--app-text)]"
-              onClick={() => onEditPlaylist(selectedPlaylist)}
-            >
-              <Pencil className="size-3.5" />
-            </button>
-            <button
-              type="button"
-              aria-label={`Удалить плейлист «${selectedPlaylist.name}»`}
-              className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
-              onClick={() => onDeletePlaylist(selectedPlaylist)}
-            >
-              <Trash2 className="size-3.5" />
-            </button>
+            <Tooltip content={`Редактировать плейлист «${selectedPlaylist.name}»`} side="top">
+              <button
+                type="button"
+                aria-label={`Редактировать плейлист «${selectedPlaylist.name}»`}
+                className="flex size-8 items-center justify-center rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] hover:text-[var(--app-text)]"
+                onClick={() => onEditPlaylist(selectedPlaylist)}
+              >
+                <Pencil className="size-3.5" />
+              </button>
+            </Tooltip>
+            <Tooltip content={`Удалить плейлист «${selectedPlaylist.name}»`} side="top">
+              <button
+                type="button"
+                aria-label={`Удалить плейлист «${selectedPlaylist.name}»`}
+                className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
+                onClick={() => onDeletePlaylist(selectedPlaylist)}
+              >
+                <Trash2 className="size-3.5" />
+              </button>
+            </Tooltip>
           </>
         }
       >

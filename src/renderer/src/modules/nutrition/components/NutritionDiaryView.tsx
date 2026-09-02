@@ -1,3 +1,4 @@
+import { Tooltip } from '../../../shared/ui/tooltip'
 import * as Collapsible from '@radix-ui/react-collapsible'
 import {
   Braces,
@@ -66,14 +67,16 @@ export function NutritionDiaryView({
       {showDateNavigation && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 shadow-[var(--app-shadow-card)]">
           <div className="flex items-center gap-1">
-            <button
-              type="button"
-              aria-label="Предыдущий день"
-              className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] hover:bg-[var(--app-control-hover)]"
-              onClick={() => onDateChange(shiftNutritionDate(selectedDate, -1))}
-            >
-              <ChevronLeft className="size-4" />
-            </button>
+            <Tooltip content="Предыдущий день" side="top">
+              <button
+                type="button"
+                aria-label="Предыдущий день"
+                className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] hover:bg-[var(--app-control-hover)]"
+                onClick={() => onDateChange(shiftNutritionDate(selectedDate, -1))}
+              >
+                <ChevronLeft className="size-4" />
+              </button>
+            </Tooltip>
             <button
               type="button"
               className="min-w-56 rounded-xl px-3 py-2 text-left hover:bg-[var(--app-control-hover)] max-[520px]:min-w-0"
@@ -88,14 +91,16 @@ export function NutritionDiaryView({
                   : 'Вернуться к сегодняшнему дню'}
               </div>
             </button>
-            <button
-              type="button"
-              aria-label="Следующий день"
-              className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] hover:bg-[var(--app-control-hover)]"
-              onClick={() => onDateChange(shiftNutritionDate(selectedDate, 1))}
-            >
-              <ChevronRight className="size-4" />
-            </button>
+            <Tooltip content="Следующий день" side="top">
+              <button
+                type="button"
+                aria-label="Следующий день"
+                className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] hover:bg-[var(--app-control-hover)]"
+                onClick={() => onDateChange(shiftNutritionDate(selectedDate, 1))}
+              >
+                <ChevronRight className="size-4" />
+              </button>
+            </Tooltip>
           </div>
           <AppDateField
             value={selectedDate}
@@ -347,22 +352,26 @@ function MealRow({
                 </p>
               </div>
               <div className="flex gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100">
-                <button
-                  type="button"
-                  aria-label={`Изменить «${entry.title}»`}
-                  className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)]"
-                  onClick={() => onEdit(entry)}
-                >
-                  <Pencil className="size-3.5" />
-                </button>
-                <button
-                  type="button"
-                  aria-label={`Удалить «${entry.title}»`}
-                  className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
-                  onClick={() => onDelete(entry)}
-                >
-                  <Trash2 className="size-3.5" />
-                </button>
+                <Tooltip content={`Изменить «${entry.title}»`} side="top">
+                  <button
+                    type="button"
+                    aria-label={`Изменить «${entry.title}»`}
+                    className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)]"
+                    onClick={() => onEdit(entry)}
+                  >
+                    <Pencil className="size-3.5" />
+                  </button>
+                </Tooltip>
+                <Tooltip content={`Удалить «${entry.title}»`} side="top">
+                  <button
+                    type="button"
+                    aria-label={`Удалить «${entry.title}»`}
+                    className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
+                    onClick={() => onDelete(entry)}
+                  >
+                    <Trash2 className="size-3.5" />
+                  </button>
+                </Tooltip>
               </div>
             </div>
           ))}

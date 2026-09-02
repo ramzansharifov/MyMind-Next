@@ -1,3 +1,4 @@
+import { Tooltip } from '../../../shared/ui/tooltip'
 import { CalendarDays, ChevronLeft, ChevronRight, LoaderCircle } from 'lucide-react'
 import {
   forwardRef,
@@ -268,17 +269,19 @@ export function DiaryReader({
           <span>✦</span>
         </span>
 
-        <button
-          type="button"
-          disabled={!previousDay || isLoading || pageTurn !== null}
-          aria-label="Предыдущая страница"
-          className="diary-page-edge-button diary-page-edge-button--previous"
-          onClick={() => {
-            if (previousDay) void openDay(previousDay.dayKey)
-          }}
-        >
-          <ChevronLeft className="size-5" />
-        </button>
+        <Tooltip content="Предыдущая страница" side="top">
+          <button
+            type="button"
+            disabled={!previousDay || isLoading || pageTurn !== null}
+            aria-label="Предыдущая страница"
+            className="diary-page-edge-button diary-page-edge-button--previous"
+            onClick={() => {
+              if (previousDay) void openDay(previousDay.dayKey)
+            }}
+          >
+            <ChevronLeft className="size-5" />
+          </button>
+        </Tooltip>
 
         <div
           ref={pageStageRef}
@@ -308,17 +311,19 @@ export function DiaryReader({
           )}
         </div>
 
-        <button
-          type="button"
-          disabled={!nextDay || isLoading || pageTurn !== null}
-          aria-label="Следующая страница"
-          className="diary-page-edge-button diary-page-edge-button--next"
-          onClick={() => {
-            if (nextDay) void openDay(nextDay.dayKey)
-          }}
-        >
-          <ChevronRight className="size-5" />
-        </button>
+        <Tooltip content="Следующая страница" side="top">
+          <button
+            type="button"
+            disabled={!nextDay || isLoading || pageTurn !== null}
+            aria-label="Следующая страница"
+            className="diary-page-edge-button diary-page-edge-button--next"
+            onClick={() => {
+              if (nextDay) void openDay(nextDay.dayKey)
+            }}
+          >
+            <ChevronRight className="size-5" />
+          </button>
+        </Tooltip>
       </div>
 
       {day && pageTurn && (

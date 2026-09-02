@@ -1,3 +1,4 @@
+import { Tooltip } from '../../shared/ui/tooltip'
 import { AnimatePresence } from 'framer-motion'
 import {
   CheckCircle2,
@@ -361,14 +362,16 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
               onChange={(event) => setQuery(event.target.value)}
             />
             {query && (
-              <button
-                type="button"
-                aria-label="Очистить поиск задач"
-                className="text-[var(--app-muted)] hover:text-[var(--app-text)]"
-                onClick={() => setQuery('')}
-              >
-                <X className="size-4" />
-              </button>
+              <Tooltip content="Очистить поиск задач" side="top">
+                <button
+                  type="button"
+                  aria-label="Очистить поиск задач"
+                  className="text-[var(--app-muted)] hover:text-[var(--app-text)]"
+                  onClick={() => setQuery('')}
+                >
+                  <X className="size-4" />
+                </button>
+              </Tooltip>
             )}
           </label>
 
@@ -398,14 +401,16 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
           className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300"
         >
           <span>{error}</span>
-          <button
-            type="button"
-            aria-label="Закрыть ошибку"
-            className="flex size-7 items-center justify-center rounded-lg hover:bg-red-500/10"
-            onClick={() => setError(null)}
-          >
-            <X className="size-4" />
-          </button>
+          <Tooltip content="Закрыть ошибку" side="top">
+            <button
+              type="button"
+              aria-label="Закрыть ошибку"
+              className="flex size-7 items-center justify-center rounded-lg hover:bg-red-500/10"
+              onClick={() => setError(null)}
+            >
+              <X className="size-4" />
+            </button>
+          </Tooltip>
         </div>
       )}
 
@@ -415,14 +420,16 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
             <span className="text-xs font-semibold tracking-[0.12em] text-[var(--app-muted)] uppercase">
               Группы
             </span>
-            <button
-              type="button"
-              aria-label="Создать группу"
-              className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-              onClick={openNewGroup}
-            >
-              <Plus className="size-4" />
-            </button>
+            <Tooltip content="Создать группу" side="top">
+              <button
+                type="button"
+                aria-label="Создать группу"
+                className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+                onClick={openNewGroup}
+              >
+                <Plus className="size-4" />
+              </button>
+            </Tooltip>
           </div>
 
           <div className="mt-2 space-y-1">
@@ -498,25 +505,29 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
                     </span>
                   </button>
                   <div className="mr-1 flex shrink-0 items-center">
-                    <button
-                      type="button"
-                      aria-label={`Изменить группу «${group.name}»`}
-                      className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-                      onClick={() => {
-                        setEditingGroup(group)
-                        setGroupDialogOpen(true)
-                      }}
-                    >
-                      <Pencil className="size-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label={`Удалить группу «${group.name}»`}
-                      className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
-                      onClick={() => setDeleteGroupTarget(group)}
-                    >
-                      <Trash2 className="size-3.5" />
-                    </button>
+                    <Tooltip content={`Изменить группу «${group.name}»`} side="top">
+                      <button
+                        type="button"
+                        aria-label={`Изменить группу «${group.name}»`}
+                        className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+                        onClick={() => {
+                          setEditingGroup(group)
+                          setGroupDialogOpen(true)
+                        }}
+                      >
+                        <Pencil className="size-3.5" />
+                      </button>
+                    </Tooltip>
+                    <Tooltip content={`Удалить группу «${group.name}»`} side="top">
+                      <button
+                        type="button"
+                        aria-label={`Удалить группу «${group.name}»`}
+                        className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
+                        onClick={() => setDeleteGroupTarget(group)}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </Tooltip>
                   </div>
                 </div>
               )

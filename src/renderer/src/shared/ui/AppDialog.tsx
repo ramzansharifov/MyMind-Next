@@ -1,3 +1,4 @@
+import { Tooltip } from './tooltip'
 import * as Dialog from '@radix-ui/react-dialog'
 import { X } from 'lucide-react'
 import type { KeyboardEventHandler, ReactNode } from 'react'
@@ -148,16 +149,18 @@ export function AppDialog({
                   <Dialog.Description className="sr-only">{description}</Dialog.Description>
                 </div>
                 {showClose && (
-                  <Dialog.Close asChild disabled={busy}>
-                    <button
-                      type="button"
-                      aria-label={closeLabel}
-                      disabled={busy}
-                      className="flex size-8 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors outline-none hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      <X aria-hidden="true" className="size-4" />
-                    </button>
-                  </Dialog.Close>
+                  <Tooltip content={closeLabel} side="top">
+                    <Dialog.Close asChild disabled={busy}>
+                      <button
+                        type="button"
+                        aria-label={closeLabel}
+                        disabled={busy}
+                        className="flex size-8 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors outline-none hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <X aria-hidden="true" className="size-4" />
+                      </button>
+                    </Dialog.Close>
+                  </Tooltip>
                 )}
               </header>
             ) : (

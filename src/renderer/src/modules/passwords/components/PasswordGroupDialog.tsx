@@ -1,3 +1,4 @@
+import { Tooltip } from '../../../shared/ui/tooltip'
 import { FolderPlus } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
@@ -109,21 +110,22 @@ export function PasswordGroupDialog({
           <span className="block text-xs font-medium text-[var(--app-muted)]">Иконка</span>
           <div className="grid grid-cols-6 gap-2 max-[520px]:grid-cols-4">
             {PASSWORD_GROUP_ICON_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                aria-label={`Иконка: ${option.label}`}
-                aria-pressed={icon === option.value}
-                className={cn(
-                  'flex aspect-square items-center justify-center rounded-xl border text-[var(--app-muted)] outline-none transition-colors',
-                  icon === option.value
-                    ? 'border-violet-400/35 bg-violet-500/15 text-violet-200 ring-2 ring-violet-500/10'
-                    : 'border-[var(--app-border)] bg-[var(--app-workspace)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
-                )}
-                onClick={() => setIcon(option.value)}
-              >
-                <PasswordGroupIconGlyph icon={option.value} className="size-5" />
-              </button>
+              <Tooltip content={`Иконка: ${option.label}`} side="top" key={option.value}>
+                <button
+                  type="button"
+                  aria-label={`Иконка: ${option.label}`}
+                  aria-pressed={icon === option.value}
+                  className={cn(
+                    'flex aspect-square items-center justify-center rounded-xl border text-[var(--app-muted)] transition-colors outline-none',
+                    icon === option.value
+                      ? 'border-violet-400/35 bg-violet-500/15 text-violet-200 ring-2 ring-violet-500/10'
+                      : 'border-[var(--app-border)] bg-[var(--app-workspace)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
+                  )}
+                  onClick={() => setIcon(option.value)}
+                >
+                  <PasswordGroupIconGlyph icon={option.value} className="size-5" />
+                </button>
+              </Tooltip>
             ))}
           </div>
         </div>
@@ -134,21 +136,22 @@ export function PasswordGroupDialog({
             {PASSWORD_GROUP_COLOR_OPTIONS.map((option) => {
               const classes = passwordGroupColorClasses[option.value]
               return (
-                <button
-                  key={option.value}
-                  type="button"
-                  aria-label={`Цвет: ${option.label}`}
-                  aria-pressed={color === option.value}
-                  className={cn(
-                    'flex aspect-square items-center justify-center rounded-xl border bg-[var(--app-workspace)] outline-none transition-transform hover:scale-105',
-                    color === option.value
-                      ? `${classes.border} ring-2 ring-white/10`
-                      : 'border-[var(--app-border)]'
-                  )}
-                  onClick={() => setColor(option.value)}
-                >
-                  <span className={cn('size-5 rounded-full shadow-sm', classes.dot)} />
-                </button>
+                <Tooltip content={`Цвет: ${option.label}`} side="top" key={option.value}>
+                  <button
+                    type="button"
+                    aria-label={`Цвет: ${option.label}`}
+                    aria-pressed={color === option.value}
+                    className={cn(
+                      'flex aspect-square items-center justify-center rounded-xl border bg-[var(--app-workspace)] transition-transform outline-none hover:scale-105',
+                      color === option.value
+                        ? `${classes.border} ring-2 ring-white/10`
+                        : 'border-[var(--app-border)]'
+                    )}
+                    onClick={() => setColor(option.value)}
+                  >
+                    <span className={cn('size-5 rounded-full shadow-sm', classes.dot)} />
+                  </button>
+                </Tooltip>
               )
             })}
           </div>
@@ -170,13 +173,18 @@ export function PasswordGroupDialog({
               <div className="truncate text-sm font-semibold text-[var(--app-text)]">
                 {name.trim() || 'Название группы'}
               </div>
-              <div className="mt-0.5 text-xs text-[var(--app-muted)]">Так группа будет выглядеть в хранилище</div>
+              <div className="mt-0.5 text-xs text-[var(--app-muted)]">
+                Так группа будет выглядеть в хранилище
+              </div>
             </div>
           </div>
         </div>
 
         {error && (
-          <div role="alert" className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+          <div
+            role="alert"
+            className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-300"
+          >
             {error}
           </div>
         )}

@@ -263,18 +263,20 @@ export function StudyCodeFindReplace({
             className="absolute top-6 right-6 z-30 w-[min(640px,calc(100%_-_3rem))] rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] p-2 shadow-2xl shadow-black/35 max-[720px]:top-4 max-[720px]:right-4 max-[720px]:w-[calc(100%_-_2rem)]"
           >
             <div className="flex min-w-0 items-center gap-1.5">
-              <button
-                type="button"
-                className={smallButtonClassName}
-                aria-label={replaceOpen ? 'Скрыть замену' : 'Показать замену'}
-                onClick={() => setReplaceOpen((current) => !current)}
-              >
-                {replaceOpen ? (
-                  <ChevronDown aria-hidden="true" className="size-3.5" />
-                ) : (
-                  <ChevronRight aria-hidden="true" className="size-3.5" />
-                )}
-              </button>
+              <Tooltip content={replaceOpen ? 'Скрыть замену' : 'Показать замену'} side="top">
+                <button
+                  type="button"
+                  className={smallButtonClassName}
+                  aria-label={replaceOpen ? 'Скрыть замену' : 'Показать замену'}
+                  onClick={() => setReplaceOpen((current) => !current)}
+                >
+                  {replaceOpen ? (
+                    <ChevronDown aria-hidden="true" className="size-3.5" />
+                  ) : (
+                    <ChevronRight aria-hidden="true" className="size-3.5" />
+                  )}
+                </button>
+              </Tooltip>
 
               <div
                 className={cn(
@@ -362,32 +364,38 @@ export function StudyCodeFindReplace({
                 </span>
               )}
 
-              <button
-                type="button"
-                aria-label="Предыдущее совпадение"
-                className={smallButtonClassName}
-                disabled={result.matches.length === 0}
-                onClick={() => moveMatch(-1)}
-              >
-                <ChevronUp aria-hidden="true" className="size-3.5" />
-              </button>
-              <button
-                type="button"
-                aria-label="Следующее совпадение"
-                className={smallButtonClassName}
-                disabled={result.matches.length === 0}
-                onClick={() => moveMatch(1)}
-              >
-                <ChevronDown aria-hidden="true" className="size-3.5" />
-              </button>
-              <button
-                type="button"
-                aria-label="Закрыть поиск"
-                className={smallButtonClassName}
-                onClick={closeFind}
-              >
-                <X aria-hidden="true" className="size-3.5" />
-              </button>
+              <Tooltip content="Предыдущее совпадение" side="top">
+                <button
+                  type="button"
+                  aria-label="Предыдущее совпадение"
+                  className={smallButtonClassName}
+                  disabled={result.matches.length === 0}
+                  onClick={() => moveMatch(-1)}
+                >
+                  <ChevronUp aria-hidden="true" className="size-3.5" />
+                </button>
+              </Tooltip>
+              <Tooltip content="Следующее совпадение" side="top">
+                <button
+                  type="button"
+                  aria-label="Следующее совпадение"
+                  className={smallButtonClassName}
+                  disabled={result.matches.length === 0}
+                  onClick={() => moveMatch(1)}
+                >
+                  <ChevronDown aria-hidden="true" className="size-3.5" />
+                </button>
+              </Tooltip>
+              <Tooltip content="Закрыть поиск" side="top">
+                <button
+                  type="button"
+                  aria-label="Закрыть поиск"
+                  className={smallButtonClassName}
+                  onClick={closeFind}
+                >
+                  <X aria-hidden="true" className="size-3.5" />
+                </button>
+              </Tooltip>
             </div>
 
             {replaceOpen && (

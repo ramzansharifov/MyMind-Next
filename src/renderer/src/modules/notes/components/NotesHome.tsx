@@ -1,3 +1,4 @@
+import { Tooltip } from '../../../shared/ui/tooltip'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import * as Select from '@radix-ui/react-select'
 import * as Switch from '@radix-ui/react-switch'
@@ -223,14 +224,16 @@ export function NotesHome({
                   onChange={(event) => setSearch(event.target.value)}
                 />
                 {search && (
-                  <button
-                    type="button"
-                    aria-label="Очистить поиск"
-                    className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-white/[0.06] hover:text-[var(--app-text)]"
-                    onClick={() => setSearch('')}
-                  >
-                    <X aria-hidden="true" className="size-4" />
-                  </button>
+                  <Tooltip content="Очистить поиск" side="top">
+                    <button
+                      type="button"
+                      aria-label="Очистить поиск"
+                      className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-white/[0.06] hover:text-[var(--app-text)]"
+                      onClick={() => setSearch('')}
+                    >
+                      <X aria-hidden="true" className="size-4" />
+                    </button>
+                  </Tooltip>
                 )}
               </label>
 
@@ -631,14 +634,16 @@ function DashboardSection({
     <section className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)]">
       <header className="flex min-h-12 items-center gap-3 border-b border-[var(--app-border)] px-5 py-3 max-[620px]:flex-wrap">
         {backAction && (
-          <button
-            type="button"
-            aria-label={backAction.label}
-            className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] outline-none hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35"
-            onClick={backAction.onBack}
-          >
-            <ArrowLeft aria-hidden="true" className="size-4" />
-          </button>
+          <Tooltip content={backAction.label} side="top">
+            <button
+              type="button"
+              aria-label={backAction.label}
+              className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] outline-none hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35"
+              onClick={backAction.onBack}
+            >
+              <ArrowLeft aria-hidden="true" className="size-4" />
+            </button>
+          </Tooltip>
         )}
         <span className="text-violet-300">{icon}</span>
         <h2 className="text-base font-semibold text-[var(--app-text)]">{title}</h2>
@@ -962,26 +967,30 @@ function GroupCard({
           Открыть
           <ChevronRight aria-hidden="true" className="size-4" />
         </button>
-        <button
-          type="button"
-          aria-label={`Создать заметку в группе «${group.title}»`}
-          className="flex size-9 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-muted)] hover:text-[var(--app-text)]"
-          onClick={onCreateNote}
-        >
-          <FilePlus2 aria-hidden="true" className="size-4" />
-        </button>
+        <Tooltip content={`Создать заметку в группе «${group.title}»`} side="top">
+          <button
+            type="button"
+            aria-label={`Создать заметку в группе «${group.title}»`}
+            className="flex size-9 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-muted)] hover:text-[var(--app-text)]"
+            onClick={onCreateNote}
+          >
+            <FilePlus2 aria-hidden="true" className="size-4" />
+          </button>
+        </Tooltip>
       </div>
 
       <DropdownMenu.Root>
-        <DropdownMenu.Trigger asChild>
-          <button
-            type="button"
-            aria-label={`Действия группы «${group.title}»`}
-            className="absolute top-3 right-3 flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100"
-          >
-            <MoreHorizontal aria-hidden="true" className="size-4" />
-          </button>
-        </DropdownMenu.Trigger>
+        <Tooltip content={`Действия группы «${group.title}»`} side="top">
+          <DropdownMenu.Trigger asChild>
+            <button
+              type="button"
+              aria-label={`Действия группы «${group.title}»`}
+              className="absolute top-3 right-3 flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100"
+            >
+              <MoreHorizontal aria-hidden="true" className="size-4" />
+            </button>
+          </DropdownMenu.Trigger>
+        </Tooltip>
         <MenuContent>
           <MenuItem icon={<Pencil />} onSelect={onRename}>
             Переименовать
@@ -1011,13 +1020,15 @@ function NoteGroupIconPicker({
       align="start"
       onChange={(icon) => onChange(group, icon)}
       trigger={
-        <button
-          type="button"
-          aria-label={`Изменить иконку группы «${group.title}»`}
-          className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[color-mix(in_srgb,var(--app-accent-500)_15%,transparent)] bg-[color-mix(in_srgb,var(--app-accent-500)_10%,transparent)] text-[var(--app-accent-500)] transition-colors outline-none hover:border-[color-mix(in_srgb,var(--app-accent-500)_35%,transparent)] hover:bg-[color-mix(in_srgb,var(--app-accent-500)_15%,transparent)] focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)]/35"
-        >
-          <FolderIcon name={group.icon} expanded className={className} />
-        </button>
+        <Tooltip content={`Изменить иконку группы «${group.title}»`} side="top">
+          <button
+            type="button"
+            aria-label={`Изменить иконку группы «${group.title}»`}
+            className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[color-mix(in_srgb,var(--app-accent-500)_15%,transparent)] bg-[color-mix(in_srgb,var(--app-accent-500)_10%,transparent)] text-[var(--app-accent-500)] transition-colors outline-none hover:border-[color-mix(in_srgb,var(--app-accent-500)_35%,transparent)] hover:bg-[color-mix(in_srgb,var(--app-accent-500)_15%,transparent)] focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)]/35"
+          >
+            <FolderIcon name={group.icon} expanded className={className} />
+          </button>
+        </Tooltip>
       }
     />
   )
@@ -1106,15 +1117,17 @@ function NoteCard({
       </button>
 
       <DropdownMenu.Root>
-        <DropdownMenu.Trigger asChild>
-          <button
-            type="button"
-            aria-label={`Действия заметки «${note.title}»`}
-            className="absolute top-3 right-3 flex size-8 items-center justify-center rounded-lg bg-[var(--app-surface)] text-[var(--app-muted)] opacity-0 shadow-sm transition-opacity group-hover:opacity-100 focus:opacity-100"
-          >
-            <MoreHorizontal aria-hidden="true" className="size-4" />
-          </button>
-        </DropdownMenu.Trigger>
+        <Tooltip content={`Действия заметки «${note.title}»`} side="top">
+          <DropdownMenu.Trigger asChild>
+            <button
+              type="button"
+              aria-label={`Действия заметки «${note.title}»`}
+              className="absolute top-3 right-3 flex size-8 items-center justify-center rounded-lg bg-[var(--app-surface)] text-[var(--app-muted)] opacity-0 shadow-sm transition-opacity group-hover:opacity-100 focus:opacity-100"
+            >
+              <MoreHorizontal aria-hidden="true" className="size-4" />
+            </button>
+          </DropdownMenu.Trigger>
+        </Tooltip>
         <MenuContent>
           <MenuItem icon={<Pencil />} onSelect={onRename}>
             Переименовать

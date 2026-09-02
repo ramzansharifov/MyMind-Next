@@ -111,21 +111,22 @@ export function TaskGroupDialog({
           <span className="block text-xs font-medium text-[var(--app-muted)]">Иконка</span>
           <div className="grid grid-cols-6 gap-2 max-[520px]:grid-cols-4">
             {TASK_GROUP_ICON_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                aria-label={`Иконка: ${option.label}`}
-                aria-pressed={icon === option.value}
-                className={cn(
-                  'flex aspect-square items-center justify-center rounded-xl border text-[var(--app-muted)] transition-colors outline-none',
-                  icon === option.value
-                    ? 'border-violet-400/35 bg-violet-500/15 text-violet-200 ring-2 ring-violet-500/10'
-                    : 'border-[var(--app-border)] bg-[var(--app-workspace)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
-                )}
-                onClick={() => setIcon(option.value)}
-              >
-                <TaskGroupIconGlyph icon={option.value} className="size-5" />
-              </button>
+              <Tooltip content={`Иконка: ${option.label}`} side="top" key={option.value}>
+                <button
+                  type="button"
+                  aria-label={`Иконка: ${option.label}`}
+                  aria-pressed={icon === option.value}
+                  className={cn(
+                    'flex aspect-square items-center justify-center rounded-xl border text-[var(--app-muted)] transition-colors outline-none',
+                    icon === option.value
+                      ? 'border-violet-400/35 bg-violet-500/15 text-violet-200 ring-2 ring-violet-500/10'
+                      : 'border-[var(--app-border)] bg-[var(--app-workspace)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
+                  )}
+                  onClick={() => setIcon(option.value)}
+                >
+                  <TaskGroupIconGlyph icon={option.value} className="size-5" />
+                </button>
+              </Tooltip>
             ))}
           </div>
         </div>
