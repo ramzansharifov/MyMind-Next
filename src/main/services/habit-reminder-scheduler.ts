@@ -34,7 +34,13 @@ export class HabitReminderScheduler {
       const due = listDueHabitReminders(this.lastCheck, now)
       for (const reminder of due) {
         if (!markHabitReminderDelivered(reminder)) continue
-        if (!Notification.isSupported()) continue
+        if (!Notification.isSupported()) {
+          console.warn('Habit desktop notifications are not supported', {
+            title: reminder.title,
+            triggerAt: reminder.triggerAt
+          })
+          continue
+        }
 
         const progressLabel =
           reminder.targetValue > 1 ? ` · ${reminder.unit}/${reminder.targetValue}` : ''
@@ -43,6 +49,19 @@ export class HabitReminderScheduler {
           body: `Через 30 минут${progressLabel} · ${reminder.preferredTime}`,
           silent: false,
           timeoutType: 'default'
+        })
+        notification.on('show', () => {
+          console.info('Habit desktop notification shown', {
+            title: reminder.title,
+            triggerAt: reminder.triggerAt
+          })
+        })
+        notification.on('failed', (_event, error) => {
+          console.error('Habit desktop notification failed', {
+            title: reminder.title,
+            triggerAt: reminder.triggerAt,
+            error
+          })
         })
         notification.on('click', () => {
           const currentWindow = this.getWindow()

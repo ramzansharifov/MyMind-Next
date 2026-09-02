@@ -1,5 +1,6 @@
 import { electronApp, is, optimizer } from '@electron-toolkit/utils'
 import { app, BrowserWindow, dialog, session, shell } from 'electron'
+import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
@@ -32,6 +33,46 @@ let mainWindow: BrowserWindow | null = null
 const aiChatViewController = new AiChatViewController(() => mainWindow)
 const calendarReminderScheduler = new CalendarReminderScheduler(() => mainWindow)
 const habitReminderScheduler = new HabitReminderScheduler(() => mainWindow)
+
+const APP_USER_MODEL_ID = 'com.mymind.desktop'
+
+function resolveAppUserModelId(): string {
+  return process.platform === 'win32' && is.dev ? process.execPath : APP_USER_MODEL_ID
+}
+
+function configureDesktopNotificationIdentity(): void {
+  electronApp.setAppUserModelId(resolveAppUserModelId())
+}
+
+function ensureWindowsDevelopmentNotificationShortcut(): void {
+  if (process.platform !== 'win32' || !is.dev) return
+
+  try {
+    const programsDirectory = join(
+      app.getPath('appData'),
+      'Microsoft',
+      'Windows',
+      'Start Menu',
+      'Programs'
+    )
+    mkdirSync(programsDirectory, { recursive: true })
+
+    const shortcutPath = join(programsDirectory, 'MyMind Development.lnk')
+    const created = shell.writeShortcutLink(shortcutPath, 'create', {
+      target: process.execPath,
+      cwd: app.getAppPath(),
+      args: `"${app.getAppPath()}"`,
+      description: 'MyMind development',
+      appUserModelId: resolveAppUserModelId()
+    })
+
+    if (!created) {
+      console.warn('Failed to create the Windows development notification shortcut', shortcutPath)
+    }
+  } catch (reason: unknown) {
+    console.warn('Failed to configure the Windows development notification shortcut', reason)
+  }
+}
 
 const shutdownFallbackCopy: Record<
   ShutdownFallbackReason,
@@ -172,7 +213,7 @@ function createWindow(): void {
 
   if (process.platform === 'win32') {
     window.setAppDetails({
-      appId: 'com.mymind.desktop',
+      appId: resolveAppUserModelId(),
       appIconPath: windowsIcon,
       appIconIndex: 0
     })
@@ -271,7 +312,8 @@ if (!hasSingleInstanceLock) {
   })
 
   void app.whenReady().then(() => {
-    electronApp.setAppUserModelId('com.mymind.desktop')
+    configureDesktopNotificationIdentity()
+    ensureWindowsDevelopmentNotificationShortcut()
 
     app.on('browser-window-created', (_event, window) => {
       optimizer.watchWindowShortcuts(window)
