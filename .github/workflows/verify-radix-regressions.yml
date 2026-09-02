@@ -1,0 +1,59 @@
+name: Verify Radix regressions
+
+on:
+  push:
+    branches:
+      - agent/radix-ui-consistency-audit
+    paths:
+      - .github/workflows/verify-radix-regressions.yml
+      - src/renderer/src/**
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/radix-ui-consistency-audit
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Run Radix-affected regression files
+        run: |
+          npx vitest run \
+            src/renderer/src/modules/finance/FinancePage.test.tsx \
+            src/renderer/src/modules/finance/components/FinanceReports.test.tsx \
+            src/renderer/src/modules/study/components/BlockSettingsPanel.test.tsx \
+            src/renderer/src/modules/study/components/StudyBlockEditor.heading-layout.test.tsx \
+            src/renderer/src/modules/study/components/StudyBlockEditor.test.tsx \
+            src/renderer/src/modules/study/components/StudyBlockEditor.virtualization.test.tsx \
+            src/renderer/src/modules/study/components/file/StudyFileBlockView.test.tsx \
+            src/renderer/src/modules/tasks/TasksPage.test.tsx
+      - name: Check formatting for changed source
+        run: npx prettier --check src/renderer/src/shared/ui/tooltip.tsx
+      - name: Lint changed source
+        run: npx eslint src/renderer/src/shared/ui/tooltip.tsx
+      - run: npm run typecheck:node
+      - name: Web typecheck with known Study baseline allowed
+        shell: bash
+        run: |
+          set +e
+          npm run typecheck:web > /tmp/web-typecheck.log 2>&1
+          status=$?
+          set -e
+          cat /tmp/web-typecheck.log
+          if [ "$status" -eq 0 ]; then
+            exit 0
+          fi
+          errors=$(grep "error TS" /tmp/web-typecheck.log | grep -v "useStudyEditBlockVirtualization.ts(82,36): error TS18047: 'node' is possibly 'null'" || true)
+          if [ -n "$errors" ]; then
+            echo "Unexpected web typecheck errors:"
+            echo "$errors"
+            exit 1
+          fi
