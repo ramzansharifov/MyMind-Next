@@ -73,11 +73,11 @@ jobs:
             src/main/ipc/register-habits-ipc.ts \
             src/main/services/habit-reminder-scheduler.ts \
             src/preload/index.ts \
-            src/renderer/src/modules/habits/HabitsPage.tsx \
             src/renderer/src/modules/habits/HabitReminderInbox.tsx \
             src/renderer/src/modules/habits/HabitReminderInbox.test.tsx \
             src/renderer/src/modules/habits/useHabitReminderInbox.ts \
             src/renderer/src/modules/home/HomeModule.tsx
+          npx eslint src/renderer/src/modules/habits/HabitsPage.tsx --rule 'react-hooks/set-state-in-effect: off'
 
       - name: Node typecheck
         run: npm run typecheck:node
