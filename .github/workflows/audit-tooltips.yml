@@ -45,7 +45,9 @@ jobs:
           files.sort()
 
           const nativeTitles = []
-          const missingTooltips = []
+          const missingLabeledTooltips = []
+          const missingLabelsAndTooltips = []
+          const tooltipInsideAsChild = []
 
           const tagText = (tagName, sf) => tagName.getText(sf)
           const attrByName = (attrs, name) => attrs.properties.find(
@@ -73,20 +75,14 @@ jobs:
           }
 
           function hasVisibleText(node) {
-            if (ts.isJsxText(node)) {
-              return /[A-Za-zА-Яа-яЁё0-9]{2,}/.test(node.getText())
-            }
-            if (ts.isJsxExpression(node)) {
-              return expressionRendersText(node.expression)
-            }
+            if (ts.isJsxText(node)) return /[A-Za-zА-Яа-яЁё0-9]{2,}/.test(node.getText())
+            if (ts.isJsxExpression(node)) return expressionRendersText(node.expression)
             if (ts.isJsxElement(node)) {
               const hidden = attrByName(node.openingElement.attributes, 'aria-hidden')
               if (hidden) return false
               return node.children.some(hasVisibleText)
             }
-            if (ts.isJsxFragment(node)) {
-              return node.children.some(hasVisibleText)
-            }
+            if (ts.isJsxFragment(node)) return node.children.some(hasVisibleText)
             return false
           }
 
@@ -96,8 +92,7 @@ jobs:
               if (found) return
               if (ts.isJsxSelfClosingElement(child) || ts.isJsxElement(child)) {
                 const opening = ts.isJsxElement(child) ? child.openingElement : child
-                const name = tagText(opening.tagName, sf)
-                if (/^[A-Z]/.test(name)) {
+                if (/^[A-Z]/.test(tagText(opening.tagName, sf))) {
                   found = true
                   return
                 }
@@ -111,10 +106,7 @@ jobs:
           function hasTooltipAncestor(node, sf) {
             let current = node.parent
             while (current) {
-              if (ts.isJsxElement(current)) {
-                const name = tagText(current.openingElement.tagName, sf)
-                if (name === 'Tooltip') return true
-              }
+              if (ts.isJsxElement(current) && tagText(current.openingElement.tagName, sf) === 'Tooltip') return true
               current = current.parent
             }
             return false
@@ -154,12 +146,24 @@ jobs:
 
                 if (
                   name === 'button' &&
-                  aria &&
                   containsIconComponent(jsxNode, sf) &&
                   !hasVisibleText(jsxNode) &&
                   !hasTooltipAncestor(node, sf)
                 ) {
-                  missingTooltips.push(`${file}:${line}: <${name}> ${attrText(aria, sf)}`)
+                  const target = aria ? missingLabeledTooltips : missingLabelsAndTooltips
+                  target.push(`${file}:${line}: <button> ${aria ? attrText(aria, sf) : 'NO aria-label'}`)
+                }
+
+                if (name === 'Tooltip') {
+                  const parent = node.parent
+                  if (ts.isJsxElement(parent)) {
+                    const parentOpening = parent.openingElement
+                    const asChild = attrByName(parentOpening.attributes, 'asChild')
+                    if (asChild) {
+                      const parentName = tagText(parentOpening.tagName, sf)
+                      tooltipInsideAsChild.push(`${file}:${line}: <${parentName} asChild> contains <Tooltip> directly`)
+                    }
+                  }
                 }
               }
 
@@ -172,7 +176,15 @@ jobs:
           console.log(`count=${nativeTitles.length}`)
           for (const item of nativeTitles) console.log(item)
 
-          console.log('\n=== ICON-ONLY BUTTONS WITHOUT TOOLTIP ANCESTOR ===')
-          console.log(`count=${missingTooltips.length}`)
-          for (const item of missingTooltips) console.log(item)
+          console.log('\n=== LABELED ICON-ONLY BUTTONS WITHOUT TOOLTIP ===')
+          console.log(`count=${missingLabeledTooltips.length}`)
+          for (const item of missingLabeledTooltips) console.log(item)
+
+          console.log('\n=== UNLABELED ICON-ONLY BUTTONS WITHOUT TOOLTIP ===')
+          console.log(`count=${missingLabelsAndTooltips.length}`)
+          for (const item of missingLabelsAndTooltips) console.log(item)
+
+          console.log('\n=== TOOLTIP DIRECTLY INSIDE asChild TRIGGER/CLOSE ===')
+          console.log(`count=${tooltipInsideAsChild.length}`)
+          for (const item of tooltipInsideAsChild) console.log(item)
           NODE
