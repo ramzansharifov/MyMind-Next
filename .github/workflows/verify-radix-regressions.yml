@@ -66,3 +66,5 @@ jobs:
       - run: npm run db:check
       - run: npm run build:bundle
       - run: git diff --check origin/main...HEAD
+
+# Manual final validation trigger after formatter commit.
