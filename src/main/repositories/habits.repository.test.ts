@@ -12,7 +12,9 @@ import {
   createHabitGroup,
   deleteHabitGroup,
   getHabitsReport,
+  listDueHabitReminders,
   listHabitsOverview,
+  markHabitReminderDelivered,
   updateHabit,
   upsertHabitEntry
 } from './habits.repository'
@@ -28,7 +30,9 @@ beforeAll(async () => {
 beforeEach(() => {
   vi.useFakeTimers()
   vi.setSystemTime(new Date(2026, 0, 1, 12, 0, 0))
-  getSqlite().exec('DELETE FROM habit_entries; DELETE FROM habits; DELETE FROM habit_groups;')
+  getSqlite().exec(
+    'DELETE FROM habit_reminder_deliveries; DELETE FROM habit_entries; DELETE FROM habits; DELETE FROM habit_groups;'
+  )
 })
 
 afterEach(() => {
@@ -50,6 +54,7 @@ describe('habits repository', () => {
       targetValue: 3,
       unit: 'стакана',
       repeatEveryDays: 1,
+      remindersEnabled: true,
       preferredTimes: [
         { unit: 1, time: '09:00' },
         { unit: 2, time: '15:00' },
@@ -62,6 +67,7 @@ describe('habits repository', () => {
       habits: [habit],
       entries: []
     })
+    expect(habit.remindersEnabled).toBe(true)
     expect(habit.preferredTimes).toEqual([
       { unit: 1, time: '09:00' },
       { unit: 2, time: '15:00' },
@@ -87,7 +93,8 @@ describe('habits repository', () => {
       targetValue: habit.targetValue,
       unit: habit.unit,
       repeatEveryDays: habit.repeatEveryDays,
-      preferredTimes: habit.preferredTimes
+      preferredTimes: habit.preferredTimes,
+      remindersEnabled: habit.remindersEnabled
     })
     expect(updated.title).toBe('Пить воду регулярно')
 
@@ -100,6 +107,95 @@ describe('habits repository', () => {
     expect(names).not.toContain('start_date')
     expect(names).not.toContain('end_date')
     expect(names).not.toContain('archived_on')
+    expect(names).toContain('reminders_enabled')
+    expect(
+      getSqlite()
+        .prepare(
+          "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'habit_reminder_deliveries'"
+        )
+        .get()
+    ).toBeTruthy()
+  })
+
+  it('triggers reminders 30 minutes before preferred times and suppresses completed units', () => {
+    vi.setSystemTime(new Date(2026, 0, 1, 8, 0, 0))
+    const habit = createHabit({
+      title: 'Пить воду',
+      groupId: null,
+      trackingType: 'count',
+      targetValue: 3,
+      unit: 'стакана',
+      repeatEveryDays: 1,
+      remindersEnabled: true,
+      preferredTimes: [
+        { unit: 1, time: '09:00' },
+        { unit: 2, time: '15:00' },
+        { unit: 3, time: '21:00' }
+      ]
+    })
+
+    const firstTrigger = new Date(2026, 0, 1, 8, 30, 0).getTime()
+    const first = listDueHabitReminders(firstTrigger - 1_000, firstTrigger)
+    expect(first).toHaveLength(1)
+    expect(first[0]).toMatchObject({
+      habitId: habit.id,
+      occurrenceDate: '2026-01-01',
+      unit: 1,
+      targetValue: 3,
+      preferredTime: '09:00',
+      triggerAt: firstTrigger
+    })
+    expect(markHabitReminderDelivered(first[0])).toBe(true)
+    expect(markHabitReminderDelivered(first[0])).toBe(false)
+
+    upsertHabitEntry({
+      habitId: habit.id,
+      date: '2026-01-01',
+      value: 2,
+      skipped: false
+    })
+    const secondTrigger = new Date(2026, 0, 1, 14, 30, 0).getTime()
+    expect(listDueHabitReminders(secondTrigger - 1_000, secondTrigger)).toEqual([])
+
+    const thirdTrigger = new Date(2026, 0, 1, 20, 30, 0).getTime()
+    expect(listDueHabitReminders(thirdTrigger - 1_000, thirdTrigger)).toMatchObject([
+      { habitId: habit.id, unit: 3, preferredTime: '21:00' }
+    ])
+
+    upsertHabitEntry({
+      habitId: habit.id,
+      date: '2026-01-01',
+      value: 0,
+      skipped: true
+    })
+    expect(listDueHabitReminders(thirdTrigger - 1_000, thirdTrigger)).toEqual([])
+  })
+
+  it('does not schedule reminders when they are disabled or no preferred time exists', () => {
+    vi.setSystemTime(new Date(2026, 0, 1, 8, 0, 0))
+    createHabit({
+      title: 'Читать',
+      groupId: null,
+      trackingType: 'check',
+      targetValue: 1,
+      unit: '',
+      repeatEveryDays: 1,
+      remindersEnabled: false,
+      preferredTimes: [{ unit: 1, time: '09:00' }]
+    })
+    createHabit({
+      title: 'Без времени',
+      groupId: null,
+      trackingType: 'check',
+      targetValue: 1,
+      unit: '',
+      repeatEveryDays: 1,
+      remindersEnabled: false,
+      preferredTimes: []
+    })
+
+    const trigger = new Date(2026, 0, 1, 8, 30, 0).getTime()
+    expect(listDueHabitReminders(trigger - 1_000, trigger)).toEqual([])
   })
 
   it('reads legacy single preferred_time as the first unit without a migration', () => {
@@ -110,6 +206,7 @@ describe('habits repository', () => {
       targetValue: 3,
       unit: 'приёма',
       repeatEveryDays: 1,
+      remindersEnabled: false,
       preferredTimes: []
     })
 
@@ -128,6 +225,7 @@ describe('habits repository', () => {
       targetValue: 1,
       unit: '',
       repeatEveryDays: 3,
+      remindersEnabled: false,
       preferredTimes: []
     })
 
@@ -152,6 +250,7 @@ describe('habits repository', () => {
       targetValue: 1,
       unit: '',
       repeatEveryDays: 3,
+      remindersEnabled: false,
       preferredTimes: []
     })
 
@@ -195,6 +294,7 @@ describe('habits repository', () => {
       targetValue: 1,
       unit: '',
       repeatEveryDays: 1,
+      remindersEnabled: false,
       preferredTimes: []
     })
     upsertHabitEntry({ habitId: habit.id, date: '2026-01-01', value: 1, skipped: false })

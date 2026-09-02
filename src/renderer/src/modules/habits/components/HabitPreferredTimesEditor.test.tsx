@@ -86,6 +86,45 @@ describe('HabitPreferredTimesEditor', () => {
     expect(onChange).toHaveBeenCalledWith(3, '21:00')
   })
 
+  it('shows the fixed reminder switch only when a preferred time exists', async () => {
+    const user = userEvent.setup()
+    const onRemindersChange = vi.fn()
+    const { rerender } = render(
+      <HabitPreferredTimesEditor
+        trackingType="check"
+        targetValue={1}
+        values={{}}
+        remindersEnabled={false}
+        onChange={vi.fn()}
+        onRemindersChange={onRemindersChange}
+      />
+    )
+
+    expect(
+      screen.queryByRole('switch', { name: 'Напоминать о привычке за 30 минут' })
+    ).not.toBeInTheDocument()
+
+    rerender(
+      <HabitPreferredTimesEditor
+        trackingType="check"
+        targetValue={1}
+        values={{ 1: '09:00' }}
+        remindersEnabled={false}
+        onChange={vi.fn()}
+        onRemindersChange={onRemindersChange}
+      />
+    )
+
+    const reminderSwitch = screen.getByRole('switch', {
+      name: 'Напоминать о привычке за 30 минут'
+    })
+    expect(
+      screen.getByText('За 30 минут до каждого указанного предпочтительного времени.')
+    ).toBeInTheDocument()
+    await user.click(reminderSwitch)
+    expect(onRemindersChange).toHaveBeenCalledWith(true)
+  })
+
   it('paginates large count targets without rendering every unit at once', async () => {
     const user = userEvent.setup()
     render(

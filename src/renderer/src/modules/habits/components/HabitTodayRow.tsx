@@ -1,6 +1,7 @@
 import * as Popover from '@radix-ui/react-popover'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import {
+  Bell,
   Check,
   Clock3,
   Ellipsis,
@@ -243,6 +244,24 @@ export function HabitTodayRow({
                     )}
                   </div>
                 </div>
+
+                {habit.remindersEnabled && habit.preferredTimes.length > 0 && (
+                  <div className="flex items-center gap-3 rounded-xl bg-[var(--app-control)] px-3 py-2.5">
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-violet-400/20 bg-violet-500/10 text-violet-200">
+                      <Bell className="size-4" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[10px] font-medium tracking-[0.12em] text-[var(--app-muted)] uppercase">
+                        Напоминания
+                      </div>
+                      <div className="mt-1.5">
+                        <span className="inline-flex h-6 items-center rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] px-2 text-[11px] text-[var(--app-text)]">
+                          За 30 минут
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {habit.trackingType === 'count' && (
                   <div className="rounded-xl bg-[var(--app-control)] px-3 py-2.5">

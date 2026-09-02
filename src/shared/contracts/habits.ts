@@ -56,6 +56,7 @@ export interface HabitRecord {
   unit: string
   repeatEveryDays: number
   preferredTimes: HabitPreferredTime[]
+  remindersEnabled: boolean
   createdAt: number
   updatedAt: number
 }
@@ -102,6 +103,7 @@ export interface CreateHabitInput {
   unit: string
   repeatEveryDays: number
   preferredTimes: HabitPreferredTime[]
+  remindersEnabled: boolean
 }
 
 export interface UpdateHabitInput extends CreateHabitInput {

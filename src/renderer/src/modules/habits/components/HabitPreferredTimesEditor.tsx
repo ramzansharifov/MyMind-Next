@@ -1,5 +1,6 @@
 import { Tooltip } from '../../../shared/ui/tooltip'
-import { ChevronLeft, ChevronRight, Clock3 } from 'lucide-react'
+import * as Switch from '@radix-ui/react-switch'
+import { Bell, ChevronLeft, ChevronRight, Clock3 } from 'lucide-react'
 import { useState } from 'react'
 
 import type { HabitTrackingType } from '../../../../../shared/contracts/habits'
@@ -11,14 +12,18 @@ interface HabitPreferredTimesEditorProps {
   trackingType: HabitTrackingType
   targetValue: number
   values: Record<number, string>
+  remindersEnabled?: boolean
   onChange: (unit: number, value: string) => void
+  onRemindersChange?: (enabled: boolean) => void
 }
 
 export function HabitPreferredTimesEditor({
   trackingType,
   targetValue,
   values,
-  onChange
+  remindersEnabled = false,
+  onChange,
+  onRemindersChange = () => undefined
 }: HabitPreferredTimesEditorProps): React.JSX.Element {
   const [page, setPage] = useState(0)
   const safeTarget = Math.max(1, Math.floor(Number.isFinite(targetValue) ? targetValue : 1))
@@ -27,6 +32,9 @@ export function HabitPreferredTimesEditor({
   const startUnit = safePage * PAGE_SIZE + 1
   const endUnit = trackingType === 'check' ? 1 : Math.min(safeTarget, startUnit + PAGE_SIZE - 1)
   const units = Array.from({ length: endUnit - startUnit + 1 }, (_, index) => startUnit + index)
+  const hasPreferredTime = Object.entries(values).some(
+    ([unit, time]) => Number(unit) >= 1 && Number(unit) <= safeTarget && Boolean(time)
+  )
 
   return (
     <div className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-4">
@@ -98,6 +106,28 @@ export function HabitPreferredTimesEditor({
           </label>
         ))}
       </div>
+
+      {hasPreferredTime && (
+        <div className="mt-4 flex items-center gap-3 rounded-xl border border-violet-400/15 bg-violet-500/[0.055] px-3 py-3">
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-violet-400/20 bg-violet-500/10 text-violet-200">
+            <Bell className="size-4" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-medium text-[var(--app-text)]">Напоминания</div>
+            <div className="mt-0.5 text-xs leading-5 text-[var(--app-muted)]">
+              За 30 минут до каждого указанного предпочтительного времени.
+            </div>
+          </div>
+          <Switch.Root
+            checked={remindersEnabled}
+            aria-label="Напоминать о привычке за 30 минут"
+            className="relative h-6 w-11 shrink-0 rounded-full border border-[var(--app-border)] bg-[var(--app-control)] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-violet-500/30 data-[state=checked]:border-violet-400/40 data-[state=checked]:bg-violet-500"
+            onCheckedChange={onRemindersChange}
+          >
+            <Switch.Thumb className="block size-4 translate-x-1 rounded-full bg-white shadow-sm transition-transform data-[state=checked]:translate-x-5" />
+          </Switch.Root>
+        </div>
+      )}
     </div>
   )
 }
