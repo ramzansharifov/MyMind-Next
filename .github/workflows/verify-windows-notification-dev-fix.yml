@@ -1,0 +1,28 @@
+name: Verify Windows notification dev fix
+
+on:
+  push:
+    branches:
+      - agent/windows-notification-dev-fix
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/windows-notification-dev-fix
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx prettier --check src/main/index.ts src/main/services/calendar-reminder-scheduler.ts src/main/services/habit-reminder-scheduler.ts
+      - run: npx eslint src/main/index.ts src/main/services/calendar-reminder-scheduler.ts src/main/services/habit-reminder-scheduler.ts
+      - run: npm run typecheck:node
+      - run: npm run db:check
+      - run: npm run build:bundle
