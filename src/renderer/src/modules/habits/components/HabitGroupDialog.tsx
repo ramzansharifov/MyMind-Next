@@ -111,9 +111,8 @@ export function HabitGroupDialog({
           <span className="block text-xs font-medium text-[var(--app-muted)]">Иконка</span>
           <div className="grid grid-cols-8 gap-2 max-[560px]:grid-cols-4">
             {HABIT_GROUP_ICON_OPTIONS.map((option) => (
-              <Tooltip content={`Иконка: ${option.label}`} side="top">
+              <Tooltip content={`Иконка: ${option.label}`} side="top" key={option.value}>
                 <button
-                  key={option.value}
                   type="button"
                   aria-label={`Иконка: ${option.label}`}
                   aria-pressed={icon === option.value}
@@ -138,9 +137,8 @@ export function HabitGroupDialog({
             {HABIT_GROUP_COLOR_OPTIONS.map((option) => {
               const classes = habitGroupColorClasses[option.value]
               return (
-                <Tooltip content={`Цвет: ${option.label}`} side="top">
+                <Tooltip content={`Цвет: ${option.label}`} side="top" key={option.value}>
                   <button
-                    key={option.value}
                     type="button"
                     aria-label={`Цвет: ${option.label}`}
                     aria-pressed={color === option.value}

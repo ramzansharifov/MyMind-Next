@@ -99,8 +99,8 @@ export function ColorPicker({
 
           <div className="mt-3 grid grid-cols-4 gap-2">
             {colors.map((color) => (
-              <Tooltip content={`Цвет ${color}`} side="top">
-                <Popover.Close key={color} asChild>
+              <Tooltip content={`Цвет ${color}`} side="top" key={color}>
+                <Popover.Close asChild>
                   <button
                     type="button"
                     aria-label={`Цвет ${color}`}

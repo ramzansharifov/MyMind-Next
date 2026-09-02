@@ -552,9 +552,12 @@ export function CalendarPage(): React.JSX.Element {
                       {dayEvents.map((event) => {
                         const active = selectedEventKey === occurrenceKey(event)
                         return (
-                          <Tooltip content={`Открыть событие ${event.title}`} side="top">
+                          <Tooltip
+                            content={`Открыть событие ${event.title}`}
+                            side="top"
+                            key={occurrenceKey(event)}
+                          >
                             <button
-                              key={occurrenceKey(event)}
                               type="button"
                               aria-label={`Открыть событие ${event.title}`}
                               className={cn(
