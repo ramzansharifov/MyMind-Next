@@ -48,7 +48,6 @@ export function HabitDialog({
   const [unit, setUnit] = useState('')
   const [repeatEveryDays, setRepeatEveryDays] = useState('1')
   const [preferredTimes, setPreferredTimes] = useState<Record<number, string>>({})
-  const [remindersEnabled, setRemindersEnabled] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -63,7 +62,6 @@ export function HabitDialog({
     setUnit(habit?.unit ?? '')
     setRepeatEveryDays(String(habit?.repeatEveryDays ?? 1))
     setPreferredTimes(preferredTimesToRecord(habit))
-    setRemindersEnabled(habit?.remindersEnabled ?? false)
     setError(null)
   }, [groups, habit, initialGroupId, open])
 
@@ -75,7 +73,6 @@ export function HabitDialog({
       setUnit('')
       const first = preferredTimes[1]
       setPreferredTimes(first ? { 1: first } : {})
-      if (!first) setRemindersEnabled(false)
     }
   }
 
@@ -84,7 +81,6 @@ export function HabitDialog({
     if (value) next[unitNumber] = value
     else delete next[unitNumber]
     setPreferredTimes(next)
-    if (!Object.values(next).some(Boolean)) setRemindersEnabled(false)
   }
 
   async function submit(event: React.FormEvent<HTMLFormElement>): Promise<void> {
@@ -114,8 +110,7 @@ export function HabitDialog({
       targetValue: parsedTarget,
       unit: trackingType === 'check' ? '' : unit.trim(),
       repeatEveryDays: parsedRepeat,
-      preferredTimes: normalizedPreferredTimes,
-      remindersEnabled: normalizedPreferredTimes.length > 0 && remindersEnabled
+      preferredTimes: normalizedPreferredTimes
     }
 
     setError(null)
@@ -282,9 +277,7 @@ export function HabitDialog({
           trackingType={trackingType}
           targetValue={preferredTimeTarget}
           values={preferredTimes}
-          remindersEnabled={remindersEnabled}
           onChange={changePreferredTime}
-          onRemindersChange={setRemindersEnabled}
         />
 
         {error && (

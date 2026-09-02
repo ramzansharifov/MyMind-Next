@@ -1,10 +1,9 @@
-import { Tooltip } from '../../../shared/ui/tooltip'
-import * as Switch from '@radix-ui/react-switch'
 import { Bell, ChevronLeft, ChevronRight, Clock3 } from 'lucide-react'
 import { useState } from 'react'
 
 import type { HabitTrackingType } from '../../../../../shared/contracts/habits'
 import { AppTimeField } from '../../../shared/ui/AppTimeField'
+import { Tooltip } from '../../../shared/ui/tooltip'
 
 const PAGE_SIZE = 12
 
@@ -12,18 +11,14 @@ interface HabitPreferredTimesEditorProps {
   trackingType: HabitTrackingType
   targetValue: number
   values: Record<number, string>
-  remindersEnabled?: boolean
   onChange: (unit: number, value: string) => void
-  onRemindersChange?: (enabled: boolean) => void
 }
 
 export function HabitPreferredTimesEditor({
   trackingType,
   targetValue,
   values,
-  remindersEnabled = false,
-  onChange,
-  onRemindersChange = () => undefined
+  onChange
 }: HabitPreferredTimesEditorProps): React.JSX.Element {
   const [page, setPage] = useState(0)
   const safeTarget = Math.max(1, Math.floor(Number.isFinite(targetValue) ? targetValue : 1))
@@ -113,19 +108,13 @@ export function HabitPreferredTimesEditor({
             <Bell className="size-4" />
           </span>
           <div className="min-w-0 flex-1">
-            <div className="text-sm font-medium text-[var(--app-text)]">Напоминания</div>
+            <div className="text-sm font-medium text-[var(--app-text)]">
+              Напоминание включено автоматически
+            </div>
             <div className="mt-0.5 text-xs leading-5 text-[var(--app-muted)]">
-              За 30 минут до каждого указанного предпочтительного времени.
+              Оно придёт за 30 минут до каждого указанного предпочтительного времени.
             </div>
           </div>
-          <Switch.Root
-            checked={remindersEnabled}
-            aria-label="Напоминать о привычке за 30 минут"
-            className="relative h-6 w-11 shrink-0 rounded-full border border-[var(--app-border)] bg-[var(--app-control)] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-violet-500/30 data-[state=checked]:border-violet-400/40 data-[state=checked]:bg-violet-500"
-            onCheckedChange={onRemindersChange}
-          >
-            <Switch.Thumb className="block size-4 translate-x-1 rounded-full bg-white shadow-sm transition-transform data-[state=checked]:translate-x-5" />
-          </Switch.Root>
         </div>
       )}
     </div>

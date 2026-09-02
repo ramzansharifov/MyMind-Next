@@ -13,8 +13,7 @@ const baseHabit = {
   targetValue: 1,
   unit: '',
   repeatEveryDays: 1,
-  preferredTimes: [],
-  remindersEnabled: false
+  preferredTimes: []
 }
 
 describe('habit validation', () => {
@@ -78,18 +77,21 @@ describe('habit validation', () => {
     ).toThrow('Для одной единицы можно указать только одно предпочтительное время')
   })
 
-  it('allows reminders only when a preferred time is configured', () => {
-    expect(() => createHabitInputSchema.parse({ ...baseHabit, remindersEnabled: true })).toThrow(
-      'Чтобы включить напоминания, укажите предпочтительное время'
-    )
+  it('does not require a reminder toggle and still accepts legacy reminder payloads', () => {
+    expect(
+      createHabitInputSchema.parse({
+        ...baseHabit,
+        preferredTimes: [{ unit: 1, time: '09:00' }]
+      }).preferredTimes
+    ).toEqual([{ unit: 1, time: '09:00' }])
 
     expect(
       createHabitInputSchema.parse({
         ...baseHabit,
         preferredTimes: [{ unit: 1, time: '09:00' }],
-        remindersEnabled: true
+        remindersEnabled: false
       }).remindersEnabled
-    ).toBe(true)
+    ).toBe(false)
   })
 
   it('rejects legacy fields removed from the habit model', () => {
