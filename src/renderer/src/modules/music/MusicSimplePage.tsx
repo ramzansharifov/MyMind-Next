@@ -1,3 +1,4 @@
+import { Tooltip } from '../../shared/ui/tooltip'
 import * as Checkbox from '@radix-ui/react-checkbox'
 import * as Dialog from '@radix-ui/react-dialog'
 import {
@@ -220,13 +221,15 @@ function TrackDialog({
                 </div>
               </div>
               <Dialog.Close asChild>
-                <button
-                  type="button"
-                  aria-label="Закрыть"
-                  className="flex size-8 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)]"
-                >
-                  <X className="size-4" />
-                </button>
+                <Tooltip content="Закрыть" side="top">
+                  <button
+                    type="button"
+                    aria-label="Закрыть"
+                    className="flex size-8 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)]"
+                  >
+                    <X className="size-4" />
+                  </button>
+                </Tooltip>
               </Dialog.Close>
             </header>
 
@@ -466,13 +469,15 @@ function PlaylistDialog({
                 </div>
               </div>
               <Dialog.Close asChild>
-                <button
-                  type="button"
-                  aria-label="Закрыть"
-                  className="flex size-8 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)]"
-                >
-                  <X className="size-4" />
-                </button>
+                <Tooltip content="Закрыть" side="top">
+                  <button
+                    type="button"
+                    aria-label="Закрыть"
+                    className="flex size-8 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)]"
+                  >
+                    <X className="size-4" />
+                  </button>
+                </Tooltip>
               </Dialog.Close>
             </header>
 

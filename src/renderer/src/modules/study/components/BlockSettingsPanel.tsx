@@ -889,21 +889,23 @@ function AttachmentSettings({
                 </p>
               </div>
 
-              <button
-                type="button"
-                aria-label="Удалить выбранное вложение"
-                className="flex size-7 shrink-0 items-center justify-center rounded-md text-(--app-muted) outline-none hover:bg-red-500/10 hover:text-red-300 focus-visible:ring-2 focus-visible:ring-red-500/30"
-                onClick={() => {
-                  onChange({
-                    ...block,
-                    source: {
-                      type: 'local'
-                    }
-                  })
-                }}
-              >
-                <Trash2 aria-hidden="true" className="size-3.5" />
-              </button>
+              <Tooltip content="Удалить выбранное вложение" side="top">
+                <button
+                  type="button"
+                  aria-label="Удалить выбранное вложение"
+                  className="flex size-7 shrink-0 items-center justify-center rounded-md text-(--app-muted) outline-none hover:bg-red-500/10 hover:text-red-300 focus-visible:ring-2 focus-visible:ring-red-500/30"
+                  onClick={() => {
+                    onChange({
+                      ...block,
+                      source: {
+                        type: 'local'
+                      }
+                    })
+                  }}
+                >
+                  <Trash2 aria-hidden="true" className="size-3.5" />
+                </button>
+              </Tooltip>
             </div>
           )}
 
@@ -976,24 +978,26 @@ function AttachmentSettings({
             </button>
 
             {block.source.type === 'url' && savedRemoteUrl && (
-              <button
-                type="button"
-                aria-label="Удалить сохранённую ссылку"
-                className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-(--app-border) text-(--app-muted) transition-colors outline-none hover:border-red-500/30 hover:text-red-300 focus-visible:ring-2 focus-visible:ring-red-500/30"
-                onClick={() => {
-                  setRemoteUrlDraft('')
+              <Tooltip content="Удалить сохранённую ссылку" side="top">
+                <button
+                  type="button"
+                  aria-label="Удалить сохранённую ссылку"
+                  className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-(--app-border) text-(--app-muted) transition-colors outline-none hover:border-red-500/30 hover:text-red-300 focus-visible:ring-2 focus-visible:ring-red-500/30"
+                  onClick={() => {
+                    setRemoteUrlDraft('')
 
-                  onChange({
-                    ...block,
-                    source: {
-                      type: 'url',
-                      url: ''
-                    }
-                  })
-                }}
-              >
-                <Trash2 aria-hidden="true" className="size-3.5" />
-              </button>
+                    onChange({
+                      ...block,
+                      source: {
+                        type: 'url',
+                        url: ''
+                      }
+                    })
+                  }}
+                >
+                  <Trash2 aria-hidden="true" className="size-3.5" />
+                </button>
+              </Tooltip>
             )}
           </div>
         </div>

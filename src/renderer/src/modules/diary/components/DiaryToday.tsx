@@ -1,3 +1,4 @@
+import { Tooltip } from '../../../shared/ui/tooltip'
 import { Check, LoaderCircle, Pencil, Plus, Trash2, X } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 
@@ -225,54 +226,62 @@ export function DiaryToday({
                               }}
                             />
                             <div className="diary-edit-actions">
-                              <button
-                                type="button"
-                                disabled={isSaving || !editingText.trim()}
-                                aria-label="Сохранить запись"
-                                className="inline-flex size-8 items-center justify-center rounded-lg bg-[var(--app-accent-600)] text-white disabled:opacity-40"
-                                onClick={() => void saveEdit()}
-                              >
-                                <Check className="size-3.5" />
-                              </button>
-                              <button
-                                type="button"
-                                disabled={isSaving}
-                                aria-label="Отменить редактирование"
-                                className="inline-flex size-8 items-center justify-center rounded-lg border border-stone-300 bg-white/70 text-stone-600 disabled:opacity-40"
-                                onClick={() => {
-                                  setEditingId(null)
-                                  setEditingText('')
-                                }}
-                              >
-                                <X className="size-3.5" />
-                              </button>
+                              <Tooltip content="Сохранить запись" side="top">
+                                <button
+                                  type="button"
+                                  disabled={isSaving || !editingText.trim()}
+                                  aria-label="Сохранить запись"
+                                  className="inline-flex size-8 items-center justify-center rounded-lg bg-[var(--app-accent-600)] text-white disabled:opacity-40"
+                                  onClick={() => void saveEdit()}
+                                >
+                                  <Check className="size-3.5" />
+                                </button>
+                              </Tooltip>
+                              <Tooltip content="Отменить редактирование" side="top">
+                                <button
+                                  type="button"
+                                  disabled={isSaving}
+                                  aria-label="Отменить редактирование"
+                                  className="inline-flex size-8 items-center justify-center rounded-lg border border-stone-300 bg-white/70 text-stone-600 disabled:opacity-40"
+                                  onClick={() => {
+                                    setEditingId(null)
+                                    setEditingText('')
+                                  }}
+                                >
+                                  <X className="size-3.5" />
+                                </button>
+                              </Tooltip>
                             </div>
                           </>
                         ) : (
                           <>
                             <p className="diary-handwriting diary-entry-text">{entry.text}</p>
                             <div className="diary-entry-actions">
-                              <button
-                                type="button"
-                                disabled={isSaving}
-                                aria-label="Редактировать запись"
-                                className="rounded-md p-1.5 text-stone-400 hover:bg-stone-900/5 hover:text-stone-700 disabled:opacity-40"
-                                onClick={() => {
-                                  setEditingId(entry.id)
-                                  setEditingText(entry.text)
-                                }}
-                              >
-                                <Pencil className="size-3.5" />
-                              </button>
-                              <button
-                                type="button"
-                                disabled={isSaving}
-                                aria-label="Удалить запись"
-                                className="rounded-md p-1.5 text-stone-400 hover:bg-red-500/10 hover:text-red-700 disabled:opacity-40"
-                                onClick={() => setDeleteId(entry.id)}
-                              >
-                                <Trash2 className="size-3.5" />
-                              </button>
+                              <Tooltip content="Редактировать запись" side="top">
+                                <button
+                                  type="button"
+                                  disabled={isSaving}
+                                  aria-label="Редактировать запись"
+                                  className="rounded-md p-1.5 text-stone-400 hover:bg-stone-900/5 hover:text-stone-700 disabled:opacity-40"
+                                  onClick={() => {
+                                    setEditingId(entry.id)
+                                    setEditingText(entry.text)
+                                  }}
+                                >
+                                  <Pencil className="size-3.5" />
+                                </button>
+                              </Tooltip>
+                              <Tooltip content="Удалить запись" side="top">
+                                <button
+                                  type="button"
+                                  disabled={isSaving}
+                                  aria-label="Удалить запись"
+                                  className="rounded-md p-1.5 text-stone-400 hover:bg-red-500/10 hover:text-red-700 disabled:opacity-40"
+                                  onClick={() => setDeleteId(entry.id)}
+                                >
+                                  <Trash2 className="size-3.5" />
+                                </button>
+                              </Tooltip>
                             </div>
                           </>
                         )}

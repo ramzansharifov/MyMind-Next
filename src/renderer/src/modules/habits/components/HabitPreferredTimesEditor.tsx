@@ -1,3 +1,4 @@
+import { Tooltip } from '../../../shared/ui/tooltip'
 import { ChevronLeft, ChevronRight, Clock3 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -44,27 +45,31 @@ export function HabitPreferredTimesEditor({
 
         {totalPages > 1 && (
           <div className="flex shrink-0 items-center gap-1">
-            <button
-              type="button"
-              aria-label="Предыдущие единицы времени"
-              disabled={safePage === 0}
-              className="flex size-8 items-center justify-center rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:cursor-not-allowed disabled:opacity-35"
-              onClick={() => setPage(Math.max(0, safePage - 1))}
-            >
-              <ChevronLeft className="size-3.5" />
-            </button>
+            <Tooltip content="Предыдущие единицы времени" side="top">
+              <button
+                type="button"
+                aria-label="Предыдущие единицы времени"
+                disabled={safePage === 0}
+                className="flex size-8 items-center justify-center rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:cursor-not-allowed disabled:opacity-35"
+                onClick={() => setPage(Math.max(0, safePage - 1))}
+              >
+                <ChevronLeft className="size-3.5" />
+              </button>
+            </Tooltip>
             <span className="min-w-16 text-center text-[11px] font-medium text-[var(--app-muted)]">
               {safePage + 1} / {totalPages}
             </span>
-            <button
-              type="button"
-              aria-label="Следующие единицы времени"
-              disabled={safePage >= totalPages - 1}
-              className="flex size-8 items-center justify-center rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:cursor-not-allowed disabled:opacity-35"
-              onClick={() => setPage(Math.min(totalPages - 1, safePage + 1))}
-            >
-              <ChevronRight className="size-3.5" />
-            </button>
+            <Tooltip content="Следующие единицы времени" side="top">
+              <button
+                type="button"
+                aria-label="Следующие единицы времени"
+                disabled={safePage >= totalPages - 1}
+                className="flex size-8 items-center justify-center rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:cursor-not-allowed disabled:opacity-35"
+                onClick={() => setPage(Math.min(totalPages - 1, safePage + 1))}
+              >
+                <ChevronRight className="size-3.5" />
+              </button>
+            </Tooltip>
           </div>
         )}
       </div>

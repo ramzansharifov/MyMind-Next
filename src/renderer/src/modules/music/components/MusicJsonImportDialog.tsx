@@ -1,3 +1,4 @@
+import { Tooltip } from '../../../shared/ui/tooltip'
 import { Braces, LoaderCircle, RotateCcw } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
@@ -39,7 +40,10 @@ const EXAMPLE_JSON = `[
 function stripCodeFence(value: string): string {
   const trimmed = value.trim()
   if (!trimmed.startsWith('```')) return trimmed
-  return trimmed.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim()
+  return trimmed
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/, '')
+    .trim()
 }
 
 function normalizedCandidate(value: unknown): unknown {
@@ -158,8 +162,7 @@ export function MusicJsonImportDialog({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-xs leading-5 text-[var(--app-muted)]">
           Один объект или массив. Обязательное поле: <code>title</code>. Тип:{' '}
-          <code>track | album | ep | single</code>. Статус:{' '}
-          <code>want_to_listen | listened</code>.
+          <code>track | album | ep | single</code>. Статус: <code>want_to_listen | listened</code>.
         </span>
         <div className="flex gap-2">
           <button
@@ -170,15 +173,17 @@ export function MusicJsonImportDialog({
           >
             Вставить пример
           </button>
-          <button
-            type="button"
-            aria-label="Очистить JSON"
-            disabled={busy || !value}
-            className="flex size-8 items-center justify-center rounded-lg border border-[var(--app-border)] text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:opacity-35"
-            onClick={() => setValue('')}
-          >
-            <RotateCcw className="size-3.5" />
-          </button>
+          <Tooltip content="Очистить JSON" side="top">
+            <button
+              type="button"
+              aria-label="Очистить JSON"
+              disabled={busy || !value}
+              className="flex size-8 items-center justify-center rounded-lg border border-[var(--app-border)] text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:opacity-35"
+              onClick={() => setValue('')}
+            >
+              <RotateCcw className="size-3.5" />
+            </button>
+          </Tooltip>
         </div>
       </div>
 

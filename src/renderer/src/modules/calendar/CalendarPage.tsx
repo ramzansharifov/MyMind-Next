@@ -1,3 +1,4 @@
+import { Tooltip } from '../../shared/ui/tooltip'
 import {
   Bell,
   CalendarDays,
@@ -442,25 +443,29 @@ export function CalendarPage(): React.JSX.Element {
             </button>
 
             <div className="flex min-w-0 items-center justify-center gap-2 sm:gap-3">
-              <button
-                type="button"
-                aria-label="Предыдущий месяц"
-                className="flex size-9 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-                onClick={() => shiftMonth(-1)}
-              >
-                <ChevronLeft className="size-4" />
-              </button>
+              <Tooltip content="Предыдущий месяц" side="top">
+                <button
+                  type="button"
+                  aria-label="Предыдущий месяц"
+                  className="flex size-9 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+                  onClick={() => shiftMonth(-1)}
+                >
+                  <ChevronLeft className="size-4" />
+                </button>
+              </Tooltip>
               <strong className="min-w-[150px] text-center text-sm font-semibold text-[var(--app-text)] capitalize sm:min-w-[180px] sm:text-base">
                 {MONTH_FORMATTER.format(parseDate(month))}
               </strong>
-              <button
-                type="button"
-                aria-label="Следующий месяц"
-                className="flex size-9 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-                onClick={() => shiftMonth(1)}
-              >
-                <ChevronRight className="size-4" />
-              </button>
+              <Tooltip content="Следующий месяц" side="top">
+                <button
+                  type="button"
+                  aria-label="Следующий месяц"
+                  className="flex size-9 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+                  onClick={() => shiftMonth(1)}
+                >
+                  <ChevronRight className="size-4" />
+                </button>
+              </Tooltip>
             </div>
 
             <AppDateField
@@ -595,14 +600,16 @@ export function CalendarPage(): React.JSX.Element {
                 {formatOccurrenceDate(selectedDate)}
               </div>
             </div>
-            <button
-              type="button"
-              aria-label={`Добавить событие ${formatOccurrenceDate(selectedDate)}`}
-              className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] transition-colors hover:border-violet-500/30 hover:bg-violet-500/10 hover:text-violet-200"
-              onClick={() => openCreate(selectedDate)}
-            >
-              <Plus className="size-4" />
-            </button>
+            <Tooltip content={`Добавить событие ${formatOccurrenceDate(selectedDate)}`} side="top">
+              <button
+                type="button"
+                aria-label={`Добавить событие ${formatOccurrenceDate(selectedDate)}`}
+                className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] transition-colors hover:border-violet-500/30 hover:bg-violet-500/10 hover:text-violet-200"
+                onClick={() => openCreate(selectedDate)}
+              >
+                <Plus className="size-4" />
+              </button>
+            </Tooltip>
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto p-4">
@@ -976,19 +983,23 @@ export function CalendarPage(): React.JSX.Element {
                     <span className="flex items-center gap-2 text-sm text-[var(--app-text)]">
                       <Clock3 className="size-4 text-[var(--app-muted)]" /> {reminderLabel(offset)}
                     </span>
-                    <button
-                      type="button"
-                      aria-label={`Удалить напоминание ${reminderLabel(offset)}`}
-                      className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
-                      onClick={() =>
-                        setEditor({
-                          ...editor,
-                          reminderOffsets: editor.reminderOffsets.filter((item) => item !== offset)
-                        })
-                      }
-                    >
-                      <Trash2 className="size-3.5" />
-                    </button>
+                    <Tooltip content={`Удалить напоминание ${reminderLabel(offset)}`} side="top">
+                      <button
+                        type="button"
+                        aria-label={`Удалить напоминание ${reminderLabel(offset)}`}
+                        className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
+                        onClick={() =>
+                          setEditor({
+                            ...editor,
+                            reminderOffsets: editor.reminderOffsets.filter(
+                              (item) => item !== offset
+                            )
+                          })
+                        }
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </Tooltip>
                   </div>
                 ))}
                 {editor.reminderOffsets.length === 0 && (

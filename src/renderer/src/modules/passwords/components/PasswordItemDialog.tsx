@@ -1,3 +1,4 @@
+import { Tooltip } from '../../../shared/ui/tooltip'
 import { Eye, EyeOff, KeyRound, Plus, Sparkles, Star, Trash2, WandSparkles } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -254,14 +255,16 @@ export function PasswordItemDialog({
                 className="h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 pr-11 font-mono text-sm text-[var(--app-text)] outline-none placeholder:font-sans placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
                 onChange={(event) => setPassword(event.target.value)}
               />
-              <button
-                type="button"
-                aria-label={passwordVisible ? 'Скрыть пароль' : 'Показать пароль'}
-                className="absolute top-1/2 right-2 flex size-8 -translate-y-1/2 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-                onClick={() => setPasswordVisible((current) => !current)}
-              >
-                {passwordVisible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-              </button>
+              <Tooltip content={passwordVisible ? 'Скрыть пароль' : 'Показать пароль'} side="top">
+                <button
+                  type="button"
+                  aria-label={passwordVisible ? 'Скрыть пароль' : 'Показать пароль'}
+                  className="absolute top-1/2 right-2 flex size-8 -translate-y-1/2 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+                  onClick={() => setPasswordVisible((current) => !current)}
+                >
+                  {passwordVisible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                </button>
+              </Tooltip>
             </div>
           </div>
         </div>
@@ -380,18 +383,20 @@ export function PasswordItemDialog({
                 className="h-10 min-w-0 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 font-mono text-sm text-[var(--app-text)] outline-none placeholder:font-sans placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45"
                 onChange={(event) => updateCustomField(index, { value: event.target.value })}
               />
-              <button
-                type="button"
-                aria-label="Удалить дополнительное поле"
-                className="flex size-10 items-center justify-center rounded-xl text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
-                onClick={() =>
-                  setCustomFields((current) =>
-                    current.filter((_, fieldIndex) => fieldIndex !== index)
-                  )
-                }
-              >
-                <Trash2 className="size-4" />
-              </button>
+              <Tooltip content="Удалить дополнительное поле" side="top">
+                <button
+                  type="button"
+                  aria-label="Удалить дополнительное поле"
+                  className="flex size-10 items-center justify-center rounded-xl text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
+                  onClick={() =>
+                    setCustomFields((current) =>
+                      current.filter((_, fieldIndex) => fieldIndex !== index)
+                    )
+                  }
+                >
+                  <Trash2 className="size-4" />
+                </button>
+              </Tooltip>
             </div>
           ))}
         </div>

@@ -1,3 +1,4 @@
+import { Tooltip } from '../../../shared/ui/tooltip'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { Check, MoreHorizontal } from 'lucide-react'
 
@@ -21,14 +22,16 @@ export function TaskMoveGroupMenu({
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
-        <button
-          type="button"
-          aria-label={`Перенести задачу «${task.title}»`}
-          disabled={disabled}
-          className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors outline-none hover:bg-[var(--app-control)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 disabled:cursor-wait disabled:opacity-40"
-        >
-          <MoreHorizontal className="size-4" />
-        </button>
+        <Tooltip content={`Перенести задачу «${task.title}»`} side="top">
+          <button
+            type="button"
+            aria-label={`Перенести задачу «${task.title}»`}
+            disabled={disabled}
+            className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors outline-none hover:bg-[var(--app-control)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 disabled:cursor-wait disabled:opacity-40"
+          >
+            <MoreHorizontal className="size-4" />
+          </button>
+        </Tooltip>
       </DropdownMenu.Trigger>
 
       <DropdownMenu.Portal>

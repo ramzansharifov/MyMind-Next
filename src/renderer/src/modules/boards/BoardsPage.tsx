@@ -500,14 +500,16 @@ function BoardsHome({
                 onChange={(event) => setSearch(event.target.value)}
               />
               {search && (
-                <button
-                  type="button"
-                  aria-label="Очистить поиск досок"
-                  className="flex size-7 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors outline-none hover:bg-white/[0.06] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35"
-                  onClick={() => setSearch('')}
-                >
-                  <X aria-hidden="true" className="size-4" />
-                </button>
+                <Tooltip content="Очистить поиск досок" side="top">
+                  <button
+                    type="button"
+                    aria-label="Очистить поиск досок"
+                    className="flex size-7 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors outline-none hover:bg-white/[0.06] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35"
+                    onClick={() => setSearch('')}
+                  >
+                    <X aria-hidden="true" className="size-4" />
+                  </button>
+                </Tooltip>
               )}
             </label>
 

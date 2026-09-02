@@ -1,3 +1,4 @@
+import { Tooltip } from '../../../shared/ui/tooltip'
 import * as Popover from '@radix-ui/react-popover'
 import {
   CalendarDays,
@@ -267,20 +268,25 @@ export function MovieDetail({
                       <span className="text-xs opacity-70">/ 10</span>
                     </div>
                   )}
-                  <button
-                    type="button"
-                    disabled={busy}
-                    aria-label={movie.favorite ? 'Убрать из избранного' : 'Добавить в избранное'}
-                    aria-pressed={movie.favorite}
-                    className={
-                      movie.favorite
-                        ? 'flex size-[52px] items-center justify-center rounded-2xl border border-rose-400/20 bg-rose-400/10 text-rose-300 transition-colors hover:bg-rose-400/15 disabled:opacity-50'
-                        : 'flex size-[52px] items-center justify-center rounded-2xl border border-[var(--app-border)] bg-[var(--app-control)] text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-rose-300 disabled:opacity-50'
-                    }
-                    onClick={() => void toggleFavorite()}
+                  <Tooltip
+                    content={movie.favorite ? 'Убрать из избранного' : 'Добавить в избранное'}
+                    side="top"
                   >
-                    <Heart className={`size-5 ${movie.favorite ? 'fill-current' : ''}`} />
-                  </button>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      aria-label={movie.favorite ? 'Убрать из избранного' : 'Добавить в избранное'}
+                      aria-pressed={movie.favorite}
+                      className={
+                        movie.favorite
+                          ? 'flex size-[52px] items-center justify-center rounded-2xl border border-rose-400/20 bg-rose-400/10 text-rose-300 transition-colors hover:bg-rose-400/15 disabled:opacity-50'
+                          : 'flex size-[52px] items-center justify-center rounded-2xl border border-[var(--app-border)] bg-[var(--app-control)] text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-rose-300 disabled:opacity-50'
+                      }
+                      onClick={() => void toggleFavorite()}
+                    >
+                      <Heart className={`size-5 ${movie.favorite ? 'fill-current' : ''}`} />
+                    </button>
+                  </Tooltip>
                 </div>
               </div>
 
@@ -473,8 +479,9 @@ export function MovieDetail({
       >
         <div>
           <p className="text-sm leading-6 text-[var(--app-muted)]">
-            Выберите оценку для «<span className="font-medium text-[var(--app-text)]">{movie.title}</span>».
-            После сохранения запись перейдёт в «Просмотрено».
+            Выберите оценку для «
+            <span className="font-medium text-[var(--app-text)]">{movie.title}</span>». После
+            сохранения запись перейдёт в «Просмотрено».
           </p>
           <div
             role="radiogroup"
@@ -501,7 +508,9 @@ export function MovieDetail({
             ))}
           </div>
           <div className="mt-3 flex items-center gap-2 text-xs text-[var(--app-muted)]">
-            <Star className={`size-3.5 ${pendingRating !== null ? 'fill-current text-amber-300' : ''}`} />
+            <Star
+              className={`size-3.5 ${pendingRating !== null ? 'fill-current text-amber-300' : ''}`}
+            />
             {pendingRating === null ? 'Сначала выберите оценку' : `Выбрано: ${pendingRating} / 10`}
           </div>
         </div>
@@ -534,14 +543,16 @@ export function MovieDetail({
         contentClassName="bg-black"
         bodyClassName="relative flex items-center justify-center bg-black p-4 sm:p-8"
       >
-        <button
-          type="button"
-          aria-label="Закрыть полноэкранный постер"
-          className="absolute top-5 right-5 z-10 flex size-11 items-center justify-center rounded-full border border-white/15 bg-black/55 text-white backdrop-blur-md transition-colors hover:bg-white/10"
-          onClick={() => setPosterOpen(false)}
-        >
-          <X className="size-5" />
-        </button>
+        <Tooltip content="Закрыть полноэкранный постер" side="top">
+          <button
+            type="button"
+            aria-label="Закрыть полноэкранный постер"
+            className="absolute top-5 right-5 z-10 flex size-11 items-center justify-center rounded-full border border-white/15 bg-black/55 text-white backdrop-blur-md transition-colors hover:bg-white/10"
+            onClick={() => setPosterOpen(false)}
+          >
+            <X className="size-5" />
+          </button>
+        </Tooltip>
         {movie.posterUrl && (
           <img
             src={movie.posterUrl}

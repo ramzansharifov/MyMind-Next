@@ -1,3 +1,4 @@
+import { Tooltip } from '../../../shared/ui/tooltip'
 import { Braces, LoaderCircle, RotateCcw } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
@@ -174,9 +175,7 @@ export function MovieJsonImportDialog({
         <span className="text-xs text-[var(--app-muted)]">
           Один объект или массив. Обязательное поле:{' '}
           <code className="text-[var(--app-text)]">title</code>. Тип:{' '}
-          <code className="text-[var(--app-text)]">
-            movie | series | cartoon | animated_series
-          </code>
+          <code className="text-[var(--app-text)]">movie | series | cartoon | animated_series</code>
           . Для <code className="text-[var(--app-text)]">series</code> и{' '}
           <code className="text-[var(--app-text)]">animated_series</code> доступны{' '}
           <code className="text-[var(--app-text)]">seasonCount</code>,{' '}
@@ -192,15 +191,17 @@ export function MovieJsonImportDialog({
           >
             Вставить пример
           </button>
-          <button
-            type="button"
-            aria-label="Очистить JSON"
-            disabled={busy || !value}
-            className="flex size-8 items-center justify-center rounded-lg border border-[var(--app-border)] text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:opacity-35"
-            onClick={() => setValue('')}
-          >
-            <RotateCcw className="size-3.5" />
-          </button>
+          <Tooltip content="Очистить JSON" side="top">
+            <button
+              type="button"
+              aria-label="Очистить JSON"
+              disabled={busy || !value}
+              className="flex size-8 items-center justify-center rounded-lg border border-[var(--app-border)] text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:opacity-35"
+              onClick={() => setValue('')}
+            >
+              <RotateCcw className="size-3.5" />
+            </button>
+          </Tooltip>
         </div>
       </div>
 

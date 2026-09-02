@@ -1,3 +1,4 @@
+import { Tooltip } from '../../shared/ui/tooltip'
 import * as Popover from '@radix-ui/react-popover'
 import {
   ArrowLeft,
@@ -119,14 +120,16 @@ function ActiveFilterChip({ label, onRemove }: ActiveFilterChipProps): React.JSX
   return (
     <span className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-violet-400/20 bg-violet-500/10 px-2.5 text-xs font-medium text-violet-200">
       {label}
-      <button
-        type="button"
-        aria-label={`Убрать фильтр «${label}»`}
-        className="flex size-5 items-center justify-center rounded-md text-violet-200/70 transition-colors hover:bg-white/[0.08] hover:text-violet-100"
-        onClick={onRemove}
-      >
-        <X className="size-3" />
-      </button>
+      <Tooltip content={`Убрать фильтр «${label}»`} side="top">
+        <button
+          type="button"
+          aria-label={`Убрать фильтр «${label}»`}
+          className="flex size-5 items-center justify-center rounded-md text-violet-200/70 transition-colors hover:bg-white/[0.08] hover:text-violet-100"
+          onClick={onRemove}
+        >
+          <X className="size-3" />
+        </button>
+      </Tooltip>
     </span>
   )
 }
@@ -216,20 +219,20 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
     const selectedYear =
       advancedFilters.year === 'all' ? null : Number.parseInt(advancedFilters.year, 10)
     const minRating =
-      advancedFilters.minRating === 'all'
-        ? null
-        : Number.parseInt(advancedFilters.minRating, 10)
+      advancedFilters.minRating === 'all' ? null : Number.parseInt(advancedFilters.minRating, 10)
 
     return movies.filter((movie) => {
       if (filter === 'watchlist' && movie.status !== 'watchlist') return false
       if (filter === 'watched' && movie.status !== 'watched') return false
       if (filter === 'favorites' && !movie.favorite) return false
       if (advancedFilters.type !== 'all' && movie.type !== advancedFilters.type) return false
-      if (advancedFilters.genre !== 'all' && !movie.genres.includes(advancedFilters.genre)) return false
+      if (advancedFilters.genre !== 'all' && !movie.genres.includes(advancedFilters.genre))
+        return false
       if (advancedFilters.director !== 'all' && movie.director !== advancedFilters.director) {
         return false
       }
-      if (advancedFilters.actor !== 'all' && !movie.actors.includes(advancedFilters.actor)) return false
+      if (advancedFilters.actor !== 'all' && !movie.actors.includes(advancedFilters.actor))
+        return false
       if (selectedYear !== null && movie.year !== selectedYear) return false
       if (minRating !== null && (movie.rating === null || movie.rating < minRating)) return false
       if (!normalizedQuery) return true
@@ -399,11 +402,7 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
   }
 
   const headerTitle =
-    view.kind === 'form'
-      ? view.movieId
-        ? 'Редактировать фильм'
-        : 'Добавить фильм'
-      : 'Фильмы'
+    view.kind === 'form' ? (view.movieId ? 'Редактировать фильм' : 'Добавить фильм') : 'Фильмы'
 
   const headerActions = (
     <>
@@ -505,14 +504,16 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
                   onChange={(event) => setQuery(event.target.value)}
                 />
                 {query && (
-                  <button
-                    type="button"
-                    aria-label="Очистить поиск"
-                    className="flex size-7 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors hover:bg-white/[0.06] hover:text-[var(--app-text)]"
-                    onClick={() => setQuery('')}
-                  >
-                    <X className="size-4" />
-                  </button>
+                  <Tooltip content="Очистить поиск" side="top">
+                    <button
+                      type="button"
+                      aria-label="Очистить поиск"
+                      className="flex size-7 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors hover:bg-white/[0.06] hover:text-[var(--app-text)]"
+                      onClick={() => setQuery('')}
+                    >
+                      <X className="size-4" />
+                    </button>
+                  </Tooltip>
                 )}
               </label>
 
@@ -578,13 +579,15 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
                           </p>
                         </div>
                         <Popover.Close asChild>
-                          <button
-                            type="button"
-                            aria-label="Закрыть фильтры"
-                            className="flex size-8 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-                          >
-                            <X className="size-4" />
-                          </button>
+                          <Tooltip content="Закрыть фильтры" side="top">
+                            <button
+                              type="button"
+                              aria-label="Закрыть фильтры"
+                              className="flex size-8 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+                            >
+                              <X className="size-4" />
+                            </button>
+                          </Tooltip>
                         </Popover.Close>
                       </div>
 
@@ -609,7 +612,10 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
                           value={advancedFilters.director}
                           options={[
                             { value: 'all', label: 'Все режиссёры' },
-                            ...filterOptions.directors.map((director) => ({ value: director, label: director }))
+                            ...filterOptions.directors.map((director) => ({
+                              value: director,
+                              label: director
+                            }))
                           ]}
                           onChange={(value) => setAdvancedFilter('director', value)}
                         />
@@ -627,7 +633,10 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
                           value={advancedFilters.year}
                           options={[
                             { value: 'all', label: 'Любой год' },
-                            ...filterOptions.years.map((year) => ({ value: String(year), label: String(year) }))
+                            ...filterOptions.years.map((year) => ({
+                              value: String(year),
+                              label: String(year)
+                            }))
                           ]}
                           onChange={(value) => setAdvancedFilter('year', value)}
                         />
@@ -763,30 +772,39 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
                 <article key={movie.id} className="group min-w-0">
                   <div className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--app-shadow-card)] transition-[transform,border-color,box-shadow] duration-200 group-hover:-translate-y-1 group-hover:border-violet-500/25 group-hover:shadow-xl motion-reduce:transition-none">
                     <div className="relative aspect-[2/3] overflow-hidden bg-[var(--app-surface)]">
-                      <button
-                        type="button"
-                        aria-label={`Открыть фильм «${movie.title}»`}
-                        className="absolute inset-0 z-0 overflow-hidden text-left outline-none focus-visible:ring-2 focus-visible:ring-violet-500/60 focus-visible:ring-inset"
-                        onClick={() => setView({ kind: 'detail', movieId: movie.id })}
-                      >
-                        <MoviePoster movie={movie} />
-                        <span className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
-                      </button>
+                      <Tooltip content={`Открыть фильм «${movie.title}»`} side="top">
+                        <button
+                          type="button"
+                          aria-label={`Открыть фильм «${movie.title}»`}
+                          className="absolute inset-0 z-0 overflow-hidden text-left outline-none focus-visible:ring-2 focus-visible:ring-violet-500/60 focus-visible:ring-inset"
+                          onClick={() => setView({ kind: 'detail', movieId: movie.id })}
+                        >
+                          <MoviePoster movie={movie} />
+                          <span className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
+                        </button>
+                      </Tooltip>
 
-                      <button
-                        type="button"
-                        aria-label={movie.favorite ? 'Убрать из избранного' : 'Добавить в избранное'}
-                        aria-pressed={movie.favorite}
-                        disabled={isSaving}
-                        className={
-                          movie.favorite
-                            ? 'absolute top-2.5 right-2.5 z-10 flex size-9 items-center justify-center rounded-xl border border-rose-300/25 bg-black/50 text-rose-300 backdrop-blur-md transition-colors hover:bg-black/65 disabled:opacity-50'
-                            : 'absolute top-2.5 right-2.5 z-10 flex size-9 items-center justify-center rounded-xl border border-white/10 bg-black/45 text-white/70 backdrop-blur-md transition-colors hover:text-white disabled:opacity-50'
-                        }
-                        onClick={() => void updateMovie({ ...movie, favorite: !movie.favorite })}
+                      <Tooltip
+                        content={movie.favorite ? 'Убрать из избранного' : 'Добавить в избранное'}
+                        side="top"
                       >
-                        <Heart className={`size-4 ${movie.favorite ? 'fill-current' : ''}`} />
-                      </button>
+                        <button
+                          type="button"
+                          aria-label={
+                            movie.favorite ? 'Убрать из избранного' : 'Добавить в избранное'
+                          }
+                          aria-pressed={movie.favorite}
+                          disabled={isSaving}
+                          className={
+                            movie.favorite
+                              ? 'absolute top-2.5 right-2.5 z-10 flex size-9 items-center justify-center rounded-xl border border-rose-300/25 bg-black/50 text-rose-300 backdrop-blur-md transition-colors hover:bg-black/65 disabled:opacity-50'
+                              : 'absolute top-2.5 right-2.5 z-10 flex size-9 items-center justify-center rounded-xl border border-white/10 bg-black/45 text-white/70 backdrop-blur-md transition-colors hover:text-white disabled:opacity-50'
+                          }
+                          onClick={() => void updateMovie({ ...movie, favorite: !movie.favorite })}
+                        >
+                          <Heart className={`size-4 ${movie.favorite ? 'fill-current' : ''}`} />
+                        </button>
+                      </Tooltip>
 
                       <div className="pointer-events-none absolute right-2.5 bottom-2.5 left-2.5 z-10 flex items-end justify-between gap-2">
                         <span
@@ -796,7 +814,11 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
                               : 'inline-flex items-center gap-1 rounded-lg border border-violet-300/20 bg-black/50 px-2 py-1 text-[11px] font-medium text-violet-200 backdrop-blur-md'
                           }
                         >
-                          {movie.status === 'watched' ? <Check className="size-3" /> : <Bookmark className="size-3" />}
+                          {movie.status === 'watched' ? (
+                            <Check className="size-3" />
+                          ) : (
+                            <Bookmark className="size-3" />
+                          )}
                           {movie.status === 'watched' ? 'Просмотрено' : 'Хочу посмотреть'}
                         </span>
                         {movie.status === 'watched' && movie.rating !== null && (

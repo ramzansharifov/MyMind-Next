@@ -1,3 +1,4 @@
+import { Tooltip } from '../../../shared/ui/tooltip'
 import { Dumbbell, Plus, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -323,16 +324,20 @@ export function WorkoutSessionDialog({
                         </div>
                       )}
                     </div>
-                    <button
-                      type="button"
-                      aria-label="Удалить упражнение из тренировки"
-                      className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
-                      onClick={() =>
-                        setItems((current) => current.filter((_, index) => index !== exerciseIndex))
-                      }
-                    >
-                      <Trash2 className="size-4" />
-                    </button>
+                    <Tooltip content="Удалить упражнение из тренировки" side="top">
+                      <button
+                        type="button"
+                        aria-label="Удалить упражнение из тренировки"
+                        className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
+                        onClick={() =>
+                          setItems((current) =>
+                            current.filter((_, index) => index !== exerciseIndex)
+                          )
+                        }
+                      >
+                        <Trash2 className="size-4" />
+                      </button>
+                    </Tooltip>
                   </div>
 
                   <div className="mt-4 overflow-hidden rounded-xl border border-[var(--app-border)]">
@@ -385,19 +390,21 @@ export function WorkoutSessionDialog({
                               }
                             />
                           )}
-                          <button
-                            type="button"
-                            aria-label={`Удалить подход ${setIndex + 1}`}
-                            disabled={item.sets.length === 1}
-                            className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-30"
-                            onClick={() =>
-                              updateExercise(exerciseIndex, {
-                                sets: item.sets.filter((_, index) => index !== setIndex)
-                              })
-                            }
-                          >
-                            <Trash2 className="size-3.5" />
-                          </button>
+                          <Tooltip content={`Удалить подход ${setIndex + 1}`} side="top">
+                            <button
+                              type="button"
+                              aria-label={`Удалить подход ${setIndex + 1}`}
+                              disabled={item.sets.length === 1}
+                              className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-30"
+                              onClick={() =>
+                                updateExercise(exerciseIndex, {
+                                  sets: item.sets.filter((_, index) => index !== setIndex)
+                                })
+                              }
+                            >
+                              <Trash2 className="size-3.5" />
+                            </button>
+                          </Tooltip>
                         </div>
                       ))}
                     </div>

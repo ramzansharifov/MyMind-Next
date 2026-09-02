@@ -1,3 +1,4 @@
+import { Tooltip } from '../../../shared/ui/tooltip'
 import {
   BookOpen,
   Clock3,
@@ -154,16 +155,18 @@ export function StudyHome({
               />
 
               {search && (
-                <button
-                  type="button"
-                  aria-label="Очистить поиск"
-                  className="flex size-7 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors outline-none hover:bg-white/[0.06] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35"
-                  onClick={() => {
-                    setSearch('')
-                  }}
-                >
-                  <X aria-hidden="true" className="size-4" />
-                </button>
+                <Tooltip content="Очистить поиск" side="top">
+                  <button
+                    type="button"
+                    aria-label="Очистить поиск"
+                    className="flex size-7 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors outline-none hover:bg-white/[0.06] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35"
+                    onClick={() => {
+                      setSearch('')
+                    }}
+                  >
+                    <X aria-hidden="true" className="size-4" />
+                  </button>
+                </Tooltip>
               )}
             </label>
 

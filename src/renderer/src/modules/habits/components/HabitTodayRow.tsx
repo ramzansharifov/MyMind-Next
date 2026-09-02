@@ -157,13 +157,15 @@ export function HabitTodayRow({
 
         <Popover.Root open={detailsOpen} onOpenChange={setDetailsOpen}>
           <Popover.Trigger asChild>
-            <button
-              type="button"
-              aria-label={`Подробнее о привычке «${habit.title}»`}
-              className="flex size-9 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-            >
-              <Ellipsis className="size-5" />
-            </button>
+            <Tooltip content={`Подробнее о привычке «${habit.title}»`} side="top">
+              <button
+                type="button"
+                aria-label={`Подробнее о привычке «${habit.title}»`}
+                className="flex size-9 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+              >
+                <Ellipsis className="size-5" />
+              </button>
+            </Tooltip>
           </Popover.Trigger>
 
           <Popover.Portal>

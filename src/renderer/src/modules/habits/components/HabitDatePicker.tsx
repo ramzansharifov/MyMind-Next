@@ -1,3 +1,4 @@
+import { Tooltip } from '../../../shared/ui/tooltip'
 import * as Popover from '@radix-ui/react-popover'
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useMemo, useState } from 'react'
@@ -108,26 +109,30 @@ export function HabitDatePicker({ value, max, onChange }: HabitDatePickerProps):
           className="z-[130] w-[310px] rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 shadow-2xl outline-none"
         >
           <div className="flex items-center justify-between gap-2">
-            <button
-              type="button"
-              aria-label="Предыдущий месяц"
-              className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:outline-none"
-              onClick={() => setVisibleMonth((current) => shiftMonth(current, -1))}
-            >
-              <ChevronLeft className="size-4" />
-            </button>
+            <Tooltip content="Предыдущий месяц" side="top">
+              <button
+                type="button"
+                aria-label="Предыдущий месяц"
+                className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:outline-none"
+                onClick={() => setVisibleMonth((current) => shiftMonth(current, -1))}
+              >
+                <ChevronLeft className="size-4" />
+              </button>
+            </Tooltip>
             <div className="text-sm font-semibold text-[var(--app-text)]">
               {formatMonth(visibleMonth)}
             </div>
-            <button
-              type="button"
-              aria-label="Следующий месяц"
-              disabled={nextMonthDisabled}
-              className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
-              onClick={() => setVisibleMonth((current) => shiftMonth(current, 1))}
-            >
-              <ChevronRight className="size-4" />
-            </button>
+            <Tooltip content="Следующий месяц" side="top">
+              <button
+                type="button"
+                aria-label="Следующий месяц"
+                disabled={nextMonthDisabled}
+                className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
+                onClick={() => setVisibleMonth((current) => shiftMonth(current, 1))}
+              >
+                <ChevronRight className="size-4" />
+              </button>
+            </Tooltip>
           </div>
 
           <div className="mt-3 grid grid-cols-7 gap-1 px-0.5">

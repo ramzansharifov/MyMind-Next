@@ -829,13 +829,15 @@ function LinkPopover({
             <p className="text-sm font-medium">Ссылка</p>
 
             <Popover.Close asChild>
-              <button
-                type="button"
-                aria-label="Закрыть"
-                className="flex size-7 items-center justify-center rounded-md text-(--app-muted) hover:bg-white/[0.06] hover:text-(--app-text)"
-              >
-                <X className="size-4" />
-              </button>
+              <Tooltip content="Закрыть" side="top">
+                <button
+                  type="button"
+                  aria-label="Закрыть"
+                  className="flex size-7 items-center justify-center rounded-md text-(--app-muted) hover:bg-white/[0.06] hover:text-(--app-text)"
+                >
+                  <X className="size-4" />
+                </button>
+              </Tooltip>
             </Popover.Close>
           </div>
 

@@ -1,3 +1,4 @@
+import { Tooltip } from '../../../shared/ui/tooltip'
 import { ArrowDown, ArrowUp, ListPlus, Plus, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -217,34 +218,42 @@ export function WorkoutProgramDialog({
                     )}
                   </div>
                   <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      aria-label="Поднять упражнение"
-                      disabled={index === 0}
-                      className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:opacity-25"
-                      onClick={() => move(index, -1)}
-                    >
-                      <ArrowUp className="size-4" />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label="Опустить упражнение"
-                      disabled={index === items.length - 1}
-                      className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:opacity-25"
-                      onClick={() => move(index, 1)}
-                    >
-                      <ArrowDown className="size-4" />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label="Удалить упражнение из программы"
-                      className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
-                      onClick={() =>
-                        setItems((current) => current.filter((_, itemIndex) => itemIndex !== index))
-                      }
-                    >
-                      <Trash2 className="size-4" />
-                    </button>
+                    <Tooltip content="Поднять упражнение" side="top">
+                      <button
+                        type="button"
+                        aria-label="Поднять упражнение"
+                        disabled={index === 0}
+                        className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:opacity-25"
+                        onClick={() => move(index, -1)}
+                      >
+                        <ArrowUp className="size-4" />
+                      </button>
+                    </Tooltip>
+                    <Tooltip content="Опустить упражнение" side="top">
+                      <button
+                        type="button"
+                        aria-label="Опустить упражнение"
+                        disabled={index === items.length - 1}
+                        className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:opacity-25"
+                        onClick={() => move(index, 1)}
+                      >
+                        <ArrowDown className="size-4" />
+                      </button>
+                    </Tooltip>
+                    <Tooltip content="Удалить упражнение из программы" side="top">
+                      <button
+                        type="button"
+                        aria-label="Удалить упражнение из программы"
+                        className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
+                        onClick={() =>
+                          setItems((current) =>
+                            current.filter((_, itemIndex) => itemIndex !== index)
+                          )
+                        }
+                      >
+                        <Trash2 className="size-4" />
+                      </button>
+                    </Tooltip>
                   </div>
                 </article>
               )

@@ -1,3 +1,4 @@
+import { Tooltip } from '../../shared/ui/tooltip'
 import { BarChart3, Braces, CalendarDays, Target, Utensils, X, type LucideIcon } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
@@ -289,14 +290,16 @@ export function NutritionPage({
           className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300"
         >
           <span>{error}</span>
-          <button
-            type="button"
-            aria-label="Закрыть ошибку"
-            className="flex size-7 items-center justify-center rounded-lg hover:bg-red-500/10"
-            onClick={() => setError(null)}
-          >
-            <X className="size-4" />
-          </button>
+          <Tooltip content="Закрыть ошибку" side="top">
+            <button
+              type="button"
+              aria-label="Закрыть ошибку"
+              className="flex size-7 items-center justify-center rounded-lg hover:bg-red-500/10"
+              onClick={() => setError(null)}
+            >
+              <X className="size-4" />
+            </button>
+          </Tooltip>
         </div>
       )}
 
@@ -306,14 +309,16 @@ export function NutritionPage({
           className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300"
         >
           <span>{importNotice}</span>
-          <button
-            type="button"
-            aria-label="Закрыть сообщение об импорте"
-            className="flex size-7 items-center justify-center rounded-lg hover:bg-emerald-500/10"
-            onClick={() => setImportNotice(null)}
-          >
-            <X className="size-4" />
-          </button>
+          <Tooltip content="Закрыть сообщение об импорте" side="top">
+            <button
+              type="button"
+              aria-label="Закрыть сообщение об импорте"
+              className="flex size-7 items-center justify-center rounded-lg hover:bg-emerald-500/10"
+              onClick={() => setImportNotice(null)}
+            >
+              <X className="size-4" />
+            </button>
+          </Tooltip>
         </div>
       )}
 

@@ -1,3 +1,4 @@
+import { Tooltip } from '../../shared/ui/tooltip'
 import {
   ClipboardCheck,
   ClipboardCopy,
@@ -182,7 +183,10 @@ function VaultGate({
   )
 }
 
-export function PasswordsPage({ resourceId, onResourceHandled }: PasswordsPageProps): React.JSX.Element {
+export function PasswordsPage({
+  resourceId,
+  onResourceHandled
+}: PasswordsPageProps): React.JSX.Element {
   const [vaultStatus, setVaultStatus] = useState<PasswordVaultStatus | null>(null)
   const [groups, setGroups] = useState<PasswordGroupRecord[]>([])
   const [items, setItems] = useState<PasswordItemSummary[]>([])
@@ -319,7 +323,7 @@ export function PasswordsPage({ resourceId, onResourceHandled }: PasswordsPagePr
       if (issueFilter !== 'all' && !item.securityIssues.includes(issueFilter)) return false
       if (view === 'favorites' && !item.favorite) return false
       if (!normalized) return true
-      const groupName = item.groupId ? groupById.get(item.groupId)?.name ?? '' : ''
+      const groupName = item.groupId ? (groupById.get(item.groupId)?.name ?? '') : ''
       return [item.title, item.username, item.website, item.tags.join(' '), groupName]
         .join(' ')
         .toLocaleLowerCase('ru-RU')
@@ -420,9 +424,7 @@ export function PasswordsPage({ resourceId, onResourceHandled }: PasswordsPagePr
     }
   }
 
-  async function saveItem(
-    input: CreatePasswordItemInput | UpdatePasswordItemInput
-  ): Promise<void> {
+  async function saveItem(input: CreatePasswordItemInput | UpdatePasswordItemInput): Promise<void> {
     setIsBusy(true)
     setError(null)
     try {
@@ -621,14 +623,16 @@ export function PasswordsPage({ resourceId, onResourceHandled }: PasswordsPagePr
           className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300"
         >
           <span>{error}</span>
-          <button
-            type="button"
-            aria-label="Закрыть ошибку"
-            className="flex size-7 items-center justify-center rounded-lg hover:bg-red-500/10"
-            onClick={() => setError(null)}
-          >
-            <X className="size-4" />
-          </button>
+          <Tooltip content="Закрыть ошибку" side="top">
+            <button
+              type="button"
+              aria-label="Закрыть ошибку"
+              className="flex size-7 items-center justify-center rounded-lg hover:bg-red-500/10"
+              onClick={() => setError(null)}
+            >
+              <X className="size-4" />
+            </button>
+          </Tooltip>
         </div>
       )}
 
@@ -641,20 +645,22 @@ export function PasswordsPage({ resourceId, onResourceHandled }: PasswordsPagePr
       <div className="mt-5 grid gap-5 lg:grid-cols-[250px_minmax(0,1fr)]">
         <aside className="self-start rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 shadow-[var(--app-shadow-card)] lg:sticky lg:top-5">
           <div className="flex items-center justify-between px-2 py-1.5">
-            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--app-muted)]">
+            <span className="text-xs font-semibold tracking-[0.12em] text-[var(--app-muted)] uppercase">
               Группы
             </span>
-            <button
-              type="button"
-              aria-label="Создать группу"
-              className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-              onClick={() => {
-                setEditingGroup(null)
-                setGroupDialogOpen(true)
-              }}
-            >
-              <Plus className="size-4" />
-            </button>
+            <Tooltip content="Создать группу" side="top">
+              <button
+                type="button"
+                aria-label="Создать группу"
+                className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+                onClick={() => {
+                  setEditingGroup(null)
+                  setGroupDialogOpen(true)
+                }}
+              >
+                <Plus className="size-4" />
+              </button>
+            </Tooltip>
           </div>
 
           <div className="mt-2 space-y-1">
@@ -723,7 +729,9 @@ export function PasswordsPage({ resourceId, onResourceHandled }: PasswordsPagePr
                       <PasswordGroupIconGlyph icon={group.icon} className="size-3.5" />
                     </span>
                     <span className="min-w-0 flex-1 truncate text-left">{group.name}</span>
-                    <span className="text-xs opacity-60">{groupCounts.counts.get(group.id) ?? 0}</span>
+                    <span className="text-xs opacity-60">
+                      {groupCounts.counts.get(group.id) ?? 0}
+                    </span>
                   </button>
                   <div
                     className={cn(
@@ -731,25 +739,29 @@ export function PasswordsPage({ resourceId, onResourceHandled }: PasswordsPagePr
                       selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
                     )}
                   >
-                    <button
-                      type="button"
-                      aria-label={`Изменить группу «${group.name}»`}
-                      className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-                      onClick={() => {
-                        setEditingGroup(group)
-                        setGroupDialogOpen(true)
-                      }}
-                    >
-                      <Pencil className="size-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label={`Удалить группу «${group.name}»`}
-                      className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
-                      onClick={() => setDeleteGroupTarget(group)}
-                    >
-                      <Trash2 className="size-3.5" />
-                    </button>
+                    <Tooltip content={`Изменить группу «${group.name}»`} side="top">
+                      <button
+                        type="button"
+                        aria-label={`Изменить группу «${group.name}»`}
+                        className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+                        onClick={() => {
+                          setEditingGroup(group)
+                          setGroupDialogOpen(true)
+                        }}
+                      >
+                        <Pencil className="size-3.5" />
+                      </button>
+                    </Tooltip>
+                    <Tooltip content={`Удалить группу «${group.name}»`} side="top">
+                      <button
+                        type="button"
+                        aria-label={`Удалить группу «${group.name}»`}
+                        className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
+                        onClick={() => setDeleteGroupTarget(group)}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </Tooltip>
                   </div>
                 </div>
               )
@@ -773,14 +785,16 @@ export function PasswordsPage({ resourceId, onResourceHandled }: PasswordsPagePr
                       onChange={(event) => setQuery(event.target.value)}
                     />
                     {query && (
-                      <button
-                        type="button"
-                        aria-label="Очистить поиск"
-                        className="text-[var(--app-muted)] hover:text-[var(--app-text)]"
-                        onClick={() => setQuery('')}
-                      >
-                        <X className="size-4" />
-                      </button>
+                      <Tooltip content="Очистить поиск" side="top">
+                        <button
+                          type="button"
+                          aria-label="Очистить поиск"
+                          className="text-[var(--app-muted)] hover:text-[var(--app-text)]"
+                          onClick={() => setQuery('')}
+                        >
+                          <X className="size-4" />
+                        </button>
+                      </Tooltip>
                     )}
                   </label>
                   <div className="min-w-[160px]">
@@ -837,7 +851,7 @@ export function PasswordsPage({ resourceId, onResourceHandled }: PasswordsPagePr
                 <div className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--app-shadow-card)]">
                   <div className="divide-y divide-[var(--app-border)]">
                     {baseFilteredItems.map((item) => {
-                      const group = item.groupId ? groupById.get(item.groupId) ?? null : null
+                      const group = item.groupId ? (groupById.get(item.groupId) ?? null) : null
                       return (
                         <article
                           key={item.id}
@@ -885,22 +899,26 @@ export function PasswordsPage({ resourceId, onResourceHandled }: PasswordsPagePr
                               <span>{passwordTypeLabel(item.type)}</span>
                             </div>
                             <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                              {group && (() => {
-                                const color = passwordGroupColorClasses[group.color]
-                                return (
-                                  <span
-                                    className={cn(
-                                      'inline-flex h-6 items-center gap-1.5 rounded-lg border px-2 text-[11px] font-medium',
-                                      color.soft,
-                                      color.text,
-                                      color.border
-                                    )}
-                                  >
-                                    <PasswordGroupIconGlyph icon={group.icon} className="size-3" />
-                                    {group.name}
-                                  </span>
-                                )
-                              })()}
+                              {group &&
+                                (() => {
+                                  const color = passwordGroupColorClasses[group.color]
+                                  return (
+                                    <span
+                                      className={cn(
+                                        'inline-flex h-6 items-center gap-1.5 rounded-lg border px-2 text-[11px] font-medium',
+                                        color.soft,
+                                        color.text,
+                                        color.border
+                                      )}
+                                    >
+                                      <PasswordGroupIconGlyph
+                                        icon={group.icon}
+                                        className="size-3"
+                                      />
+                                      {group.name}
+                                    </span>
+                                  )
+                                })()}
                               {item.securityIssues.map((issue) => (
                                 <span
                                   key={issue}
@@ -917,39 +935,47 @@ export function PasswordsPage({ resourceId, onResourceHandled }: PasswordsPagePr
                           </button>
                           <div className="flex shrink-0 items-center gap-1">
                             {item.username && (
+                              <Tooltip content={`Скопировать логин «${item.title}»`} side="top">
+                                <button
+                                  type="button"
+                                  aria-label={`Скопировать логин «${item.title}»`}
+                                  className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control)] hover:text-[var(--app-text)]"
+                                  onClick={() => void copyField(item.id, 'username')}
+                                >
+                                  <UserRound className="size-3.5" />
+                                </button>
+                              </Tooltip>
+                            )}
+                            <Tooltip content={`Скопировать пароль «${item.title}»`} side="top">
                               <button
                                 type="button"
-                                aria-label={`Скопировать логин «${item.title}»`}
-                                className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control)] hover:text-[var(--app-text)]"
-                                onClick={() => void copyField(item.id, 'username')}
+                                aria-label={`Скопировать пароль «${item.title}»`}
+                                className="flex size-8 items-center justify-center rounded-lg text-violet-300 hover:bg-violet-500/10"
+                                onClick={() => void copyField(item.id, 'password')}
                               >
-                                <UserRound className="size-3.5" />
+                                <ClipboardCopy className="size-3.5" />
                               </button>
-                            )}
-                            <button
-                              type="button"
-                              aria-label={`Скопировать пароль «${item.title}»`}
-                              className="flex size-8 items-center justify-center rounded-lg text-violet-300 hover:bg-violet-500/10"
-                              onClick={() => void copyField(item.id, 'password')}
-                            >
-                              <ClipboardCopy className="size-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              aria-label={`Изменить «${item.title}»`}
-                              className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] opacity-0 group-hover/item:opacity-100 focus:opacity-100 hover:bg-[var(--app-control)] hover:text-[var(--app-text)]"
-                              onClick={() => void editItem(item.id)}
-                            >
-                              <Pencil className="size-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              aria-label={`Удалить «${item.title}»`}
-                              className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] opacity-0 group-hover/item:opacity-100 focus:opacity-100 hover:bg-red-500/10 hover:text-red-300"
-                              onClick={() => setDeleteItemTarget(item)}
-                            >
-                              <Trash2 className="size-3.5" />
-                            </button>
+                            </Tooltip>
+                            <Tooltip content={`Изменить «${item.title}»`} side="top">
+                              <button
+                                type="button"
+                                aria-label={`Изменить «${item.title}»`}
+                                className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] opacity-0 group-hover/item:opacity-100 hover:bg-[var(--app-control)] hover:text-[var(--app-text)] focus:opacity-100"
+                                onClick={() => void editItem(item.id)}
+                              >
+                                <Pencil className="size-3.5" />
+                              </button>
+                            </Tooltip>
+                            <Tooltip content={`Удалить «${item.title}»`} side="top">
+                              <button
+                                type="button"
+                                aria-label={`Удалить «${item.title}»`}
+                                className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] opacity-0 group-hover/item:opacity-100 hover:bg-red-500/10 hover:text-red-300 focus:opacity-100"
+                                onClick={() => setDeleteItemTarget(item)}
+                              >
+                                <Trash2 className="size-3.5" />
+                              </button>
+                            </Tooltip>
                           </div>
                         </article>
                       )
@@ -1123,7 +1149,7 @@ export function PasswordsPage({ resourceId, onResourceHandled }: PasswordsPagePr
       <PasswordDetailDialog
         open={detailOpen}
         item={selectedItem}
-        group={selectedItem?.groupId ? groupById.get(selectedItem.groupId) ?? null : null}
+        group={selectedItem?.groupId ? (groupById.get(selectedItem.groupId) ?? null) : null}
         onOpenChange={(open) => {
           setDetailOpen(open)
           if (!open) setSelectedItem(null)

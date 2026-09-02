@@ -1,3 +1,4 @@
+import { Tooltip } from '../../../shared/ui/tooltip'
 import * as Collapsible from '@radix-ui/react-collapsible'
 
 import {
@@ -412,30 +413,39 @@ export function WorkoutProgressSection({
                   </div>
                   <div className="flex gap-1">
                     <Collapsible.Trigger asChild>
+                      <Tooltip
+                        content={`Развернуть или свернуть запись прогресса за ${formatDate(entry.date)}`}
+                        side="top"
+                      >
+                        <button
+                          type="button"
+                          aria-label={`Развернуть или свернуть запись прогресса за ${formatDate(entry.date)}`}
+                          className="group flex size-9 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+                        >
+                          <ChevronDown className="size-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                        </button>
+                      </Tooltip>
+                    </Collapsible.Trigger>
+                    <Tooltip content={`Изменить прогресс за ${formatDate(entry.date)}`} side="top">
                       <button
                         type="button"
-                        aria-label={`Развернуть или свернуть запись прогресса за ${formatDate(entry.date)}`}
-                        className="group flex size-9 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+                        aria-label={`Изменить прогресс за ${formatDate(entry.date)}`}
+                        className="flex size-9 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+                        onClick={() => onEdit(entry)}
                       >
-                        <ChevronDown className="size-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                        <Pencil className="size-4" />
                       </button>
-                    </Collapsible.Trigger>
-                    <button
-                      type="button"
-                      aria-label={`Изменить прогресс за ${formatDate(entry.date)}`}
-                      className="flex size-9 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-                      onClick={() => onEdit(entry)}
-                    >
-                      <Pencil className="size-4" />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label={`Удалить прогресс за ${formatDate(entry.date)}`}
-                      className="flex size-9 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
-                      onClick={() => onDelete(entry)}
-                    >
-                      <Trash2 className="size-4" />
-                    </button>
+                    </Tooltip>
+                    <Tooltip content={`Удалить прогресс за ${formatDate(entry.date)}`} side="top">
+                      <button
+                        type="button"
+                        aria-label={`Удалить прогресс за ${formatDate(entry.date)}`}
+                        className="flex size-9 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
+                        onClick={() => onDelete(entry)}
+                      >
+                        <Trash2 className="size-4" />
+                      </button>
+                    </Tooltip>
                   </div>
                 </div>
 
@@ -558,24 +568,34 @@ export function WorkoutProgressSection({
                             <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-gradient-to-t from-black/85 via-black/55 to-transparent px-2.5 pt-8 pb-2 text-white">
                               <span className="text-[11px] font-semibold">{option.label}</span>
                               <div className="flex gap-1 opacity-0 transition-opacity group-hover/photo:opacity-100 focus-within:opacity-100">
-                                <button
-                                  type="button"
-                                  aria-label={`Заменить фото ${option.label.toLocaleLowerCase('ru-RU')} за ${formatDate(entry.date)}`}
-                                  disabled={busy}
-                                  className="flex size-7 items-center justify-center rounded-lg bg-black/55 text-white backdrop-blur hover:bg-black/75 disabled:opacity-45"
-                                  onClick={() => void onImportPhoto(entry.id, option.value)}
+                                <Tooltip
+                                  content={`Заменить фото ${option.label.toLocaleLowerCase('ru-RU')} за ${formatDate(entry.date)}`}
+                                  side="top"
                                 >
-                                  <RefreshCw className="size-3.5" />
-                                </button>
-                                <button
-                                  type="button"
-                                  aria-label={`Удалить фото ${option.label.toLocaleLowerCase('ru-RU')} за ${formatDate(entry.date)}`}
-                                  disabled={busy}
-                                  className="flex size-7 items-center justify-center rounded-lg bg-black/55 text-white backdrop-blur hover:bg-red-500/80 disabled:opacity-45"
-                                  onClick={() => setPhotoToDelete(item)}
+                                  <button
+                                    type="button"
+                                    aria-label={`Заменить фото ${option.label.toLocaleLowerCase('ru-RU')} за ${formatDate(entry.date)}`}
+                                    disabled={busy}
+                                    className="flex size-7 items-center justify-center rounded-lg bg-black/55 text-white backdrop-blur hover:bg-black/75 disabled:opacity-45"
+                                    onClick={() => void onImportPhoto(entry.id, option.value)}
+                                  >
+                                    <RefreshCw className="size-3.5" />
+                                  </button>
+                                </Tooltip>
+                                <Tooltip
+                                  content={`Удалить фото ${option.label.toLocaleLowerCase('ru-RU')} за ${formatDate(entry.date)}`}
+                                  side="top"
                                 >
-                                  <Trash2 className="size-3.5" />
-                                </button>
+                                  <button
+                                    type="button"
+                                    aria-label={`Удалить фото ${option.label.toLocaleLowerCase('ru-RU')} за ${formatDate(entry.date)}`}
+                                    disabled={busy}
+                                    className="flex size-7 items-center justify-center rounded-lg bg-black/55 text-white backdrop-blur hover:bg-red-500/80 disabled:opacity-45"
+                                    onClick={() => setPhotoToDelete(item)}
+                                  >
+                                    <Trash2 className="size-3.5" />
+                                  </button>
+                                </Tooltip>
                               </div>
                             </div>
                           </div>
@@ -610,15 +630,20 @@ export function WorkoutProgressSection({
                                 className="size-full object-cover"
                               />
                             </button>
-                            <button
-                              type="button"
-                              aria-label={`Удалить другой ракурс за ${formatDate(entry.date)}`}
-                              disabled={busy}
-                              className="absolute top-2 right-2 flex size-8 items-center justify-center rounded-lg bg-black/60 text-white opacity-0 backdrop-blur transition-opacity group-hover/photo:opacity-100 focus:opacity-100 disabled:opacity-45"
-                              onClick={() => setPhotoToDelete(item)}
+                            <Tooltip
+                              content={`Удалить другой ракурс за ${formatDate(entry.date)}`}
+                              side="top"
                             >
-                              <Trash2 className="size-4" />
-                            </button>
+                              <button
+                                type="button"
+                                aria-label={`Удалить другой ракурс за ${formatDate(entry.date)}`}
+                                disabled={busy}
+                                className="absolute top-2 right-2 flex size-8 items-center justify-center rounded-lg bg-black/60 text-white opacity-0 backdrop-blur transition-opacity group-hover/photo:opacity-100 focus:opacity-100 disabled:opacity-45"
+                                onClick={() => setPhotoToDelete(item)}
+                              >
+                                <Trash2 className="size-4" />
+                              </button>
+                            </Tooltip>
                           </div>
                         )
                       })}

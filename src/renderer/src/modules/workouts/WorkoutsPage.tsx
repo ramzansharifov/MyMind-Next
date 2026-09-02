@@ -1,3 +1,4 @@
+import { Tooltip } from '../../shared/ui/tooltip'
 import {
   Activity,
   BarChart3,
@@ -630,14 +631,16 @@ export function WorkoutsPage({
           className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300"
         >
           <span>{error}</span>
-          <button
-            type="button"
-            aria-label="Закрыть ошибку"
-            className="flex size-7 items-center justify-center rounded-lg hover:bg-red-500/10"
-            onClick={() => setError(null)}
-          >
-            <X className="size-4" />
-          </button>
+          <Tooltip content="Закрыть ошибку" side="top">
+            <button
+              type="button"
+              aria-label="Закрыть ошибку"
+              className="flex size-7 items-center justify-center rounded-lg hover:bg-red-500/10"
+              onClick={() => setError(null)}
+            >
+              <X className="size-4" />
+            </button>
+          </Tooltip>
         </div>
       )}
 
@@ -716,25 +719,29 @@ export function WorkoutsPage({
                         </span>
                       </div>
                       <div className="flex shrink-0 gap-1">
-                        <button
-                          type="button"
-                          aria-label={`Изменить «${exercise.title}»`}
-                          className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-                          onClick={() => {
-                            setEditingExercise(exercise)
-                            setExerciseDialogOpen(true)
-                          }}
-                        >
-                          <Pencil className="size-4" />
-                        </button>
-                        <button
-                          type="button"
-                          aria-label={`Удалить «${exercise.title}»`}
-                          className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
-                          onClick={() => setDeleteExerciseTarget(exercise)}
-                        >
-                          <Trash2 className="size-4" />
-                        </button>
+                        <Tooltip content={`Изменить «${exercise.title}»`} side="top">
+                          <button
+                            type="button"
+                            aria-label={`Изменить «${exercise.title}»`}
+                            className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+                            onClick={() => {
+                              setEditingExercise(exercise)
+                              setExerciseDialogOpen(true)
+                            }}
+                          >
+                            <Pencil className="size-4" />
+                          </button>
+                        </Tooltip>
+                        <Tooltip content={`Удалить «${exercise.title}»`} side="top">
+                          <button
+                            type="button"
+                            aria-label={`Удалить «${exercise.title}»`}
+                            className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
+                            onClick={() => setDeleteExerciseTarget(exercise)}
+                          >
+                            <Trash2 className="size-4" />
+                          </button>
+                        </Tooltip>
                       </div>
                     </div>
                   </article>
@@ -780,36 +787,42 @@ export function WorkoutsPage({
                       </p>
                     </div>
                     <div className="flex gap-1">
-                      <button
-                        type="button"
-                        aria-label={`Открыть карту мышц «${program.name}»`}
-                        className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-violet-500/10 hover:text-violet-300"
-                        onClick={() => {
-                          setSelectedProgramForMap(program)
-                          setProgramMuscleMapOpen(true)
-                        }}
-                      >
-                        <Activity className="size-4" />
-                      </button>
-                      <button
-                        type="button"
-                        aria-label="Изменить программу"
-                        className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-                        onClick={() => {
-                          setEditingProgram(program)
-                          setProgramDialogOpen(true)
-                        }}
-                      >
-                        <Pencil className="size-4" />
-                      </button>
-                      <button
-                        type="button"
-                        aria-label="Удалить программу"
-                        className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
-                        onClick={() => setDeleteProgramTarget(program)}
-                      >
-                        <Trash2 className="size-4" />
-                      </button>
+                      <Tooltip content={`Открыть карту мышц «${program.name}»`} side="top">
+                        <button
+                          type="button"
+                          aria-label={`Открыть карту мышц «${program.name}»`}
+                          className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-violet-500/10 hover:text-violet-300"
+                          onClick={() => {
+                            setSelectedProgramForMap(program)
+                            setProgramMuscleMapOpen(true)
+                          }}
+                        >
+                          <Activity className="size-4" />
+                        </button>
+                      </Tooltip>
+                      <Tooltip content="Изменить программу" side="top">
+                        <button
+                          type="button"
+                          aria-label="Изменить программу"
+                          className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+                          onClick={() => {
+                            setEditingProgram(program)
+                            setProgramDialogOpen(true)
+                          }}
+                        >
+                          <Pencil className="size-4" />
+                        </button>
+                      </Tooltip>
+                      <Tooltip content="Удалить программу" side="top">
+                        <button
+                          type="button"
+                          aria-label="Удалить программу"
+                          className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
+                          onClick={() => setDeleteProgramTarget(program)}
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
+                      </Tooltip>
                     </div>
                   </div>
                   {program.description && (
