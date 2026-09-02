@@ -1,3 +1,4 @@
+import * as RadioGroup from '@radix-ui/react-radio-group'
 import { Check, Monitor, Moon, Palette, Sun } from 'lucide-react'
 
 import type { AppThemePreference } from '../../../../shared/contracts/preferences'
@@ -29,31 +30,32 @@ export function AppearanceSettingsSection(): React.JSX.Element {
 
           <fieldset className="p-4">
             <legend className="sr-only">Тема</legend>
-            <div className="grid grid-cols-3 gap-3 max-[680px]:grid-cols-1">
+            <RadioGroup.Root
+              value={preferences.theme}
+              aria-label="Тема"
+              className="grid grid-cols-3 gap-3 max-[680px]:grid-cols-1"
+              onValueChange={(value) => {
+                const option = APP_THEME_OPTIONS.find((item) => item.value === value)
+                if (option) setTheme(option.value)
+              }}
+            >
               {APP_THEME_OPTIONS.map((option) => {
                 const Icon = THEME_ICONS[option.value]
                 const selected = preferences.theme === option.value
 
                 return (
-                  <label
+                  <RadioGroup.Item
                     key={option.value}
+                    value={option.value}
+                    aria-label={option.label}
                     className={cn(
-                      'relative flex min-h-24 cursor-pointer flex-col rounded-xl border p-3.5 transition-[border-color,background-color,transform] outline-none',
-                      'has-focus-visible:ring-2 has-focus-visible:ring-violet-500/50',
+                      'relative flex min-h-24 cursor-pointer flex-col rounded-xl border p-3.5 text-left transition-[border-color,background-color,transform] outline-none',
+                      'focus-visible:ring-2 focus-visible:ring-violet-500/50',
                       selected
                         ? 'border-violet-500/45 bg-violet-500/10'
                         : 'border-[var(--app-border)] bg-[var(--app-workspace)] hover:-translate-y-px hover:border-[var(--app-border-strong)]'
                     )}
                   >
-                    <input
-                      type="radio"
-                      name="appearance-theme"
-                      value={option.value}
-                      checked={selected}
-                      className="sr-only"
-                      onChange={() => setTheme(option.value)}
-                    />
-
                     <span className="flex items-start justify-between gap-3">
                       <Icon aria-hidden="true" className="size-5 shrink-0 text-violet-300" />
                       {selected && (
@@ -66,10 +68,10 @@ export function AppearanceSettingsSection(): React.JSX.Element {
                     <span className="mt-auto pt-4 text-sm font-medium text-[var(--app-text)]">
                       {option.label}
                     </span>
-                  </label>
+                  </RadioGroup.Item>
                 )
               })}
-            </div>
+            </RadioGroup.Root>
           </fieldset>
         </section>
 
@@ -83,30 +85,31 @@ export function AppearanceSettingsSection(): React.JSX.Element {
 
           <fieldset className="p-4">
             <legend className="sr-only">Акцентный цвет</legend>
-            <div className="grid grid-cols-5 gap-2 max-[680px]:grid-cols-2">
+            <RadioGroup.Root
+              value={preferences.accent}
+              aria-label="Акцентный цвет"
+              className="grid grid-cols-5 gap-2 max-[680px]:grid-cols-2"
+              onValueChange={(value) => {
+                const option = APP_ACCENT_OPTIONS.find((item) => item.value === value)
+                if (option) setAccent(option.value)
+              }}
+            >
               {APP_ACCENT_OPTIONS.map((option) => {
                 const selected = preferences.accent === option.value
 
                 return (
-                  <label
+                  <RadioGroup.Item
                     key={option.value}
+                    value={option.value}
+                    aria-label={option.label}
                     className={cn(
                       'flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2.5 rounded-xl border p-2.5 transition-[border-color,background-color,transform] outline-none',
-                      'has-focus-visible:ring-2 has-focus-visible:ring-violet-500/50',
+                      'focus-visible:ring-2 focus-visible:ring-violet-500/50',
                       selected
                         ? 'border-violet-500/45 bg-violet-500/10'
                         : 'border-[var(--app-border)] bg-[var(--app-workspace)] hover:-translate-y-px hover:border-[var(--app-border-strong)]'
                     )}
                   >
-                    <input
-                      type="radio"
-                      name="appearance-accent"
-                      value={option.value}
-                      checked={selected}
-                      className="sr-only"
-                      aria-label={option.label}
-                      onChange={() => setAccent(option.value)}
-                    />
                     <span
                       aria-hidden="true"
                       className="flex size-8 shrink-0 items-center justify-center rounded-full shadow-sm shadow-black/20"
@@ -117,10 +120,10 @@ export function AppearanceSettingsSection(): React.JSX.Element {
                     <span className="truncate text-[11px] font-medium text-[var(--app-text)]">
                       {option.label}
                     </span>
-                  </label>
+                  </RadioGroup.Item>
                 )
               })}
-            </div>
+            </RadioGroup.Root>
           </fieldset>
         </section>
 

@@ -421,10 +421,12 @@ export function StudyCodeWorkspace({
         {visibleDiagnostics[0] && (
           <div role="alert" className="ml-auto flex min-w-0 items-center gap-2 text-red-300">
             <AlertTriangle aria-hidden="true" className="size-3.5 shrink-0" />
-            <span className="truncate" title={visibleDiagnostics[0].message}>
-              Строка {visibleDiagnostics[0].line}:{visibleDiagnostics[0].column} —{' '}
-              {visibleDiagnostics[0].message}
-            </span>
+            <Tooltip content={visibleDiagnostics[0].message} side="top">
+              <span className="truncate" tabIndex={0}>
+                Строка {visibleDiagnostics[0].line}:{visibleDiagnostics[0].column} —{' '}
+                {visibleDiagnostics[0].message}
+              </span>
+            </Tooltip>
           </div>
         )}
       </footer>

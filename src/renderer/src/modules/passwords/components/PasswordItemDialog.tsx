@@ -1,13 +1,4 @@
-import {
-  Eye,
-  EyeOff,
-  KeyRound,
-  Plus,
-  Sparkles,
-  Star,
-  Trash2,
-  WandSparkles
-} from 'lucide-react'
+import { Eye, EyeOff, KeyRound, Plus, Sparkles, Star, Trash2, WandSparkles } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 import type {
@@ -20,6 +11,8 @@ import type {
 } from '../../../../../shared/contracts/passwords'
 import { cn } from '../../../shared/lib/cn'
 import { AppDialog } from '../../../shared/ui/AppDialog'
+import { AppCheckbox } from '../../../shared/ui/AppCheckbox'
+import { AppSlider } from '../../../shared/ui/AppSlider'
 import { AppSelect } from '../../../shared/ui/AppSelect'
 import { passwordsClient } from '../api/passwords-client'
 import { PASSWORD_TYPE_OPTIONS } from '../password-options'
@@ -278,15 +271,17 @@ export function PasswordItemDialog({
             <div className="flex items-center gap-2">
               <Sparkles className="size-4 text-violet-300" />
               <span className="text-sm font-semibold text-[var(--app-text)]">Генератор пароля</span>
-              <span className="ml-auto text-sm font-semibold text-violet-200">{generatorLength}</span>
+              <span className="ml-auto text-sm font-semibold text-violet-200">
+                {generatorLength}
+              </span>
             </div>
-            <input
-              type="range"
+            <AppSlider
+              ariaLabel="Длина генерируемого пароля"
               min={8}
               max={64}
               value={generatorLength}
-              className="mt-4 w-full accent-violet-500"
-              onChange={(event) => setGeneratorLength(Number(event.target.value))}
+              className="mt-4"
+              onValueChange={setGeneratorLength}
             />
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
               {[
@@ -295,22 +290,26 @@ export function PasswordItemDialog({
                 ['Цифры', digits, setDigits],
                 ['Символы', symbols, setSymbols],
                 ['Исключить похожие', excludeAmbiguous, setExcludeAmbiguous]
-              ].map(([label, checked, setter]) => (
-                <label
-                  key={String(label)}
-                  className="flex cursor-pointer items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 py-2 text-xs text-[var(--app-muted)]"
-                >
-                  <input
-                    type="checkbox"
-                    checked={Boolean(checked)}
-                    className="accent-violet-500"
-                    onChange={(event) =>
-                      (setter as React.Dispatch<React.SetStateAction<boolean>>)(event.target.checked)
-                    }
-                  />
-                  {String(label)}
-                </label>
-              ))}
+              ].map(([label, checked, setter], index) => {
+                const optionId = `password-generator-option-${index}`
+                return (
+                  <label
+                    key={String(label)}
+                    htmlFor={optionId}
+                    className="flex cursor-pointer items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 py-2 text-xs text-[var(--app-muted)]"
+                  >
+                    <AppCheckbox
+                      id={optionId}
+                      ariaLabel={String(label)}
+                      checked={Boolean(checked)}
+                      onCheckedChange={(nextChecked) =>
+                        (setter as React.Dispatch<React.SetStateAction<boolean>>)(nextChecked)
+                      }
+                    />
+                    {String(label)}
+                  </label>
+                )
+              })}
             </div>
             <button
               type="button"
@@ -342,12 +341,16 @@ export function PasswordItemDialog({
             className="h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
             onChange={(event) => setTagsText(event.target.value)}
           />
-          <span className="block text-[11px] text-[var(--app-muted)]">Разделяйте теги запятыми.</span>
+          <span className="block text-[11px] text-[var(--app-muted)]">
+            Разделяйте теги запятыми.
+          </span>
         </label>
 
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-3">
-            <span className="text-xs font-medium text-[var(--app-muted)]">Дополнительные секретные поля</span>
+            <span className="text-xs font-medium text-[var(--app-muted)]">
+              Дополнительные секретные поля
+            </span>
             <button
               type="button"
               disabled={customFields.length >= 20}
@@ -358,7 +361,10 @@ export function PasswordItemDialog({
             </button>
           </div>
           {customFields.map((field, index) => (
-            <div key={index} className="grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)_40px] gap-2">
+            <div
+              key={index}
+              className="grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)_40px] gap-2"
+            >
               <input
                 value={field.label}
                 maxLength={80}
@@ -378,7 +384,11 @@ export function PasswordItemDialog({
                 type="button"
                 aria-label="Удалить дополнительное поле"
                 className="flex size-10 items-center justify-center rounded-xl text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
-                onClick={() => setCustomFields((current) => current.filter((_, fieldIndex) => fieldIndex !== index))}
+                onClick={() =>
+                  setCustomFields((current) =>
+                    current.filter((_, fieldIndex) => fieldIndex !== index)
+                  )
+                }
               >
                 <Trash2 className="size-4" />
               </button>
@@ -414,7 +424,10 @@ export function PasswordItemDialog({
         </button>
 
         {error && (
-          <div role="alert" className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+          <div
+            role="alert"
+            className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-300"
+          >
             {error}
           </div>
         )}

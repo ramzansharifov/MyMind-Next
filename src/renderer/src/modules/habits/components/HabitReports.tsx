@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { HabitGroupRecord, HabitReport } from '../../../../../shared/contracts/habits'
 import { cn } from '../../../shared/lib/cn'
 import { AppSelect } from '../../../shared/ui/AppSelect'
+import { AppDateField } from '../../../shared/ui/AppDateField'
+import { Tooltip } from '../../../shared/ui/tooltip'
 import { habitsClient } from '../api/habits-client'
 import { habitRepeatLabel } from '../habit-options'
 import { addDays, formatHabitDate, localDateKey } from '../habit-schedule'
@@ -111,23 +113,21 @@ export function HabitReports({
             <>
               <label className="space-y-1.5">
                 <span className="block text-xs font-medium text-[var(--app-muted)]">От</span>
-                <input
-                  type="date"
+                <AppDateField
+                  ariaLabel="Начало периода отчёта привычек"
                   value={customFrom}
                   max={customTo}
-                  className="h-10 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
-                  onChange={(event) => setCustomFrom(event.target.value)}
+                  onChange={setCustomFrom}
                 />
               </label>
               <label className="space-y-1.5">
                 <span className="block text-xs font-medium text-[var(--app-muted)]">До</span>
-                <input
-                  type="date"
+                <AppDateField
+                  ariaLabel="Конец периода отчёта привычек"
                   value={customTo}
                   min={customFrom}
                   max={today}
-                  className="h-10 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
-                  onChange={(event) => setCustomTo(event.target.value)}
+                  onChange={setCustomTo}
                 />
               </label>
             </>
@@ -220,15 +220,20 @@ export function HabitReports({
 
             <div className="mt-4 grid grid-cols-[repeat(31,minmax(0,1fr))] gap-1 max-[900px]:grid-cols-[repeat(14,minmax(0,1fr))] max-[560px]:grid-cols-[repeat(7,minmax(0,1fr))]">
               {report.days.map((day) => (
-                <div
+                <Tooltip
                   key={day.date}
-                  title={`${day.date}: ${day.completionRate}% · выполнено ${day.completed}, пропущено ${day.missed}, осознанно пропущено ${day.skipped}`}
-                  aria-label={`${day.date}: выполнение ${day.completionRate}%`}
-                  className={cn(
-                    'aspect-square min-h-2 rounded-[4px] border border-white/[0.03]',
-                    heatClass(day.scheduled, day.completionRate, day.missed)
-                  )}
-                />
+                  content={`${day.date}: ${day.completionRate}% · выполнено ${day.completed}, пропущено ${day.missed}, осознанно пропущено ${day.skipped}`}
+                  side="top"
+                >
+                  <div
+                    aria-label={`${day.date}: выполнение ${day.completionRate}%`}
+                    tabIndex={0}
+                    className={cn(
+                      'aspect-square min-h-2 rounded-[4px] border border-white/[0.03]',
+                      heatClass(day.scheduled, day.completionRate, day.missed)
+                    )}
+                  />
+                </Tooltip>
               ))}
             </div>
           </section>

@@ -1,8 +1,27 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { HabitPreferredTimesEditor } from './HabitPreferredTimesEditor'
+
+beforeAll(() => {
+  Object.defineProperty(HTMLElement.prototype, 'hasPointerCapture', {
+    configurable: true,
+    value: () => false
+  })
+  Object.defineProperty(HTMLElement.prototype, 'setPointerCapture', {
+    configurable: true,
+    value: () => undefined
+  })
+  Object.defineProperty(HTMLElement.prototype, 'releasePointerCapture', {
+    configurable: true,
+    value: () => undefined
+  })
+  Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+    configurable: true,
+    value: () => undefined
+  })
+})
 
 describe('HabitPreferredTimesEditor', () => {
   it('shows one time for a check habit', () => {
@@ -15,11 +34,20 @@ describe('HabitPreferredTimesEditor', () => {
       />
     )
 
-    expect(screen.getByLabelText('Предпочтительное время привычки')).toHaveValue('09:00')
-    expect(screen.queryByLabelText('Предпочтительное время для единицы 2')).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('combobox', { name: 'Предпочтительное время привычки: часы' })
+    ).toHaveTextContent('09')
+    expect(
+      screen.getByRole('combobox', { name: 'Предпочтительное время привычки: минуты' })
+    ).toHaveTextContent('00')
+    expect(
+      screen.queryByRole('combobox', {
+        name: 'Предпочтительное время для единицы 2: часы'
+      })
+    ).not.toBeInTheDocument()
   })
 
-  it('shows a separate preferred time input for every count unit', async () => {
+  it('shows a separate preferred time control for every count unit', async () => {
     const user = userEvent.setup()
     const onChange = vi.fn()
     render(
@@ -31,13 +59,31 @@ describe('HabitPreferredTimesEditor', () => {
       />
     )
 
-    expect(screen.getByLabelText('Предпочтительное время для единицы 1')).toHaveValue('09:00')
-    expect(screen.getByLabelText('Предпочтительное время для единицы 2')).toHaveValue('15:00')
-    const third = screen.getByLabelText('Предпочтительное время для единицы 3')
-    expect(third).toHaveValue('')
+    expect(
+      screen.getByRole('combobox', { name: 'Предпочтительное время для единицы 1: часы' })
+    ).toHaveTextContent('09')
+    expect(
+      screen.getByRole('combobox', { name: 'Предпочтительное время для единицы 1: минуты' })
+    ).toHaveTextContent('00')
+    expect(
+      screen.getByRole('combobox', { name: 'Предпочтительное время для единицы 2: часы' })
+    ).toHaveTextContent('15')
+    expect(
+      screen.getByRole('combobox', { name: 'Предпочтительное время для единицы 2: минуты' })
+    ).toHaveTextContent('00')
 
-    await user.type(third, '21:00')
-    expect(onChange).toHaveBeenCalled()
+    const thirdHour = screen.getByRole('combobox', {
+      name: 'Предпочтительное время для единицы 3: часы'
+    })
+    const thirdMinute = screen.getByRole('combobox', {
+      name: 'Предпочтительное время для единицы 3: минуты'
+    })
+    expect(thirdHour).toHaveTextContent('—')
+    expect(thirdMinute).toHaveTextContent('—')
+
+    await user.click(thirdHour)
+    await user.click(await screen.findByRole('option', { name: '21' }))
+    expect(onChange).toHaveBeenCalledWith(3, '21:00')
   })
 
   it('paginates large count targets without rendering every unit at once', async () => {
@@ -51,12 +97,22 @@ describe('HabitPreferredTimesEditor', () => {
       />
     )
 
-    expect(screen.getByLabelText('Предпочтительное время для единицы 12')).toBeInTheDocument()
-    expect(screen.queryByLabelText('Предпочтительное время для единицы 13')).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('combobox', { name: 'Предпочтительное время для единицы 12: часы' })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('combobox', {
+        name: 'Предпочтительное время для единицы 13: часы'
+      })
+    ).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Следующие единицы времени' }))
 
-    expect(screen.getByLabelText('Предпочтительное время для единицы 13')).toBeInTheDocument()
-    expect(screen.getByLabelText('Предпочтительное время для единицы 14')).toBeInTheDocument()
+    expect(
+      screen.getByRole('combobox', { name: 'Предпочтительное время для единицы 13: часы' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('combobox', { name: 'Предпочтительное время для единицы 14: часы' })
+    ).toBeInTheDocument()
   })
 })

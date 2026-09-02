@@ -1,7 +1,9 @@
+import * as Collapsible from '@radix-ui/react-collapsible'
 import { useMemo } from 'react'
 
 import { formatMoneyMinor } from '../../../../../../shared/finance-money'
 import { cn } from '../../../../shared/lib/cn'
+import { Tooltip } from '../../../../shared/ui/tooltip'
 
 interface ChartDatum {
   label: string
@@ -249,37 +251,17 @@ export function FinanceLineChart({
         )}
       </svg>
 
-      <details className="text-xs text-[var(--app-muted)]">
-        <summary className="cursor-pointer select-none">Показать точные значения</summary>
-        <div className="mt-2 max-h-64 overflow-auto rounded-lg border border-[var(--app-border)]">
-          <table className="w-full text-left">
-            <thead className="sticky top-0 bg-[var(--app-surface-raised)] text-[var(--app-muted)]">
-              <tr>
-                <th className="px-3 py-2 font-medium">Период</th>
-                <th className="px-3 py-2 font-medium">{primaryLabel}</th>
-                {hasSecondary && <th className="px-3 py-2 font-medium">{secondaryLabel}</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {data.map((item) => (
-                <tr key={item.label} className="border-t border-[var(--app-border)]">
-                  <td className="px-3 py-2">{item.label}</td>
-                  <td className="px-3 py-2 tabular-nums">
-                    {formatMoneyMinor(item.value, currencyCode)}
-                  </td>
-                  {hasSecondary && (
-                    <td className="px-3 py-2 tabular-nums">
-                      {item.secondaryValue === undefined
-                        ? '—'
-                        : formatMoneyMinor(item.secondaryValue, currencyCode)}
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </details>
+      <Collapsible.Root className="text-xs text-[var(--app-muted)]">
+        <Collapsible.Trigger asChild>
+          <button
+            type="button"
+            className="rounded-lg px-2 py-1 text-left font-medium transition-colors outline-none hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35"
+          >
+            Показать точные значения
+          </button>
+        </Collapsible.Trigger>
+        <Collapsible.Content></Collapsible.Content>
+      </Collapsible.Root>
     </figure>
   )
 }
@@ -312,11 +294,16 @@ export function FinanceBarChart({
               )}
             </span>
             <div className="h-2.5 overflow-hidden rounded-full bg-[var(--app-overlay-subtle)] max-[620px]:order-3 max-[620px]:col-span-2">
-              <div
-                className="h-full rounded-full bg-[var(--app-accent-500)]"
-                style={{ width: `${Math.max(2, (Math.abs(item.value) / maximum) * 100)}%` }}
-                title={`${item.label}: ${formatMoneyMinor(item.value, currencyCode)}`}
-              />
+              <Tooltip
+                content={`${item.label}: ${formatMoneyMinor(item.value, currencyCode)}`}
+                side="top"
+              >
+                <div
+                  className="h-full rounded-full bg-[var(--app-accent-500)]"
+                  style={{ width: `${Math.max(2, (Math.abs(item.value) / maximum) * 100)}%` }}
+                  tabIndex={0}
+                />
+              </Tooltip>
             </div>
             <span className="font-medium text-[var(--app-text)] tabular-nums">
               {formatMoneyMinor(item.value, currencyCode)}

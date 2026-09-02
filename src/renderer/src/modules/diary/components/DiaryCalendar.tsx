@@ -2,6 +2,7 @@ import { LoaderCircle } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 import type { DiaryDaySummary, DiarySummary } from '../../../../../shared/contracts/diary'
+import { Tooltip } from '../../../shared/ui/tooltip'
 import { diaryClient } from '../api/diary-client'
 import { diaryMoodMeta, getDiaryErrorMessage, localDayKey, monthRange } from '../lib/diary-ui'
 
@@ -128,13 +129,14 @@ export function DiaryCalendar({
                     </span>
 
                     {page?.mood && (
-                      <span
-                        className={`flex size-8 items-center justify-center rounded-xl text-xl leading-none ${today ? 'bg-violet-500/10' : 'bg-[var(--app-overlay-faint)]'}`}
-                        title={diaryMoodMeta[page.mood].label}
-                        aria-label={diaryMoodMeta[page.mood].label}
-                      >
-                        {diaryMoodMeta[page.mood].emoji}
-                      </span>
+                      <Tooltip content={diaryMoodMeta[page.mood].label} side="top">
+                        <span
+                          className={`flex size-8 items-center justify-center rounded-xl text-xl leading-none ${today ? 'bg-violet-500/10' : 'bg-[var(--app-overlay-faint)]'}`}
+                          aria-label={diaryMoodMeta[page.mood].label}
+                        >
+                          {diaryMoodMeta[page.mood].emoji}
+                        </span>
+                      </Tooltip>
                     )}
                   </div>
 

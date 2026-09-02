@@ -8,6 +8,7 @@ import type {
   MusicType
 } from '../../../../../shared/contracts/music'
 import { createMusicItemInputSchema } from '../../../../../shared/validation/music'
+import { AppSelect } from '../../../shared/ui/AppSelect'
 import { MUSIC_TYPE_OPTIONS, musicTypeLabel } from '../music-types'
 
 interface MusicFormPageProps {
@@ -84,7 +85,9 @@ function draftFromItem(item: MusicItemRecord | null): MusicDraft {
 }
 
 function FieldLabel({ children }: { children: React.ReactNode }): React.JSX.Element {
-  return <span className="mb-1.5 block text-xs font-medium text-[var(--app-muted)]">{children}</span>
+  return (
+    <span className="mb-1.5 block text-xs font-medium text-[var(--app-muted)]">{children}</span>
+  )
 }
 
 const inputClassName =
@@ -123,7 +126,8 @@ export function MusicFormPage({ item, formId, onSave }: MusicFormPageProps): Rea
       description: draft.description,
       status: draft.status,
       favorite: draft.favorite,
-      rating: draft.status === 'listened' && draft.rating ? Number.parseInt(draft.rating, 10) : null,
+      rating:
+        draft.status === 'listened' && draft.rating ? Number.parseInt(draft.rating, 10) : null,
       comments: draft.comments
     }
 
@@ -143,7 +147,11 @@ export function MusicFormPage({ item, formId, onSave }: MusicFormPageProps): Rea
   const previewArtist = artists.length > 0 ? artists.join(', ') : 'Исполнитель не указан'
 
   return (
-    <form id={formId} className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_280px]" onSubmit={(event) => void submit(event)}>
+    <form
+      id={formId}
+      className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_280px]"
+      onSubmit={(event) => void submit(event)}
+    >
       <div className="space-y-5">
         <section className="rounded-[24px] border border-[var(--app-border)] bg-[var(--app-surface)] p-6 shadow-[var(--app-shadow-card)]">
           <div className="mb-5 flex items-center gap-3">
@@ -311,18 +319,19 @@ export function MusicFormPage({ item, formId, onSave }: MusicFormPageProps): Rea
           {draft.status === 'listened' && (
             <div className="mt-4 max-w-xs">
               <FieldLabel>Оценка</FieldLabel>
-              <select
-                value={draft.rating}
-                className={inputClassName}
-                onChange={(event) => patch({ rating: event.target.value })}
-              >
-                <option value="">Без оценки</option>
-                {[10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map((rating) => (
-                  <option key={rating} value={rating}>
-                    {rating} / 10
-                  </option>
-                ))}
-              </select>
+              <AppSelect
+                ariaLabel="Оценка музыки"
+                value={draft.rating || 'none'}
+                triggerClassName={inputClassName}
+                options={[
+                  { value: 'none', label: 'Без оценки' },
+                  ...[10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map((rating) => ({
+                    value: String(rating),
+                    label: `${rating} / 10`
+                  }))
+                ]}
+                onValueChange={(value) => patch({ rating: value === 'none' ? '' : value })}
+              />
             </div>
           )}
         </section>
@@ -332,7 +341,9 @@ export function MusicFormPage({ item, formId, onSave }: MusicFormPageProps): Rea
             <span className="flex size-9 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
               <Star className="size-4" />
             </span>
-            <h2 className="text-sm font-semibold text-[var(--app-text)]">Описание и личные комментарии</h2>
+            <h2 className="text-sm font-semibold text-[var(--app-text)]">
+              Описание и личные комментарии
+            </h2>
           </div>
           <label className="block">
             <FieldLabel>Описание</FieldLabel>
@@ -357,7 +368,10 @@ export function MusicFormPage({ item, formId, onSave }: MusicFormPageProps): Rea
         </section>
 
         {error && (
-          <div role="alert" className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          <div
+            role="alert"
+            className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+          >
             {error}
           </div>
         )}
@@ -384,8 +398,14 @@ export function MusicFormPage({ item, formId, onSave }: MusicFormPageProps): Rea
         </h3>
         <p className="mt-1 truncate text-sm text-[var(--app-muted)]">{previewArtist}</p>
         <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-[var(--app-muted)]">
-          <span className="rounded-lg border border-[var(--app-border)] px-2 py-1">{musicTypeLabel(draft.type)}</span>
-          {draft.year && <span className="rounded-lg border border-[var(--app-border)] px-2 py-1">{draft.year}</span>}
+          <span className="rounded-lg border border-[var(--app-border)] px-2 py-1">
+            {musicTypeLabel(draft.type)}
+          </span>
+          {draft.year && (
+            <span className="rounded-lg border border-[var(--app-border)] px-2 py-1">
+              {draft.year}
+            </span>
+          )}
         </div>
         <div className="mt-4 inline-flex items-center gap-2 rounded-xl bg-violet-500/10 px-3 py-2 text-xs font-medium text-violet-200">
           <Disc3 className="size-4" />

@@ -44,6 +44,7 @@ import type {
 } from '../../../../../shared/contracts/study'
 import { cn } from '../../../shared/lib/cn'
 import { AutoGrowTextarea } from '../../../shared/ui/AutoGrowTextarea'
+import { Tooltip } from '../../../shared/ui/tooltip'
 import {
   cloneStudyBlock,
   createStudyBlock,
@@ -667,17 +668,13 @@ function StudyBlockDragItem({
     } satisfies StudyBlockDropData
   })
 
-  const {
-    containerRef,
-    contentRef,
-    shouldRenderContent,
-    placeholderHeight
-  } = useStudyEditBlockVirtualization({
-    block,
-    index,
-    enabled: virtualize,
-    pinned: cardProps.isActive || isDragging
-  })
+  const { containerRef, contentRef, shouldRenderContent, placeholderHeight } =
+    useStudyEditBlockVirtualization({
+      block,
+      index,
+      enabled: virtualize,
+      pinned: cardProps.isActive || isDragging
+    })
 
   const setViewportRef = useCallback(
     (node: HTMLDivElement | null) => {
@@ -829,25 +826,26 @@ function StudyBlockCard({
         onMouseDown={onActivate}
       >
         <div className={cn('flex items-center gap-2', open && 'mb-2')}>
-          <button
-            type="button"
-            aria-label={`Перетащить блок «${blockLabel}»`}
-            title="Перетащить блок"
-            disabled={dragDisabled}
-            className={cn(
-              'flex size-7 shrink-0 touch-none items-center justify-center rounded-md',
-              'text-[var(--app-muted)] outline-none',
-              'cursor-grab transition-colors',
-              'hover:bg-white/[0.06] hover:text-violet-300',
-              'active:cursor-grabbing',
-              'focus-visible:ring-2 focus-visible:ring-violet-500/35',
-              'disabled:cursor-default disabled:opacity-25'
-            )}
-            {...dragHandleAttributes}
-            {...dragHandleListeners}
-          >
-            <GripVertical aria-hidden="true" className="size-4" />
-          </button>
+          <Tooltip content="Перетащить блок" side="top">
+            <button
+              type="button"
+              aria-label={`Перетащить блок «${blockLabel}»`}
+              disabled={dragDisabled}
+              className={cn(
+                'flex size-7 shrink-0 touch-none items-center justify-center rounded-md',
+                'text-[var(--app-muted)] outline-none',
+                'cursor-grab transition-colors',
+                'hover:bg-white/[0.06] hover:text-violet-300',
+                'active:cursor-grabbing',
+                'focus-visible:ring-2 focus-visible:ring-violet-500/35',
+                'disabled:cursor-default disabled:opacity-25'
+              )}
+              {...dragHandleAttributes}
+              {...dragHandleListeners}
+            >
+              <GripVertical aria-hidden="true" className="size-4" />
+            </button>
+          </Tooltip>
           <Collapsible.Trigger asChild>
             <button
               type="button"
@@ -1018,13 +1016,10 @@ function EditHeadingBlock({ block, onChange }: EditableBlockProps): React.JSX.El
         <div
           aria-hidden="true"
           data-study-heading-edit-highlight
-          className="pointer-events-none absolute inset-0 overflow-hidden px-2 py-2 font-semibold whitespace-pre-wrap break-words text-transparent"
+          className="pointer-events-none absolute inset-0 overflow-hidden px-2 py-2 font-semibold break-words whitespace-pre-wrap text-transparent"
           style={{ ...typography, textAlign: alignment }}
         >
-          <span
-            className="box-decoration-clone rounded-lg px-0.5"
-            style={{ backgroundColor }}
-          >
+          <span className="rounded-lg box-decoration-clone px-0.5" style={{ backgroundColor }}>
             {block.text}
           </span>
         </div>
@@ -1443,7 +1438,7 @@ function StudyReadHeading({ heading }: { heading: StudyHeadingBlock }): React.JS
   const content = (
     <span
       data-study-heading-background={backgroundScope}
-      className={cn(backgroundScope === 'text' && 'box-decoration-clone rounded-lg px-0.5')}
+      className={cn(backgroundScope === 'text' && 'rounded-lg box-decoration-clone px-0.5')}
       style={{ backgroundColor: backgroundScope === 'text' ? backgroundColor : 'transparent' }}
     >
       {heading.text || 'Без заголовка'}

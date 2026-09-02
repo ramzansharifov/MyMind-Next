@@ -1,5 +1,11 @@
 import * as TooltipPrimitive from '@radix-ui/react-tooltip'
-import { type PropsWithChildren, type ReactElement, type ReactNode } from 'react'
+import {
+  createContext,
+  type PropsWithChildren,
+  type ReactElement,
+  type ReactNode,
+  useContext
+} from 'react'
 
 import { cn } from '../lib/cn'
 
@@ -20,30 +26,29 @@ interface TooltipProps {
   contentClassName?: string
 }
 
+const TooltipProviderContext = createContext(false)
+
 export function TooltipProvider({
   children,
   delayDuration = 250
 }: TooltipProviderProps): React.JSX.Element {
   return (
-    <TooltipPrimitive.Provider delayDuration={delayDuration} skipDelayDuration={100}>
-      {children}
-    </TooltipPrimitive.Provider>
+    <TooltipProviderContext.Provider value>
+      <TooltipPrimitive.Provider delayDuration={delayDuration} skipDelayDuration={100}>
+        {children}
+      </TooltipPrimitive.Provider>
+    </TooltipProviderContext.Provider>
   )
 }
 
-export function Tooltip({
+function TooltipRoot({
   children,
   content,
-  side = 'right',
-  align = 'center',
-  disabled = false,
+  side,
+  align,
   delayDuration,
   contentClassName
-}: TooltipProps): React.JSX.Element {
-  if (disabled) {
-    return children
-  }
-
+}: Omit<TooltipProps, 'disabled'>): React.JSX.Element {
   return (
     <TooltipPrimitive.Root delayDuration={delayDuration}>
       <TooltipPrimitive.Trigger asChild>{children}</TooltipPrimitive.Trigger>
@@ -71,4 +76,38 @@ export function Tooltip({
       </TooltipPrimitive.Portal>
     </TooltipPrimitive.Root>
   )
+}
+
+export function Tooltip({
+  children,
+  content,
+  side = 'right',
+  align = 'center',
+  disabled = false,
+  delayDuration,
+  contentClassName
+}: TooltipProps): React.JSX.Element {
+  const hasProvider = useContext(TooltipProviderContext)
+
+  if (disabled) {
+    return children
+  }
+
+  const tooltip = (
+    <TooltipRoot
+      content={content}
+      side={side}
+      align={align}
+      delayDuration={delayDuration}
+      contentClassName={contentClassName}
+    >
+      {children}
+    </TooltipRoot>
+  )
+
+  if (hasProvider) {
+    return tooltip
+  }
+
+  return <TooltipProvider>{tooltip}</TooltipProvider>
 }

@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { FinanceReport } from '../../../../../shared/contracts/finance'
 
@@ -32,10 +32,38 @@ const baseReport: FinanceReport = {
   limits: []
 }
 
+beforeAll(() => {
+  Object.defineProperty(HTMLElement.prototype, 'hasPointerCapture', {
+    configurable: true,
+    value: () => false
+  })
+  Object.defineProperty(HTMLElement.prototype, 'setPointerCapture', {
+    configurable: true,
+    value: () => undefined
+  })
+  Object.defineProperty(HTMLElement.prototype, 'releasePointerCapture', {
+    configurable: true,
+    value: () => undefined
+  })
+  Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+    configurable: true,
+    value: () => undefined
+  })
+})
+
 beforeEach(() => {
   vi.clearAllMocks()
   mocks.getReport.mockResolvedValue(baseReport)
 })
+
+async function chooseSelectOption(
+  user: ReturnType<typeof userEvent.setup>,
+  ariaLabel: string,
+  optionLabel: string
+): Promise<void> {
+  await user.click(screen.getByRole('combobox', { name: ariaLabel }))
+  await user.click(await screen.findByRole('option', { name: optionLabel }))
+}
 
 describe('FinanceReports', () => {
   it('loads all operations without accidentally filtering out template-based transactions', async () => {
@@ -53,18 +81,17 @@ describe('FinanceReports', () => {
     render(<FinanceReports accounts={[]} tags={[]} baseCurrencyCode="TJS" limitsVersion={0} />)
     await screen.findByText('Доходы и расходы по времени')
 
-    const source = screen.getByRole('combobox', { name: 'Источник операции' })
-    await user.selectOptions(source, 'template')
+    await chooseSelectOption(user, 'Источник операции', 'Из шаблонов')
     await waitFor(() =>
       expect(mocks.getReport.mock.calls.at(-1)?.[0]).toMatchObject({ templateOnly: true })
     )
 
-    await user.selectOptions(source, 'manual')
+    await chooseSelectOption(user, 'Источник операции', 'Созданные вручную')
     await waitFor(() =>
       expect(mocks.getReport.mock.calls.at(-1)?.[0]).toMatchObject({ templateOnly: false })
     )
 
-    await user.selectOptions(source, 'all')
+    await chooseSelectOption(user, 'Источник операции', 'Все операции')
     await waitFor(() =>
       expect(mocks.getReport.mock.calls.at(-1)?.[0]).not.toHaveProperty('templateOnly')
     )
@@ -97,8 +124,8 @@ describe('FinanceReports', () => {
     )
     await screen.findByText('Доходы и расходы по времени')
 
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Тег' }), 'food')
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Тип операции' }), 'transfer')
+    await chooseSelectOption(user, 'Тег', 'Еда')
+    await chooseSelectOption(user, 'Тип операции', 'Только переводы')
 
     await waitFor(() => {
       const filters = mocks.getReport.mock.calls.at(-1)?.[0]

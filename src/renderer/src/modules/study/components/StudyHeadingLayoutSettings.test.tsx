@@ -20,28 +20,26 @@ describe('StudyHeadingLayoutSettings', () => {
 
     render(<StudyHeadingLayoutSettings block={heading} onChange={onChange} />)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Центр' }))
+    fireEvent.click(screen.getByRole('radio', { name: 'Центр' }))
     expect(onChange).toHaveBeenCalledWith({ ...heading, alignment: 'center' })
 
-    fireEvent.click(screen.getByRole('button', { name: 'Справа' }))
+    fireEvent.click(screen.getByRole('radio', { name: 'Справа' }))
     expect(onChange).toHaveBeenCalledWith({ ...heading, alignment: 'right' })
   })
 
   it('switches between text-only and full-container background', () => {
     const onChange = vi.fn()
-    const { rerender } = render(
-      <StudyHeadingLayoutSettings block={heading} onChange={onChange} />
-    )
+    const { rerender } = render(<StudyHeadingLayoutSettings block={heading} onChange={onChange} />)
 
     expect(screen.getByText('Область фона')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Весь блок' }))
+    fireEvent.click(screen.getByRole('radio', { name: 'Весь блок' }))
     expect(onChange).toHaveBeenCalledWith({ ...heading, backgroundScope: 'container' })
 
     const containerHeading = { ...heading, backgroundScope: 'container' as const }
     rerender(<StudyHeadingLayoutSettings block={containerHeading} onChange={onChange} />)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Текст' }))
+    fireEvent.click(screen.getByRole('radio', { name: 'Текст' }))
     expect(onChange).toHaveBeenCalledWith({ ...containerHeading, backgroundScope: 'text' })
   })
 })

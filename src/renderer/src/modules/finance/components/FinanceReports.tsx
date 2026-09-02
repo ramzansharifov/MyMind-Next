@@ -14,6 +14,10 @@ import {
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
+import { AppDateField } from '../../../shared/ui/AppDateField'
+import { AppSelect } from '../../../shared/ui/AppSelect'
+import { Tooltip } from '../../../shared/ui/tooltip'
+
 import type {
   FinanceAccountSummary,
   FinanceReportFilters,
@@ -284,25 +288,23 @@ export function FinanceReports({
         {period === 'custom' && (
           <div className="mt-3 grid max-w-xl grid-cols-2 gap-3 max-[520px]:grid-cols-1">
             <FilterField label="С даты">
-              <input
-                aria-label="Начальная дата"
-                type="date"
+              <AppDateField
+                ariaLabel="Начальная дата"
                 value={from}
-                onChange={(event) => {
-                  if (event.target.value) setFrom(event.target.value)
+                inputClassName={financeInputClassName}
+                onChange={(value) => {
+                  if (value) setFrom(value)
                 }}
-                className={financeInputClassName}
               />
             </FilterField>
             <FilterField label="По дату">
-              <input
-                aria-label="Конечная дата"
-                type="date"
+              <AppDateField
+                ariaLabel="Конечная дата"
                 value={to}
-                onChange={(event) => {
-                  if (event.target.value) setTo(event.target.value)
+                inputClassName={financeInputClassName}
+                onChange={(value) => {
+                  if (value) setTo(value)
                 }}
-                className={financeInputClassName}
               />
             </FilterField>
           </div>
@@ -310,63 +312,62 @@ export function FinanceReports({
 
         <div className="mt-4 grid grid-cols-4 gap-3 max-[1000px]:grid-cols-2 max-[560px]:grid-cols-1">
           <FilterField label="Операции">
-            <select
-              aria-label="Тип операции"
+            <AppSelect
+              ariaLabel="Тип операции"
               value={type}
-              onChange={(event) => setType(event.target.value as ReportType)}
-              className={financeInputClassName}
-            >
-              <option value="all">Все операции</option>
-              <option value="income">Только доходы</option>
-              <option value="expense">Только расходы</option>
-              <option value="transfer">Только переводы</option>
-            </select>
+              triggerClassName={financeInputClassName}
+              options={[
+                { value: 'all', label: 'Все операции' },
+                { value: 'income', label: 'Только доходы' },
+                { value: 'expense', label: 'Только расходы' },
+                { value: 'transfer', label: 'Только переводы' }
+              ]}
+              onValueChange={(value) => setType(value as ReportType)}
+            />
           </FilterField>
 
           <FilterField label="Счёт">
-            <select
-              aria-label="Счёт"
+            <AppSelect
+              ariaLabel="Счёт"
               value={accountId}
-              onChange={(event) => setAccountId(event.target.value)}
-              className={financeInputClassName}
-            >
-              <option value="all">Все счета</option>
-              {accounts.map((account) => (
-                <option key={account.id} value={account.id}>
-                  {account.name} · {account.currencyCode}
-                </option>
-              ))}
-            </select>
+              triggerClassName={financeInputClassName}
+              options={[
+                { value: 'all', label: 'Все счета' },
+                ...accounts.map((account) => ({
+                  value: account.id,
+                  label: `${account.name} · ${account.currencyCode}`
+                }))
+              ]}
+              onValueChange={setAccountId}
+            />
           </FilterField>
 
           <FilterField label="Тег">
-            <select
-              aria-label="Тег"
+            <AppSelect
+              ariaLabel="Тег"
               value={tagId}
               disabled={type === 'transfer'}
-              onChange={(event) => setTagId(event.target.value)}
-              className={financeInputClassName}
-            >
-              <option value="all">Все теги</option>
-              {availableTags.map((tag) => (
-                <option key={tag.id} value={tag.id}>
-                  {tag.name}
-                </option>
-              ))}
-            </select>
+              triggerClassName={financeInputClassName}
+              options={[
+                { value: 'all', label: 'Все теги' },
+                ...availableTags.map((tag) => ({ value: tag.id, label: tag.name }))
+              ]}
+              onValueChange={setTagId}
+            />
           </FilterField>
 
           <FilterField label="Источник">
-            <select
-              aria-label="Источник операции"
+            <AppSelect
+              ariaLabel="Источник операции"
               value={templateMode}
-              onChange={(event) => setTemplateMode(event.target.value as TemplateMode)}
-              className={financeInputClassName}
-            >
-              <option value="all">Все операции</option>
-              <option value="template">Из шаблонов</option>
-              <option value="manual">Созданные вручную</option>
-            </select>
+              triggerClassName={financeInputClassName}
+              options={[
+                { value: 'all', label: 'Все операции' },
+                { value: 'template', label: 'Из шаблонов' },
+                { value: 'manual', label: 'Созданные вручную' }
+              ]}
+              onValueChange={(value) => setTemplateMode(value as TemplateMode)}
+            />
           </FilterField>
         </div>
 
@@ -839,9 +840,11 @@ function InsightCard({
         <span className="text-violet-300">{icon}</span>
         {label}
       </div>
-      <div className="mt-2 truncate text-sm font-semibold text-[var(--app-text)]" title={value}>
-        {value}
-      </div>
+      <Tooltip content={value} side="top">
+        <div className="mt-2 truncate text-sm font-semibold text-[var(--app-text)]" tabIndex={0}>
+          {value}
+        </div>
+      </Tooltip>
       {hint && <div className="mt-1 text-[10px] text-[var(--app-muted)]">{hint}</div>}
     </FinanceSurface>
   )

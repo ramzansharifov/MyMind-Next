@@ -1,6 +1,7 @@
 import { BarChart3, CalendarDays, Droplets, Flame, Leaf, Utensils } from 'lucide-react'
 
 import type { NutritionMealType, NutritionReport } from '../../../../../shared/contracts/nutrition'
+import { AppDateField } from '../../../shared/ui/AppDateField'
 import { AppSelect } from '../../../shared/ui/AppSelect'
 import { NUTRITION_MEAL_OPTIONS, nutritionMealLabel } from '../nutrition-options'
 import { formatNutritionNumber } from '../nutrition-utils'
@@ -50,20 +51,8 @@ export function NutritionProgressView({
               onValueChange={(value) => onPeriodChange(value as NutritionProgressPeriod)}
             />
           </div>
-          <input
-            type="date"
-            value={dateFrom}
-            aria-label="Начало периода"
-            className="h-10 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none"
-            onChange={(event) => onDateFromChange(event.target.value)}
-          />
-          <input
-            type="date"
-            value={dateTo}
-            aria-label="Конец периода"
-            className="h-10 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none"
-            onChange={(event) => onDateToChange(event.target.value)}
-          />
+          <AppDateField ariaLabel="Начало периода" value={dateFrom} onChange={onDateFromChange} />
+          <AppDateField ariaLabel="Конец периода" value={dateTo} onChange={onDateToChange} />
           <div className="min-w-[190px]">
             <AppSelect
               ariaLabel="Приём пищи в прогрессе"
