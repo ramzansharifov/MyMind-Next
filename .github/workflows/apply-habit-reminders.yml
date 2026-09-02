@@ -113,7 +113,7 @@ jobs:
           def issues(path):
               data = json.load(open(path, encoding='utf-8'))
               return Counter(
-                  (message.get('ruleId'), message.get('message'))
+                  message.get('ruleId')
                   for result in data
                   for message in result.get('messages', [])
                   if message.get('severity', 0) >= 2
