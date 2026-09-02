@@ -60,13 +60,12 @@ jobs:
               if (jsx(expression.whenTrue) && jsx(expression.whenFalse)) return false
               return expressionRendersText(expression.whenTrue) || expressionRendersText(expression.whenFalse)
             }
-            if (ts.isBinaryExpression(expression)) {
-              return expressionRendersText(expression.left) || expressionRendersText(expression.right)
-            }
+            if (ts.isBinaryExpression(expression)) return expressionRendersText(expression.left) || expressionRendersText(expression.right)
             return false
           }
 
           function hasVisibleText(node) {
+            if (ts.isJsxSelfClosingElement(node)) return false
             if (ts.isJsxText(node)) return /[A-Za-zА-Яа-яЁё0-9]{2,}/.test(node.getText())
             if (ts.isJsxExpression(node)) return expressionRendersText(node.expression)
             if (ts.isJsxElement(node)) {
@@ -96,8 +95,12 @@ jobs:
             const replacements = []
 
             function visit(node) {
-              if (ts.isJsxElement(node) && tagText(node.openingElement.tagName, sf) === 'button') {
-                const aria = attrByName(node.openingElement.attributes, 'aria-label')
+              let opening = null
+              if (ts.isJsxElement(node)) opening = node.openingElement
+              else if (ts.isJsxSelfClosingElement(node)) opening = node
+
+              if (opening && tagText(opening.tagName, sf) === 'button') {
+                const aria = attrByName(opening.attributes, 'aria-label')
                 if (aria?.initializer && !hasVisibleText(node) && !hasTooltipAncestor(node, sf)) {
                   replacements.push({
                     start: node.getStart(sf),
