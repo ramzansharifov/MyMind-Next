@@ -289,6 +289,16 @@ function TrackGrid({
                     <Pencil aria-hidden="true" className="size-3.5" />
                   </button>
                 </Tooltip>
+                <Tooltip content={`Удалить трек «${item.title}»`} side="top">
+                  <button
+                    type="button"
+                    aria-label={`Удалить трек «${item.title}»`}
+                    className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
+                    onClick={() => onDeleteTrack(item)}
+                  >
+                    <Trash2 className="size-3.5" />
+                  </button>
+                </Tooltip>
                 <Tooltip
                   content={item.favorite ? 'Убрать из избранного' : 'Добавить в избранное'}
                   side="top"
@@ -306,16 +316,6 @@ function TrackGrid({
                     onClick={() => onToggleFavorite(item)}
                   >
                     <Heart className={`size-3.5 ${item.favorite ? 'fill-current' : ''}`} />
-                  </button>
-                </Tooltip>
-                <Tooltip content={`Удалить трек «${item.title}»`} side="top">
-                  <button
-                    type="button"
-                    aria-label={`Удалить трек «${item.title}»`}
-                    className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
-                    onClick={() => onDeleteTrack(item)}
-                  >
-                    <Trash2 className="size-3.5" />
                   </button>
                 </Tooltip>
               </div>
