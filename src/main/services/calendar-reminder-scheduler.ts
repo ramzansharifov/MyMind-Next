@@ -51,13 +51,32 @@ export class CalendarReminderScheduler {
           window.webContents.send(CALENDAR_IPC_CHANNELS.remindersChanged)
         }
 
-        if (!Notification.isSupported()) continue
+        if (!Notification.isSupported()) {
+          console.warn('Calendar desktop notifications are not supported', {
+            title: reminder.title,
+            triggerAt: reminder.triggerAt
+          })
+          continue
+        }
 
         const notification = new Notification({
           title: reminder.title,
           body: `Событие: ${formatEventDate(reminder.occurrenceDate, reminder.eventTime)}`,
           silent: false,
           timeoutType: 'default'
+        })
+        notification.on('show', () => {
+          console.info('Calendar desktop notification shown', {
+            title: reminder.title,
+            triggerAt: reminder.triggerAt
+          })
+        })
+        notification.on('failed', (_event, error) => {
+          console.error('Calendar desktop notification failed', {
+            title: reminder.title,
+            triggerAt: reminder.triggerAt,
+            error
+          })
         })
         notification.on('click', () => {
           const currentWindow = this.getWindow()
