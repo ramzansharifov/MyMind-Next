@@ -76,7 +76,14 @@ jobs:
             if (ts.isJsxExpression(node)) return expressionRendersText(node.expression)
             if (ts.isJsxSelfClosingElement(node)) {
               const name = tagText(node.tagName, sf)
-              return name === 'Select.Value'
+              if (name === 'Select.Value') return true
+              if (
+                /^[a-z]/.test(name) &&
+                node.attributes.properties.some((property) => ts.isJsxSpreadAttribute(property))
+              ) {
+                return true
+              }
+              return false
             }
             if (ts.isJsxElement(node)) {
               if (attrByName(node.openingElement.attributes, 'aria-hidden')) return false
