@@ -1,4 +1,4 @@
-import type { HabitRecord } from '../../../../shared/contracts/habits'
+import type { HabitRecord, HabitWeekday } from '../../../../shared/contracts/habits'
 
 const DAY_MS = 86_400_000
 
@@ -32,9 +32,19 @@ export function daysBetween(from: string, to: string): number {
   return Math.floor((dateToUtc(to) - dateToUtc(from)) / DAY_MS)
 }
 
+function weekdayForDate(value: string): HabitWeekday {
+  const weekday = new Date(dateToUtc(value)).getUTCDay()
+  return (weekday === 0 ? 7 : weekday) as HabitWeekday
+}
+
 export function isHabitScheduledOn(habit: HabitRecord, date: string): boolean {
   const anchor = habitCreatedDateKey(habit)
   if (date < anchor) return false
+
+  if (habit.weekdays.length > 0) {
+    return habit.weekdays.includes(weekdayForDate(date))
+  }
+
   const delta = daysBetween(anchor, date)
   return delta >= 0 && delta % habit.repeatEveryDays === 0
 }
@@ -42,6 +52,14 @@ export function isHabitScheduledOn(habit: HabitRecord, date: string): boolean {
 export function nextHabitDate(habit: HabitRecord, from: string): string {
   const anchor = habitCreatedDateKey(habit)
   const effectiveFrom = from < anchor ? anchor : from
+
+  if (habit.weekdays.length > 0) {
+    for (let offset = 0; offset < 7; offset += 1) {
+      const candidate = addDays(effectiveFrom, offset)
+      if (habit.weekdays.includes(weekdayForDate(candidate))) return candidate
+    }
+  }
+
   const delta = daysBetween(anchor, effectiveFrom)
   const remainder = delta % habit.repeatEveryDays
   return remainder === 0 ? effectiveFrom : addDays(effectiveFrom, habit.repeatEveryDays - remainder)

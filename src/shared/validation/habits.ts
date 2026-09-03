@@ -37,6 +37,16 @@ const habitTimeSchema = z
   .string()
   .regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Время должно быть в формате ЧЧ:ММ')
 
+const habitWeekdaySchema = z.union([
+  z.literal(1),
+  z.literal(2),
+  z.literal(3),
+  z.literal(4),
+  z.literal(5),
+  z.literal(6),
+  z.literal(7)
+])
+
 const habitPreferredTimeSchema = z
   .object({
     unit: z.number().int().min(1).max(MAX_TRACK_VALUE),
@@ -68,6 +78,7 @@ const habitBaseInputSchema = z
     targetValue: z.number().int().min(1).max(MAX_TRACK_VALUE),
     unit: z.string().trim().max(MAX_UNIT_LENGTH),
     repeatEveryDays: z.number().int().min(1).max(MAX_REPEAT_DAYS),
+    weekdays: z.array(habitWeekdaySchema).max(7).optional(),
     preferredTimes: z.array(habitPreferredTimeSchema).max(MAX_PREFERRED_TIMES),
     remindersEnabled: z.boolean().optional()
   })
@@ -90,6 +101,15 @@ function validateHabitInput(
       code: 'custom',
       path: ['unit'],
       message: 'Для привычки с отметкой единица измерения не используется'
+    })
+  }
+
+  const weekdays = input.weekdays ?? []
+  if (new Set(weekdays).size !== weekdays.length) {
+    context.addIssue({
+      code: 'custom',
+      path: ['weekdays'],
+      message: 'Дни недели не должны повторяться'
     })
   }
 

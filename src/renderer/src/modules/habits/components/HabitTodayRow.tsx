@@ -22,7 +22,7 @@ import type {
 } from '../../../../../shared/contracts/habits'
 import { cn } from '../../../shared/lib/cn'
 import { Tooltip } from '../../../shared/ui/tooltip'
-import { HabitGroupIconGlyph, habitGroupColorClasses, habitRepeatLabel } from '../habit-options'
+import { HabitGroupIconGlyph, habitGroupColorClasses, habitScheduleLabel } from '../habit-options'
 
 interface HabitTodayRowProps {
   habit: HabitRecord
@@ -212,9 +212,7 @@ export function HabitTodayRow({
                     <div className="text-[10px] font-medium tracking-[0.12em] text-[var(--app-muted)] uppercase">
                       Повторение
                     </div>
-                    <div className="mt-0.5 text-sm font-medium">
-                      {habitRepeatLabel(habit.repeatEveryDays)}
-                    </div>
+                    <div className="mt-0.5 text-sm font-medium">{habitScheduleLabel(habit)}</div>
                   </div>
                 </div>
 

@@ -7,7 +7,7 @@ import { AppSelect } from '../../../shared/ui/AppSelect'
 import { AppDateField } from '../../../shared/ui/AppDateField'
 import { Tooltip } from '../../../shared/ui/tooltip'
 import { habitsClient } from '../api/habits-client'
-import { habitRepeatLabel } from '../habit-options'
+import { habitScheduleLabel } from '../habit-options'
 import { addDays, formatHabitDate, localDateKey } from '../habit-schedule'
 
 interface HabitReportsProps {
@@ -267,7 +267,7 @@ export function HabitReports({
                               </span>
                             )}
                             <span className="rounded-lg border border-violet-400/20 bg-violet-500/10 px-2 py-0.5 text-[11px] text-violet-200">
-                              {habitRepeatLabel(habit.repeatEveryDays)}
+                              {habitScheduleLabel(habit)}
                             </span>
                           </div>
                           <div className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--app-control)]">

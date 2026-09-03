@@ -40,7 +40,7 @@ import { HabitTodayRow } from './components/HabitTodayRow'
 import { HabitReminderInbox } from './HabitReminderInbox'
 import { useHabitReminderInbox } from './useHabitReminderInbox'
 import { HabitReports } from './components/HabitReports'
-import { HabitGroupIconGlyph, habitGroupColorClasses, habitRepeatLabel } from './habit-options'
+import { HabitGroupIconGlyph, habitGroupColorClasses, habitScheduleLabel } from './habit-options'
 import {
   addDays,
   formatHabitDate,
@@ -641,8 +641,8 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
                   </h2>
                   <p className="mt-2 max-w-md text-sm leading-6 text-[var(--app-muted)]">
                     {habits.length === 0
-                      ? 'Создайте первую привычку и задайте ей период повторения — от ежедневной до любого собственного интервала.'
-                      : 'Выберите другую дату, группу или измените период повторения привычки.'}
+                      ? 'Создайте первую привычку и задайте расписание — по интервалу или по выбранным дням недели.'
+                      : 'Выберите другую дату, группу или измените расписание привычки.'}
                   </p>
                   {habits.length === 0 && (
                     <button
@@ -727,7 +727,7 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
                           <div className="flex flex-wrap items-center gap-2">
                             <h2 className="font-semibold text-[var(--app-text)]">{habit.title}</h2>
                             <span className="rounded-lg border border-violet-400/20 bg-violet-500/10 px-2 py-0.5 text-[11px] text-violet-200">
-                              {habitRepeatLabel(habit.repeatEveryDays)}
+                              {habitScheduleLabel(habit)}
                             </span>
                           </div>
                           <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] text-[var(--app-muted)]">
