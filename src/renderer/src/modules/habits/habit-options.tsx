@@ -21,9 +21,7 @@ import {
 import type {
   HabitGroupColor,
   HabitGroupIcon,
-  HabitRecord,
-  HabitTrackingType,
-  HabitWeekday
+  HabitTrackingType
 } from '../../../../shared/contracts/habits'
 
 export const HABIT_GROUP_ICON_OPTIONS: Array<{ value: HabitGroupIcon; label: string }> = [
@@ -59,20 +57,6 @@ export const HABIT_GROUP_COLOR_OPTIONS: Array<{ value: HabitGroupColor; label: s
 export const HABIT_TRACKING_OPTIONS: Array<{ value: HabitTrackingType; label: string }> = [
   { value: 'check', label: 'Простая отметка' },
   { value: 'count', label: 'Количество / прогресс' }
-]
-
-export const HABIT_WEEKDAY_OPTIONS: Array<{
-  value: HabitWeekday
-  short: string
-  label: string
-}> = [
-  { value: 1, short: 'Пн', label: 'Понедельник' },
-  { value: 2, short: 'Вт', label: 'Вторник' },
-  { value: 3, short: 'Ср', label: 'Среда' },
-  { value: 4, short: 'Чт', label: 'Четверг' },
-  { value: 5, short: 'Пт', label: 'Пятница' },
-  { value: 6, short: 'Сб', label: 'Суббота' },
-  { value: 7, short: 'Вс', label: 'Воскресенье' }
 ]
 
 const iconByName: Record<HabitGroupIcon, LucideIcon> = {
@@ -162,26 +146,4 @@ export function HabitGroupIconGlyph({
 export function habitRepeatLabel(days: number): string {
   if (days === 1) return 'Каждый день'
   return `Каждые ${days} дн.`
-}
-
-const singleWeekdayLabels: Record<HabitWeekday, string> = {
-  1: 'Каждый понедельник',
-  2: 'Каждый вторник',
-  3: 'Каждую среду',
-  4: 'Каждый четверг',
-  5: 'Каждую пятницу',
-  6: 'Каждую субботу',
-  7: 'Каждое воскресенье'
-}
-
-export function habitScheduleLabel(
-  habit: Pick<HabitRecord, 'repeatEveryDays' | 'weekdays'>
-): string {
-  const weekdays = [...habit.weekdays].sort((left, right) => left - right)
-  if (weekdays.length === 0) return habitRepeatLabel(habit.repeatEveryDays)
-  if (weekdays.length === 7) return 'Каждый день'
-  if (weekdays.length === 1) return singleWeekdayLabels[weekdays[0]]
-
-  const shortByWeekday = new Map(HABIT_WEEKDAY_OPTIONS.map((item) => [item.value, item.short]))
-  return `По дням: ${weekdays.map((weekday) => shortByWeekday.get(weekday)).join(', ')}`
 }
