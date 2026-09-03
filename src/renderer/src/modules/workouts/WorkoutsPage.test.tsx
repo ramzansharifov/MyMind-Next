@@ -273,7 +273,13 @@ describe('WorkoutsPage', () => {
 
     await user.click(screen.getByRole('button', { name: /Упражнения/ }))
     expect(moduleHeader).toContainElement(screen.getByPlaceholderText('Найти упражнение…'))
-    expect(moduleHeader).toContainElement(screen.getByRole('combobox', { name: 'Группа мышц' }))
+    const exerciseCategoryGroup = screen.getByRole('group', { name: 'Раздел упражнений' })
+    expect(moduleHeader).toContainElement(exerciseCategoryGroup)
+    expect(exerciseCategoryGroup).toHaveTextContent('Все')
+    expect(exerciseCategoryGroup).toHaveTextContent('Руки')
+    expect(exerciseCategoryGroup).toHaveTextContent('Спина')
+    expect(exerciseCategoryGroup).toHaveTextContent('Ноги')
+    expect(exerciseCategoryGroup).toHaveTextContent('Корпус')
 
     await user.click(screen.getByRole('button', { name: /Программы/ }))
     expect(moduleHeader).toContainElement(screen.getByPlaceholderText('Найти программу…'))
@@ -352,8 +358,57 @@ describe('WorkoutsPage', () => {
 
     await user.click(await screen.findByRole('button', { name: /Упражнения/ }))
 
+    expect(screen.getByRole('heading', { name: 'Руки' })).toBeInTheDocument()
     expect(screen.getByText('Сгибания на бицепс с гантелями')).toBeInTheDocument()
     expect(screen.getByText('Бицепс')).toBeInTheDocument()
+  })
+
+  it('separates the exercise library into arms, back, legs and core', async () => {
+    const user = userEvent.setup()
+    mocks.listOverview.mockResolvedValueOnce({
+      exercises: [
+        curl,
+        {
+          ...curl,
+          id: 'exercise-pull-up',
+          title: 'Подтягивания',
+          muscleGroup: 'lats',
+          muscleGroups: ['lats', 'biceps'],
+          usesExternalWeight: false
+        },
+        {
+          ...curl,
+          id: 'exercise-squat',
+          title: 'Приседания со штангой',
+          muscleGroup: 'quadriceps',
+          muscleGroups: ['quadriceps', 'glutes', 'hamstrings']
+        },
+        {
+          ...curl,
+          id: 'exercise-bench',
+          title: 'Жим штанги лёжа',
+          muscleGroup: 'chest',
+          muscleGroups: ['chest', 'triceps', 'shoulders']
+        }
+      ],
+      programs: [],
+      sessions: [],
+      progressEntries: []
+    })
+    render(<WorkoutsPage />)
+
+    await user.click(await screen.findByRole('button', { name: /Упражнения/ }))
+
+    expect(screen.getByRole('heading', { name: 'Руки' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Спина' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Ноги' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Корпус' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Спина' }))
+    expect(screen.getByRole('heading', { name: 'Спина' })).toBeInTheDocument()
+    expect(screen.getByText('Подтягивания')).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Руки' })).not.toBeInTheDocument()
+    expect(screen.queryByText('Жим штанги лёжа')).not.toBeInTheDocument()
   })
 
   it('opens the muscle map for a workout program', async () => {
