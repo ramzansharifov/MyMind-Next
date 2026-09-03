@@ -33,17 +33,10 @@ export function HabitPreferredTimesEditor({
 
   return (
     <div className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2 text-sm font-semibold text-[var(--app-text)]">
-            <Clock3 className="size-4 text-violet-300" />
-            {trackingType === 'check' ? 'Предпочтительное время' : 'Предпочтительные времена'}
-          </div>
-          <p className="mt-1 text-xs leading-5 text-[var(--app-muted)]">
-            {trackingType === 'check'
-              ? 'Можно указать одно удобное время для выполнения привычки.'
-              : 'Для каждой единицы цели можно указать своё время. Поля необязательные.'}
-          </p>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-sm font-semibold text-[var(--app-text)]">
+          <Clock3 className="size-4 text-violet-300" />
+          {trackingType === 'check' ? 'Предпочтительное время' : 'Предпочтительные времена'}
         </div>
 
         {totalPages > 1 && (
@@ -80,8 +73,8 @@ export function HabitPreferredTimesEditor({
       <div
         className={
           trackingType === 'check'
-            ? 'mt-4 max-w-xs'
-            : 'mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3'
+            ? 'mt-3 max-w-xs'
+            : 'mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3'
         }
       >
         {units.map((unit) => (
@@ -103,17 +96,12 @@ export function HabitPreferredTimesEditor({
       </div>
 
       {hasPreferredTime && (
-        <div className="mt-4 flex items-center gap-3 rounded-xl border border-violet-400/15 bg-violet-500/[0.055] px-3 py-3">
+        <div className="mt-3 flex items-center gap-3 rounded-xl border border-violet-400/15 bg-violet-500/[0.055] px-3 py-3">
           <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-violet-400/20 bg-violet-500/10 text-violet-200">
             <Bell className="size-4" />
           </span>
-          <div className="min-w-0 flex-1">
-            <div className="text-sm font-medium text-[var(--app-text)]">
-              Напоминание включено автоматически
-            </div>
-            <div className="mt-0.5 text-xs leading-5 text-[var(--app-muted)]">
-              Оно придёт за 30 минут до каждого указанного предпочтительного времени.
-            </div>
+          <div className="text-sm font-medium text-[var(--app-text)]">
+            Напоминание включено автоматически · за 30 минут
           </div>
         </div>
       )}
