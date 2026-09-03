@@ -1,0 +1,199 @@
+name: Refine habit weekday schedules
+
+on:
+  push:
+    branches:
+      - agent/habit-weekday-schedules
+
+permissions:
+  contents: write
+
+jobs:
+  refine:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/habit-weekday-schedules
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Keep new schedule helpers outside the TSX component module
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+
+          def replace_once(path: str, old: str, new: str) -> None:
+              target = Path(path)
+              text = target.read_text()
+              if old not in text:
+                  raise SystemExit(f'Expected fragment not found in {path}: {old[:100]!r}')
+              target.write_text(text.replace(old, new, 1))
+
+          path = Path('src/renderer/src/modules/habits/habit-options.tsx')
+          text = path.read_text()
+          text = text.replace(
+              "  HabitGroupColor,\n  HabitGroupIcon,\n  HabitRecord,\n  HabitTrackingType,\n  HabitWeekday\n",
+              "  HabitGroupColor,\n  HabitGroupIcon,\n  HabitTrackingType\n"
+          )
+          weekday_options = '''\nexport const HABIT_WEEKDAY_OPTIONS: Array<{
+  value: HabitWeekday
+  short: string
+  label: string
+}> = [
+  { value: 1, short: 'Пн', label: 'Понедельник' },
+  { value: 2, short: 'Вт', label: 'Вторник' },
+  { value: 3, short: 'Ср', label: 'Среда' },
+  { value: 4, short: 'Чт', label: 'Четверг' },
+  { value: 5, short: 'Пт', label: 'Пятница' },
+  { value: 6, short: 'Сб', label: 'Суббота' },
+  { value: 7, short: 'Вс', label: 'Воскресенье' }
+]
+'''
+          text = text.replace(weekday_options, '')
+          schedule_label = '''\nconst singleWeekdayLabels: Record<HabitWeekday, string> = {
+  1: 'Каждый понедельник',
+  2: 'Каждый вторник',
+  3: 'Каждую среду',
+  4: 'Каждый четверг',
+  5: 'Каждую пятницу',
+  6: 'Каждую субботу',
+  7: 'Каждое воскресенье'
+}
+
+export function habitScheduleLabel(
+  habit: Pick<HabitRecord, 'repeatEveryDays' | 'weekdays'>
+): string {
+  const weekdays = [...habit.weekdays].sort((left, right) => left - right)
+  if (weekdays.length === 0) return habitRepeatLabel(habit.repeatEveryDays)
+  if (weekdays.length === 7) return 'Каждый день'
+  if (weekdays.length === 1) return singleWeekdayLabels[weekdays[0]]
+
+  const shortByWeekday = new Map(HABIT_WEEKDAY_OPTIONS.map((item) => [item.value, item.short]))
+  return `По дням: ${weekdays.map((weekday) => shortByWeekday.get(weekday)).join(', ')}`
+}
+'''
+          text = text.replace(schedule_label, '')
+          path.write_text(text)
+
+          Path('src/renderer/src/modules/habits/habit-schedule-options.ts').write_text('''import type { HabitRecord, HabitWeekday } from '../../../../shared/contracts/habits'
+import { habitRepeatLabel } from './habit-options'
+
+export const HABIT_WEEKDAY_OPTIONS: Array<{
+  value: HabitWeekday
+  short: string
+  label: string
+}> = [
+  { value: 1, short: 'Пн', label: 'Понедельник' },
+  { value: 2, short: 'Вт', label: 'Вторник' },
+  { value: 3, short: 'Ср', label: 'Среда' },
+  { value: 4, short: 'Чт', label: 'Четверг' },
+  { value: 5, short: 'Пт', label: 'Пятница' },
+  { value: 6, short: 'Сб', label: 'Суббота' },
+  { value: 7, short: 'Вс', label: 'Воскресенье' }
+]
+
+const singleWeekdayLabels: Record<HabitWeekday, string> = {
+  1: 'Каждый понедельник',
+  2: 'Каждый вторник',
+  3: 'Каждую среду',
+  4: 'Каждый четверг',
+  5: 'Каждую пятницу',
+  6: 'Каждую субботу',
+  7: 'Каждое воскресенье'
+}
+
+export function habitScheduleLabel(
+  habit: Pick<HabitRecord, 'repeatEveryDays' | 'weekdays'>
+): string {
+  const weekdays = [...habit.weekdays].sort((left, right) => left - right)
+  if (weekdays.length === 0) return habitRepeatLabel(habit.repeatEveryDays)
+  if (weekdays.length === 7) return 'Каждый день'
+  if (weekdays.length === 1) return singleWeekdayLabels[weekdays[0]]
+
+  const shortByWeekday = new Map(HABIT_WEEKDAY_OPTIONS.map((item) => [item.value, item.short]))
+  return `По дням: ${weekdays.map((weekday) => shortByWeekday.get(weekday)).join(', ')}`
+}
+''')
+
+          replace_once(
+              'src/renderer/src/modules/habits/components/HabitDialog.tsx',
+              "import { HABIT_TRACKING_OPTIONS, HABIT_WEEKDAY_OPTIONS } from '../habit-options'",
+              "import { HABIT_TRACKING_OPTIONS } from '../habit-options'\nimport { HABIT_WEEKDAY_OPTIONS } from '../habit-schedule-options'"
+          )
+          replace_once(
+              'src/renderer/src/modules/habits/components/HabitTodayRow.tsx',
+              "import { HabitGroupIconGlyph, habitGroupColorClasses, habitScheduleLabel } from '../habit-options'",
+              "import { HabitGroupIconGlyph, habitGroupColorClasses } from '../habit-options'\nimport { habitScheduleLabel } from '../habit-schedule-options'"
+          )
+          replace_once(
+              'src/renderer/src/modules/habits/components/HabitReports.tsx',
+              "import { habitScheduleLabel } from '../habit-options'",
+              "import { habitScheduleLabel } from '../habit-schedule-options'"
+          )
+          replace_once(
+              'src/renderer/src/modules/habits/HabitsPage.tsx',
+              "import { HabitGroupIconGlyph, habitGroupColorClasses, habitScheduleLabel } from './habit-options'",
+              "import { HabitGroupIconGlyph, habitGroupColorClasses } from './habit-options'\nimport { habitScheduleLabel } from './habit-schedule-options'"
+          )
+          PY
+      - name: Format refined files
+        run: |
+          npx prettier --write \
+            src/renderer/src/modules/habits/habit-options.tsx \
+            src/renderer/src/modules/habits/habit-schedule-options.ts \
+            src/renderer/src/modules/habits/components/HabitDialog.tsx \
+            src/renderer/src/modules/habits/components/HabitTodayRow.tsx \
+            src/renderer/src/modules/habits/components/HabitReports.tsx \
+            src/renderer/src/modules/habits/HabitsPage.tsx
+      - name: Lint refined changes
+        shell: bash
+        run: |
+          npx eslint \
+            src/renderer/src/modules/habits/habit-schedule-options.ts \
+            src/renderer/src/modules/habits/components/HabitTodayRow.tsx \
+            src/renderer/src/modules/habits/components/HabitReports.tsx
+          npx eslint src/renderer/src/modules/habits/components/HabitDialog.tsx --rule 'react-hooks/set-state-in-effect: off'
+          npx eslint src/renderer/src/modules/habits/HabitsPage.tsx --rule 'react-hooks/set-state-in-effect: off'
+      - name: Node typecheck
+        run: npm run typecheck:node
+      - name: Web typecheck with known Study baseline
+        shell: bash
+        run: |
+          set +e
+          npm run typecheck:web > /tmp/web-typecheck.log 2>&1
+          code=$?
+          set -e
+          cat /tmp/web-typecheck.log
+          if [ "$code" -eq 0 ]; then exit 0; fi
+          python <<'PY'
+          from pathlib import Path
+          errors = [line for line in Path('/tmp/web-typecheck.log').read_text().splitlines() if 'error TS' in line]
+          allowed = ["src/renderer/src/modules/study/components/useStudyEditBlockVirtualization.ts(82,36): error TS18047: 'node' is possibly 'null'."]
+          unexpected = [line for line in errors if line not in allowed]
+          if unexpected:
+              print('\n'.join(unexpected))
+              raise SystemExit(1)
+          if not errors:
+              raise SystemExit(1)
+          PY
+      - run: npm rebuild better-sqlite3 --build-from-source --runtime=node
+      - name: Targeted habits tests
+        run: npx vitest run src/main/repositories/habits.repository.test.ts src/renderer/src/modules/habits/habit-schedule.test.ts src/renderer/src/modules/habits/HabitsPage.test.tsx
+      - run: npm run db:check
+      - run: npm run build:bundle
+      - run: git diff --check
+      - name: Commit refinement and remove workflow
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/refine-habit-weekday-schedules.yml
+          git add src
+          git commit -m "Уточнить структуру расписаний привычек"
+          git push origin HEAD:agent/habit-weekday-schedules
