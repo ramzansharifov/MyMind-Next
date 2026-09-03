@@ -1,0 +1,166 @@
+name: Implement workout default exercises
+
+on:
+  push:
+    branches:
+      - agent/workout-default-exercises
+
+permissions:
+  contents: write
+
+jobs:
+  implement:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+
+      - name: Apply workout exercise library changes
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+          import json
+
+          def replace_once(path: str, old: str, new: str) -> None:
+              file = Path(path)
+              text = file.read_text(encoding='utf-8')
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected one occurrence, found {count}')
+              file.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          options_path = 'src/renderer/src/modules/workouts/workout-options.tsx'
+          replace_once(
+              options_path,
+              "export type WorkoutMuscleFamily = 'arms' | 'back' | 'chest' | 'abs' | 'legs'\n",
+              "export type WorkoutMuscleFamily = 'arms' | 'back' | 'chest' | 'abs' | 'legs'\nexport type WorkoutExerciseCategory = 'arms' | 'back' | 'legs' | 'core'\n"
+          )
+          replace_once(
+              options_path,
+              "export const WORKOUT_MUSCLE_FAMILY_OPTIONS: Array<{\n  value: WorkoutMuscleFamily\n  label: string\n}> = [\n  { value: 'arms', label: 'Руки' },\n  { value: 'back', label: 'Спина' },\n  { value: 'chest', label: 'Грудные мышцы' },\n  { value: 'abs', label: 'Пресс' },\n  { value: 'legs', label: 'Ноги' }\n]\n",
+              "export const WORKOUT_MUSCLE_FAMILY_OPTIONS: Array<{\n  value: WorkoutMuscleFamily\n  label: string\n}> = [\n  { value: 'arms', label: 'Руки' },\n  { value: 'back', label: 'Спина' },\n  { value: 'chest', label: 'Грудные мышцы' },\n  { value: 'abs', label: 'Пресс' },\n  { value: 'legs', label: 'Ноги' }\n]\n\nexport const WORKOUT_EXERCISE_CATEGORY_OPTIONS: Array<{\n  value: WorkoutExerciseCategory\n  label: string\n}> = [\n  { value: 'arms', label: 'Руки' },\n  { value: 'back', label: 'Спина' },\n  { value: 'legs', label: 'Ноги' },\n  { value: 'core', label: 'Корпус' }\n]\n\nconst WORKOUT_EXERCISE_CATEGORY_BY_GROUP: Record<WorkoutMuscleGroup, WorkoutExerciseCategory> = {\n  arms: 'arms',\n  shoulders: 'arms',\n  biceps: 'arms',\n  triceps: 'arms',\n  forearms: 'arms',\n  back: 'back',\n  lats: 'back',\n  traps: 'back',\n  lower_back: 'back',\n  chest: 'core',\n  abs: 'core',\n  legs: 'legs',\n  glutes: 'legs',\n  quadriceps: 'legs',\n  hamstrings: 'legs',\n  calves: 'legs'\n}\n\nexport function workoutExerciseCategoryForGroups(\n  groups: WorkoutMuscleGroup[]\n): WorkoutExerciseCategory {\n  return WORKOUT_EXERCISE_CATEGORY_BY_GROUP[groups[0] ?? 'arms']\n}\n"
+          )
+
+          page_path = Path('src/renderer/src/modules/workouts/WorkoutsPage.tsx')
+          page = page_path.read_text(encoding='utf-8')
+          old_import = """import {\n  WORKOUT_MUSCLE_GROUP_OPTIONS,\n  workoutMuscleGroupClasses,\n  workoutMuscleGroupLabel,\n  workoutMuscleGroupsLabel\n} from './workout-options'\n"""
+          new_import = """import {\n  WORKOUT_EXERCISE_CATEGORY_OPTIONS,\n  WORKOUT_MUSCLE_GROUP_OPTIONS,\n  workoutExerciseCategoryForGroups,\n  workoutMuscleGroupClasses,\n  workoutMuscleGroupLabel,\n  workoutMuscleGroupsLabel,\n  type WorkoutExerciseCategory\n} from './workout-options'\n"""
+          if page.count(old_import) != 1:
+              raise SystemExit('WorkoutsPage import anchor mismatch')
+          page = page.replace(old_import, new_import, 1)
+          page = page.replace(
+              "type MuscleFilter = 'all' | WorkoutMuscleGroup\n",
+              "type MuscleFilter = 'all' | WorkoutMuscleGroup\ntype ExerciseCategoryFilter = 'all' | WorkoutExerciseCategory\n",
+              1
+          )
+          page = page.replace(
+              "  const [muscleFilter, setMuscleFilter] = useState<MuscleFilter>('all')\n",
+              "  const [muscleFilter, setMuscleFilter] = useState<MuscleFilter>('all')\n  const [exerciseCategoryFilter, setExerciseCategoryFilter] =\n    useState<ExerciseCategoryFilter>('all')\n",
+              1
+          )
+
+          start = page.index('  const filteredExercises = useMemo(() => {')
+          end = page.index('  const filteredPrograms = useMemo(() => {', start)
+          filtered_block = """  const filteredExercises = useMemo(() => {\n    const normalized = query.trim().toLocaleLowerCase('ru-RU')\n    return exercises.filter((exercise) => {\n      if (\n        exerciseCategoryFilter !== 'all' &&\n        workoutExerciseCategoryForGroups(exercise.muscleGroups) !== exerciseCategoryFilter\n      ) {\n        return false\n      }\n      return (\n        !normalized ||\n        `${exercise.title} ${workoutMuscleGroupsLabel(exercise.muscleGroups)}`\n          .toLocaleLowerCase('ru-RU')\n          .includes(normalized)\n      )\n    })\n  }, [exerciseCategoryFilter, exercises, query])\n\n  const exerciseSections = useMemo(\n    () =>\n      WORKOUT_EXERCISE_CATEGORY_OPTIONS.map((category) => ({\n        ...category,\n        exercises: filteredExercises\n          .filter(\n            (exercise) =>\n              workoutExerciseCategoryForGroups(exercise.muscleGroups) === category.value\n          )\n          .sort((left, right) => left.title.localeCompare(right.title, 'ru-RU'))\n      })).filter((category) => category.exercises.length > 0),\n    [filteredExercises]\n  )\n\n"""
+          page = page[:start] + filtered_block + page[end:]
+
+          toolbar_start = page.index("    if (tab === 'exercises') {")
+          toolbar_end = page.index("    if (tab === 'programs') {", toolbar_start)
+          toolbar = """    if (tab === 'exercises') {\n      return (\n        <div className=\"flex flex-wrap gap-2\">\n          <label className=\"flex h-10 min-w-[260px] flex-1 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 focus-within:border-violet-500/45\">\n            <Search className=\"size-4 text-[var(--app-muted)]\" />\n            <input\n              type=\"search\"\n              value={query}\n              placeholder=\"Найти упражнение…\"\n              className=\"min-w-0 flex-1 bg-transparent text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60\"\n              onChange={(event) => setQuery(event.target.value)}\n            />\n          </label>\n          <div\n            role=\"group\"\n            aria-label=\"Раздел упражнений\"\n            className=\"flex h-10 max-w-full shrink-0 gap-1 overflow-x-auto rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-1\"\n          >\n            <button\n              type=\"button\"\n              aria-pressed={exerciseCategoryFilter === 'all'}\n              className={cn(\n                'h-8 shrink-0 rounded-lg px-3 text-xs font-medium transition-colors',\n                exerciseCategoryFilter === 'all'\n                  ? 'bg-violet-500 font-semibold text-white'\n                  : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'\n              )}\n              onClick={() => setExerciseCategoryFilter('all')}\n            >\n              Все\n            </button>\n            {WORKOUT_EXERCISE_CATEGORY_OPTIONS.map((category) => (\n              <button\n                key={category.value}\n                type=\"button\"\n                aria-pressed={exerciseCategoryFilter === category.value}\n                className={cn(\n                  'h-8 shrink-0 rounded-lg px-3 text-xs font-medium transition-colors',\n                  exerciseCategoryFilter === category.value\n                    ? 'bg-violet-500 font-semibold text-white'\n                    : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'\n                )}\n                onClick={() => setExerciseCategoryFilter(category.value)}\n              >\n                {category.label}\n              </button>\n            ))}\n          </div>\n        </div>\n      )\n    }\n\n"""
+          page = page[:toolbar_start] + toolbar + page[toolbar_end:]
+
+          reset_anchor = """                  setQuery('')\n                  setMuscleFilter('all')\n                  setProgramFilter('all')\n"""
+          reset_new = """                  setQuery('')\n                  setMuscleFilter('all')\n                  setExerciseCategoryFilter('all')\n                  setProgramFilter('all')\n"""
+          if page.count(reset_anchor) != 1:
+              raise SystemExit('tab reset anchor mismatch')
+          page = page.replace(reset_anchor, reset_new, 1)
+
+          render_start = page.rfind("      {tab === 'exercises' && (")
+          render_end = page.index("      {tab === 'programs' && (", render_start)
+          render_block = """      {tab === 'exercises' && (\n        <section className=\"mt-5 space-y-6\">\n          {filteredExercises.length === 0 ? (\n            <div className=\"flex min-h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface)] px-6 text-center\">\n              <Target className=\"size-8 text-violet-300\" />\n              <h2 className=\"mt-3 text-lg font-semibold text-[var(--app-text)]\">\n                {exercises.length === 0 ? 'Упражнений пока нет' : 'Ничего не найдено'}\n              </h2>\n              <p className=\"mt-1 max-w-md text-sm text-[var(--app-muted)]\">\n                {exercises.length === 0\n                  ? 'Добавьте своё упражнение — оно появится в библиотеке вместе с базовыми упражнениями.'\n                  : 'Измените поисковый запрос или выберите другой раздел.'}\n              </p>\n            </div>\n          ) : (\n            exerciseSections.map((section) => (\n              <div key={section.value} className=\"space-y-2.5\">\n                <div className=\"flex items-center gap-2 px-1\">\n                  <h2 className=\"text-sm font-semibold text-[var(--app-text)]\">{section.label}</h2>\n                  <span className=\"rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] px-2 py-0.5 text-[11px] font-medium text-[var(--app-muted)]\">\n                    {section.exercises.length}\n                  </span>\n                </div>\n\n                <div className=\"grid gap-3 md:grid-cols-2 xl:grid-cols-3\">\n                  {section.exercises.map((exercise) => {\n                    const classes = workoutMuscleGroupClasses[exercise.muscleGroup]\n                    return (\n                      <article\n                        key={exercise.id}\n                        className=\"group rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)]\"\n                      >\n                        <div className=\"flex items-start gap-3\">\n                          <WorkoutMuscleArtwork\n                            groups={exercise.muscleGroups}\n                            className=\"size-12 shrink-0 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-0.5\"\n                          />\n                          <div className=\"min-w-0 flex-1\">\n                            <div className=\"flex items-center gap-2\">\n                              <h3 className=\"truncate font-semibold text-[var(--app-text)]\">\n                                {exercise.title}\n                              </h3>\n                            </div>\n                            <span\n                              className={cn('mt-1 inline-block text-xs font-medium', classes.text)}\n                            >\n                              {workoutMuscleGroupsLabel(exercise.muscleGroups)}\n                            </span>\n                          </div>\n                          <div className=\"flex shrink-0 gap-1\">\n                            <Tooltip content={`Изменить «${exercise.title}»`} side=\"top\">\n                              <button\n                                type=\"button\"\n                                aria-label={`Изменить «${exercise.title}»`}\n                                className=\"flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]\"\n                                onClick={() => {\n                                  setEditingExercise(exercise)\n                                  setExerciseDialogOpen(true)\n                                }}\n                              >\n                                <Pencil className=\"size-4\" />\n                              </button>\n                            </Tooltip>\n                            <Tooltip content={`Удалить «${exercise.title}»`} side=\"top\">\n                              <button\n                                type=\"button\"\n                                aria-label={`Удалить «${exercise.title}»`}\n                                className=\"flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300\"\n                                onClick={() => setDeleteExerciseTarget(exercise)}\n                              >\n                                <Trash2 className=\"size-4\" />\n                              </button>\n                            </Tooltip>\n                          </div>\n                        </div>\n                      </article>\n                    )\n                  })}\n                </div>\n              </div>\n            ))\n          )}\n        </section>\n      )}\n\n"""
+          page = page[:render_start] + render_block + page[render_end:]
+          page_path.write_text(page, encoding='utf-8')
+
+          test_path = 'src/renderer/src/modules/workouts/WorkoutsPage.test.tsx'
+          replace_once(
+              test_path,
+              """    expect(moduleHeader).toContainElement(screen.getByPlaceholderText('Найти упражнение…'))\n    expect(moduleHeader).toContainElement(screen.getByRole('combobox', { name: 'Группа мышц' }))\n""",
+              """    expect(moduleHeader).toContainElement(screen.getByPlaceholderText('Найти упражнение…'))\n    const exerciseCategoryGroup = screen.getByRole('group', { name: 'Раздел упражнений' })\n    expect(moduleHeader).toContainElement(exerciseCategoryGroup)\n    expect(exerciseCategoryGroup).toHaveTextContent('Все')\n    expect(exerciseCategoryGroup).toHaveTextContent('Руки')\n    expect(exerciseCategoryGroup).toHaveTextContent('Спина')\n    expect(exerciseCategoryGroup).toHaveTextContent('Ноги')\n    expect(exerciseCategoryGroup).toHaveTextContent('Корпус')\n"""
+          )
+          replace_once(
+              test_path,
+              """    expect(screen.getByText('Сгибания на бицепс с гантелями')).toBeInTheDocument()\n    expect(screen.getByText('Бицепс')).toBeInTheDocument()\n  })\n\n  it('opens the muscle map for a workout program', async () => {\n""",
+              """    expect(screen.getByRole('heading', { name: 'Руки' })).toBeInTheDocument()\n    expect(screen.getByText('Сгибания на бицепс с гантелями')).toBeInTheDocument()\n    expect(screen.getByText('Бицепс')).toBeInTheDocument()\n  })\n\n  it('separates the exercise library into arms, back, legs and core', async () => {\n    const user = userEvent.setup()\n    mocks.listOverview.mockResolvedValueOnce({\n      exercises: [\n        curl,\n        {\n          ...curl,\n          id: 'exercise-pull-up',\n          title: 'Подтягивания',\n          muscleGroup: 'lats',\n          muscleGroups: ['lats', 'biceps'],\n          usesExternalWeight: false\n        },\n        {\n          ...curl,\n          id: 'exercise-squat',\n          title: 'Приседания со штангой',\n          muscleGroup: 'quadriceps',\n          muscleGroups: ['quadriceps', 'glutes', 'hamstrings']\n        },\n        {\n          ...curl,\n          id: 'exercise-bench',\n          title: 'Жим штанги лёжа',\n          muscleGroup: 'chest',\n          muscleGroups: ['chest', 'triceps', 'shoulders']\n        }\n      ],\n      programs: [],\n      sessions: [],\n      progressEntries: []\n    })\n    render(<WorkoutsPage />)\n\n    await user.click(await screen.findByRole('button', { name: /Упражнения/ }))\n\n    expect(screen.getByRole('heading', { name: 'Руки' })).toBeInTheDocument()\n    expect(screen.getByRole('heading', { name: 'Спина' })).toBeInTheDocument()\n    expect(screen.getByRole('heading', { name: 'Ноги' })).toBeInTheDocument()\n    expect(screen.getByRole('heading', { name: 'Корпус' })).toBeInTheDocument()\n\n    await user.click(screen.getByRole('button', { name: 'Спина' }))\n    expect(screen.getByRole('heading', { name: 'Спина' })).toBeInTheDocument()\n    expect(screen.getByText('Подтягивания')).toBeInTheDocument()\n    expect(screen.queryByRole('heading', { name: 'Руки' })).not.toBeInTheDocument()\n    expect(screen.queryByText('Жим штанги лёжа')).not.toBeInTheDocument()\n  })\n\n  it('opens the muscle map for a workout program', async () => {\n"""
+          )
+
+          migration = """WITH default_exercises (id, title, muscle_group, uses_external_weight) AS (\n  VALUES\n    ('10000000-0000-4000-8000-000000000001', 'Жим гантелей над головой', '[\"shoulders\",\"triceps\"]', 1),\n    ('10000000-0000-4000-8000-000000000002', 'Разведения гантелей в стороны', '[\"shoulders\"]', 1),\n    ('10000000-0000-4000-8000-000000000003', 'Сгибания рук с гантелями', '[\"biceps\",\"forearms\"]', 1),\n    ('10000000-0000-4000-8000-000000000004', 'Сгибания рук со штангой', '[\"biceps\",\"forearms\"]', 1),\n    ('10000000-0000-4000-8000-000000000005', 'Французский жим', '[\"triceps\"]', 1),\n    ('10000000-0000-4000-8000-000000000006', 'Разгибание рук на верхнем блоке', '[\"triceps\"]', 1),\n    ('10000000-0000-4000-8000-000000000007', 'Подтягивания', '[\"lats\",\"biceps\"]', 0),\n    ('10000000-0000-4000-8000-000000000008', 'Тяга верхнего блока', '[\"lats\",\"biceps\"]', 1),\n    ('10000000-0000-4000-8000-000000000009', 'Тяга горизонтального блока', '[\"lats\",\"traps\"]', 1),\n    ('10000000-0000-4000-8000-000000000010', 'Тяга штанги в наклоне', '[\"lats\",\"traps\",\"lower_back\"]', 1),\n    ('10000000-0000-4000-8000-000000000011', 'Становая тяга', '[\"lower_back\",\"glutes\",\"hamstrings\",\"traps\"]', 1),\n    ('10000000-0000-4000-8000-000000000012', 'Гиперэкстензия', '[\"lower_back\",\"glutes\"]', 0),\n    ('10000000-0000-4000-8000-000000000013', 'Приседания со штангой', '[\"quadriceps\",\"glutes\",\"hamstrings\"]', 1),\n    ('10000000-0000-4000-8000-000000000014', 'Приседания с собственным весом', '[\"quadriceps\",\"glutes\"]', 0),\n    ('10000000-0000-4000-8000-000000000015', 'Жим ногами', '[\"quadriceps\",\"glutes\"]', 1),\n    ('10000000-0000-4000-8000-000000000016', 'Выпады с гантелями', '[\"quadriceps\",\"glutes\",\"hamstrings\"]', 1),\n    ('10000000-0000-4000-8000-000000000017', 'Румынская тяга', '[\"hamstrings\",\"glutes\",\"lower_back\"]', 1),\n    ('10000000-0000-4000-8000-000000000018', 'Подъёмы на носки стоя', '[\"calves\"]', 1),\n    ('10000000-0000-4000-8000-000000000019', 'Жим штанги лёжа', '[\"chest\",\"triceps\",\"shoulders\"]', 1),\n    ('10000000-0000-4000-8000-000000000020', 'Жим гантелей лёжа', '[\"chest\",\"triceps\"]', 1),\n    ('10000000-0000-4000-8000-000000000021', 'Отжимания', '[\"chest\",\"triceps\",\"shoulders\"]', 0),\n    ('10000000-0000-4000-8000-000000000022', 'Скручивания', '[\"abs\"]', 0),\n    ('10000000-0000-4000-8000-000000000023', 'Подъём ног в висе', '[\"abs\"]', 0),\n    ('10000000-0000-4000-8000-000000000024', 'Русские скручивания с весом', '[\"abs\"]', 1)\n)\nINSERT INTO workout_exercises (\n  id, title, muscle_group, uses_external_weight, description, status, created_at, updated_at\n)\nSELECT\n  candidate.id,\n  candidate.title,\n  candidate.muscle_group,\n  candidate.uses_external_weight,\n  '',\n  'active',\n  1788453300000,\n  1788453300000\nFROM default_exercises AS candidate\nWHERE NOT EXISTS (\n  SELECT 1\n  FROM workout_exercises AS existing\n  WHERE existing.id = candidate.id OR trim(existing.title) = candidate.title\n);\n"""
+          Path('drizzle/0044_workout_default_exercises.sql').write_text(migration, encoding='utf-8')
+
+          journal_path = Path('drizzle/meta/_journal.json')
+          journal = json.loads(journal_path.read_text(encoding='utf-8'))
+          entries = journal.get('entries', [])
+          if any(entry.get('idx') == 44 or entry.get('tag') == '0044_workout_default_exercises' for entry in entries):
+              raise SystemExit('0044 journal entry already exists')
+          if not entries or entries[-1].get('idx') != 43:
+              raise SystemExit('unexpected migration journal tail')
+          entries.append({\n              'idx': 44,\n              'version': '6',\n              'when': 1788453300000,\n              'tag': '0044_workout_default_exercises',\n              'breakpoints': True\n          })
+          journal_path.write_text(json.dumps(journal, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+          defaults_test = """import { mkdtemp, rm } from 'node:fs/promises'\nimport { tmpdir } from 'node:os'\nimport { join, resolve } from 'node:path'\nimport { afterAll, beforeAll, describe, expect, it } from 'vitest'\n\nimport { closeDatabase, initializeDatabaseForTesting } from '../database/client'\nimport { runDatabaseMigrationsFrom } from '../database/migrate'\nimport { listWorkoutsOverview } from './workouts.repository'\n\nlet root = ''\n\nbeforeAll(async () => {\n  root = await mkdtemp(join(tmpdir(), 'mymind-workout-defaults-'))\n  initializeDatabaseForTesting(join(root, 'workouts-defaults.sqlite'))\n  runDatabaseMigrationsFrom(resolve(process.cwd(), 'drizzle'))\n})\n\nafterAll(async () => {\n  closeDatabase()\n  await rm(root, { recursive: true, force: true })\n})\n\ndescribe('default workout exercise catalog', () => {\n  it('seeds a practical base library with bodyweight and weighted exercises', () => {\n    const exercises = listWorkoutsOverview().exercises\n\n    expect(exercises).toHaveLength(24)\n    expect(exercises).toEqual(\n      expect.arrayContaining([\n        expect.objectContaining({\n          title: 'Подтягивания',\n          muscleGroups: ['lats', 'biceps'],\n          usesExternalWeight: false\n        }),\n        expect.objectContaining({\n          title: 'Приседания со штангой',\n          muscleGroups: ['quadriceps', 'glutes', 'hamstrings'],\n          usesExternalWeight: true\n        }),\n        expect.objectContaining({\n          title: 'Жим штанги лёжа',\n          muscleGroups: ['chest', 'triceps', 'shoulders'],\n          usesExternalWeight: true\n        }),\n        expect.objectContaining({\n          title: 'Скручивания',\n          muscleGroups: ['abs'],\n          usesExternalWeight: false\n        })\n      ])\n    )\n  })\n})\n"""
+          Path('src/main/repositories/workouts.defaults.test.ts').write_text(defaults_test, encoding='utf-8')
+          PY
+
+      - name: Format changed source files
+        run: npx prettier --write src/renderer/src/modules/workouts/WorkoutsPage.tsx src/renderer/src/modules/workouts/WorkoutsPage.test.tsx src/renderer/src/modules/workouts/workout-options.tsx src/main/repositories/workouts.defaults.test.ts drizzle/meta/_journal.json
+
+      - name: Lint changed TypeScript files
+        run: npx eslint src/renderer/src/modules/workouts/WorkoutsPage.tsx src/renderer/src/modules/workouts/WorkoutsPage.test.tsx src/renderer/src/modules/workouts/workout-options.tsx src/main/repositories/workouts.defaults.test.ts
+
+      - name: Node typecheck
+        run: npm run typecheck:node
+
+      - name: Web typecheck with known Study baseline
+        shell: bash
+        run: |
+          set +e
+          npm run typecheck:web > /tmp/web-typecheck.log 2>&1
+          status=$?
+          cat /tmp/web-typecheck.log
+          if [ "$status" -eq 0 ]; then exit 0; fi
+          grep -v "useStudyEditBlockVirtualization.ts(82,36): error TS18047" /tmp/web-typecheck.log | grep "error TS" && exit 1 || exit 0
+
+      - name: Rebuild native SQLite for tests
+        run: npm rebuild better-sqlite3
+
+      - name: Targeted workout tests
+        run: npx vitest run src/main/repositories/workouts.defaults.test.ts src/main/repositories/workouts.repository.test.ts src/renderer/src/modules/workouts/WorkoutsPage.test.tsx
+
+      - name: Check database migrations
+        run: npm run db:check
+
+      - name: Build production bundle
+        run: npm run build:bundle
+
+      - name: Check diff whitespace
+        run: git diff --check
+
+      - name: Commit implementation and remove temporary workflow
+        shell: bash
+        run: |
+          rm .github/workflows/implement-workout-default-exercises.yml
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Добавить базовую библиотеку упражнений"
+          git push
