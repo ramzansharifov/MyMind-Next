@@ -56,6 +56,11 @@ import { WorkoutSessionDetailDialog } from './components/WorkoutSessionDetailDia
 import { WorkoutSessionCard } from './components/WorkoutSessionCard'
 import { WorkoutSessionDialog } from './components/WorkoutSessionDialog'
 import {
+  WORKOUT_EXERCISE_CATEGORY_OPTIONS,
+  workoutExerciseCategoryForGroups,
+  type WorkoutExerciseCategory
+} from './workout-exercise-categories'
+import {
   WORKOUT_MUSCLE_GROUP_OPTIONS,
   workoutMuscleGroupClasses,
   workoutMuscleGroupLabel,
@@ -64,6 +69,7 @@ import {
 
 type WorkoutTab = 'journal' | 'exercises' | 'programs' | 'progress' | 'reports'
 type MuscleFilter = 'all' | WorkoutMuscleGroup
+type ExerciseCategoryFilter = 'all' | WorkoutExerciseCategory
 type ReportPeriod = '7' | '30' | '90' | '365' | 'custom'
 
 interface WorkoutsPageProps {
@@ -110,6 +116,8 @@ export function WorkoutsPage({
   const [tab, setTab] = useState<WorkoutTab>('journal')
   const [query, setQuery] = useState('')
   const [muscleFilter, setMuscleFilter] = useState<MuscleFilter>('all')
+  const [exerciseCategoryFilter, setExerciseCategoryFilter] =
+    useState<ExerciseCategoryFilter>('all')
   const [programFilter, setProgramFilter] = useState('all')
   const [exerciseDialogOpen, setExerciseDialogOpen] = useState(false)
   const [editingExercise, setEditingExercise] = useState<WorkoutExerciseRecord | null>(null)
@@ -195,7 +203,12 @@ export function WorkoutsPage({
   const filteredExercises = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase('ru-RU')
     return exercises.filter((exercise) => {
-      if (muscleFilter !== 'all' && !exercise.muscleGroups.includes(muscleFilter)) return false
+      if (
+        exerciseCategoryFilter !== 'all' &&
+        workoutExerciseCategoryForGroups(exercise.muscleGroups) !== exerciseCategoryFilter
+      ) {
+        return false
+      }
       return (
         !normalized ||
         `${exercise.title} ${workoutMuscleGroupsLabel(exercise.muscleGroups)}`
@@ -203,7 +216,20 @@ export function WorkoutsPage({
           .includes(normalized)
       )
     })
-  }, [exercises, muscleFilter, query])
+  }, [exerciseCategoryFilter, exercises, query])
+
+  const exerciseSections = useMemo(
+    () =>
+      WORKOUT_EXERCISE_CATEGORY_OPTIONS.map((category) => ({
+        ...category,
+        exercises: filteredExercises
+          .filter(
+            (exercise) => workoutExerciseCategoryForGroups(exercise.muscleGroups) === category.value
+          )
+          .sort((left, right) => left.title.localeCompare(right.title, 'ru-RU'))
+      })).filter((category) => category.exercises.length > 0),
+    [filteredExercises]
+  )
 
   const filteredPrograms = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase('ru-RU')
@@ -555,16 +581,40 @@ export function WorkoutsPage({
               onChange={(event) => setQuery(event.target.value)}
             />
           </label>
-          <div className="min-w-[190px]">
-            <AppSelect
-              ariaLabel="Группа мышц"
-              value={muscleFilter}
-              options={[
-                { value: 'all', label: 'Все группы мышц' },
-                ...WORKOUT_MUSCLE_GROUP_OPTIONS.map(({ value, label }) => ({ value, label }))
-              ]}
-              onValueChange={(value) => setMuscleFilter(value as MuscleFilter)}
-            />
+          <div
+            role="group"
+            aria-label="Раздел упражнений"
+            className="flex h-10 max-w-full shrink-0 gap-1 overflow-x-auto rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-1"
+          >
+            <button
+              type="button"
+              aria-pressed={exerciseCategoryFilter === 'all'}
+              className={cn(
+                'h-8 shrink-0 rounded-lg px-3 text-xs font-medium transition-colors',
+                exerciseCategoryFilter === 'all'
+                  ? 'bg-violet-500 font-semibold text-white'
+                  : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
+              )}
+              onClick={() => setExerciseCategoryFilter('all')}
+            >
+              Все
+            </button>
+            {WORKOUT_EXERCISE_CATEGORY_OPTIONS.map((category) => (
+              <button
+                key={category.value}
+                type="button"
+                aria-pressed={exerciseCategoryFilter === category.value}
+                className={cn(
+                  'h-8 shrink-0 rounded-lg px-3 text-xs font-medium transition-colors',
+                  exerciseCategoryFilter === category.value
+                    ? 'bg-violet-500 font-semibold text-white'
+                    : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
+                )}
+                onClick={() => setExerciseCategoryFilter(category.value)}
+              >
+                {category.label}
+              </button>
+            ))}
           </div>
         </div>
       )
@@ -614,6 +664,7 @@ export function WorkoutsPage({
                   setTab(item.id)
                   setQuery('')
                   setMuscleFilter('all')
+                  setExerciseCategoryFilter('all')
                   setProgramFilter('all')
                 }}
               >
@@ -683,71 +734,86 @@ export function WorkoutsPage({
       )}
 
       {tab === 'exercises' && (
-        <section className="mt-5 space-y-4">
+        <section className="mt-5 space-y-6">
           {filteredExercises.length === 0 ? (
-            <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface)] text-center">
+            <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface)] px-6 text-center">
               <Target className="size-8 text-violet-300" />
               <h2 className="mt-3 text-lg font-semibold text-[var(--app-text)]">
-                Добавьте упражнения
+                {exercises.length === 0 ? 'Упражнений пока нет' : 'Ничего не найдено'}
               </h2>
               <p className="mt-1 max-w-md text-sm text-[var(--app-muted)]">
-                Справочник упражнений используется во всех программах, тренировках и отчётах.
+                {exercises.length === 0
+                  ? 'Добавьте своё упражнение — оно появится в библиотеке вместе с базовыми упражнениями.'
+                  : 'Измените поисковый запрос или выберите другой раздел.'}
               </p>
             </div>
           ) : (
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {filteredExercises.map((exercise) => {
-                const classes = workoutMuscleGroupClasses[exercise.muscleGroup]
-                return (
-                  <article
-                    key={exercise.id}
-                    className="group rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)]"
-                  >
-                    <div className="flex items-start gap-3">
-                      <WorkoutMuscleArtwork
-                        groups={exercise.muscleGroups}
-                        className="size-12 shrink-0 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-0.5"
-                      />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="truncate font-semibold text-[var(--app-text)]">
-                            {exercise.title}
-                          </h3>
+            exerciseSections.map((section) => (
+              <div key={section.value} className="space-y-2.5">
+                <div className="flex items-center gap-2 px-1">
+                  <h2 className="text-sm font-semibold text-[var(--app-text)]">{section.label}</h2>
+                  <span className="rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] px-2 py-0.5 text-[11px] font-medium text-[var(--app-muted)]">
+                    {section.exercises.length}
+                  </span>
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                  {section.exercises.map((exercise) => {
+                    const classes = workoutMuscleGroupClasses[exercise.muscleGroup]
+                    return (
+                      <article
+                        key={exercise.id}
+                        className="group rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)]"
+                      >
+                        <div className="flex items-start gap-3">
+                          <WorkoutMuscleArtwork
+                            groups={exercise.muscleGroups}
+                            className="size-12 shrink-0 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-0.5"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <h3 className="truncate font-semibold text-[var(--app-text)]">
+                                {exercise.title}
+                              </h3>
+                            </div>
+                            <span
+                              className={cn('mt-1 inline-block text-xs font-medium', classes.text)}
+                            >
+                              {workoutMuscleGroupsLabel(exercise.muscleGroups)}
+                            </span>
+                          </div>
+                          <div className="flex shrink-0 gap-1">
+                            <Tooltip content={`Изменить «${exercise.title}»`} side="top">
+                              <button
+                                type="button"
+                                aria-label={`Изменить «${exercise.title}»`}
+                                className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+                                onClick={() => {
+                                  setEditingExercise(exercise)
+                                  setExerciseDialogOpen(true)
+                                }}
+                              >
+                                <Pencil className="size-4" />
+                              </button>
+                            </Tooltip>
+                            <Tooltip content={`Удалить «${exercise.title}»`} side="top">
+                              <button
+                                type="button"
+                                aria-label={`Удалить «${exercise.title}»`}
+                                className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
+                                onClick={() => setDeleteExerciseTarget(exercise)}
+                              >
+                                <Trash2 className="size-4" />
+                              </button>
+                            </Tooltip>
+                          </div>
                         </div>
-                        <span className={cn('mt-1 inline-block text-xs font-medium', classes.text)}>
-                          {workoutMuscleGroupsLabel(exercise.muscleGroups)}
-                        </span>
-                      </div>
-                      <div className="flex shrink-0 gap-1">
-                        <Tooltip content={`Изменить «${exercise.title}»`} side="top">
-                          <button
-                            type="button"
-                            aria-label={`Изменить «${exercise.title}»`}
-                            className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
-                            onClick={() => {
-                              setEditingExercise(exercise)
-                              setExerciseDialogOpen(true)
-                            }}
-                          >
-                            <Pencil className="size-4" />
-                          </button>
-                        </Tooltip>
-                        <Tooltip content={`Удалить «${exercise.title}»`} side="top">
-                          <button
-                            type="button"
-                            aria-label={`Удалить «${exercise.title}»`}
-                            className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
-                            onClick={() => setDeleteExerciseTarget(exercise)}
-                          >
-                            <Trash2 className="size-4" />
-                          </button>
-                        </Tooltip>
-                      </div>
-                    </div>
-                  </article>
-                )
-              })}
-            </div>
+                      </article>
+                    )
+                  })}
+                </div>
+              </div>
+            ))
           )}
         </section>
       )}
