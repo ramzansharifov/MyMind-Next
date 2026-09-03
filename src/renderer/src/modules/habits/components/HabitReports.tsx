@@ -7,7 +7,7 @@ import { AppSelect } from '../../../shared/ui/AppSelect'
 import { AppDateField } from '../../../shared/ui/AppDateField'
 import { Tooltip } from '../../../shared/ui/tooltip'
 import { habitsClient } from '../api/habits-client'
-import { habitScheduleLabel } from '../habit-options'
+import { habitScheduleLabel } from '../habit-schedule-options'
 import { addDays, formatHabitDate, localDateKey } from '../habit-schedule'
 
 interface HabitReportsProps {

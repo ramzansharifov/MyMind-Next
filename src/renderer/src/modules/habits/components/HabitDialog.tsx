@@ -11,7 +11,8 @@ import type {
 } from '../../../../../shared/contracts/habits'
 import { AppDialog } from '../../../shared/ui/AppDialog'
 import { AppSelect } from '../../../shared/ui/AppSelect'
-import { HABIT_TRACKING_OPTIONS, HABIT_WEEKDAY_OPTIONS } from '../habit-options'
+import { HABIT_TRACKING_OPTIONS } from '../habit-options'
+import { HABIT_WEEKDAY_OPTIONS } from '../habit-schedule-options'
 import { HabitPreferredTimesEditor } from './HabitPreferredTimesEditor'
 
 const NO_GROUP_VALUE = '__none__'

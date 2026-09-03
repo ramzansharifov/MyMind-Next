@@ -40,7 +40,8 @@ import { HabitTodayRow } from './components/HabitTodayRow'
 import { HabitReminderInbox } from './HabitReminderInbox'
 import { useHabitReminderInbox } from './useHabitReminderInbox'
 import { HabitReports } from './components/HabitReports'
-import { HabitGroupIconGlyph, habitGroupColorClasses, habitScheduleLabel } from './habit-options'
+import { HabitGroupIconGlyph, habitGroupColorClasses } from './habit-options'
+import { habitScheduleLabel } from './habit-schedule-options'
 import {
   addDays,
   formatHabitDate,

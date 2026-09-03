@@ -22,7 +22,8 @@ import type {
 } from '../../../../../shared/contracts/habits'
 import { cn } from '../../../shared/lib/cn'
 import { Tooltip } from '../../../shared/ui/tooltip'
-import { HabitGroupIconGlyph, habitGroupColorClasses, habitScheduleLabel } from '../habit-options'
+import { HabitGroupIconGlyph, habitGroupColorClasses } from '../habit-options'
+import { habitScheduleLabel } from '../habit-schedule-options'
 
 interface HabitTodayRowProps {
   habit: HabitRecord
