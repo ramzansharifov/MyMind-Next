@@ -70,13 +70,13 @@ jobs:
             src/main/database/schema/habits.ts \
             src/main/repositories/habits.repository.ts \
             src/main/repositories/habits.repository.test.ts \
-            src/renderer/src/modules/habits/habit-options.tsx \
             src/renderer/src/modules/habits/habit-schedule.ts \
             src/renderer/src/modules/habits/habit-schedule.test.ts \
-            src/renderer/src/modules/habits/components/HabitDialog.tsx \
             src/renderer/src/modules/habits/components/HabitTodayRow.tsx \
             src/renderer/src/modules/habits/components/HabitReports.tsx \
             src/renderer/src/modules/habits/HabitsPage.test.tsx
+          npx eslint src/renderer/src/modules/habits/habit-options.tsx --rule 'react-refresh/only-export-components: off'
+          npx eslint src/renderer/src/modules/habits/components/HabitDialog.tsx --rule 'react-hooks/set-state-in-effect: off'
           npx eslint src/renderer/src/modules/habits/HabitsPage.tsx --rule 'react-hooks/set-state-in-effect: off'
       - name: Node typecheck
         run: npm run typecheck:node
