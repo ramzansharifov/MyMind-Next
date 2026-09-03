@@ -128,57 +128,33 @@ export const WORKOUT_MUSCLE_GROUP_OPTIONS: WorkoutMuscleGroupOption[] = [
   { value: 'calves', label: 'Икры', shortLabel: 'Икры', family: 'legs', icon: Footprints }
 ]
 
-const armsClasses = {
+const accentClasses = {
   soft: 'bg-violet-500/10',
   text: 'text-violet-300',
   border: 'border-violet-400/20',
   bar: 'bg-violet-400'
-}
-const backClasses = {
-  soft: 'bg-blue-500/10',
-  text: 'text-blue-300',
-  border: 'border-blue-400/20',
-  bar: 'bg-blue-400'
-}
-const chestClasses = {
-  soft: 'bg-rose-500/10',
-  text: 'text-rose-300',
-  border: 'border-rose-400/20',
-  bar: 'bg-rose-400'
-}
-const absClasses = {
-  soft: 'bg-amber-500/10',
-  text: 'text-amber-300',
-  border: 'border-amber-400/20',
-  bar: 'bg-amber-400'
-}
-const legsClasses = {
-  soft: 'bg-emerald-500/10',
-  text: 'text-emerald-300',
-  border: 'border-emerald-400/20',
-  bar: 'bg-emerald-400'
 }
 
 export const workoutMuscleGroupClasses: Record<
   WorkoutMuscleGroup,
   { soft: string; text: string; border: string; bar: string }
 > = {
-  arms: armsClasses,
-  shoulders: armsClasses,
-  biceps: armsClasses,
-  triceps: armsClasses,
-  forearms: armsClasses,
-  back: backClasses,
-  lats: backClasses,
-  traps: backClasses,
-  lower_back: backClasses,
-  chest: chestClasses,
-  abs: absClasses,
-  legs: legsClasses,
-  glutes: legsClasses,
-  quadriceps: legsClasses,
-  hamstrings: legsClasses,
-  calves: legsClasses
+  arms: accentClasses,
+  shoulders: accentClasses,
+  biceps: accentClasses,
+  triceps: accentClasses,
+  forearms: accentClasses,
+  back: accentClasses,
+  lats: accentClasses,
+  traps: accentClasses,
+  lower_back: accentClasses,
+  chest: accentClasses,
+  abs: accentClasses,
+  legs: accentClasses,
+  glutes: accentClasses,
+  quadriceps: accentClasses,
+  hamstrings: accentClasses,
+  calves: accentClasses
 }
 
 export function workoutMuscleFamilyForGroup(group: WorkoutMuscleGroup): WorkoutMuscleFamily {
