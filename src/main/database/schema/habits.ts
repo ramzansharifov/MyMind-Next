@@ -33,6 +33,7 @@ export const habits = sqliteTable(
     targetValue: integer('target_value').notNull().default(1),
     unit: text('unit').notNull().default(''),
     repeatEveryDays: integer('repeat_every_days').notNull().default(1),
+    weekdays: text('weekdays').notNull().default('[]'),
     preferredTime: text('preferred_time'),
     remindersEnabled: integer('reminders_enabled', { mode: 'boolean' }).notNull().default(false),
     createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),

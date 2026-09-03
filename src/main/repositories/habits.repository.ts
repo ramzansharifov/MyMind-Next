@@ -21,6 +21,7 @@ import type {
   HabitReportInput,
   HabitReportSummary,
   HabitTrackingType,
+  HabitWeekday,
   HabitsOverview,
   HabitsOverviewInput,
   UpdateHabitGroupInput,
@@ -52,6 +53,7 @@ interface HabitRow {
   target_value: number
   unit: string
   repeat_every_days: number
+  weekdays: string
   preferred_time: string | null
   reminders_enabled: number
   created_at: number
@@ -102,6 +104,28 @@ function serializePreferredTimes(values: HabitPreferredTime[]): string | null {
   return JSON.stringify([...values].sort((left, right) => left.unit - right.unit))
 }
 
+function parseWeekdays(value: string | null): HabitWeekday[] {
+  if (!value) return []
+  try {
+    const parsed = JSON.parse(value) as unknown
+    if (!Array.isArray(parsed)) return []
+    return [
+      ...new Set(
+        parsed.filter(
+          (item): item is HabitWeekday =>
+            typeof item === 'number' && Number.isInteger(item) && item >= 1 && item <= 7
+        )
+      )
+    ].sort((left, right) => left - right)
+  } catch {
+    return []
+  }
+}
+
+function serializeWeekdays(values: HabitWeekday[] | undefined): string {
+  return JSON.stringify([...new Set(values ?? [])].sort((left, right) => left - right))
+}
+
 const HABIT_GROUP_SELECT = `SELECT
   id,
   name,
@@ -120,6 +144,7 @@ const HABIT_SELECT = `SELECT
   target_value,
   unit,
   repeat_every_days,
+  weekdays,
   preferred_time,
   reminders_enabled,
   created_at,
@@ -158,6 +183,7 @@ function mapHabit(row: HabitRow): HabitRecord {
     targetValue: row.target_value,
     unit: row.unit,
     repeatEveryDays: row.repeat_every_days,
+    weekdays: parseWeekdays(row.weekdays),
     preferredTimes,
     remindersEnabled: preferredTimes.length > 0,
     createdAt: row.created_at,
@@ -200,6 +226,11 @@ function addDays(value: string, days: number): string {
 
 function daysBetween(from: string, to: string): number {
   return Math.floor((dateToUtc(to) - dateToUtc(from)) / DAY_MS)
+}
+
+function weekdayForDate(value: string): HabitWeekday {
+  const weekday = new Date(dateToUtc(value)).getUTCDay()
+  return (weekday === 0 ? 7 : weekday) as HabitWeekday
 }
 
 function localDateKey(date = new Date()): string {
@@ -265,6 +296,11 @@ function nextGroupPosition(): number {
 export function isHabitScheduledOn(habit: HabitRecord, date: string): boolean {
   const anchor = habitCreatedDateKey(habit)
   if (date < anchor) return false
+
+  if (habit.weekdays.length > 0) {
+    return habit.weekdays.includes(weekdayForDate(date))
+  }
+
   const delta = daysBetween(anchor, date)
   return delta >= 0 && delta % habit.repeatEveryDays === 0
 }
@@ -552,8 +588,8 @@ export function createHabit(input: CreateHabitInput): HabitRecord {
     .prepare(
       `INSERT INTO habits (
         id, title, group_id, tracking_type, target_value, unit,
-        repeat_every_days, preferred_time, reminders_enabled, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        repeat_every_days, weekdays, preferred_time, reminders_enabled, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
       id,
@@ -563,6 +599,7 @@ export function createHabit(input: CreateHabitInput): HabitRecord {
       input.targetValue,
       input.unit,
       input.repeatEveryDays,
+      serializeWeekdays(input.weekdays),
       serializePreferredTimes(input.preferredTimes),
       input.preferredTimes.length > 0 ? 1 : 0,
       now,
@@ -573,7 +610,7 @@ export function createHabit(input: CreateHabitInput): HabitRecord {
 }
 
 export function updateHabit(input: UpdateHabitInput): HabitRecord {
-  requireHabit(input.id)
+  const current = requireHabit(input.id)
   ensureGroupExists(input.groupId)
   const now = Date.now()
 
@@ -581,7 +618,7 @@ export function updateHabit(input: UpdateHabitInput): HabitRecord {
     .prepare(
       `UPDATE habits SET
         title = ?, group_id = ?, tracking_type = ?, target_value = ?, unit = ?,
-        repeat_every_days = ?, preferred_time = ?, reminders_enabled = ?, updated_at = ?
+        repeat_every_days = ?, weekdays = ?, preferred_time = ?, reminders_enabled = ?, updated_at = ?
        WHERE id = ?`
     )
     .run(
@@ -591,6 +628,7 @@ export function updateHabit(input: UpdateHabitInput): HabitRecord {
       input.targetValue,
       input.unit,
       input.repeatEveryDays,
+      serializeWeekdays(input.weekdays ?? current.weekdays),
       serializePreferredTimes(input.preferredTimes),
       input.preferredTimes.length > 0 ? 1 : 0,
       now,
@@ -725,6 +763,7 @@ export function getHabitsReport(input: HabitReportInput): HabitReport {
       targetValue: habit.targetValue,
       unit: habit.unit,
       repeatEveryDays: habit.repeatEveryDays,
+      weekdays: habit.weekdays,
       ...habitSummary,
       ...streaks,
       totalValue

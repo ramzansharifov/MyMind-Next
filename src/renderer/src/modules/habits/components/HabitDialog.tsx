@@ -6,16 +6,19 @@ import type {
   HabitGroupRecord,
   HabitRecord,
   HabitTrackingType,
+  HabitWeekday,
   UpdateHabitInput
 } from '../../../../../shared/contracts/habits'
 import { AppDialog } from '../../../shared/ui/AppDialog'
 import { AppSelect } from '../../../shared/ui/AppSelect'
 import { HABIT_TRACKING_OPTIONS } from '../habit-options'
+import { HABIT_WEEKDAY_OPTIONS } from '../habit-schedule-options'
 import { HabitPreferredTimesEditor } from './HabitPreferredTimesEditor'
 
 const NO_GROUP_VALUE = '__none__'
 const HABIT_FORM_ID = 'habit-editor-form'
 const recurrencePresets = [1, 2, 3, 7, 10, 14, 30]
+type RecurrenceMode = 'interval' | 'weekdays'
 
 interface HabitDialogProps {
   open: boolean
@@ -47,6 +50,8 @@ export function HabitDialog({
   const [targetValue, setTargetValue] = useState('1')
   const [unit, setUnit] = useState('')
   const [repeatEveryDays, setRepeatEveryDays] = useState('1')
+  const [recurrenceMode, setRecurrenceMode] = useState<RecurrenceMode>('interval')
+  const [weekdays, setWeekdays] = useState<HabitWeekday[]>([])
   const [preferredTimes, setPreferredTimes] = useState<Record<number, string>>({})
   const [error, setError] = useState<string | null>(null)
 
@@ -61,6 +66,8 @@ export function HabitDialog({
     setTargetValue(String(habit?.targetValue ?? 1))
     setUnit(habit?.unit ?? '')
     setRepeatEveryDays(String(habit?.repeatEveryDays ?? 1))
+    setRecurrenceMode(habit && habit.weekdays.length > 0 ? 'weekdays' : 'interval')
+    setWeekdays(habit?.weekdays ?? [])
     setPreferredTimes(preferredTimesToRecord(habit))
     setError(null)
   }, [groups, habit, initialGroupId, open])
@@ -76,6 +83,14 @@ export function HabitDialog({
     }
   }
 
+  function toggleWeekday(weekday: HabitWeekday): void {
+    setWeekdays((current) =>
+      current.includes(weekday)
+        ? current.filter((item) => item !== weekday)
+        : [...current, weekday].sort((left, right) => left - right)
+    )
+  }
+
   function changePreferredTime(unitNumber: number, value: string): void {
     const next = { ...preferredTimes }
     if (value) next[unitNumber] = value
@@ -89,8 +104,13 @@ export function HabitDialog({
 
     const parsedRepeat = Number(repeatEveryDays)
     const parsedTarget = trackingType === 'check' ? 1 : Number(targetValue)
-    if (!Number.isInteger(parsedRepeat) || parsedRepeat < 1 || parsedRepeat > 3650) {
+    const validRepeat = Number.isInteger(parsedRepeat) && parsedRepeat >= 1 && parsedRepeat <= 3650
+    if (recurrenceMode === 'interval' && !validRepeat) {
       setError('Период повторения должен быть целым числом от 1 до 3650 дней')
+      return
+    }
+    if (recurrenceMode === 'weekdays' && weekdays.length === 0) {
+      setError('Выберите хотя бы один день недели')
       return
     }
     if (!Number.isInteger(parsedTarget) || parsedTarget < 1 || parsedTarget > 1_000_000_000) {
@@ -109,7 +129,8 @@ export function HabitDialog({
       trackingType,
       targetValue: parsedTarget,
       unit: trackingType === 'check' ? '' : unit.trim(),
-      repeatEveryDays: parsedRepeat,
+      repeatEveryDays: validRepeat ? parsedRepeat : 1,
+      weekdays: recurrenceMode === 'weekdays' ? weekdays : [],
       preferredTimes: normalizedPreferredTimes
     }
 
@@ -133,7 +154,7 @@ export function HabitDialog({
       open={open}
       onOpenChange={onOpenChange}
       title={habit ? 'Изменить привычку' : 'Новая привычка'}
-      description="Настройте способ отслеживания и период повторения привычки."
+      description="Настройте способ отслеживания и расписание привычки."
       icon={<Sparkles />}
       size="xl"
       busy={busy}
@@ -238,39 +259,95 @@ export function HabitDialog({
           <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-[var(--app-text)]">
             <Repeat2 className="size-4 text-violet-300" /> Повторение
           </div>
-          <p className="mb-3 text-xs leading-5 text-[var(--app-muted)]">
-            Период отсчитывается от дня создания привычки. Например, 10 означает один
-            запланированный день каждые 10 дней.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {recurrencePresets.map((days) => (
+
+          <div className="mb-3 inline-flex rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-1">
+            {(
+              [
+                ['interval', 'По интервалу'],
+                ['weekdays', 'По дням недели']
+              ] as const
+            ).map(([mode, label]) => (
               <button
-                key={days}
+                key={mode}
                 type="button"
-                aria-pressed={repeatEveryDays === String(days)}
+                aria-pressed={recurrenceMode === mode}
                 className={
-                  repeatEveryDays === String(days)
-                    ? 'h-9 rounded-xl bg-violet-500 px-3 text-xs font-semibold text-white'
-                    : 'h-9 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 text-xs font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
+                  recurrenceMode === mode
+                    ? 'h-8 rounded-lg bg-violet-500 px-3 text-xs font-semibold text-white'
+                    : 'h-8 rounded-lg px-3 text-xs font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
                 }
-                onClick={() => setRepeatEveryDays(String(days))}
+                onClick={() => setRecurrenceMode(mode)}
               >
-                {days === 1 ? 'Каждый день' : `Раз в ${days} дн.`}
+                {label}
               </button>
             ))}
           </div>
-          <label className="mt-3 block max-w-xs space-y-1.5">
-            <span className="text-xs text-[var(--app-muted)]">Свой период, дней</span>
-            <input
-              type="number"
-              min={1}
-              max={3650}
-              step={1}
-              value={repeatEveryDays}
-              className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
-              onChange={(event) => setRepeatEveryDays(event.target.value)}
-            />
-          </label>
+
+          {recurrenceMode === 'interval' ? (
+            <>
+              <p className="mb-3 text-xs leading-5 text-[var(--app-muted)]">
+                Интервал отсчитывается от дня создания привычки. Например, 10 означает один
+                запланированный день каждые 10 дней.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {recurrencePresets.map((days) => (
+                  <button
+                    key={days}
+                    type="button"
+                    aria-pressed={repeatEveryDays === String(days)}
+                    className={
+                      repeatEveryDays === String(days)
+                        ? 'h-9 rounded-xl bg-violet-500 px-3 text-xs font-semibold text-white'
+                        : 'h-9 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 text-xs font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
+                    }
+                    onClick={() => setRepeatEveryDays(String(days))}
+                  >
+                    {days === 1 ? 'Каждый день' : `Раз в ${days} дн.`}
+                  </button>
+                ))}
+              </div>
+              <label className="mt-3 block max-w-xs space-y-1.5">
+                <span className="text-xs text-[var(--app-muted)]">Свой период, дней</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={3650}
+                  step={1}
+                  value={repeatEveryDays}
+                  className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
+                  onChange={(event) => setRepeatEveryDays(event.target.value)}
+                />
+              </label>
+            </>
+          ) : (
+            <>
+              <p className="mb-3 text-xs leading-5 text-[var(--app-muted)]">
+                Выберите один или несколько дней. Например, только воскресенье или понедельник,
+                среду и пятницу каждую неделю.
+              </p>
+              <div className="grid grid-cols-7 gap-2">
+                {HABIT_WEEKDAY_OPTIONS.map((weekday) => {
+                  const selected = weekdays.includes(weekday.value)
+                  return (
+                    <button
+                      key={weekday.value}
+                      type="button"
+                      aria-label={weekday.label}
+                      aria-pressed={selected}
+                      className={
+                        selected
+                          ? 'h-10 rounded-xl bg-violet-500 text-xs font-semibold text-white'
+                          : 'h-10 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] text-xs font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
+                      }
+                      onClick={() => toggleWeekday(weekday.value)}
+                    >
+                      {weekday.short}
+                    </button>
+                  )
+                })}
+              </div>
+            </>
+          )}
         </div>
 
         <HabitPreferredTimesEditor

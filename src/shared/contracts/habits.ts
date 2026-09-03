@@ -1,4 +1,5 @@
 export const HABIT_TRACKING_TYPES = ['check', 'count'] as const
+export const HABIT_WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const
 export const HABIT_GROUP_ICONS = [
   'folder',
   'sparkles',
@@ -29,6 +30,7 @@ export const HABIT_GROUP_COLORS = [
 ] as const
 
 export type HabitTrackingType = (typeof HABIT_TRACKING_TYPES)[number]
+export type HabitWeekday = (typeof HABIT_WEEKDAYS)[number]
 export type HabitGroupIcon = (typeof HABIT_GROUP_ICONS)[number]
 export type HabitGroupColor = (typeof HABIT_GROUP_COLORS)[number]
 
@@ -55,6 +57,7 @@ export interface HabitRecord {
   targetValue: number
   unit: string
   repeatEveryDays: number
+  weekdays: HabitWeekday[]
   preferredTimes: HabitPreferredTime[]
   remindersEnabled: boolean
   createdAt: number
@@ -122,6 +125,8 @@ export interface CreateHabitInput {
   targetValue: number
   unit: string
   repeatEveryDays: number
+  /** Если массив не пуст, расписание определяется выбранными днями недели, а интервал игнорируется. */
+  weekdays?: HabitWeekday[]
   preferredTimes: HabitPreferredTime[]
   /** @deprecated Напоминания включаются автоматически при наличии preferredTimes. */
   remindersEnabled?: boolean
@@ -175,6 +180,7 @@ export interface HabitReportHabit extends HabitReportSummary {
   targetValue: number
   unit: string
   repeatEveryDays: number
+  weekdays: HabitWeekday[]
   currentStreak: number
   bestStreak: number
   totalValue: number

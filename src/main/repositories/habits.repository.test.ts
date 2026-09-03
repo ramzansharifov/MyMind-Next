@@ -314,6 +314,36 @@ describe('habits repository', () => {
     ])
   })
 
+  it('supports one or several selected weekdays and schedules reminders only on them', () => {
+    vi.setSystemTime(new Date(2026, 0, 1, 8, 0, 0))
+    const habit = createHabit({
+      title: 'Недельная привычка',
+      groupId: null,
+      trackingType: 'check',
+      targetValue: 1,
+      unit: '',
+      repeatEveryDays: 1,
+      weekdays: [4, 7],
+      preferredTimes: [{ unit: 1, time: '09:00' }]
+    })
+
+    expect(habit.weekdays).toEqual([4, 7])
+    expect(() =>
+      upsertHabitEntry({ habitId: habit.id, date: '2026-01-02', value: 1, skipped: false })
+    ).toThrow('На выбранную дату эта привычка не запланирована')
+    expect(
+      upsertHabitEntry({ habitId: habit.id, date: '2026-01-04', value: 1, skipped: false })
+    ).toMatchObject({ date: '2026-01-04', value: 1 })
+
+    getSqlite()
+      .prepare('DELETE FROM habit_entries WHERE habit_id = ? AND date = ?')
+      .run(habit.id, '2026-01-04')
+    const sundayTrigger = new Date(2026, 0, 4, 8, 30, 0).getTime()
+    expect(listDueHabitReminders(sundayTrigger - 1_000, sundayTrigger)).toMatchObject([
+      { habitId: habit.id, occurrenceDate: '2026-01-04', preferredTime: '09:00' }
+    ])
+  })
+
   it('anchors recurrence to the creation day and allows entries only on scheduled days', () => {
     const habit = createHabit({
       title: 'Тренировка',

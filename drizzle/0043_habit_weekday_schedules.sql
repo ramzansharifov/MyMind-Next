@@ -1,0 +1,1 @@
+ALTER TABLE `habits` ADD `weekdays` text DEFAULT '[]' NOT NULL;
