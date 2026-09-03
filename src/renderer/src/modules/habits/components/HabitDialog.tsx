@@ -154,7 +154,7 @@ export function HabitDialog({
       open={open}
       onOpenChange={onOpenChange}
       title={habit ? 'Изменить привычку' : 'Новая привычка'}
-      description="Настройте способ отслеживания и расписание привычки."
+      description="Настройте привычку."
       icon={<Sparkles />}
       size="xl"
       busy={busy}
@@ -211,48 +211,55 @@ export function HabitDialog({
           <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-[var(--app-text)]">
             <Target className="size-4 text-violet-300" /> Как отслеживать
           </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-1.5">
-              <span className="block text-xs text-[var(--app-muted)]">Тип</span>
-              <AppSelect
-                ariaLabel="Тип отслеживания привычки"
-                value={trackingType}
-                options={HABIT_TRACKING_OPTIONS}
-                onValueChange={changeTrackingType}
-              />
-            </div>
 
-            {trackingType === 'count' ? (
-              <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-3">
-                <label className="space-y-1.5">
-                  <span className="block text-xs text-[var(--app-muted)]">Цель</span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={1_000_000_000}
-                    step={1}
-                    value={targetValue}
-                    className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
-                    onChange={(event) => setTargetValue(event.target.value)}
-                  />
-                </label>
-                <label className="space-y-1.5">
-                  <span className="block text-xs text-[var(--app-muted)]">Единица</span>
-                  <input
-                    value={unit}
-                    maxLength={32}
-                    placeholder="страниц, мл, км…"
-                    className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
-                    onChange={(event) => setUnit(event.target.value)}
-                  />
-                </label>
-              </div>
-            ) : (
-              <div className="flex items-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-4 text-sm leading-5 text-[var(--app-muted)]">
-                Один клик отмечает привычку выполненной на запланированный день.
-              </div>
-            )}
+          <div
+            role="group"
+            aria-label="Тип отслеживания привычки"
+            className="inline-flex rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-1"
+          >
+            {HABIT_TRACKING_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                aria-pressed={trackingType === option.value}
+                className={
+                  trackingType === option.value
+                    ? 'h-9 rounded-lg bg-violet-500 px-4 text-xs font-semibold text-white'
+                    : 'h-9 rounded-lg px-4 text-xs font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
+                }
+                onClick={() => changeTrackingType(option.value)}
+              >
+                {option.label}
+              </button>
+            ))}
           </div>
+
+          {trackingType === 'count' && (
+            <div className="mt-3 grid gap-3 md:max-w-xl md:grid-cols-2">
+              <label className="space-y-1.5">
+                <span className="block text-xs text-[var(--app-muted)]">Цель</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={1_000_000_000}
+                  step={1}
+                  value={targetValue}
+                  className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
+                  onChange={(event) => setTargetValue(event.target.value)}
+                />
+              </label>
+              <label className="space-y-1.5">
+                <span className="block text-xs text-[var(--app-muted)]">Единица</span>
+                <input
+                  value={unit}
+                  maxLength={32}
+                  placeholder="страниц, мл, км…"
+                  className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
+                  onChange={(event) => setUnit(event.target.value)}
+                />
+              </label>
+            </div>
+          )}
         </div>
 
         <div className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-4">
@@ -285,10 +292,6 @@ export function HabitDialog({
 
           {recurrenceMode === 'interval' ? (
             <>
-              <p className="mb-3 text-xs leading-5 text-[var(--app-muted)]">
-                Интервал отсчитывается от дня создания привычки. Например, 10 означает один
-                запланированный день каждые 10 дней.
-              </p>
               <div className="flex flex-wrap gap-2">
                 {recurrencePresets.map((days) => (
                   <button
@@ -320,33 +323,27 @@ export function HabitDialog({
               </label>
             </>
           ) : (
-            <>
-              <p className="mb-3 text-xs leading-5 text-[var(--app-muted)]">
-                Выберите один или несколько дней. Например, только воскресенье или понедельник,
-                среду и пятницу каждую неделю.
-              </p>
-              <div className="grid grid-cols-7 gap-2">
-                {HABIT_WEEKDAY_OPTIONS.map((weekday) => {
-                  const selected = weekdays.includes(weekday.value)
-                  return (
-                    <button
-                      key={weekday.value}
-                      type="button"
-                      aria-label={weekday.label}
-                      aria-pressed={selected}
-                      className={
-                        selected
-                          ? 'h-10 rounded-xl bg-violet-500 text-xs font-semibold text-white'
-                          : 'h-10 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] text-xs font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
-                      }
-                      onClick={() => toggleWeekday(weekday.value)}
-                    >
-                      {weekday.short}
-                    </button>
-                  )
-                })}
-              </div>
-            </>
+            <div className="grid grid-cols-7 gap-2">
+              {HABIT_WEEKDAY_OPTIONS.map((weekday) => {
+                const selected = weekdays.includes(weekday.value)
+                return (
+                  <button
+                    key={weekday.value}
+                    type="button"
+                    aria-label={weekday.label}
+                    aria-pressed={selected}
+                    className={
+                      selected
+                        ? 'h-10 rounded-xl bg-violet-500 text-xs font-semibold text-white'
+                        : 'h-10 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] text-xs font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
+                    }
+                    onClick={() => toggleWeekday(weekday.value)}
+                  >
+                    {weekday.short}
+                  </button>
+                )
+              })}
+            </div>
           )}
         </div>
 
