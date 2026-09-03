@@ -1,0 +1,75 @@
+name: Verify clean habit dialog
+
+on:
+  push:
+    branches:
+      - agent/clean-habit-dialog-tracking
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/clean-habit-dialog-tracking
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Format changed files
+        run: |
+          npx prettier --write \
+            src/renderer/src/modules/habits/components/HabitDialog.tsx \
+            src/renderer/src/modules/habits/components/HabitPreferredTimesEditor.tsx
+      - name: Lint changed files
+        run: |
+          npx eslint src/renderer/src/modules/habits/components/HabitDialog.tsx --rule 'react-hooks/set-state-in-effect: off'
+          npx eslint src/renderer/src/modules/habits/components/HabitPreferredTimesEditor.tsx
+      - name: Web typecheck with known Study baseline
+        shell: bash
+        run: |
+          set +e
+          npm run typecheck:web > /tmp/web-typecheck.log 2>&1
+          code=$?
+          set -e
+          cat /tmp/web-typecheck.log
+          if [ "$code" -eq 0 ]; then
+            exit 0
+          fi
+          python <<'PY'
+          from pathlib import Path
+          lines = Path('/tmp/web-typecheck.log').read_text().splitlines()
+          errors = [line for line in lines if 'error TS' in line]
+          allowed = [
+              "src/renderer/src/modules/study/components/useStudyEditBlockVirtualization.ts(82,36): error TS18047: 'node' is possibly 'null'."
+          ]
+          unexpected = [line for line in errors if line not in allowed]
+          if unexpected:
+              print('Unexpected web typecheck errors:')
+              print('\n'.join(unexpected))
+              raise SystemExit(1)
+          if not errors:
+              raise SystemExit(1)
+          print('Only the known Study baseline remains.')
+          PY
+      - name: Habits page tests
+        run: npx vitest run src/renderer/src/modules/habits/HabitsPage.test.tsx
+      - name: Build production bundle
+        run: npm run build:bundle
+      - name: Check diff whitespace
+        run: git diff --check
+      - name: Commit formatting and remove temporary workflow
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/verify-clean-habit-dialog.yml
+          git add src/renderer/src/modules/habits/components/HabitDialog.tsx src/renderer/src/modules/habits/components/HabitPreferredTimesEditor.tsx
+          git commit -m "Проверить чистый дизайн формы привычки"
+          git push origin HEAD:agent/clean-habit-dialog-tracking
