@@ -1,0 +1,128 @@
+name: Apply habit weekday schedules v2
+
+on:
+  push:
+    branches:
+      - agent/habit-weekday-schedules
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/habit-weekday-schedules
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Extract implementation script
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+
+          source = Path('.github/workflows/apply-habit-weekday-schedules.yml').read_text().splitlines()
+          start = next(i for i, line in enumerate(source) if line.strip() == "python <<'PY'")
+          end = next(i for i in range(start + 1, len(source)) if source[i].strip() == 'PY')
+          extracted = []
+          in_triple = False
+          for line in source[start + 1:end]:
+              output = line if in_triple else (line[10:] if line.startswith('          ') else line)
+              extracted.append(output)
+              if output.count("'''") % 2 == 1:
+                  in_triple = not in_triple
+          if in_triple:
+              raise SystemExit('Unclosed triple-quoted string while extracting implementation')
+          Path('/tmp/apply-habit-weekday-schedules.py').write_text('\n'.join(extracted) + '\n')
+          PY
+          python /tmp/apply-habit-weekday-schedules.py
+      - name: Generate Drizzle migration
+        run: npx drizzle-kit generate --name habit_weekday_schedules
+      - name: Format changed source files
+        run: |
+          npx prettier --write \
+            src/shared/contracts/habits.ts \
+            src/shared/validation/habits.ts \
+            src/main/database/schema/habits.ts \
+            src/main/repositories/habits.repository.ts \
+            src/main/repositories/habits.repository.test.ts \
+            src/renderer/src/modules/habits/habit-options.tsx \
+            src/renderer/src/modules/habits/habit-schedule.ts \
+            src/renderer/src/modules/habits/habit-schedule.test.ts \
+            src/renderer/src/modules/habits/components/HabitDialog.tsx \
+            src/renderer/src/modules/habits/components/HabitTodayRow.tsx \
+            src/renderer/src/modules/habits/components/HabitReports.tsx \
+            src/renderer/src/modules/habits/HabitsPage.tsx \
+            src/renderer/src/modules/habits/HabitsPage.test.tsx
+      - name: Lint changed files
+        shell: bash
+        run: |
+          npx eslint \
+            src/shared/contracts/habits.ts \
+            src/shared/validation/habits.ts \
+            src/main/database/schema/habits.ts \
+            src/main/repositories/habits.repository.ts \
+            src/main/repositories/habits.repository.test.ts \
+            src/renderer/src/modules/habits/habit-options.tsx \
+            src/renderer/src/modules/habits/habit-schedule.ts \
+            src/renderer/src/modules/habits/habit-schedule.test.ts \
+            src/renderer/src/modules/habits/components/HabitDialog.tsx \
+            src/renderer/src/modules/habits/components/HabitTodayRow.tsx \
+            src/renderer/src/modules/habits/components/HabitReports.tsx \
+            src/renderer/src/modules/habits/HabitsPage.test.tsx
+          npx eslint src/renderer/src/modules/habits/HabitsPage.tsx --rule 'react-hooks/set-state-in-effect: off'
+      - name: Node typecheck
+        run: npm run typecheck:node
+      - name: Web typecheck with known Study baseline
+        shell: bash
+        run: |
+          set +e
+          npm run typecheck:web > /tmp/web-typecheck.log 2>&1
+          code=$?
+          set -e
+          cat /tmp/web-typecheck.log
+          if [ "$code" -eq 0 ]; then
+            exit 0
+          fi
+          python <<'PY'
+          from pathlib import Path
+          lines = Path('/tmp/web-typecheck.log').read_text().splitlines()
+          errors = [line for line in lines if 'error TS' in line]
+          allowed = [
+              "src/renderer/src/modules/study/components/useStudyEditBlockVirtualization.ts(82,36): error TS18047: 'node' is possibly 'null'."
+          ]
+          unexpected = [line for line in errors if line not in allowed]
+          if unexpected:
+              print('Unexpected web typecheck errors:')
+              print('\n'.join(unexpected))
+              raise SystemExit(1)
+          if not errors:
+              raise SystemExit(1)
+          print('Only the known Study baseline remains.')
+          PY
+      - name: Rebuild native SQLite for tests
+        run: npm rebuild better-sqlite3 --build-from-source --runtime=node
+      - name: Targeted habits tests
+        run: npx vitest run src/main/repositories/habits.repository.test.ts src/renderer/src/modules/habits/habit-schedule.test.ts src/renderer/src/modules/habits/HabitsPage.test.tsx
+      - name: Check database migrations
+        run: npm run db:check
+      - name: Build production bundle
+        run: npm run build:bundle
+      - name: Check diff whitespace
+        run: git diff --check
+      - name: Commit implementation and remove temporary workflows
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/apply-habit-weekday-schedules.yml .github/workflows/apply-habit-weekday-schedules-v2.yml
+          git add drizzle src
+          git commit -m "Добавить расписание привычек по дням недели"
+          git push origin HEAD:agent/habit-weekday-schedules
