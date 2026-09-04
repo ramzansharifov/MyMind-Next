@@ -1,0 +1,155 @@
+name: Apply semantic accent colors v5
+
+on:
+  push:
+    branches:
+      - agent/semantic-accent-colors
+
+permissions:
+  contents: write
+
+jobs:
+  refactor:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Refactor accent color tokens
+        shell: bash
+        run: |
+          python - <<'PY'
+          import re
+          from pathlib import Path
+
+          renderer = Path('src/renderer/src')
+          text_extensions = {'.ts', '.tsx', '.css'}
+
+          changed = []
+          for path in renderer.rglob('*'):
+              if not path.is_file() or path.suffix not in text_extensions:
+                  continue
+              text = path.read_text(encoding='utf-8')
+              next_text = text.replace('violet-', 'accent-')
+              if next_text != text:
+                  path.write_text(next_text, encoding='utf-8')
+                  changed.append(path)
+
+          main_css = renderer / 'assets/main.css'
+          main_text = main_css.read_text(encoding='utf-8')
+          alias_pattern = re.compile(
+              r'(?m)^  --color-accent-(?:50|100|200|300|400|500|600|700|800|900|950): var\(--app-accent-(?:50|100|200|300|400|500|600|700|800|900|950)\);\n'
+          )
+          main_text, removed_aliases = alias_pattern.subn('', main_text)
+          if removed_aliases != 11:
+              raise SystemExit(f'Expected 11 legacy accent aliases, removed {removed_aliases}')
+
+          theme_block = '''@theme {\n  /* Semantic application accent. Keep built-in Tailwind color namespaces literal. */\n  --color-accent-50: var(--app-accent-50);\n  --color-accent-100: var(--app-accent-100);\n  --color-accent-200: var(--app-accent-200);\n  --color-accent-300: var(--app-accent-300);\n  --color-accent-400: var(--app-accent-400);\n  --color-accent-500: var(--app-accent-500);\n  --color-accent-600: var(--app-accent-600);\n  --color-accent-700: var(--app-accent-700);\n  --color-accent-800: var(--app-accent-800);\n  --color-accent-900: var(--app-accent-900);\n  --color-accent-950: var(--app-accent-950);\n}\n\n'''
+          import_line = "@import 'tailwindcss';\n\n"
+          if import_line not in main_text:
+              raise SystemExit('Tailwind import was not found in main.css')
+          main_text = main_text.replace(import_line, import_line + theme_block, 1)
+          main_css.write_text(main_text, encoding='utf-8')
+
+          block_editor = renderer / 'modules/study/components/StudyBlockEditor.tsx'
+          block_text = block_editor.read_text(encoding='utf-8')
+          block_text = block_text.replace(
+              'shadow-[0_0_0_3px_rgb(139_92_246/0.16)]',
+              'shadow-[0_0_0_3px_color-mix(in_srgb,var(--app-accent-500)_16%,transparent)]'
+          )
+          block_text = block_text.replace(
+              'shadow-[0_0_12px_rgb(139_92_246/0.45)]',
+              'shadow-[0_0_12px_color-mix(in_srgb,var(--app-accent-500)_45%,transparent)]'
+          )
+          block_editor.write_text(block_text, encoding='utf-8')
+
+          material_editor = renderer / 'modules/study/components/StudyMaterialEditor.tsx'
+          material_text = material_editor.read_text(encoding='utf-8')
+          material_text = material_text.replace(
+              "'0 0 0 4px rgb(139 92 246 / 35%)'",
+              "'0 0 0 4px color-mix(in srgb, var(--app-accent-500) 35%, transparent)'"
+          )
+          material_text = material_text.replace(
+              "'0 0 0 2px rgb(139 92 246 / 30%)'",
+              "'0 0 0 2px color-mix(in srgb, var(--app-accent-500) 30%, transparent)'"
+          )
+          material_text = material_text.replace(
+              "'0 0 0 0 rgb(139 92 246 / 0%)'",
+              "'0 0 0 0 color-mix(in srgb, var(--app-accent-500) 0%, transparent)'"
+          )
+          material_text = material_text.replace(
+              "'rgb(139 92 246 / 24%)'",
+              "'color-mix(in srgb, var(--app-accent-500) 24%, transparent)'"
+          )
+          material_editor.write_text(material_text, encoding='utf-8')
+
+          contract_test = renderer / 'assets/accent-color-contract.test.ts'
+          contract_test.write_text('''import { readFileSync } from 'node:fs'\nimport { join } from 'node:path'\nimport { describe, expect, it } from 'vitest'\n\nconst mainCss = readFileSync(join(process.cwd(), 'src/renderer/src/assets/main.css'), 'utf8')\nconst lightThemeCss = readFileSync(\n  join(process.cwd(), 'src/renderer/src/assets/light-theme.css'),\n  'utf8'\n)\nconst builtInPurpleNamespace = ['vio', 'let'].join('')\n\ndescribe('semantic accent color contract', () => {\n  it('exposes the application accent through its own Tailwind color namespace', () => {\n    expect(mainCss).toContain('@theme {')\n    expect(mainCss).toContain('--color-accent-300: var(--app-accent-300);')\n    expect(mainCss).toContain('--color-accent-500: var(--app-accent-500);')\n    expect(mainCss).toContain('--color-accent-950: var(--app-accent-950);')\n  })\n\n  it('does not hijack the built-in Tailwind purple namespace', () => {\n    expect(mainCss).not.toContain(`--color-${builtInPurpleNamespace}-300: var(--app-accent-300);`)\n    expect(mainCss).not.toContain(`--color-${builtInPurpleNamespace}-500: var(--app-accent-500);`)\n  })\n\n  it('keeps the light-theme contrast adjustments on the semantic accent namespace', () => {\n    expect(lightThemeCss).toContain('--color-accent-300: var(--app-accent-700);')\n    expect(lightThemeCss).toContain('--color-accent-500: var(--app-accent-600);')\n    expect(lightThemeCss).not.toContain(\n      `--color-${builtInPurpleNamespace}-300: var(--app-accent-700);`\n    )\n  })\n})\n''', encoding='utf-8')
+
+          print(f'Renamed violet-* accent utilities in {len(changed)} files')
+          PY
+
+      - name: Remove temporary workflows
+        shell: bash
+        run: |
+          rm -f .github/workflows/audit-accent-colors.yml
+          rm -f .github/workflows/apply-semantic-accent-colors.yml
+          rm -f .github/workflows/apply-semantic-accent-colors-v2.yml
+          rm -f .github/workflows/apply-semantic-accent-colors-v3.yml
+          rm -f .github/workflows/apply-semantic-accent-colors-v4.yml
+          rm -f .github/workflows/apply-semantic-accent-colors-v5.yml
+
+      - name: Format changed renderer files
+        shell: bash
+        run: |
+          mapfile -t files < <(git diff --name-only --diff-filter=ACM | grep -E '\.(ts|tsx|css)$' || true)
+          if ((${#files[@]})); then
+            npx prettier --write "${files[@]}"
+          fi
+
+      - name: Verify color namespace migration
+        shell: bash
+        run: |
+          if grep -RIn --exclude='*.map' 'violet-' src/renderer/src; then
+            echo 'Found legacy violet-* accent utility usages.' >&2
+            exit 1
+          fi
+
+          if grep -n -- '--color-violet-' src/renderer/src/assets/main.css src/renderer/src/assets/light-theme.css; then
+            echo 'Built-in violet namespace is still overridden by the application accent.' >&2
+            exit 1
+          fi
+
+          if grep -nE 'rgb\(139 92 246|139_92_246' \
+            src/renderer/src/modules/study/components/StudyBlockEditor.tsx \
+            src/renderer/src/modules/study/components/StudyMaterialEditor.tsx; then
+            echo 'Found a hard-coded legacy accent in Study interactions.' >&2
+            exit 1
+          fi
+
+          grep -n -- '--color-accent-500: var(--app-accent-500);' src/renderer/src/assets/main.css
+          grep -n -- '--color-accent-300: var(--app-accent-700);' src/renderer/src/assets/light-theme.css
+
+      - name: Run full project checks
+        run: npm run check
+
+      - name: Verify diff
+        run: |
+          git diff --check
+          git status --short
+
+      - name: Commit refactor
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Упорядочить семантические акцентные цвета"
+          git push
