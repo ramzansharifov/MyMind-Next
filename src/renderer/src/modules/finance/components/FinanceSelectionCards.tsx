@@ -102,6 +102,12 @@ export function FinanceTagCardPicker({
     >
       {tags.map((tag) => {
         const selected = tag.id === value
+        const selectedClassName =
+          tag.type === 'expense'
+            ? 'border-red-400/60 bg-red-500/22 shadow-sm ring-1 ring-red-400/15'
+            : tag.type === 'income'
+              ? 'border-emerald-400/60 bg-emerald-500/22 shadow-sm ring-1 ring-emerald-400/15'
+              : 'border-violet-500/45 bg-violet-500/10 shadow-sm ring-1 ring-violet-500/10'
         return (
           <button
             key={tag.id}
@@ -116,7 +122,7 @@ export function FinanceTagCardPicker({
               'focus-visible:ring-2 focus-visible:ring-violet-500/35',
               'disabled:cursor-not-allowed disabled:opacity-45',
               selected
-                ? 'border-violet-500/45 bg-violet-500/10 shadow-sm ring-1 ring-violet-500/10'
+                ? selectedClassName
                 : 'border-[var(--app-border)] bg-[var(--app-field)] hover:border-[var(--app-border-strong)] hover:bg-[var(--app-field-hover)]'
             )}
             onClick={() => onChange(tag.id)}
