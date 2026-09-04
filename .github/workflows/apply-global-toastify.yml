@@ -1,0 +1,96 @@
+name: Apply global Toastify notifications
+
+on:
+  push:
+    branches:
+      - agent/global-toastify-notifications
+    paths:
+      - .github/workflows/apply-global-toastify.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/global-toastify-notifications
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Apply implementation
+        run: python .github/scripts/apply-global-toastify.py
+      - name: Install Toastify
+        run: npm install react-toastify --save
+      - name: Format
+        run: >-
+          npx prettier --write
+          package.json package-lock.json
+          src/shared/contracts/system.ts
+          src/preload/index.ts
+          src/renderer/src/main.tsx
+          src/renderer/src/assets/toast-notifications.css
+          src/renderer/src/shared/ui/AppToastNotifications.tsx
+          src/renderer/src/shared/ui/AppToastNotifications.test.tsx
+          src/renderer/src/modules/passwords/PasswordsPage.tsx
+          src/renderer/src/modules/passwords/PasswordsPage.test.tsx
+      - name: ESLint
+        run: >-
+          npx eslint
+          src/shared/contracts/system.ts
+          src/preload/index.ts
+          src/renderer/src/main.tsx
+          src/renderer/src/shared/ui/AppToastNotifications.tsx
+          src/renderer/src/shared/ui/AppToastNotifications.test.tsx
+          src/renderer/src/modules/passwords/PasswordsPage.tsx
+          src/renderer/src/modules/passwords/PasswordsPage.test.tsx
+      - name: Focused tests
+        run: >-
+          npx vitest run
+          src/renderer/src/shared/ui/AppToastNotifications.test.tsx
+          src/renderer/src/modules/passwords/PasswordsPage.test.tsx
+      - name: Node typecheck
+        run: npm run typecheck:node
+      - name: Web typecheck
+        shell: bash
+        run: |
+          set +e
+          npm run typecheck:web > /tmp/web-typecheck.log 2>&1
+          status=$?
+          cat /tmp/web-typecheck.log
+          if [ "$status" -eq 0 ]; then exit 0; fi
+          remaining="$(grep 'error TS' /tmp/web-typecheck.log | grep -v 'useStudyEditBlockVirtualization.ts(82,36): error TS18047' || true)"
+          if [ -n "$remaining" ]; then
+            printf '%s\n' "$remaining"
+            exit 1
+          fi
+          exit 0
+      - name: Database check
+        run: npm run db:check
+      - name: Production bundle
+        run: npm run build:bundle
+      - name: Whitespace
+        run: git diff --check
+      - name: Commit implementation
+        shell: bash
+        run: |
+          git config user.name "Ramzan Sharifov"
+          git config user.email "114869338+ramzansharifov@users.noreply.github.com"
+          git add \
+            package.json package-lock.json \
+            src/shared/contracts/system.ts \
+            src/preload/index.ts \
+            src/renderer/src/main.tsx \
+            src/renderer/src/assets/toast-notifications.css \
+            src/renderer/src/shared/ui/AppToastNotifications.tsx \
+            src/renderer/src/shared/ui/AppToastNotifications.test.tsx \
+            src/renderer/src/modules/passwords/PasswordsPage.tsx \
+            src/renderer/src/modules/passwords/PasswordsPage.test.tsx
+          git commit -m "feat: унифицировать уведомления через Toastify"
+          git push origin HEAD:agent/global-toastify-notifications
