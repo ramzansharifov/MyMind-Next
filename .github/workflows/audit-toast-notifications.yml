@@ -1,0 +1,27 @@
+name: Audit toast notification patterns
+
+on:
+  push:
+    branches:
+      - agent/global-toastify-notifications
+    paths:
+      - .github/workflows/audit-toast-notifications.yml
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/global-toastify-notifications
+      - name: Audit renderer feedback patterns
+        shell: bash
+        run: |
+          echo '=== setError / error state ==='
+          rg -n --glob 'src/renderer/src/**/*.{ts,tsx}' 'setError\(|\berror\s*&&|role="alert"' src/renderer/src || true
+          echo '=== success / copied / saved ==='
+          rg -n --glob 'src/renderer/src/**/*.{ts,tsx}' 'setSuccess|copiedLabel|скопирован|успеш|сохранен|сохранён|создан|удален|удалён' src/renderer/src || true
+          echo '=== catches in modules ==='
+          rg -n --glob 'src/renderer/src/modules/**/*.{ts,tsx}' 'catch \(' src/renderer/src/modules || true
+          echo '=== package refs ==='
+          rg -n 'toast|Toastify|react-toastify' package.json package-lock.json src/renderer/src || true
