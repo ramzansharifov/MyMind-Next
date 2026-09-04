@@ -43,6 +43,14 @@ export interface ShutdownResponse extends ShutdownRequest {
   decision: 'success' | 'failed' | 'cancel' | 'force'
 }
 
+export type OperationFeedbackKind = 'success' | 'error'
+
+export interface OperationFeedback {
+  kind: OperationFeedbackKind
+  message: string
+  key?: string
+}
+
 export interface MyMindApi {
   aiChat: AiChatApi
 
@@ -50,6 +58,7 @@ export interface MyMindApi {
     getHealth(): Promise<SystemHealth>
     getWindowState(): Promise<SystemWindowState>
     onWindowStateChanged(listener: (state: SystemWindowState) => void): () => void
+    onOperationFeedback?(listener: (feedback: OperationFeedback) => void): () => void
     minimizeWindow(): Promise<void>
     toggleMaximizeWindow(): Promise<SystemWindowState>
     closeWindow(): Promise<void>
