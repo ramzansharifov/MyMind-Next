@@ -1,0 +1,81 @@
+name: Verify global Toastify notifications
+
+on:
+  push:
+    branches:
+      - agent/global-toastify-notifications
+    paths:
+      - src/preload/index.ts
+      - src/shared/contracts/system.ts
+      - src/renderer/src/main.tsx
+      - src/renderer/src/assets/toast-notifications.css
+      - src/renderer/src/shared/ui/AppToastNotifications.tsx
+      - src/renderer/src/shared/ui/AppToastNotifications.test.tsx
+      - src/renderer/src/modules/passwords/PasswordsPage.tsx
+      - src/renderer/src/modules/passwords/PasswordsPage.test.tsx
+      - package.json
+      - package-lock.json
+      - .github/workflows/verify-global-toastify.yml
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/global-toastify-notifications
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies without native postinstall
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Format changed source files
+        run: >-
+          npx prettier --write
+          package.json package-lock.json
+          src/shared/contracts/system.ts
+          src/preload/index.ts
+          src/renderer/src/main.tsx
+          src/renderer/src/assets/toast-notifications.css
+          src/renderer/src/shared/ui/AppToastNotifications.tsx
+          src/renderer/src/shared/ui/AppToastNotifications.test.tsx
+          src/renderer/src/modules/passwords/PasswordsPage.tsx
+          src/renderer/src/modules/passwords/PasswordsPage.test.tsx
+      - name: ESLint changed TypeScript files
+        run: >-
+          npx eslint
+          src/shared/contracts/system.ts
+          src/preload/index.ts
+          src/renderer/src/main.tsx
+          src/renderer/src/shared/ui/AppToastNotifications.tsx
+          src/renderer/src/shared/ui/AppToastNotifications.test.tsx
+          src/renderer/src/modules/passwords/PasswordsPage.tsx
+          src/renderer/src/modules/passwords/PasswordsPage.test.tsx
+      - name: Focused toast tests
+        run: npx vitest run src/renderer/src/shared/ui/AppToastNotifications.test.tsx src/renderer/src/modules/passwords/PasswordsPage.test.tsx
+      - name: Node typecheck
+        run: npm run typecheck:node
+      - name: Web typecheck
+        run: npm run typecheck:web
+      - name: Database schema check
+        run: npm run db:check
+      - name: Production bundle
+        run: npm run build:bundle
+      - name: Whitespace check
+        run: git diff --check
+      - name: Commit formatting if needed
+        if: success()
+        shell: bash
+        run: |
+          if ! git diff --quiet; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add package.json package-lock.json src/shared/contracts/system.ts src/preload/index.ts src/renderer/src/main.tsx src/renderer/src/assets/toast-notifications.css src/renderer/src/shared/ui/AppToastNotifications.tsx src/renderer/src/shared/ui/AppToastNotifications.test.tsx src/renderer/src/modules/passwords/PasswordsPage.tsx src/renderer/src/modules/passwords/PasswordsPage.test.tsx
+            git commit -m 'style: отформатировать глобальные уведомления'
+            git push origin HEAD:agent/global-toastify-notifications
+          fi
