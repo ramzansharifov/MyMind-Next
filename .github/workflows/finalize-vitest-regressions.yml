@@ -26,30 +26,22 @@ jobs:
 
           path = Path('src/renderer/src/modules/notes/components/NotesHome.tsx')
           source = path.read_text()
-          old = '''      trigger={
-        <Tooltip content={`Изменить иконку группы «${group.title}»`} side="top">
-          <button
-            type="button"
-            aria-label={`Изменить иконку группы «${group.title}»`}
-            className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[color-mix(in_srgb,var(--app-accent-500)_15%,transparent)] bg-[color-mix(in_srgb,var(--app-accent-500)_10%,transparent)] text-[var(--app-accent-500)] transition-colors outline-none hover:border-[color-mix(in_srgb,var(--app-accent-500)_35%,transparent)] hover:bg-[color-mix(in_srgb,var(--app-accent-500)_15%,transparent)] focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)]/35"
-          >
-            <FolderIcon name={group.icon} expanded className={className} />
-          </button>
-        </Tooltip>
-      }'''
-          new = '''      triggerTooltip={`Изменить иконку группы «${group.title}»`}
-      trigger={
-        <button
-          type="button"
-          aria-label={`Изменить иконку группы «${group.title}»`}
-          className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[color-mix(in_srgb,var(--app-accent-500)_15%,transparent)] bg-[color-mix(in_srgb,var(--app-accent-500)_10%,transparent)] text-[var(--app-accent-500)] transition-colors outline-none hover:border-[color-mix(in_srgb,var(--app-accent-500)_35%,transparent)] hover:bg-[color-mix(in_srgb,var(--app-accent-500)_15%,transparent)] focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)]/35"
-        >
-          <FolderIcon name={group.icon} expanded className={className} />
-        </button>
-      }'''
-          if source.count(old) != 1:
-              raise SystemExit(f'expected exactly one Notes icon picker trigger, found {source.count(old)}')
-          path.write_text(source.replace(old, new))
+          tooltip_marker = '        <Tooltip content={`Изменить иконку группы «${group.title}»`} side="top">'
+          tooltip_index = source.index(tooltip_marker)
+          start = source.rfind('      trigger={\n', 0, tooltip_index)
+          end_marker = '        </Tooltip>\n      }'
+          end = source.index(end_marker, tooltip_index) + len(end_marker)
+          block_lines = source[start:end].splitlines()
+          if len(block_lines) < 5 or block_lines[1] != tooltip_marker:
+              raise SystemExit('unexpected Notes icon picker trigger structure')
+          button_lines = [line[2:] for line in block_lines[2:-2]]
+          replacement_lines = [
+              '      triggerTooltip={`Изменить иконку группы «${group.title}»`}',
+              '      trigger={',
+              *button_lines,
+              '      }'
+          ]
+          path.write_text(source[:start] + '\n'.join(replacement_lines) + source[end:])
           PY
 
       - name: Install dependencies
