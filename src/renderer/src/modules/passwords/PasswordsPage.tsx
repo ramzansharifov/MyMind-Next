@@ -590,30 +590,81 @@ export function PasswordsPage({
           </>
         }
       >
-        <div className="flex gap-1 overflow-x-auto rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-1">
-          {[
-            { id: 'all' as const, label: 'Хранилище', icon: KeyRound },
-            { id: 'favorites' as const, label: 'Избранное', icon: Heart },
-            { id: 'security' as const, label: 'Безопасность', icon: ShieldCheck }
-          ].map((tab) => {
-            const Icon = tab.icon
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                aria-pressed={view === tab.id}
-                className={cn(
-                  'inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3.5 text-sm font-medium',
-                  view === tab.id
-                    ? 'bg-violet-500 font-semibold text-white'
-                    : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
+        <div className="overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)]">
+          <div className="flex gap-1 overflow-x-auto p-1">
+            {[
+              { id: 'all' as const, label: 'Хранилище', icon: KeyRound },
+              { id: 'favorites' as const, label: 'Избранное', icon: Heart },
+              { id: 'security' as const, label: 'Безопасность', icon: ShieldCheck }
+            ].map((tab) => {
+              const Icon = tab.icon
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  aria-pressed={view === tab.id}
+                  className={cn(
+                    'inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3.5 text-sm font-medium',
+                    view === tab.id
+                      ? 'bg-violet-500 font-semibold text-white'
+                      : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
+                  )}
+                  onClick={() => setView(tab.id)}
+                >
+                  <Icon className="size-4" /> {tab.label}
+                </button>
+              )
+            })}
+          </div>
+
+          {view !== 'security' && (
+            <div className="flex flex-wrap gap-2 border-t border-[var(--app-border)] p-2">
+              <label className="flex h-11 min-w-[240px] flex-1 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3.5 focus-within:border-violet-500/45 focus-within:ring-2 focus-within:ring-violet-500/10">
+                <Search className="size-4 shrink-0 text-[var(--app-muted)]" />
+                <input
+                  value={query}
+                  type="search"
+                  aria-label="Поиск по паролям"
+                  placeholder="Название, логин, сайт или тег…"
+                  className="min-w-0 flex-1 bg-transparent text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60"
+                  onChange={(event) => setQuery(event.target.value)}
+                />
+                {query && (
+                  <Tooltip content="Очистить поиск" side="top">
+                    <button
+                      type="button"
+                      aria-label="Очистить поиск"
+                      className="text-[var(--app-muted)] hover:text-[var(--app-text)]"
+                      onClick={() => setQuery('')}
+                    >
+                      <X className="size-4" />
+                    </button>
+                  </Tooltip>
                 )}
-                onClick={() => setView(tab.id)}
-              >
-                <Icon className="size-4" /> {tab.label}
-              </button>
-            )
-          })}
+              </label>
+              <div className="min-w-[160px]">
+                <AppSelect
+                  ariaLabel="Фильтр по типу записи"
+                  value={typeFilter}
+                  options={[{ value: 'all', label: 'Все типы' }, ...PASSWORD_TYPE_OPTIONS]}
+                  onValueChange={(value) => setTypeFilter(value as PasswordTypeFilter)}
+                />
+              </div>
+              <div className="min-w-[180px]">
+                <AppSelect
+                  ariaLabel="Фильтр по безопасности"
+                  value={issueFilter}
+                  options={[
+                    { value: 'all', label: 'Любая безопасность' },
+                    { value: 'weak', label: 'Слабые' },
+                    { value: 'reused', label: 'Повторяющиеся' },
+                    { value: 'old', label: 'Старые пароли' }
+                  ]}
+                  onValueChange={(value) => setIssueFilter(value as PasswordIssueFilter)}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </ModuleHeader>
 
@@ -772,55 +823,6 @@ export function PasswordsPage({
         <section className="min-w-0 space-y-4">
           {view !== 'security' ? (
             <>
-              <div className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)]">
-                <div className="flex flex-wrap gap-2">
-                  <label className="flex h-11 min-w-[240px] flex-1 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 focus-within:border-violet-500/45 focus-within:ring-2 focus-within:ring-violet-500/10">
-                    <Search className="size-4 shrink-0 text-[var(--app-muted)]" />
-                    <input
-                      value={query}
-                      type="search"
-                      aria-label="Поиск по паролям"
-                      placeholder="Название, логин, сайт или тег…"
-                      className="min-w-0 flex-1 bg-transparent text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60"
-                      onChange={(event) => setQuery(event.target.value)}
-                    />
-                    {query && (
-                      <Tooltip content="Очистить поиск" side="top">
-                        <button
-                          type="button"
-                          aria-label="Очистить поиск"
-                          className="text-[var(--app-muted)] hover:text-[var(--app-text)]"
-                          onClick={() => setQuery('')}
-                        >
-                          <X className="size-4" />
-                        </button>
-                      </Tooltip>
-                    )}
-                  </label>
-                  <div className="min-w-[160px]">
-                    <AppSelect
-                      ariaLabel="Фильтр по типу записи"
-                      value={typeFilter}
-                      options={[{ value: 'all', label: 'Все типы' }, ...PASSWORD_TYPE_OPTIONS]}
-                      onValueChange={(value) => setTypeFilter(value as PasswordTypeFilter)}
-                    />
-                  </div>
-                  <div className="min-w-[180px]">
-                    <AppSelect
-                      ariaLabel="Фильтр по безопасности"
-                      value={issueFilter}
-                      options={[
-                        { value: 'all', label: 'Любая безопасность' },
-                        { value: 'weak', label: 'Слабые' },
-                        { value: 'reused', label: 'Повторяющиеся' },
-                        { value: 'old', label: 'Старые пароли' }
-                      ]}
-                      onValueChange={(value) => setIssueFilter(value as PasswordIssueFilter)}
-                    />
-                  </div>
-                </div>
-              </div>
-
               {baseFilteredItems.length === 0 ? (
                 <div className="flex min-h-72 flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface)] px-6 text-center">
                   <span className="flex size-14 items-center justify-center rounded-2xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
