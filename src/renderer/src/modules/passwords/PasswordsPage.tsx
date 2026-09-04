@@ -115,13 +115,17 @@ function VaultGate({
         <h1 className="mt-5 text-2xl font-semibold tracking-tight text-[var(--app-text)]">
           {initialized ? 'Хранилище заблокировано' : 'Настройте хранилище паролей'}
         </h1>
-        <p className="mt-2 text-sm leading-6 text-[var(--app-muted)]">
-          {initialized
-            ? 'Введите мастер-пароль. Он используется только для открытия локального зашифрованного хранилища.'
-            : 'Создайте отдельный мастер-пароль. Он не сохраняется в открытом виде и потребуется для доступа к записям.'}
-        </p>
+        {!initialized && (
+          <p className="mt-2 text-sm leading-6 text-[var(--app-muted)]">
+            Создайте отдельный мастер-пароль. Он не сохраняется в открытом виде и потребуется для
+            доступа к записям.
+          </p>
+        )}
 
-        <form className="mt-6 space-y-4" onSubmit={(event) => void submit(event)}>
+        <form
+          className={initialized ? 'mt-9 space-y-4' : 'mt-6 space-y-4'}
+          onSubmit={(event) => void submit(event)}
+        >
           <label className="block space-y-1.5">
             <span className="text-xs font-medium text-[var(--app-muted)]">Мастер-пароль</span>
             <input
