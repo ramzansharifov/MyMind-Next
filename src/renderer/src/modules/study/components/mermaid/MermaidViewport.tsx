@@ -50,7 +50,7 @@ const headerButtonClassName = [
   'text-[var(--app-muted)] outline-none',
   'transition-colors',
   'hover:bg-white/[0.06] hover:text-[var(--app-text)]',
-  'focus-visible:ring-2 focus-visible:ring-violet-500/35',
+  'focus-visible:ring-2 focus-visible:ring-accent-500/35',
   'disabled:cursor-not-allowed disabled:opacity-30'
 ].join(' ')
 

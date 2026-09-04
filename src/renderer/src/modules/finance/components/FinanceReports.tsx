@@ -277,7 +277,7 @@ export function FinanceReports({
             <button
               key={value}
               type="button"
-              className={`rounded-lg px-3 py-2 text-sm transition-colors ${period === value ? 'bg-violet-500 text-white shadow-sm' : 'bg-[var(--app-overlay-faint)] text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'}`}
+              className={`rounded-lg px-3 py-2 text-sm transition-colors ${period === value ? 'bg-accent-500 text-white shadow-sm' : 'bg-[var(--app-overlay-faint)] text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'}`}
               onClick={() => choosePeriod(value)}
             >
               {label}
@@ -380,7 +380,7 @@ export function FinanceReports({
           {hasSecondaryFilters && (
             <button
               type="button"
-              className="inline-flex items-center gap-1.5 font-medium text-[var(--app-text)] hover:text-violet-300"
+              className="hover:text-accent-300 inline-flex items-center gap-1.5 font-medium text-[var(--app-text)]"
               onClick={resetFilters}
             >
               <FilterX className="size-3.5" />
@@ -791,7 +791,7 @@ function PercentMetric({
     <FinanceSurface className="p-4">
       <div className="flex items-center justify-between gap-3">
         <span className="text-xs font-medium text-[var(--app-muted)]">{label}</span>
-        <span className="flex size-8 items-center justify-center rounded-lg bg-violet-500/10 text-violet-300">
+        <span className="bg-accent-500/10 text-accent-300 flex size-8 items-center justify-center rounded-lg">
           <PiggyBank className="size-4" />
         </span>
       </div>
@@ -837,7 +837,7 @@ function InsightCard({
   return (
     <FinanceSurface className="p-4">
       <div className="flex items-center gap-2 text-xs text-[var(--app-muted)]">
-        <span className="text-violet-300">{icon}</span>
+        <span className="text-accent-300">{icon}</span>
         {label}
       </div>
       <Tooltip content={value} side="top">
@@ -929,7 +929,7 @@ function ChartSurface({
     <FinanceSurface className="p-5">
       <div className="mb-5 flex items-start justify-between gap-4 max-[620px]:flex-col">
         <div className="flex items-start gap-3">
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-300">
+          <div className="bg-accent-500/10 text-accent-300 flex size-9 shrink-0 items-center justify-center rounded-xl">
             {icon ?? <BarChart3 className="size-4" />}
           </div>
           <div>

@@ -90,7 +90,7 @@ export function StudyFileBlockView({
           type="button"
           disabled={isOpeningFile}
           aria-label={`Открыть файл «${customTitle || asset.name}»`}
-          className="group flex w-full items-center gap-3 p-4 text-left transition-colors outline-none hover:bg-white/[0.035] focus-visible:bg-white/[0.035] focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:ring-inset disabled:cursor-wait"
+          className="group focus-visible:ring-accent-500/35 flex w-full items-center gap-3 p-4 text-left transition-colors outline-none hover:bg-white/[0.035] focus-visible:bg-white/[0.035] focus-visible:ring-2 focus-visible:ring-inset disabled:cursor-wait"
           onClick={() => {
             void openFile({
               id: asset.id,
@@ -99,7 +99,7 @@ export function StudyFileBlockView({
             })
           }}
         >
-          <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-300">
+          <div className="bg-accent-500/10 text-accent-300 flex size-11 shrink-0 items-center justify-center rounded-xl">
             <File aria-hidden="true" className="size-5" />
           </div>
 
@@ -119,7 +119,7 @@ export function StudyFileBlockView({
             </p>
           </div>
 
-          <span className="flex shrink-0 items-center gap-2 text-xs font-medium text-[var(--app-muted)] transition-colors group-hover:text-violet-300">
+          <span className="group-hover:text-accent-300 flex shrink-0 items-center gap-2 text-xs font-medium text-[var(--app-muted)] transition-colors">
             {isOpeningFile ? (
               <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
             ) : (
@@ -229,7 +229,7 @@ export function StudyFileBlockView({
                     'opacity-80 transition-all',
                     'hover:scale-[1.03] hover:bg-black/75 hover:opacity-100',
                     'focus-visible:scale-[1.03] focus-visible:opacity-100',
-                    'outline-none focus-visible:ring-2 focus-visible:ring-violet-400/70'
+                    'focus-visible:ring-accent-400/70 outline-none focus-visible:ring-2'
                   )}
                 >
                   <Maximize2 aria-hidden="true" className="size-4" />
@@ -261,7 +261,7 @@ export function StudyFileBlockView({
                       'flex size-8 shrink-0 items-center justify-center rounded-lg',
                       'text-white/70 transition-colors outline-none',
                       'hover:bg-white/10 hover:text-white',
-                      'focus-visible:ring-2 focus-visible:ring-violet-400/70'
+                      'focus-visible:ring-accent-400/70 focus-visible:ring-2'
                     )}
                   >
                     <Minimize2 aria-hidden="true" className="size-4" />

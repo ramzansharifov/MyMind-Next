@@ -111,7 +111,7 @@ export function DiaryReports({
             <button
               key={value}
               type="button"
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${period === value ? 'bg-violet-500 text-white' : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'}`}
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${period === value ? 'bg-accent-500 text-white' : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'}`}
               onClick={() => setPeriod(value)}
             >
               {label}
@@ -184,7 +184,7 @@ export function DiaryReports({
                       </div>
                       <div className="h-2 overflow-hidden rounded-full bg-[var(--app-overlay-subtle)]">
                         <div
-                          className="h-full rounded-full bg-violet-500"
+                          className="bg-accent-500 h-full rounded-full"
                           style={{ width: `${item.sharePercent}%` }}
                         />
                       </div>
@@ -216,7 +216,7 @@ export function DiaryReports({
                       <div
                         aria-label={`${point.dayKey}: ${point.entryCount} записей`}
                         tabIndex={0}
-                        className={`aspect-square min-h-4 rounded-[5px] border border-violet-500/10 ${level === 0 ? 'bg-[var(--app-overlay-faint)]' : level === 1 ? 'bg-violet-500/20' : level === 2 ? 'bg-violet-500/35' : level === 3 ? 'bg-violet-500/55' : 'bg-violet-500/80'}`}
+                        className={`border-accent-500/10 aspect-square min-h-4 rounded-[5px] border ${level === 0 ? 'bg-[var(--app-overlay-faint)]' : level === 1 ? 'bg-accent-500/20' : level === 2 ? 'bg-accent-500/35' : level === 3 ? 'bg-accent-500/55' : 'bg-accent-500/80'}`}
                       />
                     </Tooltip>
                   )
@@ -226,10 +226,10 @@ export function DiaryReports({
             <div className="mt-3 flex items-center justify-end gap-1.5 text-[10px] text-[var(--app-muted)]">
               Реже
               <span className="size-3 rounded bg-[var(--app-overlay-faint)]" />
-              <span className="size-3 rounded bg-violet-500/20" />
-              <span className="size-3 rounded bg-violet-500/40" />
-              <span className="size-3 rounded bg-violet-500/60" />
-              <span className="size-3 rounded bg-violet-500/80" />
+              <span className="bg-accent-500/20 size-3 rounded" />
+              <span className="bg-accent-500/40 size-3 rounded" />
+              <span className="bg-accent-500/60 size-3 rounded" />
+              <span className="bg-accent-500/80 size-3 rounded" />
               Чаще
             </div>
           </ReportSurface>
@@ -263,7 +263,7 @@ function Metric({
     <div className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)]">
       <div className="flex items-center justify-between gap-3 text-xs text-[var(--app-muted)]">
         <span>{label}</span>
-        <span className="text-violet-300 [&>svg]:size-4">{icon}</span>
+        <span className="text-accent-300 [&>svg]:size-4">{icon}</span>
       </div>
       <div className="mt-2 text-xl font-semibold text-[var(--app-text)] tabular-nums">{value}</div>
       <div className="mt-1 text-[10px] leading-4 text-[var(--app-muted)]">{hint}</div>
@@ -283,7 +283,7 @@ function ReportSurface({
   return (
     <div className="rounded-[22px] border border-[var(--app-border)] bg-[var(--app-surface)] p-5 shadow-[var(--app-shadow-card)]">
       <div className="mb-5 flex items-center gap-2.5">
-        <span className="flex size-8 items-center justify-center rounded-lg border border-violet-500/15 bg-violet-500/10 text-violet-300">
+        <span className="border-accent-500/15 bg-accent-500/10 text-accent-300 flex size-8 items-center justify-center rounded-lg border">
           {icon}
         </span>
         <h3 className="font-semibold text-[var(--app-text)]">{title}</h3>

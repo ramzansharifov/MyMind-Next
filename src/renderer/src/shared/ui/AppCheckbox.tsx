@@ -29,9 +29,9 @@ export function AppCheckbox({
       className={cn(
         'flex size-4 shrink-0 items-center justify-center rounded-[5px] border transition-colors outline-none',
         'border-[var(--app-border-strong)] bg-[var(--app-workspace)] text-white',
-        'hover:border-violet-400/45 hover:bg-[var(--app-control-hover)]',
-        'focus-visible:ring-2 focus-visible:ring-violet-500/35',
-        'data-[state=checked]:border-violet-500 data-[state=checked]:bg-violet-500',
+        'hover:border-accent-400/45 hover:bg-[var(--app-control-hover)]',
+        'focus-visible:ring-accent-500/35 focus-visible:ring-2',
+        'data-[state=checked]:border-accent-500 data-[state=checked]:bg-accent-500',
         'disabled:cursor-not-allowed disabled:opacity-45',
         className
       )}

@@ -117,7 +117,7 @@ export function WorkoutProgramDialog({
             type="submit"
             form={FORM_ID}
             disabled={busy || !name.trim() || items.length === 0}
-            className="h-10 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-45"
+            className="bg-accent-500 hover:bg-accent-400 h-10 rounded-xl px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
           >
             {busy ? 'Сохраняем…' : program ? 'Сохранить' : 'Создать программу'}
           </button>
@@ -133,7 +133,7 @@ export function WorkoutProgramDialog({
               value={name}
               maxLength={160}
               placeholder="Например, Push / Pull / Legs — День 1"
-              className="h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
+              className="focus:border-accent-500/45 focus:ring-accent-500/15 h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:ring-2"
               onChange={(event) => setName(event.target.value)}
             />
           </label>
@@ -144,7 +144,7 @@ export function WorkoutProgramDialog({
               rows={2}
               maxLength={10000}
               placeholder="Необязательно — цель или особенности программы"
-              className="w-full resize-y rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 py-3 text-sm leading-6 text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
+              className="focus:border-accent-500/45 focus:ring-accent-500/15 w-full resize-y rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 py-3 text-sm leading-6 text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:ring-2"
               onChange={(event) => setDescription(event.target.value)}
             />
           </label>
@@ -177,7 +177,7 @@ export function WorkoutProgramDialog({
             <button
               type="button"
               disabled={exerciseToAdd === NONE}
-              className="inline-flex h-10 items-center gap-2 rounded-xl border border-violet-400/20 bg-violet-500/10 px-3.5 text-sm font-semibold text-violet-200 hover:bg-violet-500/15 disabled:opacity-40"
+              className="border-accent-400/20 bg-accent-500/10 text-accent-200 hover:bg-accent-500/15 inline-flex h-10 items-center gap-2 rounded-xl border px-3.5 text-sm font-semibold disabled:opacity-40"
               onClick={addExercise}
             >
               <Plus className="size-4" /> Добавить
@@ -198,7 +198,7 @@ export function WorkoutProgramDialog({
                   key={item.exerciseId}
                   className="flex items-center gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] px-4 py-3"
                 >
-                  <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-xs font-semibold text-violet-300">
+                  <span className="bg-accent-500/10 text-accent-300 flex size-8 shrink-0 items-center justify-center rounded-xl text-xs font-semibold">
                     {index + 1}
                   </span>
                   {exercise && (

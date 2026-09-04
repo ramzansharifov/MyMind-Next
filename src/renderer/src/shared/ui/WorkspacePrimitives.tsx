@@ -11,7 +11,7 @@ const workspaceActionButtonVariants = cva(
     'text-sm font-medium whitespace-nowrap',
     'outline-none',
     'transition-[background-color,border-color,color,box-shadow]',
-    'focus-visible:ring-2 focus-visible:ring-violet-500/35',
+    'focus-visible:ring-2 focus-visible:ring-accent-500/35',
     'disabled:cursor-not-allowed disabled:opacity-40',
     '[&>svg]:size-4 [&>svg]:shrink-0'
   ],
@@ -23,16 +23,16 @@ const workspaceActionButtonVariants = cva(
           'bg-[var(--app-control)]',
           'text-[var(--app-text)]',
           'shadow-[var(--app-shadow-card)]',
-          'hover:border-violet-500/35',
+          'hover:border-accent-500/35',
           'hover:bg-[var(--app-control-hover)]'
         ],
         primary: [
-          'border-violet-400/20',
-          'bg-violet-500',
+          'border-accent-400/20',
+          'bg-accent-500',
           'text-white',
-          'shadow-lg shadow-violet-950/20',
-          'hover:border-violet-300/30',
-          'hover:bg-violet-400'
+          'shadow-lg shadow-accent-950/20',
+          'hover:border-accent-300/30',
+          'hover:bg-accent-400'
         ]
       }
     },
@@ -72,7 +72,7 @@ export function WorkspaceStatCard({
 }): React.JSX.Element {
   return (
     <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-card)] p-3.5 shadow-[var(--app-shadow-card)]">
-      <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
+      <div className="border-accent-500/15 bg-accent-500/10 text-accent-300 flex size-10 shrink-0 items-center justify-center rounded-xl border">
         {icon}
       </div>
 
@@ -101,7 +101,7 @@ export function WorkspacePanel({
   return (
     <section className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--app-shadow-panel)]">
       <header className="flex min-h-20 items-center gap-3 border-b border-[var(--app-border)] px-5 py-4">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
+        <div className="border-accent-500/15 bg-accent-500/10 text-accent-300 flex size-10 shrink-0 items-center justify-center rounded-xl border">
           {icon}
         </div>
 
@@ -144,9 +144,9 @@ export function WorkspaceNodeCard({
         'group flex w-full min-w-0 items-center gap-3 rounded-xl border text-left outline-none',
         'border-[var(--app-border)] bg-[var(--app-card)]',
         'transition-[border-color,background-color,transform,box-shadow]',
-        'hover:-translate-y-px hover:border-violet-500/30 hover:bg-[var(--app-card-hover)]',
+        'hover:border-accent-500/30 hover:-translate-y-px hover:bg-[var(--app-card-hover)]',
         'hover:shadow-[var(--app-shadow-hover)]',
-        'focus-visible:ring-2 focus-visible:ring-violet-500/35',
+        'focus-visible:ring-accent-500/35 focus-visible:ring-2',
         compact ? 'p-3' : 'p-3.5'
       )}
       onClick={onOpen}
@@ -157,8 +157,8 @@ export function WorkspaceNodeCard({
           'flex shrink-0 items-center justify-center rounded-xl border',
           'border-[var(--app-border)] bg-[var(--app-icon-surface)] text-[var(--app-muted)]',
           'transition-colors',
-          'group-hover:border-violet-500/20 group-hover:bg-violet-500/10',
-          'group-hover:text-violet-300',
+          'group-hover:border-accent-500/20 group-hover:bg-accent-500/10',
+          'group-hover:text-accent-300',
           compact ? 'size-9' : 'size-10'
         )}
       >
@@ -174,7 +174,7 @@ export function WorkspaceNodeCard({
 
       <ArrowRight
         aria-hidden="true"
-        className="size-4 shrink-0 -translate-x-1 text-[var(--app-muted)] opacity-0 transition-[opacity,transform,color] group-hover:translate-x-0 group-hover:text-violet-300 group-hover:opacity-100"
+        className="group-hover:text-accent-300 size-4 shrink-0 -translate-x-1 text-[var(--app-muted)] opacity-0 transition-[opacity,transform,color] group-hover:translate-x-0 group-hover:opacity-100"
       />
     </button>
   )

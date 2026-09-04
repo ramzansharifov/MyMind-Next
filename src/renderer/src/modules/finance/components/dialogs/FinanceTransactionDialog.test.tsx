@@ -200,7 +200,7 @@ describe('FinanceTransactionDialog', () => {
     )
 
     await user.click(screen.getByRole('radio', { name: 'Перевод' }))
-    expect(screen.getByRole('radio', { name: 'Перевод' })).toHaveClass('border-violet-400/60')
+    expect(screen.getByRole('radio', { name: 'Перевод' })).toHaveClass('border-accent-400/60')
     expect(screen.getByRole('radio', { name: 'Доход' })).toHaveClass('bg-[var(--app-workspace)]')
     expect(screen.getByRole('radio', { name: 'Расход' })).toHaveClass('bg-[var(--app-workspace)]')
 

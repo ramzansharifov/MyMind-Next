@@ -122,7 +122,7 @@ export function NutritionDiaryView({
 
       {!hasEntries && (
         <div className="rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface)] px-5 py-10 text-center">
-          <span className="mx-auto flex size-11 items-center justify-center rounded-2xl bg-violet-500/10 text-violet-300">
+          <span className="bg-accent-500/10 text-accent-300 mx-auto flex size-11 items-center justify-center rounded-2xl">
             <Braces className="size-5" />
           </span>
           <h2 className="mt-3 text-sm font-semibold text-[var(--app-text)]">
@@ -195,7 +195,7 @@ function DaySummary({
 
       <div className="mt-4 h-2 overflow-hidden rounded-full bg-[var(--app-workspace)]">
         <div
-          className="h-full rounded-full bg-violet-400 transition-[width]"
+          className="bg-accent-400 h-full rounded-full transition-[width]"
           style={{ width: `${nutritionProgress(nutrients.calories, calorieTarget)}%` }}
         />
       </div>
@@ -288,7 +288,7 @@ function MacroStat({
       </div>
       <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[var(--app-workspace)]">
         <div
-          className="h-full rounded-full bg-violet-400/80"
+          className="bg-accent-400/80 h-full rounded-full"
           style={{ width: `${nutritionProgress(value, target)}%` }}
         />
       </div>

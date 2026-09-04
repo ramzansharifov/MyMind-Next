@@ -83,10 +83,10 @@ export const habitGroupColorClasses: Record<
   { soft: string; text: string; border: string; dot: string }
 > = {
   violet: {
-    soft: 'bg-violet-500/10',
-    text: 'text-violet-300',
-    border: 'border-violet-400/25',
-    dot: 'bg-violet-400'
+    soft: 'bg-accent-500/10',
+    text: 'text-accent-300',
+    border: 'border-accent-400/25',
+    dot: 'bg-accent-400'
   },
   blue: {
     soft: 'bg-blue-500/10',

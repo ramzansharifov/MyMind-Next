@@ -164,7 +164,7 @@ function FinanceTagDialogContent({
                       disabled={isSaving}
                       className={cn(
                         'min-h-24 rounded-xl border p-3 text-left transition-[background-color,border-color,box-shadow,color] outline-none',
-                        'focus-visible:ring-2 focus-visible:ring-violet-500/35',
+                        'focus-visible:ring-accent-500/35 focus-visible:ring-2',
                         'disabled:cursor-not-allowed disabled:opacity-45',
                         selected ? option.activeClassName : idleCardClassName
                       )}

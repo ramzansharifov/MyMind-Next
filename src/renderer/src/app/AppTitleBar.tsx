@@ -44,7 +44,7 @@ export function AppTitleBar(): React.JSX.Element {
       )}
     >
       <div className="flex min-w-0 items-center gap-2.5 px-3">
-        <span className="flex size-6 shrink-0 items-center justify-center rounded-lg border border-violet-500/20 bg-violet-500/10 text-violet-300 shadow-inner shadow-violet-500/5">
+        <span className="border-accent-500/20 bg-accent-500/10 text-accent-300 shadow-accent-500/5 flex size-6 shrink-0 items-center justify-center rounded-lg border shadow-inner">
           <BrainCircuit aria-hidden="true" className="size-3.5" />
         </span>
 

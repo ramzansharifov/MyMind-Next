@@ -260,7 +260,7 @@ function StudyInternalLinkNodeView({ node, editor, getPos }: NodeViewProps): Rea
           <span
             className={cn(
               'text-[10px] font-normal',
-              isMissing ? 'text-red-300' : 'text-violet-300'
+              isMissing ? 'text-red-300' : 'text-accent-300'
             )}
           >
             {tooltipAction}

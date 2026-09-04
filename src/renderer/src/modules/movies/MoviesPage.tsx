@@ -118,13 +118,13 @@ function FilterSelect({ label, value, options, onChange }: FilterSelectProps): R
 
 function ActiveFilterChip({ label, onRemove }: ActiveFilterChipProps): React.JSX.Element {
   return (
-    <span className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-violet-400/20 bg-violet-500/10 px-2.5 text-xs font-medium text-violet-200">
+    <span className="border-accent-400/20 bg-accent-500/10 text-accent-200 inline-flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-medium">
       {label}
       <Tooltip content={`Убрать фильтр «${label}»`} side="top">
         <button
           type="button"
           aria-label={`Убрать фильтр «${label}»`}
-          className="flex size-5 items-center justify-center rounded-md text-violet-200/70 transition-colors hover:bg-white/[0.08] hover:text-violet-100"
+          className="text-accent-200/70 hover:text-accent-100 flex size-5 items-center justify-center rounded-md transition-colors hover:bg-white/[0.08]"
           onClick={onRemove}
         >
           <X className="size-3" />
@@ -417,7 +417,7 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
           </button>
           <button
             type="button"
-            className="inline-flex h-11 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-400"
+            className="bg-accent-500 hover:bg-accent-400 inline-flex h-11 items-center gap-2 rounded-xl px-4 text-sm font-semibold text-white transition-colors"
             onClick={() => setView({ kind: 'form', movieId: null })}
           >
             <Plus className="size-4" /> Добавить фильм
@@ -445,7 +445,7 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
             type="submit"
             form={MOVIE_FORM_ID}
             disabled={isSaving}
-            className="inline-flex h-10 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-50"
+            className="bg-accent-500 hover:bg-accent-400 inline-flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-semibold text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isSaving ? (
               <LoaderCircle className="size-4 animate-spin" />
@@ -493,7 +493,7 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
         {view.kind === 'library' && (
           <>
             <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 max-[1120px]:grid-cols-1">
-              <label className="flex h-12 min-w-0 items-center gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 focus-within:border-violet-500/45 focus-within:bg-[var(--app-surface)] focus-within:ring-2 focus-within:ring-violet-500/10">
+              <label className="focus-within:border-accent-500/45 focus-within:ring-accent-500/10 flex h-12 min-w-0 items-center gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 focus-within:bg-[var(--app-surface)] focus-within:ring-2">
                 <Search className="size-4 shrink-0 text-[var(--app-muted)]" />
                 <input
                   value={query}
@@ -531,7 +531,7 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
                       aria-selected={filter === item.id}
                       className={
                         filter === item.id
-                          ? 'inline-flex h-9 shrink-0 items-center gap-2 rounded-xl bg-violet-500 px-3.5 text-sm font-semibold text-white'
+                          ? 'bg-accent-500 inline-flex h-9 shrink-0 items-center gap-2 rounded-xl px-3.5 text-sm font-semibold text-white'
                           : 'inline-flex h-9 shrink-0 items-center gap-2 rounded-xl px-3.5 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
                       }
                       onClick={() => setFilter(item.id)}
@@ -549,14 +549,14 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
                       aria-label="Фильтры библиотеки"
                       className={
                         activeAdvancedFilterCount > 0
-                          ? 'inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-2xl border border-violet-400/30 bg-violet-500/10 px-4 text-sm font-semibold text-violet-200 transition-colors hover:bg-violet-500/15'
+                          ? 'border-accent-400/30 bg-accent-500/10 text-accent-200 hover:bg-accent-500/15 inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-semibold transition-colors'
                           : 'inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
                       }
                     >
                       <SlidersHorizontal className="size-4" />
                       Фильтры
                       {activeAdvancedFilterCount > 0 && (
-                        <span className="flex min-w-5 items-center justify-center rounded-md bg-violet-400/15 px-1.5 text-[11px] text-violet-100">
+                        <span className="bg-accent-400/15 text-accent-100 flex min-w-5 items-center justify-center rounded-md px-1.5 text-[11px]">
                           {activeAdvancedFilterCount}
                         </span>
                       )}
@@ -745,7 +745,7 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
         <section>
           {visibleMovies.length === 0 ? (
             <div className="flex min-h-80 flex-col items-center justify-center rounded-[24px] border border-dashed border-[var(--app-border)] bg-[var(--app-surface)] px-6 text-center">
-              <span className="flex size-14 items-center justify-center rounded-2xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
+              <span className="border-accent-500/15 bg-accent-500/10 text-accent-300 flex size-14 items-center justify-center rounded-2xl border">
                 <Film className="size-7" />
               </span>
               <h2 className="mt-4 text-lg font-semibold text-[var(--app-text)]">
@@ -759,7 +759,7 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
               {movies.length === 0 && (
                 <button
                   type="button"
-                  className="mt-5 inline-flex h-10 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400"
+                  className="bg-accent-500 hover:bg-accent-400 mt-5 inline-flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-semibold text-white"
                   onClick={() => setView({ kind: 'form', movieId: null })}
                 >
                   <Plus className="size-4" /> Добавить фильм
@@ -770,13 +770,13 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
             <div className="grid grid-cols-[repeat(auto-fill,minmax(170px,1fr))] gap-x-4 gap-y-7 sm:grid-cols-[repeat(auto-fill,minmax(185px,1fr))]">
               {visibleMovies.map((movie) => (
                 <article key={movie.id} className="group min-w-0">
-                  <div className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--app-shadow-card)] transition-[transform,border-color,box-shadow] duration-200 group-hover:-translate-y-1 group-hover:border-violet-500/25 group-hover:shadow-xl motion-reduce:transition-none">
+                  <div className="group-hover:border-accent-500/25 overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--app-shadow-card)] transition-[transform,border-color,box-shadow] duration-200 group-hover:-translate-y-1 group-hover:shadow-xl motion-reduce:transition-none">
                     <div className="relative aspect-[2/3] overflow-hidden bg-[var(--app-surface)]">
                       <Tooltip content={`Открыть фильм «${movie.title}»`} side="top">
                         <button
                           type="button"
                           aria-label={`Открыть фильм «${movie.title}»`}
-                          className="absolute inset-0 z-0 overflow-hidden text-left outline-none focus-visible:ring-2 focus-visible:ring-violet-500/60 focus-visible:ring-inset"
+                          className="focus-visible:ring-accent-500/60 absolute inset-0 z-0 overflow-hidden text-left outline-none focus-visible:ring-2 focus-visible:ring-inset"
                           onClick={() => setView({ kind: 'detail', movieId: movie.id })}
                         >
                           <MoviePoster movie={movie} />
@@ -811,7 +811,7 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
                           className={
                             movie.status === 'watched'
                               ? 'inline-flex items-center gap-1 rounded-lg border border-emerald-300/20 bg-black/50 px-2 py-1 text-[11px] font-medium text-emerald-200 backdrop-blur-md'
-                              : 'inline-flex items-center gap-1 rounded-lg border border-violet-300/20 bg-black/50 px-2 py-1 text-[11px] font-medium text-violet-200 backdrop-blur-md'
+                              : 'border-accent-300/20 text-accent-200 inline-flex items-center gap-1 rounded-lg border bg-black/50 px-2 py-1 text-[11px] font-medium backdrop-blur-md'
                           }
                         >
                           {movie.status === 'watched' ? (
@@ -833,7 +833,7 @@ export function MoviesPage({ resourceId, onResourceHandled }: MoviesPageProps): 
                       className="flex min-h-16 w-full min-w-0 flex-col items-start justify-center border-t border-[var(--app-border)] bg-[var(--app-surface)] px-3.5 py-3 text-left transition-colors outline-none hover:bg-[var(--app-control-hover)] focus-visible:bg-[var(--app-control-hover)]"
                       onClick={() => setView({ kind: 'detail', movieId: movie.id })}
                     >
-                      <span className="block w-full truncate text-sm font-semibold text-[var(--app-text)] transition-colors group-hover:text-violet-200">
+                      <span className="group-hover:text-accent-200 block w-full truncate text-sm font-semibold text-[var(--app-text)] transition-colors">
                         {movie.title}
                       </span>
                       <span className="mt-0.5 block text-[11px] text-[var(--app-muted)]">

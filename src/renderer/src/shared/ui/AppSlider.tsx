@@ -41,11 +41,11 @@ export function AppSlider({
       }}
     >
       <Slider.Track className="relative h-1.5 grow overflow-hidden rounded-full bg-[var(--app-control)]">
-        <Slider.Range className="absolute h-full bg-violet-500" />
+        <Slider.Range className="bg-accent-500 absolute h-full" />
       </Slider.Track>
       <Slider.Thumb
         aria-label={ariaLabel}
-        className="block size-4 rounded-full border-2 border-violet-400 bg-[var(--app-surface-raised)] shadow-sm transition-transform outline-none hover:scale-110 focus-visible:ring-2 focus-visible:ring-violet-500/35"
+        className="border-accent-400 focus-visible:ring-accent-500/35 block size-4 rounded-full border-2 bg-[var(--app-surface-raised)] shadow-sm transition-transform outline-none hover:scale-110 focus-visible:ring-2"
       />
     </Slider.Root>
   )

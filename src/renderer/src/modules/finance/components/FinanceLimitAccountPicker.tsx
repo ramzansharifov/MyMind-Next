@@ -77,15 +77,15 @@ export function FinanceLimitAccountPicker({
             disabled={disabled}
             className={cn(
               'flex min-h-24 flex-col items-center justify-center rounded-xl border px-2 py-3 text-center outline-none',
-              'transition-[background-color,border-color,box-shadow] focus-visible:ring-2 focus-visible:ring-violet-500/35',
+              'focus-visible:ring-accent-500/35 transition-[background-color,border-color,box-shadow] focus-visible:ring-2',
               'disabled:cursor-not-allowed disabled:opacity-45',
               allAccounts
-                ? 'border-violet-500/50 bg-violet-500/12 shadow-sm ring-1 ring-violet-500/15'
+                ? 'border-accent-500/50 bg-accent-500/12 ring-accent-500/15 shadow-sm ring-1'
                 : 'border-[var(--app-border)] bg-[var(--app-field)] hover:border-[var(--app-border-strong)] hover:bg-[var(--app-field-hover)]'
             )}
             onClick={() => onChange({ accountIds: [], allAccounts: true })}
           >
-            <span className="flex size-9 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
+            <span className="border-accent-500/15 bg-accent-500/10 text-accent-300 flex size-9 items-center justify-center rounded-xl border">
               <Layers3 aria-hidden="true" className="size-4.5" />
             </span>
             <span className="mt-2 text-xs font-semibold text-[var(--app-text)]">Все счета</span>
@@ -110,16 +110,16 @@ export function FinanceLimitAccountPicker({
               disabled={disabled}
               className={cn(
                 'flex min-h-24 flex-col items-center justify-center rounded-xl border px-2 py-3 text-center outline-none',
-                'transition-[background-color,border-color,box-shadow,opacity] focus-visible:ring-2 focus-visible:ring-violet-500/35',
+                'focus-visible:ring-accent-500/35 transition-[background-color,border-color,box-shadow,opacity] focus-visible:ring-2',
                 'disabled:cursor-not-allowed disabled:opacity-45',
                 selected
-                  ? 'border-violet-500/50 bg-violet-500/12 shadow-sm ring-1 ring-violet-500/15'
+                  ? 'border-accent-500/50 bg-accent-500/12 ring-accent-500/15 shadow-sm ring-1'
                   : 'border-[var(--app-border)] bg-[var(--app-field)] hover:border-[var(--app-border-strong)] hover:bg-[var(--app-field-hover)]',
                 differentCurrency && 'opacity-60 hover:opacity-100'
               )}
               onClick={() => toggleAccount(account)}
             >
-              <span className="flex size-9 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
+              <span className="border-accent-500/15 bg-accent-500/10 text-accent-300 flex size-9 items-center justify-center rounded-xl border">
                 <FinanceIcon name={account.icon} className="size-4.5" />
               </span>
               <span className="mt-2 max-w-full truncate text-xs font-semibold text-[var(--app-text)]">

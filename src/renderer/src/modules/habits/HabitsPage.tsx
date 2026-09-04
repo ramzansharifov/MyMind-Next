@@ -357,7 +357,7 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
             </button>
             <button
               type="button"
-              className="inline-flex h-11 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-400"
+              className="bg-accent-500 hover:bg-accent-400 inline-flex h-11 items-center gap-2 rounded-xl px-4 text-sm font-semibold text-white transition-colors"
               onClick={openNewHabit}
             >
               <Plus className="size-4" /> Новая привычка
@@ -367,7 +367,7 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
       >
         {view !== 'reports' && (
           <div className="flex flex-wrap gap-2">
-            <label className="flex h-10 min-w-[260px] flex-1 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 focus-within:border-violet-500/45 focus-within:ring-2 focus-within:ring-violet-500/10">
+            <label className="focus-within:border-accent-500/45 focus-within:ring-accent-500/10 flex h-10 min-w-[260px] flex-1 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 focus-within:ring-2">
               <Search className="size-4 shrink-0 text-[var(--app-muted)]" />
               <input
                 value={query}
@@ -429,7 +429,7 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
                   aria-pressed={view === item.id}
                   className={
                     view === item.id
-                      ? 'inline-flex h-9 shrink-0 items-center gap-2 rounded-lg bg-violet-500 px-3.5 text-sm font-semibold text-white'
+                      ? 'bg-accent-500 inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3.5 text-sm font-semibold text-white'
                       : 'inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3.5 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
                   }
                   onClick={() => setView(item.id)}
@@ -531,7 +531,7 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
               className={cn(
                 'flex h-10 w-full items-center gap-2 rounded-xl px-3 text-sm transition-colors',
                 groupFilter === 'all'
-                  ? 'bg-violet-500/12 font-semibold text-violet-200'
+                  ? 'bg-accent-500/12 text-accent-200 font-semibold'
                   : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
               )}
               onClick={() => setGroupFilter('all')}
@@ -546,7 +546,7 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
               className={cn(
                 'flex h-10 w-full items-center gap-2 rounded-xl px-3 text-sm transition-colors',
                 groupFilter === 'ungrouped'
-                  ? 'bg-violet-500/12 font-semibold text-violet-200'
+                  ? 'bg-accent-500/12 text-accent-200 font-semibold'
                   : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
               )}
               onClick={() => setGroupFilter('ungrouped')}
@@ -632,7 +632,7 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
             <>
               {visibleScheduledHabits.length === 0 ? (
                 <div className="flex min-h-72 flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface)] px-6 text-center">
-                  <span className="flex size-14 items-center justify-center rounded-2xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
+                  <span className="border-accent-500/15 bg-accent-500/10 text-accent-300 flex size-14 items-center justify-center rounded-2xl border">
                     <Sparkles className="size-7" />
                   </span>
                   <h2 className="mt-4 text-lg font-semibold text-[var(--app-text)]">
@@ -648,7 +648,7 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
                   {habits.length === 0 && (
                     <button
                       type="button"
-                      className="mt-5 inline-flex h-10 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400"
+                      className="bg-accent-500 hover:bg-accent-400 mt-5 inline-flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-semibold text-white"
                       onClick={openNewHabit}
                     >
                       <Plus className="size-4" /> Новая привычка
@@ -688,7 +688,7 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
             <div className="space-y-3">
               {visibleAllHabits.length === 0 ? (
                 <div className="flex min-h-72 flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface)] px-6 text-center">
-                  <Target className="size-10 text-violet-300" />
+                  <Target className="text-accent-300 size-10" />
                   <h2 className="mt-4 text-lg font-semibold text-[var(--app-text)]">
                     Ничего не найдено
                   </h2>
@@ -718,7 +718,7 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
                                 'flex size-10 shrink-0 items-center justify-center rounded-xl border',
                                 color
                                   ? `${color.soft} ${color.text} ${color.border}`
-                                  : 'border-violet-400/20 bg-violet-500/10 text-violet-300'
+                                  : 'border-accent-400/20 bg-accent-500/10 text-accent-300'
                               )}
                             >
                               {group ? (
@@ -740,7 +740,7 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
                                 <h2 className="font-semibold text-[var(--app-text)]">
                                   {habit.title}
                                 </h2>
-                                <span className="rounded-lg border border-violet-400/20 bg-violet-500/10 px-2 py-0.5 text-[11px] text-violet-200">
+                                <span className="border-accent-400/20 bg-accent-500/10 text-accent-200 rounded-lg border px-2 py-0.5 text-[11px]">
                                   {habitScheduleLabel(habit)}
                                 </span>
                               </div>

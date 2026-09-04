@@ -26,7 +26,7 @@ interface StudyFolderCodeWorkspaceProps {
 }
 
 const modeTriggerClassName =
-  'flex size-9 items-center justify-center rounded-md border border-transparent text-[var(--app-muted)] transition-colors outline-none hover:bg-white/[0.04] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 data-[state=active]:border-violet-500/30 data-[state=active]:bg-violet-500/15 data-[state=active]:text-violet-200 data-[state=active]:shadow-sm'
+  'flex size-9 items-center justify-center rounded-md border border-transparent text-[var(--app-muted)] transition-colors outline-none hover:bg-white/[0.04] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-accent-500/35 data-[state=active]:border-accent-500/30 data-[state=active]:bg-accent-500/15 data-[state=active]:text-accent-200 data-[state=active]:shadow-sm'
 
 export function StudyFolderCodeWorkspace({
   node,
@@ -110,7 +110,7 @@ export function StudyFolderCodeWorkspace({
             </button>
             <button
               type="button"
-              className="rounded-lg bg-violet-500/15 px-3 py-2 text-sm font-medium text-violet-200"
+              className="bg-accent-500/15 text-accent-200 rounded-lg px-3 py-2 text-sm font-medium"
               onClick={() => {
                 setDiscardOpen(false)
                 setCodeDirty(false)

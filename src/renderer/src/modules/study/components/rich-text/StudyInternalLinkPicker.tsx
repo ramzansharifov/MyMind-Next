@@ -145,7 +145,7 @@ export function StudyInternalLinkPicker({
           <header className="flex items-center gap-2 border-b border-[var(--app-border)] p-2">
             <div className="min-w-0 flex-1">
               {state.mode === 'toolbar' ? (
-                <label className="flex h-10 items-center gap-2 rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 focus-within:border-violet-500/45">
+                <label className="focus-within:border-accent-500/45 flex h-10 items-center gap-2 rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] px-3">
                   <Search aria-hidden="true" className="size-4 shrink-0 text-[var(--app-muted)]" />
 
                   <input
@@ -166,7 +166,7 @@ export function StudyInternalLinkPicker({
                 </label>
               ) : (
                 <div className="flex h-10 items-center gap-2 rounded-lg bg-[var(--app-workspace)] px-3">
-                  <Search aria-hidden="true" className="size-4 shrink-0 text-violet-300" />
+                  <Search aria-hidden="true" className="text-accent-300 size-4 shrink-0" />
 
                   <span className="min-w-0 flex-1 truncate text-sm text-[var(--app-text)]">
                     [[
@@ -184,7 +184,7 @@ export function StudyInternalLinkPicker({
               <button
                 type="button"
                 aria-label="Закрыть поиск внутренних ссылок"
-                className="flex size-9 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors outline-none hover:bg-white/[0.06] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35"
+                className="focus-visible:ring-accent-500/35 flex size-9 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors outline-none hover:bg-white/[0.06] hover:text-[var(--app-text)] focus-visible:ring-2"
                 onPointerDown={(event) => {
                   event.preventDefault()
                   event.stopPropagation()
@@ -254,9 +254,9 @@ export function StudyInternalLinkPicker({
                           'flex w-full min-w-0 items-center gap-3 rounded-lg px-3 py-2.5 text-left outline-none',
                           'transition-colors',
                           selected
-                            ? 'bg-violet-500/14 text-violet-100'
+                            ? 'bg-accent-500/14 text-accent-100'
                             : 'text-[var(--app-text)] hover:bg-white/[0.04]',
-                          'focus-visible:ring-2 focus-visible:ring-violet-500/35'
+                          'focus-visible:ring-accent-500/35 focus-visible:ring-2'
                         )}
                         onMouseEnter={() => {
                           onSelectedIndexChange(index)
@@ -287,7 +287,7 @@ export function StudyInternalLinkPicker({
                           className={cn(
                             'flex size-9 shrink-0 items-center justify-center rounded-lg',
                             selected
-                              ? 'bg-violet-500/20 text-violet-200'
+                              ? 'bg-accent-500/20 text-accent-200'
                               : 'bg-white/[0.035] text-[var(--app-muted)]'
                           )}
                         >

@@ -80,10 +80,10 @@ export function HomeModule(): React.JSX.Element {
                 <button
                   key={module.id}
                   type="button"
-                  className="group flex min-h-28 flex-col items-start justify-between rounded-xl border border-[var(--app-border)] bg-[var(--app-card)] p-4 text-left transition-colors outline-none hover:bg-[var(--app-card-hover)] focus-visible:ring-2 focus-visible:ring-violet-500/70"
+                  className="group focus-visible:ring-accent-500/70 flex min-h-28 flex-col items-start justify-between rounded-xl border border-[var(--app-border)] bg-[var(--app-card)] p-4 text-left transition-colors outline-none hover:bg-[var(--app-card-hover)] focus-visible:ring-2"
                   onClick={() => requestAppModuleNavigation({ view: module.id })}
                 >
-                  <span className="relative flex size-9 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-violet-300 transition-colors group-hover:border-violet-500/25">
+                  <span className="border-accent-500/15 bg-accent-500/10 text-accent-300 group-hover:border-accent-500/25 relative flex size-9 items-center justify-center rounded-xl border transition-colors">
                     <Icon aria-hidden="true" className="size-5" />
                     {module.id === 'calendar' && calendarReminders.length > 0 && (
                       <span

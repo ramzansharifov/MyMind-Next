@@ -258,7 +258,7 @@ export function BlockSettingsPanel({
     return (
       <aside className="w-full max-w-full min-w-0 rounded-xl border border-(--app-border) bg-(--app-surface) p-4">
         <div className="flex items-center gap-2 text-sm font-medium text-(--app-text)">
-          <Settings2 aria-hidden="true" className="size-4 text-violet-300" />
+          <Settings2 aria-hidden="true" className="text-accent-300 size-4" />
           Настройки
         </div>
 
@@ -280,7 +280,7 @@ export function BlockSettingsPanel({
   return (
     <aside className="flex max-h-[calc(100vh-150px)] w-full max-w-full min-w-0 flex-col overflow-hidden rounded-xl border border-(--app-border) bg-(--app-surface) max-[1180px]:max-h-none">
       <header className="flex shrink-0 items-center gap-3 border-b border-(--app-border) px-4 py-3.5">
-        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-300">
+        <div className="bg-accent-500/10 text-accent-300 flex size-8 shrink-0 items-center justify-center rounded-lg">
           <BlockIcon aria-hidden="true" className="size-4" />
         </div>
 
@@ -621,10 +621,10 @@ function LatexSettings({
           }}
         >
           <Slider.Track className="relative h-1.5 grow overflow-hidden rounded-full bg-white/[0.08]">
-            <Slider.Range className="absolute h-full bg-violet-500" />
+            <Slider.Range className="bg-accent-500 absolute h-full" />
           </Slider.Track>
 
-          <Slider.Thumb className="block size-4 rounded-full border-2 border-violet-400 bg-(--app-surface-raised) outline-none hover:scale-110 focus-visible:ring-4 focus-visible:ring-violet-500/20" />
+          <Slider.Thumb className="border-accent-400 focus-visible:ring-accent-500/20 block size-4 rounded-full border-2 bg-(--app-surface-raised) outline-none hover:scale-110 focus-visible:ring-4" />
         </Slider.Root>
       </SettingsField>
 
@@ -716,10 +716,10 @@ function MermaidSettings({
           }}
         >
           <Slider.Track className="relative h-1.5 grow overflow-hidden rounded-full bg-white/[0.08]">
-            <Slider.Range className="absolute h-full bg-violet-500" />
+            <Slider.Range className="bg-accent-500 absolute h-full" />
           </Slider.Track>
 
-          <Slider.Thumb className="block size-4 rounded-full border-2 border-violet-400 bg-(--app-surface-raised) outline-none hover:scale-110 focus-visible:ring-4 focus-visible:ring-violet-500/20" />
+          <Slider.Thumb className="border-accent-400 focus-visible:ring-accent-500/20 block size-4 rounded-full border-2 bg-(--app-surface-raised) outline-none hover:scale-110 focus-visible:ring-4" />
         </Slider.Root>
       </SettingsField>
 
@@ -732,7 +732,7 @@ function MermaidSettings({
               <button
                 key={template.id}
                 type="button"
-                className="rounded-lg border border-(--app-border) bg-(--app-workspace) px-2.5 py-2 text-xs font-medium text-(--app-muted) transition-colors outline-none hover:border-(--app-border-strong) hover:text-(--app-text) focus-visible:ring-2 focus-visible:ring-violet-500/35"
+                className="focus-visible:ring-accent-500/35 rounded-lg border border-(--app-border) bg-(--app-workspace) px-2.5 py-2 text-xs font-medium text-(--app-muted) transition-colors outline-none hover:border-(--app-border-strong) hover:text-(--app-text) focus-visible:ring-2"
                 onClick={() => {
                   onChange({
                     ...block,
@@ -862,7 +862,7 @@ function AttachmentSettings({
           <button
             type="button"
             disabled={isPicking}
-            className="flex min-h-10 items-center justify-center gap-2 rounded-lg border border-(--app-border) bg-(--app-workspace) px-3 py-2 text-sm font-medium text-(--app-text) transition-colors outline-none hover:border-violet-500/35 hover:bg-violet-500/[0.06] focus-visible:ring-2 focus-visible:ring-violet-500/35 disabled:cursor-wait disabled:opacity-60"
+            className="hover:border-accent-500/35 hover:bg-accent-500/[0.06] focus-visible:ring-accent-500/35 flex min-h-10 items-center justify-center gap-2 rounded-lg border border-(--app-border) bg-(--app-workspace) px-3 py-2 text-sm font-medium text-(--app-text) transition-colors outline-none focus-visible:ring-2 disabled:cursor-wait disabled:opacity-60"
             onClick={() => {
               void chooseLocalFile()
             }}
@@ -870,7 +870,7 @@ function AttachmentSettings({
             {isPicking ? (
               <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
             ) : (
-              <Upload aria-hidden="true" className="size-4 text-violet-300" />
+              <Upload aria-hidden="true" className="text-accent-300 size-4" />
             )}
 
             {localAsset ? 'Заменить' : 'Выбрать'}
@@ -929,9 +929,9 @@ function AttachmentSettings({
             {block.type === 'video' ? 'Ссылка на YouTube' : 'Прямая HTTPS-ссылка'}
           </span>
 
-          <label className="flex min-h-10 w-full max-w-full min-w-0 items-center gap-2 overflow-hidden rounded-lg border border-(--app-border) bg-(--app-workspace) px-3 focus-within:border-violet-500/45">
+          <label className="focus-within:border-accent-500/45 flex min-h-10 w-full max-w-full min-w-0 items-center gap-2 overflow-hidden rounded-lg border border-(--app-border) bg-(--app-workspace) px-3">
             {block.type === 'video' ? (
-              <SquarePlay aria-hidden="true" className="size-4 shrink-0 text-violet-300" />
+              <SquarePlay aria-hidden="true" className="text-accent-300 size-4 shrink-0" />
             ) : (
               <Link2 aria-hidden="true" className="size-4 shrink-0 text-(--app-muted)" />
             )}
@@ -965,7 +965,7 @@ function AttachmentSettings({
             <button
               type="button"
               disabled={!canApplyRemoteUrl}
-              className="min-h-9 min-w-0 flex-1 rounded-lg bg-violet-500/15 px-3 text-xs font-semibold text-violet-200 transition-colors outline-none hover:bg-violet-500/25 focus-visible:ring-2 focus-visible:ring-violet-500/35 disabled:cursor-not-allowed disabled:opacity-40"
+              className="bg-accent-500/15 text-accent-200 hover:bg-accent-500/25 focus-visible:ring-accent-500/35 min-h-9 min-w-0 flex-1 rounded-lg px-3 text-xs font-semibold transition-colors outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-40"
               onClick={() => {
                 if (!canApplyRemoteUrl) {
                   return
@@ -1013,7 +1013,7 @@ function AttachmentSettings({
         <input
           value={block.title ?? ''}
           placeholder="Необязательное название"
-          className="w-full max-w-full min-w-0 rounded-lg border border-(--app-border) bg-(--app-workspace) px-3 py-2 text-sm text-(--app-text) outline-none placeholder:text-(--app-muted)/60 focus:border-violet-500/45"
+          className="focus:border-accent-500/45 w-full max-w-full min-w-0 rounded-lg border border-(--app-border) bg-(--app-workspace) px-3 py-2 text-sm text-(--app-text) outline-none placeholder:text-(--app-muted)/60"
           onChange={(event) => {
             onChange({
               ...block,
@@ -1066,10 +1066,10 @@ function AttachmentSettings({
               }}
             >
               <Slider.Track className="relative h-1.5 grow overflow-hidden rounded-full bg-white/[0.08]">
-                <Slider.Range className="absolute h-full bg-violet-500" />
+                <Slider.Range className="bg-accent-500 absolute h-full" />
               </Slider.Track>
 
-              <Slider.Thumb className="block size-4 rounded-full border-2 border-violet-400 bg-(--app-surface-raised) outline-none hover:scale-110 focus-visible:ring-4 focus-visible:ring-violet-500/20" />
+              <Slider.Thumb className="border-accent-400 focus-visible:ring-accent-500/20 block size-4 rounded-full border-2 bg-(--app-surface-raised) outline-none hover:scale-110 focus-visible:ring-4" />
             </Slider.Root>
           </SettingsField>
         </>
@@ -1090,7 +1090,7 @@ function isStudyAttachmentBlock(block: StudyBlock): block is StudyAttachmentBloc
 function StudyFileSettingsIcon({ kind }: { kind: StudyAssetKind }): React.JSX.Element {
   const Icon = getStudyBlockDefinition(kind).icon
 
-  return <Icon aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-violet-300" />
+  return <Icon aria-hidden="true" className="text-accent-300 mt-0.5 size-4 shrink-0" />
 }
 
 function getLocalSourceLabel(kind: StudyAssetKind): string {
@@ -1209,10 +1209,10 @@ function DividerSettings({
           }}
         >
           <Slider.Track className="relative h-1.5 grow overflow-hidden rounded-full bg-white/[0.08]">
-            <Slider.Range className="absolute h-full bg-violet-500" />
+            <Slider.Range className="bg-accent-500 absolute h-full" />
           </Slider.Track>
 
-          <Slider.Thumb className="block size-4 rounded-full border-2 border-violet-400 bg-(--app-surface-raised) outline-none hover:scale-110 focus-visible:ring-4 focus-visible:ring-violet-500/20" />
+          <Slider.Thumb className="border-accent-400 focus-visible:ring-accent-500/20 block size-4 rounded-full border-2 bg-(--app-surface-raised) outline-none hover:scale-110 focus-visible:ring-4" />
         </Slider.Root>
       </SettingsField>
 

@@ -179,7 +179,7 @@ export function DiaryPage({ resourceId, onResourceHandled }: DiaryPageProps): Re
     section === 'library' ? (
       <button
         type="button"
-        className="inline-flex h-11 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-medium text-white transition-colors hover:bg-violet-400"
+        className="bg-accent-500 hover:bg-accent-400 inline-flex h-11 items-center gap-2 rounded-xl px-4 text-sm font-medium text-white transition-colors"
         onClick={() => setDialogMode('create')}
       >
         <Plus className="size-4" /> Новый дневник
@@ -193,7 +193,7 @@ export function DiaryPage({ resourceId, onResourceHandled }: DiaryPageProps): Re
           <button
             type="button"
             aria-label="Предыдущий месяц"
-            className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:outline-none"
+            className="focus-visible:ring-accent-500/35 flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:outline-none"
             onClick={() => shiftCalendarMonth(-1)}
           >
             <ChevronLeft aria-hidden="true" className="size-4" />
@@ -206,7 +206,7 @@ export function DiaryPage({ resourceId, onResourceHandled }: DiaryPageProps): Re
           <button
             type="button"
             aria-label="Следующий месяц"
-            className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:outline-none"
+            className="focus-visible:ring-accent-500/35 flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:outline-none"
             onClick={() => shiftCalendarMonth(1)}
           >
             <ChevronRight aria-hidden="true" className="size-4" />
@@ -250,7 +250,7 @@ export function DiaryPage({ resourceId, onResourceHandled }: DiaryPageProps): Re
                 key={id}
                 type="button"
                 aria-current={section === id ? 'page' : undefined}
-                className={`inline-flex h-10 shrink-0 items-center gap-2 rounded-xl px-4 text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-violet-500/35 ${section === id ? 'bg-violet-500 text-white shadow-sm' : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'}`}
+                className={`focus-visible:ring-accent-500/35 inline-flex h-10 shrink-0 items-center gap-2 rounded-xl px-4 text-sm font-medium transition-colors outline-none focus-visible:ring-2 ${section === id ? 'bg-accent-500 text-white shadow-sm' : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'}`}
                 onClick={() => setSection(id)}
               >
                 <Icon aria-hidden="true" className="size-4" /> {label}

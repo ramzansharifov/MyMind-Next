@@ -259,25 +259,25 @@ function SettingsNavigationCard({
         'border-[var(--app-border)] bg-[var(--app-surface)]',
         'shadow-[0_12px_40px_rgb(0_0_0/0.1)]',
         'transition-[border-color,transform,box-shadow]',
-        'hover:-translate-y-px hover:border-violet-500/35 hover:shadow-xl hover:shadow-black/10',
-        'focus-visible:ring-2 focus-visible:ring-violet-500/40'
+        'hover:border-accent-500/35 hover:-translate-y-px hover:shadow-xl hover:shadow-black/10',
+        'focus-visible:ring-accent-500/40 focus-visible:ring-2'
       )}
       onClick={onClick}
     >
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -top-24 -right-20 -z-10 size-64 rounded-full bg-violet-500/12 blur-3xl"
+        className="bg-accent-500/12 pointer-events-none absolute -top-24 -right-20 -z-10 size-64 rounded-full blur-3xl"
       />
 
       <div className="flex h-full flex-col">
         <div className="flex items-start justify-between gap-4">
-          <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl border border-violet-500/20 bg-violet-500/12 text-violet-300 shadow-inner shadow-violet-500/5">
+          <div className="border-accent-500/20 bg-accent-500/12 text-accent-300 shadow-accent-500/5 flex size-11 shrink-0 items-center justify-center rounded-2xl border shadow-inner">
             <Icon aria-hidden="true" className="size-5" />
           </div>
 
           <ArrowRight
             aria-hidden="true"
-            className="size-5 -translate-x-1 text-[var(--app-muted)] transition-[color,transform] group-hover:translate-x-0 group-hover:text-violet-300"
+            className="group-hover:text-accent-300 size-5 -translate-x-1 text-[var(--app-muted)] transition-[color,transform] group-hover:translate-x-0"
           />
         </div>
 
@@ -312,7 +312,7 @@ function AiChatSettingsPage(): React.JSX.Element {
 
       <section className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[0_12px_40px_rgb(0_0_0/0.1)]">
         <header className="flex min-h-16 items-center gap-3 border-b border-[var(--app-border)] px-5 py-3">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
+          <div className="border-accent-500/15 bg-accent-500/10 text-accent-300 flex size-10 shrink-0 items-center justify-center rounded-xl border">
             <Bot aria-hidden="true" className="size-5" />
           </div>
           <div>

@@ -102,7 +102,7 @@ export function NutritionEntryEditDialog({
             type="submit"
             form="nutrition-entry-edit-form"
             disabled={busy || !entry || !title.trim() || amount <= 0}
-            className="h-10 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400 disabled:opacity-45"
+            className="bg-accent-500 hover:bg-accent-400 h-10 rounded-xl px-4 text-sm font-semibold text-white disabled:opacity-45"
           >
             Сохранить
           </button>
@@ -125,7 +125,7 @@ export function NutritionEntryEditDialog({
                 className={cn(
                   'h-9 rounded-xl px-3 text-xs font-medium transition-colors',
                   mealType === meal.value
-                    ? 'bg-violet-500/15 text-violet-200'
+                    ? 'bg-accent-500/15 text-accent-200'
                     : 'bg-[var(--app-workspace)] text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
                 )}
                 onClick={() => setMealType(meal.value)}

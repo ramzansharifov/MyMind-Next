@@ -27,7 +27,7 @@ export function TaskMoveGroupMenu({
             type="button"
             aria-label={`Перенести задачу «${task.title}»`}
             disabled={disabled}
-            className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors outline-none hover:bg-[var(--app-control)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 disabled:cursor-wait disabled:opacity-40"
+            className="focus-visible:ring-accent-500/35 flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors outline-none hover:bg-[var(--app-control)] hover:text-[var(--app-text)] focus-visible:ring-2 disabled:cursor-wait disabled:opacity-40"
           >
             <MoreHorizontal className="size-4" />
           </button>
@@ -87,7 +87,7 @@ export function TaskMoveGroupMenu({
                     </span>
                     <span className="min-w-0 flex-1 truncate">{group.name}</span>
                     {selected && (
-                      <Check aria-hidden="true" className="size-4 shrink-0 text-violet-300" />
+                      <Check aria-hidden="true" className="text-accent-300 size-4 shrink-0" />
                     )}
                   </DropdownMenu.Item>
                 )

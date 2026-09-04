@@ -129,10 +129,10 @@ export const WORKOUT_MUSCLE_GROUP_OPTIONS: WorkoutMuscleGroupOption[] = [
 ]
 
 const accentClasses = {
-  soft: 'bg-violet-500/10',
-  text: 'text-violet-300',
-  border: 'border-violet-400/20',
-  bar: 'bg-violet-400'
+  soft: 'bg-accent-500/10',
+  text: 'text-accent-300',
+  border: 'border-accent-400/20',
+  bar: 'bg-accent-400'
 }
 
 export const workoutMuscleGroupClasses: Record<

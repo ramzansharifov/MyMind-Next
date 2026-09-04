@@ -66,16 +66,16 @@ export const taskGroupColorClasses: Record<
   { soft: string; text: string; dot: string; border: string }
 > = {
   accent: {
-    soft: 'bg-violet-500/12',
-    text: 'text-violet-300',
-    dot: 'bg-violet-400',
-    border: 'border-violet-400/25'
+    soft: 'bg-accent-500/12',
+    text: 'text-accent-300',
+    dot: 'bg-accent-400',
+    border: 'border-accent-400/25'
   },
   violet: {
-    soft: 'bg-violet-500/12',
-    text: 'text-violet-300',
-    dot: 'bg-violet-400',
-    border: 'border-violet-400/25'
+    soft: 'bg-accent-500/12',
+    text: 'text-accent-300',
+    dot: 'bg-accent-400',
+    border: 'border-accent-400/25'
   },
   blue: {
     soft: 'bg-blue-500/12',

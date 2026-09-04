@@ -35,7 +35,7 @@ export function StudySelect({
           'text-sm text-(--app-text) outline-none',
           'transition-[background-color,border-color,box-shadow]',
           'hover:border-(--app-border-strong) hover:bg-(--app-field-hover)',
-          'focus-visible:border-violet-500/50 focus-visible:ring-2 focus-visible:ring-violet-500/15',
+          'focus-visible:border-accent-500/50 focus-visible:ring-accent-500/15 focus-visible:ring-2',
           'disabled:cursor-not-allowed disabled:opacity-45'
         )}
       >
@@ -75,7 +75,7 @@ export function StudySelect({
                 <Select.ItemText>{option.label}</Select.ItemText>
 
                 <Select.ItemIndicator className="absolute right-2 inline-flex items-center">
-                  <Check aria-hidden="true" className="size-4 text-violet-300" />
+                  <Check aria-hidden="true" className="text-accent-300 size-4" />
                 </Select.ItemIndicator>
               </Select.Item>
             ))}

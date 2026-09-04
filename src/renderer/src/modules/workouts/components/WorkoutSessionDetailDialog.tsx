@@ -37,7 +37,7 @@ export function WorkoutSessionDetailDialog({
         session ? (
           <button
             type="button"
-            className="inline-flex h-10 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400"
+            className="bg-accent-500 hover:bg-accent-400 inline-flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-semibold text-white"
             onClick={onEdit}
           >
             <Pencil className="size-4" /> Изменить

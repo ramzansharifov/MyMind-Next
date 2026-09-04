@@ -616,7 +616,7 @@ function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.El
           <button
             type="button"
             aria-label="Создать внутреннюю ссылку"
-            className="flex h-10 min-w-0 items-center justify-center gap-2 rounded-lg border border-(--app-border) bg-(--app-workspace) px-2 text-xs font-medium text-(--app-text) transition-colors outline-none hover:border-violet-500/35 hover:bg-violet-500/10 focus-visible:ring-2 focus-visible:ring-(--app-accent-500)/40"
+            className="hover:border-accent-500/35 hover:bg-accent-500/10 flex h-10 min-w-0 items-center justify-center gap-2 rounded-lg border border-(--app-border) bg-(--app-workspace) px-2 text-xs font-medium text-(--app-text) transition-colors outline-none focus-visible:ring-2 focus-visible:ring-(--app-accent-500)/40"
             onMouseDown={(event) => {
               event.preventDefault()
             }}
@@ -624,7 +624,7 @@ function ConnectedRichTextSettings({ editor }: { editor: Editor }): React.JSX.El
               editor.view.dom.dispatchEvent(new CustomEvent(STUDY_OPEN_INTERNAL_LINK_PICKER_EVENT))
             }}
           >
-            <Link2 aria-hidden="true" className="size-4 shrink-0 text-violet-300" />
+            <Link2 aria-hidden="true" className="text-accent-300 size-4 shrink-0" />
             <span className="truncate">Внутренняя</span>
           </button>
 
@@ -846,7 +846,7 @@ function LinkPopover({
               autoFocus
               value={href}
               placeholder="https://example.com"
-              className="h-10 rounded-lg border border-(--app-border) bg-(--app-workspace) px-3 text-sm text-(--app-text) outline-none placeholder:text-(--app-muted)/60 focus:border-violet-500/50"
+              className="focus:border-accent-500/50 h-10 rounded-lg border border-(--app-border) bg-(--app-workspace) px-3 text-sm text-(--app-text) outline-none placeholder:text-(--app-muted)/60"
               onChange={(event) => {
                 setHref(event.target.value)
                 setError(null)
@@ -858,7 +858,7 @@ function LinkPopover({
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="submit"
-                className="flex h-9 items-center justify-center gap-2 rounded-lg bg-violet-500 text-sm font-medium text-white hover:bg-violet-400"
+                className="bg-accent-500 hover:bg-accent-400 flex h-9 items-center justify-center gap-2 rounded-lg text-sm font-medium text-white"
               >
                 <Link2 className="size-4" />
                 Применить

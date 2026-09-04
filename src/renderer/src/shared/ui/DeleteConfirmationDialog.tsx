@@ -62,9 +62,7 @@ export function DeleteConfirmationDialog({
           {description}
         </>
       }
-      icon={
-        isWarning ? <TriangleAlert aria-hidden="true" /> : <Trash2 aria-hidden="true" />
-      }
+      icon={isWarning ? <TriangleAlert aria-hidden="true" /> : <Trash2 aria-hidden="true" />}
       tone={tone}
       role="alertdialog"
       size="sm"
@@ -105,7 +103,7 @@ export function DeleteConfirmationDialog({
         <button
           type="button"
           disabled={isSubmitting}
-          className="rounded-lg border border-[var(--app-border)] px-4 py-2 text-sm font-medium text-[var(--app-muted)] transition-colors outline-none hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 disabled:cursor-not-allowed disabled:opacity-45"
+          className="focus-visible:ring-accent-500/35 rounded-lg border border-[var(--app-border)] px-4 py-2 text-sm font-medium text-[var(--app-muted)] transition-colors outline-none hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-45"
           onClick={() => onOpenChange(false)}
         >
           Отмена

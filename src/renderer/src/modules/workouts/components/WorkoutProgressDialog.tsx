@@ -154,7 +154,7 @@ export function WorkoutProgressDialog({
             type="submit"
             form={FORM_ID}
             disabled={busy || !date || !metricsValid}
-            className="h-10 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-45"
+            className="bg-accent-500 hover:bg-accent-400 h-10 rounded-xl px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
           >
             {busy ? 'Сохраняем…' : entry ? 'Сохранить' : 'Добавить запись'}
           </button>
@@ -176,7 +176,7 @@ export function WorkoutProgressDialog({
               step="0.1"
               value={bodyWeight}
               placeholder="Необязательно"
-              className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45"
+              className="focus:border-accent-500/45 h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60"
               onChange={(event) => setBodyWeight(event.target.value)}
             />
           </label>
@@ -187,7 +187,7 @@ export function WorkoutProgressDialog({
               rows={3}
               maxLength={10000}
               placeholder="Энергия, сон, восстановление, боли, общее состояние…"
-              className="w-full resize-y rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 py-3 text-sm leading-6 text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
+              className="focus:border-accent-500/45 focus:ring-accent-500/15 w-full resize-y rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 py-3 text-sm leading-6 text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:ring-2"
               onChange={(event) => setWellbeing(event.target.value)}
             />
           </label>
@@ -200,7 +200,7 @@ export function WorkoutProgressDialog({
               rows={2}
               maxLength={10000}
               placeholder="Изменения формы, питания, режима и другие наблюдения…"
-              className="w-full resize-y rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 py-3 text-sm leading-6 text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
+              className="focus:border-accent-500/45 focus:ring-accent-500/15 w-full resize-y rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 py-3 text-sm leading-6 text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:ring-2"
               onChange={(event) => setNotes(event.target.value)}
             />
           </label>
@@ -237,7 +237,7 @@ export function WorkoutProgressDialog({
             <button
               type="button"
               disabled={exerciseToAdd === NONE}
-              className="inline-flex h-10 items-center gap-2 rounded-xl border border-violet-400/20 bg-violet-500/10 px-3.5 text-sm font-semibold text-violet-200 hover:bg-violet-500/15 disabled:opacity-40"
+              className="border-accent-400/20 bg-accent-500/10 text-accent-200 hover:bg-accent-500/15 inline-flex h-10 items-center gap-2 rounded-xl border px-3.5 text-sm font-semibold disabled:opacity-40"
               onClick={addMetric}
             >
               <Plus className="size-4" /> Добавить
@@ -303,7 +303,7 @@ export function WorkoutProgressDialog({
                         step="0.25"
                         value={metric.weightKg}
                         placeholder="0"
-                        className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45"
+                        className="focus:border-accent-500/45 h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60"
                         onChange={(event) => updateMetric(index, { weightKg: event.target.value })}
                       />
                     </label>
@@ -314,7 +314,7 @@ export function WorkoutProgressDialog({
                       type="number"
                       min={1}
                       value={metric.reps}
-                      className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/45"
+                      className="focus:border-accent-500/45 h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none"
                       onChange={(event) => updateMetric(index, { reps: event.target.value })}
                     />
                   </label>
@@ -324,7 +324,7 @@ export function WorkoutProgressDialog({
                       value={metric.comment}
                       maxLength={4000}
                       placeholder="Техника, RPE, ощущения…"
-                      className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45"
+                      className="focus:border-accent-500/45 h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60"
                       onChange={(event) => updateMetric(index, { comment: event.target.value })}
                     />
                   </label>

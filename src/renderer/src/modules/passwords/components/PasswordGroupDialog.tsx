@@ -86,7 +86,7 @@ export function PasswordGroupDialog({
             type="submit"
             form={GROUP_FORM_ID}
             disabled={busy || !name.trim()}
-            className="h-10 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400 disabled:opacity-45"
+            className="bg-accent-500 hover:bg-accent-400 h-10 rounded-xl px-4 text-sm font-semibold text-white disabled:opacity-45"
           >
             {busy ? 'Сохраняем…' : group ? 'Сохранить' : 'Создать группу'}
           </button>
@@ -101,7 +101,7 @@ export function PasswordGroupDialog({
             value={name}
             maxLength={80}
             placeholder="Например, Работа"
-            className="h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
+            className="focus:border-accent-500/45 focus:ring-accent-500/15 h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:ring-2"
             onChange={(event) => setName(event.target.value)}
           />
         </label>
@@ -118,7 +118,7 @@ export function PasswordGroupDialog({
                   className={cn(
                     'flex aspect-square items-center justify-center rounded-xl border text-[var(--app-muted)] transition-colors outline-none',
                     icon === option.value
-                      ? 'border-violet-400/35 bg-violet-500/15 text-violet-200 ring-2 ring-violet-500/10'
+                      ? 'border-accent-400/35 bg-accent-500/15 text-accent-200 ring-accent-500/10 ring-2'
                       : 'border-[var(--app-border)] bg-[var(--app-workspace)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
                   )}
                   onClick={() => setIcon(option.value)}

@@ -35,7 +35,7 @@ export function HabitPreferredTimesEditor({
     <div className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-4">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 text-sm font-semibold text-[var(--app-text)]">
-          <Clock3 className="size-4 text-violet-300" />
+          <Clock3 className="text-accent-300 size-4" />
           {trackingType === 'check' ? 'Предпочтительное время' : 'Предпочтительные времена'}
         </div>
 
@@ -96,8 +96,8 @@ export function HabitPreferredTimesEditor({
       </div>
 
       {hasPreferredTime && (
-        <div className="mt-3 flex items-center gap-3 rounded-xl border border-violet-400/15 bg-violet-500/[0.055] px-3 py-3">
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-violet-400/20 bg-violet-500/10 text-violet-200">
+        <div className="border-accent-400/15 bg-accent-500/[0.055] mt-3 flex items-center gap-3 rounded-xl border px-3 py-3">
+          <span className="border-accent-400/20 bg-accent-500/10 text-accent-200 flex size-8 shrink-0 items-center justify-center rounded-lg border">
             <Bell className="size-4" />
           </span>
           <div className="text-sm font-medium text-[var(--app-text)]">

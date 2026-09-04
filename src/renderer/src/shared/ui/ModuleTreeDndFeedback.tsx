@@ -4,7 +4,7 @@ import { cn } from '../lib/cn'
 
 export type ModuleTreeNodeDropPlacement = 'before' | 'inside' | 'after' | 'root' | null
 
-export const MODULE_TREE_NODE_INSIDE_DROP_CLASS_NAME = 'bg-violet-500/15 ring-1 ring-violet-500/45'
+export const MODULE_TREE_NODE_INSIDE_DROP_CLASS_NAME = 'bg-accent-500/15 ring-1 ring-accent-500/45'
 
 export function ModuleTreeNodeDropIndicator({
   placement
@@ -16,7 +16,7 @@ export function ModuleTreeNodeDropIndicator({
       <span
         aria-hidden="true"
         data-module-tree-drop-indicator="before"
-        className="pointer-events-none absolute top-0 right-1 left-1 h-0.5 -translate-y-1/2 rounded-full bg-violet-400"
+        className="bg-accent-400 pointer-events-none absolute top-0 right-1 left-1 h-0.5 -translate-y-1/2 rounded-full"
       />
     )
   }
@@ -26,7 +26,7 @@ export function ModuleTreeNodeDropIndicator({
       <span
         aria-hidden="true"
         data-module-tree-drop-indicator="after"
-        className="pointer-events-none absolute right-1 bottom-0 left-1 h-0.5 translate-y-1/2 rounded-full bg-violet-400"
+        className="bg-accent-400 pointer-events-none absolute right-1 bottom-0 left-1 h-0.5 translate-y-1/2 rounded-full"
       />
     )
   }
@@ -70,7 +70,7 @@ export function ModuleTreeRootDropZone({
         'module-tree-root-drop-zone group/root mt-2 flex min-h-20 flex-1 items-start justify-center rounded-lg pt-3',
         collapsed && 'px-0',
         'text-xs transition-colors outline-none',
-        'focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:ring-inset',
+        'focus-visible:ring-accent-500/35 focus-visible:ring-2 focus-visible:ring-inset',
         highlighted
           ? 'text-[var(--app-accent-500)]'
           : active
@@ -104,7 +104,7 @@ export function ModuleTreeDragOverlay({
   return (
     <div
       data-module-tree-drag-overlay="true"
-      className="flex h-9 max-w-60 items-center gap-2 rounded-lg border border-violet-500/40 bg-[var(--app-surface-raised)] px-3 text-sm text-[var(--app-text)] shadow-lg shadow-black/25"
+      className="border-accent-500/40 flex h-9 max-w-60 items-center gap-2 rounded-lg border bg-[var(--app-surface-raised)] px-3 text-sm text-[var(--app-text)] shadow-lg shadow-black/25"
     >
       {icon}
       <span className="truncate">{title}</span>

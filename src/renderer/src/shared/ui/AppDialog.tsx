@@ -18,7 +18,7 @@ const sizeClassNames: Record<AppDialogSize, string> = {
 }
 
 const iconClassNames: Record<AppDialogTone, string> = {
-  default: 'border-violet-500/15 bg-violet-500/10 text-violet-300',
+  default: 'border-accent-500/15 bg-accent-500/10 text-accent-300',
   danger: 'border-red-500/15 bg-red-500/10 text-red-300',
   warning: 'border-amber-500/15 bg-amber-500/10 text-amber-300'
 }
@@ -155,7 +155,7 @@ export function AppDialog({
                         type="button"
                         aria-label={closeLabel}
                         disabled={busy}
-                        className="flex size-8 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors outline-none hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 disabled:cursor-not-allowed disabled:opacity-40"
+                        className="focus-visible:ring-accent-500/35 flex size-8 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors outline-none hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         <X aria-hidden="true" className="size-4" />
                       </button>

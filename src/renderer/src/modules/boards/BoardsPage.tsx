@@ -450,22 +450,22 @@ function BoardsHome({
         <section className="relative isolate overflow-hidden rounded-3xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[0_20px_70px_rgb(0_0_0/0.16)]">
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute -top-32 right-8 -z-10 size-80 rounded-full bg-violet-500/10 blur-3xl"
+            className="bg-accent-500/10 pointer-events-none absolute -top-32 right-8 -z-10 size-80 rounded-full blur-3xl"
           />
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute -bottom-44 -left-24 -z-10 size-80 rounded-full bg-violet-900/10 blur-3xl"
+            className="bg-accent-900/10 pointer-events-none absolute -bottom-44 -left-24 -z-10 size-80 rounded-full blur-3xl"
           />
 
           <div className="p-6 max-[720px]:p-4">
             <header className="flex items-start justify-between gap-6 max-[820px]:flex-col">
               <div className="flex min-w-0 items-start gap-4">
-                <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-violet-500/20 bg-violet-500/12 text-violet-300 shadow-inner shadow-violet-500/5">
+                <div className="border-accent-500/20 bg-accent-500/12 text-accent-300 shadow-accent-500/5 flex size-12 shrink-0 items-center justify-center rounded-2xl border shadow-inner">
                   <Presentation aria-hidden="true" className="size-6" />
                 </div>
 
                 <div className="min-w-0">
-                  <p className="text-[11px] font-semibold tracking-[0.12em] text-violet-300 uppercase">
+                  <p className="text-accent-300 text-[11px] font-semibold tracking-[0.12em] uppercase">
                     Пространство идей
                   </p>
                   <h1 className="mt-1 text-3xl font-semibold tracking-[-0.035em] text-[var(--app-text)]">
@@ -490,7 +490,7 @@ function BoardsHome({
               </div>
             </header>
 
-            <label className="mt-6 flex h-12 w-full min-w-0 items-center gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 shadow-inner shadow-black/10 transition-colors focus-within:border-violet-500/45 focus-within:ring-2 focus-within:ring-violet-500/10">
+            <label className="focus-within:border-accent-500/45 focus-within:ring-accent-500/10 mt-6 flex h-12 w-full min-w-0 items-center gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 shadow-inner shadow-black/10 transition-colors focus-within:ring-2">
               <Search aria-hidden="true" className="size-4 shrink-0 text-[var(--app-muted)]" />
               <input
                 value={search}
@@ -504,7 +504,7 @@ function BoardsHome({
                   <button
                     type="button"
                     aria-label="Очистить поиск досок"
-                    className="flex size-7 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors outline-none hover:bg-white/[0.06] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35"
+                    className="focus-visible:ring-accent-500/35 flex size-7 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors outline-none hover:bg-white/[0.06] hover:text-[var(--app-text)] focus-visible:ring-2"
                     onClick={() => setSearch('')}
                   >
                     <X aria-hidden="true" className="size-4" />
@@ -672,17 +672,17 @@ function BoardFolderPage({
         <section className="relative isolate overflow-hidden rounded-3xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[0_20px_70px_rgb(0_0_0/0.16)]">
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute -top-32 right-8 -z-10 size-80 rounded-full bg-violet-500/10 blur-3xl"
+            className="bg-accent-500/10 pointer-events-none absolute -top-32 right-8 -z-10 size-80 rounded-full blur-3xl"
           />
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute -bottom-44 -left-24 -z-10 size-80 rounded-full bg-violet-900/10 blur-3xl"
+            className="bg-accent-900/10 pointer-events-none absolute -bottom-44 -left-24 -z-10 size-80 rounded-full blur-3xl"
           />
 
           <div className="p-6 max-[720px]:p-4">
             <header className="flex items-start justify-between gap-6 max-[920px]:flex-col">
               <div className="flex min-w-0 items-start gap-4">
-                <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-violet-500/20 bg-violet-500/12 text-violet-300 shadow-inner shadow-violet-500/5">
+                <div className="border-accent-500/20 bg-accent-500/12 text-accent-300 shadow-accent-500/5 flex size-12 shrink-0 items-center justify-center rounded-2xl border shadow-inner">
                   {folder.isSystem ? (
                     <LockKeyhole aria-hidden="true" className="size-6" />
                   ) : (
@@ -690,7 +690,7 @@ function BoardFolderPage({
                   )}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[11px] font-semibold tracking-[0.12em] text-violet-300 uppercase">
+                  <p className="text-accent-300 text-[11px] font-semibold tracking-[0.12em] uppercase">
                     {folder.isSystem ? 'Системная папка досок' : 'Папка досок'}
                   </p>
                   <h1 className="mt-1 truncate text-3xl font-semibold tracking-[-0.035em] text-[var(--app-text)]">
@@ -713,7 +713,7 @@ function BoardFolderPage({
                       onChange={onIconChange}
                       trigger={
                         <WorkspaceActionButton type="button">
-                          <Palette aria-hidden="true" className="text-violet-300" />
+                          <Palette aria-hidden="true" className="text-accent-300" />
                           Иконка
                         </WorkspaceActionButton>
                       }

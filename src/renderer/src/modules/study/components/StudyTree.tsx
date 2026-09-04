@@ -403,7 +403,7 @@ function createStudyTreeMenuEntries({
               kind: 'item' as const,
               key: 'open-code',
               label: 'Открыть код структуры',
-              icon: <Braces aria-hidden="true" className="size-4 text-violet-300" />,
+              icon: <Braces aria-hidden="true" className="text-accent-300 size-4" />,
               onSelect: () => onOpenCode(node)
             },
             {
@@ -416,14 +416,14 @@ function createStudyTreeMenuEntries({
         kind: 'item',
         key: 'create-folder',
         label: 'Новая папка',
-        icon: <FolderPlus aria-hidden="true" className="size-4 text-violet-300" />,
+        icon: <FolderPlus aria-hidden="true" className="text-accent-300 size-4" />,
         onSelect: () => onCreateFolder(node.id)
       },
       {
         kind: 'item',
         key: 'create-material',
         label: 'Новый материал',
-        icon: <FilePlus2 aria-hidden="true" className="size-4 text-violet-300" />,
+        icon: <FilePlus2 aria-hidden="true" className="text-accent-300 size-4" />,
         onSelect: () => onCreateMaterial(node.id)
       },
       {
@@ -438,14 +438,14 @@ function createStudyTreeMenuEntries({
       kind: 'item',
       key: 'rename',
       label: 'Переименовать',
-      icon: <Pencil aria-hidden="true" className="size-4 text-violet-300" />,
+      icon: <Pencil aria-hidden="true" className="text-accent-300 size-4" />,
       onSelect: () => onRename(node)
     },
     {
       kind: 'item',
       key: 'duplicate',
       label: isFolder ? 'Дублировать папку' : 'Дублировать материал',
-      icon: <CopyPlus aria-hidden="true" className="size-4 text-violet-300" />,
+      icon: <CopyPlus aria-hidden="true" className="text-accent-300 size-4" />,
       onSelect: () => onDuplicate(node)
     },
     {
@@ -549,9 +549,9 @@ function StudyDragOverlay({ node }: { node: StudyNode }): React.JSX.Element {
     <ModuleTreeDragOverlay
       icon={
         node.type === 'folder' ? (
-          <StudyFolderIcon name={node.icon} className="size-4 shrink-0 text-violet-300" />
+          <StudyFolderIcon name={node.icon} className="text-accent-300 size-4 shrink-0" />
         ) : (
-          <FileText aria-hidden="true" className="size-4 shrink-0 text-violet-300" />
+          <FileText aria-hidden="true" className="text-accent-300 size-4 shrink-0" />
         )
       }
       title={node.title}

@@ -63,7 +63,7 @@ export class BoardCanvasErrorBoundary extends Component<
           )}
           <button
             type="button"
-            className="mt-4 rounded-lg bg-violet-500 px-4 py-2 text-sm font-medium text-white"
+            className="bg-accent-500 mt-4 rounded-lg px-4 py-2 text-sm font-medium text-white"
             onClick={() => {
               const reload = this.props.reload ?? (() => window.location.reload())
               reload()

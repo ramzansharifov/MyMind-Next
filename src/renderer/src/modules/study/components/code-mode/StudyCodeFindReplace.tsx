@@ -21,13 +21,13 @@ interface StudyCodeFindReplaceProps {
 }
 
 const optionButtonClassName =
-  'flex h-7 min-w-7 items-center justify-center rounded-md px-1.5 text-[11px] font-semibold text-[var(--app-muted)] transition-colors outline-none hover:bg-white/[0.06] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35'
+  'flex h-7 min-w-7 items-center justify-center rounded-md px-1.5 text-[11px] font-semibold text-[var(--app-muted)] transition-colors outline-none hover:bg-white/[0.06] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-accent-500/35'
 
 const smallButtonClassName =
-  'flex h-7 items-center justify-center rounded-md px-2 text-[11px] font-medium text-[var(--app-muted)] transition-colors outline-none hover:bg-white/[0.06] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 disabled:cursor-not-allowed disabled:opacity-35'
+  'flex h-7 items-center justify-center rounded-md px-2 text-[11px] font-medium text-[var(--app-muted)] transition-colors outline-none hover:bg-white/[0.06] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-accent-500/35 disabled:cursor-not-allowed disabled:opacity-35'
 
 const headerButtonClassName =
-  'order-[-1] flex h-9 items-center gap-2 rounded-lg border border-[var(--app-border)] bg-white/[0.025] px-3 text-xs font-medium text-[var(--app-muted)] transition-colors outline-none hover:bg-white/[0.055] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 disabled:cursor-not-allowed disabled:opacity-40'
+  'order-[-1] flex h-9 items-center gap-2 rounded-lg border border-[var(--app-border)] bg-white/[0.025] px-3 text-xs font-medium text-[var(--app-muted)] transition-colors outline-none hover:bg-white/[0.055] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-accent-500/35 disabled:cursor-not-allowed disabled:opacity-40'
 
 export function StudyCodeFindReplace({
   source,
@@ -283,7 +283,7 @@ export function StudyCodeFindReplace({
                   'flex min-w-0 flex-1 items-center rounded-lg border bg-black/10 focus-within:ring-2',
                   result.error
                     ? 'border-red-500/55 focus-within:ring-red-500/20'
-                    : 'border-[var(--app-border)] focus-within:border-violet-400/45 focus-within:ring-violet-500/15'
+                    : 'focus-within:border-accent-400/45 focus-within:ring-accent-500/15 border-[var(--app-border)]'
                 )}
               >
                 <Search
@@ -308,7 +308,7 @@ export function StudyCodeFindReplace({
                     aria-pressed={matchCase}
                     className={cn(
                       optionButtonClassName,
-                      matchCase && 'bg-violet-500/16 text-violet-200'
+                      matchCase && 'bg-accent-500/16 text-accent-200'
                     )}
                     onClick={() => setMatchCase((current) => !current)}
                   >
@@ -322,7 +322,7 @@ export function StudyCodeFindReplace({
                     aria-pressed={wholeWord}
                     className={cn(
                       optionButtonClassName,
-                      wholeWord && 'bg-violet-500/16 text-violet-200'
+                      wholeWord && 'bg-accent-500/16 text-accent-200'
                     )}
                     onClick={() => setWholeWord((current) => !current)}
                   >
@@ -336,7 +336,7 @@ export function StudyCodeFindReplace({
                     aria-pressed={useRegex}
                     className={cn(
                       optionButtonClassName,
-                      useRegex && 'bg-violet-500/16 text-violet-200'
+                      useRegex && 'bg-accent-500/16 text-accent-200'
                     )}
                     onClick={() => setUseRegex((current) => !current)}
                   >
@@ -406,7 +406,7 @@ export function StudyCodeFindReplace({
                   placeholder="Заменить"
                   spellCheck={false}
                   disabled={disabled}
-                  className="h-8 min-w-0 flex-1 rounded-lg border border-[var(--app-border)] bg-black/10 px-2.5 text-xs text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-400/45 focus:ring-2 focus:ring-violet-500/15 disabled:opacity-50"
+                  className="focus:border-accent-400/45 focus:ring-accent-500/15 h-8 min-w-0 flex-1 rounded-lg border border-[var(--app-border)] bg-black/10 px-2.5 text-xs text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:ring-2 disabled:opacity-50"
                   onChange={(event) => setReplacement(event.target.value)}
                   onKeyDown={handleReplaceKeyDown}
                 />

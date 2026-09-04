@@ -22,7 +22,7 @@ const options = [
     label: 'Перевод',
     icon: ArrowRightLeft,
     activeClassName:
-      'border-violet-400/60 bg-violet-500/22 text-violet-100 shadow-sm ring-1 ring-violet-400/15'
+      'border-accent-400/60 bg-accent-500/22 text-accent-100 shadow-sm ring-1 ring-accent-400/15'
   }
 ] as const satisfies ReadonlyArray<{
   value: FinanceUserTransactionType
@@ -57,7 +57,7 @@ export function FinanceOperationTypePicker({
             disabled={disabled}
             className={cn(
               'flex h-11 items-center justify-center gap-2 rounded-xl border px-3 text-sm font-semibold outline-none',
-              'transition-[background-color,border-color,box-shadow,color] focus-visible:ring-2 focus-visible:ring-violet-500/35',
+              'focus-visible:ring-accent-500/35 transition-[background-color,border-color,box-shadow,color] focus-visible:ring-2',
               'disabled:cursor-not-allowed disabled:opacity-45',
               selected ? option.activeClassName : idleClassName
             )}

@@ -89,7 +89,7 @@ export function FinanceHome({
                   onClick={() => onOpenAccount(account.id)}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="flex size-10 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
+                    <div className="border-accent-500/15 bg-accent-500/10 text-accent-300 flex size-10 items-center justify-center rounded-xl border">
                       <FinanceIcon name={account.icon} className="size-5" />
                     </div>
                     <div className="min-w-0">
@@ -234,7 +234,7 @@ function Metric({
   incomplete?: boolean
 }): React.JSX.Element {
   return (
-    <FinanceSurface className={`p-4 ${accent ? 'ring-1 ring-violet-500/20' : ''}`}>
+    <FinanceSurface className={`p-4 ${accent ? 'ring-accent-500/20 ring-1' : ''}`}>
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium tracking-[0.12em] text-[var(--app-muted)] uppercase">
           {label}
@@ -268,7 +268,7 @@ function SectionHeader({
 }): React.JSX.Element {
   return (
     <div className="flex min-h-6 items-center gap-3">
-      <span className="text-violet-300">{icon}</span>
+      <span className="text-accent-300">{icon}</span>
       <h2 className="text-base font-semibold text-[var(--app-text)]">{title}</h2>
       <button
         type="button"

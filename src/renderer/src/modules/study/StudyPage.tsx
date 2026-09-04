@@ -1,13 +1,5 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
-import {
-  BookOpen,
-  FilePlus2,
-  FileText,
-  Folder,
-  FolderPlus,
-  Palette,
-  Pencil
-} from 'lucide-react'
+import { BookOpen, FilePlus2, FileText, Folder, FolderPlus, Palette, Pencil } from 'lucide-react'
 import {
   lazy,
   Suspense,
@@ -43,10 +35,7 @@ import {
 } from './components/code-mode/StudyFolderCodeWorkspace'
 import { DeleteConfirmationDialog } from './components/DeleteConfirmationDialog'
 import { StudyHome } from './components/StudyHome'
-import {
-  STUDY_FOLDER_ICON_SIDEBAR_CLASS_NAME,
-  StudyFolderIcon
-} from './components/StudyFolderIcon'
+import { STUDY_FOLDER_ICON_SIDEBAR_CLASS_NAME, StudyFolderIcon } from './components/StudyFolderIcon'
 import { RenameStudyNodeDialog } from './components/RenameStudyNodeDialog'
 import { STUDY_FOLDER_ICON_OPTIONS } from './components/study-folder-icon-options'
 import { StudyTree } from './components/StudyTree'
@@ -344,7 +333,8 @@ export function StudyPage({
     }
 
     window.addEventListener(STUDY_INTERNAL_LINK_NAVIGATE_EVENT, handleInternalNavigation)
-    return () => window.removeEventListener(STUDY_INTERNAL_LINK_NAVIGATE_EVENT, handleInternalNavigation)
+    return () =>
+      window.removeEventListener(STUDY_INTERNAL_LINK_NAVIGATE_EVENT, handleInternalNavigation)
   }, [openStudyNode, runAfterDraftFlush, selectedNode])
 
   return (
@@ -666,21 +656,21 @@ function FolderWorkspace({
         <section className="relative isolate overflow-hidden rounded-3xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[0_20px_70px_rgb(0_0_0/0.16)]">
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute -top-32 right-8 -z-10 size-80 rounded-full bg-violet-500/10 blur-3xl"
+            className="bg-accent-500/10 pointer-events-none absolute -top-32 right-8 -z-10 size-80 rounded-full blur-3xl"
           />
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute -bottom-44 -left-24 -z-10 size-80 rounded-full bg-violet-900/10 blur-3xl"
+            className="bg-accent-900/10 pointer-events-none absolute -bottom-44 -left-24 -z-10 size-80 rounded-full blur-3xl"
           />
 
           <div className="p-6 max-[720px]:p-4">
             <header className="flex items-start justify-between gap-6 max-[920px]:flex-col">
               <div className="flex min-w-0 items-start gap-4">
-                <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-violet-500/20 bg-violet-500/12 text-violet-300 shadow-inner shadow-violet-500/5">
+                <div className="border-accent-500/20 bg-accent-500/12 text-accent-300 shadow-accent-500/5 flex size-12 shrink-0 items-center justify-center rounded-2xl border shadow-inner">
                   <StudyFolderIcon name={activeIcon} expanded className="size-6" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[11px] font-semibold tracking-[0.12em] text-violet-300 uppercase">
+                  <p className="text-accent-300 text-[11px] font-semibold tracking-[0.12em] uppercase">
                     Папка библиотеки
                   </p>
                   <h1 className="mt-1 truncate text-3xl font-semibold tracking-[-0.035em] text-[var(--app-text)]">
@@ -806,7 +796,7 @@ function FolderIconPicker({
             aria-label="Изменить иконку папки"
             className={folderIconButtonClassName}
           >
-            <Palette aria-hidden="true" className="text-violet-300" />
+            <Palette aria-hidden="true" className="text-accent-300" />
           </StudyActionButton>
         </DropdownMenu.Trigger>
       </Tooltip>
@@ -831,7 +821,7 @@ function FolderIconPicker({
                     'hover:bg-white/[0.06] hover:text-[var(--app-text)]',
                     'focus:bg-white/[0.06] focus:text-[var(--app-text)]',
                     option.value === value &&
-                      'border-violet-500/25 bg-violet-500/15 text-violet-200'
+                      'border-accent-500/25 bg-accent-500/15 text-accent-200'
                   )}
                   onSelect={() => onChange(option.value)}
                 >
@@ -879,11 +869,7 @@ function FolderItemsSection({
     >
       {items.length > 0 ? (
         <div
-          className={cn(
-            compact
-              ? 'grid gap-2'
-              : 'grid grid-cols-2 gap-3 max-[720px]:grid-cols-1'
-          )}
+          className={cn(compact ? 'grid gap-2' : 'grid grid-cols-2 gap-3 max-[720px]:grid-cols-1')}
         >
           {items.map((child) => (
             <WorkspaceNodeCard

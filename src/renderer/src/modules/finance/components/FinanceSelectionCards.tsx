@@ -47,15 +47,15 @@ export function FinanceAccountCardPicker({
             className={cn(
               'flex min-h-24 flex-col items-center justify-center rounded-xl border px-2 py-3 text-center outline-none',
               'transition-[background-color,border-color,box-shadow,transform]',
-              'focus-visible:ring-2 focus-visible:ring-violet-500/35',
+              'focus-visible:ring-accent-500/35 focus-visible:ring-2',
               'disabled:cursor-not-allowed disabled:opacity-45',
               selected
-                ? 'border-violet-500/45 bg-violet-500/10 shadow-sm ring-1 ring-violet-500/10'
+                ? 'border-accent-500/45 bg-accent-500/10 ring-accent-500/10 shadow-sm ring-1'
                 : 'border-[var(--app-border)] bg-[var(--app-field)] hover:border-[var(--app-border-strong)] hover:bg-[var(--app-field-hover)]'
             )}
             onClick={() => onChange(account.id)}
           >
-            <span className="flex size-9 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
+            <span className="border-accent-500/15 bg-accent-500/10 text-accent-300 flex size-9 items-center justify-center rounded-xl border">
               <FinanceIcon name={account.icon} className="size-4.5" />
             </span>
             <span className="mt-2 max-w-full truncate text-xs font-semibold text-[var(--app-text)]">
@@ -107,7 +107,7 @@ export function FinanceTagCardPicker({
             ? 'border-red-400/60 bg-red-500/22 shadow-sm ring-1 ring-red-400/15'
             : tag.type === 'income'
               ? 'border-emerald-400/60 bg-emerald-500/22 shadow-sm ring-1 ring-emerald-400/15'
-              : 'border-violet-500/45 bg-violet-500/10 shadow-sm ring-1 ring-violet-500/10'
+              : 'border-accent-500/45 bg-accent-500/10 shadow-sm ring-1 ring-accent-500/10'
         return (
           <button
             key={tag.id}
@@ -119,7 +119,7 @@ export function FinanceTagCardPicker({
             className={cn(
               'flex min-h-20 flex-col items-center justify-center rounded-xl border px-2 py-2.5 text-center outline-none',
               'transition-[background-color,border-color,box-shadow,transform]',
-              'focus-visible:ring-2 focus-visible:ring-violet-500/35',
+              'focus-visible:ring-accent-500/35 focus-visible:ring-2',
               'disabled:cursor-not-allowed disabled:opacity-45',
               selected
                 ? selectedClassName

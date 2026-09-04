@@ -54,7 +54,7 @@ const headerButtonClassName = [
   'text-[var(--app-muted)] outline-none',
   'transition-colors',
   'hover:bg-white/[0.06] hover:text-[var(--app-text)]',
-  'focus-visible:ring-2 focus-visible:ring-violet-500/35',
+  'focus-visible:ring-2 focus-visible:ring-accent-500/35',
   'disabled:cursor-not-allowed disabled:opacity-30'
 ].join(' ')
 
@@ -130,7 +130,7 @@ export function StudyMermaidBlock({
           >
             <header className="flex min-h-11 shrink-0 items-center justify-between gap-3 border-b border-[var(--app-border)] bg-white/[0.025] px-3">
               <div className="flex min-w-0 items-center gap-2">
-                <Workflow aria-hidden="true" className="size-4 shrink-0 text-violet-300" />
+                <Workflow aria-hidden="true" className="text-accent-300 size-4 shrink-0" />
                 <span className="text-[11px] font-semibold tracking-[0.08em] text-[var(--app-muted)] uppercase">
                   Mermaid
                 </span>
@@ -160,9 +160,9 @@ export function StudyMermaidBlock({
                           'text-xs text-[var(--app-muted)] outline-none',
                           'transition-colors',
                           'hover:bg-white/[0.06] hover:text-[var(--app-text)]',
-                          'focus-visible:ring-2 focus-visible:ring-violet-500/35',
-                          'data-[state=on]:bg-violet-500/15',
-                          'data-[state=on]:text-violet-200'
+                          'focus-visible:ring-accent-500/35 focus-visible:ring-2',
+                          'data-[state=on]:bg-accent-500/15',
+                          'data-[state=on]:text-accent-200'
                         )}
                       >
                         <Icon aria-hidden="true" className="size-3.5" />

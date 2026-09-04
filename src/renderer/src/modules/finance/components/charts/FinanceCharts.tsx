@@ -255,7 +255,7 @@ export function FinanceLineChart({
         <Collapsible.Trigger asChild>
           <button
             type="button"
-            className="rounded-lg px-2 py-1 text-left font-medium transition-colors outline-none hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35"
+            className="focus-visible:ring-accent-500/35 rounded-lg px-2 py-1 text-left font-medium transition-colors outline-none hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2"
           >
             Показать точные значения
           </button>

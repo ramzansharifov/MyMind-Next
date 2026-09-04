@@ -197,7 +197,7 @@ export function NoteEditor({ noteId, onBack, onNoteUpdated }: NoteEditorProps): 
           </Tooltip>
 
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-semibold tracking-[0.08em] text-violet-300 uppercase">
+            <p className="text-accent-300 text-[11px] font-semibold tracking-[0.08em] uppercase">
               Заметка
             </p>
             <h1 className="mt-1 truncate text-xl font-semibold tracking-tight text-[var(--app-text)]">
@@ -318,7 +318,7 @@ function SaveStatus({
 }): React.JSX.Element {
   if (state === 'saving') {
     return (
-      <span className="flex shrink-0 items-center gap-2 text-xs text-violet-300">
+      <span className="text-accent-300 flex shrink-0 items-center gap-2 text-xs">
         <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
         Сохранение
       </span>

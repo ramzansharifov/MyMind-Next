@@ -190,7 +190,7 @@ export function NotesHome({
           <section data-notes-hero>
             <header className="flex items-start justify-between gap-6 px-1 max-[820px]:flex-col">
               <div className="min-w-0">
-                <p className="text-[11px] font-semibold tracking-[0.12em] text-violet-300 uppercase">
+                <p className="text-accent-300 text-[11px] font-semibold tracking-[0.12em] uppercase">
                   Заметки
                 </p>
                 <h1 className="mt-1 text-3xl font-semibold tracking-[-0.035em] text-[var(--app-text)]">
@@ -214,7 +214,7 @@ export function NotesHome({
             </header>
 
             <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 max-[980px]:grid-cols-1">
-              <label className="flex h-12 min-w-0 items-center gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] px-4 focus-within:border-violet-500/45 focus-within:ring-2 focus-within:ring-violet-500/10">
+              <label className="focus-within:border-accent-500/45 focus-within:ring-accent-500/10 flex h-12 min-w-0 items-center gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] px-4 focus-within:ring-2">
                 <Search aria-hidden="true" className="size-4 shrink-0 text-[var(--app-muted)]" />
                 <input
                   value={search}
@@ -513,7 +513,7 @@ function GroupsDirectoryPage({
             <Switch.Root
               checked={hideEmptyGroups}
               aria-label="Скрыть пустые группы"
-              className="relative h-5 w-9 rounded-full border border-[var(--app-border)] bg-[var(--app-workspace)] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-violet-500/35 data-[state=checked]:bg-violet-500"
+              className="focus-visible:ring-accent-500/35 data-[state=checked]:bg-accent-500 relative h-5 w-9 rounded-full border border-[var(--app-border)] bg-[var(--app-workspace)] transition-colors outline-none focus-visible:ring-2"
               onCheckedChange={onHideEmptyGroupsChange}
             >
               <Switch.Thumb className="block size-3.5 translate-x-0.5 rounded-full bg-white transition-transform data-[state=checked]:translate-x-[17px]" />
@@ -638,14 +638,14 @@ function DashboardSection({
             <button
               type="button"
               aria-label={backAction.label}
-              className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] outline-none hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35"
+              className="focus-visible:ring-accent-500/35 flex size-8 shrink-0 items-center justify-center rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] outline-none hover:text-[var(--app-text)] focus-visible:ring-2"
               onClick={backAction.onBack}
             >
               <ArrowLeft aria-hidden="true" className="size-4" />
             </button>
           </Tooltip>
         )}
-        <span className="text-violet-300">{icon}</span>
+        <span className="text-accent-300">{icon}</span>
         <h2 className="text-base font-semibold text-[var(--app-text)]">{title}</h2>
         <div className="ml-auto flex items-center gap-3">
           {toolbar}
@@ -685,7 +685,7 @@ function NotesCollectionControls({
       >
         <Select.Trigger
           aria-label="Сортировка заметок"
-          className="flex h-9 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-xs text-[var(--app-muted)] outline-none hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35"
+          className="focus-visible:ring-accent-500/35 flex h-9 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-xs text-[var(--app-muted)] outline-none hover:text-[var(--app-text)] focus-visible:ring-2"
         >
           <span>Сортировка:</span>
           <Select.Value />
@@ -718,14 +718,14 @@ function NotesCollectionControls({
         <ToggleGroup.Item
           value="grid"
           aria-label="Показать заметки сеткой"
-          className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] outline-none hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 data-[state=on]:bg-violet-500 data-[state=on]:text-white"
+          className="focus-visible:ring-accent-500/35 data-[state=on]:bg-accent-500 flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] outline-none hover:text-[var(--app-text)] focus-visible:ring-2 data-[state=on]:text-white"
         >
           <LayoutGrid aria-hidden="true" className="size-4" />
         </ToggleGroup.Item>
         <ToggleGroup.Item
           value="list"
           aria-label="Показать заметки списком"
-          className="flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] outline-none hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 data-[state=on]:bg-violet-500 data-[state=on]:text-white"
+          className="focus-visible:ring-accent-500/35 data-[state=on]:bg-accent-500 flex size-7 items-center justify-center rounded-lg text-[var(--app-muted)] outline-none hover:text-[var(--app-text)] focus-visible:ring-2 data-[state=on]:text-white"
         >
           <List aria-hidden="true" className="size-4" />
         </ToggleGroup.Item>
@@ -748,7 +748,7 @@ function SortItem({
     >
       <Select.ItemText>{children}</Select.ItemText>
       <Select.ItemIndicator className="absolute right-3">
-        <Check aria-hidden="true" className="size-4 text-violet-300" />
+        <Check aria-hidden="true" className="text-accent-300 size-4" />
       </Select.ItemIndicator>
     </Select.Item>
   )
@@ -961,7 +961,7 @@ function GroupCard({
         <button
           type="button"
           aria-label={`Открыть группу «${group.title}»`}
-          className="flex h-9 flex-1 items-center justify-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 text-sm text-[var(--app-text)] hover:border-violet-500/30"
+          className="hover:border-accent-500/30 flex h-9 flex-1 items-center justify-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 text-sm text-[var(--app-text)]"
           onClick={onOpen}
         >
           Открыть
@@ -1058,7 +1058,7 @@ function NoteCard({
   return (
     <article
       className={cn(
-        'group relative overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] transition-[border-color,transform,box-shadow] hover:-translate-y-0.5 hover:border-violet-500/30 hover:shadow-lg',
+        'group hover:border-accent-500/30 relative overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] transition-[border-color,transform,box-shadow] hover:-translate-y-0.5 hover:shadow-lg',
         layout === 'grid' ? 'min-h-40' : 'min-h-28'
       )}
     >
@@ -1066,14 +1066,14 @@ function NoteCard({
         type="button"
         aria-label={`Открыть заметку «${note.title}»`}
         className={cn(
-          'flex h-full w-full text-left outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40 focus-visible:ring-inset',
+          'focus-visible:ring-accent-500/40 flex h-full w-full text-left outline-none focus-visible:ring-2 focus-visible:ring-inset',
           layout === 'grid' ? 'flex-col p-4' : 'items-start gap-4 p-4 pr-12'
         )}
         onClick={onOpen}
       >
         {layout === 'grid' && (
           <div className="flex items-start gap-3 pr-8">
-            <span className="mt-1 size-2 shrink-0 rounded-full bg-violet-400" />
+            <span className="bg-accent-400 mt-1 size-2 shrink-0 rounded-full" />
             <h3 className="line-clamp-2 leading-5 font-semibold text-[var(--app-text)]">
               {note.title}
             </h3>
@@ -1081,7 +1081,7 @@ function NoteCard({
         )}
 
         {layout === 'list' && (
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-300">
+          <div className="bg-accent-500/10 text-accent-300 flex size-9 shrink-0 items-center justify-center rounded-xl">
             <StickyNote aria-hidden="true" className="size-4" />
           </div>
         )}
@@ -1173,7 +1173,7 @@ function NoteCard({
 
 function NoteGroupBadge({ title }: { title?: string | null }): React.JSX.Element {
   return (
-    <span className="mt-2 inline-flex max-w-full items-center gap-1.5 rounded-full bg-violet-500/10 px-2 py-1 text-[10px] text-violet-300">
+    <span className="bg-accent-500/10 text-accent-300 mt-2 inline-flex max-w-full items-center gap-1.5 rounded-full px-2 py-1 text-[10px]">
       {title ? (
         <Folder aria-hidden="true" className="size-3" />
       ) : (
@@ -1194,7 +1194,7 @@ function NotesTab({
   return (
     <Tabs.Trigger
       value={value}
-      className="flex h-9 shrink-0 items-center gap-2 rounded-xl px-3 text-sm text-[var(--app-muted)] transition-colors outline-none hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 data-[state=active]:bg-violet-500 data-[state=active]:text-white"
+      className="focus-visible:ring-accent-500/35 data-[state=active]:bg-accent-500 flex h-9 shrink-0 items-center gap-2 rounded-xl px-3 text-sm text-[var(--app-muted)] transition-colors outline-none hover:text-[var(--app-text)] focus-visible:ring-2 data-[state=active]:text-white"
     >
       {children}
     </Tabs.Trigger>
@@ -1217,10 +1217,10 @@ function StatCard({
   return (
     <button
       type="button"
-      className="flex min-h-24 items-center gap-4 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] px-5 py-4 text-left hover:border-violet-500/30"
+      className="hover:border-accent-500/30 flex min-h-24 items-center gap-4 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] px-5 py-4 text-left"
       onClick={onClick}
     >
-      <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-300">
+      <span className="bg-accent-500/10 text-accent-300 flex size-11 shrink-0 items-center justify-center rounded-xl">
         {icon}
       </span>
       <span className="min-w-0">
@@ -1303,10 +1303,10 @@ function ActionButton({
       type="button"
       disabled={disabled}
       className={cn(
-        'flex h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-violet-500/35 disabled:cursor-not-allowed disabled:opacity-50',
+        'focus-visible:ring-accent-500/35 flex h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-medium transition-colors outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-50',
         primary
-          ? 'bg-violet-500 text-white hover:bg-violet-400'
-          : 'border border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-text)] hover:border-violet-500/30'
+          ? 'bg-accent-500 hover:bg-accent-400 text-white'
+          : 'hover:border-accent-500/30 border border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-text)]'
       )}
       onClick={onClick}
     >
@@ -1332,7 +1332,7 @@ function EmptyState({
 }): React.JSX.Element {
   return (
     <section className="flex min-h-80 flex-col items-center justify-center rounded-3xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface)] px-6 text-center">
-      <div className="flex size-14 items-center justify-center rounded-2xl bg-violet-500/10 text-violet-300">
+      <div className="bg-accent-500/10 text-accent-300 flex size-14 items-center justify-center rounded-2xl">
         <StickyNote aria-hidden="true" className="size-7" />
       </div>
       <h2 className="mt-5 text-xl font-semibold text-[var(--app-text)]">Создай первую заметку</h2>

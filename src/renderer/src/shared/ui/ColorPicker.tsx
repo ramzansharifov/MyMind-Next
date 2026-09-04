@@ -51,7 +51,7 @@ export function ColorPicker({
             'text-sm text-(--app-text)',
             'transition-[background-color,border-color,box-shadow]',
             'hover:border-(--app-border-strong) hover:bg-(--app-field-hover)',
-            'focus-visible:ring-2 focus-visible:ring-violet-500/25',
+            'focus-visible:ring-accent-500/25 focus-visible:ring-2',
             'focus-visible:outline-none',
             'disabled:cursor-not-allowed disabled:opacity-45'
           )}
@@ -108,7 +108,7 @@ export function ColorPicker({
                       'relative flex aspect-square items-center justify-center',
                       'rounded-lg border border-(--app-border) outline-none',
                       'shadow-sm transition-transform hover:scale-105',
-                      'focus-visible:ring-2 focus-visible:ring-violet-400'
+                      'focus-visible:ring-accent-400 focus-visible:ring-2'
                     )}
                     style={{ backgroundColor: color }}
                     onClick={() => onChange(color)}

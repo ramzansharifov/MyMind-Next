@@ -36,7 +36,7 @@ const navigationButtonVariants = cva(
   [
     'group relative flex h-11 w-full items-center overflow-hidden rounded-xl',
     'text-sm font-medium outline-none transition-colors',
-    'focus-visible:ring-2 focus-visible:ring-violet-500/70',
+    'focus-visible:ring-2 focus-visible:ring-accent-500/70',
     'focus-visible:ring-offset-2',
     'focus-visible:ring-offset-[var(--app-sidebar)]'
   ],
@@ -47,7 +47,7 @@ const navigationButtonVariants = cva(
         false: 'gap-3 px-3'
       },
       active: {
-        true: 'bg-[var(--app-sidebar-active)] text-violet-300',
+        true: 'bg-[var(--app-sidebar-active)] text-accent-300',
         false: [
           'text-[var(--app-muted)]',
           'hover:bg-[var(--app-control-hover)]',
@@ -86,7 +86,7 @@ function NavigationButton({
       {isActive && (
         <span
           aria-hidden="true"
-          className="absolute left-0 h-5 w-0.5 rounded-r-full bg-violet-400"
+          className="bg-accent-400 absolute left-0 h-5 w-0.5 rounded-r-full"
         />
       )}
 
@@ -96,7 +96,7 @@ function NavigationButton({
           className={cn(
             'size-5 transition-colors',
             isActive
-              ? 'text-violet-300'
+              ? 'text-accent-300'
               : ['text-[var(--app-muted)]', 'group-hover:text-[var(--app-text)]']
           )}
         />
@@ -210,9 +210,9 @@ export function AppShell({
                     'absolute top-8 right-0 z-20',
                     'flex size-7 translate-x-1/2 -translate-y-1/2',
                     'items-center justify-center rounded-full border',
-                    'border-violet-500/25',
+                    'border-accent-500/25',
                     'bg-[var(--app-surface)]',
-                    'text-violet-300',
+                    'text-accent-300',
                     'shadow-[var(--app-shadow-card)]',
                     'opacity-0 outline-none',
                     'transition-[opacity,background-color,color,transform]',
@@ -220,10 +220,10 @@ export function AppShell({
                     'group-hover/sidebar:opacity-100',
                     'group-focus-within/sidebar:opacity-100',
                     'hover:scale-105',
-                    'hover:bg-violet-500/10',
+                    'hover:bg-accent-500/10',
                     'focus-visible:opacity-100',
                     'focus-visible:ring-2',
-                    'focus-visible:ring-violet-500/70',
+                    'focus-visible:ring-accent-500/70',
                     'motion-reduce:transition-none'
                   )}
                   onClick={() => {

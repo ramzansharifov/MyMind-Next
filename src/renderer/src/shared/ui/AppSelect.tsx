@@ -39,7 +39,7 @@ export function AppSelect({
           'bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none',
           'transition-[background-color,border-color,box-shadow]',
           'hover:bg-[var(--app-control-hover)]',
-          'focus-visible:bg-[var(--app-surface)] focus-visible:ring-2 focus-visible:ring-violet-500/15',
+          'focus-visible:ring-accent-500/15 focus-visible:bg-[var(--app-surface)] focus-visible:ring-2',
           'disabled:cursor-not-allowed disabled:opacity-45',
           triggerClassName
         )}
@@ -72,14 +72,14 @@ export function AppSelect({
                 key={option.value}
                 value={option.value}
                 className={cn(
-                  'relative flex min-h-9 cursor-default items-center rounded-lg py-2 pr-8 pl-3 select-none outline-none',
+                  'relative flex min-h-9 cursor-default items-center rounded-lg py-2 pr-8 pl-3 outline-none select-none',
                   'data-[highlighted]:bg-[var(--app-control-hover)] data-[highlighted]:text-[var(--app-text)]',
-                  'data-[state=checked]:text-violet-200'
+                  'data-[state=checked]:text-accent-200'
                 )}
               >
                 <Select.ItemText>{option.label}</Select.ItemText>
                 <Select.ItemIndicator className="absolute right-2 inline-flex items-center">
-                  <Check aria-hidden="true" className="size-4 text-violet-300" />
+                  <Check aria-hidden="true" className="text-accent-300 size-4" />
                 </Select.ItemIndicator>
               </Select.Item>
             ))}

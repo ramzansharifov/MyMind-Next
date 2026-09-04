@@ -123,7 +123,7 @@ export function NutritionMealsJsonImportDialog({
             <button
               type="button"
               disabled={busy || !rawJson.trim()}
-              className="inline-flex h-10 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400 disabled:opacity-45"
+              className="bg-accent-500 hover:bg-accent-400 inline-flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-semibold text-white disabled:opacity-45"
               onClick={previewJson}
             >
               <Check className="size-4" /> Проверить
@@ -143,7 +143,7 @@ export function NutritionMealsJsonImportDialog({
             <button
               type="button"
               disabled={busy || !preview}
-              className="inline-flex h-10 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400 disabled:opacity-45"
+              className="bg-accent-500 hover:bg-accent-400 inline-flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-semibold text-white disabled:opacity-45"
               onClick={() => void confirmImport()}
             >
               Добавить {itemCount > 0 ? `(${itemCount})` : ''}
@@ -165,7 +165,7 @@ export function NutritionMealsJsonImportDialog({
               spellCheck={false}
               aria-label="JSON питания"
               placeholder={`Вставьте JSON. Например:\n${NUTRITION_JSON_EXAMPLE}`}
-              className="w-full resize-y rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 py-3 font-mono text-xs leading-5 text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/45 focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/10"
+              className="focus:border-accent-500/45 focus:ring-accent-500/10 w-full resize-y rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 py-3 font-mono text-xs leading-5 text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/45 focus:ring-2"
               onChange={(event) => {
                 setRawJson(event.target.value)
                 setError(null)
@@ -184,7 +184,7 @@ export function NutritionMealsJsonImportDialog({
               </div>
               <button
                 type="button"
-                className="inline-flex h-9 items-center gap-2 rounded-xl px-3 text-xs font-medium text-violet-300 hover:bg-violet-500/10"
+                className="text-accent-300 hover:bg-accent-500/10 inline-flex h-9 items-center gap-2 rounded-xl px-3 text-xs font-medium"
                 onClick={() => setShowExample((current) => !current)}
               >
                 <ClipboardPaste className="size-3.5" />
@@ -213,10 +213,10 @@ export function NutritionMealsJsonImportDialog({
             <MealPreview key={`${meal.mealType}-${mealIndex}`} meal={meal} />
           ))}
 
-          <div className="rounded-2xl border border-violet-500/20 bg-violet-500/8 p-4">
+          <div className="border-accent-500/20 bg-accent-500/8 rounded-2xl border p-4">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
-                <div className="text-xs text-violet-200/70">Итого будет добавлено</div>
+                <div className="text-accent-200/70 text-xs">Итого будет добавлено</div>
                 <div className="mt-1 text-2xl font-semibold text-[var(--app-text)]">
                   {formatNutritionNumber(totals.calories, 0)} ккал
                 </div>

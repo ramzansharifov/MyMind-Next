@@ -156,7 +156,7 @@ export function LearningInstructionsPage({
         onBack={onBack}
       />
 
-      <label className="flex h-12 w-full min-w-0 items-center gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] px-4 shadow-inner shadow-black/10 transition-colors focus-within:border-violet-500/45 focus-within:ring-2 focus-within:ring-violet-500/10">
+      <label className="focus-within:border-accent-500/45 focus-within:ring-accent-500/10 flex h-12 w-full min-w-0 items-center gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] px-4 shadow-inner shadow-black/10 transition-colors focus-within:ring-2">
         <Search aria-hidden="true" className="size-4 shrink-0 text-[var(--app-muted)]" />
         <input
           value={search}
@@ -170,7 +170,7 @@ export function LearningInstructionsPage({
             <button
               type="button"
               aria-label="Очистить поиск инструкций"
-              className="flex size-7 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors outline-none hover:bg-white/[0.06] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35"
+              className="focus-visible:ring-accent-500/35 flex size-7 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors outline-none hover:bg-white/[0.06] hover:text-[var(--app-text)] focus-visible:ring-2"
               onClick={() => setSearch('')}
             >
               <X aria-hidden="true" className="size-4" />
@@ -257,7 +257,7 @@ export function BoardsInstructionsPage({
         onBack={onBack}
       />
 
-      <label className="flex h-12 w-full min-w-0 items-center gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] px-4 shadow-inner shadow-black/10 transition-colors focus-within:border-violet-500/45 focus-within:ring-2 focus-within:ring-violet-500/10">
+      <label className="focus-within:border-accent-500/45 focus-within:ring-accent-500/10 flex h-12 w-full min-w-0 items-center gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] px-4 shadow-inner shadow-black/10 transition-colors focus-within:ring-2">
         <Search aria-hidden="true" className="size-4 shrink-0 text-[var(--app-muted)]" />
         <input
           value={search}
@@ -271,7 +271,7 @@ export function BoardsInstructionsPage({
             <button
               type="button"
               aria-label="Очистить поиск инструкций досок"
-              className="flex size-7 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors outline-none hover:bg-white/[0.06] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35"
+              className="focus-visible:ring-accent-500/35 flex size-7 shrink-0 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors outline-none hover:bg-white/[0.06] hover:text-[var(--app-text)] focus-visible:ring-2"
               onClick={() => setSearch('')}
             >
               <X aria-hidden="true" className="size-4" />
@@ -442,7 +442,7 @@ function InstructionArticlePage({
         <aside className="sticky top-0 grid gap-4 max-[980px]:static">
           <section className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[0_12px_40px_rgb(0_0_0/0.08)]">
             <header className="flex items-center gap-3 border-b border-[var(--app-border)] px-4 py-3.5">
-              <div className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
+              <div className="border-accent-500/15 bg-accent-500/10 text-accent-300 flex size-9 shrink-0 items-center justify-center rounded-xl border">
                 <ListChecks aria-hidden="true" className="size-4" />
               </div>
               <div>
@@ -467,7 +467,7 @@ function InstructionArticlePage({
                     )}
                     onClick={() => openSection(index)}
                   >
-                    <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-violet-500/10 text-[10px] font-semibold text-violet-300 tabular-nums transition-colors group-hover:bg-[color-mix(in_srgb,var(--app-accent-500)_18%,transparent)] group-hover:text-[var(--app-text)]">
+                    <span className="bg-accent-500/10 text-accent-300 flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold tabular-nums transition-colors group-hover:bg-[color-mix(in_srgb,var(--app-accent-500)_18%,transparent)] group-hover:text-[var(--app-text)]">
                       {index + 1}
                     </span>
                     <span>{section.title}</span>
@@ -530,12 +530,12 @@ function InstructionTopicCard<TopicId extends string>({
         'group flex min-h-32 w-full min-w-0 items-start gap-3 rounded-xl border p-4 text-left outline-none',
         'border-[var(--app-border)] bg-[var(--app-workspace)]',
         'transition-[border-color,background-color,transform,box-shadow]',
-        'hover:-translate-y-px hover:border-violet-500/30 hover:bg-[var(--app-surface-raised)]',
-        'hover:shadow-lg hover:shadow-black/10 focus-visible:ring-2 focus-visible:ring-violet-500/35'
+        'hover:border-accent-500/30 hover:-translate-y-px hover:bg-[var(--app-surface-raised)]',
+        'focus-visible:ring-accent-500/35 hover:shadow-lg hover:shadow-black/10 focus-visible:ring-2'
       )}
       onClick={() => onOpen(article.id)}
     >
-      <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
+      <div className="border-accent-500/15 bg-accent-500/10 text-accent-300 flex size-10 shrink-0 items-center justify-center rounded-xl border">
         <Icon aria-hidden="true" className="size-5" />
       </div>
 
@@ -546,7 +546,7 @@ function InstructionTopicCard<TopicId extends string>({
 
       <ArrowRight
         aria-hidden="true"
-        className="mt-1 size-4 shrink-0 -translate-x-1 text-[var(--app-muted)] transition-[color,transform] group-hover:translate-x-0 group-hover:text-violet-300"
+        className="group-hover:text-accent-300 mt-1 size-4 shrink-0 -translate-x-1 text-[var(--app-muted)] transition-[color,transform] group-hover:translate-x-0"
       />
     </button>
   )
@@ -582,7 +582,7 @@ function InstructionArticleSection({
               key={step}
               className="flex items-start gap-3 text-sm leading-6 text-[var(--app-muted)]"
             >
-              <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full border border-violet-500/20 bg-violet-500/10 text-[11px] font-semibold text-violet-300 tabular-nums">
+              <span className="border-accent-500/20 bg-accent-500/10 text-accent-300 mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full border text-[11px] font-semibold tabular-nums">
                 {index + 1}
               </span>
               <span>{step}</span>
@@ -600,7 +600,7 @@ function InstructionArticleSection({
             >
               <span
                 aria-hidden="true"
-                className="mt-2 size-1.5 shrink-0 rounded-full bg-violet-400"
+                className="bg-accent-400 mt-2 size-1.5 shrink-0 rounded-full"
               />
               <span>{bullet}</span>
             </li>
@@ -609,8 +609,8 @@ function InstructionArticleSection({
       )}
 
       {section.note && (
-        <div className="mt-4 flex items-start gap-3 rounded-xl border border-violet-500/15 bg-violet-500/[0.07] p-3.5">
-          <Lightbulb aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-violet-300" />
+        <div className="border-accent-500/15 bg-accent-500/[0.07] mt-4 flex items-start gap-3 rounded-xl border p-3.5">
+          <Lightbulb aria-hidden="true" className="text-accent-300 mt-0.5 size-4 shrink-0" />
           <p className="text-xs leading-6 text-[var(--app-muted)]">{section.note}</p>
         </div>
       )}
@@ -630,7 +630,7 @@ function InstructionShortcuts({
   return (
     <section className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[0_12px_40px_rgb(0_0_0/0.08)]">
       <header className="flex items-center gap-3 border-b border-[var(--app-border)] px-4 py-3.5">
-        <div className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
+        <div className="border-accent-500/15 bg-accent-500/10 text-accent-300 flex size-9 shrink-0 items-center justify-center rounded-xl border">
           <Keyboard aria-hidden="true" className="size-4" />
         </div>
         <div>
@@ -696,23 +696,23 @@ function InstructionModuleCard({
         'border-[var(--app-border)] bg-[var(--app-surface)]',
         'shadow-[0_12px_40px_rgb(0_0_0/0.1)]',
         'transition-[border-color,transform,box-shadow]',
-        'hover:-translate-y-px hover:border-violet-500/35 hover:shadow-xl hover:shadow-black/10',
-        'focus-visible:ring-2 focus-visible:ring-violet-500/40'
+        'hover:border-accent-500/35 hover:-translate-y-px hover:shadow-xl hover:shadow-black/10',
+        'focus-visible:ring-accent-500/40 focus-visible:ring-2'
       )}
       onClick={onOpen}
     >
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -top-28 right-4 -z-10 size-72 rounded-full bg-violet-500/12 blur-3xl"
+        className="bg-accent-500/12 pointer-events-none absolute -top-28 right-4 -z-10 size-72 rounded-full blur-3xl"
       />
 
       <div className="flex h-full items-start gap-4">
-        <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-violet-500/20 bg-violet-500/12 text-violet-300 shadow-inner shadow-violet-500/5">
+        <div className="border-accent-500/20 bg-accent-500/12 text-accent-300 shadow-accent-500/5 flex size-12 shrink-0 items-center justify-center rounded-2xl border shadow-inner">
           <Icon aria-hidden="true" className="size-6" />
         </div>
 
         <div className="flex min-w-0 flex-1 flex-col self-stretch">
-          <p className="text-[11px] font-semibold tracking-[0.12em] text-violet-300 uppercase">
+          <p className="text-accent-300 text-[11px] font-semibold tracking-[0.12em] uppercase">
             Модуль приложения
           </p>
           <h2 className="mt-1 text-xl font-semibold tracking-tight text-[var(--app-text)]">
@@ -724,7 +724,7 @@ function InstructionModuleCard({
 
         <ArrowRight
           aria-hidden="true"
-          className="mt-1 size-5 shrink-0 -translate-x-1 text-[var(--app-muted)] transition-[color,transform] group-hover:translate-x-0 group-hover:text-violet-300"
+          className="group-hover:text-accent-300 mt-1 size-5 shrink-0 -translate-x-1 text-[var(--app-muted)] transition-[color,transform] group-hover:translate-x-0"
         />
       </div>
     </button>
@@ -750,12 +750,12 @@ function InstructionHero({
     <header className="relative isolate overflow-hidden rounded-3xl border border-[var(--app-border)] bg-[var(--app-surface)] p-6 shadow-[0_20px_70px_rgb(0_0_0/0.16)] max-[720px]:p-4">
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -top-28 right-8 -z-10 size-72 rounded-full bg-violet-500/12 blur-3xl"
+        className="bg-accent-500/12 pointer-events-none absolute -top-28 right-8 -z-10 size-72 rounded-full blur-3xl"
       />
 
       <button
         type="button"
-        className="mb-6 flex h-9 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-xs font-medium text-[var(--app-muted)] transition-colors outline-none hover:border-violet-500/30 hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/40"
+        className="hover:border-accent-500/30 focus-visible:ring-accent-500/40 mb-6 flex h-9 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-xs font-medium text-[var(--app-muted)] transition-colors outline-none hover:text-[var(--app-text)] focus-visible:ring-2"
         onClick={onBack}
       >
         <ArrowLeft aria-hidden="true" className="size-4" />
@@ -763,12 +763,12 @@ function InstructionHero({
       </button>
 
       <div className="flex items-start gap-4">
-        <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-violet-500/20 bg-violet-500/12 text-violet-300 shadow-inner shadow-violet-500/5">
+        <div className="border-accent-500/20 bg-accent-500/12 text-accent-300 shadow-accent-500/5 flex size-12 shrink-0 items-center justify-center rounded-2xl border shadow-inner">
           <Icon aria-hidden="true" className="size-6" />
         </div>
 
         <div className="min-w-0">
-          <p className="text-[11px] font-semibold tracking-[0.12em] text-violet-300 uppercase">
+          <p className="text-accent-300 text-[11px] font-semibold tracking-[0.12em] uppercase">
             {eyebrow}
           </p>
           <h1 className="mt-1 text-3xl font-semibold tracking-[-0.035em] text-[var(--app-text)]">

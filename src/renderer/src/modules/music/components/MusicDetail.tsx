@@ -99,7 +99,7 @@ export function MusicDetail({
           <div className="min-w-0 p-7 max-[700px]:p-5">
             <div className="flex items-start justify-between gap-5">
               <div className="min-w-0">
-                <div className="mb-2 text-xs font-semibold tracking-[0.1em] text-violet-300 uppercase">
+                <div className="text-accent-300 mb-2 text-xs font-semibold tracking-[0.1em] uppercase">
                   {musicTypeLabel(item.type)}
                 </div>
                 <h2 className="text-3xl font-semibold tracking-[-0.035em] text-[var(--app-text)]">
@@ -182,7 +182,7 @@ export function MusicDetail({
                       <button
                         key={artist}
                         type="button"
-                        className="font-medium text-[var(--app-text)] underline decoration-transparent underline-offset-4 transition-colors hover:text-violet-300 hover:decoration-violet-400/45"
+                        className="hover:text-accent-300 hover:decoration-accent-400/45 font-medium text-[var(--app-text)] underline decoration-transparent underline-offset-4 transition-colors"
                         onClick={() => void onSearchWeb(`Музыка ${artist}`)}
                       >
                         {artist}
@@ -199,7 +199,7 @@ export function MusicDetail({
                       <button
                         key={genre}
                         type="button"
-                        className="rounded-xl border border-[var(--app-border-strong)] bg-[var(--app-control)] px-3 py-2 text-xs font-medium text-[var(--app-muted)] transition-colors hover:border-violet-400/35 hover:text-violet-300"
+                        className="hover:border-accent-400/35 hover:text-accent-300 rounded-xl border border-[var(--app-border-strong)] bg-[var(--app-control)] px-3 py-2 text-xs font-medium text-[var(--app-muted)] transition-colors"
                         onClick={() => void onSearchWeb(`Музыка жанра ${genre}`)}
                       >
                         {genre}
@@ -231,7 +231,7 @@ export function MusicDetail({
                   disabled={busy}
                   className={
                     item.status === 'want_to_listen'
-                      ? 'h-9 rounded-lg bg-violet-500/15 px-3 text-sm font-medium text-violet-200'
+                      ? 'bg-accent-500/15 text-accent-200 h-9 rounded-lg px-3 text-sm font-medium'
                       : 'h-9 rounded-lg px-3 text-sm text-[var(--app-muted)] hover:bg-[var(--app-control-hover)]'
                   }
                   onClick={() => {
@@ -244,7 +244,7 @@ export function MusicDetail({
 
               <button
                 type="button"
-                className="inline-flex h-11 items-center gap-2 rounded-xl bg-violet-500/15 px-4 text-sm font-semibold text-violet-200 transition-colors hover:bg-violet-500/20"
+                className="bg-accent-500/15 text-accent-200 hover:bg-accent-500/20 inline-flex h-11 items-center gap-2 rounded-xl px-4 text-sm font-semibold transition-colors"
                 onClick={() => void onSearchWeb(listenQuery)}
               >
                 <Play className="size-4 fill-current" /> Послушать
@@ -263,7 +263,7 @@ export function MusicDetail({
             {item.comments && (
               <div className="mt-6 border-t border-[var(--app-border)] pt-5">
                 <h3 className="flex items-center gap-2 text-sm font-semibold text-[var(--app-text)]">
-                  <Music2 className="size-4 text-violet-300" /> Личные комментарии
+                  <Music2 className="text-accent-300 size-4" /> Личные комментарии
                 </h3>
                 <p className="mt-3 text-sm leading-7 whitespace-pre-wrap text-[var(--app-muted)]">
                   {item.comments}
@@ -312,7 +312,7 @@ export function MusicDetail({
             <button
               type="button"
               disabled={busy || pendingRating === null}
-              className="h-10 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400 disabled:opacity-45"
+              className="bg-accent-500 hover:bg-accent-400 h-10 rounded-xl px-4 text-sm font-semibold text-white disabled:opacity-45"
               onClick={() => void confirmRating()}
             >
               {item.status === 'listened' ? 'Сохранить оценку' : 'Отметить прослушанным'}

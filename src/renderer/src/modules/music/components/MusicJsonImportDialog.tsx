@@ -150,7 +150,7 @@ export function MusicJsonImportDialog({
           <button
             type="button"
             disabled={busy || parsed.items.length === 0 || Boolean(parsed.error)}
-            className="inline-flex h-10 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-45"
+            className="bg-accent-500 hover:bg-accent-400 inline-flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-semibold text-white transition-colors disabled:cursor-not-allowed disabled:opacity-45"
             onClick={() => void submit()}
           >
             {busy && <LoaderCircle className="size-4 animate-spin" />}
@@ -193,7 +193,7 @@ export function MusicJsonImportDialog({
         autoFocus
         spellCheck={false}
         placeholder='[{ "title": "Blinding Lights", "type": "track", "artists": ["The Weeknd"] }]'
-        className="min-h-[360px] w-full resize-y rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-4 font-mono text-[13px] leading-6 text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)] focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
+        className="focus:border-accent-500/45 focus:ring-accent-500/15 min-h-[360px] w-full resize-y rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-4 font-mono text-[13px] leading-6 text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)] focus:ring-2"
         onChange={(event) => {
           setValue(event.target.value)
           setSubmitError(null)

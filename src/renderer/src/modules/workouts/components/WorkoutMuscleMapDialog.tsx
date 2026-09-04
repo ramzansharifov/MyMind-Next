@@ -324,7 +324,7 @@ export function WorkoutMuscleMapDialog({
         <button
           type="button"
           aria-label="Закрыть модель мышц"
-          className="absolute top-5 right-5 z-50 flex size-10 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)]/88 text-[var(--app-muted)] shadow-[var(--app-shadow-card)] backdrop-blur-xl transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/40 focus-visible:outline-none"
+          className="focus-visible:ring-accent-500/40 absolute top-5 right-5 z-50 flex size-10 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)]/88 text-[var(--app-muted)] shadow-[var(--app-shadow-card)] backdrop-blur-xl transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:outline-none"
           onClick={() => requestOpenChange(false)}
         >
           <X className="size-5" aria-hidden="true" />
@@ -477,7 +477,7 @@ export function WorkoutMuscleMapDialog({
                 aria-label="Мужская модель"
                 aria-pressed={sex === 'MALE'}
                 className={cn(
-                  'flex h-10 min-w-10 items-center justify-center rounded-xl px-3 text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-violet-500/40 focus-visible:outline-none',
+                  'focus-visible:ring-accent-500/40 flex h-10 min-w-10 items-center justify-center rounded-xl px-3 text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:outline-none',
                   sex === 'MALE'
                     ? 'bg-[var(--app-accent-500)] text-white'
                     : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
@@ -493,7 +493,7 @@ export function WorkoutMuscleMapDialog({
                 aria-label="Женская модель"
                 aria-pressed={sex === 'FEMALE'}
                 className={cn(
-                  'flex h-10 min-w-10 items-center justify-center rounded-xl px-3 text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-violet-500/40 focus-visible:outline-none',
+                  'focus-visible:ring-accent-500/40 flex h-10 min-w-10 items-center justify-center rounded-xl px-3 text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:outline-none',
                   sex === 'FEMALE'
                     ? 'bg-[var(--app-accent-500)] text-white'
                     : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
@@ -509,7 +509,7 @@ export function WorkoutMuscleMapDialog({
             <button
               type="button"
               aria-label="Повернуть модель"
-              className="absolute right-5 bottom-5 z-40 flex size-12 items-center justify-center rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)]/88 text-[var(--app-text)] shadow-[var(--app-shadow-card)] backdrop-blur-xl transition-all hover:bg-[var(--app-control-hover)] focus-visible:ring-2 focus-visible:ring-violet-500/40 focus-visible:outline-none active:scale-95"
+              className="focus-visible:ring-accent-500/40 absolute right-5 bottom-5 z-40 flex size-12 items-center justify-center rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)]/88 text-[var(--app-text)] shadow-[var(--app-shadow-card)] backdrop-blur-xl transition-all hover:bg-[var(--app-control-hover)] focus-visible:ring-2 focus-visible:outline-none active:scale-95"
               onClick={rotateModel}
             >
               <RotateCcw className="size-5" aria-hidden="true" />
@@ -526,7 +526,7 @@ export function WorkoutMuscleMapDialog({
                 <div className="text-sm font-semibold text-[var(--app-text)]">
                   {workoutMuscleGroupLabel(hoveredInfo.zone)}
                 </div>
-                <span className="shrink-0 rounded-lg bg-violet-500/10 px-2 py-1 text-[10px] font-semibold text-violet-300">
+                <span className="bg-accent-500/10 text-accent-300 shrink-0 rounded-lg px-2 py-1 text-[10px] font-semibold">
                   {hoveredInfo.count} {exerciseCountLabel(hoveredInfo.count)}
                 </span>
               </div>

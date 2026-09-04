@@ -43,7 +43,7 @@ interface StudyCodeWorkspaceProps {
 type SaveState = 'loading' | 'saved' | 'dirty' | 'saving' | 'error'
 
 const iconButtonClassName =
-  'flex h-9 items-center gap-2 rounded-lg border border-[var(--app-border)] bg-white/[0.025] px-3 text-xs font-medium text-[var(--app-muted)] transition-colors outline-none hover:bg-white/[0.055] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 disabled:cursor-not-allowed disabled:opacity-40'
+  'flex h-9 items-center gap-2 rounded-lg border border-[var(--app-border)] bg-white/[0.025] px-3 text-xs font-medium text-[var(--app-muted)] transition-colors outline-none hover:bg-white/[0.055] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-accent-500/35 disabled:cursor-not-allowed disabled:opacity-40'
 
 const STUDY_CODE_LIVE_PARSE_MAX_LENGTH = 300_000
 
@@ -301,7 +301,7 @@ export function StudyCodeWorkspace({
     >
       <header className="flex min-h-14 shrink-0 items-center gap-3 border-b border-[var(--app-border)] px-5 max-[720px]:px-3">
         <div className="flex min-w-0 items-center gap-2">
-          <Braces aria-hidden="true" className="size-4 shrink-0 text-violet-300" />
+          <Braces aria-hidden="true" className="text-accent-300 size-4 shrink-0" />
           <span className="truncate text-sm font-medium text-[var(--app-text)]">
             {node.type === 'folder' ? `Структура: ${node.title}` : node.title}
           </span>
@@ -356,7 +356,7 @@ export function StudyCodeWorkspace({
 
           <button
             type="button"
-            className="flex h-9 items-center gap-2 rounded-lg bg-violet-500/16 px-3 text-xs font-semibold text-violet-200 transition-colors outline-none hover:bg-violet-500/24 focus-visible:ring-2 focus-visible:ring-violet-500/45 disabled:cursor-not-allowed disabled:opacity-40"
+            className="bg-accent-500/16 text-accent-200 hover:bg-accent-500/24 focus-visible:ring-accent-500/45 flex h-9 items-center gap-2 rounded-lg px-3 text-xs font-semibold transition-colors outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-40"
             disabled={
               !dirty || Boolean(liveDiagnostic) || saveState === 'loading' || saveState === 'saving'
             }
@@ -468,7 +468,7 @@ export function StudyCodeWorkspace({
                 'rounded-lg px-3 py-2 text-sm font-medium',
                 pendingIsDestructive
                   ? 'bg-amber-500/15 text-amber-200 hover:bg-amber-500/20'
-                  : 'bg-violet-500/15 text-violet-200 hover:bg-violet-500/20'
+                  : 'bg-accent-500/15 text-accent-200 hover:bg-accent-500/20'
               )}
               disabled={saveState === 'saving'}
               onClick={() => void applyPreview(pendingIsDestructive)}
@@ -497,7 +497,7 @@ export function StudyCodeWorkspace({
             </button>
             <button
               type="button"
-              className="rounded-lg bg-violet-500/15 px-3 py-2 text-sm font-medium text-violet-200 hover:bg-violet-500/20"
+              className="bg-accent-500/15 text-accent-200 hover:bg-accent-500/20 rounded-lg px-3 py-2 text-sm font-medium"
               onClick={() => void reloadSnapshot()}
             >
               Обновить код
