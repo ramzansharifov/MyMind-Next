@@ -3,10 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { StudyNode } from '../../../../../../shared/contracts/study'
-import {
-  StudyFolderCodeWorkspace,
-  type StudyFolderCodeControls
-} from './StudyFolderCodeWorkspace'
+import { StudyFolderCodeWorkspace, type StudyFolderCodeControls } from './StudyFolderCodeWorkspace'
 
 vi.mock('./StudyCodeWorkspace', () => ({
   StudyCodeWorkspace: ({
@@ -98,7 +95,9 @@ describe('StudyFolderCodeWorkspace', () => {
     await user.click(screen.getByRole('button', { name: 'Изменить DSL' }))
     await user.click(screen.getByRole('tab', { name: 'Обзор' }))
 
-    expect(screen.getByRole('dialog', { name: 'Отменить изменения структуры?' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('dialog', { name: 'Отменить изменения структуры?' })
+    ).toBeInTheDocument()
     expect(screen.getByText('DSL структуры Математика')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Отменить и перейти' }))

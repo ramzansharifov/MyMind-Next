@@ -17,7 +17,10 @@ describe('workspace width', () => {
     }
 
     const finance = readFileSync(join(rendererRoot, 'modules/finance/FinancePage.tsx'), 'utf8')
-    const standardPage = readFileSync(join(rendererRoot, 'shared/ui/StandardModulePage.tsx'), 'utf8')
+    const standardPage = readFileSync(
+      join(rendererRoot, 'shared/ui/StandardModulePage.tsx'),
+      'utf8'
+    )
     const mainCss = readFileSync(join(rendererRoot, 'assets/main.css'), 'utf8')
 
     expect(finance).toContain('<StandardModulePage>')
