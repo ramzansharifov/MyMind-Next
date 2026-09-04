@@ -13,6 +13,7 @@ interface IconPickerProps<Value extends string> {
   value: Value
   onChange: (value: Value) => void
   trigger: ReactElement
+  triggerTooltip?: ReactNode
   options: readonly IconPickerOption<Value>[]
   renderIcon: (value: Value) => ReactNode
   align?: 'start' | 'center' | 'end'
@@ -24,15 +25,24 @@ export function IconPicker<Value extends string>({
   value,
   onChange,
   trigger,
+  triggerTooltip,
   options,
   renderIcon,
   align = 'end',
   label,
   optionDataAttribute
 }: IconPickerProps<Value>): React.JSX.Element {
+  const menuTrigger = <DropdownMenu.Trigger asChild>{trigger}</DropdownMenu.Trigger>
+
   return (
     <DropdownMenu.Root>
-      <DropdownMenu.Trigger asChild>{trigger}</DropdownMenu.Trigger>
+      {triggerTooltip ? (
+        <Tooltip content={triggerTooltip} side="top">
+          {menuTrigger}
+        </Tooltip>
+      ) : (
+        menuTrigger
+      )}
 
       <DropdownMenu.Portal>
         <DropdownMenu.Content
