@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs'
-import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { StudyDocument, StudyLocalAsset } from '../../shared/contracts/study'
 import {
   cleanupStudyAssetsForDocument,
+  persistStudyAudioRecording,
   persistPreparedStudyAssetImport,
   removeStudyAssetsForMaterials,
   resetStudyAssetReservationsForTesting,
@@ -72,5 +73,28 @@ describe('study asset reservations', () => {
     await importAsset()
     await removeStudyAssetsForMaterials(['material-a'])
     expect(existsSync(join(root, 'assets', 'material-a'))).toBe(false)
+  })
+
+  it('persists a recorded audio buffer as a reserved local asset', async () => {
+    const data = new Uint8Array([1, 2, 3, 4])
+    const asset = await persistStudyAudioRecording(
+      'material-a',
+      data,
+      'audio/webm',
+      () => undefined
+    )
+
+    expect(asset).toMatchObject({
+      materialId: 'material-a',
+      name: 'voice-recording.weba',
+      mimeType: 'audio/webm',
+      size: 4
+    })
+    expect(
+      await readFile(join(root, 'assets', 'material-a', asset.id, 'voice-recording.weba'))
+    ).toEqual(Buffer.from(data))
+
+    await cleanupStudyAssetsForDocument('material-a', emptyDocument)
+    expect(existsSync(join(root, 'assets', 'material-a', asset.id))).toBe(true)
   })
 })

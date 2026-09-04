@@ -1,6 +1,6 @@
 import { app, dialog, protocol, shell, type BrowserWindow, type OpenDialogOptions } from 'electron'
 import { createReadStream } from 'node:fs'
-import { copyFile, mkdir, readdir, rm, stat } from 'node:fs/promises'
+import { copyFile, mkdir, readdir, rm, stat, writeFile } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import { basename, extname, isAbsolute, join, relative, resolve } from 'node:path'
 
@@ -60,7 +60,7 @@ function getActiveReservedAssetIds(materialId: string): Set<string> {
 const FILE_KIND_EXTENSIONS = {
   image: new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'avif', 'bmp']),
   video: new Set(['mp4', 'm4v', 'mov', 'webm', 'ogv', 'ogg']),
-  audio: new Set(['mp3', 'wav', 'ogg', 'oga', 'm4a', 'aac', 'flac', 'webm'])
+  audio: new Set(['mp3', 'wav', 'ogg', 'oga', 'm4a', 'aac', 'flac', 'webm', 'weba'])
 } satisfies Record<Exclude<StudyAssetKind, 'file'>, Set<string>>
 
 const MIME_TYPES: Record<string, string> = {
@@ -85,6 +85,7 @@ const MIME_TYPES: Record<string, string> = {
   m4a: 'audio/mp4',
   aac: 'audio/aac',
   flac: 'audio/flac',
+  weba: 'audio/webm',
 
   pdf: 'application/pdf',
   txt: 'text/plain',
@@ -359,6 +360,49 @@ export async function importStudyAsset(
   if (!prepared) return null
 
   return commitPreparedStudyAssetImport(input.nodeId, prepared, assertMaterialExists)
+}
+
+export async function persistStudyAudioRecording(
+  materialId: string,
+  data: Uint8Array,
+  mimeType: 'audio/webm' | 'audio/ogg' | 'audio/mp4',
+  assertMaterialExists: () => void | Promise<void>
+): Promise<StudyLocalAsset> {
+  assertSafeAssetSegment(materialId, 'material id')
+
+  const extension = mimeType === 'audio/ogg' ? 'ogg' : mimeType === 'audio/mp4' ? 'm4a' : 'weba'
+
+  return studyMaterialCoordinator.run(materialId, async () => {
+    await assertMaterialExists()
+
+    const assetId = randomUUID()
+    const fileName = `voice-recording.${extension}`
+    const assetDirectory = join(getStudyAssetsRoot(), materialId, assetId)
+    const targetPath = join(assetDirectory, fileName)
+
+    try {
+      await mkdir(assetDirectory, { recursive: true })
+      await writeFile(targetPath, data, { flag: 'wx' })
+      reserveStudyAsset(materialId, assetId)
+    } catch (reason: unknown) {
+      try {
+        await rm(assetDirectory, { recursive: true, force: true })
+      } catch (cleanupReason: unknown) {
+        console.error('Failed to remove a partial voice recording', cleanupReason)
+      }
+
+      throw reason
+    }
+
+    return {
+      id: assetId,
+      materialId,
+      name: fileName,
+      mimeType,
+      size: data.byteLength,
+      url: createCanonicalStudyAssetUrl({ materialId, assetId, fileName })
+    }
+  })
 }
 
 export function commitPreparedStudyAssetImport(
@@ -739,7 +783,7 @@ function getPickerFilters(kind: StudyAssetKind): OpenDialogOptions['filters'] {
     return [
       {
         name: 'Аудио',
-        extensions: ['mp3', 'wav', 'ogg', 'oga', 'm4a', 'aac', 'flac', 'webm']
+        extensions: ['mp3', 'wav', 'ogg', 'oga', 'm4a', 'aac', 'flac', 'webm', 'weba']
       }
     ]
   }

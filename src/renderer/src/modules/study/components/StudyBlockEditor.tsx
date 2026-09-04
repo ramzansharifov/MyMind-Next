@@ -21,6 +21,7 @@ import {
   ChevronRight,
   CopyPlus,
   GripVertical,
+  Mic,
   Plus,
   Trash2
 } from 'lucide-react'
@@ -75,6 +76,7 @@ import { DeleteConfirmationDialog } from './DeleteConfirmationDialog'
 import { useStudyBlockAssetClient } from './study-block-asset-context'
 import { StudyDivider } from './StudyDivider'
 import { StudyFileBlockView } from './file/StudyFileBlockView'
+import { StudyVoiceRecorder } from './file/StudyVoiceRecorder'
 import { RichTextBlockEditor, RichTextViewer } from './rich-text/RichTextBlockEditor'
 import './StudyBlockEditor.performance.css'
 import { StudyHeadingLayoutSettings } from './StudyHeadingLayoutSettings'
@@ -193,8 +195,16 @@ function StudyBlockEditorContent({
   documentLabel = 'материала',
   onChange
 }: StudyBlockEditorProps): React.JSX.Element {
+  const assetClient = useStudyBlockAssetClient()
   const allowedBlockTypeSet = new Set<StudyBlockType>(allowedBlockTypes)
-  const blockTypes = studyBlockDefinitions.filter(({ type }) => allowedBlockTypeSet.has(type))
+  const supportsVoiceRecording = typeof assetClient.saveRecordedAudio === 'function'
+  const blockTypes = studyBlockDefinitions
+    .filter(({ type }) => allowedBlockTypeSet.has(type))
+    .map((definition) =>
+      supportsVoiceRecording && definition.type === 'audio'
+        ? { ...definition, label: 'Голосовое', icon: Mic }
+        : definition
+    )
   const [activeBlockId, setActiveBlockId] = useState<string | null>(document.blocks[0]?.id ?? null)
 
   const [activeTextEditor, setActiveTextEditor] = useState<Editor | null>(null)
@@ -367,6 +377,7 @@ function StudyBlockEditorContent({
               <Fragment key={block.id}>
                 <StudyBlockDragItem
                   block={block}
+                  blockLabel={getEditorBlockLabel(block.type, supportsVoiceRecording)}
                   index={index}
                   virtualize={virtualizeEditBlocks}
                   materialId={materialId}
@@ -438,7 +449,11 @@ function StudyBlockEditorContent({
         <DeleteConfirmationDialog
           open={deleteTarget !== null}
           title="Удалить блок?"
-          subject={deleteTarget ? getBlockLabel(deleteTarget.type) : undefined}
+          subject={
+            deleteTarget
+              ? getEditorBlockLabel(deleteTarget.type, supportsVoiceRecording)
+              : undefined
+          }
           description={`Блок и всё его содержимое будут удалены из ${documentLabel}.`}
           onOpenChange={(open) => {
             if (!open) {
@@ -456,7 +471,12 @@ function StudyBlockEditorContent({
       </div>
 
       <DragOverlay dropAnimation={null}>
-        {draggedBlock ? <StudyBlockDragOverlay block={draggedBlock} /> : null}
+        {draggedBlock ? (
+          <StudyBlockDragOverlay
+            block={draggedBlock}
+            label={getEditorBlockLabel(draggedBlock.type, supportsVoiceRecording)}
+          />
+        ) : null}
       </DragOverlay>
     </DndContext>
   )
@@ -634,6 +654,7 @@ interface StudyBlockDragItemProps extends Omit<
 
 function StudyBlockDragItem({
   block,
+  blockLabel,
   index,
   virtualize,
   dragDisabled,
@@ -713,6 +734,7 @@ function StudyBlockDragItem({
           <StudyBlockCard
             {...cardProps}
             block={block}
+            blockLabel={blockLabel}
             dragDisabled={dragDisabled}
             dragHandleAttributes={attributes}
             dragHandleListeners={listeners}
@@ -720,7 +742,7 @@ function StudyBlockDragItem({
           />
         </div>
       ) : (
-        <StudyVirtualizedBlockPlaceholder block={block} />
+        <StudyVirtualizedBlockPlaceholder label={blockLabel} />
       )}
 
       {dropPlacement === 'after' && <StudyBlockDropIndicator position="after" />}
@@ -728,7 +750,7 @@ function StudyBlockDragItem({
   )
 }
 
-function StudyVirtualizedBlockPlaceholder({ block }: { block: StudyBlock }): React.JSX.Element {
+function StudyVirtualizedBlockPlaceholder({ label }: { label: string }): React.JSX.Element {
   return (
     <div
       data-study-block-placeholder
@@ -736,7 +758,7 @@ function StudyVirtualizedBlockPlaceholder({ block }: { block: StudyBlock }): Rea
       className="study-edit-block-placeholder flex h-full min-h-16 items-start rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-3"
     >
       <span className="text-[10px] font-semibold tracking-[0.08em] text-[var(--app-muted)]/55 uppercase">
-        {getBlockLabel(block.type)}
+        {label}
       </span>
     </div>
   )
@@ -762,19 +784,26 @@ function StudyBlockDropIndicator({
   )
 }
 
-function StudyBlockDragOverlay({ block }: { block: StudyBlock }): React.JSX.Element {
+function StudyBlockDragOverlay({
+  block,
+  label
+}: {
+  block: StudyBlock
+  label: string
+}): React.JSX.Element {
   return (
     <div className="flex h-11 max-w-72 items-center gap-3 rounded-xl border border-violet-500/45 bg-[var(--app-surface-raised)] px-3 text-sm text-[var(--app-text)] shadow-2xl shadow-black/35">
       <GripVertical aria-hidden="true" className="size-4 shrink-0 text-violet-300" />
 
       <StudyBlockTypeIcon type={block.type} className="size-4 shrink-0 text-[var(--app-muted)]" />
 
-      <span className="truncate font-medium">{getBlockLabel(block.type)}</span>
+      <span className="truncate font-medium">{label}</span>
     </div>
   )
 }
 interface StudyBlockCardProps {
   block: StudyBlock
+  blockLabel: string
   materialId: string
   isActive: boolean
   isFirst: boolean
@@ -795,6 +824,7 @@ interface StudyBlockCardProps {
 
 function StudyBlockCard({
   block,
+  blockLabel,
   materialId,
   isActive,
   isFirst,
@@ -813,7 +843,6 @@ function StudyBlockCard({
   onDelete
 }: StudyBlockCardProps): React.JSX.Element {
   const [open, setOpen] = useState(true)
-  const blockLabel = getBlockLabel(block.type)
 
   return (
     <Collapsible.Root open={open} onOpenChange={setOpen} asChild>
@@ -1127,7 +1156,11 @@ function EditMermaidBlock({ block, onChange }: EditableBlockProps): React.JSX.El
   )
 }
 
-function EditAttachmentBlock({ block }: EditableBlockProps): React.JSX.Element {
+function EditAttachmentBlock({
+  materialId,
+  block,
+  onChange
+}: EditableBlockProps): React.JSX.Element {
   const assetClient = useStudyBlockAssetClient()
 
   if (
@@ -1137,6 +1170,18 @@ function EditAttachmentBlock({ block }: EditableBlockProps): React.JSX.Element {
     block.type !== 'file'
   ) {
     throw new Error('Attachment editor received an incompatible block')
+  }
+
+  if (block.type === 'audio' && assetClient.saveRecordedAudio) {
+    return (
+      <StudyVoiceRecorder
+        materialId={materialId}
+        block={block}
+        saveRecording={assetClient.saveRecordedAudio}
+        onOpenFile={assetClient.openAsset}
+        onChange={onChange}
+      />
+    )
   }
 
   return <StudyFileBlockView block={block} onOpenFile={assetClient.openAsset} />
@@ -1655,4 +1700,8 @@ function StudyBlockTypeIcon({
 
 function getBlockLabel(type: StudyBlock['type']): string {
   return getStudyBlockDefinition(type).label
+}
+
+function getEditorBlockLabel(type: StudyBlock['type'], supportsVoiceRecording: boolean): string {
+  return supportsVoiceRecording && type === 'audio' ? 'Голосовое' : getBlockLabel(type)
 }

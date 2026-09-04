@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { NOTE_BLOCK_TYPES } from '../../../../../shared/contracts/notes'
 import type { StudyDocument } from '../../../../../shared/contracts/study'
+import { StudyBlockAssetProvider } from './StudyBlockAssetProvider'
 import { StudyBlockEditor } from './StudyBlockEditor'
 
 const emptyDocument: StudyDocument = {
@@ -16,14 +17,23 @@ describe('StudyBlockEditor note configuration', () => {
     const user = userEvent.setup()
 
     render(
-      <StudyBlockEditor
-        materialId="note-one"
-        document={emptyDocument}
-        mode="edit"
-        allowedBlockTypes={NOTE_BLOCK_TYPES}
-        documentLabel="заметки"
-        onChange={vi.fn()}
-      />
+      <StudyBlockAssetProvider
+        client={{
+          importAsset: vi.fn(),
+          saveRecordedAudio: vi.fn(),
+          openAsset: vi.fn(),
+          capabilities: { internalLinks: false }
+        }}
+      >
+        <StudyBlockEditor
+          materialId="note-one"
+          document={emptyDocument}
+          mode="edit"
+          allowedBlockTypes={NOTE_BLOCK_TYPES}
+          documentLabel="заметки"
+          onChange={vi.fn()}
+        />
+      </StudyBlockAssetProvider>
     )
 
     await user.click(screen.getByRole('button', { name: 'Добавить блок здесь' }))
@@ -39,10 +49,12 @@ describe('StudyBlockEditor note configuration', () => {
       'Mermaid',
       'Фото',
       'Видео',
-      'Аудио',
+      'Голосовое',
       'Файл'
     ]) {
       expect(screen.getByRole('menuitem', { name: label })).toBeInTheDocument()
     }
+
+    expect(screen.queryByRole('menuitem', { name: 'Аудио' })).not.toBeInTheDocument()
   })
 })

@@ -10,6 +10,7 @@ import {
   openNoteAssetInputSchema,
   renameNoteGroupInputSchema,
   renameNoteInputSchema,
+  saveNoteVoiceRecordingInputSchema,
   saveNoteInputSchema,
   updateNoteGroupIconInputSchema
 } from '../../shared/validation/notes'
@@ -26,7 +27,11 @@ import {
   saveNote,
   updateNoteGroupIcon
 } from '../repositories/notes.repository'
-import { importStudyAsset, openStudyAsset } from '../services/study-assets'
+import {
+  importStudyAsset,
+  openStudyAsset,
+  persistStudyAudioRecording
+} from '../services/study-assets'
 import { mainOperationTracker } from '../services/main-operation-tracker'
 
 export function registerNotesIpcHandlers(): void {
@@ -112,6 +117,20 @@ export function registerNotesIpcHandlers(): void {
           getNote(input.noteId)
         }
       )
+    })
+  )
+
+  ipcMain.handle(NOTES_IPC_CHANNELS.saveVoiceRecording, (event, rawInput: unknown) =>
+    mainOperationTracker.run(() => {
+      if (!event.senderFrame || event.senderFrame !== event.sender.mainFrame) {
+        throw new Error('Untrusted note voice recording request')
+      }
+
+      const input = saveNoteVoiceRecordingInputSchema.parse(rawInput)
+
+      return persistStudyAudioRecording(input.noteId, input.data, input.mimeType, () => {
+        getNote(input.noteId)
+      })
     })
   )
 

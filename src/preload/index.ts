@@ -171,6 +171,8 @@ const api: MyMindApi = {
     saveNote: (input) => invoke(NOTES_IPC_CHANNELS.saveNote, input) as Promise<NoteRecord>,
     importAsset: (input) =>
       invoke(NOTES_IPC_CHANNELS.importAsset, input) as Promise<NoteLocalAsset | null>,
+    saveVoiceRecording: (input) =>
+      invoke(NOTES_IPC_CHANNELS.saveVoiceRecording, input) as Promise<NoteLocalAsset>,
     openAsset: (input) => invoke(NOTES_IPC_CHANNELS.openAsset, input) as Promise<void>
   },
 

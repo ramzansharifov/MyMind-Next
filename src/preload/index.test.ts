@@ -68,6 +68,7 @@ describe('preload API contract', () => {
       'getNote',
       'saveNote',
       'importAsset',
+      'saveVoiceRecording',
       'openAsset'
     ])
     expect(Object.keys(api.diary)).toEqual([

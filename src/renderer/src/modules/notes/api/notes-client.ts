@@ -9,7 +9,8 @@ import type {
   NotesApi,
   NotesOverview,
   OpenNoteAssetInput,
-  SaveNoteInput
+  SaveNoteInput,
+  SaveNoteVoiceRecordingInput
 } from '../../../../../shared/contracts/notes'
 import type {
   ImportStudyAssetInput,
@@ -75,6 +76,10 @@ export const notesClient = {
     return getNotesApi().importAsset(input)
   },
 
+  saveVoiceRecording(input: SaveNoteVoiceRecordingInput): Promise<NoteLocalAsset> {
+    return getNotesApi().saveVoiceRecording(input)
+  },
+
   openAsset(input: OpenNoteAssetInput): Promise<void> {
     return getNotesApi().openAsset(input)
   }
@@ -89,6 +94,18 @@ export const notesBlockAssetClient = {
     return notesClient.importAsset({
       noteId: input.nodeId,
       kind: input.kind
+    })
+  },
+
+  saveRecordedAudio(input: {
+    nodeId: string
+    data: Uint8Array
+    mimeType: 'audio/webm' | 'audio/ogg' | 'audio/mp4'
+  }): Promise<StudyLocalAsset> {
+    return notesClient.saveVoiceRecording({
+      noteId: input.nodeId,
+      data: input.data,
+      mimeType: input.mimeType
     })
   },
 

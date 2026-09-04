@@ -136,6 +136,20 @@ export const importNoteAssetInputSchema = z.object({
   kind: z.enum(['image', 'video', 'audio', 'file'])
 })
 
+const NOTE_VOICE_RECORDING_MAX_BYTES = 50 * 1024 * 1024
+
+export const saveNoteVoiceRecordingInputSchema = z.object({
+  noteId: noteSafeIdSchema,
+  data: z
+    .custom<Uint8Array>((value) => value instanceof Uint8Array, 'Некорректные данные записи')
+    .refine((value) => value.byteLength > 0, 'Запись не должна быть пустой')
+    .refine(
+      (value) => value.byteLength <= NOTE_VOICE_RECORDING_MAX_BYTES,
+      'Запись превышает допустимый размер 50 МБ'
+    ),
+  mimeType: z.enum(['audio/webm', 'audio/ogg', 'audio/mp4'])
+})
+
 export const openNoteAssetInputSchema = openStudyAssetInputSchema
 
 export const saveNoteInputSchema = z

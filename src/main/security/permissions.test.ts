@@ -188,7 +188,6 @@ describe('isAppPermissionAllowed', () => {
 
   it.each([
     'clipboard-read',
-    'media',
     'camera',
     'microphone',
     'geolocation',
@@ -205,6 +204,44 @@ describe('isAppPermissionAllowed', () => {
         {
           ...trustedRendererRequest,
           permission
+        },
+        rendererUrl
+      )
+    ).toBe(false)
+  })
+
+  it('allows only microphone media access from the trusted renderer main frame', () => {
+    expect(
+      isAppPermissionAllowed(
+        {
+          ...trustedRendererRequest,
+          permission: 'media',
+          mediaTypes: ['audio']
+        },
+        rendererUrl
+      )
+    ).toBe(true)
+
+    for (const mediaTypes of [['video'], ['audio', 'video'], undefined] as const) {
+      expect(
+        isAppPermissionAllowed(
+          {
+            ...trustedRendererRequest,
+            permission: 'media',
+            mediaTypes
+          },
+          rendererUrl
+        )
+      ).toBe(false)
+    }
+
+    expect(
+      isAppPermissionAllowed(
+        {
+          ...trustedRendererRequest,
+          permission: 'media',
+          mediaTypes: ['audio'],
+          isTrustedWebContents: false
         },
         rendererUrl
       )

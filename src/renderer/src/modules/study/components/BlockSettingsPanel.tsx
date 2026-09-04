@@ -1,7 +1,7 @@
 import type { Editor } from '@tiptap/core'
 import * as Separator from '@radix-ui/react-separator'
 import * as Slider from '@radix-ui/react-slider'
-import { Link2, LoaderCircle, Settings2, SquarePlay, Trash2, Upload } from 'lucide-react'
+import { Link2, LoaderCircle, Mic, Settings2, SquarePlay, Trash2, Upload } from 'lucide-react'
 import { useState } from 'react'
 
 import type { StudyAssetKind, StudyBlock } from '../../../../../shared/contracts/study'
@@ -252,6 +252,8 @@ export function BlockSettingsPanel({
   textEditor,
   onChange
 }: BlockSettingsPanelProps): React.JSX.Element {
+  const assetClient = useStudyBlockAssetClient()
+
   if (!block) {
     return (
       <aside className="w-full max-w-full min-w-0 rounded-xl border border-(--app-border) bg-(--app-surface) p-4">
@@ -265,7 +267,11 @@ export function BlockSettingsPanel({
     )
   }
 
-  const definition = getStudyBlockDefinition(block.type)
+  const baseDefinition = getStudyBlockDefinition(block.type)
+  const definition =
+    block.type === 'audio' && assetClient.saveRecordedAudio
+      ? { ...baseDefinition, label: 'Голосовое', icon: Mic }
+      : baseDefinition
 
   const BlockIcon = definition.icon
 

@@ -1,8 +1,26 @@
 import { describe, expect, it } from 'vitest'
 
-import { noteDocumentSchema, saveNoteInputSchema } from './notes'
+import { noteDocumentSchema, saveNoteInputSchema, saveNoteVoiceRecordingInputSchema } from './notes'
 
 describe('notes validation', () => {
+  it('accepts safe voice recording data and rejects empty recordings', () => {
+    expect(
+      saveNoteVoiceRecordingInputSchema.parse({
+        noteId: 'note-one',
+        data: new Uint8Array([1, 2, 3]),
+        mimeType: 'audio/webm'
+      })
+    ).toMatchObject({ noteId: 'note-one', mimeType: 'audio/webm' })
+
+    expect(() =>
+      saveNoteVoiceRecordingInputSchema.parse({
+        noteId: 'note-one',
+        data: new Uint8Array(),
+        mimeType: 'audio/webm'
+      })
+    ).toThrow('Запись не должна быть пустой')
+  })
+
   it('accepts the same twelve block types as study', () => {
     expect(
       noteDocumentSchema

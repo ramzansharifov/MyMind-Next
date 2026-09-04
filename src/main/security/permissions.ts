@@ -19,6 +19,7 @@ export interface PermissionPolicyContext {
   requestingOrigin?: string
   embeddingOrigin?: string
   topLevelUrl?: string
+  mediaTypes?: ReadonlyArray<'audio' | 'video' | 'unknown'>
   isMainFrame: boolean
   isTrustedWebContents: boolean
 }
@@ -128,6 +129,14 @@ export function isAppPermissionAllowed(
     return isTrustedRendererMainFrame(context, rendererUrl)
   }
 
+  if (context.permission === 'media') {
+    return (
+      context.mediaTypes?.length === 1 &&
+      context.mediaTypes[0] === 'audio' &&
+      isTrustedRendererMainFrame(context, rendererUrl)
+    )
+  }
+
   if (context.permission === 'fullscreen') {
     return isTrustedYouTubeFullscreenRequest(context, rendererUrl)
   }
@@ -147,6 +156,7 @@ export function installPermissionPolicy(
         requestingUrl: details.requestingUrl,
         requestingOrigin,
         embeddingOrigin: details.embeddingOrigin,
+        mediaTypes: details.mediaType ? [details.mediaType] : undefined,
         topLevelUrl: webContents?.getURL(),
         isMainFrame: details.isMainFrame,
         isTrustedWebContents:
@@ -164,6 +174,7 @@ export function installPermissionPolicy(
           permission,
           requestingUrl: details.requestingUrl,
           requestingOrigin: details.requestingUrl,
+          mediaTypes: 'mediaTypes' in details ? details.mediaTypes : undefined,
           topLevelUrl: webContents.getURL(),
           isMainFrame: details.isMainFrame,
           isTrustedWebContents: webContents === options.getTrustedWebContents()

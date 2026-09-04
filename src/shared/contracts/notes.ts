@@ -97,6 +97,14 @@ export interface ImportNoteAssetInput {
   kind: NoteAssetKind
 }
 
+export type NoteVoiceRecordingMimeType = 'audio/webm' | 'audio/ogg' | 'audio/mp4'
+
+export interface SaveNoteVoiceRecordingInput {
+  noteId: string
+  data: Uint8Array
+  mimeType: NoteVoiceRecordingMimeType
+}
+
 export const NOTES_IPC_CHANNELS = {
   listOverview: 'notes:list-overview',
   createGroup: 'notes:create-group',
@@ -110,6 +118,7 @@ export const NOTES_IPC_CHANNELS = {
   getNote: 'notes:get-note',
   saveNote: 'notes:save-note',
   importAsset: 'notes:import-asset',
+  saveVoiceRecording: 'notes:save-voice-recording',
   openAsset: 'notes:open-asset'
 } as const
 
@@ -126,5 +135,6 @@ export interface NotesApi {
   getNote(noteId: string): Promise<NoteRecord>
   saveNote(input: SaveNoteInput): Promise<NoteRecord>
   importAsset(input: ImportNoteAssetInput): Promise<NoteLocalAsset | null>
+  saveVoiceRecording(input: SaveNoteVoiceRecordingInput): Promise<NoteLocalAsset>
   openAsset(input: OpenNoteAssetInput): Promise<void>
 }

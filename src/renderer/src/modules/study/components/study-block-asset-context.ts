@@ -11,8 +11,15 @@ export interface StudyBlockEditorCapabilities {
   internalLinks?: boolean
 }
 
+export interface SaveRecordedAudioInput {
+  nodeId: string
+  data: Uint8Array
+  mimeType: 'audio/webm' | 'audio/ogg' | 'audio/mp4'
+}
+
 export interface StudyBlockAssetClient {
   importAsset(input: ImportStudyAssetInput): Promise<StudyLocalAsset | null>
+  saveRecordedAudio?(input: SaveRecordedAudioInput): Promise<StudyLocalAsset>
   openAsset(input: OpenStudyAssetInput): Promise<void>
   capabilities?: StudyBlockEditorCapabilities
 }
