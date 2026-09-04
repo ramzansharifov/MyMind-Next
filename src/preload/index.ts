@@ -37,6 +37,7 @@ import {
 import {
   IPC_CHANNELS,
   type MyMindApi,
+  type OperationFeedback,
   type SystemHealth,
   type SystemWindowState
 } from '../shared/contracts/system'
@@ -45,14 +46,48 @@ import { WORKOUTS_IPC_CHANNELS } from '../shared/contracts/workouts'
 import { toFriendlyIpcError } from './friendly-ipc-error'
 import { parseShutdownRequest } from './shutdown-request'
 
+const operationFeedbackListeners = new Set<(feedback: OperationFeedback) => void>()
+const silentErrorChannels = new Set<string>([
+  AI_CHAT_IPC_CHANNELS.setBounds,
+  CALENDAR_IPC_CHANNELS.listUnreadReminders,
+  HABITS_IPC_CHANNELS.listUnreadReminders
+])
+
+function emitOperationFeedback(feedback: OperationFeedback): void {
+  for (const listener of operationFeedbackListeners) {
+    try {
+      listener(feedback)
+    } catch (reason: unknown) {
+      console.error('Operation feedback listener failed', reason)
+    }
+  }
+}
+
+type IpcInvokeArgs =
+  Parameters<typeof ipcRenderer.invoke> extends [string, ...infer Args] ? Args : never
+
 const rawInvoke = ipcRenderer.invoke.bind(ipcRenderer)
 const invoke: typeof ipcRenderer.invoke = async (channel, ...args) => {
   try {
     return await rawInvoke(channel, ...args)
   } catch (reason: unknown) {
-    throw toFriendlyIpcError(reason)
+    const friendlyError = toFriendlyIpcError(reason)
+    if (!silentErrorChannels.has(channel)) {
+      emitOperationFeedback({ kind: 'error', message: friendlyError.message, key: channel })
+    }
+    throw friendlyError
   }
 }
+
+const invokeWithSuccess = (
+  channel: string,
+  message: string,
+  ...args: IpcInvokeArgs
+): ReturnType<typeof ipcRenderer.invoke> =>
+  invoke(channel, ...args).then((result) => {
+    emitOperationFeedback({ kind: 'success', message, key: channel })
+    return result
+  })
 
 const api: MyMindApi = {
   aiChat: {
@@ -71,6 +106,12 @@ const api: MyMindApi = {
       ipcRenderer.on(IPC_CHANNELS.windowStateChanged, handler)
       return () => {
         ipcRenderer.removeListener(IPC_CHANNELS.windowStateChanged, handler)
+      }
+    },
+    onOperationFeedback: (listener) => {
+      operationFeedbackListeners.add(listener)
+      return () => {
+        operationFeedbackListeners.delete(listener)
       }
     },
     minimizeWindow: () => invoke(IPC_CHANNELS.windowMinimize) as Promise<void>,
@@ -103,14 +144,36 @@ const api: MyMindApi = {
 
   boards: {
     listNodes: () => invoke(BOARD_IPC_CHANNELS.listNodes) as Promise<BoardNode[]>,
-    createNode: (input) => invoke(BOARD_IPC_CHANNELS.createNode, input) as Promise<BoardNode>,
-    renameNode: (input) => invoke(BOARD_IPC_CHANNELS.renameNode, input) as Promise<BoardNode>,
+    createNode: (input) =>
+      invokeWithSuccess(
+        BOARD_IPC_CHANNELS.createNode,
+        'Элемент создан',
+        input
+      ) as Promise<BoardNode>,
+    renameNode: (input) =>
+      invokeWithSuccess(
+        BOARD_IPC_CHANNELS.renameNode,
+        'Название обновлено',
+        input
+      ) as Promise<BoardNode>,
     updateFolderIcon: (input) =>
-      invoke(BOARD_IPC_CHANNELS.updateFolderIcon, input) as Promise<BoardNode>,
-    deleteNode: (nodeId) => invoke(BOARD_IPC_CHANNELS.deleteNode, nodeId) as Promise<boolean>,
+      invokeWithSuccess(
+        BOARD_IPC_CHANNELS.updateFolderIcon,
+        'Иконка папки обновлена',
+        input
+      ) as Promise<BoardNode>,
+    deleteNode: (nodeId) =>
+      invokeWithSuccess(
+        BOARD_IPC_CHANNELS.deleteNode,
+        'Элемент удалён',
+        nodeId
+      ) as Promise<boolean>,
     updateExpansion: (input) =>
       invoke(BOARD_IPC_CHANNELS.updateExpansion, input) as Promise<BoardNode>,
-    moveNode: (input) => invoke(BOARD_IPC_CHANNELS.moveNode, input) as Promise<BoardNode[]>,
+    moveNode: (input) =>
+      invokeWithSuccess(BOARD_IPC_CHANNELS.moveNode, 'Элемент перемещён', input) as Promise<
+        BoardNode[]
+      >,
     getDocument: (nodeId) =>
       invoke(BOARD_IPC_CHANNELS.getDocument, nodeId) as Promise<BoardDocument>,
     saveDocument: (input) =>
@@ -123,23 +186,50 @@ const api: MyMindApi = {
 
   study: {
     listNodes: () => invoke(STUDY_IPC_CHANNELS.listNodes) as Promise<StudyNode[]>,
-    createNode: (input) => invoke(STUDY_IPC_CHANNELS.createNode, input) as Promise<StudyNode>,
-    renameNode: (input) => invoke(STUDY_IPC_CHANNELS.renameNode, input) as Promise<StudyNode>,
+    createNode: (input) =>
+      invokeWithSuccess(
+        STUDY_IPC_CHANNELS.createNode,
+        'Элемент обучения создан',
+        input
+      ) as Promise<StudyNode>,
+    renameNode: (input) =>
+      invokeWithSuccess(
+        STUDY_IPC_CHANNELS.renameNode,
+        'Название обновлено',
+        input
+      ) as Promise<StudyNode>,
     duplicateNode: (input) =>
-      invoke(STUDY_IPC_CHANNELS.duplicateNode, input) as Promise<DuplicateStudyNodeResult>,
+      invokeWithSuccess(
+        STUDY_IPC_CHANNELS.duplicateNode,
+        'Копия создана',
+        input
+      ) as Promise<DuplicateStudyNodeResult>,
     updateFolderIcon: (input) =>
-      invoke(STUDY_IPC_CHANNELS.updateFolderIcon, input) as Promise<StudyNode>,
-    deleteNode: (nodeId) => invoke(STUDY_IPC_CHANNELS.deleteNode, nodeId) as Promise<boolean>,
+      invokeWithSuccess(
+        STUDY_IPC_CHANNELS.updateFolderIcon,
+        'Иконка папки обновлена',
+        input
+      ) as Promise<StudyNode>,
+    deleteNode: (nodeId) =>
+      invokeWithSuccess(
+        STUDY_IPC_CHANNELS.deleteNode,
+        'Элемент удалён',
+        nodeId
+      ) as Promise<boolean>,
     updateExpansion: (input) =>
       invoke(STUDY_IPC_CHANNELS.updateExpansion, input) as Promise<StudyNode>,
-    moveNode: (input) => invoke(STUDY_IPC_CHANNELS.moveNode, input) as Promise<StudyNode[]>,
+    moveNode: (input) =>
+      invokeWithSuccess(STUDY_IPC_CHANNELS.moveNode, 'Элемент перемещён', input) as Promise<
+        StudyNode[]
+      >,
     getMaterial: (nodeId) =>
       invoke(STUDY_IPC_CHANNELS.getMaterial, nodeId) as Promise<StudyMaterial>,
     saveMaterial: (input) =>
       invoke(STUDY_IPC_CHANNELS.saveMaterial, input) as Promise<StudyMaterial>,
     getCodeSnapshot: (input) => invoke(STUDY_IPC_CHANNELS.getCodeSnapshot, input),
     previewCode: (input) => invoke(STUDY_IPC_CHANNELS.previewCode, input),
-    applyCode: (input) => invoke(STUDY_IPC_CHANNELS.applyCode, input),
+    applyCode: (input) =>
+      invokeWithSuccess(STUDY_IPC_CHANNELS.applyCode, 'Изменения структуры применены', input),
     searchInternalLinkTargets: (input) =>
       invoke(STUDY_IPC_CHANNELS.searchInternalLinkTargets, input) as Promise<
         StudyInternalLinkTarget[]
@@ -153,20 +243,63 @@ const api: MyMindApi = {
       invoke(STUDY_IPC_CHANNELS.importAsset, input) as Promise<StudyLocalAsset | null>,
     openAsset: (input) => invoke(STUDY_IPC_CHANNELS.openAsset, input) as Promise<void>,
     exportMaterial: (input) =>
-      invoke(STUDY_PDF_IPC_CHANNELS.exportMaterial, input) as Promise<ExportStudyMaterialPdfResult>
+      invokeWithSuccess(
+        STUDY_PDF_IPC_CHANNELS.exportMaterial,
+        'PDF сохранён',
+        input
+      ) as Promise<ExportStudyMaterialPdfResult>
   },
 
   notes: {
     listOverview: () => invoke(NOTES_IPC_CHANNELS.listOverview) as Promise<NotesOverview>,
-    createGroup: (input) => invoke(NOTES_IPC_CHANNELS.createGroup, input) as Promise<NoteGroup>,
-    renameGroup: (input) => invoke(NOTES_IPC_CHANNELS.renameGroup, input) as Promise<NoteGroup>,
+    createGroup: (input) =>
+      invokeWithSuccess(
+        NOTES_IPC_CHANNELS.createGroup,
+        'Группа заметок создана',
+        input
+      ) as Promise<NoteGroup>,
+    renameGroup: (input) =>
+      invokeWithSuccess(
+        NOTES_IPC_CHANNELS.renameGroup,
+        'Группа переименована',
+        input
+      ) as Promise<NoteGroup>,
     updateGroupIcon: (input) =>
-      invoke(NOTES_IPC_CHANNELS.updateGroupIcon, input) as Promise<NoteGroup>,
-    deleteGroup: (groupId) => invoke(NOTES_IPC_CHANNELS.deleteGroup, groupId) as Promise<boolean>,
-    createNote: (input) => invoke(NOTES_IPC_CHANNELS.createNote, input) as Promise<NoteRecord>,
-    renameNote: (input) => invoke(NOTES_IPC_CHANNELS.renameNote, input) as Promise<NoteSummary>,
-    moveNote: (input) => invoke(NOTES_IPC_CHANNELS.moveNote, input) as Promise<NoteSummary>,
-    deleteNote: (noteId) => invoke(NOTES_IPC_CHANNELS.deleteNote, noteId) as Promise<boolean>,
+      invokeWithSuccess(
+        NOTES_IPC_CHANNELS.updateGroupIcon,
+        'Иконка группы обновлена',
+        input
+      ) as Promise<NoteGroup>,
+    deleteGroup: (groupId) =>
+      invokeWithSuccess(
+        NOTES_IPC_CHANNELS.deleteGroup,
+        'Группа удалена',
+        groupId
+      ) as Promise<boolean>,
+    createNote: (input) =>
+      invokeWithSuccess(
+        NOTES_IPC_CHANNELS.createNote,
+        'Заметка создана',
+        input
+      ) as Promise<NoteRecord>,
+    renameNote: (input) =>
+      invokeWithSuccess(
+        NOTES_IPC_CHANNELS.renameNote,
+        'Заметка переименована',
+        input
+      ) as Promise<NoteSummary>,
+    moveNote: (input) =>
+      invokeWithSuccess(
+        NOTES_IPC_CHANNELS.moveNote,
+        'Заметка перемещена',
+        input
+      ) as Promise<NoteSummary>,
+    deleteNote: (noteId) =>
+      invokeWithSuccess(
+        NOTES_IPC_CHANNELS.deleteNote,
+        'Заметка удалена',
+        noteId
+      ) as Promise<boolean>,
     getNote: (noteId) => invoke(NOTES_IPC_CHANNELS.getNote, noteId) as Promise<NoteRecord>,
     saveNote: (input) => invoke(NOTES_IPC_CHANNELS.saveNote, input) as Promise<NoteRecord>,
     importAsset: (input) =>
@@ -186,60 +319,83 @@ const api: MyMindApi = {
       ipcRenderer.on(CALENDAR_IPC_CHANNELS.remindersChanged, handler)
       return () => ipcRenderer.removeListener(CALENDAR_IPC_CHANNELS.remindersChanged, handler)
     },
-    createEvent: (input) => invoke(CALENDAR_IPC_CHANNELS.createEvent, input),
-    updateEvent: (input) => invoke(CALENDAR_IPC_CHANNELS.updateEvent, input),
-    deleteEvent: (input) => invoke(CALENDAR_IPC_CHANNELS.deleteEvent, input),
+    createEvent: (input) =>
+      invokeWithSuccess(CALENDAR_IPC_CHANNELS.createEvent, 'Событие создано', input),
+    updateEvent: (input) =>
+      invokeWithSuccess(CALENDAR_IPC_CHANNELS.updateEvent, 'Событие сохранено', input),
+    deleteEvent: (input) =>
+      invokeWithSuccess(CALENDAR_IPC_CHANNELS.deleteEvent, 'Событие удалено', input),
     setOccurrenceNote: (input) => invoke(CALENDAR_IPC_CHANNELS.setOccurrenceNote, input),
     setOccurrenceHidden: (input) => invoke(CALENDAR_IPC_CHANNELS.setOccurrenceHidden, input)
   },
 
   diary: {
     listOverview: () => invoke(DIARY_IPC_CHANNELS.listOverview),
-    createDiary: (input) => invoke(DIARY_IPC_CHANNELS.createDiary, input),
-    updateDiary: (input) => invoke(DIARY_IPC_CHANNELS.updateDiary, input),
+    createDiary: (input) =>
+      invokeWithSuccess(DIARY_IPC_CHANNELS.createDiary, 'Дневник создан', input),
+    updateDiary: (input) =>
+      invokeWithSuccess(DIARY_IPC_CHANNELS.updateDiary, 'Дневник сохранён', input),
     updateAppearance: (input) => invoke(DIARY_IPC_CHANNELS.updateAppearance, input),
-    deleteDiary: (input) => invoke(DIARY_IPC_CHANNELS.deleteDiary, input),
+    deleteDiary: (input) =>
+      invokeWithSuccess(DIARY_IPC_CHANNELS.deleteDiary, 'Дневник удалён', input),
     getDay: (input) => invoke(DIARY_IPC_CHANNELS.getDay, input),
     listDays: (input) => invoke(DIARY_IPC_CHANNELS.listDays, input),
     setMood: (input) => invoke(DIARY_IPC_CHANNELS.setMood, input),
-    createEntry: (input) => invoke(DIARY_IPC_CHANNELS.createEntry, input),
-    updateEntry: (input) => invoke(DIARY_IPC_CHANNELS.updateEntry, input),
-    deleteEntry: (input) => invoke(DIARY_IPC_CHANNELS.deleteEntry, input),
+    createEntry: (input) =>
+      invokeWithSuccess(DIARY_IPC_CHANNELS.createEntry, 'Запись добавлена', input),
+    updateEntry: (input) =>
+      invokeWithSuccess(DIARY_IPC_CHANNELS.updateEntry, 'Запись сохранена', input),
+    deleteEntry: (input) =>
+      invokeWithSuccess(DIARY_IPC_CHANNELS.deleteEntry, 'Запись удалена', input),
     getReport: (input) => invoke(DIARY_IPC_CHANNELS.getReport, input)
   },
 
   movies: {
     listOverview: () => invoke(MOVIES_IPC_CHANNELS.listOverview),
     getMovie: (input) => invoke(MOVIES_IPC_CHANNELS.getMovie, input),
-    createMovie: (input) => invoke(MOVIES_IPC_CHANNELS.createMovie, input),
-    createMovies: (input) => invoke(MOVIES_IPC_CHANNELS.createMovies, input),
-    updateMovie: (input) => invoke(MOVIES_IPC_CHANNELS.updateMovie, input),
-    deleteMovie: (input) => invoke(MOVIES_IPC_CHANNELS.deleteMovie, input),
+    createMovie: (input) =>
+      invokeWithSuccess(MOVIES_IPC_CHANNELS.createMovie, 'Фильм добавлен', input),
+    createMovies: (input) =>
+      invokeWithSuccess(MOVIES_IPC_CHANNELS.createMovies, 'Фильмы добавлены', input),
+    updateMovie: (input) =>
+      invokeWithSuccess(MOVIES_IPC_CHANNELS.updateMovie, 'Изменения фильма сохранены', input),
+    deleteMovie: (input) =>
+      invokeWithSuccess(MOVIES_IPC_CHANNELS.deleteMovie, 'Фильм удалён', input),
     searchWeb: (input) => invoke(MOVIES_IPC_CHANNELS.searchWeb, input)
   },
 
   music: {
     listOverview: () => invoke(MUSIC_IPC_CHANNELS.listOverview),
     getItem: (input) => invoke(MUSIC_IPC_CHANNELS.getItem, input),
-    createItem: (input) => invoke(MUSIC_IPC_CHANNELS.createItem, input),
-    createItems: (input) => invoke(MUSIC_IPC_CHANNELS.createItems, input),
-    updateItem: (input) => invoke(MUSIC_IPC_CHANNELS.updateItem, input),
-    deleteItem: (input) => invoke(MUSIC_IPC_CHANNELS.deleteItem, input),
-    createPlaylist: (input) => invoke(MUSIC_IPC_CHANNELS.createPlaylist, input),
-    updatePlaylist: (input) => invoke(MUSIC_IPC_CHANNELS.updatePlaylist, input),
-    deletePlaylist: (input) => invoke(MUSIC_IPC_CHANNELS.deletePlaylist, input),
+    createItem: (input) => invokeWithSuccess(MUSIC_IPC_CHANNELS.createItem, 'Трек добавлен', input),
+    createItems: (input) =>
+      invokeWithSuccess(MUSIC_IPC_CHANNELS.createItems, 'Треки добавлены', input),
+    updateItem: (input) =>
+      invokeWithSuccess(MUSIC_IPC_CHANNELS.updateItem, 'Изменения трека сохранены', input),
+    deleteItem: (input) => invokeWithSuccess(MUSIC_IPC_CHANNELS.deleteItem, 'Трек удалён', input),
+    createPlaylist: (input) =>
+      invokeWithSuccess(MUSIC_IPC_CHANNELS.createPlaylist, 'Плейлист создан', input),
+    updatePlaylist: (input) =>
+      invokeWithSuccess(MUSIC_IPC_CHANNELS.updatePlaylist, 'Плейлист сохранён', input),
+    deletePlaylist: (input) =>
+      invokeWithSuccess(MUSIC_IPC_CHANNELS.deletePlaylist, 'Плейлист удалён', input),
     setItemPlaylists: (input) => invoke(MUSIC_IPC_CHANNELS.setItemPlaylists, input),
     searchWeb: (input) => invoke(MUSIC_IPC_CHANNELS.searchWeb, input)
   },
 
   tasks: {
     listOverview: () => invoke(TASKS_IPC_CHANNELS.listOverview),
-    createGroup: (input) => invoke(TASKS_IPC_CHANNELS.createGroup, input),
-    updateGroup: (input) => invoke(TASKS_IPC_CHANNELS.updateGroup, input),
-    deleteGroup: (input) => invoke(TASKS_IPC_CHANNELS.deleteGroup, input),
-    createTask: (input) => invoke(TASKS_IPC_CHANNELS.createTask, input),
-    updateTask: (input) => invoke(TASKS_IPC_CHANNELS.updateTask, input),
-    deleteTask: (input) => invoke(TASKS_IPC_CHANNELS.deleteTask, input)
+    createGroup: (input) =>
+      invokeWithSuccess(TASKS_IPC_CHANNELS.createGroup, 'Группа задач создана', input),
+    updateGroup: (input) =>
+      invokeWithSuccess(TASKS_IPC_CHANNELS.updateGroup, 'Группа задач сохранена', input),
+    deleteGroup: (input) =>
+      invokeWithSuccess(TASKS_IPC_CHANNELS.deleteGroup, 'Группа задач удалена', input),
+    createTask: (input) =>
+      invokeWithSuccess(TASKS_IPC_CHANNELS.createTask, 'Задача создана', input),
+    updateTask: (input) =>
+      invokeWithSuccess(TASKS_IPC_CHANNELS.updateTask, 'Задача обновлена', input),
+    deleteTask: (input) => invokeWithSuccess(TASKS_IPC_CHANNELS.deleteTask, 'Задача удалена', input)
   },
 
   habits: {
@@ -251,12 +407,18 @@ const api: MyMindApi = {
       ipcRenderer.on(HABITS_IPC_CHANNELS.remindersChanged, handler)
       return () => ipcRenderer.removeListener(HABITS_IPC_CHANNELS.remindersChanged, handler)
     },
-    createGroup: (input) => invoke(HABITS_IPC_CHANNELS.createGroup, input),
-    updateGroup: (input) => invoke(HABITS_IPC_CHANNELS.updateGroup, input),
-    deleteGroup: (input) => invoke(HABITS_IPC_CHANNELS.deleteGroup, input),
-    createHabit: (input) => invoke(HABITS_IPC_CHANNELS.createHabit, input),
-    updateHabit: (input) => invoke(HABITS_IPC_CHANNELS.updateHabit, input),
-    deleteHabit: (input) => invoke(HABITS_IPC_CHANNELS.deleteHabit, input),
+    createGroup: (input) =>
+      invokeWithSuccess(HABITS_IPC_CHANNELS.createGroup, 'Группа привычек создана', input),
+    updateGroup: (input) =>
+      invokeWithSuccess(HABITS_IPC_CHANNELS.updateGroup, 'Группа привычек сохранена', input),
+    deleteGroup: (input) =>
+      invokeWithSuccess(HABITS_IPC_CHANNELS.deleteGroup, 'Группа привычек удалена', input),
+    createHabit: (input) =>
+      invokeWithSuccess(HABITS_IPC_CHANNELS.createHabit, 'Привычка создана', input),
+    updateHabit: (input) =>
+      invokeWithSuccess(HABITS_IPC_CHANNELS.updateHabit, 'Привычка сохранена', input),
+    deleteHabit: (input) =>
+      invokeWithSuccess(HABITS_IPC_CHANNELS.deleteHabit, 'Привычка удалена', input),
     upsertEntry: (input) => invoke(HABITS_IPC_CHANNELS.upsertEntry, input),
     deleteEntry: (input) => invoke(HABITS_IPC_CHANNELS.deleteEntry, input),
     getReport: (input) => invoke(HABITS_IPC_CHANNELS.getReport, input)
@@ -264,93 +426,161 @@ const api: MyMindApi = {
 
   passwords: {
     getVaultStatus: () => invoke(PASSWORDS_IPC_CHANNELS.getVaultStatus),
-    setupVault: (input) => invoke(PASSWORDS_IPC_CHANNELS.setupVault, input),
+    setupVault: (input) =>
+      invokeWithSuccess(PASSWORDS_IPC_CHANNELS.setupVault, 'Хранилище паролей создано', input),
     unlockVault: (input) => invoke(PASSWORDS_IPC_CHANNELS.unlockVault, input),
     lockVault: () => invoke(PASSWORDS_IPC_CHANNELS.lockVault),
-    changeMasterPassword: (input) => invoke(PASSWORDS_IPC_CHANNELS.changeMasterPassword, input),
+    changeMasterPassword: (input) =>
+      invokeWithSuccess(
+        PASSWORDS_IPC_CHANNELS.changeMasterPassword,
+        'Мастер-пароль изменён',
+        input
+      ),
     listOverview: () => invoke(PASSWORDS_IPC_CHANNELS.listOverview),
     getItem: (input) => invoke(PASSWORDS_IPC_CHANNELS.getItem, input),
-    createGroup: (input) => invoke(PASSWORDS_IPC_CHANNELS.createGroup, input),
-    updateGroup: (input) => invoke(PASSWORDS_IPC_CHANNELS.updateGroup, input),
-    deleteGroup: (input) => invoke(PASSWORDS_IPC_CHANNELS.deleteGroup, input),
-    createItem: (input) => invoke(PASSWORDS_IPC_CHANNELS.createItem, input),
-    updateItem: (input) => invoke(PASSWORDS_IPC_CHANNELS.updateItem, input),
-    deleteItem: (input) => invoke(PASSWORDS_IPC_CHANNELS.deleteItem, input),
+    createGroup: (input) =>
+      invokeWithSuccess(PASSWORDS_IPC_CHANNELS.createGroup, 'Группа паролей создана', input),
+    updateGroup: (input) =>
+      invokeWithSuccess(PASSWORDS_IPC_CHANNELS.updateGroup, 'Группа паролей сохранена', input),
+    deleteGroup: (input) =>
+      invokeWithSuccess(PASSWORDS_IPC_CHANNELS.deleteGroup, 'Группа паролей удалена', input),
+    createItem: (input) =>
+      invokeWithSuccess(PASSWORDS_IPC_CHANNELS.createItem, 'Запись создана', input),
+    updateItem: (input) =>
+      invokeWithSuccess(PASSWORDS_IPC_CHANNELS.updateItem, 'Запись сохранена', input),
+    deleteItem: (input) =>
+      invokeWithSuccess(PASSWORDS_IPC_CHANNELS.deleteItem, 'Запись удалена', input),
     generatePassword: (input) => invoke(PASSWORDS_IPC_CHANNELS.generatePassword, input),
-    copyItemField: (input) => invoke(PASSWORDS_IPC_CHANNELS.copyItemField, input),
+    copyItemField: (input) =>
+      invokeWithSuccess(
+        PASSWORDS_IPC_CHANNELS.copyItemField,
+        input.field === 'password' ? 'Пароль скопирован' : 'Логин скопирован',
+        input
+      ),
     openWebsite: (input) => invoke(PASSWORDS_IPC_CHANNELS.openWebsite, input)
   },
 
   workouts: {
     listOverview: () => invoke(WORKOUTS_IPC_CHANNELS.listOverview),
-    createExercise: (input) => invoke(WORKOUTS_IPC_CHANNELS.createExercise, input),
-    updateExercise: (input) => invoke(WORKOUTS_IPC_CHANNELS.updateExercise, input),
-    deleteExercise: (input) => invoke(WORKOUTS_IPC_CHANNELS.deleteExercise, input),
-    createProgram: (input) => invoke(WORKOUTS_IPC_CHANNELS.createProgram, input),
-    updateProgram: (input) => invoke(WORKOUTS_IPC_CHANNELS.updateProgram, input),
-    deleteProgram: (input) => invoke(WORKOUTS_IPC_CHANNELS.deleteProgram, input),
-    createSession: (input) => invoke(WORKOUTS_IPC_CHANNELS.createSession, input),
-    updateSession: (input) => invoke(WORKOUTS_IPC_CHANNELS.updateSession, input),
-    deleteSession: (input) => invoke(WORKOUTS_IPC_CHANNELS.deleteSession, input),
+    createExercise: (input) =>
+      invokeWithSuccess(WORKOUTS_IPC_CHANNELS.createExercise, 'Упражнение создано', input),
+    updateExercise: (input) =>
+      invokeWithSuccess(WORKOUTS_IPC_CHANNELS.updateExercise, 'Упражнение сохранено', input),
+    deleteExercise: (input) =>
+      invokeWithSuccess(WORKOUTS_IPC_CHANNELS.deleteExercise, 'Упражнение удалено', input),
+    createProgram: (input) =>
+      invokeWithSuccess(WORKOUTS_IPC_CHANNELS.createProgram, 'Программа создана', input),
+    updateProgram: (input) =>
+      invokeWithSuccess(WORKOUTS_IPC_CHANNELS.updateProgram, 'Программа сохранена', input),
+    deleteProgram: (input) =>
+      invokeWithSuccess(WORKOUTS_IPC_CHANNELS.deleteProgram, 'Программа удалена', input),
+    createSession: (input) =>
+      invokeWithSuccess(WORKOUTS_IPC_CHANNELS.createSession, 'Тренировка создана', input),
+    updateSession: (input) =>
+      invokeWithSuccess(WORKOUTS_IPC_CHANNELS.updateSession, 'Тренировка сохранена', input),
+    deleteSession: (input) =>
+      invokeWithSuccess(WORKOUTS_IPC_CHANNELS.deleteSession, 'Тренировка удалена', input),
     getSession: (input) => invoke(WORKOUTS_IPC_CHANNELS.getSession, input),
-    createProgressEntry: (input) => invoke(WORKOUTS_IPC_CHANNELS.createProgressEntry, input),
-    updateProgressEntry: (input) => invoke(WORKOUTS_IPC_CHANNELS.updateProgressEntry, input),
-    deleteProgressEntry: (input) => invoke(WORKOUTS_IPC_CHANNELS.deleteProgressEntry, input),
-    importProgressPhoto: (input) => invoke(WORKOUTS_IPC_CHANNELS.importProgressPhoto, input),
-    deleteProgressPhoto: (input) => invoke(WORKOUTS_IPC_CHANNELS.deleteProgressPhoto, input),
+    createProgressEntry: (input) =>
+      invokeWithSuccess(WORKOUTS_IPC_CHANNELS.createProgressEntry, 'Прогресс добавлен', input),
+    updateProgressEntry: (input) =>
+      invokeWithSuccess(WORKOUTS_IPC_CHANNELS.updateProgressEntry, 'Прогресс сохранён', input),
+    deleteProgressEntry: (input) =>
+      invokeWithSuccess(
+        WORKOUTS_IPC_CHANNELS.deleteProgressEntry,
+        'Запись прогресса удалена',
+        input
+      ),
+    importProgressPhoto: (input) =>
+      invokeWithSuccess(
+        WORKOUTS_IPC_CHANNELS.importProgressPhoto,
+        'Фото прогресса добавлено',
+        input
+      ),
+    deleteProgressPhoto: (input) =>
+      invokeWithSuccess(WORKOUTS_IPC_CHANNELS.deleteProgressPhoto, 'Фото удалено', input),
     getReport: (input) => invoke(WORKOUTS_IPC_CHANNELS.getReport, input)
   },
 
   nutrition: {
     listOverview: (input) => invoke(NUTRITION_IPC_CHANNELS.listOverview, input),
-    createFood: (input) => invoke(NUTRITION_IPC_CHANNELS.createFood, input),
-    createFoods: (input) => invoke(NUTRITION_IPC_CHANNELS.createFoods, input),
-    updateFood: (input) => invoke(NUTRITION_IPC_CHANNELS.updateFood, input),
-    deleteFood: (input) => invoke(NUTRITION_IPC_CHANNELS.deleteFood, input),
-    createRecipe: (input) => invoke(NUTRITION_IPC_CHANNELS.createRecipe, input),
-    updateRecipe: (input) => invoke(NUTRITION_IPC_CHANNELS.updateRecipe, input),
-    deleteRecipe: (input) => invoke(NUTRITION_IPC_CHANNELS.deleteRecipe, input),
-    createLogEntry: (input) => invoke(NUTRITION_IPC_CHANNELS.createLogEntry, input),
-    importMeals: (input) => invoke(NUTRITION_IPC_CHANNELS.importMeals, input),
-    updateLogEntry: (input) => invoke(NUTRITION_IPC_CHANNELS.updateLogEntry, input),
-    deleteLogEntry: (input) => invoke(NUTRITION_IPC_CHANNELS.deleteLogEntry, input),
+    createFood: (input) =>
+      invokeWithSuccess(NUTRITION_IPC_CHANNELS.createFood, 'Продукт добавлен', input),
+    createFoods: (input) =>
+      invokeWithSuccess(NUTRITION_IPC_CHANNELS.createFoods, 'Продукты добавлены', input),
+    updateFood: (input) =>
+      invokeWithSuccess(NUTRITION_IPC_CHANNELS.updateFood, 'Продукт сохранён', input),
+    deleteFood: (input) =>
+      invokeWithSuccess(NUTRITION_IPC_CHANNELS.deleteFood, 'Продукт удалён', input),
+    createRecipe: (input) =>
+      invokeWithSuccess(NUTRITION_IPC_CHANNELS.createRecipe, 'Рецепт создан', input),
+    updateRecipe: (input) =>
+      invokeWithSuccess(NUTRITION_IPC_CHANNELS.updateRecipe, 'Рецепт сохранён', input),
+    deleteRecipe: (input) =>
+      invokeWithSuccess(NUTRITION_IPC_CHANNELS.deleteRecipe, 'Рецепт удалён', input),
+    createLogEntry: (input) =>
+      invokeWithSuccess(NUTRITION_IPC_CHANNELS.createLogEntry, 'Приём пищи добавлен', input),
+    importMeals: (input) =>
+      invokeWithSuccess(NUTRITION_IPC_CHANNELS.importMeals, 'Питание импортировано', input),
+    updateLogEntry: (input) =>
+      invokeWithSuccess(NUTRITION_IPC_CHANNELS.updateLogEntry, 'Запись питания сохранена', input),
+    deleteLogEntry: (input) =>
+      invokeWithSuccess(NUTRITION_IPC_CHANNELS.deleteLogEntry, 'Запись питания удалена', input),
     setWater: (input) => invoke(NUTRITION_IPC_CHANNELS.setWater, input),
-    setTargets: (input) => invoke(NUTRITION_IPC_CHANNELS.setTargets, input),
+    setTargets: (input) =>
+      invokeWithSuccess(NUTRITION_IPC_CHANNELS.setTargets, 'Цели питания сохранены', input),
     getReport: (input) => invoke(NUTRITION_IPC_CHANNELS.getReport, input)
   },
 
   finance: {
     getSettings: () => invoke(FINANCE_IPC_CHANNELS.getSettings),
-    setBaseCurrency: (input) => invoke(FINANCE_IPC_CHANNELS.setBaseCurrency, input),
+    setBaseCurrency: (input) =>
+      invokeWithSuccess(FINANCE_IPC_CHANNELS.setBaseCurrency, 'Основная валюта сохранена', input),
     listExchangeRates: () => invoke(FINANCE_IPC_CHANNELS.listExchangeRates),
-    upsertExchangeRate: (input) => invoke(FINANCE_IPC_CHANNELS.upsertExchangeRate, input),
-    deleteExchangeRate: (input) => invoke(FINANCE_IPC_CHANNELS.deleteExchangeRate, input),
+    upsertExchangeRate: (input) =>
+      invokeWithSuccess(FINANCE_IPC_CHANNELS.upsertExchangeRate, 'Курс валюты сохранён', input),
+    deleteExchangeRate: (input) =>
+      invokeWithSuccess(FINANCE_IPC_CHANNELS.deleteExchangeRate, 'Курс валюты удалён', input),
     listAccounts: (period) => invoke(FINANCE_IPC_CHANNELS.listAccounts, period),
     getAccount: (id, period) => invoke(FINANCE_IPC_CHANNELS.getAccount, id, period),
-    createAccount: (input) => invoke(FINANCE_IPC_CHANNELS.createAccount, input),
-    updateAccount: (input) => invoke(FINANCE_IPC_CHANNELS.updateAccount, input),
-    deleteAccount: (input) => invoke(FINANCE_IPC_CHANNELS.deleteAccount, input),
-    clearAccountHistory: (input) => invoke(FINANCE_IPC_CHANNELS.clearAccountHistory, input),
+    createAccount: (input) =>
+      invokeWithSuccess(FINANCE_IPC_CHANNELS.createAccount, 'Счёт создан', input),
+    updateAccount: (input) =>
+      invokeWithSuccess(FINANCE_IPC_CHANNELS.updateAccount, 'Счёт сохранён', input),
+    deleteAccount: (input) =>
+      invokeWithSuccess(FINANCE_IPC_CHANNELS.deleteAccount, 'Счёт удалён', input),
+    clearAccountHistory: (input) =>
+      invokeWithSuccess(FINANCE_IPC_CHANNELS.clearAccountHistory, 'История счёта очищена', input),
     listTransactions: (filters) => invoke(FINANCE_IPC_CHANNELS.listTransactions, filters),
     getTransaction: (id) => invoke(FINANCE_IPC_CHANNELS.getTransaction, id),
-    createTransaction: (input) => invoke(FINANCE_IPC_CHANNELS.createTransaction, input),
-    updateTransaction: (input) => invoke(FINANCE_IPC_CHANNELS.updateTransaction, input),
-    deleteTransaction: (input) => invoke(FINANCE_IPC_CHANNELS.deleteTransaction, input),
+    createTransaction: (input) =>
+      invokeWithSuccess(FINANCE_IPC_CHANNELS.createTransaction, 'Операция создана', input),
+    updateTransaction: (input) =>
+      invokeWithSuccess(FINANCE_IPC_CHANNELS.updateTransaction, 'Операция сохранена', input),
+    deleteTransaction: (input) =>
+      invokeWithSuccess(FINANCE_IPC_CHANNELS.deleteTransaction, 'Операция удалена', input),
     listTags: () => invoke(FINANCE_IPC_CHANNELS.listTags),
     getTag: (id) => invoke(FINANCE_IPC_CHANNELS.getTag, id),
-    createTag: (input) => invoke(FINANCE_IPC_CHANNELS.createTag, input),
-    updateTag: (input) => invoke(FINANCE_IPC_CHANNELS.updateTag, input),
-    deleteTag: (input) => invoke(FINANCE_IPC_CHANNELS.deleteTag, input),
+    createTag: (input) => invokeWithSuccess(FINANCE_IPC_CHANNELS.createTag, 'Тег создан', input),
+    updateTag: (input) => invokeWithSuccess(FINANCE_IPC_CHANNELS.updateTag, 'Тег сохранён', input),
+    deleteTag: (input) => invokeWithSuccess(FINANCE_IPC_CHANNELS.deleteTag, 'Тег удалён', input),
     listLimits: (at) => invoke(FINANCE_IPC_CHANNELS.listLimits, at),
-    createLimit: (input) => invoke(FINANCE_IPC_CHANNELS.createLimit, input),
-    updateLimit: (input) => invoke(FINANCE_IPC_CHANNELS.updateLimit, input),
-    setLimitState: (input) => invoke(FINANCE_IPC_CHANNELS.setLimitState, input),
-    deleteLimit: (input) => invoke(FINANCE_IPC_CHANNELS.deleteLimit, input),
+    createLimit: (input) =>
+      invokeWithSuccess(FINANCE_IPC_CHANNELS.createLimit, 'Лимит создан', input),
+    updateLimit: (input) =>
+      invokeWithSuccess(FINANCE_IPC_CHANNELS.updateLimit, 'Лимит сохранён', input),
+    setLimitState: (input) =>
+      invokeWithSuccess(FINANCE_IPC_CHANNELS.setLimitState, 'Состояние лимита обновлено', input),
+    deleteLimit: (input) =>
+      invokeWithSuccess(FINANCE_IPC_CHANNELS.deleteLimit, 'Лимит удалён', input),
     previewExpenseImpact: (input) => invoke(FINANCE_IPC_CHANNELS.previewExpenseImpact, input),
     listTemplates: () => invoke(FINANCE_IPC_CHANNELS.listTemplates),
-    createTemplate: (input) => invoke(FINANCE_IPC_CHANNELS.createTemplate, input),
-    updateTemplate: (input) => invoke(FINANCE_IPC_CHANNELS.updateTemplate, input),
-    deleteTemplate: (input) => invoke(FINANCE_IPC_CHANNELS.deleteTemplate, input),
+    createTemplate: (input) =>
+      invokeWithSuccess(FINANCE_IPC_CHANNELS.createTemplate, 'Шаблон создан', input),
+    updateTemplate: (input) =>
+      invokeWithSuccess(FINANCE_IPC_CHANNELS.updateTemplate, 'Шаблон сохранён', input),
+    deleteTemplate: (input) =>
+      invokeWithSuccess(FINANCE_IPC_CHANNELS.deleteTemplate, 'Шаблон удалён', input),
     getDashboard: (period) => invoke(FINANCE_IPC_CHANNELS.getDashboard, period),
     getReport: (filters) => invoke(FINANCE_IPC_CHANNELS.getReport, filters)
   }
