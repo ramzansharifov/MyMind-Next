@@ -896,12 +896,7 @@ export function PasswordsPage({
                       {groupCounts.counts.get(group.id) ?? 0}
                     </span>
                   </button>
-                  <div
-                    className={cn(
-                      'mr-1 flex shrink-0 items-center',
-                      selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                    )}
-                  >
+                  <div className="mr-1 flex shrink-0 items-center">
                     <Tooltip content={`Изменить группу «${group.name}»`} side="top">
                       <button
                         type="button"
@@ -1077,7 +1072,7 @@ export function PasswordsPage({
                               <button
                                 type="button"
                                 aria-label={`Изменить «${item.title}»`}
-                                className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] opacity-0 group-hover/item:opacity-100 hover:bg-[var(--app-control)] hover:text-[var(--app-text)] focus:opacity-100"
+                                className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control)] hover:text-[var(--app-text)]"
                                 onClick={() => void editItem(item.id)}
                               >
                                 <Pencil className="size-3.5" />
@@ -1087,7 +1082,7 @@ export function PasswordsPage({
                               <button
                                 type="button"
                                 aria-label={`Удалить «${item.title}»`}
-                                className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] opacity-0 group-hover/item:opacity-100 hover:bg-red-500/10 hover:text-red-300 focus:opacity-100"
+                                className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
                                 onClick={() => setDeleteItemTarget(item)}
                               >
                                 <Trash2 className="size-3.5" />
