@@ -1,9 +1,5 @@
 .diary-cover-scrollbar {
-  --app-scrollbar-thumb: color-mix(
-    in srgb,
-    var(--diary-cover-base) 78%,
-    var(--diary-cover-border)
-  );
+  --app-scrollbar-thumb: color-mix(in srgb, var(--diary-cover-base) 78%, var(--diary-cover-border));
   --app-scrollbar-thumb-hover: color-mix(
     in srgb,
     var(--diary-cover-light) 86%,
