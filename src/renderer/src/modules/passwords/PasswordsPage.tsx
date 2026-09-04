@@ -787,7 +787,6 @@ export function PasswordsPage({
         </div>
       )}
 
-
       <div className="mt-5 grid gap-5 lg:grid-cols-[250px_minmax(0,1fr)]">
         <aside className="self-start rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 shadow-[var(--app-shadow-card)] lg:sticky lg:top-5">
           <div className="flex items-center justify-between px-2 py-1.5">
