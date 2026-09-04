@@ -178,7 +178,7 @@ export function PasswordItemDialog({
             type="submit"
             form={ITEM_FORM_ID}
             disabled={busy || generating || !title.trim() || !password}
-            className="h-10 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400 disabled:opacity-45"
+            className="bg-accent-500 hover:bg-accent-400 h-10 rounded-xl px-4 text-sm font-semibold text-white disabled:opacity-45"
           >
             {busy ? 'Сохраняем…' : item ? 'Сохранить' : 'Добавить'}
           </button>
@@ -214,7 +214,7 @@ export function PasswordItemDialog({
             value={title}
             maxLength={160}
             placeholder={type === 'login' ? 'Например, GitHub' : 'Например, PIN от сейфа'}
-            className="h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
+            className="focus:border-accent-500/45 focus:ring-accent-500/15 h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:ring-2"
             onChange={(event) => setTitle(event.target.value)}
           />
         </label>
@@ -227,7 +227,7 @@ export function PasswordItemDialog({
               maxLength={240}
               autoComplete="off"
               placeholder="user@example.com"
-              className="h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
+              className="focus:border-accent-500/45 focus:ring-accent-500/15 h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:ring-2"
               onChange={(event) => setUsername(event.target.value)}
             />
           </label>
@@ -238,7 +238,7 @@ export function PasswordItemDialog({
             <span className="text-xs font-medium text-[var(--app-muted)]">Пароль</span>
             <button
               type="button"
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-violet-300 hover:text-violet-200"
+              className="text-accent-300 hover:text-accent-200 inline-flex items-center gap-1.5 text-xs font-medium"
               onClick={() => setGeneratorOpen((current) => !current)}
             >
               <WandSparkles className="size-3.5" /> Генератор
@@ -252,7 +252,7 @@ export function PasswordItemDialog({
                 maxLength={1024}
                 autoComplete="new-password"
                 placeholder="Введите или сгенерируйте пароль"
-                className="h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 pr-11 font-mono text-sm text-[var(--app-text)] outline-none placeholder:font-sans placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
+                className="focus:border-accent-500/45 focus:ring-accent-500/15 h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 pr-11 font-mono text-sm text-[var(--app-text)] outline-none placeholder:font-sans placeholder:text-[var(--app-muted)]/60 focus:ring-2"
                 onChange={(event) => setPassword(event.target.value)}
               />
               <Tooltip content={passwordVisible ? 'Скрыть пароль' : 'Показать пароль'} side="top">
@@ -270,11 +270,11 @@ export function PasswordItemDialog({
         </div>
 
         {generatorOpen && (
-          <div className="rounded-2xl border border-violet-400/15 bg-violet-500/[0.06] p-4">
+          <div className="border-accent-400/15 bg-accent-500/[0.06] rounded-2xl border p-4">
             <div className="flex items-center gap-2">
-              <Sparkles className="size-4 text-violet-300" />
+              <Sparkles className="text-accent-300 size-4" />
               <span className="text-sm font-semibold text-[var(--app-text)]">Генератор пароля</span>
-              <span className="ml-auto text-sm font-semibold text-violet-200">
+              <span className="text-accent-200 ml-auto text-sm font-semibold">
                 {generatorLength}
               </span>
             </div>
@@ -317,7 +317,7 @@ export function PasswordItemDialog({
             <button
               type="button"
               disabled={generating || (!lowercase && !uppercase && !digits && !symbols)}
-              className="mt-3 inline-flex h-10 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400 disabled:opacity-45"
+              className="bg-accent-500 hover:bg-accent-400 mt-3 inline-flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-semibold text-white disabled:opacity-45"
               onClick={() => void generate()}
             >
               <Sparkles className="size-4" /> {generating ? 'Генерируем…' : 'Сгенерировать'}
@@ -331,7 +331,7 @@ export function PasswordItemDialog({
             value={website}
             maxLength={2048}
             placeholder="github.com"
-            className="h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
+            className="focus:border-accent-500/45 focus:ring-accent-500/15 h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:ring-2"
             onChange={(event) => setWebsite(event.target.value)}
           />
         </label>
@@ -341,7 +341,7 @@ export function PasswordItemDialog({
           <input
             value={tagsText}
             placeholder="Работа, Git, Разработка"
-            className="h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
+            className="focus:border-accent-500/45 focus:ring-accent-500/15 h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:ring-2"
             onChange={(event) => setTagsText(event.target.value)}
           />
           <span className="block text-[11px] text-[var(--app-muted)]">
@@ -357,7 +357,7 @@ export function PasswordItemDialog({
             <button
               type="button"
               disabled={customFields.length >= 20}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-violet-300 hover:text-violet-200 disabled:opacity-40"
+              className="text-accent-300 hover:text-accent-200 inline-flex items-center gap-1.5 text-xs font-medium disabled:opacity-40"
               onClick={() => setCustomFields((current) => [...current, { label: '', value: '' }])}
             >
               <Plus className="size-3.5" /> Добавить поле
@@ -372,7 +372,7 @@ export function PasswordItemDialog({
                 value={field.label}
                 maxLength={80}
                 placeholder="Название"
-                className="h-10 min-w-0 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45"
+                className="focus:border-accent-500/45 h-10 min-w-0 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60"
                 onChange={(event) => updateCustomField(index, { label: event.target.value })}
               />
               <input
@@ -380,7 +380,7 @@ export function PasswordItemDialog({
                 type="password"
                 maxLength={4000}
                 placeholder="Значение"
-                className="h-10 min-w-0 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 font-mono text-sm text-[var(--app-text)] outline-none placeholder:font-sans placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45"
+                className="focus:border-accent-500/45 h-10 min-w-0 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 font-mono text-sm text-[var(--app-text)] outline-none placeholder:font-sans placeholder:text-[var(--app-muted)]/60"
                 onChange={(event) => updateCustomField(index, { value: event.target.value })}
               />
               <Tooltip content="Удалить дополнительное поле" side="top">
@@ -408,7 +408,7 @@ export function PasswordItemDialog({
             rows={4}
             maxLength={20_000}
             placeholder="Например, где используется этот доступ или как восстановить аккаунт…"
-            className="w-full resize-y rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 py-3 text-sm leading-6 text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
+            className="focus:border-accent-500/45 focus:ring-accent-500/15 w-full resize-y rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 py-3 text-sm leading-6 text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:ring-2"
             onChange={(event) => setNotes(event.target.value)}
           />
         </label>

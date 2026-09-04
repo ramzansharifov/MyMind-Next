@@ -90,8 +90,8 @@ function SearchPopover({
 
   const triggerClassName =
     variant === 'chip'
-      ? 'rounded-xl border border-[var(--app-border-strong)] bg-[var(--app-control)] px-3 py-2 font-medium text-[var(--app-muted)] transition-colors hover:border-violet-400/35 hover:bg-[var(--app-control-hover)] hover:text-violet-300 focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:outline-none'
-      : 'rounded-md font-medium text-[var(--app-text)] underline decoration-transparent underline-offset-4 transition-colors hover:text-violet-300 hover:decoration-violet-400/45 focus-visible:text-violet-300 focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:outline-none'
+      ? 'rounded-xl border border-[var(--app-border-strong)] bg-[var(--app-control)] px-3 py-2 font-medium text-[var(--app-muted)] transition-colors hover:border-accent-400/35 hover:bg-[var(--app-control-hover)] hover:text-accent-300 focus-visible:ring-2 focus-visible:ring-accent-500/35 focus-visible:outline-none'
+      : 'rounded-md font-medium text-[var(--app-text)] underline decoration-transparent underline-offset-4 transition-colors hover:text-accent-300 hover:decoration-accent-400/45 focus-visible:text-accent-300 focus-visible:ring-2 focus-visible:ring-accent-500/35 focus-visible:outline-none'
 
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
@@ -230,7 +230,7 @@ export function MovieDetail({
                 <button
                   type="button"
                   aria-label="Открыть постер на весь экран"
-                  className="group absolute inset-0 cursor-zoom-in overflow-hidden text-left outline-none focus-visible:ring-2 focus-visible:ring-violet-500/60 focus-visible:ring-inset"
+                  className="group focus-visible:ring-accent-500/60 absolute inset-0 cursor-zoom-in overflow-hidden text-left outline-none focus-visible:ring-2 focus-visible:ring-inset"
                   onClick={() => setPosterOpen(true)}
                 >
                   <img
@@ -406,7 +406,7 @@ export function MovieDetail({
                     aria-pressed={movie.status === 'watchlist'}
                     className={
                       movie.status === 'watchlist'
-                        ? 'h-8 rounded-lg border border-violet-400/20 bg-violet-400/10 px-3 text-sm font-semibold text-violet-300 transition-colors disabled:opacity-50'
+                        ? 'border-accent-400/20 bg-accent-400/10 text-accent-300 h-8 rounded-lg border px-3 text-sm font-semibold transition-colors disabled:opacity-50'
                         : 'h-8 rounded-lg px-3 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] disabled:opacity-50'
                     }
                     onClick={() => requestStatus('watchlist')}
@@ -416,7 +416,7 @@ export function MovieDetail({
                 </div>
                 <button
                   type="button"
-                  className="inline-flex h-10 items-center gap-2 rounded-xl border border-violet-400/20 bg-violet-400/10 px-4 text-sm font-semibold text-violet-300 transition-colors hover:bg-violet-400/15"
+                  className="border-accent-400/20 bg-accent-400/10 text-accent-300 hover:bg-accent-400/15 inline-flex h-10 items-center gap-2 rounded-xl border px-4 text-sm font-semibold transition-colors"
                   onClick={() => void onSearchWeb(watchQuery)}
                 >
                   <Play className="size-4 fill-current" /> Посмотреть
@@ -469,7 +469,7 @@ export function MovieDetail({
             <button
               type="button"
               disabled={busy || pendingRating === null}
-              className="h-10 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-45"
+              className="bg-accent-500 hover:bg-accent-400 h-10 rounded-xl px-4 text-sm font-semibold text-white transition-colors disabled:cursor-not-allowed disabled:opacity-45"
               onClick={() => void confirmWatched()}
             >
               {busy ? 'Сохраняем…' : 'Отметить просмотренным'}

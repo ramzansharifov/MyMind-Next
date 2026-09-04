@@ -22,7 +22,7 @@ export function AppearanceSettingsSection(): React.JSX.Element {
       <div className="grid gap-5">
         <section className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[0_12px_40px_rgb(0_0_0/0.1)]">
           <header className="flex min-h-16 items-center gap-3 border-b border-[var(--app-border)] px-5 py-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
+            <div className="border-accent-500/15 bg-accent-500/10 text-accent-300 flex size-10 shrink-0 items-center justify-center rounded-xl border">
               <Monitor aria-hidden="true" className="size-5" />
             </div>
             <h2 className="text-base font-semibold text-[var(--app-text)]">Тема приложения</h2>
@@ -50,16 +50,16 @@ export function AppearanceSettingsSection(): React.JSX.Element {
                     aria-label={option.label}
                     className={cn(
                       'relative flex min-h-24 cursor-pointer flex-col rounded-xl border p-3.5 text-left transition-[border-color,background-color,transform] outline-none',
-                      'focus-visible:ring-2 focus-visible:ring-violet-500/50',
+                      'focus-visible:ring-accent-500/50 focus-visible:ring-2',
                       selected
-                        ? 'border-violet-500/45 bg-violet-500/10'
+                        ? 'border-accent-500/45 bg-accent-500/10'
                         : 'border-[var(--app-border)] bg-[var(--app-workspace)] hover:-translate-y-px hover:border-[var(--app-border-strong)]'
                     )}
                   >
                     <span className="flex items-start justify-between gap-3">
-                      <Icon aria-hidden="true" className="size-5 shrink-0 text-violet-300" />
+                      <Icon aria-hidden="true" className="text-accent-300 size-5 shrink-0" />
                       {selected && (
-                        <span className="flex size-5 items-center justify-center rounded-full bg-violet-500 text-white">
+                        <span className="bg-accent-500 flex size-5 items-center justify-center rounded-full text-white">
                           <Check aria-hidden="true" className="size-3" />
                         </span>
                       )}
@@ -77,7 +77,7 @@ export function AppearanceSettingsSection(): React.JSX.Element {
 
         <section className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[0_12px_40px_rgb(0_0_0/0.1)]">
           <header className="flex min-h-16 items-center gap-3 border-b border-[var(--app-border)] px-5 py-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
+            <div className="border-accent-500/15 bg-accent-500/10 text-accent-300 flex size-10 shrink-0 items-center justify-center rounded-xl border">
               <Palette aria-hidden="true" className="size-5" />
             </div>
             <h2 className="text-base font-semibold text-[var(--app-text)]">Акцентный цвет</h2>
@@ -104,9 +104,9 @@ export function AppearanceSettingsSection(): React.JSX.Element {
                     aria-label={option.label}
                     className={cn(
                       'flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2.5 rounded-xl border p-2.5 transition-[border-color,background-color,transform] outline-none',
-                      'focus-visible:ring-2 focus-visible:ring-violet-500/50',
+                      'focus-visible:ring-accent-500/50 focus-visible:ring-2',
                       selected
-                        ? 'border-violet-500/45 bg-violet-500/10'
+                        ? 'border-accent-500/45 bg-accent-500/10'
                         : 'border-[var(--app-border)] bg-[var(--app-workspace)] hover:-translate-y-px hover:border-[var(--app-border-strong)]'
                     )}
                   >
@@ -135,7 +135,7 @@ export function AppearanceSettingsSection(): React.JSX.Element {
             {status === 'loading' && (
               <span className="text-[var(--app-muted)]">Загрузка оформления…</span>
             )}
-            {status === 'saving' && <span className="text-violet-300">Сохранение…</span>}
+            {status === 'saving' && <span className="text-accent-300">Сохранение…</span>}
             {error && <span className="text-red-400">Не удалось сохранить: {error}</span>}
           </div>
         )}
@@ -161,7 +161,7 @@ function AppearancePreview(): React.JSX.Element {
 
         <div className="grid min-h-64 grid-cols-[64px_1fr]">
           <div className="border-r border-[var(--app-border)] bg-[var(--app-sidebar)] p-2.5">
-            <div className="flex size-9 items-center justify-center rounded-xl bg-violet-500/15 text-violet-300">
+            <div className="bg-accent-500/15 text-accent-300 flex size-9 items-center justify-center rounded-xl">
               <Palette className="size-4" />
             </div>
             <div className="mt-4 h-9 rounded-xl bg-[var(--app-sidebar-active)]" />
@@ -169,12 +169,12 @@ function AppearancePreview(): React.JSX.Element {
           </div>
 
           <div className="p-4">
-            <div className="h-2.5 w-20 rounded-full bg-violet-400/80" />
+            <div className="bg-accent-400/80 h-2.5 w-20 rounded-full" />
             <div className="mt-3 h-5 w-36 rounded-md bg-[var(--app-text)]/85" />
             <div className="mt-5 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3">
               <div className="h-2 w-4/5 rounded-full bg-[var(--app-muted)]/35" />
               <div className="mt-2 h-2 w-3/5 rounded-full bg-[var(--app-muted)]/20" />
-              <div className="mt-5 h-8 w-24 rounded-lg bg-violet-500" />
+              <div className="bg-accent-500 mt-5 h-8 w-24 rounded-lg" />
             </div>
           </div>
         </div>

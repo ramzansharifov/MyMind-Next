@@ -172,7 +172,7 @@ export function HabitDialog({
             type="submit"
             form={HABIT_FORM_ID}
             disabled={busy || !title.trim()}
-            className="h-10 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-45"
+            className="bg-accent-500 hover:bg-accent-400 h-10 rounded-xl px-4 text-sm font-semibold text-white transition-colors disabled:cursor-not-allowed disabled:opacity-45"
           >
             {busy ? 'Сохраняем…' : habit ? 'Сохранить' : 'Создать привычку'}
           </button>
@@ -188,7 +188,7 @@ export function HabitDialog({
               value={title}
               maxLength={240}
               placeholder="Например, Читать 20 минут"
-              className="h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm text-[var(--app-text)] transition-[border-color,box-shadow] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
+              className="focus:border-accent-500/45 focus:ring-accent-500/15 h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm text-[var(--app-text)] transition-[border-color,box-shadow] outline-none placeholder:text-[var(--app-muted)]/60 focus:ring-2"
               onChange={(event) => setTitle(event.target.value)}
             />
           </label>
@@ -209,7 +209,7 @@ export function HabitDialog({
 
         <div className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-4">
           <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-[var(--app-text)]">
-            <Target className="size-4 text-violet-300" /> Как отслеживать
+            <Target className="text-accent-300 size-4" /> Как отслеживать
           </div>
 
           <div
@@ -224,7 +224,7 @@ export function HabitDialog({
                 aria-pressed={trackingType === option.value}
                 className={
                   trackingType === option.value
-                    ? 'h-9 rounded-lg bg-violet-500 px-4 text-xs font-semibold text-white'
+                    ? 'bg-accent-500 h-9 rounded-lg px-4 text-xs font-semibold text-white'
                     : 'h-9 rounded-lg px-4 text-xs font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
                 }
                 onClick={() => changeTrackingType(option.value)}
@@ -244,7 +244,7 @@ export function HabitDialog({
                   max={1_000_000_000}
                   step={1}
                   value={targetValue}
-                  className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
+                  className="focus:border-accent-500/45 focus:ring-accent-500/15 h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 text-sm text-[var(--app-text)] outline-none focus:ring-2"
                   onChange={(event) => setTargetValue(event.target.value)}
                 />
               </label>
@@ -254,7 +254,7 @@ export function HabitDialog({
                   value={unit}
                   maxLength={32}
                   placeholder="страниц, мл, км…"
-                  className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
+                  className="focus:border-accent-500/45 focus:ring-accent-500/15 h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:ring-2"
                   onChange={(event) => setUnit(event.target.value)}
                 />
               </label>
@@ -264,7 +264,7 @@ export function HabitDialog({
 
         <div className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-4">
           <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-[var(--app-text)]">
-            <Repeat2 className="size-4 text-violet-300" /> Повторение
+            <Repeat2 className="text-accent-300 size-4" /> Повторение
           </div>
 
           <div className="mb-3 inline-flex rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-1">
@@ -280,7 +280,7 @@ export function HabitDialog({
                 aria-pressed={recurrenceMode === mode}
                 className={
                   recurrenceMode === mode
-                    ? 'h-8 rounded-lg bg-violet-500 px-3 text-xs font-semibold text-white'
+                    ? 'bg-accent-500 h-8 rounded-lg px-3 text-xs font-semibold text-white'
                     : 'h-8 rounded-lg px-3 text-xs font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
                 }
                 onClick={() => setRecurrenceMode(mode)}
@@ -300,7 +300,7 @@ export function HabitDialog({
                     aria-pressed={repeatEveryDays === String(days)}
                     className={
                       repeatEveryDays === String(days)
-                        ? 'h-9 rounded-xl bg-violet-500 px-3 text-xs font-semibold text-white'
+                        ? 'bg-accent-500 h-9 rounded-xl px-3 text-xs font-semibold text-white'
                         : 'h-9 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 text-xs font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
                     }
                     onClick={() => setRepeatEveryDays(String(days))}
@@ -317,7 +317,7 @@ export function HabitDialog({
                   max={3650}
                   step={1}
                   value={repeatEveryDays}
-                  className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
+                  className="focus:border-accent-500/45 focus:ring-accent-500/15 h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 text-sm text-[var(--app-text)] outline-none focus:ring-2"
                   onChange={(event) => setRepeatEveryDays(event.target.value)}
                 />
               </label>
@@ -334,7 +334,7 @@ export function HabitDialog({
                     aria-pressed={selected}
                     className={
                       selected
-                        ? 'h-10 rounded-xl bg-violet-500 text-xs font-semibold text-white'
+                        ? 'bg-accent-500 h-10 rounded-xl text-xs font-semibold text-white'
                         : 'h-10 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] text-xs font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
                     }
                     onClick={() => toggleWeekday(weekday.value)}

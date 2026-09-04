@@ -341,7 +341,7 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
             </button>
             <button
               type="button"
-              className="inline-flex h-11 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-400"
+              className="bg-accent-500 hover:bg-accent-400 inline-flex h-11 items-center gap-2 rounded-xl px-4 text-sm font-semibold text-white transition-colors"
               onClick={openNewTask}
             >
               <Plus className="size-4" /> Новая задача
@@ -350,7 +350,7 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
         }
       >
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-          <label className="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 focus-within:border-violet-500/45 focus-within:ring-2 focus-within:ring-violet-500/10">
+          <label className="focus-within:border-accent-500/45 focus-within:ring-accent-500/10 flex h-11 min-w-0 flex-1 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 focus-within:ring-2">
             <Search className="size-4 shrink-0 text-[var(--app-muted)]" />
             <input
               value={query}
@@ -383,7 +383,7 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
                 aria-pressed={viewFilter === filter.id}
                 className={
                   viewFilter === filter.id
-                    ? 'h-9 shrink-0 rounded-lg bg-violet-500 px-3.5 text-sm font-semibold text-white'
+                    ? 'bg-accent-500 h-9 shrink-0 rounded-lg px-3.5 text-sm font-semibold text-white'
                     : 'h-9 shrink-0 rounded-lg px-3.5 text-sm font-medium text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
                 }
                 onClick={() => setViewFilter(filter.id)}
@@ -438,7 +438,7 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
               className={cn(
                 'flex h-10 w-full items-center gap-2 rounded-xl px-3 text-sm transition-colors',
                 groupFilter === 'all'
-                  ? 'bg-violet-500/12 font-semibold text-violet-200'
+                  ? 'bg-accent-500/12 text-accent-200 font-semibold'
                   : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
               )}
               onClick={() => setGroupFilter('all')}
@@ -453,7 +453,7 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
               className={cn(
                 'flex h-10 w-full items-center gap-2 rounded-xl px-3 text-sm transition-colors',
                 groupFilter === 'ungrouped'
-                  ? 'bg-violet-500/12 font-semibold text-violet-200'
+                  ? 'bg-accent-500/12 text-accent-200 font-semibold'
                   : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
               )}
               onClick={() => setGroupFilter('ungrouped')}
@@ -540,7 +540,7 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
             className="flex items-center gap-2 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 shadow-[var(--app-shadow-card)]"
             onSubmit={(event) => void quickAdd(event)}
           >
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-300">
+            <span className="bg-accent-500/10 text-accent-300 flex size-9 shrink-0 items-center justify-center rounded-xl">
               <Plus className="size-4" />
             </span>
             <input
@@ -558,7 +558,7 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
             <button
               type="submit"
               disabled={!quickTitle.trim() || isSaving}
-              className="h-9 shrink-0 rounded-xl bg-violet-500 px-3.5 text-sm font-semibold text-white hover:bg-violet-400 disabled:opacity-40"
+              className="bg-accent-500 hover:bg-accent-400 h-9 shrink-0 rounded-xl px-3.5 text-sm font-semibold text-white disabled:opacity-40"
             >
               Добавить
             </button>
@@ -566,7 +566,7 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
 
           {visibleTasks.length === 0 ? (
             <div className="flex min-h-72 flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface)] px-6 text-center">
-              <span className="flex size-14 items-center justify-center rounded-2xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
+              <span className="border-accent-500/15 bg-accent-500/10 text-accent-300 flex size-14 items-center justify-center rounded-2xl border">
                 <CheckCircle2 className="size-7" />
               </span>
               <h2 className="mt-4 text-lg font-semibold text-[var(--app-text)]">
@@ -580,7 +580,7 @@ export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): Re
               {tasks.length === 0 && (
                 <button
                   type="button"
-                  className="mt-5 inline-flex h-10 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400"
+                  className="bg-accent-500 hover:bg-accent-400 mt-5 inline-flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-semibold text-white"
                   onClick={openNewTask}
                 >
                   <Plus className="size-4" /> Новая задача

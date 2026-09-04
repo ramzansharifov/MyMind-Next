@@ -1,5 +1,20 @@
 @import 'tailwindcss';
 
+@theme {
+  /* Semantic application accent. Keep built-in Tailwind color namespaces literal. */
+  --color-accent-50: var(--app-accent-50);
+  --color-accent-100: var(--app-accent-100);
+  --color-accent-200: var(--app-accent-200);
+  --color-accent-300: var(--app-accent-300);
+  --color-accent-400: var(--app-accent-400);
+  --color-accent-500: var(--app-accent-500);
+  --color-accent-600: var(--app-accent-600);
+  --color-accent-700: var(--app-accent-700);
+  --color-accent-800: var(--app-accent-800);
+  --color-accent-900: var(--app-accent-900);
+  --color-accent-950: var(--app-accent-950);
+}
+
 :root {
   color-scheme: dark;
 
@@ -47,18 +62,6 @@
   --app-accent-800: #5b21b6;
   --app-accent-900: #4c1d95;
   --app-accent-950: #2e1065;
-
-  --color-violet-50: var(--app-accent-50);
-  --color-violet-100: var(--app-accent-100);
-  --color-violet-200: var(--app-accent-200);
-  --color-violet-300: var(--app-accent-300);
-  --color-violet-400: var(--app-accent-400);
-  --color-violet-500: var(--app-accent-500);
-  --color-violet-600: var(--app-accent-600);
-  --color-violet-700: var(--app-accent-700);
-  --color-violet-800: var(--app-accent-800);
-  --color-violet-900: var(--app-accent-900);
-  --color-violet-950: var(--app-accent-950);
 }
 
 :root[data-theme='light'] {

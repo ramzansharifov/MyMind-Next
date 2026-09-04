@@ -27,9 +27,9 @@ interface MovieFormPageProps {
 }
 
 const fieldClassName =
-  'h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm text-[var(--app-text)] outline-none transition-[border-color,box-shadow,background-color] placeholder:text-[var(--app-muted)] focus:border-violet-500/45 focus:bg-[var(--app-surface)] focus:ring-2 focus:ring-violet-500/15'
+  'h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm text-[var(--app-text)] outline-none transition-[border-color,box-shadow,background-color] placeholder:text-[var(--app-muted)] focus:border-accent-500/45 focus:bg-[var(--app-surface)] focus:ring-2 focus:ring-accent-500/15'
 const textareaClassName =
-  'min-h-32 w-full resize-y rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 py-3 text-sm leading-6 text-[var(--app-text)] outline-none transition-[border-color,box-shadow,background-color] placeholder:text-[var(--app-muted)] focus:border-violet-500/45 focus:bg-[var(--app-surface)] focus:ring-2 focus:ring-violet-500/15'
+  'min-h-32 w-full resize-y rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 py-3 text-sm leading-6 text-[var(--app-text)] outline-none transition-[border-color,box-shadow,background-color] placeholder:text-[var(--app-muted)] focus:border-accent-500/45 focus:bg-[var(--app-surface)] focus:ring-2 focus:ring-accent-500/15'
 
 function SectionTitle({
   icon,
@@ -40,7 +40,7 @@ function SectionTitle({
 }): React.JSX.Element {
   return (
     <div className="mb-5 flex items-center gap-3">
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-violet-300 [&>svg]:size-4">
+      <span className="border-accent-500/15 bg-accent-500/10 text-accent-300 flex size-9 shrink-0 items-center justify-center rounded-xl border [&>svg]:size-4">
         {icon}
       </span>
       <h2 className="text-sm font-semibold text-[var(--app-text)]">{title}</h2>
@@ -61,11 +61,7 @@ function parseOptionalNumber(value: string): number | null {
   return Number.isFinite(parsed) ? parsed : null
 }
 
-export function MovieFormPage({
-  movie,
-  formId,
-  onSave
-}: MovieFormPageProps): React.JSX.Element {
+export function MovieFormPage({ movie, formId, onSave }: MovieFormPageProps): React.JSX.Element {
   const [title, setTitle] = useState(movie?.title ?? '')
   const [originalTitle, setOriginalTitle] = useState(movie?.originalTitle ?? '')
   const [type, setType] = useState<MovieType>(movie?.type ?? 'movie')
@@ -188,7 +184,11 @@ export function MovieFormPage({
 
               <div className="space-y-1.5 sm:col-span-2">
                 <span className="text-xs font-medium text-[var(--app-muted)]">Тип</span>
-                <div role="group" aria-label="Тип" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                <div
+                  role="group"
+                  aria-label="Тип"
+                  className="grid grid-cols-2 gap-2 sm:grid-cols-4"
+                >
                   {MOVIE_TYPE_OPTIONS.map((option) => (
                     <button
                       key={option.value}
@@ -197,7 +197,7 @@ export function MovieFormPage({
                       aria-pressed={type === option.value}
                       className={
                         type === option.value
-                          ? 'h-10 rounded-xl border border-violet-400/30 bg-violet-500/10 px-3 text-sm font-semibold text-violet-200'
+                          ? 'border-accent-400/30 bg-accent-500/10 text-accent-200 h-10 rounded-xl border px-3 text-sm font-semibold'
                           : 'h-10 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
                       }
                       onClick={() => setType(option.value)}
@@ -341,7 +341,7 @@ export function MovieFormPage({
                   aria-pressed={status === 'watchlist'}
                   className={
                     status === 'watchlist'
-                      ? 'flex h-12 items-center justify-center gap-2 rounded-xl border border-violet-400/30 bg-violet-500/10 px-4 text-sm font-semibold text-violet-200'
+                      ? 'border-accent-400/30 bg-accent-500/10 text-accent-200 flex h-12 items-center justify-center gap-2 rounded-xl border px-4 text-sm font-semibold'
                       : 'flex h-12 items-center justify-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
                   }
                   onClick={() => changeStatus('watchlist')}
@@ -462,7 +462,9 @@ export function MovieFormPage({
               </div>
 
               {episodicType &&
-                (seasonCount.trim() || episodesPerSeason.trim() || episodeRuntimeMinutes.trim()) && (
+                (seasonCount.trim() ||
+                  episodesPerSeason.trim() ||
+                  episodeRuntimeMinutes.trim()) && (
                   <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-[var(--app-muted)]">
                     {seasonCount.trim() && <span>Сезонов: {seasonCount}</span>}
                     {episodesPerSeason.trim() && <span>Серий в сезоне: {episodesPerSeason}</span>}
@@ -477,7 +479,7 @@ export function MovieFormPage({
                   className={
                     status === 'watched'
                       ? 'inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/10 px-2.5 py-1.5 text-xs font-medium text-emerald-300'
-                      : 'inline-flex items-center gap-1.5 rounded-lg bg-violet-500/10 px-2.5 py-1.5 text-xs font-medium text-violet-300'
+                      : 'bg-accent-500/10 text-accent-300 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium'
                   }
                 >
                   {status === 'watched' ? (

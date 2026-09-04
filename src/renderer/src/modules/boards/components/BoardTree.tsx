@@ -431,10 +431,10 @@ function BoardDragOverlay({ node }: { node: BoardNode }): React.JSX.Element {
           <FolderIcon
             name={node.icon}
             expanded={node.isExpanded}
-            className="size-4 shrink-0 text-violet-300"
+            className="text-accent-300 size-4 shrink-0"
           />
         ) : (
-          <Presentation aria-hidden="true" className="size-4 shrink-0 text-violet-300" />
+          <Presentation aria-hidden="true" className="text-accent-300 size-4 shrink-0" />
         )
       }
       title={node.title}
@@ -467,14 +467,14 @@ function createBoardMenuEntries({
         kind: 'item',
         key: 'create-folder',
         label: 'Новая папка',
-        icon: <FolderPlus aria-hidden="true" className="size-4 text-violet-300" />,
+        icon: <FolderPlus aria-hidden="true" className="text-accent-300 size-4" />,
         onSelect: () => onCreate('folder', node.id)
       },
       {
         kind: 'item',
         key: 'create-board',
         label: 'Новая доска',
-        icon: <Presentation aria-hidden="true" className="size-4 text-violet-300" />,
+        icon: <Presentation aria-hidden="true" className="text-accent-300 size-4" />,
         onSelect: () => onCreate('board', node.id)
       }
     )
@@ -489,7 +489,7 @@ function createBoardMenuEntries({
       kind: 'item',
       key: 'rename',
       label: 'Переименовать',
-      icon: <Pencil aria-hidden="true" className="size-4 text-violet-300" />,
+      icon: <Pencil aria-hidden="true" className="text-accent-300 size-4" />,
       onSelect: () => onRename(node)
     })
 

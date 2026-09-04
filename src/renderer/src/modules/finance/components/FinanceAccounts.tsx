@@ -153,7 +153,7 @@ export function FinanceAccounts({
                   onClick={() => onSelectedAccountChange(account.id)}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="flex size-11 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
+                    <div className="border-accent-500/15 bg-accent-500/10 text-accent-300 flex size-11 items-center justify-center rounded-xl border">
                       <FinanceIcon name={account.icon} className="size-5" />
                     </div>
                     <div className="min-w-0">
@@ -312,7 +312,7 @@ function AccountDetail({
       <FinanceSurface className="p-5">
         <div className="flex flex-wrap items-start justify-between gap-5">
           <div className="flex items-center gap-4">
-            <div className="flex size-14 items-center justify-center rounded-2xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
+            <div className="border-accent-500/15 bg-accent-500/10 text-accent-300 flex size-14 items-center justify-center rounded-2xl border">
               <FinanceIcon name={account.icon} className="size-7" />
             </div>
             <div>

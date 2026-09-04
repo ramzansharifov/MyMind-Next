@@ -42,10 +42,7 @@ export function nutritionValuesLine(values: NutritionValues): string {
   return `${formatNutritionNumber(values.calories, 0)} ккал · Б ${formatNutritionNumber(values.proteinG)} · Ж ${formatNutritionNumber(values.fatG)} · У ${formatNutritionNumber(values.carbsG)}`
 }
 
-export function scaleNutritionValues(
-  values: NutritionValues,
-  factor: number
-): NutritionValues {
+export function scaleNutritionValues(values: NutritionValues, factor: number): NutritionValues {
   return {
     calories: values.calories * factor,
     proteinG: values.proteinG * factor,
@@ -67,7 +64,7 @@ export function nutritionErrorMessage(reason: unknown): string {
 }
 
 export const NUTRITION_INPUT_CLASS_NAME =
-  'h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/10'
+  'h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-accent-500/45 focus:ring-2 focus:ring-accent-500/10'
 
 export const NUTRITION_TEXTAREA_CLASS_NAME =
-  'w-full resize-y rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 py-2.5 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/10'
+  'w-full resize-y rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 py-2.5 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-accent-500/45 focus:ring-2 focus:ring-accent-500/10'

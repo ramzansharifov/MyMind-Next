@@ -76,7 +76,7 @@ export function NutritionGoalView({
         onSubmit={(event) => void submit(event).catch(() => undefined)}
       >
         <div className="flex items-start gap-3 border-b border-[var(--app-border)] px-5 py-5">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-300">
+          <span className="bg-accent-500/10 text-accent-300 flex size-10 shrink-0 items-center justify-center rounded-xl">
             <Target className="size-5" />
           </span>
           <div className="min-w-0">
@@ -113,7 +113,7 @@ export function NutritionGoalView({
           <button
             type="submit"
             disabled={busy}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-45"
+            className="bg-accent-500 hover:bg-accent-400 inline-flex h-10 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold text-white transition-colors disabled:cursor-not-allowed disabled:opacity-45"
           >
             <Save className="size-4" />
             Сохранить цель

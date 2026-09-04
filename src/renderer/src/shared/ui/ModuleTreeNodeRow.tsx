@@ -129,7 +129,7 @@ export function ModuleTreeNodeRow({
                 <button
                   type="button"
                   aria-label={isExpanded ? 'Свернуть папку' : 'Развернуть папку'}
-                  className="z-20 flex size-5 shrink-0 items-center justify-center rounded-sm p-0 outline-none hover:bg-white/[0.05] focus-visible:ring-2 focus-visible:ring-violet-500/35"
+                  className="focus-visible:ring-accent-500/35 z-20 flex size-5 shrink-0 items-center justify-center rounded-sm p-0 outline-none hover:bg-white/[0.05] focus-visible:ring-2"
                   onClick={() => void onToggle?.()}
                 >
                   {isExpanded ? (
@@ -150,7 +150,7 @@ export function ModuleTreeNodeRow({
               aria-label={openAriaLabel}
               className={cn(
                 'relative z-10 flex min-w-0 touch-none items-center text-left text-sm outline-none select-none',
-                'focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:ring-inset',
+                'focus-visible:ring-accent-500/35 focus-visible:ring-2 focus-visible:ring-inset',
                 collapsed
                   ? 'size-8 shrink-0 justify-center rounded-lg bg-[var(--app-sidebar)] p-0'
                   : 'flex-1 gap-1.5 py-1.5 pr-1',

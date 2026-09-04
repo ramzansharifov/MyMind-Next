@@ -124,7 +124,7 @@ export function AppDateField({
         disabled={disabled}
         aria-label={ariaLabel}
         className={cn(
-          'app-date-field-input h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 pr-11 text-sm text-[var(--app-text)] transition-colors outline-none focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/10 disabled:cursor-not-allowed disabled:opacity-45',
+          'app-date-field-input focus:border-accent-500/45 focus:ring-accent-500/10 h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 pr-11 text-sm text-[var(--app-text)] transition-colors outline-none focus:ring-2 disabled:cursor-not-allowed disabled:opacity-45',
           inputClassName
         )}
         onChange={(event) => onChange(event.target.value)}
@@ -146,7 +146,7 @@ export function AppDateField({
               type="button"
               aria-label={calendarButtonLabel}
               disabled={disabled}
-              className="absolute top-1/2 right-1 flex size-8 -translate-y-1/2 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors outline-none hover:bg-[var(--app-control-hover)] hover:text-violet-300 focus-visible:ring-2 focus-visible:ring-violet-500/35 disabled:cursor-not-allowed disabled:opacity-40"
+              className="hover:text-accent-300 focus-visible:ring-accent-500/35 absolute top-1/2 right-1 flex size-8 -translate-y-1/2 items-center justify-center rounded-lg text-[var(--app-muted)] transition-colors outline-none hover:bg-[var(--app-control-hover)] focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-40"
             >
               <CalendarDays className="size-4" />
             </button>
@@ -167,7 +167,7 @@ export function AppDateField({
                   type="button"
                   aria-label="Предыдущий месяц"
                   disabled={previousMonthDisabled}
-                  className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] transition-colors outline-none hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
+                  className="focus-visible:ring-accent-500/35 flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] transition-colors outline-none hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
                   onClick={() => setVisibleMonth(previousMonth)}
                 >
                   <ChevronLeft className="size-4" />
@@ -181,7 +181,7 @@ export function AppDateField({
                   type="button"
                   aria-label="Следующий месяц"
                   disabled={nextMonthDisabled}
-                  className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] transition-colors outline-none hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
+                  className="focus-visible:ring-accent-500/35 flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] transition-colors outline-none hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
                   onClick={() => setVisibleMonth(nextMonth)}
                 >
                   <ChevronRight className="size-4" />
@@ -214,13 +214,13 @@ export function AppDateField({
                     aria-current={selected ? 'date' : undefined}
                     disabled={dayDisabled}
                     className={cn(
-                      'relative flex size-9 items-center justify-center rounded-xl text-xs font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-violet-500/35',
+                      'focus-visible:ring-accent-500/35 relative flex size-9 items-center justify-center rounded-xl text-xs font-medium transition-colors outline-none focus-visible:ring-2',
                       selected
-                        ? 'bg-violet-500 font-semibold text-white shadow-sm'
+                        ? 'bg-accent-500 font-semibold text-white shadow-sm'
                         : 'text-[var(--app-text)] hover:bg-[var(--app-control-hover)]',
                       outsideMonth && !selected && 'text-[var(--app-muted)]/45',
                       dayDisabled && 'cursor-not-allowed opacity-25 hover:bg-transparent',
-                      isToday && !selected && 'text-violet-300'
+                      isToday && !selected && 'text-accent-300'
                     )}
                     onClick={() => {
                       onChange(key)
@@ -229,7 +229,7 @@ export function AppDateField({
                   >
                     {date.getDate()}
                     {isToday && !selected && (
-                      <span className="absolute bottom-1 size-1 rounded-full bg-violet-400" />
+                      <span className="bg-accent-400 absolute bottom-1 size-1 rounded-full" />
                     )}
                   </button>
                 )
@@ -240,7 +240,7 @@ export function AppDateField({
               <button
                 type="button"
                 disabled={!todayAllowed}
-                className="flex h-9 w-full items-center justify-center rounded-xl bg-violet-500/10 text-xs font-semibold text-violet-200 transition-colors outline-none hover:bg-violet-500/15 focus-visible:ring-2 focus-visible:ring-violet-500/35 disabled:cursor-not-allowed disabled:opacity-35"
+                className="bg-accent-500/10 text-accent-200 hover:bg-accent-500/15 focus-visible:ring-accent-500/35 flex h-9 w-full items-center justify-center rounded-xl text-xs font-semibold transition-colors outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-35"
                 onClick={() => {
                   if (!todayAllowed) return
                   onChange(today)

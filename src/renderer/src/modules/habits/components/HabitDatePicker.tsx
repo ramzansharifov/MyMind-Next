@@ -93,9 +93,9 @@ export function HabitDatePicker({ value, max, onChange }: HabitDatePickerProps):
         <button
           type="button"
           aria-label="Открыть календарь привычек"
-          className="inline-flex h-10 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm font-medium text-[var(--app-text)] transition-colors outline-none hover:bg-[var(--app-control-hover)] focus-visible:ring-2 focus-visible:ring-violet-500/35"
+          className="focus-visible:ring-accent-500/35 inline-flex h-10 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm font-medium text-[var(--app-text)] transition-colors outline-none hover:bg-[var(--app-control-hover)] focus-visible:ring-2"
         >
-          <CalendarDays className="size-4 text-violet-300" />
+          <CalendarDays className="text-accent-300 size-4" />
           <span>{formatDisplayDate(value)}</span>
         </button>
       </Popover.Trigger>
@@ -113,7 +113,7 @@ export function HabitDatePicker({ value, max, onChange }: HabitDatePickerProps):
               <button
                 type="button"
                 aria-label="Предыдущий месяц"
-                className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:outline-none"
+                className="focus-visible:ring-accent-500/35 flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:outline-none"
                 onClick={() => setVisibleMonth((current) => shiftMonth(current, -1))}
               >
                 <ChevronLeft className="size-4" />
@@ -127,7 +127,7 @@ export function HabitDatePicker({ value, max, onChange }: HabitDatePickerProps):
                 type="button"
                 aria-label="Следующий месяц"
                 disabled={nextMonthDisabled}
-                className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
+                className="focus-visible:ring-accent-500/35 flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)] focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
                 onClick={() => setVisibleMonth((current) => shiftMonth(current, 1))}
               >
                 <ChevronRight className="size-4" />
@@ -160,13 +160,13 @@ export function HabitDatePicker({ value, max, onChange }: HabitDatePickerProps):
                   aria-current={selected ? 'date' : undefined}
                   disabled={disabled}
                   className={cn(
-                    'relative flex size-9 items-center justify-center rounded-xl text-xs font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-violet-500/35',
+                    'focus-visible:ring-accent-500/35 relative flex size-9 items-center justify-center rounded-xl text-xs font-medium transition-colors outline-none focus-visible:ring-2',
                     selected
-                      ? 'bg-violet-500 font-semibold text-white shadow-sm'
+                      ? 'bg-accent-500 font-semibold text-white shadow-sm'
                       : 'text-[var(--app-text)] hover:bg-[var(--app-control-hover)]',
                     outsideMonth && !selected && 'text-[var(--app-muted)]/45',
                     disabled && 'cursor-not-allowed opacity-25 hover:bg-transparent',
-                    isToday && !selected && 'text-violet-300'
+                    isToday && !selected && 'text-accent-300'
                   )}
                   onClick={() => {
                     onChange(key)
@@ -175,7 +175,7 @@ export function HabitDatePicker({ value, max, onChange }: HabitDatePickerProps):
                 >
                   {date.getDate()}
                   {isToday && !selected && (
-                    <span className="absolute bottom-1 size-1 rounded-full bg-violet-400" />
+                    <span className="bg-accent-400 absolute bottom-1 size-1 rounded-full" />
                   )}
                 </button>
               )
@@ -185,7 +185,7 @@ export function HabitDatePicker({ value, max, onChange }: HabitDatePickerProps):
           <div className="mt-3 border-t border-[var(--app-border)] pt-3">
             <button
               type="button"
-              className="flex h-9 w-full items-center justify-center rounded-xl bg-violet-500/10 text-xs font-semibold text-violet-200 transition-colors hover:bg-violet-500/15 focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:outline-none"
+              className="bg-accent-500/10 text-accent-200 hover:bg-accent-500/15 focus-visible:ring-accent-500/35 flex h-9 w-full items-center justify-center rounded-xl text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:outline-none"
               onClick={() => {
                 onChange(max)
                 setVisibleMonth(monthStart(maxDate))

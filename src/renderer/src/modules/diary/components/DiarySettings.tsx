@@ -76,7 +76,7 @@ export function DiarySettings({
       <div className="grid grid-cols-[minmax(0,1fr)_20rem] gap-5 max-[900px]:grid-cols-1">
         <div className="rounded-[24px] border border-[var(--app-border)] bg-[var(--app-surface)] p-5 shadow-[var(--app-shadow-card)]">
           <div className="flex items-start gap-4">
-            <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
+            <span className="border-accent-500/15 bg-accent-500/10 text-accent-300 flex size-14 shrink-0 items-center justify-center rounded-2xl border">
               <DiaryIcon name={diary.icon} className="size-7" />
             </span>
             <div className="min-w-0 flex-1">
@@ -125,7 +125,7 @@ export function DiarySettings({
       <div className="rounded-[24px] border border-[var(--app-border)] bg-[var(--app-surface)] p-5 shadow-[var(--app-shadow-card)]">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
+            <span className="border-accent-500/15 bg-accent-500/10 text-accent-300 flex size-10 shrink-0 items-center justify-center rounded-xl border">
               <Palette className="size-5" />
             </span>
             <div>
@@ -155,7 +155,7 @@ export function DiarySettings({
                       key={pattern}
                       type="button"
                       aria-pressed={selected}
-                      className={`group relative flex min-h-24 items-center gap-3 rounded-2xl border p-3 text-left transition-colors outline-none disabled:cursor-wait ${selected ? 'border-violet-500/45 bg-violet-500/[0.08]' : 'border-[var(--app-border)] bg-[var(--app-control)] hover:bg-[var(--app-control-hover)]'} focus-visible:ring-2 focus-visible:ring-violet-500/30`}
+                      className={`group relative flex min-h-24 items-center gap-3 rounded-2xl border p-3 text-left transition-colors outline-none disabled:cursor-wait ${selected ? 'border-accent-500/45 bg-accent-500/[0.08]' : 'border-[var(--app-border)] bg-[var(--app-control)] hover:bg-[var(--app-control-hover)]'} focus-visible:ring-accent-500/30 focus-visible:ring-2`}
                       onClick={() => void saveAppearance(pattern, paperTone, coverTone)}
                     >
                       <span
@@ -172,7 +172,7 @@ export function DiarySettings({
                         </span>
                       </span>
                       {selected && (
-                        <span className="absolute top-2.5 right-2.5 flex size-5 items-center justify-center rounded-full bg-violet-500 text-white">
+                        <span className="bg-accent-500 absolute top-2.5 right-2.5 flex size-5 items-center justify-center rounded-full text-white">
                           <Check className="size-3" />
                         </span>
                       )}
@@ -194,7 +194,7 @@ export function DiarySettings({
                         type="button"
                         aria-pressed={selected}
 
-                        className={`relative flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl border px-2 py-3 text-center transition-colors outline-none disabled:cursor-wait ${selected ? 'border-violet-500/45 bg-violet-500/[0.08]' : 'border-[var(--app-border)] bg-[var(--app-control)] hover:bg-[var(--app-control-hover)]'} focus-visible:ring-2 focus-visible:ring-violet-500/30`}
+                        className={`relative flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl border px-2 py-3 text-center transition-colors outline-none disabled:cursor-wait ${selected ? 'border-accent-500/45 bg-accent-500/[0.08]' : 'border-[var(--app-border)] bg-[var(--app-control)] hover:bg-[var(--app-control-hover)]'} focus-visible:ring-accent-500/30 focus-visible:ring-2`}
                         onClick={() => void saveAppearance(paperPattern, tone, coverTone)}
                       >
                         <span
@@ -206,7 +206,7 @@ export function DiarySettings({
                           {meta.label}
                         </span>
                         {selected && (
-                          <span className="absolute top-2 right-2 flex size-4 items-center justify-center rounded-full bg-violet-500 text-white">
+                          <span className="bg-accent-500 absolute top-2 right-2 flex size-4 items-center justify-center rounded-full text-white">
                             <Check className="size-2.5" />
                           </span>
                         )}
@@ -229,7 +229,7 @@ export function DiarySettings({
                         type="button"
                         aria-pressed={selected}
 
-                        className={`relative flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl border px-2 py-3 text-center transition-colors outline-none disabled:cursor-wait ${selected ? 'border-violet-500/45 bg-violet-500/[0.08]' : 'border-[var(--app-border)] bg-[var(--app-control)] hover:bg-[var(--app-control-hover)]'} focus-visible:ring-2 focus-visible:ring-violet-500/30`}
+                        className={`relative flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl border px-2 py-3 text-center transition-colors outline-none disabled:cursor-wait ${selected ? 'border-accent-500/45 bg-accent-500/[0.08]' : 'border-[var(--app-border)] bg-[var(--app-control)] hover:bg-[var(--app-control-hover)]'} focus-visible:ring-accent-500/30 focus-visible:ring-2`}
                         onClick={() => void saveAppearance(paperPattern, paperTone, tone)}
                       >
                         <span
@@ -241,7 +241,7 @@ export function DiarySettings({
                           {meta.label}
                         </span>
                         {selected && (
-                          <span className="absolute top-2 right-2 flex size-4 items-center justify-center rounded-full bg-violet-500 text-white">
+                          <span className="bg-accent-500 absolute top-2 right-2 flex size-4 items-center justify-center rounded-full text-white">
                             <Check className="size-2.5" />
                           </span>
                         )}

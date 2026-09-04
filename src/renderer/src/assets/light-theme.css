@@ -63,11 +63,11 @@
   --app-scrollbar-thumb-hover: color-mix(in srgb, var(--app-accent-600) 58%, #8794a5);
 
   /* Светлые 200–400 оттенки рассчитаны на тёмный фон. */
-  --color-violet-200: var(--app-accent-700);
-  --color-violet-300: var(--app-accent-700);
-  --color-violet-400: var(--app-accent-600);
-  --color-violet-500: var(--app-accent-600);
-  --color-violet-600: var(--app-accent-700);
+  --color-accent-200: var(--app-accent-700);
+  --color-accent-300: var(--app-accent-700);
+  --color-accent-400: var(--app-accent-600);
+  --color-accent-500: var(--app-accent-600);
+  --color-accent-600: var(--app-accent-700);
 
   --color-emerald-200: #047857;
   --color-emerald-300: #047857;

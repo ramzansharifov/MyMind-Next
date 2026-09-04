@@ -478,7 +478,7 @@ export function WorkoutsPage({
         <button
           type="button"
           disabled={exercises.length === 0}
-          className="inline-flex h-11 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-45"
+          className="bg-accent-500 hover:bg-accent-400 inline-flex h-11 items-center gap-2 rounded-xl px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
           onClick={() => {
             setEditingSession(null)
             setSessionDialogOpen(true)
@@ -490,7 +490,7 @@ export function WorkoutsPage({
       {tab === 'exercises' && (
         <button
           type="button"
-          className="inline-flex h-11 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400"
+          className="bg-accent-500 hover:bg-accent-400 inline-flex h-11 items-center gap-2 rounded-xl px-4 text-sm font-semibold text-white"
           onClick={() => {
             setEditingExercise(null)
             setExerciseDialogOpen(true)
@@ -503,7 +503,7 @@ export function WorkoutsPage({
         <button
           type="button"
           disabled={exercises.length === 0}
-          className="inline-flex h-11 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-45"
+          className="bg-accent-500 hover:bg-accent-400 inline-flex h-11 items-center gap-2 rounded-xl px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
           onClick={() => {
             setEditingProgram(null)
             setProgramDialogOpen(true)
@@ -515,7 +515,7 @@ export function WorkoutsPage({
       {tab === 'progress' && (
         <button
           type="button"
-          className="inline-flex h-11 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400"
+          className="bg-accent-500 hover:bg-accent-400 inline-flex h-11 items-center gap-2 rounded-xl px-4 text-sm font-semibold text-white"
           onClick={() => {
             setEditingProgress(null)
             setProgressDialogOpen(true)
@@ -531,7 +531,7 @@ export function WorkoutsPage({
     if (tab === 'journal') {
       return (
         <div className="flex flex-wrap gap-2">
-          <label className="flex h-10 min-w-[260px] flex-1 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 focus-within:border-violet-500/45">
+          <label className="focus-within:border-accent-500/45 flex h-10 min-w-[260px] flex-1 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3">
             <Search className="size-4 text-[var(--app-muted)]" />
             <input
               type="search"
@@ -571,7 +571,7 @@ export function WorkoutsPage({
     if (tab === 'exercises') {
       return (
         <div className="flex flex-wrap gap-2">
-          <label className="flex h-10 min-w-[260px] flex-1 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 focus-within:border-violet-500/45">
+          <label className="focus-within:border-accent-500/45 flex h-10 min-w-[260px] flex-1 items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3">
             <Search className="size-4 text-[var(--app-muted)]" />
             <input
               type="search"
@@ -592,7 +592,7 @@ export function WorkoutsPage({
               className={cn(
                 'h-8 shrink-0 rounded-lg px-3 text-xs font-medium transition-colors',
                 exerciseCategoryFilter === 'all'
-                  ? 'bg-violet-500 font-semibold text-white'
+                  ? 'bg-accent-500 font-semibold text-white'
                   : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
               )}
               onClick={() => setExerciseCategoryFilter('all')}
@@ -607,7 +607,7 @@ export function WorkoutsPage({
                 className={cn(
                   'h-8 shrink-0 rounded-lg px-3 text-xs font-medium transition-colors',
                   exerciseCategoryFilter === category.value
-                    ? 'bg-violet-500 font-semibold text-white'
+                    ? 'bg-accent-500 font-semibold text-white'
                     : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
                 )}
                 onClick={() => setExerciseCategoryFilter(category.value)}
@@ -622,7 +622,7 @@ export function WorkoutsPage({
 
     if (tab === 'programs') {
       return (
-        <label className="flex h-10 w-full items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 focus-within:border-violet-500/45">
+        <label className="focus-within:border-accent-500/45 flex h-10 w-full items-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3">
           <Search className="size-4 text-[var(--app-muted)]" />
           <input
             type="search"
@@ -657,7 +657,7 @@ export function WorkoutsPage({
                 className={cn(
                   'inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3.5 text-sm font-medium transition-colors',
                   tab === item.id
-                    ? 'bg-violet-500 font-semibold text-white'
+                    ? 'bg-accent-500 font-semibold text-white'
                     : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
                 )}
                 onClick={() => {
@@ -699,7 +699,7 @@ export function WorkoutsPage({
         <section className="mt-5 space-y-4">
           {filteredSessions.length === 0 ? (
             <div className="flex min-h-72 flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface)] px-6 text-center">
-              <Dumbbell className="size-9 text-violet-300" />
+              <Dumbbell className="text-accent-300 size-9" />
               <h2 className="mt-4 text-lg font-semibold text-[var(--app-text)]">
                 {sessions.length === 0 ? 'Тренировок пока нет' : 'Ничего не найдено'}
               </h2>
@@ -737,7 +737,7 @@ export function WorkoutsPage({
         <section className="mt-5 space-y-6">
           {filteredExercises.length === 0 ? (
             <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface)] px-6 text-center">
-              <Target className="size-8 text-violet-300" />
+              <Target className="text-accent-300 size-8" />
               <h2 className="mt-3 text-lg font-semibold text-[var(--app-text)]">
                 {exercises.length === 0 ? 'Упражнений пока нет' : 'Ничего не найдено'}
               </h2>
@@ -822,7 +822,7 @@ export function WorkoutsPage({
         <section className="mt-5 space-y-4">
           {filteredPrograms.length === 0 ? (
             <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface)] text-center">
-              <FileText className="size-8 text-violet-300" />
+              <FileText className="text-accent-300 size-8" />
               <h2 className="mt-3 text-lg font-semibold text-[var(--app-text)]">
                 Программ пока нет
               </h2>
@@ -839,7 +839,7 @@ export function WorkoutsPage({
                   className="group rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-5 shadow-[var(--app-shadow-card)]"
                 >
                   <div className="flex items-start gap-3">
-                    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-violet-400/15 bg-violet-500/10 text-violet-300">
+                    <span className="border-accent-400/15 bg-accent-500/10 text-accent-300 flex size-10 shrink-0 items-center justify-center rounded-xl border">
                       <FileText className="size-5" />
                     </span>
                     <div className="min-w-0 flex-1">
@@ -857,7 +857,7 @@ export function WorkoutsPage({
                         <button
                           type="button"
                           aria-label={`Открыть карту мышц «${program.name}»`}
-                          className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-violet-500/10 hover:text-violet-300"
+                          className="hover:bg-accent-500/10 hover:text-accent-300 flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)]"
                           onClick={() => {
                             setSelectedProgramForMap(program)
                             setProgramMuscleMapOpen(true)
@@ -1069,7 +1069,7 @@ export function WorkoutsPage({
                           <span className="text-[11px] font-medium text-[var(--app-muted)]">
                             {stat.label}
                           </span>
-                          <Icon className="size-4 text-violet-300" />
+                          <Icon className="text-accent-300 size-4" />
                         </div>
                         <div className="mt-2 text-xl font-semibold text-[var(--app-text)]">
                           {stat.value}
@@ -1085,7 +1085,7 @@ export function WorkoutsPage({
                 <div className="grid gap-4 xl:grid-cols-[1fr_1.25fr]">
                   <section className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-5 shadow-[var(--app-shadow-card)]">
                     <div className="flex items-center gap-2">
-                      <Flame className="size-5 text-violet-300" />
+                      <Flame className="text-accent-300 size-5" />
                       <div>
                         <h2 className="text-sm font-semibold text-[var(--app-text)]">
                           Распределение нагрузки
@@ -1137,7 +1137,7 @@ export function WorkoutsPage({
 
                   <section className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-5 shadow-[var(--app-shadow-card)]">
                     <div className="flex items-center gap-2">
-                      <TrendingUp className="size-5 text-violet-300" />
+                      <TrendingUp className="text-accent-300 size-5" />
                       <div>
                         <h2 className="text-sm font-semibold text-[var(--app-text)]">
                           Динамика нагрузки
@@ -1166,7 +1166,7 @@ export function WorkoutsPage({
                               </span>
                               <div className="h-7 overflow-hidden rounded-lg bg-[var(--app-workspace)]">
                                 <div
-                                  className="flex h-full items-center rounded-lg bg-violet-500/20 px-2 text-[10px] font-medium text-violet-200"
+                                  className="bg-accent-500/20 text-accent-200 flex h-full items-center rounded-lg px-2 text-[10px] font-medium"
                                   style={{
                                     width: `${Math.max(
                                       day.sets > 0 ? 8 : 0,
@@ -1197,7 +1197,7 @@ export function WorkoutsPage({
 
                 <section className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--app-shadow-card)]">
                   <div className="flex items-center gap-2 border-b border-[var(--app-border)] px-5 py-4">
-                    <Target className="size-5 text-violet-300" />
+                    <Target className="text-accent-300 size-5" />
                     <div>
                       <h2 className="text-sm font-semibold text-[var(--app-text)]">
                         По упражнениям
@@ -1237,7 +1237,7 @@ export function WorkoutsPage({
                                     className={cn(
                                       'rounded-lg border px-2 py-0.5 text-[10px] font-semibold',
                                       item.usesExternalWeight
-                                        ? 'border-violet-400/25 bg-violet-500/10 text-violet-200'
+                                        ? 'border-accent-400/25 bg-accent-500/10 text-accent-200'
                                         : 'border-emerald-400/25 bg-emerald-500/10 text-emerald-200'
                                     )}
                                   >
@@ -1352,7 +1352,7 @@ export function WorkoutsPage({
                 <div className="grid gap-4 xl:grid-cols-2">
                   <section className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--app-shadow-card)]">
                     <div className="flex items-center gap-2 border-b border-[var(--app-border)] px-5 py-4">
-                      <FileText className="size-5 text-violet-300" />
+                      <FileText className="text-accent-300 size-5" />
                       <h2 className="text-sm font-semibold text-[var(--app-text)]">
                         По программам
                       </h2>
@@ -1368,7 +1368,7 @@ export function WorkoutsPage({
                             key={item.programId ?? 'custom'}
                             className="flex items-center gap-3 px-5 py-3.5"
                           >
-                            <span className="flex size-9 items-center justify-center rounded-xl bg-violet-500/10 text-violet-300">
+                            <span className="bg-accent-500/10 text-accent-300 flex size-9 items-center justify-center rounded-xl">
                               <FileText className="size-4" />
                             </span>
                             <div className="min-w-0 flex-1">
@@ -1488,7 +1488,7 @@ export function WorkoutsPage({
 
                 <section className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-5 shadow-[var(--app-shadow-card)]">
                   <div className="flex items-center gap-2">
-                    <BarChart3 className="size-5 text-violet-300" />
+                    <BarChart3 className="text-accent-300 size-5" />
                     <h2 className="text-sm font-semibold text-[var(--app-text)]">
                       Средние показатели периода
                     </h2>

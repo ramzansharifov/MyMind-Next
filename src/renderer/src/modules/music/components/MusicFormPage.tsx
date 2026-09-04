@@ -91,7 +91,7 @@ function FieldLabel({ children }: { children: React.ReactNode }): React.JSX.Elem
 }
 
 const inputClassName =
-  'h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm text-[var(--app-text)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--app-muted)]/70 focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15'
+  'h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm text-[var(--app-text)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--app-muted)]/70 focus:border-accent-500/45 focus:ring-2 focus:ring-accent-500/15'
 
 export function MusicFormPage({ item, formId, onSave }: MusicFormPageProps): React.JSX.Element {
   const [draft, setDraft] = useState<MusicDraft>(() => draftFromItem(item))
@@ -155,7 +155,7 @@ export function MusicFormPage({ item, formId, onSave }: MusicFormPageProps): Rea
       <div className="space-y-5">
         <section className="rounded-[24px] border border-[var(--app-border)] bg-[var(--app-surface)] p-6 shadow-[var(--app-shadow-card)]">
           <div className="mb-5 flex items-center gap-3">
-            <span className="flex size-9 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
+            <span className="border-accent-500/15 bg-accent-500/10 text-accent-300 flex size-9 items-center justify-center rounded-xl border">
               <Music2 className="size-4" />
             </span>
             <h2 className="text-sm font-semibold text-[var(--app-text)]">Основная информация</h2>
@@ -193,7 +193,7 @@ export function MusicFormPage({ item, formId, onSave }: MusicFormPageProps): Rea
                   aria-pressed={draft.type === option.value}
                   className={
                     draft.type === option.value
-                      ? 'h-10 rounded-xl border border-violet-400/25 bg-violet-500/15 text-sm font-medium text-violet-200'
+                      ? 'border-accent-400/25 bg-accent-500/15 text-accent-200 h-10 rounded-xl border text-sm font-medium'
                       : 'h-10 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
                   }
                   onClick={() => patch({ type: option.value })}
@@ -272,7 +272,7 @@ export function MusicFormPage({ item, formId, onSave }: MusicFormPageProps): Rea
 
         <section className="rounded-[24px] border border-[var(--app-border)] bg-[var(--app-surface)] p-6 shadow-[var(--app-shadow-card)]">
           <div className="mb-4 flex items-center gap-3">
-            <span className="flex size-9 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
+            <span className="border-accent-500/15 bg-accent-500/10 text-accent-300 flex size-9 items-center justify-center rounded-xl border">
               <Bookmark className="size-4" />
             </span>
             <h2 className="text-sm font-semibold text-[var(--app-text)]">Моя библиотека</h2>
@@ -283,7 +283,7 @@ export function MusicFormPage({ item, formId, onSave }: MusicFormPageProps): Rea
               type="button"
               className={
                 draft.status === 'want_to_listen'
-                  ? 'h-11 rounded-xl border border-violet-400/25 bg-violet-500/15 text-sm font-medium text-violet-200'
+                  ? 'border-accent-400/25 bg-accent-500/15 text-accent-200 h-11 rounded-xl border text-sm font-medium'
                   : 'h-11 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] text-sm text-[var(--app-muted)]'
               }
               onClick={() => patch({ status: 'want_to_listen', rating: '' })}
@@ -338,7 +338,7 @@ export function MusicFormPage({ item, formId, onSave }: MusicFormPageProps): Rea
 
         <section className="rounded-[24px] border border-[var(--app-border)] bg-[var(--app-surface)] p-6 shadow-[var(--app-shadow-card)]">
           <div className="mb-4 flex items-center gap-3">
-            <span className="flex size-9 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
+            <span className="border-accent-500/15 bg-accent-500/10 text-accent-300 flex size-9 items-center justify-center rounded-xl border">
               <Star className="size-4" />
             </span>
             <h2 className="text-sm font-semibold text-[var(--app-text)]">
@@ -351,7 +351,7 @@ export function MusicFormPage({ item, formId, onSave }: MusicFormPageProps): Rea
               value={draft.description}
               rows={5}
               placeholder="Описание релиза или трека…"
-              className="w-full resize-y rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-3.5 text-sm leading-6 text-[var(--app-text)] outline-none focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
+              className="focus:border-accent-500/45 focus:ring-accent-500/15 w-full resize-y rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-3.5 text-sm leading-6 text-[var(--app-text)] outline-none focus:ring-2"
               onChange={(event) => patch({ description: event.target.value })}
             />
           </label>
@@ -361,7 +361,7 @@ export function MusicFormPage({ item, formId, onSave }: MusicFormPageProps): Rea
               value={draft.comments}
               rows={4}
               placeholder="Что хочется запомнить…"
-              className="w-full resize-y rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-3.5 text-sm leading-6 text-[var(--app-text)] outline-none focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
+              className="focus:border-accent-500/45 focus:ring-accent-500/15 w-full resize-y rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-3.5 text-sm leading-6 text-[var(--app-text)] outline-none focus:ring-2"
               onChange={(event) => patch({ comments: event.target.value })}
             />
           </label>
@@ -407,7 +407,7 @@ export function MusicFormPage({ item, formId, onSave }: MusicFormPageProps): Rea
             </span>
           )}
         </div>
-        <div className="mt-4 inline-flex items-center gap-2 rounded-xl bg-violet-500/10 px-3 py-2 text-xs font-medium text-violet-200">
+        <div className="bg-accent-500/10 text-accent-200 mt-4 inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium">
           <Disc3 className="size-4" />
           {draft.status === 'listened' ? 'Прослушано' : 'Хочу послушать'}
         </div>

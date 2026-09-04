@@ -411,7 +411,7 @@ export function CalendarPage(): React.JSX.Element {
         actions={
           <button
             type="button"
-            className="inline-flex h-11 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-400"
+            className="bg-accent-500 hover:bg-accent-400 inline-flex h-11 items-center gap-2 rounded-xl px-4 text-sm font-semibold text-white transition-colors"
             onClick={() => openCreate()}
           >
             <Plus className="size-4" /> Новое событие
@@ -528,9 +528,9 @@ export function CalendarPage(): React.JSX.Element {
                       className={cn(
                         'flex size-7 items-center justify-center rounded-lg text-xs font-semibold transition-colors',
                         isToday
-                          ? 'bg-violet-500 text-white shadow-sm shadow-violet-500/20'
+                          ? 'bg-accent-500 shadow-accent-500/20 text-white shadow-sm'
                           : isSelected
-                            ? 'bg-violet-500/15 text-violet-200'
+                            ? 'bg-accent-500/15 text-accent-200'
                             : inMonth
                               ? 'text-[var(--app-text)]'
                               : 'text-[var(--app-muted)]'
@@ -609,7 +609,7 @@ export function CalendarPage(): React.JSX.Element {
               <button
                 type="button"
                 aria-label={`Добавить событие ${formatOccurrenceDate(selectedDate)}`}
-                className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] transition-colors hover:border-violet-500/30 hover:bg-violet-500/10 hover:text-violet-200"
+                className="hover:border-accent-500/30 hover:bg-accent-500/10 hover:text-accent-200 flex size-9 shrink-0 items-center justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] transition-colors"
                 onClick={() => openCreate(selectedDate)}
               >
                 <Plus className="size-4" />
@@ -636,13 +636,13 @@ export function CalendarPage(): React.JSX.Element {
                         className={cn(
                           'w-full rounded-xl border px-3 py-2.5 text-left transition-colors',
                           active
-                            ? 'border-violet-500/30 bg-violet-500/10'
+                            ? 'border-accent-500/30 bg-accent-500/10'
                             : 'border-[var(--app-border)] bg-[var(--app-workspace)] hover:bg-[var(--app-card-hover)]'
                         )}
                         onClick={() => selectEvent(event)}
                       >
                         <div className="flex items-center gap-2">
-                          <span className="size-2 shrink-0 rounded-full bg-violet-400" />
+                          <span className="bg-accent-400 size-2 shrink-0 rounded-full" />
                           <span className="min-w-0 flex-1 truncate text-sm font-medium text-[var(--app-text)]">
                             {event.title}
                           </span>
@@ -666,7 +666,7 @@ export function CalendarPage(): React.JSX.Element {
               <div className="space-y-4 border-t border-[var(--app-border)] pt-4">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full border border-violet-500/20 bg-violet-500/10 px-2 py-1 text-[10px] font-semibold text-violet-200">
+                    <span className="border-accent-500/20 bg-accent-500/10 text-accent-200 rounded-full border px-2 py-1 text-[10px] font-semibold">
                       {selectedEvent.kind === 'annual' ? 'Ежегодное' : 'Одноразовое'}
                     </span>
                     {selectedEvent.time && (
@@ -684,7 +684,7 @@ export function CalendarPage(): React.JSX.Element {
                 </div>
 
                 {selectedEvent.kind === 'annual' && selectedEvent.startDate && (
-                  <div className="rounded-xl border border-violet-500/15 bg-violet-500/[0.07] p-3">
+                  <div className="border-accent-500/15 bg-accent-500/[0.07] rounded-xl border p-3">
                     <div className="text-[11px] font-medium text-[var(--app-muted)]">
                       Существует с
                     </div>
@@ -692,7 +692,7 @@ export function CalendarPage(): React.JSX.Element {
                       {selectedEvent.startDate.slice(0, 4)} год
                     </div>
                     {elapsedLabel(selectedEvent) && (
-                      <div className="mt-2 text-xs text-violet-200">
+                      <div className="text-accent-200 mt-2 text-xs">
                         Прошло {elapsedLabel(selectedEvent)}
                       </div>
                     )}
@@ -750,8 +750,8 @@ export function CalendarPage(): React.JSX.Element {
               </div>
             ) : (
               <div className="flex min-h-72 flex-col items-center justify-center text-center">
-                <div className="flex size-12 items-center justify-center rounded-2xl border border-violet-500/15 bg-violet-500/8">
-                  <CalendarDays className="size-6 text-violet-300" />
+                <div className="border-accent-500/15 bg-accent-500/8 flex size-12 items-center justify-center rounded-2xl border">
+                  <CalendarDays className="text-accent-300 size-6" />
                 </div>
                 <div className="mt-4 text-sm font-semibold text-[var(--app-text)]">Событий нет</div>
                 <p className="mt-1 max-w-52 text-xs leading-5 text-[var(--app-muted)]">
@@ -759,7 +759,7 @@ export function CalendarPage(): React.JSX.Element {
                 </p>
                 <button
                   type="button"
-                  className="mt-4 inline-flex h-9 items-center gap-2 rounded-xl bg-violet-500 px-3 text-xs font-semibold text-white hover:bg-violet-400"
+                  className="bg-accent-500 hover:bg-accent-400 mt-4 inline-flex h-9 items-center gap-2 rounded-xl px-3 text-xs font-semibold text-white"
                   onClick={() => openCreate(selectedDate)}
                 >
                   <Plus className="size-3.5" /> Добавить событие
@@ -810,7 +810,7 @@ export function CalendarPage(): React.JSX.Element {
               <button
                 type="button"
                 disabled={saving || !editor.title.trim()}
-                className="h-10 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400 disabled:opacity-45"
+                className="bg-accent-500 hover:bg-accent-400 h-10 rounded-xl px-4 text-sm font-semibold text-white disabled:opacity-45"
                 onClick={() => void saveEvent()}
               >
                 Сохранить
@@ -829,7 +829,7 @@ export function CalendarPage(): React.JSX.Element {
                 autoFocus
                 value={editor.title}
                 maxLength={160}
-                className="h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/45"
+                className="focus:border-accent-500/45 h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none"
                 placeholder="Например, годовщина свадьбы"
                 onChange={(event) => setEditor({ ...editor, title: event.target.value })}
               />
@@ -948,7 +948,7 @@ export function CalendarPage(): React.JSX.Element {
             </div>
 
             {editorOccurrence && elapsedLabel(editorOccurrence) && (
-              <div className="rounded-xl border border-violet-500/15 bg-violet-500/8 px-4 py-3">
+              <div className="border-accent-500/15 bg-accent-500/8 rounded-xl border px-4 py-3">
                 <div className="text-xs text-[var(--app-muted)]">Прошло с начала</div>
                 <div className="mt-1 font-semibold text-[var(--app-text)]">
                   {elapsedLabel(editorOccurrence)}
@@ -969,7 +969,7 @@ export function CalendarPage(): React.JSX.Element {
                 value={editor.note}
                 rows={4}
                 maxLength={10_000}
-                className="w-full resize-y rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 py-2.5 text-sm leading-6 text-[var(--app-text)] outline-none focus:border-violet-500/45"
+                className="focus:border-accent-500/45 w-full resize-y rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 py-2.5 text-sm leading-6 text-[var(--app-text)] outline-none"
                 placeholder="Эта заметка не повторится в следующем году"
                 onChange={(event) => setEditor({ ...editor, note: event.target.value })}
               />
@@ -977,7 +977,7 @@ export function CalendarPage(): React.JSX.Element {
 
             <div>
               <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-[var(--app-text)]">
-                <Bell className="size-4 text-violet-300" /> Напоминания
+                <Bell className="text-accent-300 size-4" /> Напоминания
               </div>
               <div className="space-y-2">
                 {editor.reminderOffsets.map((offset) => (

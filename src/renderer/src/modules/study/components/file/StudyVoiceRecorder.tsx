@@ -258,7 +258,7 @@ export function StudyVoiceRecorder({
           className={
             recorderState === 'recording'
               ? 'flex size-14 items-center justify-center rounded-full bg-red-500/15 text-red-300 ring-4 ring-red-500/10'
-              : 'flex size-14 items-center justify-center rounded-full bg-violet-500/10 text-violet-300'
+              : 'bg-accent-500/10 text-accent-300 flex size-14 items-center justify-center rounded-full'
           }
         >
           <Mic aria-hidden="true" className="size-6" />
@@ -300,7 +300,7 @@ export function StudyVoiceRecorder({
             </p>
             <button
               type="button"
-              className="mt-5 inline-flex h-10 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400"
+              className="bg-accent-500 hover:bg-accent-400 mt-5 inline-flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-semibold text-white"
               onClick={() => void startRecording()}
             >
               <Mic aria-hidden="true" className="size-4" /> Начать запись

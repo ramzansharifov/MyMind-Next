@@ -134,7 +134,7 @@ export function NotesPage({
             <button
               type="button"
               disabled={isLoading}
-              className="flex h-11 items-center justify-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 text-sm font-medium text-[var(--app-text)] transition-colors outline-none hover:bg-[var(--app-control-hover)] focus-visible:ring-2 focus-visible:ring-violet-500/35 disabled:cursor-not-allowed disabled:opacity-50"
+              className="focus-visible:ring-accent-500/35 flex h-11 items-center justify-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 text-sm font-medium text-[var(--app-text)] transition-colors outline-none hover:bg-[var(--app-control-hover)] focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-50"
               onClick={() => setCreateGroupOpen(true)}
             >
               <FolderPlus aria-hidden="true" className="size-4" />
@@ -143,7 +143,7 @@ export function NotesPage({
             <button
               type="button"
               disabled={isLoading}
-              className="flex h-11 items-center justify-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-medium text-white transition-colors outline-none hover:bg-violet-400 focus-visible:ring-2 focus-visible:ring-violet-500/35 disabled:cursor-not-allowed disabled:opacity-50"
+              className="bg-accent-500 hover:bg-accent-400 focus-visible:ring-accent-500/35 flex h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-medium text-white transition-colors outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-50"
               onClick={() => {
                 setCreateNoteGroupId(null)
                 setCreateNoteOpen(true)
@@ -176,7 +176,9 @@ export function NotesPage({
               .moveNote({ id: note.id, groupId })
               .then(handleNoteUpdated)
               .catch((reason: unknown) => {
-                setError(reason instanceof Error ? reason.message : 'Не удалось переместить заметку')
+                setError(
+                  reason instanceof Error ? reason.message : 'Не удалось переместить заметку'
+                )
               })
           }}
         />

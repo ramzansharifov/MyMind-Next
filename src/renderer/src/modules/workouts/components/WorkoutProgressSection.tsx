@@ -131,7 +131,7 @@ function BodyWeightChart({
         role="img"
         aria-label="Динамика веса тела"
         viewBox={`0 0 ${width} ${height}`}
-        className="h-44 w-full overflow-visible text-violet-400"
+        className="text-accent-400 h-44 w-full overflow-visible"
         preserveAspectRatio="none"
       >
         <line
@@ -255,7 +255,7 @@ export function WorkoutProgressSection({
     return (
       <section className="mt-5">
         <div className="flex min-h-80 flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface)] px-6 text-center">
-          <TrendingUp className="size-10 text-violet-300" />
+          <TrendingUp className="text-accent-300 size-10" />
           <h2 className="mt-4 text-lg font-semibold text-[var(--app-text)]">
             Начните фиксировать прогресс
           </h2>
@@ -274,7 +274,7 @@ export function WorkoutProgressSection({
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)]">
           <div className="flex items-center gap-2 text-xs font-medium text-[var(--app-muted)]">
-            <Scale className="size-4 text-violet-300" /> Текущий вес
+            <Scale className="text-accent-300 size-4" /> Текущий вес
           </div>
           <div className="mt-2 text-2xl font-semibold text-[var(--app-text)]">
             {latestWeight === null ? '—' : `${formatWeight(latestWeight)} кг`}
@@ -283,7 +283,7 @@ export function WorkoutProgressSection({
         </div>
         <div className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)]">
           <div className="flex items-center gap-2 text-xs font-medium text-[var(--app-muted)]">
-            <TrendingUp className="size-4 text-violet-300" /> Изменение веса
+            <TrendingUp className="text-accent-300 size-4" /> Изменение веса
           </div>
           <div className="mt-2 text-2xl font-semibold text-[var(--app-text)]">
             {weightDelta === null ? '—' : formatDelta(weightDelta)}
@@ -292,14 +292,14 @@ export function WorkoutProgressSection({
         </div>
         <div className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)]">
           <div className="flex items-center gap-2 text-xs font-medium text-[var(--app-muted)]">
-            <CalendarDays className="size-4 text-violet-300" /> Контрольные точки
+            <CalendarDays className="text-accent-300 size-4" /> Контрольные точки
           </div>
           <div className="mt-2 text-2xl font-semibold text-[var(--app-text)]">{entries.length}</div>
           <div className="mt-1 text-xs text-[var(--app-muted)]">Записей прогресса</div>
         </div>
         <div className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)]">
           <div className="flex items-center gap-2 text-xs font-medium text-[var(--app-muted)]">
-            <Images className="size-4 text-violet-300" /> Фотографии
+            <Images className="text-accent-300 size-4" /> Фотографии
           </div>
           <div className="mt-2 text-2xl font-semibold text-[var(--app-text)]">{totalPhotos}</div>
           <div className="mt-1 text-xs text-[var(--app-muted)]">Локально сохранённых снимков</div>
@@ -309,7 +309,7 @@ export function WorkoutProgressSection({
       <div className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
         <section className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-5 shadow-[var(--app-shadow-card)]">
           <div className="flex items-center gap-2">
-            <Scale className="size-5 text-violet-300" />
+            <Scale className="text-accent-300 size-5" />
             <div>
               <h2 className="text-sm font-semibold text-[var(--app-text)]">Динамика веса</h2>
               <p className="mt-0.5 text-xs text-[var(--app-muted)]">
@@ -325,7 +325,7 @@ export function WorkoutProgressSection({
         <section className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-5 shadow-[var(--app-shadow-card)]">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="flex items-center gap-2">
-              <Images className="size-5 text-violet-300" />
+              <Images className="text-accent-300 size-5" />
               <div>
                 <h2 className="text-sm font-semibold text-[var(--app-text)]">
                   Визуальный прогресс
@@ -343,7 +343,7 @@ export function WorkoutProgressSection({
                   aria-pressed={comparisonView === option.value}
                   className={`h-8 rounded-lg px-2.5 text-xs font-medium transition-colors ${
                     comparisonView === option.value
-                      ? 'bg-violet-500/15 text-violet-200'
+                      ? 'bg-accent-500/15 text-accent-200'
                       : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
                   }`}
                   onClick={() => setComparisonView(option.value)}
@@ -376,7 +376,7 @@ export function WorkoutProgressSection({
       </div>
 
       <div className="flex items-center gap-2 pt-1">
-        <TrendingUp className="size-5 text-violet-300" />
+        <TrendingUp className="text-accent-300 size-5" />
         <div>
           <h2 className="text-base font-semibold text-[var(--app-text)]">История прогресса</h2>
           <p className="mt-0.5 text-xs text-[var(--app-muted)]">
@@ -394,7 +394,7 @@ export function WorkoutProgressSection({
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
                     <div className="flex items-center gap-2">
-                      <TrendingUp className="size-5 text-violet-300" />
+                      <TrendingUp className="text-accent-300 size-5" />
                       <h3 className="text-base font-semibold text-[var(--app-text)]">
                         {formatDate(entry.date)}
                       </h3>
@@ -537,7 +537,7 @@ export function WorkoutProgressSection({
                               type="button"
                               aria-label={`Добавить фото ${option.label.toLocaleLowerCase('ru-RU')} за ${formatDate(entry.date)}`}
                               disabled={busy}
-                              className="flex aspect-[4/5] flex-col items-center justify-center rounded-xl border border-dashed border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-center text-[var(--app-muted)] transition-colors hover:border-violet-500/35 hover:bg-violet-500/5 hover:text-violet-200 disabled:opacity-45"
+                              className="hover:border-accent-500/35 hover:bg-accent-500/5 hover:text-accent-200 flex aspect-[4/5] flex-col items-center justify-center rounded-xl border border-dashed border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-center text-[var(--app-muted)] transition-colors disabled:opacity-45"
                               onClick={() => void onImportPhoto(entry.id, option.value)}
                             >
                               <Camera className="size-6" />
@@ -661,7 +661,7 @@ export function WorkoutProgressSection({
                         type="button"
                         aria-label={`Добавить другой ракурс за ${formatDate(entry.date)}`}
                         disabled={busy}
-                        className="flex aspect-[4/5] min-h-28 flex-col items-center justify-center rounded-xl border border-dashed border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-center text-[var(--app-muted)] transition-colors hover:border-violet-500/35 hover:bg-violet-500/5 hover:text-violet-200 disabled:opacity-45"
+                        className="hover:border-accent-500/35 hover:bg-accent-500/5 hover:text-accent-200 flex aspect-[4/5] min-h-28 flex-col items-center justify-center rounded-xl border border-dashed border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-center text-[var(--app-muted)] transition-colors disabled:opacity-45"
                         onClick={() => void onImportPhoto(entry.id, 'custom')}
                       >
                         <Plus className="size-5" />

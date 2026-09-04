@@ -183,7 +183,7 @@ function Timeline({ report }: { report: NutritionReport }): React.JSX.Element {
           <span className="text-xs text-[var(--app-muted)]">{day.date.slice(5)}</span>
           <div className="h-7 overflow-hidden rounded-lg bg-[var(--app-workspace)]">
             <div
-              className="flex h-full items-center rounded-lg bg-violet-500/20 px-2 text-[10px] text-violet-200"
+              className="bg-accent-500/20 text-accent-200 flex h-full items-center rounded-lg px-2 text-[10px]"
               style={{
                 width: `${Math.max(day.nutrients.calories > 0 ? 6 : 0, (day.nutrients.calories / maxCalories) * 100)}%`
               }}
@@ -248,7 +248,7 @@ function ProgressBar({
       </div>
       <div className="h-2 overflow-hidden rounded-full bg-[var(--app-workspace)]">
         <div
-          className="h-full rounded-full bg-violet-400/80"
+          className="bg-accent-400/80 h-full rounded-full"
           style={{ width: `${Math.max(percent > 0 ? 2 : 0, Math.min(100, percent))}%` }}
         />
       </div>
@@ -286,7 +286,7 @@ function Panel({
   return (
     <section className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)]">
       <div className="mb-4 flex items-center gap-2">
-        <Icon className="size-4 text-violet-300" />
+        <Icon className="text-accent-300 size-4" />
         <h2 className="text-sm font-semibold text-[var(--app-text)]">{title}</h2>
       </div>
       {children}

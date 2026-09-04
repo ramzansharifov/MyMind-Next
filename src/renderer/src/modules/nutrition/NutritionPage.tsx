@@ -245,7 +245,7 @@ export function NutritionPage({
     tab === 'today' || tab === 'diary' ? (
       <button
         type="button"
-        className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-400"
+        className="bg-accent-500 hover:bg-accent-400 inline-flex h-10 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold text-white transition-colors"
         onClick={() => setJsonDialogOpen(true)}
       >
         <Braces className="size-4" /> Добавить из JSON
@@ -271,7 +271,7 @@ export function NutritionPage({
                 className={cn(
                   'inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3.5 text-sm font-medium transition-colors',
                   tab === item.id
-                    ? 'bg-violet-500 font-semibold text-white'
+                    ? 'bg-accent-500 font-semibold text-white'
                     : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
                 )}
                 onClick={() => setTab(item.id)}

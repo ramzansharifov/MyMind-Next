@@ -44,7 +44,7 @@ export function TaskDialog({
     const initialGroupExists =
       initialGroupId !== null && groups.some((group) => group.id === initialGroupId)
     const initialGroup = task
-      ? task.groupId ?? NO_GROUP_VALUE
+      ? (task.groupId ?? NO_GROUP_VALUE)
       : initialGroupExists && initialGroupId
         ? initialGroupId
         : NO_GROUP_VALUE
@@ -102,7 +102,7 @@ export function TaskDialog({
             type="submit"
             form={TASK_FORM_ID}
             disabled={busy || !title.trim()}
-            className="h-10 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-45"
+            className="bg-accent-500 hover:bg-accent-400 h-10 rounded-xl px-4 text-sm font-semibold text-white transition-colors disabled:cursor-not-allowed disabled:opacity-45"
           >
             {busy ? 'Сохраняем…' : task ? 'Сохранить' : 'Создать задачу'}
           </button>
@@ -117,7 +117,7 @@ export function TaskDialog({
             value={title}
             maxLength={240}
             placeholder="Что нужно сделать?"
-            className="h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm text-[var(--app-text)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
+            className="focus:border-accent-500/45 focus:ring-accent-500/15 h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm text-[var(--app-text)] transition-[border-color,box-shadow] outline-none placeholder:text-[var(--app-muted)]/60 focus:ring-2"
             onChange={(event) => setTitle(event.target.value)}
           />
         </label>
@@ -150,7 +150,7 @@ export function TaskDialog({
                 aria-pressed={status === option.value}
                 className={
                   status === option.value
-                    ? 'h-9 rounded-lg bg-violet-500 text-sm font-semibold text-white'
+                    ? 'bg-accent-500 h-9 rounded-lg text-sm font-semibold text-white'
                     : 'h-9 rounded-lg text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
                 }
                 onClick={() => setStatus(option.value)}

@@ -70,7 +70,7 @@ export function PasswordDetailDialog({
           </button>
           <button
             type="button"
-            className="inline-flex h-10 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400"
+            className="bg-accent-500 hover:bg-accent-400 inline-flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-semibold text-white"
             onClick={onEdit}
           >
             <Pencil className="size-4" /> Изменить
@@ -155,7 +155,7 @@ export function PasswordDetailDialog({
                 <button
                   type="button"
                   aria-label="Скопировать пароль"
-                  className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-violet-400/20 bg-violet-500/10 text-violet-300 hover:bg-violet-500/15"
+                  className="border-accent-400/20 bg-accent-500/10 text-accent-300 hover:bg-accent-500/15 flex size-9 shrink-0 items-center justify-center rounded-xl border"
                   onClick={() => void onCopy('password')}
                 >
                   <ClipboardCopy className="size-4" />
@@ -170,7 +170,7 @@ export function PasswordDetailDialog({
               className="flex w-full items-center gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 py-3 text-left hover:bg-[var(--app-control-hover)]"
               onClick={() => void onOpenWebsite()}
             >
-              <ExternalLink className="size-4 shrink-0 text-violet-300" />
+              <ExternalLink className="text-accent-300 size-4 shrink-0" />
               <span className="min-w-0 flex-1 truncate text-sm text-[var(--app-text)]">
                 {item.website}
               </span>

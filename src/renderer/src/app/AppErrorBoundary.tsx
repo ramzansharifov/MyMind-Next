@@ -86,7 +86,7 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
           <div className="mt-5 flex flex-wrap justify-center gap-2">
             <button
               type="button"
-              className="rounded-lg bg-violet-500 px-4 py-2 text-sm font-medium text-white"
+              className="bg-accent-500 rounded-lg px-4 py-2 text-sm font-medium text-white"
               onClick={() => {
                 if (lazyImportFailed) {
                   const reload = this.props.reload ?? (() => window.location.reload())

@@ -67,7 +67,7 @@ export function WorkoutSessionCard({
         aria-expanded={expanded}
         aria-controls={detailsId}
         aria-label={`${expanded ? 'Свернуть' : 'Раскрыть'} тренировку «${title}»`}
-        className="flex w-full items-center gap-4 px-4 py-3.5 text-left focus-visible:ring-2 focus-visible:ring-violet-500/35 focus-visible:outline-none focus-visible:ring-inset"
+        className="focus-visible:ring-accent-500/35 flex w-full items-center gap-4 px-4 py-3.5 text-left focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset"
         onClick={() => setExpanded((current) => !current)}
       >
         <div className="min-w-0 flex-1">
@@ -231,7 +231,7 @@ export function WorkoutSessionCard({
                   <button
                     type="button"
                     aria-label={`Посмотреть модель мышц тренировки «${title}»`}
-                    className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] transition-colors hover:bg-violet-500/10 hover:text-violet-300"
+                    className="hover:bg-accent-500/10 hover:text-accent-300 flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] transition-colors"
                     onClick={onOpenMuscleMap}
                   >
                     <Activity className="size-4" aria-hidden="true" />

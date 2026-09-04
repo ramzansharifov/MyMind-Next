@@ -64,12 +64,12 @@ describe('StudyBlockEditor', () => {
     const firstCard = screen.getByDisplayValue('Первый блок').closest('section')
     const secondCard = screen.getByDisplayValue('Второй блок').closest('section')
 
-    expect(firstCard).toHaveClass('border-2', 'border-violet-500/40', 'p-[11px]')
+    expect(firstCard).toHaveClass('border-2', 'border-accent-500/40', 'p-[11px]')
     expect(secondCard).toHaveClass('border', 'border-[var(--app-border)]', 'p-3')
 
     fireEvent.mouseDown(secondCard!)
 
-    expect(secondCard).toHaveClass('border-2', 'border-violet-500/40', 'p-[11px]')
+    expect(secondCard).toHaveClass('border-2', 'border-accent-500/40', 'p-[11px]')
     expect(firstCard).toHaveClass('border', 'border-[var(--app-border)]', 'p-3')
   })
   it('keeps a trailing divider visible when the final heading section is collapsed', () => {

@@ -128,7 +128,7 @@ describe('BoardTree sidebar interactions', () => {
 
     expect(renameItem).toHaveAttribute('data-module-tree-action', 'rename')
     expect(renameItem).toHaveAttribute('data-board-tree-action', 'rename')
-    expect(renameIcon).toHaveClass('text-violet-300')
+    expect(renameIcon).toHaveClass('text-accent-300')
 
     await user.click(renameItem)
     expect(onRename).toHaveBeenCalledWith(folder)

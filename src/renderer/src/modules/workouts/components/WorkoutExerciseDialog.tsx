@@ -93,7 +93,7 @@ export function WorkoutExerciseDialog({
             type="submit"
             form={FORM_ID}
             disabled={busy || !title.trim() || muscleGroups.length === 0}
-            className="h-10 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-45"
+            className="bg-accent-500 hover:bg-accent-400 h-10 rounded-xl px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
           >
             {busy ? 'Сохраняем…' : exercise ? 'Сохранить' : 'Добавить упражнение'}
           </button>
@@ -108,7 +108,7 @@ export function WorkoutExerciseDialog({
             value={title}
             maxLength={160}
             placeholder="Например, Сгибания на бицепс с гантелями"
-            className="h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
+            className="focus:border-accent-500/45 focus:ring-accent-500/15 h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:ring-2"
             onChange={(event) => setTitle(event.target.value)}
           />
         </label>
@@ -123,7 +123,7 @@ export function WorkoutExerciseDialog({
               aria-pressed={usesExternalWeight}
               className={`rounded-2xl border px-4 py-3 text-left transition-colors ${
                 usesExternalWeight
-                  ? 'border-violet-400/35 bg-violet-500/10'
+                  ? 'border-accent-400/35 bg-accent-500/10'
                   : 'border-[var(--app-border)] bg-[var(--app-workspace)] hover:bg-[var(--app-control-hover)]'
               }`}
               onClick={() => setUsesExternalWeight(true)}
@@ -140,7 +140,7 @@ export function WorkoutExerciseDialog({
               aria-pressed={!usesExternalWeight}
               className={`rounded-2xl border px-4 py-3 text-left transition-colors ${
                 !usesExternalWeight
-                  ? 'border-violet-400/35 bg-violet-500/10'
+                  ? 'border-accent-400/35 bg-accent-500/10'
                   : 'border-[var(--app-border)] bg-[var(--app-workspace)] hover:bg-[var(--app-control-hover)]'
               }`}
               onClick={() => setUsesExternalWeight(false)}

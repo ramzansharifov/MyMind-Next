@@ -46,9 +46,9 @@ export function FinanceButton({
       type="button"
       className={cn(
         'inline-flex items-center justify-center gap-2 rounded-xl border text-sm font-medium transition-colors outline-none',
-        'focus-visible:ring-2 focus-visible:ring-violet-500/45 disabled:cursor-not-allowed disabled:opacity-45',
+        'focus-visible:ring-accent-500/45 focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-45',
         size === 'sm' ? 'h-9 px-3' : 'h-11 px-4',
-        tone === 'primary' && 'border-violet-500/30 bg-violet-500 text-white hover:bg-violet-400',
+        tone === 'primary' && 'border-accent-500/30 bg-accent-500 hover:bg-accent-400 text-white',
         tone === 'neutral' &&
           'border-[var(--app-border)] bg-[var(--app-surface-raised)] text-[var(--app-text)] hover:border-[var(--app-border-strong)] hover:bg-[var(--app-control-hover)]',
         tone === 'positive' &&
@@ -90,7 +90,7 @@ export function FinanceLoadingState({
 }): React.JSX.Element {
   return (
     <div className="flex min-h-48 items-center justify-center rounded-2xl border border-dashed border-[var(--app-border)] text-sm text-[var(--app-muted)]">
-      <LoaderCircle aria-hidden="true" className="mr-2 size-5 animate-spin text-violet-300" />
+      <LoaderCircle aria-hidden="true" className="text-accent-300 mr-2 size-5 animate-spin" />
       {label}
     </div>
   )
@@ -131,7 +131,7 @@ export function FinanceEmptyState({
 }): React.JSX.Element {
   return (
     <div className="flex min-h-52 flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--app-border-strong)] bg-[var(--app-overlay-faint)] px-6 py-10 text-center">
-      <div className="flex size-12 items-center justify-center rounded-2xl bg-violet-500/10 text-violet-300 ring-1 ring-violet-500/15 ring-inset">
+      <div className="bg-accent-500/10 text-accent-300 ring-accent-500/15 flex size-12 items-center justify-center rounded-2xl ring-1 ring-inset">
         {icon}
       </div>
       <h3 className="mt-4 text-base font-semibold text-[var(--app-text)]">{title}</h3>
@@ -157,7 +157,7 @@ export function FinanceSkeletonGrid({ count = 4 }: { count?: number }): React.JS
 export const financeInputClassName = cn(
   'h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3',
   'text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60',
-  'focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/10',
+  'focus:border-accent-500/45 focus:ring-2 focus:ring-accent-500/10',
   'disabled:cursor-not-allowed disabled:opacity-50'
 )
 

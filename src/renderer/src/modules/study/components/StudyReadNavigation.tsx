@@ -175,7 +175,7 @@ export function StudyReadNavigation({
         className="flex max-h-[calc(100vh-12rem)] min-h-40 flex-col overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] max-[1180px]:max-h-64"
       >
         <header className="flex shrink-0 items-center gap-3 border-b border-[var(--app-border)] px-4 py-3.5">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-300">
+          <div className="bg-accent-500/10 text-accent-300 flex size-8 shrink-0 items-center justify-center rounded-lg">
             <ListTree aria-hidden="true" className="size-4" />
           </div>
 
@@ -206,12 +206,12 @@ export function StudyReadNavigation({
                       className={cn(
                         'group relative flex min-h-9 w-full min-w-0 items-center gap-2 rounded-lg pr-2 text-left outline-none',
                         'transition-colors',
-                        'focus-visible:ring-2 focus-visible:ring-violet-500/35',
+                        'focus-visible:ring-accent-500/35 focus-visible:ring-2',
                         heading.level === 1 && 'pl-3',
                         heading.level === 2 && 'pl-6',
                         heading.level === 3 && 'pl-9',
                         isActive
-                          ? 'bg-violet-500/12 text-violet-200'
+                          ? 'bg-accent-500/12 text-accent-200'
                           : 'text-[var(--app-muted)] hover:bg-white/[0.04] hover:text-[var(--app-text)]'
                       )}
                       onClick={() => {
@@ -222,14 +222,14 @@ export function StudyReadNavigation({
                         aria-hidden="true"
                         className={cn(
                           'absolute top-2 bottom-2 left-1 w-0.5 rounded-full transition-colors',
-                          isActive ? 'bg-violet-400' : 'bg-transparent'
+                          isActive ? 'bg-accent-400' : 'bg-transparent'
                         )}
                       />
 
                       <span
                         className={cn(
                           'w-5 shrink-0 text-[9px] font-semibold tracking-wide',
-                          isActive ? 'text-violet-300' : 'text-[var(--app-muted)]/65'
+                          isActive ? 'text-accent-300' : 'text-[var(--app-muted)]/65'
                         )}
                       >
                         H{heading.level}

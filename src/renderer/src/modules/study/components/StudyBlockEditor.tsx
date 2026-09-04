@@ -567,8 +567,8 @@ function BlockInsertMenu({
                 'mx-2 flex size-6 shrink-0 items-center justify-center rounded-full',
                 'text-[var(--app-muted)] outline-none',
                 'transition-[opacity,transform,background-color,color] duration-150',
-                'hover:bg-violet-500/15 hover:text-violet-200',
-                'focus-visible:ring-2 focus-visible:ring-violet-500/35',
+                'hover:bg-accent-500/15 hover:text-accent-200',
+                'focus-visible:ring-accent-500/35 focus-visible:ring-2',
                 open || persistent
                   ? 'scale-100 opacity-100'
                   : 'scale-75 opacity-0 group-focus-within/insert:scale-100 group-focus-within/insert:opacity-100 group-hover/insert:scale-100 group-hover/insert:opacity-100'
@@ -777,9 +777,9 @@ function StudyBlockDropIndicator({
         position === 'before' ? '-top-1' : '-bottom-1'
       )}
     >
-      <span className="size-2 shrink-0 rounded-full bg-violet-400 shadow-[0_0_0_3px_rgb(139_92_246/0.16)]" />
+      <span className="bg-accent-400 size-2 shrink-0 rounded-full shadow-[0_0_0_3px_color-mix(in_srgb,var(--app-accent-500)_16%,transparent)]" />
 
-      <span className="h-0.5 flex-1 rounded-full bg-violet-400 shadow-[0_0_12px_rgb(139_92_246/0.45)]" />
+      <span className="bg-accent-400 h-0.5 flex-1 rounded-full shadow-[0_0_12px_color-mix(in_srgb,var(--app-accent-500)_45%,transparent)]" />
     </span>
   )
 }
@@ -792,8 +792,8 @@ function StudyBlockDragOverlay({
   label: string
 }): React.JSX.Element {
   return (
-    <div className="flex h-11 max-w-72 items-center gap-3 rounded-xl border border-violet-500/45 bg-[var(--app-surface-raised)] px-3 text-sm text-[var(--app-text)] shadow-2xl shadow-black/35">
-      <GripVertical aria-hidden="true" className="size-4 shrink-0 text-violet-300" />
+    <div className="border-accent-500/45 flex h-11 max-w-72 items-center gap-3 rounded-xl border bg-[var(--app-surface-raised)] px-3 text-sm text-[var(--app-text)] shadow-2xl shadow-black/35">
+      <GripVertical aria-hidden="true" className="text-accent-300 size-4 shrink-0" />
 
       <StudyBlockTypeIcon type={block.type} className="size-4 shrink-0 text-[var(--app-muted)]" />
 
@@ -851,7 +851,7 @@ function StudyBlockCard({
           'group rounded-xl bg-[var(--app-surface)] transition-[border-color,box-shadow]',
           isDragging && 'shadow-none',
           isActive
-            ? 'border-2 border-violet-500/40 p-[11px]'
+            ? 'border-accent-500/40 border-2 p-[11px]'
             : 'border border-[var(--app-border)] p-3 hover:border-[var(--app-border-strong)]'
         )}
         onMouseDown={onActivate}
@@ -866,9 +866,9 @@ function StudyBlockCard({
                 'flex size-7 shrink-0 touch-none items-center justify-center rounded-md',
                 'text-[var(--app-muted)] outline-none',
                 'cursor-grab transition-colors',
-                'hover:bg-white/[0.06] hover:text-violet-300',
+                'hover:text-accent-300 hover:bg-white/[0.06]',
                 'active:cursor-grabbing',
-                'focus-visible:ring-2 focus-visible:ring-violet-500/35',
+                'focus-visible:ring-accent-500/35 focus-visible:ring-2',
                 'disabled:cursor-default disabled:opacity-25'
               )}
               {...dragHandleAttributes}
@@ -892,7 +892,7 @@ function StudyBlockCard({
                   'text-[var(--app-muted)] outline-none',
                   'transition-colors',
                   'hover:bg-white/[0.06] hover:text-[var(--app-text)]',
-                  'focus-visible:ring-2 focus-visible:ring-violet-500/35'
+                  'focus-visible:ring-accent-500/35 focus-visible:ring-2'
                 )}
               >
                 <ChevronRight
@@ -1430,7 +1430,7 @@ function StudyReadSection({
               'text-left outline-none',
               'transition-colors duration-150',
               hasContent && 'hover:bg-white/[0.025]',
-              'focus-visible:ring-2 focus-visible:ring-violet-500/35',
+              'focus-visible:ring-accent-500/35 focus-visible:ring-2',
               !hasContent && 'cursor-default'
             )}
           >

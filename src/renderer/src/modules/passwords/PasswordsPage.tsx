@@ -102,16 +102,16 @@ function VaultGate({
       <section className="relative isolate w-full max-w-xl overflow-hidden rounded-[28px] border border-[var(--app-border)] bg-[var(--app-surface)] p-7 shadow-[var(--app-shadow-card)]">
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute -top-28 right-0 -z-10 size-72 rounded-full bg-violet-500/12 blur-3xl"
+          className="bg-accent-500/12 pointer-events-none absolute -top-28 right-0 -z-10 size-72 rounded-full blur-3xl"
         />
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute -bottom-36 -left-20 -z-10 size-72 rounded-full bg-violet-900/10 blur-3xl"
+          className="bg-accent-900/10 pointer-events-none absolute -bottom-36 -left-20 -z-10 size-72 rounded-full blur-3xl"
         />
 
         {initialized ? (
           <div className="flex items-center gap-4">
-            <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl border border-violet-500/20 bg-violet-500/10 text-violet-300 shadow-inner shadow-violet-500/5">
+            <span className="border-accent-500/20 bg-accent-500/10 text-accent-300 shadow-accent-500/5 flex size-14 shrink-0 items-center justify-center rounded-2xl border shadow-inner">
               <LockKeyhole className="size-7" />
             </span>
             <h1 className="text-2xl font-semibold tracking-tight text-[var(--app-text)]">
@@ -120,7 +120,7 @@ function VaultGate({
           </div>
         ) : (
           <>
-            <span className="flex size-14 items-center justify-center rounded-2xl border border-violet-500/20 bg-violet-500/10 text-violet-300 shadow-inner shadow-violet-500/5">
+            <span className="border-accent-500/20 bg-accent-500/10 text-accent-300 shadow-accent-500/5 flex size-14 items-center justify-center rounded-2xl border shadow-inner">
               <ShieldCheck className="size-7" />
             </span>
             <h1 className="mt-5 text-2xl font-semibold tracking-tight text-[var(--app-text)]">
@@ -150,7 +150,7 @@ function VaultGate({
               maxLength={256}
               autoComplete={initialized ? 'current-password' : 'new-password'}
               placeholder={initialized ? 'Введите мастер-пароль' : 'Минимум 12 символов'}
-              className="h-12 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
+              className="focus:border-accent-500/45 focus:ring-accent-500/15 h-12 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:ring-2"
               onChange={(event) => setPassword(event.target.value)}
             />
           </label>
@@ -164,7 +164,7 @@ function VaultGate({
                 type="password"
                 value={confirmation}
                 autoComplete="new-password"
-                className="h-12 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
+                className="focus:border-accent-500/45 focus:ring-accent-500/15 h-12 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 text-sm text-[var(--app-text)] outline-none focus:ring-2"
                 onChange={(event) => setConfirmation(event.target.value)}
               />
               {confirmation && password !== confirmation && (
@@ -192,7 +192,7 @@ function VaultGate({
           <button
             type="submit"
             disabled={busy || (initialized ? !unlockValid : !setupValid)}
-            className="h-11 w-full rounded-xl bg-violet-500 text-sm font-semibold text-white transition-colors hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-45"
+            className="bg-accent-500 hover:bg-accent-400 h-11 w-full rounded-xl text-sm font-semibold text-white transition-colors disabled:cursor-not-allowed disabled:opacity-45"
           >
             {busy ? 'Проверяем…' : initialized ? 'Разблокировать' : 'Создать хранилище'}
           </button>
@@ -597,7 +597,7 @@ export function PasswordsPage({
             </button>
             <button
               type="button"
-              className="inline-flex h-11 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400"
+              className="bg-accent-500 hover:bg-accent-400 inline-flex h-11 items-center gap-2 rounded-xl px-4 text-sm font-semibold text-white"
               onClick={() => {
                 setEditingItem(null)
                 setItemDialogOpen(true)
@@ -617,7 +617,7 @@ export function PasswordsPage({
           )}
         >
           {view !== 'security' && (
-            <label className="flex h-12 min-w-0 items-center gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 focus-within:border-violet-500/45 focus-within:bg-[var(--app-surface)] focus-within:ring-2 focus-within:ring-violet-500/10">
+            <label className="focus-within:border-accent-500/45 focus-within:ring-accent-500/10 flex h-12 min-w-0 items-center gap-3 rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 focus-within:bg-[var(--app-surface)] focus-within:ring-2">
               <Search className="size-4 shrink-0 text-[var(--app-muted)]" />
               <input
                 value={query}
@@ -670,7 +670,7 @@ export function PasswordsPage({
                     aria-selected={view === tab.id}
                     className={
                       view === tab.id
-                        ? 'inline-flex h-9 shrink-0 items-center gap-2 rounded-xl bg-violet-500 px-3.5 text-sm font-semibold text-white'
+                        ? 'bg-accent-500 inline-flex h-9 shrink-0 items-center gap-2 rounded-xl px-3.5 text-sm font-semibold text-white'
                         : 'inline-flex h-9 shrink-0 items-center gap-2 rounded-xl px-3.5 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
                     }
                     onClick={() => setView(tab.id)}
@@ -690,14 +690,14 @@ export function PasswordsPage({
                     aria-label="Фильтры хранилища"
                     className={
                       activeLibraryFilterCount > 0
-                        ? 'inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-2xl border border-violet-400/30 bg-violet-500/10 px-4 text-sm font-semibold text-violet-200 transition-colors hover:bg-violet-500/15'
+                        ? 'border-accent-400/30 bg-accent-500/10 text-accent-200 hover:bg-accent-500/15 inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-semibold transition-colors'
                         : 'inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
                     }
                   >
                     <SlidersHorizontal className="size-4" />
                     Фильтры
                     {activeLibraryFilterCount > 0 && (
-                      <span className="flex min-w-5 items-center justify-center rounded-md bg-violet-400/15 px-1.5 text-[11px] text-violet-100">
+                      <span className="bg-accent-400/15 text-accent-100 flex min-w-5 items-center justify-center rounded-md px-1.5 text-[11px]">
                         {activeLibraryFilterCount}
                       </span>
                     )}
@@ -832,7 +832,7 @@ export function PasswordsPage({
               className={cn(
                 'flex h-10 w-full items-center gap-2 rounded-xl px-3 text-sm',
                 groupFilter === 'all'
-                  ? 'bg-violet-500/12 font-semibold text-violet-200'
+                  ? 'bg-accent-500/12 text-accent-200 font-semibold'
                   : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
               )}
               onClick={() => setGroupFilter('all')}
@@ -846,7 +846,7 @@ export function PasswordsPage({
               className={cn(
                 'flex h-10 w-full items-center gap-2 rounded-xl px-3 text-sm',
                 groupFilter === 'ungrouped'
-                  ? 'bg-violet-500/12 font-semibold text-violet-200'
+                  ? 'bg-accent-500/12 text-accent-200 font-semibold'
                   : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
               )}
               onClick={() => setGroupFilter('ungrouped')}
@@ -932,7 +932,7 @@ export function PasswordsPage({
             <>
               {baseFilteredItems.length === 0 ? (
                 <div className="flex min-h-72 flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface)] px-6 text-center">
-                  <span className="flex size-14 items-center justify-center rounded-2xl border border-violet-500/15 bg-violet-500/10 text-violet-300">
+                  <span className="border-accent-500/15 bg-accent-500/10 text-accent-300 flex size-14 items-center justify-center rounded-2xl border">
                     <KeyRound className="size-7" />
                   </span>
                   <h2 className="mt-4 text-lg font-semibold text-[var(--app-text)]">
@@ -946,7 +946,7 @@ export function PasswordsPage({
                   {items.length === 0 && (
                     <button
                       type="button"
-                      className="mt-5 inline-flex h-10 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400"
+                      className="bg-accent-500 hover:bg-accent-400 mt-5 inline-flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-semibold text-white"
                       onClick={() => {
                         setEditingItem(null)
                         setItemDialogOpen(true)
@@ -970,7 +970,7 @@ export function PasswordsPage({
                             <button
                               type="button"
                               aria-label={`Открыть ${item.title}`}
-                              className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-violet-400/15 bg-violet-500/10 text-violet-300"
+                              className="border-accent-400/15 bg-accent-500/10 text-accent-300 flex size-10 shrink-0 items-center justify-center rounded-xl border"
                               onClick={() => void openItem(item.id)}
                             >
                               {item.type === 'login' ? (
@@ -1051,7 +1051,7 @@ export function PasswordsPage({
                                 <button
                                   type="button"
                                   aria-label={`Скопировать логин «${item.title}»`}
-                                  className="flex size-8 items-center justify-center rounded-lg text-violet-300 hover:bg-[var(--app-control)]"
+                                  className="text-accent-300 flex size-8 items-center justify-center rounded-lg hover:bg-[var(--app-control)]"
                                   onClick={() => void copyField(item.id, 'username')}
                                 >
                                   <UserRound className="size-3.5" />
@@ -1062,7 +1062,7 @@ export function PasswordsPage({
                               <button
                                 type="button"
                                 aria-label={`Скопировать пароль «${item.title}»`}
-                                className="flex size-8 items-center justify-center rounded-lg text-violet-300 hover:bg-violet-500/10"
+                                className="text-accent-300 hover:bg-accent-500/10 flex size-8 items-center justify-center rounded-lg"
                                 onClick={() => void copyField(item.id, 'password')}
                               >
                                 <ClipboardCopy className="size-3.5" />
@@ -1104,7 +1104,7 @@ export function PasswordsPage({
                     label: 'Всего',
                     value: securityStats.total,
                     icon: KeyRound,
-                    tone: 'text-violet-300'
+                    tone: 'text-accent-300'
                   },
                   {
                     label: 'Слабые',
@@ -1170,7 +1170,7 @@ export function PasswordsPage({
 
               <div className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--app-shadow-card)]">
                 <div className="flex items-center gap-2 border-b border-[var(--app-border)] px-4 py-3">
-                  <ShieldAlert className="size-4 text-violet-300" />
+                  <ShieldAlert className="text-accent-300 size-4" />
                   <h2 className="text-sm font-semibold text-[var(--app-text)]">Требуют внимания</h2>
                   <span className="ml-auto rounded-lg bg-[var(--app-control)] px-2 py-0.5 text-xs text-[var(--app-muted)]">
                     {groupScopedItems.filter((item) => item.securityIssues.length > 0).length}

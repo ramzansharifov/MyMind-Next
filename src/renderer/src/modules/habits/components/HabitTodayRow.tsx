@@ -116,7 +116,7 @@ export function HabitTodayRow({
                 ? 'border-emerald-400/35 bg-emerald-500/15 text-emerald-300'
                 : skipped
                   ? 'border-amber-400/30 bg-amber-500/10 text-amber-300'
-                  : 'border-violet-400/20 bg-violet-500/10 text-violet-300'
+                  : 'border-accent-400/20 bg-accent-500/10 text-accent-300'
             )}
             initial={false}
             animate={{ scale: completed ? 1 : 0.96 }}
@@ -202,7 +202,7 @@ export function HabitTodayRow({
                 </div>
 
                 <div className="flex items-center gap-3 rounded-xl bg-[var(--app-control)] px-3 py-2.5">
-                  <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-violet-400/20 bg-violet-500/10 text-violet-200">
+                  <span className="border-accent-400/20 bg-accent-500/10 text-accent-200 flex size-8 shrink-0 items-center justify-center rounded-lg border">
                     <Repeat2 className="size-4" />
                   </span>
                   <div>
@@ -242,7 +242,7 @@ export function HabitTodayRow({
 
                 {habit.remindersEnabled && habit.preferredTimes.length > 0 && (
                   <div className="flex items-center gap-3 rounded-xl bg-[var(--app-control)] px-3 py-2.5">
-                    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-violet-400/20 bg-violet-500/10 text-violet-200">
+                    <span className="border-accent-400/20 bg-accent-500/10 text-accent-200 flex size-8 shrink-0 items-center justify-center rounded-lg border">
                       <Bell className="size-4" />
                     </span>
                     <div className="min-w-0 flex-1">
@@ -290,7 +290,7 @@ export function HabitTodayRow({
                               type="button"
                               aria-label={`Увеличить прогресс «${habit.title}»`}
                               disabled={busy || completed}
-                              className="flex size-7 items-center justify-center rounded-md text-violet-300 transition-colors hover:bg-violet-500/10 disabled:opacity-30"
+                              className="text-accent-300 hover:bg-accent-500/10 flex size-7 items-center justify-center rounded-md transition-colors disabled:opacity-30"
                               onClick={() => void onAdvance()}
                             >
                               <Plus className="size-3.5" />
@@ -371,7 +371,7 @@ export function HabitTodayRow({
             aria-hidden="true"
             className={cn(
               'h-full origin-left',
-              completed ? 'bg-emerald-400/70' : 'bg-violet-400/60'
+              completed ? 'bg-emerald-400/70' : 'bg-accent-400/60'
             )}
             initial={false}
             animate={{ scaleX: Math.max(0, Math.min(1, progress)) }}

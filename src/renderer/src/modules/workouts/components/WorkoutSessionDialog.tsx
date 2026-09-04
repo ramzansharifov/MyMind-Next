@@ -204,7 +204,7 @@ export function WorkoutSessionDialog({
             type="submit"
             form={FORM_ID}
             disabled={busy || !valid || !date}
-            className="h-10 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-45"
+            className="bg-accent-500 hover:bg-accent-400 h-10 rounded-xl px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
           >
             {busy ? 'Сохраняем…' : session ? 'Сохранить' : 'Добавить тренировку'}
           </button>
@@ -237,7 +237,7 @@ export function WorkoutSessionDialog({
               max={1440}
               value={duration}
               placeholder="Например, 70"
-              className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45"
+              className="focus:border-accent-500/45 h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60"
               onChange={(event) => setDuration(event.target.value)}
             />
           </label>
@@ -247,7 +247,7 @@ export function WorkoutSessionDialog({
               value={comment}
               maxLength={10000}
               placeholder="Самочувствие во время тренировки, заметки…"
-              className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45"
+              className="focus:border-accent-500/45 h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60"
               onChange={(event) => setComment(event.target.value)}
             />
           </label>
@@ -280,7 +280,7 @@ export function WorkoutSessionDialog({
             <button
               type="button"
               disabled={exerciseToAdd === NONE}
-              className="inline-flex h-10 items-center gap-2 rounded-xl border border-violet-400/20 bg-violet-500/10 px-3.5 text-sm font-semibold text-violet-200 hover:bg-violet-500/15 disabled:opacity-40"
+              className="border-accent-400/20 bg-accent-500/10 text-accent-200 hover:bg-accent-500/15 inline-flex h-10 items-center gap-2 rounded-xl border px-3.5 text-sm font-semibold disabled:opacity-40"
               onClick={addExercise}
             >
               <Plus className="size-4" /> Добавить
@@ -308,7 +308,7 @@ export function WorkoutSessionDialog({
                         className="size-11 shrink-0 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] p-0.5"
                       />
                     ) : (
-                      <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-violet-400/15 bg-violet-500/10 text-violet-300">
+                      <span className="border-accent-400/15 bg-accent-500/10 text-accent-300 flex size-9 shrink-0 items-center justify-center rounded-xl border">
                         <Dumbbell className="size-4" />
                       </span>
                     )}
@@ -371,7 +371,7 @@ export function WorkoutSessionDialog({
                             min={1}
                             value={set.reps}
                             aria-label={`Повторения, подход ${setIndex + 1}`}
-                            className="h-9 rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] px-2.5 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/45"
+                            className="focus:border-accent-500/45 h-9 rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] px-2.5 text-sm text-[var(--app-text)] outline-none"
                             onChange={(event) =>
                               updateSet(exerciseIndex, setIndex, { reps: event.target.value })
                             }
@@ -384,7 +384,7 @@ export function WorkoutSessionDialog({
                               value={set.weightKg}
                               placeholder="0"
                               aria-label={`Вес, подход ${setIndex + 1}`}
-                              className="h-9 rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] px-2.5 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45"
+                              className="focus:border-accent-500/45 h-9 rounded-lg border border-[var(--app-border)] bg-[var(--app-workspace)] px-2.5 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60"
                               onChange={(event) =>
                                 updateSet(exerciseIndex, setIndex, { weightKg: event.target.value })
                               }
@@ -432,7 +432,7 @@ export function WorkoutSessionDialog({
                       value={item.comment}
                       maxLength={4000}
                       placeholder="Комментарий к упражнению…"
-                      className="h-9 min-w-[220px] flex-1 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-xs text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:border-violet-500/45"
+                      className="focus:border-accent-500/45 h-9 min-w-[220px] flex-1 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-xs text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60"
                       onChange={(event) =>
                         updateExercise(exerciseIndex, { comment: event.target.value })
                       }

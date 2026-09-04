@@ -71,7 +71,7 @@ export function FinanceTransactionRow({
   return (
     <article className={`group flex items-center gap-3 ${compact ? 'py-3' : 'px-4 py-3.5'}`}>
       <div
-        className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${transaction.type === 'income' ? 'bg-emerald-500/10 text-emerald-300' : transaction.type === 'expense' ? 'bg-red-500/10 text-red-300' : transaction.type === 'transfer' ? 'bg-violet-500/10 text-violet-300' : 'bg-[var(--app-overlay-subtle)] text-[var(--app-muted)]'}`}
+        className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${transaction.type === 'income' ? 'bg-emerald-500/10 text-emerald-300' : transaction.type === 'expense' ? 'bg-red-500/10 text-red-300' : transaction.type === 'transfer' ? 'bg-accent-500/10 text-accent-300' : 'bg-[var(--app-overlay-subtle)] text-[var(--app-muted)]'}`}
       >
         {transaction.tagIconSnapshot &&
         transaction.type !== 'transfer' &&
@@ -123,7 +123,7 @@ export function FinanceTransactionRow({
               <button
                 type="button"
                 aria-label="Действия с операцией"
-                className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] outline-none hover:bg-[var(--app-control-hover)] focus-visible:ring-2 focus-visible:ring-violet-500/35"
+                className="focus-visible:ring-accent-500/35 flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] outline-none hover:bg-[var(--app-control-hover)] focus-visible:ring-2"
               >
                 <MoreHorizontal className="size-4" />
               </button>

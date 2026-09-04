@@ -25,8 +25,8 @@ function errorMessage(reason: unknown): string {
 function heatClass(scheduled: number, rate: number, missed: number): string {
   if (scheduled === 0) return 'bg-[var(--app-control)]'
   if (rate >= 100) return 'bg-emerald-400/80'
-  if (rate >= 75) return 'bg-violet-400/70'
-  if (rate >= 50) return 'bg-violet-400/45'
+  if (rate >= 75) return 'bg-accent-400/70'
+  if (rate >= 50) return 'bg-accent-400/45'
   if (rate > 0) return 'bg-amber-400/45'
   if (missed > 0) return 'bg-rose-400/45'
   return 'bg-[var(--app-control-hover)]'
@@ -157,7 +157,7 @@ export function HabitReports({
                 value: `${report.summary.completionRate}%`,
                 detail: `${report.summary.completed} из ${report.summary.completed + report.summary.missed}`,
                 icon: BarChart3,
-                tone: 'text-violet-300'
+                tone: 'text-accent-300'
               },
               {
                 label: 'Выполнено',
@@ -240,7 +240,7 @@ export function HabitReports({
 
           <section className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--app-shadow-card)]">
             <div className="flex items-center gap-2 border-b border-[var(--app-border)] px-4 py-3">
-              <Flame className="size-4 text-violet-300" />
+              <Flame className="text-accent-300 size-4" />
               <h2 className="text-sm font-semibold text-[var(--app-text)]">По привычкам</h2>
               <span className="ml-auto rounded-lg bg-[var(--app-control)] px-2 py-0.5 text-xs text-[var(--app-muted)]">
                 {report.habits.length}
@@ -266,13 +266,13 @@ export function HabitReports({
                                 {groupName}
                               </span>
                             )}
-                            <span className="rounded-lg border border-violet-400/20 bg-violet-500/10 px-2 py-0.5 text-[11px] text-violet-200">
+                            <span className="border-accent-400/20 bg-accent-500/10 text-accent-200 rounded-lg border px-2 py-0.5 text-[11px]">
                               {habitScheduleLabel(habit)}
                             </span>
                           </div>
                           <div className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--app-control)]">
                             <div
-                              className="h-full rounded-full bg-violet-400 transition-[width]"
+                              className="bg-accent-400 h-full rounded-full transition-[width]"
                               style={{ width: `${habit.completionRate}%` }}
                             />
                           </div>

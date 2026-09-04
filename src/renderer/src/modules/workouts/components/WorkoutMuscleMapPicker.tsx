@@ -64,10 +64,10 @@ function MuscleZoneCard({
       aria-label={`${selected ? 'Убрать' : 'Выбрать'}: ${label}`}
       className={cn(
         'group relative flex min-h-[190px] flex-col items-center overflow-hidden rounded-2xl border p-2.5 text-center transition-all duration-200 outline-none',
-        'focus-visible:ring-2 focus-visible:ring-violet-400/55 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--app-workspace)]',
+        'focus-visible:ring-accent-400/55 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--app-workspace)]',
         selected
-          ? 'border-violet-400/45 bg-violet-500/[0.09] shadow-[0_10px_28px_rgba(0,0,0,0.14)]'
-          : 'border-[var(--app-border)] bg-[var(--app-workspace)] hover:-translate-y-0.5 hover:border-violet-400/30 hover:bg-[var(--app-control)]'
+          ? 'border-accent-400/45 bg-accent-500/[0.09] shadow-[0_10px_28px_rgba(0,0,0,0.14)]'
+          : 'hover:border-accent-400/30 border-[var(--app-border)] bg-[var(--app-workspace)] hover:-translate-y-0.5 hover:bg-[var(--app-control)]'
       )}
       onClick={() => onToggle(zone)}
     >
@@ -75,8 +75,8 @@ function MuscleZoneCard({
         className={cn(
           'absolute top-2.5 right-2.5 z-10 grid size-6 place-items-center rounded-full border transition-all',
           selected
-            ? 'border-violet-300/45 bg-violet-500 text-white shadow-[0_0_14px_color-mix(in_srgb,var(--app-accent-500)_28%,transparent)]'
-            : 'border-[var(--app-border)] bg-[var(--app-surface)] text-transparent group-hover:border-violet-400/25'
+            ? 'border-accent-300/45 bg-accent-500 text-white shadow-[0_0_14px_color-mix(in_srgb,var(--app-accent-500)_28%,transparent)]'
+            : 'group-hover:border-accent-400/25 border-[var(--app-border)] bg-[var(--app-surface)] text-transparent'
         )}
         aria-hidden="true"
       >
@@ -88,7 +88,7 @@ function MuscleZoneCard({
       <span
         className={cn(
           'mt-1.5 text-[13px] font-semibold transition-colors',
-          selected ? 'text-violet-200' : 'text-[var(--app-text)]'
+          selected ? 'text-accent-200' : 'text-[var(--app-text)]'
         )}
       >
         {label}
@@ -121,7 +121,7 @@ export function WorkoutMuscleMapPicker({
           className={cn(
             'shrink-0 rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold transition-colors',
             value.length > 0
-              ? 'border-violet-400/30 bg-violet-500/10 text-violet-300'
+              ? 'border-accent-400/30 bg-accent-500/10 text-accent-300'
               : 'border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)]'
           )}
         >

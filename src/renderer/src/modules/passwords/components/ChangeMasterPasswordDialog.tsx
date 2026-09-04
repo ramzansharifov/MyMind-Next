@@ -75,7 +75,7 @@ export function ChangeMasterPasswordDialog({
             type="submit"
             form={FORM_ID}
             disabled={busy || !valid}
-            className="h-10 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white hover:bg-violet-400 disabled:opacity-45"
+            className="bg-accent-500 hover:bg-accent-400 h-10 rounded-xl px-4 text-sm font-semibold text-white disabled:opacity-45"
           >
             {busy ? 'Сохраняем…' : 'Сменить пароль'}
           </button>
@@ -90,7 +90,7 @@ export function ChangeMasterPasswordDialog({
             type="password"
             value={currentPassword}
             autoComplete="current-password"
-            className="h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
+            className="focus:border-accent-500/45 focus:ring-accent-500/15 h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm text-[var(--app-text)] outline-none focus:ring-2"
             onChange={(event) => setCurrentPassword(event.target.value)}
           />
         </label>
@@ -102,18 +102,20 @@ export function ChangeMasterPasswordDialog({
             minLength={12}
             maxLength={256}
             autoComplete="new-password"
-            className="h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
+            className="focus:border-accent-500/45 focus:ring-accent-500/15 h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm text-[var(--app-text)] outline-none focus:ring-2"
             onChange={(event) => setNextPassword(event.target.value)}
           />
           <span className="block text-[11px] text-[var(--app-muted)]">Минимум 12 символов.</span>
         </label>
         <label className="block space-y-1.5">
-          <span className="text-xs font-medium text-[var(--app-muted)]">Повторите новый пароль</span>
+          <span className="text-xs font-medium text-[var(--app-muted)]">
+            Повторите новый пароль
+          </span>
           <input
             type="password"
             value={confirmPassword}
             autoComplete="new-password"
-            className="h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm text-[var(--app-text)] outline-none focus:border-violet-500/45 focus:ring-2 focus:ring-violet-500/15"
+            className="focus:border-accent-500/45 focus:ring-accent-500/15 h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm text-[var(--app-text)] outline-none focus:ring-2"
             onChange={(event) => setConfirmPassword(event.target.value)}
           />
         </label>
@@ -122,7 +124,10 @@ export function ChangeMasterPasswordDialog({
           <div className="text-xs text-amber-300">Пароли не совпадают.</div>
         )}
         {error && (
-          <div role="alert" className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+          <div
+            role="alert"
+            className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-300"
+          >
             {error}
           </div>
         )}

@@ -106,7 +106,7 @@ export function DiaryCalendar({
               const today = cell.dayKey === localDayKey()
               const interactiveState = page
                 ? today
-                  ? 'hover:bg-violet-500/[0.15] focus-visible:bg-violet-500/[0.15]'
+                  ? 'hover:bg-accent-500/[0.15] focus-visible:bg-accent-500/[0.15]'
                   : 'hover:bg-[var(--app-control-hover)] focus-visible:bg-[var(--app-control-hover)]'
                 : 'cursor-default'
 
@@ -116,14 +116,14 @@ export function DiaryCalendar({
                   type="button"
                   disabled={!page}
                   aria-current={today ? 'date' : undefined}
-                  className={`relative flex min-h-32 flex-col items-stretch justify-start bg-[var(--app-surface)] p-4 text-left transition-colors outline-none ${interactiveState} ${today ? 'bg-violet-500/[0.10] before:absolute before:inset-x-0 before:top-0 before:h-0.5 before:bg-violet-400/70' : ''} focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-violet-400/55 focus-visible:ring-inset`}
+                  className={`relative flex min-h-32 flex-col items-stretch justify-start bg-[var(--app-surface)] p-4 text-left transition-colors outline-none ${interactiveState} ${today ? 'bg-accent-500/[0.10] before:bg-accent-400/70 before:absolute before:inset-x-0 before:top-0 before:h-0.5' : ''} focus-visible:ring-accent-400/55 focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-inset`}
                   onClick={() => {
                     if (page) onOpenDay(cell.dayKey)
                   }}
                 >
                   <div className="flex w-full shrink-0 items-start justify-between gap-3">
                     <span
-                      className={`text-[24px] leading-none font-semibold tracking-tight ${today ? 'text-violet-100' : 'text-[var(--app-text)]'}`}
+                      className={`text-[24px] leading-none font-semibold tracking-tight ${today ? 'text-accent-100' : 'text-[var(--app-text)]'}`}
                     >
                       {cell.dayNumber}
                     </span>
@@ -131,7 +131,7 @@ export function DiaryCalendar({
                     {page?.mood && (
                       <Tooltip content={diaryMoodMeta[page.mood].label} side="top">
                         <span
-                          className={`flex size-8 items-center justify-center rounded-xl text-xl leading-none ${today ? 'bg-violet-500/10' : 'bg-[var(--app-overlay-faint)]'}`}
+                          className={`flex size-8 items-center justify-center rounded-xl text-xl leading-none ${today ? 'bg-accent-500/10' : 'bg-[var(--app-overlay-faint)]'}`}
                           aria-label={diaryMoodMeta[page.mood].label}
                         >
                           {diaryMoodMeta[page.mood].emoji}
@@ -142,7 +142,7 @@ export function DiaryCalendar({
 
                   {page && (
                     <div
-                      className={`absolute right-4 bottom-4 left-4 text-xs leading-4 font-medium ${today ? 'text-violet-100/70' : 'text-[var(--app-muted)]'}`}
+                      className={`absolute right-4 bottom-4 left-4 text-xs leading-4 font-medium ${today ? 'text-accent-100/70' : 'text-[var(--app-muted)]'}`}
                     >
                       {page.entryCount > 0
                         ? `${page.entryCount} ${entryWord(page.entryCount)}`

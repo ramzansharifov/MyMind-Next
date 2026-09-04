@@ -74,7 +74,7 @@ describe('ModuleTreeDndFeedback', () => {
 
     expect(rootZone).toHaveClass('module-tree-root-drop-zone', 'text-[var(--app-accent-500)]')
     expect(rootZone).not.toHaveClass('border-[var(--app-accent-500)]')
-    expect(rootZone).not.toHaveClass('bg-violet-500/10')
+    expect(rootZone).not.toHaveClass('bg-accent-500/10')
   })
 
   it('shares the study insertion feedback for before, inside, and after placements', () => {
@@ -92,7 +92,7 @@ describe('ModuleTreeDndFeedback', () => {
 
     expect(container.querySelector('[data-module-tree-drop-indicator]')).not.toBeInTheDocument()
     expect(MODULE_TREE_NODE_INSIDE_DROP_CLASS_NAME).toBe(
-      'bg-violet-500/15 ring-1 ring-violet-500/45'
+      'bg-accent-500/15 ring-1 ring-accent-500/45'
     )
   })
 

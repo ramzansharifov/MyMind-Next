@@ -163,9 +163,9 @@ export function StudyMarkdownBlock({
                         'text-xs text-[var(--app-muted)] outline-none',
                         'transition-colors',
                         'hover:bg-white/[0.06] hover:text-[var(--app-text)]',
-                        'focus-visible:ring-2 focus-visible:ring-violet-500/35',
-                        'data-[state=on]:bg-violet-500/15',
-                        'data-[state=on]:text-violet-200'
+                        'focus-visible:ring-accent-500/35 focus-visible:ring-2',
+                        'data-[state=on]:bg-accent-500/15',
+                        'data-[state=on]:text-accent-200'
                       )}
                     >
                       <Icon aria-hidden="true" className="size-3.5" />

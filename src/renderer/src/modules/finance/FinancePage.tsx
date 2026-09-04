@@ -214,7 +214,7 @@ export function FinancePage({
               key={id}
               type="button"
               aria-current={activePage === id ? 'page' : undefined}
-              className={`inline-flex h-10 shrink-0 items-center gap-2 rounded-xl px-4 text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-violet-500/35 ${activePage === id ? 'bg-violet-500 text-white shadow-sm' : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'}`}
+              className={`focus-visible:ring-accent-500/35 inline-flex h-10 shrink-0 items-center gap-2 rounded-xl px-4 text-sm font-medium transition-colors outline-none focus-visible:ring-2 ${activePage === id ? 'bg-accent-500 text-white shadow-sm' : 'text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'}`}
               onClick={() => {
                 setActivePage(id)
                 if (id !== 'accounts') setSelectedAccountId(null)

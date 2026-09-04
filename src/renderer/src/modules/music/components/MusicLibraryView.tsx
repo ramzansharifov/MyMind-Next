@@ -107,13 +107,13 @@ function ActiveFilterChip({
   onRemove: () => void
 }): React.JSX.Element {
   return (
-    <span className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-violet-400/20 bg-violet-500/10 px-2.5 text-xs font-medium text-violet-200">
+    <span className="border-accent-400/20 bg-accent-500/10 text-accent-200 inline-flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-medium">
       {label}
       <Tooltip content={`Убрать фильтр «${label}»`} side="top">
         <button
           type="button"
           aria-label={`Убрать фильтр «${label}»`}
-          className="flex size-5 items-center justify-center rounded-md text-violet-200/70 transition-colors hover:bg-white/[0.08] hover:text-violet-100"
+          className="text-accent-200/70 hover:text-accent-100 flex size-5 items-center justify-center rounded-md transition-colors hover:bg-white/[0.08]"
           onClick={onRemove}
         >
           <X className="size-3" />
@@ -218,14 +218,14 @@ export function MusicLibraryNavigation({
                   aria-label="Фильтры библиотеки"
                   className={
                     activeFilterCount > 0
-                      ? 'inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-2xl border border-violet-400/30 bg-violet-500/10 px-4 text-sm font-semibold text-violet-200 transition-colors hover:bg-violet-500/15'
+                      ? 'border-accent-400/30 bg-accent-500/10 text-accent-200 hover:bg-accent-500/15 inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-semibold transition-colors'
                       : 'inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-2xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 text-sm font-medium text-[var(--app-muted)] transition-colors hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]'
                   }
                 >
                   <SlidersHorizontal className="size-4" />
                   Фильтры
                   {activeFilterCount > 0 && (
-                    <span className="flex min-w-5 items-center justify-center rounded-md bg-violet-400/15 px-1.5 text-[11px] text-violet-100">
+                    <span className="bg-accent-400/15 text-accent-100 flex min-w-5 items-center justify-center rounded-md px-1.5 text-[11px]">
                       {activeFilterCount}
                     </span>
                   )}

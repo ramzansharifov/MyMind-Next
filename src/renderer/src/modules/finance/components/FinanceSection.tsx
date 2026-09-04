@@ -25,7 +25,7 @@ export function FinanceSection({
       )}
     >
       <header className="flex min-h-12 items-center gap-3 border-b border-[var(--app-border)] px-5 py-3 max-[620px]:flex-wrap">
-        <span className="shrink-0 text-violet-300">{icon}</span>
+        <span className="text-accent-300 shrink-0">{icon}</span>
         <h2 className="text-base font-semibold text-[var(--app-text)]">{title}</h2>
         {actions && <div className="ml-auto flex flex-wrap items-center gap-2">{actions}</div>}
       </header>

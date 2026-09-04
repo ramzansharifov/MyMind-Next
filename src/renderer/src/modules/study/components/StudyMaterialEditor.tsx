@@ -41,10 +41,7 @@ import {
 import { StudyActionButton } from './StudyActionButton'
 import { StudyBlockEditor } from './StudyBlockEditor'
 import { StudyCodeWorkspace } from './code-mode/StudyCodeWorkspace'
-import {
-  StudyMaterialPdfExport,
-  waitForStudyMaterialPdfReady
-} from './StudyMaterialPdfExport'
+import { StudyMaterialPdfExport, waitForStudyMaterialPdfReady } from './StudyMaterialPdfExport'
 import { StudyReadNavigation } from './StudyReadNavigation'
 
 type StudyMaterialMode = 'read' | 'edit' | 'code'
@@ -247,10 +244,12 @@ export function StudyMaterialEditor({
                   [
                     {
                       boxShadow: exact
-                        ? '0 0 0 4px rgb(139 92 246 / 35%)'
-                        : '0 0 0 2px rgb(139 92 246 / 30%)'
+                        ? '0 0 0 4px color-mix(in srgb, var(--app-accent-500) 35%, transparent)'
+                        : '0 0 0 2px color-mix(in srgb, var(--app-accent-500) 30%, transparent)'
                     },
-                    { boxShadow: '0 0 0 0 rgb(139 92 246 / 0%)' }
+                    {
+                      boxShadow: '0 0 0 0 color-mix(in srgb, var(--app-accent-500) 0%, transparent)'
+                    }
                   ],
                   { duration: 1400, easing: 'ease-out' }
                 )
@@ -266,7 +265,12 @@ export function StudyMaterialEditor({
                 const top = scrollContainer.scrollTop + targetRect.top - containerRect.top - 24
                 scrollContainer.scrollTo({ top: Math.max(top, 0), behavior: 'smooth' })
                 target.animate(
-                  [{ backgroundColor: 'rgb(139 92 246 / 24%)' }, { backgroundColor: 'transparent' }],
+                  [
+                    {
+                      backgroundColor: 'color-mix(in srgb, var(--app-accent-500) 24%, transparent)'
+                    },
+                    { backgroundColor: 'transparent' }
+                  ],
                   { duration: 1400, easing: 'ease-out' }
                 )
               }
@@ -390,7 +394,7 @@ export function StudyMaterialEditor({
         )}
 
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-semibold tracking-[0.08em] text-violet-300 uppercase">
+          <p className="text-accent-300 text-[11px] font-semibold tracking-[0.08em] uppercase">
             {focusMode ? 'Режим фокуса' : 'Материал'}
           </p>
           <h1 className="mt-1 truncate text-xl font-semibold tracking-tight text-[var(--app-text)]">
@@ -451,20 +455,32 @@ export function StudyMaterialEditor({
         )}
 
         {!focusMode && (
-          <Tabs.Root value={mode} onValueChange={(value) => void requestMode(value as StudyMaterialMode)}>
+          <Tabs.Root
+            value={mode}
+            onValueChange={(value) => void requestMode(value as StudyMaterialMode)}
+          >
             <Tabs.List
               aria-label="Режим материала"
               className="inline-flex rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] p-1"
             >
-              <Tabs.Trigger value="read" className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-[var(--app-muted)] transition-colors outline-none hover:text-[var(--app-text)] data-[state=active]:bg-[var(--app-surface-raised)] data-[state=active]:text-[var(--app-text)]">
+              <Tabs.Trigger
+                value="read"
+                className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-[var(--app-muted)] transition-colors outline-none hover:text-[var(--app-text)] data-[state=active]:bg-[var(--app-surface-raised)] data-[state=active]:text-[var(--app-text)]"
+              >
                 <BookOpen aria-hidden="true" className="size-4" />
                 Чтение
               </Tabs.Trigger>
-              <Tabs.Trigger value="edit" className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-[var(--app-muted)] transition-colors outline-none hover:text-[var(--app-text)] data-[state=active]:bg-[var(--app-surface-raised)] data-[state=active]:text-[var(--app-text)]">
+              <Tabs.Trigger
+                value="edit"
+                className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-[var(--app-muted)] transition-colors outline-none hover:text-[var(--app-text)] data-[state=active]:bg-[var(--app-surface-raised)] data-[state=active]:text-[var(--app-text)]"
+              >
                 <Edit3 aria-hidden="true" className="size-4" />
                 Редактирование
               </Tabs.Trigger>
-              <Tabs.Trigger value="code" className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-[var(--app-muted)] transition-colors outline-none hover:text-[var(--app-text)] data-[state=active]:bg-[var(--app-surface-raised)] data-[state=active]:text-[var(--app-text)]">
+              <Tabs.Trigger
+                value="code"
+                className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-[var(--app-muted)] transition-colors outline-none hover:text-[var(--app-text)] data-[state=active]:bg-[var(--app-surface-raised)] data-[state=active]:text-[var(--app-text)]"
+              >
                 <Braces aria-hidden="true" className="size-4" />
                 Код
               </Tabs.Trigger>
@@ -500,7 +516,11 @@ export function StudyMaterialEditor({
       </header>
 
       {activeMode === 'code' ? (
-        <StudyCodeWorkspace node={node} onApplied={handleCodeApplied} onDirtyChange={setCodeDirty} />
+        <StudyCodeWorkspace
+          node={node}
+          onApplied={handleCodeApplied}
+          onDirtyChange={setCodeDirty}
+        />
       ) : (
         <div
           ref={activeMode === 'read' ? readScrollRef : undefined}
@@ -546,12 +566,16 @@ export function StudyMaterialEditor({
         description="Несохранённый DSL не был применён к материалу."
         footer={
           <>
-            <button type="button" className="rounded-lg px-3 py-2 text-sm text-[var(--app-muted)]" onClick={() => setPendingMode(null)}>
+            <button
+              type="button"
+              className="rounded-lg px-3 py-2 text-sm text-[var(--app-muted)]"
+              onClick={() => setPendingMode(null)}
+            >
               Остаться
             </button>
             <button
               type="button"
-              className="rounded-lg bg-violet-500/15 px-3 py-2 text-sm font-medium text-violet-200"
+              className="bg-accent-500/15 text-accent-200 rounded-lg px-3 py-2 text-sm font-medium"
               onClick={() => {
                 const next = pendingMode
                 setPendingMode(null)
@@ -564,7 +588,9 @@ export function StudyMaterialEditor({
           </>
         }
       >
-        <p className="text-sm text-[var(--app-muted)]">Сохраните DSL, если хотите применить изменения.</p>
+        <p className="text-sm text-[var(--app-muted)]">
+          Сохраните DSL, если хотите применить изменения.
+        </p>
       </AppDialog>
 
       <AppDialog
@@ -577,7 +603,7 @@ export function StudyMaterialEditor({
         footer={
           <button
             type="button"
-            className="rounded-lg bg-violet-500/15 px-3 py-2 text-sm font-medium text-violet-200"
+            className="bg-accent-500/15 text-accent-200 rounded-lg px-3 py-2 text-sm font-medium"
             onClick={() => setPdfExportError(null)}
           >
             Закрыть
@@ -599,7 +625,7 @@ function SaveStatus({
 }): React.JSX.Element {
   if (state === 'saving') {
     return (
-      <span className="flex items-center gap-2 text-xs text-violet-300">
+      <span className="text-accent-300 flex items-center gap-2 text-xs">
         <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
         Сохранение
       </span>

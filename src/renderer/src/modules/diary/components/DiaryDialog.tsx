@@ -103,7 +103,7 @@ export function DiaryDialog({
           <button
             type="button"
             disabled={isSaving || !title.trim()}
-            className="inline-flex items-center gap-2 rounded-lg bg-violet-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-50"
+            className="bg-accent-500 hover:bg-accent-400 inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
             onClick={() => void submit()}
           >
             {isSaving && <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />}
@@ -125,7 +125,7 @@ export function DiaryDialog({
             value={title}
             maxLength={120}
             autoFocus
-            className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-control)] px-3 transition-colors outline-none placeholder:text-[var(--app-muted)] focus:border-violet-500/40 focus:ring-2 focus:ring-violet-500/15"
+            className="focus:border-accent-500/40 focus:ring-accent-500/15 h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-control)] px-3 transition-colors outline-none placeholder:text-[var(--app-muted)] focus:ring-2"
             placeholder="Например, Личный дневник"
             onChange={(event) => setTitle(event.target.value)}
           />
@@ -143,9 +143,9 @@ export function DiaryDialog({
             trigger={
               <button
                 type="button"
-                className="flex h-12 w-full items-center gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-control)] px-3 text-left transition-colors outline-none hover:bg-[var(--app-control-hover)] focus-visible:ring-2 focus-visible:ring-violet-500/30"
+                className="focus-visible:ring-accent-500/30 flex h-12 w-full items-center gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-control)] px-3 text-left transition-colors outline-none hover:bg-[var(--app-control-hover)] focus-visible:ring-2"
               >
-                <span className="flex size-8 items-center justify-center rounded-lg border border-violet-500/15 bg-violet-500/10 text-violet-300">
+                <span className="border-accent-500/15 bg-accent-500/10 text-accent-300 flex size-8 items-center justify-center rounded-lg border">
                   <DiaryIcon name={icon} className="size-4" />
                 </span>
                 <span className="text-sm text-[var(--app-text)]">{iconLabels[icon]}</span>
