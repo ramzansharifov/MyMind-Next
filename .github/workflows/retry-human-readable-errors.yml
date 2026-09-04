@@ -1,0 +1,254 @@
+name: Retry human-readable errors
+
+on:
+  push:
+    branches:
+      - agent/human-readable-errors
+    paths:
+      - .github/workflows/retry-human-readable-errors.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/human-readable-errors
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Apply centralized IPC error normalization
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          helper = r'''export const DEFAULT_USER_ERROR_MESSAGE = 'Не удалось выполнить действие. Попробуйте ещё раз.'
+          export const VALIDATION_USER_ERROR_MESSAGE =
+            'Не удалось обработать данные. Проверьте введённые значения и попробуйте ещё раз.'
+
+          function getRawMessage(reason: unknown): string {
+            if (reason instanceof Error) return reason.message
+            if (typeof reason === 'string') return reason
+            if (
+              typeof reason === 'object' &&
+              reason !== null &&
+              'message' in reason &&
+              typeof (reason as { message?: unknown }).message === 'string'
+            ) {
+              return (reason as { message: string }).message
+            }
+            return ''
+          }
+
+          function stripTechnicalWrappers(value: string): string {
+            let message = value.trim()
+
+            for (let index = 0; index < 6; index += 1) {
+              const previous = message
+              message = message
+                .replace(/^Error invoking remote method\s+(['"`]).+?\1:\s*/i, '')
+                .replace(/^(?:Error|InvokeError|UnhandledPromiseRejection):\s*/i, '')
+                .trim()
+              if (message === previous) break
+            }
+
+            const stackStart = message.search(/\n\s+at\s+/)
+            if (stackStart >= 0) message = message.slice(0, stackStart).trim()
+
+            return message
+          }
+
+          function isValidationDump(message: string): boolean {
+            const lower = message.toLowerCase()
+            if (
+              lower.includes('unrecognized_keys') ||
+              lower.includes('invalid_type') ||
+              lower.includes('invalid_union') ||
+              lower.includes('too_small') ||
+              lower.includes('too_big') ||
+              lower.includes('zoderror')
+            ) {
+              return true
+            }
+
+            return (
+              (message.startsWith('[') || message.startsWith('{')) &&
+              /"(?:code|path|keys|expected|received|validation)"\s*:/.test(message)
+            )
+          }
+
+          function isTechnicalFailure(message: string): boolean {
+            return (
+              /^(?:TypeError|ReferenceError|RangeError|SyntaxError):/i.test(message) ||
+              /\b(?:SQLITE_[A-Z_]+|ENOENT|EACCES|EPERM|ECONNREFUSED|ECONNRESET|ETIMEDOUT|ERR_[A-Z_]+)\b/.test(
+                message
+              ) ||
+              /Cannot read properties of|is not a function|Failed to fetch|NetworkError|fetch failed/i.test(
+                message
+              )
+            )
+          }
+
+          function translateKnownMessage(message: string): string {
+            if (/^invalid master password$/i.test(message)) return 'Неверный мастер-пароль'
+            if (/^vault is locked$/i.test(message)) {
+              return 'Хранилище заблокировано. Введите мастер-пароль.'
+            }
+            if (/^vault is not (?:initialized|configured)$/i.test(message)) {
+              return 'Хранилище ещё не настроено.'
+            }
+            return message
+          }
+
+          export function toFriendlyIpcErrorMessage(reason: unknown): string {
+            const rawMessage = getRawMessage(reason)
+            if (!rawMessage.trim()) return DEFAULT_USER_ERROR_MESSAGE
+
+            const message = stripTechnicalWrappers(rawMessage)
+            if (!message) return DEFAULT_USER_ERROR_MESSAGE
+            if (isValidationDump(message)) return VALIDATION_USER_ERROR_MESSAGE
+            if (isTechnicalFailure(message)) return DEFAULT_USER_ERROR_MESSAGE
+
+            return translateKnownMessage(message)
+          }
+
+          export function toFriendlyIpcError(reason: unknown): Error {
+            return new Error(toFriendlyIpcErrorMessage(reason))
+          }
+          '''
+
+          tests = r'''import { describe, expect, it } from 'vitest'
+
+          import {
+            DEFAULT_USER_ERROR_MESSAGE,
+            VALIDATION_USER_ERROR_MESSAGE,
+            toFriendlyIpcError,
+            toFriendlyIpcErrorMessage
+          } from './friendly-ipc-error'
+
+          describe('toFriendlyIpcErrorMessage', () => {
+            it('removes Electron IPC wrapper and keeps the useful domain message', () => {
+              expect(
+                toFriendlyIpcErrorMessage(
+                  new Error(
+                    "Error invoking remote method 'passwords:unlock-vault': Error: Неверный мастер-пароль"
+                  )
+                )
+              ).toBe('Неверный мастер-пароль')
+            })
+
+            it('removes repeated technical error prefixes', () => {
+              expect(
+                toFriendlyIpcErrorMessage(
+                  "Error invoking remote method 'tasks:update-task': Error: Error: Задача уже удалена"
+                )
+              ).toBe('Задача уже удалена')
+            })
+
+            it('keeps an already human-readable message unchanged', () => {
+              expect(toFriendlyIpcErrorMessage(new Error('Название не может быть пустым'))).toBe(
+                'Название не может быть пустым'
+              )
+            })
+
+            it('turns validation dumps into a concise user message', () => {
+              expect(
+                toFriendlyIpcErrorMessage(
+                  new Error(
+                    "Error invoking remote method 'habits:update-habit': Error: [{\"code\":\"unrecognized_keys\",\"keys\":[\"remindersEnabled\"],\"path\":[]}]"
+                  )
+                )
+              ).toBe(VALIDATION_USER_ERROR_MESSAGE)
+            })
+
+            it('does not expose low-level runtime and database errors', () => {
+              expect(toFriendlyIpcErrorMessage(new Error('SQLITE_BUSY: database is locked'))).toBe(
+                DEFAULT_USER_ERROR_MESSAGE
+              )
+              expect(
+                toFriendlyIpcErrorMessage(new Error("TypeError: Cannot read properties of undefined"))
+              ).toBe(DEFAULT_USER_ERROR_MESSAGE)
+            })
+
+            it('uses a fallback for unknown values', () => {
+              expect(toFriendlyIpcErrorMessage({ nope: true })).toBe(DEFAULT_USER_ERROR_MESSAGE)
+            })
+
+            it('returns a regular Error with the friendly message', () => {
+              const error = toFriendlyIpcError(
+                new Error("Error invoking remote method 'passwords:unlock-vault': Error: Неверный мастер-пароль")
+              )
+              expect(error).toBeInstanceOf(Error)
+              expect(error.message).toBe('Неверный мастер-пароль')
+            })
+          })
+          '''
+
+          Path('src/preload/friendly-ipc-error.ts').write_text(helper, encoding='utf-8')
+          Path('src/preload/friendly-ipc-error.test.ts').write_text(tests, encoding='utf-8')
+
+          index_path = Path('src/preload/index.ts')
+          text = index_path.read_text(encoding='utf-8')
+          import_line = "import { toFriendlyIpcError } from './friendly-ipc-error'\n"
+          shutdown_import = "import { parseShutdownRequest } from './shutdown-request'\n"
+          if import_line not in text:
+              if shutdown_import not in text:
+                  raise SystemExit('shutdown import anchor not found')
+              text = text.replace(shutdown_import, import_line + shutdown_import, 1)
+
+          wrapper = '''const rawInvoke = ipcRenderer.invoke.bind(ipcRenderer)\nconst invoke: typeof ipcRenderer.invoke = async (channel, ...args) => {\n  try {\n    return await rawInvoke(channel, ...args)\n  } catch (reason: unknown) {\n    throw toFriendlyIpcError(reason)\n  }\n}\n\n'''
+          marker = 'const api: MyMindApi = {'
+          if wrapper not in text:
+              if marker not in text:
+                  raise SystemExit('api marker not found')
+              text = text.replace(marker, wrapper + marker, 1)
+
+          text = text.replace('ipcRenderer.invoke(', 'invoke(')
+          index_path.write_text(text, encoding='utf-8')
+
+          if 'ipcRenderer.invoke(' in text:
+              raise SystemExit('not all direct IPC invoke calls were normalized')
+          if 'const rawInvoke = ipcRenderer.invoke.bind(ipcRenderer)' not in text:
+              raise SystemExit('raw invoke bridge is missing')
+          PY
+      - name: Format changed files
+        run: npx prettier --write src/preload/index.ts src/preload/friendly-ipc-error.ts src/preload/friendly-ipc-error.test.ts
+      - name: ESLint changed files
+        run: npx eslint src/preload/index.ts src/preload/friendly-ipc-error.ts src/preload/friendly-ipc-error.test.ts
+      - name: Friendly error tests
+        run: npx vitest run src/preload/friendly-ipc-error.test.ts src/preload/index.test.ts
+      - name: Node typecheck
+        run: npm run typecheck:node
+      - name: Web typecheck with known Study baseline
+        shell: bash
+        run: |
+          set +e
+          npm run typecheck:web > /tmp/web-typecheck.log 2>&1
+          status=$?
+          cat /tmp/web-typecheck.log
+          if [ "$status" -eq 0 ]; then exit 0; fi
+          grep -v "useStudyEditBlockVirtualization.ts(82,36): error TS18047" /tmp/web-typecheck.log | grep "error TS" && exit 1 || exit 0
+      - name: Production bundle
+        run: npm run build:bundle
+      - name: Diff whitespace
+        run: git diff --check
+      - name: Commit implementation
+        shell: bash
+        run: |
+          git config user.name "Ramzan Sharifov"
+          git config user.email "114869338+ramzansharifov@users.noreply.github.com"
+          git add src/preload/index.ts src/preload/friendly-ipc-error.ts src/preload/friendly-ipc-error.test.ts
+          if git diff --cached --quiet; then
+            echo "No implementation changes to commit"
+            exit 0
+          fi
+          git commit -m "fix: показывать человекопонятные ошибки IPC"
+          git push origin HEAD:agent/human-readable-errors
