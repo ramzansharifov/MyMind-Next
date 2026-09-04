@@ -1,0 +1,13 @@
+[role='group'][aria-label='Раздел упражнений'] {
+  overflow-y: hidden;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+[role='group'][aria-label='Раздел упражнений']::-webkit-scrollbar {
+  display: none;
+}
+
+[role='group'][aria-label='Раздел упражнений'] > button {
+  height: 100%;
+}
