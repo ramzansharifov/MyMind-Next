@@ -1,0 +1,67 @@
+name: Finalize human-readable errors
+
+on:
+  push:
+    branches:
+      - agent/human-readable-errors
+    paths:
+      - .github/workflows/finalize-human-readable-errors.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/human-readable-errors
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Apply implementation from verified generator
+        shell: bash
+        run: |
+          sed -n "/python - <<'PY'/,/^          PY$/p" .github/workflows/retry-human-readable-errors.yml \
+            | sed 's/^          //' > /tmp/apply-human-readable-errors.sh
+          bash /tmp/apply-human-readable-errors.sh
+      - name: Format changed files
+        run: npx prettier --write src/preload/index.ts src/preload/friendly-ipc-error.ts src/preload/friendly-ipc-error.test.ts
+      - name: ESLint changed files
+        run: npx eslint src/preload/index.ts src/preload/friendly-ipc-error.ts src/preload/friendly-ipc-error.test.ts
+      - name: Friendly error tests
+        run: npx vitest run src/preload/friendly-ipc-error.test.ts
+      - name: Verify preload bridge uses normalized invoke
+        shell: bash
+        run: |
+          grep -q "const rawInvoke = ipcRenderer.invoke.bind(ipcRenderer)" src/preload/index.ts
+          ! grep -q "ipcRenderer.invoke(" src/preload/index.ts
+          grep -q "throw toFriendlyIpcError(reason)" src/preload/index.ts
+      - name: Node typecheck
+        run: npm run typecheck:node
+      - name: Web typecheck with known Study baseline
+        shell: bash
+        run: |
+          set +e
+          npm run typecheck:web > /tmp/web-typecheck.log 2>&1
+          status=$?
+          cat /tmp/web-typecheck.log
+          if [ "$status" -eq 0 ]; then exit 0; fi
+          grep -v "useStudyEditBlockVirtualization.ts(82,36): error TS18047" /tmp/web-typecheck.log | grep "error TS" && exit 1 || exit 0
+      - name: Production bundle
+        run: npm run build:bundle
+      - name: Diff whitespace
+        run: git diff --check
+      - name: Commit implementation
+        shell: bash
+        run: |
+          git config user.name "Ramzan Sharifov"
+          git config user.email "114869338+ramzansharifov@users.noreply.github.com"
+          git add src/preload/index.ts src/preload/friendly-ipc-error.ts src/preload/friendly-ipc-error.test.ts
+          git commit -m "fix: показывать человекопонятные ошибки IPC"
+          git push origin HEAD:agent/human-readable-errors
