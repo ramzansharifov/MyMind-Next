@@ -109,26 +109,40 @@ function VaultGate({
           className="pointer-events-none absolute -bottom-36 -left-20 -z-10 size-72 rounded-full bg-violet-900/10 blur-3xl"
         />
 
-        <span className="flex size-14 items-center justify-center rounded-2xl border border-violet-500/20 bg-violet-500/10 text-violet-300 shadow-inner shadow-violet-500/5">
-          {initialized ? <LockKeyhole className="size-7" /> : <ShieldCheck className="size-7" />}
-        </span>
-        <h1 className="mt-5 text-2xl font-semibold tracking-tight text-[var(--app-text)]">
-          {initialized ? 'Хранилище заблокировано' : 'Настройте хранилище паролей'}
-        </h1>
-        {!initialized && (
-          <p className="mt-2 text-sm leading-6 text-[var(--app-muted)]">
-            Создайте отдельный мастер-пароль. Он не сохраняется в открытом виде и потребуется для
-            доступа к записям.
-          </p>
+        {initialized ? (
+          <div className="flex items-center gap-4">
+            <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl border border-violet-500/20 bg-violet-500/10 text-violet-300 shadow-inner shadow-violet-500/5">
+              <LockKeyhole className="size-7" />
+            </span>
+            <h1 className="text-2xl font-semibold tracking-tight text-[var(--app-text)]">
+              Хранилище заблокировано
+            </h1>
+          </div>
+        ) : (
+          <>
+            <span className="flex size-14 items-center justify-center rounded-2xl border border-violet-500/20 bg-violet-500/10 text-violet-300 shadow-inner shadow-violet-500/5">
+              <ShieldCheck className="size-7" />
+            </span>
+            <h1 className="mt-5 text-2xl font-semibold tracking-tight text-[var(--app-text)]">
+              Настройте хранилище паролей
+            </h1>
+            <p className="mt-2 text-sm leading-6 text-[var(--app-muted)]">
+              Создайте отдельный мастер-пароль. Он не сохраняется в открытом виде и потребуется для
+              доступа к записям.
+            </p>
+          </>
         )}
 
         <form
-          className={initialized ? 'mt-9 space-y-4' : 'mt-6 space-y-4'}
+          className={initialized ? 'mt-8 space-y-4' : 'mt-6 space-y-4'}
           onSubmit={(event) => void submit(event)}
         >
           <label className="block space-y-1.5">
-            <span className="text-xs font-medium text-[var(--app-muted)]">Мастер-пароль</span>
+            {!initialized && (
+              <span className="text-xs font-medium text-[var(--app-muted)]">Мастер-пароль</span>
+            )}
             <input
+              aria-label={initialized ? 'Мастер-пароль' : undefined}
               autoFocus
               type="password"
               value={password}
