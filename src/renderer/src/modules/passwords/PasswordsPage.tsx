@@ -1,7 +1,6 @@
 import { Tooltip } from '../../shared/ui/tooltip'
 import * as Popover from '@radix-ui/react-popover'
 import {
-  ClipboardCheck,
   ClipboardCopy,
   FolderPlus,
   Heart,
@@ -206,7 +205,6 @@ export function PasswordsPage({
   const [changeMasterOpen, setChangeMasterOpen] = useState(false)
   const [deleteItemTarget, setDeleteItemTarget] = useState<PasswordItemSummary | null>(null)
   const [deleteGroupTarget, setDeleteGroupTarget] = useState<PasswordGroupRecord | null>(null)
-  const [copiedLabel, setCopiedLabel] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isBusy, setIsBusy] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -472,8 +470,6 @@ export function PasswordsPage({
   async function copyField(itemId: string, field: 'username' | 'password'): Promise<void> {
     try {
       await passwordsClient.copyItemField({ id: itemId, field })
-      setCopiedLabel(field === 'password' ? 'Пароль скопирован' : 'Логин скопирован')
-      window.setTimeout(() => setCopiedLabel(null), 1600)
     } catch (reason) {
       setError(errorMessage(reason))
     }
@@ -791,11 +787,6 @@ export function PasswordsPage({
         </div>
       )}
 
-      {copiedLabel && (
-        <div className="fixed right-6 bottom-6 z-[100] inline-flex items-center gap-2 rounded-xl border border-emerald-400/20 bg-[var(--app-menu)] px-4 py-3 text-sm font-medium text-emerald-300 shadow-[var(--app-shadow-menu)]">
-          <ClipboardCheck className="size-4" /> {copiedLabel}
-        </div>
-      )}
 
       <div className="mt-5 grid gap-5 lg:grid-cols-[250px_minmax(0,1fr)]">
         <aside className="self-start rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 shadow-[var(--app-shadow-card)] lg:sticky lg:top-5">

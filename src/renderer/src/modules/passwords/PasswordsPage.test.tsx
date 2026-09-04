@@ -100,7 +100,6 @@ describe('PasswordsPage', () => {
     await user.click(await screen.findByRole('button', { name: 'Скопировать пароль «GitHub»' }))
 
     expect(mocks.copyItemField).toHaveBeenCalledWith({ id: 'item-github', field: 'password' })
-    expect(await screen.findByText('Пароль скопирован')).toBeInTheDocument()
   })
 
   it('opens the security view and shows weak password findings', async () => {
