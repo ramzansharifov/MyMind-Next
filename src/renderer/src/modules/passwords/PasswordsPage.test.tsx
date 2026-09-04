@@ -105,7 +105,7 @@ describe('PasswordsPage', () => {
     const user = userEvent.setup()
     render(<PasswordsPage />)
 
-    await user.click(await screen.findByRole('button', { name: /Безопасность/ }))
+    await user.click(await screen.findByRole('tab', { name: /Безопасность/ }))
 
     expect(screen.getByText('Требуют внимания')).toBeInTheDocument()
     expect(screen.getAllByText('Слабый').length).toBeGreaterThan(0)
