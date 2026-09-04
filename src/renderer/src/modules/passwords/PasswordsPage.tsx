@@ -698,7 +698,9 @@ export function PasswordsPage({
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div>
-                        <h2 className="text-sm font-semibold text-[var(--app-text)]">Фильтры хранилища</h2>
+                        <h2 className="text-sm font-semibold text-[var(--app-text)]">
+                          Фильтры хранилища
+                        </h2>
                         <p className="mt-1 text-xs leading-5 text-[var(--app-muted)]">
                           Фильтруйте записи по типу и состоянию безопасности.
                         </p>
@@ -718,7 +720,9 @@ export function PasswordsPage({
 
                     <div className="mt-4 grid gap-3 sm:grid-cols-2">
                       <div className="space-y-1.5">
-                        <span className="block text-xs font-medium text-[var(--app-muted)]">Тип</span>
+                        <span className="block text-xs font-medium text-[var(--app-muted)]">
+                          Тип
+                        </span>
                         <AppSelect
                           ariaLabel="Фильтр по типу записи"
                           value={typeFilter}
@@ -727,7 +731,9 @@ export function PasswordsPage({
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <span className="block text-xs font-medium text-[var(--app-muted)]">Безопасность</span>
+                        <span className="block text-xs font-medium text-[var(--app-muted)]">
+                          Безопасность
+                        </span>
                         <AppSelect
                           ariaLabel="Фильтр по безопасности"
                           value={issueFilter}
@@ -743,7 +749,9 @@ export function PasswordsPage({
                     </div>
 
                     <div className="mt-4 flex items-center justify-between gap-3 border-t border-[var(--app-border)] pt-3">
-                      <span className="text-[11px] text-[var(--app-muted)]">Изменения применяются сразу</span>
+                      <span className="text-[11px] text-[var(--app-muted)]">
+                        Изменения применяются сразу
+                      </span>
                       <button
                         type="button"
                         disabled={activeLibraryFilterCount === 0}

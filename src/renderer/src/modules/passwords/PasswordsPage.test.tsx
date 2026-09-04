@@ -61,7 +61,9 @@ const overview: PasswordsOverview = {
     weak: 1,
     reused: 0,
     old: 0,
-    issues: [{ itemId: 'item-github', title: 'GitHub', username: 'user@example.com', issues: ['weak'] }]
+    issues: [
+      { itemId: 'item-github', title: 'GitHub', username: 'user@example.com', issues: ['weak'] }
+    ]
   }
 }
 
