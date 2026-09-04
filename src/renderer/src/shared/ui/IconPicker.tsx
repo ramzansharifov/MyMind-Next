@@ -13,6 +13,7 @@ interface IconPickerProps<Value extends string> {
   value: Value
   onChange: (value: Value) => void
   trigger: ReactElement
+  triggerTooltip?: ReactNode
   options: readonly IconPickerOption<Value>[]
   renderIcon: (value: Value) => ReactNode
   align?: 'start' | 'center' | 'end'
@@ -24,15 +25,24 @@ export function IconPicker<Value extends string>({
   value,
   onChange,
   trigger,
+  triggerTooltip,
   options,
   renderIcon,
   align = 'end',
   label,
   optionDataAttribute
 }: IconPickerProps<Value>): React.JSX.Element {
+  const menuTrigger = <DropdownMenu.Trigger asChild>{trigger}</DropdownMenu.Trigger>
+
   return (
     <DropdownMenu.Root>
-      <DropdownMenu.Trigger asChild>{trigger}</DropdownMenu.Trigger>
+      {triggerTooltip ? (
+        <Tooltip content={triggerTooltip} side="top">
+          {menuTrigger}
+        </Tooltip>
+      ) : (
+        menuTrigger
+      )}
 
       <DropdownMenu.Portal>
         <DropdownMenu.Content
@@ -57,23 +67,26 @@ export function IconPicker<Value extends string>({
               }
 
               return (
-                <Tooltip key={option.value} content={option.label} side="top">
-                  <DropdownMenu.Item
-                    {...dataAttributeProps}
-                    aria-label={option.label}
-                    className={cn(
-                      'flex aspect-square cursor-default items-center justify-center rounded-xl border outline-none',
-                      'border-transparent text-[var(--app-muted)] transition-colors',
-                      'hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]',
-                      'focus:bg-[var(--app-control-hover)] focus:text-[var(--app-text)]',
-                      option.value === value &&
-                        '[border-color:color-mix(in_srgb,var(--app-accent-500)_25%,transparent)] text-[var(--app-accent-500)] shadow-sm [background:color-mix(in_srgb,var(--app-accent-500)_15%,transparent)]'
-                    )}
-                    onSelect={() => onChange(option.value)}
-                  >
-                    {renderIcon(option.value)}
-                  </DropdownMenu.Item>
-                </Tooltip>
+                <DropdownMenu.Item
+                  key={option.value}
+                  {...dataAttributeProps}
+                  aria-label={option.label}
+                  className={cn(
+                    'flex aspect-square cursor-default items-center justify-center rounded-xl border outline-none',
+                    'border-transparent text-[var(--app-muted)] transition-colors',
+                    'hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]',
+                    'focus:bg-[var(--app-control-hover)] focus:text-[var(--app-text)]',
+                    option.value === value &&
+                      '[border-color:color-mix(in_srgb,var(--app-accent-500)_25%,transparent)] text-[var(--app-accent-500)] shadow-sm [background:color-mix(in_srgb,var(--app-accent-500)_15%,transparent)]'
+                  )}
+                  onSelect={() => onChange(option.value)}
+                >
+                  <Tooltip content={option.label} side="top">
+                    <span className="flex size-full items-center justify-center">
+                      {renderIcon(option.value)}
+                    </span>
+                  </Tooltip>
+                </DropdownMenu.Item>
               )
             })}
           </div>

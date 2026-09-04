@@ -49,7 +49,7 @@ describe('StudyBlockEditor insert menu', () => {
     expect(getColumnItems(menu, 'media')).toEqual(['Фото', 'Видео', 'Аудио', 'Файл'])
   })
 
-  it('omits empty columns when the editor allows only Notes block types', async () => {
+  it('shows every block group supported by Notes', async () => {
     const user = userEvent.setup()
 
     render(
@@ -70,10 +70,11 @@ describe('StudyBlockEditor insert menu', () => {
 
     expect(Array.from(columns, (column) => column.dataset.studyBlockMenuColumn)).toEqual([
       'primary',
+      'technical',
       'media'
     ])
     expect(getColumnItems(menu, 'primary')).toEqual(['Текст', 'Заголовок', 'Доска', 'Разделитель'])
+    expect(getColumnItems(menu, 'technical')).toEqual(['Код', 'Markdown', 'LaTeX', 'Mermaid'])
     expect(getColumnItems(menu, 'media')).toEqual(['Фото', 'Видео', 'Аудио', 'Файл'])
-    expect(menu.querySelector('[data-study-block-menu-column="technical"]')).toBeNull()
   })
 })

@@ -9,7 +9,7 @@ import {
   Save,
   WandSparkles
 } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 
 import type {
   StudyCodeApplyResult,
@@ -63,6 +63,8 @@ export function StudyCodeWorkspace({
   const dirtyRef = useRef(false)
   const savingRef = useRef(false)
   const editorScrollRef = useRef<HTMLDivElement>(null)
+  const editorTextareaId = useId()
+  const editorLabel = `DSL-код ${node.type === 'folder' ? 'папки' : 'материала'} «${node.title}»`
 
   const dirty = source !== savedSource
   dirtyRef.current = dirty
@@ -394,9 +396,13 @@ export function StudyCodeWorkspace({
               {lineNumberText}
             </pre>
 
+            <label htmlFor={editorTextareaId} className="sr-only">
+              {editorLabel}
+            </label>
+
             <Editor
               value={source}
-              aria-label={`DSL-код ${node.type === 'folder' ? 'папки' : 'материала'} «${node.title}»`}
+              textareaId={editorTextareaId}
               insertSpaces
               tabSize={2}
               padding={16}

@@ -1,11 +1,8 @@
-import { FilePlus2, FolderPlus, StickyNote } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 
 import type { NoteGroup, NoteSummary, NotesOverview } from '../../../../shared/contracts/notes'
 import type { StudyFolderIconName } from '../../../../shared/contracts/study'
 import { DeleteConfirmationDialog } from '../../shared/ui/DeleteConfirmationDialog'
-import { ModuleHeader } from '../../shared/ui/ModuleHeader'
-import { StandardModulePage } from '../../shared/ui/StandardModulePage'
 import { notesClient } from './api/notes-client'
 import { NoteEditor } from './components/NoteEditor'
 import { NoteNameDialog } from './components/NoteNameDialog'
@@ -123,66 +120,30 @@ export function NotesPage({
   }
 
   return (
-    <StandardModulePage>
-      <ModuleHeader
-        icon={StickyNote}
-        title="Заметки"
-        description="Организуйте мысли, идеи, файлы и медиа в одном месте."
-        className="mb-5"
-        actions={
-          <>
-            <button
-              type="button"
-              disabled={isLoading}
-              className="focus-visible:ring-accent-500/35 flex h-11 items-center justify-center gap-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-4 text-sm font-medium text-[var(--app-text)] transition-colors outline-none hover:bg-[var(--app-control-hover)] focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-50"
-              onClick={() => setCreateGroupOpen(true)}
-            >
-              <FolderPlus aria-hidden="true" className="size-4" />
-              Новая группа
-            </button>
-            <button
-              type="button"
-              disabled={isLoading}
-              className="bg-accent-500 hover:bg-accent-400 focus-visible:ring-accent-500/35 flex h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-medium text-white transition-colors outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-50"
-              onClick={() => {
-                setCreateNoteGroupId(null)
-                setCreateNoteOpen(true)
-              }}
-            >
-              <FilePlus2 aria-hidden="true" className="size-4" />
-              Новая заметка
-            </button>
-          </>
-        }
+    <>
+      <NotesHome
+        overview={overview}
+        isLoading={isLoading}
+        onOpenNote={setSelectedNoteId}
+        onCreateGroup={() => setCreateGroupOpen(true)}
+        onCreateNote={(groupId) => {
+          setCreateNoteGroupId(groupId)
+          setCreateNoteOpen(true)
+        }}
+        onRenameGroup={setRenameGroupTarget}
+        onGroupIconChange={(group, icon) => void handleGroupIconChange(group, icon)}
+        onDeleteGroup={setDeleteGroupTarget}
+        onRenameNote={setRenameNoteTarget}
+        onDeleteNote={setDeleteNoteTarget}
+        onMoveNote={(note, groupId) => {
+          void notesClient
+            .moveNote({ id: note.id, groupId })
+            .then(handleNoteUpdated)
+            .catch((reason: unknown) => {
+              setError(reason instanceof Error ? reason.message : 'Не удалось переместить заметку')
+            })
+        }}
       />
-
-      <div data-notes-home-embedded>
-        <NotesHome
-          overview={overview}
-          isLoading={isLoading}
-          onOpenNote={setSelectedNoteId}
-          onCreateGroup={() => setCreateGroupOpen(true)}
-          onCreateNote={(groupId) => {
-            setCreateNoteGroupId(groupId)
-            setCreateNoteOpen(true)
-          }}
-          onRenameGroup={setRenameGroupTarget}
-          onGroupIconChange={(group, icon) => void handleGroupIconChange(group, icon)}
-          onDeleteGroup={setDeleteGroupTarget}
-          onRenameNote={setRenameNoteTarget}
-          onDeleteNote={setDeleteNoteTarget}
-          onMoveNote={(note, groupId) => {
-            void notesClient
-              .moveNote({ id: note.id, groupId })
-              .then(handleNoteUpdated)
-              .catch((reason: unknown) => {
-                setError(
-                  reason instanceof Error ? reason.message : 'Не удалось переместить заметку'
-                )
-              })
-          }}
-        />
-      </div>
 
       {error && (
         <div
@@ -327,6 +288,6 @@ export function NotesPage({
             .finally(() => setDeleteNoteTarget(null))
         }}
       />
-    </StandardModulePage>
+    </>
   )
 }

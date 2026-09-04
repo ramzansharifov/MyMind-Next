@@ -93,7 +93,7 @@ export function NutritionGoalView({
             <NutritionFormField key={field.key} label={field.label} hint={field.hint}>
               <input
                 type="number"
-                min="0.001"
+                min="0"
                 step={field.step}
                 value={values[field.key]}
                 placeholder="Не задано"

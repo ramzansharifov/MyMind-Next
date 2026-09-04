@@ -45,16 +45,19 @@ describe('registerTasksIpcHandlers', () => {
       ([channel]) => channel === TASKS_IPC_CHANNELS.createTask
     )?.[1]
 
-    await expect(
-      handler({}, {
-        title: 'Задача',
-        description: '',
-        groupId: null,
-        status: 'active',
-        priority: 'normal',
-        dueDate: null,
-        dueTime: '10:00'
-      })
-    ).rejects.toThrow('Чтобы указать время, сначала выберите дату')
+    expect(() =>
+      handler(
+        {},
+        {
+          title: 'Задача',
+          description: '',
+          groupId: null,
+          status: 'active',
+          priority: 'normal',
+          dueDate: null,
+          dueTime: '10:00'
+        }
+      )
+    ).toThrow('Чтобы указать время, сначала выберите дату')
   })
 })

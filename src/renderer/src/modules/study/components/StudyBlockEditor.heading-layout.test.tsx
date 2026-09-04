@@ -35,7 +35,8 @@ describe('StudyBlockEditor heading layout', () => {
     )
     const highlight = heading?.querySelector<HTMLElement>('[data-study-heading-background="text"]')
 
-    expect(heading).toHaveStyle({ textAlign: 'center', backgroundColor: 'transparent' })
+    expect(heading?.style.textAlign).toBe('center')
+    expect(heading?.style.backgroundColor).toBe('transparent')
     expect(heading).toHaveClass('rounded-lg')
     expect(highlight).toHaveStyle({ backgroundColor: '#4c1d95' })
     expect(highlight).toHaveClass('rounded-lg')
@@ -104,7 +105,8 @@ describe('StudyBlockEditor heading layout', () => {
     const mirror = container.querySelector<HTMLElement>('[data-study-heading-edit-highlight]')
     const highlight = mirror?.querySelector<HTMLElement>('span')
 
-    expect(textarea).toHaveStyle({ textAlign: 'center', backgroundColor: 'transparent' })
+    expect((textarea as HTMLTextAreaElement).style.textAlign).toBe('center')
+    expect((textarea as HTMLTextAreaElement).style.backgroundColor).toBe('transparent')
     expect(textarea).toHaveClass('rounded-lg')
     expect(mirror).toBeInTheDocument()
     expect(highlight).toHaveStyle({ backgroundColor: '#713f12' })

@@ -113,7 +113,7 @@ describe('App shell', () => {
       )
     ).toBeInTheDocument()
 
-    expect(await screen.findByText('SQLite 3.0.0')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Внешний вид/ })).toBeInTheDocument()
   })
 
   it('applies theme and accent changes from settings immediately', async () => {

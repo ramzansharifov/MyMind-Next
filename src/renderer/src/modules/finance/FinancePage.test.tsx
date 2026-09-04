@@ -120,9 +120,9 @@ describe('FinancePage', () => {
   it('renders the shared module hero and separate finance workspace pages', async () => {
     render(<FinancePage />)
     expect(await screen.findByRole('heading', { name: 'Финансы' })).toBeInTheDocument()
-    expect(document.querySelector('[data-finance-hero]')).toBeInTheDocument()
+    expect(document.querySelector('[data-module-header]')).toBeInTheDocument()
     expect(document.querySelector('[data-finance-navigation]')).toBeInTheDocument()
-    expect(document.querySelector('[data-finance-header-actions]')).toBeInTheDocument()
+    expect(document.querySelector('[data-module-header-actions]')).toBeInTheDocument()
     for (const label of ['Главная', 'Транзакции', 'Шаблоны', 'Лимиты', 'Счета', 'Теги', 'Отчёты']) {
       expect(screen.getByRole('button', { name: label })).toBeInTheDocument()
     }
@@ -159,7 +159,7 @@ describe('FinancePage', () => {
     await screen.findByText('Пока нет счетов')
 
     const headerActions = (): HTMLElement => {
-      const element = document.querySelector('[data-finance-header-actions]')
+      const element = document.querySelector('[data-module-header-actions]')
       expect(element).not.toBeNull()
       return element as HTMLElement
     }
@@ -190,7 +190,7 @@ describe('FinancePage', () => {
     expect(screen.queryByRole('button', { name: 'Создать тег' })).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Отчёты' }))
-    expect(document.querySelector('[data-finance-header-actions]')).not.toBeInTheDocument()
+    expect(document.querySelector('[data-module-header-actions]')).not.toBeInTheDocument()
   })
 
   it('renders accounts and tags inside standard section blocks', async () => {

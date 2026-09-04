@@ -118,6 +118,9 @@ describe('preload API contract', () => {
     ])
     expect(Object.keys(api.habits)).toEqual([
       'listOverview',
+      'listUnreadReminders',
+      'acknowledgeReminder',
+      'onRemindersChanged',
       'createGroup',
       'updateGroup',
       'deleteGroup',

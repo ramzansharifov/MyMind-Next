@@ -72,7 +72,7 @@ describe('registerPasswordsIpcHandlers', () => {
     )?.[1]
 
     const id = '0b8c2031-348f-4faf-9c99-a8f387e80341'
-    await expect(handler({}, { id, field: 'password' })).resolves.toBe(true)
+    expect(handler({}, { id, field: 'password' })).toBe(true)
     expect(mocks.getPasswordItem).toHaveBeenCalledWith(id)
     expect(mocks.copyPasswordValue).toHaveBeenCalledWith('secret-123')
   })

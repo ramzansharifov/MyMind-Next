@@ -78,8 +78,10 @@ export function useStudyEditBlockVirtualization({
       return undefined
     }
 
+    const measuredNode = node
+
     function measure(): void {
-      const nextHeight = Math.ceil(node.getBoundingClientRect().height)
+      const nextHeight = Math.ceil(measuredNode.getBoundingClientRect().height)
 
       if (nextHeight <= 0) {
         return
@@ -101,7 +103,7 @@ export function useStudyEditBlockVirtualization({
     }
 
     const resizeObserver = new ResizeObserver(measure)
-    resizeObserver.observe(node)
+    resizeObserver.observe(measuredNode)
 
     return () => resizeObserver.disconnect()
   }, [block.id, enabled, shouldRenderContent])

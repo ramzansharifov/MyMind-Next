@@ -1019,16 +1019,15 @@ function NoteGroupIconPicker({
       label="Иконка группы"
       align="start"
       onChange={(icon) => onChange(group, icon)}
+      triggerTooltip={`Изменить иконку группы «${group.title}»`}
       trigger={
-        <Tooltip content={`Изменить иконку группы «${group.title}»`} side="top">
-          <button
-            type="button"
-            aria-label={`Изменить иконку группы «${group.title}»`}
-            className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[color-mix(in_srgb,var(--app-accent-500)_15%,transparent)] bg-[color-mix(in_srgb,var(--app-accent-500)_10%,transparent)] text-[var(--app-accent-500)] transition-colors outline-none hover:border-[color-mix(in_srgb,var(--app-accent-500)_35%,transparent)] hover:bg-[color-mix(in_srgb,var(--app-accent-500)_15%,transparent)] focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)]/35"
-          >
-            <FolderIcon name={group.icon} expanded className={className} />
-          </button>
-        </Tooltip>
+        <button
+          type="button"
+          aria-label={`Изменить иконку группы «${group.title}»`}
+          className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[color-mix(in_srgb,var(--app-accent-500)_15%,transparent)] bg-[color-mix(in_srgb,var(--app-accent-500)_10%,transparent)] text-[var(--app-accent-500)] transition-colors outline-none hover:border-[color-mix(in_srgb,var(--app-accent-500)_35%,transparent)] hover:bg-[color-mix(in_srgb,var(--app-accent-500)_15%,transparent)] focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)]/35"
+        >
+          <FolderIcon name={group.icon} expanded className={className} />
+        </button>
       }
     />
   )

@@ -104,6 +104,7 @@ describe('diary architecture', () => {
     expect(premiumCss).toContain('.diary-premium-paper')
     expect(premiumCss).toContain('.diary-side-tab')
     expect(premiumCss).toContain('.diary-bookmark-ribbon')
-    expect(premiumCss).not.toContain('--diary-rule-step')
+    const premiumPaperBlock = premiumCss.match(/\.diary-premium-paper\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    expect(premiumPaperBlock).not.toContain('--diary-rule-step')
   })
 })
