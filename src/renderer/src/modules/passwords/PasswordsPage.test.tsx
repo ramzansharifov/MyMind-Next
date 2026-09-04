@@ -61,7 +61,9 @@ const overview: PasswordsOverview = {
     weak: 1,
     reused: 0,
     old: 0,
-    issues: [{ itemId: 'item-github', title: 'GitHub', username: 'user@example.com', issues: ['weak'] }]
+    issues: [
+      { itemId: 'item-github', title: 'GitHub', username: 'user@example.com', issues: ['weak'] }
+    ]
   }
 }
 
@@ -105,7 +107,7 @@ describe('PasswordsPage', () => {
     const user = userEvent.setup()
     render(<PasswordsPage />)
 
-    await user.click(await screen.findByRole('button', { name: /Безопасность/ }))
+    await user.click(await screen.findByRole('tab', { name: /Безопасность/ }))
 
     expect(screen.getByText('Требуют внимания')).toBeInTheDocument()
     expect(screen.getAllByText('Слабый').length).toBeGreaterThan(0)
