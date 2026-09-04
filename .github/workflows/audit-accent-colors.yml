@@ -1,0 +1,33 @@
+name: Audit accent color classes
+
+on:
+  push:
+    branches:
+      - agent/semantic-accent-colors
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Audit violet Tailwind classes and accent variables
+        shell: bash
+        run: |
+          echo '=== Files containing violet-* under renderer ==='
+          grep -RIl --exclude='*.map' 'violet-' src/renderer/src | sort || true
+          echo
+          echo '=== Counts by file ==='
+          grep -RIo --exclude='*.map' 'violet-[0-9][0-9]*' src/renderer/src \
+            | cut -d: -f1 \
+            | sort \
+            | uniq -c \
+            | sort -nr || true
+          echo
+          echo '=== Exact occurrences ==='
+          grep -RIn --exclude='*.map' 'violet-' src/renderer/src || true
+          echo
+          echo '=== Explicit app-accent variables ==='
+          grep -RIn --exclude='*.map' 'app-accent' src/renderer/src | head -n 300 || true
