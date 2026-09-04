@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { StudyNode } from '../../../../../../shared/contracts/study'
@@ -86,20 +87,21 @@ describe('StudyFolderCodeWorkspace', () => {
     )
   })
 
-  it('does not discard unsaved folder DSL when switching back to overview', () => {
+  it('does not discard unsaved folder DSL when switching back to overview', async () => {
+    const user = userEvent.setup()
     render(
       <StudyFolderCodeWorkspace node={folderNode} initialMode="code" onApplied={vi.fn()}>
         {(controls) => <FolderTestSurface {...controls} />}
       </StudyFolderCodeWorkspace>
     )
 
-    fireEvent.click(screen.getByRole('button', { name: 'Изменить DSL' }))
-    fireEvent.click(screen.getByRole('tab', { name: 'Обзор' }))
+    await user.click(screen.getByRole('button', { name: 'Изменить DSL' }))
+    await user.click(screen.getByRole('tab', { name: 'Обзор' }))
 
     expect(screen.getByRole('dialog', { name: 'Отменить изменения структуры?' })).toBeInTheDocument()
     expect(screen.getByText('DSL структуры Математика')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Отменить и перейти' }))
+    await user.click(screen.getByRole('button', { name: 'Отменить и перейти' }))
 
     expect(screen.getByRole('button', { name: 'Редактировать структуру' })).toBeInTheDocument()
     expect(screen.queryByText('DSL структуры Математика')).not.toBeInTheDocument()
