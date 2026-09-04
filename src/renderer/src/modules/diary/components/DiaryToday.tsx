@@ -127,13 +127,6 @@ export function DiaryToday({
 
   return (
     <section className="space-y-5">
-      <div>
-        <h2 className="text-lg font-semibold text-[var(--app-text)]">Сегодня</h2>
-        <p className="mt-1 text-sm text-[var(--app-muted)]">
-          Одна страница на день: настроение и столько коротких записей, сколько захочется.
-        </p>
-      </div>
-
       <div
         className="diary-book-frame diary-premium-book w-full"
         style={getDiaryCoverStyle(diary.coverTone)}

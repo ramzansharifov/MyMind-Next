@@ -14,14 +14,7 @@ export function DiaryLibrary({
   onOpenDiary: (diary: DiarySummary) => void
 }): React.JSX.Element {
   return (
-    <section className="space-y-5">
-      <div>
-        <h2 className="text-lg font-semibold text-[var(--app-text)]">Мои дневники</h2>
-        <p className="mt-1 text-sm text-[var(--app-muted)]">
-          Каждая книга хранит собственные страницы, настроение, календарь и историю.
-        </p>
-      </div>
-
+    <section>
       <div className="grid grid-cols-3 items-start gap-7 max-[1050px]:grid-cols-2 max-[650px]:grid-cols-1">
         {diaries.map((diary) => (
           <button

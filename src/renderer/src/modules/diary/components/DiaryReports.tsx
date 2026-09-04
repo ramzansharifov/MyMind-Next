@@ -105,13 +105,7 @@ export function DiaryReports({
 
   return (
     <section className="space-y-4">
-      <div className="flex items-end justify-between gap-4 max-[760px]:flex-col max-[760px]:items-start">
-        <div>
-          <h2 className="text-lg font-semibold text-[var(--app-text)]">Отчёты</h2>
-          <p className="mt-1 text-sm text-[var(--app-muted)]">
-            Ритм ведения дневника и динамика общего настроения.
-          </p>
-        </div>
+      <div className="flex justify-end">
         <div className="flex flex-wrap gap-1 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-1">
           {periodOptions.map(([value, label]) => (
             <button

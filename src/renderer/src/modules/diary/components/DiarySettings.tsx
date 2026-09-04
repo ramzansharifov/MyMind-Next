@@ -73,13 +73,6 @@ export function DiarySettings({
 
   return (
     <section className="space-y-5">
-      <div>
-        <h2 className="text-lg font-semibold text-[var(--app-text)]">Настройки дневника</h2>
-        <p className="mt-1 text-sm text-[var(--app-muted)]">
-          Название, иконка, бумага и цвет переплёта сохраняются отдельно для каждого дневника.
-        </p>
-      </div>
-
       <div className="grid grid-cols-[minmax(0,1fr)_20rem] gap-5 max-[900px]:grid-cols-1">
         <div className="rounded-[24px] border border-[var(--app-border)] bg-[var(--app-surface)] p-5 shadow-[var(--app-shadow-card)]">
           <div className="flex items-start gap-4">
