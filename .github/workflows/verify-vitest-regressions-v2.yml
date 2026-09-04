@@ -1,0 +1,43 @@
+name: Verify Vitest regressions v2
+
+on:
+  push:
+    branches:
+      - agent/fix-vitest-regressions
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Format check
+        run: npx prettier --check src/main/services/study-pdf-export.test.ts src/renderer/src/modules/nutrition/components/NutritionGoalView.tsx src/renderer/src/shared/ui/IconPicker.tsx src/renderer/src/shared/ui/AutoGrowTextarea.test.tsx src/renderer/src/shared/ui/WorkspaceWidth.architecture.test.ts src/renderer/src/modules/study/components/code-mode/StudyFolderCodeWorkspace.test.tsx
+      - name: Rebuild native module for Node tests
+        run: npm run native:node
+      - name: Run remaining six test files
+        run: >-
+          npx vitest run
+          src/main/services/study-pdf-export.test.ts
+          src/renderer/src/modules/notes/NotesPage.test.tsx
+          src/renderer/src/modules/nutrition/NutritionPage.test.tsx
+          src/renderer/src/shared/ui/AutoGrowTextarea.test.tsx
+          src/renderer/src/shared/ui/WorkspaceWidth.architecture.test.ts
+          src/renderer/src/modules/study/components/code-mode/StudyFolderCodeWorkspace.test.tsx
+      - name: Run full Vitest suite
+        run: npx vitest run
+      - name: Typecheck Node
+        run: npm run typecheck:node
+      - name: Typecheck Web
+        run: npm run typecheck:web
+      - name: Database check
+        run: npm run db:check
+      - name: Production build
+        run: npm run build:bundle
+      - name: Verify diff
+        run: git diff --check
