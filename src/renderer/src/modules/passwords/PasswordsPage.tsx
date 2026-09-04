@@ -1051,7 +1051,7 @@ export function PasswordsPage({
                                 <button
                                   type="button"
                                   aria-label={`Скопировать логин «${item.title}»`}
-                                  className="flex size-8 items-center justify-center rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-control)] hover:text-[var(--app-text)]"
+                                  className="flex size-8 items-center justify-center rounded-lg text-[var(--app-accent)] hover:bg-[var(--app-control)]"
                                   onClick={() => void copyField(item.id, 'username')}
                                 >
                                   <UserRound className="size-3.5" />
