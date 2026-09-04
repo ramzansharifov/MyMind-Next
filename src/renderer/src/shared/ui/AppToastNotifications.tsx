@@ -10,15 +10,6 @@ function feedbackToastId(feedback: OperationFeedback): string {
   return `${feedback.kind}:${feedback.key ?? 'app'}:${feedback.message}`
 }
 
-export function notifySuccess(message: string): void {
-  toast.success(message, SUCCESS_OPTIONS)
-}
-
-export function notifyError(reason: unknown, fallback = 'Не удалось выполнить действие'): void {
-  const message = reason instanceof Error ? reason.message : typeof reason === 'string' ? reason : fallback
-  toast.error(message, ERROR_OPTIONS)
-}
-
 export function AppToastNotifications(): React.JSX.Element {
   const activeErrorsRef = useRef(new Set<string>())
 
