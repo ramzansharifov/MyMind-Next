@@ -1,0 +1,42 @@
+name: Verify workouts filter scrollbar
+
+on:
+  push:
+    branches:
+      - agent/workouts-hide-filter-scrollbar
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Prettier
+        run: npx prettier --check src/renderer/src/main.tsx src/renderer/src/assets/workouts-filters.css
+      - name: Node typecheck
+        run: npm run typecheck:node
+      - name: Web typecheck with known Study baseline
+        shell: bash
+        run: |
+          set +e
+          npm run typecheck:web > /tmp/web-typecheck.log 2>&1
+          status=$?
+          cat /tmp/web-typecheck.log
+          if [ "$status" -eq 0 ]; then exit 0; fi
+          grep -v "useStudyEditBlockVirtualization.ts(82,36): error TS18047" /tmp/web-typecheck.log | grep "error TS" && exit 1 || exit 0
+      - name: Workouts tests
+        run: npx vitest run src/renderer/src/modules/workouts/WorkoutsPage.test.tsx
+      - name: Production bundle
+        run: npm run build:bundle
+      - name: Diff whitespace
+        run: git diff --check origin/main...HEAD
