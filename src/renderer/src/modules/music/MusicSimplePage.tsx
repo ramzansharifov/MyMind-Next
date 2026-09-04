@@ -35,6 +35,7 @@ import { musicClient } from './api/music-client'
 import {
   MusicLibraryContent,
   MusicLibraryNavigation,
+  type MusicLibraryFilters,
   type MusicLibraryScope
 } from './components/MusicLibraryView'
 import './components/music-interactions.css'
@@ -597,6 +598,7 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
   const [overview, setOverview] = useState<MusicOverview>({ items: [], playlists: [] })
   const [scope, setScope] = useState<MusicLibraryScope>({ kind: 'all' })
   const [query, setQuery] = useState('')
+  const [filters, setFilters] = useState<MusicLibraryFilters>({ artist: 'all', year: 'all' })
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -808,10 +810,13 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
         }
       >
         <MusicLibraryNavigation
+          items={overview.items}
           scope={scope}
           query={query}
+          filters={filters}
           onQueryChange={setQuery}
           onScopeChange={setScope}
+          onFiltersChange={setFilters}
         />
       </ModuleHeader>
 
@@ -828,6 +833,7 @@ export function MusicPage({ resourceId, onResourceHandled }: MusicPageProps): Re
         overview={overview}
         scope={scope}
         query={query}
+        filters={filters}
         isSaving={isSaving}
         onScopeChange={setScope}
         onOpenTrack={openTrackEditor}
