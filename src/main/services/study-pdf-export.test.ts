@@ -1,9 +1,11 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import type { WebContents } from 'electron'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   showSaveDialog: vi.fn(),
-  writeFile: vi.fn(),
   printToPDF: vi.fn()
 }))
 
@@ -13,16 +15,20 @@ vi.mock('electron', () => ({
   }
 }))
 
-vi.mock('node:fs/promises', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('node:fs/promises')>()
-  return { ...actual, writeFile: mocks.writeFile }
-})
-
 import { createStudyPdfFileName, exportStudyMaterialPdf } from './study-pdf-export'
+
+let tempDirectory: string | null = null
 
 describe('study PDF export', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+  })
+
+  afterEach(async () => {
+    if (tempDirectory) {
+      await rm(tempDirectory, { recursive: true, force: true })
+      tempDirectory = null
+    }
   })
 
   it('creates a safe PDF file name from a material title', () => {
@@ -43,12 +49,13 @@ describe('study PDF export', () => {
     ).resolves.toEqual({ status: 'cancelled' })
 
     expect(mocks.printToPDF).not.toHaveBeenCalled()
-    expect(mocks.writeFile).not.toHaveBeenCalled()
   })
 
   it('prints A4 with backgrounds and writes the selected PDF file', async () => {
     const pdf = Buffer.from('%PDF-test')
-    mocks.showSaveDialog.mockResolvedValue({ canceled: false, filePath: 'C:\\Temp\\Lesson.pdf' })
+    tempDirectory = await mkdtemp(join(tmpdir(), 'mymind-study-pdf-'))
+    const filePath = join(tempDirectory, 'Lesson.pdf')
+    mocks.showSaveDialog.mockResolvedValue({ canceled: false, filePath })
     mocks.printToPDF.mockResolvedValue(pdf)
     const webContents = { printToPDF: mocks.printToPDF } as unknown as WebContents
 
@@ -61,6 +68,6 @@ describe('study PDF export', () => {
       preferCSSPageSize: true,
       pageSize: 'A4'
     })
-    expect(mocks.writeFile).toHaveBeenCalledWith('C:\\Temp\\Lesson.pdf', pdf)
+    expect(await readFile(filePath)).toEqual(pdf)
   })
 })
