@@ -12,6 +12,7 @@ import './assets/board-canvas-layout.css'
 import './assets/notes-home-header.css'
 import './assets/finance-home-header.css'
 import './assets/module-home-header-unification.css'
+import './assets/workouts-filters.css'
 import './assets/app-titlebar.css'
 
 import { StrictMode } from 'react'
