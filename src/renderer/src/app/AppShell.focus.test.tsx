@@ -5,14 +5,17 @@ vi.mock('./AppTitleBar', () => ({
   AppTitleBar: () => <div data-testid="app-titlebar" />
 }))
 
+import { AiChatPreferencesProvider } from './ai-chat/AiChatPreferencesProvider'
 import { AppShell } from './AppShell'
 
 describe('AppShell focus mode', () => {
   it('removes application chrome and gives the workspace the full window', () => {
     render(
-      <AppShell activeView="study" focusMode onViewChange={vi.fn()}>
-        <div>Учебный материал</div>
-      </AppShell>
+      <AiChatPreferencesProvider>
+        <AppShell activeView="study" focusMode onViewChange={vi.fn()}>
+          <div>Учебный материал</div>
+        </AppShell>
+      </AiChatPreferencesProvider>
     )
 
     expect(screen.queryByTestId('app-titlebar')).not.toBeInTheDocument()
@@ -24,9 +27,11 @@ describe('AppShell focus mode', () => {
 
   it('keeps the titlebar outside focus mode', () => {
     render(
-      <AppShell activeView="study" onViewChange={vi.fn()}>
-        <div>Учебный материал</div>
-      </AppShell>
+      <AiChatPreferencesProvider>
+        <AppShell activeView="study" onViewChange={vi.fn()}>
+          <div>Учебный материал</div>
+        </AppShell>
+      </AiChatPreferencesProvider>
     )
 
     expect(screen.getByTestId('app-titlebar')).toBeInTheDocument()

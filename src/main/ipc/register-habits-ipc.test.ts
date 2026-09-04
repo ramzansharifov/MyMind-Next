@@ -37,9 +37,13 @@ describe('registerHabitsIpcHandlers', () => {
     expect(mocks.removeHandler.mock.calls.map(([channel]) => channel)).toEqual(
       Object.values(HABITS_IPC_CHANNELS)
     )
-    expect(mocks.handle.mock.calls.map(([channel]) => channel)).toEqual(
-      Object.values(HABITS_IPC_CHANNELS)
+    const handledChannels = mocks.handle.mock.calls.map(([channel]) => channel)
+    expect(handledChannels).toEqual(
+      Object.values(HABITS_IPC_CHANNELS).filter(
+        (channel) => channel !== HABITS_IPC_CHANNELS.remindersChanged
+      )
     )
+    expect(handledChannels).not.toContain(HABITS_IPC_CHANNELS.remindersChanged)
   })
 
   it('validates recurrence before creating a habit', () => {

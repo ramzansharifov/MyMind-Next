@@ -57,14 +57,18 @@ export function StudyFolderCodeWorkspace({
         className="inline-flex rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] p-1"
       >
         <Tooltip content="Обзор папки" side="bottom">
-          <Tabs.Trigger value="overview" aria-label="Обзор" className={modeTriggerClassName}>
-            <LayoutGrid aria-hidden="true" className="size-4" />
-          </Tabs.Trigger>
+          <span className="contents">
+            <Tabs.Trigger value="overview" aria-label="Обзор" className={modeTriggerClassName}>
+              <LayoutGrid aria-hidden="true" className="size-4" />
+            </Tabs.Trigger>
+          </span>
         </Tooltip>
         <Tooltip content="Редактировать структуру папки через DSL" side="bottom">
-          <Tabs.Trigger value="code" aria-label="Код структуры" className={modeTriggerClassName}>
-            <Braces aria-hidden="true" className="size-4" />
-          </Tabs.Trigger>
+          <span className="contents">
+            <Tabs.Trigger value="code" aria-label="Код структуры" className={modeTriggerClassName}>
+              <Braces aria-hidden="true" className="size-4" />
+            </Tabs.Trigger>
+          </span>
         </Tooltip>
       </Tabs.List>
     </Tabs.Root>

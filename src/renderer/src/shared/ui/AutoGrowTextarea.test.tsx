@@ -21,7 +21,7 @@ describe('AutoGrowTextarea background modes', () => {
     )
     const mark = mirror?.querySelector<HTMLElement>('.auto-grow-textarea-inline-background__mark')
 
-    expect(textarea).toHaveStyle({ backgroundColor: 'transparent' })
+    expect((textarea as HTMLTextAreaElement).style.backgroundColor).toBe('transparent')
     expect(mirror).toHaveAttribute('aria-hidden', 'true')
     expect(mirror).toHaveStyle({ color: 'transparent', backgroundColor: 'transparent' })
     expect(mark).toHaveTextContent('Выделенный заголовок')

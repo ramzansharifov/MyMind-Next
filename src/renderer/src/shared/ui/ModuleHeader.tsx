@@ -68,7 +68,10 @@ export function ModuleHeader({
         </div>
 
         {actions && (
-          <div className="flex max-w-full flex-wrap items-center justify-end gap-2 max-[760px]:w-full max-[760px]:justify-start">
+          <div
+            data-module-header-actions
+            className="flex max-w-full flex-wrap items-center justify-end gap-2 max-[760px]:w-full max-[760px]:justify-start"
+          >
             {actions}
           </div>
         )}

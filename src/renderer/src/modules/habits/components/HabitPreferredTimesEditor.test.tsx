@@ -108,10 +108,7 @@ describe('HabitPreferredTimesEditor', () => {
       />
     )
 
-    expect(screen.getByText('Напоминание включено автоматически')).toBeInTheDocument()
-    expect(
-      screen.getByText('Оно придёт за 30 минут до каждого указанного предпочтительного времени.')
-    ).toBeInTheDocument()
+    expect(screen.getByText(/Напоминание включено автоматически.*за 30 минут/)).toBeInTheDocument()
     expect(screen.queryByRole('switch')).not.toBeInTheDocument()
   })
 

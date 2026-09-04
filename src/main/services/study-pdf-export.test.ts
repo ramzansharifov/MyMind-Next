@@ -13,9 +13,10 @@ vi.mock('electron', () => ({
   }
 }))
 
-vi.mock('node:fs/promises', () => ({
-  writeFile: mocks.writeFile
-}))
+vi.mock('node:fs/promises', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs/promises')>()
+  return { ...actual, writeFile: mocks.writeFile }
+})
 
 import { createStudyPdfFileName, exportStudyMaterialPdf } from './study-pdf-export'
 

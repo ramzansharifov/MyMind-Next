@@ -45,6 +45,7 @@
   --app-tooltip: #20232a;
   --app-tooltip-border: #343842;
   --app-header-height: 4rem;
+  --app-standard-content-width: 1240px;
 
   --app-overlay-soft: rgb(255 255 255 / 4%);
   --app-overlay-faint: rgb(255 255 255 / 2.5%);
