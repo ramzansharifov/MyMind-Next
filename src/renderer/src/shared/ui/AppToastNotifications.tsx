@@ -50,7 +50,6 @@ export function AppToastNotifications(): React.JSX.Element {
       limit={4}
       className="mymind-toast-container"
       toastClassName="mymind-toast"
-      bodyClassName="mymind-toast-body"
     />
   )
 }
