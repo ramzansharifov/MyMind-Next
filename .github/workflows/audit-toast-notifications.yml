@@ -18,10 +18,10 @@ jobs:
         shell: bash
         run: |
           echo '=== setError / error state ==='
-          rg -n --glob 'src/renderer/src/**/*.{ts,tsx}' 'setError\(|\berror\s*&&|role="alert"' src/renderer/src || true
+          grep -RInE --include='*.ts' --include='*.tsx' 'setError\(|error[[:space:]]*&&|role="alert"' src/renderer/src || true
           echo '=== success / copied / saved ==='
-          rg -n --glob 'src/renderer/src/**/*.{ts,tsx}' 'setSuccess|copiedLabel|скопирован|успеш|сохранен|сохранён|создан|удален|удалён' src/renderer/src || true
+          grep -RInE --include='*.ts' --include='*.tsx' 'setSuccess|copiedLabel|скопирован|успеш|сохранен|сохранён|создан|удален|удалён' src/renderer/src || true
           echo '=== catches in modules ==='
-          rg -n --glob 'src/renderer/src/modules/**/*.{ts,tsx}' 'catch \(' src/renderer/src/modules || true
+          grep -RInE --include='*.ts' --include='*.tsx' 'catch \(' src/renderer/src/modules || true
           echo '=== package refs ==='
-          rg -n 'toast|Toastify|react-toastify' package.json package-lock.json src/renderer/src || true
+          grep -RInE 'toast|Toastify|react-toastify' package.json package-lock.json src/renderer/src || true
