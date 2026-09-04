@@ -19,6 +19,7 @@ jobs:
         shell: bash
         run: |
           python - <<'PY'
+          import re
           from pathlib import Path
 
           renderer = Path('src/renderer/src')
@@ -37,10 +38,12 @@ jobs:
           main_css = renderer / 'assets/main.css'
           main_text = main_css.read_text(encoding='utf-8')
 
-          legacy_alias_block = '''  --color-accent-50: var(--app-accent-50);\n  --color-accent-100: var(--app-accent-100);\n  --color-accent-200: var(--app-accent-200);\n  --color-accent-300: var(--app-accent-300);\n  --color-accent-400: var(--app-accent-400);\n  --color-accent-500: var(--app-accent-500);\n  --color-accent-600: var(--app-accent-600);\n  --color-accent-700: var(--app-accent-700);\n  --color-accent-800: var(--app-accent-800);\n  --color-accent-900: var(--app-accent-900);\n  --color-accent-950: var(--app-accent-950);\n\n'''
-          if legacy_alias_block not in main_text:
-              raise SystemExit('Expected legacy accent alias block was not found in main.css')
-          main_text = main_text.replace(legacy_alias_block, '', 1)
+          alias_pattern = re.compile(
+              r'(?m)^  --color-accent-(?:50|100|200|300|400|500|600|700|800|900|950): var\(--app-accent-(?:50|100|200|300|400|500|600|700|800|900|950)\);\n'
+          )
+          main_text, removed_aliases = alias_pattern.subn('', main_text)
+          if removed_aliases != 11:
+              raise SystemExit(f'Expected 11 legacy accent aliases, removed {removed_aliases}')
 
           theme_block = '''@theme {\n  /* Semantic application accent. Keep built-in Tailwind color namespaces literal. */\n  --color-accent-50: var(--app-accent-50);\n  --color-accent-100: var(--app-accent-100);\n  --color-accent-200: var(--app-accent-200);\n  --color-accent-300: var(--app-accent-300);\n  --color-accent-400: var(--app-accent-400);\n  --color-accent-500: var(--app-accent-500);\n  --color-accent-600: var(--app-accent-600);\n  --color-accent-700: var(--app-accent-700);\n  --color-accent-800: var(--app-accent-800);\n  --color-accent-900: var(--app-accent-900);\n  --color-accent-950: var(--app-accent-950);\n}\n\n'''
           import_line = "@import 'tailwindcss';\n\n"
