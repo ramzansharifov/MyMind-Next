@@ -159,6 +159,10 @@ describe('FinanceTransactionDialog', () => {
       'aria-checked',
       'true'
     )
+    expect(within(tagGroup).getByRole('radio', { name: 'Еда' })).toHaveClass(
+      'border-red-400/60',
+      'bg-red-500/22'
+    )
     expect(within(tagGroup).getAllByRole('radio', { checked: true })).toHaveLength(1)
     expect(screen.queryByRole('button', { name: /Создать тег для/ })).not.toBeInTheDocument()
 
