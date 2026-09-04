@@ -94,16 +94,17 @@ export function AiChatOverlay({ showLauncher = true }: AiChatOverlayProps): Reac
     const handleKeyDown = (event: KeyboardEvent): void => {
       if (
         !event.ctrlKey ||
-        event.altKey ||
+        !event.altKey ||
         event.shiftKey ||
         event.metaKey ||
-        event.key.toLowerCase() !== 'm'
+        event.repeat ||
+        event.code !== 'KeyZ'
       ) {
         return
       }
 
       event.preventDefault()
-      setOpen(true)
+      setOpen((current) => !current)
     }
 
     window.addEventListener('keydown', handleKeyDown)

@@ -80,12 +80,8 @@ export function HabitTodayRow({
       initial={false}
       transition={transition}
       className={cn(
-        'relative overflow-hidden rounded-2xl border bg-[var(--app-surface)] shadow-[var(--app-shadow-card)] transition-colors',
-        completed
-          ? 'border-emerald-400/25'
-          : skipped
-            ? 'border-amber-400/20 opacity-75'
-            : 'border-[var(--app-border)]'
+        'relative overflow-hidden bg-[var(--app-surface)] transition-colors hover:bg-[var(--app-control-hover)]',
+        skipped && 'opacity-75'
       )}
     >
       <motion.span

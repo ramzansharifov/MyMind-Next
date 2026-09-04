@@ -656,24 +656,29 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
                   )}
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {visibleScheduledHabits.map((habit) => (
-                    <HabitTodayRow
-                      key={habit.id}
-                      habit={habit}
-                      group={habit.groupId ? (groupById.get(habit.groupId) ?? null) : null}
-                      entry={entryByHabitId.get(habit.id)}
-                      busy={isSaving}
-                      onAdvance={() => advanceHabit(habit)}
-                      onChangeCount={(delta) => changeCount(habit, delta)}
-                      onToggleSkipped={() => toggleSkipped(habit)}
-                      onEdit={() => {
-                        setEditingHabit(habit)
-                        setHabitDialogOpen(true)
-                      }}
-                      onDelete={() => setDeleteHabitTarget(habit)}
-                    />
-                  ))}
+                <div
+                  data-habit-list="today"
+                  className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--app-shadow-card)]"
+                >
+                  <div className="divide-y divide-[var(--app-border)]">
+                    {visibleScheduledHabits.map((habit) => (
+                      <HabitTodayRow
+                        key={habit.id}
+                        habit={habit}
+                        group={habit.groupId ? (groupById.get(habit.groupId) ?? null) : null}
+                        entry={entryByHabitId.get(habit.id)}
+                        busy={isSaving}
+                        onAdvance={() => advanceHabit(habit)}
+                        onChangeCount={(delta) => changeCount(habit, delta)}
+                        onToggleSkipped={() => toggleSkipped(habit)}
+                        onEdit={() => {
+                          setEditingHabit(habit)
+                          setHabitDialogOpen(true)
+                        }}
+                        onDelete={() => setDeleteHabitTarget(habit)}
+                      />
+                    ))}
+                  </div>
                 </div>
               )}
             </>
@@ -692,91 +697,101 @@ export function HabitsPage({ resourceId, onResourceHandled }: HabitsPageProps): 
                   </p>
                 </div>
               ) : (
-                visibleAllHabits.map((habit) => {
-                  const group = habit.groupId ? (groupById.get(habit.groupId) ?? null) : null
-                  const color = group ? habitGroupColorClasses[group.color] : null
-                  const nextDate = nextHabitDate(habit, today)
-                  return (
-                    <article
-                      key={habit.id}
-                      className="rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-4 shadow-[var(--app-shadow-card)]"
-                    >
-                      <div className="flex flex-wrap items-start gap-4">
-                        <span
-                          className={cn(
-                            'flex size-10 shrink-0 items-center justify-center rounded-xl border',
-                            color
-                              ? `${color.soft} ${color.text} ${color.border}`
-                              : 'border-violet-400/20 bg-violet-500/10 text-violet-300'
-                          )}
+                <div
+                  data-habit-list="all"
+                  className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] shadow-[var(--app-shadow-card)]"
+                >
+                  <div className="divide-y divide-[var(--app-border)]">
+                    {visibleAllHabits.map((habit) => {
+                      const group = habit.groupId ? (groupById.get(habit.groupId) ?? null) : null
+                      const color = group ? habitGroupColorClasses[group.color] : null
+                      const nextDate = nextHabitDate(habit, today)
+                      return (
+                        <article
+                          key={habit.id}
+                          data-habit-row={habit.id}
+                          className="bg-[var(--app-surface)] p-4 transition-colors hover:bg-[var(--app-control-hover)]"
                         >
-                          {group ? (
-                            <HabitGroupIconGlyph icon={group.icon} className="size-4" />
-                          ) : (
-                            <Sparkles className="size-4" />
-                          )}
-                        </span>
-
-                        <button
-                          type="button"
-                          className="min-w-0 flex-1 text-left"
-                          onClick={() => {
-                            setEditingHabit(habit)
-                            setHabitDialogOpen(true)
-                          }}
-                        >
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h2 className="font-semibold text-[var(--app-text)]">{habit.title}</h2>
-                            <span className="rounded-lg border border-violet-400/20 bg-violet-500/10 px-2 py-0.5 text-[11px] text-violet-200">
-                              {habitScheduleLabel(habit)}
+                          <div className="flex flex-wrap items-start gap-4">
+                            <span
+                              className={cn(
+                                'flex size-10 shrink-0 items-center justify-center rounded-xl border',
+                                color
+                                  ? `${color.soft} ${color.text} ${color.border}`
+                                  : 'border-violet-400/20 bg-violet-500/10 text-violet-300'
+                              )}
+                            >
+                              {group ? (
+                                <HabitGroupIconGlyph icon={group.icon} className="size-4" />
+                              ) : (
+                                <Sparkles className="size-4" />
+                              )}
                             </span>
-                          </div>
-                          <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] text-[var(--app-muted)]">
-                            {group && <span>{group.name}</span>}
-                            {group && <span>·</span>}
-                            <span>
-                              {habit.trackingType === 'check'
-                                ? 'Отметка выполнения'
-                                : `Цель: ${habit.targetValue}${habit.unit ? ` ${habit.unit}` : ''}`}
-                            </span>
-                            {nextDate && (
-                              <>
-                                <span>·</span>
-                                <span>следующая: {formatHabitDate(nextDate, today)}</span>
-                              </>
-                            )}
-                          </div>
-                        </button>
 
-                        <div className="flex shrink-0 items-center gap-1">
-                          <Tooltip content={`Изменить привычку «${habit.title}»`} side="top">
                             <button
                               type="button"
-                              aria-label={`Изменить привычку «${habit.title}»`}
-                              className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+                              className="min-w-0 flex-1 text-left"
                               onClick={() => {
                                 setEditingHabit(habit)
                                 setHabitDialogOpen(true)
                               }}
                             >
-                              <Pencil className="size-4" />
+                              <div className="flex flex-wrap items-center gap-2">
+                                <h2 className="font-semibold text-[var(--app-text)]">
+                                  {habit.title}
+                                </h2>
+                                <span className="rounded-lg border border-violet-400/20 bg-violet-500/10 px-2 py-0.5 text-[11px] text-violet-200">
+                                  {habitScheduleLabel(habit)}
+                                </span>
+                              </div>
+                              <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] text-[var(--app-muted)]">
+                                {group && <span>{group.name}</span>}
+                                {group && <span>·</span>}
+                                <span>
+                                  {habit.trackingType === 'check'
+                                    ? 'Отметка выполнения'
+                                    : `Цель: ${habit.targetValue}${habit.unit ? ` ${habit.unit}` : ''}`}
+                                </span>
+                                {nextDate && (
+                                  <>
+                                    <span>·</span>
+                                    <span>следующая: {formatHabitDate(nextDate, today)}</span>
+                                  </>
+                                )}
+                              </div>
                             </button>
-                          </Tooltip>
-                          <Tooltip content={`Удалить привычку «${habit.title}»`} side="top">
-                            <button
-                              type="button"
-                              aria-label={`Удалить привычку «${habit.title}»`}
-                              className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
-                              onClick={() => setDeleteHabitTarget(habit)}
-                            >
-                              <Trash2 className="size-4" />
-                            </button>
-                          </Tooltip>
-                        </div>
-                      </div>
-                    </article>
-                  )
-                })
+
+                            <div className="flex shrink-0 items-center gap-1">
+                              <Tooltip content={`Изменить привычку «${habit.title}»`} side="top">
+                                <button
+                                  type="button"
+                                  aria-label={`Изменить привычку «${habit.title}»`}
+                                  className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] hover:bg-[var(--app-control-hover)] hover:text-[var(--app-text)]"
+                                  onClick={() => {
+                                    setEditingHabit(habit)
+                                    setHabitDialogOpen(true)
+                                  }}
+                                >
+                                  <Pencil className="size-4" />
+                                </button>
+                              </Tooltip>
+                              <Tooltip content={`Удалить привычку «${habit.title}»`} side="top">
+                                <button
+                                  type="button"
+                                  aria-label={`Удалить привычку «${habit.title}»`}
+                                  className="flex size-9 items-center justify-center rounded-xl text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
+                                  onClick={() => setDeleteHabitTarget(habit)}
+                                >
+                                  <Trash2 className="size-4" />
+                                </button>
+                              </Tooltip>
+                            </div>
+                          </div>
+                        </article>
+                      )
+                    })}
+                  </div>
+                </div>
               )}
             </div>
           )}

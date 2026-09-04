@@ -74,13 +74,12 @@ describe('AiChatOverlay', () => {
     await waitFor(() => expect(aiChat.setOpen).toHaveBeenCalledWith({ open: false }))
   })
 
-  it('hides the launcher but still opens the chat with Ctrl+M', async () => {
+  it('toggles the hidden chat with Ctrl+Alt+Z in English and Russian layouts', async () => {
     Object.defineProperty(window, 'api', {
       configurable: true,
       value: { aiChat }
     })
 
-    const user = userEvent.setup()
     render(
       <TooltipProvider>
         <AiChatOverlay showLauncher={false} />
@@ -90,11 +89,14 @@ describe('AiChatOverlay', () => {
     expect(screen.queryByRole('button', { name: 'Открыть ИИ-чат' })).not.toBeInTheDocument()
 
     fireEvent.keyDown(window, { key: 'm', ctrlKey: true })
+    expect(screen.queryByTestId('ai-chat-panel')).not.toBeInTheDocument()
+
+    fireEvent.keyDown(window, { key: 'я', code: 'KeyZ', ctrlKey: true, altKey: true })
 
     expect(await screen.findByTestId('ai-chat-panel')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Открыть ИИ-чат' })).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Закрыть ИИ-чат' }))
+    fireEvent.keyDown(window, { key: 'z', code: 'KeyZ', ctrlKey: true, altKey: true })
 
     await waitFor(() => expect(screen.queryByTestId('ai-chat-panel')).not.toBeInTheDocument())
     expect(screen.queryByRole('button', { name: 'Открыть ИИ-чат' })).not.toBeInTheDocument()

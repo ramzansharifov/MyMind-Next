@@ -227,7 +227,7 @@ function SettingsOverview({
 
         <SettingsNavigationCard title="ИИ-чат" icon={Bot} onClick={onOpenAiChat}>
           <SettingsValueBadge>{showLauncher ? 'Кнопка видна' : 'Кнопка скрыта'}</SettingsValueBadge>
-          <SettingsValueBadge>Ctrl + M</SettingsValueBadge>
+          <SettingsValueBadge>Ctrl + Alt + Z</SettingsValueBadge>
         </SettingsNavigationCard>
 
         <SettingsNavigationCard title="Инструкции" icon={BookOpen} onClick={onOpenInstructions}>
@@ -351,7 +351,11 @@ function AiChatSettingsPage(): React.JSX.Element {
             </kbd>
             <span>+</span>
             <kbd className="rounded-md border border-[var(--app-border-strong)] bg-[var(--app-surface)] px-2 py-1 font-mono text-[11px] text-[var(--app-text)]">
-              M
+              Alt
+            </kbd>
+            <span>+</span>
+            <kbd className="rounded-md border border-[var(--app-border-strong)] bg-[var(--app-surface)] px-2 py-1 font-mono text-[11px] text-[var(--app-text)]">
+              Z
             </kbd>
             <span className="ml-1">открывает ИИ-чат даже при скрытой кнопке.</span>
           </div>
