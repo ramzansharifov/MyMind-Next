@@ -26,8 +26,10 @@ import { DiaryReader } from './components/DiaryReader'
 import { DiaryReports } from './components/DiaryReports'
 import { DiarySettings } from './components/DiarySettings'
 import { DiaryToday } from './components/DiaryToday'
+import { getDiaryCoverStyle } from './lib/diary-cover'
 import { getDiaryErrorMessage, localDayKey } from './lib/diary-ui'
 import './diary.css'
+import './diary-scrollbar.css'
 
 type DiarySection = 'library' | 'today' | 'reader' | 'calendar' | 'reports' | 'settings'
 
@@ -222,7 +224,10 @@ export function DiaryPage({ resourceId, onResourceHandled }: DiaryPageProps): Re
     ) : undefined
 
   return (
-    <StandardModulePage>
+    <StandardModulePage
+      className={selectedDiary ? 'diary-cover-scrollbar' : undefined}
+      style={selectedDiary ? getDiaryCoverStyle(selectedDiary.coverTone) : undefined}
+    >
       <ModuleHeader
         icon={BookHeart}
         title="Дневник"
