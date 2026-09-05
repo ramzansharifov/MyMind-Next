@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: dependency-build-hardening
+  cancel-in-progress: true
+
 jobs:
   harden:
     runs-on: windows-latest
