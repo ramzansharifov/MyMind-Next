@@ -221,7 +221,10 @@ jobs:
           Set-Content -Encoding utf8 DEVELOPMENT.md ($developmentNote + $development)
 
       - name: Install monorepo dependencies
-        run: npm install
+        run: npm install --ignore-scripts
+
+      - name: Install desktop native dependencies
+        run: npm run postinstall --workspace=mymind-next
 
       - name: Verify workspace graph
         shell: pwsh
