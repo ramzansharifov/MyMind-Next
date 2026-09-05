@@ -1,0 +1,79 @@
+name: Generate app icon
+
+on:
+  push:
+    branches:
+      - agent/brand-app-icon
+    paths:
+      - build/icon-source.svg
+      - .github/workflows/generate-app-icon.yml
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/brand-app-icon
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install icon tooling
+        run: npm install --no-save --package-lock=false --ignore-scripts sharp@0.34.4 png2icons@2.0.1
+
+      - name: Generate PNG, ICO and ICNS assets
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs')
+          const sharp = require('sharp')
+          const png2icons = require('png2icons')
+
+          async function main() {
+            const png = await sharp('build/icon-source.svg')
+              .resize(1024, 1024)
+              .png({ compressionLevel: 9 })
+              .toBuffer()
+
+            const ico = png2icons.createICO(png, png2icons.BICUBIC2, 0, false, true)
+            const icns = png2icons.createICNS(png, png2icons.BICUBIC2, 0)
+
+            if (!ico || !icns) {
+              throw new Error('Failed to generate native icon formats')
+            }
+
+            fs.writeFileSync('build/icon.png', png)
+            fs.writeFileSync('resources/icon.png', png)
+            fs.writeFileSync('build/icon.ico', ico)
+            fs.writeFileSync('build/icon.icns', icns)
+          }
+
+          main().catch((error) => {
+            console.error(error)
+            process.exitCode = 1
+          })
+          NODE
+
+      - name: Verify generated assets
+        run: |
+          test -s build/icon.png
+          test -s resources/icon.png
+          test -s build/icon.ico
+          test -s build/icon.icns
+          file build/icon.png build/icon.ico build/icon.icns resources/icon.png
+
+      - name: Commit generated assets
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add build/icon.png build/icon.ico build/icon.icns resources/icon.png
+          if git diff --cached --quiet; then
+            echo "Generated assets are already current."
+            exit 0
+          fi
+          git commit -m "chore: regenerate application icons"
+          git push
