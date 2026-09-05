@@ -1,5 +1,6 @@
 import type { SqlDatabasePort } from '@mymind/contracts/storage'
 import { mobileSchemaV1 } from '@mymind/persistence/mobile-schema'
+import { mobileSchemaV2 } from '@mymind/persistence/mobile-schema-v2'
 import { openDatabaseAsync, type SQLiteDatabase, type SQLiteBindValue } from 'expo-sqlite'
 
 function bindings(parameters: unknown[]): SQLiteBindValue[] {
@@ -28,7 +29,6 @@ export function adaptSqlite(db: SQLiteDatabase): SqlDatabasePort {
     transaction:
       (operation) =>
       (...args) => {
-        // Savepoints support nested repository transactions without committing a parent.
         const name = `mymind_${++savepoint}`
         db.execSync(`SAVEPOINT ${name}`)
         try {
@@ -46,6 +46,17 @@ export function adaptSqlite(db: SQLiteDatabase): SqlDatabasePort {
   }
 }
 
+async function applyMigration(
+  db: SQLiteDatabase,
+  statements: readonly string[],
+  version: number
+): Promise<void> {
+  await db.withExclusiveTransactionAsync(async (tx) => {
+    for (const sql of statements) await tx.execAsync(sql)
+    await tx.execAsync(`PRAGMA user_version = ${version}`)
+  })
+}
+
 export async function openMobileDatabase(): Promise<SQLiteDatabase> {
   const db = await openDatabaseAsync('mymind.sqlite')
   try {
@@ -53,16 +64,27 @@ export async function openMobileDatabase(): Promise<SQLiteDatabase> {
       'PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;'
     )
     const version = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version')
-    if ((version?.user_version ?? 0) > 1)
+    let currentVersion = version?.user_version ?? 0
+
+    if (currentVersion > 2)
       throw new Error('Данные созданы новой версией MyMind. Обновите приложение.')
-    if (!version?.user_version) {
+
+    if (currentVersion === 0) {
       await db.withExclusiveTransactionAsync(async (tx) => {
         for (const sql of mobileSchemaV1) await tx.execAsync(sql)
         await tx.execAsync(
           'CREATE TABLE mobile_preferences (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL); PRAGMA user_version = 1;'
         )
       })
+      currentVersion = 1
     }
+
+    if (currentVersion === 1) {
+      await applyMigration(db, mobileSchemaV2, 2)
+      currentVersion = 2
+    }
+
+    if (currentVersion !== 2) throw new Error('Не удалось обновить локальную базу MyMind')
     return db
   } catch (error) {
     await db.closeAsync()
