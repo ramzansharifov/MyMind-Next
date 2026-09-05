@@ -54,7 +54,7 @@ function deferred(): {
 
 const document = (text: string): NoteDocument => ({
   version: 1,
-  blocks: [{ id: `block-${text}`, type: 'text', text }]
+  blocks: [{ id: 'block-test', type: 'text', text }]
 })
 
 afterEach(() => {
