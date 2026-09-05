@@ -1,0 +1,67 @@
+name: Dependency and build diagnostics
+
+on:
+  push:
+    branches:
+      - agent/dependency-build-hardening
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Use npm 11
+        run: npm install --global npm@11
+      - name: Install dependencies
+        run: npm ci
+      - name: Dependency audit details
+        shell: pwsh
+        run: |
+          cmd /c "npm audit --json > npm-audit.json"
+          Write-Host "=== npm audit compact report ==="
+          node -e "const fs=require('fs');const a=JSON.parse(fs.readFileSync('npm-audit.json','utf8'));console.log(JSON.stringify(a.metadata?.vulnerabilities||{},null,2));for(const [name,v] of Object.entries(a.vulnerabilities||{})){const via=(v.via||[]).map(x=>typeof x==='string'?x:{source:x.source,name:x.name,severity:x.severity,title:x.title,range:x.range});console.log(JSON.stringify({name,severity:v.severity,isDirect:v.isDirect,via,effects:v.effects,range:v.range,nodes:v.nodes,fixAvailable:v.fixAvailable}))}"
+          exit 0
+      - name: Outdated direct dependencies
+        shell: pwsh
+        run: |
+          cmd /c "npm outdated --json > npm-outdated.json"
+          Write-Host "=== npm outdated ==="
+          Get-Content npm-outdated.json
+          exit 0
+      - name: Native install script diagnostics
+        shell: pwsh
+        run: |
+          Write-Host "=== npm/install script configuration ==="
+          npm config get ignore-scripts
+          npm install-scripts ls
+          Write-Host "=== better-sqlite3 dependency ==="
+          npm explain better-sqlite3
+          Write-Host "=== electron dependency ==="
+          npm explain electron
+          exit 0
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Database schema check
+        run: npm run db:check
+      - name: Desktop production bundle
+        run: npm run build:bundle
+      - name: Expo Android export
+        shell: pwsh
+        run: |
+          Push-Location apps/mobile
+          npx expo export --platform android --output-dir dist-android
+          Pop-Location
+      - name: Windows installer
+        run: npm run build:win
+      - name: Diff whitespace
+        run: git diff origin/main...HEAD --check
