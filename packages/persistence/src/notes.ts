@@ -121,8 +121,7 @@ export function createNotesRepository(
 
   function findGroup(id: string): NoteGroup | null {
     const row = runtime.database().prepare(`${NOTE_GROUP_SELECT} WHERE id = ?`).get(id) as
-      | NoteGroupRow
-      | undefined
+      NoteGroupRow | undefined
     return row ? mapGroup(row) : null
   }
 
@@ -132,8 +131,7 @@ export function createNotesRepository(
 
   function findNote(id: string): NoteRecord | null {
     const row = runtime.database().prepare(`${NOTE_SELECT} WHERE id = ?`).get(id) as
-      | NoteRow
-      | undefined
+      NoteRow | undefined
     return row ? mapRecord(row) : null
   }
 
@@ -145,7 +143,9 @@ export function createNotesRepository(
 
   function listNotesOverview(): NotesOverview {
     const database = runtime.database()
-    const groups = database.prepare(`${NOTE_GROUP_SELECT} ORDER BY title ASC`).all() as NoteGroupRow[]
+    const groups = database
+      .prepare(`${NOTE_GROUP_SELECT} ORDER BY title ASC`)
+      .all() as NoteGroupRow[]
     const notes = database
       .prepare(`${NOTE_SELECT} ORDER BY updated_at DESC, title ASC`)
       .all() as NoteRow[]
@@ -229,9 +229,7 @@ export function createNotesRepository(
         now
       )
     if (valid.groupId) {
-      database
-        .prepare('UPDATE note_groups SET updated_at = ? WHERE id = ?')
-        .run(now, valid.groupId)
+      database.prepare('UPDATE note_groups SET updated_at = ? WHERE id = ?').run(now, valid.groupId)
     }
     return requireNote(id)
   }
@@ -245,9 +243,7 @@ export function createNotesRepository(
       .prepare('UPDATE notes SET title = ?, updated_at = ? WHERE id = ?')
       .run(normalized, now, id)
     if (result.changes === 0) throw new Error('Заметка не найдена')
-    return mapSummary(
-      runtime.database().prepare(`${NOTE_SELECT} WHERE id = ?`).get(id) as NoteRow
-    )
+    return mapSummary(runtime.database().prepare(`${NOTE_SELECT} WHERE id = ?`).get(id) as NoteRow)
   }
 
   function moveNote(id: string, groupId: string | null): NoteSummary {

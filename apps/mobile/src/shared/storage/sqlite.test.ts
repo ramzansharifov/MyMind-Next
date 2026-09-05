@@ -104,11 +104,15 @@ describe('Expo SQLite adapter', () => {
     expect(db.prepare('SELECT title FROM tasks WHERE id = ?').get('task-before-notes')).toEqual({
       title: 'Сохранить меня'
     })
-    expect(db.prepare('SELECT value FROM mobile_preferences WHERE key = ?').get('appearance')).toEqual({
+    expect(
+      db.prepare('SELECT value FROM mobile_preferences WHERE key = ?').get('appearance')
+    ).toEqual({
       value: 'kept'
     })
     expect(
-      db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'note_groups'").get()
+      db
+        .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'note_groups'")
+        .get()
     ).toEqual({ name: 'note_groups' })
   })
 

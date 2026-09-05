@@ -25,8 +25,14 @@ export const studyHeadingBlockSchema = z.object({
   type: z.literal('heading'),
   text: z.string().max(STUDY_DOCUMENT_LIMITS.maxTitleLength),
   level: z.union([z.literal(1), z.literal(2), z.literal(3)]),
-  color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
-  backgroundColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+  color: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/)
+    .optional(),
+  backgroundColor: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/)
+    .optional(),
   alignment: z.enum(['left', 'center', 'right']).optional(),
   backgroundScope: z.enum(['text', 'container']).optional()
 })
@@ -161,7 +167,10 @@ export const studyDividerBlockSchema = z.object({
   type: z.literal('divider'),
   variant: z.enum(['solid', 'tapered', 'dashed', 'dotted']).optional(),
   thickness: z.number().int().min(1).max(12).optional(),
-  color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional()
+  color: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/)
+    .optional()
 })
 
 export const studyBoardBlockSchema = z.object({

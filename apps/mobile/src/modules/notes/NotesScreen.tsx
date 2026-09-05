@@ -165,10 +165,7 @@ export function NotesScreen(): React.JSX.Element {
     setForm({
       title: 'Новая заметка',
       initial: { title: '', groupId: groupId ?? null },
-      fields: [
-        textField('title', 'Название'),
-        choiceField('groupId', 'Группа', groupChoices)
-      ],
+      fields: [textField('title', 'Название'), choiceField('groupId', 'Группа', groupChoices)],
       save: (values) => {
         const input = notesValidation.createNoteInputSchema.parse({
           title: values.title,
@@ -185,15 +182,18 @@ export function NotesScreen(): React.JSX.Element {
     setForm({
       title: 'Свойства заметки',
       initial: { title: note.title, groupId: note.groupId },
-      fields: [
-        textField('title', 'Название'),
-        choiceField('groupId', 'Группа', groupChoices)
-      ],
+      fields: [textField('title', 'Название'), choiceField('groupId', 'Группа', groupChoices)],
       save: async (values) => {
         await flush()
-        const renamed = notesValidation.renameNoteInputSchema.parse({ id: note.id, title: values.title })
+        const renamed = notesValidation.renameNoteInputSchema.parse({
+          id: note.id,
+          title: values.title
+        })
         api.renameNote(renamed.id, renamed.title)
-        const moved = notesValidation.moveNoteInputSchema.parse({ id: note.id, groupId: values.groupId })
+        const moved = notesValidation.moveNoteInputSchema.parse({
+          id: note.id,
+          groupId: values.groupId
+        })
         api.moveNote(moved.id, moved.groupId)
         const updated = api.getNote(note.id)
         setRecord(updated)

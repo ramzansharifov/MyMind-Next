@@ -153,7 +153,8 @@ function BlockInput({
         <View style={{ gap: 4 }}>
           <Label>{block.title || block.source.asset?.name || 'Локальное вложение'}</Label>
           <Label muted>
-            Локальное вложение сохранено без изменений. Импорт и просмотр на телефоне будут подключены отдельным адаптером.
+            Локальное вложение сохранено без изменений. Импорт и просмотр на телефоне будут
+            подключены отдельным адаптером.
           </Label>
         </View>
       )
@@ -161,14 +162,18 @@ function BlockInput({
     case 'file':
       return (
         <View style={{ gap: 4 }}>
-          <Label>{block.title || block.source.asset?.name || (block.type === 'audio' ? 'Аудио' : 'Файл')}</Label>
+          <Label>
+            {block.title || block.source.asset?.name || (block.type === 'audio' ? 'Аудио' : 'Файл')}
+          </Label>
           <Label muted>Локальное вложение сохранено без изменений.</Label>
         </View>
       )
     case 'divider':
       return (
         <View style={{ gap: 10 }}>
-          <View style={{ height: block.thickness ?? 1, backgroundColor: block.color ?? theme.border }} />
+          <View
+            style={{ height: block.thickness ?? 1, backgroundColor: block.color ?? theme.border }}
+          />
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {(['solid', 'tapered', 'dashed', 'dotted'] as const).map((variant) => (
               <Button
@@ -193,7 +198,9 @@ function BlockInput({
             style={inputStyle}
           />
           <Label muted>
-            {block.boardId ? 'Связанная доска сохранена в документе.' : 'Блок доски без созданного canvas.'}
+            {block.boardId
+              ? 'Связанная доска сохранена в документе.'
+              : 'Блок доски без созданного canvas.'}
           </Label>
         </View>
       )

@@ -18,9 +18,12 @@ function deferred<T = void>(): {
 describe('AutosaveQueue', () => {
   it('coalesces debounced snapshots and flushes the latest value', async () => {
     const saved: string[] = []
-    const queue = new AutosaveQueue<string>(async (value) => {
-      saved.push(value)
-    }, { delayMs: 10_000 })
+    const queue = new AutosaveQueue<string>(
+      async (value) => {
+        saved.push(value)
+      },
+      { delayMs: 10_000 }
+    )
 
     queue.schedule('first')
     queue.schedule('latest')
@@ -33,10 +36,13 @@ describe('AutosaveQueue', () => {
   it('serializes a newer snapshot scheduled while a save is in progress', async () => {
     const first = deferred<void>()
     const saved: string[] = []
-    const queue = new AutosaveQueue<string>(async (value) => {
-      saved.push(value)
-      if (value === 'first') await first.promise
-    }, { delayMs: 10_000 })
+    const queue = new AutosaveQueue<string>(
+      async (value) => {
+        saved.push(value)
+        if (value === 'first') await first.promise
+      },
+      { delayMs: 10_000 }
+    )
 
     queue.schedule('first')
     const flushing = queue.flush()
