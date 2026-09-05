@@ -1,7 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 import { AutosaveQueue } from './autosave'
 
-function deferred<T = void>() {
+function deferred<T = void>(): {
+  promise: Promise<T>
+  resolve(value: T | PromiseLike<T>): void
+  reject(reason?: unknown): void
+} {
   let resolve!: (value: T | PromiseLike<T>) => void
   let reject!: (reason?: unknown) => void
   const promise = new Promise<T>((res, rej) => {
