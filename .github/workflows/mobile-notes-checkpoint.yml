@@ -1,0 +1,66 @@
+name: Mobile Notes checkpoint
+
+on:
+  push:
+    branches:
+      - agent/full-mobile-app
+    paths:
+      - .mobile-ci-trigger
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Use npm 11
+        shell: pwsh
+        run: npm install --global npm@11
+      - name: Refresh lockfile metadata
+        run: npm install --package-lock-only --ignore-scripts
+      - name: Strict install
+        run: npm ci
+      - name: Format changed code
+        run: npx prettier --write apps/mobile packages apps/desktop/src/shared apps/desktop/src/main/repositories/notes.repository.ts apps/desktop/src/main/domain/study-document-index.ts
+      - name: Format check
+        run: npm run format:check
+      - name: Native desktop dependency
+        run: npm run native:node
+      - name: Lint desktop
+        run: npm run lint
+      - name: Lint mobile
+        run: npm run lint:mobile
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Mobile and shared tests
+        run: npm run test:mobile
+      - name: Desktop Notes regression
+        working-directory: apps/desktop
+        run: npx vitest run src/main/repositories/notes.repository.test.ts
+      - name: Full desktop tests
+        run: npm run test:coverage
+      - name: Database check
+        run: npm run db:check
+      - name: Desktop production bundle
+        run: npm run build:bundle
+      - name: Expo Android export
+        run: npm run export:android
+      - name: Windows installer
+        run: npm run build:win
+      - name: Whitespace
+        run: git diff --check
+      - name: Commit verified checkpoint and remove temporary workflow
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/mobile-notes-checkpoint.yml .mobile-ci-trigger
+          git add -A
+          git diff --cached --quiet; if ($LASTEXITCODE -ne 0) { git commit -m "feat: verify mobile Notes checkpoint"; git push }
