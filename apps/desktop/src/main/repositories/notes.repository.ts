@@ -1,4 +1,4 @@
-import type { NoteDocument, SaveNoteInput } from '../../shared/contracts/notes'
+import type { NoteDocument, NoteRecord, SaveNoteInput } from '../../shared/contracts/notes'
 import { desktopRepositoryRuntime } from '../database/repository-runtime'
 import {
   cleanupStudyAssetsForDocument,
@@ -35,10 +35,10 @@ export const moveNote = repository.moveNote
 export const getNote = repository.getNote
 export const listUngroupedNotes = repository.listUngroupedNotes
 
-export function saveNote(input: SaveNoteInput) {
+export function saveNote(input: SaveNoteInput): Promise<NoteRecord> {
   return studyMaterialCoordinator.run(input.id, () => repository.saveNote(input))
 }
 
-export function deleteNote(id: string) {
+export function deleteNote(id: string): Promise<boolean> {
   return studyMaterialCoordinator.run(id, () => repository.deleteNote(id))
 }
