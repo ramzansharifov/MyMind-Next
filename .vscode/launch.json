@@ -2,10 +2,10 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Debug Main Process",
+      "name": "Debug Desktop Main Process",
       "type": "node",
       "request": "launch",
-      "cwd": "${workspaceRoot}",
+      "cwd": "${workspaceRoot}/apps/desktop",
       "runtimeExecutable": "${workspaceRoot}/node_modules/.bin/electron-vite",
       "windows": {
         "runtimeExecutable": "${workspaceRoot}/node_modules/.bin/electron-vite.cmd"
@@ -16,11 +16,11 @@
       }
     },
     {
-      "name": "Debug Renderer Process",
+      "name": "Debug Desktop Renderer Process",
       "port": 9222,
       "request": "attach",
       "type": "chrome",
-      "webRoot": "${workspaceFolder}/src/renderer",
+      "webRoot": "${workspaceFolder}/apps/desktop/src/renderer",
       "timeout": 60000,
       "presentation": {
         "hidden": true
@@ -29,8 +29,8 @@
   ],
   "compounds": [
     {
-      "name": "Debug All",
-      "configurations": ["Debug Main Process", "Debug Renderer Process"],
+      "name": "Debug Desktop",
+      "configurations": ["Debug Desktop Main Process", "Debug Desktop Renderer Process"],
       "presentation": {
         "order": 1
       }

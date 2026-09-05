@@ -1,5 +1,26 @@
 # MyMind
 
+MyMind теперь организован как monorepo с двумя приложениями:
+
+`	ext
+apps/
+  desktop/  # Electron + React, существующее desktop-приложение
+  mobile/   # React Native + Expo, базовая мобильная структура
+`
+
+Все npm-команды запускаются из корня репозитория. Для разработки:
+
+`ash
+npm ci
+npm run dev:desktop
+npm run dev:mobile
+`
+
+Команда
+pm run dev сохранена как алиас для desktop-приложения.
+
+## Desktop
+
 MyMind — локальное desktop-приложение для структурированных учебных материалов.
 
 Приложение поддерживает:
