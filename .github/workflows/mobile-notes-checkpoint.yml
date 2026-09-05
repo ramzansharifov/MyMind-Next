@@ -56,7 +56,7 @@ jobs:
         working-directory: apps/desktop
         run: npx vitest run src/main/repositories/notes.repository.test.ts
       - name: Full desktop tests
-        run: npm run test:coverage
+        run: npm run test:run
       - name: Database check
         run: npm run db:check
       - name: Desktop production bundle
