@@ -1,5 +1,6 @@
 import Database from 'better-sqlite3'
 import type { SQLiteDatabase } from 'expo-sqlite'
+import { mobileSchemaV1 } from '@mymind/persistence/mobile-schema'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('expo-sqlite', () => ({ openDatabaseAsync: vi.fn() }))
@@ -36,7 +37,9 @@ function nativeDriver(): { db: Database.Database; expo: SQLiteDatabase } {
   }
   return { db, expo: driver as unknown as SQLiteDatabase }
 }
+
 afterEach(() => {
+  vi.clearAllMocks()
   for (const db of databases.splice(0)) db.close()
 })
 
@@ -63,18 +66,52 @@ describe('Expo SQLite adapter', () => {
     expect(port.prepare('SELECT * FROM records WHERE id = ?').get('rollback')).toBeUndefined()
     expect(() => insert.run('bad', {})).toThrow('Неподдерживаемый параметр')
   })
-  it('migrates only once and preserves existing user data', async () => {
+
+  it('migrates a fresh database through the latest schema and preserves preferences', async () => {
     const { db, expo } = nativeDriver()
     vi.mocked(openDatabaseAsync).mockResolvedValue(expo)
+
     await openMobileDatabase()
     db.prepare('INSERT INTO mobile_preferences VALUES (?, ?)').run('test', 'saved')
     await openMobileDatabase()
-    expect(db.pragma('user_version', { simple: true })).toBe(1)
+
+    expect(db.pragma('user_version', { simple: true })).toBe(2)
     expect(db.pragma('foreign_keys', { simple: true })).toBe(1)
     expect(db.prepare('SELECT value FROM mobile_preferences WHERE key = ?').get('test')).toEqual({
       value: 'saved'
     })
+    expect(
+      db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'notes'").get()
+    ).toEqual({ name: 'notes' })
   })
+
+  it('upgrades an existing V1 database without losing module data', async () => {
+    const { db, expo } = nativeDriver()
+    for (const sql of mobileSchemaV1) db.exec(sql)
+    db.exec(
+      'CREATE TABLE mobile_preferences (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL); PRAGMA user_version = 1;'
+    )
+    db.prepare(
+      `INSERT INTO tasks(id, title, description, group_id, status, priority, due_date, due_time, completed_at, created_at, updated_at)
+       VALUES (?, ?, '', NULL, 'active', 'normal', NULL, NULL, NULL, ?, ?)`
+    ).run('task-before-notes', 'Сохранить меня', 1, 1)
+    db.prepare('INSERT INTO mobile_preferences VALUES (?, ?)').run('appearance', 'kept')
+    vi.mocked(openDatabaseAsync).mockResolvedValue(expo)
+
+    await openMobileDatabase()
+
+    expect(db.pragma('user_version', { simple: true })).toBe(2)
+    expect(db.prepare('SELECT title FROM tasks WHERE id = ?').get('task-before-notes')).toEqual({
+      title: 'Сохранить меня'
+    })
+    expect(db.prepare('SELECT value FROM mobile_preferences WHERE key = ?').get('appearance')).toEqual({
+      value: 'kept'
+    })
+    expect(
+      db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'note_groups'").get()
+    ).toEqual({ name: 'note_groups' })
+  })
+
   it('does not reset an unknown newer database', async () => {
     const { db, expo } = nativeDriver()
     db.pragma('user_version = 99')
@@ -83,6 +120,7 @@ describe('Expo SQLite adapter', () => {
     expect(db.pragma('user_version', { simple: true })).toBe(99)
     expect(expo.closeAsync).toHaveBeenCalledOnce()
   })
+
   it('rolls back schema creation when a migration fails', async () => {
     const { db, expo } = nativeDriver()
     db.exec('CREATE TABLE mobile_preferences (key TEXT PRIMARY KEY, value TEXT)')
