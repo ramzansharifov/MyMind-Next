@@ -39,5 +39,13 @@
     "test:coverage": "npm run test:coverage --workspace=mymind-next",
     "check": "npm run check --workspace=mymind-next && npm run typecheck:mobile",
     "check:fix": "npm run format && npm run check"
+  },
+  "allowScripts": {
+    "esbuild@0.18.20": true,
+    "esbuild@0.25.12": true,
+    "esbuild@0.28.2": true,
+    "better-sqlite3@12.11.1": true,
+    "electron@44.2.0": true,
+    "electron-winstaller@5.4.0": true
   }
 }

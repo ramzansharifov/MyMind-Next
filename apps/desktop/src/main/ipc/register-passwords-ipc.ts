@@ -82,8 +82,8 @@ export function registerPasswordsIpcHandlers(): void {
   )
   ipcMain.handle(PASSWORDS_IPC_CHANNELS.lockVault, () =>
     mainOperationTracker.run(() =>
-      runVaultLifecycleOperation(() => {
-        clearTrackedPasswordClipboard()
+      runVaultLifecycleOperation(async () => {
+        await clearTrackedPasswordClipboard()
         return lockPasswordVault()
       })
     )
@@ -105,35 +105,47 @@ export function registerPasswordsIpcHandlers(): void {
     })
   )
   ipcMain.handle(PASSWORDS_IPC_CHANNELS.createGroup, (_event, rawInput: unknown) =>
-    mainOperationTracker.run(() => createPasswordGroup(createPasswordGroupInputSchema.parse(rawInput)))
+    mainOperationTracker.run(() =>
+      createPasswordGroup(createPasswordGroupInputSchema.parse(rawInput))
+    )
   )
   ipcMain.handle(PASSWORDS_IPC_CHANNELS.updateGroup, (_event, rawInput: unknown) =>
-    mainOperationTracker.run(() => updatePasswordGroup(updatePasswordGroupInputSchema.parse(rawInput)))
+    mainOperationTracker.run(() =>
+      updatePasswordGroup(updatePasswordGroupInputSchema.parse(rawInput))
+    )
   )
   ipcMain.handle(PASSWORDS_IPC_CHANNELS.deleteGroup, (_event, rawInput: unknown) =>
-    mainOperationTracker.run(() => deletePasswordGroup(deletePasswordGroupInputSchema.parse(rawInput)))
+    mainOperationTracker.run(() =>
+      deletePasswordGroup(deletePasswordGroupInputSchema.parse(rawInput))
+    )
   )
   ipcMain.handle(PASSWORDS_IPC_CHANNELS.createItem, (_event, rawInput: unknown) =>
-    mainOperationTracker.run(() => createPasswordItem(createPasswordItemInputSchema.parse(rawInput)))
+    mainOperationTracker.run(() =>
+      createPasswordItem(createPasswordItemInputSchema.parse(rawInput))
+    )
   )
   ipcMain.handle(PASSWORDS_IPC_CHANNELS.updateItem, (_event, rawInput: unknown) =>
-    mainOperationTracker.run(() => updatePasswordItem(updatePasswordItemInputSchema.parse(rawInput)))
+    mainOperationTracker.run(() =>
+      updatePasswordItem(updatePasswordItemInputSchema.parse(rawInput))
+    )
   )
   ipcMain.handle(PASSWORDS_IPC_CHANNELS.deleteItem, (_event, rawInput: unknown) =>
-    mainOperationTracker.run(() => deletePasswordItem(deletePasswordItemInputSchema.parse(rawInput)))
+    mainOperationTracker.run(() =>
+      deletePasswordItem(deletePasswordItemInputSchema.parse(rawInput))
+    )
   )
   ipcMain.handle(PASSWORDS_IPC_CHANNELS.generatePassword, (_event, rawInput: unknown) =>
     mainOperationTracker.run(() => generatePassword(generatePasswordInputSchema.parse(rawInput)))
   )
   ipcMain.handle(PASSWORDS_IPC_CHANNELS.copyItemField, (_event, rawInput: unknown) =>
-    mainOperationTracker.run(() => {
+    mainOperationTracker.run(async () => {
       const input = copyPasswordItemFieldInputSchema.parse(rawInput)
       const item = getPasswordItem(input.id)
       const value = input.field === 'password' ? item.password : item.username
       if (!value) {
         throw new Error(input.field === 'username' ? 'Логин не указан' : 'Пароль не указан')
       }
-      copyPasswordValue(value)
+      await copyPasswordValue(value)
       return true
     })
   )
