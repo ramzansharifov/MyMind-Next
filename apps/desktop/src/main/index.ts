@@ -151,11 +151,17 @@ async function resolveShutdownFallback(
   return result.response === 1 ? 'force' : 'cancel'
 }
 
-function closeApplicationResources(): void {
+async function closeApplicationResources(): Promise<void> {
   aiChatViewController.destroy()
   calendarReminderScheduler.stop()
   habitReminderScheduler.stop()
-  clearTrackedPasswordClipboard()
+
+  try {
+    await clearTrackedPasswordClipboard()
+  } catch (reason: unknown) {
+    console.warn('Failed to clear the tracked password clipboard during shutdown', reason)
+  }
+
   lockPasswordVault()
   closeDatabase()
 }
