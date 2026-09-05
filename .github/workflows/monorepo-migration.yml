@@ -251,7 +251,11 @@ jobs:
         run: npm run build:bundle
 
       - name: Bundle mobile app for Android
-        run: npm exec --workspace=mymind-mobile expo export -- --platform android --output-dir dist
+        shell: pwsh
+        run: |
+          Push-Location apps/mobile
+          npx expo export --platform android --output-dir dist
+          Pop-Location
 
       - name: Build Windows installer from workspace
         run: npm run build:win
