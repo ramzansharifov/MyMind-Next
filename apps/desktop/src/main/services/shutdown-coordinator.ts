@@ -3,7 +3,10 @@ import { randomUUID } from 'node:crypto'
 import type { ShutdownResponse } from '../../shared/contracts/system'
 
 export type ShutdownFallbackReason =
-  'renderer-timeout' | 'renderer-unresponsive' | 'renderer-gone' | 'operations-timeout'
+  | 'renderer-timeout'
+  | 'renderer-unresponsive'
+  | 'renderer-gone'
+  | 'operations-timeout'
 
 export type ShutdownFallbackDecision = 'retry' | 'cancel' | 'force'
 
@@ -19,7 +22,7 @@ export interface ShutdownTarget {
 }
 
 export interface ShutdownCoordinatorOptions {
-  closeResources(): void
+  closeResources(): void | Promise<void>
   waitForOperations(): Promise<void>
   pauseOperations(): void
   resumeOperations(): void
@@ -49,6 +52,7 @@ export class ShutdownCoordinator {
   private cancelRendererTimeout: (() => void) | null = null
   private fallbackPromise: Promise<void> | null = null
   private drainPromise: Promise<void> | null = null
+  private closePromise: Promise<void> | null = null
   private stateVersion = 0
 
   private readonly scheduleTimeout: (callback: () => void, delayMs: number) => () => void
@@ -64,7 +68,7 @@ export class ShutdownCoordinator {
 
   requestShutdown(target: ShutdownTarget): void {
     if (this.phase === 'approved') {
-      target.close()
+      void (this.closePromise ?? Promise.resolve()).then(target.close, target.close)
       return
     }
 
@@ -82,8 +86,7 @@ export class ShutdownCoordinator {
 
   requestShutdownWithoutRenderer(target: ShutdownTarget): Promise<void> {
     if (this.phase === 'approved') {
-      target.close()
-      return Promise.resolve()
+      return (this.closePromise ?? Promise.resolve()).then(target.close, target.close)
     }
 
     if (this.requestId !== null) {
@@ -115,7 +118,7 @@ export class ShutdownCoordinator {
 
     if (this.phase === 'draining') {
       if (response.decision === 'force') {
-        this.finishClose()
+        await this.finishClose()
       }
 
       return
@@ -135,7 +138,7 @@ export class ShutdownCoordinator {
     }
 
     if (response.decision === 'force') {
-      this.finishClose()
+      await this.finishClose()
       return
     }
 
@@ -234,7 +237,7 @@ export class ShutdownCoordinator {
       reason,
       canRetry: this.target.isAvailable()
     })
-      .then((decision) => {
+      .then(async (decision) => {
         if (
           this.requestId !== requestId ||
           this.stateVersion !== stateVersion ||
@@ -244,7 +247,7 @@ export class ShutdownCoordinator {
         }
 
         if (decision === 'force') {
-          this.finishClose()
+          await this.finishClose()
           return
         }
 
@@ -291,7 +294,7 @@ export class ShutdownCoordinator {
       }
 
       if (operationsFinished) {
-        this.finishClose()
+        await this.finishClose()
         return
       }
 
@@ -313,7 +316,7 @@ export class ShutdownCoordinator {
         return
       }
 
-      this.finishClose()
+      await this.finishClose()
       return
     }
   }
@@ -373,9 +376,9 @@ export class ShutdownCoordinator {
     this.options.resumeOperations()
   }
 
-  private finishClose(): void {
+  private finishClose(): Promise<void> {
     if (this.phase === 'approved') {
-      return
+      return this.closePromise ?? Promise.resolve()
     }
 
     const target = this.target
@@ -387,11 +390,17 @@ export class ShutdownCoordinator {
     this.phase = 'approved'
     this.stateVersion += 1
 
-    try {
-      this.options.closeResources()
-    } finally {
-      target?.close()
-    }
+    const closePromise = Promise.resolve()
+      .then(() => this.options.closeResources())
+      .catch((reason: unknown) => {
+        console.error('Failed to close application resources', reason)
+      })
+      .then(() => {
+        target?.close()
+      })
+
+    this.closePromise = closePromise
+    return closePromise
   }
 
   private clearRendererTimeout(): void {
