@@ -1,0 +1,96 @@
+name: Shared cross-platform foundation
+
+on:
+  push:
+    branches:
+      - agent/shared-cross-platform-foundation
+
+permissions:
+  contents: write
+
+concurrency:
+  group: shared-cross-platform-foundation
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Use npm 11
+        run: npm install --global npm@11
+
+      - name: Refresh workspace lockfile
+        run: npm install --package-lock-only --ignore-scripts
+
+      - name: Strict install
+        run: npm ci --strict-allow-scripts=true
+
+      - name: Format changed architecture files
+        shell: pwsh
+        run: |
+          npx prettier --write package.json apps/desktop/package.json apps/mobile/package.json apps/mobile/App.tsx apps/mobile/shared-core.ts apps/desktop/src/renderer/src/main.tsx apps/desktop/src/renderer/src/platform/shared-core.ts packages
+
+      - name: Shared desktop and mobile typecheck
+        run: npm run typecheck
+
+      - name: ESLint desktop integration
+        shell: pwsh
+        run: |
+          Push-Location apps/desktop
+          npx eslint src/renderer/src/main.tsx src/renderer/src/platform/shared-core.ts
+          Pop-Location
+
+      - name: Security audit gate
+        shell: pwsh
+        run: |
+          cmd /c "npm audit --json > npm-audit.json"
+          node -e "const fs=require('fs');const a=JSON.parse(fs.readFileSync('npm-audit.json','utf8'));const v=a.metadata?.vulnerabilities||{};console.log('Audit:',JSON.stringify(v));if((v.high||0)>0||(v.critical||0)>0)process.exit(1)"
+
+      - name: Full desktop tests
+        run: npm run test:run
+
+      - name: Database schema check
+        run: npm run db:check
+
+      - name: Desktop production bundle
+        run: npm run build:bundle
+
+      - name: Expo Android export
+        shell: pwsh
+        run: |
+          Push-Location apps/mobile
+          npx expo export --platform android --output-dir dist-android
+          Pop-Location
+
+      - name: Windows installer
+        run: npm run build:win
+
+      - name: Diff whitespace
+        shell: pwsh
+        run: |
+          git diff origin/main...HEAD --check
+          git diff --check
+
+      - name: Commit verified foundation and remove temporary workflow
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/shared-foundation-ci.yml
+          git add package.json package-lock.json apps/desktop/package.json apps/mobile/package.json
+          git add apps/mobile/App.tsx apps/mobile/shared-core.ts
+          git add apps/desktop/src/renderer/src/main.tsx apps/desktop/src/renderer/src/platform/shared-core.ts
+          git add packages
+          git status --short
+          git commit -m "feat: add shared cross-platform foundation"
+          git push origin HEAD:agent/shared-cross-platform-foundation
