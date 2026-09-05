@@ -98,7 +98,7 @@ jobs:
           }
           '@ | Set-Content -Encoding utf8 package.json
 
-          node -e "const fs=require('fs'); const p='apps/desktop/package.json'; const x=JSON.parse(fs.readFileSync(p,'utf8')); x.private=true; fs.writeFileSync(p, JSON.stringify(x,null,2)+'\n');"
+          node -e "const fs=require('fs'); const p='apps/desktop/package.json'; const x=JSON.parse(fs.readFileSync(p,'utf8')); x.private=true; x.devDependencies.electron='39.8.10'; fs.writeFileSync(p, JSON.stringify(x,null,2)+'\n');"
 
           if (Test-Path package-lock.json) {
             Remove-Item package-lock.json -Force
