@@ -20,6 +20,10 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - name: Use npm 11
+        run: |
+          npm install --global npm@11
+          npm --version
 
       - name: Restructure repository into workspaces
         shell: pwsh
