@@ -24,10 +24,7 @@ export interface KeyValueStoragePort {
 
 export interface NotificationPort {
   requestPermission?(): MaybePromise<boolean>
-  show(input: {
-    title: string
-    body?: string
-  }): MaybePromise<void>
+  show(input: { title: string; body?: string }): MaybePromise<void>
 }
 
 export interface PlatformServices {
