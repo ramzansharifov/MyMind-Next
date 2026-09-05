@@ -1,7 +1,7 @@
+import * as Switch from '@radix-ui/react-switch'
 import { Filter, ReceiptText, Search } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
-import { AppCheckbox } from '../../../shared/ui/AppCheckbox'
 import { AppSelect } from '../../../shared/ui/AppSelect'
 
 import type {
@@ -167,21 +167,26 @@ export function FinanceTransactions({
           />
         </div>
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-          <label
-            htmlFor="finance-include-system"
-            className="flex cursor-pointer items-center gap-2 text-sm text-[var(--app-muted)]"
-          >
-            <AppCheckbox
+          <div className="flex items-center gap-2">
+            <Switch.Root
               id="finance-include-system"
-              ariaLabel="Показывать системные операции"
+              aria-label="Показывать системные операции"
               checked={includeSystem}
+              className="group inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border border-[var(--app-border-strong)] bg-[var(--app-control-hover)] p-0.5 transition-[background-color,border-color,box-shadow] outline-none focus-visible:ring-2 focus-visible:ring-[var(--app-accent-500)]/40 data-[state=checked]:border-[var(--app-accent-500)] data-[state=checked]:bg-[var(--app-accent-500)]"
               onCheckedChange={(checked) => {
                 setIncludeSystem(checked)
                 setOffset(0)
               }}
-            />
-            Показывать системные операции
-          </label>
+            >
+              <Switch.Thumb className="block size-5 rounded-full bg-white shadow-sm transition-transform duration-200 data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0" />
+            </Switch.Root>
+            <label
+              htmlFor="finance-include-system"
+              className="cursor-pointer text-sm text-[var(--app-muted)]"
+            >
+              Показывать системные операции
+            </label>
+          </div>
           <FinanceButton
             size="sm"
             onClick={() => {
