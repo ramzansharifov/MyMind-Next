@@ -32,6 +32,16 @@ describe('App shell', () => {
             database: 'ready',
             sqliteVersion: '3.0.0'
           }),
+          getStorageInfo: vi.fn().mockResolvedValue({
+            path: 'C:\\MyMind',
+            defaultPath: 'C:\\MyMind',
+            isDefault: true
+          }),
+          changeStorageLocation: vi.fn().mockResolvedValue({
+            status: 'unchanged',
+            path: 'C:\\MyMind'
+          }),
+          openStorageLocation: vi.fn().mockResolvedValue(undefined),
 
           getWindowState: vi.fn().mockResolvedValue({ maximized: false }),
           onWindowStateChanged: vi.fn().mockReturnValue(() => undefined),
