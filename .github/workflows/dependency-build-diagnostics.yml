@@ -67,6 +67,12 @@ jobs:
       - name: Typecheck desktop and mobile
         run: npm run typecheck
 
+      - name: Formatting check
+        run: npm run format:check
+
+      - name: ESLint
+        run: npm run lint
+
       - name: Full desktop tests without obsolete npm flags
         shell: pwsh
         run: |
