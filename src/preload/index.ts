@@ -38,6 +38,8 @@ import {
   IPC_CHANNELS,
   type MyMindApi,
   type OperationFeedback,
+  type StorageChangeResult,
+  type StorageInfo,
   type SystemHealth,
   type SystemWindowState
 } from '../shared/contracts/system'
@@ -98,6 +100,10 @@ const api: MyMindApi = {
 
   system: {
     getHealth: () => invoke(IPC_CHANNELS.systemHealth) as Promise<SystemHealth>,
+    getStorageInfo: () => invoke(IPC_CHANNELS.storageGetInfo) as Promise<StorageInfo>,
+    changeStorageLocation: () =>
+      invoke(IPC_CHANNELS.storageChangeLocation) as Promise<StorageChangeResult>,
+    openStorageLocation: () => invoke(IPC_CHANNELS.storageOpenLocation) as Promise<void>,
     getWindowState: () => invoke(IPC_CHANNELS.windowGetState) as Promise<SystemWindowState>,
     onWindowStateChanged: (listener) => {
       const handler = (_event: Electron.IpcRendererEvent, state: SystemWindowState): void => {

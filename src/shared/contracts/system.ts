@@ -17,6 +17,9 @@ import type { WorkoutsApi } from './workouts'
 
 export const IPC_CHANNELS = {
   systemHealth: 'system:health',
+  storageGetInfo: 'system:storage-get-info',
+  storageChangeLocation: 'system:storage-change-location',
+  storageOpenLocation: 'system:storage-open-location',
   shutdownRequested: 'system:shutdown-requested',
   respondToShutdown: 'system:respond-to-shutdown',
   windowGetState: 'system:window-get-state',
@@ -29,6 +32,18 @@ export const IPC_CHANNELS = {
 export interface SystemHealth {
   database: 'ready'
   sqliteVersion: string
+}
+
+export interface StorageInfo {
+  path: string
+  defaultPath: string
+  isDefault: boolean
+}
+
+export interface StorageChangeResult {
+  status: 'moved' | 'cancelled' | 'unchanged'
+  path: string
+  relaunching?: boolean
 }
 
 export interface SystemWindowState {
@@ -56,6 +71,9 @@ export interface MyMindApi {
 
   system: {
     getHealth(): Promise<SystemHealth>
+    getStorageInfo(): Promise<StorageInfo>
+    changeStorageLocation(): Promise<StorageChangeResult>
+    openStorageLocation(): Promise<void>
     getWindowState(): Promise<SystemWindowState>
     onWindowStateChanged(listener: (state: SystemWindowState) => void): () => void
     onOperationFeedback?(listener: (feedback: OperationFeedback) => void): () => void

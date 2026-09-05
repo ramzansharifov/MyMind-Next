@@ -1,8 +1,9 @@
-import { app } from 'electron'
 import Database from 'better-sqlite3'
 import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { mkdirSync } from 'node:fs'
-import { join } from 'node:path'
+import { dirname } from 'node:path'
+
+import { getDatabaseFilePath } from '../services/storage-location'
 
 import * as schema from './schema'
 
@@ -10,13 +11,13 @@ let sqlite: Database.Database | null = null
 let database: BetterSQLite3Database<typeof schema> | null = null
 
 export function initializeDatabase(): void {
-  const databaseDirectory = join(app.getPath('userData'), 'data')
+  const databasePath = getDatabaseFilePath()
 
-  mkdirSync(databaseDirectory, {
+  mkdirSync(dirname(databasePath), {
     recursive: true
   })
 
-  initializeDatabaseAtPath(join(databaseDirectory, 'mymind.sqlite'))
+  initializeDatabaseAtPath(databasePath)
 }
 
 export function initializeDatabaseForTesting(databasePath: string): void {

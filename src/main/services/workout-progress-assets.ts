@@ -1,4 +1,4 @@
-import { app, type BrowserWindow } from 'electron'
+import type { BrowserWindow } from 'electron'
 import { rm } from 'node:fs/promises'
 import { join } from 'node:path'
 
@@ -13,13 +13,14 @@ import {
   getWorkoutProgressPhoto
 } from '../repositories/workouts.repository'
 import { persistPreparedStudyAssetImport, selectStudyAssetForImport } from './study-assets'
+import { getStudyAttachmentsRoot } from './storage-location'
 
 function progressAssetOwner(entryId: string): string {
   return `workout-progress-${entryId}`
 }
 
 function attachmentsRoot(): string {
-  return join(app.getPath('documents'), 'MyMind', 'Attachments')
+  return getStudyAttachmentsRoot()
 }
 
 async function removeAssetDirectory(entryId: string, assetId: string): Promise<void> {
