@@ -243,13 +243,19 @@ async function cleanupLegacyStorage(targetRoot: string): Promise<void> {
 
   if (!samePath(legacyData, join(target, 'data'))) {
     await rm(legacyData, { recursive: true, force: true }).catch((reason: unknown) => {
-      console.warn('MyMind storage initialized, but legacy database files could not be removed', reason)
+      console.warn(
+        'MyMind storage initialized, but legacy database files could not be removed',
+        reason
+      )
     })
   }
 
   if (!samePath(legacyAttachments, join(target, 'Attachments'))) {
     await rm(legacyAttachments, { recursive: true, force: true }).catch((reason: unknown) => {
-      console.warn('MyMind storage initialized, but legacy attachments could not be removed', reason)
+      console.warn(
+        'MyMind storage initialized, but legacy attachments could not be removed',
+        reason
+      )
     })
   }
 }

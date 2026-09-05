@@ -100,9 +100,9 @@ describe('storage location lifecycle', () => {
     )
     expect(await pathExists(join(userData, 'data'))).toBe(false)
 
-    const pointer = JSON.parse(
-      await readFile(join(userData, 'storage-location.json'), 'utf8')
-    ) as { storageRoot: string }
+    const pointer = JSON.parse(await readFile(join(userData, 'storage-location.json'), 'utf8')) as {
+      storageRoot: string
+    }
     expect(pointer.storageRoot).toBe(resolve(defaultStorage))
   })
 
@@ -127,9 +127,9 @@ describe('storage location lifecycle', () => {
     expect(await pathExists(join(userData, 'data'))).toBe(false)
     expect(await pathExists(join(defaultStorage, 'Attachments'))).toBe(false)
 
-    const pointer = JSON.parse(
-      await readFile(join(userData, 'storage-location.json'), 'utf8')
-    ) as { storageRoot: string }
+    const pointer = JSON.parse(await readFile(join(userData, 'storage-location.json'), 'utf8')) as {
+      storageRoot: string
+    }
     expect(pointer.storageRoot).toBe(resolve(customStorage))
   })
 
@@ -174,9 +174,9 @@ describe('storage location lifecycle', () => {
     expect(await readFile(join(customStorage, 'data', 'mymind.sqlite'), 'utf8')).toBe(
       'existing-database'
     )
-    const pointer = JSON.parse(
-      await readFile(join(userData, 'storage-location.json'), 'utf8')
-    ) as { storageRoot: string }
+    const pointer = JSON.parse(await readFile(join(userData, 'storage-location.json'), 'utf8')) as {
+      storageRoot: string
+    }
     expect(pointer.storageRoot).toBe(resolve(customStorage))
   })
 
