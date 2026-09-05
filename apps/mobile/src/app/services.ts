@@ -6,6 +6,7 @@ import { createMoviesRepository } from '@mymind/persistence/movies'
 import { createMusicRepository } from '@mymind/persistence/music'
 import { createCalendarRepository } from '@mymind/persistence/calendar'
 import { createDiaryRepository } from '@mymind/persistence/diary'
+import { createNotesRepository } from '@mymind/persistence/notes'
 import { adaptSqlite } from '../shared/storage/sqlite'
 
 export interface MobileServices {
@@ -15,8 +16,10 @@ export interface MobileServices {
   music: ReturnType<typeof createMusicRepository>
   calendar: ReturnType<typeof createCalendarRepository>
   diary: ReturnType<typeof createDiaryRepository>
+  notes: ReturnType<typeof createNotesRepository>
   settings: { get(key: string): string | null; set(key: string, value: string): void }
 }
+
 export function createMobileServices(db: SQLiteDatabase): MobileServices {
   const database = adaptSqlite(db)
   const runtime = { database: () => database, createId: randomUUID, now: Date.now }
@@ -27,6 +30,7 @@ export function createMobileServices(db: SQLiteDatabase): MobileServices {
     music: createMusicRepository(runtime),
     calendar: createCalendarRepository(runtime),
     diary: createDiaryRepository(runtime),
+    notes: createNotesRepository(runtime),
     settings: {
       get: (key: string) =>
         db.getFirstSync<{ value: string }>(
