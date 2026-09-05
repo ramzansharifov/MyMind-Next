@@ -1,0 +1,38 @@
+name: Installer readiness audit
+
+on:
+  push:
+    branches:
+      - agent/installer-readiness-audit
+
+permissions:
+  contents: read
+
+jobs:
+  windows-installer:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Build Windows installer
+        run: npm run build:win
+      - name: Inspect installer output
+        shell: pwsh
+        run: |
+          Write-Host "Installer output:"
+          Get-ChildItem -Path dist -Recurse | Select-Object FullName, Length
+          $installer = Get-ChildItem -Path dist -Filter "*-setup.exe" -File | Select-Object -First 1
+          if (-not $installer) {
+            throw "NSIS installer was not produced"
+          }
+          if ($installer.Length -lt 1MB) {
+            throw "Installer looks unexpectedly small: $($installer.Length) bytes"
+          }
+          Write-Host "INSTALLER=$($installer.FullName)"
+          Write-Host "SIZE=$($installer.Length)"
