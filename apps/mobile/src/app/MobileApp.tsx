@@ -16,6 +16,7 @@ import { ErrorState, Label, LoadingState, Row } from '../shared/ui/primitives'
 import { messageFor } from '../shared/ui/form-model'
 import { TasksScreen } from '../modules/tasks/TasksScreen'
 import { HabitsScreen } from '../modules/habits/HabitsScreen'
+import { NotesScreen } from '../modules/notes/NotesScreen'
 import { CatalogScreen } from '../modules/catalog/CatalogScreen'
 import { CalendarScreen } from '../modules/calendar/CalendarScreen'
 import { DiaryScreen } from '../modules/diary/DiaryScreen'
@@ -24,9 +25,20 @@ import { Settings } from './Settings'
 import { ReminderStatus } from './ReminderStatus'
 
 export type Route =
-  'home' | 'tasks' | 'habits' | 'more' | 'movies' | 'music' | 'calendar' | 'diary' | 'settings'
+  | 'home'
+  | 'notes'
+  | 'tasks'
+  | 'habits'
+  | 'more'
+  | 'movies'
+  | 'music'
+  | 'calendar'
+  | 'diary'
+  | 'settings'
+
 const titles: Record<Route, string> = {
   home: 'Главная',
+  notes: 'Заметки',
   tasks: 'Задачи',
   habits: 'Привычки',
   more: 'Ещё',
@@ -36,9 +48,11 @@ const titles: Record<Route, string> = {
   diary: 'Дневник',
   settings: 'Настройки'
 }
+
+const primaryTabs = ['home', 'notes', 'tasks', 'habits', 'more'] as const
+
 let servicesPromise: Promise<MobileServices> | undefined
 function initialize(): Promise<MobileServices> {
-  // Strict Mode remounts share the same connection and migration promise.
   servicesPromise ??= openMobileDatabase()
     .then(createMobileServices)
     .catch((error) => {
@@ -62,12 +76,12 @@ export default function MobileApp(): React.JSX.Element {
     ...(dark ? appearanceTokens.dark : appearanceTokens.light),
     accent: appearanceTokens.accents[appearance.accent]
   }
+
   useEffect(() => {
     let active = true
     initialize()
       .then((value) => {
         if (!active) return
-        setServices(value)
         const stored = value.settings.get('appearance')
         const parsed = stored
           ? appearancePreferencesSchema.parse(JSON.parse(stored))
@@ -85,14 +99,16 @@ export default function MobileApp(): React.JSX.Element {
       active = false
     }
   }, [attempt])
+
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
       if (route === 'home') return false
-      setRoute(['tasks', 'habits', 'more'].includes(route) ? 'home' : 'more')
+      setRoute(['notes', 'tasks', 'habits', 'more'].includes(route) ? 'home' : 'more')
       return true
     })
     return () => subscription.remove()
   }, [route])
+
   const saveAppearance = useCallback(
     (next: AppearancePreferences): void => {
       try {
@@ -106,6 +122,10 @@ export default function MobileApp(): React.JSX.Element {
     },
     [services]
   )
+
+  const moreRoutes = ['calendar', 'diary', 'movies', 'music', 'settings'] as Route[]
+  const inMore = !['home', 'notes', 'tasks', 'habits', 'more'].includes(route)
+
   return (
     <SafeAreaProvider>
       <ThemeContext.Provider value={palette}>
@@ -132,6 +152,8 @@ export default function MobileApp(): React.JSX.Element {
               <View style={{ flex: 1, paddingHorizontal: 16 }} key={route}>
                 {route === 'home' ? (
                   <Home services={services} navigate={setRoute} />
+                ) : route === 'notes' ? (
+                  <NotesScreen />
                 ) : route === 'tasks' ? (
                   <TasksScreen />
                 ) : route === 'habits' ? (
@@ -146,7 +168,7 @@ export default function MobileApp(): React.JSX.Element {
                   <Settings appearance={appearance} save={saveAppearance} />
                 ) : (
                   <FlatList
-                    data={['calendar', 'diary', 'movies', 'music', 'settings'] as Route[]}
+                    data={moreRoutes}
                     keyExtractor={(item) => item}
                     renderItem={({ item }) => (
                       <Row title={titles[item]} onPress={() => setRoute(item)} />
@@ -161,43 +183,39 @@ export default function MobileApp(): React.JSX.Element {
                   borderTopWidth: 1,
                   borderColor: palette.border,
                   paddingVertical: 8,
-                  gap: 4
+                  gap: 2
                 }}
               >
-                {(['home', 'tasks', 'habits', 'more'] as const).map((tab) => (
-                  <Pressable
-                    key={tab}
-                    accessibilityRole="tab"
-                    accessibilityLabel={titles[tab]}
-                    accessibilityState={{
-                      selected:
-                        route === tab ||
-                        (tab === 'more' && !['home', 'tasks', 'habits'].includes(route))
-                    }}
-                    onPress={() => setRoute(tab)}
-                    style={{
-                      flex: 1,
-                      minHeight: 52,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      paddingHorizontal: 2
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 13,
-                        fontWeight: '600',
-                        color:
-                          route === tab ||
-                          (tab === 'more' && !['home', 'tasks', 'habits'].includes(route))
-                            ? palette.accent
-                            : palette.muted
-                      }}
+                {primaryTabs.map((tab) => {
+                  const selected = route === tab || (tab === 'more' && inMore)
+                  return (
+                    <Pressable
+                      key={tab}
+                      accessibilityRole="tab"
+                      accessibilityLabel={titles[tab]}
+                      accessibilityState={{ selected }}
+                      onPress={() => setRoute(tab)}
+                      style={({ pressed }) => ({
+                        flex: 1,
+                        minHeight: 52,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        paddingHorizontal: 2,
+                        opacity: pressed ? 0.65 : 1
+                      })}
                     >
-                      {titles[tab]}
-                    </Text>
-                  </Pressable>
-                ))}
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          fontWeight: '600',
+                          color: selected ? palette.accent : palette.muted
+                        }}
+                      >
+                        {titles[tab]}
+                      </Text>
+                    </Pressable>
+                  )
+                })}
               </View>
             </ServicesContext.Provider>
           )}
