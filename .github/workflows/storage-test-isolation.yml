@@ -43,7 +43,7 @@ jobs:
             throw 'Storage initialization warning is still present in affected tests'
           }
       - name: Check diff whitespace
-        run: git diff main...HEAD --check
+        run: git diff origin/main...HEAD --check
       - name: Remove temporary workflow
         shell: pwsh
         run: |
