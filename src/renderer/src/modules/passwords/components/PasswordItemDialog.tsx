@@ -160,7 +160,7 @@ export function PasswordItemDialog({
       }
     >
       <form id={ITEM_FORM_ID} className="space-y-5" onSubmit={(event) => void submit(event)}>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
           <div className="space-y-1.5">
             <span className="block text-xs font-medium text-[var(--app-muted)]">Тип</span>
             <AppSelect
@@ -179,6 +179,20 @@ export function PasswordItemDialog({
               onValueChange={setGroupId}
             />
           </div>
+          <button
+            type="button"
+            aria-pressed={favorite}
+            className={cn(
+              'flex h-11 w-full items-center justify-center gap-2 rounded-xl border px-3.5 text-sm font-medium whitespace-nowrap transition-colors sm:w-auto',
+              favorite
+                ? 'border-amber-400/25 bg-amber-500/10 text-amber-200'
+                : 'border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] hover:bg-[var(--app-control-hover)]'
+            )}
+            onClick={() => setFavorite((current) => !current)}
+          >
+            <Star className={cn('size-4', favorite && 'fill-current')} />
+            <span>{favorite ? 'В избранном' : 'Добавить в избранное'}</span>
+          </button>
         </div>
 
         <label className="block space-y-1.5">
@@ -321,21 +335,6 @@ export function PasswordItemDialog({
             onChange={(event) => setNotes(event.target.value)}
           />
         </label>
-
-        <button
-          type="button"
-          aria-pressed={favorite}
-          className={cn(
-            'flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors',
-            favorite
-              ? 'border-amber-400/25 bg-amber-500/10 text-amber-200'
-              : 'border-[var(--app-border)] bg-[var(--app-workspace)] text-[var(--app-muted)] hover:bg-[var(--app-control-hover)]'
-          )}
-          onClick={() => setFavorite((current) => !current)}
-        >
-          <Star className={cn('size-4', favorite && 'fill-current')} />
-          <span className="text-sm font-medium">Добавить в избранное</span>
-        </button>
 
         {error && (
           <div
