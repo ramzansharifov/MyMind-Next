@@ -1,4 +1,4 @@
-name: Dependency and build diagnostics
+name: Dependency and build hardening
 
 on:
   push:
@@ -6,12 +6,12 @@ on:
       - agent/dependency-build-hardening
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  diagnose:
+  harden:
     runs-on: windows-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
         with:
@@ -22,46 +22,82 @@ jobs:
           cache: npm
       - name: Use npm 11
         run: npm install --global npm@11
-      - name: Install dependencies
+
+      - name: Install baseline dependencies
         run: npm ci
-      - name: Dependency audit details
+
+      - name: Upgrade Electron and normalize Node native rebuild
         shell: pwsh
         run: |
-          cmd /c "npm audit --json > npm-audit.json"
-          Write-Host "=== npm audit compact report ==="
-          node -e "const fs=require('fs');const a=JSON.parse(fs.readFileSync('npm-audit.json','utf8'));console.log(JSON.stringify(a.metadata?.vulnerabilities||{},null,2));for(const [name,v] of Object.entries(a.vulnerabilities||{})){const via=(v.via||[]).map(x=>typeof x==='string'?x:{source:x.source,name:x.name,severity:x.severity,title:x.title,range:x.range});console.log(JSON.stringify({name,severity:v.severity,isDirect:v.isDirect,via,effects:v.effects,range:v.range,nodes:v.nodes,fixAvailable:v.fixAvailable}))}"
-          exit 0
-      - name: Outdated direct dependencies
+          npm install electron@44.2.0 --save-dev --save-exact --workspace=mymind-next
+          node -e "const fs=require('fs');const file='apps/desktop/package.json';const p=JSON.parse(fs.readFileSync(file,'utf8'));p.scripts['native:node']='npm rebuild better-sqlite3';fs.writeFileSync(file,JSON.stringify(p,null,2)+'\n')"
+
+      - name: Review and approve known install scripts
         shell: pwsh
         run: |
-          cmd /c "npm outdated --json > npm-outdated.json"
-          Write-Host "=== npm outdated ==="
-          Get-Content npm-outdated.json
-          exit 0
-      - name: Native install script diagnostics
+          Write-Host "=== pending before approval ==="
+          npm approve-scripts --allow-scripts-pending
+          npm approve-scripts esbuild better-sqlite3 electron electron-winstaller
+          Write-Host "=== resulting allowScripts ==="
+          node -e "console.log(JSON.stringify(require('./package.json').allowScripts,null,2))"
+
+      - name: Reinstall with strict install-script policy
         shell: pwsh
         run: |
-          Write-Host "=== npm/install script configuration ==="
-          npm config get ignore-scripts
-          npm install-scripts ls
-          Write-Host "=== better-sqlite3 dependency ==="
-          npm explain better-sqlite3
-          Write-Host "=== electron dependency ==="
-          npm explain electron
-          exit 0
-      - name: Typecheck
+          & npm ci --strict-allow-scripts=true *>&1 | Tee-Object -FilePath strict-install.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $install = Get-Content strict-install.log -Raw
+          if ($install -match 'not yet covered by allowScripts') {
+            throw 'Unreviewed install scripts remain after approval'
+          }
+
+      - name: Verify Electron
+        run: npx electron --version
+
+      - name: Security audit gate
+        shell: pwsh
+        run: |
+          cmd /c "npm audit --json > npm-audit-after.json"
+          node -e "const fs=require('fs');const a=JSON.parse(fs.readFileSync('npm-audit-after.json','utf8'));const v=a.metadata?.vulnerabilities||{};console.log('Audit after:',JSON.stringify(v));if((v.high||0)>0||(v.critical||0)>0){console.error('High/critical vulnerabilities remain');process.exit(1)}"
+
+      - name: Typecheck desktop and mobile
         run: npm run typecheck
+
+      - name: Full desktop tests without obsolete npm flags
+        shell: pwsh
+        run: |
+          & npm run test:run *>&1 | Tee-Object -FilePath full-tests.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $tests = Get-Content full-tests.log -Raw
+          if ($tests -match 'Unknown cli config "--build-from-source"' -or $tests -match 'Unknown cli config "--runtime"') {
+            throw 'Obsolete npm native rebuild flags are still emitted'
+          }
+
       - name: Database schema check
         run: npm run db:check
+
       - name: Desktop production bundle
         run: npm run build:bundle
+
       - name: Expo Android export
         shell: pwsh
         run: |
           Push-Location apps/mobile
           npx expo export --platform android --output-dir dist-android
           Pop-Location
+
       - name: Windows installer
         run: npm run build:win
+
       - name: Diff whitespace
         run: git diff origin/main...HEAD --check
+
+      - name: Commit validated hardening and remove temporary workflow
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/dependency-build-diagnostics.yml
+          git add package.json package-lock.json apps/desktop/package.json
+          git commit -m "chore: harden dependency installation and Electron"
+          git push origin HEAD:agent/dependency-build-hardening
