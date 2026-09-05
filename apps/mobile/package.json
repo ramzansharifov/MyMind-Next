@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "main": "index.ts",
   "dependencies": {
+    "@mymind/contracts": "1.0.0",
+    "@mymind/core": "1.0.0",
+    "@mymind/design": "1.0.0",
     "expo": "~57.0.20",
     "expo-status-bar": "~57.0.1",
     "react": "19.2.3",

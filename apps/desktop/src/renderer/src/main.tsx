@@ -16,6 +16,7 @@ import './assets/workouts-filters.css'
 import './assets/app-titlebar.css'
 import 'react-toastify/dist/ReactToastify.css'
 import './assets/toast-notifications.css'
+import './platform/shared-core'
 
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
