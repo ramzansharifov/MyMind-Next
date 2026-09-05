@@ -14,7 +14,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "npm run lint --workspace=mymind-next",
-    "typecheck:packages": "npm run typecheck --workspace=@mymind/contracts && npm run typecheck --workspace=@mymind/core && npm run typecheck --workspace=@mymind/design",
+    "typecheck:packages": "npm run typecheck --workspace=@mymind/contracts && npm run typecheck --workspace=@mymind/core && npm run typecheck --workspace=@mymind/design && npm run typecheck --workspace=@mymind/persistence",
     "typecheck:desktop": "npm run typecheck --workspace=mymind-next",
     "typecheck:mobile": "npm run typecheck --workspace=mymind-mobile",
     "typecheck": "npm run typecheck:packages && npm run typecheck:desktop && npm run typecheck:mobile",
@@ -40,7 +40,10 @@
     "test:run": "npm run test:run --workspace=mymind-next",
     "test:coverage": "npm run test:coverage --workspace=mymind-next",
     "check": "npm run check --workspace=mymind-next && npm run typecheck:mobile",
-    "check:fix": "npm run format && npm run check"
+    "check:fix": "npm run format && npm run check",
+    "lint:mobile": "eslint apps/mobile packages",
+    "test:mobile": "vitest run --config vitest.mobile.config.ts",
+    "export:android": "npm run export:android --workspace=mymind-mobile"
   },
   "allowScripts": {
     "esbuild@0.18.20": true,

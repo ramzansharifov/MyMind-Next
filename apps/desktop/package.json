@@ -94,7 +94,8 @@
     "tailwind-merge": "^3.6.0",
     "three": "0.185.1",
     "tldraw": "^5.2.5",
-    "zod": "^4.4.3"
+    "zod": "^4.4.3",
+    "@mymind/persistence": "1.0.0"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config-prettier": "^3.0.0",
