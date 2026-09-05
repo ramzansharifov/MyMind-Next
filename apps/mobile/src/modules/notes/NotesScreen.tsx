@@ -1,13 +1,8 @@
 import { randomUUID } from 'expo-crypto'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Alert, AppState, BackHandler, FlatList, TextInput, View } from 'react-native'
-import {
-  STUDY_FOLDER_ICON_NAMES,
-  type NoteDocument,
-  type NoteGroup,
-  type NoteRecord,
-  type NoteSummary
-} from '@mymind/contracts/notes'
+import type { NoteDocument, NoteGroup, NoteRecord, NoteSummary } from '@mymind/contracts/notes'
+import { STUDY_FOLDER_ICON_NAMES } from '@mymind/contracts/study'
 import { AutosaveQueue } from '@mymind/core/autosave'
 import * as notesValidation from '@mymind/core/validation/notes'
 import { useServices } from '../../app/context'
@@ -250,14 +245,24 @@ export function NotesScreen(): React.JSX.Element {
           header={
             <View style={{ gap: 12, paddingBottom: 16 }}>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                <Button label={closing ? 'Сохранение…' : 'Назад'} disabled={closing} onPress={() => void closeEditor()} />
-                <Button label="Свойства" disabled={closing} onPress={() => editNoteProperties(record)} />
+                <Button
+                  label={closing ? 'Сохранение…' : 'Назад'}
+                  disabled={closing}
+                  onPress={() => void closeEditor()}
+                />
+                <Button
+                  label="Свойства"
+                  disabled={closing}
+                  onPress={() => editNoteProperties(record)}
+                />
                 <Button label="Удалить" danger disabled={closing} onPress={deleteCurrentNote} />
               </View>
               <TextInput
                 accessibilityLabel="Название заметки"
                 value={record.title}
-                onChangeText={(title) => setRecord((current) => (current ? { ...current, title } : current))}
+                onChangeText={(title) =>
+                  setRecord((current) => (current ? { ...current, title } : current))
+                }
                 onEndEditing={() => {
                   try {
                     const input = notesValidation.renameNoteInputSchema.parse({
@@ -293,8 +298,7 @@ export function NotesScreen(): React.JSX.Element {
   }
 
   const notes = (overview.data?.notes ?? []).filter(
-    (note) =>
-      noteMatches(note, query) && (groupId === undefined || note.groupId === groupId)
+    (note) => noteMatches(note, query) && (groupId === undefined || note.groupId === groupId)
   )
 
   return (
