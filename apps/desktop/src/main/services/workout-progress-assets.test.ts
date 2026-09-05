@@ -25,6 +25,10 @@ vi.mock('./study-assets', () => ({
   persistPreparedStudyAssetImport: mocks.persistPreparedStudyAssetImport
 }))
 
+vi.mock('./storage-location', () => ({
+  getStudyAttachmentsRoot: vi.fn(() => '/tmp/mymind-workout-progress-assets-test')
+}))
+
 import { importWorkoutProgressPhoto } from './workout-progress-assets'
 
 const previousFront = {
