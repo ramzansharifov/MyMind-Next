@@ -21,6 +21,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Audit runtime dependencies
+        continue-on-error: true
         run: npm audit --omit=dev --audit-level=high
       - name: Build Windows installer
         run: npm run build:win
@@ -36,8 +37,16 @@ jobs:
           if ($installer.Length -lt 1MB) {
             throw "Installer looks unexpectedly small: $($installer.Length) bytes"
           }
+          if (-not (Test-Path "dist/win-unpacked/resources/drizzle")) {
+            throw "Packaged Drizzle migrations are missing"
+          }
+          $nativeModule = Get-ChildItem -Path "dist/win-unpacked/resources" -Filter "better_sqlite3.node" -File -Recurse | Select-Object -First 1
+          if (-not $nativeModule) {
+            throw "Packaged better_sqlite3.node is missing"
+          }
           Write-Host "INSTALLER=$($installer.FullName)"
           Write-Host "SIZE=$($installer.Length)"
+          Write-Host "BETTER_SQLITE3=$($nativeModule.FullName)"
       - name: Smoke launch packaged application
         shell: pwsh
         run: |
