@@ -14,7 +14,7 @@ vi.mock('electron', () => ({
   }
 }))
 
-async function loadClipboardService() {
+async function loadClipboardService(): Promise<typeof import('./password-clipboard')> {
   return import('./password-clipboard')
 }
 
