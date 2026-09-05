@@ -64,25 +64,32 @@ export async function ensureInitialStorageLocation(): Promise<void> {
   const configuredRoot = await readConfiguredStorageRoot()
 
   if (configuredRoot) {
-    await ensureStorageRootAvailable(configuredRoot)
+    await ensureConfiguredStorageRootAvailable(configuredRoot)
     selectedStorageRoot = configuredRoot
-    await writeStorageMarker(configuredRoot)
     return
   }
 
   const defaultRoot = getDefaultStorageRoot()
   if (await readStorageMarker(defaultRoot)) {
-    await ensureStorageRootAvailable(defaultRoot)
+    await ensureExistingWritableDirectory(defaultRoot)
     await writeStoragePointer(defaultRoot)
     selectedStorageRoot = resolve(defaultRoot)
     return
   }
 
-  const chosenRoot = await chooseInitialStorageRoot(defaultRoot)
+  const chosenRoot = resolve(await chooseInitialStorageRoot(defaultRoot))
+
+  if (await readStorageMarker(chosenRoot)) {
+    await ensureExistingWritableDirectory(chosenRoot)
+    await writeStoragePointer(chosenRoot)
+    selectedStorageRoot = chosenRoot
+    return
+  }
 
   await prepareInitialStorage(chosenRoot)
   await writeStoragePointer(chosenRoot)
   selectedStorageRoot = chosenRoot
+  await cleanupLegacyStorage(chosenRoot)
 }
 
 export async function chooseStorageLocation(
@@ -227,13 +234,23 @@ async function prepareInitialStorage(targetRoot: string): Promise<void> {
   await mkdir(join(target, 'data'), { recursive: true })
   await mkdir(join(target, 'Attachments'), { recursive: true })
   await writeStorageMarker(target)
+}
+
+async function cleanupLegacyStorage(targetRoot: string): Promise<void> {
+  const target = resolve(targetRoot)
+  const legacyData = join(app.getPath('userData'), 'data')
+  const legacyAttachments = join(getDefaultStorageRoot(), 'Attachments')
 
   if (!samePath(legacyData, join(target, 'data'))) {
-    await rm(legacyData, { recursive: true, force: true }).catch(() => undefined)
+    await rm(legacyData, { recursive: true, force: true }).catch((reason: unknown) => {
+      console.warn('MyMind storage initialized, but legacy database files could not be removed', reason)
+    })
   }
 
   if (!samePath(legacyAttachments, join(target, 'Attachments'))) {
-    await rm(legacyAttachments, { recursive: true, force: true }).catch(() => undefined)
+    await rm(legacyAttachments, { recursive: true, force: true }).catch((reason: unknown) => {
+      console.warn('MyMind storage initialized, but legacy attachments could not be removed', reason)
+    })
   }
 }
 
@@ -258,13 +275,40 @@ async function readConfiguredStorageRoot(): Promise<string | null> {
   }
 }
 
-async function ensureStorageRootAvailable(root: string): Promise<void> {
+async function ensureConfiguredStorageRootAvailable(root: string): Promise<void> {
   try {
-    await ensureWritableDirectory(root)
+    const info = await stat(root)
+    if (!info.isDirectory()) {
+      throw new Error('путь не является папкой')
+    }
+
+    await ensureExistingWritableDirectory(root)
+
+    if (await readStorageMarker(root)) {
+      return
+    }
+
+    const hasKnownData =
+      (await pathExists(join(root, 'data', 'mymind.sqlite'))) ||
+      (await pathExists(join(root, 'Attachments')))
+
+    if (!hasKnownData) {
+      throw new Error('служебный маркер и данные MyMind отсутствуют')
+    }
+
+    await writeStorageMarker(root)
   } catch (reason: unknown) {
     const message = reason instanceof Error ? reason.message : String(reason)
     throw new Error(`Папка данных MyMind недоступна: ${root}\n${message}`)
   }
+}
+
+async function ensureExistingWritableDirectory(directory: string): Promise<void> {
+  await access(directory, constants.W_OK)
+
+  const probe = join(directory, `.mymind-write-test-${randomUUID()}`)
+  await writeFile(probe, 'ok', { flag: 'wx' })
+  await rm(probe, { force: true })
 }
 
 async function validateInitialTarget(target: string): Promise<void> {
@@ -320,11 +364,7 @@ async function verifyMigratedDatabase(sourceRoot: string, stageRoot: string): Pr
 
 async function ensureWritableDirectory(directory: string): Promise<void> {
   await mkdir(directory, { recursive: true })
-  await access(directory, constants.W_OK)
-
-  const probe = join(directory, `.mymind-write-test-${randomUUID()}`)
-  await writeFile(probe, 'ok', { flag: 'wx' })
-  await rm(probe, { force: true })
+  await ensureExistingWritableDirectory(directory)
 }
 
 async function writeStoragePointer(storageRoot: string): Promise<void> {
