@@ -33,12 +33,14 @@ jobs:
         shell: pwsh
         run: |
           git fetch origin main --depth=1
-          $files = @(git diff --name-only origin/main...HEAD | Where-Object { Test-Path $_ })
+          $pattern = '\.(ts|tsx|js|mjs|json|md|css|yml|yaml)$'
+          $files = @(git diff --name-only origin/main...HEAD | Where-Object { (Test-Path $_ -PathType Leaf) -and ($_ -match $pattern) })
           if ($files.Count -gt 0) { npx prettier --write -- $files }
       - name: Check branch formatting
         shell: pwsh
         run: |
-          $files = @(git diff --name-only origin/main...HEAD | Where-Object { Test-Path $_ })
+          $pattern = '\.(ts|tsx|js|mjs|json|md|css|yml|yaml)$'
+          $files = @(git diff --name-only origin/main...HEAD | Where-Object { (Test-Path $_ -PathType Leaf) -and ($_ -match $pattern) })
           if ($files.Count -gt 0) { npx prettier --check -- $files }
       - name: Native desktop dependency
         run: npm run native:node
