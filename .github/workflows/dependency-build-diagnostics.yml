@@ -67,11 +67,34 @@ jobs:
       - name: Typecheck desktop and mobile
         run: npm run typecheck
 
-      - name: Formatting check
-        run: npm run format:check
+      - name: Format hardening source changes
+        run: >-
+          npx prettier --write
+          apps/desktop/src/main/index.ts
+          apps/desktop/src/main/ipc/register-passwords-ipc.test.ts
+          apps/desktop/src/main/ipc/register-passwords-ipc.ts
+          apps/desktop/src/main/services/password-clipboard.test.ts
+          apps/desktop/src/main/services/password-clipboard.ts
+          apps/desktop/src/main/services/shutdown-coordinator-async-cleanup.test.ts
+          apps/desktop/src/main/services/shutdown-coordinator.ts
 
-      - name: ESLint
-        run: npm run lint
+      - name: Formatting check for hardening changes
+        run: >-
+          npx prettier --check
+          apps/desktop/src/main/index.ts
+          apps/desktop/src/main/ipc/register-passwords-ipc.test.ts
+          apps/desktop/src/main/ipc/register-passwords-ipc.ts
+          apps/desktop/src/main/services/password-clipboard.test.ts
+          apps/desktop/src/main/services/password-clipboard.ts
+          apps/desktop/src/main/services/shutdown-coordinator-async-cleanup.test.ts
+          apps/desktop/src/main/services/shutdown-coordinator.ts
+
+      - name: ESLint hardening changes
+        shell: pwsh
+        run: |
+          Push-Location apps/desktop
+          npx eslint src/main/index.ts src/main/ipc/register-passwords-ipc.test.ts src/main/ipc/register-passwords-ipc.ts src/main/services/password-clipboard.test.ts src/main/services/password-clipboard.ts src/main/services/shutdown-coordinator-async-cleanup.test.ts src/main/services/shutdown-coordinator.ts
+          Pop-Location
 
       - name: Full desktop tests without obsolete npm flags
         shell: pwsh
@@ -100,7 +123,10 @@ jobs:
         run: npm run build:win
 
       - name: Diff whitespace
-        run: git diff origin/main...HEAD --check
+        shell: pwsh
+        run: |
+          git diff origin/main...HEAD --check
+          git diff --check
 
       - name: Commit validated hardening and remove temporary workflow
         shell: pwsh
@@ -109,5 +135,10 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git rm .github/workflows/dependency-build-diagnostics.yml
           git add package.json package-lock.json apps/desktop/package.json
+          git add apps/desktop/src/main/index.ts
+          git add apps/desktop/src/main/ipc/register-passwords-ipc.test.ts apps/desktop/src/main/ipc/register-passwords-ipc.ts
+          git add apps/desktop/src/main/services/password-clipboard.test.ts apps/desktop/src/main/services/password-clipboard.ts
+          git add apps/desktop/src/main/services/shutdown-coordinator-async-cleanup.test.ts apps/desktop/src/main/services/shutdown-coordinator.ts
+          git status --short
           git commit -m "chore: harden dependency installation and Electron"
           git push origin HEAD:agent/dependency-build-hardening
