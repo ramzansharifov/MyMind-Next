@@ -72,4 +72,39 @@ describe('password clipboard', () => {
     expect(mocks.writeText).toHaveBeenCalledTimes(1)
     expect(mocks.writeText).toHaveBeenCalledWith('new-secret')
   })
+
+  it('clears a password whose async write was already in progress when the vault locks', async () => {
+    const { clearTrackedPasswordClipboard, copyPasswordValue } = await loadClipboardService()
+    let finishWrite: (() => void) | undefined
+
+    mocks.writeText.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          finishWrite = resolve
+        })
+    )
+    mocks.readText.mockResolvedValue('secret-123')
+
+    const copy = copyPasswordValue('secret-123')
+    await vi.waitFor(() => expect(mocks.writeText).toHaveBeenCalledWith('secret-123'))
+
+    const clear = clearTrackedPasswordClipboard()
+    finishWrite?.()
+    await Promise.all([copy, clear])
+
+    expect(mocks.clear).toHaveBeenCalledOnce()
+  })
+
+  it('keeps the previous password cleanup armed when a superseding write fails', async () => {
+    const { copyPasswordValue } = await loadClipboardService()
+    mocks.readText.mockResolvedValue('old-secret')
+
+    await copyPasswordValue('old-secret')
+    mocks.writeText.mockRejectedValueOnce(new Error('clipboard write failed'))
+
+    await expect(copyPasswordValue('new-secret')).rejects.toThrow('clipboard write failed')
+    await vi.advanceTimersByTimeAsync(30_000)
+
+    expect(mocks.clear).toHaveBeenCalledOnce()
+  })
 })
