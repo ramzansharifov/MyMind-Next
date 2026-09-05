@@ -23,10 +23,16 @@ jobs:
         with:
           node-version: 22
 
-      - name: Install icon tooling
-        run: npm install --no-save --package-lock=false --ignore-scripts sharp@0.34.4 png2icons@2.0.1
+      - name: Install isolated icon tooling
+        run: |
+          mkdir -p /tmp/icon-tools
+          cd /tmp/icon-tools
+          npm init -y
+          npm install --package-lock=false sharp@0.34.4 png2icons@2.0.1
 
       - name: Generate PNG, ICO and ICNS assets
+        env:
+          NODE_PATH: /tmp/icon-tools/node_modules
         run: |
           node <<'NODE'
           const fs = require('node:fs')
