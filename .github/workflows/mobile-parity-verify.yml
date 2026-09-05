@@ -1,0 +1,49 @@
+name: Mobile parity verification
+
+on:
+  push:
+    branches:
+      - agent/full-mobile-app
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Use npm 11
+        shell: pwsh
+        run: npm install --global npm@11
+      - name: Strict install
+        run: npm ci
+      - name: Native desktop dependency
+        run: npm run native:node
+      - name: Format
+        run: npm run format:check
+      - name: Lint desktop
+        run: npm run lint
+      - name: Lint mobile
+        run: npm run lint:mobile
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Mobile tests
+        run: npm run test:mobile
+      - name: Desktop tests
+        run: npm run test:coverage
+      - name: Database check
+        run: npm run db:check
+      - name: Desktop bundle
+        run: npm run build:bundle
+      - name: Expo Android export
+        run: npm run export:android
+      - name: Windows installer
+        run: npm run build:win
+      - name: Whitespace
+        run: git diff --check
