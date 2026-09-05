@@ -3,10 +3,7 @@ import { randomUUID } from 'node:crypto'
 import type { ShutdownResponse } from '../../shared/contracts/system'
 
 export type ShutdownFallbackReason =
-  | 'renderer-timeout'
-  | 'renderer-unresponsive'
-  | 'renderer-gone'
-  | 'operations-timeout'
+  'renderer-timeout' | 'renderer-unresponsive' | 'renderer-gone' | 'operations-timeout'
 
 export type ShutdownFallbackDecision = 'retry' | 'cancel' | 'force'
 
