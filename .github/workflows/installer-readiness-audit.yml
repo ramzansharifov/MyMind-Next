@@ -11,7 +11,7 @@ permissions:
 jobs:
   windows-installer:
     runs-on: windows-latest
-    timeout-minutes: 35
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -20,6 +20,8 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
+      - name: Audit runtime dependencies
+        run: npm audit --omit=dev --audit-level=high
       - name: Build Windows installer
         run: npm run build:win
       - name: Inspect installer output
@@ -36,3 +38,14 @@ jobs:
           }
           Write-Host "INSTALLER=$($installer.FullName)"
           Write-Host "SIZE=$($installer.Length)"
+      - name: Smoke launch packaged application
+        shell: pwsh
+        run: |
+          $app = Resolve-Path "dist/win-unpacked/MyMind.exe"
+          $process = Start-Process -FilePath $app -ArgumentList "--disable-gpu" -PassThru
+          Start-Sleep -Seconds 10
+          if ($process.HasExited) {
+            throw "Packaged MyMind exited during startup with code $($process.ExitCode)"
+          }
+          Stop-Process -Id $process.Id -Force
+          Write-Host "Packaged MyMind stayed alive for the startup smoke window"
