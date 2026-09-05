@@ -1,15 +1,12 @@
-import { app, dialog, type BrowserWindow, type MessageBoxOptions, type OpenDialogOptions } from 'electron'
-import { randomUUID } from 'node:crypto'
 import {
-  access,
-  cp,
-  mkdir,
-  readFile,
-  rename,
-  rm,
-  stat,
-  writeFile
-} from 'node:fs/promises'
+  app,
+  dialog,
+  type BrowserWindow,
+  type MessageBoxOptions,
+  type OpenDialogOptions
+} from 'electron'
+import { randomUUID } from 'node:crypto'
+import { access, cp, mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
 import { constants } from 'node:fs'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 
@@ -74,6 +71,13 @@ export async function ensureInitialStorageLocation(): Promise<void> {
   }
 
   const defaultRoot = getDefaultStorageRoot()
+  if (await readStorageMarker(defaultRoot)) {
+    await ensureStorageRootAvailable(defaultRoot)
+    await writeStoragePointer(defaultRoot)
+    selectedStorageRoot = resolve(defaultRoot)
+    return
+  }
+
   const chosenRoot = await chooseInitialStorageRoot(defaultRoot)
 
   await prepareInitialStorage(chosenRoot)
@@ -265,8 +269,16 @@ async function ensureStorageRootAvailable(root: string): Promise<void> {
 
 async function validateInitialTarget(target: string): Promise<void> {
   const marker = await readStorageMarker(target)
-  if (marker) {
-    return
+  if (marker) return
+
+  if (!samePath(target, getDefaultStorageRoot())) {
+    for (const directory of MANAGED_DIRECTORIES) {
+      if (await pathExists(join(target, directory))) {
+        throw new Error(
+          `В выбранной папке уже существует каталог «${directory}». Выберите другую папку.`
+        )
+      }
+    }
   }
 
   const databasePath = join(target, 'data', 'mymind.sqlite')
@@ -326,7 +338,20 @@ async function writeStoragePointer(storageRoot: string): Promise<void> {
   }
 
   await writeFile(temporaryPath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8')
-  await rename(temporaryPath, path)
+
+  const backupPath = `${path}.bak`
+  const hadPrevious = await pathExists(path)
+  if (hadPrevious) await rename(path, backupPath)
+
+  try {
+    await rename(temporaryPath, path)
+    await rm(backupPath, { force: true })
+  } catch (reason: unknown) {
+    if (hadPrevious && (await pathExists(backupPath))) {
+      await rename(backupPath, path).catch(() => undefined)
+    }
+    throw reason
+  }
 }
 
 async function writeStorageMarker(root: string): Promise<void> {
@@ -366,11 +391,15 @@ function assertIndependentRoots(sourceRoot: string, targetRoot: string): void {
   const fromSource = relative(source, target)
   const fromTarget = relative(target, source)
 
-  const targetInsideSource = fromSource !== '' && !fromSource.startsWith('..') && !isAbsolute(fromSource)
-  const sourceInsideTarget = fromTarget !== '' && !fromTarget.startsWith('..') && !isAbsolute(fromTarget)
+  const targetInsideSource =
+    fromSource !== '' && !fromSource.startsWith('..') && !isAbsolute(fromSource)
+  const sourceInsideTarget =
+    fromTarget !== '' && !fromTarget.startsWith('..') && !isAbsolute(fromTarget)
 
   if (targetInsideSource || sourceInsideTarget) {
-    throw new Error('Новая папка данных не может находиться внутри текущего хранилища или содержать его')
+    throw new Error(
+      'Новая папка данных не может находиться внутри текущего хранилища или содержать его'
+    )
   }
 }
 

@@ -7,7 +7,7 @@ import { pathToFileURL } from 'node:url'
 import windowsIcon from '../../build/icon.ico?asset'
 import icon from '../../resources/icon.png?asset'
 import { IPC_CHANNELS } from '../shared/contracts/system'
-import { closeDatabase, initializeDatabase } from './database/client'
+import { closeDatabase, getSqlite, initializeDatabase } from './database/client'
 import { runDatabaseMigrations } from './database/migrate'
 import { registerIpcHandlers } from './ipc/register-ipc'
 import { lockPasswordVault } from './repositories/passwords.repository'
@@ -27,6 +27,13 @@ import {
   type ShutdownFallbackReason
 } from './services/shutdown-coordinator'
 import { registerStudyAssetProtocol, registerStudyAssetScheme } from './services/study-assets'
+import {
+  chooseStorageLocation,
+  ensureInitialStorageLocation,
+  getStorageInfo,
+  getStorageRoot,
+  moveStorageTo
+} from './services/storage-location'
 import { runStudyPlainTextMaintenance } from './services/study-plain-text-maintenance'
 
 let mainWindow: BrowserWindow | null = null
@@ -311,7 +318,7 @@ if (!hasSingleInstanceLock) {
     focusExistingAppWindow(mainWindow)
   })
 
-  void app.whenReady().then(() => {
+  void app.whenReady().then(async () => {
     configureDesktopNotificationIdentity()
     ensureWindowsDevelopmentNotificationShortcut()
 
@@ -336,6 +343,15 @@ if (!hasSingleInstanceLock) {
 
     registerStudyAssetProtocol()
 
+    try {
+      await ensureInitialStorageLocation()
+    } catch (reason: unknown) {
+      const message = reason instanceof Error ? reason.message : String(reason)
+      dialog.showErrorBox('Не удалось открыть хранилище MyMind', message)
+      app.quit()
+      return
+    }
+
     initializeDatabase()
     runDatabaseMigrations()
 
@@ -349,6 +365,42 @@ if (!hasSingleInstanceLock) {
 
     registerIpcHandlers({
       getTrustedWebContents: () => mainWindow?.webContents ?? null,
+      storage: {
+        getInfo: getStorageInfo,
+        openLocation: async () => {
+          const error = await shell.openPath(getStorageRoot())
+          if (error) throw new Error(error)
+        },
+        changeLocation: async (window) => {
+          const target = await chooseStorageLocation(window)
+          const current = getStorageInfo()
+          if (!target) return { status: 'cancelled', path: current.path }
+          if (target === current.path) return { status: 'unchanged', path: current.path }
+
+          mainOperationTracker.pauseNewOperations()
+          await mainOperationTracker.whenIdle()
+          calendarReminderScheduler.stop()
+          habitReminderScheduler.stop()
+          getSqlite().pragma('wal_checkpoint(TRUNCATE)')
+          closeDatabase()
+
+          try {
+            const result = await moveStorageTo(target)
+            setTimeout(() => {
+              app.relaunch()
+              app.exit(0)
+            }, 300)
+            return result
+          } catch (reason: unknown) {
+            initializeDatabase()
+            runDatabaseMigrations()
+            calendarReminderScheduler.start()
+            habitReminderScheduler.start()
+            mainOperationTracker.resumeNewOperations()
+            throw reason
+          }
+        }
+      },
       aiChat: {
         setOpen: (input) => aiChatViewController.setOpen(input),
         setBounds: (bounds) => aiChatViewController.setBounds(bounds),

@@ -1,4 +1,4 @@
-import { app, dialog, protocol, shell, type BrowserWindow, type OpenDialogOptions } from 'electron'
+import { dialog, protocol, shell, type BrowserWindow, type OpenDialogOptions } from 'electron'
 import { createReadStream } from 'node:fs'
 import { copyFile, mkdir, readdir, rm, stat, writeFile } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
@@ -14,6 +14,7 @@ import type {
 } from '../../shared/contracts/study'
 import { createCanonicalStudyAssetUrl, isSafeStudyAssetFileName } from '../../shared/study-assets'
 import { resolveStudyAssetByteRange } from './study-asset-range'
+import { getStudyAttachmentsRoot } from './storage-location'
 import { studyMaterialCoordinator } from './study-material-coordinator'
 
 export const STUDY_ASSET_SCHEME = 'mymind-asset'
@@ -684,7 +685,7 @@ export function resetStudyAssetReservationsForTesting(now: (() => number) | null
 }
 
 function getStudyAssetsRoot(): string {
-  return studyAssetsRootForTesting ?? join(app.getPath('documents'), 'MyMind', 'Attachments')
+  return studyAssetsRootForTesting ?? getStudyAttachmentsRoot()
 }
 
 function resolveStudyAssetRequest(requestUrl: string): string | null {

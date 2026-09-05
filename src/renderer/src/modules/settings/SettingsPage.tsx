@@ -19,6 +19,7 @@ import { cn } from '../../shared/lib/cn'
 import { ModuleHeader } from '../../shared/ui/ModuleHeader'
 import { StandardModulePage } from '../../shared/ui/StandardModulePage'
 import { AppearanceSettingsSection } from './AppearanceSettingsSection'
+import { StorageSettingsSection } from './StorageSettingsSection'
 import { SettingsBreadcrumbs, type SettingsBreadcrumbItem } from './SettingsBreadcrumbs'
 import {
   BoardsInstructionArticlePage,
@@ -234,6 +235,8 @@ function SettingsOverview({
           <SettingsValueBadge>{instructionsCount} инструкций</SettingsValueBadge>
         </SettingsNavigationCard>
       </div>
+
+      <StorageSettingsSection />
 
       {error && <SettingsErrorNotice error={error} />}
     </div>

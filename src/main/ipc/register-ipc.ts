@@ -5,7 +5,12 @@ import {
   type AiChatBounds,
   type SetAiChatOpenInput
 } from '../../shared/contracts/ai-chat'
-import { IPC_CHANNELS, type SystemWindowState } from '../../shared/contracts/system'
+import {
+  IPC_CHANNELS,
+  type StorageChangeResult,
+  type StorageInfo,
+  type SystemWindowState
+} from '../../shared/contracts/system'
 import { aiChatBoundsSchema, setAiChatOpenInputSchema } from '../../shared/validation/ai-chat'
 import { shutdownResponseSchema, systemHealthSchema } from '../../shared/validation/system'
 import { getSqlite } from '../database/client'
@@ -31,6 +36,11 @@ interface SQLiteVersionRow {
 
 interface RegisterIpcHandlersOptions {
   getTrustedWebContents(): WebContents | null
+  storage: {
+    getInfo(): StorageInfo
+    changeLocation(window: BrowserWindow): Promise<StorageChangeResult>
+    openLocation(): Promise<void>
+  }
   aiChat: {
     setOpen(input: SetAiChatOpenInput): void
     setBounds(bounds: AiChatBounds): void
@@ -90,6 +100,9 @@ export function registerIpcHandlers(options: RegisterIpcHandlersOptions): void {
   ipcMain.removeHandler(AI_CHAT_IPC_CHANNELS.setBounds)
   ipcMain.removeHandler(AI_CHAT_IPC_CHANNELS.reload)
   ipcMain.removeHandler(IPC_CHANNELS.systemHealth)
+  ipcMain.removeHandler(IPC_CHANNELS.storageGetInfo)
+  ipcMain.removeHandler(IPC_CHANNELS.storageChangeLocation)
+  ipcMain.removeHandler(IPC_CHANNELS.storageOpenLocation)
   ipcMain.removeHandler(IPC_CHANNELS.respondToShutdown)
   ipcMain.removeHandler(IPC_CHANNELS.windowGetState)
   ipcMain.removeHandler(IPC_CHANNELS.windowMinimize)
@@ -123,6 +136,21 @@ export function registerIpcHandlers(options: RegisterIpcHandlersOptions): void {
       })
     })
   )
+
+  ipcMain.handle(IPC_CHANNELS.storageGetInfo, (event) => {
+    getTrustedWindow(event, options.getTrustedWebContents)
+    return options.storage.getInfo()
+  })
+
+  ipcMain.handle(IPC_CHANNELS.storageChangeLocation, (event) => {
+    const window = getTrustedWindow(event, options.getTrustedWebContents)
+    return options.storage.changeLocation(window)
+  })
+
+  ipcMain.handle(IPC_CHANNELS.storageOpenLocation, (event) => {
+    getTrustedWindow(event, options.getTrustedWebContents)
+    return options.storage.openLocation()
+  })
 
   ipcMain.handle(IPC_CHANNELS.windowGetState, (event) => {
     const window = getTrustedWindow(event, options.getTrustedWebContents)
