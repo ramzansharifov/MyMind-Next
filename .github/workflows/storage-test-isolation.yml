@@ -1,0 +1,54 @@
+name: Storage test isolation
+
+on:
+  push:
+    branches:
+      - agent/quiet-storage-test-setup
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Use npm 11
+        run: npm install --global npm@11
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+      - name: Typecheck desktop and mobile
+        run: npm run typecheck
+      - name: Run affected desktop tests without storage warnings
+        shell: pwsh
+        run: |
+          Push-Location apps/desktop
+          & npm run test:run -- src/main/services/study-code-folder-structure.test.ts src/main/services/study-code-symbolic-links.integration.test.ts src/main/services/study-code-heading-layout.test.ts src/main/services/workout-progress-assets.test.ts *>&1 | Tee-Object -FilePath storage-test-output.log
+          $exitCode = $LASTEXITCODE
+          $output = Get-Content storage-test-output.log -Raw
+          Pop-Location
+
+          if ($exitCode -ne 0) {
+            exit $exitCode
+          }
+
+          if ($output -match 'MyMind storage has not been initialized') {
+            throw 'Storage initialization warning is still present in affected tests'
+          }
+      - name: Check diff whitespace
+        run: git diff main...HEAD --check
+      - name: Remove temporary workflow
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/storage-test-isolation.yml
+          git commit -m "ci: remove storage isolation validation workflow"
+          git push origin HEAD:agent/quiet-storage-test-setup
