@@ -4,7 +4,8 @@
   "private": true,
   "description": "MyMind desktop and mobile monorepo",
   "workspaces": [
-    "apps/*"
+    "apps/*",
+    "packages/*"
   ],
   "engines": {
     "node": ">=22.13.0"
@@ -13,9 +14,10 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "npm run lint --workspace=mymind-next",
+    "typecheck:packages": "npm run typecheck --workspace=@mymind/contracts && npm run typecheck --workspace=@mymind/core && npm run typecheck --workspace=@mymind/design",
     "typecheck:desktop": "npm run typecheck --workspace=mymind-next",
     "typecheck:mobile": "npm run typecheck --workspace=mymind-mobile",
-    "typecheck": "npm run typecheck:desktop && npm run typecheck:mobile",
+    "typecheck": "npm run typecheck:packages && npm run typecheck:desktop && npm run typecheck:mobile",
     "start": "npm run start --workspace=mymind-next",
     "preview:existing": "npm run preview:existing --workspace=mymind-next",
     "dev": "npm run dev:desktop",
