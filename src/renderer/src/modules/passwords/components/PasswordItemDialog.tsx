@@ -1,10 +1,9 @@
 import { Tooltip } from '../../../shared/ui/tooltip'
-import { Eye, EyeOff, KeyRound, Plus, Sparkles, Star, Trash2, WandSparkles } from 'lucide-react'
+import { Eye, EyeOff, KeyRound, Sparkles, Star, WandSparkles } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 import type {
   CreatePasswordItemInput,
-  PasswordCustomField,
   PasswordGroupRecord,
   PasswordItemRecord,
   PasswordItemType,
@@ -31,19 +30,6 @@ interface PasswordItemDialogProps {
   onSave: (input: CreatePasswordItemInput | UpdatePasswordItemInput) => Promise<void>
 }
 
-function uniqueTags(value: string): string[] {
-  const seen = new Set<string>()
-  const result: string[] = []
-  for (const raw of value.split(',')) {
-    const tag = raw.trim()
-    const key = tag.toLocaleLowerCase('ru-RU')
-    if (!tag || seen.has(key)) continue
-    seen.add(key)
-    result.push(tag)
-  }
-  return result
-}
-
 export function PasswordItemDialog({
   open,
   item,
@@ -60,8 +46,6 @@ export function PasswordItemDialog({
   const [password, setPassword] = useState('')
   const [website, setWebsite] = useState('')
   const [notes, setNotes] = useState('')
-  const [tagsText, setTagsText] = useState('')
-  const [customFields, setCustomFields] = useState<PasswordCustomField[]>([])
   const [favorite, setFavorite] = useState(false)
   const [passwordVisible, setPasswordVisible] = useState(false)
   const [generatorOpen, setGeneratorOpen] = useState(false)
@@ -83,8 +67,6 @@ export function PasswordItemDialog({
     setPassword(item?.password ?? '')
     setWebsite(item?.website ?? '')
     setNotes(item?.notes ?? '')
-    setTagsText(item?.tags.join(', ') ?? '')
-    setCustomFields(item?.customFields ?? [])
     setFavorite(item?.favorite ?? false)
     setPasswordVisible(false)
     setGeneratorOpen(false)
@@ -121,12 +103,6 @@ export function PasswordItemDialog({
     }
   }
 
-  function updateCustomField(index: number, patch: Partial<PasswordCustomField>): void {
-    setCustomFields((current) =>
-      current.map((field, fieldIndex) => (fieldIndex === index ? { ...field, ...patch } : field))
-    )
-  }
-
   async function submit(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault()
     if (!title.trim() || !password || busy) return
@@ -140,10 +116,8 @@ export function PasswordItemDialog({
       password,
       website: website.trim(),
       notes,
-      tags: uniqueTags(tagsText),
-      customFields: customFields
-        .map((field) => ({ label: field.label.trim(), value: field.value }))
-        .filter((field) => field.label.length > 0),
+      tags: item?.tags ?? [],
+      customFields: item?.customFields ?? [],
       favorite
     }
 
@@ -160,7 +134,7 @@ export function PasswordItemDialog({
       open={open}
       onOpenChange={onOpenChange}
       title={item ? 'Изменить запись' : 'Новая запись'}
-      description="Логины, пароли и дополнительные секретные поля сохраняются в зашифрованном хранилище."
+      description="Логины и пароли сохраняются в зашифрованном хранилище."
       icon={<KeyRound />}
       size="lg"
       busy={busy || generating}
@@ -335,71 +309,6 @@ export function PasswordItemDialog({
             onChange={(event) => setWebsite(event.target.value)}
           />
         </label>
-
-        <label className="block space-y-1.5">
-          <span className="text-xs font-medium text-[var(--app-muted)]">Теги</span>
-          <input
-            value={tagsText}
-            placeholder="Работа, Git, Разработка"
-            className="focus:border-accent-500/45 focus:ring-accent-500/15 h-11 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3.5 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60 focus:ring-2"
-            onChange={(event) => setTagsText(event.target.value)}
-          />
-          <span className="block text-[11px] text-[var(--app-muted)]">
-            Разделяйте теги запятыми.
-          </span>
-        </label>
-
-        <div className="space-y-2">
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-xs font-medium text-[var(--app-muted)]">
-              Дополнительные секретные поля
-            </span>
-            <button
-              type="button"
-              disabled={customFields.length >= 20}
-              className="text-accent-300 hover:text-accent-200 inline-flex items-center gap-1.5 text-xs font-medium disabled:opacity-40"
-              onClick={() => setCustomFields((current) => [...current, { label: '', value: '' }])}
-            >
-              <Plus className="size-3.5" /> Добавить поле
-            </button>
-          </div>
-          {customFields.map((field, index) => (
-            <div
-              key={index}
-              className="grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)_40px] gap-2"
-            >
-              <input
-                value={field.label}
-                maxLength={80}
-                placeholder="Название"
-                className="focus:border-accent-500/45 h-10 min-w-0 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-muted)]/60"
-                onChange={(event) => updateCustomField(index, { label: event.target.value })}
-              />
-              <input
-                value={field.value}
-                type="password"
-                maxLength={4000}
-                placeholder="Значение"
-                className="focus:border-accent-500/45 h-10 min-w-0 rounded-xl border border-[var(--app-border)] bg-[var(--app-workspace)] px-3 font-mono text-sm text-[var(--app-text)] outline-none placeholder:font-sans placeholder:text-[var(--app-muted)]/60"
-                onChange={(event) => updateCustomField(index, { value: event.target.value })}
-              />
-              <Tooltip content="Удалить дополнительное поле" side="top">
-                <button
-                  type="button"
-                  aria-label="Удалить дополнительное поле"
-                  className="flex size-10 items-center justify-center rounded-xl text-[var(--app-muted)] hover:bg-red-500/10 hover:text-red-300"
-                  onClick={() =>
-                    setCustomFields((current) =>
-                      current.filter((_, fieldIndex) => fieldIndex !== index)
-                    )
-                  }
-                >
-                  <Trash2 className="size-4" />
-                </button>
-              </Tooltip>
-            </div>
-          ))}
-        </div>
 
         <label className="block space-y-1.5">
           <span className="text-xs font-medium text-[var(--app-muted)]">Заметки</span>
