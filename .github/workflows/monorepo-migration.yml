@@ -242,7 +242,54 @@ jobs:
         run: npm run typecheck
 
       - name: Run desktop tests
-        run: npm run test:run
+        shell: pwsh
+        run: |
+          Push-Location apps/desktop
+          & npm run test:run -- --reporter=json --outputFile=vitest-results.json --silent *> vitest-console.log
+          $exitCode = $LASTEXITCODE
+
+          if (Test-Path vitest-results.json) {
+            $results = Get-Content vitest-results.json -Raw | ConvertFrom-Json
+            $failedFiles = @($results.testResults | Where-Object {
+              $_.status -eq 'failed' -or
+              @($_.assertionResults | Where-Object { $_.status -eq 'failed' }).Count -gt 0
+            })
+
+            Write-Host "Failed test files: $($failedFiles.Count)"
+            foreach ($file in $failedFiles) {
+              Write-Host ''
+              Write-Host "FAIL $($file.name)"
+              $failedTests = @($file.assertionResults | Where-Object { $_.status -eq 'failed' })
+
+              foreach ($test in $failedTests) {
+                $testName = if ($test.fullName) {
+                  $test.fullName
+                } else {
+                  (@($test.ancestorTitles) + $test.title) -join ' > '
+                }
+                Write-Host "  $testName"
+
+                foreach ($message in @($test.failureMessages)) {
+                  $clean = $message -replace "`e\[[\d;]*m", ''
+                  ($clean -split "`r?`n" | Select-Object -First 40) |
+                    ForEach-Object { Write-Host "    $_" }
+                }
+              }
+
+              if ($failedTests.Count -eq 0 -and $file.message) {
+                ($file.message -split "`r?`n" | Select-Object -First 80) |
+                  ForEach-Object { Write-Host $_ }
+              }
+            }
+          } else {
+            Write-Host 'Vitest JSON report was not created. Last console lines:'
+            Get-Content vitest-console.log -Tail 200
+          }
+
+          Pop-Location
+          if ($exitCode -ne 0) {
+            exit $exitCode
+          }
 
       - name: Check database migrations
         run: npm run db:check
