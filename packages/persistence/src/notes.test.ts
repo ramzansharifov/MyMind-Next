@@ -6,7 +6,7 @@ import { createNotesRepository } from './notes'
 
 const databases: Database.Database[] = []
 
-function setup() {
+function setup(): { db: Database.Database; runtime: RepositoryRuntime } {
   const db = new Database(':memory:')
   databases.push(db)
   db.pragma('foreign_keys = ON')
@@ -38,7 +38,11 @@ function setup() {
   return { db, runtime }
 }
 
-function deferred() {
+function deferred(): {
+  promise: Promise<void>
+  resolve(): void
+  reject(reason?: unknown): void
+} {
   let resolve!: () => void
   let reject!: (reason?: unknown) => void
   const promise = new Promise<void>((res, rej) => {
