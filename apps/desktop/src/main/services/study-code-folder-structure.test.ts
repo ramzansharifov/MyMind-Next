@@ -7,12 +7,14 @@ import { closeDatabase, getDatabase, initializeDatabaseForTesting } from '../dat
 import { runDatabaseMigrationsFrom } from '../database/migrate'
 import { appMeta, studyNodes } from '../database/schema'
 import { createStudyNode, getStudyMaterial } from '../repositories/study.repository'
+import { setStudyAssetsRootForTesting } from './study-assets'
 import { applyStudyCode, getStudyCodeSnapshot, previewStudyCode } from './study-code-service'
 
 let testRoot = ''
 
 beforeAll(async () => {
   testRoot = await mkdtemp(join(tmpdir(), 'mymind-study-folder-code-'))
+  setStudyAssetsRootForTesting(join(testRoot, 'Attachments'))
   initializeDatabaseForTesting(join(testRoot, 'study-folder-code.sqlite'))
   runDatabaseMigrationsFrom(resolve(process.cwd(), 'drizzle'))
 })
@@ -25,6 +27,7 @@ beforeEach(() => {
 
 afterAll(async () => {
   closeDatabase()
+  setStudyAssetsRootForTesting(null)
   await rm(testRoot, { recursive: true, force: true })
 })
 
