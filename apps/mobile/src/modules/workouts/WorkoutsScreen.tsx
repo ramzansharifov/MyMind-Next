@@ -26,6 +26,8 @@ import {
   Row,
   SearchField
 } from '../../shared/ui/primitives'
+import { WorkoutProgressSheet } from './WorkoutProgressSheet'
+import { WorkoutSessionSheet } from './WorkoutSessionSheet'
 
 type Tab = 'journal' | 'exercises' | 'programs' | 'progress' | 'reports'
 
@@ -76,6 +78,10 @@ export function WorkoutsScreen(): React.JSX.Element {
   const [tab, setTab] = useState<Tab>('journal')
   const [query, setQuery] = useState('')
   const [form, setForm] = useState<FormSpec | null>(null)
+  const [sessionEditor, setSessionEditor] = useState<WorkoutSessionRecord | 'new' | null>(null)
+  const [progressEditor, setProgressEditor] = useState<WorkoutProgressEntryRecord | 'new' | null>(
+    null
+  )
 
   const exercises = overview.data?.exercises ?? []
   const programs = overview.data?.programs ?? []
@@ -202,106 +208,6 @@ export function WorkoutsScreen(): React.JSX.Element {
     })
   }
 
-  const editSession = (session?: WorkoutSessionRecord): void => {
-    const firstExercise = session?.exercises[0]
-    const firstSet = firstExercise?.sets[0]
-    setForm({
-      title: session ? 'Изменить тренировку' : 'Новая тренировка',
-      initial: {
-        programId: session?.programId ?? null,
-        date: session?.date ?? localDateKey(),
-        durationMinutes: session?.durationMinutes ?? '',
-        exerciseId: firstExercise?.exerciseId ?? exerciseChoices[0]?.value ?? null,
-        reps: firstSet?.reps ?? 10,
-        weightKg: firstSet?.weightKg ?? 0,
-        comment: session?.comment ?? ''
-      },
-      fields: [
-        choiceField('programId', 'Программа', [
-          { value: null, label: 'Свободная тренировка' },
-          ...programs
-            .filter((program) => program.status === 'active')
-            .map((program) => ({ value: program.id, label: program.name }))
-        ]),
-        textField('date', 'Дата'),
-        { key: 'durationMinutes', label: 'Длительность, мин', kind: 'nullableNumber' },
-        choiceField('exerciseId', 'Упражнение', exerciseChoices),
-        { key: 'reps', label: 'Повторения', kind: 'number' },
-        { key: 'weightKg', label: 'Вес, кг', kind: 'number' },
-        textField('comment', 'Комментарий', 'multiline')
-      ],
-      save: (values) => {
-        const exerciseId = values.exerciseId
-        if (typeof exerciseId !== 'string') throw new Error('Выберите упражнение')
-        const payload = {
-          programId: values.programId,
-          date: values.date,
-          durationMinutes: values.durationMinutes,
-          comment: values.comment,
-          exercises: [
-            {
-              exerciseId,
-              comment: '',
-              sets: [{ reps: values.reps, weightKg: values.weightKg }]
-            }
-          ]
-        }
-        if (session) {
-          api.updateSession(
-            workoutsValidation.updateWorkoutSessionInputSchema.parse({ id: session.id, ...payload })
-          )
-        } else {
-          api.createSession(workoutsValidation.createWorkoutSessionInputSchema.parse(payload))
-        }
-        overview.refresh()
-      }
-    })
-  }
-
-  const editProgress = (entry?: WorkoutProgressEntryRecord): void => {
-    setForm({
-      title: entry ? 'Изменить прогресс' : 'Новая запись прогресса',
-      initial: {
-        date: entry?.date ?? localDateKey(),
-        bodyWeightKg: entry?.bodyWeightKg ?? '',
-        wellbeing: entry?.wellbeing ?? '',
-        notes: entry?.notes ?? ''
-      },
-      fields: [
-        textField('date', 'Дата'),
-        { key: 'bodyWeightKg', label: 'Вес тела, кг', kind: 'nullableNumber' },
-        textField('wellbeing', 'Самочувствие', 'multiline'),
-        textField('notes', 'Заметки', 'multiline')
-      ],
-      save: (values) => {
-        const metrics =
-          entry?.metrics
-            .filter((metric) => metric.exerciseId !== null)
-            .map((metric) => ({
-              exerciseId: metric.exerciseId as string,
-              weightKg: metric.weightKg,
-              reps: metric.reps,
-              comment: metric.comment
-            })) ?? []
-        const payload = {
-          date: values.date,
-          bodyWeightKg: values.bodyWeightKg,
-          wellbeing: values.wellbeing,
-          notes: values.notes,
-          metrics
-        }
-        if (entry) {
-          api.updateProgressEntry(
-            workoutsValidation.updateWorkoutProgressEntryInputSchema.parse({ id: entry.id, ...payload })
-          )
-        } else {
-          api.createProgressEntry(workoutsValidation.createWorkoutProgressEntryInputSchema.parse(payload))
-        }
-        overview.refresh()
-      }
-    })
-  }
-
   const reportResult = useMemo(() => {
     try {
       return {
@@ -347,7 +253,7 @@ export function WorkoutsScreen(): React.JSX.Element {
         <SearchField value={query} onChangeText={setQuery} />
       ) : null}
       {tab === 'journal' ? (
-        <Button label="+ Тренировка" selected onPress={() => editSession()} />
+        <Button label="+ Тренировка" selected onPress={() => setSessionEditor('new')} />
       ) : null}
       {tab === 'exercises' ? (
         <Button label="+ Упражнение" selected onPress={() => editExercise()} />
@@ -356,7 +262,7 @@ export function WorkoutsScreen(): React.JSX.Element {
         <Button label="+ Программа" selected onPress={() => editProgram()} />
       ) : null}
       {tab === 'progress' ? (
-        <Button label="+ Запись прогресса" selected onPress={() => editProgress()} />
+        <Button label="+ Запись прогресса" selected onPress={() => setProgressEditor('new')} />
       ) : null}
     </View>
   )
@@ -386,6 +292,13 @@ export function WorkoutsScreen(): React.JSX.Element {
                 title={`Средняя длительность: ${report.summary.averageDurationMinutes} мин`}
                 subtitle={`Максимальный вес: ${report.summary.maxWeightKg} кг · средний: ${report.summary.averageWeightKg} кг`}
               />
+              {report.muscleGroups.slice(0, 6).map((muscle) => (
+                <Row
+                  key={muscle.muscleGroup}
+                  title={muscleLabels[muscle.muscleGroup as keyof typeof muscleLabels] ?? muscle.muscleGroup}
+                  subtitle={`${muscle.sets} подходов · ${muscle.reps} повторений · ${muscle.loadPercent}% нагрузки`}
+                />
+              ))}
               {report.personalRecords.slice(0, 5).map((record) => (
                 <Row
                   key={`weighted:${record.exerciseId}:${record.date}`}
@@ -433,7 +346,7 @@ export function WorkoutsScreen(): React.JSX.Element {
               <Row
                 title={`${session.date} · ${session.programName ?? 'Свободная тренировка'}`}
                 subtitle={`${session.exercises.length} упражнений · ${session.totalSets} подходов · ${session.totalReps} повторений · ${session.totalVolumeKg} кг`}
-                onPress={() => editSession(session)}
+                onPress={() => setSessionEditor(session)}
                 onLongPress={() =>
                   overview.confirmDelete('Удалить тренировку?', () =>
                     api.deleteSession({ id: session.id })
@@ -478,10 +391,15 @@ export function WorkoutsScreen(): React.JSX.Element {
           return (
             <Row
               title={`${entry.date}${entry.bodyWeightKg === null ? '' : ` · ${entry.bodyWeightKg} кг`}`}
-              subtitle={[entry.wellbeing, entry.notes, `${entry.metrics.length} показателей`]
+              subtitle={[
+                entry.wellbeing,
+                entry.notes,
+                `${entry.metrics.length} показателей`,
+                `${entry.photos.length} фото`
+              ]
                 .filter(Boolean)
                 .join(' · ')}
-              onPress={() => editProgress(entry)}
+              onPress={() => setProgressEditor(entry)}
               onLongPress={() =>
                 overview.confirmDelete('Удалить запись прогресса?', () =>
                   api.deleteProgressEntry({ id: entry.id })
@@ -492,6 +410,31 @@ export function WorkoutsScreen(): React.JSX.Element {
         }}
       />
       {form && <FormSheet spec={form} close={() => setForm(null)} />}
+      {sessionEditor ? (
+        <WorkoutSessionSheet
+          session={sessionEditor === 'new' ? undefined : sessionEditor}
+          exercises={exercises}
+          programs={programs}
+          save={(input) => {
+            if ('id' in input) api.updateSession(input)
+            else api.createSession(input)
+            overview.refresh()
+          }}
+          close={() => setSessionEditor(null)}
+        />
+      ) : null}
+      {progressEditor ? (
+        <WorkoutProgressSheet
+          entry={progressEditor === 'new' ? undefined : progressEditor}
+          exercises={exercises}
+          save={(input) => {
+            if ('id' in input) api.updateProgressEntry(input)
+            else api.createProgressEntry(input)
+            overview.refresh()
+          }}
+          close={() => setProgressEditor(null)}
+        />
+      ) : null}
     </View>
   )
 }
