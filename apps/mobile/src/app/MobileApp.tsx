@@ -22,6 +22,7 @@ import { NotesScreen } from '../modules/notes/NotesScreen'
 import { CatalogScreen } from '../modules/catalog/CatalogScreen'
 import { CalendarScreen } from '../modules/calendar/CalendarScreen'
 import { DiaryScreen } from '../modules/diary/DiaryScreen'
+import { WorkoutsScreen } from '../modules/workouts/WorkoutsScreen'
 import { Home } from './Home'
 import { Settings } from './Settings'
 import { ReminderStatus } from './ReminderStatus'
@@ -38,6 +39,7 @@ export type Route =
   | 'music'
   | 'calendar'
   | 'diary'
+  | 'workouts'
   | 'settings'
 
 const titles: Record<Route, string> = {
@@ -52,6 +54,7 @@ const titles: Record<Route, string> = {
   music: 'Музыка',
   calendar: 'Календарь',
   diary: 'Дневник',
+  workouts: 'Тренировки',
   settings: 'Настройки'
 }
 
@@ -134,6 +137,7 @@ export default function MobileApp(): React.JSX.Element {
     'boards',
     'calendar',
     'diary',
+    'workouts',
     'movies',
     'music',
     'settings'
@@ -182,6 +186,8 @@ export default function MobileApp(): React.JSX.Element {
                   <CalendarScreen />
                 ) : route === 'diary' ? (
                   <DiaryScreen />
+                ) : route === 'workouts' ? (
+                  <WorkoutsScreen />
                 ) : route === 'settings' ? (
                   <Settings appearance={appearance} save={saveAppearance} />
                 ) : (
