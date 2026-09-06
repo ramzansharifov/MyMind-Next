@@ -1,6 +1,6 @@
 import { randomUUID } from 'expo-crypto'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Alert, AppState, BackHandler, FlatList, TextInput, View } from 'react-native'
+import { Alert, AppState, BackHandler, FlatList, View } from 'react-native'
 import type { StudyDocument, StudyMaterial, StudyNode } from '@mymind/contracts/study'
 import { STUDY_FOLDER_ICON_NAMES } from '@mymind/contracts/study'
 import { AutosaveQueue } from '@mymind/core/autosave'
@@ -20,7 +20,6 @@ import {
   Row,
   SearchField
 } from '../../shared/ui/primitives'
-import { useTheme } from '../../shared/ui/theme'
 
 function sortNodes(nodes: StudyNode[]): StudyNode[] {
   return [...nodes].sort((a, b) => a.position - b.position || a.createdAt - b.createdAt)
@@ -60,7 +59,6 @@ function folderLabel(folder: StudyNode, nodes: StudyNode[]): string {
 
 export function StudyScreen(): React.JSX.Element {
   const { study: api } = useServices()
-  const theme = useTheme()
   const nodes = useCollection(useCallback(() => api.listNodes(), [api]))
   const [folderId, setFolderId] = useState<string | null>(null)
   const [query, setQuery] = useState('')
@@ -72,12 +70,12 @@ export function StudyScreen(): React.JSX.Element {
   const [pendingAction, setPendingAction] = useState(false)
   const queueRef = useRef<AutosaveQueue<StudyDocument> | null>(null)
 
-  const allNodes = nodes.data ?? []
-  const currentFolder = folderId ? allNodes.find((node) => node.id === folderId) ?? null : null
-
-  useEffect(() => {
-    if (folderId && nodes.data && !nodes.data.some((node) => node.id === folderId)) setFolderId(null)
-  }, [folderId, nodes.data])
+  const allNodes = useMemo(() => nodes.data ?? [], [nodes.data])
+  const effectiveFolderId =
+    folderId && allNodes.some((node) => node.id === folderId) ? folderId : null
+  const currentFolder = effectiveFolderId
+    ? (allNodes.find((node) => node.id === effectiveFolderId) ?? null)
+    : null
 
   const openMaterial = useCallback(
     (id: string): void => {
@@ -133,14 +131,14 @@ export function StudyScreen(): React.JSX.Element {
         void closeMaterial()
         return true
       }
-      if (folderId) {
+      if (effectiveFolderId) {
         setFolderId(currentFolder?.parentId ?? null)
         return true
       }
       return false
     })
     return () => subscription.remove()
-  }, [closeMaterial, currentFolder?.parentId, folderId, material])
+  }, [closeMaterial, currentFolder?.parentId, effectiveFolderId, material])
 
   useEffect(() => {
     if (!material) return
@@ -176,7 +174,7 @@ export function StudyScreen(): React.JSX.Element {
       save: (values) => {
         const input = studyValidation.createStudyNodeInputSchema.parse({
           type: 'folder',
-          parentId: folderId,
+          parentId: effectiveFolderId,
           title: values.title,
           icon: values.icon
         })
@@ -194,7 +192,7 @@ export function StudyScreen(): React.JSX.Element {
       save: (values) => {
         const input = studyValidation.createStudyNodeInputSchema.parse({
           type: 'material',
-          parentId: folderId,
+          parentId: effectiveFolderId,
           title: values.title
         })
         const created = api.createNode(input)
@@ -376,43 +374,7 @@ export function StudyScreen(): React.JSX.Element {
                   />
                 ) : null}
               </View>
-              {node ? (
-                <TextInput
-                  accessibilityLabel="Название материала"
-                  value={node.title}
-                  onChangeText={(title) => {
-                    nodes.refresh()
-                    const current = nodes.data?.find((item) => item.id === node.id)
-                    if (current) {
-                      setForm({
-                        title: 'Переименовать материал',
-                        initial: { title },
-                        fields: [textField('title', 'Название')],
-                        save: (values) => {
-                          const valid = studyValidation.renameStudyNodeInputSchema.parse({
-                            id: node.id,
-                            title: values.title
-                          })
-                          api.renameNode(valid.id, valid.title)
-                          refreshAfterMutation()
-                        }
-                      })
-                    }
-                  }}
-                  editable={false}
-                  style={{
-                    color: theme.text,
-                    backgroundColor: theme.surface,
-                    borderWidth: 1,
-                    borderColor: theme.border,
-                    borderRadius: 12,
-                    minHeight: 52,
-                    paddingHorizontal: 14,
-                    fontSize: 20,
-                    fontWeight: '700'
-                  }}
-                />
-              ) : null}
+              {node ? <Label title>{node.title}</Label> : null}
               <Label muted>Изменения содержимого сохраняются автоматически.</Label>
             </View>
           }
@@ -426,7 +388,7 @@ export function StudyScreen(): React.JSX.Element {
   const children = sortNodes(
     allNodes.filter(
       (node) =>
-        node.parentId === folderId &&
+        node.parentId === effectiveFolderId &&
         (!normalizedQuery || node.title.toLocaleLowerCase('ru-RU').includes(normalizedQuery))
     )
   )
@@ -435,12 +397,12 @@ export function StudyScreen(): React.JSX.Element {
     <View style={{ flex: 1 }}>
       <View style={{ gap: 10, marginBottom: 12 }}>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          <Button label="Корень" selected={!folderId} onPress={() => setFolderId(null)} />
+          <Button label="Корень" selected={!effectiveFolderId} onPress={() => setFolderId(null)} />
           {breadcrumbs.map((folder) => (
             <Button
               key={folder.id}
               label={folder.title}
-              selected={folder.id === folderId}
+              selected={folder.id === effectiveFolderId}
               onPress={() => setFolderId(folder.id)}
             />
           ))}
