@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { FlatList, ScrollView, View } from 'react-native'
 import type {
   WorkoutExerciseRecord,
@@ -30,6 +30,12 @@ import { WorkoutProgressSheet } from './WorkoutProgressSheet'
 import { WorkoutSessionSheet } from './WorkoutSessionSheet'
 
 type Tab = 'journal' | 'exercises' | 'programs' | 'progress' | 'reports'
+
+type WorkoutListItem =
+  | { kind: 'session'; value: WorkoutSessionRecord }
+  | { kind: 'exercise'; value: WorkoutExerciseRecord }
+  | { kind: 'program'; value: WorkoutProgramRecord }
+  | { kind: 'progress'; value: WorkoutProgressEntryRecord }
 
 const muscleLabels: Record<(typeof WORKOUT_MUSCLE_ZONES)[number], string> = {
   shoulders: 'Плечи',
@@ -89,34 +95,20 @@ export function WorkoutsScreen(): React.JSX.Element {
   const progressEntries = overview.data?.progressEntries ?? []
   const normalizedQuery = query.trim().toLocaleLowerCase('ru-RU')
 
-  const filteredExercises = useMemo(
-    () =>
-      exercises.filter((exercise) =>
-        `${exercise.title} ${formatMuscles(exercise)}`
-          .toLocaleLowerCase('ru-RU')
-          .includes(normalizedQuery)
-      ),
-    [exercises, normalizedQuery]
+  const filteredExercises = exercises.filter((exercise) =>
+    `${exercise.title} ${formatMuscles(exercise)}`
+      .toLocaleLowerCase('ru-RU')
+      .includes(normalizedQuery)
   )
-  const filteredPrograms = useMemo(
-    () =>
-      programs.filter((program) =>
-        `${program.name} ${program.description}`
-          .toLocaleLowerCase('ru-RU')
-          .includes(normalizedQuery)
-      ),
-    [programs, normalizedQuery]
+  const filteredPrograms = programs.filter((program) =>
+    `${program.name} ${program.description}`.toLocaleLowerCase('ru-RU').includes(normalizedQuery)
   )
-  const filteredSessions = useMemo(
-    () =>
-      sessions.filter((session) =>
-        `${session.programName ?? 'Свободная тренировка'} ${session.comment} ${session.exercises
-          .map((exercise) => exercise.exerciseTitle)
-          .join(' ')}`
-          .toLocaleLowerCase('ru-RU')
-          .includes(normalizedQuery)
-      ),
-    [normalizedQuery, sessions]
+  const filteredSessions = sessions.filter((session) =>
+    `${session.programName ?? 'Свободная тренировка'} ${session.comment} ${session.exercises
+      .map((exercise) => exercise.exerciseTitle)
+      .join(' ')}`
+      .toLocaleLowerCase('ru-RU')
+      .includes(normalizedQuery)
   )
 
   const muscleChoices = WORKOUT_MUSCLE_ZONES.map((group) => ({
@@ -208,22 +200,24 @@ export function WorkoutsScreen(): React.JSX.Element {
     })
   }
 
-  const reportResult = useMemo(() => {
-    try {
-      return {
-        report: api.getReport({
-          dateFrom: daysAgoKey(29),
-          dateTo: localDateKey(),
-          programId: null,
-          exerciseId: null,
-          muscleGroup: null
-        }),
-        error: ''
-      }
-    } catch (reason) {
-      return { report: null, error: messageFor(reason) }
+  let reportResult: {
+    report: ReturnType<typeof api.getReport> | null
+    error: string
+  }
+  try {
+    reportResult = {
+      report: api.getReport({
+        dateFrom: daysAgoKey(29),
+        dateTo: localDateKey(),
+        programId: null,
+        exerciseId: null,
+        muscleGroup: null
+      }),
+      error: ''
     }
-  }, [api, overview.data])
+  } catch (reason) {
+    reportResult = { report: null, error: messageFor(reason) }
+  }
 
   const tabs: Array<{ key: Tab; label: string }> = [
     { key: 'journal', label: 'Журнал' },
@@ -295,7 +289,10 @@ export function WorkoutsScreen(): React.JSX.Element {
               {report.muscleGroups.slice(0, 6).map((muscle) => (
                 <Row
                   key={muscle.muscleGroup}
-                  title={muscleLabels[muscle.muscleGroup as keyof typeof muscleLabels] ?? muscle.muscleGroup}
+                  title={
+                    muscleLabels[muscle.muscleGroup as keyof typeof muscleLabels] ??
+                    muscle.muscleGroup
+                  }
                   subtitle={`${muscle.sets} подходов · ${muscle.reps} повторений · ${muscle.loadPercent}% нагрузки`}
                 />
               ))}
@@ -320,28 +317,28 @@ export function WorkoutsScreen(): React.JSX.Element {
     )
   }
 
-  const data =
+  const listItems: WorkoutListItem[] =
     tab === 'journal'
-      ? filteredSessions
+      ? filteredSessions.map((value) => ({ kind: 'session', value }))
       : tab === 'exercises'
-        ? filteredExercises
+        ? filteredExercises.map((value) => ({ kind: 'exercise', value }))
         : tab === 'programs'
-          ? filteredPrograms
-          : progressEntries
+          ? filteredPrograms.map((value) => ({ kind: 'program', value }))
+          : progressEntries.map((value) => ({ kind: 'progress', value }))
 
   return (
     <View style={{ flex: 1 }}>
       {header}
       {overview.error ? <ErrorState message={overview.error} retry={overview.refresh} /> : null}
-      <FlatList
-        data={data}
-        keyExtractor={(item) => item.id}
+      <FlatList<WorkoutListItem>
+        data={listItems}
+        keyExtractor={(row) => `${row.kind}:${row.value.id}`}
         refreshing={overview.loading}
         onRefresh={overview.refresh}
         ListEmptyComponent={<EmptyState />}
-        renderItem={({ item }) => {
-          if (tab === 'journal') {
-            const session = item as WorkoutSessionRecord
+        renderItem={({ item: row }) => {
+          if (row.kind === 'session') {
+            const session = row.value
             return (
               <Row
                 title={`${session.date} · ${session.programName ?? 'Свободная тренировка'}`}
@@ -355,8 +352,8 @@ export function WorkoutsScreen(): React.JSX.Element {
               />
             )
           }
-          if (tab === 'exercises') {
-            const exercise = item as WorkoutExerciseRecord
+          if (row.kind === 'exercise') {
+            const exercise = row.value
             return (
               <Row
                 title={exercise.title}
@@ -372,8 +369,8 @@ export function WorkoutsScreen(): React.JSX.Element {
               />
             )
           }
-          if (tab === 'programs') {
-            const program = item as WorkoutProgramRecord
+          if (row.kind === 'program') {
+            const program = row.value
             return (
               <Row
                 title={program.name}
@@ -387,7 +384,7 @@ export function WorkoutsScreen(): React.JSX.Element {
               />
             )
           }
-          const entry = item as WorkoutProgressEntryRecord
+          const entry = row.value
           return (
             <Row
               title={`${entry.date}${entry.bodyWeightKg === null ? '' : ` · ${entry.bodyWeightKg} кг`}`}
