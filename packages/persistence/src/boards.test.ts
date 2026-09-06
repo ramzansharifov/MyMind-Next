@@ -84,11 +84,8 @@ describe('shared Boards persistence', () => {
 
   it('mirrors Study folder ancestry and removes a linked board through the Study save queue', async () => {
     const { runtime } = setup()
-    let boards: BoardsRepository
-    const study = createStudyRepository(runtime, {
-      afterDocumentSaved: (materialId, document) => boards.cleanupStudyDocument(materialId, document)
-    })
-    boards = createBoardsRepository(runtime, {
+    const study = createStudyRepository(runtime)
+    const boards = createBoardsRepository(runtime, {
       removeStudyBoardBlock: async (materialId, blockId) => {
         const current = study.getMaterial(materialId)
         await study.saveMaterial({
