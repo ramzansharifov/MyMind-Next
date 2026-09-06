@@ -30,6 +30,7 @@ export function Home({
       const notes = services.notes.listNotesOverview().notes
       const studyNodes = services.study.listNodes()
       const boards = services.boards.listNodes()
+      const workouts = services.workouts.listOverview()
       setCards([
         {
           route: 'tasks',
@@ -67,6 +68,11 @@ export function Home({
             : 'Свободный день'
         },
         { route: 'diary', title: 'Дневник', subtitle: 'Запишите мысли о сегодняшнем дне' },
+        {
+          route: 'workouts',
+          title: 'Тренировки',
+          subtitle: `${workouts.sessions.length} тренировок · ${workouts.programs.filter((program) => program.status === 'active').length} активных программ`
+        },
         {
           route: 'movies',
           title: 'Фильмы',
