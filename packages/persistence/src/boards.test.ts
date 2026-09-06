@@ -137,11 +137,11 @@ describe('shared Boards persistence', () => {
 
   it('links Note board blocks and cleans them when the source document changes', async () => {
     const { runtime } = setup()
-    let boards: BoardsRepository
+    const holder: { boards?: BoardsRepository } = {}
     const notes = createNotesRepository(runtime, {
-      afterDocumentSaved: (noteId, document) => boards.cleanupNoteDocument(noteId, document)
+      afterDocumentSaved: (noteId, document) => holder.boards?.cleanupNoteDocument(noteId, document)
     })
-    boards = createBoardsRepository(runtime, {
+    const boards = createBoardsRepository(runtime, {
       removeNoteBoardBlock: async (noteId, blockId) => {
         const note = notes.getNote(noteId)
         await notes.saveNote({
@@ -153,6 +153,7 @@ describe('shared Boards persistence', () => {
         })
       }
     })
+    holder.boards = boards
     const note = notes.createNote({ groupId: null, title: 'Идеи' })
     await notes.saveNote({
       id: note.id,
