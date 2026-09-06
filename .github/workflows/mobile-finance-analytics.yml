@@ -159,7 +159,7 @@ jobs:
       - name: Mobile and shared tests
         run: npm run test:mobile
       - name: Finance desktop tests
-        run: npx vitest run apps/desktop/src/main/services/finance-report.service.test.ts apps/desktop/src/main/services/finance.service.test.ts
+        run: npm exec --workspace=mymind-next -- vitest run src/main/services/finance-report.service.test.ts src/main/services/finance.service.test.ts
       - name: Whitespace
         run: git diff --check
       - name: Commit verified Finance analytics checkpoint
