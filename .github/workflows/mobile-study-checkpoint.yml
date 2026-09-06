@@ -1,0 +1,76 @@
+name: Mobile Study checkpoint
+
+on:
+  push:
+    branches:
+      - agent/full-mobile-app
+    paths:
+      - .mobile-study-ci-trigger
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Use npm 11
+        shell: pwsh
+        run: npm install --global npm@11
+      - name: Refresh lockfile metadata
+        run: npm install --package-lock-only --ignore-scripts
+      - name: Strict install
+        run: npm ci
+      - name: Format branch changes
+        shell: pwsh
+        run: |
+          git fetch origin main --depth=1
+          $pattern = '\.(ts|tsx|js|mjs|json|md|css|yml|yaml)$'
+          $files = @(git diff --name-only origin/main...HEAD | Where-Object { (Test-Path $_ -PathType Leaf) -and ($_ -match $pattern) })
+          if ($files.Count -gt 0) { npx prettier --write -- $files }
+      - name: Check branch formatting
+        shell: pwsh
+        run: |
+          $pattern = '\.(ts|tsx|js|mjs|json|md|css|yml|yaml)$'
+          $files = @(git diff --name-only origin/main...HEAD | Where-Object { (Test-Path $_ -PathType Leaf) -and ($_ -match $pattern) })
+          if ($files.Count -gt 0) { npx prettier --check -- $files }
+      - name: Native desktop dependency
+        run: npm run native:node
+      - name: Lint mobile and shared packages
+        run: npm run lint:mobile
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Mobile and shared tests
+        run: npm run test:mobile
+      - name: Full desktop tests
+        run: npm run test:run
+      - name: Database check
+        run: npm run db:check
+      - name: Desktop production bundle
+        run: npm run build:bundle
+      - name: Expo Android export
+        run: npm run export:android
+      - name: Windows installer
+        run: npm run build:win
+      - name: Whitespace
+        run: git diff --check
+      - name: Commit verified checkpoint and remove temporary workflow
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/mobile-study-checkpoint.yml .mobile-study-ci-trigger
+          git add -A
+          git diff --cached --quiet
+          if ($LASTEXITCODE -ne 0) {
+            git commit -m "feat: verify mobile Study checkpoint"
+            git push
+          }
