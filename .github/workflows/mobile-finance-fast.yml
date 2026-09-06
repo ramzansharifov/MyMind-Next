@@ -21,6 +21,8 @@ jobs:
         run: npm install --global npm@11
       - name: Install
         run: npm ci
+      - name: Rebuild SQLite for Node tests
+        run: npm run native:node
       - name: Shared and desktop typecheck
         run: npm run typecheck:packages && npm run typecheck:desktop
       - name: Mobile typecheck
@@ -28,4 +30,18 @@ jobs:
       - name: Mobile and shared tests
         run: npm run test:mobile
       - name: Finance formatting
-        run: npx prettier --check packages/contracts/src/finance.ts packages/core/src/finance-*.ts packages/core/src/validation/finance.ts packages/persistence/src/finance.ts packages/persistence/src/finance.test.ts packages/persistence/src/mobile-schema-v7.ts apps/desktop/src/shared/contracts/finance.ts apps/desktop/src/shared/finance-money.ts apps/desktop/src/shared/validation/finance.ts apps/mobile/src/shared/storage/sqlite.ts
+        run: >-
+          npx prettier --check
+          packages/contracts/src/finance.ts
+          packages/core/src/finance-*.ts
+          packages/core/src/validation/finance.ts
+          packages/persistence/src/finance.ts
+          packages/persistence/src/finance.test.ts
+          packages/persistence/src/mobile-schema-v7.ts
+          apps/desktop/src/shared/contracts/finance.ts
+          apps/desktop/src/shared/finance-money.ts
+          apps/desktop/src/shared/validation/finance.ts
+          apps/mobile/src/modules/finance/FinanceScreen.tsx
+          apps/mobile/src/modules/finance/finance-forms.ts
+          apps/mobile/src/shared/storage/sqlite.ts
+          apps/mobile/src/shared/storage/sqlite.test.ts
