@@ -9,6 +9,8 @@
     "@mymind/persistence": "1.0.0",
     "expo": "~57.0.20",
     "expo-crypto": "~57.0.2",
+    "expo-file-system": "~57.0.6",
+    "expo-image-picker": "~57.0.16",
     "expo-notifications": "~57.0.17",
     "expo-sqlite": "~57.0.2",
     "expo-status-bar": "~57.0.1",

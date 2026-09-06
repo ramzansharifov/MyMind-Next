@@ -98,10 +98,14 @@ describe('Expo SQLite adapter', () => {
     ).toEqual({ name: 'board_nodes' })
     expect(
       db
-        .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'workout_sessions'")
+        .prepare(
+          "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'workout_sessions'"
+        )
         .get()
     ).toEqual({ name: 'workout_sessions' })
-    expect(db.prepare('SELECT COUNT(*) AS count FROM workout_exercises').get()).toEqual({ count: 24 })
+    expect(db.prepare('SELECT COUNT(*) AS count FROM workout_exercises').get()).toEqual({
+      count: 24
+    })
   })
 
   it('upgrades an existing V1 database without losing module data', async () => {
@@ -143,7 +147,9 @@ describe('Expo SQLite adapter', () => {
         .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'board_documents'")
         .get()
     ).toEqual({ name: 'board_documents' })
-    expect(db.prepare('SELECT COUNT(*) AS count FROM workout_exercises').get()).toEqual({ count: 24 })
+    expect(db.prepare('SELECT COUNT(*) AS count FROM workout_exercises').get()).toEqual({
+      count: 24
+    })
   })
 
   it('upgrades an existing V2 database to the latest schema without losing Notes', async () => {
@@ -185,7 +191,9 @@ describe('Expo SQLite adapter', () => {
         .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'board_nodes'")
         .get()
     ).toEqual({ name: 'board_nodes' })
-    expect(db.prepare('SELECT COUNT(*) AS count FROM workout_exercises').get()).toEqual({ count: 24 })
+    expect(db.prepare('SELECT COUNT(*) AS count FROM workout_exercises').get()).toEqual({
+      count: 24
+    })
   })
 
   it('upgrades an existing V3 database through Boards and Workouts without losing Study data', async () => {
@@ -221,7 +229,9 @@ describe('Expo SQLite adapter', () => {
         .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'board_documents'")
         .get()
     ).toEqual({ name: 'board_documents' })
-    expect(db.prepare('SELECT COUNT(*) AS count FROM workout_exercises').get()).toEqual({ count: 24 })
+    expect(db.prepare('SELECT COUNT(*) AS count FROM workout_exercises').get()).toEqual({
+      count: 24
+    })
   })
 
   it('upgrades an existing V4 database to Workouts without losing Boards', async () => {
@@ -247,13 +257,21 @@ describe('Expo SQLite adapter', () => {
     await openMobileDatabase()
 
     expect(db.pragma('user_version', { simple: true })).toBe(5)
-    expect(db.prepare('SELECT title FROM board_nodes WHERE id = ?').get('board-before-workouts')).toEqual({
+    expect(
+      db.prepare('SELECT title FROM board_nodes WHERE id = ?').get('board-before-workouts')
+    ).toEqual({
       title: 'Старая доска'
     })
-    expect(db.prepare('SELECT snapshot FROM board_documents WHERE node_id = ?').get('board-before-workouts')).toEqual({
+    expect(
+      db
+        .prepare('SELECT snapshot FROM board_documents WHERE node_id = ?')
+        .get('board-before-workouts')
+    ).toEqual({
       snapshot: JSON.stringify({ document: { name: 'kept' } })
     })
-    expect(db.prepare('SELECT COUNT(*) AS count FROM workout_exercises').get()).toEqual({ count: 24 })
+    expect(db.prepare('SELECT COUNT(*) AS count FROM workout_exercises').get()).toEqual({
+      count: 24
+    })
   })
 
   it('does not reset an unknown newer database', async () => {

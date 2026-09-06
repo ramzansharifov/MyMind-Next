@@ -23,6 +23,17 @@
       "favicon": "./assets/favicon.png"
     },
     "scheme": "mymind",
-    "plugins": ["expo-sqlite", "expo-notifications"]
+    "plugins": [
+      "expo-sqlite",
+      "expo-notifications",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "MyMind использует выбранные вами фотографии для локального дневника прогресса.",
+          "cameraPermission": "MyMind использует камеру для фотографий прогресса.",
+          "microphonePermission": false
+        }
+      ]
+    ]
   }
 }

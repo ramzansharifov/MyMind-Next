@@ -59,7 +59,12 @@ export function WorkoutSessionSheet({
   const theme = useTheme()
   const counter = useRef(0)
   const activeExercises = useMemo(
-    () => exercises.filter((exercise) => exercise.status === 'active' || session?.exercises.some((item) => item.exerciseId === exercise.id)),
+    () =>
+      exercises.filter(
+        (exercise) =>
+          exercise.status === 'active' ||
+          session?.exercises.some((item) => item.exerciseId === exercise.id)
+      ),
     [exercises, session]
   )
   const [programId, setProgramId] = useState<string | null>(session?.programId ?? null)
@@ -73,7 +78,10 @@ export function WorkoutSessionSheet({
   const [items, setItems] = useState<DraftExercise[]>(() => {
     if (session) {
       return session.exercises
-        .filter((exercise): exercise is typeof exercise & { exerciseId: string } => exercise.exerciseId !== null)
+        .filter(
+          (exercise): exercise is typeof exercise & { exerciseId: string } =>
+            exercise.exerciseId !== null
+        )
         .map((exercise) => ({
           key: exercise.id,
           exerciseId: exercise.exerciseId,
@@ -201,7 +209,11 @@ export function WorkoutSessionSheet({
             {error ? <ErrorState message={error} /> : null}
             <View style={{ gap: 8 }}>
               <Label>Программа</Label>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 8 }}
+              >
                 <Button
                   label="Свободная"
                   selected={programId === null}
@@ -260,15 +272,26 @@ export function WorkoutSessionSheet({
             </View>
 
             <View style={{ gap: 12 }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  gap: 8
+                }}
+              >
                 <Label title>Упражнения</Label>
                 <Button label="+ Упражнение" disabled={pending} onPress={addExercise} />
               </View>
-              {items.length === 0 ? <ErrorState message="Добавьте хотя бы одно упражнение." /> : null}
+              {items.length === 0 ? (
+                <ErrorState message="Добавьте хотя бы одно упражнение." />
+              ) : null}
               {items.map((item, exerciseIndex) => {
                 const exercise = selectedExercise(item.exerciseId)
                 const usedByOthers = new Set(
-                  items.filter((candidate) => candidate.key !== item.key).map((candidate) => candidate.exerciseId)
+                  items
+                    .filter((candidate) => candidate.key !== item.key)
+                    .map((candidate) => candidate.exerciseId)
                 )
                 return (
                   <View
@@ -282,18 +305,33 @@ export function WorkoutSessionSheet({
                       backgroundColor: theme.surface
                     }}
                   >
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        gap: 8
+                      }}
+                    >
                       <Label>{`Упражнение ${exerciseIndex + 1}`}</Label>
                       {items.length > 1 ? (
                         <Button
                           label="Удалить"
                           danger
                           disabled={pending}
-                          onPress={() => setItems((current) => current.filter((candidate) => candidate.key !== item.key))}
+                          onPress={() =>
+                            setItems((current) =>
+                              current.filter((candidate) => candidate.key !== item.key)
+                            )
+                          }
                         />
                       ) : null}
                     </View>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={{ gap: 8 }}
+                    >
                       {activeExercises.map((candidate) => (
                         <Button
                           key={candidate.id}
@@ -396,7 +434,9 @@ export function WorkoutSessionSheet({
                                     currentItem.key === item.key
                                       ? {
                                           ...currentItem,
-                                          sets: currentItem.sets.filter((currentSet) => currentSet.key !== set.key)
+                                          sets: currentItem.sets.filter(
+                                            (currentSet) => currentSet.key !== set.key
+                                          )
                                         }
                                       : currentItem
                                   )

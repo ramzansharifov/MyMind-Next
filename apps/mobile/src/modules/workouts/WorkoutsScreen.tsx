@@ -429,6 +429,23 @@ export function WorkoutsScreen(): React.JSX.Element {
             else api.createProgressEntry(input)
             overview.refresh()
           }}
+          importPhoto={
+            progressEditor === 'new'
+              ? undefined
+              : async (view) => {
+                  const photo = await api.importProgressPhoto({ entryId: progressEditor.id, view })
+                  overview.refresh()
+                  return photo
+                }
+          }
+          deletePhoto={
+            progressEditor === 'new'
+              ? undefined
+              : async (photo) => {
+                  await api.deleteProgressPhoto({ id: photo.id })
+                  overview.refresh()
+                }
+          }
           close={() => setProgressEditor(null)}
         />
       ) : null}

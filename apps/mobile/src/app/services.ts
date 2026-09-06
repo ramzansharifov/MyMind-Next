@@ -10,6 +10,10 @@ import { createNotesRepository } from '@mymind/persistence/notes'
 import { createStudyRepository } from '@mymind/persistence/study'
 import { createBoardsRepository } from '@mymind/persistence/boards'
 import { createWorkoutsRepository } from '@mymind/persistence/workouts'
+import {
+  createWorkoutProgressAssetHooks,
+  reconcileWorkoutProgressAssets
+} from '../modules/workouts/workoutProgressAssets'
 import { adaptSqlite } from '../shared/storage/sqlite'
 
 export interface MobileServices {
@@ -76,6 +80,15 @@ export function createMobileServices(db: SQLiteDatabase): MobileServices {
       }
     }
   })
+  const workouts = createWorkoutsRepository(runtime, createWorkoutProgressAssetHooks())
+  try {
+    const photos = workouts.listOverview().progressEntries.flatMap((entry) => entry.photos)
+    for (const id of reconcileWorkoutProgressAssets(photos)) {
+      void workouts.deleteProgressPhoto({ id }).catch(() => undefined)
+    }
+  } catch (reason) {
+    console.error('Failed to reconcile workout progress photos', reason)
+  }
   return {
     tasks: createTasksRepository(runtime),
     habits: createHabitsRepository(runtime),
@@ -86,7 +99,7 @@ export function createMobileServices(db: SQLiteDatabase): MobileServices {
     notes,
     study,
     boards,
-    workouts: createWorkoutsRepository(runtime),
+    workouts,
     settings: {
       get: (key: string) =>
         db.getFirstSync<{ value: string }>(

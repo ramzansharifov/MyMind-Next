@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react'
 import {
   Alert,
+  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -13,7 +14,9 @@ import type {
   CreateWorkoutProgressEntryInput,
   UpdateWorkoutProgressEntryInput,
   WorkoutExerciseRecord,
-  WorkoutProgressEntryRecord
+  WorkoutProgressEntryRecord,
+  WorkoutProgressPhotoRecord,
+  WorkoutProgressPhotoView
 } from '@mymind/contracts/workouts'
 import {
   createWorkoutProgressEntryInputSchema,
@@ -41,6 +44,8 @@ export function WorkoutProgressSheet({
   entry,
   exercises,
   save,
+  importPhoto,
+  deletePhoto,
   close
 }: {
   entry?: WorkoutProgressEntryRecord
@@ -48,6 +53,8 @@ export function WorkoutProgressSheet({
   save(
     input: CreateWorkoutProgressEntryInput | UpdateWorkoutProgressEntryInput
   ): void | Promise<void>
+  importPhoto?(view: WorkoutProgressPhotoView): Promise<WorkoutProgressPhotoRecord | null>
+  deletePhoto?(photo: WorkoutProgressPhotoRecord): Promise<void>
   close(): void
 }): React.JSX.Element {
   const theme = useTheme()
@@ -69,18 +76,22 @@ export function WorkoutProgressSheet({
   )
   const [wellbeing, setWellbeing] = useState(entry?.wellbeing ?? '')
   const [notes, setNotes] = useState(entry?.notes ?? '')
-  const [metrics, setMetrics] = useState<DraftMetric[]>(() =>
-    entry?.metrics
-      .filter((metric): metric is typeof metric & { exerciseId: string } => metric.exerciseId !== null)
-      .map((metric) => ({
-        key: metric.id,
-        exerciseId: metric.exerciseId,
-        weightKg: String(metric.weightKg),
-        reps: String(metric.reps),
-        comment: metric.comment
-      })) ?? []
+  const [metrics, setMetrics] = useState<DraftMetric[]>(
+    () =>
+      entry?.metrics
+        .filter(
+          (metric): metric is typeof metric & { exerciseId: string } => metric.exerciseId !== null
+        )
+        .map((metric) => ({
+          key: metric.id,
+          exerciseId: metric.exerciseId,
+          weightKg: String(metric.weightKg),
+          reps: String(metric.reps),
+          comment: metric.comment
+        })) ?? []
   )
   const [pending, setPending] = useState(false)
+  const [photos, setPhotos] = useState(entry?.photos ?? [])
   const [error, setError] = useState('')
 
   const nextKey = (): string => `metric-${++counter.current}`
@@ -108,6 +119,44 @@ export function WorkoutProgressSheet({
         weightKg: '0',
         reps: '1',
         comment: ''
+      }
+    ])
+  }
+
+  const addPhoto = async (view: WorkoutProgressPhotoView): Promise<void> => {
+    if (!importPhoto || pending) return
+    setPending(true)
+    setError('')
+    try {
+      const photo = await importPhoto(view)
+      if (!photo) return
+      setPhotos((current) =>
+        view === 'custom'
+          ? [...current, photo]
+          : [...current.filter((item) => item.view !== view), photo]
+      )
+    } catch (reason) {
+      setError(messageFor(reason))
+    } finally {
+      setPending(false)
+    }
+  }
+
+  const removePhoto = (photo: WorkoutProgressPhotoRecord): void => {
+    if (!deletePhoto || pending) return
+    Alert.alert('Удалить фотографию?', 'Файл будет удалён с этого устройства.', [
+      { text: 'Отмена', style: 'cancel' },
+      {
+        text: 'Удалить',
+        style: 'destructive',
+        onPress: () => {
+          setPending(true)
+          setError('')
+          void deletePhoto(photo)
+            .then(() => setPhotos((current) => current.filter((item) => item.id !== photo.id)))
+            .catch((reason: unknown) => setError(messageFor(reason)))
+            .finally(() => setPending(false))
+        }
       }
     ])
   }
@@ -229,6 +278,75 @@ export function WorkoutProgressSheet({
                 style={{ ...inputStyle, minHeight: 90 }}
               />
             </View>
+
+            {entry ? (
+              <View style={{ gap: 12 }}>
+                <Label title>Фотографии прогресса</Label>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ gap: 8 }}
+                >
+                  {(
+                    [
+                      ['front', 'Спереди'],
+                      ['left', 'Слева'],
+                      ['right', 'Справа'],
+                      ['back', 'Сзади'],
+                      ['custom', 'Другое']
+                    ] as const
+                  ).map(([view, label]) => (
+                    <Button
+                      key={view}
+                      label={`+ ${label}`}
+                      disabled={pending}
+                      onPress={() => void addPhoto(view)}
+                    />
+                  ))}
+                </ScrollView>
+                {photos.length ? (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ gap: 10 }}
+                  >
+                    {photos.map((photo) => (
+                      <View
+                        key={photo.id}
+                        style={{
+                          width: 132,
+                          gap: 8,
+                          padding: 8,
+                          borderWidth: 1,
+                          borderColor: theme.border,
+                          borderRadius: 14,
+                          backgroundColor: theme.surface
+                        }}
+                      >
+                        <Image
+                          accessibilityLabel={`Фотография прогресса: ${photo.view}`}
+                          source={{ uri: photo.url }}
+                          resizeMode="cover"
+                          style={{ width: 114, height: 142, borderRadius: 10 }}
+                        />
+                        <Button
+                          label="Удалить"
+                          danger
+                          disabled={pending}
+                          onPress={() => removePhoto(photo)}
+                        />
+                      </View>
+                    ))}
+                  </ScrollView>
+                ) : (
+                  <Label muted>Фотографий пока нет. Они хранятся только на этом устройстве.</Label>
+                )}
+              </View>
+            ) : (
+              <Label muted>
+                Сохраните запись, затем откройте её снова, чтобы добавить фотографии.
+              </Label>
+            )}
 
             <View style={{ gap: 12 }}>
               <View

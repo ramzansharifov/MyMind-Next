@@ -14,7 +14,13 @@ function setup(): { db: Database.Database; runtime: RepositoryRuntime } {
   const db = new Database(':memory:')
   databases.push(db)
   db.pragma('foreign_keys = ON')
-  for (const schema of [mobileSchemaV1, mobileSchemaV2, mobileSchemaV3, mobileSchemaV4, mobileSchemaV5])
+  for (const schema of [
+    mobileSchemaV1,
+    mobileSchemaV2,
+    mobileSchemaV3,
+    mobileSchemaV4,
+    mobileSchemaV5
+  ])
     for (const sql of schema) db.exec(sql)
   let id = 100
   let now = 10_000
@@ -43,10 +49,12 @@ describe('shared Workouts persistence', () => {
       muscleGroups: ['lats', 'biceps'],
       usesExternalWeight: false
     })
-    expect(overview.exercises.find((exercise) => exercise.title === 'Становая тяга')).toMatchObject({
-      muscleGroups: ['lower_back', 'glutes', 'hamstrings', 'traps'],
-      usesExternalWeight: true
-    })
+    expect(overview.exercises.find((exercise) => exercise.title === 'Становая тяга')).toMatchObject(
+      {
+        muscleGroups: ['lower_back', 'glutes', 'hamstrings', 'traps'],
+        usesExternalWeight: true
+      }
+    )
   })
 
   it('keeps program/session snapshots and forces bodyweight volume to zero', () => {
@@ -89,7 +97,10 @@ describe('shared Workouts persistence', () => {
     })
     expect(workouts.getSession(session.id).programName).toBe('Силовая')
     workouts.deleteProgram({ id: program.id })
-    expect(workouts.getSession(session.id)).toMatchObject({ programId: null, programName: 'Силовая' })
+    expect(workouts.getSession(session.id)).toMatchObject({
+      programId: null,
+      programName: 'Силовая'
+    })
   })
 
   it('creates progress entries and calculates desktop-compatible report totals and records', () => {
@@ -150,7 +161,56 @@ describe('shared Workouts persistence', () => {
       durationMinutes: 90,
       maxWeightKg: 90
     })
-    expect(report.personalRecords[0]).toMatchObject({ title: 'Жим штанги лёжа', weightKg: 90, reps: 4 })
+    expect(report.personalRecords[0]).toMatchObject({
+      title: 'Жим штанги лёжа',
+      weightKg: 90,
+      reps: 4
+    })
     expect(report.bodyweightRecords[0]).toMatchObject({ title: 'Отжимания', reps: 20 })
+  })
+
+  it('stores custom photos, replaces fixed views and cleans their local assets', async () => {
+    const { runtime } = setup()
+    let imported = 0
+    const deletedAssets: string[] = []
+    const workouts = createWorkoutsRepository(runtime, {
+      importProgressPhoto: async () => {
+        imported += 1
+        return {
+          id: `asset-${imported}`,
+          name: `photo-${imported}.jpg`,
+          mimeType: 'image/jpeg',
+          size: 100 + imported,
+          url: `file:///workout-progress/asset-${imported}/photo.jpg`
+        }
+      },
+      deleteProgressPhotoAsset: async (photo) => {
+        deletedAssets.push(photo.assetId)
+      }
+    })
+    const entry = workouts.createProgressEntry({
+      date: '2026-09-06',
+      bodyWeightKg: null,
+      wellbeing: '',
+      notes: '',
+      metrics: []
+    })
+
+    const firstFront = await workouts.importProgressPhoto({ entryId: entry.id, view: 'front' })
+    const custom = await workouts.importProgressPhoto({ entryId: entry.id, view: 'custom' })
+    const nextFront = await workouts.importProgressPhoto({ entryId: entry.id, view: 'front' })
+
+    expect(firstFront?.assetId).toBe('asset-1')
+    expect(custom?.assetId).toBe('asset-2')
+    expect(nextFront?.assetId).toBe('asset-3')
+    expect(workouts.listOverview().progressEntries[0].photos.map((photo) => photo.assetId)).toEqual(
+      ['asset-2', 'asset-3']
+    )
+    expect(deletedAssets).toEqual(['asset-1'])
+
+    await workouts.deleteProgressPhoto({ id: custom!.id })
+    expect(deletedAssets).toEqual(['asset-1', 'asset-2'])
+    workouts.deleteProgressEntry({ id: entry.id })
+    expect(deletedAssets).toEqual(['asset-1', 'asset-2', 'asset-3'])
   })
 })

@@ -84,7 +84,10 @@ const workoutSetSchema = z.object({ reps: repsSchema, weightKg: weightSchema })
 const sessionExerciseSchema = z.object({
   exerciseId: idSchema,
   comment: z.string().max(4000, 'Комментарий слишком длинный'),
-  sets: z.array(workoutSetSchema).min(1, 'Добавьте хотя бы один подход').max(100, 'Слишком много подходов')
+  sets: z
+    .array(workoutSetSchema)
+    .min(1, 'Добавьте хотя бы один подход')
+    .max(100, 'Слишком много подходов')
 })
 
 const sessionPayloadSchema = z
@@ -141,7 +144,9 @@ const progressPayloadSchema = z
   })
 
 export const createWorkoutProgressEntryInputSchema = progressPayloadSchema
-export const updateWorkoutProgressEntryInputSchema = progressPayloadSchema.safeExtend({ id: idSchema })
+export const updateWorkoutProgressEntryInputSchema = progressPayloadSchema.safeExtend({
+  id: idSchema
+})
 export const deleteWorkoutProgressEntryInputSchema = z.object({ id: idSchema })
 export const importWorkoutProgressPhotoInputSchema = z.object({
   entryId: idSchema,

@@ -198,7 +198,9 @@ function parseMuscleGroups(raw: string): WorkoutMuscleGroup[] {
   return unique.length ? unique : ['shoulders']
 }
 function serializeMuscleGroups(groups: WorkoutMuscleGroup[]): string {
-  const unique = [...new Set(groups.filter((group) => muscleGroupSet.has(group)).flatMap(expandLegacyMuscleGroup))]
+  const unique = [
+    ...new Set(groups.filter((group) => muscleGroupSet.has(group)).flatMap(expandLegacyMuscleGroup))
+  ]
   if (!unique.length) throw new Error('Выберите хотя бы одну мышечную зону')
   return JSON.stringify(unique)
 }
@@ -248,36 +250,55 @@ export function createWorkoutsRepository(
   }
 
   function requireExercise(id: string): WorkoutExerciseRecord {
-    const row = getSqlite().prepare(`${EXERCISE_SELECT} WHERE id = ?`).get(id) as ExerciseRow | undefined
+    const row = getSqlite().prepare(`${EXERCISE_SELECT} WHERE id = ?`).get(id) as
+      ExerciseRow | undefined
     if (!row) throw new Error('Упражнение не найдено')
     return mapExercise(row)
   }
   function requireProgramRow(id: string): ProgramRow {
-    const row = getSqlite().prepare(`${PROGRAM_SELECT} WHERE id = ?`).get(id) as ProgramRow | undefined
+    const row = getSqlite().prepare(`${PROGRAM_SELECT} WHERE id = ?`).get(id) as
+      ProgramRow | undefined
     if (!row) throw new Error('Программа тренировок не найдена')
     return row
   }
   function requireProgressEntryRow(id: string): ProgressEntryRow {
-    const row = getSqlite().prepare(`${PROGRESS_ENTRY_SELECT} WHERE id = ?`).get(id) as ProgressEntryRow | undefined
+    const row = getSqlite().prepare(`${PROGRESS_ENTRY_SELECT} WHERE id = ?`).get(id) as
+      ProgressEntryRow | undefined
     if (!row) throw new Error('Запись прогресса не найдена')
     return row
   }
   function ensureUniqueExerciseTitle(title: string, ignoredId: string | null = null): void {
     const normalized = title.trim().toLocaleLowerCase('ru-RU')
-    const rows = getSqlite().prepare('SELECT id, title FROM workout_exercises').all() as Array<{ id: string; title: string }>
-    if (rows.some((row) => row.id !== ignoredId && row.title.trim().toLocaleLowerCase('ru-RU') === normalized))
+    const rows = getSqlite().prepare('SELECT id, title FROM workout_exercises').all() as Array<{
+      id: string
+      title: string
+    }>
+    if (
+      rows.some(
+        (row) => row.id !== ignoredId && row.title.trim().toLocaleLowerCase('ru-RU') === normalized
+      )
+    )
       throw new Error('Упражнение с таким названием уже существует')
   }
   function ensureUniqueProgramName(name: string, ignoredId: string | null = null): void {
     const normalized = name.trim().toLocaleLowerCase('ru-RU')
-    const rows = getSqlite().prepare('SELECT id, name FROM workout_programs').all() as Array<{ id: string; name: string }>
-    if (rows.some((row) => row.id !== ignoredId && row.name.trim().toLocaleLowerCase('ru-RU') === normalized))
+    const rows = getSqlite().prepare('SELECT id, name FROM workout_programs').all() as Array<{
+      id: string
+      name: string
+    }>
+    if (
+      rows.some(
+        (row) => row.id !== ignoredId && row.name.trim().toLocaleLowerCase('ru-RU') === normalized
+      )
+    )
       throw new Error('Программа с таким названием уже существует')
   }
 
   function loadPrograms(): WorkoutProgramRecord[] {
     const rows = getSqlite()
-      .prepare(`${PROGRAM_SELECT} ORDER BY CASE status WHEN 'active' THEN 0 ELSE 1 END, updated_at DESC`)
+      .prepare(
+        `${PROGRAM_SELECT} ORDER BY CASE status WHEN 'active' THEN 0 ELSE 1 END, updated_at DESC`
+      )
       .all() as ProgramRow[]
     const items = getSqlite()
       .prepare(`${PROGRAM_EXERCISE_SELECT} ORDER BY program_id, position`)
@@ -305,9 +326,15 @@ export function createWorkoutsRepository(
   }
 
   function loadSessions(): WorkoutSessionRecord[] {
-    const sessions = getSqlite().prepare(`${SESSION_SELECT} ORDER BY date DESC, created_at DESC`).all() as SessionRow[]
-    const exercises = getSqlite().prepare(`${SESSION_EXERCISE_SELECT} ORDER BY session_id, position`).all() as SessionExerciseRow[]
-    const sets = getSqlite().prepare(`${SET_SELECT} ORDER BY session_exercise_id, position`).all() as SetRow[]
+    const sessions = getSqlite()
+      .prepare(`${SESSION_SELECT} ORDER BY date DESC, created_at DESC`)
+      .all() as SessionRow[]
+    const exercises = getSqlite()
+      .prepare(`${SESSION_EXERCISE_SELECT} ORDER BY session_id, position`)
+      .all() as SessionExerciseRow[]
+    const sets = getSqlite()
+      .prepare(`${SET_SELECT} ORDER BY session_exercise_id, position`)
+      .all() as SetRow[]
     const setsByExercise = new Map<string, WorkoutSetRecord[]>()
     for (const row of sets) {
       const list = setsByExercise.get(row.session_exercise_id) ?? []
@@ -357,9 +384,15 @@ export function createWorkoutsRepository(
   }
 
   function loadProgressEntries(): WorkoutProgressEntryRecord[] {
-    const entries = getSqlite().prepare(`${PROGRESS_ENTRY_SELECT} ORDER BY date DESC, created_at DESC`).all() as ProgressEntryRow[]
-    const metrics = getSqlite().prepare(`${PROGRESS_METRIC_SELECT} ORDER BY entry_id, position`).all() as ProgressMetricRow[]
-    const photos = getSqlite().prepare(`${PROGRESS_PHOTO_SELECT} ORDER BY entry_id, created_at`).all() as ProgressPhotoRow[]
+    const entries = getSqlite()
+      .prepare(`${PROGRESS_ENTRY_SELECT} ORDER BY date DESC, created_at DESC`)
+      .all() as ProgressEntryRow[]
+    const metrics = getSqlite()
+      .prepare(`${PROGRESS_METRIC_SELECT} ORDER BY entry_id, position`)
+      .all() as ProgressMetricRow[]
+    const photos = getSqlite()
+      .prepare(`${PROGRESS_PHOTO_SELECT} ORDER BY entry_id, created_at`)
+      .all() as ProgressPhotoRow[]
     const metricsByEntry = new Map<string, WorkoutProgressMetricRecord[]>()
     const photosByEntry = new Map<string, WorkoutProgressPhotoRecord[]>()
     for (const row of metrics) {
@@ -386,7 +419,8 @@ export function createWorkoutsRepository(
     return entries.map((row) => ({
       id: row.id,
       date: row.date,
-      bodyWeightKg: row.body_weight_milli_kg === null ? null : fromMilliKg(row.body_weight_milli_kg),
+      bodyWeightKg:
+        row.body_weight_milli_kg === null ? null : fromMilliKg(row.body_weight_milli_kg),
       wellbeing: row.wellbeing,
       notes: row.notes,
       metrics: metricsByEntry.get(row.id) ?? [],
@@ -403,7 +437,9 @@ export function createWorkoutsRepository(
 
   function listOverview(): WorkoutsOverview {
     const exercises = getSqlite()
-      .prepare(`${EXERCISE_SELECT} ORDER BY CASE status WHEN 'active' THEN 0 ELSE 1 END, updated_at DESC`)
+      .prepare(
+        `${EXERCISE_SELECT} ORDER BY CASE status WHEN 'active' THEN 0 ELSE 1 END, updated_at DESC`
+      )
       .all() as ExerciseRow[]
     return {
       exercises: exercises.map(mapExercise),
@@ -418,26 +454,49 @@ export function createWorkoutsRepository(
     const id = runtime.createId()
     const now = runtime.now()
     getSqlite()
-      .prepare(`INSERT INTO workout_exercises
+      .prepare(
+        `INSERT INTO workout_exercises
         (id, title, muscle_group, uses_external_weight, description, status, created_at, updated_at)
-        VALUES (?, ?, ?, ?, '', ?, ?, ?)`)
-      .run(id, input.title.trim(), serializeMuscleGroups(input.muscleGroups), input.usesExternalWeight ? 1 : 0, input.status, now, now)
+        VALUES (?, ?, ?, ?, '', ?, ?, ?)`
+      )
+      .run(
+        id,
+        input.title.trim(),
+        serializeMuscleGroups(input.muscleGroups),
+        input.usesExternalWeight ? 1 : 0,
+        input.status,
+        now,
+        now
+      )
     return requireExercise(id)
   }
   function updateExercise(input: UpdateWorkoutExerciseInput): WorkoutExerciseRecord {
     requireExercise(input.id)
     ensureUniqueExerciseTitle(input.title, input.id)
     getSqlite()
-      .prepare(`UPDATE workout_exercises SET title = ?, muscle_group = ?, uses_external_weight = ?, description = '', status = ?, updated_at = ? WHERE id = ?`)
-      .run(input.title.trim(), serializeMuscleGroups(input.muscleGroups), input.usesExternalWeight ? 1 : 0, input.status, runtime.now(), input.id)
+      .prepare(
+        `UPDATE workout_exercises SET title = ?, muscle_group = ?, uses_external_weight = ?, description = '', status = ?, updated_at = ? WHERE id = ?`
+      )
+      .run(
+        input.title.trim(),
+        serializeMuscleGroups(input.muscleGroups),
+        input.usesExternalWeight ? 1 : 0,
+        input.status,
+        runtime.now(),
+        input.id
+      )
     return requireExercise(input.id)
   }
   function deleteExercise(input: DeleteWorkoutExerciseInput): boolean {
     requireExercise(input.id)
-    const programReference = getSqlite().prepare('SELECT 1 FROM workout_program_exercises WHERE exercise_id = ? LIMIT 1').get(input.id)
+    const programReference = getSqlite()
+      .prepare('SELECT 1 FROM workout_program_exercises WHERE exercise_id = ? LIMIT 1')
+      .get(input.id)
     if (programReference)
       throw new Error('Упражнение используется в программе. Сначала удалите его из программы.')
-    return getSqlite().prepare('DELETE FROM workout_exercises WHERE id = ?').run(input.id).changes > 0
+    return (
+      getSqlite().prepare('DELETE FROM workout_exercises WHERE id = ?').run(input.id).changes > 0
+    )
   }
 
   function insertProgramItems(programId: string, exercises: WorkoutProgramExerciseInput[]): void {
@@ -455,7 +514,10 @@ export function createWorkoutsRepository(
     const id = runtime.createId()
     const now = runtime.now()
     getSqlite().transaction(() => {
-      getSqlite().prepare(`INSERT INTO workout_programs (id, name, description, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)`)
+      getSqlite()
+        .prepare(
+          `INSERT INTO workout_programs (id, name, description, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)`
+        )
         .run(id, input.name.trim(), input.description, input.status, now, now)
       insertProgramItems(id, input.exercises)
     })()
@@ -466,19 +528,29 @@ export function createWorkoutsRepository(
     ensureUniqueProgramName(input.name, input.id)
     input.exercises.forEach((item) => requireExercise(item.exerciseId))
     getSqlite().transaction(() => {
-      getSqlite().prepare('UPDATE workout_programs SET name = ?, description = ?, status = ?, updated_at = ? WHERE id = ?')
+      getSqlite()
+        .prepare(
+          'UPDATE workout_programs SET name = ?, description = ?, status = ?, updated_at = ? WHERE id = ?'
+        )
         .run(input.name.trim(), input.description, input.status, runtime.now(), input.id)
-      getSqlite().prepare('DELETE FROM workout_program_exercises WHERE program_id = ?').run(input.id)
+      getSqlite()
+        .prepare('DELETE FROM workout_program_exercises WHERE program_id = ?')
+        .run(input.id)
       insertProgramItems(input.id, input.exercises)
     })()
     return requireProgram(input.id)
   }
   function deleteProgram(input: DeleteWorkoutProgramInput): boolean {
     requireProgramRow(input.id)
-    return getSqlite().prepare('DELETE FROM workout_programs WHERE id = ?').run(input.id).changes > 0
+    return (
+      getSqlite().prepare('DELETE FROM workout_programs WHERE id = ?').run(input.id).changes > 0
+    )
   }
 
-  function insertSessionExercises(sessionId: string, exercises: WorkoutSessionExerciseInput[]): void {
+  function insertSessionExercises(
+    sessionId: string,
+    exercises: WorkoutSessionExerciseInput[]
+  ): void {
     const exerciseStatement = getSqlite().prepare(`INSERT INTO workout_session_exercises
       (id, session_id, exercise_id, exercise_title_snapshot, muscle_group_snapshot, uses_external_weight_snapshot, position, comment)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
@@ -514,10 +586,22 @@ export function createWorkoutsRepository(
     const id = runtime.createId()
     const now = runtime.now()
     getSqlite().transaction(() => {
-      getSqlite().prepare(`INSERT INTO workout_sessions
+      getSqlite()
+        .prepare(
+          `INSERT INTO workout_sessions
         (id, program_id, program_name_snapshot, title, date, duration_minutes, comment, created_at, updated_at)
-        VALUES (?, ?, ?, '', ?, ?, ?, ?, ?)`)
-        .run(id, input.programId, programName, input.date, input.durationMinutes, input.comment, now, now)
+        VALUES (?, ?, ?, '', ?, ?, ?, ?, ?)`
+        )
+        .run(
+          id,
+          input.programId,
+          programName,
+          input.date,
+          input.durationMinutes,
+          input.comment,
+          now,
+          now
+        )
       insertSessionExercises(id, input.exercises)
     })()
     return getSession(id)
@@ -527,16 +611,31 @@ export function createWorkoutsRepository(
     input.exercises.forEach((item) => requireExercise(item.exerciseId))
     const programName = input.programId === null ? null : requireProgramRow(input.programId).name
     getSqlite().transaction(() => {
-      getSqlite().prepare(`UPDATE workout_sessions SET program_id = ?, program_name_snapshot = ?, title = '', date = ?, duration_minutes = ?, comment = ?, updated_at = ? WHERE id = ?`)
-        .run(input.programId, programName, input.date, input.durationMinutes, input.comment, runtime.now(), input.id)
-      getSqlite().prepare('DELETE FROM workout_session_exercises WHERE session_id = ?').run(input.id)
+      getSqlite()
+        .prepare(
+          `UPDATE workout_sessions SET program_id = ?, program_name_snapshot = ?, title = '', date = ?, duration_minutes = ?, comment = ?, updated_at = ? WHERE id = ?`
+        )
+        .run(
+          input.programId,
+          programName,
+          input.date,
+          input.durationMinutes,
+          input.comment,
+          runtime.now(),
+          input.id
+        )
+      getSqlite()
+        .prepare('DELETE FROM workout_session_exercises WHERE session_id = ?')
+        .run(input.id)
       insertSessionExercises(input.id, input.exercises)
     })()
     return getSession(input.id)
   }
   function deleteSession(input: DeleteWorkoutSessionInput): boolean {
     getSession(input.id)
-    return getSqlite().prepare('DELETE FROM workout_sessions WHERE id = ?').run(input.id).changes > 0
+    return (
+      getSqlite().prepare('DELETE FROM workout_sessions WHERE id = ?').run(input.id).changes > 0
+    )
   }
 
   function insertProgressMetrics(entryId: string, metrics: WorkoutProgressMetricInput[]): void {
@@ -564,10 +663,21 @@ export function createWorkoutsRepository(
     const id = runtime.createId()
     const now = runtime.now()
     getSqlite().transaction(() => {
-      getSqlite().prepare(`INSERT INTO workout_progress_entries
+      getSqlite()
+        .prepare(
+          `INSERT INTO workout_progress_entries
         (id, date, body_weight_milli_kg, wellbeing, notes, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?)`)
-        .run(id, input.date, input.bodyWeightKg === null ? null : toMilliKg(input.bodyWeightKg), input.wellbeing, input.notes, now, now)
+        VALUES (?, ?, ?, ?, ?, ?, ?)`
+        )
+        .run(
+          id,
+          input.date,
+          input.bodyWeightKg === null ? null : toMilliKg(input.bodyWeightKg),
+          input.wellbeing,
+          input.notes,
+          now,
+          now
+        )
       insertProgressMetrics(id, input.metrics)
     })()
     return getProgressEntry(id)
@@ -576,9 +686,19 @@ export function createWorkoutsRepository(
     requireProgressEntryRow(input.id)
     input.metrics.forEach((metric) => requireExercise(metric.exerciseId))
     getSqlite().transaction(() => {
-      getSqlite().prepare(`UPDATE workout_progress_entries
-        SET date = ?, body_weight_milli_kg = ?, wellbeing = ?, notes = ?, updated_at = ? WHERE id = ?`)
-        .run(input.date, input.bodyWeightKg === null ? null : toMilliKg(input.bodyWeightKg), input.wellbeing, input.notes, runtime.now(), input.id)
+      getSqlite()
+        .prepare(
+          `UPDATE workout_progress_entries
+        SET date = ?, body_weight_milli_kg = ?, wellbeing = ?, notes = ?, updated_at = ? WHERE id = ?`
+        )
+        .run(
+          input.date,
+          input.bodyWeightKg === null ? null : toMilliKg(input.bodyWeightKg),
+          input.wellbeing,
+          input.notes,
+          runtime.now(),
+          input.id
+        )
       getSqlite().prepare('DELETE FROM workout_progress_metrics WHERE entry_id = ?').run(input.id)
       insertProgressMetrics(input.id, input.metrics)
     })()
@@ -586,36 +706,81 @@ export function createWorkoutsRepository(
   }
   function deleteProgressEntry(input: DeleteWorkoutProgressEntryInput): boolean {
     const entry = getProgressEntry(input.id)
-    const result = getSqlite().prepare('DELETE FROM workout_progress_entries WHERE id = ?').run(input.id)
+    const result = getSqlite()
+      .prepare('DELETE FROM workout_progress_entries WHERE id = ?')
+      .run(input.id)
     if (result.changes > 0 && hooks.deleteProgressPhotoAsset) {
-      for (const photo of entry.photos) void hooks.deleteProgressPhotoAsset(photo).catch(() => undefined)
+      for (const photo of entry.photos)
+        void hooks.deleteProgressPhotoAsset(photo).catch(() => undefined)
     }
     return result.changes > 0
   }
   function getProgressPhoto(id: string): WorkoutProgressPhotoRecord {
-    const row = getSqlite().prepare(`${PROGRESS_PHOTO_SELECT} WHERE id = ?`).get(id) as ProgressPhotoRow | undefined
+    const row = getSqlite().prepare(`${PROGRESS_PHOTO_SELECT} WHERE id = ?`).get(id) as
+      ProgressPhotoRow | undefined
     if (!row) throw new Error('Фотография прогресса не найдена')
     return mapPhoto(row)
   }
   async function importProgressPhoto(
     input: ImportWorkoutProgressPhotoInput
   ): Promise<WorkoutProgressPhotoRecord | null> {
-    requireProgressEntryRow(input.entryId)
+    const entry = getProgressEntry(input.entryId)
     if (!hooks.importProgressPhoto) return null
     const asset = await hooks.importProgressPhoto(input.entryId, input.view)
     if (!asset) return null
     const id = runtime.createId()
     const createdAt = runtime.now()
-    getSqlite().prepare(`INSERT INTO workout_progress_photos
-      (id, entry_id, asset_id, file_name, mime_type, size, url, view, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-      .run(id, input.entryId, asset.id, asset.name, asset.mimeType, asset.size, asset.url, input.view, createdAt)
+    const imported: WorkoutProgressPhotoRecord = {
+      id,
+      entryId: input.entryId,
+      assetId: asset.id,
+      fileName: asset.name,
+      mimeType: asset.mimeType,
+      size: asset.size,
+      url: asset.url,
+      view: input.view,
+      createdAt
+    }
+    const replaced =
+      input.view === 'custom' ? [] : entry.photos.filter((photo) => photo.view === input.view)
+    try {
+      getSqlite().transaction(() => {
+        getSqlite()
+          .prepare(
+            `INSERT INTO workout_progress_photos
+          (id, entry_id, asset_id, file_name, mime_type, size, url, view, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          )
+          .run(
+            id,
+            input.entryId,
+            asset.id,
+            asset.name,
+            asset.mimeType,
+            asset.size,
+            asset.url,
+            input.view,
+            createdAt
+          )
+        for (const photo of replaced)
+          getSqlite().prepare('DELETE FROM workout_progress_photos WHERE id = ?').run(photo.id)
+      })()
+    } catch (reason) {
+      await hooks.deleteProgressPhotoAsset?.(imported).catch(() => undefined)
+      throw reason
+    }
+    if (hooks.deleteProgressPhotoAsset)
+      for (const photo of replaced)
+        await hooks.deleteProgressPhotoAsset(photo).catch(() => undefined)
     return getProgressPhoto(id)
   }
   async function deleteProgressPhoto(input: DeleteWorkoutProgressPhotoInput): Promise<boolean> {
     const photo = getProgressPhoto(input.id)
-    const result = getSqlite().prepare('DELETE FROM workout_progress_photos WHERE id = ?').run(input.id)
-    if (result.changes > 0 && hooks.deleteProgressPhotoAsset) await hooks.deleteProgressPhotoAsset(photo)
+    const result = getSqlite()
+      .prepare('DELETE FROM workout_progress_photos WHERE id = ?')
+      .run(input.id)
+    if (result.changes > 0 && hooks.deleteProgressPhotoAsset)
+      await hooks.deleteProgressPhotoAsset(photo)
     return result.changes > 0
   }
 
@@ -633,7 +798,8 @@ export function createWorkoutsRepository(
         ...session,
         exercises: session.exercises.filter((exercise) => {
           if (input.exerciseId !== null && exercise.exerciseId !== input.exerciseId) return false
-          if (input.muscleGroup !== null && !exercise.muscleGroups.includes(input.muscleGroup)) return false
+          if (input.muscleGroup !== null && !exercise.muscleGroups.includes(input.muscleGroup))
+            return false
           return true
         })
       }))
@@ -706,7 +872,8 @@ export function createWorkoutsRepository(
       programMap.set(programKey, program)
 
       for (const exercise of session.exercises) {
-        const identity = exercise.exerciseId ?? `${exercise.exerciseTitle}:${exercise.muscleGroups.join(',')}`
+        const identity =
+          exercise.exerciseId ?? `${exercise.exerciseTitle}:${exercise.muscleGroups.join(',')}`
         const key = `${identity}:${exercise.usesExternalWeight ? 'external' : 'bodyweight'}`
         const accumulator = exerciseMap.get(key) ?? {
           exerciseId: exercise.exerciseId,
@@ -730,7 +897,11 @@ export function createWorkoutsRepository(
           accumulator.sets += 1
           accumulator.reps += set.reps
           accumulator.volumeKg += volume
-          accumulator.observations.push({ date: session.date, weightKg: set.weightKg, reps: set.reps })
+          accumulator.observations.push({
+            date: session.date,
+            weightKg: set.weightKg,
+            reps: set.reps
+          })
           if (exercise.usesExternalWeight) {
             accumulator.weightTotal += set.weightKg
             accumulator.maxWeightKg = Math.max(accumulator.maxWeightKg, set.weightKg)
@@ -770,13 +941,18 @@ export function createWorkoutsRepository(
       }
     }
 
-    const totalAttributedSets = [...muscleMap.values()].reduce((sum, muscle) => sum + muscle.sets, 0)
+    const totalAttributedSets = [...muscleMap.values()].reduce(
+      (sum, muscle) => sum + muscle.sets,
+      0
+    )
     for (const group of WORKOUT_MUSCLE_ZONES) {
       const muscle = muscleMap.get(group)
       if (!muscle) continue
       muscle.exercises = muscleExerciseIds.get(group)?.size ?? 0
       muscle.volumeKg = round2(muscle.volumeKg)
-      muscle.loadPercent = totalAttributedSets ? round2((muscle.sets / totalAttributedSets) * 100) : 0
+      muscle.loadPercent = totalAttributedSets
+        ? round2((muscle.sets / totalAttributedSets) * 100)
+        : 0
     }
 
     const reportExercises: WorkoutReportExercise[] = [...exerciseMap.values()]
@@ -801,7 +977,9 @@ export function createWorkoutsRepository(
           reps: exercise.reps,
           volumeKg: round2(exercise.volumeKg),
           averageWeightKg:
-            exercise.usesExternalWeight && exercise.sets ? round2(exercise.weightTotal / exercise.sets) : 0,
+            exercise.usesExternalWeight && exercise.sets
+              ? round2(exercise.weightTotal / exercise.sets)
+              : 0,
           maxWeightKg: round2(exercise.maxWeightKg),
           estimatedOneRepMax: round2(exercise.estimatedOneRepMax),
           firstBestWeightKg: round2(firstWeight),
@@ -818,13 +996,15 @@ export function createWorkoutsRepository(
     const personalRecords: WorkoutPersonalRecord[] = [...exerciseMap.values()]
       .filter((exercise) => exercise.usesExternalWeight)
       .map((exercise) => {
-        const best = exercise.observations.reduce<{ date: string; weightKg: number; reps: number; score: number } | null>(
-          (current, observation) => {
-            const score = estimatedOneRepMax(observation.weightKg, observation.reps)
-            return !current || score > current.score ? { ...observation, score } : current
-          },
-          null
-        )
+        const best = exercise.observations.reduce<{
+          date: string
+          weightKg: number
+          reps: number
+          score: number
+        } | null>((current, observation) => {
+          const score = estimatedOneRepMax(observation.weightKg, observation.reps)
+          return !current || score > current.score ? { ...observation, score } : current
+        }, null)
         return best && best.score > 0
           ? {
               exerciseId: exercise.exerciseId,
@@ -845,7 +1025,10 @@ export function createWorkoutsRepository(
       .filter((exercise) => !exercise.usesExternalWeight)
       .map((exercise) => {
         const best = exercise.observations.reduce<{ date: string; reps: number } | null>(
-          (current, observation) => !current || observation.reps > current.reps ? { date: observation.date, reps: observation.reps } : current,
+          (current, observation) =>
+            !current || observation.reps > current.reps
+              ? { date: observation.date, reps: observation.reps }
+              : current,
           null
         )
         return best
@@ -862,10 +1045,15 @@ export function createWorkoutsRepository(
       .filter((record): record is WorkoutBodyweightRecord => record !== null)
       .sort((a, b) => b.reps - a.reps)
 
-    const sets = sessions.flatMap((session) => session.exercises.flatMap((exercise) => exercise.sets))
+    const sets = sessions.flatMap((session) =>
+      session.exercises.flatMap((exercise) => exercise.sets)
+    )
     const reps = sets.reduce((sum, set) => sum + set.reps, 0)
     const volumeKg = round2(sets.reduce((sum, set) => sum + set.reps * set.weightKg, 0))
-    const durationMinutes = sessions.reduce((sum, session) => sum + (session.durationMinutes ?? 0), 0)
+    const durationMinutes = sessions.reduce(
+      (sum, session) => sum + (session.durationMinutes ?? 0),
+      0
+    )
     const sessionCount = sessions.length
     return {
       dateFrom: input.dateFrom,
@@ -891,7 +1079,10 @@ export function createWorkoutsRepository(
       },
       muscleGroups: [...muscleMap.values()].filter((muscle) => muscle.sets > 0),
       exercises: reportExercises,
-      programs: [...programMap.values()].map((program) => ({ ...program, volumeKg: round2(program.volumeKg) })),
+      programs: [...programMap.values()].map((program) => ({
+        ...program,
+        volumeKg: round2(program.volumeKg)
+      })),
       timeline: [...dayMap.values()]
         .map((day) => ({ ...day, volumeKg: round2(day.volumeKg) }))
         .sort((a, b) => a.date.localeCompare(b.date)),
@@ -936,7 +1127,9 @@ export interface WorkoutsRepository {
   createProgressEntry(input: CreateWorkoutProgressEntryInput): WorkoutProgressEntryRecord
   updateProgressEntry(input: UpdateWorkoutProgressEntryInput): WorkoutProgressEntryRecord
   deleteProgressEntry(input: DeleteWorkoutProgressEntryInput): boolean
-  importProgressPhoto(input: ImportWorkoutProgressPhotoInput): Promise<WorkoutProgressPhotoRecord | null>
+  importProgressPhoto(
+    input: ImportWorkoutProgressPhotoInput
+  ): Promise<WorkoutProgressPhotoRecord | null>
   deleteProgressPhoto(input: DeleteWorkoutProgressPhotoInput): Promise<boolean>
   getReport(input: WorkoutReportInput): WorkoutReport
 }
