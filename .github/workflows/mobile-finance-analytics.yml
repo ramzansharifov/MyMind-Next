@@ -35,10 +35,21 @@ jobs:
           text = text.replace('  FinanceReport,\n', '')
           text = text.replace('  FinanceReportPoint,\n', '')
           text = text.replace('  FinanceTagBreakdownPoint,\n', '')
-          text = text.replace(
-              "import {\n  defaultFinancePeriod,\n  previousComparablePeriod,\n  resolveFinanceLimitPeriod\n} from '@mymind/core/finance-periods'\n",
-              "import { defaultFinancePeriod, resolveFinanceLimitPeriod } from '@mymind/core/finance-periods'\nimport type { FinanceReportAnalytics } from '@mymind/contracts/finance-report-analytics'\nimport { getFinanceReportAnalytics } from './finance-report'\n"
+          old_period_import = (
+              "import {\n"
+              "  defaultFinancePeriod,\n"
+              "  previousComparablePeriod,\n"
+              "  resolveFinanceLimitPeriod\n"
+              "} from '@mymind/core/finance-periods'\n"
           )
+          new_period_import = (
+              "import { defaultFinancePeriod, resolveFinanceLimitPeriod } from '@mymind/core/finance-periods'\n"
+              "import type { FinanceReportAnalytics } from '@mymind/contracts/finance-report-analytics'\n"
+              "import { getFinanceReportAnalytics } from './finance-report'\n"
+          )
+          if old_period_import not in text:
+              raise SystemExit('Finance period import anchor not found')
+          text = text.replace(old_period_import, new_period_import, 1)
           text = re.sub(
               r"\ninterface AggregateEntryRow \{.*?\n\}\n",
               "\n",
@@ -48,73 +59,83 @@ jobs:
           )
           start = text.index('  function aggregateRows(')
           end = text.index('\n  return {\n    getSettings,', start)
-          replacement = """  function getReport(filters: FinanceReportFilters): FinanceReportAnalytics {
-            return getFinanceReportAnalytics(
-              { database, getSettings, listExchangeRates, listLimits },
-              filters
-            )
-          }
-"""
+          replacement = "\n".join([
+              "  function getReport(filters: FinanceReportFilters): FinanceReportAnalytics {",
+              "    return getFinanceReportAnalytics(",
+              "      { database, getSettings, listExchangeRates, listLimits },",
+              "      filters",
+              "    )",
+              "  }",
+              "",
+          ])
           text = text[:start] + replacement + text[end:]
           path.write_text(text)
 
           test_path = Path('packages/persistence/src/finance.test.ts')
           test = test_path.read_text()
-          test = test.replace(
-              "const day = new Date(2026, 8, 6, 10).getTime()",
-              "const day = new Date(2026, 8, 6, 13).getTime()"
-          )
-          test = test.replace(
-              "const report = finance.getReport({ dateFrom: day - 1000, dateTo: day + 1000 })",
-              "const report = finance.getReport({\n      dateFrom: new Date(2026, 8, 6, 0, 0, 0, 0).getTime(),\n      dateTo: new Date(2026, 8, 6, 23, 59, 59, 999).getTime()\n    })"
-          )
-          old = """    expect(report).toMatchObject({
-      incomeMinor: 500_00,
-      expenseMinor: 120_00,
-      netMinor: 380_00,
-      operationCount: 3
-    })
-    expect(report.transferFlows).toHaveLength(1)
-    expect(report.expenseByTag[0]).toMatchObject({ label: 'Еда', amountMinor: 120_00 })
-"""
-          new = """    expect(report).toMatchObject({
-      incomeMinor: 500_00,
-      expenseMinor: 120_00,
-      netMinor: 380_00,
-      incomeCount: 1,
-      expenseCount: 1,
-      transferCount: 1,
-      operationCount: 3,
-      averageIncomeMinor: 500_00,
-      averageExpenseMinor: 120_00,
-      averageDailyExpenseMinor: 120_00,
-      transferVolumeMinor: 50_00,
-      balanceStartMinor: 0,
-      balanceEndMinor: 380_00,
-      balanceChangeMinor: 380_00,
-      comparisonIncomeMinor: 0,
-      comparisonExpenseMinor: 0,
-      comparisonNetMinor: 0,
-      incomeChangePercent: null,
-      expenseChangePercent: null,
-      netChangePercent: null
-    })
-    expect(report.savingsRatePercent).toBeCloseTo(76)
-    expect(report.timeline).toHaveLength(1)
-    expect(report.timeline[0]).toMatchObject({
-      incomeMinor: 500_00,
-      expenseMinor: 120_00,
-      netMinor: 380_00,
-      balanceMinor: 380_00
-    })
-    expect(report.transferFlows).toHaveLength(1)
-    expect(report.transferFlows[0]).toMatchObject({ convertedAmountMinor: 50_00 })
-    expect(report.accountActivity).toHaveLength(2)
-    expect(report.expenseByTag[0]).toMatchObject({ label: 'Еда', amountMinor: 120_00 })
-"""
-          if old not in test:
-              raise SystemExit('Finance report test anchor not found')
-          test_path.write_text(test.replace(old, new, 1))
+          old_day = "const day = new Date(2026, 8, 6, 10).getTime()"
+          if old_day not in test:
+              raise SystemExit('Finance report day anchor not found')
+          test = test.replace(old_day, "const day = new Date(2026, 8, 6, 13).getTime()", 1)
+          old_report = "const report = finance.getReport({ dateFrom: day - 1000, dateTo: day + 1000 })"
+          new_report = "\n".join([
+              "const report = finance.getReport({",
+              "      dateFrom: new Date(2026, 8, 6, 0, 0, 0, 0).getTime(),",
+              "      dateTo: new Date(2026, 8, 6, 23, 59, 59, 999).getTime()",
+              "    })",
+          ])
+          if old_report not in test:
+              raise SystemExit('Finance report invocation anchor not found')
+          test = test.replace(old_report, new_report, 1)
+          old_assertion = "\n".join([
+              "    expect(report).toMatchObject({",
+              "      incomeMinor: 500_00,",
+              "      expenseMinor: 120_00,",
+              "      netMinor: 380_00,",
+              "      operationCount: 3",
+              "    })",
+              "    expect(report.transferFlows).toHaveLength(1)",
+              "    expect(report.expenseByTag[0]).toMatchObject({ label: 'Еда', amountMinor: 120_00 })",
+          ])
+          new_assertion = "\n".join([
+              "    expect(report).toMatchObject({",
+              "      incomeMinor: 500_00,",
+              "      expenseMinor: 120_00,",
+              "      netMinor: 380_00,",
+              "      incomeCount: 1,",
+              "      expenseCount: 1,",
+              "      transferCount: 1,",
+              "      operationCount: 3,",
+              "      averageIncomeMinor: 500_00,",
+              "      averageExpenseMinor: 120_00,",
+              "      averageDailyExpenseMinor: 120_00,",
+              "      transferVolumeMinor: 50_00,",
+              "      balanceStartMinor: 0,",
+              "      balanceEndMinor: 380_00,",
+              "      balanceChangeMinor: 380_00,",
+              "      comparisonIncomeMinor: 0,",
+              "      comparisonExpenseMinor: 0,",
+              "      comparisonNetMinor: 0,",
+              "      incomeChangePercent: null,",
+              "      expenseChangePercent: null,",
+              "      netChangePercent: null",
+              "    })",
+              "    expect(report.savingsRatePercent).toBeCloseTo(76)",
+              "    expect(report.timeline).toHaveLength(1)",
+              "    expect(report.timeline[0]).toMatchObject({",
+              "      incomeMinor: 500_00,",
+              "      expenseMinor: 120_00,",
+              "      netMinor: 380_00,",
+              "      balanceMinor: 380_00",
+              "    })",
+              "    expect(report.transferFlows).toHaveLength(1)",
+              "    expect(report.transferFlows[0]).toMatchObject({ convertedAmountMinor: 50_00 })",
+              "    expect(report.accountActivity).toHaveLength(2)",
+              "    expect(report.expenseByTag[0]).toMatchObject({ label: 'Еда', amountMinor: 120_00 })",
+          ])
+          if old_assertion not in test:
+              raise SystemExit('Finance report assertion anchor not found')
+          test_path.write_text(test.replace(old_assertion, new_assertion, 1))
           PY
       - name: Refresh lockfile metadata
         run: npm install --package-lock-only --ignore-scripts
