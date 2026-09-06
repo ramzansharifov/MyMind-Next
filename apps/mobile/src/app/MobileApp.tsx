@@ -129,7 +129,15 @@ export default function MobileApp(): React.JSX.Element {
     [services]
   )
 
-  const moreRoutes = ['study', 'boards', 'calendar', 'diary', 'movies', 'music', 'settings'] as Route[]
+  const moreRoutes = [
+    'study',
+    'boards',
+    'calendar',
+    'diary',
+    'movies',
+    'music',
+    'settings'
+  ] as Route[]
   const inMore = !['home', 'notes', 'tasks', 'habits', 'more'].includes(route)
 
   return (

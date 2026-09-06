@@ -1,6 +1,10 @@
 import { z } from 'zod'
 
-import { BOARD_DOCUMENT_LIMITS, isBoardSystemRootId, type BoardSnapshot } from '@mymind/contracts/boards'
+import {
+  BOARD_DOCUMENT_LIMITS,
+  isBoardSystemRootId,
+  type BoardSnapshot
+} from '@mymind/contracts/boards'
 import { STUDY_SAFE_ID_PATTERN } from '@mymind/contracts/study'
 import { studyFolderIconSchema } from './study'
 

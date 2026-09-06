@@ -177,21 +177,22 @@ export function createBoardsRepository(
 
   function findRow(id: string): BoardNodeRow | null {
     const row = runtime.database().prepare(`${NODE_SELECT} WHERE id = ?`).get(id) as
-      | BoardNodeRow
-      | undefined
+      BoardNodeRow | undefined
     return row ?? null
   }
 
   function getNextPosition(parentId: string | null): number {
-    const row = (parentId === null
-      ? runtime
-          .database()
-          .prepare('SELECT MAX(position) AS maximum FROM board_nodes WHERE parent_id IS NULL')
-          .get()
-      : runtime
-          .database()
-          .prepare('SELECT MAX(position) AS maximum FROM board_nodes WHERE parent_id = ?')
-          .get(parentId)) as { maximum: number | null } | undefined
+    const row = (
+      parentId === null
+        ? runtime
+            .database()
+            .prepare('SELECT MAX(position) AS maximum FROM board_nodes WHERE parent_id IS NULL')
+            .get()
+        : runtime
+            .database()
+            .prepare('SELECT MAX(position) AS maximum FROM board_nodes WHERE parent_id = ?')
+            .get(parentId)
+    ) as { maximum: number | null } | undefined
     return (row?.maximum ?? -1) + 1
   }
 
@@ -244,10 +245,10 @@ export function createBoardsRepository(
   function isManagedAnchor(row: BoardNodeRow): boolean {
     return Boolean(
       isBoardSystemRootId(row.id) ||
-        row.source_study_node_id ||
-        row.source_material_id ||
-        row.source_note_id ||
-        row.source_block_id
+      row.source_study_node_id ||
+      row.source_material_id ||
+      row.source_note_id ||
+      row.source_block_id
     )
   }
 
@@ -307,7 +308,11 @@ export function createBoardsRepository(
     const icon = source.icon ?? 'folder'
     const now = runtime.now()
     if (existing) {
-      if (existing.parent_id !== parentId || existing.title !== source.title || existing.icon !== icon) {
+      if (
+        existing.parent_id !== parentId ||
+        existing.title !== source.title ||
+        existing.icon !== icon
+      ) {
         database
           .prepare(
             'UPDATE board_nodes SET parent_id = ?, title = ?, icon = ?, updated_at = ? WHERE id = ?'
@@ -480,7 +485,9 @@ export function createBoardsRepository(
       visited.add(folderId)
       const folder = findRow(folderId)
       if (!folder || folder.type !== 'folder' || !folder.source_study_node_id) return
-      const child = database.prepare('SELECT id FROM board_nodes WHERE parent_id = ? LIMIT 1').get(folder.id)
+      const child = database
+        .prepare('SELECT id FROM board_nodes WHERE parent_id = ? LIMIT 1')
+        .get(folder.id)
       if (child) return
       database.prepare('DELETE FROM board_nodes WHERE id = ?').run(folder.id)
       folderId = folder.parent_id
@@ -488,7 +495,8 @@ export function createBoardsRepository(
   }
 
   function deleteRowAndPrune(id: string, parentId: string | null): boolean {
-    const deleted = runtime.database().prepare('DELETE FROM board_nodes WHERE id = ?').run(id).changes > 0
+    const deleted =
+      runtime.database().prepare('DELETE FROM board_nodes WHERE id = ?').run(id).changes > 0
     if (deleted) pruneLinkedStudyFolders(parentId)
     return deleted
   }
@@ -517,7 +525,11 @@ export function createBoardsRepository(
     if (existing.source_note_id && existing.source_block_id) {
       if (!hooks.removeNoteBoardBlock)
         throw new Error('Удаление связанной доски заметки не настроено для этой платформы')
-      await hooks.removeNoteBoardBlock(existing.source_note_id, existing.source_block_id, existing.id)
+      await hooks.removeNoteBoardBlock(
+        existing.source_note_id,
+        existing.source_block_id,
+        existing.id
+      )
       return deleteRowAndPrune(existing.id, existing.parent_id)
     }
     return deleteRowAndPrune(existing.id, existing.parent_id)
@@ -535,7 +547,8 @@ export function createBoardsRepository(
     if (valid.parentId && protectedIds.has(valid.parentId))
       throw new Error('Нельзя перемещать элементы внутрь управляемого раздела')
     assertFolder(valid.parentId)
-    if (source.id === valid.parentId) throw new Error('Элемент нельзя переместить внутрь самого себя')
+    if (source.id === valid.parentId)
+      throw new Error('Элемент нельзя переместить внутрь самого себя')
     const byId = new Map(rows.map((row) => [row.id, row]))
     if (source.type === 'folder' && valid.parentId) {
       let ancestor = byId.get(valid.parentId)
@@ -566,7 +579,9 @@ export function createBoardsRepository(
       arranged.splice(targetPosition, 0, source)
       arranged.forEach((row, position) => {
         database
-          .prepare('UPDATE board_nodes SET parent_id = ?, position = ?, updated_at = ? WHERE id = ?')
+          .prepare(
+            'UPDATE board_nodes SET parent_id = ?, position = ?, updated_at = ? WHERE id = ?'
+          )
           .run(valid.parentId, position, now, row.id)
       })
       if (valid.parentId)
@@ -582,8 +597,7 @@ export function createBoardsRepository(
     if (!node || node.type !== 'board') throw new Error('Доска не найдена')
     const database = runtime.database()
     let row = database.prepare(`${DOCUMENT_SELECT} WHERE node_id = ?`).get(nodeId) as
-      | BoardDocumentRow
-      | undefined
+      BoardDocumentRow | undefined
     if (!row) {
       const now = runtime.now()
       database
@@ -592,8 +606,7 @@ export function createBoardsRepository(
         )
         .run(nodeId, now, now)
       row = database.prepare(`${DOCUMENT_SELECT} WHERE node_id = ?`).get(nodeId) as
-        | BoardDocumentRow
-        | undefined
+        BoardDocumentRow | undefined
     }
     if (!row) throw new Error('Не удалось создать документ доски')
     return mapDocument(row)
@@ -605,8 +618,7 @@ export function createBoardsRepository(
     if (!node || node.type !== 'board') throw new Error('Доска не найдена')
     const database = runtime.database()
     const existing = database.prepare(`${DOCUMENT_SELECT} WHERE node_id = ?`).get(nodeId) as
-      | BoardDocumentRow
-      | undefined
+      BoardDocumentRow | undefined
     const now = runtime.now()
     database.transaction(() => {
       if (existing)
@@ -622,8 +634,7 @@ export function createBoardsRepository(
       database.prepare('UPDATE board_nodes SET updated_at = ? WHERE id = ?').run(now, nodeId)
     })()
     const saved = database.prepare(`${DOCUMENT_SELECT} WHERE node_id = ?`).get(nodeId) as
-      | BoardDocumentRow
-      | undefined
+      BoardDocumentRow | undefined
     if (!saved) throw new Error('Не удалось сохранить доску')
     return mapDocument(saved)
   }
@@ -654,9 +665,9 @@ export function createBoardsRepository(
       .prepare(`${NODE_SELECT} WHERE source_material_id = ? AND source_block_id = ?`)
       .get(input.materialId, input.blockId) as BoardNodeRow | undefined
     if (existing) return mapNode(existing)
-    const materialNode = database.prepare(`${STUDY_NODE_SELECT} WHERE id = ?`).get(input.materialId) as
-      | StudyNodeRow
-      | undefined
+    const materialNode = database
+      .prepare(`${STUDY_NODE_SELECT} WHERE id = ?`)
+      .get(input.materialId) as StudyNodeRow | undefined
     const material = database
       .prepare('SELECT node_id, document FROM study_materials WHERE node_id = ?')
       .get(input.materialId) as StudyMaterialRow | undefined
@@ -762,7 +773,10 @@ export function createBoardsRepository(
     const parents: Array<string | null> = []
     for (const board of linked) {
       if (!board.source_block_id || retained.has(board.source_block_id)) continue
-      const deleted = runtime.database().prepare('DELETE FROM board_nodes WHERE id = ?').run(board.id)
+      const deleted = runtime
+        .database()
+        .prepare('DELETE FROM board_nodes WHERE id = ?')
+        .run(board.id)
       if (deleted.changes > 0) parents.push(board.parent_id)
     }
     for (const parentId of parents) pruneLinkedStudyFolders(parentId)

@@ -47,15 +47,19 @@ describe('shared Boards persistence', () => {
     expect(boards.listNodes()).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ id: BOARD_SYSTEM_ROOT_ID, title: 'Обучение', isSystem: true }),
-        expect.objectContaining({ id: BOARD_NOTES_SYSTEM_ROOT_ID, title: 'Заметки', isSystem: true })
+        expect.objectContaining({
+          id: BOARD_NOTES_SYSTEM_ROOT_ID,
+          title: 'Заметки',
+          isSystem: true
+        })
       ])
     )
     expect(boards.moveNode({ id: board.id, parentId: folder.id, position: 0 })).toEqual(
       expect.arrayContaining([expect.objectContaining({ id: board.id, parentId: folder.id })])
     )
-    expect(() => boards.moveNode({ id: board.id, parentId: BOARD_SYSTEM_ROOT_ID, position: 0 })).toThrow(
-      'управляемого раздела'
-    )
+    expect(() =>
+      boards.moveNode({ id: board.id, parentId: BOARD_SYSTEM_ROOT_ID, position: 0 })
+    ).toThrow('управляемого раздела')
     expect(() => boards.renameNode(BOARD_SYSTEM_ROOT_ID, 'Другое')).toThrow('Системную папку')
   })
 
@@ -127,7 +131,11 @@ describe('shared Boards persistence', () => {
       sourceBlockId: 'board-block'
     })
     expect(linkedChapter).toMatchObject({ title: 'Глава', icon: 'science' })
-    expect(linkedCourse).toMatchObject({ title: 'Курс', icon: 'book', parentId: BOARD_SYSTEM_ROOT_ID })
+    expect(linkedCourse).toMatchObject({
+      title: 'Курс',
+      icon: 'book',
+      parentId: BOARD_SYSTEM_ROOT_ID
+    })
     expect(linkedChapter?.parentId).toBe(linkedCourse?.id)
 
     await expect(boards.deleteNode(linked.id)).resolves.toBe(true)

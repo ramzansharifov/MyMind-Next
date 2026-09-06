@@ -29,10 +29,10 @@ function managedNodeIds(nodes: BoardNode[]): Set<string> {
   const anchor = (node: BoardNode): boolean =>
     Boolean(
       isBoardSystemRootId(node.id) ||
-        node.sourceStudyNodeId ||
-        node.sourceMaterialId ||
-        node.sourceNoteId ||
-        node.sourceBlockId
+      node.sourceStudyNodeId ||
+      node.sourceMaterialId ||
+      node.sourceNoteId ||
+      node.sourceBlockId
     )
 
   for (const node of nodes) {
@@ -94,7 +94,7 @@ export function BoardsScreen(): React.JSX.Element {
 
   const allNodes = useMemo(() => nodes.data ?? [], [nodes.data])
   const managed = useMemo(() => managedNodeIds(allNodes), [allNodes])
-  const currentFolder = folderId ? allNodes.find((node) => node.id === folderId) ?? null : null
+  const currentFolder = folderId ? (allNodes.find((node) => node.id === folderId) ?? null) : null
   const effectiveFolderId = folderId && currentFolder ? folderId : null
 
   const refresh = (): void => {
@@ -127,7 +127,8 @@ export function BoardsScreen(): React.JSX.Element {
         })
         const created = api.createNode(input)
         refresh()
-        if (created.type === 'board') setOpened({ node: created, document: api.getDocument(created.id) })
+        if (created.type === 'board')
+          setOpened({ node: created, document: api.getDocument(created.id) })
       }
     })
   }
@@ -264,7 +265,12 @@ export function BoardsScreen(): React.JSX.Element {
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           <Button label="Назад" onPress={() => setOpened(null)} />
           <Button label="Свойства" onPress={() => editNode(current)} />
-          <Button label="Удалить" danger disabled={pending} onPress={() => confirmDelete(current)} />
+          <Button
+            label="Удалить"
+            danger
+            disabled={pending}
+            onPress={() => confirmDelete(current)}
+          />
         </View>
         <Label title>{current.title}</Label>
         <Row
@@ -334,7 +340,8 @@ export function BoardsScreen(): React.JSX.Element {
           }
           renderItem={({ item, index }) => {
             const itemManaged = managed.has(item.id)
-            const canDelete = !(item.type === 'folder' && itemManaged) && !isBoardSystemRootId(item.id)
+            const canDelete =
+              !(item.type === 'folder' && itemManaged) && !isBoardSystemRootId(item.id)
             return (
               <Row
                 title={item.title}
