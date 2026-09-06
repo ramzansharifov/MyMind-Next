@@ -28,32 +28,50 @@ export function createMobileServices(db: SQLiteDatabase): MobileServices {
   const database = adaptSqlite(db)
   const runtime = { database: () => database, createId: randomUUID, now: Date.now }
   let boards: ReturnType<typeof createBoardsRepository> | null = null
+  const boardSourceDeletion = new Set<string>()
   const notes = createNotesRepository(runtime, {
-    afterDocumentSaved: (noteId, document) => boards?.cleanupNoteDocument(noteId, document)
+    afterDocumentSaved: (noteId, document) => {
+      if (!boardSourceDeletion.has(`note:${noteId}`)) boards?.cleanupNoteDocument(noteId, document)
+    }
   })
   const study = createStudyRepository(runtime, {
-    afterDocumentSaved: (materialId, document) => boards?.cleanupStudyDocument(materialId, document)
+    afterDocumentSaved: (materialId, document) => {
+      if (!boardSourceDeletion.has(`study:${materialId}`))
+        boards?.cleanupStudyDocument(materialId, document)
+    }
   })
   boards = createBoardsRepository(runtime, {
     removeStudyBoardBlock: async (materialId, blockId) => {
-      const material = study.getMaterial(materialId)
-      await study.saveMaterial({
-        nodeId: materialId,
-        document: {
-          ...material.document,
-          blocks: material.document.blocks.filter((block) => block.id !== blockId)
-        }
-      })
+      const key = `study:${materialId}`
+      boardSourceDeletion.add(key)
+      try {
+        const material = study.getMaterial(materialId)
+        await study.saveMaterial({
+          nodeId: materialId,
+          document: {
+            ...material.document,
+            blocks: material.document.blocks.filter((block) => block.id !== blockId)
+          }
+        })
+      } finally {
+        boardSourceDeletion.delete(key)
+      }
     },
     removeNoteBoardBlock: async (noteId, blockId) => {
-      const note = notes.getNote(noteId)
-      await notes.saveNote({
-        id: noteId,
-        document: {
-          ...note.document,
-          blocks: note.document.blocks.filter((block) => block.id !== blockId)
-        }
-      })
+      const key = `note:${noteId}`
+      boardSourceDeletion.add(key)
+      try {
+        const note = notes.getNote(noteId)
+        await notes.saveNote({
+          id: noteId,
+          document: {
+            ...note.document,
+            blocks: note.document.blocks.filter((block) => block.id !== blockId)
+          }
+        })
+      } finally {
+        boardSourceDeletion.delete(key)
+      }
     }
   })
   return {
