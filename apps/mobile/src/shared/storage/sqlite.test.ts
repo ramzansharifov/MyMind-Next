@@ -85,7 +85,9 @@ describe('Expo SQLite adapter', () => {
       db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'notes'").get()
     ).toEqual({ name: 'notes' })
     expect(
-      db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'study_nodes'").get()
+      db
+        .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'study_nodes'")
+        .get()
     ).toEqual({ name: 'study_nodes' })
   })
 
@@ -119,7 +121,9 @@ describe('Expo SQLite adapter', () => {
         .get()
     ).toEqual({ name: 'note_groups' })
     expect(
-      db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'study_materials'").get()
+      db
+        .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'study_materials'")
+        .get()
     ).toEqual({ name: 'study_materials' })
   })
 
@@ -151,7 +155,11 @@ describe('Expo SQLite adapter', () => {
       title: 'Старая заметка'
     })
     expect(
-      db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'study_link_targets'").get()
+      db
+        .prepare(
+          "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'study_link_targets'"
+        )
+        .get()
     ).toEqual({ name: 'study_link_targets' })
   })
 

@@ -442,11 +442,7 @@ export function StudyScreen(): React.JSX.Element {
                 disabled={index === children.length - 1}
                 onPress={() => reorder(item, 1)}
               />
-              <Button
-                label="Копия"
-                disabled={pendingAction}
-                onPress={() => duplicate(item)}
-              />
+              <Button label="Копия" disabled={pendingAction} onPress={() => duplicate(item)} />
               <Button
                 label="Удалить"
                 danger

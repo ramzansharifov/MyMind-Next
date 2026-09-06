@@ -50,7 +50,9 @@ export interface StudyRepository {
   saveMaterial(input: SaveStudyMaterialInput): Promise<StudyMaterial>
   deleteNode(id: string): Promise<boolean>
   searchInternalLinkTargets(input: SearchStudyInternalLinkTargetsInput): StudyInternalLinkTarget[]
-  resolveInternalLinkTarget(input: ResolveStudyInternalLinkTargetInput): StudyInternalLinkTarget | null
+  resolveInternalLinkTarget(
+    input: ResolveStudyInternalLinkTargetInput
+  ): StudyInternalLinkTarget | null
 }
 
 interface StudyNodeRow {
@@ -113,7 +115,10 @@ function containsLocalAssets(document: StudyDocument): boolean {
   )
 }
 
-function remapInternalLinks(document: StudyDocument, nodeIds: ReadonlyMap<string, string>): StudyDocument {
+function remapInternalLinks(
+  document: StudyDocument,
+  nodeIds: ReadonlyMap<string, string>
+): StudyDocument {
   return {
     ...document,
     blocks: document.blocks.map((block) => {
@@ -221,7 +226,9 @@ export function createStudyRepository(
   }
 
   function findNode(id: string): StudyNodeRow | null {
-    return (runtime.database().prepare(`${NODE_SELECT} WHERE id = ?`).get(id) as StudyNodeRow) ?? null
+    return (
+      (runtime.database().prepare(`${NODE_SELECT} WHERE id = ?`).get(id) as StudyNodeRow) ?? null
+    )
   }
 
   function requireNode(id: string): StudyNodeRow {
@@ -307,7 +314,10 @@ export function createStudyRepository(
     const node = requireNode(materialId)
     if (node.type !== 'material') throw new Error('Материал обучения не найден')
     const nodes = rowsById ?? new Map(allNodeRows().map((item) => [item.id, item]))
-    runtime.database().prepare('DELETE FROM study_link_targets WHERE material_id = ?').run(materialId)
+    runtime
+      .database()
+      .prepare('DELETE FROM study_link_targets WHERE material_id = ?')
+      .run(materialId)
     insertTargets(materialId, node.title, folderPath(node.parent_id, nodes), document, updatedAt)
   }
 
@@ -366,7 +376,8 @@ export function createStudyRepository(
     const position = siblings.reduce((max, row) => Math.max(max, row.position), -1) + 1
     const now = runtime.now()
     const id = runtime.createId()
-    const title = valid.title?.trim() || (valid.type === 'folder' ? 'Новая папка' : 'Новый материал')
+    const title =
+      valid.title?.trim() || (valid.type === 'folder' ? 'Новая папка' : 'Новый материал')
     const document = valid.type === 'material' ? emptyDocument() : null
 
     database.transaction(() => {
@@ -412,7 +423,9 @@ export function createStudyRepository(
     const now = runtime.now()
     const database = runtime.database()
     database.transaction(() => {
-      database.prepare('UPDATE study_nodes SET title = ?, updated_at = ? WHERE id = ?').run(next, now, id)
+      database
+        .prepare('UPDATE study_nodes SET title = ?, updated_at = ? WHERE id = ?')
+        .run(next, now, id)
       rebuildAllTargets()
     })()
     return mapNode(requireNode(id))
@@ -473,16 +486,17 @@ export function createStudyRepository(
 
       for (const node of subtree) {
         if (node.type !== 'material') continue
-        const material = database
-          .prepare(`${MATERIAL_SELECT} WHERE node_id = ?`)
-          .get(node.id) as StudyMaterialRow | undefined
+        const material = database.prepare(`${MATERIAL_SELECT} WHERE node_id = ?`).get(node.id) as
+          StudyMaterialRow | undefined
         if (!material) throw new Error(`Не найдено содержимое материала «${node.title}»`)
         let document = remapInternalLinks(parseDocument(material.document), idMap)
         const targetId = idMap.get(node.id)
         if (!targetId) throw new Error('Не удалось подготовить копию материала')
         if (containsLocalAssets(document)) {
           if (!hooks.duplicateDocumentAssets)
-            throw new Error('Копирование материала с локальными вложениями на этом устройстве недоступно')
+            throw new Error(
+              'Копирование материала с локальными вложениями на этом устройстве недоступно'
+            )
           document = studyDocumentSchema.parse(
             await hooks.duplicateDocumentAssets(node.id, targetId, document)
           )
@@ -574,7 +588,8 @@ export function createStudyRepository(
     const rows = allNodeRows()
     const source = rows.find((row) => row.id === valid.id)
     if (!source) throw new Error('Элемент обучения не найден')
-    if (valid.parentId === source.id) throw new Error('Нельзя переместить элемент внутрь самого себя')
+    if (valid.parentId === source.id)
+      throw new Error('Нельзя переместить элемент внутрь самого себя')
     if (valid.parentId !== null) {
       const parent = rows.find((row) => row.id === valid.parentId)
       if (!parent || parent.type !== 'folder') throw new Error('Целевая папка не найдена')
@@ -616,7 +631,9 @@ export function createStudyRepository(
       arranged.splice(nextPosition, 0, source)
       arranged.forEach((row, position) => {
         database
-          .prepare('UPDATE study_nodes SET parent_id = ?, position = ?, updated_at = ? WHERE id = ?')
+          .prepare(
+            'UPDATE study_nodes SET parent_id = ?, position = ?, updated_at = ? WHERE id = ?'
+          )
           .run(valid.parentId, position, now, row.id)
       })
       if (valid.parentId) {
@@ -649,8 +666,7 @@ export function createStudyRepository(
         rebuildTargetsForMaterial(nodeId, document, undefined, now)
       })()
       material = database.prepare(`${MATERIAL_SELECT} WHERE node_id = ?`).get(nodeId) as
-        | StudyMaterialRow
-        | undefined
+        StudyMaterialRow | undefined
     }
     if (!material) throw new Error('Не удалось создать содержимое материала')
     return mapMaterial(material)
@@ -689,7 +705,9 @@ export function createStudyRepository(
             )
             .run(valid.nodeId, JSON.stringify(saved.document), saved.plainText, now, now)
         }
-        database.prepare('UPDATE study_nodes SET updated_at = ? WHERE id = ?').run(now, valid.nodeId)
+        database
+          .prepare('UPDATE study_nodes SET updated_at = ? WHERE id = ?')
+          .run(now, valid.nodeId)
         rebuildTargetsForMaterial(valid.nodeId, saved.document, undefined, now)
       })()
       await hooks.afterDocumentSaved?.(valid.nodeId, saved.document)

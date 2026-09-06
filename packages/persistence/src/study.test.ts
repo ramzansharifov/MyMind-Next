@@ -123,14 +123,16 @@ describe('shared Study persistence', () => {
       (node) =>
         node.type === 'material' &&
         (node.parentId === duplicated.rootId ||
-          duplicated.nodes.find((parent) => parent.id === node.parentId)?.parentId === duplicated.rootId)
+          duplicated.nodes.find((parent) => parent.id === node.parentId)?.parentId ===
+            duplicated.rootId)
     )
     expect(duplicateMaterials).toHaveLength(2)
     const copiedIntro = duplicateMaterials.find((node) => node.title === 'Введение')
     const copiedPractice = duplicateMaterials.find((node) => node.title === 'Практика')
     expect(copiedIntro && copiedPractice).toBeTruthy()
     const copiedDocument = study.getMaterial(copiedIntro!.id).document
-    const html = copiedDocument.blocks[0]?.type === 'text' ? copiedDocument.blocks[0].html : undefined
+    const html =
+      copiedDocument.blocks[0]?.type === 'text' ? copiedDocument.blocks[0].html : undefined
     expect(html).toContain(copiedPractice!.id)
     expect(html).not.toContain(second.id)
   })
