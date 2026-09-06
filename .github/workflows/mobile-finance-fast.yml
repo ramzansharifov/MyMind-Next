@@ -7,6 +7,9 @@ on:
     paths:
       - .mobile-finance-ci-trigger
 
+permissions:
+  contents: write
+
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -21,15 +24,23 @@ jobs:
         run: npm install --global npm@11
       - name: Install
         run: npm ci
-      - name: Rebuild SQLite for Node tests
-        run: npm run native:node
-      - name: Shared and desktop typecheck
-        run: npm run typecheck:packages && npm run typecheck:desktop
-      - name: Mobile typecheck
-        run: npm run typecheck:mobile
-      - name: Mobile and shared tests
-        run: npm run test:mobile
-      - name: Finance formatting
+      - name: Format Finance checkpoint
+        run: >-
+          npx prettier --write
+          packages/contracts/src/finance.ts
+          packages/core/src/finance-*.ts
+          packages/core/src/validation/finance.ts
+          packages/persistence/src/finance.ts
+          packages/persistence/src/finance.test.ts
+          packages/persistence/src/mobile-schema-v7.ts
+          apps/desktop/src/shared/contracts/finance.ts
+          apps/desktop/src/shared/finance-money.ts
+          apps/desktop/src/shared/validation/finance.ts
+          apps/mobile/src/modules/finance/FinanceScreen.tsx
+          apps/mobile/src/modules/finance/finance-forms.ts
+          apps/mobile/src/shared/storage/sqlite.ts
+          apps/mobile/src/shared/storage/sqlite.test.ts
+      - name: Check Finance formatting
         run: >-
           npx prettier --check
           packages/contracts/src/finance.ts
@@ -45,3 +56,21 @@ jobs:
           apps/mobile/src/modules/finance/finance-forms.ts
           apps/mobile/src/shared/storage/sqlite.ts
           apps/mobile/src/shared/storage/sqlite.test.ts
+      - name: Rebuild SQLite for Node tests
+        run: npm run native:node
+      - name: Shared and desktop typecheck
+        run: npm run typecheck:packages && npm run typecheck:desktop
+      - name: Mobile typecheck
+        run: npm run typecheck:mobile
+      - name: Mobile and shared tests
+        run: npm run test:mobile
+      - name: Commit formatting
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add packages/contracts/src/finance.ts packages/core/src/finance-*.ts packages/core/src/validation/finance.ts packages/persistence/src/finance.ts packages/persistence/src/finance.test.ts packages/persistence/src/mobile-schema-v7.ts apps/desktop/src/shared/contracts/finance.ts apps/desktop/src/shared/finance-money.ts apps/desktop/src/shared/validation/finance.ts apps/mobile/src/modules/finance/FinanceScreen.tsx apps/mobile/src/modules/finance/finance-forms.ts apps/mobile/src/shared/storage/sqlite.ts apps/mobile/src/shared/storage/sqlite.test.ts
+          if ! git diff --cached --quiet; then
+            git commit -m "style: format mobile Finance checkpoint"
+            git push
+          fi
