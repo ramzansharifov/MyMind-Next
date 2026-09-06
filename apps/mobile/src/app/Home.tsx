@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { FlatList, View } from 'react-native'
 import { isHabitScheduledOn, localDateKey } from '@mymind/core/habits'
+import { formatMoneyMinor } from '@mymind/core/finance-money'
 import { ErrorState, Label, Row } from '../shared/ui/primitives'
 import { messageFor } from '../shared/ui/form-model'
 import type { MobileServices } from './services'
@@ -32,6 +33,7 @@ export function Home({
       const boards = services.boards.listNodes()
       const workouts = services.workouts.listOverview()
       const nutrition = services.nutrition.listOverview({ date })
+      const finance = services.finance.getDashboard()
       setCards([
         {
           route: 'tasks',
@@ -78,6 +80,11 @@ export function Home({
           route: 'nutrition',
           title: 'Питание',
           subtitle: `${Math.round(nutrition.day.nutrients.calories)} ккал · ${nutrition.day.waterMl} мл воды`
+        },
+        {
+          route: 'finance',
+          title: 'Финансы',
+          subtitle: `${formatMoneyMinor(finance.totalBalanceMinor, finance.settings.baseCurrencyCode)}${finance.totalBalanceComplete ? '' : ' · не все курсы заданы'}`
         },
         {
           route: 'movies',
