@@ -27,7 +27,9 @@ export function Home({
         habits.entries.some((e) => e.habitId === h.id && !e.skipped && e.value >= h.targetValue)
       )
       const events = services.calendar.listCalendarOccurrences({ from: date, to: date })
+      const notes = services.notes.listNotesOverview().notes
       const studyNodes = services.study.listNodes()
+      const boards = services.boards.listNodes()
       setCards([
         {
           route: 'tasks',
@@ -43,6 +45,16 @@ export function Home({
           route: 'study',
           title: 'Обучение',
           subtitle: `${studyNodes.filter((node) => node.type === 'material').length} материалов · ${studyNodes.filter((node) => node.type === 'folder').length} папок`
+        },
+        {
+          route: 'notes',
+          title: 'Заметки',
+          subtitle: `${notes.length} ${notes.length === 1 ? 'заметка' : 'заметок'}`
+        },
+        {
+          route: 'boards',
+          title: 'Доски',
+          subtitle: `${boards.filter((node) => node.type === 'board').length} досок`
         },
         {
           route: 'calendar',
