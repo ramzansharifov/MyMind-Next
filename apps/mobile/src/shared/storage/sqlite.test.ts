@@ -2,6 +2,8 @@ import Database from 'better-sqlite3'
 import type { SQLiteDatabase } from 'expo-sqlite'
 import { mobileSchemaV1 } from '@mymind/persistence/mobile-schema'
 import { mobileSchemaV2 } from '@mymind/persistence/mobile-schema-v2'
+import { mobileSchemaV3 } from '@mymind/persistence/mobile-schema-v3'
+import { mobileSchemaV4 } from '@mymind/persistence/mobile-schema-v4'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('expo-sqlite', () => ({ openDatabaseAsync: vi.fn() }))
@@ -76,7 +78,7 @@ describe('Expo SQLite adapter', () => {
     db.prepare('INSERT INTO mobile_preferences VALUES (?, ?)').run('test', 'saved')
     await openMobileDatabase()
 
-    expect(db.pragma('user_version', { simple: true })).toBe(3)
+    expect(db.pragma('user_version', { simple: true })).toBe(4)
     expect(db.pragma('foreign_keys', { simple: true })).toBe(1)
     expect(db.prepare('SELECT value FROM mobile_preferences WHERE key = ?').get('test')).toEqual({
       value: 'saved'
@@ -89,6 +91,11 @@ describe('Expo SQLite adapter', () => {
         .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'study_nodes'")
         .get()
     ).toEqual({ name: 'study_nodes' })
+    expect(
+      db
+        .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'board_nodes'")
+        .get()
+    ).toEqual({ name: 'board_nodes' })
   })
 
   it('upgrades an existing V1 database without losing module data', async () => {
@@ -106,7 +113,7 @@ describe('Expo SQLite adapter', () => {
 
     await openMobileDatabase()
 
-    expect(db.pragma('user_version', { simple: true })).toBe(3)
+    expect(db.pragma('user_version', { simple: true })).toBe(4)
     expect(db.prepare('SELECT title FROM tasks WHERE id = ?').get('task-before-notes')).toEqual({
       title: 'Сохранить меня'
     })
@@ -125,9 +132,14 @@ describe('Expo SQLite adapter', () => {
         .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'study_materials'")
         .get()
     ).toEqual({ name: 'study_materials' })
+    expect(
+      db
+        .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'board_documents'")
+        .get()
+    ).toEqual({ name: 'board_documents' })
   })
 
-  it('upgrades an existing V2 database to Study without losing Notes', async () => {
+  it('upgrades an existing V2 database to the latest schema without losing Notes', async () => {
     const { db, expo } = nativeDriver()
     for (const sql of mobileSchemaV1) db.exec(sql)
     db.exec(
@@ -150,7 +162,7 @@ describe('Expo SQLite adapter', () => {
 
     await openMobileDatabase()
 
-    expect(db.pragma('user_version', { simple: true })).toBe(3)
+    expect(db.pragma('user_version', { simple: true })).toBe(4)
     expect(db.prepare('SELECT title FROM notes WHERE id = ?').get('note-before-study')).toEqual({
       title: 'Старая заметка'
     })
@@ -161,6 +173,46 @@ describe('Expo SQLite adapter', () => {
         )
         .get()
     ).toEqual({ name: 'study_link_targets' })
+    expect(
+      db
+        .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'board_nodes'")
+        .get()
+    ).toEqual({ name: 'board_nodes' })
+  })
+
+  it('upgrades an existing V3 database to Boards without losing Study data', async () => {
+    const { db, expo } = nativeDriver()
+    for (const sql of mobileSchemaV1) db.exec(sql)
+    db.exec(
+      'CREATE TABLE mobile_preferences (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL); PRAGMA user_version = 1;'
+    )
+    for (const sql of mobileSchemaV2) db.exec(sql)
+    for (const sql of mobileSchemaV3) db.exec(sql)
+    db.pragma('user_version = 3')
+    db.prepare(
+      `INSERT INTO study_nodes(id, type, parent_id, title, icon, position, is_expanded, created_at, updated_at)
+       VALUES (?, 'material', NULL, ?, NULL, 0, 1, 1, 1)`
+    ).run('material-before-boards', 'Старый материал')
+    db.prepare(
+      `INSERT INTO study_materials(node_id, document, plain_text, created_at, updated_at)
+       VALUES (?, ?, '', 1, 1)`
+    ).run(
+      'material-before-boards',
+      JSON.stringify({ version: 1, blocks: [{ id: 'text-1', type: 'text', text: 'Содержимое' }] })
+    )
+    vi.mocked(openDatabaseAsync).mockResolvedValue(expo)
+
+    await openMobileDatabase()
+
+    expect(db.pragma('user_version', { simple: true })).toBe(4)
+    expect(
+      db.prepare('SELECT title FROM study_nodes WHERE id = ?').get('material-before-boards')
+    ).toEqual({ title: 'Старый материал' })
+    expect(
+      db
+        .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'board_documents'")
+        .get()
+    ).toEqual({ name: 'board_documents' })
   })
 
   it('does not reset an unknown newer database', async () => {
