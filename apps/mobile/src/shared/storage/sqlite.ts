@@ -4,6 +4,7 @@ import { mobileSchemaV2 } from '@mymind/persistence/mobile-schema-v2'
 import { mobileSchemaV3 } from '@mymind/persistence/mobile-schema-v3'
 import { mobileSchemaV4 } from '@mymind/persistence/mobile-schema-v4'
 import { mobileSchemaV5 } from '@mymind/persistence/mobile-schema-v5'
+import { mobileSchemaV6 } from '@mymind/persistence/mobile-schema-v6'
 import { openDatabaseAsync, type SQLiteDatabase, type SQLiteBindValue } from 'expo-sqlite'
 
 function bindings(parameters: unknown[]): SQLiteBindValue[] {
@@ -69,7 +70,7 @@ export async function openMobileDatabase(): Promise<SQLiteDatabase> {
     const version = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version')
     let currentVersion = version?.user_version ?? 0
 
-    if (currentVersion > 5)
+    if (currentVersion > 6)
       throw new Error('Данные созданы новой версией MyMind. Обновите приложение.')
 
     if (currentVersion === 0) {
@@ -102,7 +103,12 @@ export async function openMobileDatabase(): Promise<SQLiteDatabase> {
       currentVersion = 5
     }
 
-    if (currentVersion !== 5) throw new Error('Не удалось обновить локальную базу MyMind')
+    if (currentVersion === 5) {
+      await applyMigration(db, mobileSchemaV6, 6)
+      currentVersion = 6
+    }
+
+    if (currentVersion !== 6) throw new Error('Не удалось обновить локальную базу MyMind')
     return db
   } catch (error) {
     await db.closeAsync()

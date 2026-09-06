@@ -4,6 +4,7 @@ import { mobileSchemaV1 } from '@mymind/persistence/mobile-schema'
 import { mobileSchemaV2 } from '@mymind/persistence/mobile-schema-v2'
 import { mobileSchemaV3 } from '@mymind/persistence/mobile-schema-v3'
 import { mobileSchemaV4 } from '@mymind/persistence/mobile-schema-v4'
+import { mobileSchemaV5 } from '@mymind/persistence/mobile-schema-v5'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('expo-sqlite', () => ({ openDatabaseAsync: vi.fn() }))
@@ -78,7 +79,7 @@ describe('Expo SQLite adapter', () => {
     db.prepare('INSERT INTO mobile_preferences VALUES (?, ?)').run('test', 'saved')
     await openMobileDatabase()
 
-    expect(db.pragma('user_version', { simple: true })).toBe(5)
+    expect(db.pragma('user_version', { simple: true })).toBe(6)
     expect(db.pragma('foreign_keys', { simple: true })).toBe(1)
     expect(db.prepare('SELECT value FROM mobile_preferences WHERE key = ?').get('test')).toEqual({
       value: 'saved'
@@ -123,7 +124,7 @@ describe('Expo SQLite adapter', () => {
 
     await openMobileDatabase()
 
-    expect(db.pragma('user_version', { simple: true })).toBe(5)
+    expect(db.pragma('user_version', { simple: true })).toBe(6)
     expect(db.prepare('SELECT title FROM tasks WHERE id = ?').get('task-before-notes')).toEqual({
       title: 'Сохранить меня'
     })
@@ -175,7 +176,7 @@ describe('Expo SQLite adapter', () => {
 
     await openMobileDatabase()
 
-    expect(db.pragma('user_version', { simple: true })).toBe(5)
+    expect(db.pragma('user_version', { simple: true })).toBe(6)
     expect(db.prepare('SELECT title FROM notes WHERE id = ?').get('note-before-study')).toEqual({
       title: 'Старая заметка'
     })
@@ -220,7 +221,7 @@ describe('Expo SQLite adapter', () => {
 
     await openMobileDatabase()
 
-    expect(db.pragma('user_version', { simple: true })).toBe(5)
+    expect(db.pragma('user_version', { simple: true })).toBe(6)
     expect(
       db.prepare('SELECT title FROM study_nodes WHERE id = ?').get('material-before-boards')
     ).toEqual({ title: 'Старый материал' })
@@ -256,7 +257,7 @@ describe('Expo SQLite adapter', () => {
 
     await openMobileDatabase()
 
-    expect(db.pragma('user_version', { simple: true })).toBe(5)
+    expect(db.pragma('user_version', { simple: true })).toBe(6)
     expect(
       db.prepare('SELECT title FROM board_nodes WHERE id = ?').get('board-before-workouts')
     ).toEqual({
@@ -272,6 +273,39 @@ describe('Expo SQLite adapter', () => {
     expect(db.prepare('SELECT COUNT(*) AS count FROM workout_exercises').get()).toEqual({
       count: 24
     })
+  })
+
+  it('upgrades an existing V5 database to Nutrition without losing Workouts', async () => {
+    const { db, expo } = nativeDriver()
+    for (const schema of [
+      mobileSchemaV1,
+      mobileSchemaV2,
+      mobileSchemaV3,
+      mobileSchemaV4,
+      mobileSchemaV5
+    ])
+      for (const sql of schema) db.exec(sql)
+    db.exec('CREATE TABLE mobile_preferences (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL)')
+    db.pragma('user_version = 5')
+    db.prepare(
+      `INSERT INTO workout_sessions(
+        id, program_id, program_name_snapshot, title, date, duration_minutes, comment, created_at, updated_at
+      ) VALUES (?, NULL, NULL, ?, ?, ?, '', 1, 1)`
+    ).run('session-before-nutrition', 'Сохранённая тренировка', '2026-09-06', 45)
+    vi.mocked(openDatabaseAsync).mockResolvedValue(expo)
+
+    await openMobileDatabase()
+
+    expect(db.pragma('user_version', { simple: true })).toBe(6)
+    expect(
+      db.prepare('SELECT title FROM workout_sessions WHERE id = ?').get('session-before-nutrition')
+    ).toEqual({ title: 'Сохранённая тренировка' })
+    expect(
+      db
+        .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'nutrition_foods'")
+        .get()
+    ).toEqual({ name: 'nutrition_foods' })
+    expect(db.prepare('SELECT COUNT(*) AS count FROM nutrition_foods').get()).toEqual({ count: 211 })
   })
 
   it('does not reset an unknown newer database', async () => {

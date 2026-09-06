@@ -31,6 +31,7 @@ export function Home({
       const studyNodes = services.study.listNodes()
       const boards = services.boards.listNodes()
       const workouts = services.workouts.listOverview()
+      const nutrition = services.nutrition.listOverview({ date })
       setCards([
         {
           route: 'tasks',
@@ -72,6 +73,11 @@ export function Home({
           route: 'workouts',
           title: 'Тренировки',
           subtitle: `${workouts.sessions.length} тренировок · ${workouts.programs.filter((program) => program.status === 'active').length} активных программ`
+        },
+        {
+          route: 'nutrition',
+          title: 'Питание',
+          subtitle: `${Math.round(nutrition.day.nutrients.calories)} ккал · ${nutrition.day.waterMl} мл воды`
         },
         {
           route: 'movies',

@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto'
 import Database from 'better-sqlite3'
 import { describe, expect, it } from 'vitest'
 import { mobileSchemaV1 } from './mobile-schema'
+import { mobileSchemaV6 } from './mobile-schema-v6'
 import { createTasksRepository } from './tasks'
 import { createHabitsRepository } from './habits'
 import { createDiaryRepository } from './diary'
@@ -34,6 +35,57 @@ const taskInput = {
 } as const
 
 describe('mobile schema and shared repositories', () => {
+  it('keeps the native Nutrition schema aligned with fully migrated desktop', () => {
+    const desktop = new Database(':memory:')
+    const mobile = new Database(':memory:')
+    try {
+      const root = 'apps/desktop/drizzle'
+      const journal = JSON.parse(readFileSync(`${root}/meta/_journal.json`, 'utf8')) as {
+        entries: { tag: string }[]
+      }
+      for (const entry of journal.entries)
+        desktop.exec(readFileSync(`${root}/${entry.tag}.sql`, 'utf8'))
+      mobile.pragma('foreign_keys = ON')
+      for (const sql of mobileSchemaV6) mobile.exec(sql)
+      const tables = [
+        'nutrition_foods',
+        'nutrition_recipes',
+        'nutrition_recipe_ingredients',
+        'nutrition_log_entries',
+        'nutrition_water_days',
+        'nutrition_targets'
+      ]
+      for (const name of tables) {
+        for (const pragma of ['table_info', 'foreign_key_list']) {
+          expect(mobile.pragma(`${pragma}('${name}')`), `${name}: ${pragma}`).toEqual(
+            desktop.pragma(`${pragma}('${name}')`)
+          )
+        }
+        const indexes = (db: Database.Database): unknown[] =>
+          (
+            db.pragma(`index_list('${name}')`) as {
+              name: string
+              unique: number
+              partial: number
+              origin: string
+            }[]
+          )
+            .map((index) => ({
+              name: index.name,
+              unique: index.unique,
+              partial: index.partial,
+              origin: index.origin,
+              columns: db.pragma(`index_info('${index.name}')`)
+            }))
+            .sort((a, b) => a.name.localeCompare(b.name))
+        expect(indexes(mobile)).toEqual(indexes(desktop))
+      }
+    } finally {
+      desktop.close()
+      mobile.close()
+    }
+  })
+
   it('has the same columns, indexes and foreign keys as fully migrated desktop', () => {
     const desktop = new Database(':memory:')
     const mobile = new Database(':memory:')

@@ -10,6 +10,7 @@ import { createNotesRepository } from '@mymind/persistence/notes'
 import { createStudyRepository } from '@mymind/persistence/study'
 import { createBoardsRepository } from '@mymind/persistence/boards'
 import { createWorkoutsRepository } from '@mymind/persistence/workouts'
+import { createNutritionRepository } from '@mymind/persistence/nutrition'
 import {
   createWorkoutProgressAssetHooks,
   reconcileWorkoutProgressAssets
@@ -27,6 +28,7 @@ export interface MobileServices {
   study: ReturnType<typeof createStudyRepository>
   boards: ReturnType<typeof createBoardsRepository>
   workouts: ReturnType<typeof createWorkoutsRepository>
+  nutrition: ReturnType<typeof createNutritionRepository>
   settings: { get(key: string): string | null; set(key: string, value: string): void }
 }
 
@@ -100,6 +102,7 @@ export function createMobileServices(db: SQLiteDatabase): MobileServices {
     study,
     boards,
     workouts,
+    nutrition: createNutritionRepository(runtime),
     settings: {
       get: (key: string) =>
         db.getFirstSync<{ value: string }>(
