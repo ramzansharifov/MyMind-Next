@@ -111,8 +111,12 @@ describe('Expo SQLite adapter', () => {
     ]) {
       expectTable(db, table)
     }
-    expect(db.prepare('SELECT COUNT(*) AS count FROM workout_exercises').get()).toEqual({ count: 24 })
-    expect(db.prepare('SELECT COUNT(*) AS count FROM nutrition_foods').get()).toEqual({ count: 211 })
+    expect(db.prepare('SELECT COUNT(*) AS count FROM workout_exercises').get()).toEqual({
+      count: 24
+    })
+    expect(db.prepare('SELECT COUNT(*) AS count FROM nutrition_foods').get()).toEqual({
+      count: 211
+    })
   })
 
   it('upgrades V1 without losing Tasks or preferences', async () => {
@@ -131,7 +135,9 @@ describe('Expo SQLite adapter', () => {
     expect(db.prepare('SELECT title FROM tasks WHERE id = ?').get('task-before-notes')).toEqual({
       title: 'Сохранить меня'
     })
-    expect(db.prepare('SELECT value FROM mobile_preferences WHERE key = ?').get('appearance')).toEqual({
+    expect(
+      db.prepare('SELECT value FROM mobile_preferences WHERE key = ?').get('appearance')
+    ).toEqual({
       value: 'kept'
     })
     expectTable(db, 'finance_accounts')
@@ -176,7 +182,9 @@ describe('Expo SQLite adapter', () => {
     vi.mocked(openDatabaseAsync).mockResolvedValue(expo)
     await openMobileDatabase()
     expect(db.pragma('user_version', { simple: true })).toBe(7)
-    expect(db.prepare('SELECT title FROM study_nodes WHERE id = ?').get('material-before-boards')).toEqual({
+    expect(
+      db.prepare('SELECT title FROM study_nodes WHERE id = ?').get('material-before-boards')
+    ).toEqual({
       title: 'Старый материал'
     })
   })
@@ -195,7 +203,11 @@ describe('Expo SQLite adapter', () => {
     vi.mocked(openDatabaseAsync).mockResolvedValue(expo)
     await openMobileDatabase()
     expect(db.pragma('user_version', { simple: true })).toBe(7)
-    expect(db.prepare('SELECT snapshot FROM board_documents WHERE node_id = ?').get('board-before-workouts')).toEqual({
+    expect(
+      db
+        .prepare('SELECT snapshot FROM board_documents WHERE node_id = ?')
+        .get('board-before-workouts')
+    ).toEqual({
       snapshot
     })
   })
@@ -211,10 +223,14 @@ describe('Expo SQLite adapter', () => {
     vi.mocked(openDatabaseAsync).mockResolvedValue(expo)
     await openMobileDatabase()
     expect(db.pragma('user_version', { simple: true })).toBe(7)
-    expect(db.prepare('SELECT title FROM workout_sessions WHERE id = ?').get('session-before-nutrition')).toEqual({
+    expect(
+      db.prepare('SELECT title FROM workout_sessions WHERE id = ?').get('session-before-nutrition')
+    ).toEqual({
       title: 'Сохранённая тренировка'
     })
-    expect(db.prepare('SELECT COUNT(*) AS count FROM nutrition_foods').get()).toEqual({ count: 211 })
+    expect(db.prepare('SELECT COUNT(*) AS count FROM nutrition_foods').get()).toEqual({
+      count: 211
+    })
   })
 
   it('upgrades V6 to Finance without losing Nutrition data', async () => {
@@ -232,7 +248,11 @@ describe('Expo SQLite adapter', () => {
     await openMobileDatabase()
 
     expect(db.pragma('user_version', { simple: true })).toBe(7)
-    expect(db.prepare('SELECT title_snapshot FROM nutrition_log_entries WHERE id = ?').get('meal-before-finance')).toEqual({
+    expect(
+      db
+        .prepare('SELECT title_snapshot FROM nutrition_log_entries WHERE id = ?')
+        .get('meal-before-finance')
+    ).toEqual({
       title_snapshot: 'Сохранённый обед'
     })
     expectTable(db, 'finance_settings')

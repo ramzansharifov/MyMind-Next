@@ -7,11 +7,7 @@ import type {
   FinanceTransaction
 } from '@mymind/contracts/finance'
 import type { FinanceRepository } from '@mymind/persistence/finance'
-import {
-  FINANCE_RATE_SCALE,
-  formatMinorPlain,
-  parseMoneyToMinor
-} from '@mymind/core/finance-money'
+import { FINANCE_RATE_SCALE, formatMinorPlain, parseMoneyToMinor } from '@mymind/core/finance-money'
 import * as validation from '@mymind/core/validation/finance'
 import { choiceField, textField, type FormField, type FormSpec } from '../../shared/ui/form-model'
 
@@ -42,10 +38,7 @@ function multipleField(
   return { key, label, kind: 'multiple', choices }
 }
 
-export function accountForm(
-  api: FinanceRepository,
-  account?: FinanceAccountSummary
-): FormSpec {
+export function accountForm(api: FinanceRepository, account?: FinanceAccountSummary): FormSpec {
   return {
     title: account ? 'Изменить счёт' : 'Новый счёт',
     initial: {
@@ -60,7 +53,9 @@ export function accountForm(
         'currencyCode',
         'Валюта',
         'text',
-        account?.transactionCount ? 'После появления операций валюту изменить нельзя.' : 'Например: TJS, USD, EUR.'
+        account?.transactionCount
+          ? 'После появления операций валюту изменить нельзя.'
+          : 'Например: TJS, USD, EUR.'
       ),
       ...(account ? [] : [textField('initialBalance', 'Начальный баланс')]),
       choiceField('icon', 'Иконка', [
@@ -134,22 +129,25 @@ function transactionInitial(transaction?: FinanceTransaction) {
   const destinationEntry = transaction?.entries.find((entry) => entry.signedAmountMinor > 0)
   const singleEntry = transaction?.entries[0]
   const occurredAt = transaction?.occurredAt ?? Date.now()
-  const amountMinor = transaction?.type === 'income' || transaction?.type === 'expense'
-    ? Math.abs(singleEntry?.signedAmountMinor ?? 0)
-    : Math.abs(sourceEntry?.signedAmountMinor ?? 0)
+  const amountMinor =
+    transaction?.type === 'income' || transaction?.type === 'expense'
+      ? Math.abs(singleEntry?.signedAmountMinor ?? 0)
+      : Math.abs(sourceEntry?.signedAmountMinor ?? 0)
   const currency = singleEntry?.accountCurrencyCode ?? sourceEntry?.accountCurrencyCode ?? 'TJS'
   return {
-    type: transaction?.type === 'transfer' ? 'transfer' : transaction?.type === 'income' ? 'income' : 'expense',
+    type:
+      transaction?.type === 'transfer'
+        ? 'transfer'
+        : transaction?.type === 'income'
+          ? 'income'
+          : 'expense',
     accountId: singleEntry?.accountId ?? null,
     sourceAccountId: sourceEntry?.accountId ?? null,
     destinationAccountId: destinationEntry?.accountId ?? null,
     amount: amountMinor ? formatMinorPlain(amountMinor, currency) : '',
     destinationAmount:
       destinationEntry && destinationEntry.signedAmountMinor
-        ? formatMinorPlain(
-            destinationEntry.signedAmountMinor,
-            destinationEntry.accountCurrencyCode
-          )
+        ? formatMinorPlain(destinationEntry.signedAmountMinor, destinationEntry.accountCurrencyCode)
         : '',
     tagId: transaction?.tagId ?? null,
     templateId: transaction?.templateId ?? null,
@@ -179,24 +177,41 @@ export function transactionForm(
       choiceField(
         'accountId',
         'Счёт для дохода/расхода',
-        accounts.map((account) => ({ value: account.id, label: `${account.name} · ${account.currencyCode}` }))
+        accounts.map((account) => ({
+          value: account.id,
+          label: `${account.name} · ${account.currencyCode}`
+        }))
       ),
       choiceField(
         'sourceAccountId',
         'Счёт списания для перевода',
-        accounts.map((account) => ({ value: account.id, label: `${account.name} · ${account.currencyCode}` }))
+        accounts.map((account) => ({
+          value: account.id,
+          label: `${account.name} · ${account.currencyCode}`
+        }))
       ),
       choiceField(
         'destinationAccountId',
         'Счёт зачисления для перевода',
-        accounts.map((account) => ({ value: account.id, label: `${account.name} · ${account.currencyCode}` }))
+        accounts.map((account) => ({
+          value: account.id,
+          label: `${account.name} · ${account.currencyCode}`
+        }))
       ),
-      textField('amount', 'Сумма / сумма списания', 'text', 'Денежная сумма вводится строкой и сохраняется только в минимальных единицах.'),
+      textField(
+        'amount',
+        'Сумма / сумма списания',
+        'text',
+        'Денежная сумма вводится строкой и сохраняется только в минимальных единицах.'
+      ),
       textField('destinationAmount', 'Сумма зачисления при переводе'),
       choiceField(
         'tagId',
         'Тег',
-        tags.map((tag) => ({ value: tag.id, label: `${tag.name} · ${tag.type === 'income' ? 'доход' : tag.type === 'expense' ? 'расход' : 'оба'}` }))
+        tags.map((tag) => ({
+          value: tag.id,
+          label: `${tag.name} · ${tag.type === 'income' ? 'доход' : tag.type === 'expense' ? 'расход' : 'оба'}`
+        }))
       ),
       choiceField('templateId', 'Шаблон', [
         { value: null, label: 'Без шаблона' },
@@ -212,9 +227,14 @@ export function transactionForm(
       const templateId = values.templateId === null ? null : String(values.templateId)
       if (type === 'transfer') {
         const sourceAccount = accounts.find((account) => account.id === values.sourceAccountId)
-        const destinationAccount = accounts.find((account) => account.id === values.destinationAccountId)
+        const destinationAccount = accounts.find(
+          (account) => account.id === values.destinationAccountId
+        )
         if (!sourceAccount || !destinationAccount) throw new Error('Выберите оба счёта перевода')
-        const sourceAmountMinor = parseMoneyToMinor(String(values.amount), sourceAccount.currencyCode)
+        const sourceAmountMinor = parseMoneyToMinor(
+          String(values.amount),
+          sourceAccount.currencyCode
+        )
         const destinationAmountMinor = parseMoneyToMinor(
           String(values.destinationAmount || values.amount),
           destinationAccount.currencyCode
@@ -272,7 +292,10 @@ export function limitForm(
       multipleField(
         'accountIds',
         'Счета (пусто = все счета одной валюты)',
-        accounts.map((account) => ({ value: account.id, label: `${account.name} · ${account.currencyCode}` }))
+        accounts.map((account) => ({
+          value: account.id,
+          label: `${account.name} · ${account.currencyCode}`
+        }))
       ),
       choiceField(
         'tagId',
@@ -296,7 +319,7 @@ export function limitForm(
     save(values) {
       const accountIds = values.accountIds as string[]
       const selectedCurrency = accountIds.length
-        ? accounts.find((account) => account.id === accountIds[0])?.currencyCode ?? baseCurrency
+        ? (accounts.find((account) => account.id === accountIds[0])?.currencyCode ?? baseCurrency)
         : baseCurrency
       const payload = {
         amountMinor: parseMoneyToMinor(String(values.amount), selectedCurrency),
@@ -307,7 +330,10 @@ export function limitForm(
         warningPercent: values.warningPercent,
         state: values.state
       }
-      if (limit) api.updateLimit(validation.updateFinanceLimitInputSchema.parse({ id: limit.id, ...payload }))
+      if (limit)
+        api.updateLimit(
+          validation.updateFinanceLimitInputSchema.parse({ id: limit.id, ...payload })
+        )
       else api.createLimit(validation.createFinanceLimitInputSchema.parse(payload))
     }
   }
@@ -352,12 +378,18 @@ export function templateForm(
       choiceField(
         'sourceAccountId',
         'Счёт / счёт списания',
-        accounts.map((account) => ({ value: account.id, label: `${account.name} · ${account.currencyCode}` }))
+        accounts.map((account) => ({
+          value: account.id,
+          label: `${account.name} · ${account.currencyCode}`
+        }))
       ),
       choiceField(
         'destinationAccountId',
         'Счёт зачисления',
-        accounts.map((account) => ({ value: account.id, label: `${account.name} · ${account.currencyCode}` }))
+        accounts.map((account) => ({
+          value: account.id,
+          label: `${account.name} · ${account.currencyCode}`
+        }))
       ),
       choiceField(
         'tagId',
@@ -383,7 +415,10 @@ export function templateForm(
         sourceAccountId: sourceAccount.id,
         destinationAccountId: destinationAccount?.id ?? null,
         tagId: isTransfer ? null : values.tagId,
-        sourceAmountMinor: parseMoneyToMinor(String(values.sourceAmount), sourceAccount.currencyCode),
+        sourceAmountMinor: parseMoneyToMinor(
+          String(values.sourceAmount),
+          sourceAccount.currencyCode
+        ),
         destinationAmountMinor: destinationAccount
           ? parseMoneyToMinor(
               String(values.destinationAmount || values.sourceAmount),
@@ -392,7 +427,10 @@ export function templateForm(
           : null,
         comment: values.comment
       }
-      if (template) api.updateTemplate(validation.updateFinanceTemplateInputSchema.parse({ id: template.id, ...payload }))
+      if (template)
+        api.updateTemplate(
+          validation.updateFinanceTemplateInputSchema.parse({ id: template.id, ...payload })
+        )
       else api.createTemplate(validation.createFinanceTemplateInputSchema.parse(payload))
     }
   }
@@ -415,7 +453,8 @@ export function exchangeRateForm(
     ],
     save(values) {
       const numericRate = Number(String(values.rate).replace(',', '.'))
-      if (!Number.isFinite(numericRate) || numericRate <= 0) throw new Error('Укажите положительный курс')
+      if (!Number.isFinite(numericRate) || numericRate <= 0)
+        throw new Error('Укажите положительный курс')
       api.upsertExchangeRate(
         validation.upsertFinanceExchangeRateInputSchema.parse({
           currencyCode: String(values.currencyCode).trim().toUpperCase(),

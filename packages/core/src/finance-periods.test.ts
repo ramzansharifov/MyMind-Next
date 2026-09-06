@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import type { FinanceLimit } from '@mymind/contracts/finance'
-import { defaultFinancePeriod, previousComparablePeriod, resolveFinanceLimitPeriod } from './finance-periods'
+import {
+  defaultFinancePeriod,
+  previousComparablePeriod,
+  resolveFinanceLimitPeriod
+} from './finance-periods'
 
 function limit(periodType: FinanceLimit['periodType']): FinanceLimit {
   return {

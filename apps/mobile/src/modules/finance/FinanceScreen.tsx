@@ -12,7 +12,14 @@ import { useServices } from '../../app/context'
 import { useCollection } from '../../shared/hooks/useCollection'
 import { FormSheet } from '../../shared/ui/FormSheet'
 import type { FormSpec } from '../../shared/ui/form-model'
-import { Button, EmptyState, ErrorState, Label, LoadingState, Row } from '../../shared/ui/primitives'
+import {
+  Button,
+  EmptyState,
+  ErrorState,
+  Label,
+  LoadingState,
+  Row
+} from '../../shared/ui/primitives'
 import {
   accountForm,
   baseCurrencyForm,
@@ -23,7 +30,8 @@ import {
   transactionForm
 } from './finance-forms'
 
-type Tab = 'home' | 'transactions' | 'accounts' | 'tags' | 'limits' | 'templates' | 'reports' | 'rates'
+type Tab =
+  'home' | 'transactions' | 'accounts' | 'tags' | 'limits' | 'templates' | 'reports' | 'rates'
 
 function startOfDaysAgo(days: number): number {
   const value = new Date()
@@ -112,7 +120,10 @@ export function FinanceScreen(): React.JSX.Element {
   const rates = useMemo(() => data?.rates ?? [], [data?.rates])
 
   if (state.loading) return <LoadingState />
-  if (!data) return <ErrorState message={state.error || 'Не удалось загрузить финансы'} retry={state.refresh} />
+  if (!data)
+    return (
+      <ErrorState message={state.error || 'Не удалось загрузить финансы'} retry={state.refresh} />
+    )
 
   const tabs: Array<{ key: Tab; label: string }> = [
     { key: 'home', label: 'Обзор' },
@@ -127,9 +138,18 @@ export function FinanceScreen(): React.JSX.Element {
 
   const header = (
     <View style={{ gap: 10, paddingBottom: 12 }}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ gap: 8 }}
+      >
         {tabs.map((item) => (
-          <Button key={item.key} label={item.label} selected={tab === item.key} onPress={() => setTab(item.key)} />
+          <Button
+            key={item.key}
+            label={item.label}
+            selected={tab === item.key}
+            onPress={() => setTab(item.key)}
+          />
         ))}
       </ScrollView>
       {state.error ? <ErrorState message={state.error} retry={state.refresh} /> : null}
@@ -175,7 +195,10 @@ export function FinanceScreen(): React.JSX.Element {
       onPress={() => openForm(transactionForm(api, accounts, tags, templates, item))}
       onLongPress={() => deleteTransaction(item)}
     >
-      <Button label="Изменить" onPress={() => openForm(transactionForm(api, accounts, tags, templates, item))} />
+      <Button
+        label="Изменить"
+        onPress={() => openForm(transactionForm(api, accounts, tags, templates, item))}
+      />
       <Button label="Удалить" danger onPress={() => deleteTransaction(item)} />
     </Row>
   )
@@ -225,11 +248,18 @@ export function FinanceScreen(): React.JSX.Element {
 
   const renderLimit = ({ item }: { item: FinanceLimitStatus }): React.JSX.Element => (
     <Row
-      title={`${item.tagId ? tags.find((tag) => tag.id === item.tagId)?.name ?? 'Лимит' : 'Лимит'} · ${formatMoneyMinor(item.amountMinor, item.currencyCode)}`}
+      title={`${item.tagId ? (tags.find((tag) => tag.id === item.tagId)?.name ?? 'Лимит') : 'Лимит'} · ${formatMoneyMinor(item.amountMinor, item.currencyCode)}`}
       subtitle={`${formatMoneyMinor(item.spentMinor, item.currencyCode)} использовано · ${Math.round(item.usagePercent)}% · ${item.state === 'active' ? 'активен' : 'пауза'}`}
-      onPress={() => openForm(limitForm(api, accounts, tags, data.dashboard.settings.baseCurrencyCode, item))}
+      onPress={() =>
+        openForm(limitForm(api, accounts, tags, data.dashboard.settings.baseCurrencyCode, item))
+      }
     >
-      <Button label="Изменить" onPress={() => openForm(limitForm(api, accounts, tags, data.dashboard.settings.baseCurrencyCode, item))} />
+      <Button
+        label="Изменить"
+        onPress={() =>
+          openForm(limitForm(api, accounts, tags, data.dashboard.settings.baseCurrencyCode, item))
+        }
+      />
       <Button
         label={item.state === 'active' ? 'Пауза' : 'Возобновить'}
         onPress={() =>
@@ -276,7 +306,11 @@ export function FinanceScreen(): React.JSX.Element {
       <ScrollView contentContainerStyle={{ gap: 10, paddingBottom: 40 }}>
         <Row
           title={formatMoneyMinor(dashboard.totalBalanceMinor, dashboard.settings.baseCurrencyCode)}
-          subtitle={dashboard.totalBalanceComplete ? 'Общий баланс' : `Общий баланс неполный · нет курсов: ${dashboard.missingRateCurrencies.join(', ')}`}
+          subtitle={
+            dashboard.totalBalanceComplete
+              ? 'Общий баланс'
+              : `Общий баланс неполный · нет курсов: ${dashboard.missingRateCurrencies.join(', ')}`
+          }
         />
         <Row
           title={`Доходы: ${formatMoneyMinor(dashboard.incomeMinor, dashboard.settings.baseCurrencyCode)}`}
@@ -293,9 +327,21 @@ export function FinanceScreen(): React.JSX.Element {
           <Button label="+ Тег" onPress={() => openForm(tagForm(api))} />
         </View>
         <Label>Счета</Label>
-        {accounts.length ? accounts.slice(0, 4).map((account) => <View key={account.id}>{renderAccount({ item: account })}</View>) : <EmptyState text="Создайте первый счёт." />}
+        {accounts.length ? (
+          accounts
+            .slice(0, 4)
+            .map((account) => <View key={account.id}>{renderAccount({ item: account })}</View>)
+        ) : (
+          <EmptyState text="Создайте первый счёт." />
+        )}
         <Label>Последние операции</Label>
-        {dashboard.recentTransactions.length ? dashboard.recentTransactions.map((transaction) => <View key={transaction.id}>{renderTransaction({ item: transaction })}</View>) : <EmptyState text="Операций пока нет." />}
+        {dashboard.recentTransactions.length ? (
+          dashboard.recentTransactions.map((transaction) => (
+            <View key={transaction.id}>{renderTransaction({ item: transaction })}</View>
+          ))
+        ) : (
+          <EmptyState text="Операций пока нет." />
+        )}
       </ScrollView>
     )
   } else if (tab === 'transactions') {
@@ -324,7 +370,11 @@ export function FinanceScreen(): React.JSX.Element {
       <FlatList
         data={accounts}
         keyExtractor={(item) => item.id}
-        ListHeaderComponent={<View style={{ paddingBottom: 12 }}><Button label="+ Счёт" selected onPress={() => openForm(accountForm(api))} /></View>}
+        ListHeaderComponent={
+          <View style={{ paddingBottom: 12 }}>
+            <Button label="+ Счёт" selected onPress={() => openForm(accountForm(api))} />
+          </View>
+        }
         ListEmptyComponent={<EmptyState text="Создайте первый счёт." />}
         renderItem={renderAccount}
       />
@@ -334,7 +384,11 @@ export function FinanceScreen(): React.JSX.Element {
       <FlatList
         data={tags}
         keyExtractor={(item) => item.id}
-        ListHeaderComponent={<View style={{ paddingBottom: 12 }}><Button label="+ Тег" selected onPress={() => openForm(tagForm(api))} /></View>}
+        ListHeaderComponent={
+          <View style={{ paddingBottom: 12 }}>
+            <Button label="+ Тег" selected onPress={() => openForm(tagForm(api))} />
+          </View>
+        }
         ListEmptyComponent={<EmptyState text="Создайте первый тег." />}
         renderItem={renderTag}
       />
@@ -350,7 +404,9 @@ export function FinanceScreen(): React.JSX.Element {
               label="+ Лимит"
               selected
               disabled={!accounts.length || !tags.some((tag) => tag.type !== 'income')}
-              onPress={() => openForm(limitForm(api, accounts, tags, data.dashboard.settings.baseCurrencyCode))}
+              onPress={() =>
+                openForm(limitForm(api, accounts, tags, data.dashboard.settings.baseCurrencyCode))
+              }
             />
           </View>
         }
@@ -381,26 +437,65 @@ export function FinanceScreen(): React.JSX.Element {
     const report = data.report
     content = (
       <ScrollView contentContainerStyle={{ gap: 10, paddingBottom: 40 }}>
-        <Row title="Последние 30 дней" subtitle={`${report.operationCount} операций · ${report.currencyCode}`} />
-        <Row title={`Доходы ${formatMoneyMinor(report.incomeMinor, report.currencyCode)}`} subtitle={`Расходы ${formatMoneyMinor(report.expenseMinor, report.currencyCode)} · чистый поток ${formatMoneyMinor(report.netMinor, report.currencyCode)}`} />
-        <Row title={`Средний расход ${formatMoneyMinor(report.averageExpenseMinor, report.currencyCode)}`} subtitle={`Крупнейший расход ${formatMoneyMinor(report.largestExpenseMinor, report.currencyCode)}`} />
-        {report.missingRateCurrencies.length ? <ErrorState message={`Не хватает курсов: ${report.missingRateCurrencies.join(', ')}`} /> : null}
+        <Row
+          title="Последние 30 дней"
+          subtitle={`${report.operationCount} операций · ${report.currencyCode}`}
+        />
+        <Row
+          title={`Доходы ${formatMoneyMinor(report.incomeMinor, report.currencyCode)}`}
+          subtitle={`Расходы ${formatMoneyMinor(report.expenseMinor, report.currencyCode)} · чистый поток ${formatMoneyMinor(report.netMinor, report.currencyCode)}`}
+        />
+        <Row
+          title={`Средний расход ${formatMoneyMinor(report.averageExpenseMinor, report.currencyCode)}`}
+          subtitle={`Крупнейший расход ${formatMoneyMinor(report.largestExpenseMinor, report.currencyCode)}`}
+        />
+        {report.missingRateCurrencies.length ? (
+          <ErrorState message={`Не хватает курсов: ${report.missingRateCurrencies.join(', ')}`} />
+        ) : null}
         <Label>Расходы по тегам</Label>
-        {report.expenseByTag.length ? report.expenseByTag.slice(0, 10).map((item) => (
-          <Row key={`${item.tagId ?? 'none'}:${item.label}`} title={item.label} subtitle={`${formatMoneyMinor(item.amountMinor, report.currencyCode)} · ${Math.round(item.sharePercent)}%`} />
-        )) : <EmptyState text="Нет расходов за выбранный период." />}
+        {report.expenseByTag.length ? (
+          report.expenseByTag
+            .slice(0, 10)
+            .map((item) => (
+              <Row
+                key={`${item.tagId ?? 'none'}:${item.label}`}
+                title={item.label}
+                subtitle={`${formatMoneyMinor(item.amountMinor, report.currencyCode)} · ${Math.round(item.sharePercent)}%`}
+              />
+            ))
+        ) : (
+          <EmptyState text="Нет расходов за выбранный период." />
+        )}
         <Label>Переводы</Label>
-        {report.transferFlows.length ? report.transferFlows.slice(0, 10).map((flow) => (
-          <Row key={`${flow.sourceAccountId}:${flow.destinationAccountId}:${flow.sourceCurrencyCode}:${flow.destinationCurrencyCode}`} title={`${flow.sourceAccountName} → ${flow.destinationAccountName}`} subtitle={`${flow.count} переводов · ${formatMoneyMinor(flow.sourceAmountMinor, flow.sourceCurrencyCode)} → ${formatMoneyMinor(flow.destinationAmountMinor, flow.destinationCurrencyCode)}`} />
-        )) : <EmptyState text="Переводов за период нет." />}
+        {report.transferFlows.length ? (
+          report.transferFlows
+            .slice(0, 10)
+            .map((flow) => (
+              <Row
+                key={`${flow.sourceAccountId}:${flow.destinationAccountId}:${flow.sourceCurrencyCode}:${flow.destinationCurrencyCode}`}
+                title={`${flow.sourceAccountName} → ${flow.destinationAccountName}`}
+                subtitle={`${flow.count} переводов · ${formatMoneyMinor(flow.sourceAmountMinor, flow.sourceCurrencyCode)} → ${formatMoneyMinor(flow.destinationAmountMinor, flow.destinationCurrencyCode)}`}
+              />
+            ))
+        ) : (
+          <EmptyState text="Переводов за период нет." />
+        )}
       </ScrollView>
     )
   } else {
     const base = data.dashboard.settings.baseCurrencyCode
     content = (
       <ScrollView contentContainerStyle={{ gap: 10, paddingBottom: 40 }}>
-        <Row title={`Основная валюта · ${base}`} subtitle="Все сводные показатели конвертируются в неё." onPress={() => openForm(baseCurrencyForm(api, base))} />
-        <Button label="+ Ручной курс" selected onPress={() => openForm(exchangeRateForm(api, base))} />
+        <Row
+          title={`Основная валюта · ${base}`}
+          subtitle="Все сводные показатели конвертируются в неё."
+          onPress={() => openForm(baseCurrencyForm(api, base))}
+        />
+        <Button
+          label="+ Ручной курс"
+          selected
+          onPress={() => openForm(exchangeRateForm(api, base))}
+        />
         {rates.map((rate) => (
           <Row
             key={rate.currencyCode}

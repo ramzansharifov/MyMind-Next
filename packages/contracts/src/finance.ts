@@ -315,8 +315,7 @@ export interface CreateFinanceTransferInput {
 }
 
 export type CreateFinanceTransactionInput =
-  | CreateFinanceIncomeExpenseInput
-  | CreateFinanceTransferInput
+  CreateFinanceIncomeExpenseInput | CreateFinanceTransferInput
 
 export interface UpdateFinanceTransactionInput {
   id: string

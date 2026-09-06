@@ -54,7 +54,11 @@ export const financePeriodSchema = z
   .object({ from: financeTimestampSchema, to: financeTimestampSchema })
   .superRefine((period, context) => {
     if (period.from > period.to) {
-      context.addIssue({ code: 'custom', path: ['to'], message: 'Конец периода не может быть раньше начала' })
+      context.addIssue({
+        code: 'custom',
+        path: ['to'],
+        message: 'Конец периода не может быть раньше начала'
+      })
     }
   })
 
@@ -170,7 +174,11 @@ export const financeTransactionFiltersSchema = z
     offset: z.number().int().min(0).max(1_000_000).optional()
   })
   .superRefine((filters, context) => {
-    if (filters.dateFrom !== undefined && filters.dateTo !== undefined && filters.dateFrom > filters.dateTo) {
+    if (
+      filters.dateFrom !== undefined &&
+      filters.dateTo !== undefined &&
+      filters.dateFrom > filters.dateTo
+    ) {
       context.addIssue({
         code: 'custom',
         path: ['dateTo'],

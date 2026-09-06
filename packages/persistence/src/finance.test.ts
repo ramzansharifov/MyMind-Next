@@ -90,7 +90,9 @@ describe('shared Finance persistence', () => {
         comment: ''
       })
     ).toThrow('суммы должны совпадать')
-    expect(db.prepare('SELECT COUNT(*) AS count FROM finance_transactions').get()).toEqual({ count: 0 })
+    expect(db.prepare('SELECT COUNT(*) AS count FROM finance_transactions').get()).toEqual({
+      count: 0
+    })
 
     const transfer = finance.createTransaction({
       type: 'transfer',
@@ -166,7 +168,10 @@ describe('shared Finance persistence', () => {
       createdAdjustmentCount: 1,
       newInitialBalanceMinor: 900_00
     })
-    expect(finance.getAccount(source.id)).toMatchObject({ balanceMinor: 900_00, transactionCount: 0 })
+    expect(finance.getAccount(source.id)).toMatchObject({
+      balanceMinor: 900_00,
+      transactionCount: 0
+    })
     expect(finance.getAccount(destination.id).balanceMinor).toBe(100_00)
     expect(finance.listTransactions({ includeSystem: true }).items[0]).toMatchObject({
       type: 'adjustment',

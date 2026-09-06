@@ -41,10 +41,7 @@ import type {
 import { getFinanceTagColor } from '@mymind/contracts/finance'
 import type { RepositoryRuntime, SqlDatabasePort } from '@mymind/contracts/storage'
 import { createFinanceRateBook, convertFinanceMinor } from '@mymind/core/finance-conversion'
-import {
-  FINANCE_RATE_SCALE,
-  assertSafeMinor
-} from '@mymind/core/finance-money'
+import { FINANCE_RATE_SCALE, assertSafeMinor } from '@mymind/core/finance-money'
 import {
   defaultFinancePeriod,
   previousComparablePeriod,
@@ -292,16 +289,14 @@ export function createFinanceRepository(runtime: RepositoryRuntime) {
 
   function requireAccountRow(id: string): AccountRow {
     const row = database().prepare('SELECT * FROM finance_accounts WHERE id = ?').get(id) as
-      | AccountRow
-      | undefined
+      AccountRow | undefined
     if (!row) throw new Error('Счёт не найден')
     return row
   }
 
   function requireTagRow(id: string): TagRow {
     const row = database().prepare('SELECT * FROM finance_tags WHERE id = ?').get(id) as
-      | TagRow
-      | undefined
+      TagRow | undefined
     if (!row) throw new Error('Тег не найден')
     return row
   }
@@ -594,7 +589,15 @@ export function createFinanceRepository(runtime: RepositoryRuntime) {
           (id, name, currency_code, initial_balance_minor, icon, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?)`
       )
-      .run(id, input.name, input.currencyCode, input.initialBalanceMinor, input.icon, timestamp, timestamp)
+      .run(
+        id,
+        input.name,
+        input.currencyCode,
+        input.initialBalanceMinor,
+        input.icon,
+        timestamp,
+        timestamp
+      )
     return getAccount(id)
   }
 
@@ -625,8 +628,9 @@ export function createFinanceRepository(runtime: RepositoryRuntime) {
         .get(input.id) as CountRow
     ).count
     if (entryCount > 0) throw new Error('Чтобы удалить счёт, сначала очистите его историю.')
-    return database().transaction(() =>
-      database().prepare('DELETE FROM finance_accounts WHERE id = ?').run(input.id).changes > 0
+    return database().transaction(
+      () =>
+        database().prepare('DELETE FROM finance_accounts WHERE id = ?').run(input.id).changes > 0
     )()
   }
 
@@ -731,7 +735,9 @@ export function createFinanceRepository(runtime: RepositoryRuntime) {
     const tagColor = getFinanceTagColor(input.type)
     database().transaction(() => {
       database()
-        .prepare('UPDATE finance_tags SET name = ?, type = ?, icon = ?, updated_at = ? WHERE id = ?')
+        .prepare(
+          'UPDATE finance_tags SET name = ?, type = ?, icon = ?, updated_at = ? WHERE id = ?'
+        )
         .run(input.name, input.type, input.icon, now(), input.id)
       database()
         .prepare('UPDATE finance_transactions SET tag_color_snapshot = ? WHERE tag_id = ?')
@@ -750,15 +756,14 @@ export function createFinanceRepository(runtime: RepositoryRuntime) {
     if (transactionCount > 0) {
       throw new Error(`Тег используется в ${transactionCount} операциях и не может быть удалён`)
     }
-    return database().transaction(() =>
-      database().prepare('DELETE FROM finance_tags WHERE id = ?').run(input.id).changes > 0
+    return database().transaction(
+      () => database().prepare('DELETE FROM finance_tags WHERE id = ?').run(input.id).changes > 0
     )()
   }
 
   function getTransaction(id: string): FinanceTransaction {
     const row = database().prepare('SELECT * FROM finance_transactions WHERE id = ?').get(id) as
-      | TransactionRow
-      | undefined
+      TransactionRow | undefined
     if (!row) throw new Error('Транзакция не найдена')
     const entries = database()
       .prepare(
@@ -832,8 +837,10 @@ export function createFinanceRepository(runtime: RepositoryRuntime) {
     if (existing.is_system === 1) {
       throw new Error('Системную корректировку нельзя удалить вручную')
     }
-    return database().transaction(() =>
-      database().prepare('DELETE FROM finance_transactions WHERE id = ?').run(input.id).changes > 0
+    return database().transaction(
+      () =>
+        database().prepare('DELETE FROM finance_transactions WHERE id = ?').run(input.id).changes >
+        0
     )()
   }
 
@@ -970,7 +977,12 @@ export function createFinanceRepository(runtime: RepositoryRuntime) {
           signed_amount_minor: number
         }>
         for (const entry of otherEntries) {
-          insertAdjustment(entry.account_id, entry.signed_amount_minor, transaction.occurred_at, reason)
+          insertAdjustment(
+            entry.account_id,
+            entry.signed_amount_minor,
+            transaction.occurred_at,
+            reason
+          )
           createdAdjustmentCount += 1
         }
       }
@@ -981,7 +993,9 @@ export function createFinanceRepository(runtime: RepositoryRuntime) {
           .run(...rows.map((row) => row.id))
       }
       database()
-        .prepare('UPDATE finance_accounts SET initial_balance_minor = ?, updated_at = ? WHERE id = ?')
+        .prepare(
+          'UPDATE finance_accounts SET initial_balance_minor = ?, updated_at = ? WHERE id = ?'
+        )
         .run(account.balanceMinor, now(), account.id)
       return {
         account: getAccount(account.id),
@@ -1001,8 +1015,7 @@ export function createFinanceRepository(runtime: RepositoryRuntime) {
 
   function requireLimitRaw(id: string): FinanceLimit {
     const row = database().prepare('SELECT * FROM finance_limits WHERE id = ?').get(id) as
-      | LimitRow
-      | undefined
+      LimitRow | undefined
     if (!row) throw new Error('Лимит не найден')
     return mapLimit(row)
   }
@@ -1021,7 +1034,9 @@ export function createFinanceRepository(runtime: RepositoryRuntime) {
     return { ...limit, accountIds: limitAccountIds(limit.id) }
   }
 
-  function normalizeLimitInput<T extends CreateFinanceLimitInput | UpdateFinanceLimitInput>(input: T): T {
+  function normalizeLimitInput<T extends CreateFinanceLimitInput | UpdateFinanceLimitInput>(
+    input: T
+  ): T {
     const tag = getTag(input.tagId)
     if (tag.type === 'income') throw new Error('Лимит расходов нельзя связать с доходным тегом')
     const accountIds = [...new Set(input.accountIds)]
@@ -1234,7 +1249,9 @@ export function createFinanceRepository(runtime: RepositoryRuntime) {
       .filter((limit) => limit.state === 'active')
       .filter((limit) => {
         const ids = limit.accountIds ?? []
-        return ids.length ? ids.includes(input.accountId) : account.currencyCode === limit.currencyCode
+        return ids.length
+          ? ids.includes(input.accountId)
+          : account.currencyCode === limit.currencyCode
       })
       .filter((limit) => !limit.tagId || limit.tagId === input.tagId)
       .map((limit) => {
@@ -1279,7 +1296,8 @@ export function createFinanceRepository(runtime: RepositoryRuntime) {
           spentAfterMinor,
           exceededAfterMinor: Math.max(0, spentAfterMinor - limit.amountMinor),
           warningReachedAfter:
-            limit.amountMinor > 0 && (spentAfterMinor / limit.amountMinor) * 100 >= limit.warningPercent,
+            limit.amountMinor > 0 &&
+            (spentAfterMinor / limit.amountMinor) * 100 >= limit.warningPercent,
           convertedExpenseMinor
         }
       })
@@ -1393,9 +1411,10 @@ export function createFinanceRepository(runtime: RepositoryRuntime) {
   }
 
   function deleteTemplate(input: { id: string }): boolean {
-    return database().transaction(() =>
-      database().prepare('DELETE FROM finance_transaction_templates WHERE id = ?').run(input.id)
-        .changes > 0
+    return database().transaction(
+      () =>
+        database().prepare('DELETE FROM finance_transaction_templates WHERE id = ?').run(input.id)
+          .changes > 0
     )()
   }
 
@@ -1420,7 +1439,8 @@ export function createFinanceRepository(runtime: RepositoryRuntime) {
     let incomeMinor = 0
     let expenseMinor = 0
     for (const transaction of transactions) {
-      if (transaction.isSystem || (transaction.type !== 'income' && transaction.type !== 'expense')) continue
+      if (transaction.isSystem || (transaction.type !== 'income' && transaction.type !== 'expense'))
+        continue
       const entry = transaction.entries[0]
       if (!entry) continue
       const converted = convertFinanceMinor(
@@ -1576,7 +1596,13 @@ export function createFinanceRepository(runtime: RepositoryRuntime) {
         operations.add(row.transaction_id)
       } else if (row.type === 'transfer') operations.add(row.transaction_id)
     }
-    return { incomeMinor, expenseMinor, largestIncomeMinor, largestExpenseMinor, operationCount: operations.size }
+    return {
+      incomeMinor,
+      expenseMinor,
+      largestIncomeMinor,
+      largestExpenseMinor,
+      operationCount: operations.size
+    }
   }
 
   function dateKey(timestamp: number, monthly: boolean): { key: string; label: string } {
