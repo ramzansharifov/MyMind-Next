@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3'
 import type { SQLiteDatabase } from 'expo-sqlite'
 import { mobileSchemaV1 } from '@mymind/persistence/mobile-schema'
+import { mobileSchemaV2 } from '@mymind/persistence/mobile-schema-v2'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('expo-sqlite', () => ({ openDatabaseAsync: vi.fn() }))
@@ -75,7 +76,7 @@ describe('Expo SQLite adapter', () => {
     db.prepare('INSERT INTO mobile_preferences VALUES (?, ?)').run('test', 'saved')
     await openMobileDatabase()
 
-    expect(db.pragma('user_version', { simple: true })).toBe(2)
+    expect(db.pragma('user_version', { simple: true })).toBe(3)
     expect(db.pragma('foreign_keys', { simple: true })).toBe(1)
     expect(db.prepare('SELECT value FROM mobile_preferences WHERE key = ?').get('test')).toEqual({
       value: 'saved'
@@ -83,6 +84,9 @@ describe('Expo SQLite adapter', () => {
     expect(
       db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'notes'").get()
     ).toEqual({ name: 'notes' })
+    expect(
+      db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'study_nodes'").get()
+    ).toEqual({ name: 'study_nodes' })
   })
 
   it('upgrades an existing V1 database without losing module data', async () => {
@@ -100,7 +104,7 @@ describe('Expo SQLite adapter', () => {
 
     await openMobileDatabase()
 
-    expect(db.pragma('user_version', { simple: true })).toBe(2)
+    expect(db.pragma('user_version', { simple: true })).toBe(3)
     expect(db.prepare('SELECT title FROM tasks WHERE id = ?').get('task-before-notes')).toEqual({
       title: 'Сохранить меня'
     })
@@ -114,6 +118,41 @@ describe('Expo SQLite adapter', () => {
         .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'note_groups'")
         .get()
     ).toEqual({ name: 'note_groups' })
+    expect(
+      db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'study_materials'").get()
+    ).toEqual({ name: 'study_materials' })
+  })
+
+  it('upgrades an existing V2 database to Study without losing Notes', async () => {
+    const { db, expo } = nativeDriver()
+    for (const sql of mobileSchemaV1) db.exec(sql)
+    db.exec(
+      'CREATE TABLE mobile_preferences (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL); PRAGMA user_version = 1;'
+    )
+    for (const sql of mobileSchemaV2) db.exec(sql)
+    db.pragma('user_version = 2')
+    db.prepare(
+      `INSERT INTO notes(id, group_id, title, document, plain_text, created_at, updated_at)
+       VALUES (?, NULL, ?, ?, ?, ?, ?)`
+    ).run(
+      'note-before-study',
+      'Старая заметка',
+      JSON.stringify({ version: 1, blocks: [{ id: 'block-1', type: 'text', text: 'Текст' }] }),
+      'Текст',
+      1,
+      1
+    )
+    vi.mocked(openDatabaseAsync).mockResolvedValue(expo)
+
+    await openMobileDatabase()
+
+    expect(db.pragma('user_version', { simple: true })).toBe(3)
+    expect(db.prepare('SELECT title FROM notes WHERE id = ?').get('note-before-study')).toEqual({
+      title: 'Старая заметка'
+    })
+    expect(
+      db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'study_link_targets'").get()
+    ).toEqual({ name: 'study_link_targets' })
   })
 
   it('does not reset an unknown newer database', async () => {
