@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import { Alert, FlatList, ScrollView, View } from 'react-native'
+import { FlatList, ScrollView, View } from 'react-native'
 import type {
   WorkoutExerciseRecord,
   WorkoutProgramRecord,
@@ -22,7 +22,6 @@ import {
   Button,
   EmptyState,
   ErrorState,
-  Label,
   LoadingState,
   Row,
   SearchField
@@ -77,7 +76,6 @@ export function WorkoutsScreen(): React.JSX.Element {
   const [tab, setTab] = useState<Tab>('journal')
   const [query, setQuery] = useState('')
   const [form, setForm] = useState<FormSpec | null>(null)
-  const [reportError, setReportError] = useState('')
 
   const exercises = overview.data?.exercises ?? []
   const programs = overview.data?.programs ?? []
@@ -88,14 +86,18 @@ export function WorkoutsScreen(): React.JSX.Element {
   const filteredExercises = useMemo(
     () =>
       exercises.filter((exercise) =>
-        `${exercise.title} ${formatMuscles(exercise)}`.toLocaleLowerCase('ru-RU').includes(normalizedQuery)
+        `${exercise.title} ${formatMuscles(exercise)}`
+          .toLocaleLowerCase('ru-RU')
+          .includes(normalizedQuery)
       ),
     [exercises, normalizedQuery]
   )
   const filteredPrograms = useMemo(
     () =>
       programs.filter((program) =>
-        `${program.name} ${program.description}`.toLocaleLowerCase('ru-RU').includes(normalizedQuery)
+        `${program.name} ${program.description}`
+          .toLocaleLowerCase('ru-RU')
+          .includes(normalizedQuery)
       ),
     [programs, normalizedQuery]
   )
@@ -272,17 +274,21 @@ export function WorkoutsScreen(): React.JSX.Element {
         textField('notes', 'Заметки', 'multiline')
       ],
       save: (values) => {
+        const metrics =
+          entry?.metrics
+            .filter((metric) => metric.exerciseId !== null)
+            .map((metric) => ({
+              exerciseId: metric.exerciseId as string,
+              weightKg: metric.weightKg,
+              reps: metric.reps,
+              comment: metric.comment
+            })) ?? []
         const payload = {
           date: values.date,
           bodyWeightKg: values.bodyWeightKg,
           wellbeing: values.wellbeing,
           notes: values.notes,
-          metrics: entry?.metrics.map((metric) => ({
-            exerciseId: metric.exerciseId,
-            weightKg: metric.weightKg,
-            reps: metric.reps,
-            comment: metric.comment
-          })).filter((metric): metric is { exerciseId: string; weightKg: number; reps: number; comment: string } => Boolean(metric.exerciseId)) ?? []
+          metrics
         }
         if (entry) {
           api.updateProgressEntry(
@@ -296,19 +302,20 @@ export function WorkoutsScreen(): React.JSX.Element {
     })
   }
 
-  const report = useMemo(() => {
+  const reportResult = useMemo(() => {
     try {
-      setReportError('')
-      return api.getReport({
-        dateFrom: daysAgoKey(29),
-        dateTo: localDateKey(),
-        programId: null,
-        exerciseId: null,
-        muscleGroup: null
-      })
+      return {
+        report: api.getReport({
+          dateFrom: daysAgoKey(29),
+          dateTo: localDateKey(),
+          programId: null,
+          exerciseId: null,
+          muscleGroup: null
+        }),
+        error: ''
+      }
     } catch (reason) {
-      setReportError(messageFor(reason))
-      return null
+      return { report: null, error: messageFor(reason) }
     }
   }, [api, overview.data])
 
@@ -322,27 +329,49 @@ export function WorkoutsScreen(): React.JSX.Element {
 
   const header = (
     <View style={{ gap: 10, paddingBottom: 12 }}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ gap: 8 }}
+      >
         {tabs.map((item) => (
-          <Button key={item.key} label={item.label} selected={tab === item.key} onPress={() => setTab(item.key)} />
+          <Button
+            key={item.key}
+            label={item.label}
+            selected={tab === item.key}
+            onPress={() => setTab(item.key)}
+          />
         ))}
       </ScrollView>
-      {tab !== 'reports' && tab !== 'progress' ? <SearchField value={query} onChangeText={setQuery} /> : null}
-      {tab === 'journal' ? <Button label="+ Тренировка" selected onPress={() => editSession()} /> : null}
-      {tab === 'exercises' ? <Button label="+ Упражнение" selected onPress={() => editExercise()} /> : null}
-      {tab === 'programs' ? <Button label="+ Программа" selected onPress={() => editProgram()} /> : null}
-      {tab === 'progress' ? <Button label="+ Запись прогресса" selected onPress={() => editProgress()} /> : null}
+      {tab !== 'reports' && tab !== 'progress' ? (
+        <SearchField value={query} onChangeText={setQuery} />
+      ) : null}
+      {tab === 'journal' ? (
+        <Button label="+ Тренировка" selected onPress={() => editSession()} />
+      ) : null}
+      {tab === 'exercises' ? (
+        <Button label="+ Упражнение" selected onPress={() => editExercise()} />
+      ) : null}
+      {tab === 'programs' ? (
+        <Button label="+ Программа" selected onPress={() => editProgram()} />
+      ) : null}
+      {tab === 'progress' ? (
+        <Button label="+ Запись прогресса" selected onPress={() => editProgress()} />
+      ) : null}
     </View>
   )
 
   if (overview.loading) return <LoadingState />
 
   if (tab === 'reports') {
+    const report = reportResult.report
     return (
       <View style={{ flex: 1 }}>
         {header}
         {overview.error ? <ErrorState message={overview.error} retry={overview.refresh} /> : null}
-        {reportError ? <ErrorState message={reportError} retry={overview.refresh} /> : null}
+        {reportResult.error ? (
+          <ErrorState message={reportResult.error} retry={overview.refresh} />
+        ) : null}
         <ScrollView contentContainerStyle={{ paddingBottom: 32, gap: 10 }}>
           {!report ? (
             <EmptyState text="Отчёт пока недоступен." />
@@ -406,7 +435,9 @@ export function WorkoutsScreen(): React.JSX.Element {
                 subtitle={`${session.exercises.length} упражнений · ${session.totalSets} подходов · ${session.totalReps} повторений · ${session.totalVolumeKg} кг`}
                 onPress={() => editSession(session)}
                 onLongPress={() =>
-                  overview.confirmDelete('Удалить тренировку?', () => api.deleteSession({ id: session.id }))
+                  overview.confirmDelete('Удалить тренировку?', () =>
+                    api.deleteSession({ id: session.id })
+                  )
                 }
               />
             )
@@ -436,7 +467,9 @@ export function WorkoutsScreen(): React.JSX.Element {
                 subtitle={`${program.exercises.length} упражнений${program.description ? ` · ${program.description}` : ''}${program.status === 'archived' ? ' · архив' : ''}`}
                 onPress={() => editProgram(program)}
                 onLongPress={() =>
-                  overview.confirmDelete('Удалить программу?', () => api.deleteProgram({ id: program.id }))
+                  overview.confirmDelete('Удалить программу?', () =>
+                    api.deleteProgram({ id: program.id })
+                  )
                 }
               />
             )
@@ -450,7 +483,9 @@ export function WorkoutsScreen(): React.JSX.Element {
                 .join(' · ')}
               onPress={() => editProgress(entry)}
               onLongPress={() =>
-                overview.confirmDelete('Удалить запись прогресса?', () => api.deleteProgressEntry({ id: entry.id }))
+                overview.confirmDelete('Удалить запись прогресса?', () =>
+                  api.deleteProgressEntry({ id: entry.id })
+                )
               }
             />
           )
