@@ -27,6 +27,7 @@ export function Home({
         habits.entries.some((e) => e.habitId === h.id && !e.skipped && e.value >= h.targetValue)
       )
       const events = services.calendar.listCalendarOccurrences({ from: date, to: date })
+      const studyNodes = services.study.listNodes()
       setCards([
         {
           route: 'tasks',
@@ -37,6 +38,11 @@ export function Home({
           route: 'habits',
           title: 'Привычки сегодня',
           subtitle: `${complete.length} из ${scheduled.length} выполнено`
+        },
+        {
+          route: 'study',
+          title: 'Обучение',
+          subtitle: `${studyNodes.filter((node) => node.type === 'material').length} материалов · ${studyNodes.filter((node) => node.type === 'folder').length} папок`
         },
         {
           route: 'calendar',
