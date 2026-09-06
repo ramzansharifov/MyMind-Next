@@ -7,7 +7,10 @@ import { createStudyRepository } from './study'
 
 const databases: Database.Database[] = []
 
-function setup(hooks: Parameters<typeof createStudyRepository>[1] = {}) {
+function setup(hooks: Parameters<typeof createStudyRepository>[1] = {}): {
+  db: Database.Database
+  study: ReturnType<typeof createStudyRepository>
+} {
   const db = new Database(':memory:')
   databases.push(db)
   db.pragma('foreign_keys = ON')
@@ -22,7 +25,11 @@ function setup(hooks: Parameters<typeof createStudyRepository>[1] = {}) {
   return { db, study: createStudyRepository(runtime, hooks) }
 }
 
-function deferred() {
+function deferred(): {
+  promise: Promise<void>
+  resolve(): void
+  reject(reason?: unknown): void
+} {
   let resolve!: () => void
   let reject!: (reason?: unknown) => void
   const promise = new Promise<void>((res, rej) => {
