@@ -1,0 +1,31 @@
+name: Mobile Finance fast checkpoint
+
+on:
+  push:
+    branches:
+      - agent/full-mobile-app
+    paths:
+      - .mobile-finance-ci-trigger
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Use npm 11
+        run: npm install --global npm@11
+      - name: Install
+        run: npm ci
+      - name: Shared and desktop typecheck
+        run: npm run typecheck:packages && npm run typecheck:desktop
+      - name: Mobile typecheck
+        run: npm run typecheck:mobile
+      - name: Mobile and shared tests
+        run: npm run test:mobile
+      - name: Finance formatting
+        run: npx prettier --check packages/contracts/src/finance.ts packages/core/src/finance-*.ts packages/core/src/validation/finance.ts packages/persistence/src/finance.ts packages/persistence/src/finance.test.ts packages/persistence/src/mobile-schema-v7.ts apps/desktop/src/shared/contracts/finance.ts apps/desktop/src/shared/finance-money.ts apps/desktop/src/shared/validation/finance.ts apps/mobile/src/shared/storage/sqlite.ts
