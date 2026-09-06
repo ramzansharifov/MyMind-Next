@@ -15,6 +15,7 @@ import { ThemeContext } from '../shared/ui/theme'
 import { ErrorState, Label, LoadingState, Row } from '../shared/ui/primitives'
 import { messageFor } from '../shared/ui/form-model'
 import { StudyScreen } from '../modules/study/StudyScreen'
+import { BoardsScreen } from '../modules/boards/BoardsScreen'
 import { TasksScreen } from '../modules/tasks/TasksScreen'
 import { HabitsScreen } from '../modules/habits/HabitsScreen'
 import { NotesScreen } from '../modules/notes/NotesScreen'
@@ -28,6 +29,7 @@ import { ReminderStatus } from './ReminderStatus'
 export type Route =
   | 'home'
   | 'study'
+  | 'boards'
   | 'notes'
   | 'tasks'
   | 'habits'
@@ -41,6 +43,7 @@ export type Route =
 const titles: Record<Route, string> = {
   home: 'Главная',
   study: 'Обучение',
+  boards: 'Доски',
   notes: 'Заметки',
   tasks: 'Задачи',
   habits: 'Привычки',
@@ -126,7 +129,7 @@ export default function MobileApp(): React.JSX.Element {
     [services]
   )
 
-  const moreRoutes = ['study', 'calendar', 'diary', 'movies', 'music', 'settings'] as Route[]
+  const moreRoutes = ['study', 'boards', 'calendar', 'diary', 'movies', 'music', 'settings'] as Route[]
   const inMore = !['home', 'notes', 'tasks', 'habits', 'more'].includes(route)
 
   return (
@@ -157,6 +160,8 @@ export default function MobileApp(): React.JSX.Element {
                   <Home services={services} navigate={setRoute} />
                 ) : route === 'study' ? (
                   <StudyScreen />
+                ) : route === 'boards' ? (
+                  <BoardsScreen />
                 ) : route === 'notes' ? (
                   <NotesScreen />
                 ) : route === 'tasks' ? (
