@@ -16,12 +16,9 @@ import type {
   FinanceLimitImpact,
   FinanceLimitStatus,
   FinancePeriod,
-  FinanceReport,
   FinanceReportFilters,
-  FinanceReportPoint,
   FinanceSettings,
   FinanceTag,
-  FinanceTagBreakdownPoint,
   FinanceTagSummary,
   FinanceTemplate,
   FinanceTransaction,
@@ -42,11 +39,9 @@ import { getFinanceTagColor } from '@mymind/contracts/finance'
 import type { RepositoryRuntime, SqlDatabasePort } from '@mymind/contracts/storage'
 import { createFinanceRateBook, convertFinanceMinor } from '@mymind/core/finance-conversion'
 import { FINANCE_RATE_SCALE, assertSafeMinor } from '@mymind/core/finance-money'
-import {
-  defaultFinancePeriod,
-  previousComparablePeriod,
-  resolveFinanceLimitPeriod
-} from '@mymind/core/finance-periods'
+import { defaultFinancePeriod, resolveFinanceLimitPeriod } from '@mymind/core/finance-periods'
+import type { FinanceReportAnalytics } from '@mymind/contracts/finance-report-analytics'
+import { getFinanceReportAnalytics } from './finance-report'
 
 interface SettingsRow {
   id: string
@@ -147,18 +142,6 @@ interface CountRow {
 interface ExpenseAmountRow {
   amount_minor: number
   currency_code: string
-}
-interface AggregateEntryRow {
-  type: FinanceTransaction['type']
-  tag_id: string | null
-  tag_name: string | null
-  tag_color: string | null
-  occurred_at: number
-  account_id: string
-  account_name: string
-  currency_code: string
-  signed_amount_minor: number
-  transaction_id: string
 }
 
 export function createFinanceRepository(runtime: RepositoryRuntime) {
@@ -1511,239 +1494,11 @@ export function createFinanceRepository(runtime: RepositoryRuntime) {
     }
   }
 
-  function aggregateRows(filters: FinanceReportFilters): AggregateEntryRow[] {
-    const clauses = ['t.occurred_at BETWEEN ? AND ?']
-    const params: unknown[] = [filters.dateFrom, filters.dateTo]
-    if (filters.types?.length) {
-      clauses.push(`t.type IN (${filters.types.map(() => '?').join(', ')})`)
-      params.push(...filters.types)
-    }
-    if (filters.accountIds?.length) {
-      clauses.push(`e.account_id IN (${filters.accountIds.map(() => '?').join(', ')})`)
-      params.push(...filters.accountIds)
-    }
-    if (filters.tagId !== undefined) {
-      clauses.push(filters.tagId === null ? 't.tag_id IS NULL' : 't.tag_id = ?')
-      if (filters.tagId !== null) params.push(filters.tagId)
-    }
-    if (filters.currencyCode) {
-      clauses.push('a.currency_code = ?')
-      params.push(filters.currencyCode)
-    }
-    if (filters.minAmountMinor !== undefined) {
-      clauses.push('ABS(e.signed_amount_minor) >= ?')
-      params.push(filters.minAmountMinor)
-    }
-    if (filters.maxAmountMinor !== undefined) {
-      clauses.push('ABS(e.signed_amount_minor) <= ?')
-      params.push(filters.maxAmountMinor)
-    }
-    if (filters.templateOnly !== undefined) {
-      clauses.push(
-        filters.templateOnly
-          ? 't.template_name_snapshot IS NOT NULL'
-          : 't.template_name_snapshot IS NULL'
-      )
-    }
-    return database()
-      .prepare(
-        `SELECT t.type, t.tag_id, t.tag_name_snapshot AS tag_name,
-          t.tag_color_snapshot AS tag_color, t.occurred_at,
-          e.account_id, a.name AS account_name, a.currency_code,
-          e.signed_amount_minor, t.id AS transaction_id
-         FROM finance_transactions t
-         JOIN finance_transaction_entries e ON e.transaction_id = t.id
-         JOIN finance_accounts a ON a.id = e.account_id
-         WHERE t.is_system = 0 AND ${clauses.join(' AND ')}
-         ORDER BY t.occurred_at ASC, t.created_at ASC`
-      )
-      .all(...params) as AggregateEntryRow[]
-  }
-
-  function convertedRows(rows: AggregateEntryRow[], targetCurrency: string) {
-    const { rateBook } = loadRateBook()
-    const missing = new Set<string>()
-    const converted: Array<AggregateEntryRow & { convertedMinor: number }> = []
-    for (const row of rows) {
-      const amount = convertFinanceMinor(
-        rateBook,
-        row.signed_amount_minor,
-        row.currency_code,
-        targetCurrency
-      )
-      if (amount === null) missing.add(row.currency_code)
-      else converted.push({ ...row, convertedMinor: amount })
-    }
-    return { converted, missing: [...missing].sort() }
-  }
-
-  function reportSummary(rows: Array<AggregateEntryRow & { convertedMinor: number }>) {
-    let incomeMinor = 0
-    let expenseMinor = 0
-    let largestIncomeMinor = 0
-    let largestExpenseMinor = 0
-    const operations = new Set<string>()
-    for (const row of rows) {
-      if (row.type === 'income') {
-        const amount = Math.abs(row.convertedMinor)
-        incomeMinor = assertSafeMinor(incomeMinor + amount)
-        largestIncomeMinor = Math.max(largestIncomeMinor, amount)
-        operations.add(row.transaction_id)
-      } else if (row.type === 'expense') {
-        const amount = Math.abs(row.convertedMinor)
-        expenseMinor = assertSafeMinor(expenseMinor + amount)
-        largestExpenseMinor = Math.max(largestExpenseMinor, amount)
-        operations.add(row.transaction_id)
-      } else if (row.type === 'transfer') operations.add(row.transaction_id)
-    }
-    return {
-      incomeMinor,
-      expenseMinor,
-      largestIncomeMinor,
-      largestExpenseMinor,
-      operationCount: operations.size
-    }
-  }
-
-  function dateKey(timestamp: number, monthly: boolean): { key: string; label: string } {
-    const date = new Date(timestamp)
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    if (monthly) return { key: `${year}-${month}`, label: `${month}.${year}` }
-    const day = String(date.getDate()).padStart(2, '0')
-    return { key: `${year}-${month}-${day}`, label: `${day}.${month}` }
-  }
-
-  function timeline(
-    rows: Array<AggregateEntryRow & { convertedMinor: number }>,
-    period: FinancePeriod
-  ): FinanceReportPoint[] {
-    const durationDays = Math.max(1, Math.ceil((period.to - period.from) / 86_400_000))
-    const monthly = durationDays > 120
-    const buckets = new Map<string, FinanceReportPoint>()
-    let runningBalance = 0
-    for (const row of rows) {
-      const identity = dateKey(row.occurred_at, monthly)
-      const bucket = buckets.get(identity.key) ?? {
-        ...identity,
-        incomeMinor: 0,
-        expenseMinor: 0,
-        netMinor: 0,
-        balanceMinor: 0
-      }
-      if (row.type === 'income') bucket.incomeMinor += Math.abs(row.convertedMinor)
-      if (row.type === 'expense') bucket.expenseMinor += Math.abs(row.convertedMinor)
-      bucket.netMinor = bucket.incomeMinor - bucket.expenseMinor
-      runningBalance = assertSafeMinor(runningBalance + row.convertedMinor)
-      bucket.balanceMinor = runningBalance
-      buckets.set(identity.key, bucket)
-    }
-    return [...buckets.values()].sort((left, right) => left.key.localeCompare(right.key))
-  }
-
-  function tagBreakdown(
-    rows: Array<AggregateEntryRow & { convertedMinor: number }>,
-    type: 'income' | 'expense'
-  ): FinanceTagBreakdownPoint[] {
-    const totals = new Map<string, FinanceTagBreakdownPoint>()
-    for (const row of rows) {
-      if (row.type !== type) continue
-      const key = row.tag_id ?? 'unknown'
-      const current = totals.get(key) ?? {
-        tagId: row.tag_id,
-        label: row.tag_name ?? 'Без тега',
-        color: row.tag_color,
-        amountMinor: 0,
-        sharePercent: 0
-      }
-      current.amountMinor = assertSafeMinor(current.amountMinor + Math.abs(row.convertedMinor))
-      totals.set(key, current)
-    }
-    const grandTotal = [...totals.values()].reduce((sum, item) => sum + item.amountMinor, 0)
-    return [...totals.values()]
-      .map((item) => ({
-        ...item,
-        sharePercent: grandTotal > 0 ? (item.amountMinor / grandTotal) * 100 : 0
-      }))
-      .sort((left, right) => right.amountMinor - left.amountMinor)
-  }
-
-  function transferFlows(rows: AggregateEntryRow[]): FinanceReport['transferFlows'] {
-    const byTransaction = new Map<string, AggregateEntryRow[]>()
-    for (const row of rows) {
-      if (row.type !== 'transfer') continue
-      const collection = byTransaction.get(row.transaction_id) ?? []
-      collection.push(row)
-      byTransaction.set(row.transaction_id, collection)
-    }
-    const flows = new Map<string, FinanceReport['transferFlows'][number]>()
-    for (const entries of byTransaction.values()) {
-      const source = entries.find((entry) => entry.signed_amount_minor < 0)
-      const destination = entries.find((entry) => entry.signed_amount_minor > 0)
-      if (!source || !destination) continue
-      const key = `${source.account_id}:${destination.account_id}:${source.currency_code}:${destination.currency_code}`
-      const current = flows.get(key) ?? {
-        sourceAccountId: source.account_id,
-        sourceAccountName: source.account_name,
-        destinationAccountId: destination.account_id,
-        destinationAccountName: destination.account_name,
-        sourceAmountMinor: 0,
-        destinationAmountMinor: 0,
-        sourceCurrencyCode: source.currency_code,
-        destinationCurrencyCode: destination.currency_code,
-        count: 0
-      }
-      current.sourceAmountMinor = assertSafeMinor(
-        current.sourceAmountMinor + Math.abs(source.signed_amount_minor)
-      )
-      current.destinationAmountMinor = assertSafeMinor(
-        current.destinationAmountMinor + destination.signed_amount_minor
-      )
-      current.count += 1
-      flows.set(key, current)
-    }
-    return [...flows.values()].sort((left, right) => right.count - left.count)
-  }
-
-  function getReport(filters: FinanceReportFilters): FinanceReport {
-    const settings = getSettings()
-    const targetCurrency = filters.currencyCode ?? settings.baseCurrencyCode
-    const period = { from: filters.dateFrom, to: filters.dateTo }
-    const comparisonPeriod = previousComparablePeriod(period)
-    const rows = aggregateRows(filters)
-    const { converted, missing } = convertedRows(rows, targetCurrency)
-    const summary = reportSummary(converted)
-    const comparisonRows = aggregateRows({
-      ...filters,
-      dateFrom: comparisonPeriod.from,
-      dateTo: comparisonPeriod.to
-    })
-    const comparison = reportSummary(convertedRows(comparisonRows, targetCurrency).converted)
-    const currentNet = summary.incomeMinor - summary.expenseMinor
-    const previousNet = comparison.incomeMinor - comparison.expenseMinor
-    const changePercent =
-      previousNet === 0 ? null : ((currentNet - previousNet) / Math.abs(previousNet)) * 100
-    const expenseRows = converted.filter((row) => row.type === 'expense')
-    return {
-      period,
-      comparisonPeriod,
-      currencyCode: targetCurrency,
-      incomeMinor: summary.incomeMinor,
-      expenseMinor: summary.expenseMinor,
-      netMinor: assertSafeMinor(currentNet),
-      averageExpenseMinor:
-        expenseRows.length > 0 ? Math.round(summary.expenseMinor / expenseRows.length) : 0,
-      largestExpenseMinor: summary.largestExpenseMinor,
-      largestIncomeMinor: summary.largestIncomeMinor,
-      operationCount: summary.operationCount,
-      changePercent,
-      missingRateCurrencies: missing,
-      timeline: timeline(converted, period),
-      expenseByTag: tagBreakdown(converted, 'expense'),
-      incomeByTag: tagBreakdown(converted, 'income'),
-      transferFlows: transferFlows(rows),
-      limits: listLimits(filters.dateTo)
-    }
+  function getReport(filters: FinanceReportFilters): FinanceReportAnalytics {
+    return getFinanceReportAnalytics(
+      { database, getSettings, listExchangeRates, listLimits },
+      filters
+    )
   }
 
   return {

@@ -274,7 +274,7 @@ describe('shared Finance persistence', () => {
     })
     const income = finance.createTag({ name: 'Доход', type: 'income', icon: 'briefcase' })
     const expense = finance.createTag({ name: 'Еда', type: 'expense', icon: 'utensils' })
-    const day = new Date(2026, 8, 6, 10).getTime()
+    const day = new Date(2026, 8, 6, 13).getTime()
     finance.createTransaction({
       type: 'income',
       accountId: account.id,
@@ -301,14 +301,43 @@ describe('shared Finance persistence', () => {
       comment: ''
     })
 
-    const report = finance.getReport({ dateFrom: day - 1000, dateTo: day + 1000 })
+    const report = finance.getReport({
+      dateFrom: new Date(2026, 8, 6, 0, 0, 0, 0).getTime(),
+      dateTo: new Date(2026, 8, 6, 23, 59, 59, 999).getTime()
+    })
     expect(report).toMatchObject({
       incomeMinor: 500_00,
       expenseMinor: 120_00,
       netMinor: 380_00,
-      operationCount: 3
+      incomeCount: 1,
+      expenseCount: 1,
+      transferCount: 1,
+      operationCount: 3,
+      averageIncomeMinor: 500_00,
+      averageExpenseMinor: 120_00,
+      averageDailyExpenseMinor: 120_00,
+      transferVolumeMinor: 50_00,
+      balanceStartMinor: 0,
+      balanceEndMinor: 380_00,
+      balanceChangeMinor: 380_00,
+      comparisonIncomeMinor: 0,
+      comparisonExpenseMinor: 0,
+      comparisonNetMinor: 0,
+      incomeChangePercent: null,
+      expenseChangePercent: null,
+      netChangePercent: null
+    })
+    expect(report.savingsRatePercent).toBeCloseTo(76)
+    expect(report.timeline).toHaveLength(1)
+    expect(report.timeline[0]).toMatchObject({
+      incomeMinor: 500_00,
+      expenseMinor: 120_00,
+      netMinor: 380_00,
+      balanceMinor: 380_00
     })
     expect(report.transferFlows).toHaveLength(1)
+    expect(report.transferFlows[0]).toMatchObject({ convertedAmountMinor: 50_00 })
+    expect(report.accountActivity).toHaveLength(2)
     expect(report.expenseByTag[0]).toMatchObject({ label: 'Еда', amountMinor: 120_00 })
   })
 })
