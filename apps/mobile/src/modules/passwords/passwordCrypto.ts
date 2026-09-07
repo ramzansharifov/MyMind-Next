@@ -1,11 +1,20 @@
 import { gcm } from '@noble/ciphers/aes.js'
 import { scryptAsync } from '@noble/hashes/scrypt.js'
-import { getRandomBytes } from 'expo-crypto'
+import { getRandomValues } from 'expo-crypto'
 import type { PasswordCryptoPort } from '@mymind/contracts/password-crypto'
 
 const GCM_NONCE_BYTES = 12
 const GCM_TAG_BYTES = 16
 const encoder = new TextEncoder()
+
+function secureRandomBytes(length: number): Uint8Array {
+  if (!Number.isSafeInteger(length) || length <= 0) {
+    throw new Error('Некорректная длина случайных данных')
+  }
+  const bytes = new Uint8Array(length)
+  getRandomValues(bytes)
+  return bytes
+}
 
 function secureRandomInt(maxExclusive: number): number {
   if (!Number.isSafeInteger(maxExclusive) || maxExclusive <= 0 || maxExclusive > 256) {
@@ -13,14 +22,14 @@ function secureRandomInt(maxExclusive: number): number {
   }
   const ceiling = 256 - (256 % maxExclusive)
   for (;;) {
-    const value = getRandomBytes(1)[0] ?? 0
+    const value = secureRandomBytes(1)[0] ?? 0
     if (value < ceiling) return value % maxExclusive
   }
 }
 
 export const mobilePasswordCrypto: PasswordCryptoPort = {
   randomBytes(length) {
-    return getRandomBytes(length)
+    return secureRandomBytes(length)
   },
 
   randomInt(maxExclusive) {
@@ -44,7 +53,7 @@ export const mobilePasswordCrypto: PasswordCryptoPort = {
 
   encryptAes256Gcm(plaintext, key, aad) {
     if (key.length !== 32) throw new Error('Некорректный ключ хранилища паролей')
-    const nonce = getRandomBytes(GCM_NONCE_BYTES)
+    const nonce = secureRandomBytes(GCM_NONCE_BYTES)
     const sealed = gcm(key, nonce, aad).encrypt(plaintext)
     try {
       if (sealed.length < GCM_TAG_BYTES) throw new Error('Не удалось зашифровать данные')
@@ -59,7 +68,11 @@ export const mobilePasswordCrypto: PasswordCryptoPort = {
   },
 
   decryptAes256Gcm(payload, key, aad) {
-    if (key.length !== 32 || payload.nonce.length !== GCM_NONCE_BYTES || payload.tag.length !== GCM_TAG_BYTES) {
+    if (
+      key.length !== 32 ||
+      payload.nonce.length !== GCM_NONCE_BYTES ||
+      payload.tag.length !== GCM_TAG_BYTES
+    ) {
       throw new Error('Некорректные параметры зашифрованных данных')
     }
     const sealed = new Uint8Array(payload.ciphertext.length + payload.tag.length)
