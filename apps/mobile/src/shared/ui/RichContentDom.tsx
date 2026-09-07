@@ -75,7 +75,10 @@ function MermaidContent({
   theme: MermaidTheme
   colorScheme: 'light' | 'dark'
 }): React.JSX.Element {
-  const [state, setState] = useState<{ svg: string; error: string | null }>({ svg: '', error: null })
+  const [state, setState] = useState<{ svg: string; error: string | null }>({
+    svg: '',
+    error: null
+  })
 
   useEffect(() => {
     let active = true
