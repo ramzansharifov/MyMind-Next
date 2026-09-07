@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react'
 import { AppState, View } from 'react-native'
-import { subscribeDataChanges } from './changes'
-import { createReminderScheduler } from '../shared/platform/reminders'
+import { notifyDataChanged, subscribeDataChanges } from './changes'
+import {
+  createReminderScheduler,
+  reconcileCalendarReminderDeliveries,
+  subscribeCalendarReminderDeliveries
+} from '../shared/platform/reminders'
 import { ErrorState } from '../shared/ui/primitives'
 import { messageFor } from '../shared/ui/form-model'
 import type { MobileServices } from './services'
@@ -19,7 +23,11 @@ export function ReminderStatus({
     const run = (): void => {
       if (timer) clearTimeout(timer)
       timer = setTimeout(() => {
-        void sync()
+        void (async () => {
+          const delivered = await reconcileCalendarReminderDeliveries(services)
+          await sync()
+          if (delivered > 0) notifyDataChanged()
+        })()
           .then(() => {
             if (active) setError('')
           })
@@ -28,7 +36,8 @@ export function ReminderStatus({
           })
       }, 300)
     }
-    const unsubscribe = subscribeDataChanges(run)
+    const unsubscribeData = subscribeDataChanges(run)
+    const unsubscribeNotifications = subscribeCalendarReminderDeliveries(services, notifyDataChanged)
     const state = AppState.addEventListener('change', (value) => {
       if (value === 'active') run()
     })
@@ -36,7 +45,8 @@ export function ReminderStatus({
     return () => {
       active = false
       if (timer) clearTimeout(timer)
-      unsubscribe()
+      unsubscribeData()
+      unsubscribeNotifications()
       state.remove()
     }
   }, [services])
