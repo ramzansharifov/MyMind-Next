@@ -30,6 +30,9 @@ jobs:
       - name: Integrate native Boards shell with tldraw DOM canvas
         run: node .github/scripts/mobile-board-canvas.cjs
 
+      - name: Baseline install for local Expo CLI
+        run: npm ci
+
       - name: Install Expo DOM prerequisites
         working-directory: apps/mobile
         run: npx expo install @expo/metro-runtime react-dom react-native-web
