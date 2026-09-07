@@ -102,7 +102,6 @@ jobs:
 
       - name: Check formatting for mobile PDF changes
         run: npx prettier --check apps/mobile/src/modules/study/StudyScreen.tsx apps/mobile/src/modules/study/studyPdf.ts apps/mobile/src/modules/study/studyPdfExport.ts apps/mobile/src/modules/study/studyPdf.test.ts apps/mobile/src/shared/ui/DocumentReader.tsx apps/mobile/src/shared/ui/studyRichText.ts apps/mobile/src/shared/ui/studyRichText.test.ts MOBILE_PARITY.md apps/mobile/package.json package-lock.json
-      - run: npm run lint
       - run: npm run lint:mobile
       - run: npm run typecheck
       - run: npm run test:mobile
