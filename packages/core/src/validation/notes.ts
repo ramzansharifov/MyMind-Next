@@ -1,6 +1,10 @@
 import { z } from 'zod'
 
-import { NOTE_BLOCK_TYPES } from '@mymind/contracts/notes'
+import {
+  NOTE_BLOCK_TYPES,
+  NOTE_VOICE_RECORDING_MAX_BYTES,
+  NOTE_VOICE_RECORDING_MIME_TYPES
+} from '@mymind/contracts/notes'
 import { STUDY_DOCUMENT_LIMITS, STUDY_SAFE_ID_PATTERN } from '@mymind/contracts/study'
 import {
   openStudyAssetInputSchema,
@@ -132,8 +136,6 @@ export const importNoteAssetInputSchema = z.object({
   kind: z.enum(['image', 'video', 'audio', 'file'])
 })
 
-const NOTE_VOICE_RECORDING_MAX_BYTES = 50 * 1024 * 1024
-
 export const saveNoteVoiceRecordingInputSchema = z.object({
   noteId: noteSafeIdSchema,
   data: z
@@ -143,7 +145,7 @@ export const saveNoteVoiceRecordingInputSchema = z.object({
       (value) => value.byteLength <= NOTE_VOICE_RECORDING_MAX_BYTES,
       'Запись превышает допустимый размер 50 МБ'
     ),
-  mimeType: z.enum(['audio/webm', 'audio/ogg', 'audio/mp4'])
+  mimeType: z.enum(NOTE_VOICE_RECORDING_MIME_TYPES)
 })
 
 export const openNoteAssetInputSchema = openStudyAssetInputSchema
