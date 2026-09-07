@@ -188,7 +188,11 @@ export function createPasswordsRepository(
     })
   }
 
-  function encryptBuffer(plaintext: Uint8Array, key: Uint8Array, aad: Uint8Array): EncryptedEnvelope {
+  function encryptBuffer(
+    plaintext: Uint8Array,
+    key: Uint8Array,
+    aad: Uint8Array
+  ): EncryptedEnvelope {
     const encrypted = crypto.encryptAes256Gcm(plaintext, key, aad)
     try {
       return {
@@ -204,7 +208,11 @@ export function createPasswordsRepository(
     }
   }
 
-  function decryptBuffer(envelope: EncryptedEnvelope, key: Uint8Array, aad: Uint8Array): Uint8Array {
+  function decryptBuffer(
+    envelope: EncryptedEnvelope,
+    key: Uint8Array,
+    aad: Uint8Array
+  ): Uint8Array {
     if (envelope.version !== 1) throw new Error('Неподдерживаемая версия зашифрованных данных')
     const nonce = decodeBase64(envelope.nonce)
     const ciphertext = decodeBase64(envelope.ciphertext)
@@ -239,7 +247,10 @@ export function createPasswordsRepository(
     try {
       plaintext = decryptBuffer(envelope, key, aad)
     } catch (error) {
-      if (error instanceof Error && error.message === 'Неподдерживаемая версия зашифрованных данных') {
+      if (
+        error instanceof Error &&
+        error.message === 'Неподдерживаемая версия зашифрованных данных'
+      ) {
         throw error
       }
       throw new Error('Зашифрованные данные повреждены')
@@ -347,7 +358,8 @@ export function createPasswordsRepository(
   function ensureUniqueGroupName(name: string, ignoredId: string | null = null): void {
     const normalized = name.trim().toLocaleLowerCase('ru-RU')
     const duplicate = listGroups().some(
-      (group) => group.id !== ignoredId && group.name.trim().toLocaleLowerCase('ru-RU') === normalized
+      (group) =>
+        group.id !== ignoredId && group.name.trim().toLocaleLowerCase('ru-RU') === normalized
     )
     if (duplicate) throw new Error('Группа с таким названием уже существует')
   }
@@ -535,7 +547,9 @@ export function createPasswordsRepository(
     }
   }
 
-  async function unlockPasswordVault(input: UnlockPasswordVaultInput): Promise<PasswordVaultStatus> {
+  async function unlockPasswordVault(
+    input: UnlockPasswordVaultInput
+  ): Promise<PasswordVaultStatus> {
     const row = getVaultRow()
     if (!row) throw new Error('Сначала настройте хранилище паролей')
 
@@ -711,7 +725,8 @@ export function createPasswordsRepository(
     ensureGroupExists(input.groupId)
     const previous = requireItem(input.id)
     const now = runtime.now()
-    const passwordUpdatedAt = previous.password === input.password ? previous.passwordUpdatedAt : now
+    const passwordUpdatedAt =
+      previous.password === input.password ? previous.passwordUpdatedAt : now
     const payload = normalizeItemPayload(input, passwordUpdatedAt)
 
     getSqlite()

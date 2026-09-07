@@ -6,6 +6,8 @@ import { mobileSchemaV3 } from '@mymind/persistence/mobile-schema-v3'
 import { mobileSchemaV4 } from '@mymind/persistence/mobile-schema-v4'
 import { mobileSchemaV5 } from '@mymind/persistence/mobile-schema-v5'
 import { mobileSchemaV6 } from '@mymind/persistence/mobile-schema-v6'
+import { mobileSchemaV7 } from '@mymind/persistence/mobile-schema-v7'
+import { mobileSchemaV8 } from '@mymind/persistence/mobile-schema-v8'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('expo-sqlite', () => ({ openDatabaseAsync: vi.fn() }))
@@ -40,7 +42,7 @@ function nativeDriver(): { db: Database.Database; expo: SQLiteDatabase } {
   return { db, expo: driver as unknown as SQLiteDatabase }
 }
 
-function installThrough(db: Database.Database, version: 1 | 2 | 3 | 4 | 5 | 6): void {
+function installThrough(db: Database.Database, version: 1 | 2 | 3 | 4 | 5 | 6 | 7): void {
   for (const sql of mobileSchemaV1) db.exec(sql)
   db.exec('CREATE TABLE mobile_preferences (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL)')
   if (version >= 2) for (const sql of mobileSchemaV2) db.exec(sql)
@@ -48,6 +50,7 @@ function installThrough(db: Database.Database, version: 1 | 2 | 3 | 4 | 5 | 6): 
   if (version >= 4) for (const sql of mobileSchemaV4) db.exec(sql)
   if (version >= 5) for (const sql of mobileSchemaV5) db.exec(sql)
   if (version >= 6) for (const sql of mobileSchemaV6) db.exec(sql)
+  if (version >= 7) for (const sql of mobileSchemaV7) db.exec(sql)
   db.pragma(`user_version = ${version}`)
 }
 
@@ -86,7 +89,7 @@ describe('Expo SQLite adapter', () => {
     expect(() => insert.run('bad', {})).toThrow('Неподдерживаемый параметр')
   })
 
-  it('migrates a fresh database through V7 and preserves preferences across reopen', async () => {
+  it('migrates a fresh database through V8 and preserves preferences across reopen', async () => {
     const { db, expo } = nativeDriver()
     vi.mocked(openDatabaseAsync).mockResolvedValue(expo)
 
@@ -94,7 +97,7 @@ describe('Expo SQLite adapter', () => {
     db.prepare('INSERT INTO mobile_preferences VALUES (?, ?)').run('test', 'saved')
     await openMobileDatabase()
 
-    expect(db.pragma('user_version', { simple: true })).toBe(7)
+    expect(db.pragma('user_version', { simple: true })).toBe(8)
     expect(db.pragma('foreign_keys', { simple: true })).toBe(1)
     expect(db.prepare('SELECT value FROM mobile_preferences WHERE key = ?').get('test')).toEqual({
       value: 'saved'
@@ -107,7 +110,10 @@ describe('Expo SQLite adapter', () => {
       'nutrition_foods',
       'finance_accounts',
       'finance_transactions',
-      'finance_transaction_entries'
+      'finance_transaction_entries',
+      'password_vault',
+      'password_groups',
+      'password_items'
     ]) {
       expectTable(db, table)
     }
@@ -131,7 +137,7 @@ describe('Expo SQLite adapter', () => {
 
     await openMobileDatabase()
 
-    expect(db.pragma('user_version', { simple: true })).toBe(7)
+    expect(db.pragma('user_version', { simple: true })).toBe(8)
     expect(db.prepare('SELECT title FROM tasks WHERE id = ?').get('task-before-notes')).toEqual({
       title: 'Сохранить меня'
     })
@@ -159,7 +165,7 @@ describe('Expo SQLite adapter', () => {
     )
     vi.mocked(openDatabaseAsync).mockResolvedValue(expo)
     await openMobileDatabase()
-    expect(db.pragma('user_version', { simple: true })).toBe(7)
+    expect(db.pragma('user_version', { simple: true })).toBe(8)
     expect(db.prepare('SELECT title FROM notes WHERE id = ?').get('note-before-study')).toEqual({
       title: 'Старая заметка'
     })
@@ -181,7 +187,7 @@ describe('Expo SQLite adapter', () => {
     )
     vi.mocked(openDatabaseAsync).mockResolvedValue(expo)
     await openMobileDatabase()
-    expect(db.pragma('user_version', { simple: true })).toBe(7)
+    expect(db.pragma('user_version', { simple: true })).toBe(8)
     expect(
       db.prepare('SELECT title FROM study_nodes WHERE id = ?').get('material-before-boards')
     ).toEqual({
@@ -202,7 +208,7 @@ describe('Expo SQLite adapter', () => {
     ).run('board-before-workouts', snapshot)
     vi.mocked(openDatabaseAsync).mockResolvedValue(expo)
     await openMobileDatabase()
-    expect(db.pragma('user_version', { simple: true })).toBe(7)
+    expect(db.pragma('user_version', { simple: true })).toBe(8)
     expect(
       db
         .prepare('SELECT snapshot FROM board_documents WHERE node_id = ?')
@@ -222,7 +228,7 @@ describe('Expo SQLite adapter', () => {
     ).run('session-before-nutrition', 'Сохранённая тренировка', '2026-09-06', 45)
     vi.mocked(openDatabaseAsync).mockResolvedValue(expo)
     await openMobileDatabase()
-    expect(db.pragma('user_version', { simple: true })).toBe(7)
+    expect(db.pragma('user_version', { simple: true })).toBe(8)
     expect(
       db.prepare('SELECT title FROM workout_sessions WHERE id = ?').get('session-before-nutrition')
     ).toEqual({
@@ -247,7 +253,7 @@ describe('Expo SQLite adapter', () => {
 
     await openMobileDatabase()
 
-    expect(db.pragma('user_version', { simple: true })).toBe(7)
+    expect(db.pragma('user_version', { simple: true })).toBe(8)
     expect(
       db
         .prepare('SELECT title_snapshot FROM nutrition_log_entries WHERE id = ?')
@@ -257,6 +263,27 @@ describe('Expo SQLite adapter', () => {
     })
     expectTable(db, 'finance_settings')
     expectTable(db, 'finance_limit_accounts')
+  })
+
+  it('upgrades V7 to Passwords without losing Finance data', async () => {
+    const { db, expo } = nativeDriver()
+    installThrough(db, 7)
+    db.prepare(
+      `INSERT INTO finance_accounts(
+        id, name, currency_code, initial_balance_minor, icon, created_at, updated_at
+      ) VALUES (?, ?, 'TJS', 12345, 'wallet', 1, 1)`
+    ).run('account-before-passwords', 'Сохранённый счёт')
+    vi.mocked(openDatabaseAsync).mockResolvedValue(expo)
+
+    await openMobileDatabase()
+
+    expect(db.pragma('user_version', { simple: true })).toBe(8)
+    expect(
+      db.prepare('SELECT name FROM finance_accounts WHERE id = ?').get('account-before-passwords')
+    ).toEqual({ name: 'Сохранённый счёт' })
+    expectTable(db, 'password_vault')
+    expectTable(db, 'password_groups')
+    expectTable(db, 'password_items')
   })
 
   it('does not reset an unknown newer database', async () => {

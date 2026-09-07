@@ -48,10 +48,7 @@ const nodePasswordCrypto: PasswordCryptoPort = {
     const nonce = randomBytes(12)
     const cipher = createCipheriv('aes-256-gcm', Buffer.from(key), nonce, { authTagLength: 16 })
     cipher.setAAD(Buffer.from(aad))
-    const ciphertext = Buffer.concat([
-      cipher.update(Buffer.from(plaintext)),
-      cipher.final()
-    ])
+    const ciphertext = Buffer.concat([cipher.update(Buffer.from(plaintext)), cipher.final()])
     const tag = cipher.getAuthTag()
     return {
       nonce: new Uint8Array(nonce),
@@ -61,19 +58,13 @@ const nodePasswordCrypto: PasswordCryptoPort = {
   },
 
   decryptAes256Gcm(payload, key, aad) {
-    const decipher = createDecipheriv(
-      'aes-256-gcm',
-      Buffer.from(key),
-      Buffer.from(payload.nonce),
-      { authTagLength: 16 }
-    )
+    const decipher = createDecipheriv('aes-256-gcm', Buffer.from(key), Buffer.from(payload.nonce), {
+      authTagLength: 16
+    })
     decipher.setAAD(Buffer.from(aad))
     decipher.setAuthTag(Buffer.from(payload.tag))
     return new Uint8Array(
-      Buffer.concat([
-        decipher.update(Buffer.from(payload.ciphertext)),
-        decipher.final()
-      ])
+      Buffer.concat([decipher.update(Buffer.from(payload.ciphertext)), decipher.final()])
     )
   },
 

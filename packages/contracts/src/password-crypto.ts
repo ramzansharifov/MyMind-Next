@@ -25,10 +25,6 @@ export interface PasswordCryptoPort {
     key: Uint8Array,
     aad: Uint8Array
   ): PasswordEncryptedPayload
-  decryptAes256Gcm(
-    payload: PasswordEncryptedPayload,
-    key: Uint8Array,
-    aad: Uint8Array
-  ): Uint8Array
+  decryptAes256Gcm(payload: PasswordEncryptedPayload, key: Uint8Array, aad: Uint8Array): Uint8Array
   timingSafeEqual(left: Uint8Array, right: Uint8Array): boolean
 }

@@ -50,12 +50,9 @@ const nodeCrypto: PasswordCryptoPort = {
     }
   },
   decryptAes256Gcm(payload, key, aad) {
-    const decipher = createDecipheriv(
-      'aes-256-gcm',
-      Buffer.from(key),
-      Buffer.from(payload.nonce),
-      { authTagLength: 16 }
-    )
+    const decipher = createDecipheriv('aes-256-gcm', Buffer.from(key), Buffer.from(payload.nonce), {
+      authTagLength: 16
+    })
     decipher.setAAD(Buffer.from(aad))
     decipher.setAuthTag(Buffer.from(payload.tag))
     return new Uint8Array(
@@ -108,12 +105,20 @@ describe('shared Passwords persistence', () => {
       const journal = JSON.parse(readFileSync(`${root}/meta/_journal.json`, 'utf8')) as {
         entries: { tag: string }[]
       }
-      for (const entry of journal.entries) desktop.exec(readFileSync(`${root}/${entry.tag}.sql`, 'utf8'))
+      for (const entry of journal.entries)
+        desktop.exec(readFileSync(`${root}/${entry.tag}.sql`, 'utf8'))
       mobile.pragma('foreign_keys = ON')
       for (const sql of mobileSchemaV8) mobile.exec(sql)
 
       const indexes = (db: Database.Database, name: string): unknown[] =>
-        (db.pragma(`index_list('${name}')`) as { name: string; unique: number; partial: number; origin: string }[])
+        (
+          db.pragma(`index_list('${name}')`) as {
+            name: string
+            unique: number
+            partial: number
+            origin: string
+          }[]
+        )
           .map((index) => ({
             name: index.name,
             unique: index.unique,
@@ -141,7 +146,11 @@ describe('shared Passwords persistence', () => {
   it('encrypts every sensitive payload and unlocks only with the master password', async () => {
     const { db, repository } = setup()
     await repository.setupPasswordVault({ masterPassword: 'master-password-very-strong' })
-    const group = repository.createPasswordGroup({ name: 'Работа', icon: 'briefcase', color: 'blue' })
+    const group = repository.createPasswordGroup({
+      name: 'Работа',
+      icon: 'briefcase',
+      color: 'blue'
+    })
     const item = repository.createPasswordItem(itemInput(group.id))
 
     const rawGroup = db
@@ -152,15 +161,20 @@ describe('shared Passwords persistence', () => {
       .get(item.id) as { encrypted_payload: string }
 
     expect(rawGroup.encrypted_payload).not.toContain('Работа')
-    for (const secret of ['GitHub', 'user@example.com', 'Strong-password-123!', 'secret-recovery-code']) {
+    for (const secret of [
+      'GitHub',
+      'user@example.com',
+      'Strong-password-123!',
+      'secret-recovery-code'
+    ]) {
       expect(rawItem.encrypted_payload).not.toContain(secret)
     }
 
     repository.lockPasswordVault()
     expect(() => repository.listPasswordsOverview()).toThrow('заблокировано')
-    await expect(repository.unlockPasswordVault({ masterPassword: 'wrong-master-password' })).rejects.toThrow(
-      'Неверный мастер-пароль'
-    )
+    await expect(
+      repository.unlockPasswordVault({ masterPassword: 'wrong-master-password' })
+    ).rejects.toThrow('Неверный мастер-пароль')
     await repository.unlockPasswordVault({ masterPassword: 'master-password-very-strong' })
     expect(repository.getPasswordItem(item.id)).toMatchObject({
       title: 'GitHub',

@@ -62,7 +62,9 @@ const itemPayloadSchema = z
     website: z.string().trim().max(2048, 'Адрес сайта слишком длинный'),
     notes: z.string().max(20_000, 'Заметка слишком длинная'),
     tags: z.array(z.string().trim().min(1).max(40)).max(30, 'Можно добавить не более 30 тегов'),
-    customFields: z.array(customFieldSchema).max(20, 'Можно добавить не более 20 дополнительных полей'),
+    customFields: z
+      .array(customFieldSchema)
+      .max(20, 'Можно добавить не более 20 дополнительных полей'),
     favorite: z.boolean()
   })
   .superRefine((input, context) => {
@@ -109,7 +111,9 @@ export const generatePasswordInputSchema = z
     excludeAmbiguous: z.boolean()
   })
   .superRefine((input, context) => {
-    const enabled = [input.lowercase, input.uppercase, input.digits, input.symbols].filter(Boolean).length
+    const enabled = [input.lowercase, input.uppercase, input.digits, input.symbols].filter(
+      Boolean
+    ).length
 
     if (enabled === 0) {
       context.addIssue({
