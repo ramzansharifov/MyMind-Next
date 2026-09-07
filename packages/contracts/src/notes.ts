@@ -97,7 +97,9 @@ export interface ImportNoteAssetInput {
   kind: NoteAssetKind
 }
 
-export type NoteVoiceRecordingMimeType = 'audio/webm' | 'audio/ogg' | 'audio/mp4'
+export const NOTE_VOICE_RECORDING_MIME_TYPES = ['audio/webm', 'audio/ogg', 'audio/mp4'] as const
+export type NoteVoiceRecordingMimeType = (typeof NOTE_VOICE_RECORDING_MIME_TYPES)[number]
+export const NOTE_VOICE_RECORDING_MAX_BYTES = 50 * 1024 * 1024
 
 export interface SaveNoteVoiceRecordingInput {
   noteId: string
