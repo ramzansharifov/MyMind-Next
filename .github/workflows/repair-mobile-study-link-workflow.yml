@@ -1,0 +1,56 @@
+name: Repair mobile Study link workflow
+
+on:
+  push:
+    branches:
+      - agent/full-mobile-app
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: ${{ !contains(github.event.head_commit.message, '[repair-link-workflow]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/full-mobile-app
+      - name: Repair YAML indentation
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('.github/workflows/mobile-study-link-authoring.yml')
+          lines = path.read_text(encoding='utf-8').splitlines()
+          output = []
+          inside = False
+          for line in lines:
+              if "text += r'''" in line:
+                  inside = True
+                  output.append(line)
+                  continue
+              if inside:
+                  if line == "'''":
+                      output.append("          '''")
+                      inside = False
+                  elif line:
+                      output.append('          ' + line)
+                  else:
+                      output.append('')
+                  continue
+              output.append(line)
+          if inside:
+              raise SystemExit('Unclosed raw TypeScript helper block')
+          path.write_text('\n'.join(output) + '\n', encoding='utf-8')
+          PY
+          git diff --check
+      - name: Commit repair
+        shell: bash
+        run: |
+          git config user.name "Ramzan Sharifov"
+          git config user.email "114869338+ramzansharifov@users.noreply.github.com"
+          git rm .github/workflows/repair-mobile-study-link-workflow.yml
+          git add .github/workflows/mobile-study-link-authoring.yml
+          git commit -m "ci: repair Study link verification workflow [repair-link-workflow]"
+          git push origin HEAD:agent/full-mobile-app
