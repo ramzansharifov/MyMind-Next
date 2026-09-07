@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { NOTE_VOICE_RECORDING_MAX_BYTES } from '@mymind/contracts/notes'
-import {
-  assertNoteVoiceRecordingSize,
-  noteVoiceRecordingFileName
-} from './note-voice-recording'
+import { assertNoteVoiceRecordingSize, noteVoiceRecordingFileName } from './note-voice-recording'
 
 describe('note voice recording rules', () => {
   it('uses a stable extension for every accepted desktop-compatible mime type', () => {
