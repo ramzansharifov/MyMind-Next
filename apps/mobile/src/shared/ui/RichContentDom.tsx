@@ -1,5 +1,3 @@
-'use dom'
-
 import katex from 'katex'
 import mermaid from 'mermaid'
 import { useEffect, useMemo, useState } from 'react'
@@ -10,7 +8,7 @@ type RichContentKind = 'markdown' | 'latex' | 'mermaid'
 type MermaidTheme = 'dark' | 'default' | 'neutral' | 'forest'
 type TextAlignment = 'left' | 'center' | 'right'
 
-interface RichContentDomProps {
+export interface RichContentDomProps {
   dom?: import('expo/dom').DOMProps
   kind: RichContentKind
   source: string
