@@ -1,5 +1,3 @@
-'use dom'
-
 import katex from 'katex'
 import mermaid from 'mermaid'
 import { useEffect, useMemo, useState } from 'react'
