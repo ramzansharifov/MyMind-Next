@@ -206,53 +206,45 @@ jobs:
           )
           replace_once(
               screen,
-              """              <Button label=\"Редактировать\" onPress={() => setMaterialMode('edit')} />
-                          <Button label=\"Фокус\" selected onPress={() => setFocus(true)} />""",
-              """              <Button label=\"Редактировать\" onPress={() => setMaterialMode('edit')} />
-                          <Button
-                            label=\"Код\"
-                            disabled={closing}
-                            onPress={() => {
-                              void flush()
-                                .then(() => setMaterialMode('code'))
-                                .catch((reason) => setEditorError(messageFor(reason)))
-                            }}
-                          />
-                          <Button label=\"Фокус\" selected onPress={() => setFocus(true)} />"""
+              """<Button label=\"Редактировать\" onPress={() => setMaterialMode('edit')} />""",
+              """<Button label=\"Редактировать\" onPress={() => setMaterialMode('edit')} />
+              <Button
+                label=\"Код\"
+                disabled={closing}
+                onPress={() => {
+                  void flush()
+                    .then(() => setMaterialMode('code'))
+                    .catch((reason) => setEditorError(messageFor(reason)))
+                }}
+              />"""
           )
           replace_once(
               screen,
-              """                  <Button label=\"Чтение\" onPress={() => setMaterialMode('read')} />
-                              <Button label=\"Фокус\" onPress={() => setFocus(true)} />""",
-              """                  <Button label=\"Чтение\" onPress={() => setMaterialMode('read')} />
-                              <Button
-                                label=\"Код\"
-                                disabled={closing}
-                                onPress={() => {
-                                  void flush()
-                                    .then(() => setMaterialMode('code'))
-                                    .catch((reason) => setEditorError(messageFor(reason)))
-                                }}
-                              />
-                              <Button label=\"Фокус\" onPress={() => setFocus(true)} />"""
+              """<Button label=\"Чтение\" onPress={() => setMaterialMode('read')} />""",
+              """<Button label=\"Чтение\" onPress={() => setMaterialMode('read')} />
+                  <Button
+                    label=\"Код\"
+                    disabled={closing}
+                    onPress={() => {
+                      void flush()
+                        .then(() => setMaterialMode('code'))
+                        .catch((reason) => setEditorError(messageFor(reason)))
+                    }}
+                  />"""
           )
           replace_once(
               screen,
-              """          <Button label=\"+ Папка\" selected onPress={createFolder} />
-                      <Button label=\"+ Материал\" selected onPress={createMaterial} />""",
-              """          <Button label=\"+ Папка\" selected onPress={createFolder} />
-                      <Button label=\"+ Материал\" selected onPress={createMaterial} />
-                      {currentFolder ? (
-                        <Button label=\"Код\" onPress={() => setCodeNodeId(currentFolder.id)} />
-                      ) : null}"""
+              """<Button label=\"+ Материал\" selected onPress={createMaterial} />""",
+              """<Button label=\"+ Материал\" selected onPress={createMaterial} />
+          {currentFolder ? (
+            <Button label=\"Код\" onPress={() => setCodeNodeId(currentFolder.id)} />
+          ) : null}"""
           )
           replace_once(
               screen,
-              """              <Button label=\"Изменить\" onPress={() => editNode(item)} />
-                          <Button label=\"↑\" disabled={index === 0} onPress={() => reorder(item, -1)} />""",
-              """              <Button label=\"Изменить\" onPress={() => editNode(item)} />
-                          <Button label=\"Код\" onPress={() => setCodeNodeId(item.id)} />
-                          <Button label=\"↑\" disabled={index === 0} onPress={() => reorder(item, -1)} />"""
+              """<Button label=\"Изменить\" onPress={() => editNode(item)} />""",
+              """<Button label=\"Изменить\" onPress={() => editNode(item)} />
+              <Button label=\"Код\" onPress={() => setCodeNodeId(item.id)} />"""
           )
           PY
           npx prettier --write apps/mobile/src/modules/study/studyCode.ts apps/mobile/src/modules/study/StudyCodeWorkspace.tsx apps/mobile/src/modules/study/StudyScreen.tsx
