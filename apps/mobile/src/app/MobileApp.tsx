@@ -10,6 +10,7 @@ import {
 import { appearancePreferencesSchema } from '@mymind/core/validation/preferences'
 import { ServicesContext } from './context'
 import { createMobileServices, type MobileServices } from './services'
+import { exportMobileBackup, restoreMobileBackup } from '../shared/backup/mobileBackup'
 import { openMobileDatabase } from '../shared/storage/sqlite'
 import { ThemeContext } from '../shared/ui/theme'
 import { ErrorState, Label, LoadingState, Row } from '../shared/ui/primitives'
@@ -69,9 +70,20 @@ const titles: Record<Route, string> = {
 
 const primaryTabs = ['home', 'notes', 'tasks', 'habits', 'more'] as const
 
+let databasePromise: ReturnType<typeof openMobileDatabase> | undefined
 let servicesPromise: Promise<MobileServices> | undefined
+
+function database(): ReturnType<typeof openMobileDatabase> {
+  databasePromise ??= openMobileDatabase().catch((error) => {
+    databasePromise = undefined
+    servicesPromise = undefined
+    throw error
+  })
+  return databasePromise
+}
+
 function initialize(): Promise<MobileServices> {
-  servicesPromise ??= openMobileDatabase()
+  servicesPromise ??= database()
     .then(createMobileServices)
     .catch((error) => {
       servicesPromise = undefined
@@ -80,15 +92,27 @@ function initialize(): Promise<MobileServices> {
   return servicesPromise
 }
 
+function readAppearance(services: MobileServices): AppearancePreferences {
+  const stored = services.settings.get('appearance')
+  if (!stored) return DEFAULT_APPEARANCE_PREFERENCES
+  try {
+    return appearancePreferencesSchema.parse(JSON.parse(stored))
+  } catch {
+    return DEFAULT_APPEARANCE_PREFERENCES
+  }
+}
+
 export default function MobileApp(): React.JSX.Element {
   const system = useColorScheme()
   const [services, setServices] = useState<MobileServices | null>(null)
+  const [servicesEpoch, setServicesEpoch] = useState(0)
   const [appearance, setAppearance] = useState<AppearancePreferences>(
     DEFAULT_APPEARANCE_PREFERENCES
   )
   const [route, setRoute] = useState<Route>('home')
   const [boardResourceId, setBoardResourceId] = useState<string | null>(null)
   const [immersive, setImmersive] = useState(false)
+  const [restoringBackup, setRestoringBackup] = useState(false)
   const [error, setError] = useState('')
   const [attempt, setAttempt] = useState(0)
   const dark = (appearance.theme === 'system' ? (system ?? 'dark') : appearance.theme) === 'dark'
@@ -114,15 +138,9 @@ export default function MobileApp(): React.JSX.Element {
     initialize()
       .then((value) => {
         if (!active) return
-        const stored = value.settings.get('appearance')
-        const parsed = stored
-          ? appearancePreferencesSchema.parse(JSON.parse(stored))
-          : DEFAULT_APPEARANCE_PREFERENCES
-        if (active) {
-          setServices(value)
-          setAppearance(parsed)
-          setError('')
-        }
+        setServices(value)
+        setAppearance(readAppearance(value))
+        setError('')
       })
       .catch((reason) => {
         if (active) setError(messageFor(reason))
@@ -155,6 +173,31 @@ export default function MobileApp(): React.JSX.Element {
     },
     [services]
   )
+
+  const exportBackup = useCallback(async () => exportMobileBackup(await database()), [])
+
+  const restoreBackup = useCallback(async () => {
+    setRestoringBackup(true)
+    setError('')
+    await new Promise<void>((resolve) => setTimeout(resolve, 0))
+    try {
+      const db = await database()
+      const result = await restoreMobileBackup(db)
+      if (result.restored) {
+        const nextServices = createMobileServices(db)
+        servicesPromise = Promise.resolve(nextServices)
+        setServices(nextServices)
+        setAppearance(readAppearance(nextServices))
+        setServicesEpoch((value) => value + 1)
+      }
+      return result
+    } catch (reason) {
+      setError(messageFor(reason))
+      throw reason
+    } finally {
+      setRestoringBackup(false)
+    }
+  }, [])
 
   const moreRoutes = [
     'study',
@@ -194,8 +237,8 @@ export default function MobileApp(): React.JSX.Element {
           {!services ? (
             !error && <LoadingState />
           ) : (
-            <ServicesContext.Provider value={services}>
-              <ReminderStatus services={services} />
+            <ServicesContext.Provider value={services} key={servicesEpoch}>
+              {!restoringBackup ? <ReminderStatus services={services} /> : null}
               <View style={{ flex: 1, paddingHorizontal: immersive ? 0 : 16 }} key={route}>
                 {route === 'home' ? (
                   <Home services={services} navigate={navigate} />
@@ -224,7 +267,12 @@ export default function MobileApp(): React.JSX.Element {
                 ) : route === 'passwords' ? (
                   <PasswordsScreen />
                 ) : route === 'settings' ? (
-                  <Settings appearance={appearance} save={saveAppearance} />
+                  <Settings
+                    appearance={appearance}
+                    save={saveAppearance}
+                    exportBackup={exportBackup}
+                    restoreBackup={restoreBackup}
+                  />
                 ) : (
                   <FlatList
                     data={moreRoutes}
