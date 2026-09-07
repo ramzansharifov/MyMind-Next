@@ -1,0 +1,122 @@
+name: Mobile Study PDF sync
+
+on:
+  push:
+    branches:
+      - agent/full-mobile-app
+
+permissions:
+  contents: write
+
+jobs:
+  verify-and-sync:
+    if: ${{ !contains(github.event.head_commit.message, '[mobile-pdf-sync]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/full-mobile-app
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Install Expo Print and patch Study UI
+        shell: bash
+        run: |
+          npm install "expo-print@~57.0.1" --workspace=mymind-mobile
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('apps/mobile/src/modules/study/StudyScreen.tsx')
+          text = path.read_text(encoding='utf-8')
+
+          def replace_once(needle: str, replacement: str) -> None:
+              global text
+              count = text.count(needle)
+              if count != 1:
+                  raise SystemExit(f'Expected exactly one StudyScreen match, got {count}: {needle[:80]!r}')
+              text = text.replace(needle, replacement, 1)
+
+          replace_once(
+              "import { StudyCodeWorkspace } from './StudyCodeWorkspace'\n",
+              "import { StudyCodeWorkspace } from './StudyCodeWorkspace'\nimport { exportStudyMaterialPdf } from './studyPdfExport'\n",
+          )
+          replace_once(
+              "  const [pendingAction, setPendingAction] = useState(false)\n",
+              "  const [pendingAction, setPendingAction] = useState(false)\n  const [exportingPdf, setExportingPdf] = useState(false)\n",
+          )
+          replace_once(
+              "  const flush = useCallback(async (): Promise<void> => {\n    const queue = queueRef.current\n    if (!queue) return\n    await queue.flush()\n    setEditorError('')\n  }, [])\n",
+              "  const flush = useCallback(async (): Promise<void> => {\n    const queue = queueRef.current\n    if (!queue) return\n    await queue.flush()\n    setEditorError('')\n  }, [])\n\n  const exportPdf = useCallback(\n    async (title: string): Promise<void> => {\n      if (!material || !document || exportingPdf) return\n      setExportingPdf(true)\n      setEditorError('')\n      try {\n        await flush()\n        await exportStudyMaterialPdf({\n          title,\n          document,\n          resolveAssetUri: documentAssets.resolveAssetUri,\n          resolveInternalLinkTarget: (link) =>\n            api.resolveInternalLinkTarget({\n              kind: link.kind,\n              materialId: link.materialId,\n              headingId: link.headingId\n            })\n        })\n      } catch (reason) {\n        setEditorError(messageFor(reason))\n      } finally {\n        setExportingPdf(false)\n      }\n    },\n    [api, document, documentAssets, exportingPdf, flush, material]\n  )\n",
+          )
+          replace_once(
+              "              <Button label=\"Фокус\" selected onPress={() => setFocus(true)} />\n",
+              "              <Button\n                label={exportingPdf ? 'PDF…' : 'PDF'}\n                disabled={closing || exportingPdf}\n                onPress={() => void exportPdf(node?.title ?? 'Материал')}\n              />\n              <Button label=\"Фокус\" selected onPress={() => setFocus(true)} />\n",
+          )
+          replace_once(
+              "                  <Button label=\"Фокус\" onPress={() => setFocus(true)} />\n",
+              "                  <Button\n                    label={exportingPdf ? 'PDF…' : 'PDF'}\n                    disabled={closing || exportingPdf}\n                    onPress={() => void exportPdf(node?.title ?? 'Материал')}\n                  />\n                  <Button label=\"Фокус\" onPress={() => setFocus(true)} />\n",
+          )
+          path.write_text(text, encoding='utf-8')
+
+          pdf = Path('apps/mobile/src/modules/study/studyPdf.ts')
+          pdf_text = pdf.read_text(encoding='utf-8')
+          pdf_text = pdf_text.replace(
+              "output = output.replace(/(?<!\\*)\\*([^*]+)\\*(?!\\*)/g, '<em>$1</em>')",
+              "output = output.replace(/\\*([^*]+)\\*/g, '<em>$1</em>')",
+          )
+          pdf_text = pdf_text.replace(
+              "output = output.replace(/(?<!_)_([^_]+)_(?!_)/g, '<em>$1</em>')",
+              "output = output.replace(/_([^_]+)_/g, '<em>$1</em>')",
+          )
+          pdf.write_text(pdf_text, encoding='utf-8')
+
+          parity = Path('MOBILE_PARITY.md')
+          parity_lines = parity.read_text(encoding='utf-8').splitlines()
+          for index, line in enumerate(parity_lines):
+              if line.startswith('| Study     |'):
+                  parity_lines[index] = '| Study     | Nested folders/materials, versioned block documents, read/edit/focus, resource navigation, code workspace, links, assets, PDF, duplicate, reorder, autosave, deletion barriers                                        | Shared contracts, V3 SQLite repository, native tree CRUD, lossless block editor, serialized autosave, local attachments, dedicated read/focus mode, Markdown/LaTeX/Mermaid reader, mobile code workspace, desktop-compatible internal-link navigation/back history, and native A4 PDF export with offline local-image embedding | Internal-link authoring UI inside the native rich-text editor, rendered Mermaid diagrams inside PDF (current PDF keeps Mermaid source losslessly), and physical-device PDF/share + rich-content smoke tests. Unsupported blocks remain lossless. |'
+                  break
+          else:
+              raise SystemExit('Study parity row not found')
+
+          parity_text = '\n'.join(parity_lines) + '\n'
+          parity_text = parity_text.replace(
+              'Next continue the remaining Study/Boards reader and canvas parity, then run the final cross-platform review.',
+              'Next run the final cross-platform parity review, close remaining security/platform gaps, and perform physical-device smoke tests for native-only capabilities.'
+          )
+          parity.write_text(parity_text, encoding='utf-8')
+          PY
+
+      - name: Format changed source
+        run: npx prettier --write apps/mobile/src/modules/study/StudyScreen.tsx apps/mobile/src/modules/study/studyPdf.ts apps/mobile/src/modules/study/studyPdfExport.ts apps/mobile/src/modules/study/studyPdf.test.ts apps/mobile/src/shared/ui/DocumentReader.tsx apps/mobile/src/shared/ui/studyRichText.ts apps/mobile/src/shared/ui/studyRichText.test.ts MOBILE_PARITY.md apps/mobile/package.json package-lock.json
+
+      - name: Rebuild native modules for Node
+        run: npm run native:node
+
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run lint:mobile
+      - run: npm run typecheck
+      - run: npm run test:mobile
+      - run: npm run test:run
+      - run: npm run db:check
+      - run: npm run build:bundle
+      - run: npm run export:android
+      - run: git diff --check
+
+      - name: Commit verified sync
+        shell: bash
+        run: |
+          git config user.name "Ramzan Sharifov"
+          git config user.email "114869338+ramzansharifov@users.noreply.github.com"
+          git rm .github/workflows/mobile-pdf-sync.yml
+          git add apps/mobile/package.json package-lock.json apps/mobile/src/modules/study apps/mobile/src/shared/ui/DocumentReader.tsx apps/mobile/src/shared/ui/studyRichText.ts apps/mobile/src/shared/ui/studyRichText.test.ts MOBILE_PARITY.md
+          git commit -m "feat: complete mobile Study PDF export [mobile-pdf-sync]"
+          git push origin HEAD:agent/full-mobile-app
