@@ -14,8 +14,8 @@ function interfaceBlock(source: string, name: string): string {
 
 describe('finance color architecture', () => {
   it('keeps account color out of contracts, validation, storage and renderer payloads', () => {
-    const contract = read('src/shared/contracts/finance.ts')
-    const validation = read('src/shared/validation/finance.ts')
+    const contract = read('../../packages/contracts/src/finance.ts')
+    const validation = read('../../packages/core/src/validation/finance.ts')
     const schema = read('src/main/database/schema/finance.ts')
     const repository = read('src/main/repositories/finance.repository.ts')
     const dialog = read(
@@ -39,7 +39,7 @@ describe('finance color architecture', () => {
   })
 
   it('accepts no custom tag color and derives the three semantic colors only from tag type', () => {
-    const contract = read('src/shared/contracts/finance.ts')
+    const contract = read('../../packages/contracts/src/finance.ts')
     const schema = read('src/main/database/schema/finance.ts')
     const repository = read('src/main/repositories/finance.repository.ts')
     const dialog = read('src/renderer/src/modules/finance/components/dialogs/FinanceTagDialog.tsx')
