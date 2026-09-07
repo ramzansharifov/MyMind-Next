@@ -66,7 +66,7 @@ export function studyAssetMimeType(extension: string): string {
 }
 
 export function sanitizeStudyAssetFileName(value: string): string {
-  const source = (value.replace(/\\/g, '/').split('/').pop() ?? '').normalize('NFC')
+  const source = value.normalize('NFC')
   const dot = source.lastIndexOf('.')
   const originalExtension = dot > 0 ? source.slice(dot) : ''
   const extension = originalExtension
