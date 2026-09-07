@@ -1,7 +1,12 @@
 import { randomUUID } from 'expo-crypto'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, AppState, BackHandler, FlatList, View } from 'react-native'
-import type { StudyDocument, StudyMaterial, StudyNode } from '@mymind/contracts/study'
+import type {
+  StudyBoardBlock,
+  StudyDocument,
+  StudyMaterial,
+  StudyNode
+} from '@mymind/contracts/study'
 import { STUDY_FOLDER_ICON_NAMES } from '@mymind/contracts/study'
 import { AutosaveQueue } from '@mymind/core/autosave'
 import * as studyValidation from '@mymind/core/validation/study'
@@ -59,11 +64,13 @@ function folderLabel(folder: StudyNode, nodes: StudyNode[]): string {
 }
 
 export function StudyScreen({
-  onImmersiveChange
+  onImmersiveChange,
+  onOpenBoard
 }: {
   onImmersiveChange?: (active: boolean) => void
+  onOpenBoard?: (boardId: string) => void
 }): React.JSX.Element {
-  const { study: api, documentAssets } = useServices()
+  const { study: api, boards, documentAssets } = useServices()
   const nodes = useCollection(useCallback(() => api.listNodes(), [api]))
   const [folderId, setFolderId] = useState<string | null>(null)
   const [query, setQuery] = useState('')
@@ -176,6 +183,32 @@ export function StudyScreen({
     setEditorError('')
     queueRef.current?.schedule(next)
   }
+
+  const openLinkedBoard = useCallback(
+    async (block: StudyBoardBlock): Promise<void> => {
+      if (!material || !document || !onOpenBoard) {
+        throw new Error('Связанную доску сейчас нельзя открыть')
+      }
+      await flush()
+      const board = boards.ensureStudyBoard({ materialId: material.nodeId, blockId: block.id })
+      if (block.boardId !== board.id || block.title !== board.title) {
+        const nextDocument: StudyDocument = {
+          ...document,
+          blocks: document.blocks.map((item) =>
+            item.id === block.id && item.type === 'board'
+              ? { ...item, boardId: board.id, title: board.title }
+              : item
+          )
+        }
+        setDocument(nextDocument)
+        queueRef.current?.schedule(nextDocument)
+        await flush()
+      }
+      notifyDataChanged()
+      onOpenBoard(board.id)
+    },
+    [boards, document, flush, material, onOpenBoard]
+  )
 
   const refreshAfterMutation = (): void => {
     nodes.refresh()
@@ -421,6 +454,7 @@ export function StudyScreen({
             openAsset={documentAssets.openAsset}
             resolveAssetUri={documentAssets.resolveAssetUri}
             onAssetError={(reason) => setEditorError(messageFor(reason))}
+            openBoard={openLinkedBoard}
             header={readerHeader}
           />
         ) : (
@@ -431,6 +465,7 @@ export function StudyScreen({
             importAsset={(kind) => documentAssets.importAsset(material.nodeId, kind)}
             openAsset={documentAssets.openAsset}
             resolveAssetUri={documentAssets.resolveAssetUri}
+            openBoard={openLinkedBoard}
             onAssetError={(reason) => setEditorError(messageFor(reason))}
             header={
               <View style={{ gap: 12, paddingBottom: 16 }}>

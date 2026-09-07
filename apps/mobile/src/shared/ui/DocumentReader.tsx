@@ -1,6 +1,7 @@
 import { FlatList, Image, Text, View } from 'react-native'
 import type { StudyBlock, StudyDocument, StudyLocalAsset } from '@mymind/contracts/study'
 import { designTokens } from '@mymind/design'
+import { DocumentBoardReader, type OpenDocumentBoard } from './DocumentBoardBlock'
 import { AudioAssetPlayer } from './VoiceRecorder'
 import { Button, Label } from './primitives'
 import { useTheme } from './theme'
@@ -10,6 +11,7 @@ interface DocumentReaderProps {
   resolveAssetUri?: (asset: StudyLocalAsset) => string | null
   openAsset?: (asset: StudyLocalAsset) => Promise<void>
   onAssetError?: (reason: unknown) => void
+  openBoard?: OpenDocumentBoard
   header?: React.ReactElement | null
 }
 
@@ -99,12 +101,14 @@ function ReadBlock({
   block,
   resolveAssetUri,
   openAsset,
-  onAssetError
+  onAssetError,
+  openBoard
 }: {
   block: StudyBlock
   resolveAssetUri?: (asset: StudyLocalAsset) => string | null
   openAsset?: (asset: StudyLocalAsset) => Promise<void>
   onAssetError?: (reason: unknown) => void
+  openBoard?: OpenDocumentBoard
 }): React.JSX.Element {
   const theme = useTheme()
 
@@ -202,25 +206,7 @@ function ReadBlock({
         />
       )
     case 'board':
-      return (
-        <View
-          style={{
-            gap: 6,
-            padding: 14,
-            borderRadius: designTokens.radius.lg,
-            borderWidth: 1,
-            borderColor: theme.border,
-            backgroundColor: theme.surface
-          }}
-        >
-          <Label>{block.title || 'Доска'}</Label>
-          <Label muted>
-            {block.boardId
-              ? 'Связанная доска сохранена в материале.'
-              : 'Доска ещё не создана для этого блока.'}
-          </Label>
-        </View>
-      )
+      return <DocumentBoardReader block={block} openBoard={openBoard} onError={onAssetError} />
   }
 }
 
@@ -229,6 +215,7 @@ export function DocumentReader({
   resolveAssetUri,
   openAsset,
   onAssetError,
+  openBoard,
   header
 }: DocumentReaderProps): React.JSX.Element {
   return (
@@ -249,6 +236,7 @@ export function DocumentReader({
             resolveAssetUri={resolveAssetUri}
             openAsset={openAsset}
             onAssetError={onAssetError}
+            openBoard={openBoard}
           />
         </View>
       )}

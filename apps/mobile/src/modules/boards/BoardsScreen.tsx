@@ -86,7 +86,11 @@ function folderLabel(folder: BoardNode, nodes: BoardNode[]): string {
   return path.join(' / ')
 }
 
-export function BoardsScreen(): React.JSX.Element {
+export function BoardsScreen({
+  initialBoardId = null
+}: {
+  initialBoardId?: string | null
+}): React.JSX.Element {
   const { boards: api } = useServices()
   const nodes = useCollection(useCallback(() => api.listNodes(), [api]))
   const [folderId, setFolderId] = useState<string | null>(null)
@@ -98,6 +102,7 @@ export function BoardsScreen(): React.JSX.Element {
   const [saveState, setSaveState] = useState<BoardSaveState>('saved')
   const [closingBoard, setClosingBoard] = useState(false)
   const canvasRef = useRef<BoardCanvasDomRef>(null)
+  const initialBoardRef = useRef<string | null>(null)
   const theme = useTheme()
   const canvasColorScheme = theme.background === appearanceTokens.dark.background ? 'dark' : 'light'
 
@@ -111,11 +116,38 @@ export function BoardsScreen(): React.JSX.Element {
     notifyDataChanged()
   }
 
-  const openBoard = (node: BoardNode): void => {
-    setError('')
-    setSaveState('saved')
-    setOpened({ node, document: api.getDocument(node.id) })
-  }
+  const openBoard = useCallback(
+    (node: BoardNode): void => {
+      setError('')
+      setSaveState('saved')
+      setOpened({ node, document: api.getDocument(node.id) })
+    },
+    [api]
+  )
+
+  useEffect(() => {
+    if (!initialBoardId || nodes.loading || initialBoardRef.current === initialBoardId) {
+      return undefined
+    }
+    initialBoardRef.current = initialBoardId
+    let active = true
+    queueMicrotask(() => {
+      if (!active) return
+      const target = allNodes.find((node) => node.id === initialBoardId)
+      if (!target || target.type !== 'board') {
+        setError('Связанная доска не найдена')
+        return
+      }
+      try {
+        openBoard(target)
+      } catch (reason) {
+        setError(messageFor(reason))
+      }
+    })
+    return () => {
+      active = false
+    }
+  }, [allNodes, initialBoardId, nodes.loading, openBoard])
 
   const closeBoard = useCallback(async (): Promise<void> => {
     if (!opened || closingBoard) return

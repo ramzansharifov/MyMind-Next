@@ -4,10 +4,12 @@ import type {
   StudyAssetKind,
   StudyBlock,
   StudyBlockType,
+  StudyBoardBlock,
   StudyDocument,
   StudyLocalAsset
 } from '@mymind/contracts/study'
 import { designTokens } from '@mymind/design'
+import { DocumentBoardEditor, type OpenDocumentBoard } from './DocumentBoardBlock'
 import { Button, Label } from './primitives'
 import { useTheme } from './theme'
 import { AudioAssetPlayer, VoiceRecorder, type VoiceRecordingInput } from './VoiceRecorder'
@@ -19,6 +21,7 @@ const INSERTABLE_BLOCKS: ReadonlyArray<{ type: StudyBlockType; label: string }> 
   { type: 'markdown', label: 'Markdown' },
   { type: 'latex', label: 'LaTeX' },
   { type: 'mermaid', label: 'Mermaid' },
+  { type: 'board', label: 'Доска' },
   { type: 'divider', label: 'Разделитель' }
 ]
 
@@ -45,6 +48,7 @@ interface DocumentEditorProps {
   openAsset?: (asset: StudyLocalAsset) => Promise<void>
   resolveAssetUri?: (asset: StudyLocalAsset) => string | null
   saveRecordedAudio?: (input: VoiceRecordingInput) => Promise<StudyLocalAsset>
+  openBoard?: OpenDocumentBoard
   onAssetError?: (reason: unknown) => void
 }
 
@@ -62,6 +66,8 @@ function newBlock(type: StudyBlockType, id: string): StudyBlock | null {
       return { id, type, source: '', viewMode: 'write', displayMode: 'display' }
     case 'mermaid':
       return { id, type, source: '', viewMode: 'write' }
+    case 'board':
+      return { id, type }
     case 'divider':
       return { id, type, variant: 'solid' }
     default:
@@ -159,11 +165,13 @@ function LocalAssetEditor({
 function BlockInput({
   block,
   update,
-  assetActions
+  assetActions,
+  openBoard
 }: {
   block: StudyBlock
   update(next: StudyBlock): void
   assetActions: DocumentAssetActions
+  openBoard?: OpenDocumentBoard
 }): React.JSX.Element {
   const theme = useTheme()
   const inputStyle = {
@@ -298,21 +306,12 @@ function BlockInput({
       )
     case 'board':
       return (
-        <View style={{ gap: 6 }}>
-          <TextInput
-            accessibilityLabel="Название доски"
-            placeholder="Доска"
-            placeholderTextColor={theme.muted}
-            value={block.title ?? ''}
-            onChangeText={(title) => update({ ...block, title: title || undefined })}
-            style={inputStyle}
-          />
-          <Label muted>
-            {block.boardId
-              ? 'Связанная доска сохранена в документе.'
-              : 'Блок доски без созданного canvas.'}
-          </Label>
-        </View>
+        <DocumentBoardEditor
+          block={block as StudyBoardBlock}
+          update={(next) => update(next)}
+          openBoard={openBoard}
+          onError={assetActions.onAssetError}
+        />
       )
   }
 }
@@ -326,6 +325,7 @@ export function DocumentEditor({
   openAsset,
   resolveAssetUri,
   saveRecordedAudio,
+  openBoard,
   onAssetError
 }: DocumentEditorProps): React.JSX.Element {
   const theme = useTheme()
@@ -430,6 +430,7 @@ export function DocumentEditor({
             block={item}
             update={(next) => replace(index, next)}
             assetActions={assetActions}
+            openBoard={openBoard}
           />
         </View>
       )}

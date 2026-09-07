@@ -2,6 +2,7 @@ import { randomUUID } from 'expo-crypto'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Alert, AppState, BackHandler, FlatList, TextInput, View } from 'react-native'
 import type { NoteDocument, NoteGroup, NoteRecord, NoteSummary } from '@mymind/contracts/notes'
+import type { StudyBoardBlock } from '@mymind/contracts/study'
 import { STUDY_FOLDER_ICON_NAMES } from '@mymind/contracts/study'
 import { AutosaveQueue } from '@mymind/core/autosave'
 import * as notesValidation from '@mymind/core/validation/notes'
@@ -28,8 +29,12 @@ function noteMatches(note: NoteSummary, query: string): boolean {
   return `${note.title} ${note.plainText}`.toLocaleLowerCase().includes(normalized)
 }
 
-export function NotesScreen(): React.JSX.Element {
-  const { notes: api, documentAssets } = useServices()
+export function NotesScreen({
+  onOpenBoard
+}: {
+  onOpenBoard?: (boardId: string) => void
+}): React.JSX.Element {
+  const { notes: api, boards, documentAssets } = useServices()
   const theme = useTheme()
   const overview = useCollection(useCallback(() => api.listNotesOverview(), [api]))
   const [query, setQuery] = useState('')
@@ -114,6 +119,32 @@ export function NotesScreen(): React.JSX.Element {
     setEditorError('')
     queueRef.current?.schedule(next)
   }
+
+  const openLinkedBoard = useCallback(
+    async (block: StudyBoardBlock): Promise<void> => {
+      if (!record || !document || !onOpenBoard) {
+        throw new Error('Связанную доску сейчас нельзя открыть')
+      }
+      await flush()
+      const board = boards.ensureNoteBoard({ noteId: record.id, blockId: block.id })
+      if (block.boardId !== board.id || block.title !== board.title) {
+        const nextDocument: NoteDocument = {
+          ...document,
+          blocks: document.blocks.map((item) =>
+            item.id === block.id && item.type === 'board'
+              ? { ...item, boardId: board.id, title: board.title }
+              : item
+          )
+        }
+        setDocument(nextDocument)
+        queueRef.current?.schedule(nextDocument)
+        await flush()
+      }
+      notifyDataChanged()
+      onOpenBoard(board.id)
+    },
+    [boards, document, flush, onOpenBoard, record]
+  )
 
   const groupChoices = [
     { value: null, label: 'Без группы' },
@@ -246,6 +277,7 @@ export function NotesScreen(): React.JSX.Element {
           openAsset={documentAssets.openAsset}
           resolveAssetUri={documentAssets.resolveAssetUri}
           saveRecordedAudio={(input) => documentAssets.saveRecordedAudio(record.id, input)}
+          openBoard={openLinkedBoard}
           onAssetError={(reason) => setEditorError(messageFor(reason))}
           header={
             <View style={{ gap: 12, paddingBottom: 16 }}>

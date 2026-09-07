@@ -87,6 +87,7 @@ export default function MobileApp(): React.JSX.Element {
     DEFAULT_APPEARANCE_PREFERENCES
   )
   const [route, setRoute] = useState<Route>('home')
+  const [boardResourceId, setBoardResourceId] = useState<string | null>(null)
   const [immersive, setImmersive] = useState(false)
   const [error, setError] = useState('')
   const [attempt, setAttempt] = useState(0)
@@ -98,7 +99,14 @@ export default function MobileApp(): React.JSX.Element {
 
   const navigate = useCallback((next: Route): void => {
     setImmersive(false)
+    setBoardResourceId(null)
     setRoute(next)
+  }, [])
+
+  const openBoard = useCallback((boardId: string): void => {
+    setImmersive(false)
+    setBoardResourceId(boardId)
+    setRoute('boards')
   }, [])
 
   useEffect(() => {
@@ -192,11 +200,11 @@ export default function MobileApp(): React.JSX.Element {
                 {route === 'home' ? (
                   <Home services={services} navigate={navigate} />
                 ) : route === 'study' ? (
-                  <StudyScreen onImmersiveChange={setImmersive} />
+                  <StudyScreen onImmersiveChange={setImmersive} onOpenBoard={openBoard} />
                 ) : route === 'boards' ? (
-                  <BoardsScreen />
+                  <BoardsScreen initialBoardId={boardResourceId} />
                 ) : route === 'notes' ? (
-                  <NotesScreen />
+                  <NotesScreen onOpenBoard={openBoard} />
                 ) : route === 'tasks' ? (
                   <TasksScreen />
                 ) : route === 'habits' ? (
