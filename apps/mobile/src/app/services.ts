@@ -12,10 +12,12 @@ import { createBoardsRepository } from '@mymind/persistence/boards'
 import { createWorkoutsRepository } from '@mymind/persistence/workouts'
 import { createNutritionRepository } from '@mymind/persistence/nutrition'
 import { createFinanceRepository } from '@mymind/persistence/finance'
+import { createPasswordsRepository } from '@mymind/persistence/passwords'
 import {
   createWorkoutProgressAssetHooks,
   reconcileWorkoutProgressAssets
 } from '../modules/workouts/workoutProgressAssets'
+import { mobilePasswordCrypto } from '../modules/passwords/passwordCrypto'
 import { adaptSqlite } from '../shared/storage/sqlite'
 
 export interface MobileServices {
@@ -31,6 +33,7 @@ export interface MobileServices {
   workouts: ReturnType<typeof createWorkoutsRepository>
   nutrition: ReturnType<typeof createNutritionRepository>
   finance: ReturnType<typeof createFinanceRepository>
+  passwords: ReturnType<typeof createPasswordsRepository>
   settings: { get(key: string): string | null; set(key: string, value: string): void }
 }
 
@@ -106,6 +109,7 @@ export function createMobileServices(db: SQLiteDatabase): MobileServices {
     workouts,
     nutrition: createNutritionRepository(runtime),
     finance: createFinanceRepository(runtime),
+    passwords: createPasswordsRepository(runtime, mobilePasswordCrypto),
     settings: {
       get: (key: string) =>
         db.getFirstSync<{ value: string }>(
