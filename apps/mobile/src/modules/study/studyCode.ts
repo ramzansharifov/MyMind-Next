@@ -117,7 +117,8 @@ export async function applyMobileStudyCode(
   nodeId: string,
   source: string,
   baseRevision: string,
-  confirmDestructive = false
+  confirmDestructive = false,
+  validateDocumentAssets?: (ownerId: string, document: StudyDocument) => Promise<void>
 ): Promise<StudyCodeApplyResult> {
   const preview = previewMobileStudyCode(repository, nodeId, source, baseRevision)
   if (!preview.valid) throw diagnosticError(preview.diagnostics[0])
@@ -134,6 +135,13 @@ export async function applyMobileStudyCode(
   if (snapshot.revision !== baseRevision) throw diagnosticError(revisionConflictDiagnostic())
 
   const plan = buildPlan(repository, nodeId, source)
+  if (validateDocumentAssets) {
+    for (const desired of plan.desired) {
+      if (desired.ast.kind === 'material' && desired.existing && desired.document) {
+        await validateDocumentAssets(desired.existing.id, desired.document)
+      }
+    }
+  }
   const documentAst = parseStudyCode(source)
   const originalIds = new Set(plan.scope.rows.map((row) => row.id))
   const actualIds = new Map<StudyCodeTreeAst, string>()

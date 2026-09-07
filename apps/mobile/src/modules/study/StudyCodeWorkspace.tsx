@@ -3,7 +3,8 @@ import { Alert, Platform, ScrollView, Text, TextInput, View } from 'react-native
 import type {
   StudyCodeApplyResult,
   StudyCodePreviewResult,
-  StudyCodeSnapshot
+  StudyCodeSnapshot,
+  StudyDocument
 } from '@mymind/contracts/study'
 import type { StudyRepository } from '@mymind/persistence/study'
 import { Button, ErrorState, Label, LoadingState } from '../../shared/ui/primitives'
@@ -18,11 +19,13 @@ import {
 export function StudyCodeWorkspace({
   repository,
   nodeId,
+  validateDocumentAssets,
   onClose,
   onApplied
 }: {
   repository: StudyRepository
   nodeId: string
+  validateDocumentAssets(ownerId: string, document: StudyDocument): Promise<void>
   onClose(): void
   onApplied(result: StudyCodeApplyResult): void
 }): React.JSX.Element {
@@ -84,7 +87,8 @@ export function StudyCodeWorkspace({
         nodeId,
         source,
         snapshot.revision,
-        confirmDestructive
+        confirmDestructive,
+        validateDocumentAssets
       )
       const next = getMobileStudyCodeSnapshot(repository, nodeId)
       setSnapshot(next)

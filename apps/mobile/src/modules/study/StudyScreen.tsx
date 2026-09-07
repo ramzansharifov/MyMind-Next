@@ -16,6 +16,7 @@ import { useCollection } from '../../shared/hooks/useCollection'
 import { DocumentEditor } from '../../shared/ui/DocumentEditor'
 import { DocumentReader } from '../../shared/ui/DocumentReader'
 import { FormSheet } from '../../shared/ui/FormSheet'
+import { StudyCodeWorkspace } from './StudyCodeWorkspace'
 import { choiceField, messageFor, textField, type FormSpec } from '../../shared/ui/form-model'
 import {
   Button,
@@ -80,7 +81,8 @@ export function StudyScreen({
   const [editorError, setEditorError] = useState('')
   const [closing, setClosing] = useState(false)
   const [pendingAction, setPendingAction] = useState(false)
-  const [materialMode, setMaterialMode] = useState<'read' | 'edit'>('edit')
+  const [materialMode, setMaterialMode] = useState<'read' | 'edit' | 'code'>('edit')
+  const [codeNodeId, setCodeNodeId] = useState<string | null>(null)
   const [focusMode, setFocusMode] = useState(false)
   const queueRef = useRef<AutosaveQueue<StudyDocument> | null>(null)
 
@@ -157,6 +159,14 @@ export function StudyScreen({
         setFocus(false)
         return true
       }
+      if (material && materialMode === 'code') {
+        setMaterialMode('edit')
+        return true
+      }
+      if (codeNodeId) {
+        setCodeNodeId(null)
+        return true
+      }
       if (material) {
         void closeMaterial()
         return true
@@ -168,7 +178,16 @@ export function StudyScreen({
       return false
     })
     return () => subscription.remove()
-  }, [closeMaterial, currentFolder?.parentId, effectiveFolderId, focusMode, material, setFocus])
+  }, [
+    closeMaterial,
+    codeNodeId,
+    currentFolder?.parentId,
+    effectiveFolderId,
+    focusMode,
+    material,
+    materialMode,
+    setFocus
+  ])
 
   useEffect(() => {
     if (!material) return
@@ -395,8 +414,46 @@ export function StudyScreen({
     return result
   }, [allNodes, currentFolder])
 
+  if (codeNodeId) {
+    return (
+      <View style={{ flex: 1 }}>
+        {editorError ? <ErrorState message={editorError} /> : null}
+        <StudyCodeWorkspace
+          repository={api}
+          nodeId={codeNodeId}
+          validateDocumentAssets={documentAssets.validateDocumentAssets}
+          onClose={() => setCodeNodeId(null)}
+          onApplied={() => {
+            nodes.refresh()
+            notifyDataChanged()
+          }}
+        />
+      </View>
+    )
+  }
+
   if (material && document) {
     const node = allNodes.find((item) => item.id === material.nodeId)
+    if (materialMode === 'code') {
+      return (
+        <View style={{ flex: 1 }}>
+          {editorError ? <ErrorState message={editorError} /> : null}
+          <StudyCodeWorkspace
+            repository={api}
+            nodeId={material.nodeId}
+            validateDocumentAssets={documentAssets.validateDocumentAssets}
+            onClose={() => setMaterialMode('edit')}
+            onApplied={() => {
+              const next = api.getMaterial(material.nodeId)
+              setMaterial(next)
+              setDocument(next.document)
+              nodes.refresh()
+              notifyDataChanged()
+            }}
+          />
+        </View>
+      )
+    }
     const reading = focusMode || materialMode === 'read'
     const readerHeader = (
       <View
@@ -418,6 +475,15 @@ export function StudyScreen({
                 onPress={() => void closeMaterial()}
               />
               <Button label="Редактировать" onPress={() => setMaterialMode('edit')} />
+              <Button
+                label="Код"
+                disabled={closing}
+                onPress={() => {
+                  void flush()
+                    .then(() => setMaterialMode('code'))
+                    .catch((reason) => setEditorError(messageFor(reason)))
+                }}
+              />
               <Button label="Фокус" selected onPress={() => setFocus(true)} />
               {node ? (
                 <Button label="Свойства" disabled={closing} onPress={() => editNode(node)} />
@@ -476,6 +542,15 @@ export function StudyScreen({
                     onPress={() => void closeMaterial()}
                   />
                   <Button label="Чтение" onPress={() => setMaterialMode('read')} />
+                  <Button
+                    label="Код"
+                    disabled={closing}
+                    onPress={() => {
+                      void flush()
+                        .then(() => setMaterialMode('code'))
+                        .catch((reason) => setEditorError(messageFor(reason)))
+                    }}
+                  />
                   <Button label="Фокус" onPress={() => setFocus(true)} />
                   {node ? (
                     <Button label="Свойства" disabled={closing} onPress={() => editNode(node)} />
@@ -533,6 +608,9 @@ export function StudyScreen({
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           <Button label="+ Папка" selected onPress={createFolder} />
           <Button label="+ Материал" selected onPress={createMaterial} />
+          {currentFolder ? (
+            <Button label="Код" onPress={() => setCodeNodeId(currentFolder.id)} />
+          ) : null}
         </View>
         <SearchField value={query} onChangeText={setQuery} />
       </View>
@@ -559,6 +637,7 @@ export function StudyScreen({
               }
             >
               <Button label="Изменить" onPress={() => editNode(item)} />
+              <Button label="Код" onPress={() => setCodeNodeId(item.id)} />
               <Button label="↑" disabled={index === 0} onPress={() => reorder(item, -1)} />
               <Button
                 label="↓"
