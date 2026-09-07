@@ -6,7 +6,6 @@ import type {
   StudyCodeSnapshot
 } from '@mymind/contracts/study'
 import type { StudyRepository } from '@mymind/persistence/study'
-import type { MobileDocumentAssetStore } from '../../shared/platform/documentAssets'
 import { Button, ErrorState, Label, LoadingState } from '../../shared/ui/primitives'
 import { useTheme } from '../../shared/ui/theme'
 import {
@@ -18,13 +17,11 @@ import {
 
 export function StudyCodeWorkspace({
   repository,
-  documentAssets,
   nodeId,
   onClose,
   onApplied
 }: {
   repository: StudyRepository
-  documentAssets: MobileDocumentAssetStore
   nodeId: string
   onClose(): void
   onApplied(result: StudyCodeApplyResult): void
@@ -79,8 +76,7 @@ export function StudyCodeWorkspace({
         nodeId,
         source,
         snapshot.revision,
-        confirmDestructive,
-        documentAssets.validateDocumentAssets
+        confirmDestructive
       )
       const next = getMobileStudyCodeSnapshot(repository, nodeId)
       setSnapshot(next)
@@ -114,9 +110,7 @@ export function StudyCodeWorkspace({
   if (!snapshot && !error) return <LoadingState />
 
   const summary = preview?.summary
-  const changed = summary
-    ? Object.values(summary).reduce((total, value) => total + value, 0)
-    : 0
+  const changed = summary ? Object.values(summary).reduce((total, value) => total + value, 0) : 0
 
   return (
     <View style={{ flex: 1, gap: 10 }}>
@@ -125,7 +119,12 @@ export function StudyCodeWorkspace({
         <Button label="Сбросить" disabled={busy} onPress={reload} />
         <Button label="Формат" disabled={busy} onPress={format} />
         <Button label="Проверить" disabled={busy} onPress={() => void check()} />
-        <Button label={busy ? 'Применение…' : 'Применить'} selected disabled={busy} onPress={save} />
+        <Button
+          label={busy ? 'Применение…' : 'Применить'}
+          selected
+          disabled={busy}
+          onPress={save}
+        />
       </View>
 
       {snapshot ? (
