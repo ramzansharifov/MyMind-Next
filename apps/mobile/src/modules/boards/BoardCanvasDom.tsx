@@ -17,6 +17,7 @@ import {
 import 'tldraw/tldraw.css'
 import type { BoardSnapshot } from '@mymind/contracts/boards'
 import { BoardSaveQueue, type BoardSaveState } from '@mymind/core/board-save-queue'
+import RichContentDom, { type RichContentDomProps } from '../../shared/ui/RichContentDom'
 
 const assetUrls = getAssetUrlsByMetaUrl()
 const AUTOSAVE_DELAY_MS = 800
@@ -25,15 +26,22 @@ export interface BoardCanvasDomRef extends DOMImperativeFactory {
   flush: () => Promise<void>
 }
 
-interface BoardCanvasDomProps {
+interface BoardSurfaceProps {
   ref: Ref<BoardCanvasDomRef>
   dom?: import('expo/dom').DOMProps
+  mode?: 'board'
   snapshot: BoardSnapshot | null
   colorScheme: 'light' | 'dark'
   saveSnapshot: (snapshot: BoardSnapshot) => Promise<void>
   onSaveState: (state: BoardSaveState) => Promise<void>
   onError: (message: string) => Promise<void>
 }
+
+interface RichSurfaceProps extends RichContentDomProps {
+  mode: 'rich'
+}
+
+type BoardCanvasDomProps = BoardSurfaceProps | RichSurfaceProps
 
 interface StoreState {
   store: TLStore | null
@@ -64,14 +72,14 @@ function serializeSnapshot(store: TLStore): BoardSnapshot {
   return JSON.parse(JSON.stringify(getSnapshot(store))) as BoardSnapshot
 }
 
-export default function BoardCanvasDom({
+function BoardSurface({
   ref,
   snapshot,
   colorScheme,
   saveSnapshot,
   onSaveState,
   onError
-}: BoardCanvasDomProps): React.JSX.Element {
+}: BoardSurfaceProps): React.JSX.Element {
   const [storeState] = useState(() => createStore(snapshot))
   const [queue] = useState(
     () =>
@@ -161,6 +169,11 @@ export default function BoardCanvasDom({
       <style>{styles}</style>
     </main>
   )
+}
+
+export default function BoardCanvasDom(props: BoardCanvasDomProps): React.JSX.Element {
+  if (props.mode === 'rich') return <RichContentDom {...props} />
+  return <BoardSurface {...props} />
 }
 
 const styles = `
