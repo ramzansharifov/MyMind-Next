@@ -24,7 +24,7 @@ describe('finance limit architecture', () => {
   })
 
   it('does not keep an independent limit name in the public contract or database schema', () => {
-    const contract = read('src/shared/contracts/finance.ts')
+    const contract = read('../../packages/contracts/src/finance.ts')
     const schema = read('src/main/database/schema/finance.ts')
     const migration = read('drizzle/0015_simplify_finance_templates_limits.sql')
     const financeLimitContract = contract.match(/export interface FinanceLimit \{[\s\S]*?\n\}/)?.[0]
