@@ -399,7 +399,11 @@ export function DocumentEditor({
               <Button label="Удалить" danger onPress={() => remove(index)} />
             </View>
           </View>
-          <BlockInput block={item} update={(next) => replace(index, next)} assetActions={assetActions} />
+          <BlockInput
+            block={item}
+            update={(next) => replace(index, next)}
+            assetActions={assetActions}
+          />
         </View>
       )}
       ListFooterComponent={

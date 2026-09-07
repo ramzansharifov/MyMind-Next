@@ -29,7 +29,7 @@ function noteMatches(note: NoteSummary, query: string): boolean {
 }
 
 export function NotesScreen(): React.JSX.Element {
-  const { notes: api } = useServices()
+  const { notes: api, documentAssets } = useServices()
   const theme = useTheme()
   const overview = useCollection(useCallback(() => api.listNotesOverview(), [api]))
   const [query, setQuery] = useState('')
@@ -242,6 +242,10 @@ export function NotesScreen(): React.JSX.Element {
           document={document}
           onChange={changeDocument}
           createId={randomUUID}
+          importAsset={(kind) => documentAssets.importAsset(record.id, kind)}
+          openAsset={documentAssets.openAsset}
+          resolveAssetUri={documentAssets.resolveAssetUri}
+          onAssetError={(reason) => setEditorError(messageFor(reason))}
           header={
             <View style={{ gap: 12, paddingBottom: 16 }}>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>

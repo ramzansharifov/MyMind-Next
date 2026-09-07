@@ -58,7 +58,7 @@ function folderLabel(folder: StudyNode, nodes: StudyNode[]): string {
 }
 
 export function StudyScreen(): React.JSX.Element {
-  const { study: api } = useServices()
+  const { study: api, documentAssets } = useServices()
   const nodes = useCollection(useCallback(() => api.listNodes(), [api]))
   const [folderId, setFolderId] = useState<string | null>(null)
   const [query, setQuery] = useState('')
@@ -347,6 +347,10 @@ export function StudyScreen(): React.JSX.Element {
           document={document}
           onChange={changeDocument}
           createId={randomUUID}
+          importAsset={(kind) => documentAssets.importAsset(material.nodeId, kind)}
+          openAsset={documentAssets.openAsset}
+          resolveAssetUri={documentAssets.resolveAssetUri}
+          onAssetError={(reason) => setEditorError(messageFor(reason))}
           header={
             <View style={{ gap: 12, paddingBottom: 16 }}>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>

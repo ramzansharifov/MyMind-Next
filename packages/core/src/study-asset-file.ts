@@ -73,7 +73,9 @@ export function sanitizeStudyAssetFileName(value: string): string {
     .replace(/[^.a-zA-Z0-9]/g, '')
     .slice(0, 16)
     .toLocaleLowerCase('en-US')
-  const rawStem = originalExtension ? source.slice(0, source.length - originalExtension.length) : source
+  const rawStem = originalExtension
+    ? source.slice(0, source.length - originalExtension.length)
+    : source
   const stem = replaceControlCharacters(rawStem)
     .replace(/[<>:"/\\|?*]/g, '_')
     .replace(/[.\s]+$/g, '')

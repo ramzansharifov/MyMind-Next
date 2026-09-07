@@ -122,7 +122,8 @@ export function createMobileServices(db: SQLiteDatabase): MobileServices {
     for (const node of study.listNodes()) {
       if (node.type === 'material') documents.set(node.id, study.getMaterial(node.id).document)
     }
-    for (const note of notes.listNotesOverview().notes) documents.set(note.id, notes.getNote(note.id).document)
+    for (const note of notes.listNotesOverview().notes)
+      documents.set(note.id, notes.getNote(note.id).document)
     void documentAssets.reconcileDocuments(documents).catch((reason: unknown) => {
       console.error('Failed to reconcile mobile document assets', reason)
     })

@@ -28,10 +28,7 @@ interface AssetReservation {
 
 const reservations = new Map<string, AssetReservation>()
 
-type AssetBlock = Extract<
-  StudyBlock,
-  { type: 'image' | 'video' | 'audio' | 'file' }
->
+type AssetBlock = Extract<StudyBlock, { type: 'image' | 'video' | 'audio' | 'file' }>
 
 function reservationKey(ownerId: string, assetId: string): string {
   return `${ownerId}:${assetId}`
@@ -135,7 +132,10 @@ export interface MobileDocumentAssetStore {
 }
 
 export function createMobileDocumentAssetStore(): MobileDocumentAssetStore {
-  async function importAsset(ownerId: string, kind: StudyAssetKind): Promise<StudyLocalAsset | null> {
+  async function importAsset(
+    ownerId: string,
+    kind: StudyAssetKind
+  ): Promise<StudyLocalAsset | null> {
     assertSafeId(ownerId, 'идентификатор документа')
     const result = await DocumentPicker.getDocumentAsync({
       type: pickerMimeTypes(kind),
@@ -249,7 +249,10 @@ export function createMobileDocumentAssetStore(): MobileDocumentAssetStore {
     const directory = ownerDirectory(ownerId)
     if (!directory.exists) return
     for (const entry of directory.list()) {
-      if (!(entry instanceof Directory) || (!referenced.has(entry.name) && !reserved.has(entry.name)))
+      if (
+        !(entry instanceof Directory) ||
+        (!referenced.has(entry.name) && !reserved.has(entry.name))
+      )
         entry.delete()
     }
     if (directory.exists && directory.list().length === 0) directory.delete()
