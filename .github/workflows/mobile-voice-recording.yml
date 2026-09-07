@@ -1,0 +1,526 @@
+name: Mobile voice recording checkpoint
+
+on:
+  push:
+    branches:
+      - agent/full-mobile-app
+    paths:
+      - .mobile-voice-recording-trigger
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Use npm 11
+        run: npm install --global npm@11
+
+      - name: Implement native voice recording and playback
+        shell: bash
+        run: |
+          cat > packages/core/src/note-voice-recording.ts <<'EOF'
+          import {
+            NOTE_VOICE_RECORDING_MAX_BYTES,
+            type NoteVoiceRecordingMimeType
+          } from '@mymind/contracts/notes'
+
+          const EXTENSIONS: Readonly<Record<NoteVoiceRecordingMimeType, string>> = {
+            'audio/mp4': 'm4a',
+            'audio/webm': 'webm',
+            'audio/ogg': 'ogg'
+          }
+
+          export function noteVoiceRecordingFileName(
+            mimeType: NoteVoiceRecordingMimeType,
+            createdAt = Date.now()
+          ): string {
+            if (!Number.isSafeInteger(createdAt) || createdAt < 0) {
+              throw new Error('Некорректное время создания записи')
+            }
+            return `voice-${createdAt}.${EXTENSIONS[mimeType]}`
+          }
+
+          export function assertNoteVoiceRecordingSize(size: number): void {
+            if (!Number.isSafeInteger(size) || size <= 0) {
+              throw new Error('Запись не должна быть пустой')
+            }
+            if (size > NOTE_VOICE_RECORDING_MAX_BYTES) {
+              throw new Error('Запись превышает допустимый размер 50 МБ')
+            }
+          }
+          EOF
+
+          cat > packages/core/src/note-voice-recording.test.ts <<'EOF'
+          import { describe, expect, it } from 'vitest'
+          import { NOTE_VOICE_RECORDING_MAX_BYTES } from '@mymind/contracts/notes'
+          import {
+            assertNoteVoiceRecordingSize,
+            noteVoiceRecordingFileName
+          } from './note-voice-recording'
+
+          describe('note voice recording rules', () => {
+            it('uses a stable extension for every accepted desktop-compatible mime type', () => {
+              expect(noteVoiceRecordingFileName('audio/mp4', 123)).toBe('voice-123.m4a')
+              expect(noteVoiceRecordingFileName('audio/webm', 123)).toBe('voice-123.webm')
+              expect(noteVoiceRecordingFileName('audio/ogg', 123)).toBe('voice-123.ogg')
+            })
+
+            it('accepts a recording up to 50 MiB and rejects empty or oversized files', () => {
+              expect(() => assertNoteVoiceRecordingSize(1)).not.toThrow()
+              expect(() => assertNoteVoiceRecordingSize(NOTE_VOICE_RECORDING_MAX_BYTES)).not.toThrow()
+              expect(() => assertNoteVoiceRecordingSize(0)).toThrow('Запись не должна быть пустой')
+              expect(() => assertNoteVoiceRecordingSize(NOTE_VOICE_RECORDING_MAX_BYTES + 1)).toThrow(
+                'Запись превышает допустимый размер 50 МБ'
+              )
+            })
+          })
+          EOF
+
+          cat > apps/mobile/src/shared/ui/VoiceRecorder.tsx <<'EOF'
+          import {
+            AudioModule,
+            RecordingPresets,
+            setAudioModeAsync,
+            useAudioPlayer,
+            useAudioPlayerStatus,
+            useAudioRecorder,
+            useAudioRecorderState
+          } from 'expo-audio'
+          import { File } from 'expo-file-system'
+          import { useCallback, useEffect, useRef, useState } from 'react'
+          import { AppState, Platform, View } from 'react-native'
+          import type { NoteVoiceRecordingMimeType } from '@mymind/contracts/notes'
+          import type { StudyLocalAsset } from '@mymind/contracts/study'
+          import { Button, Label } from './primitives'
+
+          export interface VoiceRecordingInput {
+            uri: string
+            mimeType: NoteVoiceRecordingMimeType
+          }
+
+          type RecorderPhase = 'idle' | 'starting' | 'recording' | 'saving'
+
+          function durationLabel(milliseconds: number): string {
+            const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000))
+            const minutes = Math.floor(totalSeconds / 60)
+            const seconds = totalSeconds % 60
+            return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+          }
+
+          function playbackLabel(seconds: number): string {
+            return durationLabel(Math.round(Math.max(0, seconds) * 1000))
+          }
+
+          function discardRecording(uri: string | null): void {
+            if (!uri) return
+            try {
+              const file = new File(uri)
+              if (file.exists) file.delete()
+            } catch {
+              // Cache cleanup is best-effort. The OS can reclaim the recorder cache as well.
+            }
+          }
+
+          async function setRecordingAudioMode(enabled: boolean): Promise<void> {
+            await setAudioModeAsync({
+              allowsRecording: enabled,
+              playsInSilentMode: true
+            })
+          }
+
+          export function VoiceRecorder({
+            saveRecording,
+            onSaved,
+            onError,
+            disabled = false
+          }: {
+            saveRecording(input: VoiceRecordingInput): Promise<StudyLocalAsset>
+            onSaved(asset: StudyLocalAsset): void
+            onError?: (reason: unknown) => void
+            disabled?: boolean
+          }): React.JSX.Element {
+            const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY)
+            const recorderState = useAudioRecorderState(recorder, 250)
+            const [phase, setPhaseState] = useState<RecorderPhase>('idle')
+            const phaseRef = useRef<RecorderPhase>('idle')
+            const mountedRef = useRef(true)
+
+            const setPhase = useCallback((next: RecorderPhase): void => {
+              phaseRef.current = next
+              if (mountedRef.current) setPhaseState(next)
+            }, [])
+
+            const stopWithoutSaving = useCallback(
+              async (message?: string): Promise<void> => {
+                if (phaseRef.current !== 'recording') return
+                setPhase('saving')
+                try {
+                  await recorder.stop()
+                  discardRecording(recorder.uri)
+                  if (message) onError?.(new Error(message))
+                } catch (reason) {
+                  onError?.(reason)
+                } finally {
+                  await setRecordingAudioMode(false).catch(() => undefined)
+                  setPhase('idle')
+                }
+              },
+              [onError, recorder, setPhase]
+            )
+
+            useEffect(() => {
+              mountedRef.current = true
+              return () => {
+                mountedRef.current = false
+              }
+            }, [])
+
+            useEffect(() => {
+              const subscription = AppState.addEventListener('change', (state) => {
+                if (state !== 'active' && phaseRef.current === 'recording') {
+                  void stopWithoutSaving('Запись остановлена без сохранения при сворачивании приложения')
+                }
+              })
+              return () => subscription.remove()
+            }, [stopWithoutSaving])
+
+            useEffect(
+              () => () => {
+                if (phaseRef.current !== 'recording') return
+                phaseRef.current = 'saving'
+                void recorder
+                  .stop()
+                  .then(() => discardRecording(recorder.uri))
+                  .catch(() => undefined)
+                  .finally(() => {
+                    void setRecordingAudioMode(false).catch(() => undefined)
+                  })
+              },
+              [recorder]
+            )
+
+            const start = async (): Promise<void> => {
+              if (disabled || phaseRef.current !== 'idle') return
+              if (Platform.OS === 'web') {
+                onError?.(new Error('Запись голоса доступна в мобильном приложении MyMind'))
+                return
+              }
+
+              setPhase('starting')
+              try {
+                const currentPermission = await AudioModule.getRecordingPermissionsAsync()
+                const permission = currentPermission.granted
+                  ? currentPermission
+                  : await AudioModule.requestRecordingPermissionsAsync()
+                if (!permission.granted) {
+                  throw new Error('Для записи голоса нужен доступ к микрофону')
+                }
+
+                await setRecordingAudioMode(true)
+                await recorder.prepareToRecordAsync()
+                recorder.record()
+                setPhase('recording')
+              } catch (reason) {
+                await setRecordingAudioMode(false).catch(() => undefined)
+                setPhase('idle')
+                onError?.(reason)
+              }
+            }
+
+            const stopAndSave = async (): Promise<void> => {
+              if (phaseRef.current !== 'recording') return
+              setPhase('saving')
+              try {
+                await recorder.stop()
+                const uri = recorder.uri
+                if (!uri) throw new Error('Не удалось получить файл голосовой записи')
+                const asset = await saveRecording({ uri, mimeType: 'audio/mp4' })
+                onSaved(asset)
+              } catch (reason) {
+                discardRecording(recorder.uri)
+                onError?.(reason)
+              } finally {
+                await setRecordingAudioMode(false).catch(() => undefined)
+                setPhase('idle')
+              }
+            }
+
+            return (
+              <View style={{ gap: 8 }}>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                  <Button
+                    label={
+                      phase === 'starting'
+                        ? 'Подготовка…'
+                        : phase === 'saving'
+                          ? 'Сохранение…'
+                          : phase === 'recording'
+                            ? 'Остановить и добавить'
+                            : 'Записать голос'
+                    }
+                    selected={phase === 'recording'}
+                    disabled={disabled || phase === 'starting' || phase === 'saving'}
+                    onPress={() => void (phase === 'recording' ? stopAndSave() : start())}
+                  />
+                  {phase === 'recording' ? (
+                    <Button label="Отмена" danger onPress={() => void stopWithoutSaving()} />
+                  ) : null}
+                </View>
+                {phase === 'recording' ? (
+                  <Label muted>Запись · {durationLabel(recorderState.durationMillis)}</Label>
+                ) : null}
+              </View>
+            )
+          }
+
+          export function AudioAssetPlayer({
+            uri,
+            onError
+          }: {
+            uri: string
+            onError?: (reason: unknown) => void
+          }): React.JSX.Element {
+            const player = useAudioPlayer(uri, { updateInterval: 250 })
+            const status = useAudioPlayerStatus(player)
+
+            const toggle = async (): Promise<void> => {
+              try {
+                if (status.playing) {
+                  player.pause()
+                  return
+                }
+                if (status.duration > 0 && status.currentTime >= status.duration - 0.1) {
+                  await player.seekTo(0)
+                }
+                player.play()
+              } catch (reason) {
+                onError?.(reason)
+              }
+            }
+
+            return (
+              <View style={{ gap: 6 }}>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                  <Button
+                    label={status.playing ? 'Пауза' : status.isLoaded ? 'Воспроизвести' : 'Загрузка…'}
+                    disabled={!status.isLoaded}
+                    onPress={() => void toggle()}
+                  />
+                </View>
+                <Label muted>
+                  {playbackLabel(status.currentTime)} / {playbackLabel(status.duration)}
+                </Label>
+                {status.error ? <Label muted>Не удалось воспроизвести: {status.error}</Label> : null}
+              </View>
+            )
+          }
+          EOF
+
+          node <<'NODE'
+          const fs = require('node:fs')
+
+          function patch(path, replacements) {
+            let value = fs.readFileSync(path, 'utf8')
+            for (const [from, to] of replacements) {
+              if (!value.includes(from)) throw new Error(`Patch target not found in ${path}: ${from}`)
+              value = value.replace(from, to)
+            }
+            fs.writeFileSync(path, value)
+          }
+
+          patch('packages/contracts/src/notes.ts', [
+            [
+              "export type NoteVoiceRecordingMimeType = 'audio/webm' | 'audio/ogg' | 'audio/mp4'",
+              "export const NOTE_VOICE_RECORDING_MIME_TYPES = ['audio/webm', 'audio/ogg', 'audio/mp4'] as const\nexport type NoteVoiceRecordingMimeType = (typeof NOTE_VOICE_RECORDING_MIME_TYPES)[number]\nexport const NOTE_VOICE_RECORDING_MAX_BYTES = 50 * 1024 * 1024"
+            ]
+          ])
+
+          patch('packages/core/src/validation/notes.ts', [
+            [
+              "import { NOTE_BLOCK_TYPES } from '@mymind/contracts/notes'",
+              "import {\n  NOTE_BLOCK_TYPES,\n  NOTE_VOICE_RECORDING_MAX_BYTES,\n  NOTE_VOICE_RECORDING_MIME_TYPES\n} from '@mymind/contracts/notes'"
+            ],
+            ["const NOTE_VOICE_RECORDING_MAX_BYTES = 50 * 1024 * 1024\n\n", ''],
+            [
+              "  mimeType: z.enum(['audio/webm', 'audio/ogg', 'audio/mp4'])",
+              '  mimeType: z.enum(NOTE_VOICE_RECORDING_MIME_TYPES)'
+            ]
+          ])
+
+          patch('apps/mobile/src/shared/platform/documentAssets.ts', [
+            [
+              "import type {\n  StudyAssetKind,",
+              "import type { NoteVoiceRecordingMimeType } from '@mymind/contracts/notes'\nimport type {\n  StudyAssetKind,"
+            ],
+            [
+              "import { createCanonicalStudyAssetUrl, isSafeStudyAssetFileName } from '@mymind/core/study-assets'",
+              "import { createCanonicalStudyAssetUrl, isSafeStudyAssetFileName } from '@mymind/core/study-assets'\nimport {\n  assertNoteVoiceRecordingSize,\n  noteVoiceRecordingFileName\n} from '@mymind/core/note-voice-recording'"
+            ],
+            [
+              "  importAsset(ownerId: string, kind: StudyAssetKind): Promise<StudyLocalAsset | null>\n",
+              "  importAsset(ownerId: string, kind: StudyAssetKind): Promise<StudyLocalAsset | null>\n  saveRecordedAudio(\n    ownerId: string,\n    input: { uri: string; mimeType: NoteVoiceRecordingMimeType }\n  ): Promise<StudyLocalAsset>\n"
+            ],
+            [
+              "  async function validateDocumentAssets(ownerId: string, document: StudyDocument): Promise<void> {",
+              `  async function saveRecordedAudio(\n    ownerId: string,\n    input: { uri: string; mimeType: NoteVoiceRecordingMimeType }\n  ): Promise<StudyLocalAsset> {\n    assertSafeId(ownerId, 'идентификатор документа')\n    const source = new File(input.uri)\n    if (!source.exists) throw new Error('Файл голосовой записи не найден')\n\n    let directory: Directory | null = null\n    try {\n      assertNoteVoiceRecordingSize(source.size)\n      const id = randomUUID()\n      const fileName = noteVoiceRecordingFileName(input.mimeType)\n      directory = assetDirectory(ownerId, id)\n      const target = new File(directory, fileName)\n      directory.create({ intermediates: true, idempotent: false })\n      await source.copy(target)\n      if (!target.exists) throw new Error('Не удалось сохранить голосовую запись')\n      assertNoteVoiceRecordingSize(target.size)\n      reserve(ownerId, id)\n      try {\n        if (source.exists) source.delete()\n      } catch {\n        // The recorder cache is best-effort cleanup after a successful copy.\n      }\n      return {\n        id,\n        materialId: ownerId,\n        name: fileName,\n        mimeType: input.mimeType,\n        size: target.size,\n        url: createCanonicalStudyAssetUrl({ materialId: ownerId, assetId: id, fileName })\n      }\n    } catch (reason) {\n      if (directory?.exists) directory.delete()\n      try {\n        if (source.exists) source.delete()\n      } catch {\n        // The OS can reclaim the recorder cache if explicit cleanup is unavailable.\n      }\n      throw reason\n    }\n  }\n\n  async function validateDocumentAssets(ownerId: string, document: StudyDocument): Promise<void> {`
+            ],
+            [
+              "    importAsset,\n    validateDocumentAssets,",
+              "    importAsset,\n    saveRecordedAudio,\n    validateDocumentAssets,"
+            ]
+          ])
+
+          patch('apps/mobile/src/shared/ui/DocumentEditor.tsx', [
+            ["import { useState } from 'react'", "import { useRef, useState } from 'react'"],
+            [
+              "import { useTheme } from './theme'",
+              "import { useTheme } from './theme'\nimport { AudioAssetPlayer, VoiceRecorder, type VoiceRecordingInput } from './VoiceRecorder'"
+            ],
+            [
+              "      {block.type === 'image' && uri ? (",
+              "      {block.type === 'audio' && uri ? (\n        <AudioAssetPlayer uri={uri} onError={assetActions.onAssetError} />\n      ) : null}\n      {block.type === 'image' && uri ? ("
+            ],
+            [
+              "  resolveAssetUri,\n  onAssetError\n}: {",
+              "  resolveAssetUri,\n  saveRecordedAudio,\n  onAssetError\n}: {"
+            ],
+            [
+              "  resolveAssetUri?: (asset: StudyLocalAsset) => string | null\n  onAssetError?: (reason: unknown) => void",
+              "  resolveAssetUri?: (asset: StudyLocalAsset) => string | null\n  saveRecordedAudio?: (input: VoiceRecordingInput) => Promise<StudyLocalAsset>\n  onAssetError?: (reason: unknown) => void"
+            ],
+            [
+              "  const theme = useTheme()\n  const [pendingAsset, setPendingAsset] = useState<StudyAssetKind | null>(null)",
+              "  const theme = useTheme()\n  const documentRef = useRef(document)\n  documentRef.current = document\n  const [pendingAsset, setPendingAsset] = useState<StudyAssetKind | null>(null)"
+            ],
+            [
+              "  const assetActions = { importAsset, openAsset, resolveAssetUri, onAssetError }\n  const replace =",
+              "  const assetActions = { importAsset, openAsset, resolveAssetUri, onAssetError }\n  const append = (block: StudyBlock): void => {\n    const current = documentRef.current\n    const next = { ...current, blocks: [...current.blocks, block] }\n    documentRef.current = next\n    onChange(next)\n  }\n  const replace ="
+            ],
+            [
+              "    if (block) onChange({ ...document, blocks: [...document.blocks, block] })",
+              "    if (block) append(block)"
+            ],
+            [
+              "      const block = newAssetBlock(type, createId(), asset)\n      onChange({ ...document, blocks: [...document.blocks, block] })",
+              "      const block = newAssetBlock(type, createId(), asset)\n      append(block)"
+            ],
+            [
+              "          </View>\n        </View>\n      }\n    />",
+              "          </View>\n          {saveRecordedAudio ? (\n            <VoiceRecorder\n              saveRecording={saveRecordedAudio}\n              onSaved={(asset) => append(newAssetBlock('audio', createId(), asset))}\n              onError={onAssetError}\n              disabled={pendingAsset !== null}\n            />\n          ) : null}\n        </View>\n      }\n    />"
+            ]
+          ])
+
+          patch('apps/mobile/src/modules/notes/NotesScreen.tsx', [
+            [
+              "          resolveAssetUri={documentAssets.resolveAssetUri}\n          onAssetError=",
+              "          resolveAssetUri={documentAssets.resolveAssetUri}\n          saveRecordedAudio={(input) => documentAssets.saveRecordedAudio(record.id, input)}\n          onAssetError="
+            ]
+          ])
+
+          const mobilePackagePath = 'apps/mobile/package.json'
+          const mobilePackage = JSON.parse(fs.readFileSync(mobilePackagePath, 'utf8'))
+          mobilePackage.dependencies['expo-audio'] = '~57.0.4'
+          fs.writeFileSync(mobilePackagePath, `${JSON.stringify(mobilePackage, null, 2)}\n`)
+
+          const appConfigPath = 'apps/mobile/app.json'
+          const appConfig = JSON.parse(fs.readFileSync(appConfigPath, 'utf8'))
+          if (!appConfig.expo.plugins.some((plugin) => Array.isArray(plugin) && plugin[0] === 'expo-audio')) {
+            appConfig.expo.plugins.push([
+              'expo-audio',
+              {
+                microphonePermission:
+                  'MyMind использует микрофон только когда вы записываете голосовую заметку.',
+                recordAudioAndroid: true,
+                enableBackgroundRecording: false,
+                enableBackgroundPlayback: false
+              }
+            ])
+          }
+          fs.writeFileSync(appConfigPath, `${JSON.stringify(appConfig, null, 2)}\n`)
+
+          const parityPath = 'MOBILE_PARITY.md'
+          let parity = fs.readFileSync(parityPath, 'utf8')
+          parity = parity.replace(
+            /^\| Study\s+\|.*$/m,
+            '| Study | Nested folders/materials, versioned block documents, read/edit/focus, resource navigation, code workspace, links, assets, PDF, duplicate, reorder, autosave, deletion barriers | Shared contracts, V3 SQLite repository, native tree CRUD, lossless block editor, serialized autosave, local image/video/audio/file attachments with ownership validation, cleanup and duplication | Rich Markdown/LaTeX/Mermaid reader, focus mode, code workspace, PDF and deeper native presentation parity; preserve unsupported blocks losslessly |'
+          )
+          parity = parity.replace(
+            /^\| Notes\s+\|.*$/m,
+            '| Notes | Groups/icons, recents, title/content search, move, block editor, voice recording, attachments, embedded boards, autosave | Shared SQLite repository, native group/note CRUD, lossless block editor, serialized autosave, local attachments, foreground voice recording with explicit microphone permission, 50 MiB limit and local audio playback | Physical-device microphone/process-death smoke test, richer reader presentation and remaining desktop visual polish |'
+          )
+          fs.writeFileSync(parityPath, parity)
+          NODE
+
+      - name: Refresh lockfile metadata
+        run: npm install --package-lock-only --ignore-scripts
+
+      - name: Strict install
+        run: npm ci
+
+      - name: Rebuild SQLite for Node tests
+        run: npm run native:node
+
+      - name: Format voice checkpoint
+        run: >-
+          npx prettier --write
+          packages/contracts/src/notes.ts
+          packages/core/src/validation/notes.ts
+          packages/core/src/note-voice-recording.ts
+          packages/core/src/note-voice-recording.test.ts
+          apps/mobile/src/shared/platform/documentAssets.ts
+          apps/mobile/src/shared/ui/VoiceRecorder.tsx
+          apps/mobile/src/shared/ui/DocumentEditor.tsx
+          apps/mobile/src/modules/notes/NotesScreen.tsx
+          apps/mobile/package.json
+          apps/mobile/app.json
+          MOBILE_PARITY.md
+
+      - name: Lint mobile and shared packages
+        run: npm run lint:mobile
+
+      - name: Typecheck all platforms
+        run: npm run typecheck
+
+      - name: Mobile and shared tests
+        run: npm run test:mobile
+
+      - name: Full desktop regression tests
+        run: npm run test:run
+
+      - name: Database schema check
+        run: npm run db:check
+
+      - name: Desktop production bundle
+        run: npm run build:bundle
+
+      - name: Expo Android export
+        run: npm run export:android
+
+      - name: Security audit gate
+        run: npm audit --audit-level=high
+
+      - name: Whitespace
+        run: git diff --check
+
+      - name: Commit verified voice checkpoint
+        shell: bash
+        run: |
+          rm -f .github/workflows/mobile-voice-recording.yml .mobile-voice-recording-trigger
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "feat: add native Notes voice recording" || exit 0
+          git push origin HEAD:agent/full-mobile-app
