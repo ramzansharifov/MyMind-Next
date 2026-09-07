@@ -1,8 +1,8 @@
 import { FlatList, Image, Text, View } from 'react-native'
 import type { StudyBlock, StudyDocument, StudyLocalAsset } from '@mymind/contracts/study'
 import { appearanceTokens, designTokens } from '@mymind/design'
+import BoardCanvasDom from '../../modules/boards/BoardCanvasDom'
 import { DocumentBoardReader, type OpenDocumentBoard } from './DocumentBoardBlock'
-import RichContentDom from './RichContentDom'
 import { AudioAssetPlayer } from './VoiceRecorder'
 import { Button, Label } from './primitives'
 import { useTheme } from './theme'
@@ -114,6 +114,7 @@ function ReadBlock({
   const theme = useTheme()
   const colorScheme = theme.background === appearanceTokens.dark.background ? 'dark' : 'light'
   const richProps = {
+    mode: 'rich' as const,
     colorScheme,
     textColor: theme.text,
     mutedColor: theme.muted,
@@ -156,10 +157,10 @@ function ReadBlock({
     case 'code':
       return <SourceSurface label={block.language || 'Код'} source={block.source} />
     case 'markdown':
-      return <RichContentDom {...richProps} kind="markdown" source={block.source} />
+      return <BoardCanvasDom {...richProps} kind="markdown" source={block.source} />
     case 'latex':
       return (
-        <RichContentDom
+        <BoardCanvasDom
           {...richProps}
           kind="latex"
           latexDisplayMode={block.displayMode ?? 'display'}
@@ -170,7 +171,7 @@ function ReadBlock({
       )
     case 'mermaid':
       return (
-        <RichContentDom
+        <BoardCanvasDom
           {...richProps}
           kind="mermaid"
           mermaidTheme={block.theme ?? (colorScheme === 'dark' ? 'dark' : 'default')}
