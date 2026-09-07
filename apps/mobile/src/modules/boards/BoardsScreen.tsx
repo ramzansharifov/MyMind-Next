@@ -1,12 +1,15 @@
-import { useCallback, useMemo, useState } from 'react'
-import { Alert, FlatList, View } from 'react-native'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Alert, AppState, BackHandler, FlatList, View } from 'react-native'
 import type { BoardDocument, BoardNode } from '@mymind/contracts/boards'
 import { isBoardSystemRootId } from '@mymind/contracts/boards'
 import { STUDY_FOLDER_ICON_NAMES } from '@mymind/contracts/study'
+import { BoardSaveState } from '@mymind/core/board-save-queue'
 import * as boardValidation from '@mymind/core/validation/boards'
+import { appearanceTokens } from '@mymind/design'
 import { useServices } from '../../app/context'
 import { notifyDataChanged } from '../../app/changes'
 import { useCollection } from '../../shared/hooks/useCollection'
+import BoardCanvasDom, { type BoardCanvasDomRef } from './BoardCanvasDom'
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { choiceField, messageFor, textField, type FormSpec } from '../../shared/ui/form-model'
 import {
@@ -18,6 +21,7 @@ import {
   Row,
   SearchField
 } from '../../shared/ui/primitives'
+import { useTheme } from '../../shared/ui/theme'
 
 function sortNodes(nodes: BoardNode[]): BoardNode[] {
   return [...nodes].sort((a, b) => a.position - b.position || a.title.localeCompare(b.title))
@@ -91,6 +95,11 @@ export function BoardsScreen(): React.JSX.Element {
   const [opened, setOpened] = useState<{ node: BoardNode; document: BoardDocument } | null>(null)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState('')
+  const [saveState, setSaveState] = useState<BoardSaveState>('saved')
+  const [closingBoard, setClosingBoard] = useState(false)
+  const canvasRef = useRef<BoardCanvasDomRef>(null)
+  const theme = useTheme()
+  const canvasColorScheme = theme.background === appearanceTokens.dark.background ? 'dark' : 'light'
 
   const allNodes = useMemo(() => nodes.data ?? [], [nodes.data])
   const managed = useMemo(() => managedNodeIds(allNodes), [allNodes])
@@ -101,6 +110,45 @@ export function BoardsScreen(): React.JSX.Element {
     nodes.refresh()
     notifyDataChanged()
   }
+
+  const openBoard = (node: BoardNode): void => {
+    setError('')
+    setSaveState('saved')
+    setOpened({ node, document: api.getDocument(node.id) })
+  }
+
+  const closeBoard = useCallback(async (): Promise<void> => {
+    if (!opened || closingBoard) return
+    setClosingBoard(true)
+    try {
+      await canvasRef.current?.flush()
+      setOpened(null)
+      setError('')
+    } catch (reason) {
+      setError(messageFor(reason))
+    } finally {
+      setClosingBoard(false)
+    }
+  }, [closingBoard, opened])
+
+  useEffect(() => {
+    if (!opened) return undefined
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      void closeBoard()
+      return true
+    })
+    return () => subscription.remove()
+  }, [closeBoard, opened])
+
+  useEffect(() => {
+    if (!opened) return undefined
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state !== 'active') {
+        void canvasRef.current?.flush().catch((reason: unknown) => setError(messageFor(reason)))
+      }
+    })
+    return () => subscription.remove()
+  }, [opened])
 
   const createNode = (type: 'folder' | 'board'): void => {
     setForm({
@@ -127,8 +175,7 @@ export function BoardsScreen(): React.JSX.Element {
         })
         const created = api.createNode(input)
         refresh()
-        if (created.type === 'board')
-          setOpened({ node: created, document: api.getDocument(created.id) })
+        if (created.type === 'board') openBoard(created)
       }
     })
   }
@@ -229,13 +276,13 @@ export function BoardsScreen(): React.JSX.Element {
           onPress: () => {
             setPending(true)
             setError('')
-            void api
-              .deleteNode(node.id)
-              .then(() => {
-                if (opened?.node.id === node.id) setOpened(null)
-                if (effectiveFolderId === node.id) setFolderId(node.parentId)
-                refresh()
-              })
+            void (async () => {
+              if (opened?.node.id === node.id) await canvasRef.current?.flush()
+              await api.deleteNode(node.id)
+              if (opened?.node.id === node.id) setOpened(null)
+              if (effectiveFolderId === node.id) setFolderId(node.parentId)
+              refresh()
+            })()
               .catch((reason) => setError(messageFor(reason)))
               .finally(() => setPending(false))
           }
@@ -259,32 +306,58 @@ export function BoardsScreen(): React.JSX.Element {
 
   if (opened) {
     const current = allNodes.find((node) => node.id === opened.node.id) ?? opened.node
+    const saveLabel =
+      saveState === 'saving'
+        ? 'Сохранение…'
+        : saveState === 'dirty'
+          ? 'Есть несохранённые изменения'
+          : saveState === 'error'
+            ? 'Ошибка сохранения'
+            : 'Сохранено локально'
+
     return (
-      <View style={{ flex: 1, gap: 14 }}>
+      <View style={{ flex: 1, gap: 10 }}>
         {error ? <ErrorState message={error} /> : null}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          <Button label="Назад" onPress={() => setOpened(null)} />
-          <Button label="Свойства" onPress={() => editNode(current)} />
+          <Button
+            label={closingBoard ? 'Сохранение…' : 'Назад'}
+            disabled={closingBoard || pending}
+            onPress={() => void closeBoard()}
+          />
+          <Button
+            label="Свойства"
+            disabled={closingBoard || pending}
+            onPress={() => editNode(current)}
+          />
           <Button
             label="Удалить"
             danger
-            disabled={pending}
+            disabled={closingBoard || pending}
             onPress={() => confirmDelete(current)}
           />
         </View>
-        <Label title>{current.title}</Label>
-        <Row
-          title={opened.document.snapshot ? 'Снимок доски сохранён' : 'Пустая доска'}
-          subtitle={
-            opened.document.snapshot
-              ? 'Документ tldraw сохранён без преобразований. Мобильный canvas подключается отдельно, чтобы не повредить совместимость с desktop.'
-              : 'Структура доски создана и готова для нативного canvas.'
-          }
-        />
-        <Label muted>
-          На этом этапе мобильная версия уже безопасно хранит и переносит исходный BoardSnapshot без
-          изменения его структуры. Редактирование canvas будет подключено следующим слоем.
-        </Label>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
+          <Label title>{current.title}</Label>
+          <Label muted>{saveLabel}</Label>
+        </View>
+        <View style={{ flex: 1, minHeight: 320, overflow: 'hidden', borderRadius: 12 }}>
+          <BoardCanvasDom
+            key={current.id}
+            ref={canvasRef}
+            snapshot={opened.document.snapshot}
+            colorScheme={canvasColorScheme}
+            saveSnapshot={async (snapshot) => {
+              api.saveDocument(current.id, snapshot)
+            }}
+            onSaveState={async (state) => {
+              setSaveState(state)
+            }}
+            onError={async (message) => {
+              setError(message)
+            }}
+            dom={{ scrollEnabled: false, style: { flex: 1 } }}
+          />
+        </View>
         {form && <FormSheet spec={form} close={() => setForm(null)} />}
       </View>
     )
@@ -356,11 +429,7 @@ export function BoardsScreen(): React.JSX.Element {
                         ? 'Доска заметки'
                         : 'Доска'
                 }
-                onPress={() =>
-                  item.type === 'folder'
-                    ? setFolderId(item.id)
-                    : setOpened({ node: item, document: api.getDocument(item.id) })
-                }
+                onPress={() => (item.type === 'folder' ? setFolderId(item.id) : openBoard(item))}
               >
                 {item.type === 'board' || !itemManaged ? (
                   <Button label="Изменить" onPress={() => editNode(item)} />

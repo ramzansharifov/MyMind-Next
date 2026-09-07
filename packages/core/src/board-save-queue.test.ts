@@ -25,11 +25,14 @@ describe('BoardSaveQueue', () => {
     const first = deferred()
     const saved: BoardSnapshot[] = []
     let calls = 0
-    const queue = new BoardSaveQueue(async (next) => {
-      calls += 1
-      if (calls === 1) await first.promise
-      saved.push(next)
-    }, () => undefined)
+    const queue = new BoardSaveQueue(
+      async (next) => {
+        calls += 1
+        if (calls === 1) await first.promise
+        saved.push(next)
+      },
+      () => undefined
+    )
 
     queue.update(snapshot(1))
     const saving = queue.saveLatest()
@@ -45,10 +48,13 @@ describe('BoardSaveQueue', () => {
     const saved: BoardSnapshot[] = []
     let fail = true
     const states: BoardSaveState[] = []
-    const queue = new BoardSaveQueue(async (next) => {
-      if (fail) throw new Error('offline')
-      saved.push(next)
-    }, (state) => states.push(state))
+    const queue = new BoardSaveQueue(
+      async (next) => {
+        if (fail) throw new Error('offline')
+        saved.push(next)
+      },
+      (state) => states.push(state)
+    )
 
     queue.update(snapshot(7))
     await expect(queue.flush()).rejects.toThrow('offline')
@@ -64,9 +70,12 @@ describe('BoardSaveQueue', () => {
 
   it('does not accept new snapshots after disposal', async () => {
     const saved: BoardSnapshot[] = []
-    const queue = new BoardSaveQueue(async (next) => {
-      saved.push(next)
-    }, () => undefined)
+    const queue = new BoardSaveQueue(
+      async (next) => {
+        saved.push(next)
+      },
+      () => undefined
+    )
     queue.dispose()
     queue.update(snapshot(1))
     await queue.flush()
