@@ -5,7 +5,6 @@ import mermaid from 'mermaid'
 import { useEffect, useMemo, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import 'katex/dist/katex.min.css'
 
 type RichContentKind = 'markdown' | 'latex' | 'mermaid'
 type MermaidTheme = 'dark' | 'default' | 'neutral' | 'forest'
@@ -50,7 +49,7 @@ function LatexContent({
           throwOnError: true,
           strict: 'warn',
           trust: false,
-          output: 'htmlAndMathml'
+          output: 'mathml'
         }),
         error: null
       }
@@ -205,6 +204,7 @@ const styles = `
   .markdown-content th, .markdown-content td { border: 1px solid var(--border); padding: 6px 9px; }
   .markdown-content img { max-width: 100%; height: auto; border-radius: 10px; }
   .latex-content { width: 100%; overflow-x: auto; padding: 6px 2px; }
+  .latex-content math { color: var(--text); }
   .mermaid-content { width: 100%; overflow-x: auto; text-align: center; }
   .mermaid-content svg { max-width: 100%; height: auto; }
   .muted { color: var(--muted); margin: 0; }
