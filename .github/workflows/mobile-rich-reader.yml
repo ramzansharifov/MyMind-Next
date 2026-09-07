@@ -39,6 +39,7 @@ jobs:
       - name: Format rich reader checkpoint
         run: >-
           npx prettier --write
+          apps/mobile/src/modules/boards/BoardCanvasDom.tsx
           apps/mobile/src/shared/ui/RichContentDom.tsx
           apps/mobile/src/shared/ui/DocumentReader.tsx
           apps/mobile/package.json
