@@ -1,0 +1,89 @@
+name: Mobile rich reader checkpoint
+
+on:
+  push:
+    branches:
+      - agent/full-mobile-app
+    paths:
+      - .mobile-rich-reader-trigger
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Use npm 11
+        run: npm install --global npm@11
+
+      - name: Integrate rich mobile reader
+        run: node .github/scripts/mobile-rich-reader.cjs
+
+      - name: Refresh lockfile metadata
+        run: npm install --package-lock-only --ignore-scripts
+
+      - name: Strict install
+        run: npm ci
+
+      - name: Rebuild SQLite for Node tests
+        run: npm run native:node
+
+      - name: Format rich reader checkpoint
+        run: >-
+          npx prettier --write
+          apps/mobile/src/shared/ui/RichContentDom.tsx
+          apps/mobile/src/shared/ui/DocumentReader.tsx
+          apps/mobile/package.json
+          MOBILE_PARITY.md
+
+      - name: Lint mobile and shared packages
+        run: npm run lint:mobile
+
+      - name: Typecheck all platforms
+        run: npm run typecheck
+
+      - name: Mobile and shared tests
+        run: npm run test:mobile
+
+      - name: Full desktop regression tests
+        run: npm run test:run
+
+      - name: Database schema check
+        run: npm run db:check
+
+      - name: Desktop production bundle
+        run: npm run build:bundle
+
+      - name: Expo Android export
+        run: npm run export:android
+
+      - name: Security audit gate
+        run: npm audit --audit-level=high
+
+      - name: Whitespace
+        run: git diff --check
+
+      - name: Commit verified rich reader checkpoint
+        shell: bash
+        run: |
+          rm -f \
+            .github/workflows/mobile-rich-reader.yml \
+            .github/scripts/mobile-rich-reader.cjs \
+            .mobile-rich-reader-trigger
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "feat: render rich Study content on mobile" || exit 0
+          git push origin HEAD:agent/full-mobile-app
