@@ -124,7 +124,7 @@ export function tagForm(api: FinanceRepository, tag?: FinanceTagSummary): FormSp
   }
 }
 
-function transactionInitial(transaction?: FinanceTransaction) {
+function transactionInitial(transaction?: FinanceTransaction): Record<string, unknown> {
   const sourceEntry = transaction?.entries.find((entry) => entry.signedAmountMinor < 0)
   const destinationEntry = transaction?.entries.find((entry) => entry.signedAmountMinor > 0)
   const singleEntry = transaction?.entries[0]

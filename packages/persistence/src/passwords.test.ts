@@ -11,7 +11,8 @@ import { readFileSync } from 'node:fs'
 import Database from 'better-sqlite3'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { PasswordCryptoPort } from '@mymind/contracts/password-crypto'
-import { createPasswordsRepository } from './passwords'
+import type { CreatePasswordItemInput } from '@mymind/contracts/passwords'
+import { createPasswordsRepository, type PasswordsRepository } from './passwords'
 import { mobileSchemaV8 } from './mobile-schema-v8'
 
 const databases: Database.Database[] = []
@@ -64,7 +65,7 @@ const nodeCrypto: PasswordCryptoPort = {
   }
 }
 
-function setup() {
+function setup(): { db: Database.Database; repository: PasswordsRepository } {
   const db = new Database(':memory:')
   databases.push(db)
   db.pragma('foreign_keys = ON')
@@ -77,7 +78,10 @@ function setup() {
   return { db, repository }
 }
 
-function itemInput(groupId: string | null, password = 'Strong-password-123!') {
+function itemInput(
+  groupId: string | null,
+  password = 'Strong-password-123!'
+): CreatePasswordItemInput {
   return {
     groupId,
     type: 'login' as const,

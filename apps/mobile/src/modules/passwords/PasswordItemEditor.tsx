@@ -202,14 +202,26 @@ export function PasswordItemEditor({
             <Label>Тип</Label>
             <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
               <Button label="Логин" selected={type === 'login'} onPress={() => setType('login')} />
-              <Button label="Пароль" selected={type === 'password'} onPress={() => setType('password')} />
+              <Button
+                label="Пароль"
+                selected={type === 'password'}
+                onPress={() => setType('password')}
+              />
             </View>
           </View>
 
           <View style={{ gap: 7 }}>
             <Label>Группа</Label>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-              <Button label="Без группы" selected={groupId === null} onPress={() => setGroupId(null)} />
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 8 }}
+            >
+              <Button
+                label="Без группы"
+                selected={groupId === null}
+                onPress={() => setGroupId(null)}
+              />
               {groups.map((group) => (
                 <Button
                   key={group.id}
@@ -238,15 +250,12 @@ export function PasswordItemEditor({
           />
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             <Button label="Генератор" onPress={() => setGeneratorOpen(true)} />
-            {password ? <Button label="Копировать пароль" onPress={() => void copy(password)} /> : null}
+            {password ? (
+              <Button label="Копировать пароль" onPress={() => void copy(password)} />
+            ) : null}
           </View>
 
-          <TextField
-            label="Сайт"
-            value={website}
-            setValue={setWebsite}
-            autoCapitalize="none"
-          />
+          <TextField label="Сайт" value={website} setValue={setWebsite} autoCapitalize="none" />
           <TextField label="Заметка" value={notes} setValue={setNotes} multiline />
           <TextField
             label="Теги через запятую"
@@ -270,11 +279,22 @@ export function PasswordItemEditor({
             }}
           >
             <Label>В избранном</Label>
-            <Switch value={favorite} onValueChange={setFavorite} trackColor={{ true: theme.accent }} />
+            <Switch
+              value={favorite}
+              onValueChange={setFavorite}
+              trackColor={{ true: theme.accent }}
+            />
           </View>
 
           <View style={{ gap: 10 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 10, alignItems: 'center' }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                gap: 10,
+                alignItems: 'center'
+              }}
+            >
               <View style={{ flex: 1 }}>
                 <Label>Дополнительные поля</Label>
                 <Label muted>Например, PIN, recovery code или секретный ответ.</Label>
@@ -348,7 +368,9 @@ export function PasswordItemEditor({
                     label="Удалить поле"
                     danger
                     onPress={() =>
-                      setCustomFields((fields) => fields.filter((_, fieldIndex) => fieldIndex !== index))
+                      setCustomFields((fields) =>
+                        fields.filter((_, fieldIndex) => fieldIndex !== index)
+                      )
                     }
                   />
                 </View>
@@ -364,7 +386,7 @@ export function PasswordItemEditor({
             generate={api.generatePassword}
             close={() => setGeneratorOpen(false)}
             copy={copy}
-            useValue={(generated) => {
+            onUseValue={(generated) => {
               setPassword(generated)
               setPasswordVisible(true)
             }}

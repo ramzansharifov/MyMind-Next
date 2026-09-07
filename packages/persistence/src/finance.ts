@@ -9,6 +9,7 @@ import type {
   DeleteFinanceExchangeRateInput,
   FinanceAccount,
   FinanceAccountSummary,
+  FinanceApi,
   FinanceBalanceByCurrency,
   FinanceDashboard,
   FinanceExchangeRate,
@@ -37,7 +38,11 @@ import type {
 } from '@mymind/contracts/finance'
 import { getFinanceTagColor } from '@mymind/contracts/finance'
 import type { RepositoryRuntime, SqlDatabasePort } from '@mymind/contracts/storage'
-import { createFinanceRateBook, convertFinanceMinor } from '@mymind/core/finance-conversion'
+import {
+  createFinanceRateBook,
+  convertFinanceMinor,
+  type FinanceRateBook
+} from '@mymind/core/finance-conversion'
 import { FINANCE_RATE_SCALE, assertSafeMinor } from '@mymind/core/finance-money'
 import { defaultFinancePeriod, resolveFinanceLimitPeriod } from '@mymind/core/finance-periods'
 import type { FinanceReportAnalytics } from '@mymind/contracts/finance-report-analytics'
@@ -144,7 +149,18 @@ interface ExpenseAmountRow {
   currency_code: string
 }
 
-export function createFinanceRepository(runtime: RepositoryRuntime) {
+type SyncFinanceApi = {
+  [Key in keyof FinanceApi]: FinanceApi[Key] extends (...args: infer Args) => Promise<infer Result>
+    ? (...args: Args) => Result
+    : never
+}
+
+export type FinanceRepository = Omit<SyncFinanceApi, 'getReport'> & {
+  getTemplate(id: string): FinanceTemplate
+  getReport(filters: FinanceReportFilters): FinanceReportAnalytics
+}
+
+export function createFinanceRepository(runtime: RepositoryRuntime): FinanceRepository {
   const database = (): SqlDatabasePort => runtime.database()
   const createId = (): string => runtime.createId()
   const now = (): number => runtime.now()
@@ -1100,7 +1116,11 @@ export function createFinanceRepository(runtime: RepositoryRuntime) {
     }
   }
 
-  function loadRateBook() {
+  function loadRateBook(): {
+    settings: FinanceSettings
+    rates: FinanceExchangeRate[]
+    rateBook: FinanceRateBook
+  } {
     const settings = getSettings()
     const rates = listExchangeRates()
     return { settings, rates, rateBook: createFinanceRateBook(settings.baseCurrencyCode, rates) }
@@ -1538,5 +1558,3 @@ export function createFinanceRepository(runtime: RepositoryRuntime) {
     getReport
   }
 }
-
-export type FinanceRepository = ReturnType<typeof createFinanceRepository>

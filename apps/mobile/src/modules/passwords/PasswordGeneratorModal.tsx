@@ -10,12 +10,12 @@ export function PasswordGeneratorModal({
   generate,
   close,
   copy,
-  useValue
+  onUseValue
 }: {
   generate(input: GeneratePasswordInput): string
   close(): void
   copy(value: string): Promise<void>
-  useValue?(value: string): void
+  onUseValue?(value: string): void
 }): React.JSX.Element {
   const theme = useTheme()
   const [length, setLength] = useState('24')
@@ -33,7 +33,11 @@ export function PasswordGeneratorModal({
       { label: 'Заглавные буквы', value: uppercase, set: setUppercase },
       { label: 'Цифры', value: digits, set: setDigits },
       { label: 'Символы', value: symbols, set: setSymbols },
-      { label: 'Исключить похожие I, l, 1, O, 0, o', value: excludeAmbiguous, set: setExcludeAmbiguous }
+      {
+        label: 'Исключить похожие I, l, 1, O, 0, o',
+        value: excludeAmbiguous,
+        set: setExcludeAmbiguous
+      }
     ],
     [digits, excludeAmbiguous, lowercase, symbols, uppercase]
   )
@@ -115,7 +119,11 @@ export function PasswordGeneratorModal({
             </View>
           ))}
 
-          <Button label={value ? 'Сгенерировать заново' : 'Сгенерировать'} selected onPress={regenerate} />
+          <Button
+            label={value ? 'Сгенерировать заново' : 'Сгенерировать'}
+            selected
+            onPress={regenerate}
+          />
           {error ? <ErrorState message={error} /> : null}
 
           {value ? (
@@ -137,14 +145,17 @@ export function PasswordGeneratorModal({
                 style={{ color: theme.text, fontSize: 17, minHeight: 44 }}
               />
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                <Button label={visible ? 'Скрыть' : 'Показать'} onPress={() => setVisible(!visible)} />
+                <Button
+                  label={visible ? 'Скрыть' : 'Показать'}
+                  onPress={() => setVisible(!visible)}
+                />
                 <Button label="Копировать" onPress={() => void copy(value)} />
-                {useValue ? (
+                {onUseValue ? (
                   <Button
                     label="Использовать"
                     selected
                     onPress={() => {
-                      useValue(value)
+                      onUseValue(value)
                       close()
                     }}
                   />

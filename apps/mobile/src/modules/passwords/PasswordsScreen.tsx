@@ -1,11 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import {
-  AppState,
-  Linking,
-  ScrollView,
-  TextInput,
-  View
-} from 'react-native'
+import { AppState, Linking, ScrollView, TextInput, View } from 'react-native'
 import {
   PASSWORD_GROUP_COLORS,
   PASSWORD_GROUP_ICONS,
@@ -149,7 +143,9 @@ function VaultGate({
         ) : null}
         {error ? <ErrorState message={error} /> : null}
         <Button
-          label={working ? 'Проверка…' : status.initialized ? 'Разблокировать' : 'Создать хранилище'}
+          label={
+            working ? 'Проверка…' : status.initialized ? 'Разблокировать' : 'Создать хранилище'
+          }
           selected
           disabled={working}
           onPress={() => void submit()}
@@ -259,14 +255,18 @@ export function PasswordsScreen(): React.JSX.Element {
         )
       ],
       save: (values) => {
-        if (group) api.updatePasswordGroup(updatePasswordGroupInputSchema.parse({ ...values, id: group.id }))
+        if (group)
+          api.updatePasswordGroup(updatePasswordGroupInputSchema.parse({ ...values, id: group.id }))
         else api.createPasswordGroup(createPasswordGroupInputSchema.parse(values))
         refresh()
       }
     })
   }
 
-  const copyField = async (item: PasswordItemSummary, field: 'username' | 'password'): Promise<void> => {
+  const copyField = async (
+    item: PasswordItemSummary,
+    field: 'username' | 'password'
+  ): Promise<void> => {
     try {
       const record = api.getPasswordItem(item.id)
       const value = field === 'username' ? record.username : record.password
@@ -307,7 +307,8 @@ export function PasswordsScreen(): React.JSX.Element {
   }
 
   if (loading && !overview) return <LoadingState />
-  if (!overview) return <ErrorState message={error || 'Не удалось открыть хранилище'} retry={refresh} />
+  if (!overview)
+    return <ErrorState message={error || 'Не удалось открыть хранилище'} retry={refresh} />
 
   let content: React.JSX.Element
   if (tab === 'groups') {
@@ -409,7 +410,9 @@ export function PasswordsScreen(): React.JSX.Element {
             </Row>
           ))
         ) : (
-          <EmptyState text={tab === 'favorites' ? 'Избранных записей пока нет.' : 'Записей пока нет.'} />
+          <EmptyState
+            text={tab === 'favorites' ? 'Избранных записей пока нет.' : 'Записей пока нет.'}
+          />
         )}
       </ScrollView>
     )
@@ -418,7 +421,11 @@ export function PasswordsScreen(): React.JSX.Element {
   return (
     <View style={{ flex: 1 }}>
       <View style={{ gap: 10, paddingBottom: 12 }}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 8 }}
+        >
           {[
             { key: 'items' as const, label: 'Все' },
             { key: 'favorites' as const, label: 'Избранное' },
@@ -437,7 +444,11 @@ export function PasswordsScreen(): React.JSX.Element {
         {(tab === 'items' || tab === 'favorites') && (
           <>
             <SearchField value={query} onChangeText={setQuery} />
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 8 }}
+            >
               <Button
                 label="Все группы"
                 selected={groupFilter === undefined}

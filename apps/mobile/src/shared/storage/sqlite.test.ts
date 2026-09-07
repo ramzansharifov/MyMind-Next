@@ -7,7 +7,6 @@ import { mobileSchemaV4 } from '@mymind/persistence/mobile-schema-v4'
 import { mobileSchemaV5 } from '@mymind/persistence/mobile-schema-v5'
 import { mobileSchemaV6 } from '@mymind/persistence/mobile-schema-v6'
 import { mobileSchemaV7 } from '@mymind/persistence/mobile-schema-v7'
-import { mobileSchemaV8 } from '@mymind/persistence/mobile-schema-v8'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('expo-sqlite', () => ({ openDatabaseAsync: vi.fn() }))

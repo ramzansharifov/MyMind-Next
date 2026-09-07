@@ -3,11 +3,11 @@ import { afterEach, describe, expect, it } from 'vitest'
 import type { RepositoryRuntime, SqlDatabasePort } from '@mymind/contracts/storage'
 import { FINANCE_RATE_SCALE } from '@mymind/core/finance-money'
 import { mobileSchemaV7 } from './mobile-schema-v7'
-import { createFinanceRepository } from './finance'
+import { createFinanceRepository, type FinanceRepository } from './finance'
 
 const databases: Database.Database[] = []
 
-function setup() {
+function setup(): { db: Database.Database; finance: FinanceRepository; now: () => number } {
   const db = new Database(':memory:')
   databases.push(db)
   db.pragma('foreign_keys = ON')

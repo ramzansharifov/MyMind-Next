@@ -91,7 +91,8 @@ export function ChangeMasterPasswordModal({
             <View style={{ flex: 1 }}>
               <Label title>Сменить мастер-пароль</Label>
               <Label muted>
-                Данные не расшифровываются заново: меняется только защищённая оболочка ключа хранилища.
+                Данные не расшифровываются заново: меняется только защищённая оболочка ключа
+                хранилища.
               </Label>
             </View>
             <Button label="Закрыть" onPress={close} />

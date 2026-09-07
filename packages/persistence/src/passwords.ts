@@ -443,8 +443,21 @@ export function createPasswordsRepository(
   }
 
   function toSummary(item: PasswordItemRecord): PasswordItemSummary {
-    const { password: _password, notes: _notes, customFields: _customFields, ...summary } = item
-    return summary
+    return {
+      id: item.id,
+      groupId: item.groupId,
+      type: item.type,
+      title: item.title,
+      username: item.username,
+      website: item.website,
+      tags: item.tags,
+      favorite: item.favorite,
+      strength: item.strength,
+      securityIssues: item.securityIssues,
+      passwordUpdatedAt: item.passwordUpdatedAt,
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt
+    }
   }
 
   function buildSecurityReport(items: PasswordItemRecord[]): PasswordSecurityReport {
