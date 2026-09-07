@@ -1,5 +1,6 @@
 import { randomUUID } from 'expo-crypto'
 import type { SQLiteDatabase } from 'expo-sqlite'
+import type { StudyDocument } from '@mymind/contracts/study'
 import { createTasksRepository } from '@mymind/persistence/tasks'
 import { createHabitsRepository } from '@mymind/persistence/habits'
 import { createMoviesRepository } from '@mymind/persistence/movies'
@@ -18,6 +19,7 @@ import {
   reconcileWorkoutProgressAssets
 } from '../modules/workouts/workoutProgressAssets'
 import { mobilePasswordCrypto } from '../modules/passwords/passwordCrypto'
+import { createMobileDocumentAssetStore } from '../shared/platform/documentAssets'
 import { adaptSqlite } from '../shared/storage/sqlite'
 
 export interface MobileServices {
@@ -34,24 +36,42 @@ export interface MobileServices {
   nutrition: ReturnType<typeof createNutritionRepository>
   finance: ReturnType<typeof createFinanceRepository>
   passwords: ReturnType<typeof createPasswordsRepository>
+  documentAssets: ReturnType<typeof createMobileDocumentAssetStore>
   settings: { get(key: string): string | null; set(key: string, value: string): void }
 }
 
 export function createMobileServices(db: SQLiteDatabase): MobileServices {
   const database = adaptSqlite(db)
   const runtime = { database: () => database, createId: randomUUID, now: Date.now }
+  const documentAssets = createMobileDocumentAssetStore()
   let boards: ReturnType<typeof createBoardsRepository> | null = null
   const boardSourceDeletion = new Set<string>()
   const notes = createNotesRepository(runtime, {
-    afterDocumentSaved: (noteId, document) => {
+    validateDocumentAssets: documentAssets.validateDocumentAssets,
+    afterDocumentSaved: async (noteId, document) => {
       if (!boardSourceDeletion.has(`note:${noteId}`)) boards?.cleanupNoteDocument(noteId, document)
+      await documentAssets.cleanupDocumentAssets(noteId, document).catch((reason: unknown) => {
+        console.error('Failed to clean up unreferenced note assets', reason)
+      })
+    },
+    afterNoteDeleted: async (noteId) => {
+      await documentAssets.removeAssetsForOwners([noteId]).catch((reason: unknown) => {
+        console.error('Failed to remove note assets after deletion', reason)
+      })
     }
   })
   const study = createStudyRepository(runtime, {
-    afterDocumentSaved: (materialId, document) => {
+    validateDocumentAssets: documentAssets.validateDocumentAssets,
+    duplicateDocumentAssets: documentAssets.duplicateDocumentAssets,
+    afterDocumentSaved: async (materialId, document) => {
       if (!boardSourceDeletion.has(`study:${materialId}`))
         boards?.cleanupStudyDocument(materialId, document)
-    }
+      await documentAssets.cleanupDocumentAssets(materialId, document).catch((reason: unknown) => {
+        console.error('Failed to clean up unreferenced study assets', reason)
+      })
+    },
+    afterMaterialsDeleted: (materialIds) => documentAssets.removeAssetsForOwners(materialIds),
+    onCleanupError: (reason) => console.error('Failed to remove deleted study assets', reason)
   })
   boards = createBoardsRepository(runtime, {
     removeStudyBoardBlock: async (materialId, blockId) => {
@@ -96,6 +116,20 @@ export function createMobileServices(db: SQLiteDatabase): MobileServices {
   } catch (reason) {
     console.error('Failed to reconcile workout progress photos', reason)
   }
+
+  try {
+    const documents = new Map<string, StudyDocument>()
+    for (const node of study.listNodes()) {
+      if (node.type === 'material') documents.set(node.id, study.getMaterial(node.id).document)
+    }
+    for (const note of notes.listNotesOverview().notes) documents.set(note.id, notes.getNote(note.id).document)
+    void documentAssets.reconcileDocuments(documents).catch((reason: unknown) => {
+      console.error('Failed to reconcile mobile document assets', reason)
+    })
+  } catch (reason) {
+    console.error('Failed to prepare mobile document asset reconciliation', reason)
+  }
+
   return {
     tasks: createTasksRepository(runtime),
     habits: createHabitsRepository(runtime),
@@ -110,6 +144,7 @@ export function createMobileServices(db: SQLiteDatabase): MobileServices {
     nutrition: createNutritionRepository(runtime),
     finance: createFinanceRepository(runtime),
     passwords: createPasswordsRepository(runtime, mobilePasswordCrypto),
+    documentAssets,
     settings: {
       get: (key: string) =>
         db.getFirstSync<{ value: string }>(
