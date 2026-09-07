@@ -18,6 +18,7 @@ import { DocumentReader, type DocumentRevealRequest } from '../../shared/ui/Docu
 import { FormSheet } from '../../shared/ui/FormSheet'
 import type { StudyRichTextInternalLink } from '../../shared/ui/studyRichText'
 import { StudyCodeWorkspace } from './StudyCodeWorkspace'
+import { exportStudyMaterialPdf } from './studyPdfExport'
 import { choiceField, messageFor, textField, type FormSpec } from '../../shared/ui/form-model'
 import {
   Button,
@@ -94,10 +95,13 @@ export function StudyScreen({
   const [editorError, setEditorError] = useState('')
   const [closing, setClosing] = useState(false)
   const [pendingAction, setPendingAction] = useState(false)
+  const [exportingPdf, setExportingPdf] = useState(false)
   const [materialMode, setMaterialMode] = useState<'read' | 'edit' | 'code'>('edit')
   const [codeNodeId, setCodeNodeId] = useState<string | null>(null)
   const [focusMode, setFocusMode] = useState(false)
-  const [internalLinkHistory, setInternalLinkHistory] = useState<StudyInternalLinkHistoryEntry[]>([])
+  const [internalLinkHistory, setInternalLinkHistory] = useState<StudyInternalLinkHistoryEntry[]>(
+    []
+  )
   const [reveal, setReveal] = useState<DocumentRevealRequest | null>(null)
   const queueRef = useRef<AutosaveQueue<StudyDocument> | null>(null)
   const revealSequenceRef = useRef(0)
@@ -159,6 +163,33 @@ export function StudyScreen({
     await queue.flush()
     setEditorError('')
   }, [])
+
+  const exportPdf = useCallback(
+    async (title: string): Promise<void> => {
+      if (!material || !document || exportingPdf) return
+      setExportingPdf(true)
+      setEditorError('')
+      try {
+        await flush()
+        await exportStudyMaterialPdf({
+          title,
+          document,
+          resolveAssetUri: documentAssets.resolveAssetUri,
+          resolveInternalLinkTarget: (link) =>
+            api.resolveInternalLinkTarget({
+              kind: link.kind,
+              materialId: link.materialId,
+              headingId: link.headingId
+            })
+        })
+      } catch (reason) {
+        setEditorError(messageFor(reason))
+      } finally {
+        setExportingPdf(false)
+      }
+    },
+    [api, document, documentAssets, exportingPdf, flush, material]
+  )
 
   const openInternalLink = useCallback(
     async (link: StudyRichTextInternalLink, sourceBlockId: string): Promise<void> => {
@@ -592,6 +623,11 @@ export function StudyScreen({
                     .catch((reason) => setEditorError(messageFor(reason)))
                 }}
               />
+              <Button
+                label={exportingPdf ? 'PDF…' : 'PDF'}
+                disabled={closing || exportingPdf}
+                onPress={() => void exportPdf(node?.title ?? 'Материал')}
+              />
               <Button label="Фокус" selected onPress={() => setFocus(true)} />
               {node ? (
                 <Button label="Свойства" disabled={closing} onPress={() => editNode(node)} />
@@ -666,6 +702,11 @@ export function StudyScreen({
                         .then(() => setMaterialMode('code'))
                         .catch((reason) => setEditorError(messageFor(reason)))
                     }}
+                  />
+                  <Button
+                    label={exportingPdf ? 'PDF…' : 'PDF'}
+                    disabled={closing || exportingPdf}
+                    onPress={() => void exportPdf(node?.title ?? 'Материал')}
                   />
                   <Button label="Фокус" onPress={() => setFocus(true)} />
                   {node ? (

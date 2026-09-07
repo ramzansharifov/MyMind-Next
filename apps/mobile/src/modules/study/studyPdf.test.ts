@@ -51,9 +51,24 @@ describe('mobile Study PDF serializer', () => {
         { id: 'markdown-1', type: 'markdown', source: '## Markdown\n\n- one\n- two' },
         { id: 'latex-1', type: 'latex', source: 'x^2 + y^2', displayMode: 'display' },
         { id: 'mermaid-1', type: 'mermaid', source: 'graph TD; A-->B;' },
-        { id: 'image-1', type: 'image', source: { type: 'local', asset: imageAsset }, title: 'Diagram' },
-        { id: 'video-1', type: 'video', source: { type: 'url', url: 'https://example.com/video.mp4' }, title: 'Video' },
-        { id: 'audio-1', type: 'audio', source: { type: 'local', asset: audioAsset }, title: 'Voice' },
+        {
+          id: 'image-1',
+          type: 'image',
+          source: { type: 'local', asset: imageAsset },
+          title: 'Diagram'
+        },
+        {
+          id: 'video-1',
+          type: 'video',
+          source: { type: 'url', url: 'https://example.com/video.mp4' },
+          title: 'Video'
+        },
+        {
+          id: 'audio-1',
+          type: 'audio',
+          source: { type: 'local', asset: audioAsset },
+          title: 'Voice'
+        },
         { id: 'file-1', type: 'file', source: { type: 'local' }, title: 'Document' },
         { id: 'divider-1', type: 'divider', variant: 'dashed', thickness: 2 },
         { id: 'board-1', type: 'board', boardId: 'board-1', title: 'Ideas board' }

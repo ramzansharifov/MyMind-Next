@@ -12,10 +12,7 @@ import BoardCanvasDom from '../../modules/boards/BoardCanvasDom'
 import { DocumentBoardReader, type OpenDocumentBoard } from './DocumentBoardBlock'
 import { AudioAssetPlayer } from './VoiceRecorder'
 import { Button, Label } from './primitives'
-import {
-  parseStudyRichTextSegments,
-  type StudyRichTextInternalLink
-} from './studyRichText'
+import { parseStudyRichTextSegments, type StudyRichTextInternalLink } from './studyRichText'
 import { useTheme } from './theme'
 
 export interface DocumentRevealRequest {

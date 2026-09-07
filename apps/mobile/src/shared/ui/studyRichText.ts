@@ -12,8 +12,7 @@ export interface StudyRichTextInternalLink {
 }
 
 export type StudyRichTextSegment =
-  | { type: 'text'; text: string }
-  | { type: 'internal-link'; link: StudyRichTextInternalLink }
+  { type: 'text'; text: string } | { type: 'internal-link'; link: StudyRichTextInternalLink }
 
 const INTERNAL_LINK_PATTERN =
   /<span\b(?=[^>]*\bdata-study-internal-link\s*=\s*(?:"true"|'true'))([^>]*)>([\s\S]*?)<\/span\s*>/gi
@@ -21,7 +20,12 @@ const INTERNAL_LINK_PATTERN =
 function decodeHtmlEntities(value: string): string {
   return value.replace(
     /&(?:#(\d+)|#x([\da-f]+)|([a-z]+));/gi,
-    (match, decimal: string | undefined, hexadecimal: string | undefined, named: string | undefined) => {
+    (
+      match,
+      decimal: string | undefined,
+      hexadecimal: string | undefined,
+      named: string | undefined
+    ) => {
       if (decimal) {
         const codePoint = Number.parseInt(decimal, 10)
         return Number.isFinite(codePoint) && codePoint <= 0x10ffff
@@ -112,7 +116,11 @@ export function parseStudyRichTextSegments(
   let found = false
   INTERNAL_LINK_PATTERN.lastIndex = 0
 
-  for (let match = INTERNAL_LINK_PATTERN.exec(html); match; match = INTERNAL_LINK_PATTERN.exec(html)) {
+  for (
+    let match = INTERNAL_LINK_PATTERN.exec(html);
+    match;
+    match = INTERNAL_LINK_PATTERN.exec(html)
+  ) {
     found = true
     if (match.index > cursor) {
       segments.push({ type: 'text', text: htmlFragmentToText(html.slice(cursor, match.index)) })
@@ -120,7 +128,8 @@ export function parseStudyRichTextSegments(
 
     const attributes = match[1] ?? ''
     const innerHtml = match[2] ?? ''
-    const targetKind = attribute(attributes, 'data-target-kind') === 'heading' ? 'heading' : 'material'
+    const targetKind =
+      attribute(attributes, 'data-target-kind') === 'heading' ? 'heading' : 'material'
     const rawHeadingId = attribute(attributes, 'data-heading-id')
     const storedLabel = attribute(attributes, 'data-label') ?? htmlFragmentToText(innerHtml)
 

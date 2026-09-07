@@ -4,9 +4,9 @@ import { parseStudyRichTextSegments } from './studyRichText'
 
 describe('parseStudyRichTextSegments', () => {
   it('keeps plain mobile text when the block has no internal links', () => {
-    expect(parseStudyRichTextSegments('<p><strong>Desktop rich</strong></p>', 'Mobile plain')).toEqual([
-      { type: 'text', text: 'Mobile plain' }
-    ])
+    expect(
+      parseStudyRichTextSegments('<p><strong>Desktop rich</strong></p>', 'Mobile plain')
+    ).toEqual([{ type: 'text', text: 'Mobile plain' }])
   })
 
   it('parses the desktop Study internal-link contract and surrounding text', () => {

@@ -14,9 +14,7 @@ export interface StudyPdfBuildOptions {
   title: string
   document: StudyDocument
   resolveAssetDataUri?: (asset: StudyLocalAsset) => Promise<string | null>
-  resolveInternalLinkTarget?: (
-    link: StudyRichTextInternalLink
-  ) => StudyInternalLinkTarget | null
+  resolveInternalLinkTarget?: (link: StudyRichTextInternalLink) => StudyInternalLinkTarget | null
 }
 
 const INTERNAL_LINK_PATTERN =
@@ -50,16 +48,10 @@ function safeHeadingColor(value: string | undefined): string | null {
 
 function sanitizeRichTextHtml(html: string): string {
   return html
-    .replace(
-      /<(script|style|iframe|object|embed|form)\b[^>]*>[\s\S]*?<\/\1\s*>/gi,
-      ''
-    )
+    .replace(/<(script|style|iframe|object|embed|form)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, '')
     .replace(/<(script|style|iframe|object|embed|form)\b[^>]*\/?\s*>/gi, '')
     .replace(/\s+on[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
-    .replace(
-      /\s+(href|src)\s*=\s*("|')\s*javascript:[\s\S]*?\2/gi,
-      ' $1="#"'
-    )
+    .replace(/\s+(href|src)\s*=\s*("|')\s*javascript:[\s\S]*?\2/gi, ' $1="#"')
 }
 
 function refreshInternalLinkLabels(
@@ -101,19 +93,18 @@ function renderInlineMarkdown(value: string): string {
   const inlineCode: string[] = []
   output = output.replace(/`([^`]+)`/g, (_whole, code: string) => {
     const index = inlineCode.push(`<code>${code}</code>`) - 1
-    return `\u0000CODE${index}\u0000`
+    return `\uE000CODE${index}\uE001`
   })
   output = output.replace(
     /\[([^\]]+)\]\(((?:https?:\/\/|mailto:)[^)\s]+)\)/gi,
-    (_whole, label: string, url: string) =>
-      `<a href="${escapeAttribute(url)}">${label}</a>`
+    (_whole, label: string, url: string) => `<a href="${escapeAttribute(url)}">${label}</a>`
   )
   output = output.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
   output = output.replace(/__([^_]+)__/g, '<strong>$1</strong>')
-  output = output.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>')
-  output = output.replace(/(?<!_)_([^_]+)_(?!_)/g, '<em>$1</em>')
+  output = output.replace(/\*([^*]+)\*/g, '<em>$1</em>')
+  output = output.replace(/_([^_]+)_/g, '<em>$1</em>')
   output = output.replace(/~~([^~]+)~~/g, '<del>$1</del>')
-  output = output.replace(/\u0000CODE(\d+)\u0000/g, (_whole, index: string) => {
+  output = output.replace(/\uE000CODE(\d+)\uE001/g, (_whole, index: string) => {
     return inlineCode[Number(index)] ?? ''
   })
   return output
@@ -144,7 +135,9 @@ function startsMarkdownStructure(lines: string[], index: number): boolean {
   if (/^>\s?/.test(line)) return true
   if (/^\s*[-*+]\s+/.test(line) || /^\s*\d+[.)]\s+/.test(line)) return true
   if (/^\s*(?:-{3,}|\*{3,}|_{3,})\s*$/.test(line)) return true
-  return Boolean(lines[index + 1] && line.includes('|') && isMarkdownTableSeparator(lines[index + 1]!))
+  return Boolean(
+    lines[index + 1] && line.includes('|') && isMarkdownTableSeparator(lines[index + 1]!)
+  )
 }
 
 export function renderMarkdownForPdf(source: string): string {
@@ -179,7 +172,11 @@ export function renderMarkdownForPdf(source: string): string {
       const headers = markdownCells(line)
       index += 2
       const rows: string[][] = []
-      while (index < lines.length && (lines[index] ?? '').includes('|') && (lines[index] ?? '').trim()) {
+      while (
+        index < lines.length &&
+        (lines[index] ?? '').includes('|') &&
+        (lines[index] ?? '').trim()
+      ) {
         rows.push(markdownCells(lines[index] ?? ''))
         index += 1
       }
@@ -288,14 +285,13 @@ async function renderImageBlock(
     source = resolveAssetDataUri ? await resolveAssetDataUri(block.source.asset) : null
   }
   const caption = `<figcaption>${escapeHtml(label)}</figcaption>`
-  if (!source) return `<figure class="media-card media-missing"><div>Изображение недоступно</div>${caption}</figure>`
+  if (!source)
+    return `<figure class="media-card media-missing"><div>Изображение недоступно</div>${caption}</figure>`
   const fit = block.imageFit === 'cover' ? 'cover' : 'contain'
   return `<figure class="image-block"><img src="${escapeAttribute(source)}" alt="${escapeAttribute(label)}" style="object-fit:${fit}">${caption}</figure>`
 }
 
-function renderMediaCard(
-  block: Extract<StudyBlock, { type: 'video' | 'audio' | 'file' }>
-): string {
+function renderMediaCard(block: Extract<StudyBlock, { type: 'video' | 'audio' | 'file' }>): string {
   const asset = block.source.type === 'local' ? block.source.asset : undefined
   const fallback = block.type === 'video' ? 'Видео' : block.type === 'audio' ? 'Аудио' : 'Файл'
   const label = block.title || assetLabel(asset, fallback)
@@ -324,14 +320,12 @@ function renderHeading(block: Extract<StudyBlock, { type: 'heading' }>): string 
 function renderDivider(block: Extract<StudyBlock, { type: 'divider' }>): string {
   const color = safeHeadingColor(block.color) ?? '#d9dee7'
   const thickness = Math.max(1, Math.min(12, block.thickness ?? 1))
-  const style = block.variant === 'dashed' ? 'dashed' : block.variant === 'dotted' ? 'dotted' : 'solid'
+  const style =
+    block.variant === 'dashed' ? 'dashed' : block.variant === 'dotted' ? 'dotted' : 'solid'
   return `<hr style="border-top:${thickness}px ${style} ${color}">`
 }
 
-async function renderBlock(
-  block: StudyBlock,
-  options: StudyPdfBuildOptions
-): Promise<string> {
+async function renderBlock(block: StudyBlock, options: StudyPdfBuildOptions): Promise<string> {
   switch (block.type) {
     case 'text':
       return `<section class="rich-text">${renderRichText(block, options.resolveInternalLinkTarget)}</section>`

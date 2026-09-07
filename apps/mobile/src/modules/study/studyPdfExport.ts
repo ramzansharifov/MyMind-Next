@@ -13,9 +13,7 @@ export interface ExportStudyMaterialPdfOptions {
   title: string
   document: StudyDocument
   resolveAssetUri: (asset: StudyLocalAsset) => string | null
-  resolveInternalLinkTarget?: (
-    link: StudyRichTextInternalLink
-  ) => StudyInternalLinkTarget | null
+  resolveInternalLinkTarget?: (link: StudyRichTextInternalLink) => StudyInternalLinkTarget | null
 }
 
 async function localAssetDataUri(
