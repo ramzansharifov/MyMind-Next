@@ -25,6 +25,7 @@ import { DiaryScreen } from '../modules/diary/DiaryScreen'
 import { WorkoutsScreen } from '../modules/workouts/WorkoutsScreen'
 import { NutritionScreen } from '../modules/nutrition/NutritionScreen'
 import { FinanceScreen } from '../modules/finance/FinanceScreen'
+import { PasswordsScreen } from '../modules/passwords/PasswordsScreen'
 import { Home } from './Home'
 import { Settings } from './Settings'
 import { ReminderStatus } from './ReminderStatus'
@@ -44,6 +45,7 @@ export type Route =
   | 'workouts'
   | 'nutrition'
   | 'finance'
+  | 'passwords'
   | 'settings'
 
 const titles: Record<Route, string> = {
@@ -61,6 +63,7 @@ const titles: Record<Route, string> = {
   workouts: 'Тренировки',
   nutrition: 'Питание',
   finance: 'Финансы',
+  passwords: 'Пароли',
   settings: 'Настройки'
 }
 
@@ -146,6 +149,7 @@ export default function MobileApp(): React.JSX.Element {
     'workouts',
     'nutrition',
     'finance',
+    'passwords',
     'movies',
     'music',
     'settings'
@@ -200,6 +204,8 @@ export default function MobileApp(): React.JSX.Element {
                   <NutritionScreen />
                 ) : route === 'finance' ? (
                   <FinanceScreen />
+                ) : route === 'passwords' ? (
+                  <PasswordsScreen />
                 ) : route === 'settings' ? (
                   <Settings appearance={appearance} save={saveAppearance} />
                 ) : (
