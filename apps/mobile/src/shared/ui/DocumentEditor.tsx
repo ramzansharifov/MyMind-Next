@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { FlatList, Image, Text, TextInput, View } from 'react-native'
 import type {
   StudyAssetKind,
@@ -10,6 +10,7 @@ import type {
 import { designTokens } from '@mymind/design'
 import { Button, Label } from './primitives'
 import { useTheme } from './theme'
+import { AudioAssetPlayer, VoiceRecorder, type VoiceRecordingInput } from './VoiceRecorder'
 
 const INSERTABLE_BLOCKS: ReadonlyArray<{ type: StudyBlockType; label: string }> = [
   { type: 'text', label: 'Текст' },
@@ -32,6 +33,18 @@ interface DocumentAssetActions {
   importAsset?: (kind: StudyAssetKind) => Promise<StudyLocalAsset | null>
   openAsset?: (asset: StudyLocalAsset) => Promise<void>
   resolveAssetUri?: (asset: StudyLocalAsset) => string | null
+  onAssetError?: (reason: unknown) => void
+}
+
+interface DocumentEditorProps {
+  document: StudyDocument
+  onChange(document: StudyDocument): void
+  createId(): string
+  header?: React.ReactElement | null
+  importAsset?: (kind: StudyAssetKind) => Promise<StudyLocalAsset | null>
+  openAsset?: (asset: StudyLocalAsset) => Promise<void>
+  resolveAssetUri?: (asset: StudyLocalAsset) => string | null
+  saveRecordedAudio?: (input: VoiceRecordingInput) => Promise<StudyLocalAsset>
   onAssetError?: (reason: unknown) => void
 }
 
@@ -96,6 +109,9 @@ function LocalAssetEditor({
 
   return (
     <View style={{ gap: 8 }}>
+      {block.type === 'audio' && uri ? (
+        <AudioAssetPlayer uri={uri} onError={assetActions.onAssetError} />
+      ) : null}
       {block.type === 'image' && uri ? (
         <Image
           accessibilityLabel={block.title || asset?.name || 'Изображение'}
@@ -309,42 +325,54 @@ export function DocumentEditor({
   importAsset,
   openAsset,
   resolveAssetUri,
+  saveRecordedAudio,
   onAssetError
-}: {
-  document: StudyDocument
-  onChange(document: StudyDocument): void
-  createId(): string
-  header?: React.ReactElement | null
-  importAsset?: (kind: StudyAssetKind) => Promise<StudyLocalAsset | null>
-  openAsset?: (asset: StudyLocalAsset) => Promise<void>
-  resolveAssetUri?: (asset: StudyLocalAsset) => string | null
-  onAssetError?: (reason: unknown) => void
-}): React.JSX.Element {
+}: DocumentEditorProps): React.JSX.Element {
   const theme = useTheme()
+  const documentRef = useRef(document)
   const [pendingAsset, setPendingAsset] = useState<StudyAssetKind | null>(null)
   const assetActions = { importAsset, openAsset, resolveAssetUri, onAssetError }
+
+  useEffect(() => {
+    documentRef.current = document
+  }, [document])
+
+  const emit = (next: StudyDocument): void => {
+    documentRef.current = next
+    onChange(next)
+  }
   const replace = (index: number, block: StudyBlock): void => {
-    const blocks = document.blocks.slice()
+    const currentDocument = documentRef.current
+    const blocks = currentDocument.blocks.slice()
     blocks[index] = block
-    onChange({ ...document, blocks })
+    emit({ ...currentDocument, blocks })
   }
   const remove = (index: number): void => {
-    onChange({ ...document, blocks: document.blocks.filter((_, current) => current !== index) })
+    const currentDocument = documentRef.current
+    emit({
+      ...currentDocument,
+      blocks: currentDocument.blocks.filter((_, current) => current !== index)
+    })
   }
   const move = (index: number, direction: -1 | 1): void => {
+    const currentDocument = documentRef.current
     const destination = index + direction
-    if (destination < 0 || destination >= document.blocks.length) return
-    const blocks = document.blocks.slice()
+    if (destination < 0 || destination >= currentDocument.blocks.length) return
+    const blocks = currentDocument.blocks.slice()
     const current = blocks[index]
     const target = blocks[destination]
     if (!current || !target) return
     blocks[index] = target
     blocks[destination] = current
-    onChange({ ...document, blocks })
+    emit({ ...currentDocument, blocks })
+  }
+  const append = (block: StudyBlock): void => {
+    const currentDocument = documentRef.current
+    emit({ ...currentDocument, blocks: [...currentDocument.blocks, block] })
   }
   const insert = (type: StudyBlockType): void => {
     const block = newBlock(type, createId())
-    if (block) onChange({ ...document, blocks: [...document.blocks, block] })
+    if (block) append(block)
   }
   const insertAsset = async (type: StudyAssetKind): Promise<void> => {
     if (!importAsset || pendingAsset) return
@@ -352,8 +380,7 @@ export function DocumentEditor({
     try {
       const asset = await importAsset(type)
       if (!asset) return
-      const block = newAssetBlock(type, createId(), asset)
-      onChange({ ...document, blocks: [...document.blocks, block] })
+      append(newAssetBlock(type, createId(), asset))
     } catch (reason) {
       onAssetError?.(reason)
     } finally {
@@ -424,6 +451,14 @@ export function DocumentEditor({
                 ))
               : null}
           </View>
+          {saveRecordedAudio ? (
+            <VoiceRecorder
+              saveRecording={saveRecordedAudio}
+              onSaved={(asset) => append(newAssetBlock('audio', createId(), asset))}
+              onError={onAssetError}
+              disabled={pendingAsset !== null}
+            />
+          ) : null}
         </View>
       }
     />
