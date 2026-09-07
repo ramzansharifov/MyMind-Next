@@ -26,7 +26,7 @@ export interface BoardCanvasDomRef extends DOMImperativeFactory {
 }
 
 interface BoardCanvasDomProps {
-  ref?: Ref<BoardCanvasDomRef>
+  ref: Ref<BoardCanvasDomRef>
   dom?: import('expo/dom').DOMProps
   snapshot: BoardSnapshot | null
   colorScheme: 'light' | 'dark'
