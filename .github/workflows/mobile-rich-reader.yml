@@ -27,9 +27,6 @@ jobs:
       - name: Use npm 11
         run: npm install --global npm@11
 
-      - name: Integrate rich mobile reader
-        run: node .github/scripts/mobile-rich-reader.cjs
-
       - name: Refresh lockfile metadata
         run: npm install --package-lock-only --ignore-scripts
 
