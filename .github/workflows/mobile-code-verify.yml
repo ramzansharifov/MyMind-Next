@@ -24,16 +24,38 @@ jobs:
       - run: npm install --package-lock-only --ignore-scripts
       - run: npm ci
       - run: npm run native:node
+      - name: Repair isolated lint findings
+        shell: bash
+        run: |
+          sed -i '/  type StudyCodeBlockAst,/d' apps/mobile/src/modules/study/studyCode.ts
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('apps/mobile/src/modules/study/StudyCodeWorkspace.tsx')
+          source = path.read_text()
+          old = "  useEffect(() => reload(), [reload])"
+          new = """  useEffect(() => {
+            let active = true
+            queueMicrotask(() => {
+              if (active) reload()
+            })
+            return () => {
+              active = false
+            }
+          }, [reload])"""
+          if old not in source:
+              raise SystemExit('StudyCodeWorkspace effect pattern not found')
+          path.write_text(source.replace(old, new))
+          PY
       - name: Format new Study code files
         run: npx prettier --write packages/core/src/study-code.ts packages/core/src/study-code-constraints.ts packages/core/src/study-code-document.ts apps/desktop/src/shared/study-code.ts apps/desktop/src/shared/study-code-constraints.ts apps/mobile/src/modules/study/studyCode.ts apps/mobile/src/modules/study/StudyCodeWorkspace.tsx
-      - name: Commit formatting if needed
+      - name: Commit repairs if needed
         shell: bash
         run: |
           if ! git diff --quiet; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add packages/core/src/study-code.ts packages/core/src/study-code-constraints.ts packages/core/src/study-code-document.ts apps/desktop/src/shared/study-code.ts apps/desktop/src/shared/study-code-constraints.ts apps/mobile/src/modules/study/studyCode.ts apps/mobile/src/modules/study/StudyCodeWorkspace.tsx
-            git commit -m "style: format shared Study code"
+            git commit -m "fix: satisfy Study code lint rules"
             git push origin HEAD:agent/full-mobile-app
           fi
       - run: npm run lint:mobile
