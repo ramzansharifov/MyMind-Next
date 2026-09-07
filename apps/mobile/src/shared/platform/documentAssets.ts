@@ -2,6 +2,7 @@ import * as DocumentPicker from 'expo-document-picker'
 import { randomUUID } from 'expo-crypto'
 import { Directory, File, Paths } from 'expo-file-system'
 import * as Sharing from 'expo-sharing'
+import type { NoteVoiceRecordingMimeType } from '@mymind/contracts/notes'
 import type {
   StudyAssetKind,
   StudyBlock,
@@ -9,6 +10,10 @@ import type {
   StudyLocalAsset
 } from '@mymind/contracts/study'
 import { STUDY_SAFE_ID_PATTERN } from '@mymind/contracts/study'
+import {
+  assertNoteVoiceRecordingSize,
+  noteVoiceRecordingFileName
+} from '@mymind/core/note-voice-recording'
 import {
   isSupportedStudyAssetExtension,
   sanitizeStudyAssetFileName,
@@ -118,6 +123,10 @@ function replaceAsset(block: AssetBlock, asset: StudyLocalAsset): AssetBlock {
 
 export interface MobileDocumentAssetStore {
   importAsset(ownerId: string, kind: StudyAssetKind): Promise<StudyLocalAsset | null>
+  saveRecordedAudio(
+    ownerId: string,
+    input: { uri: string; mimeType: NoteVoiceRecordingMimeType }
+  ): Promise<StudyLocalAsset>
   validateDocumentAssets(ownerId: string, document: StudyDocument): Promise<void>
   duplicateDocumentAssets(
     sourceOwnerId: string,
@@ -171,6 +180,50 @@ export function createMobileDocumentAssetStore(): MobileDocumentAssetStore {
       }
     } catch (reason) {
       if (directory.exists) directory.delete()
+      throw reason
+    }
+  }
+
+  async function saveRecordedAudio(
+    ownerId: string,
+    input: { uri: string; mimeType: NoteVoiceRecordingMimeType }
+  ): Promise<StudyLocalAsset> {
+    assertSafeId(ownerId, 'идентификатор документа')
+    const source = new File(input.uri)
+    if (!source.exists) throw new Error('Файл голосовой записи не найден')
+
+    let directory: Directory | null = null
+    try {
+      assertNoteVoiceRecordingSize(source.size)
+      const id = randomUUID()
+      const fileName = noteVoiceRecordingFileName(input.mimeType)
+      directory = assetDirectory(ownerId, id)
+      const target = new File(directory, fileName)
+      directory.create({ intermediates: true, idempotent: false })
+      await source.copy(target)
+      if (!target.exists) throw new Error('Не удалось сохранить голосовую запись')
+      assertNoteVoiceRecordingSize(target.size)
+      reserve(ownerId, id)
+      try {
+        if (source.exists) source.delete()
+      } catch {
+        // Recorder cache cleanup is best-effort after a successful durable copy.
+      }
+      return {
+        id,
+        materialId: ownerId,
+        name: fileName,
+        mimeType: input.mimeType,
+        size: target.size,
+        url: createCanonicalStudyAssetUrl({ materialId: ownerId, assetId: id, fileName })
+      }
+    } catch (reason) {
+      if (directory?.exists) directory.delete()
+      try {
+        if (source.exists) source.delete()
+      } catch {
+        // The operating system can reclaim the recorder cache if explicit cleanup is unavailable.
+      }
       throw reason
     }
   }
@@ -307,6 +360,7 @@ export function createMobileDocumentAssetStore(): MobileDocumentAssetStore {
 
   return {
     importAsset,
+    saveRecordedAudio,
     validateDocumentAssets,
     duplicateDocumentAssets,
     cleanupDocumentAssets,
