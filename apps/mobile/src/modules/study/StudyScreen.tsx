@@ -14,8 +14,9 @@ import { useServices } from '../../app/context'
 import { notifyDataChanged } from '../../app/changes'
 import { useCollection } from '../../shared/hooks/useCollection'
 import { DocumentEditor } from '../../shared/ui/DocumentEditor'
-import { DocumentReader } from '../../shared/ui/DocumentReader'
+import { DocumentReader, type DocumentRevealRequest } from '../../shared/ui/DocumentReader'
 import { FormSheet } from '../../shared/ui/FormSheet'
+import type { StudyRichTextInternalLink } from '../../shared/ui/studyRichText'
 import { StudyCodeWorkspace } from './StudyCodeWorkspace'
 import { choiceField, messageFor, textField, type FormSpec } from '../../shared/ui/form-model'
 import {
@@ -27,6 +28,18 @@ import {
   Row,
   SearchField
 } from '../../shared/ui/primitives'
+
+interface StudyInternalLinkHistoryEntry {
+  sourceMaterialId: string
+  destinationMaterialId: string
+  sourceBlockId: string
+}
+
+interface OpenStudyMaterialOptions {
+  mode?: 'read' | 'edit'
+  revealBlockId?: string | null
+  preserveLinkHistory?: boolean
+}
 
 function sortNodes(nodes: StudyNode[]): StudyNode[] {
   return [...nodes].sort((a, b) => a.position - b.position || a.createdAt - b.createdAt)
@@ -84,7 +97,10 @@ export function StudyScreen({
   const [materialMode, setMaterialMode] = useState<'read' | 'edit' | 'code'>('edit')
   const [codeNodeId, setCodeNodeId] = useState<string | null>(null)
   const [focusMode, setFocusMode] = useState(false)
+  const [internalLinkHistory, setInternalLinkHistory] = useState<StudyInternalLinkHistoryEntry[]>([])
+  const [reveal, setReveal] = useState<DocumentRevealRequest | null>(null)
   const queueRef = useRef<AutosaveQueue<StudyDocument> | null>(null)
+  const revealSequenceRef = useRef(0)
 
   const allNodes = useMemo(() => nodes.data ?? [], [nodes.data])
   const effectiveFolderId =
@@ -102,11 +118,19 @@ export function StudyScreen({
     [onImmersiveChange]
   )
 
+  const requestReveal = useCallback((blockId: string | null): void => {
+    revealSequenceRef.current += 1
+    setReveal({ blockId, requestId: revealSequenceRef.current })
+  }, [])
+
   const openMaterial = useCallback(
-    (id: string): void => {
+    (id: string, options: OpenStudyMaterialOptions = {}): void => {
       try {
         setFocus(false)
-        setMaterialMode('edit')
+        setMaterialMode(options.mode ?? 'edit')
+        if (!options.preserveLinkHistory) setInternalLinkHistory([])
+        if (options.revealBlockId !== undefined) requestReveal(options.revealBlockId)
+        else setReveal(null)
         const next = api.getMaterial(id)
         setMaterial(next)
         setDocument(next.document)
@@ -126,7 +150,7 @@ export function StudyScreen({
         setEditorError(messageFor(reason))
       }
     },
-    [api, setFocus]
+    [api, requestReveal, setFocus]
   )
 
   const flush = useCallback(async (): Promise<void> => {
@@ -135,6 +159,77 @@ export function StudyScreen({
     await queue.flush()
     setEditorError('')
   }, [])
+
+  const openInternalLink = useCallback(
+    async (link: StudyRichTextInternalLink, sourceBlockId: string): Promise<void> => {
+      if (!material || !link.materialId) return
+      const target = api.resolveInternalLinkTarget({
+        kind: link.kind,
+        materialId: link.materialId,
+        headingId: link.headingId
+      })
+      if (!target) {
+        Alert.alert('Ссылка недоступна', 'Материал или заголовок был удалён.')
+        return
+      }
+
+      try {
+        await flush()
+        setInternalLinkHistory((current) => [
+          ...current,
+          {
+            sourceMaterialId: material.nodeId,
+            destinationMaterialId: target.materialId,
+            sourceBlockId
+          }
+        ])
+
+        const targetBlockId = target.kind === 'heading' ? target.headingId : null
+        if (target.materialId === material.nodeId) {
+          setFocus(false)
+          setMaterialMode('read')
+          requestReveal(targetBlockId)
+          return
+        }
+
+        openMaterial(target.materialId, {
+          mode: 'read',
+          revealBlockId: targetBlockId,
+          preserveLinkHistory: true
+        })
+      } catch (reason) {
+        setEditorError(messageFor(reason))
+      }
+    },
+    [api, flush, material, openMaterial, requestReveal, setFocus]
+  )
+
+  const navigateInternalLinkBack = useCallback(async (): Promise<void> => {
+    const entry = internalLinkHistory.at(-1)
+    if (!entry || !material) return
+
+    try {
+      await flush()
+      api.getMaterial(entry.sourceMaterialId)
+      setInternalLinkHistory((current) => current.slice(0, -1))
+
+      if (entry.sourceMaterialId === material.nodeId) {
+        setFocus(false)
+        setMaterialMode('read')
+        requestReveal(entry.sourceBlockId)
+        return
+      }
+
+      openMaterial(entry.sourceMaterialId, {
+        mode: 'read',
+        revealBlockId: entry.sourceBlockId,
+        preserveLinkHistory: true
+      })
+    } catch (reason) {
+      setInternalLinkHistory((current) => current.slice(0, -1))
+      setEditorError(messageFor(reason))
+    }
+  }, [api, flush, internalLinkHistory, material, openMaterial, requestReveal, setFocus])
 
   const closeMaterial = useCallback(async (): Promise<void> => {
     if (closing) return
@@ -145,6 +240,8 @@ export function StudyScreen({
       queueRef.current = null
       setMaterial(null)
       setDocument(null)
+      setInternalLinkHistory([])
+      setReveal(null)
       nodes.refresh()
     } catch (reason) {
       setEditorError(messageFor(reason))
@@ -167,6 +264,10 @@ export function StudyScreen({
         setCodeNodeId(null)
         return true
       }
+      if (material && internalLinkHistory.length > 0) {
+        void navigateInternalLinkBack()
+        return true
+      }
       if (material) {
         void closeMaterial()
         return true
@@ -184,8 +285,10 @@ export function StudyScreen({
     currentFolder?.parentId,
     effectiveFolderId,
     focusMode,
+    internalLinkHistory.length,
     material,
     materialMode,
+    navigateInternalLinkBack,
     setFocus
   ])
 
@@ -388,6 +491,8 @@ export function StudyScreen({
                   queueRef.current = null
                   setMaterial(null)
                   setDocument(null)
+                  setInternalLinkHistory([])
+                  setReveal(null)
                 }
                 if (folderId === node.id) setFolderId(node.parentId)
                 setEditorError('')
@@ -469,6 +574,9 @@ export function StudyScreen({
             <Button label="Выйти из фокуса" selected onPress={() => setFocus(false)} />
           ) : (
             <>
+              {internalLinkHistory.length > 0 ? (
+                <Button label="← По ссылке" onPress={() => void navigateInternalLinkBack()} />
+              ) : null}
               <Button
                 label={closing ? 'Сохранение…' : 'Назад'}
                 disabled={closing}
@@ -521,6 +629,11 @@ export function StudyScreen({
             resolveAssetUri={documentAssets.resolveAssetUri}
             onAssetError={(reason) => setEditorError(messageFor(reason))}
             openBoard={openLinkedBoard}
+            resolveInternalLinkTarget={api.resolveInternalLinkTarget}
+            onOpenInternalLink={(link, sourceBlockId) => {
+              void openInternalLink(link, sourceBlockId)
+            }}
+            reveal={reveal}
             header={readerHeader}
           />
         ) : (
@@ -536,6 +649,9 @@ export function StudyScreen({
             header={
               <View style={{ gap: 12, paddingBottom: 16 }}>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                  {internalLinkHistory.length > 0 ? (
+                    <Button label="← По ссылке" onPress={() => void navigateInternalLinkBack()} />
+                  ) : null}
                   <Button
                     label={closing ? 'Сохранение…' : 'Назад'}
                     disabled={closing}
