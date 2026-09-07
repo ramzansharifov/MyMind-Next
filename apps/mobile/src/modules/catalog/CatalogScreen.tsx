@@ -17,6 +17,7 @@ import {
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { choiceField, messageFor, textField, type FormSpec } from '../../shared/ui/form-model'
 import { movieFields, movieValues, musicFields, musicValues } from './catalog-forms'
+import { CatalogJsonImportModal } from './CatalogJsonImportModal'
 
 export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX.Element {
   const services = useServices()
@@ -41,6 +42,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
   const [playlistsView, setPlaylistsView] = useState(false)
   const [playlistId, setPlaylistId] = useState<string | null>(null)
   const [form, setForm] = useState<FormSpec | null>(null)
+  const [jsonImportOpen, setJsonImportOpen] = useState(false)
   const [webError, setWebError] = useState('')
   const done = mode === 'movies' ? 'watched' : 'listened'
   const want = mode === 'movies' ? 'watchlist' : 'want_to_listen'
@@ -197,6 +199,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
               onPress={() => setPlaylistsView(!playlistsView)}
             />
           )}
+          {!playlistsView && <Button label="Из JSON" onPress={() => setJsonImportOpen(true)} />}
           <Button label="Фильтры" onPress={filters} />
         </View>
         <SearchField value={query} onChangeText={setQuery} />
@@ -299,6 +302,20 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
         />
       )}
       {form && <FormSheet spec={form} close={() => setForm(null)} />}
+      {jsonImportOpen && (
+        <CatalogJsonImportModal
+          mode={mode}
+          close={() => setJsonImportOpen(false)}
+          importMovies={(items) => {
+            services.movies.createMovies({ movies: items })
+            state.refresh()
+          }}
+          importMusic={(items) => {
+            services.music.createMusicItems({ items })
+            state.refresh()
+          }}
+        />
+      )}
     </View>
   )
 }

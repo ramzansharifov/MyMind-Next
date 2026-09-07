@@ -63,9 +63,9 @@ describe('catalog JSON import parsing', () => {
 
   it('rejects empty arrays and imports larger than the desktop limit', () => {
     expect(parseMoviesJson('[]').error).toBe('Массив фильмов пуст')
-    expect(parseMusicJson(JSON.stringify(Array.from({ length: 101 }, () => ({ title: 'x' })))).error).toBe(
-      'За один раз можно добавить до 100 записей'
-    )
+    expect(
+      parseMusicJson(JSON.stringify(Array.from({ length: 101 }, () => ({ title: 'x' })))).error
+    ).toBe('За один раз можно добавить до 100 записей')
   })
 
   it('treats blank input as an idle editor rather than an error', () => {

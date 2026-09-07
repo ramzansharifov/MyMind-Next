@@ -1,5 +1,13 @@
 import { useMemo, useState } from 'react'
-import { Alert, KeyboardAvoidingView, Modal, Platform, ScrollView, TextInput, View } from 'react-native'
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  TextInput,
+  View
+} from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import type { CreateMovieInput } from '@mymind/contracts/movies'
 import type { CreateMusicItemInput } from '@mymind/contracts/music'
@@ -59,8 +67,8 @@ export function CatalogJsonImportModal({
   const parsed = useMemo(
     () =>
       mode === 'movies'
-        ? ({ mode: 'movies' as const, ...parseMoviesJson(value) })
-        : ({ mode: 'music' as const, ...parseMusicJson(value) }),
+        ? { mode: 'movies' as const, ...parseMoviesJson(value) }
+        : { mode: 'music' as const, ...parseMusicJson(value) },
     [mode, value]
   )
   const error = submitError || parsed.error || ''
@@ -109,7 +117,8 @@ export function CatalogJsonImportModal({
             <View style={{ gap: 6 }}>
               <Label title>{title}</Label>
               <Label muted>
-                Один объект или массив до 100 записей. Проверка выполняется локально до записи в базу.
+                Один объект или массив до 100 записей. Проверка выполняется локально до записи в
+                базу.
               </Label>
             </View>
 

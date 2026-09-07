@@ -86,9 +86,7 @@ export function parseMoviesJson(value: string): CatalogJsonImportResult<CreateMo
   const parsed = parseCandidates(value)
   if (parsed.error) return { items: [], error: parsed.error }
   if (parsed.candidates.length === 0) {
-    return value.trim()
-      ? { items: [], error: 'Массив фильмов пуст' }
-      : { items: [], error: null }
+    return value.trim() ? { items: [], error: 'Массив фильмов пуст' } : { items: [], error: null }
   }
   if (parsed.candidates.length > MAX_IMPORT_ITEMS) {
     return { items: [], error: 'За один раз можно добавить до 100 фильмов' }
