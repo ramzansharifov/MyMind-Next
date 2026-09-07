@@ -34,6 +34,7 @@ export function Home({
       const workouts = services.workouts.listOverview()
       const nutrition = services.nutrition.listOverview({ date })
       const finance = services.finance.getDashboard()
+      const passwordVault = services.passwords.getPasswordVaultStatus()
       setCards([
         {
           route: 'tasks',
@@ -85,6 +86,15 @@ export function Home({
           route: 'finance',
           title: 'Финансы',
           subtitle: `${formatMoneyMinor(finance.totalBalanceMinor, finance.settings.baseCurrencyCode)}${finance.totalBalanceComplete ? '' : ' · не все курсы заданы'}`
+        },
+        {
+          route: 'passwords',
+          title: 'Пароли',
+          subtitle: passwordVault.initialized
+            ? passwordVault.unlocked
+              ? 'Хранилище открыто'
+              : 'Хранилище защищено и заблокировано'
+            : 'Настройте зашифрованное хранилище'
         },
         {
           route: 'movies',
