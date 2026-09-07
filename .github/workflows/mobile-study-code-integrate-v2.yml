@@ -1,4 +1,4 @@
-name: Mobile Study Code Integrate
+name: Mobile Study Code Integrate V2
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
 jobs:
   integrate:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
@@ -32,8 +32,9 @@ jobs:
 
           def replace_once(path: Path, old: str, new: str):
               source = path.read_text()
-              if source.count(old) != 1:
-                  raise SystemExit(f'{path}: expected one match, got {source.count(old)} for {old[:80]!r}')
+              count = source.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected one match, got {count} for {old[:100]!r}')
               path.write_text(source.replace(old, new, 1))
 
           engine = Path('apps/mobile/src/modules/study/studyCode.ts')
@@ -96,12 +97,12 @@ jobs:
           replace_once(
               workspace,
               """        snapshot.revision,
-                    confirmDestructive
-                  )""",
+                confirmDestructive
+              )""",
               """        snapshot.revision,
-                    confirmDestructive,
-                    validateDocumentAssets
-                  )"""
+                confirmDestructive,
+                validateDocumentAssets
+              )"""
           )
 
           screen = Path('apps/mobile/src/modules/study/StudyScreen.tsx')
@@ -205,11 +206,11 @@ jobs:
           )
           replace_once(
               screen,
-              """              <Button label="Редактировать" onPress={() => setMaterialMode('edit')} />
-                          <Button label="Фокус" selected onPress={() => setFocus(true)} />""",
-              """              <Button label="Редактировать" onPress={() => setMaterialMode('edit')} />
+              """              <Button label=\"Редактировать\" onPress={() => setMaterialMode('edit')} />
+                          <Button label=\"Фокус\" selected onPress={() => setFocus(true)} />""",
+              """              <Button label=\"Редактировать\" onPress={() => setMaterialMode('edit')} />
                           <Button
-                            label="Код"
+                            label=\"Код\"
                             disabled={closing}
                             onPress={() => {
                               void flush()
@@ -217,15 +218,15 @@ jobs:
                                 .catch((reason) => setEditorError(messageFor(reason)))
                             }}
                           />
-                          <Button label="Фокус" selected onPress={() => setFocus(true)} />"""
+                          <Button label=\"Фокус\" selected onPress={() => setFocus(true)} />"""
           )
           replace_once(
               screen,
-              """                  <Button label="Чтение" onPress={() => setMaterialMode('read')} />
-                              <Button label="Фокус" onPress={() => setFocus(true)} />""",
-              """                  <Button label="Чтение" onPress={() => setMaterialMode('read')} />
+              """                  <Button label=\"Чтение\" onPress={() => setMaterialMode('read')} />
+                              <Button label=\"Фокус\" onPress={() => setFocus(true)} />""",
+              """                  <Button label=\"Чтение\" onPress={() => setMaterialMode('read')} />
                               <Button
-                                label="Код"
+                                label=\"Код\"
                                 disabled={closing}
                                 onPress={() => {
                                   void flush()
@@ -233,25 +234,25 @@ jobs:
                                     .catch((reason) => setEditorError(messageFor(reason)))
                                 }}
                               />
-                              <Button label="Фокус" onPress={() => setFocus(true)} />"""
+                              <Button label=\"Фокус\" onPress={() => setFocus(true)} />"""
           )
           replace_once(
               screen,
-              """          <Button label="+ Папка" selected onPress={createFolder} />
-                      <Button label="+ Материал" selected onPress={createMaterial} />""",
-              """          <Button label="+ Папка" selected onPress={createFolder} />
-                      <Button label="+ Материал" selected onPress={createMaterial} />
+              """          <Button label=\"+ Папка\" selected onPress={createFolder} />
+                      <Button label=\"+ Материал\" selected onPress={createMaterial} />""",
+              """          <Button label=\"+ Папка\" selected onPress={createFolder} />
+                      <Button label=\"+ Материал\" selected onPress={createMaterial} />
                       {currentFolder ? (
-                        <Button label="Код" onPress={() => setCodeNodeId(currentFolder.id)} />
+                        <Button label=\"Код\" onPress={() => setCodeNodeId(currentFolder.id)} />
                       ) : null}"""
           )
           replace_once(
               screen,
-              """              <Button label="Изменить" onPress={() => editNode(item)} />
-                          <Button label="↑" disabled={index === 0} onPress={() => reorder(item, -1)} />""",
-              """              <Button label="Изменить" onPress={() => editNode(item)} />
-                          <Button label="Код" onPress={() => setCodeNodeId(item.id)} />
-                          <Button label="↑" disabled={index === 0} onPress={() => reorder(item, -1)} />"""
+              """              <Button label=\"Изменить\" onPress={() => editNode(item)} />
+                          <Button label=\"↑\" disabled={index === 0} onPress={() => reorder(item, -1)} />""",
+              """              <Button label=\"Изменить\" onPress={() => editNode(item)} />
+                          <Button label=\"Код\" onPress={() => setCodeNodeId(item.id)} />
+                          <Button label=\"↑\" disabled={index === 0} onPress={() => reorder(item, -1)} />"""
           )
           PY
           npx prettier --write apps/mobile/src/modules/study/studyCode.ts apps/mobile/src/modules/study/StudyCodeWorkspace.tsx apps/mobile/src/modules/study/StudyScreen.tsx
@@ -259,13 +260,12 @@ jobs:
       - run: npm run typecheck
       - run: npm run test:mobile
       - run: git diff --check
-      - name: Commit integration
+      - name: Commit integration and remove temporary workflow
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add apps/mobile/src/modules/study/studyCode.ts apps/mobile/src/modules/study/StudyCodeWorkspace.tsx apps/mobile/src/modules/study/StudyScreen.tsx
-          if ! git diff --cached --quiet; then
-            git commit -m "feat: expose Study code mode on mobile"
-            git push origin HEAD:agent/full-mobile-app
-          fi
+          git rm .github/workflows/mobile-study-code-integrate-v2.yml
+          git commit -m "feat: expose Study code mode on mobile"
+          git push origin HEAD:agent/full-mobile-app
