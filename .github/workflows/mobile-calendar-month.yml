@@ -1,0 +1,70 @@
+name: Mobile Calendar month checkpoint
+
+on:
+  push:
+    branches:
+      - agent/full-mobile-app
+    paths:
+      - .mobile-calendar-month-trigger
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Use npm 11
+        run: npm install --global npm@11
+      - name: Strict install
+        run: npm ci
+      - name: Rebuild SQLite for Node tests
+        run: npm run native:node
+      - name: Format Calendar checkpoint
+        run: >-
+          npx prettier --write
+          apps/mobile/src/modules/calendar/CalendarScreen.tsx
+          packages/core/src/calendar-month.ts
+          packages/core/src/calendar-month.test.ts
+      - name: Lint mobile and shared packages
+        run: npm run lint:mobile
+      - name: Typecheck all platforms
+        run: npm run typecheck
+      - name: Mobile and shared tests
+        run: npm run test:mobile
+      - name: Desktop Calendar regression tests
+        run: >-
+          npm exec --workspace=mymind-next -- vitest run
+          src/main/repositories/calendar.repository.test.ts
+          src/renderer/src/modules/calendar/CalendarPage.test.tsx
+          src/renderer/src/modules/calendar/CalendarReminderInbox.test.tsx
+      - name: Database schema check
+        run: npm run db:check
+      - name: Desktop production bundle
+        run: npm run build:bundle
+      - name: Expo Android export
+        run: npm run export:android
+      - name: Security audit gate
+        run: npm audit --audit-level=high
+      - name: Whitespace
+        run: git diff --check
+      - name: Commit verified Calendar month checkpoint
+        env:
+          BRANCH: agent/full-mobile-app
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -f .github/workflows/mobile-calendar-month.yml .mobile-calendar-month-trigger
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "feat: verify native Calendar month view"
+            git push origin "HEAD:${BRANCH}"
+          fi
