@@ -45,28 +45,52 @@ describe('mobile password clipboard', () => {
     expect(value).toBe('user-value')
   })
 
-  it('explicit cleanup invalidates queued copies and fails closed on clipboard read errors', async () => {
+  it('waits for an in-progress secret write and clears it during explicit cleanup', async () => {
     let value = ''
-    let releaseWrite: (() => void) | null = null
+    let releaseWrite!: () => void
     const firstWrite = new Promise<void>((resolve) => {
       releaseWrite = resolve
     })
+    let writeStarted!: () => void
+    const started = new Promise<void>((resolve) => {
+      writeStarted = resolve
+    })
     const adapter = {
-      getStringAsync: vi.fn(async () => {
-        throw new Error('clipboard unavailable')
-      }),
+      getStringAsync: vi.fn(async () => value),
       setStringAsync: vi.fn(async (next: string) => {
-        if (next === 'secret') await firstWrite
+        if (next === 'secret') {
+          writeStarted()
+          await firstWrite
+        }
         value = next
       })
     }
     const manager = createPasswordClipboardManager(adapter, 30_000)
 
     const copy = manager.copy('secret')
+    await started
     const cleanup = manager.clearTracked()
-    releaseWrite?.()
+    releaseWrite()
     await copy
     await cleanup
+    expect(value).toBe('')
+  })
+
+  it('fails closed when explicit cleanup cannot inspect a tracked secret', async () => {
+    let value = ''
+    const adapter = {
+      getStringAsync: vi.fn(async () => {
+        throw new Error('clipboard unavailable')
+      }),
+      setStringAsync: vi.fn(async (next: string) => {
+        value = next
+      })
+    }
+    const manager = createPasswordClipboardManager(adapter, 30_000)
+
+    await manager.copy('secret')
+    expect(value).toBe('secret')
+    await manager.clearTracked()
     expect(value).toBe('')
   })
 })
