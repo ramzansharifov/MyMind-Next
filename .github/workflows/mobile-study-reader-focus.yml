@@ -1,0 +1,278 @@
+name: Mobile Study reader focus checkpoint
+
+on:
+  push:
+    branches:
+      - agent/full-mobile-app
+    paths:
+      - .mobile-study-reader-focus-trigger
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Use npm 11
+        run: npm install --global npm@11
+
+      - name: Finish native Study read and focus modes
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs')
+          const path = 'apps/mobile/src/modules/study/StudyScreen.tsx'
+          let value = fs.readFileSync(path, 'utf8')
+
+          function replace(from, to) {
+            if (!value.includes(from)) throw new Error(`Patch target not found: ${from.slice(0, 120)}`)
+            value = value.replace(from, to)
+          }
+
+          replace(
+            "import { DocumentEditor } from '../../shared/ui/DocumentEditor'",
+            "import { DocumentEditor } from '../../shared/ui/DocumentEditor'\nimport { DocumentReader } from '../../shared/ui/DocumentReader'"
+          )
+
+          replace(
+            'export function StudyScreen(): React.JSX.Element {',
+            'export function StudyScreen({\n  onImmersiveChange\n}: {\n  onImmersiveChange?: (active: boolean) => void\n}): React.JSX.Element {'
+          )
+
+          replace(
+            "  const [pendingAction, setPendingAction] = useState(false)\n  const queueRef = useRef<AutosaveQueue<StudyDocument> | null>(null)",
+            "  const [pendingAction, setPendingAction] = useState(false)\n  const [materialMode, setMaterialMode] = useState<'read' | 'edit'>('edit')\n  const [focusMode, setFocusMode] = useState(false)\n  const queueRef = useRef<AutosaveQueue<StudyDocument> | null>(null)"
+          )
+
+          replace(
+            "  const currentFolder = effectiveFolderId\n    ? (allNodes.find((node) => node.id === effectiveFolderId) ?? null)\n    : null\n\n  const openMaterial = useCallback(",
+            "  const currentFolder = effectiveFolderId\n    ? (allNodes.find((node) => node.id === effectiveFolderId) ?? null)\n    : null\n\n  const setFocus = useCallback(\n    (active: boolean): void => {\n      setFocusMode(active)\n      onImmersiveChange?.(active)\n      if (active) setMaterialMode('read')\n    },\n    [onImmersiveChange]\n  )\n\n  const openMaterial = useCallback("
+          )
+
+          replace(
+            "      try {\n        const next = api.getMaterial(id)\n        setMaterial(next)",
+            "      try {\n        setFocus(false)\n        setMaterialMode('edit')\n        const next = api.getMaterial(id)\n        setMaterial(next)"
+          )
+          replace('    [api]\n  )\n\n  const flush', '    [api, setFocus]\n  )\n\n  const flush')
+
+          replace(
+            "    try {\n      await flush()\n      queueRef.current = null\n      setMaterial(null)",
+            "    try {\n      await flush()\n      setFocus(false)\n      queueRef.current = null\n      setMaterial(null)"
+          )
+          replace(
+            '  }, [closing, flush, nodes])',
+            '  }, [closing, flush, nodes, setFocus])'
+          )
+
+          replace(
+            "    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {\n      if (material) {",
+            "    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {\n      if (focusMode) {\n        setFocus(false)\n        return true\n      }\n      if (material) {"
+          )
+          replace(
+            '  }, [closeMaterial, currentFolder?.parentId, effectiveFolderId, material])',
+            '  }, [closeMaterial, currentFolder?.parentId, effectiveFolderId, focusMode, material, setFocus])'
+          )
+
+          replace(
+            "                if (material?.nodeId === node.id) {\n                  queueRef.current = null",
+            "                if (material?.nodeId === node.id) {\n                  setFocus(false)\n                  queueRef.current = null"
+          )
+
+          const materialBlock = `  if (material && document) {
+    const node = allNodes.find((item) => item.id === material.nodeId)
+    const reading = focusMode || materialMode === 'read'
+    const readerHeader = (
+      <View
+        style={{
+          gap: 12,
+          paddingHorizontal: focusMode ? 16 : 0,
+          paddingTop: focusMode ? 12 : 0,
+          paddingBottom: 20
+        }}
+      >
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          {focusMode ? (
+            <Button label="Выйти из фокуса" selected onPress={() => setFocus(false)} />
+          ) : (
+            <>
+              <Button
+                label={closing ? 'Сохранение…' : 'Назад'}
+                disabled={closing}
+                onPress={() => void closeMaterial()}
+              />
+              <Button label="Редактировать" onPress={() => setMaterialMode('edit')} />
+              <Button label="Фокус" selected onPress={() => setFocus(true)} />
+              {node ? (
+                <Button label="Свойства" disabled={closing} onPress={() => editNode(node)} />
+              ) : null}
+              {node ? (
+                <Button
+                  label="Копия"
+                  disabled={closing || pendingAction}
+                  onPress={() => duplicate(node)}
+                />
+              ) : null}
+              {node ? (
+                <Button
+                  label="Удалить"
+                  danger
+                  disabled={closing || pendingAction}
+                  onPress={() => confirmDelete(node)}
+                />
+              ) : null}
+            </>
+          )}
+        </View>
+        {node ? <Label title>{node.title}</Label> : null}
+        {!focusMode ? <Label muted>Режим чтения не изменяет содержимое материала.</Label> : null}
+      </View>
+    )
+
+    return (
+      <View style={{ flex: 1 }}>
+        {editorError ? <ErrorState message={editorError} retry={() => void flush()} /> : null}
+        {reading ? (
+          <DocumentReader
+            document={document}
+            openAsset={documentAssets.openAsset}
+            resolveAssetUri={documentAssets.resolveAssetUri}
+            onAssetError={(reason) => setEditorError(messageFor(reason))}
+            header={readerHeader}
+          />
+        ) : (
+          <DocumentEditor
+            document={document}
+            onChange={changeDocument}
+            createId={randomUUID}
+            importAsset={(kind) => documentAssets.importAsset(material.nodeId, kind)}
+            openAsset={documentAssets.openAsset}
+            resolveAssetUri={documentAssets.resolveAssetUri}
+            onAssetError={(reason) => setEditorError(messageFor(reason))}
+            header={
+              <View style={{ gap: 12, paddingBottom: 16 }}>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                  <Button
+                    label={closing ? 'Сохранение…' : 'Назад'}
+                    disabled={closing}
+                    onPress={() => void closeMaterial()}
+                  />
+                  <Button label="Чтение" onPress={() => setMaterialMode('read')} />
+                  <Button label="Фокус" onPress={() => setFocus(true)} />
+                  {node ? (
+                    <Button label="Свойства" disabled={closing} onPress={() => editNode(node)} />
+                  ) : null}
+                  {node ? (
+                    <Button
+                      label="Копия"
+                      disabled={closing || pendingAction}
+                      onPress={() => duplicate(node)}
+                    />
+                  ) : null}
+                  {node ? (
+                    <Button
+                      label="Удалить"
+                      danger
+                      disabled={closing || pendingAction}
+                      onPress={() => confirmDelete(node)}
+                    />
+                  ) : null}
+                </View>
+                {node ? <Label title>{node.title}</Label> : null}
+                <Label muted>Изменения содержимого сохраняются автоматически.</Label>
+              </View>
+            }
+          />
+        )}
+        {!focusMode && form ? <FormSheet spec={form} close={() => setForm(null)} /> : null}
+      </View>
+    )
+  }`
+
+          const pattern = /  if \(material && document\) \{[\s\S]*?\n  \}\n\n  const normalizedQuery/
+          if (!pattern.test(value)) throw new Error('Material render block not found')
+          value = value.replace(pattern, `${materialBlock}\n\n  const normalizedQuery`)
+
+          fs.writeFileSync(path, value)
+
+          const readerPath = 'apps/mobile/src/shared/ui/DocumentReader.tsx'
+          let reader = fs.readFileSync(readerPath, 'utf8')
+          reader = reader.replace(
+            "      contentContainerStyle={{ paddingBottom: 64 }}",
+            "      contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 64 }}"
+          )
+          fs.writeFileSync(readerPath, reader)
+
+          const parityPath = 'MOBILE_PARITY.md'
+          let parity = fs.readFileSync(parityPath, 'utf8')
+          parity = parity.replace(
+            /^\| Study\s+\|.*$/m,
+            '| Study | Nested folders/materials, versioned block documents, read/edit/focus, resource navigation, code workspace, links, assets, PDF, duplicate, reorder, autosave, deletion barriers | Shared contracts, V3 SQLite repository, native tree CRUD, lossless block editor, serialized autosave, local attachments, dedicated native read mode and immersive focus mode with safe back handling | Rich Markdown/LaTeX/Mermaid rendering, code workspace, PDF and deeper internal-link/navigation parity; preserve unsupported blocks losslessly |'
+          )
+          fs.writeFileSync(parityPath, parity)
+          NODE
+
+      - name: Refresh lockfile metadata
+        run: npm install --package-lock-only --ignore-scripts
+
+      - name: Strict install
+        run: npm ci
+
+      - name: Rebuild SQLite for Node tests
+        run: npm run native:node
+
+      - name: Format Study reader checkpoint
+        run: >-
+          npx prettier --write
+          apps/mobile/src/app/MobileApp.tsx
+          apps/mobile/src/modules/study/StudyScreen.tsx
+          apps/mobile/src/shared/ui/DocumentReader.tsx
+          MOBILE_PARITY.md
+
+      - name: Lint mobile and shared packages
+        run: npm run lint:mobile
+
+      - name: Typecheck all platforms
+        run: npm run typecheck
+
+      - name: Mobile and shared tests
+        run: npm run test:mobile
+
+      - name: Full desktop regression tests
+        run: npm run test:run
+
+      - name: Database schema check
+        run: npm run db:check
+
+      - name: Desktop production bundle
+        run: npm run build:bundle
+
+      - name: Expo Android export
+        run: npm run export:android
+
+      - name: Security audit gate
+        run: npm audit --audit-level=high
+
+      - name: Whitespace
+        run: git diff --check
+
+      - name: Commit verified Study reader checkpoint
+        shell: bash
+        run: |
+          rm -f .github/workflows/mobile-study-reader-focus.yml .mobile-study-reader-focus-trigger
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "feat: add mobile Study read and focus modes" || exit 0
+          git push origin HEAD:agent/full-mobile-app
