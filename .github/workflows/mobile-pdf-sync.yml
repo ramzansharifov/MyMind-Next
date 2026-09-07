@@ -68,12 +68,20 @@ jobs:
           pdf = Path('apps/mobile/src/modules/study/studyPdf.ts')
           pdf_text = pdf.read_text(encoding='utf-8')
           pdf_text = pdf_text.replace(
+              "return `\\u0000CODE${index}\\u0000`",
+              "return `\\uE000CODE${index}\\uE001`",
+          )
+          pdf_text = pdf_text.replace(
               "output = output.replace(/(?<!\\*)\\*([^*]+)\\*(?!\\*)/g, '<em>$1</em>')",
               "output = output.replace(/\\*([^*]+)\\*/g, '<em>$1</em>')",
           )
           pdf_text = pdf_text.replace(
               "output = output.replace(/(?<!_)_([^_]+)_(?!_)/g, '<em>$1</em>')",
               "output = output.replace(/_([^_]+)_/g, '<em>$1</em>')",
+          )
+          pdf_text = pdf_text.replace(
+              "output = output.replace(/\\u0000CODE(\\d+)\\u0000/g, (_whole, index: string) => {",
+              "output = output.replace(/\\uE000CODE(\\d+)\\uE001/g, (_whole, index: string) => {",
           )
           pdf.write_text(pdf_text, encoding='utf-8')
 
