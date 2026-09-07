@@ -41,7 +41,7 @@ function services(overrides?: {
   enabled?: boolean
   storedScan?: string | null
   due?: CalendarReminderRecord[]
-}) {
+}): { service: MobileServices; values: Map<string, string> } {
   const values = new Map<string, string>()
   values.set('reminders.enabled', String(overrides?.enabled ?? true))
   if (overrides?.storedScan !== undefined && overrides.storedScan !== null)
