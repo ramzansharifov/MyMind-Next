@@ -1,6 +1,9 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { FlatList, Pressable, Text, View } from 'react-native'
-import type { CalendarOccurrenceRecord } from '@mymind/contracts/calendar'
+import type {
+  CalendarOccurrenceRecord,
+  CalendarUnreadReminderRecord
+} from '@mymind/contracts/calendar'
 import {
   calendarMonthGrid,
   calendarMonthKey,
@@ -11,7 +14,7 @@ import {
 import { localDateKey } from '@mymind/core/habits'
 import * as schema from '@mymind/core/validation/calendar'
 import { diaryDayKeySchema } from '@mymind/core/validation/diary'
-import { notifyDataChanged } from '../../app/changes'
+import { notifyDataChanged, subscribeDataChanges } from '../../app/changes'
 import { useServices } from '../../app/context'
 import { useCollection } from '../../shared/hooks/useCollection'
 import { FormSheet } from '../../shared/ui/FormSheet'
@@ -26,6 +29,7 @@ import {
   SearchField
 } from '../../shared/ui/primitives'
 import { useTheme } from '../../shared/ui/theme'
+import { CalendarReminderInboxModal } from './CalendarReminderInboxModal'
 
 const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'] as const
 const WEEKDAYS_LONG = [
@@ -97,6 +101,7 @@ export function CalendarScreen(): React.JSX.Element {
   const [selectedDate, setSelectedDate] = useState(today)
   const [query, setQuery] = useState('')
   const [form, setForm] = useState<FormSpec | null>(null)
+  const [inboxOpen, setInboxOpen] = useState(false)
   const grid = useMemo(() => calendarMonthGrid(month), [month])
   const state = useCollection(
     useCallback(
@@ -107,6 +112,9 @@ export function CalendarScreen(): React.JSX.Element {
       [api, grid.from, grid.to]
     )
   )
+  const unread = useCollection(useCallback(() => api.listUnreadCalendarReminders(), [api]))
+
+  useEffect(() => subscribeDataChanges(unread.refresh), [unread.refresh])
 
   const byDay = useMemo(() => {
     const result = new Map<string, CalendarOccurrenceRecord[]>()
@@ -143,6 +151,13 @@ export function CalendarScreen(): React.JSX.Element {
     setMonth(calendarMonthKey(today))
     setSelectedDate(today)
     setQuery('')
+  }
+
+  const acknowledgeReminders = (reminders: CalendarUnreadReminderRecord[]): void => {
+    for (const reminder of reminders) {
+      api.acknowledgeCalendarReminder({ deliveryId: reminder.deliveryId })
+    }
+    notifyDataChanged()
   }
 
   const edit = (item?: CalendarOccurrenceRecord): void =>
@@ -201,6 +216,8 @@ export function CalendarScreen(): React.JSX.Element {
         state.refresh()
       }
     })
+
+  const unreadReminders = unread.data ?? []
 
   return (
     <View style={{ flex: 1 }}>
@@ -322,6 +339,13 @@ export function CalendarScreen(): React.JSX.Element {
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           <Button label="+ Событие" selected onPress={() => edit()} />
           <Button label="Сегодня" selected={selectedDate === today} onPress={selectToday} />
+          {unreadReminders.length > 0 ? (
+            <Button
+              label={`Напоминания (${unreadReminders.length})`}
+              selected
+              onPress={() => setInboxOpen(true)}
+            />
+          ) : null}
         </View>
 
         <View style={{ gap: 8 }}>
@@ -331,6 +355,7 @@ export function CalendarScreen(): React.JSX.Element {
       </View>
 
       {state.error ? <ErrorState message={state.error} retry={state.refresh} /> : null}
+      {unread.error ? <ErrorState message={unread.error} retry={unread.refresh} /> : null}
       {state.loading ? (
         <LoadingState />
       ) : (
@@ -343,7 +368,10 @@ export function CalendarScreen(): React.JSX.Element {
             />
           }
           refreshing={state.loading}
-          onRefresh={state.refresh}
+          onRefresh={() => {
+            state.refresh()
+            unread.refresh()
+          }}
           contentContainerStyle={{ paddingBottom: 40 }}
           renderItem={({ item }) => (
             <Row title={item.title} subtitle={occurrenceSubtitle(item)} onPress={() => edit(item)}>
@@ -385,6 +413,13 @@ export function CalendarScreen(): React.JSX.Element {
         />
       )}
       {form ? <FormSheet spec={form} close={() => setForm(null)} /> : null}
+      {inboxOpen ? (
+        <CalendarReminderInboxModal
+          reminders={unreadReminders}
+          close={() => setInboxOpen(false)}
+          acknowledge={acknowledgeReminders}
+        />
+      ) : null}
     </View>
   )
 }
