@@ -7,11 +7,7 @@ function parts(value: string): { year: number; month: number; day: number } {
   const month = Number(match[2])
   const day = Number(match[3])
   const date = new Date(year, month - 1, day, 12)
-  if (
-    date.getFullYear() !== year ||
-    date.getMonth() !== month - 1 ||
-    date.getDate() !== day
-  ) {
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
     throw new Error('Некорректная дата календаря')
   }
   return { year, month, day }

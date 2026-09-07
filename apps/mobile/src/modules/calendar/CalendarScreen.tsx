@@ -218,19 +218,28 @@ export function CalendarScreen(): React.JSX.Element {
             accessibilityRole="button"
             accessibilityLabel="Перейти к сегодняшней дате"
             onPress={selectToday}
-            style={({ pressed }) => ({ flex: 1, alignItems: 'center', opacity: pressed ? 0.65 : 1 })}
+            style={({ pressed }) => ({
+              flex: 1,
+              alignItems: 'center',
+              opacity: pressed ? 0.65 : 1
+            })}
           >
             <Text style={{ color: theme.text, fontSize: 18, fontWeight: '700' }}>
               {monthTitle(month)}
             </Text>
-            <Text style={{ color: theme.muted, fontSize: 12, marginTop: 2 }}>Нажмите для сегодня</Text>
+            <Text style={{ color: theme.muted, fontSize: 12, marginTop: 2 }}>
+              Нажмите для сегодня
+            </Text>
           </Pressable>
           <Button label="›" onPress={() => shiftMonth(1)} />
         </View>
 
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           {WEEKDAYS.map((weekday) => (
-            <View key={weekday} style={{ width: '14.285714%', alignItems: 'center', paddingVertical: 4 }}>
+            <View
+              key={weekday}
+              style={{ width: '14.285714%', alignItems: 'center', paddingVertical: 4 }}
+            >
               <Text style={{ color: theme.muted, fontSize: 12, fontWeight: '600' }}>{weekday}</Text>
             </View>
           ))}
@@ -289,10 +298,17 @@ export function CalendarScreen(): React.JSX.Element {
                 {count > 0 ? (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                     <View
-                      style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: theme.accent }}
+                      style={{
+                        width: 5,
+                        height: 5,
+                        borderRadius: 3,
+                        backgroundColor: theme.accent
+                      }}
                     />
                     {count > 1 ? (
-                      <Text style={{ color: theme.muted, fontSize: 10, fontWeight: '600' }}>{count}</Text>
+                      <Text style={{ color: theme.muted, fontSize: 10, fontWeight: '600' }}>
+                        {count}
+                      </Text>
                     ) : null}
                   </View>
                 ) : (
