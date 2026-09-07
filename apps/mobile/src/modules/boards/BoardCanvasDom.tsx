@@ -2,7 +2,7 @@
 
 import { getAssetUrlsByMetaUrl } from '@tldraw/assets/urls'
 import { useDOMImperativeHandle, type DOMImperativeFactory } from 'expo/dom'
-import { useEffect, useRef, useState, type Ref } from 'react'
+import { useCallback, useEffect, useRef, useState, type Ref } from 'react'
 import {
   createTLStore,
   defaultAssetUtils,
@@ -73,60 +73,47 @@ export default function BoardCanvasDom({
   onError
 }: BoardCanvasDomProps): React.JSX.Element {
   const [storeState] = useState(() => createStore(snapshot))
-  const saveActionRef = useRef(saveSnapshot)
-  const stateActionRef = useRef(onSaveState)
-  const errorActionRef = useRef(onError)
+  const [queue] = useState(
+    () =>
+      new BoardSaveQueue(saveSnapshot, (state) => {
+        void onSaveState(state)
+      })
+  )
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const queueRef = useRef<BoardSaveQueue | null>(null)
 
-  saveActionRef.current = saveSnapshot
-  stateActionRef.current = onSaveState
-  errorActionRef.current = onError
-
-  if (!queueRef.current) {
-    queueRef.current = new BoardSaveQueue(
-      async (next) => saveActionRef.current(next),
-      (state) => {
-        void stateActionRef.current(state)
-      }
-    )
-  }
-
-  const clearTimer = (): void => {
+  const clearTimer = useCallback((): void => {
     if (timerRef.current === null) return
     clearTimeout(timerRef.current)
     timerRef.current = null
-  }
+  }, [])
 
-  const flush = async (): Promise<void> => {
+  const reportError = useCallback(
+    async (reason: unknown): Promise<void> => {
+      await onError(messageFor(reason))
+    },
+    [onError]
+  )
+
+  const flush = useCallback(async (): Promise<void> => {
     clearTimer()
-    const queue = queueRef.current
-    if (!queue) return
     try {
       await queue.flush()
     } catch (reason) {
-      await errorActionRef.current(messageFor(reason))
+      await reportError(reason)
       throw reason
     }
-  }
+  }, [clearTimer, queue, reportError])
 
-  useDOMImperativeHandle(
-    ref,
-    () => ({
-      flush
-    }),
-    []
-  )
+  useDOMImperativeHandle(ref, () => ({ flush }), [flush])
 
   useEffect(() => {
     if (!storeState.error) return
-    void errorActionRef.current(storeState.error)
-  }, [storeState.error])
+    void onError(storeState.error)
+  }, [onError, storeState.error])
 
   useEffect(() => {
     const store = storeState.store
-    const queue = queueRef.current
-    if (!store || !queue) return undefined
+    if (!store) return undefined
 
     let observedHistory = store.history.get()
     const stopListening = react('autosave mobile board', () => {
@@ -138,23 +125,19 @@ export default function BoardCanvasDom({
       timerRef.current = setTimeout(() => {
         timerRef.current = null
         void queue.saveLatest().catch((reason: unknown) => {
-          void errorActionRef.current(messageFor(reason))
+          void reportError(reason)
         })
       }, AUTOSAVE_DELAY_MS)
     })
 
-    void stateActionRef.current('saved')
+    void onSaveState('saved')
 
     return () => {
       clearTimer()
       stopListening()
-      void queue
-        .flush()
-        .catch((reason: unknown) => errorActionRef.current(messageFor(reason)))
-        .finally(() => queue.dispose())
-      store.dispose()
+      void queue.flush().catch((reason: unknown) => reportError(reason))
     }
-  }, [storeState.store])
+  }, [clearTimer, onSaveState, queue, reportError, storeState.store])
 
   if (storeState.error || !storeState.store) {
     return (
