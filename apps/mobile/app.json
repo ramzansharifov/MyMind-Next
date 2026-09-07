@@ -33,6 +33,15 @@
           "cameraPermission": "MyMind использует камеру для фотографий прогресса.",
           "microphonePermission": false
         }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "MyMind использует микрофон только когда вы записываете голосовую заметку.",
+          "recordAudioAndroid": true,
+          "enableBackgroundRecording": false,
+          "enableBackgroundPlayback": false
+        }
       ]
     ]
   }
