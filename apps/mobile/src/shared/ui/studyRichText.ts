@@ -1,4 +1,4 @@
-import type { StudyInternalLinkTargetKind } from '@mymind/contracts/study'
+import type { StudyInternalLinkTarget, StudyInternalLinkTargetKind } from '@mymind/contracts/study'
 
 export interface StudyRichTextInternalLink {
   kind: StudyInternalLinkTargetKind
@@ -155,4 +155,151 @@ export function parseStudyRichTextSegments(
   }
 
   return trimOuterNewlines(segments)
+}
+
+function escapeHtmlText(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\n/g, '<br>')
+}
+
+function escapeHtmlAttribute(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+}
+
+function renderInternalLink(link: StudyRichTextInternalLink): string {
+  const attributes = [
+    'data-study-internal-link="true"',
+    `data-target-kind="${link.kind}"`,
+    `data-material-id="${escapeHtmlAttribute(link.materialId)}"`,
+    link.headingId ? `data-heading-id="${escapeHtmlAttribute(link.headingId)}"` : '',
+    link.headingLevel ? `data-heading-level="${link.headingLevel}"` : '',
+    `data-label-mode="${link.labelMode}"`,
+    `data-label="${escapeHtmlAttribute(link.label)}"`,
+    `data-material-title="${escapeHtmlAttribute(link.materialTitle)}"`,
+    `data-folder-path="${escapeHtmlAttribute(JSON.stringify(link.folderPath))}"`
+  ]
+    .filter(Boolean)
+    .join(' ')
+  return `<span ${attributes}>${escapeHtmlText(link.label)}</span>`
+}
+
+export function ensureStudyRichTextEditableSegments(
+  segments: readonly StudyRichTextSegment[]
+): StudyRichTextSegment[] {
+  const normalized: StudyRichTextSegment[] = []
+  for (const segment of segments) {
+    const previous = normalized.at(-1)
+    if (segment.type === 'text') {
+      if (previous?.type === 'text') previous.text += segment.text
+      else normalized.push({ type: 'text', text: segment.text })
+      continue
+    }
+    if (!previous || previous.type === 'internal-link') {
+      normalized.push({ type: 'text', text: '' })
+    }
+    normalized.push({
+      type: 'internal-link',
+      link: { ...segment.link, folderPath: [...segment.link.folderPath] }
+    })
+  }
+  if (normalized.length === 0 || normalized.at(-1)?.type === 'internal-link') {
+    normalized.push({ type: 'text', text: '' })
+  }
+  return normalized
+}
+
+export function studyRichTextSegmentsToText(segments: readonly StudyRichTextSegment[]): string {
+  return segments
+    .map((segment) => (segment.type === 'text' ? segment.text : segment.link.label))
+    .join('')
+}
+
+export function hasStudyRichTextInternalLinks(segments: readonly StudyRichTextSegment[]): boolean {
+  return segments.some((segment) => segment.type === 'internal-link')
+}
+
+export function serializeStudyRichTextSegments(segments: readonly StudyRichTextSegment[]): string {
+  const body = segments
+    .map((segment) =>
+      segment.type === 'text' ? escapeHtmlText(segment.text) : renderInternalLink(segment.link)
+    )
+    .join('')
+  return `<p>${body}</p>`
+}
+
+export function studyRichTextLinkFromTarget(
+  target: StudyInternalLinkTarget,
+  customLabel?: string
+): StudyRichTextInternalLink {
+  const normalizedCustomLabel = customLabel?.trim() ?? ''
+  return {
+    kind: target.kind,
+    materialId: target.materialId,
+    headingId: target.kind === 'heading' ? target.headingId : null,
+    headingLevel: target.kind === 'heading' ? target.headingLevel : null,
+    labelMode: normalizedCustomLabel ? 'custom' : 'auto',
+    label: normalizedCustomLabel || target.title,
+    materialTitle: target.materialTitle,
+    folderPath: [...target.folderPath]
+  }
+}
+
+export function insertStudyRichTextLink(
+  segments: readonly StudyRichTextSegment[],
+  textSegmentIndex: number,
+  offset: number,
+  link: StudyRichTextInternalLink
+): StudyRichTextSegment[] {
+  const editable = ensureStudyRichTextEditableSegments(segments)
+  const segment = editable[textSegmentIndex]
+  if (!segment || segment.type !== 'text') return editable
+  const safeOffset = Math.max(0, Math.min(offset, segment.text.length))
+  return ensureStudyRichTextEditableSegments([
+    ...editable.slice(0, textSegmentIndex),
+    { type: 'text', text: segment.text.slice(0, safeOffset) },
+    { type: 'internal-link', link },
+    { type: 'text', text: segment.text.slice(safeOffset) },
+    ...editable.slice(textSegmentIndex + 1)
+  ])
+}
+
+export function updateStudyRichTextTextSegment(
+  segments: readonly StudyRichTextSegment[],
+  index: number,
+  text: string
+): StudyRichTextSegment[] {
+  const editable = ensureStudyRichTextEditableSegments(segments)
+  if (editable[index]?.type !== 'text') return editable
+  return editable.map((segment, current) =>
+    current === index && segment.type === 'text' ? { type: 'text', text } : segment
+  )
+}
+
+export function replaceStudyRichTextLink(
+  segments: readonly StudyRichTextSegment[],
+  index: number,
+  link: StudyRichTextInternalLink
+): StudyRichTextSegment[] {
+  const editable = ensureStudyRichTextEditableSegments(segments)
+  if (editable[index]?.type !== 'internal-link') return editable
+  return editable.map((segment, current) =>
+    current === index ? { type: 'internal-link', link } : segment
+  )
+}
+
+export function removeStudyRichTextLink(
+  segments: readonly StudyRichTextSegment[],
+  index: number
+): StudyRichTextSegment[] {
+  const editable = ensureStudyRichTextEditableSegments(segments)
+  if (editable[index]?.type !== 'internal-link') return editable
+  return ensureStudyRichTextEditableSegments(editable.filter((_, current) => current !== index))
 }

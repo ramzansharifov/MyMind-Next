@@ -6,10 +6,12 @@ import type {
   StudyBlockType,
   StudyBoardBlock,
   StudyDocument,
+  StudyInternalLinkTarget,
   StudyLocalAsset
 } from '@mymind/contracts/study'
 import { designTokens } from '@mymind/design'
 import { DocumentBoardEditor, type OpenDocumentBoard } from './DocumentBoardBlock'
+import { StudyRichTextEditor } from './StudyRichTextEditor'
 import { Button, Label } from './primitives'
 import { useTheme } from './theme'
 import { AudioAssetPlayer, VoiceRecorder, type VoiceRecordingInput } from './VoiceRecorder'
@@ -49,6 +51,7 @@ interface DocumentEditorProps {
   resolveAssetUri?: (asset: StudyLocalAsset) => string | null
   saveRecordedAudio?: (input: VoiceRecordingInput) => Promise<StudyLocalAsset>
   openBoard?: OpenDocumentBoard
+  searchInternalLinkTargets?: (query: string) => StudyInternalLinkTarget[]
   onAssetError?: (reason: unknown) => void
 }
 
@@ -166,12 +169,14 @@ function BlockInput({
   block,
   update,
   assetActions,
-  openBoard
+  openBoard,
+  searchInternalLinkTargets
 }: {
   block: StudyBlock
   update(next: StudyBlock): void
   assetActions: DocumentAssetActions
   openBoard?: OpenDocumentBoard
+  searchInternalLinkTargets?: (query: string) => StudyInternalLinkTarget[]
 }): React.JSX.Element {
   const theme = useTheme()
   const inputStyle = {
@@ -188,7 +193,13 @@ function BlockInput({
 
   switch (block.type) {
     case 'text':
-      return (
+      return searchInternalLinkTargets ? (
+        <StudyRichTextEditor
+          block={block}
+          update={(next) => update(next)}
+          searchTargets={searchInternalLinkTargets}
+        />
+      ) : (
         <TextInput
           accessibilityLabel="Текстовый блок"
           multiline
@@ -326,6 +337,7 @@ export function DocumentEditor({
   resolveAssetUri,
   saveRecordedAudio,
   openBoard,
+  searchInternalLinkTargets,
   onAssetError
 }: DocumentEditorProps): React.JSX.Element {
   const theme = useTheme()
@@ -431,6 +443,7 @@ export function DocumentEditor({
             update={(next) => replace(index, next)}
             assetActions={assetActions}
             openBoard={openBoard}
+            searchInternalLinkTargets={searchInternalLinkTargets}
           />
         </View>
       )}

@@ -681,6 +681,13 @@ export function StudyScreen({
             openAsset={documentAssets.openAsset}
             resolveAssetUri={documentAssets.resolveAssetUri}
             openBoard={openLinkedBoard}
+            searchInternalLinkTargets={(linkQuery) =>
+              api.searchInternalLinkTargets({
+                query: linkQuery,
+                currentMaterialId: material.nodeId,
+                limit: 40
+              })
+            }
             onAssetError={(reason) => setEditorError(messageFor(reason))}
             header={
               <View style={{ gap: 12, paddingBottom: 16 }}>
