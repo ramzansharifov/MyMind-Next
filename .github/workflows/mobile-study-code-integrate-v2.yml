@@ -97,12 +97,12 @@ jobs:
           replace_once(
               workspace,
               """        snapshot.revision,
-                confirmDestructive
-              )""",
+                  confirmDestructive
+                )""",
               """        snapshot.revision,
-                confirmDestructive,
-                validateDocumentAssets
-              )"""
+                  confirmDestructive,
+                  validateDocumentAssets
+                )"""
           )
 
           screen = Path('apps/mobile/src/modules/study/StudyScreen.tsx')
