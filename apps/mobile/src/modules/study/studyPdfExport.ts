@@ -14,6 +14,7 @@ export interface ExportStudyMaterialPdfOptions {
   document: StudyDocument
   resolveAssetUri: (asset: StudyLocalAsset) => string | null
   resolveInternalLinkTarget?: (link: StudyRichTextInternalLink) => StudyInternalLinkTarget | null
+  renderedMermaidSvg?: Readonly<Record<string, string>>
 }
 
 async function localAssetDataUri(
@@ -37,6 +38,7 @@ export async function exportStudyMaterialPdf(
     title: options.title,
     document: options.document,
     resolveInternalLinkTarget: options.resolveInternalLinkTarget,
+    resolveMermaidSvg: (blockId) => options.renderedMermaidSvg?.[blockId] ?? null,
     resolveAssetDataUri: (asset) => {
       const key = `${asset.materialId}:${asset.id}`
       const cached = assetCache.get(key)

@@ -103,6 +103,7 @@ describe('mobile Study PDF serializer', () => {
     expect(html).toContain('<h2>Markdown</h2>')
     expect(html).toContain('<math')
     expect(html).toContain('graph TD; A--&gt;B;')
+    expect(html).toContain('mermaid-fallback')
     expect(html).toContain('src="data:image/png;base64,AAAA"')
     expect(html).toContain('Video')
     expect(html).toContain('Voice')
@@ -110,6 +111,40 @@ describe('mobile Study PDF serializer', () => {
     expect(html).toContain('border-top:2px dashed')
     expect(html).toContain('Ideas board')
     expect(resolveAssetDataUri).toHaveBeenCalledOnce()
+  })
+
+  it('embeds sanitized rendered Mermaid SVG and removes active content', async () => {
+    const html = await buildStudyMaterialPdfHtml({
+      title: 'Mermaid',
+      document: {
+        version: 1,
+        blocks: [{ id: 'mermaid-1', type: 'mermaid', source: 'graph TD; A-->B;' }]
+      },
+      resolveMermaidSvg: () =>
+        '<svg viewBox="0 0 100 50" onclick="evil()"><script>alert(1)</script><a href="javascript:evil()"><path d="M0 0L10 10" /></a><text>Diagram</text></svg>'
+    })
+
+    expect(html).toContain('class="mermaid-block"')
+    expect(html).toContain('<svg viewBox="0 0 100 50"')
+    expect(html).toContain('Diagram')
+    expect(html).not.toContain('<script')
+    expect(html).not.toContain('onclick=')
+    expect(html).not.toContain('javascript:')
+    expect(html).not.toContain('mermaid-fallback')
+  })
+
+  it('falls back to escaped Mermaid source when rendered SVG is invalid', async () => {
+    const html = await buildStudyMaterialPdfHtml({
+      title: 'Mermaid fallback',
+      document: {
+        version: 1,
+        blocks: [{ id: 'mermaid-1', type: 'mermaid', source: 'graph TD; A-->B;' }]
+      },
+      resolveMermaidSvg: () => '<div>not svg</div>'
+    })
+
+    expect(html).toContain('mermaid-fallback')
+    expect(html).toContain('graph TD; A--&gt;B;')
   })
 
   it('marks unresolved internal-link targets while preserving the stored label', async () => {

@@ -15,6 +15,7 @@ export interface StudyPdfBuildOptions {
   document: StudyDocument
   resolveAssetDataUri?: (asset: StudyLocalAsset) => Promise<string | null>
   resolveInternalLinkTarget?: (link: StudyRichTextInternalLink) => StudyInternalLinkTarget | null
+  resolveMermaidSvg?: (blockId: string) => string | null
 }
 
 const INTERNAL_LINK_PATTERN =
@@ -260,6 +261,31 @@ function renderLatexForPdf(block: Extract<StudyBlock, { type: 'latex' }>): strin
   }
 }
 
+function sanitizeMermaidSvg(svg: string): string | null {
+  const trimmed = svg.trim()
+  if (!/^<svg\b/i.test(trimmed) || !/<\/svg>\s*$/i.test(trimmed)) return null
+  return trimmed
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi, '')
+    .replace(/<foreignObject\b[^>]*>[\s\S]*?<\/foreignObject\s*>/gi, '')
+    .replace(/\s+on[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+    .replace(/\s+(href|xlink:href)\s*=\s*("|')\s*javascript:[\s\S]*?\2/gi, ' $1="#"')
+}
+
+function renderMermaidForPdf(
+  block: Extract<StudyBlock, { type: 'mermaid' }>,
+  resolver: StudyPdfBuildOptions['resolveMermaidSvg']
+): string {
+  const rendered = resolver ? sanitizeMermaidSvg(resolver(block.id) ?? '') : null
+  if (rendered) {
+    return '<figure class="mermaid-block">' + rendered + '</figure>'
+  }
+  return (
+    '<section class="source-fallback mermaid-fallback"><div class="source-label">Диаграмма Mermaid</div><pre>' +
+    escapeHtml(block.source) +
+    '</pre><p>Исходный код диаграммы сохранён в PDF.</p></section>'
+  )
+}
+
 function formatFileSize(size: number): string {
   if (!Number.isFinite(size) || size <= 0) return '0 Б'
   if (size < 1024) return `${Math.round(size)} Б`
@@ -338,7 +364,7 @@ async function renderBlock(block: StudyBlock, options: StudyPdfBuildOptions): Pr
     case 'latex':
       return renderLatexForPdf(block)
     case 'mermaid':
-      return `<section class="source-fallback mermaid-fallback"><div class="source-label">Диаграмма Mermaid</div><pre>${escapeHtml(block.source)}</pre><p>Исходный код диаграммы сохранён в PDF.</p></section>`
+      return renderMermaidForPdf(block, options.resolveMermaidSvg)
     case 'image':
       return renderImageBlock(block, options.resolveAssetDataUri)
     case 'video':
@@ -403,6 +429,8 @@ pre { margin: 0; padding: 2.5mm 3mm 3mm; white-space: pre-wrap; word-break: brea
 .source-fallback p { margin: 0; padding: 0 3mm 3mm; color: #6b7280; font-size: 8pt; }
 .latex-block { width: 100%; padding: 2.5mm; overflow: visible; break-inside: avoid-page; }
 .latex-block math { max-width: 100%; color: #111827; }
+.mermaid-block { width: 100%; margin-left: 0; margin-right: 0; padding: 2mm; border: 1px solid #e5e7eb; border-radius: 3mm; background: #fff; break-inside: avoid-page; }
+.mermaid-block svg { display: block; width: auto; max-width: 100%; height: auto; max-height: 235mm; margin: 0 auto; }
 .table-wrap { width: 100%; overflow: visible; border: 1px solid #d9dee7; border-radius: 2mm; }
 table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 8.5pt; }
 thead { display: table-header-group; }

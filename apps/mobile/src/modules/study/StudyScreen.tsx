@@ -18,6 +18,12 @@ import { DocumentReader, type DocumentRevealRequest } from '../../shared/ui/Docu
 import { FormSheet } from '../../shared/ui/FormSheet'
 import type { StudyRichTextInternalLink } from '../../shared/ui/studyRichText'
 import { StudyCodeWorkspace } from './StudyCodeWorkspace'
+import StudyMermaidExportDom, {
+  type StudyMermaidPdfItem,
+  type StudyMermaidPdfRequest,
+  type StudyMermaidPdfResponse,
+  type StudyMermaidPdfResult
+} from './StudyMermaidExportDom'
 import { exportStudyMaterialPdf } from './studyPdfExport'
 import { choiceField, messageFor, textField, type FormSpec } from '../../shared/ui/form-model'
 import {
@@ -104,6 +110,13 @@ export function StudyScreen({
   )
   const [reveal, setReveal] = useState<DocumentRevealRequest | null>(null)
   const queueRef = useRef<AutosaveQueue<StudyDocument> | null>(null)
+  const [mermaidPdfRequest, setMermaidPdfRequest] = useState<StudyMermaidPdfRequest | null>(null)
+  const mermaidPdfSequenceRef = useRef(0)
+  const mermaidPdfPendingRef = useRef<{
+    requestId: number
+    resolve(results: StudyMermaidPdfResult[]): void
+    timeout: ReturnType<typeof setTimeout>
+  } | null>(null)
   const revealSequenceRef = useRef(0)
 
   const allNodes = useMemo(() => nodes.data ?? [], [nodes.data])
@@ -164,6 +177,54 @@ export function StudyScreen({
     setEditorError('')
   }, [])
 
+  const renderMermaidPdf = useCallback(
+    (items: StudyMermaidPdfItem[]): Promise<StudyMermaidPdfResult[]> => {
+      if (items.length === 0) return Promise.resolve([])
+      const previous = mermaidPdfPendingRef.current
+      if (previous) {
+        clearTimeout(previous.timeout)
+        previous.resolve([])
+      }
+      mermaidPdfSequenceRef.current += 1
+      const requestId = mermaidPdfSequenceRef.current
+      return new Promise((resolve) => {
+        const timeout = setTimeout(() => {
+          const pending = mermaidPdfPendingRef.current
+          if (!pending || pending.requestId !== requestId) return
+          mermaidPdfPendingRef.current = null
+          setMermaidPdfRequest(null)
+          resolve([])
+        }, 12000)
+        mermaidPdfPendingRef.current = { requestId, resolve, timeout }
+        setMermaidPdfRequest({ requestId, items })
+      })
+    },
+    []
+  )
+
+  const handleMermaidPdfRendered = useCallback(
+    async (response: StudyMermaidPdfResponse): Promise<void> => {
+      const pending = mermaidPdfPendingRef.current
+      if (!pending || pending.requestId !== response.requestId) return
+      clearTimeout(pending.timeout)
+      mermaidPdfPendingRef.current = null
+      setMermaidPdfRequest(null)
+      pending.resolve(response.results)
+    },
+    []
+  )
+
+  useEffect(
+    () => () => {
+      const pending = mermaidPdfPendingRef.current
+      if (!pending) return
+      clearTimeout(pending.timeout)
+      mermaidPdfPendingRef.current = null
+      pending.resolve([])
+    },
+    []
+  )
+
   const exportPdf = useCallback(
     async (title: string): Promise<void> => {
       if (!material || !document || exportingPdf) return
@@ -171,10 +232,19 @@ export function StudyScreen({
       setEditorError('')
       try {
         await flush()
+        const mermaidItems: StudyMermaidPdfItem[] = document.blocks
+          .filter((block) => block.type === 'mermaid')
+          .map((block) => ({ id: block.id, source: block.source, theme: block.theme }))
+        const renderedMermaidSvg: Record<string, string> = {}
+        const rendered = await renderMermaidPdf(mermaidItems)
+        for (const item of rendered) {
+          if (item.svg) renderedMermaidSvg[item.id] = item.svg
+        }
         await exportStudyMaterialPdf({
           title,
           document,
           resolveAssetUri: documentAssets.resolveAssetUri,
+          renderedMermaidSvg,
           resolveInternalLinkTarget: (link) =>
             api.resolveInternalLinkTarget({
               kind: link.kind,
@@ -188,7 +258,7 @@ export function StudyScreen({
         setExportingPdf(false)
       }
     },
-    [api, document, documentAssets, exportingPdf, flush, material]
+    [api, document, documentAssets, exportingPdf, flush, material, renderMermaidPdf]
   )
 
   const openInternalLink = useCallback(
@@ -657,6 +727,16 @@ export function StudyScreen({
 
     return (
       <View style={{ flex: 1 }}>
+        <View
+          pointerEvents="none"
+          style={{ position: 'absolute', width: 1, height: 1, opacity: 0, overflow: 'hidden' }}
+        >
+          <StudyMermaidExportDom
+            request={mermaidPdfRequest}
+            onRendered={handleMermaidPdfRendered}
+            dom={{ scrollEnabled: false, style: { width: 1, height: 1 } }}
+          />
+        </View>
         {editorError ? <ErrorState message={editorError} retry={() => void flush()} /> : null}
         {reading ? (
           <DocumentReader
