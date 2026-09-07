@@ -59,31 +59,18 @@ export function CalendarReminderInboxModal({
 }: {
   reminders: CalendarUnreadReminderRecord[]
   close(): void
-  acknowledge(reminder: CalendarUnreadReminderRecord): void
+  acknowledge(reminders: CalendarUnreadReminderRecord[]): void
 }): React.JSX.Element {
   const theme = useTheme()
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState('')
 
-  const acknowledgeOne = (reminder: CalendarUnreadReminderRecord): void => {
+  const run = (key: string, selected: CalendarUnreadReminderRecord[]): void => {
     if (busy) return
-    setBusy(reminder.deliveryId)
+    setBusy(key)
     setError('')
     try {
-      acknowledge(reminder)
-    } catch (reason) {
-      setError(messageFor(reason))
-    } finally {
-      setBusy(null)
-    }
-  }
-
-  const acknowledgeAll = (): void => {
-    if (busy) return
-    setBusy('all')
-    setError('')
-    try {
-      for (const reminder of reminders) acknowledge(reminder)
+      acknowledge(selected)
     } catch (reason) {
       setError(messageFor(reason))
     } finally {
@@ -116,10 +103,10 @@ export function CalendarReminderInboxModal({
 
           {reminders.length > 1 ? (
             <Button
-              label="Понятно для всех"
+              label={busy === 'all' ? 'Подождите…' : 'Понятно для всех'}
               selected
               disabled={Boolean(busy)}
-              onPress={acknowledgeAll}
+              onPress={() => run('all', reminders)}
             />
           ) : null}
           {error ? <ErrorState message={error} /> : null}
@@ -135,7 +122,7 @@ export function CalendarReminderInboxModal({
                 label={busy === reminder.deliveryId ? 'Подождите…' : 'Понятно'}
                 selected
                 disabled={Boolean(busy)}
-                onPress={() => acknowledgeOne(reminder)}
+                onPress={() => run(reminder.deliveryId, [reminder])}
               />
             </Row>
           ))}
