@@ -1,11 +1,27 @@
+import { useEffect, useMemo, useRef } from 'react'
 import { FlatList, Image, Text, View } from 'react-native'
-import type { StudyBlock, StudyDocument, StudyLocalAsset } from '@mymind/contracts/study'
+import type {
+  ResolveStudyInternalLinkTargetInput,
+  StudyBlock,
+  StudyDocument,
+  StudyInternalLinkTarget,
+  StudyLocalAsset
+} from '@mymind/contracts/study'
 import { appearanceTokens, designTokens } from '@mymind/design'
 import BoardCanvasDom from '../../modules/boards/BoardCanvasDom'
 import { DocumentBoardReader, type OpenDocumentBoard } from './DocumentBoardBlock'
 import { AudioAssetPlayer } from './VoiceRecorder'
 import { Button, Label } from './primitives'
+import {
+  parseStudyRichTextSegments,
+  type StudyRichTextInternalLink
+} from './studyRichText'
 import { useTheme } from './theme'
+
+export interface DocumentRevealRequest {
+  blockId: string | null
+  requestId: number
+}
 
 interface DocumentReaderProps {
   document: StudyDocument
@@ -13,6 +29,11 @@ interface DocumentReaderProps {
   openAsset?: (asset: StudyLocalAsset) => Promise<void>
   onAssetError?: (reason: unknown) => void
   openBoard?: OpenDocumentBoard
+  resolveInternalLinkTarget?: (
+    input: ResolveStudyInternalLinkTargetInput
+  ) => StudyInternalLinkTarget | null
+  onOpenInternalLink?: (link: StudyRichTextInternalLink, sourceBlockId: string) => void
+  reveal?: DocumentRevealRequest | null
   header?: React.ReactElement | null
 }
 
@@ -98,18 +119,87 @@ function LocalAttachment({
   )
 }
 
+function RichTextBlock({
+  block,
+  resolveInternalLinkTarget,
+  onOpenInternalLink
+}: {
+  block: Extract<StudyBlock, { type: 'text' }>
+  resolveInternalLinkTarget?: (
+    input: ResolveStudyInternalLinkTargetInput
+  ) => StudyInternalLinkTarget | null
+  onOpenInternalLink?: (link: StudyRichTextInternalLink, sourceBlockId: string) => void
+}): React.JSX.Element {
+  const theme = useTheme()
+  const segments = useMemo(
+    () => parseStudyRichTextSegments(block.html, block.text),
+    [block.html, block.text]
+  )
+
+  return (
+    <Text selectable style={{ color: theme.text, fontSize: 17, lineHeight: 26 }}>
+      {segments.map((segment, index) => {
+        if (segment.type === 'text') return segment.text
+
+        const link = segment.link
+        const resolved = resolveInternalLinkTarget?.({
+          kind: link.kind,
+          materialId: link.materialId,
+          headingId: link.headingId
+        })
+        const missing = resolved === null || !link.materialId
+        const displayLabel =
+          link.labelMode === 'custom' ? link.label : (resolved?.title ?? link.label)
+        const canOpen = !missing && Boolean(onOpenInternalLink)
+
+        return (
+          <Text
+            key={`${link.materialId}:${link.headingId ?? 'material'}:${index}`}
+            accessibilityRole="link"
+            accessibilityLabel={
+              missing
+                ? `Недоступная внутренняя ссылка: ${displayLabel || 'без названия'}`
+                : `Открыть внутреннюю ссылку: ${displayLabel || 'без названия'}`
+            }
+            accessibilityState={{ disabled: missing }}
+            onPress={
+              canOpen
+                ? () => {
+                    onOpenInternalLink?.(link, block.id)
+                  }
+                : undefined
+            }
+            style={{
+              color: missing ? theme.muted : theme.accent,
+              textDecorationLine: missing ? 'line-through' : 'underline'
+            }}
+          >
+            {displayLabel || 'Внутренняя ссылка'}
+          </Text>
+        )
+      })}
+    </Text>
+  )
+}
+
 function ReadBlock({
   block,
   resolveAssetUri,
   openAsset,
   onAssetError,
-  openBoard
+  openBoard,
+  resolveInternalLinkTarget,
+  onOpenInternalLink
 }: {
   block: StudyBlock
   resolveAssetUri?: (asset: StudyLocalAsset) => string | null
   openAsset?: (asset: StudyLocalAsset) => Promise<void>
   onAssetError?: (reason: unknown) => void
   openBoard?: OpenDocumentBoard
+  resolveInternalLinkTarget?: (
+    input: ResolveStudyInternalLinkTargetInput
+  ) => StudyInternalLinkTarget | null
+  onOpenInternalLink?: (link: StudyRichTextInternalLink, sourceBlockId: string) => void
 }): React.JSX.Element {
   const theme = useTheme()
   const colorScheme = theme.background === appearanceTokens.dark.background ? 'dark' : 'light'
@@ -131,9 +221,11 @@ function ReadBlock({
   switch (block.type) {
     case 'text':
       return (
-        <Text selectable style={{ color: theme.text, fontSize: 17, lineHeight: 26 }}>
-          {block.text || ' '}
-        </Text>
+        <RichTextBlock
+          block={block}
+          resolveInternalLinkTarget={resolveInternalLinkTarget}
+          onOpenInternalLink={onOpenInternalLink}
+        />
       )
     case 'heading':
       return (
@@ -248,10 +340,30 @@ export function DocumentReader({
   openAsset,
   onAssetError,
   openBoard,
+  resolveInternalLinkTarget,
+  onOpenInternalLink,
+  reveal,
   header
 }: DocumentReaderProps): React.JSX.Element {
+  const listRef = useRef<FlatList<StudyBlock>>(null)
+
+  useEffect(() => {
+    if (!reveal) return undefined
+    const frame = requestAnimationFrame(() => {
+      if (reveal.blockId === null) {
+        listRef.current?.scrollToOffset({ offset: 0, animated: true })
+        return
+      }
+      const index = document.blocks.findIndex((block) => block.id === reveal.blockId)
+      if (index < 0) return
+      listRef.current?.scrollToIndex({ index, viewOffset: 24, animated: true })
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [document.blocks, reveal])
+
   return (
     <FlatList
+      ref={listRef}
       data={document.blocks}
       keyExtractor={(block) => block.id}
       contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 64 }}
@@ -261,6 +373,15 @@ export function DocumentReader({
           <Label muted>Документ пуст.</Label>
         </View>
       }
+      onScrollToIndexFailed={({ index, averageItemLength }) => {
+        listRef.current?.scrollToOffset({
+          offset: Math.max(0, averageItemLength * index),
+          animated: true
+        })
+        setTimeout(() => {
+          listRef.current?.scrollToIndex({ index, viewOffset: 24, animated: true })
+        }, 120)
+      }}
       renderItem={({ item }) => (
         <View style={{ marginBottom: 20 }}>
           <ReadBlock
@@ -269,6 +390,8 @@ export function DocumentReader({
             openAsset={openAsset}
             onAssetError={onAssetError}
             openBoard={openBoard}
+            resolveInternalLinkTarget={resolveInternalLinkTarget}
+            onOpenInternalLink={onOpenInternalLink}
           />
         </View>
       )}
