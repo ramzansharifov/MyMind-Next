@@ -78,9 +78,7 @@ function LocalAttachment({
           }}
         />
       ) : null}
-      {block.type === 'audio' && uri ? (
-        <AudioAssetPlayer uri={uri} onError={onAssetError} />
-      ) : null}
+      {block.type === 'audio' && uri ? <AudioAssetPlayer uri={uri} onError={onAssetError} /> : null}
       {block.title ? <Label>{block.title}</Label> : null}
       <Label muted>{asset.name}</Label>
       {!uri ? <Label muted>Локальный файл не найден на этом устройстве.</Label> : null}
@@ -237,7 +235,7 @@ export function DocumentReader({
     <FlatList
       data={document.blocks}
       keyExtractor={(block) => block.id}
-      contentContainerStyle={{ paddingBottom: 64 }}
+      contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 64 }}
       ListHeaderComponent={header ?? null}
       ListEmptyComponent={
         <View style={{ paddingVertical: 28 }}>

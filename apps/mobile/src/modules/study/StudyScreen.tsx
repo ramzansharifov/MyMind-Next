@@ -9,6 +9,7 @@ import { useServices } from '../../app/context'
 import { notifyDataChanged } from '../../app/changes'
 import { useCollection } from '../../shared/hooks/useCollection'
 import { DocumentEditor } from '../../shared/ui/DocumentEditor'
+import { DocumentReader } from '../../shared/ui/DocumentReader'
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { choiceField, messageFor, textField, type FormSpec } from '../../shared/ui/form-model'
 import {
@@ -57,7 +58,11 @@ function folderLabel(folder: StudyNode, nodes: StudyNode[]): string {
   return path.join(' / ')
 }
 
-export function StudyScreen(): React.JSX.Element {
+export function StudyScreen({
+  onImmersiveChange
+}: {
+  onImmersiveChange?: (active: boolean) => void
+}): React.JSX.Element {
   const { study: api, documentAssets } = useServices()
   const nodes = useCollection(useCallback(() => api.listNodes(), [api]))
   const [folderId, setFolderId] = useState<string | null>(null)
@@ -68,6 +73,8 @@ export function StudyScreen(): React.JSX.Element {
   const [editorError, setEditorError] = useState('')
   const [closing, setClosing] = useState(false)
   const [pendingAction, setPendingAction] = useState(false)
+  const [materialMode, setMaterialMode] = useState<'read' | 'edit'>('edit')
+  const [focusMode, setFocusMode] = useState(false)
   const queueRef = useRef<AutosaveQueue<StudyDocument> | null>(null)
 
   const allNodes = useMemo(() => nodes.data ?? [], [nodes.data])
@@ -77,9 +84,20 @@ export function StudyScreen(): React.JSX.Element {
     ? (allNodes.find((node) => node.id === effectiveFolderId) ?? null)
     : null
 
+  const setFocus = useCallback(
+    (active: boolean): void => {
+      setFocusMode(active)
+      onImmersiveChange?.(active)
+      if (active) setMaterialMode('read')
+    },
+    [onImmersiveChange]
+  )
+
   const openMaterial = useCallback(
     (id: string): void => {
       try {
+        setFocus(false)
+        setMaterialMode('edit')
         const next = api.getMaterial(id)
         setMaterial(next)
         setDocument(next.document)
@@ -99,7 +117,7 @@ export function StudyScreen(): React.JSX.Element {
         setEditorError(messageFor(reason))
       }
     },
-    [api]
+    [api, setFocus]
   )
 
   const flush = useCallback(async (): Promise<void> => {
@@ -114,6 +132,7 @@ export function StudyScreen(): React.JSX.Element {
     setClosing(true)
     try {
       await flush()
+      setFocus(false)
       queueRef.current = null
       setMaterial(null)
       setDocument(null)
@@ -123,10 +142,14 @@ export function StudyScreen(): React.JSX.Element {
     } finally {
       setClosing(false)
     }
-  }, [closing, flush, nodes])
+  }, [closing, flush, nodes, setFocus])
 
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (focusMode) {
+        setFocus(false)
+        return true
+      }
       if (material) {
         void closeMaterial()
         return true
@@ -138,7 +161,7 @@ export function StudyScreen(): React.JSX.Element {
       return false
     })
     return () => subscription.remove()
-  }, [closeMaterial, currentFolder?.parentId, effectiveFolderId, material])
+  }, [closeMaterial, currentFolder?.parentId, effectiveFolderId, focusMode, material, setFocus])
 
   useEffect(() => {
     if (!material) return
@@ -309,6 +332,7 @@ export function StudyScreen(): React.JSX.Element {
               .deleteNode(node.id)
               .then(() => {
                 if (material?.nodeId === node.id) {
+                  setFocus(false)
                   queueRef.current = null
                   setMaterial(null)
                   setDocument(null)
@@ -340,50 +364,110 @@ export function StudyScreen(): React.JSX.Element {
 
   if (material && document) {
     const node = allNodes.find((item) => item.id === material.nodeId)
+    const reading = focusMode || materialMode === 'read'
+    const readerHeader = (
+      <View
+        style={{
+          gap: 12,
+          paddingHorizontal: focusMode ? 16 : 0,
+          paddingTop: focusMode ? 12 : 0,
+          paddingBottom: 20
+        }}
+      >
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          {focusMode ? (
+            <Button label="Выйти из фокуса" selected onPress={() => setFocus(false)} />
+          ) : (
+            <>
+              <Button
+                label={closing ? 'Сохранение…' : 'Назад'}
+                disabled={closing}
+                onPress={() => void closeMaterial()}
+              />
+              <Button label="Редактировать" onPress={() => setMaterialMode('edit')} />
+              <Button label="Фокус" selected onPress={() => setFocus(true)} />
+              {node ? (
+                <Button label="Свойства" disabled={closing} onPress={() => editNode(node)} />
+              ) : null}
+              {node ? (
+                <Button
+                  label="Копия"
+                  disabled={closing || pendingAction}
+                  onPress={() => duplicate(node)}
+                />
+              ) : null}
+              {node ? (
+                <Button
+                  label="Удалить"
+                  danger
+                  disabled={closing || pendingAction}
+                  onPress={() => confirmDelete(node)}
+                />
+              ) : null}
+            </>
+          )}
+        </View>
+        {node ? <Label title>{node.title}</Label> : null}
+        {!focusMode ? <Label muted>Режим чтения не изменяет содержимое материала.</Label> : null}
+      </View>
+    )
+
     return (
       <View style={{ flex: 1 }}>
         {editorError ? <ErrorState message={editorError} retry={() => void flush()} /> : null}
-        <DocumentEditor
-          document={document}
-          onChange={changeDocument}
-          createId={randomUUID}
-          importAsset={(kind) => documentAssets.importAsset(material.nodeId, kind)}
-          openAsset={documentAssets.openAsset}
-          resolveAssetUri={documentAssets.resolveAssetUri}
-          onAssetError={(reason) => setEditorError(messageFor(reason))}
-          header={
-            <View style={{ gap: 12, paddingBottom: 16 }}>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                <Button
-                  label={closing ? 'Сохранение…' : 'Назад'}
-                  disabled={closing}
-                  onPress={() => void closeMaterial()}
-                />
-                {node ? (
-                  <Button label="Свойства" disabled={closing} onPress={() => editNode(node)} />
-                ) : null}
-                {node ? (
+        {reading ? (
+          <DocumentReader
+            document={document}
+            openAsset={documentAssets.openAsset}
+            resolveAssetUri={documentAssets.resolveAssetUri}
+            onAssetError={(reason) => setEditorError(messageFor(reason))}
+            header={readerHeader}
+          />
+        ) : (
+          <DocumentEditor
+            document={document}
+            onChange={changeDocument}
+            createId={randomUUID}
+            importAsset={(kind) => documentAssets.importAsset(material.nodeId, kind)}
+            openAsset={documentAssets.openAsset}
+            resolveAssetUri={documentAssets.resolveAssetUri}
+            onAssetError={(reason) => setEditorError(messageFor(reason))}
+            header={
+              <View style={{ gap: 12, paddingBottom: 16 }}>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                   <Button
-                    label="Копия"
-                    disabled={closing || pendingAction}
-                    onPress={() => duplicate(node)}
+                    label={closing ? 'Сохранение…' : 'Назад'}
+                    disabled={closing}
+                    onPress={() => void closeMaterial()}
                   />
-                ) : null}
-                {node ? (
-                  <Button
-                    label="Удалить"
-                    danger
-                    disabled={closing || pendingAction}
-                    onPress={() => confirmDelete(node)}
-                  />
-                ) : null}
+                  <Button label="Чтение" onPress={() => setMaterialMode('read')} />
+                  <Button label="Фокус" onPress={() => setFocus(true)} />
+                  {node ? (
+                    <Button label="Свойства" disabled={closing} onPress={() => editNode(node)} />
+                  ) : null}
+                  {node ? (
+                    <Button
+                      label="Копия"
+                      disabled={closing || pendingAction}
+                      onPress={() => duplicate(node)}
+                    />
+                  ) : null}
+                  {node ? (
+                    <Button
+                      label="Удалить"
+                      danger
+                      disabled={closing || pendingAction}
+                      onPress={() => confirmDelete(node)}
+                    />
+                  ) : null}
+                </View>
+                {node ? <Label title>{node.title}</Label> : null}
+                <Label muted>Изменения содержимого сохраняются автоматически.</Label>
               </View>
-              {node ? <Label title>{node.title}</Label> : null}
-              <Label muted>Изменения содержимого сохраняются автоматически.</Label>
-            </View>
-          }
-        />
-        {form && <FormSheet spec={form} close={() => setForm(null)} />}
+            }
+          />
+        )}
+        {!focusMode && form ? <FormSheet spec={form} close={() => setForm(null)} /> : null}
       </View>
     )
   }
