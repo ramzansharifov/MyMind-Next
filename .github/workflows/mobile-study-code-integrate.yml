@@ -1,0 +1,271 @@
+name: Mobile Study Code Integrate
+
+on:
+  push:
+    branches:
+      - agent/full-mobile-app
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm install --global npm@11
+      - run: npm install --package-lock-only --ignore-scripts
+      - run: npm ci
+      - run: npm run native:node
+      - name: Integrate Study code workspace
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path: Path, old: str, new: str):
+              source = path.read_text()
+              if source.count(old) != 1:
+                  raise SystemExit(f'{path}: expected one match, got {source.count(old)} for {old[:80]!r}')
+              path.write_text(source.replace(old, new, 1))
+
+          engine = Path('apps/mobile/src/modules/study/studyCode.ts')
+          replace_once(
+              engine,
+              """  baseRevision: string,
+            confirmDestructive = false
+          ): Promise<StudyCodeApplyResult> {""",
+              """  baseRevision: string,
+            confirmDestructive = false,
+            validateDocumentAssets?: (ownerId: string, document: StudyDocument) => Promise<void>
+          ): Promise<StudyCodeApplyResult> {"""
+          )
+          replace_once(
+              engine,
+              """  const plan = buildPlan(repository, nodeId, source)
+            const documentAst = parseStudyCode(source)""",
+              """  const plan = buildPlan(repository, nodeId, source)
+            if (validateDocumentAssets) {
+              for (const desired of plan.desired) {
+                if (desired.ast.kind === 'material' && desired.existing && desired.document) {
+                  await validateDocumentAssets(desired.existing.id, desired.document)
+                }
+              }
+            }
+            const documentAst = parseStudyCode(source)"""
+          )
+
+          workspace = Path('apps/mobile/src/modules/study/StudyCodeWorkspace.tsx')
+          replace_once(
+              workspace,
+              """  StudyCodePreviewResult,
+            StudyCodeSnapshot
+          } from '@mymind/contracts/study'""",
+              """  StudyCodePreviewResult,
+            StudyCodeSnapshot,
+            StudyDocument
+          } from '@mymind/contracts/study'"""
+          )
+          replace_once(
+              workspace,
+              """  repository,
+            nodeId,
+            onClose,""",
+              """  repository,
+            nodeId,
+            validateDocumentAssets,
+            onClose,"""
+          )
+          replace_once(
+              workspace,
+              """  repository: StudyRepository
+            nodeId: string
+            onClose(): void""",
+              """  repository: StudyRepository
+            nodeId: string
+            validateDocumentAssets(ownerId: string, document: StudyDocument): Promise<void>
+            onClose(): void"""
+          )
+          replace_once(
+              workspace,
+              """        snapshot.revision,
+                    confirmDestructive
+                  )""",
+              """        snapshot.revision,
+                    confirmDestructive,
+                    validateDocumentAssets
+                  )"""
+          )
+
+          screen = Path('apps/mobile/src/modules/study/StudyScreen.tsx')
+          replace_once(
+              screen,
+              """import { FormSheet } from '../../shared/ui/FormSheet'
+          import { choiceField,""",
+              """import { FormSheet } from '../../shared/ui/FormSheet'
+          import { StudyCodeWorkspace } from './StudyCodeWorkspace'
+          import { choiceField,"""
+          )
+          replace_once(
+              screen,
+              """  const [materialMode, setMaterialMode] = useState<'read' | 'edit'>('edit')
+            const [focusMode, setFocusMode] = useState(false)""",
+              """  const [materialMode, setMaterialMode] = useState<'read' | 'edit' | 'code'>('edit')
+            const [codeNodeId, setCodeNodeId] = useState<string | null>(null)
+            const [focusMode, setFocusMode] = useState(false)"""
+          )
+          replace_once(
+              screen,
+              """      if (material) {
+                  void closeMaterial()
+                  return true
+                }
+                if (effectiveFolderId) {""",
+              """      if (material && materialMode === 'code') {
+                  setMaterialMode('edit')
+                  return true
+                }
+                if (codeNodeId) {
+                  setCodeNodeId(null)
+                  return true
+                }
+                if (material) {
+                  void closeMaterial()
+                  return true
+                }
+                if (effectiveFolderId) {"""
+          )
+          replace_once(
+              screen,
+              """  }, [closeMaterial, currentFolder?.parentId, effectiveFolderId, focusMode, material, setFocus])""",
+              """  }, [
+              closeMaterial,
+              codeNodeId,
+              currentFolder?.parentId,
+              effectiveFolderId,
+              focusMode,
+              material,
+              materialMode,
+              setFocus
+            ])"""
+          )
+          replace_once(
+              screen,
+              """  if (material && document) {
+              const node = allNodes.find((item) => item.id === material.nodeId)
+              const reading = focusMode || materialMode === 'read'""",
+              """  if (codeNodeId) {
+              return (
+                <View style={{ flex: 1 }}>
+                  {editorError ? <ErrorState message={editorError} /> : null}
+                  <StudyCodeWorkspace
+                    repository={api}
+                    nodeId={codeNodeId}
+                    validateDocumentAssets={documentAssets.validateDocumentAssets}
+                    onClose={() => setCodeNodeId(null)}
+                    onApplied={() => {
+                      nodes.refresh()
+                      notifyDataChanged()
+                    }}
+                  />
+                </View>
+              )
+            }
+
+            if (material && document) {
+              const node = allNodes.find((item) => item.id === material.nodeId)
+              if (materialMode === 'code') {
+                return (
+                  <View style={{ flex: 1 }}>
+                    {editorError ? <ErrorState message={editorError} /> : null}
+                    <StudyCodeWorkspace
+                      repository={api}
+                      nodeId={material.nodeId}
+                      validateDocumentAssets={documentAssets.validateDocumentAssets}
+                      onClose={() => setMaterialMode('edit')}
+                      onApplied={() => {
+                        const next = api.getMaterial(material.nodeId)
+                        setMaterial(next)
+                        setDocument(next.document)
+                        nodes.refresh()
+                        notifyDataChanged()
+                      }}
+                    />
+                  </View>
+                )
+              }
+              const reading = focusMode || materialMode === 'read'"""
+          )
+          replace_once(
+              screen,
+              """              <Button label="Редактировать" onPress={() => setMaterialMode('edit')} />
+                          <Button label="Фокус" selected onPress={() => setFocus(true)} />""",
+              """              <Button label="Редактировать" onPress={() => setMaterialMode('edit')} />
+                          <Button
+                            label="Код"
+                            disabled={closing}
+                            onPress={() => {
+                              void flush()
+                                .then(() => setMaterialMode('code'))
+                                .catch((reason) => setEditorError(messageFor(reason)))
+                            }}
+                          />
+                          <Button label="Фокус" selected onPress={() => setFocus(true)} />"""
+          )
+          replace_once(
+              screen,
+              """                  <Button label="Чтение" onPress={() => setMaterialMode('read')} />
+                              <Button label="Фокус" onPress={() => setFocus(true)} />""",
+              """                  <Button label="Чтение" onPress={() => setMaterialMode('read')} />
+                              <Button
+                                label="Код"
+                                disabled={closing}
+                                onPress={() => {
+                                  void flush()
+                                    .then(() => setMaterialMode('code'))
+                                    .catch((reason) => setEditorError(messageFor(reason)))
+                                }}
+                              />
+                              <Button label="Фокус" onPress={() => setFocus(true)} />"""
+          )
+          replace_once(
+              screen,
+              """          <Button label="+ Папка" selected onPress={createFolder} />
+                      <Button label="+ Материал" selected onPress={createMaterial} />""",
+              """          <Button label="+ Папка" selected onPress={createFolder} />
+                      <Button label="+ Материал" selected onPress={createMaterial} />
+                      {currentFolder ? (
+                        <Button label="Код" onPress={() => setCodeNodeId(currentFolder.id)} />
+                      ) : null}"""
+          )
+          replace_once(
+              screen,
+              """              <Button label="Изменить" onPress={() => editNode(item)} />
+                          <Button label="↑" disabled={index === 0} onPress={() => reorder(item, -1)} />""",
+              """              <Button label="Изменить" onPress={() => editNode(item)} />
+                          <Button label="Код" onPress={() => setCodeNodeId(item.id)} />
+                          <Button label="↑" disabled={index === 0} onPress={() => reorder(item, -1)} />"""
+          )
+          PY
+          npx prettier --write apps/mobile/src/modules/study/studyCode.ts apps/mobile/src/modules/study/StudyCodeWorkspace.tsx apps/mobile/src/modules/study/StudyScreen.tsx
+      - run: npm run lint:mobile
+      - run: npm run typecheck
+      - run: npm run test:mobile
+      - run: git diff --check
+      - name: Commit integration
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/mobile/src/modules/study/studyCode.ts apps/mobile/src/modules/study/StudyCodeWorkspace.tsx apps/mobile/src/modules/study/StudyScreen.tsx
+          if ! git diff --cached --quiet; then
+            git commit -m "feat: expose Study code mode on mobile"
+            git push origin HEAD:agent/full-mobile-app
+          fi
