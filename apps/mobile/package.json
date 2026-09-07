@@ -43,7 +43,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "export:android": "expo export --platform android"
+    "export:android": "node ./scripts/export-android.mjs"
   },
   "private": true
 }
