@@ -30,12 +30,12 @@ jobs:
       - name: Integrate native Boards shell with tldraw DOM canvas
         run: node .github/scripts/mobile-board-canvas.cjs
 
-      - name: Install exact tldraw snapshot editor
-        run: npm install --workspace=mymind-mobile tldraw@5.2.5 @tldraw/assets@5.2.5
-
       - name: Install Expo DOM prerequisites
         working-directory: apps/mobile
         run: npx expo install @expo/metro-runtime react-dom react-native-web
+
+      - name: Install exact tldraw snapshot editor
+        run: npm install --workspace=mymind-mobile tldraw@5.2.5 @tldraw/assets@5.2.5
 
       - name: Strict install from updated lockfile
         run: npm ci
