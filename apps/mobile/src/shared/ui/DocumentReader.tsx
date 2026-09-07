@@ -157,12 +157,12 @@ function ReadBlock({
     case 'code':
       return <SourceSurface label={block.language || 'Код'} source={block.source} />
     case 'markdown':
-      return <BoardCanvasDom {...richProps} kind="markdown" source={block.source} />
+      return <BoardCanvasDom {...richProps} kind={'markdown' as const} source={block.source} />
     case 'latex':
       return (
         <BoardCanvasDom
           {...richProps}
-          kind="latex"
+          kind={'latex' as const}
           latexDisplayMode={block.displayMode ?? 'display'}
           latexAlignment={block.alignment ?? 'center'}
           latexScale={block.scale ?? 1}
@@ -173,7 +173,7 @@ function ReadBlock({
       return (
         <BoardCanvasDom
           {...richProps}
-          kind="mermaid"
+          kind={'mermaid' as const}
           mermaidTheme={block.theme ?? (colorScheme === 'dark' ? 'dark' : 'default')}
           source={block.source}
         />
