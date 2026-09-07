@@ -28,7 +28,9 @@ jobs:
         run: npm install --global npm@11
 
       - name: Integrate linked Study and Notes boards
-        run: node .github/scripts/mobile-linked-boards.cjs
+        run: |
+          node .github/scripts/mobile-linked-boards.cjs
+          node .github/scripts/mobile-linked-boards-lint-fix.cjs
 
       - name: Strict install
         run: npm ci
@@ -81,6 +83,7 @@ jobs:
           rm -f \
             .github/workflows/mobile-linked-boards.yml \
             .github/scripts/mobile-linked-boards.cjs \
+            .github/scripts/mobile-linked-boards-lint-fix.cjs \
             .mobile-linked-boards-trigger
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
