@@ -6,8 +6,10 @@ import type { MobileServices } from '../../app/services'
 
 const prefix = 'mymind-reminder:'
 const calendarScanKey = 'reminders.calendar.last-delivery-scan'
+const calendarScheduledLedgerKey = 'reminders.calendar.scheduled-ledger'
 const startupLookbackMs = 5 * 60_000
 const maxLookbackMs = 30 * 24 * 60 * 60_000
+const maxScheduledNotifications = 60
 
 interface PlannedReminder {
   identifier: string
@@ -58,6 +60,36 @@ function calendarNotificationData(reminder: CalendarReminderRecord): Record<stri
   }
 }
 
+function calendarScheduledKey(reminder: CalendarReminderRecord): string {
+  return JSON.stringify([reminder.reminderId, reminder.occurrenceDate, reminder.triggerAt])
+}
+
+function readCalendarScheduledLedger(services: MobileServices): Set<string> {
+  const raw = services.settings.get(calendarScheduledLedgerKey)
+  if (!raw) return new Set()
+  try {
+    const parsed = JSON.parse(raw) as unknown
+    if (!Array.isArray(parsed)) return new Set()
+    return new Set(
+      parsed
+        .filter((item): item is string => typeof item === 'string' && item.length <= 512)
+        .slice(0, maxScheduledNotifications)
+    )
+  } catch {
+    return new Set()
+  }
+}
+
+function writeCalendarScheduledLedger(
+  services: MobileServices,
+  desired: readonly PlannedReminder[]
+): void {
+  const keys = desired.flatMap((item) =>
+    item.calendarReminder ? [calendarScheduledKey(item.calendarReminder)] : []
+  )
+  services.settings.set(calendarScheduledLedgerKey, JSON.stringify(keys))
+}
+
 export function calendarReminderFromNotificationData(
   data: Record<string, unknown> | undefined
 ): CalendarReminderRecord | null {
@@ -100,8 +132,9 @@ function scanStart(raw: string | null, now: number): number {
 }
 
 /**
- * Backfills the unread Calendar inbox when the app returns to the foreground. This is important
- * when the OS delivered a local notification while the JavaScript runtime was suspended.
+ * Backfills the unread Calendar inbox when the app returns to the foreground. Only reminders
+ * recorded in the previous scheduling ledger can be backfilled: this prevents a Calendar
+ * reminder displaced by the iOS 60-notification budget from being reported as delivered.
  */
 export async function reconcileCalendarReminderDeliveries(
   services: MobileServices
@@ -119,9 +152,11 @@ export async function reconcileCalendarReminderDeliveries(
   }
 
   const since = scanStart(services.settings.get(calendarScanKey), now)
+  const scheduled = readCalendarScheduledLedger(services)
   const due = services.calendar.listDueCalendarReminders(since, now)
   let delivered = 0
   for (const reminder of due) {
+    if (!scheduled.has(calendarScheduledKey(reminder))) continue
     if (services.calendar.markCalendarReminderDelivered(reminder)) delivered += 1
   }
   services.settings.set(calendarScanKey, String(now))
@@ -186,7 +221,7 @@ export function createReminderScheduler(services: MobileServices): () => Promise
       const desired = [...habits, ...calendar]
         .filter((item) => item.triggerAt > now)
         .sort((a, b) => a.triggerAt - b.triggerAt)
-        .slice(0, 60)
+        .slice(0, maxScheduledNotifications)
       const planned = new Map(desired.map((item) => [item.identifier, item]))
       const existing = await Notifications.getAllScheduledNotificationsAsync()
       const unchanged = new Set<string>()
@@ -217,6 +252,9 @@ export function createReminderScheduler(services: MobileServices): () => Promise
           }
         })
       }
+      // Persist only after all cancellations/schedules succeed. The next foreground catch-up
+      // therefore reflects notifications the OS was actually asked to keep, not all due events.
+      writeCalendarScheduledLedger(services, desired)
     })
     // Keep the queue usable after failure; the caller still receives the rejection.
     queue = operation.catch(() => {})
