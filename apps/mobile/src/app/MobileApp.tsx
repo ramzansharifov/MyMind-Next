@@ -87,6 +87,7 @@ export default function MobileApp(): React.JSX.Element {
     DEFAULT_APPEARANCE_PREFERENCES
   )
   const [route, setRoute] = useState<Route>('home')
+  const [immersive, setImmersive] = useState(false)
   const [error, setError] = useState('')
   const [attempt, setAttempt] = useState(0)
   const dark = (appearance.theme === 'system' ? (system ?? 'dark') : appearance.theme) === 'dark'
@@ -94,6 +95,11 @@ export default function MobileApp(): React.JSX.Element {
     ...(dark ? appearanceTokens.dark : appearanceTokens.light),
     accent: appearanceTokens.accents[appearance.accent]
   }
+
+  const navigate = useCallback((next: Route): void => {
+    setImmersive(false)
+    setRoute(next)
+  }, [])
 
   useEffect(() => {
     let active = true
@@ -120,12 +126,13 @@ export default function MobileApp(): React.JSX.Element {
 
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (immersive) return false
       if (route === 'home') return false
-      setRoute(['notes', 'tasks', 'habits', 'more'].includes(route) ? 'home' : 'more')
+      navigate(['notes', 'tasks', 'habits', 'more'].includes(route) ? 'home' : 'more')
       return true
     })
     return () => subscription.remove()
-  }, [route])
+  }, [immersive, navigate, route])
 
   const saveAppearance = useCallback(
     (next: AppearancePreferences): void => {
@@ -161,10 +168,12 @@ export default function MobileApp(): React.JSX.Element {
       <ThemeContext.Provider value={palette}>
         <SafeAreaView style={{ flex: 1, backgroundColor: palette.background }}>
           <StatusBar style={dark ? 'light' : 'dark'} />
-          <View style={{ paddingHorizontal: 20, paddingTop: 14, paddingBottom: 16, gap: 4 }}>
-            <Label muted>MYMIND</Label>
-            <Label title>{titles[route]}</Label>
-          </View>
+          {!immersive ? (
+            <View style={{ paddingHorizontal: 20, paddingTop: 14, paddingBottom: 16, gap: 4 }}>
+              <Label muted>MYMIND</Label>
+              <Label title>{titles[route]}</Label>
+            </View>
+          ) : null}
           {error && (
             <ErrorState
               message={error}
@@ -179,11 +188,11 @@ export default function MobileApp(): React.JSX.Element {
           ) : (
             <ServicesContext.Provider value={services}>
               <ReminderStatus services={services} />
-              <View style={{ flex: 1, paddingHorizontal: 16 }} key={route}>
+              <View style={{ flex: 1, paddingHorizontal: immersive ? 0 : 16 }} key={route}>
                 {route === 'home' ? (
-                  <Home services={services} navigate={setRoute} />
+                  <Home services={services} navigate={navigate} />
                 ) : route === 'study' ? (
-                  <StudyScreen />
+                  <StudyScreen onImmersiveChange={setImmersive} />
                 ) : route === 'boards' ? (
                   <BoardsScreen />
                 ) : route === 'notes' ? (
@@ -213,52 +222,54 @@ export default function MobileApp(): React.JSX.Element {
                     data={moreRoutes}
                     keyExtractor={(item) => item}
                     renderItem={({ item }) => (
-                      <Row title={titles[item]} onPress={() => setRoute(item)} />
+                      <Row title={titles[item]} onPress={() => navigate(item)} />
                     )}
                   />
                 )}
               </View>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-around',
-                  borderTopWidth: 1,
-                  borderColor: palette.border,
-                  paddingVertical: 8,
-                  gap: 2
-                }}
-              >
-                {primaryTabs.map((tab) => {
-                  const selected = route === tab || (tab === 'more' && inMore)
-                  return (
-                    <Pressable
-                      key={tab}
-                      accessibilityRole="tab"
-                      accessibilityLabel={titles[tab]}
-                      accessibilityState={{ selected }}
-                      onPress={() => setRoute(tab)}
-                      style={({ pressed }) => ({
-                        flex: 1,
-                        minHeight: 52,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        paddingHorizontal: 2,
-                        opacity: pressed ? 0.65 : 1
-                      })}
-                    >
-                      <Text
-                        style={{
-                          fontSize: 12,
-                          fontWeight: '600',
-                          color: selected ? palette.accent : palette.muted
-                        }}
+              {!immersive ? (
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-around',
+                    borderTopWidth: 1,
+                    borderColor: palette.border,
+                    paddingVertical: 8,
+                    gap: 2
+                  }}
+                >
+                  {primaryTabs.map((tab) => {
+                    const selected = route === tab || (tab === 'more' && inMore)
+                    return (
+                      <Pressable
+                        key={tab}
+                        accessibilityRole="tab"
+                        accessibilityLabel={titles[tab]}
+                        accessibilityState={{ selected }}
+                        onPress={() => navigate(tab)}
+                        style={({ pressed }) => ({
+                          flex: 1,
+                          minHeight: 52,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          paddingHorizontal: 2,
+                          opacity: pressed ? 0.65 : 1
+                        })}
                       >
-                        {titles[tab]}
-                      </Text>
-                    </Pressable>
-                  )
-                })}
-              </View>
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            fontWeight: '600',
+                            color: selected ? palette.accent : palette.muted
+                          }}
+                        >
+                          {titles[tab]}
+                        </Text>
+                      </Pressable>
+                    )
+                  })}
+                </View>
+              ) : null}
             </ServicesContext.Provider>
           )}
         </SafeAreaView>
