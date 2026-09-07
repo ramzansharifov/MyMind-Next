@@ -19,7 +19,6 @@ import {
   formatStudyCodeSource,
   parseStudyCode,
   serializeStudyCodeTree,
-  type StudyCodeBlockAst,
   type StudyCodeMaterialAst,
   type StudyCodeTreeAst,
   type StudyCodeTreeFolder,

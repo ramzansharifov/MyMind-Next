@@ -45,7 +45,15 @@ export function StudyCodeWorkspace({
     }
   }, [nodeId, repository])
 
-  useEffect(() => reload(), [reload])
+  useEffect(() => {
+    let active = true
+    queueMicrotask(() => {
+      if (active) reload()
+    })
+    return () => {
+      active = false
+    }
+  }, [reload])
 
   const check = useCallback((): StudyCodePreviewResult | null => {
     if (!snapshot) return null
