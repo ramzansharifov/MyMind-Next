@@ -1,5 +1,12 @@
-import { FlatList, Text, TextInput, View } from 'react-native'
-import type { StudyBlock, StudyBlockType, StudyDocument } from '@mymind/contracts/study'
+import { useState } from 'react'
+import { FlatList, Image, Text, TextInput, View } from 'react-native'
+import type {
+  StudyAssetKind,
+  StudyBlock,
+  StudyBlockType,
+  StudyDocument,
+  StudyLocalAsset
+} from '@mymind/contracts/study'
 import { designTokens } from '@mymind/design'
 import { Button, Label } from './primitives'
 import { useTheme } from './theme'
@@ -13,6 +20,20 @@ const INSERTABLE_BLOCKS: ReadonlyArray<{ type: StudyBlockType; label: string }> 
   { type: 'mermaid', label: 'Mermaid' },
   { type: 'divider', label: 'Разделитель' }
 ]
+
+const ASSET_BLOCKS: ReadonlyArray<{ type: StudyAssetKind; label: string }> = [
+  { type: 'image', label: 'Изображение' },
+  { type: 'video', label: 'Видео' },
+  { type: 'audio', label: 'Аудио' },
+  { type: 'file', label: 'Файл' }
+]
+
+interface DocumentAssetActions {
+  importAsset?: (kind: StudyAssetKind) => Promise<StudyLocalAsset | null>
+  openAsset?: (asset: StudyLocalAsset) => Promise<void>
+  resolveAssetUri?: (asset: StudyLocalAsset) => string | null
+  onAssetError?: (reason: unknown) => void
+}
 
 function newBlock(type: StudyBlockType, id: string): StudyBlock | null {
   switch (type) {
@@ -35,12 +56,98 @@ function newBlock(type: StudyBlockType, id: string): StudyBlock | null {
   }
 }
 
+function newAssetBlock(type: StudyAssetKind, id: string, asset: StudyLocalAsset): StudyBlock {
+  const source = { type: 'local' as const, asset }
+  if (type === 'image') return { id, type, source, imageFit: 'contain' }
+  if (type === 'video') return { id, type, source }
+  if (type === 'audio') return { id, type, source }
+  return { id, type: 'file', source }
+}
+
+function formatBytes(value: number): string {
+  if (value < 1024) return `${value} Б`
+  if (value < 1024 * 1024) return `${Math.round(value / 1024)} КБ`
+  return `${(value / (1024 * 1024)).toFixed(1)} МБ`
+}
+
+function LocalAssetEditor({
+  block,
+  update,
+  assetActions
+}: {
+  block: Extract<StudyBlock, { type: 'image' | 'video' | 'audio' | 'file' }>
+  update(next: StudyBlock): void
+  assetActions: DocumentAssetActions
+}): React.JSX.Element {
+  const theme = useTheme()
+  if (block.source.type !== 'local') return <View />
+  const asset = block.source.asset
+  const uri = asset ? assetActions.resolveAssetUri?.(asset) : null
+  const inputStyle = {
+    color: theme.text,
+    backgroundColor: theme.raised,
+    borderWidth: 1,
+    borderColor: theme.border,
+    borderRadius: designTokens.radius.md,
+    padding: 12,
+    minHeight: 48,
+    fontSize: 16
+  } as const
+
+  return (
+    <View style={{ gap: 8 }}>
+      {block.type === 'image' && uri ? (
+        <Image
+          accessibilityLabel={block.title || asset?.name || 'Изображение'}
+          source={{ uri }}
+          resizeMode={block.imageFit ?? 'contain'}
+          style={{
+            width: '100%',
+            height: block.imageHeight ?? 220,
+            borderRadius: designTokens.radius.md,
+            backgroundColor: theme.raised
+          }}
+        />
+      ) : null}
+      <TextInput
+        accessibilityLabel="Подпись вложения"
+        placeholder="Подпись"
+        placeholderTextColor={theme.muted}
+        value={block.title ?? ''}
+        onChangeText={(title) => update({ ...block, title: title || undefined })}
+        style={inputStyle}
+      />
+      {asset ? (
+        <Label muted>
+          {asset.name} · {formatBytes(asset.size)} · {asset.mimeType}
+        </Label>
+      ) : (
+        <Label muted>Вложение ещё не выбрано.</Label>
+      )}
+      {asset && !uri ? <Label muted>Локальный файл не найден на этом устройстве.</Label> : null}
+      {asset && assetActions.openAsset ? (
+        <Button
+          label="Открыть / поделиться"
+          disabled={!uri}
+          onPress={() => {
+            void assetActions.openAsset?.(asset).catch((reason: unknown) => {
+              assetActions.onAssetError?.(reason)
+            })
+          }}
+        />
+      ) : null}
+    </View>
+  )
+}
+
 function BlockInput({
   block,
-  update
+  update,
+  assetActions
 }: {
   block: StudyBlock
   update(next: StudyBlock): void
+  assetActions: DocumentAssetActions
 }): React.JSX.Element {
   const theme = useTheme()
   const inputStyle = {
@@ -150,24 +257,11 @@ function BlockInput({
           />
         </View>
       ) : (
-        <View style={{ gap: 4 }}>
-          <Label>{block.title || block.source.asset?.name || 'Локальное вложение'}</Label>
-          <Label muted>
-            Локальное вложение сохранено без изменений. Импорт и просмотр на телефоне будут
-            подключены отдельным адаптером.
-          </Label>
-        </View>
+        <LocalAssetEditor block={block} update={update} assetActions={assetActions} />
       )
     case 'audio':
     case 'file':
-      return (
-        <View style={{ gap: 4 }}>
-          <Label>
-            {block.title || block.source.asset?.name || (block.type === 'audio' ? 'Аудио' : 'Файл')}
-          </Label>
-          <Label muted>Локальное вложение сохранено без изменений.</Label>
-        </View>
-      )
+      return <LocalAssetEditor block={block} update={update} assetActions={assetActions} />
     case 'divider':
       return (
         <View style={{ gap: 10 }}>
@@ -211,14 +305,24 @@ export function DocumentEditor({
   document,
   onChange,
   createId,
-  header
+  header,
+  importAsset,
+  openAsset,
+  resolveAssetUri,
+  onAssetError
 }: {
   document: StudyDocument
   onChange(document: StudyDocument): void
   createId(): string
   header?: React.ReactElement | null
+  importAsset?: (kind: StudyAssetKind) => Promise<StudyLocalAsset | null>
+  openAsset?: (asset: StudyLocalAsset) => Promise<void>
+  resolveAssetUri?: (asset: StudyLocalAsset) => string | null
+  onAssetError?: (reason: unknown) => void
 }): React.JSX.Element {
   const theme = useTheme()
+  const [pendingAsset, setPendingAsset] = useState<StudyAssetKind | null>(null)
+  const assetActions = { importAsset, openAsset, resolveAssetUri, onAssetError }
   const replace = (index: number, block: StudyBlock): void => {
     const blocks = document.blocks.slice()
     blocks[index] = block
@@ -241,6 +345,20 @@ export function DocumentEditor({
   const insert = (type: StudyBlockType): void => {
     const block = newBlock(type, createId())
     if (block) onChange({ ...document, blocks: [...document.blocks, block] })
+  }
+  const insertAsset = async (type: StudyAssetKind): Promise<void> => {
+    if (!importAsset || pendingAsset) return
+    setPendingAsset(type)
+    try {
+      const asset = await importAsset(type)
+      if (!asset) return
+      const block = newAssetBlock(type, createId(), asset)
+      onChange({ ...document, blocks: [...document.blocks, block] })
+    } catch (reason) {
+      onAssetError?.(reason)
+    } finally {
+      setPendingAsset(null)
+    }
   }
 
   return (
@@ -281,7 +399,7 @@ export function DocumentEditor({
               <Button label="Удалить" danger onPress={() => remove(index)} />
             </View>
           </View>
-          <BlockInput block={item} update={(next) => replace(index, next)} />
+          <BlockInput block={item} update={(next) => replace(index, next)} assetActions={assetActions} />
         </View>
       )}
       ListFooterComponent={
@@ -291,6 +409,16 @@ export function DocumentEditor({
             {INSERTABLE_BLOCKS.map((item) => (
               <Button key={item.type} label={item.label} onPress={() => insert(item.type)} />
             ))}
+            {importAsset
+              ? ASSET_BLOCKS.map((item) => (
+                  <Button
+                    key={item.type}
+                    label={pendingAsset === item.type ? 'Выбор…' : item.label}
+                    disabled={pendingAsset !== null}
+                    onPress={() => void insertAsset(item.type)}
+                  />
+                ))
+              : null}
           </View>
         </View>
       }
