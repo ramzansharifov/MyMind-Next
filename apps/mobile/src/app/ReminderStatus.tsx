@@ -37,7 +37,10 @@ export function ReminderStatus({
       }, 300)
     }
     const unsubscribeData = subscribeDataChanges(run)
-    const unsubscribeNotifications = subscribeCalendarReminderDeliveries(services, notifyDataChanged)
+    const unsubscribeNotifications = subscribeCalendarReminderDeliveries(
+      services,
+      notifyDataChanged
+    )
     const state = AppState.addEventListener('change', (value) => {
       if (value === 'active') run()
     })

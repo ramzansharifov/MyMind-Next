@@ -47,7 +47,9 @@ function plannedSignature(item: PlannedReminder): string {
   ])
 }
 
-function calendarNotificationData(reminder: CalendarReminderRecord): Record<string, string | number> {
+function calendarNotificationData(
+  reminder: CalendarReminderRecord
+): Record<string, string | number> {
   return {
     mymindKind: 'calendar',
     reminderId: reminder.reminderId,
