@@ -10,7 +10,10 @@ import type {
   StudyNode
 } from '@mymind/contracts/study'
 import { STUDY_FOLDER_ICON_NAMES, STUDY_SAFE_ID_PATTERN } from '@mymind/contracts/study'
-import { buildStudyDocumentFromCode, serializeStudyBlockToCode } from '@mymind/core/study-code-document'
+import {
+  buildStudyDocumentFromCode,
+  serializeStudyBlockToCode
+} from '@mymind/core/study-code-document'
 import { validateStudyCodeConstraints } from '@mymind/core/study-code-constraints'
 import {
   formatStudyCodeSource,
@@ -84,7 +87,10 @@ export function previewMobileStudyCode(
     if (constraintDiagnostics.length > 0) {
       return {
         valid: false,
-        diagnostics: constraintDiagnostics.map((diagnostic) => ({ severity: 'error', ...diagnostic })),
+        diagnostics: constraintDiagnostics.map((diagnostic) => ({
+          severity: 'error',
+          ...diagnostic
+        })),
         summary: emptySummary,
         destructive: false
       }
@@ -134,7 +140,12 @@ export async function applyMobileStudyCode(
   const actualIds = new Map<StudyCodeTreeAst, string>()
   const referencedOriginalIds = new Set<string>([plan.scope.root.id])
 
-  const createMissing = (ast: StudyCodeTreeAst, parentId: string | null, position: number, root: boolean): void => {
+  const createMissing = (
+    ast: StudyCodeTreeAst,
+    parentId: string | null,
+    position: number,
+    root: boolean
+  ): void => {
     let id: string
     if (root) {
       id = plan.scope.root.id
@@ -158,7 +169,12 @@ export async function applyMobileStudyCode(
 
   createMissing(documentAst.root, plan.scope.root.parentId, plan.scope.root.position, true)
 
-  const updateNodes = (ast: StudyCodeTreeAst, parentId: string | null, position: number, root: boolean): void => {
+  const updateNodes = (
+    ast: StudyCodeTreeAst,
+    parentId: string | null,
+    position: number,
+    root: boolean
+  ): void => {
     const id = requireActualId(actualIds, ast)
     const current = repository.listNodes().find((node) => node.id === id)
     if (!current) throw new Error('Элемент обучения исчез во время применения кода')
@@ -183,9 +199,7 @@ export async function applyMobileStudyCode(
     const id = requireActualId(actualIds, ast)
     if (ast.kind === 'material') {
       const existing = repository.getMaterial(id).document
-      const outsideOwners = new Map(
-        [...blockOwners].filter(([, owner]) => owner !== id)
-      )
+      const outsideOwners = new Map([...blockOwners].filter(([, owner]) => owner !== id))
       const next = buildStudyDocumentFromCode(ast, id, existing, {
         createId: randomUUID,
         outsideBlockOwners: outsideOwners
@@ -199,7 +213,8 @@ export async function applyMobileStudyCode(
   await saveMaterials(documentAst.root)
 
   const removed = plan.scope.rows.filter(
-    (row) => row.id !== plan.scope.root.id && originalIds.has(row.id) && !referencedOriginalIds.has(row.id)
+    (row) =>
+      row.id !== plan.scope.root.id && originalIds.has(row.id) && !referencedOriginalIds.has(row.id)
   )
   const removedIds = new Set(removed.map((row) => row.id))
   const topLevelRemoved = removed.filter((row) => !row.parentId || !removedIds.has(row.parentId))
@@ -218,7 +233,8 @@ export async function applyMobileStudyCode(
 function buildPlan(repository: StudyRepository, nodeId: string, source: string): PreviewPlan {
   const scope = loadScope(repository, nodeId)
   const ast = parseStudyCode(source)
-  if (ast.root.kind !== scope.root.type) semanticFail(ast.root, `Корень должен оставаться ${scope.root.type}`)
+  if (ast.root.kind !== scope.root.type)
+    semanticFail(ast.root, `Корень должен оставаться ${scope.root.type}`)
   if (ast.root.id && ast.root.id !== scope.root.id) {
     semanticFail(ast.root, 'Идентификатор корневого элемента нельзя менять')
   }
@@ -259,7 +275,8 @@ function buildPlan(repository: StudyRepository, nodeId: string, source: string):
 
     if (usedKeys.has(key)) semanticFail(nodeAst, `Идентификатор ${key} используется несколько раз`)
     usedKeys.add(key)
-    if (existing && existing.type !== nodeAst.kind) semanticFail(nodeAst, 'Тип существующего элемента нельзя менять')
+    if (existing && existing.type !== nodeAst.kind)
+      semanticFail(nodeAst, 'Тип существующего элемента нельзя менять')
 
     const desiredNode: DesiredNode = { key, ast: nodeAst, existing, parentKey, position }
     desired.push(desiredNode)
@@ -271,9 +288,7 @@ function buildPlan(repository: StudyRepository, nodeId: string, source: string):
       const existingDocument = existing ? scope.materials.get(existing.id) : undefined
       validateNewBlockIdentities(nodeAst, existingDocument, blockOwners)
       if (!existing) validateNewMaterialAssets(nodeAst)
-      const outsideOwners = new Map(
-        [...blockOwners].filter(([, owner]) => owner !== existing?.id)
-      )
+      const outsideOwners = new Map([...blockOwners].filter(([, owner]) => owner !== existing?.id))
       desiredNode.document = buildStudyDocumentFromCode(
         nodeAst,
         existing?.id ?? key,
@@ -309,7 +324,8 @@ function loadScope(repository: StudyRepository, nodeId: string): ScopeState {
   }
   const rows = allRows.filter((row) => included.has(row.id))
   const materials = new Map<string, StudyDocument>()
-  for (const row of rows) if (row.type === 'material') materials.set(row.id, repository.getMaterial(row.id).document)
+  for (const row of rows)
+    if (row.type === 'material') materials.set(row.id, repository.getMaterial(row.id).document)
   return { root, rows, rowsById: new Map(rows.map((row) => [row.id, row])), allRowsById, materials }
 }
 
@@ -364,10 +380,12 @@ function validateNewBlockIdentities(
   const used = new Set<string>()
   for (const block of ast.blocks) {
     if (!block.id) continue
-    if (used.has(block.id)) semanticFail(block, `Идентификатор блока ${block.id} используется несколько раз`)
+    if (used.has(block.id))
+      semanticFail(block, `Идентификатор блока ${block.id} используется несколько раз`)
     used.add(block.id)
     if (!old.has(block.id)) {
-      if (owners.has(block.id)) semanticFail(block, 'Идентификатор блока уже принадлежит другому материалу')
+      if (owners.has(block.id))
+        semanticFail(block, 'Идентификатор блока уже принадлежит другому материалу')
       semanticFail(block, 'Новые блоки создаются без @id')
     }
   }
@@ -375,14 +393,16 @@ function validateNewBlockIdentities(
 
 function validateNewMaterialAssets(ast: StudyCodeMaterialAst): void {
   const block = ast.blocks.find((candidate) => candidate.attributes.asset !== undefined)
-  if (block) semanticFail(block, 'Новый материал не может ссылаться на существующее локальное вложение')
+  if (block)
+    semanticFail(block, 'Новый материал не может ссылаться на существующее локальное вложение')
 }
 
 function resolveFolderIcon(ast: StudyCodeTreeAst, existing: StudyNode | null): StudyFolderIconName {
   if (ast.kind !== 'folder') return 'folder'
   const raw = ast.attributes.icon
   if (raw === undefined) return existing?.icon ?? 'folder'
-  if (typeof raw !== 'string' || !folderIconSet.has(raw)) semanticFail(ast, 'Неизвестная иконка папки')
+  if (typeof raw !== 'string' || !folderIconSet.has(raw))
+    semanticFail(ast, 'Неизвестная иконка папки')
   return raw as StudyFolderIconName
 }
 
@@ -400,11 +420,14 @@ function calculateSummary(scope: ScopeState, desired: DesiredNode[]): StudyCodeC
     }
     desiredExistingIds.add(node.existing.id)
     if (node.ast.title.trim() !== node.existing.title) summary.renamedNodes += 1
-    const desiredParentId = node.parentKey?.startsWith('__preview_node_') ? node.parentKey : node.parentKey
+    const desiredParentId = node.parentKey?.startsWith('__preview_node_')
+      ? node.parentKey
+      : node.parentKey
     if (
       node.existing.id !== scope.root.id &&
       (node.existing.parentId !== desiredParentId || node.existing.position !== node.position)
-    ) summary.movedNodes += 1
+    )
+      summary.movedNodes += 1
 
     if (node.ast.kind === 'material' && node.document) {
       const oldDocument = scope.materials.get(node.existing.id) ?? { version: 1, blocks: [] }
@@ -416,8 +439,12 @@ function calculateSummary(scope: ScopeState, desired: DesiredNode[]): StudyCodeC
         else if (JSON.stringify(old) !== JSON.stringify(block)) summary.updatedBlocks += 1
       }
       for (const block of oldDocument.blocks) if (!newById.has(block.id)) summary.deletedBlocks += 1
-      const oldCommon = oldDocument.blocks.filter((block) => newById.has(block.id)).map((block) => block.id)
-      const newCommon = node.document.blocks.filter((block) => oldById.has(block.id)).map((block) => block.id)
+      const oldCommon = oldDocument.blocks
+        .filter((block) => newById.has(block.id))
+        .map((block) => block.id)
+      const newCommon = node.document.blocks
+        .filter((block) => oldById.has(block.id))
+        .map((block) => block.id)
       oldCommon.forEach((id, index) => {
         if (newCommon[index] !== id) summary.reorderedBlocks += 1
       })
@@ -496,8 +523,13 @@ function toDiagnostic(reason: unknown): StudyCodeDiagnostic {
   }
 }
 
-function diagnosticError(diagnostic: StudyCodeDiagnostic | undefined): Error & { line: number; column: number } {
-  const error = new Error(diagnostic?.message ?? 'Некорректный код') as Error & { line: number; column: number }
+function diagnosticError(
+  diagnostic: StudyCodeDiagnostic | undefined
+): Error & { line: number; column: number } {
+  const error = new Error(diagnostic?.message ?? 'Некорректный код') as Error & {
+    line: number
+    column: number
+  }
   error.line = diagnostic?.line ?? 1
   error.column = diagnostic?.column ?? 1
   return error
@@ -510,7 +542,10 @@ function semanticFail(node: { line: number; column: number }, message: string): 
   throw error
 }
 
-function requireActualId(ids: ReadonlyMap<StudyCodeTreeAst, string>, ast: StudyCodeTreeAst): string {
+function requireActualId(
+  ids: ReadonlyMap<StudyCodeTreeAst, string>,
+  ast: StudyCodeTreeAst
+): string {
   const id = ids.get(ast)
   if (!id) throw new Error('Не удалось сопоставить элемент DSL с локальными данными')
   return id

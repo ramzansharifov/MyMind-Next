@@ -129,7 +129,9 @@ export function parseStudyCode(source: string): StudyCodeDocumentAst {
 
 export function parseStudyCodeSafe(
   source: string
-): { success: true; value: StudyCodeDocumentAst } | { success: false; diagnostic: StudyCodeDiagnosticLike } {
+):
+  | { success: true; value: StudyCodeDocumentAst }
+  | { success: false; diagnostic: StudyCodeDiagnosticLike } {
   try {
     return { success: true, value: parseStudyCode(source) }
   } catch (reason: unknown) {

@@ -1,8 +1,4 @@
-import type {
-  StudyBlock,
-  StudyDocument,
-  StudyLocalAsset
-} from '@mymind/contracts/study'
+import type { StudyBlock, StudyDocument, StudyLocalAsset } from '@mymind/contracts/study'
 import { STUDY_SAFE_ID_PATTERN } from '@mymind/contracts/study'
 import { createCanonicalStudyAssetUrl } from './study-assets'
 import type {
@@ -152,9 +148,14 @@ function resolveBlockId(
   outsideBlockOwners: ReadonlyMap<string, string>,
   createId: () => string
 ): string {
-  if (!ast.id) return createUniqueId(new Set([...oldBlocks.keys(), ...usedIds, ...outsideBlockOwners.keys()]), createId)
+  if (!ast.id)
+    return createUniqueId(
+      new Set([...oldBlocks.keys(), ...usedIds, ...outsideBlockOwners.keys()]),
+      createId
+    )
   if (!STUDY_SAFE_ID_PATTERN.test(ast.id)) semanticFail(ast, 'Некорректный @id блока')
-  if (usedIds.has(ast.id)) semanticFail(ast, `Идентификатор блока ${ast.id} используется несколько раз`)
+  if (usedIds.has(ast.id))
+    semanticFail(ast, `Идентификатор блока ${ast.id} используется несколько раз`)
 
   const old = oldBlocks.get(ast.id)
   if (old && old.type !== ast.blockType) semanticFail(ast, 'Тип существующего блока нельзя менять')
@@ -197,12 +198,7 @@ function buildBlock(
         color: optionalString(attributes, 'color', ast),
         backgroundColor: optionalString(attributes, 'background', ast),
         alignment: optionalEnum(attributes, 'align', ['left', 'center', 'right'], ast),
-        backgroundScope: optionalEnum(
-          attributes,
-          'backgroundScope',
-          ['text', 'container'],
-          ast
-        )
+        backgroundScope: optionalEnum(attributes, 'backgroundScope', ['text', 'container'], ast)
       })
     case 'code':
       assertAllowedAttributes(ast, ['language'])
@@ -242,7 +238,16 @@ function buildBlock(
         scale: optionalNumber(attributes, 'scale', ast)
       })
     case 'image':
-      assertAllowedAttributes(ast, ['asset', 'name', 'mime', 'size', 'url', 'title', 'fit', 'height'])
+      assertAllowedAttributes(ast, [
+        'asset',
+        'name',
+        'mime',
+        'size',
+        'url',
+        'title',
+        'fit',
+        'height'
+      ])
       return compactObject({
         id,
         type: 'image' as const,
@@ -283,7 +288,12 @@ function buildBlock(
       if (boardId && existing?.type !== 'board') {
         semanticFail(ast, 'Новая доска создаётся без board. Откройте блок после сохранения.')
       }
-      if (boardId && existing?.type === 'board' && existing.boardId && boardId !== existing.boardId) {
+      if (
+        boardId &&
+        existing?.type === 'board' &&
+        existing.boardId &&
+        boardId !== existing.boardId
+      ) {
         semanticFail(ast, 'Нельзя подменить связанную доску через DSL')
       }
       return compactObject({ id, type: 'board' as const, boardId, title: ast.title })
