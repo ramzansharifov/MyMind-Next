@@ -245,6 +245,7 @@ export function NotesScreen(): React.JSX.Element {
           importAsset={(kind) => documentAssets.importAsset(record.id, kind)}
           openAsset={documentAssets.openAsset}
           resolveAssetUri={documentAssets.resolveAssetUri}
+          saveRecordedAudio={(input) => documentAssets.saveRecordedAudio(record.id, input)}
           onAssetError={(reason) => setEditorError(messageFor(reason))}
           header={
             <View style={{ gap: 12, paddingBottom: 16 }}>
