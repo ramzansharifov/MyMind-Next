@@ -24,6 +24,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: node .github/scripts/mobile-study-mermaid-pdf.cjs
+      - run: node .github/scripts/mobile-study-mermaid-pdf-fix.cjs
       - run: npx prettier --write apps/mobile/src/modules/study/StudyMermaidExportDom.tsx apps/mobile/src/modules/study/StudyScreen.tsx apps/mobile/src/modules/study/studyPdf.ts apps/mobile/src/modules/study/studyPdf.test.ts apps/mobile/src/modules/study/studyPdfExport.ts MOBILE_PARITY.md
       - run: npm run native:node
       - run: npx prettier --check apps/mobile/src/modules/study/StudyMermaidExportDom.tsx apps/mobile/src/modules/study/StudyScreen.tsx apps/mobile/src/modules/study/studyPdf.ts apps/mobile/src/modules/study/studyPdf.test.ts apps/mobile/src/modules/study/studyPdfExport.ts MOBILE_PARITY.md
