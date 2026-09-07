@@ -1,7 +1,8 @@
 import { FlatList, Image, Text, View } from 'react-native'
 import type { StudyBlock, StudyDocument, StudyLocalAsset } from '@mymind/contracts/study'
-import { designTokens } from '@mymind/design'
+import { appearanceTokens, designTokens } from '@mymind/design'
 import { DocumentBoardReader, type OpenDocumentBoard } from './DocumentBoardBlock'
+import RichContentDom from './RichContentDom'
 import { AudioAssetPlayer } from './VoiceRecorder'
 import { Button, Label } from './primitives'
 import { useTheme } from './theme'
@@ -111,6 +112,20 @@ function ReadBlock({
   openBoard?: OpenDocumentBoard
 }): React.JSX.Element {
   const theme = useTheme()
+  const colorScheme = theme.background === appearanceTokens.dark.background ? 'dark' : 'light'
+  const richProps = {
+    colorScheme,
+    textColor: theme.text,
+    mutedColor: theme.muted,
+    borderColor: theme.border,
+    surfaceColor: theme.raised,
+    accentColor: theme.accent,
+    dom: {
+      matchContents: true,
+      scrollEnabled: false,
+      style: { width: '100%' }
+    }
+  } as const
 
   switch (block.type) {
     case 'text':
@@ -141,11 +156,27 @@ function ReadBlock({
     case 'code':
       return <SourceSurface label={block.language || 'Код'} source={block.source} />
     case 'markdown':
-      return <SourceSurface label="Markdown" source={block.source} />
+      return <RichContentDom {...richProps} kind="markdown" source={block.source} />
     case 'latex':
-      return <SourceSurface label="LaTeX" source={block.source} />
+      return (
+        <RichContentDom
+          {...richProps}
+          kind="latex"
+          latexDisplayMode={block.displayMode ?? 'display'}
+          latexAlignment={block.alignment ?? 'center'}
+          latexScale={block.scale ?? 1}
+          source={block.source}
+        />
+      )
     case 'mermaid':
-      return <SourceSurface label="Mermaid" source={block.source} />
+      return (
+        <RichContentDom
+          {...richProps}
+          kind="mermaid"
+          mermaidTheme={block.theme ?? (colorScheme === 'dark' ? 'dark' : 'default')}
+          source={block.source}
+        />
+      )
     case 'image':
     case 'video':
       if (block.source.type === 'url') {
