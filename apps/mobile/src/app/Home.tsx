@@ -40,9 +40,7 @@ export function Home({
       const complete = scheduled.filter((habit) =>
         habits.entries.some(
           (entry) =>
-            entry.habitId === habit.id &&
-            !entry.skipped &&
-            entry.value >= habit.targetValue
+            entry.habitId === habit.id && !entry.skipped && entry.value >= habit.targetValue
         )
       )
       const events = services.calendar.listCalendarOccurrences({ from: date, to: date })
