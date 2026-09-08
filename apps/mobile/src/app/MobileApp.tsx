@@ -11,7 +11,7 @@ import { appearancePreferencesSchema } from '@mymind/core/validation/preferences
 import { ServicesContext } from './context'
 import { createMobileServices, type MobileServices } from './services'
 import { exportMobileBackup, restoreMobileBackup } from '../shared/backup/mobileBackup'
-import { openMobileDatabase } from '../shared/storage/sqlite'
+import { openMobileDatabase } from '../shared/storage/mobileDatabase'
 import { ThemeContext } from '../shared/ui/theme'
 import { ErrorState, Label, LoadingState, Row } from '../shared/ui/primitives'
 import { messageFor } from '../shared/ui/form-model'
