@@ -20,6 +20,7 @@ import {
   reportDateRange,
   type MobileReportPeriod
 } from '../../shared/report-period'
+import { WorkoutMuscleMap } from './WorkoutMuscleMap'
 
 const PERIODS: MobileReportPeriod[] = ['7', '30', '90', '365', 'custom']
 
@@ -271,6 +272,8 @@ function WorkoutReportHeader({
           hint={`макс. ${report.summary.maxWeightKg} кг`}
         />
       </View>
+
+      <WorkoutMuscleMap groups={report.muscleGroups} />
 
       <Section title="Распределение нагрузки">
         {report.muscleGroups
