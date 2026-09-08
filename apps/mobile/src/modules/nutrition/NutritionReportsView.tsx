@@ -18,6 +18,7 @@ import {
   reportDateRange,
   type MobileReportPeriod
 } from '../../shared/report-period'
+import { NutritionTrendCharts } from './NutritionTrendCharts'
 
 const PERIODS: MobileReportPeriod[] = ['7', '30', '90', '365', 'custom']
 
@@ -201,6 +202,8 @@ function NutritionReportHeader({
           value={`${Math.round(report.summary.calorieGoalHitPercent)}%`}
         />
       </View>
+
+      <NutritionTrendCharts timeline={report.timeline} />
 
       <Section title="Среднее КБЖУ">
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
