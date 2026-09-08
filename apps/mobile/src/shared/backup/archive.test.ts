@@ -43,9 +43,9 @@ describe('mobile backup archive contract', () => {
 
     expect(header).toHaveLength(MOBILE_BACKUP_HEADER_SIZE)
     expect(decodeMobileBackupHeader(header)).toBe(body.length)
-    expect(
-      decodeMobileBackupManifest(body, MOBILE_BACKUP_HEADER_SIZE + body.length + 7)
-    ).toEqual(source)
+    expect(decodeMobileBackupManifest(body, MOBILE_BACKUP_HEADER_SIZE + body.length + 7)).toEqual(
+      source
+    )
   })
 
   it('rejects path traversal and Windows separator aliases', () => {
