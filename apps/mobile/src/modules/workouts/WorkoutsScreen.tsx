@@ -11,13 +11,7 @@ import * as workoutsValidation from '@mymind/core/validation/workouts'
 import { useServices } from '../../app/context'
 import { useCollection } from '../../shared/hooks/useCollection'
 import { FormSheet } from '../../shared/ui/FormSheet'
-import {
-  choiceField,
-  messageFor,
-  textField,
-  type FormField,
-  type FormSpec
-} from '../../shared/ui/form-model'
+import { choiceField, textField, type FormField, type FormSpec } from '../../shared/ui/form-model'
 import {
   Button,
   EmptyState,
@@ -52,11 +46,6 @@ const muscleLabels: Record<(typeof WORKOUT_MUSCLE_ZONES)[number], string> = {
   quadriceps: 'Квадрицепс',
   hamstrings: 'Бицепс бедра',
   calves: 'Икры'
-}
-
-function localDateKey(date = new Date()): string {
-  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
-  return local.toISOString().slice(0, 10)
 }
 
 function multiField(

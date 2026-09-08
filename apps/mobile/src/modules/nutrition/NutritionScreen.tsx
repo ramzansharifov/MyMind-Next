@@ -13,7 +13,7 @@ import * as validation from '@mymind/core/validation/nutrition'
 import { useServices } from '../../app/context'
 import { useCollection } from '../../shared/hooks/useCollection'
 import { FormSheet } from '../../shared/ui/FormSheet'
-import { choiceField, messageFor, textField, type FormSpec } from '../../shared/ui/form-model'
+import { choiceField, textField, type FormSpec } from '../../shared/ui/form-model'
 import {
   Button,
   EmptyState,
