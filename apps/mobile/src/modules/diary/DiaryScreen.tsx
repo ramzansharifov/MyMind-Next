@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Animated, BackHandler, FlatList, Pressable, Text, View } from 'react-native'
 import {
   DIARY_COVER_TONES,
@@ -212,7 +212,7 @@ function DiaryDetail({ diary, back }: { diary: DiarySummary; back(): void }): Re
   const [query, setQuery] = useState('')
   const [form, setForm] = useState<FormSpec | null>(null)
   const [calendarMonth, setCalendarMonth] = useState(() => diaryMonthKey(localDateKey()))
-  const pageOffset = useRef(new Animated.Value(0)).current
+  const [pageOffset] = useState(() => new Animated.Value(0))
 
   const state = useCollection(
     useCallback(
