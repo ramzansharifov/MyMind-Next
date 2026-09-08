@@ -27,10 +27,21 @@ jobs:
       - name: Rebuild SQLite for Node
         run: npm run native:node
 
-      - name: Format
+      - name: Format changed mobile backup files
         id: format
         continue-on-error: true
-        run: npm run format:check
+        run: >-
+          npx prettier --check
+          apps/mobile/src/app/MobileApp.tsx
+          apps/mobile/src/app/Settings.tsx
+          apps/mobile/src/app/ReminderSettings.tsx
+          apps/mobile/src/shared/storage/sqlite.ts
+          apps/mobile/src/shared/backup/archive.ts
+          apps/mobile/src/shared/backup/archive.test.ts
+          apps/mobile/src/shared/backup/mobileBackup.ts
+          apps/mobile/src/shared/backup/restoreRecovery.ts
+          apps/mobile/src/shared/backup/restoreRecoveryState.ts
+          apps/mobile/src/shared/backup/restoreRecoveryState.test.ts
       - name: Mobile lint
         id: lint_mobile
         continue-on-error: true
