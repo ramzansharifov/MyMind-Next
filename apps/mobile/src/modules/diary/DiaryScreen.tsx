@@ -6,6 +6,7 @@ import {
   DIARY_MOODS,
   DIARY_PAPER_PATTERNS,
   DIARY_PAPER_TONES,
+  type DiaryDaySummary,
   type DiaryEntry,
   type DiarySummary
 } from '@mymind/contracts/diary'
@@ -17,7 +18,6 @@ import {
   Button,
   EmptyState,
   ErrorState,
-  Label,
   LoadingState,
   Row,
   SearchField
@@ -25,6 +25,7 @@ import {
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { choiceField, textField, type FormSpec } from '../../shared/ui/form-model'
 import { useTheme } from '../../shared/ui/theme'
+import { DiaryReportsView } from './DiaryReportsView'
 import {
   buildDiaryCalendarMonth,
   diaryAppearancePalette,
@@ -51,7 +52,7 @@ export function DiaryScreen(): React.JSX.Element {
   const [selected, setSelected] = useState<DiarySummary | null>(null)
   const [form, setForm] = useState<FormSpec | null>(null)
 
-  const edit = (item?: DiarySummary): void =>
+  const editDiary = (item?: DiarySummary): void =>
     setForm({
       title: item ? 'Изменить дневник' : 'Новый дневник',
       initial: { title: item?.title ?? '', icon: item?.icon ?? 'book-heart' },
@@ -85,8 +86,8 @@ export function DiaryScreen(): React.JSX.Element {
 
   return (
     <View style={{ flex: 1, gap: 12 }}>
-      <Button label="+ Дневник" selected onPress={() => edit()} />
-      {state.error && <ErrorState message={state.error} retry={state.refresh} />}
+      <Button label="+ Дневник" selected onPress={() => editDiary()} />
+      {state.error ? <ErrorState message={state.error} retry={state.refresh} /> : null}
       {state.loading ? (
         <LoadingState />
       ) : (
@@ -99,13 +100,11 @@ export function DiaryScreen(): React.JSX.Element {
             <DiaryNotebookCard
               diary={item}
               onOpen={() => setSelected(item)}
-              onEdit={() => edit(item)}
+              onEdit={() => editDiary(item)}
               onDelete={() =>
                 state.confirmDelete(
                   'Удалить дневник?',
-                  () => {
-                    api.deleteDiary({ id: item.id })
-                  },
+                  () => api.deleteDiary({ id: item.id }),
                   'Все дни и записи этого дневника будут удалены.'
                 )
               }
@@ -113,7 +112,7 @@ export function DiaryScreen(): React.JSX.Element {
           )}
         />
       )}
-      {form && <FormSheet spec={form} close={() => setForm(null)} />}
+      {form ? <FormSheet spec={form} close={() => setForm(null)} /> : null}
     </View>
   )
 }
@@ -219,12 +218,17 @@ function DiaryDetail({ diary, back }: { diary: DiarySummary; back(): void }): Re
     useCallback(
       () => ({
         day: api.getDiaryDay({ diaryId: currentDiary.id, dayKey: date }),
-        days: api.listDiaryDays({ diaryId: currentDiary.id }),
-        report: api.getDiaryReport({ diaryId: currentDiary.id })
+        days: api.listDiaryDays({ diaryId: currentDiary.id })
       }),
       [api, currentDiary.id, date]
     )
   )
+
+  const refreshDetail = (): void => {
+    state.refresh()
+    const latest = api.listDiaryOverview().diaries.find((item) => item.id === currentDiary.id)
+    if (latest) setCurrentDiary(latest)
+  }
 
   const turnToDate = (nextDate: string, direction = 1): void => {
     pageOffset.setValue(direction >= 0 ? 24 : -24)
@@ -238,7 +242,7 @@ function DiaryDetail({ diary, back }: { diary: DiarySummary; back(): void }): Re
     }).start()
   }
 
-  const edit = (entry?: DiaryEntry): void =>
+  const editEntry = (entry?: DiaryEntry): void =>
     setForm({
       title: entry ? 'Изменить запись' : 'Новая запись',
       initial: { text: entry?.text ?? '' },
@@ -257,7 +261,7 @@ function DiaryDetail({ diary, back }: { diary: DiarySummary; back(): void }): Re
             })
           )
         }
-        state.refresh()
+        refreshDetail()
       }
     })
 
@@ -266,12 +270,10 @@ function DiaryDetail({ diary, back }: { diary: DiarySummary; back(): void }): Re
       title: 'Перейти к дате',
       initial: { dayKey: date },
       fields: [textField('dayKey', 'Дата', 'text', 'ГГГГ-ММ-ДД')],
-      save: (values) => {
-        turnToDate(schema.diaryDayKeySchema.parse(values.dayKey))
-      }
+      save: (values) => turnToDate(schema.diaryDayKeySchema.parse(values.dayKey))
     })
 
-  const mood = (): void =>
+  const editMood = (): void =>
     setForm({
       title: 'Настроение дня',
       initial: { mood: state.data?.day?.mood ?? null },
@@ -289,11 +291,11 @@ function DiaryDetail({ diary, back }: { diary: DiarySummary; back(): void }): Re
             dayKey: date
           })
         )
-        state.refresh()
+        refreshDetail()
       }
     })
 
-  const appearance = (): void =>
+  const editAppearance = (): void =>
     setForm({
       title: 'Оформление дневника',
       initial: {
@@ -305,10 +307,7 @@ function DiaryDetail({ diary, back }: { diary: DiarySummary; back(): void }): Re
         choiceField(
           'paperPattern',
           'Разметка бумаги',
-          DIARY_PAPER_PATTERNS.map((value) => ({
-            value,
-            label: diaryPaperPatternLabels[value]
-          }))
+          DIARY_PAPER_PATTERNS.map((value) => ({ value, label: diaryPaperPatternLabels[value] }))
         ),
         choiceField(
           'paperTone',
@@ -383,16 +382,16 @@ function DiaryDetail({ diary, back }: { diary: DiarySummary; back(): void }): Re
             <Button label={date} onPress={chooseDate} />
             <Button label="›" onPress={() => turnToDate(addDays(date, 1), 1)} />
             <Button label="Сегодня" onPress={() => turnToDate(localDateKey())} />
-            <Button label="+ Запись" selected onPress={() => edit()} />
+            <Button label="+ Запись" selected onPress={() => editEntry()} />
             <Button
               label={moodMeta ? `${moodMeta.emoji} ${moodMeta.label}` : 'Настроение'}
-              onPress={mood}
+              onPress={editMood}
             />
           </View>
         ) : null}
       </View>
 
-      {state.error && <ErrorState message={state.error} retry={state.refresh} />}
+      {state.error ? <ErrorState message={state.error} retry={state.refresh} /> : null}
       {state.loading ? (
         <LoadingState />
       ) : view === 'history' ? (
@@ -410,36 +409,9 @@ function DiaryDetail({ diary, back }: { diary: DiarySummary; back(): void }): Re
           onOpenDay={(dayKey) => turnToDate(dayKey)}
         />
       ) : view === 'report' ? (
-        <FlatList
-          data={state.data?.report.timeline ?? []}
-          keyExtractor={(item) => item.dayKey}
-          ListHeaderComponent={
-            <View style={{ marginBottom: 16, gap: 3 }}>
-              <Label title>{state.data?.report.entryCount ?? 0} записей</Label>
-              <Label>Активных дней: {state.data?.report.activeDays ?? 0}</Label>
-              <Label>
-                Среднее настроение: {state.data?.report.averageMoodScore?.toFixed(1) ?? '—'} / 5
-              </Label>
-              <Label>
-                В среднем записей за активный день:{' '}
-                {state.data?.report.averageEntriesPerActiveDay.toFixed(1) ?? '0.0'}
-              </Label>
-            </View>
-          }
-          ListEmptyComponent={<EmptyState text="Для отчёта пока недостаточно данных." />}
-          renderItem={({ item }) => {
-            const reportMood = diaryMoodMeta(item.mood)
-            return (
-              <Row
-                title={item.dayKey}
-                subtitle={`${item.entryCount} записей${reportMood ? ` · ${reportMood.emoji} ${reportMood.label}` : ''}`}
-                onPress={() => turnToDate(item.dayKey)}
-              />
-            )
-          }}
-        />
+        <DiaryReportsView diaryId={currentDiary.id} onOpenDay={(dayKey) => turnToDate(dayKey)} />
       ) : view === 'settings' ? (
-        <DiaryAppearancePreview diary={currentDiary} onEdit={appearance} />
+        <DiaryAppearancePreview diary={currentDiary} onEdit={editAppearance} />
       ) : (
         <Animated.View style={{ flex: 1, transform: [{ translateX: pageOffset }] }}>
           <DiaryPaperDay
@@ -447,17 +419,21 @@ function DiaryDetail({ diary, back }: { diary: DiarySummary; back(): void }): Re
             date={date}
             entries={state.data?.day?.entries ?? []}
             moodLabel={moodMeta ? `${moodMeta.emoji} ${moodMeta.label}` : null}
-            onEdit={edit}
+            onEdit={editEntry}
             onDelete={(entry) =>
               state.confirmDelete('Удалить запись?', () => {
                 api.deleteDiaryEntry({ id: entry.id })
+                const latest = api.listDiaryOverview().diaries.find(
+                  (item) => item.id === currentDiary.id
+                )
+                if (latest) setCurrentDiary(latest)
               })
             }
           />
         </Animated.View>
       )}
 
-      {form && <FormSheet spec={form} close={() => setForm(null)} />}
+      {form ? <FormSheet spec={form} close={() => setForm(null)} /> : null}
     </View>
   )
 }
@@ -468,7 +444,7 @@ function DiaryHistory({
   setQuery,
   onOpenDay
 }: {
-  days: ReturnType<ReturnType<typeof useServices>['diary']['listDiaryDays']>
+  days: DiaryDaySummary[]
   query: string
   setQuery(value: string): void
   onOpenDay(dayKey: string): void
@@ -698,9 +674,7 @@ function DiaryPaperDay({
         contentContainerStyle={{ paddingBottom: 24 }}
         ListHeaderComponent={
           <View style={{ marginBottom: 14, gap: 5 }}>
-            <Text style={{ color: palette.paperText, fontSize: 20, fontWeight: '800' }}>
-              {date}
-            </Text>
+            <Text style={{ color: palette.paperText, fontSize: 20, fontWeight: '800' }}>{date}</Text>
             {moodLabel ? (
               <Text style={{ color: palette.paperMuted, fontSize: 13 }}>{moodLabel}</Text>
             ) : null}
