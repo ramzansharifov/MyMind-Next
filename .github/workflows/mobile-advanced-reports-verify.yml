@@ -28,93 +28,8 @@ jobs:
         run: npm ci
       - name: Rebuild SQLite for Node
         run: npm run native:node
-
       - name: Wire advanced report views
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-
-          nutrition = Path('apps/mobile/src/modules/nutrition/NutritionScreen.tsx')
-          text = nutrition.read_text()
-          import_anchor = "import { NutritionRecipeSheet } from './NutritionRecipeSheet'"
-          import_line = "import { NutritionReportsView } from './NutritionReportsView'"
-          if import_line not in text:
-              if import_anchor not in text:
-                  raise SystemExit('Nutrition import anchor not found')
-              text = text.replace(import_anchor, import_anchor + '\n' + import_line, 1)
-
-          days_ago = """function daysAgoKey(days: number): string {
-  return shiftDate(localDateKey(), -days)
-}
-
-"""
-          if days_ago in text:
-              text = text.replace(days_ago, '', 1)
-
-          report_start = text.find('  let report: ReturnType<typeof api.getReport> | null = null')
-          tabs_start = text.find('  const tabs: Array<{ key: Tab; label: string }> =', report_start)
-          if report_start < 0 or tabs_start < 0:
-              raise SystemExit('Nutrition inline report block not found')
-          text = text[:report_start] + text[tabs_start:]
-
-          branch_start = text.find("  if (tab === 'report') {")
-          list_start = text.find('\n\n  const list: ListItem[] =', branch_start)
-          if branch_start < 0 or list_start < 0:
-              raise SystemExit('Nutrition report render branch not found')
-          replacement = """  if (tab === 'report') {
-    return (
-      <View style={{ flex: 1 }}>
-        {header}
-        {overview.error ? <ErrorState message={overview.error} retry={overview.refresh} /> : null}
-        <NutritionReportsView />
-      </View>
-    )
-  }"""
-          text = text[:branch_start] + replacement + text[list_start:]
-          nutrition.write_text(text)
-
-          workouts = Path('apps/mobile/src/modules/workouts/WorkoutsScreen.tsx')
-          text = workouts.read_text()
-          import_anchor = "import { WorkoutSessionSheet } from './WorkoutSessionSheet'"
-          import_line = "import { WorkoutReportsView } from './WorkoutReportsView'"
-          if import_line not in text:
-              if import_anchor not in text:
-                  raise SystemExit('Workouts import anchor not found')
-              text = text.replace(import_anchor, import_anchor + '\n' + import_line, 1)
-
-          days_ago = """function daysAgoKey(days: number): string {
-  const date = new Date()
-  date.setDate(date.getDate() - days)
-  return localDateKey(date)
-}
-
-"""
-          if days_ago in text:
-              text = text.replace(days_ago, '', 1)
-
-          report_start = text.find('  let reportResult: {')
-          tabs_start = text.find('  const tabs: Array<{ key: Tab; label: string }> =', report_start)
-          if report_start < 0 or tabs_start < 0:
-              raise SystemExit('Workout inline report block not found')
-          text = text[:report_start] + text[tabs_start:]
-
-          branch_start = text.find("  if (tab === 'reports') {")
-          list_start = text.find('\n\n  const listItems: WorkoutListItem[] =', branch_start)
-          if branch_start < 0 or list_start < 0:
-              raise SystemExit('Workout report render branch not found')
-          replacement = """  if (tab === 'reports') {
-    return (
-      <View style={{ flex: 1 }}>
-        {header}
-        {overview.error ? <ErrorState message={overview.error} retry={overview.refresh} /> : null}
-        <WorkoutReportsView exercises={exercises} programs={programs} />
-      </View>
-    )
-  }"""
-          text = text[:branch_start] + replacement + text[list_start:]
-          workouts.write_text(text)
-          PY
-
+        run: python .github/scripts/mobile-advanced-reports-wire.py
       - name: Format advanced report checkpoint
         id: format
         run: >-
@@ -143,7 +58,6 @@ jobs:
             git pull --rebase origin agent/full-mobile-app
             git push origin HEAD:agent/full-mobile-app
           fi
-
       - name: Mobile lint
         id: lint_mobile
         continue-on-error: true
@@ -180,7 +94,6 @@ jobs:
         id: whitespace
         continue-on-error: true
         run: git diff --check
-
       - name: Require green gate
         if: always()
         env:
