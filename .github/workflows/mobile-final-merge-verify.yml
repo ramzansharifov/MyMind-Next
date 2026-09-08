@@ -109,9 +109,6 @@ jobs:
           test -f android/app/build.gradle
           test -f android/app/src/main/AndroidManifest.xml
           grep -q 'expo_system_ui_user_interface_style' android/app/src/main/res/values/strings.xml
-          grep -q 'android.permission.RECORD_AUDIO' android/app/src/main/AndroidManifest.xml
-          grep -q 'android.permission.CAMERA' android/app/src/main/AndroidManifest.xml
-          grep -q 'android.permission.POST_NOTIFICATIONS' android/app/src/main/AndroidManifest.xml
       - name: Assemble Android debug APK
         working-directory: apps/mobile/android
         env:
@@ -119,9 +116,17 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew :app:assembleDebug --no-daemon --stacktrace
-      - name: Verify APK output
+      - name: Verify APK output and permissions
         working-directory: apps/mobile
-        run: test -f android/app/build/outputs/apk/debug/app-debug.apk
+        run: |
+          APK='android/app/build/outputs/apk/debug/app-debug.apk'
+          test -f "$APK"
+          AAPT="$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)"
+          test -n "$AAPT"
+          "$AAPT" dump permissions "$APK" | tee /tmp/mymind-apk-permissions.txt
+          grep -q 'android.permission.RECORD_AUDIO' /tmp/mymind-apk-permissions.txt
+          grep -q 'android.permission.CAMERA' /tmp/mymind-apk-permissions.txt
+          grep -q 'android.permission.POST_NOTIFICATIONS' /tmp/mymind-apk-permissions.txt
       - name: Restore Expo prebuild script normalization
         run: git checkout -- apps/mobile/package.json
       - name: Ensure tracked files unchanged
