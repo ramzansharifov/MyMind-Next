@@ -6,7 +6,8 @@ import {
   MOBILE_RESTORE_PENDING_FILE,
   MOBILE_RESTORE_ROLLBACK_PREFIX,
   decodeMobileRestoreRecoveryMarker,
-  encodeMobileRestoreRecoveryMarker
+  encodeMobileRestoreRecoveryMarker,
+  isMobileRestoreArtifactDirectoryName
 } from './restoreRecoveryState'
 
 export const MOBILE_DURABLE_FILE_ROOTS = ['document-assets', 'workout-progress'] as const
@@ -129,6 +130,17 @@ function clearMarkerFor(rollbackName: string): void {
     throw new Error('Служебная точка отката MyMind не соответствует текущему восстановлению')
   }
   file.delete()
+}
+
+export function cleanupStaleMobileRestoreArtifacts(): void {
+  for (const child of Paths.document.list()) {
+    if (!(child instanceof Directory) || !isMobileRestoreArtifactDirectoryName(child.name)) continue
+    try {
+      child.delete()
+    } catch {
+      // Stale internal restore data never overrides app startup; retry cleanup on the next launch.
+    }
+  }
 }
 
 export async function createDurableMobileRestoreRollback(
