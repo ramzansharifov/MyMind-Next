@@ -70,6 +70,12 @@ jobs:
         run: npm ci
       - name: Build Windows installer
         run: npm run build:win
+      - name: Verify Windows installer output
+        shell: pwsh
+        run: |
+          $installer = Get-ChildItem -Path apps/desktop/dist -Filter '*-setup.exe' -File | Select-Object -First 1
+          if (-not $installer) { throw 'Windows installer was not created.' }
+          Write-Host "Installer: $($installer.FullName) ($($installer.Length) bytes)"
 
   android-native:
     runs-on: ubuntu-latest
