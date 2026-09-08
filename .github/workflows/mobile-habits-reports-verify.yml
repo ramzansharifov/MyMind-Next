@@ -1,0 +1,124 @@
+name: Mobile habits reports verification
+
+on:
+  push:
+    branches:
+      - agent/full-mobile-app
+    paths:
+      - .mobile-habits-reports-trigger
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Use npm 11
+        run: npm install --global npm@11
+      - name: Install
+        run: npm ci
+      - name: Rebuild SQLite for Node
+        run: npm run native:node
+
+      - name: Format changed habits files
+        id: format
+        run: >-
+          npx prettier --write
+          apps/mobile/src/modules/habits/HabitsScreen.tsx
+          apps/mobile/src/modules/habits/HabitsReportsView.tsx
+          apps/mobile/src/modules/habits/habit-report-periods.ts
+          apps/mobile/src/modules/habits/habit-report-periods.test.ts
+      - name: Commit formatting
+        run: |
+          git add \
+            apps/mobile/src/modules/habits/HabitsScreen.tsx \
+            apps/mobile/src/modules/habits/HabitsReportsView.tsx \
+            apps/mobile/src/modules/habits/habit-report-periods.ts \
+            apps/mobile/src/modules/habits/habit-report-periods.test.ts
+          if git diff --cached --quiet; then
+            echo "No formatting changes to commit."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "style: format mobile habits reports"
+            git push
+          fi
+      - name: Mobile lint
+        id: lint_mobile
+        continue-on-error: true
+        run: npm run lint:mobile
+      - name: TypeScript
+        id: typecheck
+        continue-on-error: true
+        run: npm run typecheck
+      - name: Mobile tests
+        id: mobile_tests
+        continue-on-error: true
+        run: npm run test:mobile
+      - name: Desktop regression
+        id: desktop_tests
+        continue-on-error: true
+        run: npm run test:run
+      - name: Database schema
+        id: db
+        continue-on-error: true
+        run: npm run db:check
+      - name: Desktop production bundle
+        id: desktop_bundle
+        continue-on-error: true
+        run: npm run build:bundle
+      - name: Android Expo export
+        id: android
+        continue-on-error: true
+        run: npm run export:android
+      - name: Security audit
+        id: audit
+        continue-on-error: true
+        run: npm audit --audit-level=high
+      - name: Whitespace
+        id: whitespace
+        continue-on-error: true
+        run: git diff --check
+
+      - name: Require green gate
+        if: always()
+        env:
+          FORMAT: ${{ steps.format.outcome }}
+          LINT_MOBILE: ${{ steps.lint_mobile.outcome }}
+          TYPECHECK: ${{ steps.typecheck.outcome }}
+          MOBILE_TESTS: ${{ steps.mobile_tests.outcome }}
+          DESKTOP_TESTS: ${{ steps.desktop_tests.outcome }}
+          DB: ${{ steps.db.outcome }}
+          DESKTOP_BUNDLE: ${{ steps.desktop_bundle.outcome }}
+          ANDROID: ${{ steps.android.outcome }}
+          AUDIT: ${{ steps.audit.outcome }}
+          WHITESPACE: ${{ steps.whitespace.outcome }}
+        run: |
+          printf '%s\n' \
+            "format=$FORMAT" \
+            "lint_mobile=$LINT_MOBILE" \
+            "typecheck=$TYPECHECK" \
+            "mobile_tests=$MOBILE_TESTS" \
+            "desktop_tests=$DESKTOP_TESTS" \
+            "db=$DB" \
+            "desktop_bundle=$DESKTOP_BUNDLE" \
+            "android=$ANDROID" \
+            "audit=$AUDIT" \
+            "whitespace=$WHITESPACE"
+          test "$FORMAT" = success
+          test "$LINT_MOBILE" = success
+          test "$TYPECHECK" = success
+          test "$MOBILE_TESTS" = success
+          test "$DESKTOP_TESTS" = success
+          test "$DB" = success
+          test "$DESKTOP_BUNDLE" = success
+          test "$ANDROID" = success
+          test "$AUDIT" = success
+          test "$WHITESPACE" = success
