@@ -226,7 +226,9 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
 
   const selectedMovie =
     mode === 'movies' && selectedMovieId
-      ? (state.data?.items as MovieRecord[] | undefined)?.find((item) => item.id === selectedMovieId)
+      ? (state.data?.items as MovieRecord[] | undefined)?.find(
+          (item) => item.id === selectedMovieId
+        )
       : undefined
 
   const updateMovie = (movie: MovieRecord): void => {

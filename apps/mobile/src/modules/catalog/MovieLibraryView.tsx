@@ -98,7 +98,9 @@ function MovieCard({
               style={{ width: '100%', height: '100%' }}
             />
           ) : (
-            <Text style={{ color: theme.muted, fontSize: 11, textAlign: 'center' }}>Нет постера</Text>
+            <Text style={{ color: theme.muted, fontSize: 11, textAlign: 'center' }}>
+              Нет постера
+            </Text>
           )}
         </View>
 

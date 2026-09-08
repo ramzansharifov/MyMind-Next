@@ -12,11 +12,7 @@ import {
 import type { MovieRecord } from '@mymind/contracts/movies'
 import { Button, Label } from '../../shared/ui/primitives'
 import { useTheme } from '../../shared/ui/theme'
-import {
-  formatMovieRuntime,
-  isEpisodicMovieType,
-  movieTypeLabel
-} from './movie-presentation'
+import { formatMovieRuntime, isEpisodicMovieType, movieTypeLabel } from './movie-presentation'
 
 interface MovieDetailViewProps {
   movie: MovieRecord
@@ -58,7 +54,13 @@ function MetadataChip({
   )
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }): React.JSX.Element {
+function Section({
+  title,
+  children
+}: {
+  title: string
+  children: React.ReactNode
+}): React.JSX.Element {
   return (
     <View style={{ gap: 10 }}>
       <Label title>{title}</Label>
@@ -189,9 +191,7 @@ export function MovieDetailView({
 
               {episodic ? (
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                  {movie.seasonCount ? (
-                    <MetadataChip label={`${movie.seasonCount} сез.`} />
-                  ) : null}
+                  {movie.seasonCount ? <MetadataChip label={`${movie.seasonCount} сез.`} /> : null}
                   {movie.episodesPerSeason ? (
                     <MetadataChip label={`${movie.episodesPerSeason} эп./сез.`} />
                   ) : null}
