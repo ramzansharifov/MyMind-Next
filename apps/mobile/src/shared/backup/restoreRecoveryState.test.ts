@@ -11,11 +11,12 @@ const stageDirectory = '.mymind-restore-stage-123e4567-e89b-12d3-a456-4266141740
 
 describe('mobile restore recovery marker', () => {
   it('round-trips a safe rollback directory', () => {
-    expect(decodeMobileRestoreRecoveryMarker(encodeMobileRestoreRecoveryMarker(rollbackDirectory)))
-      .toEqual({
-        version: MOBILE_RESTORE_RECOVERY_VERSION,
-        rollbackDirectory
-      })
+    expect(
+      decodeMobileRestoreRecoveryMarker(encodeMobileRestoreRecoveryMarker(rollbackDirectory))
+    ).toEqual({
+      version: MOBILE_RESTORE_RECOVERY_VERSION,
+      rollbackDirectory
+    })
   })
 
   it('recognizes only strict internal restore artifact directories', () => {
