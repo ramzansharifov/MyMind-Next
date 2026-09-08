@@ -8,7 +8,7 @@ on:
       - .mobile-finance-reports-trigger
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   verify:
@@ -29,14 +29,29 @@ jobs:
 
       - name: Format changed finance files
         id: format
-        continue-on-error: true
         run: >-
-          npx prettier --check
+          npx prettier --write
           apps/mobile/src/modules/finance/FinanceScreen.tsx
           apps/mobile/src/modules/finance/FinanceReportsView.tsx
           apps/mobile/src/modules/finance/finance-report-filters.ts
           apps/mobile/src/modules/finance/finance-report-filters.test.ts
           MOBILE_PARITY.md
+      - name: Commit formatting
+        run: |
+          git add \
+            apps/mobile/src/modules/finance/FinanceScreen.tsx \
+            apps/mobile/src/modules/finance/FinanceReportsView.tsx \
+            apps/mobile/src/modules/finance/finance-report-filters.ts \
+            apps/mobile/src/modules/finance/finance-report-filters.test.ts \
+            MOBILE_PARITY.md
+          if git diff --cached --quiet; then
+            echo "No formatting changes to commit."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "style: format mobile finance reports"
+            git push
+          fi
       - name: Mobile lint
         id: lint_mobile
         continue-on-error: true
