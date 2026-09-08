@@ -42,7 +42,8 @@
           "enableBackgroundRecording": false,
           "enableBackgroundPlayback": false
         }
-      ]
+      ],
+      "expo-system-ui"
     ]
   }
 }
