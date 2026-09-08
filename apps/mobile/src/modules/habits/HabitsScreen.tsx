@@ -224,12 +224,7 @@ export function HabitsScreen(): React.JSX.Element {
           )}
         />
       ) : view === 'report' ? (
-        <HabitsReportsView
-          api={api}
-          groupId={group}
-          scopeLabel={scopeLabel}
-          referenceDate={date}
-        />
+        <HabitsReportsView api={api} groupId={group} scopeLabel={scopeLabel} referenceDate={date} />
       ) : (
         <FlatList
           data={visible}

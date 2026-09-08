@@ -74,7 +74,9 @@ export function habitReportPeriod(
   }
 }
 
-export function buildHabitHeatmapWeeks<T extends { date: string }>(days: T[]): Array<Array<T | null>> {
+export function buildHabitHeatmapWeeks<T extends { date: string }>(
+  days: T[]
+): Array<Array<T | null>> {
   if (days.length === 0) return []
 
   const padded: Array<T | null> = [

@@ -4,7 +4,14 @@ import type { HabitReportDay } from '@mymind/contracts/habits'
 import * as schema from '@mymind/core/validation/habits'
 import type { MobileServices } from '../../app/services'
 import { useCollection } from '../../shared/hooks/useCollection'
-import { Button, EmptyState, ErrorState, Label, LoadingState, Row } from '../../shared/ui/primitives'
+import {
+  Button,
+  EmptyState,
+  ErrorState,
+  Label,
+  LoadingState,
+  Row
+} from '../../shared/ui/primitives'
 import { useTheme } from '../../shared/ui/theme'
 import {
   buildHabitHeatmapWeeks,
@@ -133,7 +140,9 @@ export function HabitsReportsView({
 
   if (state.loading && !state.data) return <LoadingState />
   if (!state.data) {
-    return <ErrorState message={state.error || 'Не удалось построить отчёт'} retry={state.refresh} />
+    return (
+      <ErrorState message={state.error || 'Не удалось построить отчёт'} retry={state.refresh} />
+    )
   }
 
   const { period, report } = state.data
@@ -188,10 +197,7 @@ export function HabitsReportsView({
 
       {state.error ? <ErrorState message={state.error} retry={state.refresh} /> : null}
 
-      <Row
-        title={period.label}
-        subtitle={`${scopeLabel} · ${report.dateFrom} — ${report.dateTo}`}
-      >
+      <Row title={period.label} subtitle={`${scopeLabel} · ${report.dateFrom} — ${report.dateTo}`}>
         <Button label="Обновить" onPress={state.refresh} />
       </Row>
 
@@ -241,7 +247,10 @@ export function HabitsReportsView({
                         }}
                       />
                     ) : (
-                      <View key={`empty-${weekIndex}-${dayIndex}`} style={{ width: 14, height: 14 }} />
+                      <View
+                        key={`empty-${weekIndex}-${dayIndex}`}
+                        style={{ width: 14, height: 14 }}
+                      />
                     )
                   )}
                 </View>
