@@ -8,7 +8,7 @@ on:
       - .mobile-habits-reports-trigger
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   verify:
@@ -27,31 +27,16 @@ jobs:
       - name: Rebuild SQLite for Node
         run: npm run native:node
 
-      - name: Format changed habits files
+      - name: Check formatting
         id: format
+        continue-on-error: true
         run: >-
-          npx prettier --write
+          npx prettier --check
           apps/mobile/src/modules/habits/HabitsScreen.tsx
           apps/mobile/src/modules/habits/HabitsReportsView.tsx
           apps/mobile/src/modules/habits/habit-report-periods.ts
           apps/mobile/src/modules/habits/habit-report-periods.test.ts
           MOBILE_PARITY.md
-      - name: Commit formatting
-        run: |
-          git add \
-            apps/mobile/src/modules/habits/HabitsScreen.tsx \
-            apps/mobile/src/modules/habits/HabitsReportsView.tsx \
-            apps/mobile/src/modules/habits/habit-report-periods.ts \
-            apps/mobile/src/modules/habits/habit-report-periods.test.ts \
-            MOBILE_PARITY.md
-          if git diff --cached --quiet; then
-            echo "No formatting changes to commit."
-          else
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git commit -m "style: format mobile habits reports checkpoint"
-            git push
-          fi
       - name: Mobile lint
         id: lint_mobile
         continue-on-error: true
