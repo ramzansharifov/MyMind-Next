@@ -221,6 +221,7 @@ function DiaryReportHeader({
         })}
       </View>
 
+      <DiaryMoodTrend points={activityTimeline} />
       <DiaryActivityHeatmap points={activityTimeline} />
 
       <Text style={{ color: theme.muted, fontSize: 12, fontWeight: '700' }}>Дни периода</Text>
@@ -255,6 +256,80 @@ function Metric({
       <Text style={{ color: theme.muted, fontSize: 11 }}>{label}</Text>
       <Text style={{ color: theme.text, fontSize: 19, fontWeight: '800' }}>{value}</Text>
       <Text style={{ color: theme.muted, fontSize: 10 }}>{hint}</Text>
+    </View>
+  )
+}
+
+function DiaryMoodTrend({ points }: { points: DiaryReportPoint[] }): React.JSX.Element {
+  const theme = useTheme()
+  const hasMood = points.some((point) => point.moodScore !== null)
+
+  return (
+    <View
+      style={{
+        borderWidth: 1,
+        borderColor: theme.border,
+        borderRadius: 16,
+        backgroundColor: theme.surface,
+        padding: 14,
+        gap: 10
+      }}
+    >
+      <Text style={{ color: theme.text, fontSize: 15, fontWeight: '800' }}>
+        Динамика настроения
+      </Text>
+      {!hasMood ? (
+        <Text style={{ color: theme.muted, fontSize: 12 }}>Настроение пока не отмечалось.</Text>
+      ) : (
+        <View style={{ gap: 6 }}>
+          <FlatList
+            horizontal
+            data={points}
+            keyExtractor={(point) => point.dayKey}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ alignItems: 'flex-end', gap: 5, minHeight: 116 }}
+            renderItem={({ item }) => {
+              const score = item.moodScore
+              const meta = diaryMoodMeta(item.mood)
+              return (
+                <View
+                  accessibilityLabel={
+                    score === null
+                      ? `${item.dayKey}: настроение не отмечено`
+                      : `${item.dayKey}: ${meta?.label ?? score}, ${score} из 5`
+                  }
+                  style={{ width: 16, height: 112, justifyContent: 'flex-end', alignItems: 'center' }}
+                >
+                  {score === null ? (
+                    <View
+                      style={{
+                        width: 3,
+                        height: 3,
+                        borderRadius: 2,
+                        backgroundColor: theme.border
+                      }}
+                    />
+                  ) : (
+                    <View
+                      style={{
+                        width: 10,
+                        height: Math.max(12, score * 19),
+                        borderRadius: 5,
+                        backgroundColor: theme.accent,
+                        opacity: 0.32 + score * 0.12
+                      }}
+                    />
+                  )}
+                </View>
+              )
+            }}
+          />
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            <Text style={{ color: theme.muted, fontSize: 10 }}>😞 Плохое</Text>
+            <Text style={{ color: theme.muted, fontSize: 10 }}>😄 Отличное</Text>
+          </View>
+        </View>
+      )}
     </View>
   )
 }
