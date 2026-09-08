@@ -110,12 +110,11 @@ export function Settings({
             {backupError ? <ErrorState message={backupError} /> : null}
             {backupMessage ? <Label muted>{backupMessage}</Label> : null}
           </View>
-          <ReminderSettings />
+          <ReminderSettings disabled={busy !== null} />
         </View>
       }
       data={[{ id: 'theme' }, { id: 'accent' }]}
-      keyExtractor={(item) => item.id
-      }
+      keyExtractor={(item) => item.id}
       renderItem={({ item }) => (
         <View style={{ gap: 12, marginBottom: 28 }}>
           <Label title>{item.id === 'theme' ? 'Оформление' : 'Акцентный цвет'}</Label>
@@ -126,6 +125,7 @@ export function Settings({
                     key={theme}
                     label={{ system: 'Системное', light: 'Светлое', dark: 'Тёмное' }[theme]}
                     selected={appearance.theme === theme}
+                    disabled={busy !== null}
                     onPress={() => save({ ...appearance, theme })}
                   />
                 ))
@@ -134,6 +134,7 @@ export function Settings({
                     key={accent}
                     label={names[accent]}
                     selected={appearance.accent === accent}
+                    disabled={busy !== null}
                     onPress={() => save({ ...appearance, accent })}
                   />
                 ))}
