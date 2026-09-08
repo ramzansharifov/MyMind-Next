@@ -54,7 +54,7 @@ export function habitReportPeriod(
     return {
       dateFrom: addDays(to, -(days - 1)),
       dateTo: to,
-      label: `${days} ${days === 7 ? 'дней' : days === 30 ? 'дней' : days === 90 ? 'дней' : 'дней'}`
+      label: `${days} дней`
     }
   }
 
