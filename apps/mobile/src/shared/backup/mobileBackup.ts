@@ -27,6 +27,7 @@ import {
   rollbackDurableMobileRestore,
   type MobileDurableFileRoot
 } from './restoreRecovery'
+import { MOBILE_RESTORE_STAGE_PREFIX } from './restoreRecoveryState'
 
 const CHUNK_SIZE = 1024 * 1024
 
@@ -61,6 +62,14 @@ function readExactly(handle: FileHandle, length: number): Uint8Array {
   const bytes = handle.readBytes(length)
   if (bytes.length !== length) throw new Error('Файл backup обрывается раньше ожидаемого')
   return bytes
+}
+
+function deleteDirectoryBestEffort(directory: Directory): void {
+  try {
+    if (directory.exists) directory.delete()
+  } catch {
+    // Internal restore staging is disposable and will also be cleaned on the next app launch.
+  }
 }
 
 function hashFile(file: File): string {
@@ -325,7 +334,7 @@ export async function restoreMobileBackup(db: SQLiteDatabase): Promise<MobileRes
     throw new Error('Файл backup превышает допустимый размер')
   }
 
-  const stage = new Directory(Paths.document, `.mymind-restore-stage-${randomUUID()}`)
+  const stage = new Directory(Paths.document, `${MOBILE_RESTORE_STAGE_PREFIX}${randomUUID()}`)
   let restoredDatabase: SQLiteDatabase | null = null
   let databaseBytes: Uint8Array | null = null
   let manifest: MobileBackupManifestV1 | null = null
@@ -348,12 +357,15 @@ export async function restoreMobileBackup(db: SQLiteDatabase): Promise<MobileRes
       const digest = extractFileEntry(input, entry, stage)
       if (digest !== entry.sha256) throw new Error(`Файл «${entry.path}» повреждён`)
     }
+  } catch (reason) {
+    deleteDirectoryBestEffort(stage)
+    throw reason
   } finally {
     input.close()
   }
 
   if (!manifest || !databaseBytes) {
-    if (stage.exists) stage.delete()
+    deleteDirectoryBestEffort(stage)
     throw new Error('Backup не содержит базы данных')
   }
 
@@ -389,6 +401,6 @@ export async function restoreMobileBackup(db: SQLiteDatabase): Promise<MobileRes
     }
   } finally {
     if (restoredDatabase) await restoredDatabase.closeAsync().catch(() => undefined)
-    if (stage.exists) stage.delete()
+    deleteDirectoryBestEffort(stage)
   }
 }
