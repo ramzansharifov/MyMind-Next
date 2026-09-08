@@ -12,7 +12,14 @@ import { useServices } from '../../app/context'
 import { useCollection } from '../../shared/hooks/useCollection'
 import { FormSheet } from '../../shared/ui/FormSheet'
 import type { FormSpec } from '../../shared/ui/form-model'
-import { Button, EmptyState, ErrorState, Label, LoadingState, Row } from '../../shared/ui/primitives'
+import {
+  Button,
+  EmptyState,
+  ErrorState,
+  Label,
+  LoadingState,
+  Row
+} from '../../shared/ui/primitives'
 import {
   accountForm,
   baseCurrencyForm,
@@ -25,14 +32,7 @@ import {
 import { FinanceReportsView } from './FinanceReportsView'
 
 type Tab =
-  | 'home'
-  | 'transactions'
-  | 'accounts'
-  | 'tags'
-  | 'limits'
-  | 'templates'
-  | 'reports'
-  | 'rates'
+  'home' | 'transactions' | 'accounts' | 'tags' | 'limits' | 'templates' | 'reports' | 'rates'
 
 function operationTitle(transaction: FinanceTransaction): string {
   if (transaction.type === 'transfer') {
@@ -110,7 +110,9 @@ export function FinanceScreen(): React.JSX.Element {
 
   if (state.loading) return <LoadingState />
   if (!data) {
-    return <ErrorState message={state.error || 'Не удалось загрузить финансы'} retry={state.refresh} />
+    return (
+      <ErrorState message={state.error || 'Не удалось загрузить финансы'} retry={state.refresh} />
+    )
   }
 
   const tabs: Array<{ key: Tab; label: string }> = [

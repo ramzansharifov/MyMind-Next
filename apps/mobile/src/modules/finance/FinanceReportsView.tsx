@@ -4,7 +4,14 @@ import type { FinanceAccountSummary, FinanceTagSummary } from '@mymind/contracts
 import { formatMoneyMinor } from '@mymind/core/finance-money'
 import type { MobileServices } from '../../app/services'
 import { useCollection } from '../../shared/hooks/useCollection'
-import { Button, EmptyState, ErrorState, Label, LoadingState, Row } from '../../shared/ui/primitives'
+import {
+  Button,
+  EmptyState,
+  ErrorState,
+  Label,
+  LoadingState,
+  Row
+} from '../../shared/ui/primitives'
 import { useTheme } from '../../shared/ui/theme'
 import {
   availableFinanceReportTags,
@@ -57,7 +64,12 @@ function percentChange(value: number | null): string {
   return `${rounded > 0 ? '+' : ''}${rounded}%`
 }
 
-export function FinanceReportsView({ api, accounts, tags, baseCurrencyCode }: Props): React.JSX.Element {
+export function FinanceReportsView({
+  api,
+  accounts,
+  tags,
+  baseCurrencyCode
+}: Props): React.JSX.Element {
   const theme = useTheme()
   const initialCustom = useMemo(() => defaultFinanceCustomRange(), [])
   const [reportRange, setReportRange] = useState<MobileFinanceReportRange>('30d')
@@ -139,7 +151,9 @@ export function FinanceReportsView({ api, accounts, tags, baseCurrencyCode }: Pr
 
   if (state.loading && !state.data) return <LoadingState />
   if (!state.data) {
-    return <ErrorState message={state.error || 'Не удалось построить отчёт'} retry={state.refresh} />
+    return (
+      <ErrorState message={state.error || 'Не удалось построить отчёт'} retry={state.refresh} />
+    )
   }
 
   const { report, period } = state.data
@@ -155,7 +169,10 @@ export function FinanceReportsView({ api, accounts, tags, baseCurrencyCode }: Pr
   } as const
 
   return (
-    <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: 12, paddingBottom: 40 }}>
+    <ScrollView
+      keyboardShouldPersistTaps="handled"
+      contentContainerStyle={{ gap: 12, paddingBottom: 40 }}
+    >
       <Label>Период</Label>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         {reportRangeOptions.map((option) => (
@@ -212,8 +229,16 @@ export function FinanceReportsView({ api, accounts, tags, baseCurrencyCode }: Pr
       </View>
 
       <Label>Счёт</Label>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-        <Button label="Все счета" selected={accountId === 'all'} onPress={() => setAccountId('all')} />
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ gap: 8 }}
+      >
+        <Button
+          label="Все счета"
+          selected={accountId === 'all'}
+          onPress={() => setAccountId('all')}
+        />
         {accounts.map((account) => (
           <Button
             key={account.id}
@@ -228,8 +253,16 @@ export function FinanceReportsView({ api, accounts, tags, baseCurrencyCode }: Pr
       {reportType === 'transfer' ? (
         <Label muted>Для переводов тег не применяется.</Label>
       ) : (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-          <Button label="Все теги" selected={validTagId === 'all'} onPress={() => setTagId('all')} />
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 8 }}
+        >
+          <Button
+            label="Все теги"
+            selected={validTagId === 'all'}
+            onPress={() => setTagId('all')}
+          />
           {availableTags.map((tag) => (
             <Button
               key={tag.id}
@@ -255,7 +288,10 @@ export function FinanceReportsView({ api, accounts, tags, baseCurrencyCode }: Pr
       {hasSecondaryFilters ? <Button label="Сбросить фильтры" onPress={resetFilters} /> : null}
       {state.error ? <ErrorState message={state.error} retry={state.refresh} /> : null}
 
-      <Row title={period.label} subtitle={`${report.operationCount} операций · ${report.currencyCode}`} />
+      <Row
+        title={period.label}
+        subtitle={`${report.operationCount} операций · ${report.currencyCode}`}
+      />
       <Row
         title={`Баланс: ${optionalMoney(report.balanceEndMinor, report.currencyCode)}`}
         subtitle={`На начало: ${optionalMoney(report.balanceStartMinor, report.currencyCode)} · изменение: ${optionalMoney(report.balanceChangeMinor, report.currencyCode)}`}
@@ -281,7 +317,9 @@ export function FinanceReportsView({ api, accounts, tags, baseCurrencyCode }: Pr
         subtitle={`К прошлому периоду: доход ${percentChange(report.incomeChangePercent)} · расход ${percentChange(report.expenseChangePercent)} · итог ${percentChange(report.netChangePercent)}`}
       />
       {report.missingRateCurrencies.length ? (
-        <ErrorState message={`Не хватает текущих курсов: ${report.missingRateCurrencies.join(', ')}`} />
+        <ErrorState
+          message={`Не хватает текущих курсов: ${report.missingRateCurrencies.join(', ')}`}
+        />
       ) : null}
       {report.comparisonMissingRateCurrencies.length ? (
         <ErrorState
@@ -291,39 +329,45 @@ export function FinanceReportsView({ api, accounts, tags, baseCurrencyCode }: Pr
 
       <Label>Динамика</Label>
       {report.timeline.length ? (
-        report.timeline.slice(-12).map((point) => (
-          <Row
-            key={point.key}
-            title={`${point.label} · ${formatMoneyMinor(point.netMinor, report.currencyCode)}`}
-            subtitle={`Доход ${formatMoneyMinor(point.incomeMinor, report.currencyCode)} · расход ${formatMoneyMinor(point.expenseMinor, report.currencyCode)} · баланс ${optionalMoney(point.balanceMinor, report.currencyCode)}`}
-          />
-        ))
+        report.timeline
+          .slice(-12)
+          .map((point) => (
+            <Row
+              key={point.key}
+              title={`${point.label} · ${formatMoneyMinor(point.netMinor, report.currencyCode)}`}
+              subtitle={`Доход ${formatMoneyMinor(point.incomeMinor, report.currencyCode)} · расход ${formatMoneyMinor(point.expenseMinor, report.currencyCode)} · баланс ${optionalMoney(point.balanceMinor, report.currencyCode)}`}
+            />
+          ))
       ) : (
         <EmptyState text="Нет данных для динамики." />
       )}
 
       <Label>Расходы по тегам</Label>
       {report.expenseByTag.length ? (
-        report.expenseByTag.slice(0, 10).map((item) => (
-          <Row
-            key={`${item.tagId ?? 'none'}:${item.label}:expense`}
-            title={item.label}
-            subtitle={`${formatMoneyMinor(item.amountMinor, report.currencyCode)} · ${Math.round(item.sharePercent)}%`}
-          />
-        ))
+        report.expenseByTag
+          .slice(0, 10)
+          .map((item) => (
+            <Row
+              key={`${item.tagId ?? 'none'}:${item.label}:expense`}
+              title={item.label}
+              subtitle={`${formatMoneyMinor(item.amountMinor, report.currencyCode)} · ${Math.round(item.sharePercent)}%`}
+            />
+          ))
       ) : (
         <EmptyState text="Нет расходов за выбранный период." />
       )}
 
       <Label>Доходы по тегам</Label>
       {report.incomeByTag.length ? (
-        report.incomeByTag.slice(0, 10).map((item) => (
-          <Row
-            key={`${item.tagId ?? 'none'}:${item.label}:income`}
-            title={item.label}
-            subtitle={`${formatMoneyMinor(item.amountMinor, report.currencyCode)} · ${Math.round(item.sharePercent)}%`}
-          />
-        ))
+        report.incomeByTag
+          .slice(0, 10)
+          .map((item) => (
+            <Row
+              key={`${item.tagId ?? 'none'}:${item.label}:income`}
+              title={item.label}
+              subtitle={`${formatMoneyMinor(item.amountMinor, report.currencyCode)} · ${Math.round(item.sharePercent)}%`}
+            />
+          ))
       ) : (
         <EmptyState text="Нет доходов за выбранный период." />
       )}
@@ -343,13 +387,15 @@ export function FinanceReportsView({ api, accounts, tags, baseCurrencyCode }: Pr
 
       <Label>Переводы</Label>
       {report.transferFlows.length ? (
-        report.transferFlows.slice(0, 10).map((flow) => (
-          <Row
-            key={`${flow.sourceAccountId}:${flow.destinationAccountId}:${flow.sourceCurrencyCode}:${flow.destinationCurrencyCode}`}
-            title={`${flow.sourceAccountName} → ${flow.destinationAccountName}`}
-            subtitle={`${flow.count} переводов · ${formatMoneyMinor(flow.sourceAmountMinor, flow.sourceCurrencyCode)} → ${formatMoneyMinor(flow.destinationAmountMinor, flow.destinationCurrencyCode)}${flow.convertedAmountMinor === null ? '' : ` · ${formatMoneyMinor(flow.convertedAmountMinor, report.currencyCode)}`}`}
-          />
-        ))
+        report.transferFlows
+          .slice(0, 10)
+          .map((flow) => (
+            <Row
+              key={`${flow.sourceAccountId}:${flow.destinationAccountId}:${flow.sourceCurrencyCode}:${flow.destinationCurrencyCode}`}
+              title={`${flow.sourceAccountName} → ${flow.destinationAccountName}`}
+              subtitle={`${flow.count} переводов · ${formatMoneyMinor(flow.sourceAmountMinor, flow.sourceCurrencyCode)} → ${formatMoneyMinor(flow.destinationAmountMinor, flow.destinationCurrencyCode)}${flow.convertedAmountMinor === null ? '' : ` · ${formatMoneyMinor(flow.convertedAmountMinor, report.currencyCode)}`}`}
+            />
+          ))
       ) : (
         <EmptyState text="Переводов за период нет." />
       )}

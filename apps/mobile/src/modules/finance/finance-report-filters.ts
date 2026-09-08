@@ -5,13 +5,7 @@ import type {
 } from '@mymind/contracts/finance'
 
 export type MobileFinanceReportRange =
-  | '7d'
-  | '30d'
-  | '90d'
-  | 'month'
-  | 'previous-month'
-  | 'year'
-  | 'custom'
+  '7d' | '30d' | '90d' | 'month' | 'previous-month' | 'year' | 'custom'
 export type MobileFinanceReportType = 'all' | 'income' | 'expense' | 'transfer'
 export type MobileFinanceReportSource = 'all' | 'template' | 'manual'
 
@@ -58,7 +52,15 @@ export function parseFinanceDateInput(value: string, endOfDay = false): number {
   const year = Number(match[1])
   const month = Number(match[2])
   const day = Number(match[3])
-  const date = new Date(year, month - 1, day, endOfDay ? 23 : 0, endOfDay ? 59 : 0, endOfDay ? 59 : 0, endOfDay ? 999 : 0)
+  const date = new Date(
+    year,
+    month - 1,
+    day,
+    endOfDay ? 23 : 0,
+    endOfDay ? 59 : 0,
+    endOfDay ? 59 : 0,
+    endOfDay ? 999 : 0
+  )
   if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
     throw new Error('Укажите существующую дату')
   }
