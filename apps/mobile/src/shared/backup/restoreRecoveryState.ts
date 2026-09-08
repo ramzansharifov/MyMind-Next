@@ -1,8 +1,11 @@
 export const MOBILE_RESTORE_RECOVERY_VERSION = 1 as const
 export const MOBILE_RESTORE_PENDING_FILE = '.mymind-restore-pending.json'
 export const MOBILE_RESTORE_ROLLBACK_PREFIX = '.mymind-restore-rollback-'
+export const MOBILE_RESTORE_STAGE_PREFIX = '.mymind-restore-stage-'
 
-const ROLLBACK_DIRECTORY_PATTERN = /^\.mymind-restore-rollback-[0-9a-f-]{36}$/i
+const UUID_TEXT = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+const ROLLBACK_DIRECTORY_PATTERN = new RegExp(`^\\.mymind-restore-rollback-${UUID_TEXT}$`, 'i')
+const STAGE_DIRECTORY_PATTERN = new RegExp(`^\\.mymind-restore-stage-${UUID_TEXT}$`, 'i')
 
 export interface MobileRestoreRecoveryMarker {
   version: typeof MOBILE_RESTORE_RECOVERY_VERSION
@@ -13,6 +16,10 @@ export function assertSafeRollbackDirectoryName(value: string): void {
   if (!ROLLBACK_DIRECTORY_PATTERN.test(value)) {
     throw new Error('Некорректная точка отката MyMind')
   }
+}
+
+export function isMobileRestoreArtifactDirectoryName(value: string): boolean {
+  return ROLLBACK_DIRECTORY_PATTERN.test(value) || STAGE_DIRECTORY_PATTERN.test(value)
 }
 
 export function encodeMobileRestoreRecoveryMarker(rollbackDirectory: string): string {
