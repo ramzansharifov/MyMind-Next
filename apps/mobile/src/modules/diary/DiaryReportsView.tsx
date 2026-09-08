@@ -131,7 +131,9 @@ function DiaryReportHeader({
     [report.fromDay, report.timeline, report.toDay]
   )
   const regularity =
-    activityTimeline.length > 0 ? Math.round((report.activeDays / activityTimeline.length) * 100) : 0
+    activityTimeline.length > 0
+      ? Math.round((report.activeDays / activityTimeline.length) * 100)
+      : 0
 
   return (
     <View style={{ gap: 14, marginBottom: 16 }}>
@@ -153,7 +155,11 @@ function DiaryReportHeader({
       ) : null}
 
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-        <Metric label="Страниц" value={String(report.pageCount)} hint={`${report.activeDays} активных`} />
+        <Metric
+          label="Страниц"
+          value={String(report.pageCount)}
+          hint={`${report.activeDays} активных`}
+        />
         <Metric
           label="Записей"
           value={String(report.entryCount)}
@@ -161,7 +167,9 @@ function DiaryReportHeader({
         />
         <Metric
           label="Настроение"
-          value={report.averageMoodScore == null ? '—' : `${report.averageMoodScore.toFixed(1)} / 5`}
+          value={
+            report.averageMoodScore == null ? '—' : `${report.averageMoodScore.toFixed(1)} / 5`
+          }
           hint={`${report.moodDays} дней с оценкой`}
         />
         <Metric label="Регулярность" value={`${regularity}%`} hint="доля дней с записями" />
@@ -255,7 +263,8 @@ function DiaryActivityHeatmap({ points }: { points: DiaryReportPoint[] }): React
   const theme = useTheme()
   const weeks = useMemo(() => {
     const result: DiaryReportPoint[][] = []
-    for (let index = 0; index < points.length; index += 7) result.push(points.slice(index, index + 7))
+    for (let index = 0; index < points.length; index += 7)
+      result.push(points.slice(index, index + 7))
     return result
   }, [points])
 
@@ -270,9 +279,13 @@ function DiaryActivityHeatmap({ points }: { points: DiaryReportPoint[] }): React
         gap: 10
       }}
     >
-      <Text style={{ color: theme.text, fontSize: 15, fontWeight: '800' }}>Календарь активности</Text>
+      <Text style={{ color: theme.text, fontSize: 15, fontWeight: '800' }}>
+        Календарь активности
+      </Text>
       {weeks.length === 0 ? (
-        <Text style={{ color: theme.muted, fontSize: 12 }}>За выбранный период пока нет страниц.</Text>
+        <Text style={{ color: theme.muted, fontSize: 12 }}>
+          За выбранный период пока нет страниц.
+        </Text>
       ) : (
         <FlatList
           horizontal

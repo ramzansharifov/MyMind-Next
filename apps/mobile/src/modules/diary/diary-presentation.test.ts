@@ -106,11 +106,7 @@ describe('mobile diary presentation', () => {
         '2026-09-01',
         '2026-09-03'
       )
-    ).toEqual([
-      point('2026-09-01', 2),
-      point('2026-09-02', 0),
-      point('2026-09-03', 1)
-    ])
+    ).toEqual([point('2026-09-01', 2), point('2026-09-02', 0), point('2026-09-03', 1)])
   })
 
   it('maps moods and persisted appearance choices to native presentation values', () => {

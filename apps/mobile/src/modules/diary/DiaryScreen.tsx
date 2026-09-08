@@ -423,9 +423,9 @@ function DiaryDetail({ diary, back }: { diary: DiarySummary; back(): void }): Re
             onDelete={(entry) =>
               state.confirmDelete('Удалить запись?', () => {
                 api.deleteDiaryEntry({ id: entry.id })
-                const latest = api.listDiaryOverview().diaries.find(
-                  (item) => item.id === currentDiary.id
-                )
+                const latest = api
+                  .listDiaryOverview()
+                  .diaries.find((item) => item.id === currentDiary.id)
                 if (latest) setCurrentDiary(latest)
               })
             }
@@ -674,7 +674,9 @@ function DiaryPaperDay({
         contentContainerStyle={{ paddingBottom: 24 }}
         ListHeaderComponent={
           <View style={{ marginBottom: 14, gap: 5 }}>
-            <Text style={{ color: palette.paperText, fontSize: 20, fontWeight: '800' }}>{date}</Text>
+            <Text style={{ color: palette.paperText, fontSize: 20, fontWeight: '800' }}>
+              {date}
+            </Text>
             {moodLabel ? (
               <Text style={{ color: palette.paperMuted, fontSize: 13 }}>{moodLabel}</Text>
             ) : null}
