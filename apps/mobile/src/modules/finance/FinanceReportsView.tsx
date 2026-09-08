@@ -13,6 +13,7 @@ import {
   Row
 } from '../../shared/ui/primitives'
 import { useTheme } from '../../shared/ui/theme'
+import { FinanceReportCharts } from './FinanceReportCharts'
 import {
   availableFinanceReportTags,
   buildFinanceReportFilters,
@@ -326,6 +327,16 @@ export function FinanceReportsView({
           message={`Для сравнения не хватает курсов: ${report.comparisonMissingRateCurrencies.join(', ')}`}
         />
       ) : null}
+
+      <Label>Графики</Label>
+      <FinanceReportCharts
+        reportType={reportType}
+        currencyCode={report.currencyCode}
+        timeline={report.timeline}
+        expenseByTag={report.expenseByTag}
+        incomeByTag={report.incomeByTag}
+        transferFlows={report.transferFlows}
+      />
 
       <Label>Динамика</Label>
       {report.timeline.length ? (
