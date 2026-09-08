@@ -36,6 +36,7 @@ jobs:
           apps/mobile/src/app/Settings.tsx
           apps/mobile/src/app/ReminderSettings.tsx
           apps/mobile/src/shared/storage/sqlite.ts
+          apps/mobile/src/shared/storage/mobileDatabase.ts
           apps/mobile/src/shared/backup/archive.ts
           apps/mobile/src/shared/backup/archive.test.ts
           apps/mobile/src/shared/backup/mobileBackup.ts
