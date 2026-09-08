@@ -43,13 +43,23 @@ function assertInteger(value: unknown, label: string, min = 0): asserts value is
 }
 
 export function assertSafeBackupPath(path: string): void {
-  if (!path || path.length > 1024 || path.includes('\\') || path.includes('\0') || path.startsWith('/'))
+  if (
+    !path ||
+    path.length > 1024 ||
+    path.includes('\\') ||
+    path.includes('\0') ||
+    path.startsWith('/')
+  )
     throw new Error('Некорректный путь внутри backup')
   const segments = path.split('/')
   if (
     segments.some(
       (segment) =>
-        !segment || segment === '.' || segment === '..' || segment.length > 255 || segment.includes('\0')
+        !segment ||
+        segment === '.' ||
+        segment === '..' ||
+        segment.length > 255 ||
+        segment.includes('\0')
     )
   )
     throw new Error('Некорректный путь внутри backup')
@@ -154,11 +164,10 @@ export function decodeMobileBackupHeader(header: Uint8Array): number {
   if (header.length !== HEADER_SIZE) throw new Error('Файл backup повреждён')
   const magic = new TextDecoder().decode(header.subarray(0, 8))
   if (magic !== MAGIC_TEXT) throw new Error('Это не backup MyMind')
-  const manifestBytes = new DataView(
-    header.buffer,
-    header.byteOffset,
-    header.byteLength
-  ).getUint32(8, false)
+  const manifestBytes = new DataView(header.buffer, header.byteOffset, header.byteLength).getUint32(
+    8,
+    false
+  )
   if (manifestBytes <= 0 || manifestBytes > MOBILE_BACKUP_MAX_MANIFEST_BYTES)
     throw new Error('Некорректный размер манифеста backup')
   return manifestBytes
