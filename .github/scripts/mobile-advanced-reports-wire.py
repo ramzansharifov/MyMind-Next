@@ -32,13 +32,15 @@ def wire_nutrition() -> None:
     )
     text = text.replace(days_ago, '', 1)
 
-    text = replace_between(
-        text,
-        '  let report: ReturnType<typeof api.getReport> | null = null',
-        '  const tabs: Array<{ key: Tab; label: string }> =',
-        '',
-        'Nutrition inline report',
-    )
+    old_report_anchor = '  let report: ReturnType<typeof api.getReport> | null = null'
+    if old_report_anchor in text:
+        text = replace_between(
+            text,
+            old_report_anchor,
+            '  const tabs: Array<{ key: Tab; label: string }> =',
+            '',
+            'Nutrition inline report',
+        )
 
     replacement = (
         "  if (tab === 'report') {\n"
@@ -94,13 +96,15 @@ def wire_workouts() -> None:
     )
     text = text.replace(days_ago, '', 1)
 
-    text = replace_between(
-        text,
-        '  let reportResult: {',
-        '  const tabs: Array<{ key: Tab; label: string }> =',
-        '',
-        'Workout inline report',
-    )
+    old_report_anchor = '  let reportResult: {'
+    if old_report_anchor in text:
+        text = replace_between(
+            text,
+            old_report_anchor,
+            '  const tabs: Array<{ key: Tab; label: string }> =',
+            '',
+            'Workout inline report',
+        )
 
     replacement = (
         "  if (tab === 'reports') {\n"
