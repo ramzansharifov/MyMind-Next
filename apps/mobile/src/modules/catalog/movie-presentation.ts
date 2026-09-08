@@ -1,4 +1,4 @@
-import type { MovieRecord, MovieType } from '@mymind/contracts/movies'
+import type { MovieRecord, MovieType, UpdateMovieInput } from '@mymind/contracts/movies'
 
 export interface MovieLibraryStats {
   total: number
@@ -31,6 +31,29 @@ export function formatMovieRuntime(minutes: number | null): string | null {
   if (hours === 0) return `${remainder} мин`
   if (remainder === 0) return `${hours} ч`
   return `${hours} ч ${remainder} мин`
+}
+
+export function movieRecordToUpdateInput(movie: MovieRecord): UpdateMovieInput {
+  return {
+    id: movie.id,
+    title: movie.title,
+    originalTitle: movie.originalTitle,
+    type: movie.type,
+    year: movie.year,
+    posterUrl: movie.posterUrl,
+    director: movie.director,
+    runtimeMinutes: movie.runtimeMinutes,
+    seasonCount: movie.seasonCount,
+    episodesPerSeason: movie.episodesPerSeason,
+    episodeRuntimeMinutes: movie.episodeRuntimeMinutes,
+    genres: movie.genres,
+    actors: movie.actors,
+    description: movie.description,
+    status: movie.status,
+    favorite: movie.favorite,
+    rating: movie.rating,
+    comments: movie.comments
+  }
 }
 
 export function movieLibraryStats(movies: readonly MovieRecord[]): MovieLibraryStats {
