@@ -31,7 +31,10 @@ export function financeChartBarSize(
   const safeDomain = Math.max(1, Math.abs(domain))
   const safeMaxSize = Math.max(0, maxSize)
   if (safeMaxSize === 0) return 0
-  return Math.min(safeMaxSize, Math.max(Math.min(minVisibleSize, safeMaxSize), (amount / safeDomain) * safeMaxSize))
+  return Math.min(
+    safeMaxSize,
+    Math.max(Math.min(minVisibleSize, safeMaxSize), (amount / safeDomain) * safeMaxSize)
+  )
 }
 
 export function financeBreakdownWidth(sharePercent: number): `${number}%` {

@@ -116,13 +116,21 @@ function CashFlowChart({
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ alignItems: 'flex-end', gap: 8, minHeight: 142, paddingTop: 4 }}
+            contentContainerStyle={{
+              alignItems: 'flex-end',
+              gap: 8,
+              minHeight: 142,
+              paddingTop: 4
+            }}
           >
             {points.map((point) => {
               const incomeHeight = financeChartBarSize(point.incomeMinor, domain, 94)
               const expenseHeight = financeChartBarSize(point.expenseMinor, domain, 94)
               return (
-                <View key={`cash-flow:${point.key}`} style={{ width: 58, alignItems: 'center', gap: 5 }}>
+                <View
+                  key={`cash-flow:${point.key}`}
+                  style={{ width: 58, alignItems: 'center', gap: 5 }}
+                >
                   <View
                     accessibilityLabel={`${point.label}: доход ${formatMoneyMinor(point.incomeMinor, currencyCode)}, расход ${formatMoneyMinor(point.expenseMinor, currencyCode)}`}
                     style={{ height: 100, flexDirection: 'row', alignItems: 'flex-end', gap: 4 }}
@@ -189,7 +197,10 @@ function BalanceChart({
             const balance = point.balanceMinor ?? 0
             const size = financeChartBarSize(balance, domain, halfHeight)
             return (
-              <View key={`balance:${point.key}`} style={{ width: 58, alignItems: 'center', gap: 5 }}>
+              <View
+                key={`balance:${point.key}`}
+                style={{ width: 58, alignItems: 'center', gap: 5 }}
+              >
                 <View
                   accessibilityLabel={`${point.label}: баланс ${formatMoneyMinor(balance, currencyCode)}`}
                   style={{ width: 34, height: halfHeight * 2 + 2, position: 'relative' }}
@@ -279,12 +290,18 @@ function BreakdownChart({
                   {item.label}
                 </Text>
                 <Text style={{ color: theme.muted, fontSize: 11 }}>
-                  {formatMoneyMinor(item.amountMinor, currencyCode)} · {Math.round(item.sharePercent)}%
+                  {formatMoneyMinor(item.amountMinor, currencyCode)} ·{' '}
+                  {Math.round(item.sharePercent)}%
                 </Text>
               </View>
               <View
                 accessibilityLabel={`${item.label}: ${formatMoneyMinor(item.amountMinor, currencyCode)}, ${Math.round(item.sharePercent)}%`}
-                style={{ height: 9, borderRadius: 5, overflow: 'hidden', backgroundColor: theme.raised }}
+                style={{
+                  height: 9,
+                  borderRadius: 5,
+                  overflow: 'hidden',
+                  backgroundColor: theme.raised
+                }}
               >
                 <View
                   style={{
@@ -345,7 +362,12 @@ function TransferChart({
                 </View>
                 <View
                   accessibilityLabel={`${flow.sourceAccountName} в ${flow.destinationAccountName}: ${flow.count} переводов, ${formatMoneyMinor(converted, currencyCode)}`}
-                  style={{ height: 9, borderRadius: 5, overflow: 'hidden', backgroundColor: theme.raised }}
+                  style={{
+                    height: 9,
+                    borderRadius: 5,
+                    overflow: 'hidden',
+                    backgroundColor: theme.raised
+                  }}
                 >
                   <View
                     style={{
