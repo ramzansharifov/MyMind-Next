@@ -8,10 +8,6 @@ import { mobileSchemaV6 } from '@mymind/persistence/mobile-schema-v6'
 import { mobileSchemaV7 } from '@mymind/persistence/mobile-schema-v7'
 import { mobileSchemaV8 } from '@mymind/persistence/mobile-schema-v8'
 import { openDatabaseAsync, type SQLiteDatabase, type SQLiteBindValue } from 'expo-sqlite'
-import {
-  cleanupStaleMobileRestoreArtifacts,
-  recoverInterruptedMobileRestore
-} from '../backup/restoreRecovery'
 
 function bindings(parameters: unknown[]): SQLiteBindValue[] {
   return parameters.map((value) => {
@@ -67,67 +63,69 @@ async function applyMigration(
   })
 }
 
+export async function initializeMobileDatabase(db: SQLiteDatabase): Promise<SQLiteDatabase> {
+  await db.execAsync(
+    'PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;'
+  )
+  const version = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version')
+  let currentVersion = version?.user_version ?? 0
+
+  if (currentVersion > 8)
+    throw new Error('Данные созданы новой версией MyMind. Обновите приложение.')
+
+  if (currentVersion === 0) {
+    await db.withExclusiveTransactionAsync(async (tx) => {
+      for (const sql of mobileSchemaV1) await tx.execAsync(sql)
+      await tx.execAsync(
+        'CREATE TABLE mobile_preferences (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL); PRAGMA user_version = 1;'
+      )
+    })
+    currentVersion = 1
+  }
+
+  if (currentVersion === 1) {
+    await applyMigration(db, mobileSchemaV2, 2)
+    currentVersion = 2
+  }
+
+  if (currentVersion === 2) {
+    await applyMigration(db, mobileSchemaV3, 3)
+    currentVersion = 3
+  }
+
+  if (currentVersion === 3) {
+    await applyMigration(db, mobileSchemaV4, 4)
+    currentVersion = 4
+  }
+
+  if (currentVersion === 4) {
+    await applyMigration(db, mobileSchemaV5, 5)
+    currentVersion = 5
+  }
+
+  if (currentVersion === 5) {
+    await applyMigration(db, mobileSchemaV6, 6)
+    currentVersion = 6
+  }
+
+  if (currentVersion === 6) {
+    await applyMigration(db, mobileSchemaV7, 7)
+    currentVersion = 7
+  }
+
+  if (currentVersion === 7) {
+    await applyMigration(db, mobileSchemaV8, 8)
+    currentVersion = 8
+  }
+
+  if (currentVersion !== 8) throw new Error('Не удалось обновить локальную базу MyMind')
+  return db
+}
+
 export async function openMobileDatabase(): Promise<SQLiteDatabase> {
   const db = await openDatabaseAsync('mymind.sqlite')
   try {
-    await recoverInterruptedMobileRestore(db)
-    cleanupStaleMobileRestoreArtifacts()
-    await db.execAsync(
-      'PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;'
-    )
-    const version = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version')
-    let currentVersion = version?.user_version ?? 0
-
-    if (currentVersion > 8)
-      throw new Error('Данные созданы новой версией MyMind. Обновите приложение.')
-
-    if (currentVersion === 0) {
-      await db.withExclusiveTransactionAsync(async (tx) => {
-        for (const sql of mobileSchemaV1) await tx.execAsync(sql)
-        await tx.execAsync(
-          'CREATE TABLE mobile_preferences (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL); PRAGMA user_version = 1;'
-        )
-      })
-      currentVersion = 1
-    }
-
-    if (currentVersion === 1) {
-      await applyMigration(db, mobileSchemaV2, 2)
-      currentVersion = 2
-    }
-
-    if (currentVersion === 2) {
-      await applyMigration(db, mobileSchemaV3, 3)
-      currentVersion = 3
-    }
-
-    if (currentVersion === 3) {
-      await applyMigration(db, mobileSchemaV4, 4)
-      currentVersion = 4
-    }
-
-    if (currentVersion === 4) {
-      await applyMigration(db, mobileSchemaV5, 5)
-      currentVersion = 5
-    }
-
-    if (currentVersion === 5) {
-      await applyMigration(db, mobileSchemaV6, 6)
-      currentVersion = 6
-    }
-
-    if (currentVersion === 6) {
-      await applyMigration(db, mobileSchemaV7, 7)
-      currentVersion = 7
-    }
-
-    if (currentVersion === 7) {
-      await applyMigration(db, mobileSchemaV8, 8)
-      currentVersion = 8
-    }
-
-    if (currentVersion !== 8) throw new Error('Не удалось обновить локальную базу MyMind')
-    return db
+    return await initializeMobileDatabase(db)
   } catch (error) {
     await db.closeAsync()
     throw error
