@@ -4,8 +4,7 @@ import {
   HABIT_GROUP_COLORS,
   HABIT_GROUP_ICONS,
   type HabitGroupRecord,
-  type HabitRecord,
-  type HabitReport
+  type HabitRecord
 } from '@mymind/contracts/habits'
 import { addDays, isHabitScheduledOn, localDateKey } from '@mymind/core/habits'
 import * as schema from '@mymind/core/validation/habits'
@@ -15,7 +14,6 @@ import {
   Button,
   EmptyState,
   ErrorState,
-  Label,
   LoadingState,
   Row,
   SearchField
@@ -23,6 +21,7 @@ import {
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { choiceField, textField, type FormSpec } from '../../shared/ui/form-model'
 import { useTheme } from '../../shared/ui/theme'
+import { HabitsReportsView } from './HabitsReportsView'
 
 export function HabitsScreen(): React.JSX.Element {
   const { habits: api } = useServices()
@@ -32,7 +31,6 @@ export function HabitsScreen(): React.JSX.Element {
   const [query, setQuery] = useState('')
   const [group, setGroup] = useState<string | null | undefined>(undefined)
   const [form, setForm] = useState<FormSpec | null>(null)
-  const [report, setReport] = useState<HabitReport | null>(null)
   const state = useCollection(
     useCallback(
       () => api.listHabitsOverview(schema.habitsOverviewInputSchema.parse({ date })),
@@ -120,33 +118,19 @@ export function HabitsScreen(): React.JSX.Element {
         state.refresh()
       }
     })
-  const reportForm = (): void =>
-    setForm({
-      title: 'Отчёт по привычкам',
-      initial: { dateFrom: addDays(date, -29), dateTo: date },
-      fields: [
-        textField('dateFrom', 'С даты', 'text', 'ГГГГ-ММ-ДД'),
-        textField('dateTo', 'По дату', 'text', 'ГГГГ-ММ-ДД')
-      ],
-      save: (values) => {
-        setReport(
-          api.getHabitsReport(
-            schema.habitReportInputSchema.parse({
-              ...values,
-              groupId: group ?? null,
-              ungroupedOnly: group === null
-            })
-          )
-        )
-        setView('report')
-      }
-    })
   const visible = (state.data?.habits ?? []).filter(
     (h) =>
       (view !== 'today' || isHabitScheduledOn(h, date)) &&
       (group === undefined || h.groupId === group) &&
       h.title.toLocaleLowerCase().includes(query.toLocaleLowerCase())
   )
+  const scopeLabel =
+    group === undefined
+      ? 'Все привычки'
+      : group === null
+        ? 'Без группы'
+        : (state.data?.groups.find((item) => item.id === group)?.name ?? 'Выбранная группа')
+
   return (
     <View style={{ flex: 1 }}>
       <View style={{ gap: 10, marginBottom: 12 }}>
@@ -163,7 +147,7 @@ export function HabitsScreen(): React.JSX.Element {
               onPress={() => setView(v.id)}
             />
           ))}
-          <Button label="Отчёт" onPress={reportForm} />
+          <Button label="Отчёт" selected={view === 'report'} onPress={() => setView('report')} />
           <Button
             label={view === 'groups' ? '+ Группа' : '+ Привычка'}
             selected
@@ -189,7 +173,9 @@ export function HabitsScreen(): React.JSX.Element {
           <Button label="›" onPress={() => setDate(addDays(date, 1))} />
           <Button label="Сегодня" onPress={() => setDate(localDateKey())} />
         </View>
-        {view !== 'groups' && <SearchField value={query} onChangeText={setQuery} />}
+        {(view === 'today' || view === 'all') && (
+          <SearchField value={query} onChangeText={setQuery} />
+        )}
         {group !== undefined && (
           <Button label="Сбросить группу" onPress={() => setGroup(undefined)} />
         )}
@@ -237,29 +223,12 @@ export function HabitsScreen(): React.JSX.Element {
             </Row>
           )}
         />
-      ) : view === 'report' && report ? (
-        <FlatList
-          data={report.habits}
-          keyExtractor={(item) => item.habitId}
-          ListHeaderComponent={
-            <View style={{ marginBottom: 16 }}>
-              <Label>
-                {report.dateFrom} — {report.dateTo}
-              </Label>
-              <Label title>{report.summary.completionRate}% выполнено</Label>
-              <Label muted>
-                Выполнено {report.summary.completed} · Пропущено {report.summary.skipped} · Не
-                выполнено {report.summary.missed}
-              </Label>
-            </View>
-          }
-          ListEmptyComponent={<EmptyState />}
-          renderItem={({ item }) => (
-            <Row
-              title={item.title}
-              subtitle={`Прогресс ${item.completionRate}% · Серия ${item.currentStreak} · Лучшая ${item.bestStreak} · Всего ${item.totalValue} ${item.unit}`}
-            />
-          )}
+      ) : view === 'report' ? (
+        <HabitsReportsView
+          api={api}
+          groupId={group}
+          scopeLabel={scopeLabel}
+          referenceDate={date}
         />
       ) : (
         <FlatList
