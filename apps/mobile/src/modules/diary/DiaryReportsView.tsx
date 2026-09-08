@@ -75,40 +75,40 @@ export function DiaryReportsView({
   if (!report) return <EmptyState text="Для отчёта пока недостаточно данных." />
 
   return (
-    <FlatList
-      data={report.timeline}
-      keyExtractor={(item) => item.dayKey}
-      contentContainerStyle={{ paddingBottom: 24 }}
-      ListHeaderComponent={
-        <DiaryReportHeader
-          report={report}
-          period={period}
-          customFrom={customFrom}
-          customTo={customTo}
-          onSelectPeriod={(nextPeriod) => {
-            if (nextPeriod === 'custom') openCustomPeriod()
-            else setPeriod(nextPeriod)
-          }}
-        />
-      }
-      ListEmptyComponent={<EmptyState text="За выбранный период пока нет страниц." />}
-      renderItem={({ item }) => {
-        const mood = diaryMoodMeta(item.mood)
-        return (
-          <Row
-            title={item.dayKey}
-            subtitle={`${item.entryCount} записей${mood ? ` · ${mood.emoji} ${mood.label}` : ''}`}
-            onPress={() => onOpenDay(item.dayKey)}
+    <View style={{ flex: 1 }}>
+      <FlatList
+        data={report.timeline}
+        keyExtractor={(item) => item.dayKey}
+        contentContainerStyle={{ paddingBottom: 24 }}
+        ListHeaderComponent={
+          <DiaryReportHeader
+            report={report}
+            period={period}
+            customFrom={customFrom}
+            customTo={customTo}
+            onSelectPeriod={(nextPeriod) => {
+              if (nextPeriod === 'custom') openCustomPeriod()
+              else setPeriod(nextPeriod)
+            }}
           />
-        )
-      }}
-      ListFooterComponent={
-        <>
-          {state.error ? <ErrorState message={state.error} retry={state.refresh} /> : null}
-          {form ? <FormSheet spec={form} close={() => setForm(null)} /> : null}
-        </>
-      }
-    />
+        }
+        ListEmptyComponent={<EmptyState text="За выбранный период пока нет страниц." />}
+        ListFooterComponent={
+          state.error ? <ErrorState message={state.error} retry={state.refresh} /> : null
+        }
+        renderItem={({ item }) => {
+          const mood = diaryMoodMeta(item.mood)
+          return (
+            <Row
+              title={item.dayKey}
+              subtitle={`${item.entryCount} записей${mood ? ` · ${mood.emoji} ${mood.label}` : ''}`}
+              onPress={() => onOpenDay(item.dayKey)}
+            />
+          )
+        }}
+      />
+      {form ? <FormSheet spec={form} close={() => setForm(null)} /> : null}
+    </View>
   )
 }
 
@@ -297,7 +297,14 @@ function DiaryActivityHeatmap({ points }: { points: DiaryReportPoint[] }): React
                       backgroundColor:
                         intensity === 0
                           ? theme.raised
-                          : theme.accent + (intensity === 1 ? '35' : intensity === 2 ? '59' : intensity === 3 ? '82' : 'B8')
+                          : theme.accent +
+                            (intensity === 1
+                              ? '35'
+                              : intensity === 2
+                                ? '59'
+                                : intensity === 3
+                                  ? '82'
+                                  : 'B8')
                     }}
                   />
                 )
