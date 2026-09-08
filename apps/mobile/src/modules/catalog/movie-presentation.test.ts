@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import type { MovieRecord } from '@mymind/contracts/movies'
+import { updateMovieInputSchema } from '@mymind/core/validation/movies'
 import {
   formatMovieRuntime,
   isEpisodicMovieType,
   movieLibraryStats,
+  movieRecordToUpdateInput,
   movieTypeLabel
 } from './movie-presentation'
 
@@ -28,7 +30,7 @@ function movie(overrides: Partial<MovieRecord> = {}): MovieRecord {
     rating: null,
     comments: '',
     createdAt: 1,
-    updatedAt: 1,
+    updatedAt: 2,
     ...overrides
   }
 }
@@ -49,6 +51,16 @@ describe('mobile movie presentation helpers', () => {
     expect(formatMovieRuntime(45)).toBe('45 мин')
     expect(formatMovieRuntime(60)).toBe('1 ч')
     expect(formatMovieRuntime(145)).toBe('2 ч 25 мин')
+  })
+
+  it('maps records to strict update inputs without persistence timestamps', () => {
+    const input = movieRecordToUpdateInput(
+      movie({ status: 'watched', favorite: true, rating: 9, createdAt: 100, updatedAt: 200 })
+    )
+
+    expect(input).not.toHaveProperty('createdAt')
+    expect(input).not.toHaveProperty('updatedAt')
+    expect(updateMovieInputSchema.parse(input)).toEqual(input)
   })
 
   it('derives overview statistics only from the existing movie records', () => {
