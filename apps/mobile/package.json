@@ -3,13 +3,37 @@
   "version": "1.0.0",
   "main": "index.ts",
   "dependencies": {
+    "@expo/metro-runtime": "~57.0.15",
     "@mymind/contracts": "1.0.0",
     "@mymind/core": "1.0.0",
     "@mymind/design": "1.0.0",
-    "expo": "~57.0.20",
+    "@mymind/persistence": "1.0.0",
+    "@noble/ciphers": "2.4.0",
+    "@noble/hashes": "2.4.0",
+    "@tldraw/assets": "^5.2.5",
+    "expo": "~57.0.21",
+    "expo-audio": "~57.0.4",
+    "expo-clipboard": "~57.0.1",
+    "expo-crypto": "~57.0.2",
+    "expo-document-picker": "~57.0.1",
+    "expo-file-system": "~57.0.6",
+    "expo-image-picker": "~57.0.16",
+    "expo-notifications": "~57.0.17",
+    "expo-print": "~57.0.1",
+    "expo-sharing": "~57.0.18",
+    "expo-sqlite": "~57.0.2",
     "expo-status-bar": "~57.0.1",
+    "expo-system-ui": "~57.0.3",
+    "katex": "^0.17.0",
+    "mermaid": "^11.16.0",
     "react": "19.2.3",
-    "react-native": "0.86.3"
+    "react-dom": "19.2.3",
+    "react-markdown": "^10.1.0",
+    "react-native": "0.86.3",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-web": "^0.21.2",
+    "remark-gfm": "^4.0.1",
+    "tldraw": "^5.2.5"
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
@@ -20,7 +44,8 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "export:android": "node ./scripts/export-android.mjs"
   },
   "private": true
 }

@@ -1,3 +1,4 @@
+import { sortTasks } from '@mymind/core/tasks'
 import { Tooltip } from '../../shared/ui/tooltip'
 import { AnimatePresence } from 'framer-motion'
 import {
@@ -64,20 +65,6 @@ function toUpdateTaskInput(
     dueDate: task.dueDate,
     dueTime: task.dueTime
   }
-}
-
-function sortTasks(tasks: TaskRecord[]): TaskRecord[] {
-  return [...tasks].sort((left, right) => {
-    if (left.status !== right.status) return left.status === 'active' ? -1 : 1
-
-    const leftActivity =
-      left.status === 'completed' ? (left.completedAt ?? left.updatedAt) : left.updatedAt
-    const rightActivity =
-      right.status === 'completed' ? (right.completedAt ?? right.updatedAt) : right.updatedAt
-
-    if (leftActivity !== rightActivity) return rightActivity - leftActivity
-    return right.createdAt - left.createdAt
-  })
 }
 
 export function TasksPage({ resourceId, onResourceHandled }: TasksPageProps): React.JSX.Element {

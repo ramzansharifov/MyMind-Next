@@ -14,7 +14,8 @@ function interfaceBlock(source: string, name: string): string {
 
 describe('diary architecture', () => {
   it('keeps diary color out of contracts, storage and forms', () => {
-    const contract = read('src/shared/contracts/diary.ts')
+    const contract = read('../../packages/contracts/src/diary.ts')
+    expect(read('src/shared/contracts/diary.ts')).toContain('@mymind/contracts/diary')
     const schema = read('src/main/database/schema/diary.ts')
     const dialog = read('src/renderer/src/modules/diary/components/DiaryDialog.tsx')
 

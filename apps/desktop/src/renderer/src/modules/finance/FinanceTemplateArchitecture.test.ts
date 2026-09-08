@@ -32,7 +32,7 @@ describe('finance template architecture', () => {
   })
 
   it('removes scheduling, reminders and template state from contracts, IPC and SQLite', () => {
-    const contract = read('src/shared/contracts/finance.ts')
+    const contract = read('../../packages/contracts/src/finance.ts')
     const ipc = read('src/main/ipc/register-finance-ipc.ts')
     const schema = read('src/main/database/schema/finance.ts')
     const migration = read('drizzle/0015_simplify_finance_templates_limits.sql')
