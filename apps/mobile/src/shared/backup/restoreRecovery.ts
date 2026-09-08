@@ -1,5 +1,5 @@
 import { randomUUID } from 'expo-crypto'
-import { Directory, File, FileMode, Paths, type FileHandle } from 'expo-file-system'
+import { Directory, File, FileMode, Paths } from 'expo-file-system'
 import { backupDatabaseAsync, deserializeDatabaseAsync, type SQLiteDatabase } from 'expo-sqlite'
 import { MOBILE_BACKUP_MAX_DATABASE_BYTES } from './archive'
 import {
@@ -104,7 +104,10 @@ async function assertRecoveredDatabaseHealthy(db: SQLiteDatabase): Promise<void>
 }
 
 async function restoreDatabaseSnapshot(rollback: Directory, db: SQLiteDatabase): Promise<void> {
-  const bytes = readBytes(new File(rollback, ROLLBACK_DATABASE_FILE), MOBILE_BACKUP_MAX_DATABASE_BYTES)
+  const bytes = readBytes(
+    new File(rollback, ROLLBACK_DATABASE_FILE),
+    MOBILE_BACKUP_MAX_DATABASE_BYTES
+  )
   const snapshot = await deserializeDatabaseAsync(bytes)
   try {
     await backupDatabaseAsync({
@@ -143,9 +146,7 @@ export function cleanupStaleMobileRestoreArtifacts(): void {
   }
 }
 
-export async function createDurableMobileRestoreRollback(
-  db: SQLiteDatabase
-): Promise<Directory> {
+export async function createDurableMobileRestoreRollback(db: SQLiteDatabase): Promise<Directory> {
   if (pendingMarkerFile().exists) {
     throw new Error('Сначала необходимо завершить предыдущее восстановление MyMind')
   }
