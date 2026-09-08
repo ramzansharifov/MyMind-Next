@@ -20,6 +20,7 @@ import { movieFields, movieValues, musicFields, musicValues } from './catalog-fo
 import { CatalogJsonImportModal } from './CatalogJsonImportModal'
 import { MovieDetailView } from './MovieDetailView'
 import { MovieLibraryView } from './MovieLibraryView'
+import { movieRecordToUpdateInput } from './movie-presentation'
 
 export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX.Element {
   const services = useServices()
@@ -233,7 +234,9 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
 
   const updateMovie = (movie: MovieRecord): void => {
     state.mutate(() => {
-      services.movies.updateMovie(moviesSchema.updateMovieInputSchema.parse(movie))
+      services.movies.updateMovie(
+        moviesSchema.updateMovieInputSchema.parse(movieRecordToUpdateInput(movie))
+      )
     })
   }
 
