@@ -61,6 +61,7 @@ export function habitReportPeriod(
   const dateFrom = parseDateKey(customFrom)
   const dateTo = parseDateKey(customTo)
   if (dateTo < dateFrom) throw new Error('Конец периода не может быть раньше начала')
+  if (dateTo > to) throw new Error('Конец периода не может быть позже сегодняшнего дня')
 
   const reportDays = daysBetween(dateFrom, dateTo) + 1
   if (reportDays > MAX_CUSTOM_REPORT_DAYS) {
