@@ -1,5 +1,5 @@
-import { useCallback, useState } from 'react'
-import { FlatList, View } from 'react-native'
+import { useCallback, useMemo, useState } from 'react'
+import { FlatList, TextInput, View } from 'react-native'
 import {
   TASK_GROUP_COLORS,
   TASK_GROUP_ICONS,
@@ -20,68 +20,57 @@ import {
 } from '../../shared/ui/primitives'
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { choiceField, textField, type FormSpec } from '../../shared/ui/form-model'
+import { useTheme } from '../../shared/ui/theme'
+import { quickTaskInput, taskEditorInput, taskSearchText } from './task-presentation'
 
 export function TasksScreen(): React.JSX.Element {
   const { tasks: api } = useServices()
+  const theme = useTheme()
   const state = useCollection(useCallback(() => api.listTasksOverview(), [api]))
   const [query, setQuery] = useState('')
+  const [quickTitle, setQuickTitle] = useState('')
   const [filter, setFilter] = useState('all')
   const [group, setGroup] = useState<string | null | undefined>(undefined)
   const [groupsView, setGroupsView] = useState(false)
   const [form, setForm] = useState<FormSpec | null>(null)
-  const groupChoices = [
-    { value: null, label: 'Без группы' },
-    ...(state.data?.groups ?? []).map((g) => ({ value: g.id, label: g.name }))
-  ]
+
+  const groupChoices = useMemo(
+    () => [
+      { value: null, label: 'Без группы' },
+      ...(state.data?.groups ?? []).map((item) => ({ value: item.id, label: item.name }))
+    ],
+    [state.data?.groups]
+  )
+
   const edit = (task?: TaskRecord): void =>
     setForm({
       title: task ? 'Редактировать задачу' : 'Новая задача',
-      initial: task
-        ? {
-            title: task.title,
-            description: task.description,
-            groupId: task.groupId,
-            status: task.status,
-            priority: task.priority,
-            dueDate: task.dueDate,
-            dueTime: task.dueTime
-          }
-        : {
-            title: '',
-            description: '',
-            groupId: group ?? null,
-            status: 'active',
-            priority: 'normal',
-            dueDate: null,
-            dueTime: null
-          },
+      initial: {
+        title: task?.title ?? '',
+        groupId: task?.groupId ?? (typeof group === 'string' ? group : null),
+        status: task?.status ?? 'active'
+      },
       fields: [
         textField('title', 'Название'),
-        textField('description', 'Описание', 'multiline'),
         choiceField('groupId', 'Группа', groupChoices),
-        choiceField('priority', 'Приоритет', [
-          { value: 'low', label: 'Низкий' },
-          { value: 'normal', label: 'Обычный' },
-          { value: 'high', label: 'Высокий' }
-        ]),
         choiceField('status', 'Статус', [
           { value: 'active', label: 'Активная' },
           { value: 'completed', label: 'Выполнена' }
-        ]),
-        textField('dueDate', 'Дата', 'text', 'ГГГГ-ММ-ДД; пустое поле — без срока'),
-        textField('dueTime', 'Время', 'text', 'ЧЧ:ММ; необязательно')
+        ])
       ],
       save: (values) => {
-        const input = schema.createTaskInputSchema.parse({
-          ...values,
-          dueDate: values.dueDate || null,
-          dueTime: values.dueTime || null
-        })
-        if (task) api.updateTask({ ...input, id: task.id })
-        else api.createTask(input)
+        const input = taskEditorInput(
+          String(values.title ?? ''),
+          typeof values.groupId === 'string' ? values.groupId : null,
+          values.status === 'completed' ? 'completed' : 'active',
+          task
+        )
+        if (task) api.updateTask(schema.updateTaskInputSchema.parse({ ...input, id: task.id }))
+        else api.createTask(schema.createTaskInputSchema.parse(input))
         state.refresh()
       }
     })
+
   const editGroup = (item?: TaskGroupRecord): void =>
     setForm({
       title: item ? 'Группа задач' : 'Новая группа',
@@ -110,25 +99,69 @@ export function TasksScreen(): React.JSX.Element {
         state.refresh()
       }
     })
+
   const toggle = (task: TaskRecord): void =>
     state.mutate(() => {
-      api.updateTask({
-        id: task.id,
-        title: task.title,
-        description: task.description,
-        groupId: task.groupId,
-        status: task.status === 'active' ? 'completed' : 'active',
-        priority: task.priority,
-        dueDate: task.dueDate,
-        dueTime: task.dueTime
-      })
+      api.updateTask(
+        schema.updateTaskInputSchema.parse({
+          ...taskEditorInput(
+            task.title,
+            task.groupId,
+            task.status === 'active' ? 'completed' : 'active',
+            task
+          ),
+          id: task.id
+        })
+      )
     })
-  const tasks = sortTasks(state.data?.tasks ?? []).filter(
-    (task) =>
-      (filter === 'all' || task.status === filter) &&
-      (group === undefined || task.groupId === group) &&
-      `${task.title} ${task.description}`.toLocaleLowerCase().includes(query.toLocaleLowerCase())
+
+  const move = (task: TaskRecord): void =>
+    setForm({
+      title: 'Перенести задачу',
+      initial: { groupId: task.groupId },
+      fields: [choiceField('groupId', 'Группа', groupChoices)],
+      save: (values) => {
+        const nextGroupId = typeof values.groupId === 'string' ? values.groupId : null
+        api.updateTask(
+          schema.updateTaskInputSchema.parse({
+            ...taskEditorInput(task.title, nextGroupId, task.status, task),
+            id: task.id
+          })
+        )
+        state.refresh()
+      }
+    })
+
+  const quickAdd = (): void => {
+    const title = quickTitle.trim()
+    if (!title || state.pending) return
+    state.mutate(() => {
+      api.createTask(
+        schema.createTaskInputSchema.parse(
+          quickTaskInput(title, typeof group === 'string' ? group : null)
+        )
+      )
+      setQuickTitle('')
+    })
+  }
+
+  const groupById = useMemo(
+    () => new Map((state.data?.groups ?? []).map((item) => [item.id, item.name])),
+    [state.data?.groups]
   )
+  const normalizedQuery = query.trim().toLocaleLowerCase('ru')
+  const tasks = sortTasks(state.data?.tasks ?? []).filter((task) => {
+    if (filter !== 'all' && task.status !== filter) return false
+    if (group !== undefined && task.groupId !== group) return false
+    if (!normalizedQuery) return true
+    return taskSearchText(task, task.groupId ? (groupById.get(task.groupId) ?? '') : '').includes(
+      normalizedQuery
+    )
+  })
+
+  const selectedGroupName =
+    typeof group === 'string' ? (groupById.get(group) ?? 'Группа') : group === null ? 'Без группы' : null
+
   return (
     <View style={{ flex: 1 }}>
       <View style={{ gap: 10, marginBottom: 12 }}>
@@ -143,14 +176,45 @@ export function TasksScreen(): React.JSX.Element {
             onPress={() => (groupsView ? editGroup() : edit())}
           />
         </View>
+
         {!groupsView && (
           <>
+            <View style={{ flexDirection: 'row', gap: 8, alignItems: 'stretch' }}>
+              <TextInput
+                accessibilityLabel="Быстро добавить задачу"
+                placeholder="Быстро добавить задачу…"
+                placeholderTextColor={theme.muted}
+                value={quickTitle}
+                onChangeText={setQuickTitle}
+                onSubmitEditing={quickAdd}
+                returnKeyType="done"
+                editable={!state.pending}
+                style={{
+                  flex: 1,
+                  minHeight: 48,
+                  borderWidth: 1,
+                  borderColor: theme.border,
+                  backgroundColor: theme.surface,
+                  color: theme.text,
+                  paddingHorizontal: 14,
+                  borderRadius: 12,
+                  fontSize: 16
+                }}
+              />
+              <Button
+                label="Добавить"
+                selected
+                disabled={!quickTitle.trim() || state.pending}
+                onPress={quickAdd}
+              />
+            </View>
+
             <SearchField value={query} onChangeText={setQuery} />
             <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
               {[
                 { value: 'all', label: 'Все' },
                 { value: 'active', label: 'Активные' },
-                { value: 'completed', label: 'Готово' }
+                { value: 'completed', label: 'Выполненные' }
               ].map((item) => (
                 <Button
                   key={item.value}
@@ -165,10 +229,14 @@ export function TasksScreen(): React.JSX.Element {
                 onPress={() => setGroup(undefined)}
               />
               <Button label="Без группы" selected={group === null} onPress={() => setGroup(null)} />
+              {selectedGroupName && typeof group === 'string' ? (
+                <Button label={selectedGroupName} selected onPress={() => setGroup(undefined)} />
+              ) : null}
             </View>
           </>
         )}
       </View>
+
       {state.error && <ErrorState message={state.error} retry={state.refresh} />}
       {state.loading ? (
         <LoadingState />
@@ -180,7 +248,7 @@ export function TasksScreen(): React.JSX.Element {
           renderItem={({ item }) => (
             <Row
               title={item.name}
-              subtitle={`${state.data?.tasks.filter((t) => t.groupId === item.id).length ?? 0} задач`}
+              subtitle={`${state.data?.tasks.filter((task) => task.groupId === item.id).length ?? 0} задач`}
               onPress={() => {
                 setGroup(item.id)
                 setGroupsView(false)
@@ -195,9 +263,9 @@ export function TasksScreen(): React.JSX.Element {
                     'Удалить группу?',
                     () => {
                       api.deleteTaskGroup({ id: item.id })
-                      if (group === item.id) setGroup(undefined)
+                      if (group === item.id) setGroup(null)
                     },
-                    'Задачи сохранятся без группы.'
+                    'Сами задачи сохранятся и будут перенесены в «Без группы».'
                   )
                 }
               />
@@ -211,37 +279,39 @@ export function TasksScreen(): React.JSX.Element {
           refreshing={state.loading}
           onRefresh={state.refresh}
           ListEmptyComponent={<EmptyState />}
-          renderItem={({ item }) => (
-            <Row
-              title={`${item.status === 'completed' ? '✓ ' : ''}${item.title}`}
-              subtitle={[
-                item.description,
-                item.dueDate,
-                item.dueTime,
-                item.priority === 'high' ? 'Высокий приоритет' : '',
-                state.data?.groups.find((g) => g.id === item.groupId)?.name
-              ]
-                .filter(Boolean)
-                .join(' · ')}
-              onPress={() => edit(item)}
-            >
-              <Button
-                label={item.status === 'active' ? 'Выполнить' : 'Вернуть'}
-                disabled={state.pending}
-                onPress={() => toggle(item)}
-              />
-              <Button
-                label="Удалить"
-                danger
-                disabled={state.pending}
-                onPress={() =>
-                  state.confirmDelete('Удалить задачу?', () => {
-                    api.deleteTask({ id: item.id })
-                  })
+          renderItem={({ item }) => {
+            const groupName = item.groupId ? groupById.get(item.groupId) : null
+            return (
+              <Row
+                title={`${item.status === 'completed' ? '✓ ' : ''}${item.title}`}
+                subtitle={
+                  [groupName, item.status === 'completed' ? 'Выполнено' : 'Активная']
+                    .filter(Boolean)
+                    .join(' · ')
                 }
-              />
-            </Row>
-          )}
+                onPress={() => toggle(item)}
+              >
+                <Button
+                  label={item.status === 'active' ? 'Выполнить' : 'Вернуть'}
+                  selected={item.status === 'completed'}
+                  disabled={state.pending}
+                  onPress={() => toggle(item)}
+                />
+                <Button label="Перенести" disabled={state.pending} onPress={() => move(item)} />
+                <Button label="Изменить" disabled={state.pending} onPress={() => edit(item)} />
+                <Button
+                  label="Удалить"
+                  danger
+                  disabled={state.pending}
+                  onPress={() =>
+                    state.confirmDelete('Удалить задачу?', () => {
+                      api.deleteTask({ id: item.id })
+                    })
+                  }
+                />
+              </Row>
+            )
+          }}
         />
       )}
       {form && <FormSheet spec={form} close={() => setForm(null)} />}
