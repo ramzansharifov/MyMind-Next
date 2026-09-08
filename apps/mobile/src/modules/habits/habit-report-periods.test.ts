@@ -34,7 +34,7 @@ describe('mobile habit report periods', () => {
     })
   })
 
-  it('accepts valid custom dates and rejects invalid or reversed ranges', () => {
+  it('accepts valid custom dates and rejects invalid, reversed or future ranges', () => {
     expect(habitReportPeriod('custom', '2026-02-01', '2026-02-28', referenceDate)).toEqual({
       dateFrom: '2026-02-01',
       dateTo: '2026-02-28',
@@ -45,6 +45,9 @@ describe('mobile habit report periods', () => {
     )
     expect(() => habitReportPeriod('custom', '2026-09-09', '2026-09-08', referenceDate)).toThrow(
       /раньше начала/i
+    )
+    expect(() => habitReportPeriod('custom', '2026-09-01', '2026-09-09', referenceDate)).toThrow(
+      /позже сегодняшнего дня/i
     )
   })
 
