@@ -36,8 +36,7 @@ jobs:
             .mobile-music-parity-trigger \
             .mobile-final-readonly-trigger \
             .mobile-finalize-parity-trigger \
-            .mobile-cleanup-trigger \
-            .boards-ci-trigger
+            .mobile-cleanup-trigger
       - name: Commit cleanup
         run: |
           if git diff --cached --quiet; then
