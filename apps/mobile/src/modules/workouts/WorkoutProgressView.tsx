@@ -96,7 +96,12 @@ export function WorkoutProgressView({
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ alignItems: 'flex-end', gap: 8, minHeight: 142, paddingTop: 8 }}
+                contentContainerStyle={{
+                  alignItems: 'flex-end',
+                  gap: 8,
+                  minHeight: 142,
+                  paddingTop: 8
+                }}
               >
                 {summary.weightPoints.map((point) => {
                   const barHeight = 28 + point.normalized * 78
@@ -115,9 +120,7 @@ export function WorkoutProgressView({
                           backgroundColor: theme.accent
                         }}
                       />
-                      <Text style={{ color: theme.muted, fontSize: 9 }}>
-                        {point.date.slice(5)}
-                      </Text>
+                      <Text style={{ color: theme.muted, fontSize: 9 }}>{point.date.slice(5)}</Text>
                     </View>
                   )
                 })}
@@ -145,7 +148,10 @@ export function WorkoutProgressView({
             </ScrollView>
             {comparison.first ? (
               <View style={{ flexDirection: 'row', gap: 10 }}>
-                <PhotoCard item={comparison.first} label={comparison.comparable ? 'Было' : 'Снимок'} />
+                <PhotoCard
+                  item={comparison.first}
+                  label={comparison.comparable ? 'Было' : 'Снимок'}
+                />
                 {comparison.comparable && comparison.last ? (
                   <PhotoCard item={comparison.last} label="Стало" />
                 ) : null}

@@ -62,7 +62,9 @@ export function workoutPhotoComparison(
   const photos = [...entries]
     .sort((left, right) => left.date.localeCompare(right.date))
     .flatMap((entry) =>
-      entry.photos.filter((photo) => photo.view === view).map((photo) => ({ photo, date: entry.date }))
+      entry.photos
+        .filter((photo) => photo.view === view)
+        .map((photo) => ({ photo, date: entry.date }))
     )
   const first = photos[0] ?? null
   const last = photos.at(-1) ?? null

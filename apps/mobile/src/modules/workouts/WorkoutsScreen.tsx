@@ -265,7 +265,10 @@ export function WorkoutsScreen(): React.JSX.Element {
               progressEditor === 'new'
                 ? undefined
                 : async (view) => {
-                    const photo = await api.importProgressPhoto({ entryId: progressEditor.id, view })
+                    const photo = await api.importProgressPhoto({
+                      entryId: progressEditor.id,
+                      view
+                    })
                     overview.refresh()
                     return photo
                   }

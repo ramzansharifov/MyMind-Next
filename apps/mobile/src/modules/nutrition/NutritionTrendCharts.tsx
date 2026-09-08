@@ -2,7 +2,11 @@ import { ScrollView, Text, View } from 'react-native'
 import type { NutritionReportDay } from '@mymind/contracts/nutrition'
 import { useTheme } from '../../shared/ui/theme'
 
-export function NutritionTrendCharts({ timeline }: { timeline: NutritionReportDay[] }): React.JSX.Element {
+export function NutritionTrendCharts({
+  timeline
+}: {
+  timeline: NutritionReportDay[]
+}): React.JSX.Element {
   return (
     <View style={{ gap: 12 }}>
       <TrendChart
@@ -72,7 +76,10 @@ function TrendChart({
             const barHeight = Math.max(4, (actual / max) * 104)
             const goalBottom = goal === null ? null : Math.max(0, Math.min(104, (goal / max) * 104))
             return (
-              <View key={`${title}:${item.date}`} style={{ width: 48, alignItems: 'center', gap: 5 }}>
+              <View
+                key={`${title}:${item.date}`}
+                style={{ width: 48, alignItems: 'center', gap: 5 }}
+              >
                 <Text style={{ color: theme.text, fontSize: 9, fontWeight: '700' }}>
                   {Math.round(actual)}
                 </Text>
