@@ -536,7 +536,9 @@ function DiaryCalendar({
           backgroundColor: theme.surface
         }}
       >
-        <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: theme.border }}>
+        <View
+          style={{ flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: theme.border }}
+        >
           {WEEKDAYS.map((weekday) => (
             <View key={weekday} style={{ flex: 1, alignItems: 'center', paddingVertical: 8 }}>
               <Text style={{ color: theme.muted, fontSize: 11, fontWeight: '700' }}>{weekday}</Text>
@@ -696,7 +698,9 @@ function DiaryPaperDay({
         contentContainerStyle={{ paddingBottom: 24 }}
         ListHeaderComponent={
           <View style={{ marginBottom: 14, gap: 5 }}>
-            <Text style={{ color: palette.paperText, fontSize: 20, fontWeight: '800' }}>{date}</Text>
+            <Text style={{ color: palette.paperText, fontSize: 20, fontWeight: '800' }}>
+              {date}
+            </Text>
             {moodLabel ? (
               <Text style={{ color: palette.paperMuted, fontSize: 13 }}>{moodLabel}</Text>
             ) : null}
@@ -732,7 +736,9 @@ function DiaryPaperDay({
               onPress={() => onEdit(item)}
               style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1, gap: 5 })}
             >
-              <Text style={{ color: palette.paperText, fontSize: 16, lineHeight: 23 }}>{item.text}</Text>
+              <Text style={{ color: palette.paperText, fontSize: 16, lineHeight: 23 }}>
+                {item.text}
+              </Text>
               <Text style={{ color: palette.paperMuted, fontSize: 11 }}>
                 {new Date(item.occurredAt).toLocaleTimeString('ru-RU', {
                   hour: '2-digit',

@@ -100,9 +100,11 @@ export function shiftDiaryMonth(monthKey: string, delta: number): string {
 
 export function diaryMonthLabel(monthKey: string): string {
   const { year, monthIndex } = parseMonthKey(monthKey)
-  const label = new Intl.DateTimeFormat('ru-RU', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(
-    new Date(Date.UTC(year, monthIndex, 1))
-  )
+  const label = new Intl.DateTimeFormat('ru-RU', {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC'
+  }).format(new Date(Date.UTC(year, monthIndex, 1)))
   return label.charAt(0).toUpperCase() + label.slice(1)
 }
 
