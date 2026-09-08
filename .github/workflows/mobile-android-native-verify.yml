@@ -20,11 +20,10 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
-          cache: gradle
       - name: Use npm 11
         run: npm install --global npm@11
       - name: Install
