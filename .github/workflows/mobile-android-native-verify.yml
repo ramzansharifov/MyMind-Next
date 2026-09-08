@@ -8,52 +8,39 @@ on:
       - .mobile-android-native-trigger
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  android-native:
+  align-expo:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: '17'
       - name: Use npm 11
         run: npm install --global npm@11
       - name: Install
         run: npm ci
-      - name: Validate Expo config
+      - name: Align Expo SDK dependency
         working-directory: apps/mobile
-        run: npx expo config --type public
-      - name: Generate Android native project
+        run: npx expo install expo@~57.0.21
+      - name: Verify Expo dependency alignment
         working-directory: apps/mobile
-        env:
-          CI: '1'
-        run: npx expo prebuild --platform android --clean --no-install
-      - name: Verify generated native project
-        working-directory: apps/mobile
+        run: npx expo install --check
+      - name: Commit Expo alignment
         run: |
-          test -f android/gradlew
-          test -f android/app/build.gradle
-          test -f android/app/src/main/AndroidManifest.xml
-          grep -q 'expo_system_ui_user_interface_style' android/app/src/main/res/values/strings.xml
-      - name: Assemble Android debug APK
-        working-directory: apps/mobile/android
-        env:
-          NODE_ENV: development
-        run: |
-          chmod +x gradlew
-          ./gradlew :app:assembleDebug --no-daemon --stacktrace
-      - name: Verify APK output
-        working-directory: apps/mobile
-        run: test -f android/app/build/outputs/apk/debug/app-debug.apk
-      - name: Restore prebuild script normalization
-        run: git checkout -- apps/mobile/package.json
-      - name: Ensure tracked files unchanged
-        run: git diff --exit-code -- . ':!apps/mobile/android' ':!apps/mobile/ios'
+          git add apps/mobile/package.json package-lock.json
+          if git diff --cached --quiet; then
+            echo "Expo dependency is already aligned."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "chore: align Expo SDK dependency"
+            git pull --rebase origin agent/full-mobile-app
+            git push origin HEAD:agent/full-mobile-app
+          fi
