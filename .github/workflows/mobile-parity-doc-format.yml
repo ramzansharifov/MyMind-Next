@@ -1,0 +1,42 @@
+name: Mobile parity doc format
+
+on:
+  push:
+    branches:
+      - agent/full-mobile-app
+    paths:
+      - .mobile-parity-doc-format-trigger
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Use npm 11
+        run: npm install --global npm@11
+      - name: Install
+        run: npm ci
+      - name: Format parity document
+        run: npx prettier --write MOBILE_PARITY.md
+      - name: Commit formatted parity document
+        run: |
+          git add MOBILE_PARITY.md
+          if git diff --cached --quiet; then
+            echo "MOBILE_PARITY.md already formatted."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "style: format mobile parity checkpoint"
+          git pull --rebase origin agent/full-mobile-app
+          git push origin HEAD:agent/full-mobile-app
