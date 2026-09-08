@@ -222,8 +222,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
           )) &&
         (!type || item.type === type) &&
         (!year || String(item.year) === year) &&
-        (!director ||
-          item.director.toLocaleLowerCase().includes(director.toLocaleLowerCase())) &&
+        (!director || item.director.toLocaleLowerCase().includes(director.toLocaleLowerCase())) &&
         (!actor ||
           item.actors.some((name) =>
             name.toLocaleLowerCase().includes(actor.toLocaleLowerCase())
@@ -275,10 +274,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
     return playlist.trackIds.some((itemId) => {
       const item = musicItems.find((entry) => entry.id === itemId)
       return item
-        ? [item.title, ...item.artists]
-            .join(' ')
-            .toLocaleLowerCase('ru')
-            .includes(normalizedQuery)
+        ? [item.title, ...item.artists].join(' ').toLocaleLowerCase('ru').includes(normalizedQuery)
         : false
     })
   })

@@ -77,10 +77,22 @@ describe('mobile music presentation helpers', () => {
 
   it('requires both title and artist for the simplified track editor', () => {
     expect(() =>
-      musicTrackInputFromDraft({ title: '', artist: 'Artist', year: '', duration: '', favorite: false })
+      musicTrackInputFromDraft({
+        title: '',
+        artist: 'Artist',
+        year: '',
+        duration: '',
+        favorite: false
+      })
     ).toThrow('Введите название трека')
     expect(() =>
-      musicTrackInputFromDraft({ title: 'Track', artist: '', year: '', duration: '', favorite: false })
+      musicTrackInputFromDraft({
+        title: 'Track',
+        artist: '',
+        year: '',
+        duration: '',
+        favorite: false
+      })
     ).toThrow('Введите исполнителя')
   })
 

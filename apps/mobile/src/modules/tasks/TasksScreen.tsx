@@ -160,7 +160,11 @@ export function TasksScreen(): React.JSX.Element {
   })
 
   const selectedGroupName =
-    typeof group === 'string' ? (groupById.get(group) ?? 'Группа') : group === null ? 'Без группы' : null
+    typeof group === 'string'
+      ? (groupById.get(group) ?? 'Группа')
+      : group === null
+        ? 'Без группы'
+        : null
 
   return (
     <View style={{ flex: 1 }}>
@@ -284,11 +288,9 @@ export function TasksScreen(): React.JSX.Element {
             return (
               <Row
                 title={`${item.status === 'completed' ? '✓ ' : ''}${item.title}`}
-                subtitle={
-                  [groupName, item.status === 'completed' ? 'Выполнено' : 'Активная']
-                    .filter(Boolean)
-                    .join(' · ')
-                }
+                subtitle={[groupName, item.status === 'completed' ? 'Выполнено' : 'Активная']
+                  .filter(Boolean)
+                  .join(' · ')}
                 onPress={() => toggle(item)}
               >
                 <Button
