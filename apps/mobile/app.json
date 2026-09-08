@@ -30,8 +30,7 @@
         "expo-image-picker",
         {
           "photosPermission": "MyMind использует выбранные вами фотографии для локального дневника прогресса.",
-          "cameraPermission": "MyMind использует камеру для фотографий прогресса.",
-          "microphonePermission": false
+          "cameraPermission": "MyMind использует камеру для фотографий прогресса."
         }
       ],
       [
