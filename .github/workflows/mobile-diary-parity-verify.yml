@@ -34,12 +34,14 @@ jobs:
         run: >-
           npx prettier --write
           apps/mobile/src/modules/diary/DiaryScreen.tsx
+          apps/mobile/src/modules/diary/DiaryReportsView.tsx
           apps/mobile/src/modules/diary/diary-presentation.ts
           apps/mobile/src/modules/diary/diary-presentation.test.ts
       - name: Commit formatting if needed
         run: |
           git add \
             apps/mobile/src/modules/diary/DiaryScreen.tsx \
+            apps/mobile/src/modules/diary/DiaryReportsView.tsx \
             apps/mobile/src/modules/diary/diary-presentation.ts \
             apps/mobile/src/modules/diary/diary-presentation.test.ts
           if git diff --cached --quiet; then
