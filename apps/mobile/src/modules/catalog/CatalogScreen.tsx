@@ -1,40 +1,38 @@
 import { useCallback, useState } from 'react'
-import { FlatList, Linking, View } from 'react-native'
+import { Linking, View } from 'react-native'
 import type { MovieRecord } from '@mymind/contracts/movies'
 import type { MusicItemRecord, MusicPlaylistRecord } from '@mymind/contracts/music'
 import * as moviesSchema from '@mymind/core/validation/movies'
 import * as musicSchema from '@mymind/core/validation/music'
 import { useServices } from '../../app/context'
 import { useCollection } from '../../shared/hooks/useCollection'
-import {
-  Button,
-  EmptyState,
-  ErrorState,
-  LoadingState,
-  Row,
-  SearchField
-} from '../../shared/ui/primitives'
+import { Button, ErrorState, LoadingState, SearchField } from '../../shared/ui/primitives'
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { choiceField, messageFor, textField, type FormSpec } from '../../shared/ui/form-model'
-import { movieFields, movieValues, musicFields, musicValues } from './catalog-forms'
+import { movieFields, movieValues } from './catalog-forms'
 import { CatalogJsonImportModal } from './CatalogJsonImportModal'
 import { MovieDetailView } from './MovieDetailView'
 import { MovieLibraryView } from './MovieLibraryView'
+import { MusicLibraryView, type MobileMusicView } from './MusicLibraryView'
 import { movieRecordToUpdateInput } from './movie-presentation'
+import {
+  musicFilterArtists,
+  musicFilterYears,
+  musicRecordToUpdateInput,
+  musicTrackDraftFromItem,
+  musicTrackInputFromDraft
+} from './music-presentation'
 
 export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX.Element {
   const services = useServices()
   const state = useCollection(
-    useCallback(
-      () => ({
-        items:
-          mode === 'movies'
-            ? services.movies.listMoviesOverview().movies
-            : services.music.listMusicOverview().items,
-        playlists: mode === 'music' ? services.music.listMusicOverview().playlists : []
-      }),
-      [mode, services]
-    )
+    useCallback(() => {
+      if (mode === 'movies') {
+        return { items: services.movies.listMoviesOverview().movies, playlists: [] }
+      }
+      const overview = services.music.listMusicOverview()
+      return { items: overview.items, playlists: overview.playlists }
+    }, [mode, services])
   )
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState('all')
@@ -45,52 +43,94 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
   const [director, setDirector] = useState('')
   const [actor, setActor] = useState('')
   const [minRating, setMinRating] = useState('')
+  const [musicArtist, setMusicArtist] = useState('')
+  const [musicYear, setMusicYear] = useState('')
   const [playlistsView, setPlaylistsView] = useState(false)
   const [playlistId, setPlaylistId] = useState<string | null>(null)
   const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null)
   const [form, setForm] = useState<FormSpec | null>(null)
   const [jsonImportOpen, setJsonImportOpen] = useState(false)
   const [webError, setWebError] = useState('')
-  const done = mode === 'movies' ? 'watched' : 'listened'
-  const want = mode === 'movies' ? 'watchlist' : 'want_to_listen'
 
-  const edit = (item?: MovieRecord | MusicItemRecord): void =>
+  const editMovie = (item?: MovieRecord): void =>
     setForm({
-      title: item ? 'Редактирование' : mode === 'movies' ? 'Добавить фильм' : 'Добавить музыку',
-      initial:
-        mode === 'movies'
-          ? movieValues(item as MovieRecord | undefined)
-          : musicValues(item as MusicItemRecord | undefined),
-      fields: mode === 'movies' ? movieFields : musicFields,
+      title: item ? 'Редактирование' : 'Добавить фильм',
+      initial: movieValues(item),
+      fields: movieFields,
       save: (values) => {
-        if (mode === 'movies') {
-          const input = moviesSchema.createMovieInputSchema.parse({
-            ...values,
-            posterUrl: values.posterUrl || null,
-            originalTitle: values.originalTitle || null
-          })
-          if (item) services.movies.updateMovie({ ...input, id: item.id })
-          else services.movies.createMovie(input)
-        } else {
-          const input = musicSchema.createMusicItemInputSchema.parse({
-            ...values,
-            coverUrl: values.coverUrl || null
-          })
-          if (item) services.music.updateMusicItem({ ...input, id: item.id })
-          else services.music.createMusicItem(input)
-        }
+        const input = moviesSchema.createMovieInputSchema.parse({
+          ...values,
+          posterUrl: values.posterUrl || null,
+          originalTitle: values.originalTitle || null
+        })
+        if (item) services.movies.updateMovie({ ...input, id: item.id })
+        else services.movies.createMovie(input)
         state.refresh()
       }
     })
 
+  const editTrack = (item?: MusicItemRecord): void => {
+    const draft = musicTrackDraftFromItem(item)
+    const playlists = state.data?.playlists ?? []
+    setForm({
+      title: item ? 'Редактировать трек' : 'Новый трек',
+      initial: {
+        ...draft,
+        ...Object.fromEntries(
+          playlists.map((playlist) => [
+            `playlist:${playlist.id}`,
+            item ? playlist.trackIds.includes(item.id) : false
+          ])
+        )
+      },
+      fields: [
+        textField('title', 'Название'),
+        textField('artist', 'Исполнитель'),
+        textField('year', 'Год'),
+        textField('duration', 'Длительность', 'text', 'Например 3:45 или 225 секунд'),
+        textField('favorite', 'Избранное', 'boolean'),
+        ...playlists.map((playlist) =>
+          textField(`playlist:${playlist.id}`, `Плейлист · ${playlist.name}`, 'boolean')
+        )
+      ],
+      save: (values) => {
+        const input = musicSchema.createMusicItemInputSchema.parse(
+          musicTrackInputFromDraft(
+            {
+              title: String(values.title ?? ''),
+              artist: String(values.artist ?? ''),
+              year: String(values.year ?? ''),
+              duration: String(values.duration ?? ''),
+              favorite: Boolean(values.favorite)
+            },
+            item
+          )
+        )
+        const saved = item
+          ? services.music.updateMusicItem({ ...input, id: item.id })
+          : services.music.createMusicItem(input)
+        services.music.setMusicItemPlaylists({
+          itemId: saved.id,
+          playlistIds: playlists
+            .filter((playlist) => Boolean(values[`playlist:${playlist.id}`]))
+            .map((playlist) => playlist.id)
+        })
+        state.refresh()
+      }
+    })
+  }
+
   const editPlaylist = (item?: MusicPlaylistRecord): void =>
     setForm({
-      title: 'Плейлист',
+      title: item ? 'Редактировать плейлист' : 'Новый плейлист',
       initial: { name: item?.name ?? '', coverUrl: item?.coverUrl ?? null },
-      fields: [textField('name', 'Название'), textField('coverUrl', 'Ссылка на обложку')],
+      fields: [
+        textField('name', 'Название'),
+        textField('coverUrl', 'Обложка плейлиста', 'text', 'Ссылка http:// или https://')
+      ],
       save: (values) => {
         const input = musicSchema.createMusicPlaylistInputSchema.parse({
-          ...values,
+          name: values.name,
           coverUrl: values.coverUrl || null
         })
         if (item) services.music.updateMusicPlaylist({ ...input, id: item.id })
@@ -99,27 +139,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
       }
     })
 
-  const membership = (item: MusicItemRecord): void =>
-    setForm({
-      title: 'Добавить в плейлисты',
-      initial: Object.fromEntries(
-        (state.data?.playlists ?? []).map((p) => [p.id, p.trackIds.includes(item.id)])
-      ),
-      fields: (state.data?.playlists ?? []).map((p) => textField(p.id, p.name, 'boolean')),
-      save: (values) => {
-        services.music.setMusicItemPlaylists(
-          musicSchema.setMusicItemPlaylistsInputSchema.parse({
-            itemId: item.id,
-            playlistIds: Object.entries(values)
-              .filter(([, value]) => value)
-              .map(([id]) => id)
-          })
-        )
-        state.refresh()
-      }
-    })
-
-  const filters = (): void =>
+  const movieFilters = (): void =>
     setForm({
       title: 'Фильтры и сортировка',
       initial: { genre, type, year, director, actor, minRating, sort },
@@ -127,28 +147,15 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
         textField('genre', 'Жанр'),
         choiceField('type', 'Тип', [
           { value: '', label: 'Все' },
-          ...(mode === 'movies'
-            ? [
-                { value: 'movie', label: 'Фильм' },
-                { value: 'series', label: 'Сериал' },
-                { value: 'cartoon', label: 'Мультфильм' },
-                { value: 'animated_series', label: 'Мультсериал' }
-              ]
-            : [
-                { value: 'track', label: 'Трек' },
-                { value: 'album', label: 'Альбом' },
-                { value: 'ep', label: 'EP' },
-                { value: 'single', label: 'Сингл' }
-              ])
+          { value: 'movie', label: 'Фильм' },
+          { value: 'series', label: 'Сериал' },
+          { value: 'cartoon', label: 'Мультфильм' },
+          { value: 'animated_series', label: 'Мультсериал' }
         ]),
         textField('year', 'Год; пусто — все'),
-        ...(mode === 'movies'
-          ? [
-              textField('director', 'Режиссёр'),
-              textField('actor', 'Актёр'),
-              textField('minRating', 'Минимальная оценка 1–10')
-            ]
-          : []),
+        textField('director', 'Режиссёр'),
+        textField('actor', 'Актёр'),
+        textField('minRating', 'Минимальная оценка 1–10'),
         choiceField('sort', 'Порядок', [
           { value: 'recent', label: 'Недавно изменённые' },
           { value: 'title', label: 'По названию' },
@@ -156,65 +163,88 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
           { value: 'year', label: 'По году' }
         ])
       ],
-      save: (v) => {
-        setGenre(String(v.genre))
-        setType(String(v.type))
-        setYear(String(v.year))
-        if (mode === 'movies') {
-          setDirector(String(v.director))
-          setActor(String(v.actor))
-          setMinRating(String(v.minRating))
-        }
-        setSort(String(v.sort))
+      save: (values) => {
+        setGenre(String(values.genre))
+        setType(String(values.type))
+        setYear(String(values.year))
+        setDirector(String(values.director))
+        setActor(String(values.actor))
+        setMinRating(String(values.minRating))
+        setSort(String(values.sort))
       }
     })
 
-  const webSearch = async (title: string): Promise<void> => {
+  const musicFilters = (): void => {
+    const musicItems = (state.data?.items ?? []) as MusicItemRecord[]
+    setForm({
+      title: 'Фильтры библиотеки',
+      initial: { artist: musicArtist, year: musicYear },
+      fields: [
+        choiceField('artist', 'Исполнитель', [
+          { value: '', label: 'Все исполнители' },
+          ...musicFilterArtists(musicItems).map((artistName) => ({
+            value: artistName,
+            label: artistName
+          }))
+        ]),
+        choiceField('year', 'Год', [
+          { value: '', label: 'Любой год' },
+          ...musicFilterYears(musicItems).map((value) => ({
+            value: String(value),
+            label: String(value)
+          }))
+        ])
+      ],
+      save: (values) => {
+        setMusicArtist(String(values.artist ?? ''))
+        setMusicYear(String(values.year ?? ''))
+      }
+    })
+  }
+
+  const webSearch = async (searchQuery: string): Promise<void> => {
     setWebError('')
     try {
-      await Linking.openURL(`https://www.google.com/search?q=${encodeURIComponent(title)}`)
+      await Linking.openURL(`https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`)
     } catch (reason) {
       setWebError(messageFor(reason))
     }
   }
 
-  const minRatingNumber = Number(minRating)
-  const items = (state.data?.items ?? [])
-    .filter(
-      (item) =>
+  const movieItems = ((state.data?.items ?? []) as MovieRecord[])
+    .filter((item) => {
+      const minRatingNumber = Number(minRating)
+      return (
         (filter === 'all' || (filter === 'favorite' && item.favorite) || item.status === filter) &&
         (!genre ||
-          item.genres.some((g) => g.toLocaleLowerCase().includes(genre.toLocaleLowerCase()))) &&
+          item.genres.some((value) =>
+            value.toLocaleLowerCase().includes(genre.toLocaleLowerCase())
+          )) &&
         (!type || item.type === type) &&
         (!year || String(item.year) === year) &&
-        (mode !== 'movies' ||
-          !director ||
-          ('director' in item &&
-            item.director.toLocaleLowerCase().includes(director.toLocaleLowerCase()))) &&
-        (mode !== 'movies' ||
-          !actor ||
-          ('actors' in item &&
-            item.actors.some((name) =>
-              name.toLocaleLowerCase().includes(actor.toLocaleLowerCase())
-            ))) &&
-        (mode !== 'movies' ||
-          !minRating ||
+        (!director ||
+          item.director.toLocaleLowerCase().includes(director.toLocaleLowerCase())) &&
+        (!actor ||
+          item.actors.some((name) =>
+            name.toLocaleLowerCase().includes(actor.toLocaleLowerCase())
+          )) &&
+        (!minRating ||
           !Number.isFinite(minRatingNumber) ||
           (item.rating ?? 0) >= minRatingNumber) &&
-        (!playlistId ||
-          state.data?.playlists.find((p) => p.id === playlistId)?.trackIds.includes(item.id)) &&
         [
           item.title,
           item.description,
           item.comments,
           ...item.genres,
-          ...('artists' in item ? item.artists : item.actors),
-          ...('director' in item ? [item.director, item.originalTitle ?? ''] : [item.album])
+          ...item.actors,
+          item.director,
+          item.originalTitle ?? ''
         ]
           .join(' ')
           .toLocaleLowerCase()
           .includes(query.toLocaleLowerCase())
-    )
+      )
+    })
     .sort((a, b) =>
       sort === 'title'
         ? a.title.localeCompare(b.title, 'ru')
@@ -225,12 +255,48 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
             : b.updatedAt - a.updatedAt
     )
 
-  const selectedMovie =
-    mode === 'movies' && selectedMovieId
-      ? (state.data?.items as MovieRecord[] | undefined)?.find(
-          (item) => item.id === selectedMovieId
-        )
-      : undefined
+  const musicItems = (state.data?.items ?? []) as MusicItemRecord[]
+  const musicPlaylists = state.data?.playlists ?? []
+  const selectedPlaylist = playlistId
+    ? (musicPlaylists.find((playlist) => playlist.id === playlistId) ?? null)
+    : null
+  const normalizedQuery = query.trim().toLocaleLowerCase('ru')
+  const visibleMusicItems = musicItems.filter((item) => {
+    if (filter === 'favorite' && !item.favorite) return false
+    if (playlistId && !selectedPlaylist?.trackIds.includes(item.id)) return false
+    if (musicArtist && !item.artists.includes(musicArtist)) return false
+    if (musicYear && item.year?.toString() !== musicYear) return false
+    if (!normalizedQuery) return true
+    return [item.title, ...item.artists].join(' ').toLocaleLowerCase('ru').includes(normalizedQuery)
+  })
+  const visiblePlaylists = musicPlaylists.filter((playlist) => {
+    if (!normalizedQuery) return true
+    if (playlist.name.toLocaleLowerCase('ru').includes(normalizedQuery)) return true
+    return playlist.trackIds.some((itemId) => {
+      const item = musicItems.find((entry) => entry.id === itemId)
+      return item
+        ? [item.title, ...item.artists]
+            .join(' ')
+            .toLocaleLowerCase('ru')
+            .includes(normalizedQuery)
+        : false
+    })
+  })
+  const musicView: MobileMusicView = playlistsView
+    ? 'playlists'
+    : playlistId
+      ? 'playlist'
+      : filter === 'favorite'
+        ? 'favorites'
+        : 'tracks'
+  const musicEmptyBecauseFilter =
+    Boolean(normalizedQuery) || Boolean(musicArtist) || Boolean(musicYear)
+
+  const selectedMovie = selectedMovieId
+    ? ((state.data?.items as MovieRecord[] | undefined)?.find(
+        (item) => item.id === selectedMovieId
+      ) ?? null)
+    : null
 
   const updateMovie = (movie: MovieRecord): void => {
     state.mutate(() => {
@@ -240,7 +306,29 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
     })
   }
 
-  if (selectedMovie) {
+  const updateMusic = (item: MusicItemRecord): void => {
+    state.mutate(() => {
+      services.music.updateMusicItem(
+        musicSchema.updateMusicItemInputSchema.parse(musicRecordToUpdateInput(item))
+      )
+    })
+  }
+
+  const deletePlaylist = (playlist: MusicPlaylistRecord): void => {
+    state.confirmDelete(
+      'Удалить плейлист?',
+      () => {
+        services.music.deleteMusicPlaylist({ id: playlist.id })
+        if (playlistId === playlist.id) {
+          setPlaylistId(null)
+          setPlaylistsView(true)
+        }
+      },
+      'Треки останутся в музыкальной библиотеке. Удалится только сам плейлист.'
+    )
+  }
+
+  if (mode === 'movies' && selectedMovie) {
     return (
       <View style={{ flex: 1 }}>
         {state.error && <ErrorState message={state.error} retry={state.refresh} />}
@@ -249,7 +337,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
           movie={selectedMovie}
           busy={state.pending}
           onBack={() => setSelectedMovieId(null)}
-          onEdit={() => edit(selectedMovie)}
+          onEdit={() => editMovie(selectedMovie)}
           onDelete={() =>
             state.confirmDelete('Удалить фильм?', () => {
               services.movies.deleteMovie({ id: selectedMovie.id })
@@ -269,78 +357,81 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
   return (
     <View style={{ flex: 1 }}>
       <View style={{ gap: 8, marginBottom: 12 }}>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          <Button
-            label={playlistsView ? '+ Плейлист' : '+ Добавить'}
-            selected
-            onPress={() => (playlistsView ? editPlaylist() : edit())}
-          />
-          {mode === 'music' && (
-            <Button
-              label={playlistsView ? 'Каталог' : 'Плейлисты'}
-              onPress={() => setPlaylistsView(!playlistsView)}
-            />
-          )}
-          {!playlistsView && <Button label="Из JSON" onPress={() => setJsonImportOpen(true)} />}
-          <Button label="Фильтры" onPress={filters} />
-        </View>
-        <SearchField value={query} onChangeText={setQuery} />
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          {[
-            { value: 'all', label: 'Все' },
-            { value: want, label: 'В планах' },
-            { value: done, label: mode === 'movies' ? 'Просмотрено' : 'Прослушано' },
-            { value: 'favorite', label: 'Избранное' }
-          ].map((f) => (
-            <Button
-              key={f.value}
-              label={f.label}
-              selected={filter === f.value}
-              onPress={() => setFilter(f.value)}
-            />
-          ))}
-          {playlistId && <Button label="Все плейлисты" onPress={() => setPlaylistId(null)} />}
-        </View>
+        {mode === 'movies' ? (
+          <>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              <Button label="+ Добавить" selected onPress={() => editMovie()} />
+              <Button label="Из JSON" onPress={() => setJsonImportOpen(true)} />
+              <Button label="Фильтры" onPress={movieFilters} />
+            </View>
+            <SearchField value={query} onChangeText={setQuery} />
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              {[
+                { value: 'all', label: 'Все' },
+                { value: 'watchlist', label: 'В планах' },
+                { value: 'watched', label: 'Просмотрено' },
+                { value: 'favorite', label: 'Избранное' }
+              ].map((item) => (
+                <Button
+                  key={item.value}
+                  label={item.label}
+                  selected={filter === item.value}
+                  onPress={() => setFilter(item.value)}
+                />
+              ))}
+            </View>
+          </>
+        ) : (
+          <>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              <Button label="+ Трек" selected onPress={() => editTrack()} />
+              <Button label="+ Плейлист" onPress={() => editPlaylist()} />
+              {!playlistsView && <Button label="Фильтры" onPress={musicFilters} />}
+            </View>
+            <SearchField value={query} onChangeText={setQuery} />
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              <Button
+                label="Все треки"
+                selected={musicView === 'tracks'}
+                onPress={() => {
+                  setQuery('')
+                  setFilter('all')
+                  setPlaylistId(null)
+                  setPlaylistsView(false)
+                }}
+              />
+              <Button
+                label="Избранное"
+                selected={musicView === 'favorites'}
+                onPress={() => {
+                  setQuery('')
+                  setFilter('favorite')
+                  setPlaylistId(null)
+                  setPlaylistsView(false)
+                }}
+              />
+              <Button
+                label="Плейлисты"
+                selected={musicView === 'playlists' || musicView === 'playlist'}
+                onPress={() => {
+                  setQuery('')
+                  setFilter('all')
+                  setPlaylistId(null)
+                  setPlaylistsView(true)
+                }}
+              />
+            </View>
+          </>
+        )}
       </View>
+
       {state.error && <ErrorState message={state.error} retry={state.refresh} />}
       {webError && <ErrorState message={webError} />}
       {state.loading ? (
         <LoadingState />
-      ) : playlistsView ? (
-        <FlatList
-          data={state.data?.playlists ?? []}
-          keyExtractor={(item) => item.id}
-          ListEmptyComponent={<EmptyState />}
-          renderItem={({ item }) => (
-            <Row
-              title={item.name}
-              subtitle={`${item.trackIds.length} треков`}
-              onPress={() => {
-                setPlaylistId(item.id)
-                setPlaylistsView(false)
-              }}
-            >
-              <Button label="Изменить" onPress={() => editPlaylist(item)} />
-              <Button
-                label="Удалить"
-                danger
-                onPress={() =>
-                  state.confirmDelete(
-                    'Удалить плейлист?',
-                    () => {
-                      services.music.deleteMusicPlaylist({ id: item.id })
-                      if (playlistId === item.id) setPlaylistId(null)
-                    },
-                    'Треки останутся в каталоге.'
-                  )
-                }
-              />
-            </Row>
-          )}
-        />
       ) : mode === 'movies' ? (
         <MovieLibraryView
-          movies={items as MovieRecord[]}
+          movies={movieItems}
           refreshing={state.loading}
           onRefresh={state.refresh}
           onOpen={(movie) => setSelectedMovieId(movie.id)}
@@ -350,53 +441,47 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
           }}
         />
       ) : (
-        <FlatList
-          data={items}
-          keyExtractor={(item) => item.id}
-          ListEmptyComponent={<EmptyState />}
-          onRefresh={state.refresh}
+        <MusicLibraryView
+          view={musicView}
+          items={visibleMusicItems}
+          playlists={visiblePlaylists}
+          selectedPlaylist={selectedPlaylist}
           refreshing={state.loading}
-          renderItem={({ item }) => (
-            <Row
-              title={`${item.favorite ? '★ ' : ''}${item.title}`}
-              subtitle={[
-                item.year,
-                item.status === done ? '✓' : 'В планах',
-                item.rating ? `${item.rating}/10` : '',
-                item.genres.join(', '),
-                'artists' in item ? item.artists.join(', ') : item.director,
-                item.description
-              ]
-                .filter(Boolean)
-                .join(' · ')}
-              onPress={() => edit(item)}
-            >
-              <Button
-                label="В интернете"
-                onPress={() => {
-                  void webSearch(item.title)
-                }}
-              />
-              {item.type === 'track' && (
-                <Button label="В плейлист" onPress={() => membership(item as MusicItemRecord)} />
-              )}
-              <Button
-                label="Удалить"
-                danger
-                onPress={() =>
-                  state.confirmDelete('Удалить запись?', () => {
-                    services.music.deleteMusicItem({ id: item.id })
-                  })
-                }
-              />
-            </Row>
-          )}
+          emptyBecauseFilter={musicEmptyBecauseFilter}
+          onRefresh={state.refresh}
+          onOpenTrack={editTrack}
+          onToggleFavorite={(item) => updateMusic({ ...item, favorite: !item.favorite })}
+          onSearchWeb={(item) => {
+            const artist = item.artists[0]
+            void webSearch(`Слушать ${item.title}${artist ? ` ${artist}` : ''}`)
+          }}
+          onDeleteTrack={(item) =>
+            state.confirmDelete(
+              'Удалить трек?',
+              () => services.music.deleteMusicItem({ id: item.id }),
+              'Трек будет удалён из библиотеки и всех плейлистов.'
+            )
+          }
+          onOpenPlaylist={(playlist) => {
+            setQuery('')
+            setFilter('all')
+            setPlaylistId(playlist.id)
+            setPlaylistsView(false)
+          }}
+          onEditPlaylist={editPlaylist}
+          onDeletePlaylist={deletePlaylist}
+          onBackToPlaylists={() => {
+            setQuery('')
+            setPlaylistId(null)
+            setPlaylistsView(true)
+          }}
         />
       )}
+
       {form && <FormSheet spec={form} close={() => setForm(null)} />}
-      {jsonImportOpen && (
+      {mode === 'movies' && jsonImportOpen && (
         <CatalogJsonImportModal
-          mode={mode}
+          mode="movies"
           close={() => setJsonImportOpen(false)}
           importMovies={(importedItems) => {
             services.movies.createMovies({ movies: importedItems })
