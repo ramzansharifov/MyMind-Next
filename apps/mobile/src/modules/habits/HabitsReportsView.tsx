@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { ScrollView, Text, TextInput, View } from 'react-native'
 import type { HabitReportDay } from '@mymind/contracts/habits'
+import { localDateKey } from '@mymind/core/habits'
 import * as schema from '@mymind/core/validation/habits'
 import type { MobileServices } from '../../app/services'
 import { useCollection } from '../../shared/hooks/useCollection'
@@ -24,7 +25,6 @@ interface Props {
   api: MobileServices['habits']
   groupId: string | null | undefined
   scopeLabel: string
-  referenceDate: string
 }
 
 const reportRangeOptions: Array<{ key: MobileHabitReportRange; label: string }> = [
@@ -77,14 +77,10 @@ function MetricCard({ label, value }: { label: string; value: string }): React.J
   )
 }
 
-export function HabitsReportsView({
-  api,
-  groupId,
-  scopeLabel,
-  referenceDate
-}: Props): React.JSX.Element {
+export function HabitsReportsView({ api, groupId, scopeLabel }: Props): React.JSX.Element {
   const theme = useTheme()
-  const initialCustom = useMemo(() => defaultHabitCustomRange(referenceDate), [referenceDate])
+  const today = localDateKey()
+  const initialCustom = useMemo(() => defaultHabitCustomRange(today), [today])
   const [reportRange, setReportRange] = useState<MobileHabitReportRange>('30d')
   const [customFrom, setCustomFrom] = useState(initialCustom.from)
   const [customTo, setCustomTo] = useState(initialCustom.to)
@@ -94,7 +90,7 @@ export function HabitsReportsView({
 
   const state = useCollection(
     useCallback(() => {
-      const period = habitReportPeriod(reportRange, customFrom, customTo, referenceDate)
+      const period = habitReportPeriod(reportRange, customFrom, customTo, today)
       const input = schema.habitReportInputSchema.parse({
         dateFrom: period.dateFrom,
         dateTo: period.dateTo,
@@ -102,7 +98,7 @@ export function HabitsReportsView({
         ungroupedOnly: groupId === null
       })
       return { period, report: api.getHabitsReport(input) }
-    }, [api, customFrom, customTo, groupId, referenceDate, reportRange])
+    }, [api, customFrom, customTo, groupId, reportRange, today])
   )
 
   const weeks = useMemo(
@@ -112,7 +108,7 @@ export function HabitsReportsView({
 
   const applyCustomPeriod = (): void => {
     try {
-      habitReportPeriod('custom', customDraftFrom, customDraftTo, referenceDate)
+      habitReportPeriod('custom', customDraftFrom, customDraftTo, today)
       const nextFrom = customDraftFrom.trim()
       const nextTo = customDraftTo.trim()
       setCustomError('')
@@ -169,7 +165,7 @@ export function HabitsReportsView({
 
       {reportRange === 'custom' ? (
         <View style={{ gap: 10 }}>
-          <Label muted>Формат даты: ГГГГ-ММ-ДД · максимум 730 дней</Label>
+          <Label muted>Формат даты: ГГГГ-ММ-ДД · максимум 730 дней · не позже сегодня</Label>
           <TextInput
             accessibilityLabel="Начальная дата отчёта привычек"
             value={customDraftFrom}
@@ -205,8 +201,8 @@ export function HabitsReportsView({
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
         <MetricCard label="Запланировано" value={String(report.summary.scheduled)} />
         <MetricCard label="Выполнено" value={String(report.summary.completed)} />
-        <MetricCard label="Пропущено" value={String(report.summary.skipped)} />
-        <MetricCard label="Не выполнено" value={String(report.summary.missed)} />
+        <MetricCard label="Пропущено" value={String(report.summary.missed)} />
+        <MetricCard label="Осознанно пропущено" value={String(report.summary.skipped)} />
         <MetricCard label="Ожидает сегодня/в будущем" value={String(report.summary.pending)} />
         <MetricCard label="Процент выполнения" value={`${report.summary.completionRate}%`} />
       </View>
@@ -237,7 +233,7 @@ export function HabitsReportsView({
                       <View
                         key={day.date}
                         accessible
-                        accessibilityLabel={`${day.date}: ${day.completionRate}% выполнено, ${day.completed} выполнено, ${day.missed} не выполнено, ${day.skipped} пропущено`}
+                        accessibilityLabel={`${day.date}: ${day.completionRate}% выполнено, ${day.completed} выполнено, ${day.missed} пропущено, ${day.skipped} осознанно пропущено`}
                         style={{
                           width: 14,
                           height: 14,
@@ -284,7 +280,7 @@ export function HabitsReportsView({
           <Row
             key={item.habitId}
             title={`${item.title} · ${item.completionRate}%`}
-            subtitle={`Выполнено ${item.completed}/${item.scheduled} · серия ${item.currentStreak} · лучшая ${item.bestStreak} · пропущено ${item.skipped} · не выполнено ${item.missed} · ожидает ${item.pending} · всего ${totalValueLabel(item)}`}
+            subtitle={`Выполнено ${item.completed}/${item.scheduled} · серия ${item.currentStreak} · лучшая ${item.bestStreak} · пропущено ${item.missed} · осознанно пропущено ${item.skipped} · ожидает ${item.pending} · всего ${totalValueLabel(item)}`}
           />
         ))
       ) : (
