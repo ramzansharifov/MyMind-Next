@@ -21,7 +21,11 @@ function entry(
   }
 }
 
-function photo(id: string, entryId: string, view: 'front' | 'back') {
+function photo(
+  id: string,
+  entryId: string,
+  view: 'front' | 'back'
+): WorkoutProgressEntryRecord['photos'][number] {
   return {
     id,
     entryId,
@@ -32,7 +36,7 @@ function photo(id: string, entryId: string, view: 'front' | 'back') {
     url: `file:///${id}.jpg`,
     view,
     createdAt: 1
-  } as const
+  }
 }
 
 describe('workout progress presentation', () => {
