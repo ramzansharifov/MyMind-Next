@@ -246,11 +246,7 @@ function LibraryHeader({
   onDeletePlaylist
 }: Pick<
   MusicLibraryViewProps,
-  | 'view'
-  | 'selectedPlaylist'
-  | 'onBackToPlaylists'
-  | 'onEditPlaylist'
-  | 'onDeletePlaylist'
+  'view' | 'selectedPlaylist' | 'onBackToPlaylists' | 'onEditPlaylist' | 'onDeletePlaylist'
 >): React.JSX.Element {
   return (
     <SectionHeader
