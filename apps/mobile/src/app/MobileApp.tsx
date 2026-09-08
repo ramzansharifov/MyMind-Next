@@ -49,6 +49,8 @@ export type Route =
   | 'passwords'
   | 'settings'
 
+type BackupOperation = 'export' | 'restore'
+
 const titles: Record<Route, string> = {
   home: 'Главная',
   study: 'Обучение',
@@ -112,7 +114,7 @@ export default function MobileApp(): React.JSX.Element {
   const [route, setRoute] = useState<Route>('home')
   const [boardResourceId, setBoardResourceId] = useState<string | null>(null)
   const [immersive, setImmersive] = useState(false)
-  const [restoringBackup, setRestoringBackup] = useState(false)
+  const [backupOperation, setBackupOperation] = useState<BackupOperation | null>(null)
   const [error, setError] = useState('')
   const [attempt, setAttempt] = useState(0)
   const dark = (appearance.theme === 'system' ? (system ?? 'dark') : appearance.theme) === 'dark'
@@ -123,22 +125,22 @@ export default function MobileApp(): React.JSX.Element {
 
   const navigate = useCallback(
     (next: Route): void => {
-      if (restoringBackup) return
+      if (backupOperation) return
       setImmersive(false)
       setBoardResourceId(null)
       setRoute(next)
     },
-    [restoringBackup]
+    [backupOperation]
   )
 
   const openBoard = useCallback(
     (boardId: string): void => {
-      if (restoringBackup) return
+      if (backupOperation) return
       setImmersive(false)
       setBoardResourceId(boardId)
       setRoute('boards')
     },
-    [restoringBackup]
+    [backupOperation]
   )
 
   useEffect(() => {
@@ -160,17 +162,18 @@ export default function MobileApp(): React.JSX.Element {
 
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (restoringBackup) return true
+      if (backupOperation) return true
       if (immersive) return false
       if (route === 'home') return false
       navigate(['notes', 'tasks', 'habits', 'more'].includes(route) ? 'home' : 'more')
       return true
     })
     return () => subscription.remove()
-  }, [immersive, navigate, restoringBackup, route])
+  }, [backupOperation, immersive, navigate, route])
 
   const saveAppearance = useCallback(
     (next: AppearancePreferences): void => {
+      if (backupOperation) return
       try {
         const valid = appearancePreferencesSchema.parse(next)
         services?.settings.set('appearance', JSON.stringify(valid))
@@ -180,13 +183,27 @@ export default function MobileApp(): React.JSX.Element {
         setError(messageFor(reason))
       }
     },
-    [services]
+    [backupOperation, services]
   )
 
-  const exportBackup = useCallback(async () => exportMobileBackup(await database()), [])
+  const exportBackup = useCallback(async () => {
+    if (backupOperation) throw new Error('Операция резервного копирования уже выполняется')
+    setBackupOperation('export')
+    setError('')
+    await new Promise<void>((resolve) => setTimeout(resolve, 0))
+    try {
+      return await exportMobileBackup(await database())
+    } catch (reason) {
+      setError(messageFor(reason))
+      throw reason
+    } finally {
+      setBackupOperation(null)
+    }
+  }, [backupOperation])
 
   const restoreBackup = useCallback(async () => {
-    setRestoringBackup(true)
+    if (backupOperation) throw new Error('Операция резервного копирования уже выполняется')
+    setBackupOperation('restore')
     setError('')
     await new Promise<void>((resolve) => setTimeout(resolve, 0))
     try {
@@ -204,9 +221,9 @@ export default function MobileApp(): React.JSX.Element {
       setError(messageFor(reason))
       throw reason
     } finally {
-      setRestoringBackup(false)
+      setBackupOperation(null)
     }
-  }, [])
+  }, [backupOperation])
 
   const moreRoutes = [
     'study',
@@ -247,7 +264,7 @@ export default function MobileApp(): React.JSX.Element {
             !error && <LoadingState />
           ) : (
             <ServicesContext.Provider value={services} key={servicesEpoch}>
-              {!restoringBackup ? <ReminderStatus services={services} /> : null}
+              {!backupOperation ? <ReminderStatus services={services} /> : null}
               <View style={{ flex: 1, paddingHorizontal: immersive ? 0 : 16 }} key={route}>
                 {route === 'home' ? (
                   <Home services={services} navigate={navigate} />
@@ -292,7 +309,7 @@ export default function MobileApp(): React.JSX.Element {
                   />
                 )}
               </View>
-              {!immersive && !restoringBackup ? (
+              {!immersive && !backupOperation ? (
                 <View
                   style={{
                     flexDirection: 'row',
