@@ -19,6 +19,12 @@ def wire_nutrition() -> None:
             raise SystemExit('Nutrition import anchor not found')
         text = text.replace(import_anchor, f'{import_anchor}\n{import_line}', 1)
 
+    text = text.replace(
+        "import { choiceField, messageFor, textField, type FormSpec } from '../../shared/ui/form-model'",
+        "import { choiceField, textField, type FormSpec } from '../../shared/ui/form-model'",
+        1,
+    )
+
     days_ago = (
         'function daysAgoKey(days: number): string {\n'
         '  return shiftDate(localDateKey(), -days)\n'
@@ -64,6 +70,20 @@ def wire_workouts() -> None:
         if import_anchor not in text:
             raise SystemExit('Workouts import anchor not found')
         text = text.replace(import_anchor, f'{import_anchor}\n{import_line}', 1)
+
+    text = text.replace(
+        "import {\n  choiceField,\n  messageFor,\n  textField,\n  type FormField,\n  type FormSpec\n} from '../../shared/ui/form-model'",
+        "import { choiceField, textField, type FormField, type FormSpec } from '../../shared/ui/form-model'",
+        1,
+    )
+
+    local_date_key = (
+        'function localDateKey(date = new Date()): string {\n'
+        '  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000)\n'
+        "  return local.toISOString().slice(0, 10)\n"
+        '}\n\n'
+    )
+    text = text.replace(local_date_key, '', 1)
 
     days_ago = (
         'function daysAgoKey(days: number): string {\n'
