@@ -298,7 +298,12 @@ function DiaryMoodTrend({ points }: { points: DiaryReportPoint[] }): React.JSX.E
                       ? `${item.dayKey}: настроение не отмечено`
                       : `${item.dayKey}: ${meta?.label ?? score}, ${score} из 5`
                   }
-                  style={{ width: 16, height: 112, justifyContent: 'flex-end', alignItems: 'center' }}
+                  style={{
+                    width: 16,
+                    height: 112,
+                    justifyContent: 'flex-end',
+                    alignItems: 'center'
+                  }}
                 >
                   {score === null ? (
                     <View
