@@ -29,6 +29,26 @@ jobs:
       - name: Rebuild SQLite for Node
         run: npm run native:node
 
+      - name: Fix Diary animation lint
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('apps/mobile/src/modules/diary/DiaryScreen.tsx')
+          text = path.read_text()
+          replacements = {
+              "import { useCallback, useEffect, useMemo, useRef, useState } from 'react'":
+                  "import { useCallback, useEffect, useMemo, useState } from 'react'",
+              "  const pageOffset = useRef(new Animated.Value(0)).current":
+                  "  const [pageOffset] = useState(() => new Animated.Value(0))",
+          }
+          for before, after in replacements.items():
+              if before not in text:
+                  raise SystemExit(f'Expected Diary source fragment not found: {before}')
+              text = text.replace(before, after, 1)
+          path.write_text(text)
+          PY
+
       - name: Format final mobile parity checkpoint
         id: format
         run: >-
