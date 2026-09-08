@@ -21,6 +21,7 @@ import {
   SearchField
 } from '../../shared/ui/primitives'
 import { WorkoutProgressSheet } from './WorkoutProgressSheet'
+import { WorkoutProgressView } from './WorkoutProgressView'
 import { WorkoutSessionSheet } from './WorkoutSessionSheet'
 import { WorkoutReportsView } from './WorkoutReportsView'
 
@@ -30,7 +31,6 @@ type WorkoutListItem =
   | { kind: 'session'; value: WorkoutSessionRecord }
   | { kind: 'exercise'; value: WorkoutExerciseRecord }
   | { kind: 'program'; value: WorkoutProgramRecord }
-  | { kind: 'progress'; value: WorkoutProgressEntryRecord }
 
 const muscleLabels: Record<(typeof WORKOUT_MUSCLE_ZONES)[number], string> = {
   shoulders: 'Плечи',
@@ -220,9 +220,6 @@ export function WorkoutsScreen(): React.JSX.Element {
       {tab === 'programs' ? (
         <Button label="+ Программа" selected onPress={() => editProgram()} />
       ) : null}
-      {tab === 'progress' ? (
-        <Button label="+ Запись прогресса" selected onPress={() => setProgressEditor('new')} />
-      ) : null}
     </View>
   )
 
@@ -238,14 +235,62 @@ export function WorkoutsScreen(): React.JSX.Element {
     )
   }
 
+  if (tab === 'progress') {
+    return (
+      <View style={{ flex: 1 }}>
+        {header}
+        {overview.error ? <ErrorState message={overview.error} retry={overview.refresh} /> : null}
+        <WorkoutProgressView
+          entries={progressEntries}
+          refreshing={overview.loading}
+          refresh={overview.refresh}
+          onAdd={() => setProgressEditor('new')}
+          onEdit={setProgressEditor}
+          onDelete={(entry) =>
+            overview.confirmDelete('Удалить запись прогресса?', () =>
+              api.deleteProgressEntry({ id: entry.id })
+            )
+          }
+        />
+        {progressEditor ? (
+          <WorkoutProgressSheet
+            entry={progressEditor === 'new' ? undefined : progressEditor}
+            exercises={exercises}
+            save={(input) => {
+              if ('id' in input) api.updateProgressEntry(input)
+              else api.createProgressEntry(input)
+              overview.refresh()
+            }}
+            importPhoto={
+              progressEditor === 'new'
+                ? undefined
+                : async (view) => {
+                    const photo = await api.importProgressPhoto({ id: progressEditor.id, view })
+                    overview.refresh()
+                    return photo
+                  }
+            }
+            deletePhoto={
+              progressEditor === 'new'
+                ? undefined
+                : async (photo) => {
+                    await api.deleteProgressPhoto({ id: photo.id })
+                    overview.refresh()
+                  }
+            }
+            close={() => setProgressEditor(null)}
+          />
+        ) : null}
+      </View>
+    )
+  }
+
   const listItems: WorkoutListItem[] =
     tab === 'journal'
       ? filteredSessions.map((value) => ({ kind: 'session', value }))
       : tab === 'exercises'
         ? filteredExercises.map((value) => ({ kind: 'exercise', value }))
-        : tab === 'programs'
-          ? filteredPrograms.map((value) => ({ kind: 'program', value }))
-          : progressEntries.map((value) => ({ kind: 'progress', value }))
+        : filteredPrograms.map((value) => ({ kind: 'program', value }))
 
   return (
     <View style={{ flex: 1 }}>
@@ -290,37 +335,15 @@ export function WorkoutsScreen(): React.JSX.Element {
               />
             )
           }
-          if (row.kind === 'program') {
-            const program = row.value
-            return (
-              <Row
-                title={program.name}
-                subtitle={`${program.exercises.length} упражнений${program.description ? ` · ${program.description}` : ''}${program.status === 'archived' ? ' · архив' : ''}`}
-                onPress={() => editProgram(program)}
-                onLongPress={() =>
-                  overview.confirmDelete('Удалить программу?', () =>
-                    api.deleteProgram({ id: program.id })
-                  )
-                }
-              />
-            )
-          }
-          const entry = row.value
+          const program = row.value
           return (
             <Row
-              title={`${entry.date}${entry.bodyWeightKg === null ? '' : ` · ${entry.bodyWeightKg} кг`}`}
-              subtitle={[
-                entry.wellbeing,
-                entry.notes,
-                `${entry.metrics.length} показателей`,
-                `${entry.photos.length} фото`
-              ]
-                .filter(Boolean)
-                .join(' · ')}
-              onPress={() => setProgressEditor(entry)}
+              title={program.name}
+              subtitle={`${program.exercises.length} упражнений${program.description ? ` · ${program.description}` : ''}${program.status === 'archived' ? ' · архив' : ''}`}
+              onPress={() => editProgram(program)}
               onLongPress={() =>
-                overview.confirmDelete('Удалить запись прогресса?', () =>
-                  api.deleteProgressEntry({ id: entry.id })
+                overview.confirmDelete('Удалить программу?', () =>
+                  api.deleteProgram({ id: program.id })
                 )
               }
             />
@@ -339,35 +362,6 @@ export function WorkoutsScreen(): React.JSX.Element {
             overview.refresh()
           }}
           close={() => setSessionEditor(null)}
-        />
-      ) : null}
-      {progressEditor ? (
-        <WorkoutProgressSheet
-          entry={progressEditor === 'new' ? undefined : progressEditor}
-          exercises={exercises}
-          save={(input) => {
-            if ('id' in input) api.updateProgressEntry(input)
-            else api.createProgressEntry(input)
-            overview.refresh()
-          }}
-          importPhoto={
-            progressEditor === 'new'
-              ? undefined
-              : async (view) => {
-                  const photo = await api.importProgressPhoto({ entryId: progressEditor.id, view })
-                  overview.refresh()
-                  return photo
-                }
-          }
-          deletePhoto={
-            progressEditor === 'new'
-              ? undefined
-              : async (photo) => {
-                  await api.deleteProgressPhoto({ id: photo.id })
-                  overview.refresh()
-                }
-          }
-          close={() => setProgressEditor(null)}
         />
       ) : null}
     </View>
