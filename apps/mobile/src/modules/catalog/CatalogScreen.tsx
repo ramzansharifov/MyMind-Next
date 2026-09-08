@@ -18,6 +18,8 @@ import { FormSheet } from '../../shared/ui/FormSheet'
 import { choiceField, messageFor, textField, type FormSpec } from '../../shared/ui/form-model'
 import { movieFields, movieValues, musicFields, musicValues } from './catalog-forms'
 import { CatalogJsonImportModal } from './CatalogJsonImportModal'
+import { MovieDetailView } from './MovieDetailView'
+import { MovieLibraryView } from './MovieLibraryView'
 
 export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX.Element {
   const services = useServices()
@@ -39,13 +41,18 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
   const [genre, setGenre] = useState('')
   const [type, setType] = useState('')
   const [year, setYear] = useState('')
+  const [director, setDirector] = useState('')
+  const [actor, setActor] = useState('')
+  const [minRating, setMinRating] = useState('')
   const [playlistsView, setPlaylistsView] = useState(false)
   const [playlistId, setPlaylistId] = useState<string | null>(null)
+  const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null)
   const [form, setForm] = useState<FormSpec | null>(null)
   const [jsonImportOpen, setJsonImportOpen] = useState(false)
   const [webError, setWebError] = useState('')
   const done = mode === 'movies' ? 'watched' : 'listened'
   const want = mode === 'movies' ? 'watchlist' : 'want_to_listen'
+
   const edit = (item?: MovieRecord | MusicItemRecord): void =>
     setForm({
       title: item ? 'Редактирование' : mode === 'movies' ? 'Добавить фильм' : 'Добавить музыку',
@@ -74,6 +81,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
         state.refresh()
       }
     })
+
   const editPlaylist = (item?: MusicPlaylistRecord): void =>
     setForm({
       title: 'Плейлист',
@@ -89,6 +97,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
         state.refresh()
       }
     })
+
   const membership = (item: MusicItemRecord): void =>
     setForm({
       title: 'Добавить в плейлисты',
@@ -108,10 +117,11 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
         state.refresh()
       }
     })
+
   const filters = (): void =>
     setForm({
       title: 'Фильтры и сортировка',
-      initial: { genre, type, year, sort },
+      initial: { genre, type, year, director, actor, minRating, sort },
       fields: [
         textField('genre', 'Жанр'),
         choiceField('type', 'Тип', [
@@ -131,6 +141,13 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
               ])
         ]),
         textField('year', 'Год; пусто — все'),
+        ...(mode === 'movies'
+          ? [
+              textField('director', 'Режиссёр'),
+              textField('actor', 'Актёр'),
+              textField('minRating', 'Минимальная оценка 1–10')
+            ]
+          : []),
         choiceField('sort', 'Порядок', [
           { value: 'recent', label: 'Недавно изменённые' },
           { value: 'title', label: 'По названию' },
@@ -142,9 +159,15 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
         setGenre(String(v.genre))
         setType(String(v.type))
         setYear(String(v.year))
+        if (mode === 'movies') {
+          setDirector(String(v.director))
+          setActor(String(v.actor))
+          setMinRating(String(v.minRating))
+        }
         setSort(String(v.sort))
       }
     })
+
   const webSearch = async (title: string): Promise<void> => {
     setWebError('')
     try {
@@ -153,6 +176,8 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
       setWebError(messageFor(reason))
     }
   }
+
+  const minRatingNumber = Number(minRating)
   const items = (state.data?.items ?? [])
     .filter(
       (item) =>
@@ -161,6 +186,20 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
           item.genres.some((g) => g.toLocaleLowerCase().includes(genre.toLocaleLowerCase()))) &&
         (!type || item.type === type) &&
         (!year || String(item.year) === year) &&
+        (mode !== 'movies' ||
+          !director ||
+          ('director' in item &&
+            item.director.toLocaleLowerCase().includes(director.toLocaleLowerCase()))) &&
+        (mode !== 'movies' ||
+          !actor ||
+          ('actors' in item &&
+            item.actors.some((name) =>
+              name.toLocaleLowerCase().includes(actor.toLocaleLowerCase())
+            ))) &&
+        (mode !== 'movies' ||
+          !minRating ||
+          !Number.isFinite(minRatingNumber) ||
+          (item.rating ?? 0) >= minRatingNumber) &&
         (!playlistId ||
           state.data?.playlists.find((p) => p.id === playlistId)?.trackIds.includes(item.id)) &&
         [
@@ -184,6 +223,44 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
             ? (b.year ?? 0) - (a.year ?? 0)
             : b.updatedAt - a.updatedAt
     )
+
+  const selectedMovie =
+    mode === 'movies' && selectedMovieId
+      ? (state.data?.items as MovieRecord[] | undefined)?.find((item) => item.id === selectedMovieId)
+      : undefined
+
+  const updateMovie = (movie: MovieRecord): void => {
+    state.mutate(() => {
+      services.movies.updateMovie(moviesSchema.updateMovieInputSchema.parse(movie))
+    })
+  }
+
+  if (selectedMovie) {
+    return (
+      <View style={{ flex: 1 }}>
+        {state.error && <ErrorState message={state.error} retry={state.refresh} />}
+        {webError && <ErrorState message={webError} />}
+        <MovieDetailView
+          movie={selectedMovie}
+          busy={state.pending}
+          onBack={() => setSelectedMovieId(null)}
+          onEdit={() => edit(selectedMovie)}
+          onDelete={() =>
+            state.confirmDelete('Удалить фильм?', () => {
+              services.movies.deleteMovie({ id: selectedMovie.id })
+              setSelectedMovieId(null)
+            })
+          }
+          onUpdate={updateMovie}
+          onSearchWeb={(searchQuery) => {
+            void webSearch(searchQuery)
+          }}
+        />
+        {form && <FormSheet spec={form} close={() => setForm(null)} />}
+      </View>
+    )
+  }
+
   return (
     <View style={{ flex: 1 }}>
       <View style={{ gap: 8, marginBottom: 12 }}>
@@ -256,6 +333,17 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
             </Row>
           )}
         />
+      ) : mode === 'movies' ? (
+        <MovieLibraryView
+          movies={items as MovieRecord[]}
+          refreshing={state.loading}
+          onRefresh={state.refresh}
+          onOpen={(movie) => setSelectedMovieId(movie.id)}
+          onToggleFavorite={(movie) => updateMovie({ ...movie, favorite: !movie.favorite })}
+          onSearchWeb={(movie) => {
+            void webSearch(movie.title)
+          }}
+        />
       ) : (
         <FlatList
           data={items}
@@ -284,7 +372,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
                   void webSearch(item.title)
                 }}
               />
-              {mode === 'music' && item.type === 'track' && (
+              {item.type === 'track' && (
                 <Button label="В плейлист" onPress={() => membership(item as MusicItemRecord)} />
               )}
               <Button
@@ -292,8 +380,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
                 danger
                 onPress={() =>
                   state.confirmDelete('Удалить запись?', () => {
-                    if (mode === 'movies') services.movies.deleteMovie({ id: item.id })
-                    else services.music.deleteMusicItem({ id: item.id })
+                    services.music.deleteMusicItem({ id: item.id })
                   })
                 }
               />
@@ -306,12 +393,12 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
         <CatalogJsonImportModal
           mode={mode}
           close={() => setJsonImportOpen(false)}
-          importMovies={(items) => {
-            services.movies.createMovies({ movies: items })
+          importMovies={(importedItems) => {
+            services.movies.createMovies({ movies: importedItems })
             state.refresh()
           }}
-          importMusic={(items) => {
-            services.music.createMusicItems({ items })
+          importMusic={(importedItems) => {
+            services.music.createMusicItems({ items: importedItems })
             state.refresh()
           }}
         />
