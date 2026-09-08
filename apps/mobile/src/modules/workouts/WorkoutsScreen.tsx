@@ -28,6 +28,7 @@ import {
 } from '../../shared/ui/primitives'
 import { WorkoutProgressSheet } from './WorkoutProgressSheet'
 import { WorkoutSessionSheet } from './WorkoutSessionSheet'
+import { WorkoutReportsView } from './WorkoutReportsView'
 
 type Tab = 'journal' | 'exercises' | 'programs' | 'progress' | 'reports'
 
@@ -56,12 +57,6 @@ const muscleLabels: Record<(typeof WORKOUT_MUSCLE_ZONES)[number], string> = {
 function localDateKey(date = new Date()): string {
   const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
   return local.toISOString().slice(0, 10)
-}
-
-function daysAgoKey(days: number): string {
-  const date = new Date()
-  date.setDate(date.getDate() - days)
-  return localDateKey(date)
 }
 
 function multiField(
@@ -200,25 +195,6 @@ export function WorkoutsScreen(): React.JSX.Element {
     })
   }
 
-  let reportResult: {
-    report: ReturnType<typeof api.getReport> | null
-    error: string
-  }
-  try {
-    reportResult = {
-      report: api.getReport({
-        dateFrom: daysAgoKey(29),
-        dateTo: localDateKey(),
-        programId: null,
-        exerciseId: null,
-        muscleGroup: null
-      }),
-      error: ''
-    }
-  } catch (reason) {
-    reportResult = { report: null, error: messageFor(reason) }
-  }
-
   const tabs: Array<{ key: Tab; label: string }> = [
     { key: 'journal', label: 'Журнал' },
     { key: 'exercises', label: 'Упражнения' },
@@ -264,55 +240,11 @@ export function WorkoutsScreen(): React.JSX.Element {
   if (overview.loading) return <LoadingState />
 
   if (tab === 'reports') {
-    const report = reportResult.report
     return (
       <View style={{ flex: 1 }}>
         {header}
         {overview.error ? <ErrorState message={overview.error} retry={overview.refresh} /> : null}
-        {reportResult.error ? (
-          <ErrorState message={reportResult.error} retry={overview.refresh} />
-        ) : null}
-        <ScrollView contentContainerStyle={{ paddingBottom: 32, gap: 10 }}>
-          {!report ? (
-            <EmptyState text="Отчёт пока недоступен." />
-          ) : (
-            <>
-              <Row title="Последние 30 дней" subtitle={`${report.dateFrom} — ${report.dateTo}`} />
-              <Row
-                title={`${report.summary.sessions} тренировок · ${report.summary.activeDays} активных дней`}
-                subtitle={`${report.summary.sets} подходов · ${report.summary.reps} повторений · ${report.summary.volumeKg} кг объёма`}
-              />
-              <Row
-                title={`Средняя длительность: ${report.summary.averageDurationMinutes} мин`}
-                subtitle={`Максимальный вес: ${report.summary.maxWeightKg} кг · средний: ${report.summary.averageWeightKg} кг`}
-              />
-              {report.muscleGroups.slice(0, 6).map((muscle) => (
-                <Row
-                  key={muscle.muscleGroup}
-                  title={
-                    muscleLabels[muscle.muscleGroup as keyof typeof muscleLabels] ??
-                    muscle.muscleGroup
-                  }
-                  subtitle={`${muscle.sets} подходов · ${muscle.reps} повторений · ${muscle.loadPercent}% нагрузки`}
-                />
-              ))}
-              {report.personalRecords.slice(0, 5).map((record) => (
-                <Row
-                  key={`weighted:${record.exerciseId}:${record.date}`}
-                  title={`Рекорд · ${record.title}`}
-                  subtitle={`${record.weightKg} кг × ${record.reps} · 1ПМ ≈ ${record.estimatedOneRepMax} кг · ${record.date}`}
-                />
-              ))}
-              {report.bodyweightRecords.slice(0, 5).map((record) => (
-                <Row
-                  key={`body:${record.exerciseId}:${record.date}`}
-                  title={`Рекорд · ${record.title}`}
-                  subtitle={`${record.reps} повторений · ${record.date}`}
-                />
-              ))}
-            </>
-          )}
-        </ScrollView>
+        <WorkoutReportsView exercises={exercises} programs={programs} />
       </View>
     )
   }

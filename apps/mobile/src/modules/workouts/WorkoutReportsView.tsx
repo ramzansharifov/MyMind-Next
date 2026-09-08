@@ -90,7 +90,12 @@ export function WorkoutReportsView({
         textField('dateTo', 'По дату', 'text', 'ГГГГ-ММ-ДД')
       ],
       save: (values) => {
-        const next = reportDateRange('custom', String(values.dateFrom), String(values.dateTo), today)
+        const next = reportDateRange(
+          'custom',
+          String(values.dateFrom),
+          String(values.dateTo),
+          today
+        )
         workoutReportInputSchema.parse({
           ...next,
           programId: programId === 'all' ? null : programId,
@@ -164,12 +169,12 @@ export function WorkoutReportsView({
                 ? 'Все программы'
                 : programId === 'custom'
                   ? 'Свободные тренировки'
-                  : programs.find((program) => program.id === programId)?.name ?? 'Программа'
+                  : (programs.find((program) => program.id === programId)?.name ?? 'Программа')
             }
             exerciseLabel={
               exerciseId === 'all'
                 ? 'Все упражнения'
-                : exercises.find((exercise) => exercise.id === exerciseId)?.title ?? 'Упражнение'
+                : (exercises.find((exercise) => exercise.id === exerciseId)?.title ?? 'Упражнение')
             }
             muscleLabel={muscleGroup === 'all' ? 'Все мышцы' : muscleLabels[muscleGroup]}
             onPeriod={(next) => {
@@ -245,10 +250,26 @@ function WorkoutReportHeader({
       </View>
 
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-        <Metric label="Тренировки" value={String(report.summary.sessions)} hint={`${report.summary.exercises} упражнений`} />
-        <Metric label="Активные дни" value={String(report.summary.activeDays)} hint={`${report.summary.durationMinutes} мин всего`} />
-        <Metric label="Подходы" value={String(report.summary.sets)} hint={`${report.summary.reps} повторений`} />
-        <Metric label="Тоннаж" value={`${report.summary.volumeKg} кг`} hint={`макс. ${report.summary.maxWeightKg} кг`} />
+        <Metric
+          label="Тренировки"
+          value={String(report.summary.sessions)}
+          hint={`${report.summary.exercises} упражнений`}
+        />
+        <Metric
+          label="Активные дни"
+          value={String(report.summary.activeDays)}
+          hint={`${report.summary.durationMinutes} мин всего`}
+        />
+        <Metric
+          label="Подходы"
+          value={String(report.summary.sets)}
+          hint={`${report.summary.reps} повторений`}
+        />
+        <Metric
+          label="Тоннаж"
+          value={`${report.summary.volumeKg} кг`}
+          hint={`макс. ${report.summary.maxWeightKg} кг`}
+        />
       </View>
 
       <Section title="Распределение нагрузки">
@@ -267,8 +288,12 @@ function WorkoutReportHeader({
       {report.exercises.length > 0 ? (
         <Section title="Упражнения">
           {report.exercises.slice(0, 10).map((exercise) => (
-            <Text key={`${exercise.exerciseId ?? exercise.title}`} style={{ color: theme.muted, fontSize: 12 }}>
-              {exercise.title} · {exercise.sessions} трен. · {exercise.sets} подх. · {exercise.reps} повт.
+            <Text
+              key={`${exercise.exerciseId ?? exercise.title}`}
+              style={{ color: theme.muted, fontSize: 12 }}
+            >
+              {exercise.title} · {exercise.sessions} трен. · {exercise.sets} подх. · {exercise.reps}{' '}
+              повт.
               {exercise.usesExternalWeight ? ` · максимум ${exercise.maxWeightKg} кг` : ''}
             </Text>
           ))}
@@ -278,12 +303,18 @@ function WorkoutReportHeader({
       {report.personalRecords.length > 0 || report.bodyweightRecords.length > 0 ? (
         <Section title="Рекорды">
           {report.personalRecords.slice(0, 5).map((record) => (
-            <Text key={`weighted:${record.exerciseId}:${record.date}`} style={{ color: theme.muted, fontSize: 12 }}>
+            <Text
+              key={`weighted:${record.exerciseId}:${record.date}`}
+              style={{ color: theme.muted, fontSize: 12 }}
+            >
               {record.title} · {record.weightKg} кг × {record.reps} · {record.date}
             </Text>
           ))}
           {report.bodyweightRecords.slice(0, 5).map((record) => (
-            <Text key={`body:${record.exerciseId}:${record.date}`} style={{ color: theme.muted, fontSize: 12 }}>
+            <Text
+              key={`body:${record.exerciseId}:${record.date}`}
+              style={{ color: theme.muted, fontSize: 12 }}
+            >
               {record.title} · {record.reps} повторений · {record.date}
             </Text>
           ))}
@@ -326,7 +357,13 @@ function Metric({
   )
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }): React.JSX.Element {
+function Section({
+  title,
+  children
+}: {
+  title: string
+  children: React.ReactNode
+}): React.JSX.Element {
   const theme = useTheme()
   return (
     <View
@@ -362,7 +399,9 @@ function ProgressLine({
         <Text style={{ color: theme.text, fontSize: 12, fontWeight: '700' }}>{label}</Text>
         <Text style={{ color: theme.muted, fontSize: 11 }}>{caption}</Text>
       </View>
-      <View style={{ height: 7, borderRadius: 99, overflow: 'hidden', backgroundColor: theme.raised }}>
+      <View
+        style={{ height: 7, borderRadius: 99, overflow: 'hidden', backgroundColor: theme.raised }}
+      >
         <View style={{ width: `${width}%`, height: '100%', backgroundColor: theme.accent }} />
       </View>
     </View>

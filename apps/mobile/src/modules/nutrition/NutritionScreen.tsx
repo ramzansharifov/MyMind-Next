@@ -23,6 +23,7 @@ import {
   SearchField
 } from '../../shared/ui/primitives'
 import { NutritionRecipeSheet } from './NutritionRecipeSheet'
+import { NutritionReportsView } from './NutritionReportsView'
 
 type Tab = 'today' | 'diary' | 'foods' | 'recipes' | 'report'
 type ListItem =
@@ -69,10 +70,6 @@ function shiftDate(value: string, days: number): string {
   const date = new Date(`${value}T12:00:00`)
   date.setDate(date.getDate() + days)
   return localDateKey(date)
-}
-
-function daysAgoKey(days: number): string {
-  return shiftDate(localDateKey(), -days)
 }
 
 function nutrientFields(): ReturnType<typeof textField>[] {
@@ -334,21 +331,6 @@ export function NutritionScreen(): React.JSX.Element {
     })
   }
 
-  let report: ReturnType<typeof api.getReport> | null = null
-  let reportError = ''
-  try {
-    report = api.getReport({
-      dateFrom: daysAgoKey(29),
-      dateTo: localDateKey(),
-      mealType: null,
-      sourceType: null,
-      foodId: null,
-      recipeId: null
-    })
-  } catch (reason) {
-    reportError = messageFor(reason)
-  }
-
   const tabs: Array<{ key: Tab; label: string }> = [
     { key: 'today', label: 'Сегодня' },
     { key: 'diary', label: 'Дневник' },
@@ -470,38 +452,8 @@ export function NutritionScreen(): React.JSX.Element {
     return (
       <View style={{ flex: 1 }}>
         {header}
-        {reportError ? <ErrorState message={reportError} retry={overview.refresh} /> : null}
-        <ScrollView contentContainerStyle={{ gap: 10, paddingBottom: 40 }}>
-          {!report ? (
-            <EmptyState text="Отчёт пока недоступен." />
-          ) : (
-            <>
-              <Row title="Последние 30 дней" subtitle={`${report.dateFrom} — ${report.dateTo}`} />
-              <Row
-                title={`${report.summary.loggedDays} дней · ${report.summary.entries} записей`}
-                subtitle={`В среднем ${report.summary.averageCalories} ккал · ${report.summary.averageWaterMl} мл воды`}
-              />
-              <Row
-                title={`Попадание в цель: ${report.summary.calorieGoalHitPercent}%`}
-                subtitle={`${report.summary.calorieGoalHitDays} из ${report.summary.calorieGoalDays} дней · выше ${report.summary.daysAboveCalories} · ниже ${report.summary.daysBelowCalories}`}
-              />
-              {report.macroShare.map((macro) => (
-                <Row
-                  key={macro.macro}
-                  title={`${macro.macro}: ${macro.percent}%`}
-                  subtitle={`${macro.calories} ккал`}
-                />
-              ))}
-              {report.topItems.slice(0, 10).map((item, index) => (
-                <Row
-                  key={`${item.sourceType}:${item.sourceId ?? item.title}:${index}`}
-                  title={item.title}
-                  subtitle={`${item.entries} раз · ${item.calories} ккал`}
-                />
-              ))}
-            </>
-          )}
-        </ScrollView>
+        {overview.error ? <ErrorState message={overview.error} retry={overview.refresh} /> : null}
+        <NutritionReportsView />
       </View>
     )
   }

@@ -76,7 +76,12 @@ export function NutritionReportsView(): React.JSX.Element {
         textField('dateTo', 'По дату', 'text', 'ГГГГ-ММ-ДД')
       ],
       save: (values) => {
-        const next = reportDateRange('custom', String(values.dateFrom), String(values.dateTo), today)
+        const next = reportDateRange(
+          'custom',
+          String(values.dateFrom),
+          String(values.dateTo),
+          today
+        )
         nutritionReportInputSchema.parse({
           ...next,
           mealType: mealType === 'all' ? null : mealType,
@@ -172,7 +177,11 @@ function NutritionReportHeader({
       ) : null}
 
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-        <Button label="Все приёмы" selected={mealType === 'all'} onPress={() => onMealType('all')} />
+        <Button
+          label="Все приёмы"
+          selected={mealType === 'all'}
+          onPress={() => onMealType('all')}
+        />
         {NUTRITION_MEAL_TYPES.map((value) => (
           <Button
             key={value}
@@ -187,7 +196,10 @@ function NutritionReportHeader({
         <Metric label="Дней с записями" value={String(report.summary.loggedDays)} />
         <Metric label="Средние ккал" value={String(Math.round(report.summary.averageCalories))} />
         <Metric label="Вода / день" value={`${Math.round(report.summary.averageWaterMl)} мл`} />
-        <Metric label="Попадание в цель" value={`${Math.round(report.summary.calorieGoalHitPercent)}%`} />
+        <Metric
+          label="Попадание в цель"
+          value={`${Math.round(report.summary.calorieGoalHitPercent)}%`}
+        />
       </View>
 
       <Section title="Среднее КБЖУ">
@@ -223,7 +235,10 @@ function NutritionReportHeader({
       {report.topItems.length > 0 ? (
         <Section title="Частые позиции">
           {report.topItems.slice(0, 8).map((item, index) => (
-            <Text key={`${item.sourceType}:${item.sourceId ?? item.title}:${index}`} style={{ color: theme.muted, fontSize: 12 }}>
+            <Text
+              key={`${item.sourceType}:${item.sourceId ?? item.title}:${index}`}
+              style={{ color: theme.muted, fontSize: 12 }}
+            >
               {item.title} · {item.entries} раз · {Math.round(item.calories)} ккал
             </Text>
           ))}
@@ -265,7 +280,13 @@ function Metric({
   )
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }): React.JSX.Element {
+function Section({
+  title,
+  children
+}: {
+  title: string
+  children: React.ReactNode
+}): React.JSX.Element {
   const theme = useTheme()
   return (
     <View
@@ -301,7 +322,9 @@ function ProgressLine({
         <Text style={{ color: theme.text, fontSize: 12, fontWeight: '700' }}>{label}</Text>
         <Text style={{ color: theme.muted, fontSize: 11 }}>{caption}</Text>
       </View>
-      <View style={{ height: 7, borderRadius: 99, overflow: 'hidden', backgroundColor: theme.raised }}>
+      <View
+        style={{ height: 7, borderRadius: 99, overflow: 'hidden', backgroundColor: theme.raised }}
+      >
         <View style={{ width: `${width}%`, height: '100%', backgroundColor: theme.accent }} />
       </View>
     </View>
