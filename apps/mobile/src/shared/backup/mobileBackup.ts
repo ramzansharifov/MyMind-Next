@@ -2,11 +2,7 @@ import * as DocumentPicker from 'expo-document-picker'
 import { randomUUID } from 'expo-crypto'
 import { Directory, File, FileMode, Paths, type FileHandle } from 'expo-file-system'
 import * as Sharing from 'expo-sharing'
-import {
-  backupDatabaseAsync,
-  deserializeDatabaseAsync,
-  type SQLiteDatabase
-} from 'expo-sqlite'
+import { backupDatabaseAsync, deserializeDatabaseAsync, type SQLiteDatabase } from 'expo-sqlite'
 import { sha256 } from '@noble/hashes/sha2.js'
 import {
   MOBILE_BACKUP_EXTENSION,
@@ -24,11 +20,15 @@ import {
   type MobileBackupEntry,
   type MobileBackupManifestV1
 } from './archive'
+import {
+  MOBILE_DURABLE_FILE_ROOTS,
+  commitDurableMobileRestore,
+  createDurableMobileRestoreRollback,
+  rollbackDurableMobileRestore,
+  type MobileDurableFileRoot
+} from './restoreRecovery'
 
 const CHUNK_SIZE = 1024 * 1024
-const FILE_ROOTS = ['document-assets', 'workout-progress'] as const
-
-type FileRoot = (typeof FILE_ROOTS)[number]
 
 interface SourceFile {
   path: string
@@ -80,7 +80,7 @@ function hashFile(file: File): string {
   }
 }
 
-function collectFiles(rootName: FileRoot): SourceFile[] {
+function collectFiles(rootName: MobileDurableFileRoot): SourceFile[] {
   const root = new Directory(Paths.document, rootName)
   if (!root.exists) return []
   const result: SourceFile[] = []
@@ -105,15 +105,17 @@ function collectFiles(rootName: FileRoot): SourceFile[] {
 
 async function assertDatabaseHealthy(db: SQLiteDatabase): Promise<void> {
   const version = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version')
-  if (version?.user_version !== MOBILE_BACKUP_SCHEMA_VERSION)
+  if (version?.user_version !== MOBILE_BACKUP_SCHEMA_VERSION) {
     throw new Error('Версия локальной базы данных не поддерживается для backup')
+  }
 
   const integrity = await db.getAllAsync<Record<string, unknown>>('PRAGMA integrity_check')
   if (
     integrity.length !== 1 ||
     String(Object.values(integrity[0] ?? {})[0] ?? '').toLocaleLowerCase('en-US') !== 'ok'
-  )
+  ) {
     throw new Error('Проверка целостности базы данных не пройдена')
+  }
 
   const foreignKeys = await db.getAllAsync('PRAGMA foreign_key_check')
   if (foreignKeys.length > 0) throw new Error('В базе данных нарушены внешние ключи')
@@ -131,24 +133,33 @@ async function schemaSignature(db: SQLiteDatabase): Promise<string> {
   return JSON.stringify(rows)
 }
 
-function appendFile(output: FileHandle, file: File): void {
-  const input = file.open(FileMode.ReadOnly)
+function appendSourceFile(output: FileHandle, source: SourceFile): void {
+  if (!source.file.exists || source.file.size !== source.size) {
+    throw new Error(`Файл «${source.path}» изменился во время создания backup`)
+  }
+  const digest = sha256.create()
+  const input = source.file.open(FileMode.ReadOnly)
   try {
-    let remaining = file.size
+    let remaining = source.size
     while (remaining > 0) {
       const bytes = input.readBytes(Math.min(CHUNK_SIZE, remaining))
-      if (bytes.length === 0) throw new Error(`Не удалось прочитать «${file.name}»`)
+      if (bytes.length === 0) throw new Error(`Не удалось прочитать «${source.path}»`)
       output.writeBytes(bytes)
+      digest.update(bytes)
       remaining -= bytes.length
     }
   } finally {
     input.close()
   }
+  if (source.file.size !== source.size || toHex(digest.digest()) !== source.sha256) {
+    throw new Error(`Файл «${source.path}» изменился во время создания backup`)
+  }
 }
 
 function createManifest(database: Uint8Array, files: SourceFile[]): MobileBackupManifestV1 {
-  if (database.length > MOBILE_BACKUP_MAX_DATABASE_BYTES)
+  if (database.length > MOBILE_BACKUP_MAX_DATABASE_BYTES) {
     throw new Error('Локальная база данных слишком большая для backup')
+  }
   let offset = 0
   const entries: MobileBackupEntry[] = [
     {
@@ -183,10 +194,12 @@ function createManifest(database: Uint8Array, files: SourceFile[]): MobileBackup
 export async function exportMobileBackup(db: SQLiteDatabase): Promise<MobileBackupSummary> {
   await assertDatabaseHealthy(db)
   const database = await db.serializeAsync()
-  const files = FILE_ROOTS.flatMap(collectFiles)
+  const files = MOBILE_DURABLE_FILE_ROOTS.flatMap(collectFiles)
   const manifest = createManifest(database, files)
   const manifestBytes = encodeMobileBackupManifest(manifest)
   const header = encodeMobileBackupHeader(manifestBytes.length)
+  const payloadBytes = manifest.entries.reduce((sum, entry) => sum + entry.size, 0)
+  const expectedArchiveBytes = header.length + manifestBytes.length + payloadBytes
   const stamp = new Date(manifest.createdAt).toISOString().replace(/[:.]/g, '-')
   const archive = new File(Paths.cache, `MyMind-${stamp}${MOBILE_BACKUP_EXTENSION}`)
   archive.create({ overwrite: true })
@@ -195,7 +208,7 @@ export async function exportMobileBackup(db: SQLiteDatabase): Promise<MobileBack
     output.writeBytes(header)
     output.writeBytes(manifestBytes)
     output.writeBytes(database)
-    for (const source of files) appendFile(output, source.file)
+    for (const source of files) appendSourceFile(output, source)
   } catch (reason) {
     output.close()
     if (archive.exists) archive.delete()
@@ -203,8 +216,12 @@ export async function exportMobileBackup(db: SQLiteDatabase): Promise<MobileBack
   }
   output.close()
 
-  if (!(await Sharing.isAvailableAsync())) {
+  if (!archive.exists || archive.size !== expectedArchiveBytes) {
     if (archive.exists) archive.delete()
+    throw new Error('Не удалось проверить итоговый файл backup')
+  }
+  if (!(await Sharing.isAvailableAsync())) {
+    archive.delete()
     throw new Error('Системный экспорт файлов недоступен на этом устройстве')
   }
   try {
@@ -218,7 +235,7 @@ export async function exportMobileBackup(db: SQLiteDatabase): Promise<MobileBack
   return {
     createdAt: manifest.createdAt,
     files: files.length,
-    bytes: manifest.entries.reduce((sum, entry) => sum + entry.size, 0)
+    bytes: payloadBytes
   }
 }
 
@@ -231,11 +248,7 @@ function targetFile(stage: Directory, path: string): File {
   return file
 }
 
-function extractFileEntry(
-  input: FileHandle,
-  entry: MobileBackupEntry,
-  stage: Directory
-): string {
+function extractFileEntry(input: FileHandle, entry: MobileBackupEntry, stage: Directory): string {
   const outputFile = targetFile(stage, entry.path)
   const output = outputFile.open(FileMode.Truncate)
   const digest = sha256.create()
@@ -266,34 +279,18 @@ function extractDatabaseEntry(input: FileHandle, entry: MobileBackupEntry): Uint
     digest.update(bytes)
     cursor += bytes.length
   }
-  if (toHex(digest.digest()) !== entry.sha256)
+  if (toHex(digest.digest()) !== entry.sha256) {
     throw new Error('Контрольная сумма базы данных backup не совпадает')
+  }
   return database
 }
 
-async function copyRollbackRoots(rollback: Directory): Promise<void> {
-  rollback.create({ intermediates: true, idempotent: false })
-  for (const rootName of FILE_ROOTS) {
-    const live = new Directory(Paths.document, rootName)
-    if (live.exists) await live.copy(new Directory(rollback, rootName))
-  }
-}
-
 async function swapRoots(stage: Directory): Promise<void> {
-  for (const rootName of FILE_ROOTS) {
+  for (const rootName of MOBILE_DURABLE_FILE_ROOTS) {
     const live = new Directory(Paths.document, rootName)
     if (live.exists) live.delete()
     const staged = new Directory(stage, rootName)
     if (staged.exists) await staged.move(live)
-  }
-}
-
-async function restoreRollbackRoots(rollback: Directory): Promise<void> {
-  for (const rootName of FILE_ROOTS) {
-    const live = new Directory(Paths.document, rootName)
-    if (live.exists) live.delete()
-    const saved = new Directory(rollback, rootName)
-    if (saved.exists) await saved.copy(live)
   }
 }
 
@@ -321,13 +318,14 @@ export async function restoreMobileBackup(db: SQLiteDatabase): Promise<MobileRes
   if (!selected) return { restored: false, createdAt: 0, files: 0, bytes: 0 }
 
   const archive = new File(selected.uri)
-  if (!archive.exists || archive.size < MOBILE_BACKUP_HEADER_SIZE)
+  if (!archive.exists || archive.size < MOBILE_BACKUP_HEADER_SIZE) {
     throw new Error('Файл backup пуст или повреждён')
-  if (archive.size > MOBILE_BACKUP_MAX_TOTAL_BYTES + 4 * 1024 * 1024 + MOBILE_BACKUP_HEADER_SIZE)
+  }
+  if (archive.size > MOBILE_BACKUP_MAX_TOTAL_BYTES + 4 * 1024 * 1024 + MOBILE_BACKUP_HEADER_SIZE) {
     throw new Error('Файл backup превышает допустимый размер')
+  }
 
   const stage = new Directory(Paths.document, `.mymind-restore-stage-${randomUUID()}`)
-  const rollback = new Directory(Paths.document, `.mymind-restore-rollback-${randomUUID()}`)
   let restoredDatabase: SQLiteDatabase | null = null
   let databaseBytes: Uint8Array | null = null
   let manifest: MobileBackupManifestV1 | null = null
@@ -337,8 +335,9 @@ export async function restoreMobileBackup(db: SQLiteDatabase): Promise<MobileRes
     const manifestLength = decodeMobileBackupHeader(header)
     const manifestBytes = readExactly(input, manifestLength)
     manifest = decodeMobileBackupManifest(manifestBytes, archive.size)
-    if (manifest.schemaVersion !== MOBILE_BACKUP_SCHEMA_VERSION)
+    if (manifest.schemaVersion !== MOBILE_BACKUP_SCHEMA_VERSION) {
       throw new Error('Backup создан несовместимой версией MyMind')
+    }
 
     stage.create({ intermediates: true, idempotent: false })
     for (const entry of manifest.entries) {
@@ -361,27 +360,22 @@ export async function restoreMobileBackup(db: SQLiteDatabase): Promise<MobileRes
   try {
     restoredDatabase = await deserializeDatabaseAsync(databaseBytes)
     await assertDatabaseHealthy(restoredDatabase)
-    if ((await schemaSignature(restoredDatabase)) !== (await schemaSignature(db)))
+    if ((await schemaSignature(restoredDatabase)) !== (await schemaSignature(db))) {
       throw new Error('Структура базы данных backup не соответствует этой версии MyMind')
+    }
 
-    const rollbackDatabaseBytes = await db.serializeAsync()
-    await copyRollbackRoots(rollback)
+    const rollback = await createDurableMobileRestoreRollback(db)
     try {
       await swapRoots(stage)
       await restoreDatabase(restoredDatabase, db)
+      commitDurableMobileRestore(rollback)
     } catch (reason) {
-      await restoreRollbackRoots(rollback).catch(() => undefined)
       try {
-        const rollbackDatabase = await deserializeDatabaseAsync(rollbackDatabaseBytes)
-        try {
-          await restoreDatabase(rollbackDatabase, db)
-        } finally {
-          await rollbackDatabase.closeAsync()
-        }
+        await rollbackDurableMobileRestore(db, rollback)
       } catch (rollbackReason) {
         throw new AggregateError(
           [reason, rollbackReason],
-          'Восстановление не удалось, а автоматический откат базы данных завершился ошибкой'
+          'Восстановление не удалось, а автоматический откат завершился ошибкой. MyMind повторит откат при следующем запуске.'
         )
       }
       throw reason
@@ -396,6 +390,5 @@ export async function restoreMobileBackup(db: SQLiteDatabase): Promise<MobileRes
   } finally {
     if (restoredDatabase) await restoredDatabase.closeAsync().catch(() => undefined)
     if (stage.exists) stage.delete()
-    if (rollback.exists) rollback.delete()
   }
 }
