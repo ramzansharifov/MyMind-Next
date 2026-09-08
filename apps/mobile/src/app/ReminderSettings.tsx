@@ -6,7 +6,7 @@ import { requestReminderPermission } from '../shared/platform/reminders'
 import { Button, ErrorState, Label } from '../shared/ui/primitives'
 import { messageFor } from '../shared/ui/form-model'
 
-export function ReminderSettings(): React.JSX.Element {
+export function ReminderSettings({ disabled = false }: { disabled?: boolean }): React.JSX.Element {
   const services = useServices()
   const [enabled, setEnabled] = useState(
     () => services.settings.get('reminders.enabled') === 'true'
@@ -15,13 +15,14 @@ export function ReminderSettings(): React.JSX.Element {
   const [error, setError] = useState('')
   const guard = useRef(false)
   const toggle = async (): Promise<void> => {
-    if (guard.current) return
+    if (guard.current || disabled) return
     guard.current = true
     setPending(true)
     setError('')
     try {
-      if (!enabled && !(await requestReminderPermission()))
+      if (!enabled && !(await requestReminderPermission())) {
         throw new Error('Разрешите уведомления MyMind в настройках телефона.')
+      }
       services.settings.set('reminders.enabled', String(!enabled))
       setEnabled(!enabled)
       notifyDataChanged()
@@ -42,7 +43,7 @@ export function ReminderSettings(): React.JSX.Element {
       <Button
         label={pending ? 'Подождите…' : enabled ? 'Выключить напоминания' : 'Включить напоминания'}
         selected={enabled}
-        disabled={pending}
+        disabled={pending || disabled}
         onPress={() => {
           void toggle()
         }}
