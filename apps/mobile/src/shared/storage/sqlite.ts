@@ -8,6 +8,7 @@ import { mobileSchemaV6 } from '@mymind/persistence/mobile-schema-v6'
 import { mobileSchemaV7 } from '@mymind/persistence/mobile-schema-v7'
 import { mobileSchemaV8 } from '@mymind/persistence/mobile-schema-v8'
 import { openDatabaseAsync, type SQLiteDatabase, type SQLiteBindValue } from 'expo-sqlite'
+import { recoverInterruptedMobileRestore } from '../backup/restoreRecovery'
 
 function bindings(parameters: unknown[]): SQLiteBindValue[] {
   return parameters.map((value) => {
@@ -66,6 +67,7 @@ async function applyMigration(
 export async function openMobileDatabase(): Promise<SQLiteDatabase> {
   const db = await openDatabaseAsync('mymind.sqlite')
   try {
+    await recoverInterruptedMobileRestore(db)
     await db.execAsync(
       'PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;'
     )
