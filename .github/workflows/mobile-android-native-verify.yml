@@ -8,7 +8,7 @@ on:
       - .mobile-android-native-trigger
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   android-native:
@@ -16,8 +16,6 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -30,34 +28,6 @@ jobs:
         run: npm install --global npm@11
       - name: Install
         run: npm ci
-      - name: Install Expo System UI
-        working-directory: apps/mobile
-        run: npx expo install expo-system-ui
-      - name: Register Expo System UI plugin
-        run: |
-          node - <<'NODE'
-          const fs = require('node:fs')
-          const path = 'apps/mobile/app.json'
-          const config = JSON.parse(fs.readFileSync(path, 'utf8'))
-          const plugins = Array.isArray(config.expo.plugins) ? config.expo.plugins : []
-          if (!plugins.some((plugin) => plugin === 'expo-system-ui')) {
-            plugins.push('expo-system-ui')
-          }
-          config.expo.plugins = plugins
-          fs.writeFileSync(path, `${JSON.stringify(config, null, 2)}\n`)
-          NODE
-      - name: Commit native theme dependency
-        run: |
-          git add apps/mobile/package.json apps/mobile/app.json package-lock.json
-          if git diff --cached --quiet; then
-            echo "Expo System UI dependency already current."
-          else
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git commit -m "fix: enable Android automatic system theme"
-            git pull --rebase origin agent/full-mobile-app
-            git push origin HEAD:agent/full-mobile-app
-          fi
       - name: Validate Expo config
         working-directory: apps/mobile
         run: npx expo config --type public
@@ -75,6 +45,8 @@ jobs:
           grep -q 'expo_system_ui_user_interface_style' android/app/src/main/res/values/strings.xml
       - name: Assemble Android debug APK
         working-directory: apps/mobile/android
+        env:
+          NODE_ENV: development
         run: |
           chmod +x gradlew
           ./gradlew :app:assembleDebug --no-daemon --stacktrace
