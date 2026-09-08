@@ -24,6 +24,9 @@ jobs:
         run: npm install --global npm@11
       - name: Install
         run: npm ci
+      - name: Check Expo dependency alignment
+        working-directory: apps/mobile
+        run: npx expo install --check
       - name: Rebuild SQLite for Node
         run: npm run native:node
       - name: Check mobile checkpoint formatting
@@ -100,6 +103,9 @@ jobs:
           test -f android/app/build.gradle
           test -f android/app/src/main/AndroidManifest.xml
           grep -q 'expo_system_ui_user_interface_style' android/app/src/main/res/values/strings.xml
+          grep -q 'android.permission.RECORD_AUDIO' android/app/src/main/AndroidManifest.xml
+          grep -q 'android.permission.CAMERA' android/app/src/main/AndroidManifest.xml
+          grep -q 'android.permission.POST_NOTIFICATIONS' android/app/src/main/AndroidManifest.xml
       - name: Assemble Android debug APK
         working-directory: apps/mobile/android
         env:
