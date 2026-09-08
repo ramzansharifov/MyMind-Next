@@ -238,6 +238,31 @@ function SectionHeader({
   )
 }
 
+function LibraryHeader({
+  view,
+  selectedPlaylist,
+  onBackToPlaylists,
+  onEditPlaylist,
+  onDeletePlaylist
+}: Pick<
+  MusicLibraryViewProps,
+  | 'view'
+  | 'selectedPlaylist'
+  | 'onBackToPlaylists'
+  | 'onEditPlaylist'
+  | 'onDeletePlaylist'
+>): React.JSX.Element {
+  return (
+    <SectionHeader
+      view={view}
+      selectedPlaylist={selectedPlaylist}
+      onBackToPlaylists={onBackToPlaylists}
+      onEditPlaylist={onEditPlaylist}
+      onDeletePlaylist={onDeletePlaylist}
+    />
+  )
+}
+
 export function MusicLibraryView({
   view,
   items,
@@ -255,7 +280,6 @@ export function MusicLibraryView({
   onDeletePlaylist,
   onBackToPlaylists
 }: MusicLibraryViewProps): React.JSX.Element {
-  const playlistMode = view === 'playlists'
   const emptyText = emptyBecauseFilter
     ? 'Ничего не найдено.'
     : view === 'favorites'
@@ -266,41 +290,56 @@ export function MusicLibraryView({
           ? 'В этом плейлисте пока нет треков.'
           : 'Треков пока нет.'
 
+  const header = (
+    <LibraryHeader
+      view={view}
+      selectedPlaylist={selectedPlaylist}
+      onBackToPlaylists={onBackToPlaylists}
+      onEditPlaylist={onEditPlaylist}
+      onDeletePlaylist={onDeletePlaylist}
+    />
+  )
+
+  if (view === 'playlists') {
+    return (
+      <FlatList<MusicPlaylistRecord>
+        data={playlists}
+        keyExtractor={(playlist) => playlist.id}
+        onRefresh={onRefresh}
+        refreshing={refreshing}
+        contentContainerStyle={{ paddingBottom: 24 }}
+        ListHeaderComponent={header}
+        ListEmptyComponent={<EmptyState text={emptyText} />}
+        renderItem={({ item: playlist }) => (
+          <PlaylistCard
+            playlist={playlist}
+            onOpen={() => onOpenPlaylist(playlist)}
+            onEdit={() => onEditPlaylist(playlist)}
+            onDelete={() => onDeletePlaylist(playlist)}
+          />
+        )}
+      />
+    )
+  }
+
   return (
-    <FlatList
-      data={playlistMode ? playlists : items}
+    <FlatList<MusicItemRecord>
+      data={items}
       keyExtractor={(item) => item.id}
       onRefresh={onRefresh}
       refreshing={refreshing}
       contentContainerStyle={{ paddingBottom: 24 }}
-      ListHeaderComponent={
-        <SectionHeader
-          view={view}
-          selectedPlaylist={selectedPlaylist}
-          onBackToPlaylists={onBackToPlaylists}
-          onEditPlaylist={onEditPlaylist}
-          onDeletePlaylist={onDeletePlaylist}
-        />
-      }
+      ListHeaderComponent={header}
       ListEmptyComponent={<EmptyState text={emptyText} />}
-      renderItem={({ item }) =>
-        playlistMode ? (
-          <PlaylistCard
-            playlist={item as MusicPlaylistRecord}
-            onOpen={() => onOpenPlaylist(item as MusicPlaylistRecord)}
-            onEdit={() => onEditPlaylist(item as MusicPlaylistRecord)}
-            onDelete={() => onDeletePlaylist(item as MusicPlaylistRecord)}
-          />
-        ) : (
-          <TrackCard
-            item={item as MusicItemRecord}
-            onOpen={() => onOpenTrack(item as MusicItemRecord)}
-            onToggleFavorite={() => onToggleFavorite(item as MusicItemRecord)}
-            onSearchWeb={() => onSearchWeb(item as MusicItemRecord)}
-            onDelete={() => onDeleteTrack(item as MusicItemRecord)}
-          />
-        )
-      }
+      renderItem={({ item }) => (
+        <TrackCard
+          item={item}
+          onOpen={() => onOpenTrack(item)}
+          onToggleFavorite={() => onToggleFavorite(item)}
+          onSearchWeb={() => onSearchWeb(item)}
+          onDelete={() => onDeleteTrack(item)}
+        />
+      )}
     />
   )
 }
