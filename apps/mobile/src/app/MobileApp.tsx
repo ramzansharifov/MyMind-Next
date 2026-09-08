@@ -121,17 +121,25 @@ export default function MobileApp(): React.JSX.Element {
     accent: appearanceTokens.accents[appearance.accent]
   }
 
-  const navigate = useCallback((next: Route): void => {
-    setImmersive(false)
-    setBoardResourceId(null)
-    setRoute(next)
-  }, [])
+  const navigate = useCallback(
+    (next: Route): void => {
+      if (restoringBackup) return
+      setImmersive(false)
+      setBoardResourceId(null)
+      setRoute(next)
+    },
+    [restoringBackup]
+  )
 
-  const openBoard = useCallback((boardId: string): void => {
-    setImmersive(false)
-    setBoardResourceId(boardId)
-    setRoute('boards')
-  }, [])
+  const openBoard = useCallback(
+    (boardId: string): void => {
+      if (restoringBackup) return
+      setImmersive(false)
+      setBoardResourceId(boardId)
+      setRoute('boards')
+    },
+    [restoringBackup]
+  )
 
   useEffect(() => {
     let active = true
@@ -152,13 +160,14 @@ export default function MobileApp(): React.JSX.Element {
 
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (restoringBackup) return true
       if (immersive) return false
       if (route === 'home') return false
       navigate(['notes', 'tasks', 'habits', 'more'].includes(route) ? 'home' : 'more')
       return true
     })
     return () => subscription.remove()
-  }, [immersive, navigate, route])
+  }, [immersive, navigate, restoringBackup, route])
 
   const saveAppearance = useCallback(
     (next: AppearancePreferences): void => {
@@ -283,7 +292,7 @@ export default function MobileApp(): React.JSX.Element {
                   />
                 )}
               </View>
-              {!immersive ? (
+              {!immersive && !restoringBackup ? (
                 <View
                   style={{
                     flexDirection: 'row',
