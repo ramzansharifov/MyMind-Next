@@ -3,9 +3,23 @@ import { defineConfig } from 'electron-vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
+const bundledWorkspacePackages = ['@mymind/contracts', '@mymind/core', '@mymind/persistence']
+
 export default defineConfig({
-  main: {},
-  preload: {},
+  main: {
+    build: {
+      externalizeDeps: {
+        exclude: bundledWorkspacePackages
+      }
+    }
+  },
+  preload: {
+    build: {
+      externalizeDeps: {
+        exclude: bundledWorkspacePackages
+      }
+    }
+  },
   renderer: {
     optimizeDeps: {
       // Оптимизатор Vite 7 превращает JSON `?url` из @tldraw/assets в готовые
