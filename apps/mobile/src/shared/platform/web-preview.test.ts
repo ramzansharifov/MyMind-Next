@@ -30,7 +30,11 @@ describe('mobile web preview redirect', () => {
   })
 
   it('ignores missing or invalid preview configuration', () => {
-    expect(getSafeWebPreviewRedirect('http://localhost:8082/', undefined)).toBeNull()
-    expect(getSafeWebPreviewRedirect('http://localhost:8082/', 'not-a-url')).toBeNull()
+    expect(
+      getSafeWebPreviewRedirect('http://localhost:8082/', undefined)
+    ).toBeNull()
+    expect(
+      getSafeWebPreviewRedirect('http://localhost:8082/', 'not-a-url')
+    ).toBeNull()
   })
 })
