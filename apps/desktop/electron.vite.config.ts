@@ -3,11 +3,7 @@ import { defineConfig } from 'electron-vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
-const bundledWorkspacePackages = [
-  '@mymind/contracts',
-  '@mymind/core',
-  '@mymind/persistence'
-]
+const bundledWorkspacePackages = ['@mymind/contracts', '@mymind/core', '@mymind/persistence']
 
 export default defineConfig({
   main: {
