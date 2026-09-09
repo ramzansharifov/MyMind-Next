@@ -13,13 +13,19 @@ describe('mobile web preview redirect', () => {
 
   it('does not redirect when the browser is already on the safe preview', () => {
     expect(
-      getSafeWebPreviewRedirect('http://localhost:8081/', 'http://localhost:8081')
+      getSafeWebPreviewRedirect(
+        'http://localhost:8081/',
+        'http://localhost:8081'
+      )
     ).toBeNull()
   })
 
   it('supports loopback host aliases for local preview access', () => {
     expect(
-      getSafeWebPreviewRedirect('http://127.0.0.1:8082/', 'http://localhost:8081')
+      getSafeWebPreviewRedirect(
+        'http://127.0.0.1:8082/',
+        'http://localhost:8081'
+      )
     ).toBe('http://localhost:8081/')
   })
 
