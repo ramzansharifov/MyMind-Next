@@ -260,7 +260,7 @@ export default function MobileApp(): React.JSX.Element {
               <Label title>{titles[route]}</Label>
             </View>
           ) : null}
-          {error && (
+          {error ? (
             <ErrorState
               message={error}
               retry={() => {
@@ -268,7 +268,7 @@ export default function MobileApp(): React.JSX.Element {
                 setAttempt((value) => value + 1)
               }}
             />
-          )}
+          ) : null}
           {!services ? (
             !error && <LoadingState />
           ) : (
