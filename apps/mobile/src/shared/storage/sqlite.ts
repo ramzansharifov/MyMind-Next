@@ -9,6 +9,15 @@ import { mobileSchemaV7 } from '@mymind/persistence/mobile-schema-v7'
 import { mobileSchemaV8 } from '@mymind/persistence/mobile-schema-v8'
 import { openDatabaseAsync, type SQLiteDatabase, type SQLiteBindValue } from 'expo-sqlite'
 
+type MigrationTransactionRunner = (
+  db: SQLiteDatabase,
+  operation: (tx: SQLiteDatabase) => Promise<void>
+) => Promise<void>
+
+const runExclusiveMigrationTransaction: MigrationTransactionRunner = async (db, operation) => {
+  await db.withExclusiveTransactionAsync(operation)
+}
+
 function bindings(parameters: unknown[]): SQLiteBindValue[] {
   return parameters.map((value) => {
     if (
@@ -55,15 +64,19 @@ export function adaptSqlite(db: SQLiteDatabase): SqlDatabasePort {
 async function applyMigration(
   db: SQLiteDatabase,
   statements: readonly string[],
-  version: number
+  version: number,
+  runTransaction: MigrationTransactionRunner
 ): Promise<void> {
-  await db.withExclusiveTransactionAsync(async (tx) => {
+  await runTransaction(db, async (tx) => {
     for (const sql of statements) await tx.execAsync(sql)
     await tx.execAsync(`PRAGMA user_version = ${version}`)
   })
 }
 
-export async function initializeMobileDatabase(db: SQLiteDatabase): Promise<SQLiteDatabase> {
+export async function initializeMobileDatabase(
+  db: SQLiteDatabase,
+  runTransaction: MigrationTransactionRunner = runExclusiveMigrationTransaction
+): Promise<SQLiteDatabase> {
   await db.execAsync(
     'PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;'
   )
@@ -74,7 +87,7 @@ export async function initializeMobileDatabase(db: SQLiteDatabase): Promise<SQLi
     throw new Error('Данные созданы новой версией MyMind. Обновите приложение.')
 
   if (currentVersion === 0) {
-    await db.withExclusiveTransactionAsync(async (tx) => {
+    await runTransaction(db, async (tx) => {
       for (const sql of mobileSchemaV1) await tx.execAsync(sql)
       await tx.execAsync(
         'CREATE TABLE mobile_preferences (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL); PRAGMA user_version = 1;'
@@ -84,37 +97,37 @@ export async function initializeMobileDatabase(db: SQLiteDatabase): Promise<SQLi
   }
 
   if (currentVersion === 1) {
-    await applyMigration(db, mobileSchemaV2, 2)
+    await applyMigration(db, mobileSchemaV2, 2, runTransaction)
     currentVersion = 2
   }
 
   if (currentVersion === 2) {
-    await applyMigration(db, mobileSchemaV3, 3)
+    await applyMigration(db, mobileSchemaV3, 3, runTransaction)
     currentVersion = 3
   }
 
   if (currentVersion === 3) {
-    await applyMigration(db, mobileSchemaV4, 4)
+    await applyMigration(db, mobileSchemaV4, 4, runTransaction)
     currentVersion = 4
   }
 
   if (currentVersion === 4) {
-    await applyMigration(db, mobileSchemaV5, 5)
+    await applyMigration(db, mobileSchemaV5, 5, runTransaction)
     currentVersion = 5
   }
 
   if (currentVersion === 5) {
-    await applyMigration(db, mobileSchemaV6, 6)
+    await applyMigration(db, mobileSchemaV6, 6, runTransaction)
     currentVersion = 6
   }
 
   if (currentVersion === 6) {
-    await applyMigration(db, mobileSchemaV7, 7)
+    await applyMigration(db, mobileSchemaV7, 7, runTransaction)
     currentVersion = 7
   }
 
   if (currentVersion === 7) {
-    await applyMigration(db, mobileSchemaV8, 8)
+    await applyMigration(db, mobileSchemaV8, 8, runTransaction)
     currentVersion = 8
   }
 
