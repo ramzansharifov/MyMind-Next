@@ -1,0 +1,40 @@
+name: Mobile web runtime verification
+
+on:
+  push:
+    branches:
+      - fix/mobile-web-runtime
+
+permissions:
+  contents: read
+
+jobs:
+  verify-web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Use npm 11
+        run: npm install --global npm@11
+      - name: Install
+        run: npm ci
+      - name: Check formatting
+        run: npx prettier --check apps/mobile/metro.config.js apps/mobile/src/app/MobileApp.tsx apps/mobile/src/app/ReminderStatus.web.tsx apps/mobile/src/shared/storage/mobileDatabase.web.ts apps/mobile/src/shared/backup/mobileBackup.web.ts
+      - name: TypeScript
+        run: npm run typecheck
+      - name: Mobile regression
+        run: npm run test:mobile
+      - name: Export web
+        working-directory: apps/mobile
+        run: npx expo export --platform web --output-dir dist-web
+      - name: Verify web export
+        shell: bash
+        run: |
+          test -f apps/mobile/dist-web/index.html
+          test -n "$(find apps/mobile/dist-web -type f | head -n 1)"
+      - name: Whitespace
+        run: git diff --check
