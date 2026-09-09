@@ -7,13 +7,12 @@ const config = getDefaultConfig(__dirname)
 if (!config.resolver.assetExts.includes('wasm')) config.resolver.assetExts.push('wasm')
 
 // SharedArrayBuffer is required by expo-sqlite's web worker.
-const enhanceMiddleware = config.server.enhanceMiddleware
-config.server.enhanceMiddleware = (middleware, metroServer) => {
-  const enhanced = enhanceMiddleware ? enhanceMiddleware(middleware, metroServer) : middleware
+// Match Expo's documented setup exactly so the HTML response itself is cross-origin isolated.
+config.server.enhanceMiddleware = (middleware) => {
   return (req, res, next) => {
     res.setHeader('Cross-Origin-Embedder-Policy', 'credentialless')
     res.setHeader('Cross-Origin-Opener-Policy', 'same-origin')
-    enhanced(req, res, next)
+    middleware(req, res, next)
   }
 }
 
