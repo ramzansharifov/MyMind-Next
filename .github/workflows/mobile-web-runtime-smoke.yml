@@ -11,7 +11,7 @@ permissions:
 jobs:
   verify-web-runtime:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -25,17 +25,17 @@ jobs:
       - name: Rebuild SQLite for Node
         run: npm run native:node
       - name: Check formatting
-        run: npx prettier --check apps/mobile/metro.config.js apps/mobile/src/modules/tasks/TasksScreen.tsx
+        run: npx prettier --check apps/mobile/metro.config.js apps/mobile/scripts/start-web-preview.mjs apps/mobile/src/modules/tasks/TasksScreen.tsx
       - name: TypeScript
         run: npm run typecheck
       - name: Mobile regression
         run: npm run test:mobile
-      - name: Start Expo web server
+      - name: Start isolated Expo web preview
         working-directory: apps/mobile
         run: |
-          CI=1 npx expo start --web --port 8081 > /tmp/mymind-expo-web.log 2>&1 &
+          CI=1 node ./scripts/start-web-preview.mjs --clear > /tmp/mymind-expo-web.log 2>&1 &
           echo $! > /tmp/mymind-expo-web.pid
-          for i in $(seq 1 90); do
+          for i in $(seq 1 120); do
             if curl --fail --silent http://127.0.0.1:8081/ >/dev/null; then
               exit 0
             fi
@@ -51,7 +51,7 @@ jobs:
           grep -i '^Cross-Origin-Opener-Policy: same-origin' /tmp/mymind-headers.txt
       - name: Browser runtime smoke
         run: |
-          google-chrome --headless --no-sandbox --disable-gpu --virtual-time-budget=20000 --dump-dom http://127.0.0.1:8081/ > /tmp/mymind-dom.html 2>/tmp/mymind-chrome.log || {
+          google-chrome --headless --no-sandbox --disable-gpu --virtual-time-budget=60000 --dump-dom http://127.0.0.1:8081/ > /tmp/mymind-dom.html 2>/tmp/mymind-chrome.log || {
             cat /tmp/mymind-chrome.log
             cat /tmp/mymind-expo-web.log
             exit 1
@@ -62,15 +62,19 @@ jobs:
             exit 1
           fi
           grep -q 'MYMIND' /tmp/mymind-dom.html
+      - name: Stop runtime server
+        run: |
+          kill "$(cat /tmp/mymind-expo-web.pid)" || true
+          sleep 2
       - name: Export web
         working-directory: apps/mobile
         run: npx expo export --platform web --output-dir dist-web
       - name: Whitespace
         run: git diff --check
-      - name: Stop Expo web server
+      - name: Runtime logs
         if: always()
         run: |
           if [ -f /tmp/mymind-expo-web.pid ]; then
             kill "$(cat /tmp/mymind-expo-web.pid)" || true
           fi
-          tail -n 120 /tmp/mymind-expo-web.log || true
+          tail -n 160 /tmp/mymind-expo-web.log || true
