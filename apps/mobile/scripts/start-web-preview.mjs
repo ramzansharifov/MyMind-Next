@@ -20,6 +20,7 @@ const expoPackageJsonPath = resolveFromScript.resolve('expo/package.json')
 const expoCliPath = path.join(path.dirname(expoPackageJsonPath), 'bin', 'cli')
 const publicPort = parsePort(process.env.MYMIND_WEB_PORT, 8081, 'MYMIND_WEB_PORT')
 const metroPort = parsePort(process.env.MYMIND_WEB_METRO_PORT, 8082, 'MYMIND_WEB_METRO_PORT')
+const publicOrigin = `http://localhost:${publicPort}`
 
 if (publicPort === metroPort) {
   throw new Error('MYMIND_WEB_PORT and MYMIND_WEB_METRO_PORT must be different')
@@ -46,9 +47,9 @@ server.on('error', (error) => {
 })
 
 server.listen(publicPort, '127.0.0.1', () => {
-  console.log(`\n[MyMind] SQLite-safe web preview: http://localhost:${publicPort}`)
+  console.log(`\n[MyMind] SQLite-safe web preview: ${publicOrigin}`)
   console.log(`[MyMind] Expo Metro backend: http://127.0.0.1:${metroPort}`)
-  console.log('[MyMind] Open only the SQLite-safe URL above while testing web.\n')
+  console.log('[MyMind] If Expo shows the backend URL, MyMind will redirect it to the safe preview automatically.\n')
 
   const extraExpoArguments = process.argv.slice(2)
 
@@ -61,7 +62,8 @@ server.listen(publicPort, '127.0.0.1', () => {
       env: {
         ...process.env,
         BROWSER: 'none',
-        EXPO_PACKAGER_PROXY_URL: `http://localhost:${publicPort}`
+        EXPO_PACKAGER_PROXY_URL: publicOrigin,
+        EXPO_PUBLIC_MYMIND_WEB_PREVIEW_ORIGIN: publicOrigin
       }
     }
   )
