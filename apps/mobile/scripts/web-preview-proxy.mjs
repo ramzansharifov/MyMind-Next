@@ -49,11 +49,7 @@ function proxyHttpRequest(request, response, targetPort, publicPort) {
     (proxyResponse) => {
       const responseHeaders = withIsolationHeaders(proxyResponse.headers)
       if (responseHeaders.location) {
-        responseHeaders.location = rewriteLocation(
-          responseHeaders.location,
-          targetPort,
-          publicPort
-        )
+        responseHeaders.location = rewriteLocation(responseHeaders.location, targetPort, publicPort)
       }
 
       response.writeHead(
