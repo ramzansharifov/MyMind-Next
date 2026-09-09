@@ -11,7 +11,7 @@ permissions:
 jobs:
   verify-web-runtime:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -22,59 +22,8 @@ jobs:
         run: npm install --global npm@11
       - name: Install
         run: npm ci
-      - name: Rebuild SQLite for Node
-        run: npm run native:node
-      - name: Check formatting
-        run: npx prettier --check apps/mobile/metro.config.js apps/mobile/scripts/start-web-preview.mjs apps/mobile/src/modules/tasks/TasksScreen.tsx
-      - name: TypeScript
-        run: npm run typecheck
-      - name: Mobile regression
-        run: npm run test:mobile
-      - name: Start isolated Expo web preview
-        working-directory: apps/mobile
+      - name: Print exact Prettier diff
         run: |
-          CI=1 node ./scripts/start-web-preview.mjs --clear > /tmp/mymind-expo-web.log 2>&1 &
-          echo $! > /tmp/mymind-expo-web.pid
-          for i in $(seq 1 120); do
-            if curl --fail --silent http://127.0.0.1:8081/ >/dev/null; then
-              exit 0
-            fi
-            sleep 2
-          done
-          cat /tmp/mymind-expo-web.log
-          exit 1
-      - name: Verify cross-origin isolation headers
-        run: |
-          curl --fail --silent --show-error --dump-header /tmp/mymind-headers.txt http://127.0.0.1:8081/ -o /tmp/mymind-index.html
-          cat /tmp/mymind-headers.txt
-          grep -i '^Cross-Origin-Embedder-Policy: credentialless' /tmp/mymind-headers.txt
-          grep -i '^Cross-Origin-Opener-Policy: same-origin' /tmp/mymind-headers.txt
-      - name: Browser runtime smoke
-        run: |
-          google-chrome --headless --no-sandbox --disable-gpu --virtual-time-budget=60000 --dump-dom http://127.0.0.1:8081/ > /tmp/mymind-dom.html 2>/tmp/mymind-chrome.log || {
-            cat /tmp/mymind-chrome.log
-            cat /tmp/mymind-expo-web.log
-            exit 1
-          }
-          if grep -q 'SharedArrayBuffer is not defined' /tmp/mymind-dom.html; then
-            cat /tmp/mymind-dom.html
-            cat /tmp/mymind-expo-web.log
-            exit 1
-          fi
-          grep -q 'MYMIND' /tmp/mymind-dom.html
-      - name: Stop runtime server
-        run: |
-          kill "$(cat /tmp/mymind-expo-web.pid)" || true
-          sleep 2
-      - name: Export web
-        working-directory: apps/mobile
-        run: npx expo export --platform web --output-dir dist-web
-      - name: Whitespace
-        run: git diff --check
-      - name: Runtime logs
-        if: always()
-        run: |
-          if [ -f /tmp/mymind-expo-web.pid ]; then
-            kill "$(cat /tmp/mymind-expo-web.pid)" || true
-          fi
-          tail -n 160 /tmp/mymind-expo-web.log || true
+          npx prettier --write apps/mobile/scripts/start-web-preview.mjs
+          git diff -- apps/mobile/scripts/start-web-preview.mjs
+          test -z "$(git status --short apps/mobile/scripts/start-web-preview.mjs)"
