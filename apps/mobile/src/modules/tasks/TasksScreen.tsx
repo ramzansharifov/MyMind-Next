@@ -241,7 +241,7 @@ export function TasksScreen(): React.JSX.Element {
         )}
       </View>
 
-      {state.error && <ErrorState message={state.error} retry={state.refresh} />}
+      {state.error ? <ErrorState message={state.error} retry={state.refresh} /> : null}
       {state.loading ? (
         <LoadingState />
       ) : groupsView ? (
