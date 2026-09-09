@@ -19,11 +19,10 @@ jobs:
         run: npm install --global npm@11
       - name: Install
         run: npm ci
-      - name: Format changed product files and show exact diff
-        shell: pwsh
-        run: |
-          npx prettier --write apps/mobile/index.ts apps/mobile/scripts/start-web-preview.mjs apps/mobile/src/shared/platform/web-preview.ts apps/mobile/src/shared/platform/web-preview.test.ts
-          git diff -- apps/mobile/index.ts apps/mobile/scripts/start-web-preview.mjs apps/mobile/src/shared/platform/web-preview.ts apps/mobile/src/shared/platform/web-preview.test.ts
+      - name: Rebuild SQLite for Node tests
+        run: npm run native:node
+      - name: Check formatting
+        run: npx prettier --check apps/mobile/index.ts apps/mobile/scripts/start-web-preview.mjs apps/mobile/src/shared/platform/web-preview.ts apps/mobile/src/shared/platform/web-preview.test.ts
       - name: Mobile typecheck
         run: npm run typecheck --workspace=mymind-mobile
       - name: Mobile regression
