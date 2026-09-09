@@ -49,7 +49,9 @@ server.on('error', (error) => {
 server.listen(publicPort, '127.0.0.1', () => {
   console.log(`\n[MyMind] SQLite-safe web preview: ${publicOrigin}`)
   console.log(`[MyMind] Expo Metro backend: http://127.0.0.1:${metroPort}`)
-  console.log('[MyMind] If Expo shows the backend URL, MyMind will redirect it to the safe preview automatically.\n')
+  console.log(
+    '[MyMind] If Expo shows the backend URL, MyMind will redirect it to the safe preview automatically.\n'
+  )
 
   const extraExpoArguments = process.argv.slice(2)
 
