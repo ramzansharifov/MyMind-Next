@@ -1,0 +1,90 @@
+name: Mobile web isolation verification
+
+on:
+  push:
+    branches:
+      - fix/mobile-web-cross-origin-preview
+
+permissions:
+  contents: read
+
+jobs:
+  verify-web-isolation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Use npm 11
+        run: npm install --global npm@11
+      - name: Install
+        run: npm ci
+      - name: Check formatting
+        run: npm run format:check
+      - name: TypeScript
+        run: npm run typecheck
+      - name: Mobile regression
+        run: npm run test:mobile
+      - name: Proxy unit check
+        run: npm run test:web-preview --workspace=mymind-mobile
+      - name: Start SQLite-safe web preview
+        shell: bash
+        run: |
+          npm run web --workspace=mymind-mobile > /tmp/mymind-web.log 2>&1 &
+          echo $! > /tmp/mymind-web.pid
+
+          ready=0
+          for attempt in $(seq 1 90); do
+            if curl --fail --silent --show-error http://localhost:8081/ > /tmp/mymind-home.html; then
+              ready=1
+              break
+            fi
+            sleep 1
+          done
+
+          if [ "$ready" -ne 1 ]; then
+            cat /tmp/mymind-web.log
+            exit 1
+          fi
+
+          curl --fail --silent --show-error --head http://localhost:8081/ | tee /tmp/mymind-headers.txt
+          grep -i '^cross-origin-embedder-policy: credentialless' /tmp/mymind-headers.txt
+          grep -i '^cross-origin-opener-policy: same-origin' /tmp/mymind-headers.txt
+      - name: Open MyMind in headless Chrome
+        shell: bash
+        run: |
+          CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          if [ -z "$CHROME" ]; then
+            echo 'No Chromium-based browser found on runner.'
+            exit 1
+          fi
+
+          "$CHROME" \
+            --headless=new \
+            --no-sandbox \
+            --disable-gpu \
+            --virtual-time-budget=12000 \
+            --dump-dom \
+            http://localhost:8081/ \
+            > /tmp/mymind-dom.html \
+            2> /tmp/mymind-chrome.log
+
+          if grep -Fq 'SharedArrayBuffer is not defined' /tmp/mymind-dom.html /tmp/mymind-chrome.log; then
+            echo 'SharedArrayBuffer runtime failure is still present.'
+            cat /tmp/mymind-chrome.log
+            exit 1
+          fi
+
+          grep -Fq 'Главная' /tmp/mymind-dom.html
+      - name: Show preview logs
+        if: always()
+        shell: bash
+        run: |
+          cat /tmp/mymind-web.log 2>/dev/null || true
+          cat /tmp/mymind-chrome.log 2>/dev/null || true
+          if [ -f /tmp/mymind-web.pid ]; then
+            kill "$(cat /tmp/mymind-web.pid)" 2>/dev/null || true
+          fi
