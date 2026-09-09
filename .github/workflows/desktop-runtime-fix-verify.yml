@@ -1,0 +1,42 @@
+name: Desktop runtime fix verification
+
+on:
+  push:
+    branches:
+      - fix/desktop-workspace-runtime-bundle
+
+permissions:
+  contents: read
+
+jobs:
+  verify-windows:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Use npm 11
+        run: npm install --global npm@11
+      - name: Install
+        run: npm ci
+      - name: Check fix formatting
+        run: npx prettier --check apps/desktop/electron.vite.config.ts apps/desktop/package.json apps/desktop/scripts/check-runtime-bundle.mjs
+      - name: TypeScript
+        run: npm run typecheck
+      - name: Desktop regression
+        run: npm run test:run
+      - name: Database schema
+        run: npm run db:check
+      - name: Build runtime bundle
+        run: npm run build:bundle
+      - name: Build Windows installer
+        run: npm run build:win
+      - name: Verify Windows installer
+        shell: pwsh
+        run: |
+          $installer = Get-ChildItem apps/desktop/dist -Recurse -File -Filter '*setup*.exe' | Select-Object -First 1
+          if (-not $installer) { throw 'Windows installer was not produced' }
+          Write-Host "Installer: $($installer.FullName)"
