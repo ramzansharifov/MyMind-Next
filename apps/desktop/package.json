@@ -15,7 +15,8 @@
     "start": "npm run build:bundle && npm run native:electron && electron-vite preview --skipBuild",
     "preview:existing": "npm run native:electron && electron-vite preview",
     "dev": "npm run native:electron && electron-vite dev",
-    "build:bundle": "electron-vite build",
+    "check:runtime-bundle": "node scripts/check-runtime-bundle.mjs",
+    "build:bundle": "electron-vite build && npm run check:runtime-bundle",
     "build": "npm run typecheck && npm run build:bundle",
     "postinstall": "electron-builder install-app-deps",
     "build:unpack": "npm run build && npm run native:electron && electron-builder --dir",
@@ -100,7 +101,7 @@
   "devDependencies": {
     "@electron-toolkit/eslint-config-prettier": "^3.0.0",
     "@electron-toolkit/eslint-config-ts": "^3.1.0",
-    "@electron-toolkit/tsconfig": "^2.0.0",
+    "@electron-toolkit/tsconfig": "^2.1.0",
     "@electron/rebuild": "^4.2.0",
     "@tailwindcss/vite": "^4.3.2",
     "@testing-library/jest-dom": "^6.9.1",
