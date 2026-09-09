@@ -2,7 +2,8 @@ import { readdir, readFile } from 'node:fs/promises'
 import { extname, join, relative } from 'node:path'
 
 const runtimeRoots = [join('out', 'main'), join('out', 'preload')]
-const workspaceImportPattern = /(?:from\s*|require\(|import\()\s*['"]@mymind\/(?:contracts|core|persistence)(?:\/[^'"]*)?['"]/g
+const workspaceImportPattern =
+  /(?:from\s*|require\(|import\()\s*['"]@mymind\/(?:contracts|core|persistence)(?:\/[^'"]*)?['"]/g
 
 async function collectJavaScriptFiles(directory) {
   const entries = await readdir(directory, { withFileTypes: true })
@@ -11,7 +12,8 @@ async function collectJavaScriptFiles(directory) {
   for (const entry of entries) {
     const path = join(directory, entry.name)
     if (entry.isDirectory()) files.push(...(await collectJavaScriptFiles(path)))
-    else if (entry.isFile() && ['.js', '.mjs', '.cjs'].includes(extname(entry.name))) files.push(path)
+    else if (entry.isFile() && ['.js', '.mjs', '.cjs'].includes(extname(entry.name)))
+      files.push(path)
   }
 
   return files
@@ -24,7 +26,10 @@ for (const runtimeRoot of runtimeRoots) {
     const source = await readFile(file, 'utf8')
     const matches = source.match(workspaceImportPattern)
     if (matches?.length) {
-      violations.push({ file: relative(process.cwd(), file), matches: [...new Set(matches)] })
+      violations.push({
+        file: relative(process.cwd(), file),
+        matches: [...new Set(matches)]
+      })
     }
   }
 }
