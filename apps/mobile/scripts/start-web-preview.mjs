@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process'
+import { createRequire } from 'node:module'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createWebPreviewProxy } from './web-preview-proxy.mjs'
@@ -14,6 +15,9 @@ function parsePort(value, fallback, name) {
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url))
 const appDirectory = path.resolve(scriptDirectory, '..')
+const resolveFromScript = createRequire(import.meta.url)
+const expoPackageJsonPath = resolveFromScript.resolve('expo/package.json')
+const expoCliPath = path.join(path.dirname(expoPackageJsonPath), 'bin', 'cli')
 const publicPort = parsePort(process.env.MYMIND_WEB_PORT, 8081, 'MYMIND_WEB_PORT')
 const metroPort = parsePort(process.env.MYMIND_WEB_METRO_PORT, 8082, 'MYMIND_WEB_METRO_PORT')
 
@@ -46,12 +50,11 @@ server.listen(publicPort, '127.0.0.1', () => {
   console.log(`[MyMind] Expo Metro backend: http://127.0.0.1:${metroPort}`)
   console.log('[MyMind] Open only the SQLite-safe URL above while testing web.\n')
 
-  const npxCommand = process.platform === 'win32' ? 'npx.cmd' : 'npx'
   const extraExpoArguments = process.argv.slice(2)
 
   metroProcess = spawn(
-    npxCommand,
-    ['expo', 'start', '--web', '--port', String(metroPort), ...extraExpoArguments],
+    process.execPath,
+    [expoCliPath, 'start', '--web', '--port', String(metroPort), ...extraExpoArguments],
     {
       cwd: appDirectory,
       stdio: 'inherit',
