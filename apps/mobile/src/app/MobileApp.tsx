@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
-import { BackHandler, FlatList, Pressable, Text, useColorScheme, View } from 'react-native'
+import {
+  BackHandler,
+  FlatList,
+  Platform,
+  Pressable,
+  Text,
+  useColorScheme,
+  View
+} from 'react-native'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar'
 import { appearanceTokens } from '@mymind/design'
@@ -161,6 +169,7 @@ export default function MobileApp(): React.JSX.Element {
   }, [attempt])
 
   useEffect(() => {
+    if (Platform.OS !== 'android') return
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
       if (backupOperation) return true
       if (immersive) return false
@@ -251,7 +260,7 @@ export default function MobileApp(): React.JSX.Element {
               <Label title>{titles[route]}</Label>
             </View>
           ) : null}
-          {error && (
+          {error ? (
             <ErrorState
               message={error}
               retry={() => {
@@ -259,7 +268,7 @@ export default function MobileApp(): React.JSX.Element {
                 setAttempt((value) => value + 1)
               }}
             />
-          )}
+          ) : null}
           {!services ? (
             !error && <LoadingState />
           ) : (
