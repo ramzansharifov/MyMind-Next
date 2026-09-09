@@ -9,11 +9,7 @@ const publicPort = Number(process.env.MYMIND_WEB_PORT ?? 8081)
 const metroPort = Number(process.env.MYMIND_METRO_PORT ?? 8082)
 const host = '127.0.0.1'
 
-if (
-  !Number.isInteger(publicPort) ||
-  !Number.isInteger(metroPort) ||
-  publicPort === metroPort
-) {
+if (!Number.isInteger(publicPort) || !Number.isInteger(metroPort) || publicPort === metroPort) {
   throw new Error('MYMIND_WEB_PORT and MYMIND_METRO_PORT must be different integer ports')
 }
 
@@ -94,7 +90,5 @@ expo.on('exit', (code) => {
 server.listen(publicPort, host, () => {
   console.log(`\nMyMind web preview: http://localhost:${publicPort}`)
   console.log(`Expo Metro upstream: http://localhost:${metroPort}`)
-  console.log(
-    'The preview proxy adds the cross-origin isolation required by expo-sqlite Web.\n'
-  )
+  console.log('The preview proxy adds the cross-origin isolation required by expo-sqlite Web.\n')
 })
