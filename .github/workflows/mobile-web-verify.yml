@@ -22,6 +22,8 @@ jobs:
         run: npm install --global npm@11
       - name: Install
         run: npm ci
+      - name: Rebuild SQLite for Node
+        run: npm run native:node
       - name: Check formatting
         run: npx prettier --check apps/mobile/metro.config.js apps/mobile/src/app/MobileApp.tsx apps/mobile/src/app/ReminderStatus.web.tsx apps/mobile/src/shared/storage/mobileDatabase.web.ts apps/mobile/src/shared/backup/mobileBackup.web.ts
       - name: TypeScript
