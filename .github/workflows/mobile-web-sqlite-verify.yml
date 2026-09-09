@@ -1,0 +1,39 @@
+name: Mobile web SQLite verification
+
+on:
+  push:
+    branches:
+      - fix/mobile-web-sqlite-transactions
+
+permissions:
+  contents: read
+
+jobs:
+  verify-web-sqlite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Use npm 11
+        run: npm install --global npm@11
+      - name: Install
+        run: npm ci
+      - name: Rebuild SQLite for Node
+        run: npm run native:node
+      - name: Check formatting
+        run: npx prettier --check apps/mobile/src/shared/storage/sqlite.ts apps/mobile/src/shared/storage/mobileDatabase.web.ts apps/mobile/src/shared/storage/sqlite-web-migrations.test.ts
+      - name: TypeScript
+        run: npm run typecheck
+      - name: Mobile regression
+        run: npm run test:mobile
+      - name: Export web
+        working-directory: apps/mobile
+        run: npx expo export --platform web --output-dir dist-web
+      - name: Verify web export
+        run: test -f apps/mobile/dist-web/index.html
+      - name: Whitespace
+        run: git diff --check
