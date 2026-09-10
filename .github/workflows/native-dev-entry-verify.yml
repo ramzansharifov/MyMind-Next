@@ -96,6 +96,26 @@ jobs:
           adb reverse tcp:8081 tcp:8081
           adb install -r apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
 
+      - name: Prepare React Native DevTools sandbox
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          (cd apps/mobile && timeout 35 env -u CI NODE_ENV=development npx expo start --dev-client --localhost --port 8081 > ../../metro-prewarm.log 2>&1)
+          set -e
+
+          sandbox="$(find "$HOME/.cache/dotslash" -type f -path '*/React Native DevTools-linux-x64/chrome-sandbox' -print -quit 2>/dev/null || true)"
+          if [ -z "$sandbox" ]; then
+            echo 'React Native DevTools sandbox was not downloaded during Metro prewarm.'
+            cat metro-prewarm.log || true
+            exit 1
+          fi
+
+          echo "Preparing $sandbox"
+          sudo chown root:root "$sandbox"
+          sudo chmod 4755 "$sandbox"
+          stat -c '%U %G %a %n' "$sandbox"
+
       - name: Start Metro development server
         shell: bash
         run: |
@@ -149,4 +169,5 @@ jobs:
           path: |
             dev-ui.xml
             metro.log
+            metro-prewarm.log
             emulator.log
