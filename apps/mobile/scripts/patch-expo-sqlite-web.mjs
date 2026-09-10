@@ -8,7 +8,7 @@ const requireFromHere = createRequire(import.meta.url)
 const BUGGY_LENGTH_WRITE = 'resultArray.set(new Uint32Array([length]), 0);'
 const FIXED_LENGTH_WRITE = 'new DataView(resultBuffer).setUint32(0, length, true);'
 const BUGGY_LENGTH_READ = 'const length = new Uint32Array(resultArray.buffer, 0, 1)[0];'
-const FIXED_LENGTH_READ = 'const length = new DataView(resultBuffer).getUint32(0, length, true);'
+const FIXED_LENGTH_READ = 'const length = new DataView(resultBuffer).getUint32(0, true);'
 const BUGGY_PAUSE_TIMEOUT =
   "if (i > 1_000_000) {\n        throw new Error('Sync operation timeout');\n      }"
 const FIXED_PAUSE_TIMEOUT =
