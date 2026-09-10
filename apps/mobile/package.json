@@ -48,6 +48,7 @@
     "web:raw": "expo start --web",
     "test:web-preview": "node ./scripts/web-preview-proxy.test.mjs",
     "test:web-sqlite-patch": "node ./scripts/patch-expo-sqlite-web.test.mjs",
+    "test:android-runtime": "node ./scripts/verify-android-runtime.mjs",
     "typecheck": "tsc --noEmit",
     "export:android": "node ./scripts/export-android.mjs"
   },
