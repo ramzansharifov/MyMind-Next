@@ -30,7 +30,7 @@ jobs:
       - name: Verify Web preview proxy
         run: npm run test:web-preview --workspace=mymind-mobile
       - name: Check formatting
-        run: npx prettier --check apps/mobile/scripts/patch-expo-sqlite-web.mjs apps/mobile/scripts/patch-expo-sqlite-web.test.mjs apps/mobile/scripts/start-web-preview.mjs apps/mobile/src/shared/storage/mobileDatabase.web.ts apps/mobile/src/shared/platform/documentAssets.web.ts apps/mobile/src/modules/workouts/workoutProgressAssets.web.ts
+        run: npx prettier --check apps/mobile/scripts/export-android.mjs apps/mobile/scripts/patch-expo-sqlite-web.mjs apps/mobile/scripts/patch-expo-sqlite-web.test.mjs apps/mobile/scripts/start-web-preview.mjs apps/mobile/src/shared/storage/mobileDatabase.web.ts apps/mobile/src/shared/platform/documentAssets.web.ts apps/mobile/src/modules/workouts/workoutProgressAssets.web.ts
       - name: Mobile typecheck
         run: npm run typecheck --workspace=mymind-mobile
       - name: Mobile regression
