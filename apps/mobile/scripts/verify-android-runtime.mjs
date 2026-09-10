@@ -5,7 +5,7 @@ import path from 'node:path'
 const packageName = process.env.MYMIND_ANDROID_PACKAGE || 'com.mymind.mobile'
 const activityName = process.env.MYMIND_ANDROID_ACTIVITY || '.MainActivity'
 const outputDirectory = path.resolve(
-  process.env.MYMIND_ANDROID_SMOKE_OUTPUT || 'apps/mobile/android-smoke-artifacts'
+  process.env.MYMIND_ANDROID_SMOKE_OUTPUT || 'android-smoke-artifacts'
 )
 const timeoutMs = Number(process.env.MYMIND_ANDROID_SMOKE_TIMEOUT_MS || 120_000)
 
