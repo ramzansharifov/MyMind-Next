@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process'
 import { createRequire } from 'node:module'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { patchInstalledExpoSqliteWeb } from './patch-expo-sqlite-web.mjs'
 import { createWebPreviewProxy } from './web-preview-proxy.mjs'
 
 function parsePort(value, fallback, name) {
@@ -25,6 +26,8 @@ const publicOrigin = `http://localhost:${publicPort}`
 if (publicPort === metroPort) {
   throw new Error('MYMIND_WEB_PORT and MYMIND_WEB_METRO_PORT must be different')
 }
+
+await patchInstalledExpoSqliteWeb()
 
 const server = createWebPreviewProxy({ targetPort: metroPort, publicPort })
 let metroProcess
