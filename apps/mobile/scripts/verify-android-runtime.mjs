@@ -131,14 +131,19 @@ try {
   console.log(`[MyMind] Home rendered in process ${state.pid}.`)
 
   const notes = findNodeCenter(state.xml, 'Заметки')
-  if (!notes) throw new Error('Could not find a tappable “Заметки” node in the Home accessibility tree.')
+  if (!notes) {
+    throw new Error('Could not find a tappable “Заметки” node in the Home accessibility tree.')
+  }
 
   adb(['shell', 'input', 'tap', String(notes.x), String(notes.y)])
   state = await waitForUi(['Заметки'], 'Notes screen after navigation')
   console.log('[MyMind] Notes navigation passed.')
 
   adb(['shell', 'input', 'keyevent', 'KEYCODE_BACK'])
-  state = await waitForUi(['Главная', 'Задачи', 'Привычки'], 'Home after Android back navigation')
+  state = await waitForUi(
+    ['Главная', 'Задачи', 'Привычки'],
+    'Home after Android back navigation'
+  )
   console.log('[MyMind] Android back navigation passed.')
 
   const currentPid = packagePid()
