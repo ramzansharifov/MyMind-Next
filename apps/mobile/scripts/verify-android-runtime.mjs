@@ -83,7 +83,8 @@ function xmlNodes(xml) {
   return nodes
 }
 
-function findNodeCenter(xml, label, { clickable } = {}) {
+function findNodeCenter(xml, label, { clickable, position = 'top' } = {}) {
+  const matches = []
   for (const attributes of xmlNodes(xml)) {
     if (attributes.text !== label && attributes['content-desc'] !== label) continue
     if (clickable !== undefined && attributes.clickable !== String(clickable)) continue
@@ -92,12 +93,14 @@ function findNodeCenter(xml, label, { clickable } = {}) {
 
     const [, left, top, right, bottom] = bounds.map(Number)
     if (right <= left || bottom <= top) continue
-    return {
+    matches.push({
       x: Math.round((left + right) / 2),
       y: Math.round((top + bottom) / 2)
-    }
+    })
   }
-  return null
+
+  matches.sort((a, b) => a.y - b.y || a.x - b.x)
+  return position === 'bottom' ? (matches.at(-1) ?? null) : (matches[0] ?? null)
 }
 
 function hasPlainText(xml, label) {
@@ -139,11 +142,11 @@ async function waitForUi(labels, description, predicate = () => true) {
   throw new Error(`Timed out waiting for Android UI: ${description}`)
 }
 
-async function tapVisibleLabel(label, description, maxScrolls = 0) {
+async function tapVisibleLabel(label, description, maxScrolls = 0, position = 'top') {
   for (let attempt = 0; attempt <= maxScrolls; attempt += 1) {
     const xml = uiDump()
     assertHealthyUi(xml, description)
-    const point = findNodeCenter(xml, label, { clickable: true })
+    const point = findNodeCenter(xml, label, { clickable: true, position })
     if (point) {
       adb(['shell', 'input', 'tap', String(point.x), String(point.y)])
       return
@@ -156,10 +159,38 @@ async function tapVisibleLabel(label, description, maxScrolls = 0) {
   throw new Error(`Could not find tappable “${label}” while ${description}.`)
 }
 
+async function typeIntoField(label, value, description, maxScrolls = 0) {
+  for (let attempt = 0; attempt <= maxScrolls; attempt += 1) {
+    const xml = uiDump()
+    assertHealthyUi(xml, description)
+    const point = findNodeCenter(xml, label, { clickable: true })
+    if (point) {
+      adb(['shell', 'input', 'tap', String(point.x), String(point.y)])
+      await sleep(250)
+      adb(['shell', 'input', 'text', value])
+      await waitForUi([value], `${description} after typing`)
+      return
+    }
+    if (attempt < maxScrolls) {
+      adb(['shell', 'input', 'swipe', '160', '500', '160', '220', '250'])
+      await sleep(700)
+    }
+  }
+  throw new Error(`Could not find editable “${label}” while ${description}.`)
+}
+
 async function waitForDeepRoute(title) {
   return waitForUi([title], `${title} screen`, (xml) => {
     return hasPlainText(xml, title) && !hasClickableLabel(xml, title)
   })
+}
+
+function launchApp() {
+  const launch = adb(['shell', 'am', 'start', '-W', '-n', `${packageName}/${activityName}`], {
+    timeout: 60_000
+  })
+  console.log(launch)
+  return launch
 }
 
 function captureArtifacts(pid, uiXml) {
@@ -188,11 +219,7 @@ console.log(`[MyMind] Android runtime smoke package: ${packageName}`)
 adb(['wait-for-device'], { timeout: 120_000 })
 adb(['logcat', '-c'])
 adb(['shell', 'am', 'force-stop', packageName])
-
-const launch = adb(['shell', 'am', 'start', '-W', '-n', `${packageName}/${activityName}`], {
-  timeout: 60_000
-})
-console.log(launch)
+launchApp()
 
 let state
 try {
@@ -225,12 +252,65 @@ try {
   state = await waitForUi(homeLabels, 'Home after Android back navigation from More')
   console.log('[MyMind] Android back navigation passed across primary and More routes.')
 
+  const suffix = Date.now().toString(36)
+  const testNoteTitle = `mymind_ci_${suffix}`
+  const testNoteContent = `persist_${suffix}`
+
+  await tapVisibleLabel('Заметки', 'opening Notes for persistence smoke')
+  state = await waitForUi(['Заметки', 'Группы', '+ Заметка'], 'Notes before persistence smoke')
+  await tapVisibleLabel('+ Заметка', 'creating persistence smoke note')
+  await waitForUi(['Новая заметка', 'Сохранить', 'Название'], 'new note form')
+  await typeIntoField('Название', testNoteTitle, 'entering persistence smoke note title')
+  await tapVisibleLabel('Сохранить', 'saving persistence smoke note')
+  state = await waitForUi(
+    [testNoteTitle, 'Добавить блок'],
+    'persistence smoke note editor after creation'
+  )
+
+  await tapVisibleLabel('Текст', 'adding persistence smoke text block', 10)
+  await waitForUi(['Текстовый блок'], 'persistence smoke text block')
+  await typeIntoField('Текстовый блок', testNoteContent, 'entering persistence smoke content', 4)
+
+  adb(['shell', 'input', 'keyevent', 'KEYCODE_HOME'])
+  await sleep(1_000)
+  adb(['shell', 'am', 'force-stop', packageName])
+  if (packagePid()) throw new Error('MyMind process remained alive after force-stop.')
+
+  launchApp()
+  state = await waitForUi(homeLabels, 'Home after force-stop relaunch')
+  console.log('[MyMind] Cold relaunch after force-stop passed.')
+
+  await tapVisibleLabel('Заметки', 'opening Notes after force-stop relaunch')
+  state = await waitForUi(
+    ['Заметки', testNoteTitle],
+    'persisted note after force-stop relaunch'
+  )
+  await tapVisibleLabel(testNoteTitle, 'opening persisted note after force-stop relaunch', 10)
+  state = await waitForUi(
+    [testNoteTitle, testNoteContent, 'Текстовый блок'],
+    'persisted note content after force-stop relaunch'
+  )
+  console.log('[MyMind] Note metadata and autosaved content survived force-stop relaunch.')
+
+  await tapVisibleLabel('Удалить', 'opening persistence smoke note delete confirmation')
+  await waitForUi(['Удалить заметку?'], 'persistence smoke note delete confirmation')
+  await tapVisibleLabel('Удалить', 'confirming persistence smoke note deletion', 0, 'bottom')
+  state = await waitForUi(
+    ['Заметки', 'Группы', '+ Заметка'],
+    'Notes after persistence smoke cleanup',
+    (xml) => !xml.includes(testNoteTitle)
+  )
+  console.log('[MyMind] Persistence smoke test data cleaned up.')
+
+  adb(['shell', 'input', 'keyevent', 'KEYCODE_BACK'])
+  state = await waitForUi(homeLabels, 'Home after persistence smoke')
+
   const currentPid = packagePid()
   if (!currentPid) throw new Error('MyMind process exited during the runtime smoke test.')
   state.pid = currentPid
 
   captureArtifacts(state.pid, state.xml)
-  console.log('[MyMind] Full Android module runtime smoke passed.')
+  console.log('[MyMind] Full Android module and persistence runtime smoke passed.')
 } catch (error) {
   const pid = packagePid()
   captureArtifacts(pid || '0', uiDump())
