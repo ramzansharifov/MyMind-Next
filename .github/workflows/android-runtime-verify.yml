@@ -19,6 +19,8 @@ jobs:
     env:
       CI: 1
       EXPO_NO_TELEMETRY: 1
+      ANDROID_USER_HOME: ${{ github.workspace }}/.android
+      ANDROID_AVD_HOME: ${{ github.workspace }}/.android/avd
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -54,6 +56,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          mkdir -p "$ANDROID_AVD_HOME"
           sudo chmod 666 /dev/kvm || true
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
@@ -64,6 +67,7 @@ jobs:
             --force \
             --name mymind-ci \
             --package "system-images;android-35;google_apis;x86_64"
+          "$ANDROID_HOME/emulator/emulator" -list-avds | grep -Fx 'mymind-ci'
           echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
 
       - name: Boot Android emulator
@@ -81,7 +85,7 @@ jobs:
             -camera-front none \
             > emulator.log 2>&1 &
 
-          adb wait-for-device
+          timeout 180 adb wait-for-device
           for attempt in $(seq 1 120); do
             if [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ]; then
               break
