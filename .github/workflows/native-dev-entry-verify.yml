@@ -113,31 +113,43 @@ jobs:
           cat metro.log
           exit 1
 
-      - name: Open development build and verify app registration
+      - name: Open Android debug build and verify app registration
         shell: bash
         run: |
           set -euo pipefail
           adb logcat -c
-          adb shell am start -W -a android.intent.action.VIEW \
-            -d 'exp+mymind-mobile://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081'
+
+          launch_activity="$(adb shell cmd package resolve-activity --brief \
+            -a android.intent.action.MAIN \
+            -c android.intent.category.LAUNCHER \
+            com.mymind.mobile | tr -d '\r' | tail -n 1)"
+          if [[ "$launch_activity" != com.mymind.mobile/* ]]; then
+            echo "Could not resolve MyMind launcher activity: $launch_activity"
+            adb shell dumpsys package com.mymind.mobile | grep -A 30 -B 5 -E 'MAIN|LAUNCHER|Activity' || true
+            exit 1
+          fi
+
+          echo "Launching $launch_activity directly; expo-dev-client is intentionally not part of this PR."
+          adb shell am force-stop com.mymind.mobile
+          adb shell am start -W -n "$launch_activity"
 
           for attempt in $(seq 1 80); do
             adb shell uiautomator dump /sdcard/mymind-dev-ui.xml >/dev/null 2>&1 || true
             adb exec-out cat /sdcard/mymind-dev-ui.xml > dev-ui.xml 2>/dev/null || true
             if grep -q 'App entry not found' dev-ui.xml; then
-              echo 'Development build still reports App entry not found.'
+              echo 'Android debug build still reports App entry not found.'
               cat dev-ui.xml
               adb logcat -d -v threadtime | tail -n 300
               exit 1
             fi
             if grep -q 'Главная' dev-ui.xml && grep -q 'Заметки' dev-ui.xml; then
-              echo 'MyMind development build registered main and rendered Home.'
+              echo 'MyMind Android debug build registered main and rendered Home.'
               exit 0
             fi
             sleep 2
           done
 
-          echo 'Timed out waiting for MyMind Home in the development build.'
+          echo 'Timed out waiting for MyMind Home in the Android debug build.'
           cat dev-ui.xml || true
           cat metro.log || true
           adb logcat -d -v threadtime | tail -n 300
