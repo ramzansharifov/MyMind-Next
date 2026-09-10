@@ -203,14 +203,18 @@ export function createMobileDocumentAssetStore() {
     const owners = new Set(ownerIds)
     for (const assetKey of [...sessionAssetUris.keys()]) {
       const separator = assetKey.indexOf(':')
-      if (separator >= 0 && owners.has(assetKey.slice(0, separator))) sessionAssetUris.delete(assetKey)
+      if (separator >= 0 && owners.has(assetKey.slice(0, separator))) {
+        sessionAssetUris.delete(assetKey)
+      }
     }
   }
 
   async function reconcileDocuments(documents: ReadonlyMap<string, StudyDocument>): Promise<void> {
     for (const assetKey of [...sessionAssetUris.keys()]) {
       const separator = assetKey.indexOf(':')
-      if (separator < 0 || !documents.has(assetKey.slice(0, separator))) sessionAssetUris.delete(assetKey)
+      if (separator < 0 || !documents.has(assetKey.slice(0, separator))) {
+        sessionAssetUris.delete(assetKey)
+      }
     }
     for (const [ownerId, document] of documents) await cleanupDocumentAssets(ownerId, document)
   }
