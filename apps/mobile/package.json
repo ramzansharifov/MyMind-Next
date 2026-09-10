@@ -42,7 +42,7 @@
   "scripts": {
     "postinstall": "node ./scripts/patch-expo-sqlite-web.mjs",
     "start": "expo start",
-    "android": "expo start --android",
+    "android": "expo run:android",
     "ios": "expo start --ios",
     "web": "node ./scripts/start-web-preview.mjs",
     "web:raw": "expo start --web",
