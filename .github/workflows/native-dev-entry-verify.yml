@@ -100,7 +100,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          (cd apps/mobile && npx expo start --dev-client --localhost --port 8081 > ../../metro.log 2>&1) &
+          (cd apps/mobile && env -u CI NODE_ENV=development npx expo start --dev-client --localhost --port 8081 > ../../metro.log 2>&1) &
           for attempt in $(seq 1 120); do
             if curl -fsS http://127.0.0.1:8081/status | grep -q 'packager-status:running'; then
               exit 0
