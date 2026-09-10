@@ -1,6 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import path from 'node:path'
+import { pathToFileURL } from 'node:url'
 
 const requireFromHere = createRequire(import.meta.url)
 
@@ -58,6 +59,7 @@ export async function patchInstalledExpoSqliteWeb() {
   return workerChannelPath
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
-  await patchInstalledExpoSqliteWeb()
-}
+const invokedAsScript =
+  process.argv[1] != null && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href
+
+if (invokedAsScript) await patchInstalledExpoSqliteWeb()
