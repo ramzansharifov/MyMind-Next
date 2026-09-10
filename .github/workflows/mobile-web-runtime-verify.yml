@@ -5,6 +5,10 @@ on:
     branches:
       - fix/mobile-web-runtime-stability
 
+concurrency:
+  group: mobile-web-runtime-verification
+  cancel-in-progress: true
+
 jobs:
   verify-web-runtime:
     runs-on: windows-latest
@@ -68,7 +72,12 @@ jobs:
 
           $dom = Get-Content app-dom.html -Raw
           $browserLog = Get-Content browser.log -Raw -ErrorAction SilentlyContinue
+          $webOut = Get-Content web-out.log -Raw -ErrorAction SilentlyContinue
+          $webErr = Get-Content web-err.log -Raw -ErrorAction SilentlyContinue
+          $runtimeLog = "$browserLog`n$webOut`n$webErr"
           Get-Content browser.log -ErrorAction SilentlyContinue
+          Get-Content web-out.log -ErrorAction SilentlyContinue
+          Get-Content web-err.log -ErrorAction SilentlyContinue
 
           if ($dom -notmatch 'Главная') { throw 'MyMind Home did not render.' }
           if ($dom -notmatch 'Задачи') { throw 'MyMind Home cards did not finish loading.' }
@@ -83,7 +92,7 @@ jobs:
             'expo-file-system is not supported on web'
           )
           foreach ($needle in $forbidden) {
-            if ($dom.Contains($needle) -or $browserLog.Contains($needle)) {
+            if ($dom.Contains($needle) -or $runtimeLog.Contains($needle)) {
               throw "Known Web runtime failure is still present: $needle"
             }
           }
