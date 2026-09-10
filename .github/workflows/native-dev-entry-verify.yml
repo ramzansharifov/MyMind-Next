@@ -39,7 +39,7 @@ jobs:
 
       - name: Verify mobile regression
         run: |
-          npx prettier --check apps/mobile/index.ts .github/workflows/native-dev-entry-verify.yml
+          npx prettier --check apps/mobile/index.ts apps/mobile/src/bootstrap/native.ts apps/mobile/src/bootstrap/web.ts .github/workflows/native-dev-entry-verify.yml
           npm run typecheck --workspace=mymind-mobile
           npm run native:node
           npm run test:mobile
