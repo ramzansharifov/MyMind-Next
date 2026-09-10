@@ -36,6 +36,8 @@ jobs:
       - name: Verify smoke tooling
         run: |
           node --check apps/mobile/scripts/verify-android-runtime.mjs
+          npx prettier --write apps/mobile/scripts/verify-android-runtime.mjs
+          git diff -- apps/mobile/scripts/verify-android-runtime.mjs
           npx prettier --check apps/mobile/package.json apps/mobile/scripts/verify-android-runtime.mjs .github/workflows/android-runtime-verify.yml
           npm run typecheck --workspace=mymind-mobile
 
