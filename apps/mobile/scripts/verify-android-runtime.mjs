@@ -281,10 +281,7 @@ try {
   console.log('[MyMind] Cold relaunch after force-stop passed.')
 
   await tapVisibleLabel('Заметки', 'opening Notes after force-stop relaunch')
-  state = await waitForUi(
-    ['Заметки', testNoteTitle],
-    'persisted note after force-stop relaunch'
-  )
+  state = await waitForUi(['Заметки', testNoteTitle], 'persisted note after force-stop relaunch')
   await tapVisibleLabel(testNoteTitle, 'opening persisted note after force-stop relaunch', 10)
   state = await waitForUi(
     [testNoteTitle, testNoteContent, 'Текстовый блок'],
