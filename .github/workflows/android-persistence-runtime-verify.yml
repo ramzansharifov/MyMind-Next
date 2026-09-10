@@ -1,0 +1,125 @@
+name: Android persistence runtime verification
+
+on:
+  push:
+    branches:
+      - verify/android-persistence-runtime
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-persistence-runtime-verification
+  cancel-in-progress: true
+
+jobs:
+  verify-android-persistence-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    env:
+      CI: 1
+      EXPO_NO_TELEMETRY: 1
+      ANDROID_USER_HOME: ${{ github.workspace }}/.android
+      ANDROID_AVD_HOME: ${{ github.workspace }}/.android/avd
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify changed tooling and mobile regression
+        run: |
+          node --check apps/mobile/scripts/verify-android-runtime.mjs
+          npx prettier --write apps/mobile/scripts/verify-android-runtime.mjs apps/mobile/scripts/README.android-runtime-smoke.md .github/workflows/android-persistence-runtime-verify.yml
+          git diff -- apps/mobile/scripts/verify-android-runtime.mjs apps/mobile/scripts/README.android-runtime-smoke.md .github/workflows/android-persistence-runtime-verify.yml
+          git diff --exit-code -- apps/mobile/scripts/verify-android-runtime.mjs apps/mobile/scripts/README.android-runtime-smoke.md .github/workflows/android-persistence-runtime-verify.yml
+          npm run typecheck --workspace=mymind-mobile
+          npm run native:node
+          npm run test:mobile
+
+      - name: Generate Android project
+        working-directory: apps/mobile
+        run: npx expo prebuild --platform android --clean --no-install
+
+      - name: Build standalone release APK
+        working-directory: apps/mobile/android
+        run: ./gradlew :app:assembleRelease --no-daemon --stacktrace
+
+      - name: Verify release APK
+        run: test -s apps/mobile/android/app/build/outputs/apk/release/app-release.apk
+
+      - name: Prepare Android emulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$ANDROID_AVD_HOME"
+          sudo chmod 666 /dev/kvm || true
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+            "platform-tools" \
+            "emulator" \
+            "system-images;android-35;google_apis;x86_64"
+          echo no | "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" create avd \
+            --force \
+            --name mymind-ci \
+            --package "system-images;android-35;google_apis;x86_64"
+          "$ANDROID_HOME/emulator/emulator" -list-avds | grep -Fx 'mymind-ci'
+          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
+
+      - name: Boot Android emulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          nohup "$ANDROID_HOME/emulator/emulator" \
+            -avd mymind-ci \
+            -no-window \
+            -no-audio \
+            -no-boot-anim \
+            -no-snapshot \
+            -gpu swiftshader_indirect \
+            -camera-back none \
+            -camera-front none \
+            > emulator.log 2>&1 &
+
+          timeout 180 adb wait-for-device
+          for attempt in $(seq 1 120); do
+            if [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ]; then
+              break
+            fi
+            if [ "$attempt" = "120" ]; then
+              echo "Android emulator did not finish booting."
+              cat emulator.log
+              exit 1
+            fi
+            sleep 2
+          done
+
+          adb shell settings put global window_animation_scale 0
+          adb shell settings put global transition_animation_scale 0
+          adb shell settings put global animator_duration_scale 0
+          adb shell input keyevent 82 || true
+          adb shell wm dismiss-keyguard || true
+
+      - name: Install MyMind
+        run: adb install -r apps/mobile/android/app/build/outputs/apk/release/app-release.apk
+
+      - name: Run Android module and persistence runtime smoke
+        run: npm run test:android-runtime --workspace=mymind-mobile
+
+      - name: Upload Android persistence smoke artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-persistence-runtime-smoke
+          if-no-files-found: ignore
+          path: |
+            apps/mobile/android-smoke-artifacts/**
+            emulator.log
