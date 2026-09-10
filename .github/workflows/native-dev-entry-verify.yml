@@ -124,12 +124,12 @@ jobs:
           sudo chmod 4755 "$sandbox"
           stat -c '%U %G %a %n' "$sandbox"
 
-          mv "$devtools" "$devtools.bin"
-          cat > "$devtools" <<'EOF'
-          #!/usr/bin/env bash
-          exec "$(dirname "$0")/React Native DevTools.bin" --no-sandbox "$@"
-          EOF
-          chmod 755 "$devtools"
+          sudo mv "$devtools" "$devtools.bin"
+          printf '%s\n' \
+            '#!/usr/bin/env bash' \
+            'exec "$(dirname "$0")/React Native DevTools.bin" --no-sandbox "$@"' \
+            | sudo tee "$devtools" >/dev/null
+          sudo chmod 755 "$devtools"
           echo 'React Native DevTools launcher wrapped with --no-sandbox for the headless GitHub runner.'
 
       - name: Start Metro development server
