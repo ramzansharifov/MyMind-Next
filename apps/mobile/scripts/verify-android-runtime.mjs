@@ -108,8 +108,7 @@ function hasPlainText(xml, label) {
 
 function hasClickableLabel(xml, label) {
   return xmlNodes(xml).some(
-    (node) =>
-      node.clickable === 'true' && (node.text === label || node['content-desc'] === label)
+    (node) => node.clickable === 'true' && (node.text === label || node['content-desc'] === label)
   )
 }
 
