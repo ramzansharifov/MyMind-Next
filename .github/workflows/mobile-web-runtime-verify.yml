@@ -28,11 +28,13 @@ jobs:
       - name: Verify expo-sqlite compatibility patch
         run: node apps/mobile/scripts/patch-expo-sqlite-web.test.mjs
       - name: Check formatting
-        run: npx prettier --check apps/mobile/scripts/patch-expo-sqlite-web.mjs apps/mobile/scripts/patch-expo-sqlite-web.test.mjs apps/mobile/scripts/start-web-preview.mjs apps/mobile/src/shared/storage/mobileDatabase.web.ts apps/mobile/src/shared/platform/documentAssets.web.ts apps/mobile/src/modules/workouts/workoutProgressAssets.web.ts
+        run: npx prettier --check apps/mobile/scripts/patch-expo-sqlite-web.mjs apps/mobile/scripts/patch-expo-sqlite-web.test.mjs apps/mobile/scripts/start-web-preview.mjs apps/mobile/scripts/verify-web-runtime.mjs apps/mobile/src/shared/storage/mobileDatabase.web.ts apps/mobile/src/shared/platform/documentAssets.web.ts apps/mobile/src/modules/workouts/workoutProgressAssets.web.ts
       - name: Mobile typecheck
         run: npm run typecheck --workspace=mymind-mobile
       - name: Mobile regression
         run: npm run test:mobile
+      - name: Install temporary browser driver
+        run: npm install --no-save --ignore-scripts playwright-core@1.63.0
       - name: Start Web preview
         shell: pwsh
         run: |
@@ -59,62 +61,7 @@ jobs:
           if ($response.Headers['Cross-Origin-Embedder-Policy'] -ne 'credentialless') { throw 'Missing COEP.' }
           if ($response.Headers['Cross-Origin-Opener-Policy'] -ne 'same-origin') { throw 'Missing COOP.' }
       - name: Open MyMind in Chromium and reject known runtime failures
-        shell: pwsh
-        run: |
-          $browserCandidates = @(
-            "$env:ProgramFiles\Google\Chrome\Application\chrome.exe",
-            "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe",
-            "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe"
-          )
-          $browser = $browserCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
-          if (-not $browser) { throw 'No Chromium browser found.' }
-
-          $profile = Join-Path $env:RUNNER_TEMP 'mymind-chromium-profile'
-          Remove-Item $profile -Recurse -Force -ErrorAction SilentlyContinue
-          $browserArguments = @(
-            '--headless=new',
-            "--user-data-dir=$profile",
-            '--no-first-run',
-            '--no-default-browser-check',
-            '--disable-extensions',
-            '--disable-gpu',
-            '--no-sandbox',
-            '--enable-logging=stderr',
-            '--v=0',
-            '--virtual-time-budget=20000',
-            '--dump-dom',
-            'http://localhost:8081/'
-          )
-          $browserProcess = Start-Process -FilePath $browser -ArgumentList $browserArguments -Wait -PassThru -NoNewWindow -RedirectStandardOutput app-dom.html -RedirectStandardError browser.log
-          if ($browserProcess.ExitCode -ne 0) { throw "Chromium exited with code $($browserProcess.ExitCode)." }
-
-          [string]$dom = Get-Content app-dom.html -Raw -ErrorAction SilentlyContinue
-          [string]$browserLog = Get-Content browser.log -Raw -ErrorAction SilentlyContinue
-          [string]$webOut = Get-Content web-out.log -Raw -ErrorAction SilentlyContinue
-          [string]$webErr = Get-Content web-err.log -Raw -ErrorAction SilentlyContinue
-          [string]$runtimeLog = [string]::Concat($browserLog, "`n", $webOut, "`n", $webErr)
-          Get-Content browser.log -ErrorAction SilentlyContinue
-          Get-Content web-out.log -ErrorAction SilentlyContinue
-          Get-Content web-err.log -ErrorAction SilentlyContinue
-
-          if ($dom -notmatch 'Главная') { throw 'MyMind Home did not render.' }
-          if ($dom -notmatch 'Привычки сегодня') { throw 'MyMind Home data cards did not finish loading.' }
-          if ($dom -notmatch 'Обучение') { throw 'MyMind Home data cards did not finish loading.' }
-
-          $forbidden = @(
-            'SharedArrayBuffer is not defined',
-            'Sync operation timeout',
-            "Expected ',' or ']' after array element in JSON",
-            'validatePath is not a function',
-            'Failed to reconcile workout progress photos',
-            'Failed to reconcile mobile document assets',
-            'expo-file-system is not supported on web'
-          )
-          foreach ($needle in $forbidden) {
-            if ($dom.Contains($needle) -or $runtimeLog.Contains($needle)) {
-              throw "Known Web runtime failure is still present: $needle"
-            }
-          }
+        run: node apps/mobile/scripts/verify-web-runtime.mjs
       - name: Stop preview
         if: always()
         shell: pwsh
