@@ -26,6 +26,7 @@ ftag/
 
 # Tests
 coverage/
+apps/mobile/android-smoke-artifacts/
 
 # IDE
 .idea/
