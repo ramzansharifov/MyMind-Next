@@ -40,12 +40,14 @@
     "typescript": "~6.0.3"
   },
   "scripts": {
+    "postinstall": "node ./scripts/patch-expo-sqlite-web.mjs",
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "node ./scripts/start-web-preview.mjs",
     "web:raw": "expo start --web",
     "test:web-preview": "node ./scripts/web-preview-proxy.test.mjs",
+    "test:web-sqlite-patch": "node ./scripts/patch-expo-sqlite-web.test.mjs",
     "typecheck": "tsc --noEmit",
     "export:android": "node ./scripts/export-android.mjs"
   },
