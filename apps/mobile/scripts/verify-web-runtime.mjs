@@ -60,13 +60,24 @@ try {
     throw new Error(`Preview navigation failed with HTTP ${response?.status() ?? 'no response'}.`)
   }
 
+  const isolation = await page.evaluate(() => ({
+    isolated: globalThis.crossOriginIsolated === true,
+    sharedArrayBufferType: typeof globalThis.SharedArrayBuffer
+  }))
+  if (!isolation.isolated || isolation.sharedArrayBufferType !== 'function') {
+    throw new Error(
+      `SQLite-safe preview is not cross-origin isolated: ${JSON.stringify(isolation)}`
+    )
+  }
+
   await page.getByText('Главная', { exact: true }).first().waitFor({ timeout: 120_000 })
-  await page.getByText('Заметки', { exact: true }).first().waitFor({ timeout: 120_000 })
-  await page.getByText('Задачи', { exact: true }).first().waitFor({ timeout: 120_000 })
-  await page.waitForTimeout(3_000)
+  await page.getByText('Привычки сегодня', { exact: true }).first().waitFor({ timeout: 120_000 })
+  await page.getByText('Обучение', { exact: true }).first().waitFor({ timeout: 120_000 })
+  await page.getByText('Сегодня в календаре', { exact: true }).first().waitFor({ timeout: 120_000 })
+  await page.waitForTimeout(2_000)
 
   const bodyText = await page.locator('body').innerText()
-  console.log('[MyMind] Browser runtime smoke rendered the mobile Home shell.')
+  console.log('[MyMind] Browser runtime smoke rendered the loaded mobile Home dashboard.')
   console.log(bodyText.slice(0, 4_000))
 
   const combined = `${bodyText}\n${runtimeMessages.join('\n')}`
