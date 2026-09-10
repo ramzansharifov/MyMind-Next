@@ -18,7 +18,9 @@ jobs:
     timeout-minutes: 45
     env:
       CI: 1
+      NODE_ENV: development
       EXPO_NO_TELEMETRY: 1
+      EXPO_UNSTABLE_HEADLESS: 1
       ANDROID_USER_HOME: ${{ github.workspace }}/.android
       ANDROID_AVD_HOME: ${{ github.workspace }}/.android/avd
     steps:
@@ -96,47 +98,11 @@ jobs:
           adb reverse tcp:8081 tcp:8081
           adb install -r apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
 
-      - name: Prepare React Native DevTools for headless CI
-        shell: bash
-        run: |
-          set -euo pipefail
-          set +e
-          (cd apps/mobile && timeout 35 env -u CI NODE_ENV=development npx expo start --dev-client --localhost --port 8081 > ../../metro-prewarm.log 2>&1)
-          set -e
-
-          sandbox="$(find "$HOME/.cache/dotslash" -type f -path '*/React Native DevTools-linux-x64/chrome-sandbox' -print -quit 2>/dev/null || true)"
-          if [ -z "$sandbox" ]; then
-            echo 'React Native DevTools was not downloaded during Metro prewarm.'
-            cat metro-prewarm.log || true
-            exit 1
-          fi
-
-          devtools_dir="$(dirname "$sandbox")"
-          devtools="$devtools_dir/React Native DevTools"
-          if [ ! -x "$devtools" ]; then
-            echo "React Native DevTools launcher not found at $devtools"
-            find "$devtools_dir" -maxdepth 1 -printf '%M %f\n' || true
-            exit 1
-          fi
-
-          echo "Preparing $sandbox"
-          sudo chown root:root "$sandbox"
-          sudo chmod 4755 "$sandbox"
-          stat -c '%U %G %a %n' "$sandbox"
-
-          sudo mv "$devtools" "$devtools.bin"
-          printf '%s\n' \
-            '#!/usr/bin/env bash' \
-            'exec "$(dirname "$0")/React Native DevTools.bin" --no-sandbox "$@"' \
-            | sudo tee "$devtools" >/dev/null
-          sudo chmod 755 "$devtools"
-          echo 'React Native DevTools launcher wrapped with --no-sandbox for the headless GitHub runner.'
-
       - name: Start Metro development server
         shell: bash
         run: |
           set -euo pipefail
-          (cd apps/mobile && env -u CI NODE_ENV=development npx expo start --dev-client --localhost --port 8081 > ../../metro.log 2>&1) &
+          (cd apps/mobile && npx expo start --dev-client --localhost --port 8081 > ../../metro.log 2>&1) &
           for attempt in $(seq 1 120); do
             if curl -fsS http://127.0.0.1:8081/status | grep -q 'packager-status:running'; then
               exit 0
@@ -185,5 +151,4 @@ jobs:
           path: |
             dev-ui.xml
             metro.log
-            metro-prewarm.log
             emulator.log
