@@ -71,8 +71,22 @@ jobs:
 
           $profile = Join-Path $env:RUNNER_TEMP 'mymind-chromium-profile'
           Remove-Item $profile -Recurse -Force -ErrorAction SilentlyContinue
-          & $browser --headless=new --user-data-dir=$profile --no-first-run --no-default-browser-check --disable-extensions --disable-gpu --no-sandbox --enable-logging=stderr --v=0 --virtual-time-budget=20000 --dump-dom http://localhost:8081/ 1> app-dom.html 2> browser.log
-          if ($LASTEXITCODE -ne 0) { throw "Chromium exited with code $LASTEXITCODE." }
+          $browserArguments = @(
+            '--headless=new',
+            "--user-data-dir=$profile",
+            '--no-first-run',
+            '--no-default-browser-check',
+            '--disable-extensions',
+            '--disable-gpu',
+            '--no-sandbox',
+            '--enable-logging=stderr',
+            '--v=0',
+            '--virtual-time-budget=20000',
+            '--dump-dom',
+            'http://localhost:8081/'
+          )
+          $browserProcess = Start-Process -FilePath $browser -ArgumentList $browserArguments -Wait -PassThru -NoNewWindow -RedirectStandardOutput app-dom.html -RedirectStandardError browser.log
+          if ($browserProcess.ExitCode -ne 0) { throw "Chromium exited with code $($browserProcess.ExitCode)." }
 
           [string]$dom = Get-Content app-dom.html -Raw -ErrorAction SilentlyContinue
           [string]$browserLog = Get-Content browser.log -Raw -ErrorAction SilentlyContinue
