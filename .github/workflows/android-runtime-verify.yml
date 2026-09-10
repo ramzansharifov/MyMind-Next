@@ -36,8 +36,6 @@ jobs:
       - name: Verify smoke tooling
         run: |
           node --check apps/mobile/scripts/verify-android-runtime.mjs
-          npx prettier --write apps/mobile/scripts/verify-android-runtime.mjs
-          git diff -- apps/mobile/scripts/verify-android-runtime.mjs
           npx prettier --check apps/mobile/package.json apps/mobile/scripts/verify-android-runtime.mjs .github/workflows/android-runtime-verify.yml
           npm run typecheck --workspace=mymind-mobile
 
@@ -66,6 +64,7 @@ jobs:
             --force \
             --name mymind-ci \
             --package "system-images;android-35;google_apis;x86_64"
+          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
 
       - name: Boot Android emulator
         shell: bash
