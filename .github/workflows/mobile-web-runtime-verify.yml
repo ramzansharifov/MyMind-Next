@@ -71,11 +71,11 @@ jobs:
 
           & $browser --headless=new --disable-gpu --no-sandbox --enable-logging=stderr --v=0 --virtual-time-budget=20000 --dump-dom http://localhost:8081/ 1> app-dom.html 2> browser.log
 
-          $dom = Get-Content app-dom.html -Raw
-          $browserLog = Get-Content browser.log -Raw -ErrorAction SilentlyContinue
-          $webOut = Get-Content web-out.log -Raw -ErrorAction SilentlyContinue
-          $webErr = Get-Content web-err.log -Raw -ErrorAction SilentlyContinue
-          $runtimeLog = "$browserLog`n$webOut`n$webErr"
+          [string]$dom = Get-Content app-dom.html -Raw -ErrorAction SilentlyContinue
+          [string]$browserLog = Get-Content browser.log -Raw -ErrorAction SilentlyContinue
+          [string]$webOut = Get-Content web-out.log -Raw -ErrorAction SilentlyContinue
+          [string]$webErr = Get-Content web-err.log -Raw -ErrorAction SilentlyContinue
+          [string]$runtimeLog = [string]::Concat($browserLog, "`n", $webOut, "`n", $webErr)
           Get-Content browser.log -ErrorAction SilentlyContinue
           Get-Content web-out.log -ErrorAction SilentlyContinue
           Get-Content web-err.log -ErrorAction SilentlyContinue
