@@ -39,40 +39,34 @@ jobs:
         run: npm run export:android
       - name: Install temporary browser driver
         run: npm install --no-save --ignore-scripts playwright-core@1.63.0
-      - name: Start Web preview
+      - name: Run Web preview browser smoke
         shell: pwsh
         run: |
           Remove-Item Env:CI -ErrorAction SilentlyContinue
           $process = Start-Process -FilePath node -ArgumentList @('apps/mobile/scripts/start-web-preview.mjs') -PassThru -NoNewWindow -RedirectStandardOutput web-out.log -RedirectStandardError web-err.log
-          $process.Id | Out-File web.pid
 
-          $ready = $false
-          for ($attempt = 1; $attempt -le 120; $attempt++) {
-            Start-Sleep -Seconds 1
-            try {
-              $response = Invoke-WebRequest -UseBasicParsing http://localhost:8081/ -TimeoutSec 2
-              if ($response.StatusCode -eq 200) {
-                $ready = $true
-                break
+          try {
+            $ready = $false
+            for ($attempt = 1; $attempt -le 120; $attempt++) {
+              Start-Sleep -Seconds 1
+              try {
+                $response = Invoke-WebRequest -UseBasicParsing http://localhost:8081/ -TimeoutSec 2
+                if ($response.StatusCode -eq 200) {
+                  $ready = $true
+                  break
+                }
+              } catch {
               }
-            } catch {
             }
-          }
 
-          Get-Content web-out.log -ErrorAction SilentlyContinue
-          Get-Content web-err.log -ErrorAction SilentlyContinue
-          if (-not $ready) { throw 'Web preview did not become ready.' }
-          if ($response.Headers['Cross-Origin-Embedder-Policy'] -ne 'credentialless') { throw 'Missing COEP.' }
-          if ($response.Headers['Cross-Origin-Opener-Policy'] -ne 'same-origin') { throw 'Missing COOP.' }
-      - name: Open MyMind in Chromium and reject known runtime failures
-        run: node apps/mobile/scripts/verify-web-runtime.mjs
-      - name: Stop preview
-        if: always()
-        shell: pwsh
-        run: |
-          if (Test-Path web.pid) {
-            $pidValue = Get-Content web.pid
-            Stop-Process -Id $pidValue -Force -ErrorAction SilentlyContinue
+            if (-not $ready) { throw 'Web preview did not become ready.' }
+            if ($response.Headers['Cross-Origin-Embedder-Policy'] -ne 'credentialless') { throw 'Missing COEP.' }
+            if ($response.Headers['Cross-Origin-Opener-Policy'] -ne 'same-origin') { throw 'Missing COOP.' }
+
+            node apps/mobile/scripts/verify-web-runtime.mjs
+            if ($LASTEXITCODE -ne 0) { throw "Browser runtime smoke exited with code $LASTEXITCODE." }
+          } finally {
+            Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+            Get-Content web-out.log -ErrorAction SilentlyContinue
+            Get-Content web-err.log -ErrorAction SilentlyContinue
           }
-          Get-Content web-out.log -ErrorAction SilentlyContinue
-          Get-Content web-err.log -ErrorAction SilentlyContinue
