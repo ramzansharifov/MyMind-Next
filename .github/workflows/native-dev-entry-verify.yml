@@ -96,7 +96,7 @@ jobs:
           adb reverse tcp:8081 tcp:8081
           adb install -r apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
 
-      - name: Prepare React Native DevTools sandbox
+      - name: Prepare React Native DevTools for headless CI
         shell: bash
         run: |
           set -euo pipefail
@@ -106,8 +106,16 @@ jobs:
 
           sandbox="$(find "$HOME/.cache/dotslash" -type f -path '*/React Native DevTools-linux-x64/chrome-sandbox' -print -quit 2>/dev/null || true)"
           if [ -z "$sandbox" ]; then
-            echo 'React Native DevTools sandbox was not downloaded during Metro prewarm.'
+            echo 'React Native DevTools was not downloaded during Metro prewarm.'
             cat metro-prewarm.log || true
+            exit 1
+          fi
+
+          devtools_dir="$(dirname "$sandbox")"
+          devtools="$devtools_dir/React Native DevTools"
+          if [ ! -x "$devtools" ]; then
+            echo "React Native DevTools launcher not found at $devtools"
+            find "$devtools_dir" -maxdepth 1 -printf '%M %f\n' || true
             exit 1
           fi
 
@@ -115,6 +123,14 @@ jobs:
           sudo chown root:root "$sandbox"
           sudo chmod 4755 "$sandbox"
           stat -c '%U %G %a %n' "$sandbox"
+
+          mv "$devtools" "$devtools.bin"
+          cat > "$devtools" <<'EOF'
+          #!/usr/bin/env bash
+          exec "$(dirname "$0")/React Native DevTools.bin" --no-sandbox "$@"
+          EOF
+          chmod 755 "$devtools"
+          echo 'React Native DevTools launcher wrapped with --no-sandbox for the headless GitHub runner.'
 
       - name: Start Metro development server
         shell: bash
