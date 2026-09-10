@@ -38,10 +38,9 @@ jobs:
       - name: Verify changed tooling and mobile regression
         run: |
           node --check apps/mobile/scripts/verify-android-runtime.mjs
-          npx prettier --write apps/mobile/scripts/verify-android-runtime.mjs
-          git diff -- apps/mobile/scripts/verify-android-runtime.mjs
           npx prettier --check apps/mobile/scripts/verify-android-runtime.mjs .github/workflows/android-module-runtime-verify.yml
           npm run typecheck --workspace=mymind-mobile
+          npm run native:node
           npm run test:mobile
 
       - name: Generate Android project
