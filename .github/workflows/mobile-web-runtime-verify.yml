@@ -1,0 +1,99 @@
+name: Mobile web runtime verification
+
+on:
+  push:
+    branches:
+      - fix/mobile-web-runtime-stability
+
+jobs:
+  verify-web-runtime:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Use npm 11
+        run: npm install --global npm@11
+      - name: Install
+        run: npm ci
+      - name: Rebuild SQLite for Node tests
+        run: npm run native:node
+      - name: Verify expo-sqlite compatibility patch
+        run: node apps/mobile/scripts/patch-expo-sqlite-web.test.mjs
+      - name: Check formatting
+        run: npx prettier --check apps/mobile/scripts/patch-expo-sqlite-web.mjs apps/mobile/scripts/patch-expo-sqlite-web.test.mjs apps/mobile/scripts/start-web-preview.mjs apps/mobile/src/shared/storage/mobileDatabase.web.ts apps/mobile/src/shared/platform/documentAssets.web.ts apps/mobile/src/modules/workouts/workoutProgressAssets.web.ts
+      - name: Mobile typecheck
+        run: npm run typecheck --workspace=mymind-mobile
+      - name: Mobile regression
+        run: npm run test:mobile
+      - name: Start Web preview
+        shell: pwsh
+        run: |
+          $process = Start-Process -FilePath node -ArgumentList @('apps/mobile/scripts/start-web-preview.mjs') -PassThru -NoNewWindow -RedirectStandardOutput web-out.log -RedirectStandardError web-err.log
+          $process.Id | Out-File web.pid
+
+          $ready = $false
+          for ($attempt = 1; $attempt -le 120; $attempt++) {
+            Start-Sleep -Seconds 1
+            try {
+              $response = Invoke-WebRequest -UseBasicParsing http://localhost:8081/ -TimeoutSec 2
+              if ($response.StatusCode -eq 200) {
+                $ready = $true
+                break
+              }
+            } catch {
+            }
+          }
+
+          Get-Content web-out.log -ErrorAction SilentlyContinue
+          Get-Content web-err.log -ErrorAction SilentlyContinue
+          if (-not $ready) { throw 'Web preview did not become ready.' }
+          if ($response.Headers['Cross-Origin-Embedder-Policy'] -ne 'credentialless') { throw 'Missing COEP.' }
+          if ($response.Headers['Cross-Origin-Opener-Policy'] -ne 'same-origin') { throw 'Missing COOP.' }
+      - name: Open MyMind in Chromium and reject known runtime failures
+        shell: pwsh
+        run: |
+          $browserCandidates = @(
+            "$env:ProgramFiles\Google\Chrome\Application\chrome.exe",
+            "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe",
+            "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe"
+          )
+          $browser = $browserCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $browser) { throw 'No Chromium browser found.' }
+
+          & $browser --headless=new --disable-gpu --no-sandbox --enable-logging=stderr --v=0 --virtual-time-budget=20000 --dump-dom http://localhost:8081/ 1> app-dom.html 2> browser.log
+
+          $dom = Get-Content app-dom.html -Raw
+          $browserLog = Get-Content browser.log -Raw -ErrorAction SilentlyContinue
+          Get-Content browser.log -ErrorAction SilentlyContinue
+
+          if ($dom -notmatch 'Главная') { throw 'MyMind Home did not render.' }
+          if ($dom -notmatch 'Задачи') { throw 'MyMind Home cards did not finish loading.' }
+
+          $forbidden = @(
+            'SharedArrayBuffer is not defined',
+            'Sync operation timeout',
+            "Expected ',' or ']' after array element in JSON",
+            'validatePath is not a function',
+            'Failed to reconcile workout progress photos',
+            'Failed to reconcile mobile document assets',
+            'expo-file-system is not supported on web'
+          )
+          foreach ($needle in $forbidden) {
+            if ($dom.Contains($needle) -or $browserLog.Contains($needle)) {
+              throw "Known Web runtime failure is still present: $needle"
+            }
+          }
+      - name: Stop preview
+        if: always()
+        shell: pwsh
+        run: |
+          if (Test-Path web.pid) {
+            $pidValue = Get-Content web.pid
+            Stop-Process -Id $pidValue -Force -ErrorAction SilentlyContinue
+          }
+          Get-Content web-out.log -ErrorAction SilentlyContinue
+          Get-Content web-err.log -ErrorAction SilentlyContinue
