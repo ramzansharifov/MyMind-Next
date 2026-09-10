@@ -32,10 +32,13 @@ export function patchExpoSqliteWorkerChannelSource(source) {
   }
 
   if (next.includes(BUGGY_PAUSE_TIMEOUT)) {
-    if (!next.includes('  let i = 0;')) {
+    if (!next.includes('let i = 0;')) {
       throw new Error('Unsupported expo-sqlite WorkerChannel sync-loop implementation')
     }
-    next = next.replace('  let i = 0;', '  const deadline = Date.now() + 15_000;\n  let i = 0;')
+    next = next.replace(
+      'let i = 0;',
+      'const deadline = Date.now() + 15_000;\n  let i = 0;'
+    )
     next = next.replace(BUGGY_PAUSE_TIMEOUT, FIXED_PAUSE_TIMEOUT)
     changed = true
   } else if (!next.includes(FIXED_PAUSE_TIMEOUT)) {
