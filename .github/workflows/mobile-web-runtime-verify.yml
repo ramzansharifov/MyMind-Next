@@ -69,7 +69,10 @@ jobs:
           $browser = $browserCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
           if (-not $browser) { throw 'No Chromium browser found.' }
 
-          & $browser --headless=new --disable-gpu --no-sandbox --enable-logging=stderr --v=0 --virtual-time-budget=20000 --dump-dom http://localhost:8081/ 1> app-dom.html 2> browser.log
+          $profile = Join-Path $env:RUNNER_TEMP 'mymind-chromium-profile'
+          Remove-Item $profile -Recurse -Force -ErrorAction SilentlyContinue
+          & $browser --headless=new --user-data-dir=$profile --no-first-run --no-default-browser-check --disable-extensions --disable-gpu --no-sandbox --enable-logging=stderr --v=0 --virtual-time-budget=20000 --dump-dom http://localhost:8081/ 1> app-dom.html 2> browser.log
+          if ($LASTEXITCODE -ne 0) { throw "Chromium exited with code $LASTEXITCODE." }
 
           [string]$dom = Get-Content app-dom.html -Raw -ErrorAction SilentlyContinue
           [string]$browserLog = Get-Content browser.log -Raw -ErrorAction SilentlyContinue
@@ -81,7 +84,8 @@ jobs:
           Get-Content web-err.log -ErrorAction SilentlyContinue
 
           if ($dom -notmatch 'Главная') { throw 'MyMind Home did not render.' }
-          if ($dom -notmatch 'Задачи') { throw 'MyMind Home cards did not finish loading.' }
+          if ($dom -notmatch 'Привычки сегодня') { throw 'MyMind Home data cards did not finish loading.' }
+          if ($dom -notmatch 'Обучение') { throw 'MyMind Home data cards did not finish loading.' }
 
           $forbidden = @(
             'SharedArrayBuffer is not defined',
