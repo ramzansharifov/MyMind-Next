@@ -49,7 +49,13 @@ export function Button({
   compact?: boolean
 }): React.JSX.Element {
   const theme = useTheme()
-  const foreground = primary ? '#ffffff' : danger ? theme.error : selected ? theme.accent : theme.text
+  const foreground = primary
+    ? '#ffffff'
+    : danger
+      ? theme.error
+      : selected
+        ? theme.accent
+        : theme.text
 
   return (
     <Pressable
