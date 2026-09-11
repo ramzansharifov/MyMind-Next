@@ -484,7 +484,8 @@ export function PasswordsScreen(): React.JSX.Element {
                 />
               }
             />
-          ))
+          )
+        })
         ) : (
           <EmptyState
             text={tab === 'favorites' ? 'Избранных записей пока нет.' : 'Записей пока нет.'}
