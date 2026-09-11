@@ -1,14 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
-import {
-  Image,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
-  TextInput,
-  View
-} from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { Image, ScrollView, TextInput, View } from 'react-native'
 import type {
   CreateWorkoutProgressEntryInput,
   UpdateWorkoutProgressEntryInput,
@@ -21,6 +12,8 @@ import {
   createWorkoutProgressEntryInputSchema,
   updateWorkoutProgressEntryInputSchema
 } from '@mymind/core/validation/workouts'
+import { AppDialog } from '../../shared/ui/AppDialog'
+import { AppDateField } from '../../shared/ui/FormControls'
 import { Button, ErrorState, Label } from '../../shared/ui/primitives'
 import { messageFor, nullableNumeric, numeric } from '../../shared/ui/form-model'
 import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
@@ -214,286 +207,284 @@ export function WorkoutProgressSheet({
   } as const
 
   return (
-    <Modal animationType="slide" onRequestClose={requestClose}>
-      <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
-        <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
-          <View style={{ padding: 16, gap: 12 }}>
-            <Label title>{entry ? 'Изменить прогресс' : 'Новая запись прогресса'}</Label>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
-              <Button label="Отмена" disabled={pending} onPress={requestClose} />
-              <Button
-                label={pending ? 'Сохранение…' : 'Сохранить'}
-                selected
-                disabled={pending}
-                onPress={() => void submit()}
-              />
-            </View>
-          </View>
-          <ScrollView
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{ padding: 16, paddingBottom: 60, gap: 18 }}
-          >
-            {error ? <ErrorState message={error} /> : null}
-            <View style={{ gap: 8 }}>
-              <Label>Дата</Label>
-              <TextInput
-                accessibilityLabel="Дата прогресса"
-                editable={!pending}
-                value={date}
-                onChangeText={setDate}
-                placeholder="ГГГГ-ММ-ДД"
-                placeholderTextColor={theme.muted}
-                style={inputStyle}
-              />
-            </View>
-            <View style={{ gap: 8 }}>
-              <Label>Вес тела, кг</Label>
-              <TextInput
-                accessibilityLabel="Вес тела"
-                editable={!pending}
-                value={bodyWeightKg}
-                onChangeText={setBodyWeightKg}
-                keyboardType="decimal-pad"
-                placeholder="Не указано"
-                placeholderTextColor={theme.muted}
-                style={inputStyle}
-              />
-            </View>
-            <View style={{ gap: 8 }}>
-              <Label>Самочувствие</Label>
-              <TextInput
-                accessibilityLabel="Самочувствие"
-                editable={!pending}
-                value={wellbeing}
-                onChangeText={setWellbeing}
-                multiline
-                textAlignVertical="top"
-                style={{ ...inputStyle, minHeight: 90 }}
-              />
-            </View>
-            <View style={{ gap: 8 }}>
-              <Label>Заметки</Label>
-              <TextInput
-                accessibilityLabel="Заметки прогресса"
-                editable={!pending}
-                value={notes}
-                onChangeText={setNotes}
-                multiline
-                textAlignVertical="top"
-                style={{ ...inputStyle, minHeight: 90 }}
-              />
-            </View>
+    <AppDialog
+      open
+      onOpenChange={(open) => {
+        if (!open) requestClose()
+      }}
+      title={entry ? 'Изменить прогресс' : 'Новая запись прогресса'}
+      description="Показатели, самочувствие и фотографии прогресса"
+      icon="workouts"
+      presentation="sheet"
+      busy={pending}
+      footer={
+        <>
+          <Button label="Отмена" disabled={pending} onPress={requestClose} />
+          <Button
+            label={pending ? 'Сохранение…' : 'Сохранить'}
+            primary
+            disabled={pending}
+            onPress={() => void submit()}
+          />
+        </>
+      }
+    >
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ padding: 16, paddingBottom: 28, gap: 18 }}
+      >
+        {error ? <ErrorState message={error} /> : null}
+        <View style={{ gap: 8 }}>
+          <Label>Дата</Label>
+          <AppDateField
+            label="Дата прогресса"
+            value={date}
+            onChangeText={setDate}
+            disabled={pending}
+          />
+        </View>
+        <View style={{ gap: 8 }}>
+          <Label>Вес тела, кг</Label>
+          <TextInput
+            accessibilityLabel="Вес тела"
+            editable={!pending}
+            value={bodyWeightKg}
+            onChangeText={setBodyWeightKg}
+            keyboardType="decimal-pad"
+            placeholder="Не указано"
+            placeholderTextColor={theme.muted}
+            style={inputStyle}
+          />
+        </View>
+        <View style={{ gap: 8 }}>
+          <Label>Самочувствие</Label>
+          <TextInput
+            accessibilityLabel="Самочувствие"
+            editable={!pending}
+            value={wellbeing}
+            onChangeText={setWellbeing}
+            multiline
+            textAlignVertical="top"
+            style={{ ...inputStyle, minHeight: 90 }}
+          />
+        </View>
+        <View style={{ gap: 8 }}>
+          <Label>Заметки</Label>
+          <TextInput
+            accessibilityLabel="Заметки прогресса"
+            editable={!pending}
+            value={notes}
+            onChangeText={setNotes}
+            multiline
+            textAlignVertical="top"
+            style={{ ...inputStyle, minHeight: 90 }}
+          />
+        </View>
 
-            {entry ? (
-              <View style={{ gap: 12 }}>
-                <Label title>Фотографии прогресса</Label>
+        {entry ? (
+          <View style={{ gap: 12 }}>
+            <Label title>Фотографии прогресса</Label>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 8 }}
+            >
+              {(
+                [
+                  ['front', 'Спереди'],
+                  ['left', 'Слева'],
+                  ['right', 'Справа'],
+                  ['back', 'Сзади'],
+                  ['custom', 'Другое']
+                ] as const
+              ).map(([view, label]) => (
+                <Button
+                  key={view}
+                  label={`+ ${label}`}
+                  disabled={pending}
+                  onPress={() => void addPhoto(view)}
+                />
+              ))}
+            </ScrollView>
+            {photos.length ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 10 }}
+              >
+                {photos.map((photo) => (
+                  <View
+                    key={photo.id}
+                    style={{
+                      width: 132,
+                      gap: 8,
+                      padding: 8,
+                      borderWidth: 1,
+                      borderColor: theme.border,
+                      borderRadius: 14,
+                      backgroundColor: theme.surface
+                    }}
+                  >
+                    <Image
+                      accessibilityLabel={`Фотография прогресса: ${photo.view}`}
+                      source={{ uri: photo.url }}
+                      resizeMode="cover"
+                      style={{ width: 114, height: 142, borderRadius: 10 }}
+                    />
+                    <Button
+                      label="Удалить"
+                      danger
+                      disabled={pending}
+                      onPress={() => removePhoto(photo)}
+                    />
+                  </View>
+                ))}
+              </ScrollView>
+            ) : (
+              <Label muted>Фотографий пока нет. Они хранятся только на этом устройстве.</Label>
+            )}
+          </View>
+        ) : (
+          <Label muted>
+            Сохраните запись, затем откройте её снова, чтобы добавить фотографии.
+          </Label>
+        )}
+
+        <View style={{ gap: 12 }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: 8
+            }}
+          >
+            <Label title>Показатели</Label>
+            <Button label="+ Показатель" disabled={pending} onPress={addMetric} />
+          </View>
+          {metrics.map((metric, index) => {
+            const exercise = exerciseById(metric.exerciseId)
+            const usedByOthers = new Set(
+              metrics
+                .filter((candidate) => candidate.key !== metric.key)
+                .map((candidate) => candidate.exerciseId)
+            )
+            return (
+              <View
+                key={metric.key}
+                style={{
+                  gap: 12,
+                  padding: 14,
+                  borderWidth: 1,
+                  borderColor: theme.border,
+                  borderRadius: 16,
+                  backgroundColor: theme.surface
+                }}
+              >
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: 8
+                  }}
+                >
+                  <Label>{`Показатель ${index + 1}`}</Label>
+                  <Button
+                    label="Удалить"
+                    danger
+                    disabled={pending}
+                    onPress={() =>
+                      setMetrics((current) =>
+                        current.filter((candidate) => candidate.key !== metric.key)
+                      )
+                    }
+                  />
+                </View>
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={{ gap: 8 }}
                 >
-                  {(
-                    [
-                      ['front', 'Спереди'],
-                      ['left', 'Слева'],
-                      ['right', 'Справа'],
-                      ['back', 'Сзади'],
-                      ['custom', 'Другое']
-                    ] as const
-                  ).map(([view, label]) => (
+                  {selectableExercises.map((candidate) => (
                     <Button
-                      key={view}
-                      label={`+ ${label}`}
-                      disabled={pending}
-                      onPress={() => void addPhoto(view)}
-                    />
-                  ))}
-                </ScrollView>
-                {photos.length ? (
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={{ gap: 10 }}
-                  >
-                    {photos.map((photo) => (
-                      <View
-                        key={photo.id}
-                        style={{
-                          width: 132,
-                          gap: 8,
-                          padding: 8,
-                          borderWidth: 1,
-                          borderColor: theme.border,
-                          borderRadius: 14,
-                          backgroundColor: theme.surface
-                        }}
-                      >
-                        <Image
-                          accessibilityLabel={`Фотография прогресса: ${photo.view}`}
-                          source={{ uri: photo.url }}
-                          resizeMode="cover"
-                          style={{ width: 114, height: 142, borderRadius: 10 }}
-                        />
-                        <Button
-                          label="Удалить"
-                          danger
-                          disabled={pending}
-                          onPress={() => removePhoto(photo)}
-                        />
-                      </View>
-                    ))}
-                  </ScrollView>
-                ) : (
-                  <Label muted>Фотографий пока нет. Они хранятся только на этом устройстве.</Label>
-                )}
-              </View>
-            ) : (
-              <Label muted>
-                Сохраните запись, затем откройте её снова, чтобы добавить фотографии.
-              </Label>
-            )}
-
-            <View style={{ gap: 12 }}>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  gap: 8
-                }}
-              >
-                <Label title>Показатели</Label>
-                <Button label="+ Показатель" disabled={pending} onPress={addMetric} />
-              </View>
-              {metrics.map((metric, index) => {
-                const exercise = exerciseById(metric.exerciseId)
-                const usedByOthers = new Set(
-                  metrics
-                    .filter((candidate) => candidate.key !== metric.key)
-                    .map((candidate) => candidate.exerciseId)
-                )
-                return (
-                  <View
-                    key={metric.key}
-                    style={{
-                      gap: 12,
-                      padding: 14,
-                      borderWidth: 1,
-                      borderColor: theme.border,
-                      borderRadius: 16,
-                      backgroundColor: theme.surface
-                    }}
-                  >
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        gap: 8
-                      }}
-                    >
-                      <Label>{`Показатель ${index + 1}`}</Label>
-                      <Button
-                        label="Удалить"
-                        danger
-                        disabled={pending}
-                        onPress={() =>
-                          setMetrics((current) =>
-                            current.filter((candidate) => candidate.key !== metric.key)
-                          )
-                        }
-                      />
-                    </View>
-                    <ScrollView
-                      horizontal
-                      showsHorizontalScrollIndicator={false}
-                      contentContainerStyle={{ gap: 8 }}
-                    >
-                      {selectableExercises.map((candidate) => (
-                        <Button
-                          key={candidate.id}
-                          label={candidate.title}
-                          selected={candidate.id === metric.exerciseId}
-                          disabled={pending || usedByOthers.has(candidate.id)}
-                          onPress={() =>
-                            setMetrics((current) =>
-                              current.map((currentMetric) =>
-                                currentMetric.key === metric.key
-                                  ? { ...currentMetric, exerciseId: candidate.id }
-                                  : currentMetric
-                              )
-                            )
-                          }
-                        />
-                      ))}
-                    </ScrollView>
-                    <View style={{ flexDirection: 'row', gap: 8 }}>
-                      {exercise?.usesExternalWeight ? (
-                        <TextInput
-                          accessibilityLabel={`Вес показателя ${index + 1}`}
-                          editable={!pending}
-                          value={metric.weightKg}
-                          onChangeText={(value) =>
-                            setMetrics((current) =>
-                              current.map((currentMetric) =>
-                                currentMetric.key === metric.key
-                                  ? { ...currentMetric, weightKg: value }
-                                  : currentMetric
-                              )
-                            )
-                          }
-                          keyboardType="decimal-pad"
-                          placeholder="Вес, кг"
-                          placeholderTextColor={theme.muted}
-                          style={{ ...inputStyle, flex: 1 }}
-                        />
-                      ) : null}
-                      <TextInput
-                        accessibilityLabel={`Повторения показателя ${index + 1}`}
-                        editable={!pending}
-                        value={metric.reps}
-                        onChangeText={(value) =>
-                          setMetrics((current) =>
-                            current.map((currentMetric) =>
-                              currentMetric.key === metric.key
-                                ? { ...currentMetric, reps: value }
-                                : currentMetric
-                            )
-                          )
-                        }
-                        keyboardType="number-pad"
-                        placeholder="Повторы"
-                        placeholderTextColor={theme.muted}
-                        style={{ ...inputStyle, flex: 1 }}
-                      />
-                    </View>
-                    <TextInput
-                      accessibilityLabel={`Комментарий показателя ${index + 1}`}
-                      editable={!pending}
-                      value={metric.comment}
-                      onChangeText={(value) =>
+                      key={candidate.id}
+                      label={candidate.title}
+                      selected={candidate.id === metric.exerciseId}
+                      disabled={pending || usedByOthers.has(candidate.id)}
+                      onPress={() =>
                         setMetrics((current) =>
                           current.map((currentMetric) =>
                             currentMetric.key === metric.key
-                              ? { ...currentMetric, comment: value }
+                              ? { ...currentMetric, exerciseId: candidate.id }
                               : currentMetric
                           )
                         )
                       }
-                      placeholder="Комментарий"
-                      placeholderTextColor={theme.muted}
-                      style={inputStyle}
                     />
-                  </View>
-                )
-              })}
-            </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-    </Modal>
-  )
-}
+                  ))}
+                </ScrollView>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  {exercise?.usesExternalWeight ? (
+                    <TextInput
+                      accessibilityLabel={`Вес показателя ${index + 1}`}
+                      editable={!pending}
+                      value={metric.weightKg}
+                      onChangeText={(value) =>
+                        setMetrics((current) =>
+                          current.map((currentMetric) =>
+                            currentMetric.key === metric.key
+                              ? { ...currentMetric, weightKg: value }
+                              : currentMetric
+                          )
+                        )
+                      }
+                      keyboardType="decimal-pad"
+                      placeholder="Вес, кг"
+                      placeholderTextColor={theme.muted}
+                      style={{ ...inputStyle, flex: 1 }}
+                    />
+                  ) : null}
+                  <TextInput
+                    accessibilityLabel={`Повторения показателя ${index + 1}`}
+                    editable={!pending}
+                    value={metric.reps}
+                    onChangeText={(value) =>
+                      setMetrics((current) =>
+                        current.map((currentMetric) =>
+                          currentMetric.key === metric.key
+                            ? { ...currentMetric, reps: value }
+                            : currentMetric
+                        )
+                      )
+                    }
+                    keyboardType="number-pad"
+                    placeholder="Повторы"
+                    placeholderTextColor={theme.muted}
+                    style={{ ...inputStyle, flex: 1 }}
+                  />
+                </View>
+                <TextInput
+                  accessibilityLabel={`Комментарий показателя ${index + 1}`}
+                  editable={!pending}
+                  value={metric.comment}
+                  onChangeText={(value) =>
+                    setMetrics((current) =>
+                      current.map((currentMetric) =>
+                        currentMetric.key === metric.key
+                          ? { ...currentMetric, comment: value }
+                          : currentMetric
+                      )
+                    )
+                  }
+                  placeholder="Комментарий"
+                  placeholderTextColor={theme.muted}
+                  style={inputStyle}
+                />
+              </View>
+            )
+          })}
+        </View>
+      </ScrollView>
+    </AppDialog>
+  )}
