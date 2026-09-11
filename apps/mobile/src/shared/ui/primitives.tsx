@@ -31,6 +31,8 @@ export function Button({
   disabled = false,
   danger = false,
   selected = false,
+  primary = false,
+  ghost = false,
   icon,
   iconOnly = false,
   compact = false
@@ -40,12 +42,14 @@ export function Button({
   disabled?: boolean
   danger?: boolean
   selected?: boolean
+  primary?: boolean
+  ghost?: boolean
   icon?: AppIconName
   iconOnly?: boolean
   compact?: boolean
 }): React.JSX.Element {
   const theme = useTheme()
-  const foreground = danger ? theme.error : selected ? theme.accent : theme.text
+  const foreground = primary ? '#ffffff' : danger ? theme.error : selected ? theme.accent : theme.text
 
   return (
     <Pressable
@@ -65,15 +69,23 @@ export function Button({
         paddingHorizontal: iconOnly ? 0 : compact ? 11 : 14,
         paddingVertical: iconOnly ? 0 : compact ? 7 : 9,
         borderRadius: compact ? 11 : designTokens.radius.md,
-        borderWidth: 1,
+        borderWidth: ghost || primary ? 0 : 1,
         borderColor: danger ? theme.error + '35' : selected ? theme.accent + '66' : theme.border,
-        backgroundColor: danger
-          ? theme.error + '0E'
-          : selected
-            ? theme.accent + '18'
-            : pressed
+        backgroundColor: primary
+          ? pressed
+            ? theme.accent + 'D9'
+            : theme.accent
+          : ghost
+            ? pressed
               ? theme.raised
-              : theme.surface,
+              : 'transparent'
+            : danger
+              ? theme.error + '0E'
+              : selected
+                ? theme.accent + '18'
+                : pressed
+                  ? theme.raised
+                  : theme.surface,
         opacity: disabled ? 0.42 : pressed ? 0.72 : 1
       })}
     >
@@ -101,6 +113,8 @@ export function IconButton({
   disabled = false,
   danger = false,
   selected = false,
+  primary = false,
+  ghost = false,
   compact = false
 }: {
   label: string
@@ -109,6 +123,8 @@ export function IconButton({
   disabled?: boolean
   danger?: boolean
   selected?: boolean
+  primary?: boolean
+  ghost?: boolean
   compact?: boolean
 }): React.JSX.Element {
   return (
@@ -120,6 +136,8 @@ export function IconButton({
       disabled={disabled}
       danger={danger}
       selected={selected}
+      primary={primary}
+      ghost={ghost}
       onPress={onPress}
     />
   )
