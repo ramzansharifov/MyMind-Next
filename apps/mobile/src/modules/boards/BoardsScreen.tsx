@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AppState, BackHandler, FlatList, View } from 'react-native'
 import type { BoardDocument, BoardNode } from '@mymind/contracts/boards'
 import { isBoardSystemRootId } from '@mymind/contracts/boards'
-import { STUDY_FOLDER_ICON_NAMES } from '@mymind/contracts/study'
 import { BoardSaveState } from '@mymind/core/board-save-queue'
 import * as boardValidation from '@mymind/core/validation/boards'
 import { appearanceTokens } from '@mymind/design'
@@ -13,7 +12,9 @@ import BoardCanvasDom, { type BoardCanvasDomRef } from './BoardCanvasDom'
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { ActionMenu } from '../../shared/ui/ActionMenu'
 import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
-import { choiceField, messageFor, textField, type FormSpec } from '../../shared/ui/form-model'
+import { VisualIconBadge } from '../../shared/ui/VisualPickers'
+import { FOLDER_ICON_CHOICES } from '../../shared/ui/visual-options'
+import { choiceField, iconField, messageFor, textField, type FormSpec } from '../../shared/ui/form-model'
 import {
   Button,
   EmptyState,
@@ -195,11 +196,7 @@ export function BoardsScreen({
         textField('title', 'Название'),
         ...(type === 'folder'
           ? [
-              choiceField(
-                'icon',
-                'Иконка',
-                STUDY_FOLDER_ICON_NAMES.map((icon) => ({ value: icon, label: icon }))
-              )
+              iconField('icon', 'Иконка', FOLDER_ICON_CHOICES, 'folder')
             ]
           : [])
       ],
@@ -240,11 +237,7 @@ export function BoardsScreen({
         textField('title', 'Название'),
         ...(node.type === 'folder' && !managedFolder
           ? [
-              choiceField(
-                'icon',
-                'Иконка',
-                STUDY_FOLDER_ICON_NAMES.map((icon) => ({ value: icon, label: icon }))
-              ),
+              iconField('icon', 'Иконка', FOLDER_ICON_CHOICES, 'folder'),
               choiceField('parentId', 'Расположение', folderChoices)
             ]
           : node.type === 'board' && !managed.has(node.id)
@@ -458,13 +451,19 @@ export function BoardsScreen({
                   item.type === 'folder'
                     ? itemManaged
                       ? 'Управляемая папка'
-                      : `Папка · ${item.icon ?? 'folder'}`
+                      : 'Папка'
                     : item.sourceMaterialId
                       ? 'Доска материала'
                       : item.sourceNoteId
                         ? 'Доска заметки'
                         : 'Доска'
                 }
+                leading={
+                  item.type === 'folder' ? (
+                    <VisualIconBadge value={item.icon ?? 'folder'} />
+                  ) : undefined
+                }
+                leadingIcon={item.type === 'board' ? 'boards' : undefined}
                 onPress={() => (item.type === 'folder' ? setFolderId(item.id) : openBoard(item))}
                 action={
                   <ActionMenu

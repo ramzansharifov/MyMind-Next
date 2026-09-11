@@ -3,7 +3,6 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { AppState, BackHandler, FlatList, TextInput, View } from 'react-native'
 import type { NoteDocument, NoteGroup, NoteRecord, NoteSummary } from '@mymind/contracts/notes'
 import type { StudyBoardBlock } from '@mymind/contracts/study'
-import { STUDY_FOLDER_ICON_NAMES } from '@mymind/contracts/study'
 import { AutosaveQueue } from '@mymind/core/autosave'
 import * as notesValidation from '@mymind/core/validation/notes'
 import { useServices } from '../../app/context'
@@ -15,7 +14,9 @@ import { ActionMenu } from '../../shared/ui/ActionMenu'
 import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
 import { useToast } from '../../shared/ui/ToastProvider'
 import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
-import { choiceField, messageFor, textField, type FormSpec } from '../../shared/ui/form-model'
+import { VisualIconBadge } from '../../shared/ui/VisualPickers'
+import { FOLDER_ICON_CHOICES } from '../../shared/ui/visual-options'
+import { choiceField, iconField, messageFor, textField, type FormSpec } from '../../shared/ui/form-model'
 import {
   Button,
   EmptyState,
@@ -167,11 +168,7 @@ export function NotesScreen({
       },
       fields: [
         textField('title', 'Название'),
-        choiceField(
-          'icon',
-          'Иконка',
-          STUDY_FOLDER_ICON_NAMES.map((icon) => ({ value: icon, label: icon }))
-        )
+        iconField('icon', 'Иконка', FOLDER_ICON_CHOICES, 'folder')
       ],
       save: (values) => {
         if (group) {
@@ -412,7 +409,7 @@ export function NotesScreen({
                 (overview.data?.notes.filter((note) => note.groupId === item.id).length ?? 0) +
                 ' заметок'
               }
-              leadingIcon="folder"
+              leading={<VisualIconBadge value={item.icon ?? 'folder'} />}
               onPress={() => {
                 setGroupId(item.id)
                 setGroupsView(false)

@@ -1,11 +1,6 @@
 import { useCallback, useState } from 'react'
 import { FlatList, View } from 'react-native'
-import {
-  HABIT_GROUP_COLORS,
-  HABIT_GROUP_ICONS,
-  type HabitGroupRecord,
-  type HabitRecord
-} from '@mymind/contracts/habits'
+import { type HabitGroupRecord, type HabitRecord } from '@mymind/contracts/habits'
 import { addDays, isHabitScheduledOn, localDateKey } from '@mymind/core/habits'
 import * as schema from '@mymind/core/validation/habits'
 import { useServices } from '../../app/context'
@@ -22,7 +17,9 @@ import { FormSheet } from '../../shared/ui/FormSheet'
 import { AppDateField } from '../../shared/ui/FormControls'
 import { ActionMenu } from '../../shared/ui/ActionMenu'
 import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
-import { choiceField, textField, type FormSpec } from '../../shared/ui/form-model'
+import { VisualIconBadge } from '../../shared/ui/VisualPickers'
+import { GROUP_COLOR_CHOICES, HABIT_GROUP_ICON_CHOICES } from '../../shared/ui/visual-options'
+import { choiceField, colorField, iconField, textField, type FormSpec } from '../../shared/ui/form-model'
 import { HabitsReportsView } from './HabitsReportsView'
 
 export function HabitsScreen(): React.JSX.Element {
@@ -81,6 +78,13 @@ export function HabitsScreen(): React.JSX.Element {
           'Номер единицы и время. Например: вторая чашка воды в 13:00.'
         )
       ],
+      preview: {
+        titleKey: 'name',
+        iconKey: 'icon',
+        colorKey: 'color',
+        iconFamily: 'habit',
+        description: 'Так группа будет выглядеть в модуле привычек.'
+      },
       save: (values) => {
         const input = schema.createHabitInputSchema.parse({
           ...values,
@@ -101,16 +105,8 @@ export function HabitsScreen(): React.JSX.Element {
       },
       fields: [
         textField('name', 'Название'),
-        choiceField(
-          'icon',
-          'Значок',
-          HABIT_GROUP_ICONS.map((value) => ({ value, label: value }))
-        ),
-        choiceField(
-          'color',
-          'Цвет',
-          HABIT_GROUP_COLORS.map((value) => ({ value, label: value }))
-        )
+        iconField('icon', 'Иконка', HABIT_GROUP_ICON_CHOICES, 'habit'),
+        colorField('color', 'Цвет', GROUP_COLOR_CHOICES)
       ],
       save: (values) => {
         const input = schema.createHabitGroupInputSchema.parse(values)
@@ -204,7 +200,7 @@ export function HabitsScreen(): React.JSX.Element {
           renderItem={({ item }) => (
             <WorkspaceNodeCard
               title={item.name}
-              leadingIcon="folder"
+              leading={<VisualIconBadge value={item.icon} colorKey={item.color} />}
               onPress={() => {
                 setGroup(item.id)
                 setView('all')

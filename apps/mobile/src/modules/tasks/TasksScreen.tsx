@@ -1,11 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { FlatList, Pressable, Text, TextInput, View } from 'react-native'
-import {
-  TASK_GROUP_COLORS,
-  TASK_GROUP_ICONS,
-  type TaskGroupRecord,
-  type TaskRecord
-} from '@mymind/contracts/tasks'
+import { type TaskGroupRecord, type TaskRecord } from '@mymind/contracts/tasks'
 import * as schema from '@mymind/core/validation/tasks'
 import { sortTasks } from '@mymind/core/tasks'
 import { useServices } from '../../app/context'
@@ -21,7 +16,9 @@ import {
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { ActionMenu } from '../../shared/ui/ActionMenu'
 import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
-import { choiceField, textField, type FormSpec } from '../../shared/ui/form-model'
+import { VisualIconBadge } from '../../shared/ui/VisualPickers'
+import { TASK_GROUP_COLOR_CHOICES, TASK_GROUP_ICON_CHOICES } from '../../shared/ui/visual-options'
+import { choiceField, colorField, iconField, textField, type FormSpec } from '../../shared/ui/form-model'
 import { AppIcon } from '../../shared/ui/icons'
 import { useTheme } from '../../shared/ui/theme'
 import { quickTaskInput, taskEditorInput, taskSearchText } from './task-presentation'
@@ -61,6 +58,13 @@ export function TasksScreen(): React.JSX.Element {
           { value: 'completed', label: 'Выполнена' }
         ])
       ],
+      preview: {
+        titleKey: 'name',
+        iconKey: 'icon',
+        colorKey: 'color',
+        iconFamily: 'task',
+        description: 'Так группа будет выглядеть в списке задач.'
+      },
       save: (values) => {
         const input = taskEditorInput(
           String(values.title ?? ''),
@@ -84,15 +88,12 @@ export function TasksScreen(): React.JSX.Element {
       },
       fields: [
         textField('name', 'Название'),
-        choiceField(
-          'icon',
-          'Значок',
-          TASK_GROUP_ICONS.map((value) => ({ value, label: value }))
-        ),
-        choiceField(
+        iconField('icon', 'Иконка', TASK_GROUP_ICON_CHOICES, 'task'),
+        colorField(
           'color',
           'Цвет',
-          TASK_GROUP_COLORS.map((value) => ({ value, label: value }))
+          TASK_GROUP_COLOR_CHOICES,
+          '«Без цвета» использует акцент приложения.'
         )
       ],
       save: (values) => {
@@ -263,7 +264,7 @@ export function TasksScreen(): React.JSX.Element {
                 (state.data?.tasks.filter((task) => task.groupId === item.id).length ?? 0) +
                 ' задач'
               }
-              leadingIcon="folder"
+              leading={<VisualIconBadge value={item.icon} colorKey={item.color} />}
               onPress={() => {
                 setGroup(item.id)
                 setGroupsView(false)
