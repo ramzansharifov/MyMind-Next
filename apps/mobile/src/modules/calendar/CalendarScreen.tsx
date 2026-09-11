@@ -374,7 +374,7 @@ export function CalendarScreen(): React.JSX.Element {
             state.refresh()
             unread.refresh()
           }}
-          contentContainerStyle={{ paddingBottom: 40 }}
+          contentContainerStyle={{ paddingBottom: 96 }}
           renderItem={({ item }) => (
             <WorkspaceNodeCard
               title={item.title}

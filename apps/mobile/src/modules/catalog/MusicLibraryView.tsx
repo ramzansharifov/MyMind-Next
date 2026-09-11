@@ -303,7 +303,7 @@ export function MusicLibraryView({
         keyExtractor={(playlist) => playlist.id}
         onRefresh={onRefresh}
         refreshing={refreshing}
-        contentContainerStyle={{ paddingBottom: 24 }}
+        contentContainerStyle={{ paddingBottom: 96 }}
         ListHeaderComponent={header}
         ListEmptyComponent={<EmptyState text={emptyText} />}
         renderItem={({ item: playlist }) => (
@@ -324,7 +324,7 @@ export function MusicLibraryView({
       keyExtractor={(item) => item.id}
       onRefresh={onRefresh}
       refreshing={refreshing}
-      contentContainerStyle={{ paddingBottom: 24 }}
+      contentContainerStyle={{ paddingBottom: 96 }}
       ListHeaderComponent={header}
       ListEmptyComponent={<EmptyState text={emptyText} />}
       renderItem={({ item }) => (
