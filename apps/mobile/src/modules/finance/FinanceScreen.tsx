@@ -548,16 +548,10 @@ export function FinanceScreen(): React.JSX.Element {
                     label: 'Новый лимит',
                     description: 'Ограничить расходы по категории',
                     icon: 'finance',
-                    disabled:
-                      !accounts.length || !tags.some((tag) => tag.type !== 'income'),
+                    disabled: !accounts.length || !tags.some((tag) => tag.type !== 'income'),
                     onPress: () =>
                       openForm(
-                        limitForm(
-                          api,
-                          accounts,
-                          tags,
-                          data.dashboard.settings.baseCurrencyCode
-                        )
+                        limitForm(api, accounts, tags, data.dashboard.settings.baseCurrencyCode)
                       )
                   }
                 ]
@@ -580,9 +574,7 @@ export function FinanceScreen(): React.JSX.Element {
                         description: 'Добавить ручной курс валюты',
                         icon: 'finance',
                         onPress: () =>
-                          openForm(
-                            exchangeRateForm(api, data.dashboard.settings.baseCurrencyCode)
-                          )
+                          openForm(exchangeRateForm(api, data.dashboard.settings.baseCurrencyCode))
                       }
                     ]
                   : []

@@ -212,7 +212,6 @@ export function WorkoutsScreen(): React.JSX.Element {
       {tab !== 'reports' && tab !== 'progress' ? (
         <SearchField value={query} onChangeText={setQuery} />
       ) : null}
-
     </View>
   )
 

@@ -558,5 +558,4 @@ export function NotesScreen({
       {form && <FormSheet spec={form} close={() => setForm(null)} />}
     </View>
   )
-
 }
