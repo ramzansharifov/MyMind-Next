@@ -5,6 +5,7 @@ import {
   BookHeart,
   CalendarDays,
   Check,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   CircleHelp,
@@ -57,6 +58,7 @@ export type AppIconName =
   | 'delete'
   | 'back'
   | 'forward'
+  | 'down'
   | 'move'
   | 'reset'
   | 'check'
@@ -89,6 +91,7 @@ const icons: Record<AppIconName, LucideIcon> = {
   delete: Trash2,
   back: ChevronLeft,
   forward: ChevronRight,
+  down: ChevronDown,
   move: MoveRight,
   reset: RotateCcw,
   check: Check,

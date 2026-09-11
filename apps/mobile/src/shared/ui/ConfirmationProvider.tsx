@@ -3,6 +3,7 @@ import {
   type PropsWithChildren,
   useCallback,
   useContext,
+  useRef,
   useState
 } from 'react'
 import { DeleteConfirmationDialog } from './DeleteConfirmationDialog'
@@ -30,20 +31,20 @@ const ConfirmationContext = createContext<
 
 export function ConfirmationProvider({ children }: PropsWithChildren): React.JSX.Element {
   const [request, setRequest] = useState<StoredConfirmation | null>(null)
+  const activeRef = useRef(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const confirm = useCallback(
     (options: ConfirmationOptions): Promise<boolean> =>
       new Promise((resolve) => {
-        setRequest((current) => {
-          if (current) {
-            resolve(false)
-            return current
-          }
-          setError(null)
-          return { ...options, resolve }
-        })
+        if (activeRef.current) {
+          resolve(false)
+          return
+        }
+        activeRef.current = true
+        setError(null)
+        setRequest({ ...options, resolve })
       }),
     []
   )
@@ -53,6 +54,7 @@ export function ConfirmationProvider({ children }: PropsWithChildren): React.JSX
       if (busy) return
       setRequest((current) => {
         current?.resolve(result)
+        activeRef.current = false
         return null
       })
       setError(null)
@@ -67,6 +69,7 @@ export function ConfirmationProvider({ children }: PropsWithChildren): React.JSX
     try {
       await request.onConfirm()
       request.resolve(true)
+      activeRef.current = false
       setRequest(null)
     } catch (reason) {
       setError(messageFor(reason))

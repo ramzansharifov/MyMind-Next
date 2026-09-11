@@ -1,11 +1,11 @@
 import { messageFor, numeric, nullableNumeric, type FormSpec } from './form-model'
 import { useRef, useState } from 'react'
-import { ScrollView, Switch, TextInput, View } from 'react-native'
+import { ScrollView, View } from 'react-native'
 import { AppDialog, type AppDialogPresentation } from './AppDialog'
 import { useConfirmation } from './ConfirmationProvider'
+import { AppCheckbox, AppSelect, AppTextField } from './FormControls'
 import { Button, ErrorState, Label } from './primitives'
 import { useToast } from './ToastProvider'
-import { useTheme } from './theme'
 import { notifyDataChanged } from '../../app/changes'
 import { PreferredTimes } from './PreferredTimes'
 
@@ -17,7 +17,6 @@ function presentationFor(spec: FormSpec): AppDialogPresentation {
 }
 
 export function FormSheet({ spec, close }: { spec: FormSpec; close(): void }): React.JSX.Element {
-  const theme = useTheme()
   const confirm = useConfirmation()
   const toast = useToast()
   const [values, setValues] = useState(spec.initial)
@@ -121,23 +120,23 @@ export function FormSheet({ spec, close }: { spec: FormSpec; close(): void }): R
                 disabled={pending}
               />
             ) : field.kind === 'multiple' ? (
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              <View style={{ gap: 7 }}>
                 {field.choices?.map((choice) => {
                   const selected = Array.isArray(values[field.key])
                     ? (values[field.key] as (string | null)[])
                     : []
                   return (
-                    <Button
+                    <AppCheckbox
                       key={String(choice.value)}
                       label={choice.label}
-                      selected={selected.includes(choice.value)}
+                      value={selected.includes(choice.value)}
                       disabled={pending}
-                      onPress={() =>
+                      onChange={(checked) =>
                         set(
                           field.key,
-                          selected.includes(choice.value)
-                            ? selected.filter((value) => value !== choice.value)
-                            : [...selected, choice.value]
+                          checked
+                            ? [...selected, choice.value]
+                            : selected.filter((value) => value !== choice.value)
                         )
                       }
                     />
@@ -145,29 +144,27 @@ export function FormSheet({ spec, close }: { spec: FormSpec; close(): void }): R
                 })}
               </View>
             ) : field.kind === 'boolean' ? (
-              <Switch
-                accessibilityLabel={field.label}
-                disabled={pending}
+              <AppCheckbox
                 value={Boolean(values[field.key])}
-                onValueChange={(value) => set(field.key, value)}
-                trackColor={{ true: theme.accent }}
+                disabled={pending}
+                onChange={(value) => set(field.key, value)}
               />
             ) : field.kind === 'choice' ? (
-              <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-                {field.choices?.map((choice) => (
-                  <Button
-                    key={String(choice.value)}
-                    label={choice.label}
-                    selected={values[field.key] === choice.value}
-                    disabled={pending}
-                    onPress={() => set(field.key, choice.value)}
-                  />
-                ))}
-              </View>
+              <AppSelect
+                label={field.label}
+                value={
+                  typeof values[field.key] === 'string' || values[field.key] === null
+                    ? (values[field.key] as string | null)
+                    : null
+                }
+                choices={field.choices ?? []}
+                disabled={pending}
+                onChange={(value) => set(field.key, value)}
+              />
             ) : (
-              <TextInput
+              <AppTextField
                 accessibilityLabel={field.label}
-                editable={!pending}
+                disabled={pending}
                 multiline={field.kind === 'multiline'}
                 keyboardType={
                   field.kind === 'number' || field.kind === 'nullableNumber'
@@ -181,18 +178,6 @@ export function FormSheet({ spec, close }: { spec: FormSpec; close(): void }): R
                     : String(values[field.key] ?? '')
                 }
                 onChangeText={(value) => set(field.key, value)}
-                style={{
-                  color: theme.text,
-                  backgroundColor: theme.surface,
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                  borderRadius: 14,
-                  paddingHorizontal: 14,
-                  paddingVertical: 12,
-                  minHeight: field.kind === 'multiline' ? 140 : 50,
-                  textAlignVertical: field.kind === 'multiline' ? 'top' : 'center',
-                  fontSize: 16
-                }}
               />
             )}
           </View>
