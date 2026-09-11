@@ -383,11 +383,10 @@ export function PasswordsScreen(): React.JSX.Element {
                       onPress: () => deleteGroup(group)
                     }
                   ]}
-                  />
-                }
-              />
-            )
-          })
+                />
+              }
+            />
+          ))
         ) : (
           <EmptyState text="Групп пока нет." />
         )}
@@ -446,46 +445,51 @@ export function PasswordsScreen(): React.JSX.Element {
                   <ActionMenu
                     title={item.title}
                     items={[
-                    ...(item.username
-                      ? [
-                          {
-                            key: 'copy-login',
-                            label: 'Скопировать логин',
-                            icon: 'copy' as const,
-                            onPress: () => void copyField(item, 'username')
-                          }
-                        ]
-                      : []),
-                    {
-                      key: 'copy-password',
-                      label: 'Скопировать пароль',
-                      icon: 'copy',
-                      onPress: () => void copyField(item, 'password')
-                    },
-                    ...(item.website
-                      ? [
-                          {
-                            key: 'website',
-                            label: 'Открыть сайт',
-                            icon: 'forward' as const,
-                            onPress: () => void openWebsite(item)
-                          }
-                        ]
-                      : []),
-                    { key: 'edit', label: 'Изменить', icon: 'edit', onPress: () => openItem(item) },
-                    {
-                      key: 'delete',
-                      label: 'Удалить',
-                      icon: 'delete',
-                      danger: true,
-                      onPress: () => deleteItem(item)
-                    }
-                  ]}
-                />
-              }
-            />
-          )
-        })
+                      ...(item.username
+                        ? [
+                            {
+                              key: 'copy-login',
+                              label: 'Скопировать логин',
+                              icon: 'copy' as const,
+                              onPress: () => void copyField(item, 'username')
+                            }
+                          ]
+                        : []),
+                      {
+                        key: 'copy-password',
+                        label: 'Скопировать пароль',
+                        icon: 'copy',
+                        onPress: () => void copyField(item, 'password')
+                      },
+                      ...(item.website
+                        ? [
+                            {
+                              key: 'website',
+                              label: 'Открыть сайт',
+                              icon: 'forward' as const,
+                              onPress: () => void openWebsite(item)
+                            }
+                          ]
+                        : []),
+                      {
+                        key: 'edit',
+                        label: 'Изменить',
+                        icon: 'edit',
+                        onPress: () => openItem(item)
+                      },
+                      {
+                        key: 'delete',
+                        label: 'Удалить',
+                        icon: 'delete',
+                        danger: true,
+                        onPress: () => deleteItem(item)
+                      }
+                    ]}
+                  />
+                }
+              />
+            )
+          })
         ) : (
           <EmptyState
             text={tab === 'favorites' ? 'Избранных записей пока нет.' : 'Записей пока нет.'}
