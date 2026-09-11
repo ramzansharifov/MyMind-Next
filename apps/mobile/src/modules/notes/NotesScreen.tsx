@@ -16,6 +16,7 @@ import {
   Button,
   EmptyState,
   ErrorState,
+  IconButton,
   Label,
   LoadingState,
   Row,
@@ -281,18 +282,27 @@ export function NotesScreen({
           onAssetError={(reason) => setEditorError(messageFor(reason))}
           header={
             <View style={{ gap: 12, paddingBottom: 16 }}>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                <Button
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <IconButton
                   label={closing ? 'Сохранение…' : 'Назад'}
+                  icon="back"
                   disabled={closing}
                   onPress={() => void closeEditor()}
                 />
-                <Button
-                  label="Свойства"
+                <View style={{ flex: 1 }} />
+                <IconButton
+                  label="Свойства заметки"
+                  icon="edit"
                   disabled={closing}
                   onPress={() => editNoteProperties(record)}
                 />
-                <Button label="Удалить" danger disabled={closing} onPress={deleteCurrentNote} />
+                <IconButton
+                  label="Удалить заметку"
+                  icon="delete"
+                  danger
+                  disabled={closing}
+                  onPress={deleteCurrentNote}
+                />
               </View>
               <TextInput
                 accessibilityLabel="Название заметки"
@@ -344,10 +354,13 @@ export function NotesScreen({
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           <Button
             label={groupsView ? 'К заметкам' : 'Группы'}
+            icon={groupsView ? 'notes' : 'folder'}
+            compact
             onPress={() => setGroupsView((value) => !value)}
           />
-          <Button
-            label={groupsView ? '+ Группа' : '+ Заметка'}
+          <IconButton
+            label={groupsView ? 'Создать группу' : 'Создать заметку'}
+            icon="add"
             selected
             onPress={() => (groupsView ? editGroup() : createNote())}
           />
@@ -390,15 +403,18 @@ export function NotesScreen({
           renderItem={({ item }) => (
             <Row
               title={item.title}
-              subtitle={`${overview.data?.notes.filter((note) => note.groupId === item.id).length ?? 0} заметок · ${item.icon}`}
+              subtitle={(overview.data?.notes.filter((note) => note.groupId === item.id).length ?? 0) + ' заметок'}
+              leadingIcon="folder"
               onPress={() => {
                 setGroupId(item.id)
                 setGroupsView(false)
               }}
             >
-              <Button label="Изменить" onPress={() => editGroup(item)} />
-              <Button
-                label="Удалить"
+              <IconButton label="Изменить группу" icon="edit" compact onPress={() => editGroup(item)} />
+              <IconButton
+                label="Удалить группу"
+                icon="delete"
+                compact
                 danger
                 onPress={() =>
                   Alert.alert(
@@ -437,6 +453,7 @@ export function NotesScreen({
           renderItem={({ item }) => (
             <Row
               title={item.title}
+              leadingIcon="notes"
               subtitle={[
                 item.plainText.slice(0, 180),
                 overview.data?.groups.find((group) => group.id === item.groupId)?.title
