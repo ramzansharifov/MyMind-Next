@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import { Alert, FlatList, ScrollView, View } from 'react-native'
+import { FlatList, ScrollView, View } from 'react-native'
 import type {
   FinanceAccountSummary,
   FinanceLimitStatus,
@@ -30,6 +30,7 @@ import {
   transactionForm
 } from './finance-forms'
 import { FinanceReportsView } from './FinanceReportsView'
+import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
 
 type Tab =
   'home' | 'transactions' | 'accounts' | 'tags' | 'limits' | 'templates' | 'reports' | 'rates'
@@ -68,6 +69,7 @@ function operationSubtitle(transaction: FinanceTransaction): string {
 
 export function FinanceScreen(): React.JSX.Element {
   const { finance: api } = useServices()
+  const confirm = useConfirmation()
   const state = useCollection(
     useCallback(() => {
       const dashboard = api.getDashboard()
@@ -157,25 +159,25 @@ export function FinanceScreen(): React.JSX.Element {
   }
 
   const clearHistory = (account: FinanceAccountSummary): void => {
-    Alert.alert(
-      `Очистить историю «${account.name}»?`,
-      `Текущий баланс ${formatMoneyMinor(account.balanceMinor, account.currencyCode)} станет новым начальным балансом. Связанные переводы будут компенсированы на других счетах.`,
-      [
-        { text: 'Отмена', style: 'cancel' },
-        {
-          text: 'Очистить',
-          style: 'destructive',
-          onPress: () =>
-            state.mutate(() => {
-              api.clearAccountHistory({
-                accountId: account.id,
-                expectedBalanceMinor: account.balanceMinor,
-                confirmation: 'ОЧИСТИТЬ'
-              })
+    void confirm({
+      title: `Очистить историю «${account.name}»?`,
+      description: `Текущий баланс ${formatMoneyMinor(account.balanceMinor, account.currencyCode)} станет новым начальным балансом. Связанные переводы будут компенсированы на других счетах.`,
+      confirmLabel: 'Очистить',
+      submittingLabel: 'Очищаем…',
+      tone: 'danger',
+      onConfirm: () => {
+        state.mutate(
+          () => {
+            api.clearAccountHistory({
+              accountId: account.id,
+              expectedBalanceMinor: account.balanceMinor,
+              confirmation: 'ОЧИСТИТЬ'
             })
-        }
-      ]
-    )
+          },
+          'История счёта очищена'
+        )
+      }
+    })
   }
 
   const renderTransaction = ({ item }: { item: FinanceTransaction }): React.JSX.Element => (

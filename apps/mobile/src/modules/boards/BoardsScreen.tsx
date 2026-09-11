@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Alert, AppState, BackHandler, FlatList, View } from 'react-native'
+import { AppState, BackHandler, FlatList, View } from 'react-native'
 import type { BoardDocument, BoardNode } from '@mymind/contracts/boards'
 import { isBoardSystemRootId } from '@mymind/contracts/boards'
 import { STUDY_FOLDER_ICON_NAMES } from '@mymind/contracts/study'
@@ -22,6 +22,8 @@ import {
   SearchField
 } from '../../shared/ui/primitives'
 import { useTheme } from '../../shared/ui/theme'
+import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
+import { useToast } from '../../shared/ui/ToastProvider'
 
 function sortNodes(nodes: BoardNode[]): BoardNode[] {
   return [...nodes].sort((a, b) => a.position - b.position || a.title.localeCompare(b.title))
@@ -92,6 +94,8 @@ export function BoardsScreen({
   initialBoardId?: string | null
 }): React.JSX.Element {
   const { boards: api } = useServices()
+  const confirm = useConfirmation()
+  const toast = useToast()
   const nodes = useCollection(useCallback(() => api.listNodes(), [api]))
   const [folderId, setFolderId] = useState<string | null>(null)
   const [query, setQuery] = useState('')
@@ -293,34 +297,33 @@ export function BoardsScreen({
 
   const confirmDelete = (node: BoardNode): void => {
     if (pending || (node.type === 'folder' && managed.has(node.id))) return
-    Alert.alert(
-      node.type === 'folder' ? 'Удалить папку?' : 'Удалить доску?',
-      node.type === 'folder'
-        ? 'Будут удалены папка и все вложенные обычные доски.'
-        : node.sourceMaterialId || node.sourceNoteId
-          ? 'Связанный блок будет также удалён из исходного документа.'
-          : 'Это действие нельзя отменить.',
-      [
-        { text: 'Отмена', style: 'cancel' },
-        {
-          text: 'Удалить',
-          style: 'destructive',
-          onPress: () => {
-            setPending(true)
-            setError('')
-            void (async () => {
-              if (opened?.node.id === node.id) await canvasRef.current?.flush()
-              await api.deleteNode(node.id)
-              if (opened?.node.id === node.id) setOpened(null)
-              if (effectiveFolderId === node.id) setFolderId(node.parentId)
-              refresh()
-            })()
-              .catch((reason) => setError(messageFor(reason)))
-              .finally(() => setPending(false))
-          }
+    void confirm({
+      title: node.type === 'folder' ? 'Удалить папку?' : 'Удалить доску?',
+      description:
+        node.type === 'folder'
+          ? 'Будут удалены папка и все вложенные обычные доски.'
+          : node.sourceMaterialId || node.sourceNoteId
+            ? 'Связанный блок будет также удалён из исходного документа.'
+            : 'Это действие нельзя отменить.',
+      tone: 'danger',
+      onConfirm: async () => {
+        setPending(true)
+        setError('')
+        try {
+          if (opened?.node.id === node.id) await canvasRef.current?.flush()
+          await api.deleteNode(node.id)
+          if (opened?.node.id === node.id) setOpened(null)
+          if (effectiveFolderId === node.id) setFolderId(node.parentId)
+          refresh()
+          toast.success(node.type === 'folder' ? 'Папка удалена' : 'Доска удалена')
+        } catch (reason) {
+          setError(messageFor(reason))
+          throw reason
+        } finally {
+          setPending(false)
         }
-      ]
-    )
+      }
+    })
   }
 
   const breadcrumbs = useMemo(() => {

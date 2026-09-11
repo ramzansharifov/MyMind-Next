@@ -1,6 +1,6 @@
 import { randomUUID } from 'expo-crypto'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Alert, AppState, BackHandler, FlatList, View } from 'react-native'
+import { AppState, BackHandler, FlatList, View } from 'react-native'
 import type {
   StudyBoardBlock,
   StudyDocument,
@@ -16,6 +16,8 @@ import { useCollection } from '../../shared/hooks/useCollection'
 import { DocumentEditor } from '../../shared/ui/DocumentEditor'
 import { DocumentReader, type DocumentRevealRequest } from '../../shared/ui/DocumentReader'
 import { FormSheet } from '../../shared/ui/FormSheet'
+import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
+import { useToast } from '../../shared/ui/ToastProvider'
 import type { StudyRichTextInternalLink } from '../../shared/ui/studyRichText'
 import { StudyCodeWorkspace } from './StudyCodeWorkspace'
 import StudyMermaidExportDom, {
@@ -92,6 +94,8 @@ export function StudyScreen({
   onOpenBoard?: (boardId: string) => void
 }): React.JSX.Element {
   const { study: api, boards, documentAssets } = useServices()
+  const confirm = useConfirmation()
+  const toast = useToast()
   const nodes = useCollection(useCallback(() => api.listNodes(), [api]))
   const [folderId, setFolderId] = useState<string | null>(null)
   const [query, setQuery] = useState('')
@@ -270,7 +274,7 @@ export function StudyScreen({
         headingId: link.headingId
       })
       if (!target) {
-        Alert.alert('Ссылка недоступна', 'Материал или заголовок был удалён.')
+        toast.error('Материал или заголовок был удалён.', 'study-link-unavailable')
         return
       }
 
@@ -570,41 +574,39 @@ export function StudyScreen({
   }
 
   const confirmDelete = (node: StudyNode): void => {
-    Alert.alert(
-      node.type === 'folder' ? 'Удалить папку?' : 'Удалить материал?',
-      node.type === 'folder'
-        ? 'Будут удалены папка, все вложенные материалы и их локальные данные.'
-        : 'Материал и его локальные данные будут удалены.',
-      [
-        { text: 'Отмена', style: 'cancel' },
-        {
-          text: 'Удалить',
-          style: 'destructive',
-          onPress: () => {
-            if (pendingAction) return
-            setPendingAction(true)
-            if (material?.nodeId === node.id) queueRef.current?.discardPending()
-            void api
-              .deleteNode(node.id)
-              .then(() => {
-                if (material?.nodeId === node.id) {
-                  setFocus(false)
-                  queueRef.current = null
-                  setMaterial(null)
-                  setDocument(null)
-                  setInternalLinkHistory([])
-                  setReveal(null)
-                }
-                if (folderId === node.id) setFolderId(node.parentId)
-                setEditorError('')
-                refreshAfterMutation()
-              })
-              .catch((reason) => setEditorError(messageFor(reason)))
-              .finally(() => setPendingAction(false))
+    if (pendingAction) return
+    void confirm({
+      title: node.type === 'folder' ? 'Удалить папку?' : 'Удалить материал?',
+      description:
+        node.type === 'folder'
+          ? 'Будут удалены папка, все вложенные материалы и их локальные данные.'
+          : 'Материал и его локальные данные будут удалены.',
+      tone: 'danger',
+      onConfirm: async () => {
+        setPendingAction(true)
+        if (material?.nodeId === node.id) queueRef.current?.discardPending()
+        try {
+          await api.deleteNode(node.id)
+          if (material?.nodeId === node.id) {
+            setFocus(false)
+            queueRef.current = null
+            setMaterial(null)
+            setDocument(null)
+            setInternalLinkHistory([])
+            setReveal(null)
           }
+          if (folderId === node.id) setFolderId(node.parentId)
+          setEditorError('')
+          refreshAfterMutation()
+          toast.success(node.type === 'folder' ? 'Папка удалена' : 'Материал удалён')
+        } catch (reason) {
+          setEditorError(messageFor(reason))
+          throw reason
+        } finally {
+          setPendingAction(false)
         }
-      ]
-    )
+      }
+    })
   }
 
   const breadcrumbs = useMemo(() => {

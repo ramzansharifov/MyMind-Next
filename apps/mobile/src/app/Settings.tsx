@@ -1,10 +1,12 @@
 import { useState } from 'react'
-import { Alert, FlatList, View } from 'react-native'
+import { FlatList, View } from 'react-native'
 import type { AppearancePreferences } from '@mymind/contracts/preferences'
 import type { MobileBackupSummary, MobileRestoreResult } from '../shared/backup/mobileBackup'
 import { Button, ErrorState, Label } from '../shared/ui/primitives'
 import { messageFor } from '../shared/ui/form-model'
 import { ReminderSettings } from './ReminderSettings'
+import { useConfirmation } from '../shared/ui/ConfirmationProvider'
+import { useToast } from '../shared/ui/ToastProvider'
 
 export function Settings({
   appearance,
@@ -17,6 +19,8 @@ export function Settings({
   exportBackup(): Promise<MobileBackupSummary>
   restoreBackup(): Promise<MobileRestoreResult>
 }): React.JSX.Element {
+  const confirm = useConfirmation()
+  const toast = useToast()
   const [busy, setBusy] = useState<'export' | 'restore' | null>(null)
   const [backupError, setBackupError] = useState('')
   const [backupMessage, setBackupMessage] = useState('')
@@ -35,11 +39,13 @@ export function Settings({
     setBackupMessage('')
     try {
       const result = await exportBackup()
-      setBackupMessage(
-        `Резервная копия подготовлена: ${result.files} файлов, ${Math.max(1, Math.round(result.bytes / 1024))} КБ.`
-      )
+      const message = `Резервная копия подготовлена: ${result.files} файлов, ${Math.max(1, Math.round(result.bytes / 1024))} КБ.`
+      setBackupMessage(message)
+      toast.success(message, 'backup-export')
     } catch (reason) {
-      setBackupError(messageFor(reason))
+      const message = messageFor(reason)
+      setBackupError(message)
+      toast.error(message, 'backup-export')
     } finally {
       setBusy(null)
     }
@@ -53,12 +59,15 @@ export function Settings({
     try {
       const result = await restoreBackup()
       if (result.restored) {
-        setBackupMessage(
-          `Данные восстановлены из копии от ${new Date(result.createdAt).toLocaleString('ru-RU')}.`
-        )
+        const message = `Данные восстановлены из копии от ${new Date(result.createdAt).toLocaleString('ru-RU')}.`
+        setBackupMessage(message)
+        toast.success(message, 'backup-restore')
       }
     } catch (reason) {
-      setBackupError(messageFor(reason))
+      const message = messageFor(reason)
+      setBackupError(message)
+      toast.error(message, 'backup-restore')
+      throw reason
     } finally {
       setBusy(null)
     }
@@ -66,20 +75,16 @@ export function Settings({
 
   const confirmRestore = (): void => {
     if (busy) return
-    Alert.alert(
-      'Восстановить резервную копию?',
-      'Текущие локальные данные будут заменены данными из выбранного файла. Перед заменой MyMind проверит целостность копии и создаст внутреннюю точку отката.',
-      [
-        { text: 'Отмена', style: 'cancel' },
-        {
-          text: 'Выбрать файл',
-          style: 'destructive',
-          onPress: () => {
-            void runRestore()
-          }
-        }
-      ]
-    )
+    void confirm({
+      title: 'Восстановить резервную копию?',
+      description:
+        'Текущие локальные данные будут заменены данными из выбранного файла. Перед заменой MyMind проверит целостность копии и создаст внутреннюю точку отката.',
+      confirmLabel: 'Выбрать файл',
+      submittingLabel: 'Проверяем…',
+      tone: 'warning',
+      notice: 'Перед заменой MyMind проверит целостность копии и создаст внутреннюю точку отката.',
+      onConfirm: runRestore
+    })
   }
 
   return (
