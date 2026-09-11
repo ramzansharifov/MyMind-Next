@@ -71,7 +71,7 @@ export function AppDialog({
       onRequestClose={requestClose}
     >
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{
           flex: 1,
           justifyContent: fullscreen ? 'flex-start' : sheet ? 'flex-end' : 'center'
