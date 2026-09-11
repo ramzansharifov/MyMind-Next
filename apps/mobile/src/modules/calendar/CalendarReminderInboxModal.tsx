@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { Modal, ScrollView, View } from 'react-native'
+import { ScrollView, View } from 'react-native'
 import type { CalendarUnreadReminderRecord } from '@mymind/contracts/calendar'
 import { calendarParseDate } from '@mymind/core/calendar-month'
-import { Button, EmptyState, ErrorState, Label, Row } from '../../shared/ui/primitives'
+import { AppDialog } from '../../shared/ui/AppDialog'
+import { Button, EmptyState, ErrorState } from '../../shared/ui/primitives'
+import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
 import { messageFor } from '../../shared/ui/form-model'
-import { useTheme } from '../../shared/ui/theme'
 
 const MONTHS = [
   'января',
@@ -61,7 +62,6 @@ export function CalendarReminderInboxModal({
   close(): void
   acknowledge(reminders: CalendarUnreadReminderRecord[]): void
 }): React.JSX.Element {
-  const theme = useTheme()
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState('')
 
@@ -79,55 +79,53 @@ export function CalendarReminderInboxModal({
   }
 
   return (
-    <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={close}>
-      <View style={{ flex: 1, backgroundColor: theme.background }}>
-        <ScrollView contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 48 }}>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'flex-start',
-              justifyContent: 'space-between',
-              gap: 12
-            }}
-          >
-            <View style={{ flex: 1, gap: 4 }}>
-              <Label title>Напоминания календаря</Label>
-              <Label muted>
-                {reminders.length
-                  ? `${reminders.length} непрочитанных. Они исчезнут только после подтверждения.`
-                  : 'Непрочитанных напоминаний нет.'}
-              </Label>
-            </View>
-            <Button label="Закрыть" onPress={close} />
-          </View>
-
-          {reminders.length > 1 ? (
+    <AppDialog
+      open
+      onOpenChange={(open) => {
+        if (!open) close()
+      }}
+      title="Напоминания календаря"
+      description={
+        reminders.length
+          ? `${reminders.length} непрочитанных. Они исчезнут только после подтверждения.`
+          : 'Непрочитанных напоминаний нет.'
+      }
+      icon="calendar"
+      presentation="sheet"
+      busy={Boolean(busy)}
+    >
+      <ScrollView contentContainerStyle={{ padding: 14, gap: 10, paddingBottom: 28 }}>
+        {reminders.length > 1 ? (
+          <View style={{ alignItems: 'flex-start', marginBottom: 2 }}>
             <Button
               label={busy === 'all' ? 'Подождите…' : 'Понятно для всех'}
               selected
               disabled={Boolean(busy)}
               onPress={() => run('all', reminders)}
             />
-          ) : null}
-          {error ? <ErrorState message={error} /> : null}
-          {reminders.length === 0 ? <EmptyState text="Все напоминания прочитаны." /> : null}
+          </View>
+        ) : null}
+        {error ? <ErrorState message={error} /> : null}
+        {reminders.length === 0 ? <EmptyState text="Все напоминания прочитаны." /> : null}
 
-          {reminders.map((reminder) => (
-            <Row
-              key={reminder.deliveryId}
-              title={reminder.title}
-              subtitle={occurrenceLabel(reminder)}
-            >
+        {reminders.map((reminder) => (
+          <WorkspaceNodeCard
+            key={reminder.deliveryId}
+            title={reminder.title}
+            subtitle={occurrenceLabel(reminder)}
+            leadingIcon="calendar"
+            action={
               <Button
-                label={busy === reminder.deliveryId ? 'Подождите…' : 'Понятно'}
+                label={busy === reminder.deliveryId ? '…' : 'Понятно'}
+                compact
                 selected
                 disabled={Boolean(busy)}
                 onPress={() => run(reminder.deliveryId, [reminder])}
               />
-            </Row>
-          ))}
-        </ScrollView>
-      </View>
-    </Modal>
+            }
+          />
+        ))}
+      </ScrollView>
+    </AppDialog>
   )
 }

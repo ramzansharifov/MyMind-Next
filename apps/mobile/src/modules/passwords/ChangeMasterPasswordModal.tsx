@@ -1,41 +1,34 @@
 import { useState } from 'react'
-import { Modal, ScrollView, TextInput, View } from 'react-native'
+import { ScrollView, View } from 'react-native'
 import type { PasswordsRepository } from '@mymind/persistence/passwords'
 import { changeMasterPasswordInputSchema } from '@mymind/core/validation/passwords'
+import { AppDialog } from '../../shared/ui/AppDialog'
+import { AppTextField } from '../../shared/ui/FormControls'
 import { Button, ErrorState, Label } from '../../shared/ui/primitives'
 import { messageFor } from '../../shared/ui/form-model'
-import { useTheme } from '../../shared/ui/theme'
 
 function MasterInput({
   label,
   value,
-  setValue
+  setValue,
+  disabled = false
 }: {
   label: string
   value: string
   setValue(value: string): void
+  disabled?: boolean
 }): React.JSX.Element {
-  const theme = useTheme()
   return (
     <View style={{ gap: 7 }}>
       <Label>{label}</Label>
-      <TextInput
+      <AppTextField
         value={value}
         onChangeText={setValue}
+        disabled={disabled}
         secureTextEntry
         autoCapitalize="none"
         autoCorrect={false}
         accessibilityLabel={label}
-        style={{
-          minHeight: 50,
-          borderWidth: 1,
-          borderColor: theme.border,
-          backgroundColor: theme.surface,
-          color: theme.text,
-          borderRadius: 12,
-          paddingHorizontal: 14,
-          fontSize: 16
-        }}
       />
     </View>
   )
@@ -50,7 +43,6 @@ export function ChangeMasterPasswordModal({
   close(): void
   changed(): void
 }): React.JSX.Element {
-  const theme = useTheme()
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -60,6 +52,7 @@ export function ChangeMasterPasswordModal({
   const save = async (): Promise<void> => {
     if (working) return
     setWorking(true)
+    setError('')
     try {
       if (newPassword !== confirmPassword) throw new Error('Новые мастер-пароли не совпадают')
       const input = changeMasterPasswordInputSchema.parse({
@@ -70,7 +63,6 @@ export function ChangeMasterPasswordModal({
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
-      setError('')
       changed()
       close()
     } catch (reason) {
@@ -81,42 +73,49 @@ export function ChangeMasterPasswordModal({
   }
 
   return (
-    <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={close}>
-      <View style={{ flex: 1, backgroundColor: theme.background }}>
-        <ScrollView
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 48 }}
-        >
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
-            <View style={{ flex: 1 }}>
-              <Label title>Сменить мастер-пароль</Label>
-              <Label muted>
-                Данные не расшифровываются заново: меняется только защищённая оболочка ключа
-                хранилища.
-              </Label>
-            </View>
-            <Button label="Закрыть" onPress={close} />
-          </View>
-          <MasterInput
-            label="Текущий мастер-пароль"
-            value={currentPassword}
-            setValue={setCurrentPassword}
-          />
-          <MasterInput label="Новый мастер-пароль" value={newPassword} setValue={setNewPassword} />
-          <MasterInput
-            label="Повторите новый мастер-пароль"
-            value={confirmPassword}
-            setValue={setConfirmPassword}
-          />
-          {error ? <ErrorState message={error} /> : null}
-          <Button
-            label={working ? 'Смена…' : 'Сменить мастер-пароль'}
-            selected
-            disabled={working}
-            onPress={() => void save()}
-          />
-        </ScrollView>
-      </View>
-    </Modal>
+    <AppDialog
+      open
+      onOpenChange={(open) => {
+        if (!open && !working) close()
+      }}
+      title="Сменить мастер-пароль"
+      description="Меняется только защищённая оболочка ключа хранилища."
+      icon="passwords"
+      presentation="sheet"
+      busy={working}
+      footer={
+        <Button
+          label={working ? 'Смена…' : 'Сменить мастер-пароль'}
+          primary
+          disabled={working}
+          onPress={() => void save()}
+        />
+      }
+    >
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 28 }}
+      >
+        <MasterInput
+          label="Текущий мастер-пароль"
+          value={currentPassword}
+          setValue={setCurrentPassword}
+          disabled={working}
+        />
+        <MasterInput
+          label="Новый мастер-пароль"
+          value={newPassword}
+          setValue={setNewPassword}
+          disabled={working}
+        />
+        <MasterInput
+          label="Повторите новый мастер-пароль"
+          value={confirmPassword}
+          setValue={setConfirmPassword}
+          disabled={working}
+        />
+        {error ? <ErrorState message={error} /> : null}
+      </ScrollView>
+    </AppDialog>
   )
 }
