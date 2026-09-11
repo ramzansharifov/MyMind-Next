@@ -11,6 +11,7 @@ import { formatMoneyMinor } from '@mymind/core/finance-money'
 import { useServices } from '../../app/context'
 import { useCollection } from '../../shared/hooks/useCollection'
 import { FormSheet } from '../../shared/ui/FormSheet'
+import { ActionMenu } from '../../shared/ui/ActionMenu'
 import type { FormSpec } from '../../shared/ui/form-model'
 import {
   Button,
@@ -187,11 +188,22 @@ export function FinanceScreen(): React.JSX.Element {
       onPress={() => openForm(transactionForm(api, accounts, tags, templates, item))}
       onLongPress={() => deleteTransaction(item)}
     >
-      <Button
-        label="Изменить"
-        onPress={() => openForm(transactionForm(api, accounts, tags, templates, item))}
+      <ActionMenu
+        title={operationTitle(item)}
+        items={[
+          {
+            label: 'Изменить',
+            icon: 'edit',
+            onPress: () => openForm(transactionForm(api, accounts, tags, templates, item))
+          },
+          {
+            label: 'Удалить',
+            icon: 'delete',
+            danger: true,
+            onPress: () => deleteTransaction(item)
+          }
+        ]}
       />
-      <Button label="Удалить" danger onPress={() => deleteTransaction(item)} />
     </Row>
   )
 
@@ -201,20 +213,30 @@ export function FinanceScreen(): React.JSX.Element {
       subtitle={`${item.transactionCount} операций${item.periodChangeMinor ? ` · изменение ${formatMoneyMinor(item.periodChangeMinor, item.currencyCode)}` : ''}`}
       onPress={() => openForm(accountForm(api, item))}
     >
-      <Button label="Изменить" onPress={() => openForm(accountForm(api, item))} />
-      {item.transactionCount > 0 ? (
-        <Button label="Очистить историю" danger onPress={() => clearHistory(item)} />
-      ) : (
-        <Button
-          label="Удалить"
-          danger
-          onPress={() =>
-            state.confirmDelete(`Удалить счёт «${item.name}»?`, () => {
-              api.deleteAccount({ id: item.id })
-            })
-          }
-        />
-      )}
+      <ActionMenu
+        title={item.name}
+        items={[
+          { label: 'Изменить', icon: 'edit', onPress: () => openForm(accountForm(api, item)) },
+          item.transactionCount > 0
+            ? {
+                key: 'clear',
+                label: 'Очистить историю',
+                icon: 'reset',
+                danger: true,
+                onPress: () => clearHistory(item)
+              }
+            : {
+                key: 'delete',
+                label: 'Удалить',
+                icon: 'delete',
+                danger: true,
+                onPress: () =>
+                  state.confirmDelete(`Удалить счёт «${item.name}»?`, () => {
+                    api.deleteAccount({ id: item.id })
+                  })
+              }
+        ]}
+      />
     </Row>
   )
 
@@ -224,16 +246,21 @@ export function FinanceScreen(): React.JSX.Element {
       subtitle={`${item.type === 'income' ? 'Доход' : item.type === 'expense' ? 'Расход' : 'Доход и расход'} · ${item.transactionCount} операций`}
       onPress={() => openForm(tagForm(api, item))}
     >
-      <Button label="Изменить" onPress={() => openForm(tagForm(api, item))} />
-      <Button
-        label="Удалить"
-        danger
-        disabled={item.transactionCount > 0 || item.linkedLimitCount > 0}
-        onPress={() =>
-          state.confirmDelete(`Удалить тег «${item.name}»?`, () => {
-            api.deleteTag({ id: item.id })
-          })
-        }
+      <ActionMenu
+        title={item.name}
+        items={[
+          { label: 'Изменить', icon: 'edit', onPress: () => openForm(tagForm(api, item)) },
+          {
+            label: 'Удалить',
+            icon: 'delete',
+            danger: true,
+            disabled: item.transactionCount > 0 || item.linkedLimitCount > 0,
+            onPress: () =>
+              state.confirmDelete(`Удалить тег «${item.name}»?`, () => {
+                api.deleteTag({ id: item.id })
+              })
+          }
+        ]}
       />
     </Row>
   )
@@ -246,28 +273,38 @@ export function FinanceScreen(): React.JSX.Element {
         openForm(limitForm(api, accounts, tags, data.dashboard.settings.baseCurrencyCode, item))
       }
     >
-      <Button
-        label="Изменить"
-        onPress={() =>
-          openForm(limitForm(api, accounts, tags, data.dashboard.settings.baseCurrencyCode, item))
-        }
-      />
-      <Button
-        label={item.state === 'active' ? 'Пауза' : 'Возобновить'}
-        onPress={() =>
-          state.mutate(() => {
-            api.setLimitState({ id: item.id, state: item.state === 'active' ? 'paused' : 'active' })
-          })
-        }
-      />
-      <Button
-        label="Удалить"
-        danger
-        onPress={() =>
-          state.confirmDelete('Удалить лимит?', () => {
-            api.deleteLimit({ id: item.id })
-          })
-        }
+      <ActionMenu
+        title="Лимит"
+        items={[
+          {
+            label: 'Изменить',
+            icon: 'edit',
+            onPress: () =>
+              openForm(
+                limitForm(api, accounts, tags, data.dashboard.settings.baseCurrencyCode, item)
+              )
+          },
+          {
+            label: item.state === 'active' ? 'Поставить на паузу' : 'Возобновить',
+            icon: 'reset',
+            onPress: () =>
+              state.mutate(() => {
+                api.setLimitState({
+                  id: item.id,
+                  state: item.state === 'active' ? 'paused' : 'active'
+                })
+              })
+          },
+          {
+            label: 'Удалить',
+            icon: 'delete',
+            danger: true,
+            onPress: () =>
+              state.confirmDelete('Удалить лимит?', () => {
+                api.deleteLimit({ id: item.id })
+              })
+          }
+        ]}
       />
     </Row>
   )
@@ -278,15 +315,24 @@ export function FinanceScreen(): React.JSX.Element {
       subtitle={`${item.type === 'income' ? 'Доход' : item.type === 'expense' ? 'Расход' : 'Перевод'} · ${item.comment || 'без комментария'}`}
       onPress={() => openForm(templateForm(api, accounts, tags, item))}
     >
-      <Button label="Изменить" onPress={() => openForm(templateForm(api, accounts, tags, item))} />
-      <Button
-        label="Удалить"
-        danger
-        onPress={() =>
-          state.confirmDelete(`Удалить шаблон «${item.name}»?`, () => {
-            api.deleteTemplate({ id: item.id })
-          })
-        }
+      <ActionMenu
+        title={item.name}
+        items={[
+          {
+            label: 'Изменить',
+            icon: 'edit',
+            onPress: () => openForm(templateForm(api, accounts, tags, item))
+          },
+          {
+            label: 'Удалить',
+            icon: 'delete',
+            danger: true,
+            onPress: () =>
+              state.confirmDelete(`Удалить шаблон «${item.name}»?`, () => {
+                api.deleteTemplate({ id: item.id })
+              })
+          }
+        ]}
       />
     </Row>
   )

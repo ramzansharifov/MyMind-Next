@@ -18,6 +18,7 @@ import { notifyDataChanged, subscribeDataChanges } from '../../app/changes'
 import { useServices } from '../../app/context'
 import { useCollection } from '../../shared/hooks/useCollection'
 import { FormSheet } from '../../shared/ui/FormSheet'
+import { ActionMenu } from '../../shared/ui/ActionMenu'
 import { choiceField, textField, type FormSpec } from '../../shared/ui/form-model'
 import {
   Button,
@@ -375,38 +376,47 @@ export function CalendarScreen(): React.JSX.Element {
           contentContainerStyle={{ paddingBottom: 40 }}
           renderItem={({ item }) => (
             <Row title={item.title} subtitle={occurrenceSubtitle(item)} onPress={() => edit(item)}>
-              {item.kind === 'annual' ? (
-                <Button
-                  label="Пропустить в этом году"
-                  onPress={() =>
-                    state.confirmDelete(
-                      'Скрыть это повторение?',
-                      () => {
-                        api.setCalendarOccurrenceHidden({
-                          eventId: item.eventId,
-                          occurrenceDate: item.occurrenceDate,
-                          hidden: true
-                        })
-                      },
-                      'Остальные ежегодные повторения сохранятся.'
-                    )
+              <ActionMenu
+                title={item.title}
+                items={[
+                  ...(item.kind === 'annual'
+                    ? [
+                        {
+                          key: 'skip-year',
+                          label: 'Пропустить в этом году',
+                          icon: 'skip' as const,
+                          onPress: () =>
+                            state.confirmDelete(
+                              'Скрыть это повторение?',
+                              () => {
+                                api.setCalendarOccurrenceHidden({
+                                  eventId: item.eventId,
+                                  occurrenceDate: item.occurrenceDate,
+                                  hidden: true
+                                })
+                              },
+                              'Остальные ежегодные повторения сохранятся.'
+                            )
+                        }
+                      ]
+                    : []),
+                  {
+                    key: 'delete',
+                    label: 'Удалить событие',
+                    icon: 'delete',
+                    danger: true,
+                    onPress: () =>
+                      state.confirmDelete(
+                        'Удалить событие?',
+                        () => {
+                          api.deleteCalendarEvent(item.eventId)
+                        },
+                        item.kind === 'annual'
+                          ? 'Будут удалены все ежегодные повторения и заметки.'
+                          : 'Событие и заметка будут удалены.'
+                      )
                   }
-                />
-              ) : null}
-              <Button
-                label="Удалить событие"
-                danger
-                onPress={() =>
-                  state.confirmDelete(
-                    'Удалить событие?',
-                    () => {
-                      api.deleteCalendarEvent(item.eventId)
-                    },
-                    item.kind === 'annual'
-                      ? 'Будут удалены все ежегодные повторения и заметки.'
-                      : 'Событие и заметка будут удалены.'
-                  )
-                }
+                ]}
               />
             </Row>
           )}
