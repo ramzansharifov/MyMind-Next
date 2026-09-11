@@ -8,6 +8,7 @@ import { useServices } from '../../app/context'
 import { useCollection } from '../../shared/hooks/useCollection'
 import { Button, ErrorState, LoadingState, SearchField } from '../../shared/ui/primitives'
 import { FormSheet } from '../../shared/ui/FormSheet'
+import { MobileCreateAction } from '../../shared/ui/MobileCreateAction'
 import { choiceField, messageFor, textField, type FormSpec } from '../../shared/ui/form-model'
 import { movieFields, movieValues } from './catalog-forms'
 import { CatalogJsonImportModal } from './CatalogJsonImportModal'
@@ -345,7 +346,37 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
             void webSearch(searchQuery)
           }}
         />
-        {form && <FormSheet spec={form} close={() => setForm(null)} />}
+        <MobileCreateAction
+        actions={
+          mode === 'movies'
+            ? [
+                {
+                  key: 'movie',
+                  label: 'Добавить фильм',
+                  description: 'Создать запись фильма или сериала',
+                  icon: 'movies',
+                  onPress: () => editMovie()
+                }
+              ]
+            : [
+                {
+                  key: 'track',
+                  label: 'Добавить трек',
+                  description: 'Создать новую музыкальную запись',
+                  icon: 'music',
+                  onPress: () => editTrack()
+                },
+                {
+                  key: 'playlist',
+                  label: 'Новый плейлист',
+                  description: 'Создать плейлист и добавить в него треки',
+                  icon: 'folder',
+                  onPress: () => editPlaylist()
+                }
+              ]
+        }
+      />
+      {form && <FormSheet spec={form} close={() => setForm(null)} />}
       </View>
     )
   }
@@ -356,7 +387,6 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
         {mode === 'movies' ? (
           <>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              <Button label="+ Добавить" selected onPress={() => editMovie()} />
               <Button label="Из JSON" onPress={() => setJsonImportOpen(true)} />
               <Button label="Фильтры" onPress={movieFilters} />
             </View>
@@ -380,8 +410,6 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
         ) : (
           <>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              <Button label="+ Трек" selected onPress={() => editTrack()} />
-              <Button label="+ Плейлист" onPress={() => editPlaylist()} />
               {!playlistsView && <Button label="Фильтры" onPress={musicFilters} />}
             </View>
             <SearchField value={query} onChangeText={setQuery} />
