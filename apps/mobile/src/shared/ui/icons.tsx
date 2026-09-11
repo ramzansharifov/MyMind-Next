@@ -6,6 +6,7 @@ import {
   CalendarDays,
   Check,
   ChevronDown,
+  Clock3,
   ChevronLeft,
   ChevronRight,
   CircleHelp,
@@ -59,6 +60,7 @@ export type AppIconName =
   | 'back'
   | 'forward'
   | 'down'
+  | 'clock'
   | 'move'
   | 'reset'
   | 'check'
@@ -92,6 +94,7 @@ const icons: Record<AppIconName, LucideIcon> = {
   back: ChevronLeft,
   forward: ChevronRight,
   down: ChevronDown,
+  clock: Clock3,
   move: MoveRight,
   reset: RotateCcw,
   check: Check,

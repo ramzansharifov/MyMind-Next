@@ -3,7 +3,7 @@ import { useRef, useState } from 'react'
 import { ScrollView, View } from 'react-native'
 import { AppDialog, type AppDialogPresentation } from './AppDialog'
 import { useConfirmation } from './ConfirmationProvider'
-import { AppCheckbox, AppSelect, AppTextField } from './FormControls'
+import { AppCheckbox, AppDateField, AppSelect, AppTextField, AppTimeField } from './FormControls'
 import { Button, ErrorState, Label } from './primitives'
 import { useToast } from './ToastProvider'
 import { notifyDataChanged } from '../../app/changes'
@@ -149,6 +149,10 @@ export function FormSheet({ spec, close }: { spec: FormSpec; close(): void }): R
                 disabled={pending}
                 onChange={(value) => set(field.key, value)}
               />
+            ) : field.kind === 'date' ? (
+              <AppDateField label={field.label} value={String(values[field.key] ?? '')} disabled={pending} optional={values[field.key] === null} onChangeText={(value) => set(field.key, value)} />
+            ) : field.kind === 'time' ? (
+              <AppTimeField label={field.label} value={String(values[field.key] ?? '')} disabled={pending} optional={values[field.key] === null} onChangeText={(value) => set(field.key, value)} />
             ) : field.kind === 'choice' ? (
               <AppSelect
                 label={field.label}
