@@ -46,15 +46,22 @@ jobs:
             apps/mobile/src/app/navigation.ts \
             apps/mobile/src/modules/boards/BoardsScreen.tsx \
             apps/mobile/src/modules/calendar/CalendarScreen.tsx \
+            apps/mobile/src/modules/calendar/CalendarReminderInboxModal.tsx \
+            apps/mobile/src/modules/catalog/CatalogJsonImportModal.tsx \
             apps/mobile/src/modules/diary/DiaryScreen.tsx \
             apps/mobile/src/modules/finance/finance-forms.ts \
             apps/mobile/src/modules/finance/FinanceScreen.tsx \
             apps/mobile/src/modules/habits/HabitsScreen.tsx \
             apps/mobile/src/modules/notes/NotesScreen.tsx \
             apps/mobile/src/modules/nutrition/NutritionScreen.tsx \
+            apps/mobile/src/modules/nutrition/NutritionRecipeSheet.tsx \
             apps/mobile/src/modules/passwords/PasswordsScreen.tsx \
+            apps/mobile/src/modules/passwords/ChangeMasterPasswordModal.tsx \
+            apps/mobile/src/modules/passwords/PasswordGeneratorModal.tsx \
             apps/mobile/src/modules/study/StudyScreen.tsx \
             apps/mobile/src/modules/tasks/TasksScreen.tsx \
+            apps/mobile/src/modules/workouts/WorkoutProgressSheet.tsx \
+            apps/mobile/src/modules/workouts/WorkoutSessionSheet.tsx \
             apps/mobile/src/shared/hooks/useCollection.ts \
             apps/mobile/src/shared/ui/form-model.ts \
             apps/mobile/src/shared/ui/ActionMenu.tsx \
@@ -92,15 +99,22 @@ jobs:
               apps/mobile/src/app/navigation.ts \
               apps/mobile/src/modules/boards/BoardsScreen.tsx \
               apps/mobile/src/modules/calendar/CalendarScreen.tsx \
+              apps/mobile/src/modules/calendar/CalendarReminderInboxModal.tsx \
+              apps/mobile/src/modules/catalog/CatalogJsonImportModal.tsx \
               apps/mobile/src/modules/diary/DiaryScreen.tsx \
               apps/mobile/src/modules/finance/finance-forms.ts \
               apps/mobile/src/modules/finance/FinanceScreen.tsx \
               apps/mobile/src/modules/habits/HabitsScreen.tsx \
               apps/mobile/src/modules/notes/NotesScreen.tsx \
               apps/mobile/src/modules/nutrition/NutritionScreen.tsx \
+              apps/mobile/src/modules/nutrition/NutritionRecipeSheet.tsx \
               apps/mobile/src/modules/passwords/PasswordsScreen.tsx \
+              apps/mobile/src/modules/passwords/ChangeMasterPasswordModal.tsx \
+              apps/mobile/src/modules/passwords/PasswordGeneratorModal.tsx \
               apps/mobile/src/modules/study/StudyScreen.tsx \
               apps/mobile/src/modules/tasks/TasksScreen.tsx \
+              apps/mobile/src/modules/workouts/WorkoutProgressSheet.tsx \
+              apps/mobile/src/modules/workouts/WorkoutSessionSheet.tsx \
               apps/mobile/src/shared/hooks/useCollection.ts \
               apps/mobile/src/shared/ui/form-model.ts \
               apps/mobile/src/shared/ui/ActionMenu.tsx \
@@ -110,6 +124,7 @@ jobs:
               apps/mobile/src/shared/ui/FormControls.tsx \
               apps/mobile/src/shared/ui/FormSheet.tsx \
               apps/mobile/src/shared/ui/ToastProvider.tsx \
+              apps/mobile/src/shared/ui/Workspace.tsx \
               apps/mobile/src/shared/ui/icons.tsx \
               apps/mobile/src/shared/ui/primitives.tsx \
               apps/mobile/package.json \
