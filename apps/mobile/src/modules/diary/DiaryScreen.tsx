@@ -23,6 +23,7 @@ import {
   SearchField
 } from '../../shared/ui/primitives'
 import { FormSheet } from '../../shared/ui/FormSheet'
+import { MobileCreateAction } from '../../shared/ui/MobileCreateAction'
 import { choiceField, textField, type FormSpec } from '../../shared/ui/form-model'
 import { useTheme } from '../../shared/ui/theme'
 import { DiaryReportsView } from './DiaryReportsView'
@@ -86,7 +87,6 @@ export function DiaryScreen(): React.JSX.Element {
 
   return (
     <View style={{ flex: 1, gap: 12 }}>
-      <Button label="+ Дневник" selected onPress={() => editDiary()} />
       {state.error ? <ErrorState message={state.error} retry={state.refresh} /> : null}
       {state.loading ? (
         <LoadingState />
@@ -94,7 +94,7 @@ export function DiaryScreen(): React.JSX.Element {
         <FlatList
           data={state.data?.diaries ?? []}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingBottom: 24 }}
+          contentContainerStyle={{ paddingBottom: 88 }}
           ListEmptyComponent={<EmptyState />}
           renderItem={({ item }) => (
             <DiaryNotebookCard
@@ -112,6 +112,17 @@ export function DiaryScreen(): React.JSX.Element {
           )}
         />
       )}
+      <MobileCreateAction
+        actions={[
+          {
+            key: 'diary',
+            label: 'Новый дневник',
+            description: 'Создать отдельный личный дневник',
+            icon: 'diary',
+            onPress: () => editDiary()
+          }
+        ]}
+      />
       {form ? <FormSheet spec={form} close={() => setForm(null)} /> : null}
     </View>
   )
@@ -382,7 +393,6 @@ function DiaryDetail({ diary, back }: { diary: DiarySummary; back(): void }): Re
             <Button label={date} onPress={chooseDate} />
             <Button label="›" onPress={() => turnToDate(addDays(date, 1), 1)} />
             <Button label="Сегодня" onPress={() => turnToDate(localDateKey())} />
-            <Button label="+ Запись" selected onPress={() => editEntry()} />
             <Button
               label={moodMeta ? `${moodMeta.emoji} ${moodMeta.label}` : 'Настроение'}
               onPress={editMood}
@@ -433,6 +443,19 @@ function DiaryDetail({ diary, back }: { diary: DiarySummary; back(): void }): Re
         </Animated.View>
       )}
 
+      {view === 'day' ? (
+        <MobileCreateAction
+          actions={[
+            {
+              key: 'entry',
+              label: 'Новая запись',
+              description: 'Добавить запись на выбранный день',
+              icon: 'diary',
+              onPress: () => editEntry()
+            }
+          ]}
+        />
+      ) : null}
       {form ? <FormSheet spec={form} close={() => setForm(null)} /> : null}
     </View>
   )

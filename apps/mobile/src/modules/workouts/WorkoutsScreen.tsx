@@ -11,6 +11,7 @@ import * as workoutsValidation from '@mymind/core/validation/workouts'
 import { useServices } from '../../app/context'
 import { useCollection } from '../../shared/hooks/useCollection'
 import { FormSheet } from '../../shared/ui/FormSheet'
+import { MobileCreateAction } from '../../shared/ui/MobileCreateAction'
 import { choiceField, textField, type FormField, type FormSpec } from '../../shared/ui/form-model'
 import {
   Button,
@@ -211,15 +212,7 @@ export function WorkoutsScreen(): React.JSX.Element {
       {tab !== 'reports' && tab !== 'progress' ? (
         <SearchField value={query} onChangeText={setQuery} />
       ) : null}
-      {tab === 'journal' ? (
-        <Button label="+ Тренировка" selected onPress={() => setSessionEditor('new')} />
-      ) : null}
-      {tab === 'exercises' ? (
-        <Button label="+ Упражнение" selected onPress={() => editExercise()} />
-      ) : null}
-      {tab === 'programs' ? (
-        <Button label="+ Программа" selected onPress={() => editProgram()} />
-      ) : null}
+
     </View>
   )
 
@@ -244,13 +237,23 @@ export function WorkoutsScreen(): React.JSX.Element {
           entries={progressEntries}
           refreshing={overview.loading}
           refresh={overview.refresh}
-          onAdd={() => setProgressEditor('new')}
           onEdit={setProgressEditor}
           onDelete={(entry) =>
             overview.confirmDelete('Удалить запись прогресса?', () =>
               api.deleteProgressEntry({ id: entry.id })
             )
           }
+        />
+        <MobileCreateAction
+          actions={[
+            {
+              key: 'progress',
+              label: 'Новая точка прогресса',
+              description: 'Добавить вес, замеры и фотографии',
+              icon: 'workouts',
+              onPress: () => setProgressEditor('new')
+            }
+          ]}
         />
         {progressEditor ? (
           <WorkoutProgressSheet
@@ -302,6 +305,7 @@ export function WorkoutsScreen(): React.JSX.Element {
       <FlatList<WorkoutListItem>
         data={listItems}
         keyExtractor={(row) => `${row.kind}:${row.value.id}`}
+        contentContainerStyle={{ paddingBottom: 96 }}
         refreshing={overview.loading}
         onRefresh={overview.refresh}
         ListEmptyComponent={<EmptyState />}
@@ -352,6 +356,33 @@ export function WorkoutsScreen(): React.JSX.Element {
             />
           )
         }}
+      />
+      <MobileCreateAction
+        actions={[
+          tab === 'journal'
+            ? {
+                key: 'session',
+                label: 'Новая тренировка',
+                description: 'Записать тренировку и выполненные подходы',
+                icon: 'workouts',
+                onPress: () => setSessionEditor('new')
+              }
+            : tab === 'exercises'
+              ? {
+                  key: 'exercise',
+                  label: 'Новое упражнение',
+                  description: 'Добавить упражнение в библиотеку',
+                  icon: 'workouts',
+                  onPress: () => editExercise()
+                }
+              : {
+                  key: 'program',
+                  label: 'Новая программа',
+                  description: 'Собрать программу из упражнений',
+                  icon: 'folder',
+                  onPress: () => editProgram()
+                }
+        ]}
       />
       {form && <FormSheet spec={form} close={() => setForm(null)} />}
       {sessionEditor ? (
