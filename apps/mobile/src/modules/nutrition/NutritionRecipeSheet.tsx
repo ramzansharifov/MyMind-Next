@@ -1,13 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
-import {
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
-  TextInput,
-  View
-} from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { ScrollView, TextInput, View } from 'react-native'
 import type {
   CreateNutritionRecipeInput,
   NutritionFoodRecord,
@@ -21,6 +13,7 @@ import {
 import { notifyDataChanged } from '../../app/changes'
 import { messageFor, numeric } from '../../shared/ui/form-model'
 import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
+import { AppDialog } from '../../shared/ui/AppDialog'
 import { Button, ErrorState, Label, SearchField } from '../../shared/ui/primitives'
 import { useTheme } from '../../shared/ui/theme'
 
@@ -116,98 +109,99 @@ export function NutritionRecipeSheet({
   } as const
 
   return (
-    <Modal animationType="slide" onRequestClose={requestClose}>
-      <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
-        <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
-          <View style={{ padding: 16, gap: 12 }}>
-            <Label title>{recipe ? 'Изменить рецепт' : 'Новый рецепт'}</Label>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 10 }}>
-              <Button label="Отмена" onPress={requestClose} disabled={pending} />
-              <Button label="Сохранить" onPress={submit} disabled={pending} selected />
+    <AppDialog
+      open
+      onOpenChange={(open) => {
+        if (!open) requestClose()
+      }}
+      title={recipe ? 'Изменить рецепт' : 'Новый рецепт'}
+      description="Состав, количество порций и ингредиенты"
+      icon="nutrition"
+      presentation="sheet"
+      busy={pending}
+      footer={
+        <>
+          <Button label="Отмена" onPress={requestClose} disabled={pending} />
+          <Button label={pending ? 'Сохранение…' : 'Сохранить'} onPress={submit} disabled={pending} primary />
+        </>
+      }
+    >
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 28 }}
+      >
+        {error ? <ErrorState message={error} /> : null}
+        <Label>Название</Label>
+        <TextInput
+          accessibilityLabel="Название"
+          value={name}
+          onChangeText={setName}
+          style={inputStyle}
+        />
+        <Label>Описание</Label>
+        <TextInput
+          accessibilityLabel="Описание"
+          value={description}
+          onChangeText={setDescription}
+          multiline
+          style={{ ...inputStyle, minHeight: 90, textAlignVertical: 'top' }}
+        />
+        <Label>Количество порций</Label>
+        <TextInput
+          accessibilityLabel="Количество порций"
+          value={servings}
+          onChangeText={setServings}
+          keyboardType="decimal-pad"
+          style={inputStyle}
+        />
+        <Label>Ингредиенты</Label>
+        <SearchField value={query} onChangeText={setQuery} />
+        {visibleFoods.map((food) => {
+          const selected = food.id in ingredients
+          return (
+            <View
+              key={food.id}
+              style={{
+                borderWidth: 1,
+                borderColor: selected ? theme.accent : theme.border,
+                backgroundColor: theme.surface,
+                borderRadius: 12,
+                padding: 12,
+                gap: 8
+              }}
+            >
+              <Label>{food.name}</Label>
+              <Label muted>
+                На {food.baseAmount} {food.baseUnit}: {food.nutrients.calories} ккал
+              </Label>
+              <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                <Button
+                  label={selected ? 'Убрать' : 'Добавить'}
+                  selected={selected}
+                  onPress={() =>
+                    setIngredients((current) => {
+                      const next = { ...current }
+                      if (selected) delete next[food.id]
+                      else next[food.id] = String(food.baseAmount)
+                      return next
+                    })
+                  }
+                />
+                {selected ? (
+                  <TextInput
+                    accessibilityLabel={`Количество: ${food.name}`}
+                    value={ingredients[food.id]}
+                    onChangeText={(value) =>
+                      setIngredients((current) => ({ ...current, [food.id]: value }))
+                    }
+                    keyboardType="decimal-pad"
+                    style={{ ...inputStyle, flex: 1 }}
+                  />
+                ) : null}
+              </View>
             </View>
-          </View>
-          <ScrollView
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 56 }}
-          >
-            {error ? <ErrorState message={error} /> : null}
-            <Label>Название</Label>
-            <TextInput
-              accessibilityLabel="Название"
-              value={name}
-              onChangeText={setName}
-              style={inputStyle}
-            />
-            <Label>Описание</Label>
-            <TextInput
-              accessibilityLabel="Описание"
-              value={description}
-              onChangeText={setDescription}
-              multiline
-              style={{ ...inputStyle, minHeight: 90, textAlignVertical: 'top' }}
-            />
-            <Label>Количество порций</Label>
-            <TextInput
-              accessibilityLabel="Количество порций"
-              value={servings}
-              onChangeText={setServings}
-              keyboardType="decimal-pad"
-              style={inputStyle}
-            />
-            <Label>Ингредиенты</Label>
-            <SearchField value={query} onChangeText={setQuery} />
-            {visibleFoods.map((food) => {
-              const selected = food.id in ingredients
-              return (
-                <View
-                  key={food.id}
-                  style={{
-                    borderWidth: 1,
-                    borderColor: selected ? theme.accent : theme.border,
-                    backgroundColor: theme.surface,
-                    borderRadius: 12,
-                    padding: 12,
-                    gap: 8
-                  }}
-                >
-                  <Label>{food.name}</Label>
-                  <Label muted>
-                    На {food.baseAmount} {food.baseUnit}: {food.nutrients.calories} ккал
-                  </Label>
-                  <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-                    <Button
-                      label={selected ? 'Убрать' : 'Добавить'}
-                      selected={selected}
-                      onPress={() =>
-                        setIngredients((current) => {
-                          const next = { ...current }
-                          if (selected) delete next[food.id]
-                          else next[food.id] = String(food.baseAmount)
-                          return next
-                        })
-                      }
-                    />
-                    {selected ? (
-                      <TextInput
-                        accessibilityLabel={`Количество: ${food.name}`}
-                        value={ingredients[food.id]}
-                        onChangeText={(value) =>
-                          setIngredients((current) => ({ ...current, [food.id]: value }))
-                        }
-                        keyboardType="decimal-pad"
-                        style={{ ...inputStyle, flex: 1 }}
-                      />
-                    ) : null}
-                  </View>
-                </View>
-              )
-            })}
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-    </Modal>
-  )
-}
+          )
+        })}
+      </ScrollView>
+    </AppDialog>
+  )}

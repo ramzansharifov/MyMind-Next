@@ -1,16 +1,9 @@
 import { useMemo, useState } from 'react'
-import {
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
-  TextInput,
-  View
-} from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { ScrollView, TextInput, View } from 'react-native'
 import type { CreateMovieInput } from '@mymind/contracts/movies'
 import type { CreateMusicItemInput } from '@mymind/contracts/music'
 import { parseMoviesJson, parseMusicJson } from '@mymind/core/catalog-json-import'
+import { AppDialog } from '../../shared/ui/AppDialog'
 import { Button, ErrorState, Label } from '../../shared/ui/primitives'
 import { messageFor } from '../../shared/ui/form-model'
 import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
@@ -109,82 +102,79 @@ export function CatalogJsonImportModal({
   }
 
   return (
-    <Modal visible animationType="slide" onRequestClose={requestClose}>
-      <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
-        <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
-          <ScrollView
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 48 }}
-          >
-            <View style={{ gap: 6 }}>
-              <Label title>{title}</Label>
-              <Label muted>
-                Один объект или массив до 100 записей. Проверка выполняется локально до записи в
-                базу.
-              </Label>
-            </View>
+    <AppDialog
+      open
+      onOpenChange={(open) => {
+        if (!open) requestClose()
+      }}
+      title={title}
+      description="Один объект или массив до 100 записей. Проверка выполняется локально до записи в базу."
+      icon={mode === 'movies' ? 'movies' : 'music'}
+      presentation="sheet"
+      busy={busy}
+      footer={
+        <>
+          <Button label="Отмена" disabled={busy} onPress={requestClose} />
+          <Button
+            label={
+              busy
+                ? 'Добавление…'
+                : parsed.items.length > 1
+                  ? `Добавить ${parsed.items.length}`
+                  : 'Добавить'
+            }
+            primary
+            disabled={busy || parsed.items.length === 0 || Boolean(parsed.error)}
+            onPress={() => void submit()}
+          />
+        </>
+      }
+    >
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 28 }}
+      >
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          <Button label="Пример" disabled={busy} onPress={() => setValue(example)} />
+          <Button label="Очистить" disabled={busy || !value} onPress={() => setValue('')} />
+        </View>
 
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              <Button label="Пример" disabled={busy} onPress={() => setValue(example)} />
-              <Button label="Очистить" disabled={busy || !value} onPress={() => setValue('')} />
-              <Button label="Отмена" disabled={busy} onPress={requestClose} />
-            </View>
+        <TextInput
+          accessibilityLabel={mode === 'movies' ? 'JSON фильмов' : 'JSON музыки'}
+          value={value}
+          onChangeText={(next) => {
+            setValue(next)
+            setSubmitError('')
+          }}
+          multiline
+          autoCapitalize="none"
+          autoCorrect={false}
+          spellCheck={false}
+          placeholder={
+            mode === 'movies'
+              ? '[{ "title": "Аркейн", "type": "animated_series" }]'
+              : '[{ "title": "Blinding Lights", "type": "track" }]'
+          }
+          placeholderTextColor={theme.muted}
+          style={{
+            minHeight: 300,
+            color: theme.text,
+            backgroundColor: theme.surface,
+            borderWidth: 1,
+            borderColor: theme.border,
+            borderRadius: 14,
+            padding: 14,
+            textAlignVertical: 'top',
+            fontFamily: 'monospace',
+            fontSize: 14,
+            lineHeight: 21
+          }}
+        />
 
-            <TextInput
-              accessibilityLabel={mode === 'movies' ? 'JSON фильмов' : 'JSON музыки'}
-              value={value}
-              onChangeText={(next) => {
-                setValue(next)
-                setSubmitError('')
-              }}
-              multiline
-              autoCapitalize="none"
-              autoCorrect={false}
-              spellCheck={false}
-              placeholder={
-                mode === 'movies'
-                  ? '[{ "title": "Аркейн", "type": "animated_series" }]'
-                  : '[{ "title": "Blinding Lights", "type": "track" }]'
-              }
-              placeholderTextColor={theme.muted}
-              style={{
-                minHeight: 300,
-                color: theme.text,
-                backgroundColor: theme.surface,
-                borderWidth: 1,
-                borderColor: theme.border,
-                borderRadius: 14,
-                padding: 14,
-                textAlignVertical: 'top',
-                fontFamily: 'monospace',
-                fontSize: 14,
-                lineHeight: 21
-              }}
-            />
-
-            {error ? <ErrorState message={error} /> : null}
-            {!error && parsed.items.length > 0 ? (
-              <Label muted>Готово к добавлению: {parsed.items.length}</Label>
-            ) : null}
-
-            <Button
-              label={
-                busy
-                  ? 'Добавление…'
-                  : parsed.items.length > 1
-                    ? `Добавить ${parsed.items.length}`
-                    : 'Добавить'
-              }
-              selected
-              disabled={busy || parsed.items.length === 0 || Boolean(parsed.error)}
-              onPress={() => void submit()}
-            />
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-    </Modal>
-  )
-}
+        {error ? <ErrorState message={error} /> : null}
+        {!error && parsed.items.length > 0 ? (
+          <Label muted>Готово к добавлению: {parsed.items.length}</Label>
+        ) : null}
+      </ScrollView>
+    </AppDialog>
+  )}

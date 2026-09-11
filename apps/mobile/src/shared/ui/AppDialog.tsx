@@ -96,7 +96,7 @@ export function AppDialog({
           accessibilityLabel={title}
           style={{
             width: fullscreen ? '100%' : sheet ? '100%' : Math.max(280, Math.min(width - 32, 540)),
-            height: fullscreen ? '100%' : undefined,
+            height: fullscreen ? '100%' : sheet ? Math.min(height * 0.92, 820) : undefined,
             maxHeight: fullscreen ? undefined : Math.max(320, height * (sheet ? 0.92 : 0.85)),
             alignSelf: 'center',
             overflow: 'hidden',
@@ -189,7 +189,7 @@ export function AppDialog({
             ) : null}
           </View>
 
-          <View style={{ minHeight: 0, flex: fullscreen ? 1 : undefined }}>{children}</View>
+          <View style={{ minHeight: 0, flex: fullscreen || sheet ? 1 : undefined }}>{children}</View>
 
           {footer && !fullscreen ? (
             <View
