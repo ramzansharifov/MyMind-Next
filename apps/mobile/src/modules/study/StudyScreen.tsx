@@ -16,6 +16,7 @@ import { useCollection } from '../../shared/hooks/useCollection'
 import { DocumentEditor } from '../../shared/ui/DocumentEditor'
 import { DocumentReader, type DocumentRevealRequest } from '../../shared/ui/DocumentReader'
 import { FormSheet } from '../../shared/ui/FormSheet'
+import { ActionMenu } from '../../shared/ui/ActionMenu'
 import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
 import { useToast } from '../../shared/ui/ToastProvider'
 import type { StudyRichTextInternalLink } from '../../shared/ui/studyRichText'
@@ -882,20 +883,32 @@ export function StudyScreen({
                 item.type === 'folder' ? setFolderId(item.id) : openMaterial(item.id)
               }
             >
-              <Button label="Изменить" onPress={() => editNode(item)} />
-              <Button label="Код" onPress={() => setCodeNodeId(item.id)} />
-              <Button label="↑" disabled={index === 0} onPress={() => reorder(item, -1)} />
-              <Button
-                label="↓"
-                disabled={index === children.length - 1}
-                onPress={() => reorder(item, 1)}
-              />
-              <Button label="Копия" disabled={pendingAction} onPress={() => duplicate(item)} />
-              <Button
-                label="Удалить"
-                danger
+              <ActionMenu
+                title={item.title}
                 disabled={pendingAction}
-                onPress={() => confirmDelete(item)}
+                items={[
+                  { label: 'Изменить', icon: 'edit', onPress: () => editNode(item) },
+                  { label: 'Открыть код', icon: 'study', onPress: () => setCodeNodeId(item.id) },
+                  {
+                    label: 'Переместить выше',
+                    icon: 'move',
+                    disabled: index === 0,
+                    onPress: () => reorder(item, -1)
+                  },
+                  {
+                    label: 'Переместить ниже',
+                    icon: 'move',
+                    disabled: index === children.length - 1,
+                    onPress: () => reorder(item, 1)
+                  },
+                  { label: 'Создать копию', icon: 'add', onPress: () => duplicate(item) },
+                  {
+                    label: 'Удалить',
+                    icon: 'delete',
+                    danger: true,
+                    onPress: () => confirmDelete(item)
+                  }
+                ]}
               />
             </Row>
           )}
