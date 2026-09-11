@@ -487,4 +487,5 @@ export function WorkoutProgressSheet({
         </View>
       </ScrollView>
     </AppDialog>
-  )}
+  )
+}

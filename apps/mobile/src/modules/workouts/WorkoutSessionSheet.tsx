@@ -476,4 +476,5 @@ export function WorkoutSessionSheet({
         </View>
       </ScrollView>
     </AppDialog>
-  )}
+  )
+}

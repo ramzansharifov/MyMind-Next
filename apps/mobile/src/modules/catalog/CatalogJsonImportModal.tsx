@@ -177,4 +177,5 @@ export function CatalogJsonImportModal({
         ) : null}
       </ScrollView>
     </AppDialog>
-  )}
+  )
+}
