@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import { FlatList, TextInput, View } from 'react-native'
+import { FlatList, Pressable, Text, TextInput, View } from 'react-native'
 import {
   TASK_GROUP_COLORS,
   TASK_GROUP_ICONS,
@@ -21,6 +21,7 @@ import {
 } from '../../shared/ui/primitives'
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { choiceField, textField, type FormSpec } from '../../shared/ui/form-model'
+import { AppIcon } from '../../shared/ui/icons'
 import { useTheme } from '../../shared/ui/theme'
 import { quickTaskInput, taskEditorInput, taskSearchText } from './task-presentation'
 
@@ -180,7 +181,7 @@ export function TasksScreen(): React.JSX.Element {
           <IconButton
             label={groupsView ? 'Создать группу' : 'Создать задачу'}
             icon="add"
-            selected
+            primary
             onPress={() => (groupsView ? editGroup() : edit())}
           />
         </View>
@@ -212,7 +213,7 @@ export function TasksScreen(): React.JSX.Element {
               <IconButton
                 label="Добавить задачу"
                 icon="add"
-                selected
+                primary
                 disabled={!quickTitle.trim() || state.pending}
                 onPress={quickAdd}
               />
@@ -301,50 +302,156 @@ export function TasksScreen(): React.JSX.Element {
           ListEmptyComponent={<EmptyState />}
           renderItem={({ item }) => {
             const groupName = item.groupId ? groupById.get(item.groupId) : null
+            const completed = item.status === 'completed'
+
             return (
-              <Row
-                title={item.title}
-                leadingIcon="tasks"
-                subtitle={[groupName, item.status === 'completed' ? 'Выполнено' : 'Активная']
-                  .filter(Boolean)
-                  .join(' · ')}
-                onPress={() => toggle(item)}
+              <View
+                style={{
+                  position: 'relative',
+                  minHeight: 66,
+                  marginBottom: 8,
+                  overflow: 'hidden',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  borderWidth: 1,
+                  borderColor: theme.border,
+                  borderRadius: 16,
+                  backgroundColor: completed ? theme.success + '0E' : theme.surface
+                }}
               >
-                <IconButton
-                  label={item.status === 'active' ? 'Выполнить' : 'Вернуть'}
-                  icon={item.status === 'active' ? 'check' : 'reset'}
-                  selected={item.status === 'completed'}
-                  compact
-                  disabled={state.pending}
-                  onPress={() => toggle(item)}
-                />
-                <IconButton
-                  label="Перенести"
-                  icon="move"
-                  compact
-                  disabled={state.pending}
-                  onPress={() => move(item)}
-                />
-                <IconButton
-                  label="Изменить"
-                  icon="edit"
-                  compact
-                  disabled={state.pending}
-                  onPress={() => edit(item)}
-                />
-                <IconButton
-                  label="Удалить"
-                  icon="delete"
-                  compact
-                  danger
-                  disabled={state.pending}
-                  onPress={() =>
-                    state.confirmDelete('Удалить задачу?', () => {
-                      api.deleteTask({ id: item.id })
-                    })
+                {completed ? (
+                  <View
+                    pointerEvents="none"
+                    style={{
+                      position: 'absolute',
+                      top: 8,
+                      bottom: 8,
+                      left: 0,
+                      width: 2,
+                      borderTopRightRadius: 2,
+                      borderBottomRightRadius: 2,
+                      backgroundColor: theme.success
+                    }}
+                  />
+                ) : null}
+
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    completed ? 'Вернуть задачу ' + item.title : 'Выполнить задачу ' + item.title
                   }
-                />
-              </Row>
+                  onPress={() => toggle(item)}
+                  disabled={state.pending}
+                  style={({ pressed }) => ({
+                    flex: 1,
+                    minWidth: 0,
+                    minHeight: 64,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 11,
+                    paddingLeft: 14,
+                    paddingRight: 6,
+                    paddingVertical: 11,
+                    opacity: pressed ? 0.72 : 1
+                  })}
+                >
+                  <View
+                    style={{
+                      width: 22,
+                      height: 22,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: 11,
+                      borderWidth: 1,
+                      borderColor: completed ? theme.success : theme.muted,
+                      backgroundColor: completed ? theme.success + '22' : 'transparent'
+                    }}
+                  >
+                    {completed ? (
+                      <AppIcon name="check" size={13} strokeWidth={3} color={theme.success} />
+                    ) : null}
+                  </View>
+
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text
+                      numberOfLines={2}
+                      style={{
+                        color: completed ? theme.muted : theme.text,
+                        fontSize: 14,
+                        lineHeight: 20,
+                        fontWeight: '600',
+                        textDecorationLine: completed ? 'line-through' : 'none',
+                        textDecorationColor: completed ? theme.success : undefined
+                      }}
+                    >
+                      {item.title}
+                    </Text>
+                    {groupName ? (
+                      <View
+                        style={{
+                          alignSelf: 'flex-start',
+                          marginTop: 6,
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: 5,
+                          borderRadius: 8,
+                          borderWidth: 1,
+                          borderColor: theme.accent + '2E',
+                          backgroundColor: theme.accent + '14',
+                          paddingHorizontal: 7,
+                          paddingVertical: 3
+                        }}
+                      >
+                        <AppIcon name="folder" size={11} color={theme.accent} />
+                        <Text
+                          numberOfLines={1}
+                          style={{ maxWidth: 120, color: theme.accent, fontSize: 10.5 }}
+                        >
+                          {groupName}
+                        </Text>
+                      </View>
+                    ) : null}
+                  </View>
+                </Pressable>
+
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingRight: 6
+                  }}
+                >
+                  <IconButton
+                    label="Перенести"
+                    icon="move"
+                    compact
+                    ghost
+                    disabled={state.pending}
+                    onPress={() => move(item)}
+                  />
+                  <IconButton
+                    label="Изменить"
+                    icon="edit"
+                    compact
+                    ghost
+                    disabled={state.pending}
+                    onPress={() => edit(item)}
+                  />
+                  <IconButton
+                    label="Удалить"
+                    icon="delete"
+                    compact
+                    ghost
+                    danger
+                    disabled={state.pending}
+                    onPress={() =>
+                      state.confirmDelete('Удалить задачу?', () => {
+                        api.deleteTask({ id: item.id })
+                      })
+                    }
+                  />
+                </View>
+              </View>
             )
           }}
         />
