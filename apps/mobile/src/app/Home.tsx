@@ -1,15 +1,16 @@
 import { useCallback, useEffect, useState } from 'react'
-import { FlatList, Text, View } from 'react-native'
+import { FlatList, Pressable, Text, View } from 'react-native'
 import type { CalendarUnreadReminderRecord } from '@mymind/contracts/calendar'
 import type { HabitUnreadReminderRecord } from '@mymind/contracts/habits'
 import { isHabitScheduledOn, localDateKey } from '@mymind/core/habits'
 import { formatMoneyMinor } from '@mymind/core/finance-money'
-import { Button, ErrorState, Label, Row } from '../shared/ui/primitives'
+import { ErrorState, IconButton } from '../shared/ui/primitives'
+import { AppIcon } from '../shared/ui/icons'
 import { messageFor } from '../shared/ui/form-model'
 import { useTheme } from '../shared/ui/theme'
+import { routeIcons, type Route } from './navigation'
 import { subscribeDataChanges } from './changes'
 import type { MobileServices } from './services'
-import type { Route } from './MobileApp'
 
 interface HomeCard {
   route: Route
@@ -24,6 +25,7 @@ export function Home({
   services: MobileServices
   navigate(route: Route): void
 }): React.JSX.Element {
+  const theme = useTheme()
   const [error, setError] = useState('')
   const [cards, setCards] = useState<HomeCard[]>([])
   const [calendarReminders, setCalendarReminders] = useState<CalendarUnreadReminderRecord[]>([])
@@ -60,55 +62,72 @@ export function Home({
         {
           route: 'tasks',
           title: 'Задачи',
-          subtitle: `${tasks.filter((task) => task.status === 'active').length} активных · ${tasks.filter((task) => task.status === 'active' && task.dueDate && task.dueDate < date).length} просрочено`
+          subtitle:
+            tasks.filter((task) => task.status === 'active').length +
+            ' активных · ' +
+            tasks.filter((task) => task.status === 'active' && task.dueDate && task.dueDate < date)
+              .length +
+            ' просрочено'
         },
         {
           route: 'habits',
-          title: 'Привычки сегодня',
-          subtitle: `${complete.length} из ${scheduled.length} выполнено${unreadHabits.length > 0 ? ` · ${unreadHabits.length} непрочит.` : ''}`
+          title: 'Привычки',
+          subtitle: complete.length + ' из ' + scheduled.length + ' выполнено'
         },
         {
           route: 'study',
           title: 'Обучение',
-          subtitle: `${studyNodes.filter((node) => node.type === 'material').length} материалов · ${studyNodes.filter((node) => node.type === 'folder').length} папок`
+          subtitle:
+            studyNodes.filter((node) => node.type === 'material').length +
+            ' материалов · ' +
+            studyNodes.filter((node) => node.type === 'folder').length +
+            ' папок'
         },
         {
           route: 'notes',
           title: 'Заметки',
-          subtitle: `${notes.length} ${notes.length === 1 ? 'заметка' : 'заметок'}`
+          subtitle: notes.length + ' ' + (notes.length === 1 ? 'заметка' : 'заметок')
         },
         {
           route: 'boards',
           title: 'Доски',
-          subtitle: `${boards.filter((node) => node.type === 'board').length} досок`
+          subtitle: boards.filter((node) => node.type === 'board').length + ' досок'
         },
         {
           route: 'calendar',
-          title: 'Сегодня в календаре',
-          subtitle: `${
-            events.length
-              ? events
-                  .slice(0, 3)
-                  .map((event) => event.title)
-                  .join(' · ')
-              : 'Свободный день'
-          }${unreadCalendar.length > 0 ? ` · ${unreadCalendar.length} непрочит.` : ''}`
+          title: 'Календарь',
+          subtitle: events.length
+            ? events
+                .slice(0, 2)
+                .map((event) => event.title)
+                .join(' · ')
+            : 'Свободный день'
         },
-        { route: 'diary', title: 'Дневник', subtitle: 'Запишите мысли о сегодняшнем дне' },
+        { route: 'diary', title: 'Дневник', subtitle: 'Мысли и записи дня' },
         {
           route: 'workouts',
           title: 'Тренировки',
-          subtitle: `${workouts.sessions.length} тренировок · ${workouts.programs.filter((program) => program.status === 'active').length} активных программ`
+          subtitle:
+            workouts.sessions.length +
+            ' тренировок · ' +
+            workouts.programs.filter((program) => program.status === 'active').length +
+            ' активных'
         },
         {
           route: 'nutrition',
           title: 'Питание',
-          subtitle: `${Math.round(nutrition.day.nutrients.calories)} ккал · ${nutrition.day.waterMl} мл воды`
+          subtitle:
+            Math.round(nutrition.day.nutrients.calories) +
+            ' ккал · ' +
+            nutrition.day.waterMl +
+            ' мл'
         },
         {
           route: 'finance',
           title: 'Финансы',
-          subtitle: `${formatMoneyMinor(finance.totalBalanceMinor, finance.settings.baseCurrencyCode)}${finance.totalBalanceComplete ? '' : ' · не все курсы заданы'}`
+          subtitle:
+            formatMoneyMinor(finance.totalBalanceMinor, finance.settings.baseCurrencyCode) +
+            (finance.totalBalanceComplete ? '' : ' · неполные курсы')
         },
         {
           route: 'passwords',
@@ -116,18 +135,18 @@ export function Home({
           subtitle: passwordVault.initialized
             ? passwordVault.unlocked
               ? 'Хранилище открыто'
-              : 'Хранилище защищено и заблокировано'
-            : 'Настройте зашифрованное хранилище'
+              : 'Хранилище заблокировано'
+            : 'Хранилище не настроено'
         },
         {
           route: 'movies',
           title: 'Фильмы',
-          subtitle: `${services.movies.listMoviesOverview().movies.length} в коллекции`
+          subtitle: services.movies.listMoviesOverview().movies.length + ' в коллекции'
         },
         {
           route: 'music',
           title: 'Музыка',
-          subtitle: `${services.music.listMusicOverview().items.length} в коллекции`
+          subtitle: services.music.listMusicOverview().items.length + ' в коллекции'
         }
       ])
       setError('')
@@ -175,21 +194,80 @@ export function Home({
       {error ? <ErrorState message={error} retry={refresh} /> : null}
       <FlatList
         data={cards}
+        numColumns={2}
         keyExtractor={(item) => item.route}
+        columnWrapperStyle={{ gap: 10 }}
+        contentContainerStyle={{ paddingBottom: 12, gap: 10 }}
         onRefresh={refresh}
         refreshing={refreshing}
         ListHeaderComponent={
-          <View style={{ paddingBottom: 20, gap: 16 }}>
-            <View>
-              <Label title>
+          <View style={{ paddingBottom: 4, gap: 14 }}>
+            <View
+              style={{
+                minHeight: 128,
+                justifyContent: 'flex-end',
+                overflow: 'hidden',
+                borderWidth: 1,
+                borderColor: theme.border,
+                borderRadius: 24,
+                backgroundColor: theme.surface,
+                padding: 18,
+                elevation: 2
+              }}
+            >
+              <View
+                style={{
+                  position: 'absolute',
+                  width: 170,
+                  height: 170,
+                  borderRadius: 85,
+                  top: -90,
+                  right: -30,
+                  backgroundColor: theme.accent + '13'
+                }}
+              />
+              <View
+                style={{
+                  position: 'absolute',
+                  width: 110,
+                  height: 110,
+                  borderRadius: 55,
+                  bottom: -72,
+                  left: -34,
+                  backgroundColor: theme.accent + '08'
+                }}
+              />
+              <Text
+                style={{
+                  color: theme.accent,
+                  fontSize: 10,
+                  fontWeight: '700',
+                  letterSpacing: 1.4
+                }}
+              >
+                СЕГОДНЯ
+              </Text>
+              <Text
+                style={{
+                  marginTop: 5,
+                  color: theme.text,
+                  fontSize: 23,
+                  lineHeight: 29,
+                  fontWeight: '700',
+                  letterSpacing: -0.45
+                }}
+              >
                 {new Date().toLocaleDateString('ru-RU', {
                   day: 'numeric',
                   month: 'long',
                   weekday: 'long'
                 })}
-              </Label>
-              <Label muted>Ваш день, в вашем ритме.</Label>
+              </Text>
+              <Text style={{ marginTop: 4, color: theme.muted, fontSize: 13, lineHeight: 19 }}>
+                Ваш день, в вашем ритме.
+              </Text>
             </View>
+
             <HomeReminderInbox
               calendarReminders={calendarReminders}
               habitReminders={habitReminders}
@@ -198,11 +276,102 @@ export function Home({
               acknowledgeCalendar={acknowledgeCalendar}
               acknowledgeHabit={acknowledgeHabit}
             />
+
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingHorizontal: 2,
+                paddingTop: 2
+              }}
+            >
+              <Text style={{ color: theme.text, fontSize: 14, fontWeight: '700' }}>Разделы</Text>
+              <Text style={{ color: theme.muted, fontSize: 11 }}>{cards.length}</Text>
+            </View>
           </View>
         }
-        renderItem={({ item }) => (
-          <Row title={item.title} subtitle={item.subtitle} onPress={() => navigate(item.route)} />
-        )}
+        renderItem={({ item }) => {
+          const hasNotification =
+            (item.route === 'calendar' && calendarReminders.length > 0) ||
+            (item.route === 'habits' && habitReminders.length > 0)
+
+          return (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={item.title}
+              onPress={() => navigate(item.route)}
+              style={({ pressed }) => ({
+                flex: 1,
+                minHeight: 126,
+                justifyContent: 'space-between',
+                padding: 14,
+                borderWidth: 1,
+                borderColor: theme.border,
+                borderRadius: 18,
+                backgroundColor: pressed ? theme.raised : theme.surface,
+                opacity: pressed ? 0.78 : 1,
+                elevation: 1
+              })}
+            >
+              <View
+                style={{
+                  width: 38,
+                  height: 38,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: 13,
+                  borderWidth: 1,
+                  borderColor: theme.accent + '28',
+                  backgroundColor: theme.accent + '11'
+                }}
+              >
+                <AppIcon name={routeIcons[item.route]} size={18} color={theme.accent} />
+                {hasNotification ? (
+                  <View
+                    accessibilityLabel="Есть непрочитанные напоминания"
+                    style={{
+                      position: 'absolute',
+                      top: -3,
+                      right: -3,
+                      width: 8,
+                      height: 8,
+                      borderRadius: 4,
+                      backgroundColor: theme.error,
+                      borderWidth: 2,
+                      borderColor: theme.surface
+                    }}
+                  />
+                ) : null}
+              </View>
+
+              <View style={{ gap: 4 }}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 6
+                  }}
+                >
+                  <Text
+                    numberOfLines={1}
+                    style={{ flex: 1, color: theme.text, fontSize: 14, fontWeight: '600' }}
+                  >
+                    {item.title}
+                  </Text>
+                  <AppIcon name="forward" size={15} color={theme.muted} />
+                </View>
+                <Text
+                  numberOfLines={2}
+                  style={{ color: theme.muted, fontSize: 11, lineHeight: 16 }}
+                >
+                  {item.subtitle}
+                </Text>
+              </View>
+            </Pressable>
+          )
+        }}
       />
     </View>
   )
@@ -232,14 +401,29 @@ function HomeReminderInbox({
       style={{
         borderWidth: 1,
         borderColor: theme.border,
-        borderRadius: 16,
+        borderRadius: 20,
         backgroundColor: theme.surface,
         padding: 12,
-        gap: 10
+        gap: 9,
+        elevation: 1
       }}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Text style={{ color: theme.text, fontSize: 15, fontWeight: '800' }}>Напоминания</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <View
+          style={{
+            width: 34,
+            height: 34,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: 11,
+            backgroundColor: theme.accent + '12'
+          }}
+        >
+          <AppIcon name="info" size={16} color={theme.accent} />
+        </View>
+        <Text style={{ flex: 1, color: theme.text, fontSize: 14, fontWeight: '700' }}>
+          Напоминания
+        </Text>
         <View
           style={{
             minWidth: 24,
@@ -256,18 +440,24 @@ function HomeReminderInbox({
 
       {calendarReminders.slice(0, 3).map((reminder) => (
         <ReminderCard
-          key={`calendar-${reminder.deliveryId}`}
+          key={'calendar-' + reminder.deliveryId}
           title={reminder.title}
-          subtitle={`Календарь · ${reminder.occurrenceDate}${reminder.eventTime ? ` · ${reminder.eventTime}` : ''}`}
+          subtitle={
+            'Календарь · ' +
+            reminder.occurrenceDate +
+            (reminder.eventTime ? ' · ' + reminder.eventTime : '')
+          }
           onOpen={openCalendar}
           onAcknowledge={() => acknowledgeCalendar(reminder.deliveryId)}
         />
       ))}
       {habitReminders.slice(0, 3).map((reminder) => (
         <ReminderCard
-          key={`habit-${reminder.deliveryId}`}
+          key={'habit-' + reminder.deliveryId}
           title={reminder.title}
-          subtitle={`Привычка · ${reminder.occurrenceDate} · ${reminder.preferredTime}`}
+          subtitle={
+            'Привычка · ' + reminder.occurrenceDate + ' · ' + reminder.preferredTime
+          }
           onOpen={openHabits}
           onAcknowledge={() => acknowledgeHabit(reminder.deliveryId)}
         />
@@ -292,25 +482,32 @@ function ReminderCard({
   onAcknowledge(): void
 }): React.JSX.Element {
   const theme = useTheme()
+
   return (
     <View
       style={{
+        minHeight: 60,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
         borderWidth: 1,
         borderColor: theme.border,
-        borderRadius: 13,
+        borderRadius: 14,
         backgroundColor: theme.raised,
-        padding: 11,
-        gap: 9
+        paddingHorizontal: 11,
+        paddingVertical: 9
       }}
     >
-      <View style={{ gap: 3 }}>
-        <Text style={{ color: theme.text, fontSize: 13, fontWeight: '700' }}>{title}</Text>
-        <Text style={{ color: theme.muted, fontSize: 11 }}>{subtitle}</Text>
+      <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+        <Text numberOfLines={1} style={{ color: theme.text, fontSize: 13, fontWeight: '600' }}>
+          {title}
+        </Text>
+        <Text numberOfLines={2} style={{ color: theme.muted, fontSize: 10.5, lineHeight: 15 }}>
+          {subtitle}
+        </Text>
       </View>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-        <Button label="Открыть" onPress={onOpen} />
-        <Button label="Прочитано" onPress={onAcknowledge} />
-      </View>
+      <IconButton label="Открыть" icon="forward" compact onPress={onOpen} />
+      <IconButton label="Прочитано" icon="check" compact selected onPress={onAcknowledge} />
     </View>
   )
 }
