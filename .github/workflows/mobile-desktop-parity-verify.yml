@@ -52,6 +52,7 @@ jobs:
             apps/mobile/src/modules/habits/HabitsScreen.tsx \
             apps/mobile/src/modules/notes/NotesScreen.tsx \
             apps/mobile/src/modules/nutrition/NutritionScreen.tsx \
+            apps/mobile/src/modules/passwords/PasswordsScreen.tsx \
             apps/mobile/src/modules/study/StudyScreen.tsx \
             apps/mobile/src/modules/tasks/TasksScreen.tsx \
             apps/mobile/src/shared/hooks/useCollection.ts \
@@ -96,6 +97,7 @@ jobs:
               apps/mobile/src/modules/habits/HabitsScreen.tsx \
               apps/mobile/src/modules/notes/NotesScreen.tsx \
               apps/mobile/src/modules/nutrition/NutritionScreen.tsx \
+              apps/mobile/src/modules/passwords/PasswordsScreen.tsx \
               apps/mobile/src/modules/study/StudyScreen.tsx \
               apps/mobile/src/modules/tasks/TasksScreen.tsx \
               apps/mobile/src/shared/hooks/useCollection.ts \

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { InteractionManager, Pressable, Text, View } from 'react-native'
 import { AppDialog } from './AppDialog'
 import { AppIcon, type AppIconName } from './icons'
 import { IconButton } from './primitives'
@@ -59,7 +59,7 @@ export function ActionMenu({
                 onPress={() => {
                   if (item.disabled) return
                   setOpen(false)
-                  item.onPress()
+                  InteractionManager.runAfterInteractions(() => item.onPress())
                 }}
                 style={({ pressed }) => ({
                   minHeight: 52,

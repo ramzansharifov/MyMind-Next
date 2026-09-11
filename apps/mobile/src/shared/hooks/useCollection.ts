@@ -77,7 +77,24 @@ export function useCollection<T>(read: () => T): CollectionState<T> {
       description: explanation,
       tone: 'danger',
       onConfirm: () => {
-        mutate(operation, 'Удалено')
+        if (guard.current) throw new Error('Другая операция уже выполняется')
+        guard.current = true
+        setPending(true)
+        setError('')
+        try {
+          operation()
+          notifyDataChanged()
+          refresh()
+          toast.success('Удалено')
+        } catch (reason) {
+          const message = messageFor(reason)
+          setError(message)
+          toast.error(message)
+          throw reason
+        } finally {
+          guard.current = false
+          setPending(false)
+        }
       }
     })
   }
