@@ -1,6 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
 import {
-  Alert,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -22,6 +21,7 @@ import {
 } from '@mymind/core/validation/workouts'
 import { Button, ErrorState, Label } from '../../shared/ui/primitives'
 import { messageFor, nullableNumeric, numeric } from '../../shared/ui/form-model'
+import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
 import { useTheme } from '../../shared/ui/theme'
 
 interface DraftSet {
@@ -57,6 +57,7 @@ export function WorkoutSessionSheet({
   close(): void
 }): React.JSX.Element {
   const theme = useTheme()
+  const confirm = useConfirmation()
   const counter = useRef(0)
   const activeExercises = useMemo(
     () =>
@@ -111,10 +112,14 @@ export function WorkoutSessionSheet({
   const nextKey = (prefix: string): string => `${prefix}-${++counter.current}`
   const requestClose = (): void => {
     if (pending) return
-    Alert.alert('Закрыть тренировку?', 'Несохранённые изменения будут потеряны.', [
-      { text: 'Продолжить', style: 'cancel' },
-      { text: 'Не сохранять', style: 'destructive', onPress: close }
-    ])
+    void confirm({
+      title: 'Закрыть тренировку?',
+      description: 'Несохранённые изменения будут потеряны.',
+      confirmLabel: 'Не сохранять',
+      tone: 'warning',
+      notice: null,
+      onConfirm: close
+    })
   }
   const selectedExercise = (exerciseId: string): WorkoutExerciseRecord | undefined =>
     exercises.find((exercise) => exercise.id === exerciseId)

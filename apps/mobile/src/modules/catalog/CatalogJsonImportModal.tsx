@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
 import {
-  Alert,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -14,6 +13,7 @@ import type { CreateMusicItemInput } from '@mymind/contracts/music'
 import { parseMoviesJson, parseMusicJson } from '@mymind/core/catalog-json-import'
 import { Button, ErrorState, Label } from '../../shared/ui/primitives'
 import { messageFor } from '../../shared/ui/form-model'
+import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
 import { useTheme } from '../../shared/ui/theme'
 
 const MOVIE_EXAMPLE = `[
@@ -61,6 +61,7 @@ export function CatalogJsonImportModal({
   importMusic
 }: CatalogJsonImportModalProps): React.JSX.Element {
   const theme = useTheme()
+  const confirm = useConfirmation()
   const [value, setValue] = useState('')
   const [busy, setBusy] = useState(false)
   const [submitError, setSubmitError] = useState('')
@@ -81,10 +82,14 @@ export function CatalogJsonImportModal({
       close()
       return
     }
-    Alert.alert('Закрыть импорт?', 'Введённый JSON будет потерян.', [
-      { text: 'Продолжить', style: 'cancel' },
-      { text: 'Закрыть', style: 'destructive', onPress: close }
-    ])
+    void confirm({
+      title: 'Закрыть импорт?',
+      description: 'Введённый JSON будет потерян.',
+      confirmLabel: 'Закрыть',
+      tone: 'warning',
+      notice: null,
+      onConfirm: close
+    })
   }
 
   const submit = async (): Promise<void> => {

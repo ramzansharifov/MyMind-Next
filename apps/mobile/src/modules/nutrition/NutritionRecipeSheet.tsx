@@ -1,6 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
 import {
-  Alert,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -21,6 +20,7 @@ import {
 } from '@mymind/core/validation/nutrition'
 import { notifyDataChanged } from '../../app/changes'
 import { messageFor, numeric } from '../../shared/ui/form-model'
+import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
 import { Button, ErrorState, Label, SearchField } from '../../shared/ui/primitives'
 import { useTheme } from '../../shared/ui/theme'
 
@@ -36,6 +36,7 @@ export function NutritionRecipeSheet({
   close(): void
 }): React.JSX.Element {
   const theme = useTheme()
+  const confirm = useConfirmation()
   const [name, setName] = useState(recipe?.name ?? '')
   const [description, setDescription] = useState(recipe?.description ?? '')
   const [servings, setServings] = useState(String(recipe?.servings ?? 1))
@@ -65,10 +66,14 @@ export function NutritionRecipeSheet({
 
   const requestClose = (): void => {
     if (!dirty) return close()
-    Alert.alert('Отменить изменения?', 'Несохранённые изменения будут потеряны.', [
-      { text: 'Продолжить', style: 'cancel' },
-      { text: 'Не сохранять', style: 'destructive', onPress: close }
-    ])
+    void confirm({
+      title: 'Отменить изменения?',
+      description: 'Несохранённые изменения будут потеряны.',
+      confirmLabel: 'Не сохранять',
+      tone: 'warning',
+      notice: null,
+      onConfirm: close
+    })
   }
   const submit = (): void => {
     if (guard.current) return

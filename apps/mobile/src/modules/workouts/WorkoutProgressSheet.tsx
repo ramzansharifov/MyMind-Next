@@ -1,6 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
 import {
-  Alert,
   Image,
   KeyboardAvoidingView,
   Modal,
@@ -24,6 +23,7 @@ import {
 } from '@mymind/core/validation/workouts'
 import { Button, ErrorState, Label } from '../../shared/ui/primitives'
 import { messageFor, nullableNumeric, numeric } from '../../shared/ui/form-model'
+import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
 import { useTheme } from '../../shared/ui/theme'
 
 interface DraftMetric {
@@ -58,6 +58,7 @@ export function WorkoutProgressSheet({
   close(): void
 }): React.JSX.Element {
   const theme = useTheme()
+  const confirm = useConfirmation()
   const counter = useRef(0)
   const selectableExercises = useMemo(
     () =>
@@ -99,10 +100,14 @@ export function WorkoutProgressSheet({
     exercises.find((exercise) => exercise.id === id)
   const requestClose = (): void => {
     if (pending) return
-    Alert.alert('Закрыть запись прогресса?', 'Несохранённые изменения будут потеряны.', [
-      { text: 'Продолжить', style: 'cancel' },
-      { text: 'Не сохранять', style: 'destructive', onPress: close }
-    ])
+    void confirm({
+      title: 'Закрыть запись прогресса?',
+      description: 'Несохранённые изменения будут потеряны.',
+      confirmLabel: 'Не сохранять',
+      tone: 'warning',
+      notice: null,
+      onConfirm: close
+    })
   }
   const addMetric = (): void => {
     const used = new Set(metrics.map((metric) => metric.exerciseId))
@@ -144,21 +149,24 @@ export function WorkoutProgressSheet({
 
   const removePhoto = (photo: WorkoutProgressPhotoRecord): void => {
     if (!deletePhoto || pending) return
-    Alert.alert('Удалить фотографию?', 'Файл будет удалён с этого устройства.', [
-      { text: 'Отмена', style: 'cancel' },
-      {
-        text: 'Удалить',
-        style: 'destructive',
-        onPress: () => {
-          setPending(true)
-          setError('')
-          void deletePhoto(photo)
-            .then(() => setPhotos((current) => current.filter((item) => item.id !== photo.id)))
-            .catch((reason: unknown) => setError(messageFor(reason)))
-            .finally(() => setPending(false))
+    void confirm({
+      title: 'Удалить фотографию?',
+      description: 'Файл будет удалён с этого устройства.',
+      tone: 'danger',
+      onConfirm: async () => {
+        setPending(true)
+        setError('')
+        try {
+          await deletePhoto(photo)
+          setPhotos((current) => current.filter((item) => item.id !== photo.id))
+        } catch (reason) {
+          setError(messageFor(reason))
+          throw reason
+        } finally {
+          setPending(false)
         }
       }
-    ])
+    })
   }
 
   const submit = async (): Promise<void> => {
