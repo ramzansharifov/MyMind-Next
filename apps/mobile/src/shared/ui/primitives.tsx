@@ -88,7 +88,7 @@ export function Button({
           style={{
             color: foreground,
             fontSize: compact ? 13 : 14,
-            fontWeight: '650'
+            fontWeight: '600'
           }}
         >
           {label}
@@ -193,7 +193,7 @@ export function Row({
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text
             numberOfLines={2}
-            style={{ color: theme.text, fontSize: 15, lineHeight: 21, fontWeight: '650' }}
+            style={{ color: theme.text, fontSize: 15, lineHeight: 21, fontWeight: '600' }}
           >
             {title}
           </Text>
