@@ -346,37 +346,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
             void webSearch(searchQuery)
           }}
         />
-        <MobileCreateAction
-        actions={
-          mode === 'movies'
-            ? [
-                {
-                  key: 'movie',
-                  label: 'Добавить фильм',
-                  description: 'Создать запись фильма или сериала',
-                  icon: 'movies',
-                  onPress: () => editMovie()
-                }
-              ]
-            : [
-                {
-                  key: 'track',
-                  label: 'Добавить трек',
-                  description: 'Создать новую музыкальную запись',
-                  icon: 'music',
-                  onPress: () => editTrack()
-                },
-                {
-                  key: 'playlist',
-                  label: 'Новый плейлист',
-                  description: 'Создать плейлист и добавить в него треки',
-                  icon: 'folder',
-                  onPress: () => editPlaylist()
-                }
-              ]
-        }
-      />
-      {form && <FormSheet spec={form} close={() => setForm(null)} />}
+        {form && <FormSheet spec={form} close={() => setForm(null)} />}
       </View>
     )
   }
@@ -502,6 +472,36 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
         />
       )}
 
+      <MobileCreateAction
+        actions={
+          mode === 'movies'
+            ? [
+                {
+                  key: 'movie',
+                  label: 'Добавить фильм',
+                  description: 'Создать запись фильма или сериала',
+                  icon: 'movies',
+                  onPress: () => editMovie()
+                }
+              ]
+            : [
+                {
+                  key: 'track',
+                  label: 'Добавить трек',
+                  description: 'Создать новую музыкальную запись',
+                  icon: 'music',
+                  onPress: () => editTrack()
+                },
+                {
+                  key: 'playlist',
+                  label: 'Новый плейлист',
+                  description: 'Создать плейлист и добавить в него треки',
+                  icon: 'folder',
+                  onPress: () => editPlaylist()
+                }
+              ]
+        }
+      />
       {form && <FormSheet spec={form} close={() => setForm(null)} />}
       {mode === 'movies' && jsonImportOpen && (
         <CatalogJsonImportModal
