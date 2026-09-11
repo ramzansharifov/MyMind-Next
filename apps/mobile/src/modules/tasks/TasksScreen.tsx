@@ -16,11 +16,11 @@ import {
   ErrorState,
   IconButton,
   LoadingState,
-  Row,
   SearchField
 } from '../../shared/ui/primitives'
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { ActionMenu } from '../../shared/ui/ActionMenu'
+import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
 import { choiceField, textField, type FormSpec } from '../../shared/ui/form-model'
 import { AppIcon } from '../../shared/ui/icons'
 import { useTheme } from '../../shared/ui/theme'
@@ -257,7 +257,7 @@ export function TasksScreen(): React.JSX.Element {
           keyExtractor={(item) => item.id}
           ListEmptyComponent={<EmptyState />}
           renderItem={({ item }) => (
-            <Row
+            <WorkspaceNodeCard
               title={item.name}
               subtitle={
                 (state.data?.tasks.filter((task) => task.groupId === item.id).length ?? 0) +
@@ -268,32 +268,33 @@ export function TasksScreen(): React.JSX.Element {
                 setGroup(item.id)
                 setGroupsView(false)
               }}
-            >
-              <ActionMenu
-                title={item.name}
-                items={[
-                  {
-                    label: 'Изменить группу',
-                    icon: 'edit',
-                    onPress: () => editGroup(item)
-                  },
-                  {
-                    label: 'Удалить группу',
-                    icon: 'delete',
-                    danger: true,
-                    onPress: () =>
-                      state.confirmDelete(
-                        'Удалить группу?',
-                        () => {
-                          api.deleteTaskGroup({ id: item.id })
-                          if (group === item.id) setGroup(null)
-                        },
-                        'Сами задачи сохранятся и будут перенесены в «Без группы».'
-                      )
-                  }
-                ]}
-              />
-            </Row>
+              action={
+                <ActionMenu
+                  title={item.name}
+                  items={[
+                    {
+                      label: 'Изменить группу',
+                      icon: 'edit',
+                      onPress: () => editGroup(item)
+                    },
+                    {
+                      label: 'Удалить группу',
+                      icon: 'delete',
+                      danger: true,
+                      onPress: () =>
+                        state.confirmDelete(
+                          'Удалить группу?',
+                          () => {
+                            api.deleteTaskGroup({ id: item.id })
+                            if (group === item.id) setGroup(null)
+                          },
+                          'Сами задачи сохранятся и будут перенесены в «Без группы».'
+                        )
+                    }
+                  ]}
+                />
+              }
+            />
           )}
         />
       ) : (

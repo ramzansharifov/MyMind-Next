@@ -16,12 +16,12 @@ import {
   ErrorState,
   IconButton,
   LoadingState,
-  Row,
   SearchField
 } from '../../shared/ui/primitives'
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { AppDateField } from '../../shared/ui/FormControls'
 import { ActionMenu } from '../../shared/ui/ActionMenu'
+import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
 import { choiceField, textField, type FormSpec } from '../../shared/ui/form-model'
 import { HabitsReportsView } from './HabitsReportsView'
 
@@ -202,39 +202,40 @@ export function HabitsScreen(): React.JSX.Element {
           }
           ListEmptyComponent={<EmptyState />}
           renderItem={({ item }) => (
-            <Row
+            <WorkspaceNodeCard
               title={item.name}
               leadingIcon="folder"
               onPress={() => {
                 setGroup(item.id)
                 setView('all')
               }}
-            >
-              <ActionMenu
-                title={item.name}
-                items={[
-                  {
-                    label: 'Изменить группу',
-                    icon: 'edit',
-                    onPress: () => editGroup(item)
-                  },
-                  {
-                    label: 'Удалить группу',
-                    icon: 'delete',
-                    danger: true,
-                    onPress: () =>
-                      state.confirmDelete(
-                        'Удалить группу?',
-                        () => {
-                          api.deleteHabitGroup({ id: item.id })
-                          if (group === item.id) setGroup(undefined)
-                        },
-                        'Привычки сохранятся без группы.'
-                      )
-                  }
-                ]}
-              />
-            </Row>
+              action={
+                <ActionMenu
+                  title={item.name}
+                  items={[
+                    {
+                      label: 'Изменить группу',
+                      icon: 'edit',
+                      onPress: () => editGroup(item)
+                    },
+                    {
+                      label: 'Удалить группу',
+                      icon: 'delete',
+                      danger: true,
+                      onPress: () =>
+                        state.confirmDelete(
+                          'Удалить группу?',
+                          () => {
+                            api.deleteHabitGroup({ id: item.id })
+                            if (group === item.id) setGroup(undefined)
+                          },
+                          'Привычки сохранятся без группы.'
+                        )
+                    }
+                  ]}
+                />
+              }
+            />
           )}
         />
       ) : view === 'report' ? (
@@ -250,7 +251,7 @@ export function HabitsScreen(): React.JSX.Element {
             const entry = state.data?.entries.find((e) => e.habitId === item.id)
             const scheduled = isHabitScheduledOn(item, date)
             return (
-              <Row
+              <WorkspaceNodeCard
                 title={item.title}
                 leadingIcon="habits"
                 subtitle={[
@@ -268,88 +269,89 @@ export function HabitsScreen(): React.JSX.Element {
                   .filter(Boolean)
                   .join(' · ')}
                 onPress={() => edit(item)}
-              >
-                {scheduled && (
-                  <>
-                    <IconButton
-                      label={item.trackingType === 'count' ? 'Добавить единицу' : 'Выполнить'}
-                      icon="check"
-                      compact
-                      selected={(entry?.value ?? 0) >= item.targetValue && !entry?.skipped}
+                action={
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    {scheduled ? (
+                      <IconButton
+                        label={item.trackingType === 'count' ? 'Добавить единицу' : 'Выполнить'}
+                        icon="check"
+                        compact
+                        selected={(entry?.value ?? 0) >= item.targetValue && !entry?.skipped}
+                        disabled={state.pending}
+                        onPress={() =>
+                          state.mutate(() => {
+                            api.upsertHabitEntry(
+                              schema.upsertHabitEntryInputSchema.parse({
+                                habitId: item.id,
+                                date,
+                                value: item.trackingType === 'count' ? (entry?.value ?? 0) + 1 : 1,
+                                skipped: false
+                              })
+                            )
+                          })
+                        }
+                      />
+                    ) : null}
+                    <ActionMenu
                       disabled={state.pending}
-                      onPress={() =>
-                        state.mutate(() => {
-                          api.upsertHabitEntry(
-                            schema.upsertHabitEntryInputSchema.parse({
-                              habitId: item.id,
-                              date,
-                              value: item.trackingType === 'count' ? (entry?.value ?? 0) + 1 : 1,
-                              skipped: false
-                            })
-                          )
-                        })
-                      }
+                      title={item.title}
+                      items={[
+                        ...(scheduled
+                          ? [
+                              {
+                                key: 'skip',
+                                label: 'Пропустить',
+                                icon: 'skip' as const,
+                                onPress: () =>
+                                  state.mutate(() => {
+                                    api.upsertHabitEntry({
+                                      habitId: item.id,
+                                      date,
+                                      value: 0,
+                                      skipped: true
+                                    })
+                                  })
+                              }
+                            ]
+                          : []),
+                        ...(entry
+                          ? [
+                              {
+                                key: 'reset',
+                                label: 'Сбросить отметку',
+                                icon: 'reset' as const,
+                                onPress: () =>
+                                  state.mutate(() => {
+                                    api.deleteHabitEntry({ habitId: item.id, date })
+                                  })
+                              }
+                            ]
+                          : []),
+                        {
+                          key: 'edit',
+                          label: 'Изменить',
+                          icon: 'edit',
+                          onPress: () => edit(item)
+                        },
+                        {
+                          key: 'delete',
+                          label: 'Удалить привычку',
+                          icon: 'delete',
+                          danger: true,
+                          onPress: () =>
+                            state.confirmDelete(
+                              'Удалить привычку?',
+                              () => {
+                                api.deleteHabit({ id: item.id })
+                              },
+                              'Будет удалена и история отметок.'
+                            )
+                        }
+                      ]}
                     />
-                  </>
-                )}
-                <ActionMenu
-                  disabled={state.pending}
-                  title={item.title}
-                  items={[
-                    ...(scheduled
-                      ? [
-                          {
-                            key: 'skip',
-                            label: 'Пропустить',
-                            icon: 'skip' as const,
-                            onPress: () =>
-                              state.mutate(() => {
-                                api.upsertHabitEntry({
-                                  habitId: item.id,
-                                  date,
-                                  value: 0,
-                                  skipped: true
-                                })
-                              })
-                          }
-                        ]
-                      : []),
-                    ...(entry
-                      ? [
-                          {
-                            key: 'reset',
-                            label: 'Сбросить отметку',
-                            icon: 'reset' as const,
-                            onPress: () =>
-                              state.mutate(() => {
-                                api.deleteHabitEntry({ habitId: item.id, date })
-                              })
-                          }
-                        ]
-                      : []),
-                    {
-                      key: 'edit',
-                      label: 'Изменить',
-                      icon: 'edit',
-                      onPress: () => edit(item)
-                    },
-                    {
-                      key: 'delete',
-                      label: 'Удалить привычку',
-                      icon: 'delete',
-                      danger: true,
-                      onPress: () =>
-                        state.confirmDelete(
-                          'Удалить привычку?',
-                          () => {
-                            api.deleteHabit({ id: item.id })
-                          },
-                          'Будет удалена и история отметок.'
-                        )
-                    }
-                  ]}
-                />
-              </Row>
+                  </View>
+                }
+              />
             )
           }}
         />

@@ -14,6 +14,7 @@ import { FormSheet } from '../../shared/ui/FormSheet'
 import { ActionMenu } from '../../shared/ui/ActionMenu'
 import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
 import { useToast } from '../../shared/ui/ToastProvider'
+import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
 import { choiceField, messageFor, textField, type FormSpec } from '../../shared/ui/form-model'
 import {
   Button,
@@ -405,7 +406,7 @@ export function NotesScreen({
           keyExtractor={(item) => item.id}
           ListEmptyComponent={<EmptyState text="Групп пока нет." />}
           renderItem={({ item }) => (
-            <Row
+            <WorkspaceNodeCard
               title={item.title}
               subtitle={
                 (overview.data?.notes.filter((note) => note.groupId === item.id).length ?? 0) +
@@ -416,37 +417,38 @@ export function NotesScreen({
                 setGroupId(item.id)
                 setGroupsView(false)
               }}
-            >
-              <ActionMenu
-                title={item.title}
-                items={[
-                  {
-                    label: 'Изменить группу',
-                    icon: 'edit',
-                    onPress: () => editGroup(item)
-                  },
-                  {
-                    label: 'Удалить группу',
-                    icon: 'delete',
-                    danger: true,
-                    onPress: () => {
-                      void confirm({
-                        title: 'Удалить группу?',
-                        description: 'Заметки сохранятся и перейдут в раздел «Без группы».',
-                        tone: 'danger',
-                        onConfirm: () => {
-                          api.deleteNoteGroup(item.id)
-                          if (groupId === item.id) setGroupId(undefined)
-                          overview.refresh()
-                          notifyDataChanged()
-                          toast.success('Группа удалена')
-                        }
-                      })
+              action={
+                <ActionMenu
+                  title={item.title}
+                  items={[
+                    {
+                      label: 'Изменить группу',
+                      icon: 'edit',
+                      onPress: () => editGroup(item)
+                    },
+                    {
+                      label: 'Удалить группу',
+                      icon: 'delete',
+                      danger: true,
+                      onPress: () => {
+                        void confirm({
+                          title: 'Удалить группу?',
+                          description: 'Заметки сохранятся и перейдут в раздел «Без группы».',
+                          tone: 'danger',
+                          onConfirm: () => {
+                            api.deleteNoteGroup(item.id)
+                            if (groupId === item.id) setGroupId(undefined)
+                            overview.refresh()
+                            notifyDataChanged()
+                            toast.success('Группа удалена')
+                          }
+                        })
+                      }
                     }
-                  }
-                ]}
-              />
-            </Row>
+                  ]}
+                />
+              }
+            />
           )}
         />
       ) : (
