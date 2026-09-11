@@ -10,7 +10,7 @@ permissions:
 
 concurrency:
   group: mobile-desktop-parity-verification
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   verify-mobile-desktop-parity:
@@ -45,12 +45,17 @@ jobs:
             apps/mobile/src/app/Settings.tsx \
             apps/mobile/src/app/navigation.ts \
             apps/mobile/src/modules/boards/BoardsScreen.tsx \
+            apps/mobile/src/modules/calendar/CalendarScreen.tsx \
+            apps/mobile/src/modules/diary/DiaryScreen.tsx \
+            apps/mobile/src/modules/finance/finance-forms.ts \
             apps/mobile/src/modules/finance/FinanceScreen.tsx \
             apps/mobile/src/modules/habits/HabitsScreen.tsx \
             apps/mobile/src/modules/notes/NotesScreen.tsx \
+            apps/mobile/src/modules/nutrition/NutritionScreen.tsx \
             apps/mobile/src/modules/study/StudyScreen.tsx \
             apps/mobile/src/modules/tasks/TasksScreen.tsx \
             apps/mobile/src/shared/hooks/useCollection.ts \
+            apps/mobile/src/shared/ui/form-model.ts \
             apps/mobile/src/shared/ui/ActionMenu.tsx \
             apps/mobile/src/shared/ui/AppDialog.tsx \
             apps/mobile/src/shared/ui/ConfirmationProvider.tsx \
@@ -84,12 +89,17 @@ jobs:
               apps/mobile/src/app/Settings.tsx \
               apps/mobile/src/app/navigation.ts \
               apps/mobile/src/modules/boards/BoardsScreen.tsx \
+              apps/mobile/src/modules/calendar/CalendarScreen.tsx \
+              apps/mobile/src/modules/diary/DiaryScreen.tsx \
+              apps/mobile/src/modules/finance/finance-forms.ts \
               apps/mobile/src/modules/finance/FinanceScreen.tsx \
               apps/mobile/src/modules/habits/HabitsScreen.tsx \
               apps/mobile/src/modules/notes/NotesScreen.tsx \
+              apps/mobile/src/modules/nutrition/NutritionScreen.tsx \
               apps/mobile/src/modules/study/StudyScreen.tsx \
               apps/mobile/src/modules/tasks/TasksScreen.tsx \
               apps/mobile/src/shared/hooks/useCollection.ts \
+              apps/mobile/src/shared/ui/form-model.ts \
               apps/mobile/src/shared/ui/ActionMenu.tsx \
               apps/mobile/src/shared/ui/AppDialog.tsx \
               apps/mobile/src/shared/ui/ConfirmationProvider.tsx \
