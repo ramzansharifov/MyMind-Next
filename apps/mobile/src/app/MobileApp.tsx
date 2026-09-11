@@ -1,13 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import {
-  BackHandler,
-  FlatList,
-  Platform,
-  Pressable,
-  Text,
-  useColorScheme,
-  View
-} from 'react-native'
+import { BackHandler, FlatList, Platform, Pressable, Text, useColorScheme, View } from 'react-native'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar'
 import { appearanceTokens } from '@mymind/design'
@@ -18,10 +10,18 @@ import {
 import { appearancePreferencesSchema } from '@mymind/core/validation/preferences'
 import { ServicesContext } from './context'
 import { createMobileServices, type MobileServices } from './services'
+import {
+  moreRoutes,
+  primaryTabs,
+  routeIcons,
+  routeTitles,
+  type Route
+} from './navigation'
 import { exportMobileBackup, restoreMobileBackup } from '../shared/backup/mobileBackup'
 import { openMobileDatabase } from '../shared/storage/mobileDatabase'
 import { ThemeContext } from '../shared/ui/theme'
-import { ErrorState, Label, LoadingState, Row } from '../shared/ui/primitives'
+import { ErrorState, LoadingState } from '../shared/ui/primitives'
+import { AppIcon } from '../shared/ui/icons'
 import { messageFor } from '../shared/ui/form-model'
 import { StudyScreen } from '../modules/study/StudyScreen'
 import { BoardsScreen } from '../modules/boards/BoardsScreen'
@@ -39,46 +39,9 @@ import { Home } from './Home'
 import { Settings } from './Settings'
 import { ReminderStatus } from './ReminderStatus'
 
-export type Route =
-  | 'home'
-  | 'study'
-  | 'boards'
-  | 'notes'
-  | 'tasks'
-  | 'habits'
-  | 'more'
-  | 'movies'
-  | 'music'
-  | 'calendar'
-  | 'diary'
-  | 'workouts'
-  | 'nutrition'
-  | 'finance'
-  | 'passwords'
-  | 'settings'
+export type { Route } from './navigation'
 
 type BackupOperation = 'export' | 'restore'
-
-const titles: Record<Route, string> = {
-  home: 'Главная',
-  study: 'Обучение',
-  boards: 'Доски',
-  notes: 'Заметки',
-  tasks: 'Задачи',
-  habits: 'Привычки',
-  more: 'Ещё',
-  movies: 'Фильмы',
-  music: 'Музыка',
-  calendar: 'Календарь',
-  diary: 'Дневник',
-  workouts: 'Тренировки',
-  nutrition: 'Питание',
-  finance: 'Финансы',
-  passwords: 'Пароли',
-  settings: 'Настройки'
-}
-
-const primaryTabs = ['home', 'notes', 'tasks', 'habits', 'more'] as const
 
 let databasePromise: ReturnType<typeof openMobileDatabase> | undefined
 let servicesPromise: Promise<MobileServices> | undefined
@@ -234,47 +197,108 @@ export default function MobileApp(): React.JSX.Element {
     }
   }, [backupOperation])
 
-  const moreRoutes = [
-    'study',
-    'boards',
-    'calendar',
-    'diary',
-    'workouts',
-    'nutrition',
-    'finance',
-    'passwords',
-    'movies',
-    'music',
-    'settings'
-  ] as Route[]
   const inMore = !['home', 'notes', 'tasks', 'habits', 'more'].includes(route)
 
   return (
     <SafeAreaProvider>
       <ThemeContext.Provider value={palette}>
         <SafeAreaView style={{ flex: 1, backgroundColor: palette.background }}>
-          <StatusBar style={dark ? 'light' : 'dark'} />
+          <StatusBar style={dark ? 'light' : 'dark'} backgroundColor={palette.background} />
+
           {!immersive ? (
-            <View style={{ paddingHorizontal: 20, paddingTop: 14, paddingBottom: 16, gap: 4 }}>
-              <Label muted>MYMIND</Label>
-              <Label title>{titles[route]}</Label>
+            <View style={{ paddingHorizontal: 16, paddingTop: 10, paddingBottom: 12 }}>
+              <View
+                style={{
+                  minHeight: 66,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 12,
+                  paddingHorizontal: 14,
+                  paddingVertical: 11,
+                  overflow: 'hidden',
+                  borderWidth: 1,
+                  borderColor: palette.border,
+                  borderRadius: 22,
+                  backgroundColor: palette.surface,
+                  elevation: 2
+                }}
+              >
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: -54,
+                    right: -24,
+                    width: 132,
+                    height: 132,
+                    borderRadius: 66,
+                    backgroundColor: palette.accent + '0D'
+                  }}
+                />
+                <View
+                  style={{
+                    width: 42,
+                    height: 42,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderWidth: 1,
+                    borderColor: palette.accent + '32',
+                    borderRadius: 14,
+                    backgroundColor: palette.accent + '14'
+                  }}
+                >
+                  <AppIcon name={routeIcons[route]} size={21} color={palette.accent} />
+                </View>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text
+                    style={{
+                      color: palette.muted,
+                      fontSize: 10,
+                      fontWeight: '700',
+                      letterSpacing: 1.25
+                    }}
+                  >
+                    MYMIND
+                  </Text>
+                  <Text
+                    numberOfLines={1}
+                    style={{
+                      marginTop: 1,
+                      color: palette.text,
+                      fontSize: 21,
+                      lineHeight: 27,
+                      fontWeight: '700',
+                      letterSpacing: -0.35
+                    }}
+                  >
+                    {routeTitles[route]}
+                  </Text>
+                </View>
+              </View>
             </View>
           ) : null}
+
           {error ? (
-            <ErrorState
-              message={error}
-              retry={() => {
-                setError('')
-                setAttempt((value) => value + 1)
-              }}
-            />
+            <View style={{ paddingHorizontal: 16 }}>
+              <ErrorState
+                message={error}
+                retry={() => {
+                  setError('')
+                  setAttempt((value) => value + 1)
+                }}
+              />
+            </View>
           ) : null}
+
           {!services ? (
             !error && <LoadingState />
           ) : (
             <ServicesContext.Provider value={services} key={servicesEpoch}>
               {!backupOperation ? <ReminderStatus services={services} /> : null}
-              <View style={{ flex: 1, paddingHorizontal: immersive ? 0 : 16 }} key={route}>
+
+              <View
+                style={{ flex: 1, paddingHorizontal: immersive ? 0 : 16, minHeight: 0 }}
+                key={route}
+              >
                 {route === 'home' ? (
                   <Home services={services} navigate={navigate} />
                 ) : route === 'study' ? (
@@ -311,22 +335,74 @@ export default function MobileApp(): React.JSX.Element {
                 ) : (
                   <FlatList
                     data={moreRoutes}
+                    numColumns={2}
                     keyExtractor={(item) => item}
+                    columnWrapperStyle={{ gap: 10 }}
+                    contentContainerStyle={{ paddingBottom: 12, gap: 10 }}
                     renderItem={({ item }) => (
-                      <Row title={titles[item]} onPress={() => navigate(item)} />
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={routeTitles[item]}
+                        onPress={() => navigate(item)}
+                        style={({ pressed }) => ({
+                          flex: 1,
+                          minHeight: 106,
+                          justifyContent: 'space-between',
+                          padding: 14,
+                          borderWidth: 1,
+                          borderColor: palette.border,
+                          borderRadius: 18,
+                          backgroundColor: pressed ? palette.raised : palette.surface,
+                          opacity: pressed ? 0.78 : 1,
+                          elevation: 1
+                        })}
+                      >
+                        <View
+                          style={{
+                            width: 36,
+                            height: 36,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            borderRadius: 12,
+                            borderWidth: 1,
+                            borderColor: palette.accent + '26',
+                            backgroundColor: palette.accent + '10'
+                          }}
+                        >
+                          <AppIcon name={routeIcons[item]} size={18} color={palette.accent} />
+                        </View>
+                        <View
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: 8
+                          }}
+                        >
+                          <Text style={{ color: palette.text, fontSize: 14, fontWeight: '600' }}>
+                            {routeTitles[item]}
+                          </Text>
+                          <AppIcon name="forward" size={17} color={palette.muted} />
+                        </View>
+                      </Pressable>
                     )}
                   />
                 )}
               </View>
+
               {!immersive && !backupOperation ? (
                 <View
                   style={{
+                    marginHorizontal: 10,
+                    marginTop: 8,
+                    marginBottom: 6,
+                    padding: 5,
                     flexDirection: 'row',
-                    justifyContent: 'space-around',
-                    borderTopWidth: 1,
+                    borderWidth: 1,
                     borderColor: palette.border,
-                    paddingVertical: 8,
-                    gap: 2
+                    borderRadius: 22,
+                    backgroundColor: palette.surface,
+                    elevation: 4
                   }}
                 >
                   {primaryTabs.map((tab) => {
@@ -335,26 +411,34 @@ export default function MobileApp(): React.JSX.Element {
                       <Pressable
                         key={tab}
                         accessibilityRole="tab"
-                        accessibilityLabel={titles[tab]}
+                        accessibilityLabel={routeTitles[tab]}
                         accessibilityState={{ selected }}
                         onPress={() => navigate(tab)}
                         style={({ pressed }) => ({
                           flex: 1,
-                          minHeight: 52,
+                          minHeight: 54,
                           alignItems: 'center',
                           justifyContent: 'center',
-                          paddingHorizontal: 2,
-                          opacity: pressed ? 0.65 : 1
+                          gap: 3,
+                          borderRadius: 17,
+                          backgroundColor: selected ? palette.accent + '16' : 'transparent',
+                          opacity: pressed ? 0.68 : 1
                         })}
                       >
+                        <AppIcon
+                          name={routeIcons[tab]}
+                          size={20}
+                          color={selected ? palette.accent : palette.muted}
+                        />
                         <Text
                           style={{
-                            fontSize: 12,
-                            fontWeight: '600',
+                            fontSize: 10.5,
+                            lineHeight: 13,
+                            fontWeight: selected ? '700' : '600',
                             color: selected ? palette.accent : palette.muted
                           }}
                         >
-                          {titles[tab]}
+                          {routeTitles[tab]}
                         </Text>
                       </Pressable>
                     )
