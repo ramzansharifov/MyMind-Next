@@ -123,6 +123,7 @@ export function WorkspaceNodeCard({
   title,
   subtitle,
   leadingIcon,
+  leading,
   onPress,
   onLongPress,
   action,
@@ -131,6 +132,7 @@ export function WorkspaceNodeCard({
   title: string
   subtitle?: string
   leadingIcon?: AppIconName
+  leading?: ReactNode
   onPress?(): void
   onLongPress?(): void
   action?: ReactNode
@@ -170,7 +172,9 @@ export function WorkspaceNodeCard({
           backgroundColor: pressed && onPress ? theme.raised : 'transparent'
         })}
       >
-        {leadingIcon ? (
+        {leading ? (
+          leading
+        ) : leadingIcon ? (
           <View
             style={{
               width: 36,

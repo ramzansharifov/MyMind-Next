@@ -8,10 +8,11 @@ import { Button, ErrorState, Label } from './primitives'
 import { useToast } from './ToastProvider'
 import { notifyDataChanged } from '../../app/changes'
 import { PreferredTimes } from './PreferredTimes'
+import { AppColorGrid, AppIconGrid, VisualGroupPreview } from './VisualPickers'
 
 function presentationFor(spec: FormSpec): AppDialogPresentation {
   const complex = spec.fields.some((field) =>
-    ['multiline', 'times', 'multiple'].includes(field.kind ?? 'text')
+    ['multiline', 'times', 'multiple', 'icon', 'color'].includes(field.kind ?? 'text')
   )
   return spec.fields.length <= 4 && !complex ? 'card' : 'sheet'
 }
@@ -165,6 +166,21 @@ export function FormSheet({ spec, close }: { spec: FormSpec; close(): void }): R
                 optional={values[field.key] === null}
                 onChangeText={(value) => set(field.key, value)}
               />
+            ) : field.kind === 'icon' ? (
+              <AppIconGrid
+                family={field.iconFamily ?? 'folder'}
+                value={String(values[field.key] ?? '')}
+                choices={field.choices ?? []}
+                disabled={pending}
+                onChange={(value) => set(field.key, value)}
+              />
+            ) : field.kind === 'color' ? (
+              <AppColorGrid
+                value={String(values[field.key] ?? '')}
+                choices={field.choices ?? []}
+                disabled={pending}
+                onChange={(value) => set(field.key, value)}
+              />
             ) : field.kind === 'choice' ? (
               <AppSelect
                 label={field.label}
@@ -198,6 +214,17 @@ export function FormSheet({ spec, close }: { spec: FormSpec; close(): void }): R
             )}
           </View>
         ))}
+        {spec.preview ? (
+          <VisualGroupPreview
+            family={spec.preview.iconFamily}
+            title={String(values[spec.preview.titleKey] ?? '')}
+            icon={String(values[spec.preview.iconKey] ?? 'folder')}
+            colorKey={
+              spec.preview.colorKey ? String(values[spec.preview.colorKey] ?? '') : undefined
+            }
+            description={spec.preview.description}
+          />
+        ) : null}
       </ScrollView>
     </AppDialog>
   )

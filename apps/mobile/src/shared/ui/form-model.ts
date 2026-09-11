@@ -13,16 +13,28 @@ export type FormField = {
     | 'list'
     | 'boolean'
     | 'choice'
+    | 'icon'
+    | 'color'
     | 'multiple'
     | 'times'
   choices?: readonly { value: string | null; label: string }[]
+  iconFamily?: import('./visual-options').VisualIconFamily
   hint?: string
+}
+
+export interface FormPreviewSpec {
+  titleKey: string
+  iconKey: string
+  colorKey?: string
+  iconFamily: import('./visual-options').VisualIconFamily
+  description: string
 }
 
 export interface FormSpec {
   title: string
   initial: FormValues
   fields: FormField[]
+  preview?: FormPreviewSpec
   save(values: FormValues): void | Promise<void>
 }
 
@@ -44,6 +56,20 @@ export const choiceField = (
   label: string,
   choices: readonly { value: string | null; label: string }[]
 ): FormField => ({ key, label, kind: 'choice', choices })
+
+export const iconField = (
+  key: string,
+  label: string,
+  choices: readonly { value: string | null; label: string }[],
+  iconFamily: import('./visual-options').VisualIconFamily
+): FormField => ({ key, label, kind: 'icon', choices, iconFamily })
+
+export const colorField = (
+  key: string,
+  label: string,
+  choices: readonly { value: string | null; label: string }[],
+  hint?: string
+): FormField => ({ key, label, kind: 'color', choices, hint })
 
 export const numeric = (value: unknown): number =>
   typeof value === 'number'
