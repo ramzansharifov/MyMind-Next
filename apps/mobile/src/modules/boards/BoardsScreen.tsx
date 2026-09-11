@@ -200,6 +200,15 @@ export function BoardsScreen({
             ]
           : [])
       ],
+      preview:
+        type === 'folder'
+          ? {
+              titleKey: 'title',
+              iconKey: 'icon',
+              iconFamily: 'folder',
+              description: 'Так папка будет выглядеть в разделе досок.'
+            }
+          : undefined,
       save: (values) => {
         const input = boardValidation.createBoardNodeInputSchema.parse({
           type,
@@ -244,6 +253,15 @@ export function BoardsScreen({
             ? [choiceField('parentId', 'Расположение', folderChoices)]
             : [])
       ],
+      preview:
+        node.type === 'folder' && !managedFolder
+          ? {
+              titleKey: 'title',
+              iconKey: 'icon',
+              iconFamily: 'folder',
+              description: 'Так папка будет выглядеть в разделе досок.'
+            }
+          : undefined,
       save: (values) => {
         const renamed = boardValidation.renameBoardNodeInputSchema.parse({
           id: node.id,

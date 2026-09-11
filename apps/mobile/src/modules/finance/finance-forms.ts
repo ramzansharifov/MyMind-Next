@@ -9,7 +9,8 @@ import type {
 import type { FinanceRepository } from '@mymind/persistence/finance'
 import { FINANCE_RATE_SCALE, formatMinorPlain, parseMoneyToMinor } from '@mymind/core/finance-money'
 import * as validation from '@mymind/core/validation/finance'
-import { choiceField, textField, type FormField, type FormSpec } from '../../shared/ui/form-model'
+import { choiceField, iconField, textField, type FormField, type FormSpec } from '../../shared/ui/form-model'
+import { FINANCE_ICON_CHOICES } from '../../shared/ui/visual-options'
 
 function localDateKey(timestamp = Date.now()): string {
   const date = new Date(timestamp)
@@ -58,13 +59,7 @@ export function accountForm(api: FinanceRepository, account?: FinanceAccountSumm
           : 'Например: TJS, USD, EUR.'
       ),
       ...(account ? [] : [textField('initialBalance', 'Начальный баланс')]),
-      choiceField('icon', 'Иконка', [
-        { value: 'wallet', label: 'Кошелёк' },
-        { value: 'credit-card', label: 'Карта' },
-        { value: 'banknote', label: 'Наличные' },
-        { value: 'landmark', label: 'Банк' },
-        { value: 'piggy-bank', label: 'Накопления' }
-      ])
+      iconField('icon', 'Иконка счёта', FINANCE_ICON_CHOICES, 'finance')
     ],
     save(values) {
       const currencyCode = String(values.currencyCode).trim().toUpperCase()
@@ -106,15 +101,7 @@ export function tagForm(api: FinanceRepository, tag?: FinanceTagSummary): FormSp
         { value: 'income', label: 'Доход' },
         { value: 'both', label: 'Оба' }
       ]),
-      choiceField('icon', 'Иконка', [
-        { value: 'tag', label: 'Тег' },
-        { value: 'utensils', label: 'Еда' },
-        { value: 'shopping-cart', label: 'Покупки' },
-        { value: 'car', label: 'Транспорт' },
-        { value: 'home', label: 'Дом' },
-        { value: 'briefcase', label: 'Работа' },
-        { value: 'gift', label: 'Подарок' }
-      ])
+      iconField('icon', 'Иконка тега', FINANCE_ICON_CHOICES, 'finance')
     ],
     save(values) {
       const input = { name: values.name, type: values.type, icon: values.icon }

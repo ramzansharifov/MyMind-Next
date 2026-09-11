@@ -170,6 +170,12 @@ export function NotesScreen({
         textField('title', 'Название'),
         iconField('icon', 'Иконка', FOLDER_ICON_CHOICES, 'folder')
       ],
+      preview: {
+        titleKey: 'title',
+        iconKey: 'icon',
+        iconFamily: 'folder',
+        description: 'Так группа будет выглядеть в заметках.'
+      },
       save: (values) => {
         if (group) {
           const renamed = notesValidation.renameNoteGroupInputSchema.parse({

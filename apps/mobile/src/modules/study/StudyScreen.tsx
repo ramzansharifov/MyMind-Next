@@ -452,6 +452,12 @@ export function StudyScreen({
         textField('title', 'Название'),
         iconField('icon', 'Иконка', FOLDER_ICON_CHOICES, 'folder')
       ],
+      preview: {
+        titleKey: 'title',
+        iconKey: 'icon',
+        iconFamily: 'folder',
+        description: 'Так папка будет выглядеть в обучении.'
+      },
       save: (values) => {
         const input = studyValidation.createStudyNodeInputSchema.parse({
           type: 'folder',
@@ -507,6 +513,15 @@ export function StudyScreen({
           : []),
         choiceField('parentId', 'Расположение', folderChoices)
       ],
+      preview:
+        node.type === 'folder'
+          ? {
+              titleKey: 'title',
+              iconKey: 'icon',
+              iconFamily: 'folder',
+              description: 'Так папка будет выглядеть в обучении.'
+            }
+          : undefined,
       save: async (values) => {
         if (material?.nodeId === node.id) await flush()
         const renamed = studyValidation.renameStudyNodeInputSchema.parse({
