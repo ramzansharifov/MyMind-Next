@@ -10,6 +10,7 @@ import {
   useWindowDimensions
 } from 'react-native'
 import { AppIcon, type AppIconName } from './icons'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from './theme'
 
 export type AppDialogTone = 'default' | 'danger' | 'warning'
@@ -49,6 +50,7 @@ export function AppDialog({
   showClose?: boolean
 }): React.JSX.Element {
   const theme = useTheme()
+  const insets = useSafeAreaInsets()
   const { width, height } = useWindowDimensions()
   const fullscreen = presentation === 'fullscreen'
   const sheet = presentation === 'sheet'
@@ -117,7 +119,8 @@ export function AppDialog({
               alignItems: 'center',
               gap: 12,
               paddingHorizontal: 16,
-              paddingVertical: 14,
+              paddingTop: fullscreen ? 14 + insets.top : 14,
+              paddingBottom: 14,
               borderBottomWidth: 1,
               borderBottomColor: theme.border
             }}
@@ -189,7 +192,15 @@ export function AppDialog({
             ) : null}
           </View>
 
-          <View style={{ minHeight: 0, flex: fullscreen || sheet ? 1 : undefined }}>{children}</View>
+          <View
+            style={{
+              minHeight: 0,
+              flex: fullscreen || sheet ? 1 : undefined,
+              paddingBottom: !footer && (fullscreen || sheet) ? insets.bottom : 0
+            }}
+          >
+            {children}
+          </View>
 
           {footer && !fullscreen ? (
             <View
@@ -198,7 +209,9 @@ export function AppDialog({
                 flexWrap: 'wrap',
                 justifyContent: 'flex-end',
                 gap: 8,
-                padding: 14,
+                paddingHorizontal: 14,
+              paddingTop: 14,
+              paddingBottom: 14 + (fullscreen || sheet ? insets.bottom : 0),
                 borderTopWidth: 1,
                 borderTopColor: theme.border
               }}
