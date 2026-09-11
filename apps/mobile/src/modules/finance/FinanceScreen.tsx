@@ -12,6 +12,7 @@ import { useServices } from '../../app/context'
 import { useCollection } from '../../shared/hooks/useCollection'
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { ActionMenu } from '../../shared/ui/ActionMenu'
+import { WorkspaceNodeCard, WorkspacePanel, WorkspaceStatCard } from '../../shared/ui/Workspace'
 import type { FormSpec } from '../../shared/ui/form-model'
 import {
   Button,
@@ -182,159 +183,165 @@ export function FinanceScreen(): React.JSX.Element {
   }
 
   const renderTransaction = ({ item }: { item: FinanceTransaction }): React.JSX.Element => (
-    <Row
+    <WorkspaceNodeCard
       title={operationTitle(item)}
       subtitle={operationSubtitle(item)}
       onPress={() => openForm(transactionForm(api, accounts, tags, templates, item))}
       onLongPress={() => deleteTransaction(item)}
-    >
-      <ActionMenu
-        title={operationTitle(item)}
-        items={[
-          {
-            label: 'Изменить',
-            icon: 'edit',
-            onPress: () => openForm(transactionForm(api, accounts, tags, templates, item))
-          },
-          {
-            label: 'Удалить',
-            icon: 'delete',
-            danger: true,
-            onPress: () => deleteTransaction(item)
-          }
-        ]}
-      />
-    </Row>
+      action={
+        <ActionMenu
+          title={operationTitle(item)}
+          items={[
+            {
+              label: 'Изменить',
+              icon: 'edit',
+              onPress: () => openForm(transactionForm(api, accounts, tags, templates, item))
+            },
+            {
+              label: 'Удалить',
+              icon: 'delete',
+              danger: true,
+              onPress: () => deleteTransaction(item)
+            }
+          ]}
+        />
+      }
+    />
   )
 
   const renderAccount = ({ item }: { item: FinanceAccountSummary }): React.JSX.Element => (
-    <Row
+    <WorkspaceNodeCard
       title={`${item.name} · ${formatMoneyMinor(item.balanceMinor, item.currencyCode)}`}
       subtitle={`${item.transactionCount} операций${item.periodChangeMinor ? ` · изменение ${formatMoneyMinor(item.periodChangeMinor, item.currencyCode)}` : ''}`}
+      leadingIcon="finance"
       onPress={() => openForm(accountForm(api, item))}
-    >
-      <ActionMenu
-        title={item.name}
-        items={[
-          { label: 'Изменить', icon: 'edit', onPress: () => openForm(accountForm(api, item)) },
-          item.transactionCount > 0
-            ? {
-                key: 'clear',
-                label: 'Очистить историю',
-                icon: 'reset',
-                danger: true,
-                onPress: () => clearHistory(item)
-              }
-            : {
-                key: 'delete',
-                label: 'Удалить',
-                icon: 'delete',
-                danger: true,
-                onPress: () =>
-                  state.confirmDelete(`Удалить счёт «${item.name}»?`, () => {
-                    api.deleteAccount({ id: item.id })
-                  })
-              }
-        ]}
-      />
-    </Row>
+      action={
+        <ActionMenu
+          title={item.name}
+          items={[
+            { label: 'Изменить', icon: 'edit', onPress: () => openForm(accountForm(api, item)) },
+            item.transactionCount > 0
+              ? {
+                  key: 'clear',
+                  label: 'Очистить историю',
+                  icon: 'reset',
+                  danger: true,
+                  onPress: () => clearHistory(item)
+                }
+              : {
+                  key: 'delete',
+                  label: 'Удалить',
+                  icon: 'delete',
+                  danger: true,
+                  onPress: () =>
+                    state.confirmDelete(`Удалить счёт «${item.name}»?`, () => {
+                      api.deleteAccount({ id: item.id })
+                    })
+                }
+          ]}
+        />
+      }
+    />
   )
 
   const renderTag = ({ item }: { item: FinanceTagSummary }): React.JSX.Element => (
-    <Row
+    <WorkspaceNodeCard
       title={item.name}
       subtitle={`${item.type === 'income' ? 'Доход' : item.type === 'expense' ? 'Расход' : 'Доход и расход'} · ${item.transactionCount} операций`}
       onPress={() => openForm(tagForm(api, item))}
-    >
-      <ActionMenu
-        title={item.name}
-        items={[
-          { label: 'Изменить', icon: 'edit', onPress: () => openForm(tagForm(api, item)) },
-          {
-            label: 'Удалить',
-            icon: 'delete',
-            danger: true,
-            disabled: item.transactionCount > 0 || item.linkedLimitCount > 0,
-            onPress: () =>
-              state.confirmDelete(`Удалить тег «${item.name}»?`, () => {
-                api.deleteTag({ id: item.id })
-              })
-          }
-        ]}
-      />
-    </Row>
+      action={
+        <ActionMenu
+          title={item.name}
+          items={[
+            { label: 'Изменить', icon: 'edit', onPress: () => openForm(tagForm(api, item)) },
+            {
+              label: 'Удалить',
+              icon: 'delete',
+              danger: true,
+              disabled: item.transactionCount > 0 || item.linkedLimitCount > 0,
+              onPress: () =>
+                state.confirmDelete(`Удалить тег «${item.name}»?`, () => {
+                  api.deleteTag({ id: item.id })
+                })
+            }
+          ]}
+        />
+      }
+    />
   )
 
   const renderLimit = ({ item }: { item: FinanceLimitStatus }): React.JSX.Element => (
-    <Row
+    <WorkspaceNodeCard
       title={`${item.tagId ? (tags.find((tag) => tag.id === item.tagId)?.name ?? 'Лимит') : 'Лимит'} · ${formatMoneyMinor(item.amountMinor, item.currencyCode)}`}
       subtitle={`${formatMoneyMinor(item.spentMinor, item.currencyCode)} использовано · ${Math.round(item.usagePercent)}% · ${item.state === 'active' ? 'активен' : 'пауза'}`}
       onPress={() =>
         openForm(limitForm(api, accounts, tags, data.dashboard.settings.baseCurrencyCode, item))
       }
-    >
-      <ActionMenu
-        title="Лимит"
-        items={[
-          {
-            label: 'Изменить',
-            icon: 'edit',
-            onPress: () =>
-              openForm(
-                limitForm(api, accounts, tags, data.dashboard.settings.baseCurrencyCode, item)
-              )
-          },
-          {
-            label: item.state === 'active' ? 'Поставить на паузу' : 'Возобновить',
-            icon: 'reset',
-            onPress: () =>
-              state.mutate(() => {
-                api.setLimitState({
-                  id: item.id,
-                  state: item.state === 'active' ? 'paused' : 'active'
+      action={
+        <ActionMenu
+          title="Лимит"
+          items={[
+            {
+              label: 'Изменить',
+              icon: 'edit',
+              onPress: () =>
+                openForm(
+                  limitForm(api, accounts, tags, data.dashboard.settings.baseCurrencyCode, item)
+                )
+            },
+            {
+              label: item.state === 'active' ? 'Поставить на паузу' : 'Возобновить',
+              icon: 'reset',
+              onPress: () =>
+                state.mutate(() => {
+                  api.setLimitState({
+                    id: item.id,
+                    state: item.state === 'active' ? 'paused' : 'active'
+                  })
                 })
-              })
-          },
-          {
-            label: 'Удалить',
-            icon: 'delete',
-            danger: true,
-            onPress: () =>
-              state.confirmDelete('Удалить лимит?', () => {
-                api.deleteLimit({ id: item.id })
-              })
-          }
-        ]}
-      />
-    </Row>
+            },
+            {
+              label: 'Удалить',
+              icon: 'delete',
+              danger: true,
+              onPress: () =>
+                state.confirmDelete('Удалить лимит?', () => {
+                  api.deleteLimit({ id: item.id })
+                })
+            }
+          ]}
+        />
+      }
+    />
   )
 
   const renderTemplate = ({ item }: { item: FinanceTemplate }): React.JSX.Element => (
-    <Row
+    <WorkspaceNodeCard
       title={item.name}
       subtitle={`${item.type === 'income' ? 'Доход' : item.type === 'expense' ? 'Расход' : 'Перевод'} · ${item.comment || 'без комментария'}`}
       onPress={() => openForm(templateForm(api, accounts, tags, item))}
-    >
-      <ActionMenu
-        title={item.name}
-        items={[
-          {
-            label: 'Изменить',
-            icon: 'edit',
-            onPress: () => openForm(templateForm(api, accounts, tags, item))
-          },
-          {
-            label: 'Удалить',
-            icon: 'delete',
-            danger: true,
-            onPress: () =>
-              state.confirmDelete(`Удалить шаблон «${item.name}»?`, () => {
-                api.deleteTemplate({ id: item.id })
-              })
-          }
-        ]}
-      />
-    </Row>
+      action={
+        <ActionMenu
+          title={item.name}
+          items={[
+            {
+              label: 'Изменить',
+              icon: 'edit',
+              onPress: () => openForm(templateForm(api, accounts, tags, item))
+            },
+            {
+              label: 'Удалить',
+              icon: 'delete',
+              danger: true,
+              onPress: () =>
+                state.confirmDelete(`Удалить шаблон «${item.name}»?`, () => {
+                  api.deleteTemplate({ id: item.id })
+                })
+            }
+          ]}
+        />
+      }
+    />
   )
 
   let content: React.JSX.Element
@@ -342,18 +349,27 @@ export function FinanceScreen(): React.JSX.Element {
     const dashboard = data.dashboard
     content = (
       <ScrollView contentContainerStyle={{ gap: 10, paddingBottom: 40 }}>
-        <Row
-          title={formatMoneyMinor(dashboard.totalBalanceMinor, dashboard.settings.baseCurrencyCode)}
-          subtitle={
-            dashboard.totalBalanceComplete
-              ? 'Общий баланс'
-              : `Общий баланс неполный · нет курсов: ${dashboard.missingRateCurrencies.join(', ')}`
-          }
-        />
-        <Row
-          title={`Доходы: ${formatMoneyMinor(dashboard.incomeMinor, dashboard.settings.baseCurrencyCode)}`}
-          subtitle={`Расходы: ${formatMoneyMinor(dashboard.expenseMinor, dashboard.settings.baseCurrencyCode)} · чистый поток ${formatMoneyMinor(dashboard.netMinor, dashboard.settings.baseCurrencyCode)}`}
-        />
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+          <WorkspaceStatCard
+            label="Общий баланс"
+            icon="finance"
+            value={formatMoneyMinor(
+              dashboard.totalBalanceMinor,
+              dashboard.settings.baseCurrencyCode
+            )}
+            detail={
+              dashboard.totalBalanceComplete
+                ? 'Все счета учтены'
+                : `Нет курсов: ${dashboard.missingRateCurrencies.join(', ')}`
+            }
+          />
+          <WorkspaceStatCard
+            label="Чистый поток"
+            icon="finance"
+            value={formatMoneyMinor(dashboard.netMinor, dashboard.settings.baseCurrencyCode)}
+            detail={`Доходы ${formatMoneyMinor(dashboard.incomeMinor, dashboard.settings.baseCurrencyCode)} · расходы ${formatMoneyMinor(dashboard.expenseMinor, dashboard.settings.baseCurrencyCode)}`}
+          />
+        </View>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           <Button
             label="+ Операция"
@@ -364,22 +380,24 @@ export function FinanceScreen(): React.JSX.Element {
           <Button label="+ Счёт" onPress={() => openForm(accountForm(api))} />
           <Button label="+ Тег" onPress={() => openForm(tagForm(api))} />
         </View>
-        <Label>Счета</Label>
-        {accounts.length ? (
-          accounts
-            .slice(0, 4)
-            .map((account) => <View key={account.id}>{renderAccount({ item: account })}</View>)
-        ) : (
-          <EmptyState text="Создайте первый счёт." />
-        )}
-        <Label>Последние операции</Label>
-        {dashboard.recentTransactions.length ? (
-          dashboard.recentTransactions.map((transaction) => (
-            <View key={transaction.id}>{renderTransaction({ item: transaction })}</View>
-          ))
-        ) : (
-          <EmptyState text="Операций пока нет." />
-        )}
+        <WorkspacePanel title="Счета" icon="finance">
+          {accounts.length ? (
+            accounts
+              .slice(0, 4)
+              .map((account) => <View key={account.id}>{renderAccount({ item: account })}</View>)
+          ) : (
+            <EmptyState text="Создайте первый счёт." />
+          )}
+        </WorkspacePanel>
+        <WorkspacePanel title="Последние операции" icon="finance">
+          {dashboard.recentTransactions.length ? (
+            dashboard.recentTransactions.map((transaction) => (
+              <View key={transaction.id}>{renderTransaction({ item: transaction })}</View>
+            ))
+          ) : (
+            <EmptyState text="Операций пока нет." />
+          )}
+        </WorkspacePanel>
       </ScrollView>
     )
   } else if (tab === 'transactions') {
