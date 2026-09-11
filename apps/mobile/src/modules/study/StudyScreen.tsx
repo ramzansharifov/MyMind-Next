@@ -17,6 +17,7 @@ import { DocumentEditor } from '../../shared/ui/DocumentEditor'
 import { DocumentReader, type DocumentRevealRequest } from '../../shared/ui/DocumentReader'
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { ActionMenu } from '../../shared/ui/ActionMenu'
+import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
 import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
 import { useToast } from '../../shared/ui/ToastProvider'
 import type { StudyRichTextInternalLink } from '../../shared/ui/studyRichText'
@@ -35,7 +36,6 @@ import {
   ErrorState,
   Label,
   LoadingState,
-  Row,
   SearchField
 } from '../../shared/ui/primitives'
 
@@ -876,41 +876,43 @@ export function StudyScreen({
             <EmptyState text={query.trim() ? 'Ничего не найдено.' : 'В этой папке пока пусто.'} />
           }
           renderItem={({ item, index }) => (
-            <Row
+            <WorkspaceNodeCard
               title={item.title}
               subtitle={item.type === 'folder' ? `Папка · ${item.icon ?? 'folder'}` : 'Материал'}
+              leadingIcon={item.type === 'folder' ? 'folder' : 'study'}
               onPress={() =>
                 item.type === 'folder' ? setFolderId(item.id) : openMaterial(item.id)
               }
-            >
-              <ActionMenu
-                title={item.title}
-                disabled={pendingAction}
-                items={[
-                  { label: 'Изменить', icon: 'edit', onPress: () => editNode(item) },
-                  { label: 'Открыть код', icon: 'study', onPress: () => setCodeNodeId(item.id) },
-                  {
-                    label: 'Переместить выше',
-                    icon: 'move',
-                    disabled: index === 0,
-                    onPress: () => reorder(item, -1)
-                  },
-                  {
-                    label: 'Переместить ниже',
-                    icon: 'move',
-                    disabled: index === children.length - 1,
-                    onPress: () => reorder(item, 1)
-                  },
-                  { label: 'Создать копию', icon: 'add', onPress: () => duplicate(item) },
-                  {
-                    label: 'Удалить',
-                    icon: 'delete',
-                    danger: true,
-                    onPress: () => confirmDelete(item)
-                  }
-                ]}
-              />
-            </Row>
+              action={
+                <ActionMenu
+                  title={item.title}
+                  disabled={pendingAction}
+                  items={[
+                    { label: 'Изменить', icon: 'edit', onPress: () => editNode(item) },
+                    { label: 'Открыть код', icon: 'study', onPress: () => setCodeNodeId(item.id) },
+                    {
+                      label: 'Переместить выше',
+                      icon: 'move',
+                      disabled: index === 0,
+                      onPress: () => reorder(item, -1)
+                    },
+                    {
+                      label: 'Переместить ниже',
+                      icon: 'move',
+                      disabled: index === children.length - 1,
+                      onPress: () => reorder(item, 1)
+                    },
+                    { label: 'Создать копию', icon: 'add', onPress: () => duplicate(item) },
+                    {
+                      label: 'Удалить',
+                      icon: 'delete',
+                      danger: true,
+                      onPress: () => confirmDelete(item)
+                    }
+                  ]}
+                />
+              }
+            />
           )}
         />
       )}

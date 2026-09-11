@@ -12,6 +12,7 @@ import { useCollection } from '../../shared/hooks/useCollection'
 import BoardCanvasDom, { type BoardCanvasDomRef } from './BoardCanvasDom'
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { ActionMenu } from '../../shared/ui/ActionMenu'
+import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
 import { choiceField, messageFor, textField, type FormSpec } from '../../shared/ui/form-model'
 import {
   Button,
@@ -19,7 +20,6 @@ import {
   ErrorState,
   Label,
   LoadingState,
-  Row,
   SearchField
 } from '../../shared/ui/primitives'
 import { useTheme } from '../../shared/ui/theme'
@@ -452,7 +452,7 @@ export function BoardsScreen({
             const canDelete =
               !(item.type === 'folder' && itemManaged) && !isBoardSystemRootId(item.id)
             return (
-              <Row
+              <WorkspaceNodeCard
                 title={item.title}
                 subtitle={
                   item.type === 'folder'
@@ -466,53 +466,54 @@ export function BoardsScreen({
                         : 'Доска'
                 }
                 onPress={() => (item.type === 'folder' ? setFolderId(item.id) : openBoard(item))}
-              >
-                <ActionMenu
-                  title={item.title}
-                  disabled={pending}
-                  items={[
-                    ...(item.type === 'board' || !itemManaged
-                      ? [
-                          {
-                            key: 'edit',
-                            label: 'Изменить',
-                            icon: 'edit' as const,
-                            onPress: () => editNode(item)
-                          }
-                        ]
-                      : []),
-                    ...(!itemManaged
-                      ? [
-                          {
-                            key: 'up',
-                            label: 'Переместить выше',
-                            icon: 'move' as const,
-                            disabled: index === 0,
-                            onPress: () => reorder(item, -1)
-                          },
-                          {
-                            key: 'down',
-                            label: 'Переместить ниже',
-                            icon: 'move' as const,
-                            disabled: index === children.length - 1,
-                            onPress: () => reorder(item, 1)
-                          }
-                        ]
-                      : []),
-                    ...(canDelete
-                      ? [
-                          {
-                            key: 'delete',
-                            label: 'Удалить',
-                            icon: 'delete' as const,
-                            danger: true,
-                            onPress: () => confirmDelete(item)
-                          }
-                        ]
-                      : [])
-                  ]}
-                />
-              </Row>
+                action={
+                  <ActionMenu
+                    title={item.title}
+                    disabled={pending}
+                    items={[
+                      ...(item.type === 'board' || !itemManaged
+                        ? [
+                            {
+                              key: 'edit',
+                              label: 'Изменить',
+                              icon: 'edit' as const,
+                              onPress: () => editNode(item)
+                            }
+                          ]
+                        : []),
+                      ...(!itemManaged
+                        ? [
+                            {
+                              key: 'up',
+                              label: 'Переместить выше',
+                              icon: 'move' as const,
+                              disabled: index === 0,
+                              onPress: () => reorder(item, -1)
+                            },
+                            {
+                              key: 'down',
+                              label: 'Переместить ниже',
+                              icon: 'move' as const,
+                              disabled: index === children.length - 1,
+                              onPress: () => reorder(item, 1)
+                            }
+                          ]
+                        : []),
+                      ...(canDelete
+                        ? [
+                            {
+                              key: 'delete',
+                              label: 'Удалить',
+                              icon: 'delete' as const,
+                              danger: true,
+                              onPress: () => confirmDelete(item)
+                            }
+                          ]
+                        : [])
+                    ]}
+                  />
+                }
+              />
             )
           }}
         />

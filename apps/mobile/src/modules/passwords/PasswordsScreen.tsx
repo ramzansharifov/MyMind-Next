@@ -19,6 +19,7 @@ import type { PasswordsRepository } from '@mymind/persistence/passwords'
 import { useServices } from '../../app/context'
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { ActionMenu } from '../../shared/ui/ActionMenu'
+import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
 import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
 import { useToast } from '../../shared/ui/ToastProvider'
 import { choiceField, messageFor, textField, type FormSpec } from '../../shared/ui/form-model'
@@ -362,28 +363,30 @@ export function PasswordsScreen(): React.JSX.Element {
         </View>
         {overview.groups.length ? (
           overview.groups.map((group) => (
-            <Row
+            <WorkspaceNodeCard
               key={group.id}
               title={group.name}
               subtitle={`${overview.items.filter((item) => item.groupId === group.id).length} записей · ${group.icon}`}
+              leadingIcon="folder"
               onPress={() => {
                 setGroupFilter(group.id)
                 setTab('items')
               }}
-            >
-              <ActionMenu
-                title={group.name}
-                items={[
-                  { label: 'Изменить', icon: 'edit', onPress: () => editGroup(group) },
-                  {
-                    label: 'Удалить',
-                    icon: 'delete',
-                    danger: true,
-                    onPress: () => deleteGroup(group)
-                  }
-                ]}
-              />
-            </Row>
+              action={
+                <ActionMenu
+                                title={group.name}
+                                items={[
+                                  { label: 'Изменить', icon: 'edit', onPress: () => editGroup(group) },
+                                  {
+                                    label: 'Удалить',
+                                    icon: 'delete',
+                                    danger: true,
+                                    onPress: () => deleteGroup(group)
+                                  }
+                                ]}
+                              />
+              }
+            />
           ))
         ) : (
           <EmptyState text="Групп пока нет." />
@@ -424,52 +427,54 @@ export function PasswordsScreen(): React.JSX.Element {
         </View>
         {filteredItems.length ? (
           filteredItems.map((item) => (
-            <Row
+            <WorkspaceNodeCard
               key={item.id}
               title={`${item.favorite ? '♥ ' : ''}${item.title}`}
               subtitle={itemSubtitle(item, overview)}
+              leadingIcon="passwords"
               onPress={() => openItem(item)}
-            >
-              <ActionMenu
-                title={item.title}
-                items={[
-                  ...(item.username
-                    ? [
-                        {
-                          key: 'copy-login',
-                          label: 'Скопировать логин',
-                          icon: 'copy' as const,
-                          onPress: () => void copyField(item, 'username')
-                        }
-                      ]
-                    : []),
-                  {
-                    key: 'copy-password',
-                    label: 'Скопировать пароль',
-                    icon: 'copy',
-                    onPress: () => void copyField(item, 'password')
-                  },
-                  ...(item.website
-                    ? [
-                        {
-                          key: 'website',
-                          label: 'Открыть сайт',
-                          icon: 'forward' as const,
-                          onPress: () => void openWebsite(item)
-                        }
-                      ]
-                    : []),
-                  { key: 'edit', label: 'Изменить', icon: 'edit', onPress: () => openItem(item) },
-                  {
-                    key: 'delete',
-                    label: 'Удалить',
-                    icon: 'delete',
-                    danger: true,
-                    onPress: () => deleteItem(item)
-                  }
-                ]}
-              />
-            </Row>
+              action={
+                <ActionMenu
+                                title={item.title}
+                                items={[
+                                  ...(item.username
+                                    ? [
+                                        {
+                                          key: 'copy-login',
+                                          label: 'Скопировать логин',
+                                          icon: 'copy' as const,
+                                          onPress: () => void copyField(item, 'username')
+                                        }
+                                      ]
+                                    : []),
+                                  {
+                                    key: 'copy-password',
+                                    label: 'Скопировать пароль',
+                                    icon: 'copy',
+                                    onPress: () => void copyField(item, 'password')
+                                  },
+                                  ...(item.website
+                                    ? [
+                                        {
+                                          key: 'website',
+                                          label: 'Открыть сайт',
+                                          icon: 'forward' as const,
+                                          onPress: () => void openWebsite(item)
+                                        }
+                                      ]
+                                    : []),
+                                  { key: 'edit', label: 'Изменить', icon: 'edit', onPress: () => openItem(item) },
+                                  {
+                                    key: 'delete',
+                                    label: 'Удалить',
+                                    icon: 'delete',
+                                    danger: true,
+                                    onPress: () => deleteItem(item)
+                                  }
+                                ]}
+                              />
+              }
+            />
           ))
         ) : (
           <EmptyState
