@@ -20,6 +20,7 @@ import {
   SearchField
 } from '../../shared/ui/primitives'
 import { FormSheet } from '../../shared/ui/FormSheet'
+import { ActionMenu } from '../../shared/ui/ActionMenu'
 import { choiceField, textField, type FormSpec } from '../../shared/ui/form-model'
 import { useTheme } from '../../shared/ui/theme'
 import { HabitsReportsView } from './HabitsReportsView'
@@ -221,27 +222,29 @@ export function HabitsScreen(): React.JSX.Element {
                 setView('all')
               }}
             >
-              <IconButton
-                label="Изменить группу"
-                icon="edit"
-                compact
-                onPress={() => editGroup(item)}
-              />
-              <IconButton
-                label="Удалить группу"
-                icon="delete"
-                compact
-                danger
-                onPress={() =>
-                  state.confirmDelete(
-                    'Удалить группу?',
-                    () => {
-                      api.deleteHabitGroup({ id: item.id })
-                      if (group === item.id) setGroup(undefined)
-                    },
-                    'Привычки сохранятся без группы.'
-                  )
-                }
+              <ActionMenu
+                title={item.name}
+                items={[
+                  {
+                    label: 'Изменить группу',
+                    icon: 'edit',
+                    onPress: () => editGroup(item)
+                  },
+                  {
+                    label: 'Удалить группу',
+                    icon: 'delete',
+                    danger: true,
+                    onPress: () =>
+                      state.confirmDelete(
+                        'Удалить группу?',
+                        () => {
+                          api.deleteHabitGroup({ id: item.id })
+                          if (group === item.id) setGroup(undefined)
+                        },
+                        'Привычки сохранятся без группы.'
+                      )
+                  }
+                ]}
               />
             </Row>
           )}
@@ -299,44 +302,64 @@ export function HabitsScreen(): React.JSX.Element {
                         })
                       }
                     />
-                    <IconButton
-                      label="Пропустить"
-                      icon="skip"
-                      compact
-                      onPress={() =>
-                        state.mutate(() => {
-                          api.upsertHabitEntry({ habitId: item.id, date, value: 0, skipped: true })
-                        })
-                      }
-                    />
-                    {entry && (
-                      <IconButton
-                        label="Сбросить отметку"
-                        icon="reset"
-                        compact
-                        onPress={() =>
-                          state.mutate(() => {
-                            api.deleteHabitEntry({ habitId: item.id, date })
-                          })
-                        }
-                      />
-                    )}
                   </>
                 )}
-                <IconButton
-                  label="Удалить привычку"
-                  icon="delete"
-                  compact
-                  danger
-                  onPress={() =>
-                    state.confirmDelete(
-                      'Удалить привычку?',
-                      () => {
-                        api.deleteHabit({ id: item.id })
-                      },
-                      'Будет удалена и история отметок.'
-                    )
-                  }
+                <ActionMenu
+                  disabled={state.pending}
+                  title={item.title}
+                  items={[
+                    ...(scheduled
+                      ? [
+                          {
+                            key: 'skip',
+                            label: 'Пропустить',
+                            icon: 'skip' as const,
+                            onPress: () =>
+                              state.mutate(() => {
+                                api.upsertHabitEntry({
+                                  habitId: item.id,
+                                  date,
+                                  value: 0,
+                                  skipped: true
+                                })
+                              })
+                          }
+                        ]
+                      : []),
+                    ...(entry
+                      ? [
+                          {
+                            key: 'reset',
+                            label: 'Сбросить отметку',
+                            icon: 'reset' as const,
+                            onPress: () =>
+                              state.mutate(() => {
+                                api.deleteHabitEntry({ habitId: item.id, date })
+                              })
+                          }
+                        ]
+                      : []),
+                    {
+                      key: 'edit',
+                      label: 'Изменить',
+                      icon: 'edit',
+                      onPress: () => edit(item)
+                    },
+                    {
+                      key: 'delete',
+                      label: 'Удалить привычку',
+                      icon: 'delete',
+                      danger: true,
+                      onPress: () =>
+                        state.confirmDelete(
+                          'Удалить привычку?',
+                          () => {
+                            api.deleteHabit({ id: item.id })
+                          },
+                          'Будет удалена и история отметок.'
+                        )
+                    }
+                  ]}
                 />
               </Row>
             )

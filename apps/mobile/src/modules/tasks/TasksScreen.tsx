@@ -20,6 +20,7 @@ import {
   SearchField
 } from '../../shared/ui/primitives'
 import { FormSheet } from '../../shared/ui/FormSheet'
+import { ActionMenu } from '../../shared/ui/ActionMenu'
 import { choiceField, textField, type FormSpec } from '../../shared/ui/form-model'
 import { AppIcon } from '../../shared/ui/icons'
 import { useTheme } from '../../shared/ui/theme'
@@ -268,27 +269,29 @@ export function TasksScreen(): React.JSX.Element {
                 setGroupsView(false)
               }}
             >
-              <IconButton
-                label="Изменить группу"
-                icon="edit"
-                compact
-                onPress={() => editGroup(item)}
-              />
-              <IconButton
-                label="Удалить группу"
-                icon="delete"
-                compact
-                danger
-                onPress={() =>
-                  state.confirmDelete(
-                    'Удалить группу?',
-                    () => {
-                      api.deleteTaskGroup({ id: item.id })
-                      if (group === item.id) setGroup(null)
-                    },
-                    'Сами задачи сохранятся и будут перенесены в «Без группы».'
-                  )
-                }
+              <ActionMenu
+                title={item.name}
+                items={[
+                  {
+                    label: 'Изменить группу',
+                    icon: 'edit',
+                    onPress: () => editGroup(item)
+                  },
+                  {
+                    label: 'Удалить группу',
+                    icon: 'delete',
+                    danger: true,
+                    onPress: () =>
+                      state.confirmDelete(
+                        'Удалить группу?',
+                        () => {
+                          api.deleteTaskGroup({ id: item.id })
+                          if (group === item.id) setGroup(null)
+                        },
+                        'Сами задачи сохранятся и будут перенесены в «Без группы».'
+                      )
+                  }
+                ]}
               />
             </Row>
           )}
@@ -421,34 +424,30 @@ export function TasksScreen(): React.JSX.Element {
                     paddingRight: 6
                   }}
                 >
-                  <IconButton
-                    label="Перенести"
-                    icon="move"
-                    compact
-                    ghost
+                  <ActionMenu
                     disabled={state.pending}
-                    onPress={() => move(item)}
-                  />
-                  <IconButton
-                    label="Изменить"
-                    icon="edit"
-                    compact
-                    ghost
-                    disabled={state.pending}
-                    onPress={() => edit(item)}
-                  />
-                  <IconButton
-                    label="Удалить"
-                    icon="delete"
-                    compact
-                    ghost
-                    danger
-                    disabled={state.pending}
-                    onPress={() =>
-                      state.confirmDelete('Удалить задачу?', () => {
-                        api.deleteTask({ id: item.id })
-                      })
-                    }
+                    title={item.title}
+                    items={[
+                      {
+                        label: 'Перенести',
+                        icon: 'move',
+                        onPress: () => move(item)
+                      },
+                      {
+                        label: 'Изменить',
+                        icon: 'edit',
+                        onPress: () => edit(item)
+                      },
+                      {
+                        label: 'Удалить',
+                        icon: 'delete',
+                        danger: true,
+                        onPress: () =>
+                          state.confirmDelete('Удалить задачу?', () => {
+                            api.deleteTask({ id: item.id })
+                          })
+                      }
+                    ]}
                   />
                 </View>
               </View>
