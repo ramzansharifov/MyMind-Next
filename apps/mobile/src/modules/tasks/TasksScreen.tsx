@@ -14,6 +14,7 @@ import {
   Button,
   EmptyState,
   ErrorState,
+  IconButton,
   LoadingState,
   Row,
   SearchField
@@ -172,10 +173,13 @@ export function TasksScreen(): React.JSX.Element {
         <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
           <Button
             label={groupsView ? 'К задачам' : 'Группы'}
+            icon={groupsView ? 'tasks' : 'folder'}
+            compact
             onPress={() => setGroupsView(!groupsView)}
           />
-          <Button
-            label={groupsView ? '+ Группа' : '+ Задача'}
+          <IconButton
+            label={groupsView ? 'Создать группу' : 'Создать задачу'}
+            icon="add"
             selected
             onPress={() => (groupsView ? editGroup() : edit())}
           />
@@ -205,8 +209,9 @@ export function TasksScreen(): React.JSX.Element {
                   fontSize: 16
                 }}
               />
-              <Button
-                label="Добавить"
+              <IconButton
+                label="Добавить задачу"
+                icon="add"
                 selected
                 disabled={!quickTitle.trim() || state.pending}
                 onPress={quickAdd}
@@ -252,15 +257,18 @@ export function TasksScreen(): React.JSX.Element {
           renderItem={({ item }) => (
             <Row
               title={item.name}
-              subtitle={`${state.data?.tasks.filter((task) => task.groupId === item.id).length ?? 0} задач`}
+              subtitle={(state.data?.tasks.filter((task) => task.groupId === item.id).length ?? 0) + ' задач'}
+              leadingIcon="folder"
               onPress={() => {
                 setGroup(item.id)
                 setGroupsView(false)
               }}
             >
-              <Button label="Изменить" onPress={() => editGroup(item)} />
-              <Button
-                label="Удалить"
+              <IconButton label="Изменить группу" icon="edit" compact onPress={() => editGroup(item)} />
+              <IconButton
+                label="Удалить группу"
+                icon="delete"
+                compact
                 danger
                 onPress={() =>
                   state.confirmDelete(
@@ -287,22 +295,27 @@ export function TasksScreen(): React.JSX.Element {
             const groupName = item.groupId ? groupById.get(item.groupId) : null
             return (
               <Row
-                title={`${item.status === 'completed' ? '✓ ' : ''}${item.title}`}
+                title={item.title}
+                leadingIcon="tasks"
                 subtitle={[groupName, item.status === 'completed' ? 'Выполнено' : 'Активная']
                   .filter(Boolean)
                   .join(' · ')}
                 onPress={() => toggle(item)}
               >
-                <Button
+                <IconButton
                   label={item.status === 'active' ? 'Выполнить' : 'Вернуть'}
+                  icon={item.status === 'active' ? 'check' : 'reset'}
                   selected={item.status === 'completed'}
+                  compact
                   disabled={state.pending}
                   onPress={() => toggle(item)}
                 />
-                <Button label="Перенести" disabled={state.pending} onPress={() => move(item)} />
-                <Button label="Изменить" disabled={state.pending} onPress={() => edit(item)} />
-                <Button
+                <IconButton label="Перенести" icon="move" compact disabled={state.pending} onPress={() => move(item)} />
+                <IconButton label="Изменить" icon="edit" compact disabled={state.pending} onPress={() => edit(item)} />
+                <IconButton
                   label="Удалить"
+                  icon="delete"
+                  compact
                   danger
                   disabled={state.pending}
                   onPress={() =>
