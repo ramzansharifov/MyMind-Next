@@ -150,9 +150,21 @@ export function FormSheet({ spec, close }: { spec: FormSpec; close(): void }): R
                 onChange={(value) => set(field.key, value)}
               />
             ) : field.kind === 'date' ? (
-              <AppDateField label={field.label} value={String(values[field.key] ?? '')} disabled={pending} optional={values[field.key] === null} onChangeText={(value) => set(field.key, value)} />
+              <AppDateField
+                label={field.label}
+                value={String(values[field.key] ?? '')}
+                disabled={pending}
+                optional={values[field.key] === null}
+                onChangeText={(value) => set(field.key, value)}
+              />
             ) : field.kind === 'time' ? (
-              <AppTimeField label={field.label} value={String(values[field.key] ?? '')} disabled={pending} optional={values[field.key] === null} onChangeText={(value) => set(field.key, value)} />
+              <AppTimeField
+                label={field.label}
+                value={String(values[field.key] ?? '')}
+                disabled={pending}
+                optional={values[field.key] === null}
+                onChangeText={(value) => set(field.key, value)}
+              />
             ) : field.kind === 'choice' ? (
               <AppSelect
                 label={field.label}

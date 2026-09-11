@@ -78,9 +78,7 @@ export function DeleteConfirmationDialog({
             }}
           >
             <AppIcon name="info" size={16} color={accent} />
-            <Text style={{ flex: 1, color: accent, fontSize: 12.5, lineHeight: 18 }}>
-              {notice}
-            </Text>
+            <Text style={{ flex: 1, color: accent, fontSize: 12.5, lineHeight: 18 }}>{notice}</Text>
           </View>
         ) : null}
 

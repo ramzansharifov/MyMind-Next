@@ -1,11 +1,5 @@
 import { useState } from 'react'
-import {
-  Pressable,
-  Text,
-  TextInput,
-  type TextInputProps,
-  View
-} from 'react-native'
+import { Pressable, Text, TextInput, type TextInputProps, View } from 'react-native'
 import { AppDialog } from './AppDialog'
 import { AppIcon } from './icons'
 import { useTheme } from './theme'
@@ -66,23 +60,79 @@ export function AppTextField({
   )
 }
 
-function TemporalField({ value, onChangeText, label, kind, disabled = false, optional = false }: { value: string; onChangeText(value: string): void; label: string; kind: 'date' | 'time'; disabled?: boolean; optional?: boolean }): React.JSX.Element {
+function TemporalField({
+  value,
+  onChangeText,
+  label,
+  kind,
+  disabled = false,
+  optional = false
+}: {
+  value: string
+  onChangeText(value: string): void
+  label: string
+  kind: 'date' | 'time'
+  disabled?: boolean
+  optional?: boolean
+}): React.JSX.Element {
   const theme = useTheme()
   const [focused, setFocused] = useState(false)
   const date = kind === 'date'
   return (
-    <View style={{ minHeight: 50, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, borderWidth: 1, borderColor: focused ? theme.accent + '8A' : theme.border, borderRadius: 14, backgroundColor: theme.surface, opacity: disabled ? 0.5 : 1 }}>
-      <AppIcon name={date ? 'calendar' : 'clock'} size={18} color={focused ? theme.accent : theme.muted} />
-      <TextInput accessibilityLabel={label} value={value} onChangeText={onChangeText} editable={!disabled} maxLength={date ? 10 : 5} placeholder={date ? 'ГГГГ-ММ-ДД' : optional ? 'ЧЧ:ММ (необязательно)' : 'ЧЧ:ММ'} placeholderTextColor={theme.muted} autoCapitalize="none" autoCorrect={false} onFocus={() => setFocused(true)} onBlur={() => setFocused(false)} style={{ flex: 1, minHeight: 48, color: theme.text, fontSize: 16, paddingVertical: 10 }} />
+    <View
+      style={{
+        minHeight: 50,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        paddingHorizontal: 12,
+        borderWidth: 1,
+        borderColor: focused ? theme.accent + '8A' : theme.border,
+        borderRadius: 14,
+        backgroundColor: theme.surface,
+        opacity: disabled ? 0.5 : 1
+      }}
+    >
+      <AppIcon
+        name={date ? 'calendar' : 'clock'}
+        size={18}
+        color={focused ? theme.accent : theme.muted}
+      />
+      <TextInput
+        accessibilityLabel={label}
+        value={value}
+        onChangeText={onChangeText}
+        editable={!disabled}
+        maxLength={date ? 10 : 5}
+        placeholder={date ? 'ГГГГ-ММ-ДД' : optional ? 'ЧЧ:ММ (необязательно)' : 'ЧЧ:ММ'}
+        placeholderTextColor={theme.muted}
+        autoCapitalize="none"
+        autoCorrect={false}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        style={{ flex: 1, minHeight: 48, color: theme.text, fontSize: 16, paddingVertical: 10 }}
+      />
     </View>
   )
 }
 
-export function AppDateField(props: { value: string; onChangeText(value: string): void; label: string; disabled?: boolean; optional?: boolean }): React.JSX.Element {
+export function AppDateField(props: {
+  value: string
+  onChangeText(value: string): void
+  label: string
+  disabled?: boolean
+  optional?: boolean
+}): React.JSX.Element {
   return <TemporalField {...props} kind="date" />
 }
 
-export function AppTimeField(props: { value: string; onChangeText(value: string): void; label: string; disabled?: boolean; optional?: boolean }): React.JSX.Element {
+export function AppTimeField(props: {
+  value: string
+  onChangeText(value: string): void
+  label: string
+  disabled?: boolean
+  optional?: boolean
+}): React.JSX.Element {
   return <TemporalField {...props} kind="time" />
 }
 

@@ -168,16 +168,13 @@ export function FinanceScreen(): React.JSX.Element {
       submittingLabel: 'Очищаем…',
       tone: 'danger',
       onConfirm: () => {
-        state.mutate(
-          () => {
-            api.clearAccountHistory({
-              accountId: account.id,
-              expectedBalanceMinor: account.balanceMinor,
-              confirmation: 'ОЧИСТИТЬ'
-            })
-          },
-          'История счёта очищена'
-        )
+        state.mutate(() => {
+          api.clearAccountHistory({
+            accountId: account.id,
+            expectedBalanceMinor: account.balanceMinor,
+            confirmation: 'ОЧИСТИТЬ'
+          })
+        }, 'История счёта очищена')
       }
     })
   }

@@ -69,7 +69,11 @@ export function ActionMenu({
                   paddingHorizontal: 13,
                   paddingVertical: 10,
                   borderRadius: 14,
-                  backgroundColor: pressed ? (item.danger ? theme.error + '0E' : theme.surface) : 'transparent',
+                  backgroundColor: pressed
+                    ? item.danger
+                      ? theme.error + '0E'
+                      : theme.surface
+                    : 'transparent',
                   opacity: item.disabled ? 0.4 : pressed ? 0.76 : 1
                 })}
               >

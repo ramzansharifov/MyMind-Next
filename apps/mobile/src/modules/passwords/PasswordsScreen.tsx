@@ -374,17 +374,17 @@ export function PasswordsScreen(): React.JSX.Element {
               }}
               action={
                 <ActionMenu
-                                title={group.name}
-                                items={[
-                                  { label: 'Изменить', icon: 'edit', onPress: () => editGroup(group) },
-                                  {
-                                    label: 'Удалить',
-                                    icon: 'delete',
-                                    danger: true,
-                                    onPress: () => deleteGroup(group)
-                                  }
-                                ]}
-                              />
+                  title={group.name}
+                  items={[
+                    { label: 'Изменить', icon: 'edit', onPress: () => editGroup(group) },
+                    {
+                      label: 'Удалить',
+                      icon: 'delete',
+                      danger: true,
+                      onPress: () => deleteGroup(group)
+                    }
+                  ]}
+                />
               }
             />
           ))
@@ -435,44 +435,44 @@ export function PasswordsScreen(): React.JSX.Element {
               onPress={() => openItem(item)}
               action={
                 <ActionMenu
-                                title={item.title}
-                                items={[
-                                  ...(item.username
-                                    ? [
-                                        {
-                                          key: 'copy-login',
-                                          label: 'Скопировать логин',
-                                          icon: 'copy' as const,
-                                          onPress: () => void copyField(item, 'username')
-                                        }
-                                      ]
-                                    : []),
-                                  {
-                                    key: 'copy-password',
-                                    label: 'Скопировать пароль',
-                                    icon: 'copy',
-                                    onPress: () => void copyField(item, 'password')
-                                  },
-                                  ...(item.website
-                                    ? [
-                                        {
-                                          key: 'website',
-                                          label: 'Открыть сайт',
-                                          icon: 'forward' as const,
-                                          onPress: () => void openWebsite(item)
-                                        }
-                                      ]
-                                    : []),
-                                  { key: 'edit', label: 'Изменить', icon: 'edit', onPress: () => openItem(item) },
-                                  {
-                                    key: 'delete',
-                                    label: 'Удалить',
-                                    icon: 'delete',
-                                    danger: true,
-                                    onPress: () => deleteItem(item)
-                                  }
-                                ]}
-                              />
+                  title={item.title}
+                  items={[
+                    ...(item.username
+                      ? [
+                          {
+                            key: 'copy-login',
+                            label: 'Скопировать логин',
+                            icon: 'copy' as const,
+                            onPress: () => void copyField(item, 'username')
+                          }
+                        ]
+                      : []),
+                    {
+                      key: 'copy-password',
+                      label: 'Скопировать пароль',
+                      icon: 'copy',
+                      onPress: () => void copyField(item, 'password')
+                    },
+                    ...(item.website
+                      ? [
+                          {
+                            key: 'website',
+                            label: 'Открыть сайт',
+                            icon: 'forward' as const,
+                            onPress: () => void openWebsite(item)
+                          }
+                        ]
+                      : []),
+                    { key: 'edit', label: 'Изменить', icon: 'edit', onPress: () => openItem(item) },
+                    {
+                      key: 'delete',
+                      label: 'Удалить',
+                      icon: 'delete',
+                      danger: true,
+                      onPress: () => deleteItem(item)
+                    }
+                  ]}
+                />
               }
             />
           ))

@@ -47,28 +47,25 @@ export function ToastProvider({ children }: PropsWithChildren): React.JSX.Elemen
     setToasts((current) => current.filter((toast) => toast.id !== id))
   }, [])
 
-  const show = useCallback(
-    (input: ToastInput): void => {
-      const id = toastId(input)
-      const previousTimer = timers.current.get(id)
-      if (previousTimer) clearTimeout(previousTimer)
+  const show = useCallback((input: ToastInput): void => {
+    const id = toastId(input)
+    const previousTimer = timers.current.get(id)
+    if (previousTimer) clearTimeout(previousTimer)
 
-      setToasts((current) => {
-        const withoutDuplicate = current.filter((toast) => toast.id !== id)
-        return [{ ...input, id }, ...withoutDuplicate].slice(0, 4)
-      })
+    setToasts((current) => {
+      const withoutDuplicate = current.filter((toast) => toast.id !== id)
+      return [{ ...input, id }, ...withoutDuplicate].slice(0, 4)
+    })
 
-      const delay = input.kind === 'error' ? 5200 : 2600
-      timers.current.set(
-        id,
-        setTimeout(() => {
-          timers.current.delete(id)
-          setToasts((current) => current.filter((toast) => toast.id !== id))
-        }, delay)
-      )
-    },
-    []
-  )
+    const delay = input.kind === 'error' ? 5200 : 2600
+    timers.current.set(
+      id,
+      setTimeout(() => {
+        timers.current.delete(id)
+        setToasts((current) => current.filter((toast) => toast.id !== id))
+      }, delay)
+    )
+  }, [])
 
   useEffect(
     () => () => {

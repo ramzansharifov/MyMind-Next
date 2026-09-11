@@ -383,47 +383,47 @@ export function CalendarScreen(): React.JSX.Element {
               onPress={() => edit(item)}
               action={
                 <ActionMenu
-                                title={item.title}
-                                items={[
-                                  ...(item.kind === 'annual'
-                                    ? [
-                                        {
-                                          key: 'skip-year',
-                                          label: 'Пропустить в этом году',
-                                          icon: 'skip' as const,
-                                          onPress: () =>
-                                            state.confirmDelete(
-                                              'Скрыть это повторение?',
-                                              () => {
-                                                api.setCalendarOccurrenceHidden({
-                                                  eventId: item.eventId,
-                                                  occurrenceDate: item.occurrenceDate,
-                                                  hidden: true
-                                                })
-                                              },
-                                              'Остальные ежегодные повторения сохранятся.'
-                                            )
-                                        }
-                                      ]
-                                    : []),
-                                  {
-                                    key: 'delete',
-                                    label: 'Удалить событие',
-                                    icon: 'delete',
-                                    danger: true,
-                                    onPress: () =>
-                                      state.confirmDelete(
-                                        'Удалить событие?',
-                                        () => {
-                                          api.deleteCalendarEvent(item.eventId)
-                                        },
-                                        item.kind === 'annual'
-                                          ? 'Будут удалены все ежегодные повторения и заметки.'
-                                          : 'Событие и заметка будут удалены.'
-                                      )
-                                  }
-                                ]}
-                              />
+                  title={item.title}
+                  items={[
+                    ...(item.kind === 'annual'
+                      ? [
+                          {
+                            key: 'skip-year',
+                            label: 'Пропустить в этом году',
+                            icon: 'skip' as const,
+                            onPress: () =>
+                              state.confirmDelete(
+                                'Скрыть это повторение?',
+                                () => {
+                                  api.setCalendarOccurrenceHidden({
+                                    eventId: item.eventId,
+                                    occurrenceDate: item.occurrenceDate,
+                                    hidden: true
+                                  })
+                                },
+                                'Остальные ежегодные повторения сохранятся.'
+                              )
+                          }
+                        ]
+                      : []),
+                    {
+                      key: 'delete',
+                      label: 'Удалить событие',
+                      icon: 'delete',
+                      danger: true,
+                      onPress: () =>
+                        state.confirmDelete(
+                          'Удалить событие?',
+                          () => {
+                            api.deleteCalendarEvent(item.eventId)
+                          },
+                          item.kind === 'annual'
+                            ? 'Будут удалены все ежегодные повторения и заметки.'
+                            : 'Событие и заметка будут удалены.'
+                        )
+                    }
+                  ]}
+                />
               }
             />
           )}
