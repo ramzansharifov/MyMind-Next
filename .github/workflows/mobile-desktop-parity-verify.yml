@@ -64,6 +64,7 @@ jobs:
             apps/mobile/src/shared/ui/FormControls.tsx \
             apps/mobile/src/shared/ui/FormSheet.tsx \
             apps/mobile/src/shared/ui/ToastProvider.tsx \
+            apps/mobile/src/shared/ui/Workspace.tsx \
             apps/mobile/src/shared/ui/icons.tsx \
             apps/mobile/src/shared/ui/primitives.tsx \
             apps/mobile/package.json \
