@@ -7,7 +7,6 @@ import type {
   StudyMaterial,
   StudyNode
 } from '@mymind/contracts/study'
-import { STUDY_FOLDER_ICON_NAMES } from '@mymind/contracts/study'
 import { AutosaveQueue } from '@mymind/core/autosave'
 import * as studyValidation from '@mymind/core/validation/study'
 import { useServices } from '../../app/context'
@@ -18,6 +17,8 @@ import { DocumentReader, type DocumentRevealRequest } from '../../shared/ui/Docu
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { ActionMenu } from '../../shared/ui/ActionMenu'
 import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
+import { VisualIconBadge } from '../../shared/ui/VisualPickers'
+import { FOLDER_ICON_CHOICES } from '../../shared/ui/visual-options'
 import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
 import { useToast } from '../../shared/ui/ToastProvider'
 import type { StudyRichTextInternalLink } from '../../shared/ui/studyRichText'
@@ -29,7 +30,13 @@ import StudyMermaidExportDom, {
   type StudyMermaidPdfResult
 } from './StudyMermaidExportDom'
 import { exportStudyMaterialPdf } from './studyPdfExport'
-import { choiceField, messageFor, textField, type FormSpec } from '../../shared/ui/form-model'
+import {
+  choiceField,
+  iconField,
+  messageFor,
+  textField,
+  type FormSpec
+} from '../../shared/ui/form-model'
 import {
   Button,
   EmptyState,
@@ -449,12 +456,14 @@ export function StudyScreen({
       initial: { title: '', icon: 'folder' },
       fields: [
         textField('title', 'Название'),
-        choiceField(
-          'icon',
-          'Иконка',
-          STUDY_FOLDER_ICON_NAMES.map((icon) => ({ value: icon, label: icon }))
-        )
+        iconField('icon', 'Иконка', FOLDER_ICON_CHOICES, 'folder')
       ],
+      preview: {
+        titleKey: 'title',
+        iconKey: 'icon',
+        iconFamily: 'folder',
+        description: 'Так папка будет выглядеть в обучении.'
+      },
       save: (values) => {
         const input = studyValidation.createStudyNodeInputSchema.parse({
           type: 'folder',
@@ -504,16 +513,19 @@ export function StudyScreen({
       fields: [
         textField('title', 'Название'),
         ...(node.type === 'folder'
-          ? [
-              choiceField(
-                'icon',
-                'Иконка',
-                STUDY_FOLDER_ICON_NAMES.map((icon) => ({ value: icon, label: icon }))
-              )
-            ]
+          ? [iconField('icon', 'Иконка', FOLDER_ICON_CHOICES, 'folder')]
           : []),
         choiceField('parentId', 'Расположение', folderChoices)
       ],
+      preview:
+        node.type === 'folder'
+          ? {
+              titleKey: 'title',
+              iconKey: 'icon',
+              iconFamily: 'folder',
+              description: 'Так папка будет выглядеть в обучении.'
+            }
+          : undefined,
       save: async (values) => {
         if (material?.nodeId === node.id) await flush()
         const renamed = studyValidation.renameStudyNodeInputSchema.parse({
@@ -878,8 +890,13 @@ export function StudyScreen({
           renderItem={({ item, index }) => (
             <WorkspaceNodeCard
               title={item.title}
-              subtitle={item.type === 'folder' ? `Папка · ${item.icon ?? 'folder'}` : 'Материал'}
-              leadingIcon={item.type === 'folder' ? 'folder' : 'study'}
+              subtitle={item.type === 'folder' ? 'Папка' : 'Материал'}
+              leading={
+                item.type === 'folder' ? (
+                  <VisualIconBadge value={item.icon ?? 'folder'} />
+                ) : undefined
+              }
+              leadingIcon={item.type === 'material' ? 'study' : undefined}
               onPress={() =>
                 item.type === 'folder' ? setFolderId(item.id) : openMaterial(item.id)
               }

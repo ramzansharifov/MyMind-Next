@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AppState, Linking, ScrollView, TextInput, View } from 'react-native'
 import {
-  PASSWORD_GROUP_COLORS,
-  PASSWORD_GROUP_ICONS,
   type PasswordGroupRecord,
   type PasswordItemRecord,
   type PasswordItemSummary,
@@ -20,9 +18,17 @@ import { useServices } from '../../app/context'
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { ActionMenu } from '../../shared/ui/ActionMenu'
 import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
+import { VisualIconBadge } from '../../shared/ui/VisualPickers'
+import { GROUP_COLOR_CHOICES, PASSWORD_GROUP_ICON_CHOICES } from '../../shared/ui/visual-options'
 import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
 import { useToast } from '../../shared/ui/ToastProvider'
-import { choiceField, messageFor, textField, type FormSpec } from '../../shared/ui/form-model'
+import {
+  colorField,
+  iconField,
+  messageFor,
+  textField,
+  type FormSpec
+} from '../../shared/ui/form-model'
 import {
   Button,
   EmptyState,
@@ -249,17 +255,16 @@ export function PasswordsScreen(): React.JSX.Element {
       },
       fields: [
         textField('name', 'Название'),
-        choiceField(
-          'icon',
-          'Значок',
-          PASSWORD_GROUP_ICONS.map((value) => ({ value, label: value }))
-        ),
-        choiceField(
-          'color',
-          'Цвет',
-          PASSWORD_GROUP_COLORS.map((value) => ({ value, label: value }))
-        )
+        iconField('icon', 'Иконка', PASSWORD_GROUP_ICON_CHOICES, 'password'),
+        colorField('color', 'Цвет', GROUP_COLOR_CHOICES)
       ],
+      preview: {
+        titleKey: 'name',
+        iconKey: 'icon',
+        colorKey: 'color',
+        iconFamily: 'password',
+        description: 'Так группа будет выглядеть в хранилище.'
+      },
       save: (values) => {
         if (group)
           api.updatePasswordGroup(updatePasswordGroupInputSchema.parse({ ...values, id: group.id }))
@@ -366,8 +371,8 @@ export function PasswordsScreen(): React.JSX.Element {
             <WorkspaceNodeCard
               key={group.id}
               title={group.name}
-              subtitle={`${overview.items.filter((item) => item.groupId === group.id).length} записей · ${group.icon}`}
-              leadingIcon="folder"
+              subtitle={`${overview.items.filter((item) => item.groupId === group.id).length} записей`}
+              leading={<VisualIconBadge value={group.icon} colorKey={group.color} />}
               onPress={() => {
                 setGroupFilter(group.id)
                 setTab('items')
@@ -426,56 +431,71 @@ export function PasswordsScreen(): React.JSX.Element {
           <Button label="+ Запись" selected onPress={() => openItem()} />
         </View>
         {filteredItems.length ? (
-          filteredItems.map((item) => (
-            <WorkspaceNodeCard
-              key={item.id}
-              title={`${item.favorite ? '♥ ' : ''}${item.title}`}
-              subtitle={itemSubtitle(item, overview)}
-              leadingIcon="passwords"
-              onPress={() => openItem(item)}
-              action={
-                <ActionMenu
-                  title={item.title}
-                  items={[
-                    ...(item.username
-                      ? [
-                          {
-                            key: 'copy-login',
-                            label: 'Скопировать логин',
-                            icon: 'copy' as const,
-                            onPress: () => void copyField(item, 'username')
-                          }
-                        ]
-                      : []),
-                    {
-                      key: 'copy-password',
-                      label: 'Скопировать пароль',
-                      icon: 'copy',
-                      onPress: () => void copyField(item, 'password')
-                    },
-                    ...(item.website
-                      ? [
-                          {
-                            key: 'website',
-                            label: 'Открыть сайт',
-                            icon: 'forward' as const,
-                            onPress: () => void openWebsite(item)
-                          }
-                        ]
-                      : []),
-                    { key: 'edit', label: 'Изменить', icon: 'edit', onPress: () => openItem(item) },
-                    {
-                      key: 'delete',
-                      label: 'Удалить',
-                      icon: 'delete',
-                      danger: true,
-                      onPress: () => deleteItem(item)
-                    }
-                  ]}
-                />
-              }
-            />
-          ))
+          filteredItems.map((item) => {
+            const itemGroup = item.groupId
+              ? (overview.groups.find((candidate) => candidate.id === item.groupId) ?? null)
+              : null
+            return (
+              <WorkspaceNodeCard
+                key={item.id}
+                title={`${item.favorite ? '♥ ' : ''}${item.title}`}
+                subtitle={itemSubtitle(item, overview)}
+                leading={
+                  itemGroup ? (
+                    <VisualIconBadge value={itemGroup.icon} colorKey={itemGroup.color} />
+                  ) : undefined
+                }
+                leadingIcon={itemGroup ? undefined : 'passwords'}
+                onPress={() => openItem(item)}
+                action={
+                  <ActionMenu
+                    title={item.title}
+                    items={[
+                      ...(item.username
+                        ? [
+                            {
+                              key: 'copy-login',
+                              label: 'Скопировать логин',
+                              icon: 'copy' as const,
+                              onPress: () => void copyField(item, 'username')
+                            }
+                          ]
+                        : []),
+                      {
+                        key: 'copy-password',
+                        label: 'Скопировать пароль',
+                        icon: 'copy',
+                        onPress: () => void copyField(item, 'password')
+                      },
+                      ...(item.website
+                        ? [
+                            {
+                              key: 'website',
+                              label: 'Открыть сайт',
+                              icon: 'forward' as const,
+                              onPress: () => void openWebsite(item)
+                            }
+                          ]
+                        : []),
+                      {
+                        key: 'edit',
+                        label: 'Изменить',
+                        icon: 'edit',
+                        onPress: () => openItem(item)
+                      },
+                      {
+                        key: 'delete',
+                        label: 'Удалить',
+                        icon: 'delete',
+                        danger: true,
+                        onPress: () => deleteItem(item)
+                      }
+                    ]}
+                  />
+                }
+              />
+            )
+          })
         ) : (
           <EmptyState
             text={tab === 'favorites' ? 'Избранных записей пока нет.' : 'Записей пока нет.'}

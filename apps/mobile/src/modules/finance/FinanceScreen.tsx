@@ -13,6 +13,7 @@ import { useCollection } from '../../shared/hooks/useCollection'
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { ActionMenu } from '../../shared/ui/ActionMenu'
 import { WorkspaceNodeCard, WorkspacePanel, WorkspaceStatCard } from '../../shared/ui/Workspace'
+import { VisualIconBadge } from '../../shared/ui/VisualPickers'
 import type { FormSpec } from '../../shared/ui/form-model'
 import {
   Button,
@@ -210,7 +211,7 @@ export function FinanceScreen(): React.JSX.Element {
     <WorkspaceNodeCard
       title={`${item.name} · ${formatMoneyMinor(item.balanceMinor, item.currencyCode)}`}
       subtitle={`${item.transactionCount} операций${item.periodChangeMinor ? ` · изменение ${formatMoneyMinor(item.periodChangeMinor, item.currencyCode)}` : ''}`}
-      leadingIcon="finance"
+      leading={<VisualIconBadge value={item.icon} />}
       onPress={() => openForm(accountForm(api, item))}
       action={
         <ActionMenu
@@ -245,6 +246,7 @@ export function FinanceScreen(): React.JSX.Element {
     <WorkspaceNodeCard
       title={item.name}
       subtitle={`${item.type === 'income' ? 'Доход' : item.type === 'expense' ? 'Расход' : 'Доход и расход'} · ${item.transactionCount} операций`}
+      leading={<VisualIconBadge value={item.icon} />}
       onPress={() => openForm(tagForm(api, item))}
       action={
         <ActionMenu

@@ -1,11 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { FlatList, Pressable, Text, TextInput, View } from 'react-native'
-import {
-  TASK_GROUP_COLORS,
-  TASK_GROUP_ICONS,
-  type TaskGroupRecord,
-  type TaskRecord
-} from '@mymind/contracts/tasks'
+import { type TaskGroupRecord, type TaskRecord } from '@mymind/contracts/tasks'
 import * as schema from '@mymind/core/validation/tasks'
 import { sortTasks } from '@mymind/core/tasks'
 import { useServices } from '../../app/context'
@@ -21,7 +16,15 @@ import {
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { ActionMenu } from '../../shared/ui/ActionMenu'
 import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
-import { choiceField, textField, type FormSpec } from '../../shared/ui/form-model'
+import { VisualIconBadge } from '../../shared/ui/VisualPickers'
+import { TASK_GROUP_COLOR_CHOICES, TASK_GROUP_ICON_CHOICES } from '../../shared/ui/visual-options'
+import {
+  choiceField,
+  colorField,
+  iconField,
+  textField,
+  type FormSpec
+} from '../../shared/ui/form-model'
 import { AppIcon } from '../../shared/ui/icons'
 import { useTheme } from '../../shared/ui/theme'
 import { quickTaskInput, taskEditorInput, taskSearchText } from './task-presentation'
@@ -61,6 +64,13 @@ export function TasksScreen(): React.JSX.Element {
           { value: 'completed', label: 'Выполнена' }
         ])
       ],
+      preview: {
+        titleKey: 'name',
+        iconKey: 'icon',
+        colorKey: 'color',
+        iconFamily: 'task',
+        description: 'Так группа будет выглядеть в списке задач.'
+      },
       save: (values) => {
         const input = taskEditorInput(
           String(values.title ?? ''),
@@ -84,15 +94,12 @@ export function TasksScreen(): React.JSX.Element {
       },
       fields: [
         textField('name', 'Название'),
-        choiceField(
-          'icon',
-          'Значок',
-          TASK_GROUP_ICONS.map((value) => ({ value, label: value }))
-        ),
-        choiceField(
+        iconField('icon', 'Иконка', TASK_GROUP_ICON_CHOICES, 'task'),
+        colorField(
           'color',
           'Цвет',
-          TASK_GROUP_COLORS.map((value) => ({ value, label: value }))
+          TASK_GROUP_COLOR_CHOICES,
+          '«Без цвета» использует акцент приложения.'
         )
       ],
       save: (values) => {
@@ -149,7 +156,7 @@ export function TasksScreen(): React.JSX.Element {
   }
 
   const groupById = useMemo(
-    () => new Map((state.data?.groups ?? []).map((item) => [item.id, item.name])),
+    () => new Map((state.data?.groups ?? []).map((item) => [item.id, item])),
     [state.data?.groups]
   )
   const normalizedQuery = query.trim().toLocaleLowerCase('ru')
@@ -157,14 +164,15 @@ export function TasksScreen(): React.JSX.Element {
     if (filter !== 'all' && task.status !== filter) return false
     if (group !== undefined && task.groupId !== group) return false
     if (!normalizedQuery) return true
-    return taskSearchText(task, task.groupId ? (groupById.get(task.groupId) ?? '') : '').includes(
-      normalizedQuery
-    )
+    return taskSearchText(
+      task,
+      task.groupId ? (groupById.get(task.groupId)?.name ?? '') : ''
+    ).includes(normalizedQuery)
   })
 
   const selectedGroupName =
     typeof group === 'string'
-      ? (groupById.get(group) ?? 'Группа')
+      ? (groupById.get(group)?.name ?? 'Группа')
       : group === null
         ? 'Без группы'
         : null
@@ -263,7 +271,7 @@ export function TasksScreen(): React.JSX.Element {
                 (state.data?.tasks.filter((task) => task.groupId === item.id).length ?? 0) +
                 ' задач'
               }
-              leadingIcon="folder"
+              leading={<VisualIconBadge value={item.icon} colorKey={item.color} />}
               onPress={() => {
                 setGroup(item.id)
                 setGroupsView(false)
@@ -305,7 +313,7 @@ export function TasksScreen(): React.JSX.Element {
           onRefresh={state.refresh}
           ListEmptyComponent={<EmptyState />}
           renderItem={({ item }) => {
-            const groupName = item.groupId ? groupById.get(item.groupId) : null
+            const taskGroup = item.groupId ? (groupById.get(item.groupId) ?? null) : null
             const completed = item.status === 'completed'
 
             return (
@@ -390,28 +398,26 @@ export function TasksScreen(): React.JSX.Element {
                     >
                       {item.title}
                     </Text>
-                    {groupName ? (
+                    {taskGroup ? (
                       <View
                         style={{
                           alignSelf: 'flex-start',
                           marginTop: 6,
                           flexDirection: 'row',
                           alignItems: 'center',
-                          gap: 5,
-                          borderRadius: 8,
-                          borderWidth: 1,
-                          borderColor: theme.accent + '2E',
-                          backgroundColor: theme.accent + '14',
-                          paddingHorizontal: 7,
-                          paddingVertical: 3
+                          gap: 5
                         }}
                       >
-                        <AppIcon name="folder" size={11} color={theme.accent} />
+                        <VisualIconBadge
+                          value={taskGroup.icon}
+                          colorKey={taskGroup.color}
+                          size={24}
+                        />
                         <Text
                           numberOfLines={1}
-                          style={{ maxWidth: 120, color: theme.accent, fontSize: 10.5 }}
+                          style={{ maxWidth: 120, color: theme.muted, fontSize: 10.5 }}
                         >
-                          {groupName}
+                          {taskGroup.name}
                         </Text>
                       </View>
                     ) : null}
