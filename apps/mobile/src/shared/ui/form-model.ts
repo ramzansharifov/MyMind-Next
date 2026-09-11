@@ -8,6 +8,8 @@ export type FormField = {
     | 'multiline'
     | 'number'
     | 'nullableNumber'
+    | 'date'
+    | 'time'
     | 'list'
     | 'boolean'
     | 'choice'

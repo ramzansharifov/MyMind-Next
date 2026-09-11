@@ -18,11 +18,15 @@ import {
 import { appearancePreferencesSchema } from '@mymind/core/validation/preferences'
 import { ServicesContext } from './context'
 import { createMobileServices, type MobileServices } from './services'
+import { moreRoutes, primaryTabs, routeIcons, routeTitles, type Route } from './navigation'
 import { exportMobileBackup, restoreMobileBackup } from '../shared/backup/mobileBackup'
 import { openMobileDatabase } from '../shared/storage/mobileDatabase'
 import { ThemeContext } from '../shared/ui/theme'
-import { ErrorState, Label, LoadingState, Row } from '../shared/ui/primitives'
+import { ErrorState, LoadingState } from '../shared/ui/primitives'
+import { AppIcon } from '../shared/ui/icons'
 import { messageFor } from '../shared/ui/form-model'
+import { ConfirmationProvider } from '../shared/ui/ConfirmationProvider'
+import { ToastProvider } from '../shared/ui/ToastProvider'
 import { StudyScreen } from '../modules/study/StudyScreen'
 import { BoardsScreen } from '../modules/boards/BoardsScreen'
 import { TasksScreen } from '../modules/tasks/TasksScreen'
@@ -39,46 +43,9 @@ import { Home } from './Home'
 import { Settings } from './Settings'
 import { ReminderStatus } from './ReminderStatus'
 
-export type Route =
-  | 'home'
-  | 'study'
-  | 'boards'
-  | 'notes'
-  | 'tasks'
-  | 'habits'
-  | 'more'
-  | 'movies'
-  | 'music'
-  | 'calendar'
-  | 'diary'
-  | 'workouts'
-  | 'nutrition'
-  | 'finance'
-  | 'passwords'
-  | 'settings'
+export type { Route } from './navigation'
 
 type BackupOperation = 'export' | 'restore'
-
-const titles: Record<Route, string> = {
-  home: 'Главная',
-  study: 'Обучение',
-  boards: 'Доски',
-  notes: 'Заметки',
-  tasks: 'Задачи',
-  habits: 'Привычки',
-  more: 'Ещё',
-  movies: 'Фильмы',
-  music: 'Музыка',
-  calendar: 'Календарь',
-  diary: 'Дневник',
-  workouts: 'Тренировки',
-  nutrition: 'Питание',
-  finance: 'Финансы',
-  passwords: 'Пароли',
-  settings: 'Настройки'
-}
-
-const primaryTabs = ['home', 'notes', 'tasks', 'habits', 'more'] as const
 
 let databasePromise: ReturnType<typeof openMobileDatabase> | undefined
 let servicesPromise: Promise<MobileServices> | undefined
@@ -234,136 +201,269 @@ export default function MobileApp(): React.JSX.Element {
     }
   }, [backupOperation])
 
-  const moreRoutes = [
-    'study',
-    'boards',
-    'calendar',
-    'diary',
-    'workouts',
-    'nutrition',
-    'finance',
-    'passwords',
-    'movies',
-    'music',
-    'settings'
-  ] as Route[]
   const inMore = !['home', 'notes', 'tasks', 'habits', 'more'].includes(route)
 
   return (
     <SafeAreaProvider>
       <ThemeContext.Provider value={palette}>
-        <SafeAreaView style={{ flex: 1, backgroundColor: palette.background }}>
-          <StatusBar style={dark ? 'light' : 'dark'} />
-          {!immersive ? (
-            <View style={{ paddingHorizontal: 20, paddingTop: 14, paddingBottom: 16, gap: 4 }}>
-              <Label muted>MYMIND</Label>
-              <Label title>{titles[route]}</Label>
-            </View>
-          ) : null}
-          {error ? (
-            <ErrorState
-              message={error}
-              retry={() => {
-                setError('')
-                setAttempt((value) => value + 1)
-              }}
-            />
-          ) : null}
-          {!services ? (
-            !error && <LoadingState />
-          ) : (
-            <ServicesContext.Provider value={services} key={servicesEpoch}>
-              {!backupOperation ? <ReminderStatus services={services} /> : null}
-              <View style={{ flex: 1, paddingHorizontal: immersive ? 0 : 16 }} key={route}>
-                {route === 'home' ? (
-                  <Home services={services} navigate={navigate} />
-                ) : route === 'study' ? (
-                  <StudyScreen onImmersiveChange={setImmersive} onOpenBoard={openBoard} />
-                ) : route === 'boards' ? (
-                  <BoardsScreen initialBoardId={boardResourceId} />
-                ) : route === 'notes' ? (
-                  <NotesScreen onOpenBoard={openBoard} />
-                ) : route === 'tasks' ? (
-                  <TasksScreen />
-                ) : route === 'habits' ? (
-                  <HabitsScreen />
-                ) : route === 'movies' || route === 'music' ? (
-                  <CatalogScreen mode={route} />
-                ) : route === 'calendar' ? (
-                  <CalendarScreen />
-                ) : route === 'diary' ? (
-                  <DiaryScreen />
-                ) : route === 'workouts' ? (
-                  <WorkoutsScreen />
-                ) : route === 'nutrition' ? (
-                  <NutritionScreen />
-                ) : route === 'finance' ? (
-                  <FinanceScreen />
-                ) : route === 'passwords' ? (
-                  <PasswordsScreen />
-                ) : route === 'settings' ? (
-                  <Settings
-                    appearance={appearance}
-                    save={saveAppearance}
-                    exportBackup={exportBackup}
-                    restoreBackup={restoreBackup}
-                  />
-                ) : (
-                  <FlatList
-                    data={moreRoutes}
-                    keyExtractor={(item) => item}
-                    renderItem={({ item }) => (
-                      <Row title={titles[item]} onPress={() => navigate(item)} />
-                    )}
-                  />
-                )}
-              </View>
-              {!immersive && !backupOperation ? (
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-around',
-                    borderTopWidth: 1,
-                    borderColor: palette.border,
-                    paddingVertical: 8,
-                    gap: 2
-                  }}
-                >
-                  {primaryTabs.map((tab) => {
-                    const selected = route === tab || (tab === 'more' && inMore)
-                    return (
-                      <Pressable
-                        key={tab}
-                        accessibilityRole="tab"
-                        accessibilityLabel={titles[tab]}
-                        accessibilityState={{ selected }}
-                        onPress={() => navigate(tab)}
-                        style={({ pressed }) => ({
-                          flex: 1,
-                          minHeight: 52,
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          paddingHorizontal: 2,
-                          opacity: pressed ? 0.65 : 1
-                        })}
-                      >
-                        <Text
-                          style={{
-                            fontSize: 12,
-                            fontWeight: '600',
-                            color: selected ? palette.accent : palette.muted
-                          }}
-                        >
-                          {titles[tab]}
-                        </Text>
-                      </Pressable>
-                    )
-                  })}
+        <ToastProvider>
+          <ConfirmationProvider>
+            <SafeAreaView style={{ flex: 1, backgroundColor: palette.background }}>
+              <StatusBar style={dark ? 'light' : 'dark'} />
+
+              {!immersive ? (
+                <View style={{ paddingHorizontal: 16, paddingTop: 10, paddingBottom: 12 }}>
+                  <View
+                    style={{
+                      minHeight: 80,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 14,
+                      paddingHorizontal: 16,
+                      paddingVertical: 15,
+                      overflow: 'hidden',
+                      borderWidth: 1,
+                      borderColor: palette.border,
+                      borderRadius: 28,
+                      backgroundColor: palette.surface,
+                      elevation: 2
+                    }}
+                  >
+                    <View
+                      pointerEvents="none"
+                      style={{
+                        position: 'absolute',
+                        top: -82,
+                        right: 18,
+                        width: 190,
+                        height: 190,
+                        borderRadius: 95,
+                        backgroundColor: palette.accent + '12'
+                      }}
+                    />
+                    <View
+                      pointerEvents="none"
+                      style={{
+                        position: 'absolute',
+                        bottom: -100,
+                        left: -54,
+                        width: 176,
+                        height: 176,
+                        borderRadius: 88,
+                        backgroundColor: palette.accent + '08'
+                      }}
+                    />
+                    <View
+                      style={{
+                        width: 48,
+                        height: 48,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderWidth: 1,
+                        borderColor: palette.accent + '33',
+                        borderRadius: 16,
+                        backgroundColor: palette.accent + '1A'
+                      }}
+                    >
+                      <AppIcon
+                        name={routeIcons[route]}
+                        size={24}
+                        strokeWidth={2}
+                        color={palette.accent}
+                      />
+                    </View>
+                    <Text
+                      numberOfLines={1}
+                      style={{
+                        flex: 1,
+                        color: palette.text,
+                        fontSize: 26,
+                        lineHeight: 32,
+                        fontWeight: '600',
+                        letterSpacing: -0.9
+                      }}
+                    >
+                      {routeTitles[route]}
+                    </Text>
+                  </View>
                 </View>
               ) : null}
-            </ServicesContext.Provider>
-          )}
-        </SafeAreaView>
+
+              {error ? (
+                <View style={{ paddingHorizontal: 16 }}>
+                  <ErrorState
+                    message={error}
+                    retry={() => {
+                      setError('')
+                      setAttempt((value) => value + 1)
+                    }}
+                  />
+                </View>
+              ) : null}
+
+              {!services ? (
+                !error && <LoadingState />
+              ) : (
+                <ServicesContext.Provider value={services} key={servicesEpoch}>
+                  {!backupOperation ? <ReminderStatus services={services} /> : null}
+
+                  <View
+                    style={{ flex: 1, paddingHorizontal: immersive ? 0 : 16, minHeight: 0 }}
+                    key={route}
+                  >
+                    {route === 'home' ? (
+                      <Home services={services} navigate={navigate} />
+                    ) : route === 'study' ? (
+                      <StudyScreen onImmersiveChange={setImmersive} onOpenBoard={openBoard} />
+                    ) : route === 'boards' ? (
+                      <BoardsScreen initialBoardId={boardResourceId} />
+                    ) : route === 'notes' ? (
+                      <NotesScreen onOpenBoard={openBoard} />
+                    ) : route === 'tasks' ? (
+                      <TasksScreen />
+                    ) : route === 'habits' ? (
+                      <HabitsScreen />
+                    ) : route === 'movies' || route === 'music' ? (
+                      <CatalogScreen mode={route} />
+                    ) : route === 'calendar' ? (
+                      <CalendarScreen />
+                    ) : route === 'diary' ? (
+                      <DiaryScreen />
+                    ) : route === 'workouts' ? (
+                      <WorkoutsScreen />
+                    ) : route === 'nutrition' ? (
+                      <NutritionScreen />
+                    ) : route === 'finance' ? (
+                      <FinanceScreen />
+                    ) : route === 'passwords' ? (
+                      <PasswordsScreen />
+                    ) : route === 'settings' ? (
+                      <Settings
+                        appearance={appearance}
+                        save={saveAppearance}
+                        exportBackup={exportBackup}
+                        restoreBackup={restoreBackup}
+                      />
+                    ) : (
+                      <FlatList
+                        data={moreRoutes}
+                        numColumns={2}
+                        keyExtractor={(item) => item}
+                        columnWrapperStyle={{ gap: 10, justifyContent: 'space-between' }}
+                        contentContainerStyle={{ paddingBottom: 12, gap: 10 }}
+                        renderItem={({ item }) => (
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={routeTitles[item]}
+                            onPress={() => navigate(item)}
+                            style={({ pressed }) => ({
+                              width: '48.5%',
+                              minHeight: 106,
+                              justifyContent: 'space-between',
+                              padding: 14,
+                              borderWidth: 1,
+                              borderColor: palette.border,
+                              borderRadius: 18,
+                              backgroundColor: pressed ? palette.raised : palette.surface,
+                              opacity: pressed ? 0.78 : 1,
+                              elevation: 1
+                            })}
+                          >
+                            <View
+                              style={{
+                                width: 36,
+                                height: 36,
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                borderRadius: 12,
+                                borderWidth: 1,
+                                borderColor: palette.accent + '26',
+                                backgroundColor: palette.accent + '10'
+                              }}
+                            >
+                              <AppIcon name={routeIcons[item]} size={18} color={palette.accent} />
+                            </View>
+                            <View
+                              style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                gap: 8
+                              }}
+                            >
+                              <Text
+                                style={{ color: palette.text, fontSize: 14, fontWeight: '600' }}
+                              >
+                                {routeTitles[item]}
+                              </Text>
+                              <AppIcon name="forward" size={17} color={palette.muted} />
+                            </View>
+                          </Pressable>
+                        )}
+                      />
+                    )}
+                  </View>
+
+                  {!immersive && !backupOperation ? (
+                    <View
+                      style={{
+                        marginHorizontal: 10,
+                        marginTop: 8,
+                        marginBottom: 6,
+                        padding: 5,
+                        flexDirection: 'row',
+                        borderWidth: 1,
+                        borderColor: palette.border,
+                        borderRadius: 22,
+                        backgroundColor: palette.surface,
+                        elevation: 4
+                      }}
+                    >
+                      {primaryTabs.map((tab) => {
+                        const selected = route === tab || (tab === 'more' && inMore)
+                        return (
+                          <Pressable
+                            key={tab}
+                            accessibilityRole="tab"
+                            accessibilityLabel={routeTitles[tab]}
+                            accessibilityState={{ selected }}
+                            onPress={() => navigate(tab)}
+                            style={({ pressed }) => ({
+                              flex: 1,
+                              minHeight: 54,
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: 3,
+                              borderRadius: 17,
+                              backgroundColor: selected ? palette.accent + '16' : 'transparent',
+                              opacity: pressed ? 0.68 : 1
+                            })}
+                          >
+                            <AppIcon
+                              name={routeIcons[tab]}
+                              size={20}
+                              color={selected ? palette.accent : palette.muted}
+                            />
+                            <Text
+                              style={{
+                                fontSize: 10.5,
+                                lineHeight: 13,
+                                fontWeight: selected ? '700' : '600',
+                                color: selected ? palette.accent : palette.muted
+                              }}
+                            >
+                              {routeTitles[tab]}
+                            </Text>
+                          </Pressable>
+                        )
+                      })}
+                    </View>
+                  ) : null}
+                </ServicesContext.Provider>
+              )}
+            </SafeAreaView>
+          </ConfirmationProvider>
+        </ToastProvider>
       </ThemeContext.Provider>
     </SafeAreaProvider>
   )

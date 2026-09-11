@@ -1,6 +1,6 @@
 import { randomUUID } from 'expo-crypto'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Alert, AppState, BackHandler, FlatList, View } from 'react-native'
+import { AppState, BackHandler, FlatList, View } from 'react-native'
 import type {
   StudyBoardBlock,
   StudyDocument,
@@ -16,6 +16,10 @@ import { useCollection } from '../../shared/hooks/useCollection'
 import { DocumentEditor } from '../../shared/ui/DocumentEditor'
 import { DocumentReader, type DocumentRevealRequest } from '../../shared/ui/DocumentReader'
 import { FormSheet } from '../../shared/ui/FormSheet'
+import { ActionMenu } from '../../shared/ui/ActionMenu'
+import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
+import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
+import { useToast } from '../../shared/ui/ToastProvider'
 import type { StudyRichTextInternalLink } from '../../shared/ui/studyRichText'
 import { StudyCodeWorkspace } from './StudyCodeWorkspace'
 import StudyMermaidExportDom, {
@@ -32,7 +36,6 @@ import {
   ErrorState,
   Label,
   LoadingState,
-  Row,
   SearchField
 } from '../../shared/ui/primitives'
 
@@ -92,6 +95,8 @@ export function StudyScreen({
   onOpenBoard?: (boardId: string) => void
 }): React.JSX.Element {
   const { study: api, boards, documentAssets } = useServices()
+  const confirm = useConfirmation()
+  const toast = useToast()
   const nodes = useCollection(useCallback(() => api.listNodes(), [api]))
   const [folderId, setFolderId] = useState<string | null>(null)
   const [query, setQuery] = useState('')
@@ -270,7 +275,7 @@ export function StudyScreen({
         headingId: link.headingId
       })
       if (!target) {
-        Alert.alert('Ссылка недоступна', 'Материал или заголовок был удалён.')
+        toast.error('Материал или заголовок был удалён.', 'study-link-unavailable')
         return
       }
 
@@ -570,41 +575,39 @@ export function StudyScreen({
   }
 
   const confirmDelete = (node: StudyNode): void => {
-    Alert.alert(
-      node.type === 'folder' ? 'Удалить папку?' : 'Удалить материал?',
-      node.type === 'folder'
-        ? 'Будут удалены папка, все вложенные материалы и их локальные данные.'
-        : 'Материал и его локальные данные будут удалены.',
-      [
-        { text: 'Отмена', style: 'cancel' },
-        {
-          text: 'Удалить',
-          style: 'destructive',
-          onPress: () => {
-            if (pendingAction) return
-            setPendingAction(true)
-            if (material?.nodeId === node.id) queueRef.current?.discardPending()
-            void api
-              .deleteNode(node.id)
-              .then(() => {
-                if (material?.nodeId === node.id) {
-                  setFocus(false)
-                  queueRef.current = null
-                  setMaterial(null)
-                  setDocument(null)
-                  setInternalLinkHistory([])
-                  setReveal(null)
-                }
-                if (folderId === node.id) setFolderId(node.parentId)
-                setEditorError('')
-                refreshAfterMutation()
-              })
-              .catch((reason) => setEditorError(messageFor(reason)))
-              .finally(() => setPendingAction(false))
+    if (pendingAction) return
+    void confirm({
+      title: node.type === 'folder' ? 'Удалить папку?' : 'Удалить материал?',
+      description:
+        node.type === 'folder'
+          ? 'Будут удалены папка, все вложенные материалы и их локальные данные.'
+          : 'Материал и его локальные данные будут удалены.',
+      tone: 'danger',
+      onConfirm: async () => {
+        setPendingAction(true)
+        if (material?.nodeId === node.id) queueRef.current?.discardPending()
+        try {
+          await api.deleteNode(node.id)
+          if (material?.nodeId === node.id) {
+            setFocus(false)
+            queueRef.current = null
+            setMaterial(null)
+            setDocument(null)
+            setInternalLinkHistory([])
+            setReveal(null)
           }
+          if (folderId === node.id) setFolderId(node.parentId)
+          setEditorError('')
+          refreshAfterMutation()
+          toast.success(node.type === 'folder' ? 'Папка удалена' : 'Материал удалён')
+        } catch (reason) {
+          setEditorError(messageFor(reason))
+          throw reason
+        } finally {
+          setPendingAction(false)
         }
-      ]
-    )
+      }
+    })
   }
 
   const breadcrumbs = useMemo(() => {
@@ -873,29 +876,43 @@ export function StudyScreen({
             <EmptyState text={query.trim() ? 'Ничего не найдено.' : 'В этой папке пока пусто.'} />
           }
           renderItem={({ item, index }) => (
-            <Row
+            <WorkspaceNodeCard
               title={item.title}
               subtitle={item.type === 'folder' ? `Папка · ${item.icon ?? 'folder'}` : 'Материал'}
+              leadingIcon={item.type === 'folder' ? 'folder' : 'study'}
               onPress={() =>
                 item.type === 'folder' ? setFolderId(item.id) : openMaterial(item.id)
               }
-            >
-              <Button label="Изменить" onPress={() => editNode(item)} />
-              <Button label="Код" onPress={() => setCodeNodeId(item.id)} />
-              <Button label="↑" disabled={index === 0} onPress={() => reorder(item, -1)} />
-              <Button
-                label="↓"
-                disabled={index === children.length - 1}
-                onPress={() => reorder(item, 1)}
-              />
-              <Button label="Копия" disabled={pendingAction} onPress={() => duplicate(item)} />
-              <Button
-                label="Удалить"
-                danger
-                disabled={pendingAction}
-                onPress={() => confirmDelete(item)}
-              />
-            </Row>
+              action={
+                <ActionMenu
+                  title={item.title}
+                  disabled={pendingAction}
+                  items={[
+                    { label: 'Изменить', icon: 'edit', onPress: () => editNode(item) },
+                    { label: 'Открыть код', icon: 'study', onPress: () => setCodeNodeId(item.id) },
+                    {
+                      label: 'Переместить выше',
+                      icon: 'move',
+                      disabled: index === 0,
+                      onPress: () => reorder(item, -1)
+                    },
+                    {
+                      label: 'Переместить ниже',
+                      icon: 'move',
+                      disabled: index === children.length - 1,
+                      onPress: () => reorder(item, 1)
+                    },
+                    { label: 'Создать копию', icon: 'add', onPress: () => duplicate(item) },
+                    {
+                      label: 'Удалить',
+                      icon: 'delete',
+                      danger: true,
+                      onPress: () => confirmDelete(item)
+                    }
+                  ]}
+                />
+              }
+            />
           )}
         />
       )}

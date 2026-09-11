@@ -18,6 +18,8 @@ import { notifyDataChanged, subscribeDataChanges } from '../../app/changes'
 import { useServices } from '../../app/context'
 import { useCollection } from '../../shared/hooks/useCollection'
 import { FormSheet } from '../../shared/ui/FormSheet'
+import { ActionMenu } from '../../shared/ui/ActionMenu'
+import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
 import { choiceField, textField, type FormSpec } from '../../shared/ui/form-model'
 import {
   Button,
@@ -178,13 +180,13 @@ export function CalendarScreen(): React.JSX.Element {
           { value: 'one_time', label: 'Один раз' },
           { value: 'annual', label: 'Каждый год' }
         ]),
-        textField('date', 'Дата события', 'text', 'ГГГГ-ММ-ДД'),
-        textField('time', 'Время', 'text', 'ЧЧ:ММ, необязательно'),
+        textField('date', 'Дата события', 'date'),
+        textField('time', 'Время', 'time', 'Необязательно'),
         textField(
           'startDate',
           'Отсчитывать время от даты',
-          'text',
-          'Для ежегодных событий; ГГГГ-ММ-ДД'
+          'date',
+          'Для ежегодных событий; необязательно'
         ),
         textField('note', 'Заметка к этому событию', 'multiline'),
         textField('offsets', 'Напомнить за N минут', 'text', 'Через запятую, например: 30, 1440')
@@ -374,41 +376,56 @@ export function CalendarScreen(): React.JSX.Element {
           }}
           contentContainerStyle={{ paddingBottom: 40 }}
           renderItem={({ item }) => (
-            <Row title={item.title} subtitle={occurrenceSubtitle(item)} onPress={() => edit(item)}>
-              {item.kind === 'annual' ? (
-                <Button
-                  label="Пропустить в этом году"
-                  onPress={() =>
-                    state.confirmDelete(
-                      'Скрыть это повторение?',
-                      () => {
-                        api.setCalendarOccurrenceHidden({
-                          eventId: item.eventId,
-                          occurrenceDate: item.occurrenceDate,
-                          hidden: true
-                        })
-                      },
-                      'Остальные ежегодные повторения сохранятся.'
-                    )
-                  }
+            <WorkspaceNodeCard
+              title={item.title}
+              subtitle={occurrenceSubtitle(item)}
+              leadingIcon="calendar"
+              onPress={() => edit(item)}
+              action={
+                <ActionMenu
+                  title={item.title}
+                  items={[
+                    ...(item.kind === 'annual'
+                      ? [
+                          {
+                            key: 'skip-year',
+                            label: 'Пропустить в этом году',
+                            icon: 'skip' as const,
+                            onPress: () =>
+                              state.confirmDelete(
+                                'Скрыть это повторение?',
+                                () => {
+                                  api.setCalendarOccurrenceHidden({
+                                    eventId: item.eventId,
+                                    occurrenceDate: item.occurrenceDate,
+                                    hidden: true
+                                  })
+                                },
+                                'Остальные ежегодные повторения сохранятся.'
+                              )
+                          }
+                        ]
+                      : []),
+                    {
+                      key: 'delete',
+                      label: 'Удалить событие',
+                      icon: 'delete',
+                      danger: true,
+                      onPress: () =>
+                        state.confirmDelete(
+                          'Удалить событие?',
+                          () => {
+                            api.deleteCalendarEvent(item.eventId)
+                          },
+                          item.kind === 'annual'
+                            ? 'Будут удалены все ежегодные повторения и заметки.'
+                            : 'Событие и заметка будут удалены.'
+                        )
+                    }
+                  ]}
                 />
-              ) : null}
-              <Button
-                label="Удалить событие"
-                danger
-                onPress={() =>
-                  state.confirmDelete(
-                    'Удалить событие?',
-                    () => {
-                      api.deleteCalendarEvent(item.eventId)
-                    },
-                    item.kind === 'annual'
-                      ? 'Будут удалены все ежегодные повторения и заметки.'
-                      : 'Событие и заметка будут удалены.'
-                  )
-                }
-              />
-            </Row>
+              }
+            />
           )}
         />
       )}

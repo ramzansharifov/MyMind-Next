@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react'
-import { Modal, ScrollView, Switch, TextInput, View } from 'react-native'
+import { ScrollView, TextInput, View } from 'react-native'
 import type { GeneratePasswordInput } from '@mymind/contracts/passwords'
 import { generatePasswordInputSchema } from '@mymind/core/validation/passwords'
+import { AppDialog } from '../../shared/ui/AppDialog'
+import { AppCheckbox, AppTextField } from '../../shared/ui/FormControls'
 import { Button, ErrorState, Label } from '../../shared/ui/primitives'
 import { messageFor } from '../../shared/ui/form-model'
 import { useTheme } from '../../shared/ui/theme'
@@ -60,111 +62,86 @@ export function PasswordGeneratorModal({
   }
 
   return (
-    <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={close}>
-      <View style={{ flex: 1, backgroundColor: theme.background }}>
-        <ScrollView
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 48 }}
-        >
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
-            <View style={{ flex: 1 }}>
-              <Label title>Генератор паролей</Label>
-              <Label muted>Генерация выполняется локально на устройстве.</Label>
-            </View>
-            <Button label="Закрыть" onPress={close} />
-          </View>
-
+    <AppDialog
+      open
+      onOpenChange={(open) => {
+        if (!open) close()
+      }}
+      title="Генератор паролей"
+      description="Генерация выполняется локально на устройстве."
+      icon="passwords"
+      presentation="sheet"
+    >
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 28 }}
+      >
+        <View style={{ gap: 7 }}>
           <Label>Длина</Label>
-          <TextInput
+          <AppTextField
             value={length}
             onChangeText={setLength}
             keyboardType="number-pad"
             accessibilityLabel="Длина пароля"
+          />
+        </View>
+
+        <View style={{ gap: 7 }}>
+          {settings.map((setting) => (
+            <AppCheckbox
+              key={setting.label}
+              label={setting.label}
+              value={setting.value}
+              onChange={setting.set}
+            />
+          ))}
+        </View>
+
+        <Button
+          label={value ? 'Сгенерировать заново' : 'Сгенерировать'}
+          primary
+          onPress={regenerate}
+        />
+        {error ? <ErrorState message={error} /> : null}
+
+        {value ? (
+          <View
             style={{
-              minHeight: 48,
+              gap: 10,
               borderWidth: 1,
               borderColor: theme.border,
-              borderRadius: 12,
               backgroundColor: theme.surface,
-              color: theme.text,
-              paddingHorizontal: 14,
-              fontSize: 16
+              borderRadius: 16,
+              padding: 14
             }}
-          />
-
-          {settings.map((setting) => (
-            <View
-              key={setting.label}
-              style={{
-                minHeight: 52,
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: 12,
-                borderWidth: 1,
-                borderColor: theme.border,
-                borderRadius: 12,
-                paddingHorizontal: 14,
-                backgroundColor: theme.surface
-              }}
-            >
-              <View style={{ flex: 1 }}>
-                <Label>{setting.label}</Label>
-              </View>
-              <Switch
-                value={setting.value}
-                onValueChange={setting.set}
-                trackColor={{ true: theme.accent }}
+          >
+            <TextInput
+              editable={false}
+              value={value}
+              secureTextEntry={!visible}
+              accessibilityLabel="Сгенерированный пароль"
+              style={{ color: theme.text, fontSize: 17, minHeight: 44 }}
+            />
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              <Button
+                label={visible ? 'Скрыть' : 'Показать'}
+                onPress={() => setVisible(!visible)}
               />
-            </View>
-          ))}
-
-          <Button
-            label={value ? 'Сгенерировать заново' : 'Сгенерировать'}
-            selected
-            onPress={regenerate}
-          />
-          {error ? <ErrorState message={error} /> : null}
-
-          {value ? (
-            <View
-              style={{
-                gap: 10,
-                borderWidth: 1,
-                borderColor: theme.border,
-                backgroundColor: theme.surface,
-                borderRadius: 16,
-                padding: 16
-              }}
-            >
-              <TextInput
-                editable={false}
-                value={value}
-                secureTextEntry={!visible}
-                accessibilityLabel="Сгенерированный пароль"
-                style={{ color: theme.text, fontSize: 17, minHeight: 44 }}
-              />
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              <Button label="Копировать" icon="copy" onPress={() => void copy(value)} />
+              {onUseValue ? (
                 <Button
-                  label={visible ? 'Скрыть' : 'Показать'}
-                  onPress={() => setVisible(!visible)}
+                  label="Использовать"
+                  primary
+                  onPress={() => {
+                    onUseValue(value)
+                    close()
+                  }}
                 />
-                <Button label="Копировать" onPress={() => void copy(value)} />
-                {onUseValue ? (
-                  <Button
-                    label="Использовать"
-                    selected
-                    onPress={() => {
-                      onUseValue(value)
-                      close()
-                    }}
-                  />
-                ) : null}
-              </View>
+              ) : null}
             </View>
-          ) : null}
-        </ScrollView>
-      </View>
-    </Modal>
+          </View>
+        ) : null}
+      </ScrollView>
+    </AppDialog>
   )
 }

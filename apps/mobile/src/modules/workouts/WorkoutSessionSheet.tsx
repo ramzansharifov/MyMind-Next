@@ -1,14 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
-import {
-  Alert,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
-  TextInput,
-  View
-} from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { ScrollView, TextInput, View } from 'react-native'
 import type {
   CreateWorkoutSessionInput,
   UpdateWorkoutSessionInput,
@@ -20,8 +11,11 @@ import {
   createWorkoutSessionInputSchema,
   updateWorkoutSessionInputSchema
 } from '@mymind/core/validation/workouts'
+import { AppDialog } from '../../shared/ui/AppDialog'
+import { AppDateField } from '../../shared/ui/FormControls'
 import { Button, ErrorState, Label } from '../../shared/ui/primitives'
 import { messageFor, nullableNumeric, numeric } from '../../shared/ui/form-model'
+import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
 import { useTheme } from '../../shared/ui/theme'
 
 interface DraftSet {
@@ -57,6 +51,7 @@ export function WorkoutSessionSheet({
   close(): void
 }): React.JSX.Element {
   const theme = useTheme()
+  const confirm = useConfirmation()
   const counter = useRef(0)
   const activeExercises = useMemo(
     () =>
@@ -111,10 +106,14 @@ export function WorkoutSessionSheet({
   const nextKey = (prefix: string): string => `${prefix}-${++counter.current}`
   const requestClose = (): void => {
     if (pending) return
-    Alert.alert('Закрыть тренировку?', 'Несохранённые изменения будут потеряны.', [
-      { text: 'Продолжить', style: 'cancel' },
-      { text: 'Не сохранять', style: 'destructive', onPress: close }
-    ])
+    void confirm({
+      title: 'Закрыть тренировку?',
+      description: 'Несохранённые изменения будут потеряны.',
+      confirmLabel: 'Не сохранять',
+      tone: 'warning',
+      notice: null,
+      onConfirm: close
+    })
   }
   const selectedExercise = (exerciseId: string): WorkoutExerciseRecord | undefined =>
     exercises.find((exercise) => exercise.id === exerciseId)
@@ -184,299 +183,296 @@ export function WorkoutSessionSheet({
   } as const
 
   return (
-    <Modal animationType="slide" onRequestClose={requestClose}>
-      <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
-        <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
-          <View style={{ padding: 16, gap: 12 }}>
-            <Label title>{session ? 'Изменить тренировку' : 'Новая тренировка'}</Label>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
-              <Button label="Отмена" disabled={pending} onPress={requestClose} />
-              <Button
-                label={pending ? 'Сохранение…' : 'Сохранить'}
-                selected
-                disabled={pending}
-                onPress={() => void submit()}
-              />
-            </View>
-          </View>
+    <AppDialog
+      open
+      onOpenChange={(open) => {
+        if (!open) requestClose()
+      }}
+      title={session ? 'Изменить тренировку' : 'Новая тренировка'}
+      description="Программа, упражнения, подходы и комментарии"
+      icon="workouts"
+      presentation="sheet"
+      busy={pending}
+      footer={
+        <>
+          <Button label="Отмена" disabled={pending} onPress={requestClose} />
+          <Button
+            label={pending ? 'Сохранение…' : 'Сохранить'}
+            primary
+            disabled={pending}
+            onPress={() => void submit()}
+          />
+        </>
+      }
+    >
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ padding: 16, paddingBottom: 28, gap: 18 }}
+      >
+        {error ? <ErrorState message={error} /> : null}
+        <View style={{ gap: 8 }}>
+          <Label>Программа</Label>
           <ScrollView
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{ padding: 16, paddingBottom: 60, gap: 18 }}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 8 }}
           >
-            {error ? <ErrorState message={error} /> : null}
-            <View style={{ gap: 8 }}>
-              <Label>Программа</Label>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ gap: 8 }}
-              >
+            <Button
+              label="Свободная"
+              selected={programId === null}
+              disabled={pending}
+              onPress={() => setProgramId(null)}
+            />
+            {programs
+              .filter((program) => program.status === 'active' || program.id === programId)
+              .map((program) => (
                 <Button
-                  label="Свободная"
-                  selected={programId === null}
+                  key={program.id}
+                  label={program.name}
+                  selected={program.id === programId}
                   disabled={pending}
-                  onPress={() => setProgramId(null)}
+                  onPress={() => setProgramId(program.id)}
                 />
-                {programs
-                  .filter((program) => program.status === 'active' || program.id === programId)
-                  .map((program) => (
-                    <Button
-                      key={program.id}
-                      label={program.name}
-                      selected={program.id === programId}
-                      disabled={pending}
-                      onPress={() => setProgramId(program.id)}
-                    />
-                  ))}
-              </ScrollView>
-            </View>
-            <View style={{ gap: 8 }}>
-              <Label>Дата</Label>
-              <TextInput
-                accessibilityLabel="Дата тренировки"
-                editable={!pending}
-                value={date}
-                onChangeText={setDate}
-                placeholder="ГГГГ-ММ-ДД"
-                placeholderTextColor={theme.muted}
-                style={inputStyle}
-              />
-            </View>
-            <View style={{ gap: 8 }}>
-              <Label>Длительность, мин</Label>
-              <TextInput
-                accessibilityLabel="Длительность тренировки"
-                editable={!pending}
-                value={durationMinutes}
-                onChangeText={setDurationMinutes}
-                keyboardType="number-pad"
-                placeholder="Не указано"
-                placeholderTextColor={theme.muted}
-                style={inputStyle}
-              />
-            </View>
-            <View style={{ gap: 8 }}>
-              <Label>Комментарий</Label>
-              <TextInput
-                accessibilityLabel="Комментарий тренировки"
-                editable={!pending}
-                value={comment}
-                onChangeText={setComment}
-                multiline
-                textAlignVertical="top"
-                style={{ ...inputStyle, minHeight: 90 }}
-              />
-            </View>
+              ))}
+          </ScrollView>
+        </View>
+        <View style={{ gap: 8 }}>
+          <Label>Дата</Label>
+          <AppDateField
+            label="Дата тренировки"
+            value={date}
+            onChangeText={setDate}
+            disabled={pending}
+          />
+        </View>
+        <View style={{ gap: 8 }}>
+          <Label>Длительность, мин</Label>
+          <TextInput
+            accessibilityLabel="Длительность тренировки"
+            editable={!pending}
+            value={durationMinutes}
+            onChangeText={setDurationMinutes}
+            keyboardType="number-pad"
+            placeholder="Не указано"
+            placeholderTextColor={theme.muted}
+            style={inputStyle}
+          />
+        </View>
+        <View style={{ gap: 8 }}>
+          <Label>Комментарий</Label>
+          <TextInput
+            accessibilityLabel="Комментарий тренировки"
+            editable={!pending}
+            value={comment}
+            onChangeText={setComment}
+            multiline
+            textAlignVertical="top"
+            style={{ ...inputStyle, minHeight: 90 }}
+          />
+        </View>
 
-            <View style={{ gap: 12 }}>
+        <View style={{ gap: 12 }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: 8
+            }}
+          >
+            <Label title>Упражнения</Label>
+            <Button label="+ Упражнение" disabled={pending} onPress={addExercise} />
+          </View>
+          {items.length === 0 ? <ErrorState message="Добавьте хотя бы одно упражнение." /> : null}
+          {items.map((item, exerciseIndex) => {
+            const exercise = selectedExercise(item.exerciseId)
+            const usedByOthers = new Set(
+              items
+                .filter((candidate) => candidate.key !== item.key)
+                .map((candidate) => candidate.exerciseId)
+            )
+            return (
               <View
+                key={item.key}
                 style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  gap: 8
+                  gap: 12,
+                  padding: 14,
+                  borderWidth: 1,
+                  borderColor: theme.border,
+                  borderRadius: 16,
+                  backgroundColor: theme.surface
                 }}
               >
-                <Label title>Упражнения</Label>
-                <Button label="+ Упражнение" disabled={pending} onPress={addExercise} />
-              </View>
-              {items.length === 0 ? (
-                <ErrorState message="Добавьте хотя бы одно упражнение." />
-              ) : null}
-              {items.map((item, exerciseIndex) => {
-                const exercise = selectedExercise(item.exerciseId)
-                const usedByOthers = new Set(
-                  items
-                    .filter((candidate) => candidate.key !== item.key)
-                    .map((candidate) => candidate.exerciseId)
-                )
-                return (
-                  <View
-                    key={item.key}
-                    style={{
-                      gap: 12,
-                      padding: 14,
-                      borderWidth: 1,
-                      borderColor: theme.border,
-                      borderRadius: 16,
-                      backgroundColor: theme.surface
-                    }}
-                  >
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        gap: 8
-                      }}
-                    >
-                      <Label>{`Упражнение ${exerciseIndex + 1}`}</Label>
-                      {items.length > 1 ? (
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: 8
+                  }}
+                >
+                  <Label>{`Упражнение ${exerciseIndex + 1}`}</Label>
+                  {items.length > 1 ? (
+                    <Button
+                      label="Удалить"
+                      danger
+                      disabled={pending}
+                      onPress={() =>
+                        setItems((current) =>
+                          current.filter((candidate) => candidate.key !== item.key)
+                        )
+                      }
+                    />
+                  ) : null}
+                </View>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ gap: 8 }}
+                >
+                  {activeExercises.map((candidate) => (
+                    <Button
+                      key={candidate.id}
+                      label={candidate.title}
+                      selected={candidate.id === item.exerciseId}
+                      disabled={pending || usedByOthers.has(candidate.id)}
+                      onPress={() =>
+                        setItems((current) =>
+                          current.map((currentItem) =>
+                            currentItem.key === item.key
+                              ? { ...currentItem, exerciseId: candidate.id }
+                              : currentItem
+                          )
+                        )
+                      }
+                    />
+                  ))}
+                </ScrollView>
+                <TextInput
+                  accessibilityLabel={`Комментарий упражнения ${exerciseIndex + 1}`}
+                  editable={!pending}
+                  value={item.comment}
+                  onChangeText={(value) =>
+                    setItems((current) =>
+                      current.map((currentItem) =>
+                        currentItem.key === item.key
+                          ? { ...currentItem, comment: value }
+                          : currentItem
+                      )
+                    )
+                  }
+                  placeholder="Комментарий"
+                  placeholderTextColor={theme.muted}
+                  style={inputStyle}
+                />
+                {item.sets.map((set, setIndex) => (
+                  <View key={set.key} style={{ gap: 8 }}>
+                    <Label muted>{`Подход ${setIndex + 1}`}</Label>
+                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                      <TextInput
+                        accessibilityLabel={`Повторения, подход ${setIndex + 1}`}
+                        editable={!pending}
+                        value={set.reps}
+                        onChangeText={(value) =>
+                          setItems((current) =>
+                            current.map((currentItem) =>
+                              currentItem.key === item.key
+                                ? {
+                                    ...currentItem,
+                                    sets: currentItem.sets.map((currentSet) =>
+                                      currentSet.key === set.key
+                                        ? { ...currentSet, reps: value }
+                                        : currentSet
+                                    )
+                                  }
+                                : currentItem
+                            )
+                          )
+                        }
+                        keyboardType="number-pad"
+                        placeholder="Повторы"
+                        placeholderTextColor={theme.muted}
+                        style={{ ...inputStyle, flex: 1 }}
+                      />
+                      {exercise?.usesExternalWeight ? (
+                        <TextInput
+                          accessibilityLabel={`Вес, подход ${setIndex + 1}`}
+                          editable={!pending}
+                          value={set.weightKg}
+                          onChangeText={(value) =>
+                            setItems((current) =>
+                              current.map((currentItem) =>
+                                currentItem.key === item.key
+                                  ? {
+                                      ...currentItem,
+                                      sets: currentItem.sets.map((currentSet) =>
+                                        currentSet.key === set.key
+                                          ? { ...currentSet, weightKg: value }
+                                          : currentSet
+                                      )
+                                    }
+                                  : currentItem
+                              )
+                            )
+                          }
+                          keyboardType="decimal-pad"
+                          placeholder="Вес, кг"
+                          placeholderTextColor={theme.muted}
+                          style={{ ...inputStyle, flex: 1 }}
+                        />
+                      ) : null}
+                      {item.sets.length > 1 ? (
                         <Button
-                          label="Удалить"
+                          label="−"
                           danger
                           disabled={pending}
                           onPress={() =>
                             setItems((current) =>
-                              current.filter((candidate) => candidate.key !== item.key)
-                            )
-                          }
-                        />
-                      ) : null}
-                    </View>
-                    <ScrollView
-                      horizontal
-                      showsHorizontalScrollIndicator={false}
-                      contentContainerStyle={{ gap: 8 }}
-                    >
-                      {activeExercises.map((candidate) => (
-                        <Button
-                          key={candidate.id}
-                          label={candidate.title}
-                          selected={candidate.id === item.exerciseId}
-                          disabled={pending || usedByOthers.has(candidate.id)}
-                          onPress={() =>
-                            setItems((current) =>
                               current.map((currentItem) =>
                                 currentItem.key === item.key
-                                  ? { ...currentItem, exerciseId: candidate.id }
+                                  ? {
+                                      ...currentItem,
+                                      sets: currentItem.sets.filter(
+                                        (currentSet) => currentSet.key !== set.key
+                                      )
+                                    }
                                   : currentItem
                               )
                             )
                           }
                         />
-                      ))}
-                    </ScrollView>
-                    <TextInput
-                      accessibilityLabel={`Комментарий упражнения ${exerciseIndex + 1}`}
-                      editable={!pending}
-                      value={item.comment}
-                      onChangeText={(value) =>
-                        setItems((current) =>
-                          current.map((currentItem) =>
-                            currentItem.key === item.key
-                              ? { ...currentItem, comment: value }
-                              : currentItem
-                          )
-                        )
-                      }
-                      placeholder="Комментарий"
-                      placeholderTextColor={theme.muted}
-                      style={inputStyle}
-                    />
-                    {item.sets.map((set, setIndex) => (
-                      <View key={set.key} style={{ gap: 8 }}>
-                        <Label muted>{`Подход ${setIndex + 1}`}</Label>
-                        <View style={{ flexDirection: 'row', gap: 8 }}>
-                          <TextInput
-                            accessibilityLabel={`Повторения, подход ${setIndex + 1}`}
-                            editable={!pending}
-                            value={set.reps}
-                            onChangeText={(value) =>
-                              setItems((current) =>
-                                current.map((currentItem) =>
-                                  currentItem.key === item.key
-                                    ? {
-                                        ...currentItem,
-                                        sets: currentItem.sets.map((currentSet) =>
-                                          currentSet.key === set.key
-                                            ? { ...currentSet, reps: value }
-                                            : currentSet
-                                        )
-                                      }
-                                    : currentItem
-                                )
-                              )
-                            }
-                            keyboardType="number-pad"
-                            placeholder="Повторы"
-                            placeholderTextColor={theme.muted}
-                            style={{ ...inputStyle, flex: 1 }}
-                          />
-                          {exercise?.usesExternalWeight ? (
-                            <TextInput
-                              accessibilityLabel={`Вес, подход ${setIndex + 1}`}
-                              editable={!pending}
-                              value={set.weightKg}
-                              onChangeText={(value) =>
-                                setItems((current) =>
-                                  current.map((currentItem) =>
-                                    currentItem.key === item.key
-                                      ? {
-                                          ...currentItem,
-                                          sets: currentItem.sets.map((currentSet) =>
-                                            currentSet.key === set.key
-                                              ? { ...currentSet, weightKg: value }
-                                              : currentSet
-                                          )
-                                        }
-                                      : currentItem
-                                  )
-                                )
-                              }
-                              keyboardType="decimal-pad"
-                              placeholder="Вес, кг"
-                              placeholderTextColor={theme.muted}
-                              style={{ ...inputStyle, flex: 1 }}
-                            />
-                          ) : null}
-                          {item.sets.length > 1 ? (
-                            <Button
-                              label="−"
-                              danger
-                              disabled={pending}
-                              onPress={() =>
-                                setItems((current) =>
-                                  current.map((currentItem) =>
-                                    currentItem.key === item.key
-                                      ? {
-                                          ...currentItem,
-                                          sets: currentItem.sets.filter(
-                                            (currentSet) => currentSet.key !== set.key
-                                          )
-                                        }
-                                      : currentItem
-                                  )
-                                )
-                              }
-                            />
-                          ) : null}
-                        </View>
-                      </View>
-                    ))}
-                    <Button
-                      label="+ Подход"
-                      disabled={pending}
-                      onPress={() =>
-                        setItems((current) =>
-                          current.map((currentItem) =>
-                            currentItem.key === item.key
-                              ? {
-                                  ...currentItem,
-                                  sets: [
-                                    ...currentItem.sets,
-                                    {
-                                      key: nextKey('set'),
-                                      reps: currentItem.sets.at(-1)?.reps ?? '10',
-                                      weightKg: currentItem.sets.at(-1)?.weightKg ?? '0'
-                                    }
-                                  ]
-                                }
-                              : currentItem
-                          )
-                        )
-                      }
-                    />
+                      ) : null}
+                    </View>
                   </View>
-                )
-              })}
-            </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-    </Modal>
+                ))}
+                <Button
+                  label="+ Подход"
+                  disabled={pending}
+                  onPress={() =>
+                    setItems((current) =>
+                      current.map((currentItem) =>
+                        currentItem.key === item.key
+                          ? {
+                              ...currentItem,
+                              sets: [
+                                ...currentItem.sets,
+                                {
+                                  key: nextKey('set'),
+                                  reps: currentItem.sets.at(-1)?.reps ?? '10',
+                                  weightKg: currentItem.sets.at(-1)?.weightKg ?? '0'
+                                }
+                              ]
+                            }
+                          : currentItem
+                      )
+                    )
+                  }
+                />
+              </View>
+            )
+          })}
+        </View>
+      </ScrollView>
+    </AppDialog>
   )
 }

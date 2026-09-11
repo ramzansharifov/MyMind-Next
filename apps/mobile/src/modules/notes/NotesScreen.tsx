@@ -1,6 +1,6 @@
 import { randomUUID } from 'expo-crypto'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Alert, AppState, BackHandler, FlatList, TextInput, View } from 'react-native'
+import { AppState, BackHandler, FlatList, TextInput, View } from 'react-native'
 import type { NoteDocument, NoteGroup, NoteRecord, NoteSummary } from '@mymind/contracts/notes'
 import type { StudyBoardBlock } from '@mymind/contracts/study'
 import { STUDY_FOLDER_ICON_NAMES } from '@mymind/contracts/study'
@@ -11,11 +11,16 @@ import { notifyDataChanged } from '../../app/changes'
 import { useCollection } from '../../shared/hooks/useCollection'
 import { DocumentEditor } from '../../shared/ui/DocumentEditor'
 import { FormSheet } from '../../shared/ui/FormSheet'
+import { ActionMenu } from '../../shared/ui/ActionMenu'
+import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
+import { useToast } from '../../shared/ui/ToastProvider'
+import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
 import { choiceField, messageFor, textField, type FormSpec } from '../../shared/ui/form-model'
 import {
   Button,
   EmptyState,
   ErrorState,
+  IconButton,
   Label,
   LoadingState,
   Row,
@@ -36,6 +41,8 @@ export function NotesScreen({
 }): React.JSX.Element {
   const { notes: api, boards, documentAssets } = useServices()
   const theme = useTheme()
+  const confirm = useConfirmation()
+  const toast = useToast()
   const overview = useCollection(useCallback(() => api.listNotesOverview(), [api]))
   const [query, setQuery] = useState('')
   const [groupId, setGroupId] = useState<string | null | undefined>(undefined)
@@ -236,33 +243,28 @@ export function NotesScreen({
 
   const deleteCurrentNote = (): void => {
     if (!record) return
-    Alert.alert('Удалить заметку?', 'Заметка и её локальные данные будут удалены.', [
-      { text: 'Отмена', style: 'cancel' },
-      {
-        text: 'Удалить',
-        style: 'destructive',
-        onPress: () => {
-          const id = record.id
-          setClosing(true)
-          void (async () => {
-            try {
-              queueRef.current?.discardPending()
-              await api.deleteNote(id)
-              queueRef.current = null
-              setRecord(null)
-              setDocument(null)
-              setEditorError('')
-              notifyDataChanged()
-              overview.refresh()
-            } catch (reason) {
-              setEditorError(messageFor(reason))
-            } finally {
-              setClosing(false)
-            }
-          })()
+    const id = record.id
+    void confirm({
+      title: 'Удалить заметку?',
+      description: 'Заметка и её локальные данные будут удалены.',
+      tone: 'danger',
+      onConfirm: async () => {
+        setClosing(true)
+        try {
+          queueRef.current?.discardPending()
+          await api.deleteNote(id)
+          queueRef.current = null
+          setRecord(null)
+          setDocument(null)
+          setEditorError('')
+          notifyDataChanged()
+          overview.refresh()
+          toast.success('Заметка удалена')
+        } finally {
+          setClosing(false)
         }
       }
-    ])
+    })
   }
 
   if (record && document) {
@@ -281,18 +283,31 @@ export function NotesScreen({
           onAssetError={(reason) => setEditorError(messageFor(reason))}
           header={
             <View style={{ gap: 12, paddingBottom: 16 }}>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                <Button
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <IconButton
                   label={closing ? 'Сохранение…' : 'Назад'}
+                  icon="back"
                   disabled={closing}
                   onPress={() => void closeEditor()}
                 />
-                <Button
-                  label="Свойства"
+                <View style={{ flex: 1 }} />
+                <ActionMenu
                   disabled={closing}
-                  onPress={() => editNoteProperties(record)}
+                  title="Заметка"
+                  items={[
+                    {
+                      label: 'Свойства заметки',
+                      icon: 'edit',
+                      onPress: () => editNoteProperties(record)
+                    },
+                    {
+                      label: 'Удалить заметку',
+                      icon: 'delete',
+                      danger: true,
+                      onPress: deleteCurrentNote
+                    }
+                  ]}
                 />
-                <Button label="Удалить" danger disabled={closing} onPress={deleteCurrentNote} />
               </View>
               <TextInput
                 accessibilityLabel="Название заметки"
@@ -344,10 +359,13 @@ export function NotesScreen({
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           <Button
             label={groupsView ? 'К заметкам' : 'Группы'}
+            icon={groupsView ? 'notes' : 'folder'}
+            compact
             onPress={() => setGroupsView((value) => !value)}
           />
-          <Button
-            label={groupsView ? '+ Группа' : '+ Заметка'}
+          <IconButton
+            label={groupsView ? 'Создать группу' : 'Создать заметку'}
+            icon="add"
             selected
             onPress={() => (groupsView ? editGroup() : createNote())}
           />
@@ -388,43 +406,49 @@ export function NotesScreen({
           keyExtractor={(item) => item.id}
           ListEmptyComponent={<EmptyState text="Групп пока нет." />}
           renderItem={({ item }) => (
-            <Row
+            <WorkspaceNodeCard
               title={item.title}
-              subtitle={`${overview.data?.notes.filter((note) => note.groupId === item.id).length ?? 0} заметок · ${item.icon}`}
+              subtitle={
+                (overview.data?.notes.filter((note) => note.groupId === item.id).length ?? 0) +
+                ' заметок'
+              }
+              leadingIcon="folder"
               onPress={() => {
                 setGroupId(item.id)
                 setGroupsView(false)
               }}
-            >
-              <Button label="Изменить" onPress={() => editGroup(item)} />
-              <Button
-                label="Удалить"
-                danger
-                onPress={() =>
-                  Alert.alert(
-                    'Удалить группу?',
-                    'Заметки сохранятся и перейдут в раздел «Без группы».',
-                    [
-                      { text: 'Отмена', style: 'cancel' },
-                      {
-                        text: 'Удалить',
-                        style: 'destructive',
-                        onPress: () => {
-                          try {
+              action={
+                <ActionMenu
+                  title={item.title}
+                  items={[
+                    {
+                      label: 'Изменить группу',
+                      icon: 'edit',
+                      onPress: () => editGroup(item)
+                    },
+                    {
+                      label: 'Удалить группу',
+                      icon: 'delete',
+                      danger: true,
+                      onPress: () => {
+                        void confirm({
+                          title: 'Удалить группу?',
+                          description: 'Заметки сохранятся и перейдут в раздел «Без группы».',
+                          tone: 'danger',
+                          onConfirm: () => {
                             api.deleteNoteGroup(item.id)
                             if (groupId === item.id) setGroupId(undefined)
                             overview.refresh()
                             notifyDataChanged()
-                          } catch (reason) {
-                            Alert.alert('Не удалось удалить группу', messageFor(reason))
+                            toast.success('Группа удалена')
                           }
-                        }
+                        })
                       }
-                    ]
-                  )
-                }
-              />
-            </Row>
+                    }
+                  ]}
+                />
+              }
+            />
           )}
         />
       ) : (
@@ -437,6 +461,7 @@ export function NotesScreen({
           renderItem={({ item }) => (
             <Row
               title={item.title}
+              leadingIcon="notes"
               subtitle={[
                 item.plainText.slice(0, 180),
                 overview.data?.groups.find((group) => group.id === item.groupId)?.title

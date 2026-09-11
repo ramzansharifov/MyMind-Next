@@ -18,6 +18,10 @@ import {
 import type { PasswordsRepository } from '@mymind/persistence/passwords'
 import { useServices } from '../../app/context'
 import { FormSheet } from '../../shared/ui/FormSheet'
+import { ActionMenu } from '../../shared/ui/ActionMenu'
+import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
+import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
+import { useToast } from '../../shared/ui/ToastProvider'
 import { choiceField, messageFor, textField, type FormSpec } from '../../shared/ui/form-model'
 import {
   Button,
@@ -170,6 +174,8 @@ function itemSubtitle(item: PasswordItemSummary, overview: PasswordsOverview): s
 
 export function PasswordsScreen(): React.JSX.Element {
   const { passwords: api } = useServices()
+  const confirm = useConfirmation()
+  const toast = useToast()
   const [status, setStatus] = useState<PasswordVaultStatus>(() => api.getPasswordVaultStatus())
   const [overview, setOverview] = useState<PasswordsOverview | null>(null)
   const [loading, setLoading] = useState(false)
@@ -273,6 +279,7 @@ export function PasswordsScreen(): React.JSX.Element {
       if (!value) throw new Error(field === 'username' ? 'Логин не указан' : 'Пароль не указан')
       await passwordClipboard.copy(value)
       setError('')
+      toast.success(field === 'username' ? 'Логин скопирован' : 'Пароль скопирован')
     } catch (reason) {
       setError(messageFor(reason))
     }
@@ -287,6 +294,43 @@ export function PasswordsScreen(): React.JSX.Element {
     } catch (reason) {
       setError(messageFor(reason))
     }
+  }
+
+  const deleteGroup = (group: PasswordGroupRecord): void => {
+    void confirm({
+      title: `Удалить группу «${group.name}»?`,
+      description: 'Записи группы сохранятся, но группа будет удалена.',
+      tone: 'danger',
+      onConfirm: () => {
+        try {
+          api.deletePasswordGroup({ id: group.id })
+          if (groupFilter === group.id) setGroupFilter(undefined)
+          refresh()
+          toast.success('Группа удалена')
+        } catch (reason) {
+          setError(messageFor(reason))
+          throw reason
+        }
+      }
+    })
+  }
+
+  const deleteItem = (item: PasswordItemSummary): void => {
+    void confirm({
+      title: `Удалить запись «${item.title}»?`,
+      description: 'Запись и сохранённые в ней данные будут удалены.',
+      tone: 'danger',
+      onConfirm: () => {
+        try {
+          api.deletePasswordItem({ id: item.id })
+          refresh()
+          toast.success('Запись удалена')
+        } catch (reason) {
+          setError(messageFor(reason))
+          throw reason
+        }
+      }
+    })
   }
 
   const filteredItems = useMemo(() => {
@@ -319,30 +363,30 @@ export function PasswordsScreen(): React.JSX.Element {
         </View>
         {overview.groups.length ? (
           overview.groups.map((group) => (
-            <Row
+            <WorkspaceNodeCard
               key={group.id}
               title={group.name}
               subtitle={`${overview.items.filter((item) => item.groupId === group.id).length} записей · ${group.icon}`}
+              leadingIcon="folder"
               onPress={() => {
                 setGroupFilter(group.id)
                 setTab('items')
               }}
-            >
-              <Button label="Изменить" onPress={() => editGroup(group)} />
-              <Button
-                label="Удалить"
-                danger
-                onPress={() => {
-                  try {
-                    api.deletePasswordGroup({ id: group.id })
-                    if (groupFilter === group.id) setGroupFilter(undefined)
-                    refresh()
-                  } catch (reason) {
-                    setError(messageFor(reason))
-                  }
-                }}
-              />
-            </Row>
+              action={
+                <ActionMenu
+                  title={group.name}
+                  items={[
+                    { label: 'Изменить', icon: 'edit', onPress: () => editGroup(group) },
+                    {
+                      label: 'Удалить',
+                      icon: 'delete',
+                      danger: true,
+                      onPress: () => deleteGroup(group)
+                    }
+                  ]}
+                />
+              }
+            />
           ))
         ) : (
           <EmptyState text="Групп пока нет." />
@@ -383,31 +427,54 @@ export function PasswordsScreen(): React.JSX.Element {
         </View>
         {filteredItems.length ? (
           filteredItems.map((item) => (
-            <Row
+            <WorkspaceNodeCard
               key={item.id}
               title={`${item.favorite ? '♥ ' : ''}${item.title}`}
               subtitle={itemSubtitle(item, overview)}
+              leadingIcon="passwords"
               onPress={() => openItem(item)}
-            >
-              {item.username ? (
-                <Button label="Логин" onPress={() => void copyField(item, 'username')} />
-              ) : null}
-              <Button label="Пароль" onPress={() => void copyField(item, 'password')} />
-              {item.website ? <Button label="Сайт" onPress={() => void openWebsite(item)} /> : null}
-              <Button label="Изменить" onPress={() => openItem(item)} />
-              <Button
-                label="Удалить"
-                danger
-                onPress={() => {
-                  try {
-                    api.deletePasswordItem({ id: item.id })
-                    refresh()
-                  } catch (reason) {
-                    setError(messageFor(reason))
-                  }
-                }}
-              />
-            </Row>
+              action={
+                <ActionMenu
+                  title={item.title}
+                  items={[
+                    ...(item.username
+                      ? [
+                          {
+                            key: 'copy-login',
+                            label: 'Скопировать логин',
+                            icon: 'copy' as const,
+                            onPress: () => void copyField(item, 'username')
+                          }
+                        ]
+                      : []),
+                    {
+                      key: 'copy-password',
+                      label: 'Скопировать пароль',
+                      icon: 'copy',
+                      onPress: () => void copyField(item, 'password')
+                    },
+                    ...(item.website
+                      ? [
+                          {
+                            key: 'website',
+                            label: 'Открыть сайт',
+                            icon: 'forward' as const,
+                            onPress: () => void openWebsite(item)
+                          }
+                        ]
+                      : []),
+                    { key: 'edit', label: 'Изменить', icon: 'edit', onPress: () => openItem(item) },
+                    {
+                      key: 'delete',
+                      label: 'Удалить',
+                      icon: 'delete',
+                      danger: true,
+                      onPress: () => deleteItem(item)
+                    }
+                  ]}
+                />
+              }
+            />
           ))
         ) : (
           <EmptyState

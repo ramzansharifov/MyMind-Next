@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { FlatList, TextInput, View } from 'react-native'
+import { FlatList, View } from 'react-native'
 import {
   HABIT_GROUP_COLORS,
   HABIT_GROUP_ICONS,
@@ -14,18 +14,19 @@ import {
   Button,
   EmptyState,
   ErrorState,
+  IconButton,
   LoadingState,
-  Row,
   SearchField
 } from '../../shared/ui/primitives'
 import { FormSheet } from '../../shared/ui/FormSheet'
+import { AppDateField } from '../../shared/ui/FormControls'
+import { ActionMenu } from '../../shared/ui/ActionMenu'
+import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
 import { choiceField, textField, type FormSpec } from '../../shared/ui/form-model'
-import { useTheme } from '../../shared/ui/theme'
 import { HabitsReportsView } from './HabitsReportsView'
 
 export function HabitsScreen(): React.JSX.Element {
   const { habits: api } = useServices()
-  const theme = useTheme()
   const [date, setDate] = useState(localDateKey())
   const [view, setView] = useState('today')
   const [query, setQuery] = useState('')
@@ -148,36 +149,39 @@ export function HabitsScreen(): React.JSX.Element {
             />
           ))}
           <Button label="Отчёт" selected={view === 'report'} onPress={() => setView('report')} />
-          <Button
-            label={view === 'groups' ? '+ Группа' : '+ Привычка'}
+          <IconButton
+            label={view === 'groups' ? 'Создать группу' : 'Создать привычку'}
+            icon="add"
             selected
             onPress={() => (view === 'groups' ? editGroup() : edit())}
           />
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <Button label="‹" onPress={() => setDate(addDays(date, -1))} />
-          <TextInput
-            accessibilityLabel="Дата привычек"
-            value={date}
-            onChangeText={setDate}
-            style={{
-              flex: 1,
-              color: theme.text,
-              padding: 12,
-              fontSize: 16,
-              borderColor: theme.border,
-              borderWidth: 1,
-              borderRadius: 12
-            }}
+          <IconButton
+            label="Предыдущий день"
+            icon="back"
+            onPress={() => setDate(addDays(date, -1))}
           />
-          <Button label="›" onPress={() => setDate(addDays(date, 1))} />
+          <View style={{ flex: 1 }}>
+            <AppDateField label="Дата привычек" value={date} onChangeText={setDate} />
+          </View>
+          <IconButton
+            label="Следующий день"
+            icon="forward"
+            onPress={() => setDate(addDays(date, 1))}
+          />
           <Button label="Сегодня" onPress={() => setDate(localDateKey())} />
         </View>
         {(view === 'today' || view === 'all') && (
           <SearchField value={query} onChangeText={setQuery} />
         )}
         {group !== undefined && (
-          <Button label="Сбросить группу" onPress={() => setGroup(undefined)} />
+          <Button
+            label="Сбросить группу"
+            icon="reset"
+            compact
+            onPress={() => setGroup(undefined)}
+          />
         )}
       </View>
       {state.error && <ErrorState message={state.error} retry={state.refresh} />}
@@ -198,29 +202,40 @@ export function HabitsScreen(): React.JSX.Element {
           }
           ListEmptyComponent={<EmptyState />}
           renderItem={({ item }) => (
-            <Row
+            <WorkspaceNodeCard
               title={item.name}
+              leadingIcon="folder"
               onPress={() => {
                 setGroup(item.id)
                 setView('all')
               }}
-            >
-              <Button label="Изменить" onPress={() => editGroup(item)} />
-              <Button
-                label="Удалить"
-                danger
-                onPress={() =>
-                  state.confirmDelete(
-                    'Удалить группу?',
-                    () => {
-                      api.deleteHabitGroup({ id: item.id })
-                      if (group === item.id) setGroup(undefined)
+              action={
+                <ActionMenu
+                  title={item.name}
+                  items={[
+                    {
+                      label: 'Изменить группу',
+                      icon: 'edit',
+                      onPress: () => editGroup(item)
                     },
-                    'Привычки сохранятся без группы.'
-                  )
-                }
-              />
-            </Row>
+                    {
+                      label: 'Удалить группу',
+                      icon: 'delete',
+                      danger: true,
+                      onPress: () =>
+                        state.confirmDelete(
+                          'Удалить группу?',
+                          () => {
+                            api.deleteHabitGroup({ id: item.id })
+                            if (group === item.id) setGroup(undefined)
+                          },
+                          'Привычки сохранятся без группы.'
+                        )
+                    }
+                  ]}
+                />
+              }
+            />
           )}
         />
       ) : view === 'report' ? (
@@ -236,63 +251,107 @@ export function HabitsScreen(): React.JSX.Element {
             const entry = state.data?.entries.find((e) => e.habitId === item.id)
             const scheduled = isHabitScheduledOn(item, date)
             return (
-              <Row
-                title={`${entry?.skipped ? 'Пропуск · ' : (entry?.value ?? 0) >= item.targetValue ? '✓ ' : ''}${item.title}`}
-                subtitle={`${entry?.value ?? 0} / ${item.targetValue} ${item.unit}${!scheduled ? ' · Не запланировано на эту дату' : ''}`}
+              <WorkspaceNodeCard
+                title={item.title}
+                leadingIcon="habits"
+                subtitle={[
+                  entry?.skipped
+                    ? 'Пропущено'
+                    : (entry?.value ?? 0) >= item.targetValue
+                      ? 'Выполнено'
+                      : null,
+                  (entry?.value ?? 0) +
+                    ' / ' +
+                    item.targetValue +
+                    (item.unit ? ' ' + item.unit : ''),
+                  !scheduled ? 'Не запланировано на эту дату' : null
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
                 onPress={() => edit(item)}
-              >
-                {scheduled && (
-                  <>
-                    <Button
-                      label={item.trackingType === 'count' ? '+1' : 'Выполнить'}
-                      disabled={state.pending}
-                      onPress={() =>
-                        state.mutate(() => {
-                          api.upsertHabitEntry(
-                            schema.upsertHabitEntryInputSchema.parse({
-                              habitId: item.id,
-                              date,
-                              value: item.trackingType === 'count' ? (entry?.value ?? 0) + 1 : 1,
-                              skipped: false
-                            })
-                          )
-                        })
-                      }
-                    />
-                    <Button
-                      label="Пропустить"
-                      onPress={() =>
-                        state.mutate(() => {
-                          api.upsertHabitEntry({ habitId: item.id, date, value: 0, skipped: true })
-                        })
-                      }
-                    />
-                    {entry && (
-                      <Button
-                        label="Сбросить"
+                action={
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    {scheduled ? (
+                      <IconButton
+                        label={item.trackingType === 'count' ? 'Добавить единицу' : 'Выполнить'}
+                        icon="check"
+                        compact
+                        selected={(entry?.value ?? 0) >= item.targetValue && !entry?.skipped}
+                        disabled={state.pending}
                         onPress={() =>
                           state.mutate(() => {
-                            api.deleteHabitEntry({ habitId: item.id, date })
+                            api.upsertHabitEntry(
+                              schema.upsertHabitEntryInputSchema.parse({
+                                habitId: item.id,
+                                date,
+                                value: item.trackingType === 'count' ? (entry?.value ?? 0) + 1 : 1,
+                                skipped: false
+                              })
+                            )
                           })
                         }
                       />
-                    )}
-                  </>
-                )}
-                <Button
-                  label="Удалить"
-                  danger
-                  onPress={() =>
-                    state.confirmDelete(
-                      'Удалить привычку?',
-                      () => {
-                        api.deleteHabit({ id: item.id })
-                      },
-                      'Будет удалена и история отметок.'
-                    )
-                  }
-                />
-              </Row>
+                    ) : null}
+                    <ActionMenu
+                      disabled={state.pending}
+                      title={item.title}
+                      items={[
+                        ...(scheduled
+                          ? [
+                              {
+                                key: 'skip',
+                                label: 'Пропустить',
+                                icon: 'skip' as const,
+                                onPress: () =>
+                                  state.mutate(() => {
+                                    api.upsertHabitEntry({
+                                      habitId: item.id,
+                                      date,
+                                      value: 0,
+                                      skipped: true
+                                    })
+                                  })
+                              }
+                            ]
+                          : []),
+                        ...(entry
+                          ? [
+                              {
+                                key: 'reset',
+                                label: 'Сбросить отметку',
+                                icon: 'reset' as const,
+                                onPress: () =>
+                                  state.mutate(() => {
+                                    api.deleteHabitEntry({ habitId: item.id, date })
+                                  })
+                              }
+                            ]
+                          : []),
+                        {
+                          key: 'edit',
+                          label: 'Изменить',
+                          icon: 'edit',
+                          onPress: () => edit(item)
+                        },
+                        {
+                          key: 'delete',
+                          label: 'Удалить привычку',
+                          icon: 'delete',
+                          danger: true,
+                          onPress: () =>
+                            state.confirmDelete(
+                              'Удалить привычку?',
+                              () => {
+                                api.deleteHabit({ id: item.id })
+                              },
+                              'Будет удалена и история отметок.'
+                            )
+                        }
+                      ]}
+                    />
+                  </View>
+                }
+              />
             )
           }}
         />

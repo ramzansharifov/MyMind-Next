@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Alert } from 'react-native'
 import { messageFor } from '../ui/form-model'
 import { notifyDataChanged } from '../../app/changes'
+import { useConfirmation } from '../ui/ConfirmationProvider'
+import { useToast } from '../ui/ToastProvider'
 
 interface CollectionState<T> {
   data: T | null
@@ -9,16 +10,19 @@ interface CollectionState<T> {
   loading: boolean
   pending: boolean
   refresh(): void
-  mutate(operation: () => void): void
+  mutate(operation: () => void, successMessage?: string): void
   confirmDelete(title: string, operation: () => void, explanation?: string): void
 }
+
 export function useCollection<T>(read: () => T): CollectionState<T> {
+  const confirm = useConfirmation()
+  const toast = useToast()
   const [data, setData] = useState<T | null>(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const [pending, setPending] = useState(false)
   const guard = useRef(false)
-  const confirming = useRef(false)
+
   const refresh = useCallback(() => {
     setError('')
     setLoading(true)
@@ -31,6 +35,7 @@ export function useCollection<T>(read: () => T): CollectionState<T> {
       setLoading(false)
     }
   }, [read])
+
   useEffect(() => {
     let active = true
     queueMicrotask(() => {
@@ -40,7 +45,8 @@ export function useCollection<T>(read: () => T): CollectionState<T> {
       active = false
     }
   }, [refresh])
-  const mutate = (operation: () => void): void => {
+
+  const mutate = (operation: () => void, successMessage?: string): void => {
     if (guard.current) return
     guard.current = true
     setPending(true)
@@ -49,47 +55,49 @@ export function useCollection<T>(read: () => T): CollectionState<T> {
       operation()
       notifyDataChanged()
       refresh()
+      if (successMessage) toast.success(successMessage)
     } catch (reason) {
-      setError(messageFor(reason))
+      const message = messageFor(reason)
+      setError(message)
+      toast.error(message)
     } finally {
       guard.current = false
       setPending(false)
     }
   }
+
   const confirmDelete = (
     title: string,
     operation: () => void,
     explanation = 'Это действие нельзя отменить.'
   ): void => {
-    if (guard.current || confirming.current) return
-    confirming.current = true
-    Alert.alert(
+    if (guard.current) return
+    void confirm({
       title,
-      explanation,
-      [
-        {
-          text: 'Отмена',
-          style: 'cancel',
-          onPress: () => {
-            confirming.current = false
-          }
-        },
-        {
-          text: 'Удалить',
-          style: 'destructive',
-          onPress: () => {
-            confirming.current = false
-            mutate(operation)
-          }
-        }
-      ],
-      {
-        cancelable: true,
-        onDismiss: () => {
-          confirming.current = false
+      description: explanation,
+      tone: 'danger',
+      onConfirm: () => {
+        if (guard.current) throw new Error('Другая операция уже выполняется')
+        guard.current = true
+        setPending(true)
+        setError('')
+        try {
+          operation()
+          notifyDataChanged()
+          refresh()
+          toast.success('Удалено')
+        } catch (reason) {
+          const message = messageFor(reason)
+          setError(message)
+          toast.error(message)
+          throw reason
+        } finally {
+          guard.current = false
+          setPending(false)
         }
       }
-    )
+    })
   }
+
   return { data, error, loading, pending, refresh, mutate, confirmDelete }
 }
