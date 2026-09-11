@@ -196,7 +196,7 @@ export function Home({
         data={cards}
         numColumns={2}
         keyExtractor={(item) => item.route}
-        columnWrapperStyle={{ gap: 10 }}
+        columnWrapperStyle={{ gap: 10, justifyContent: 'space-between' }}
         contentContainerStyle={{ paddingBottom: 12, gap: 10 }}
         onRefresh={refresh}
         refreshing={refreshing}
@@ -302,7 +302,7 @@ export function Home({
               accessibilityLabel={item.title}
               onPress={() => navigate(item.route)}
               style={({ pressed }) => ({
-                flex: 1,
+                width: '48.5%',
                 minHeight: 126,
                 justifyContent: 'space-between',
                 padding: 14,
