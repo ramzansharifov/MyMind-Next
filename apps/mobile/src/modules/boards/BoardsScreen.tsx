@@ -408,27 +408,7 @@ export function BoardsScreen({
             dom={{ scrollEnabled: false, style: { flex: 1 } }}
           />
         </View>
-        {!currentManaged ? (
-        <MobileCreateAction
-          actions={[
-            {
-              key: 'folder',
-              label: 'Новая папка',
-              description: 'Создать папку в текущем разделе',
-              icon: 'folder',
-              onPress: () => createNode('folder')
-            },
-            {
-              key: 'board',
-              label: 'Новая доска',
-              description: 'Создать новую доску здесь',
-              icon: 'boards',
-              onPress: () => createNode('board')
-            }
-          ]}
-        />
-      ) : null}
-      {form && <FormSheet spec={form} close={() => setForm(null)} />}
+        {form && <FormSheet spec={form} close={() => setForm(null)} />}
       </View>
     )
   }
@@ -554,6 +534,26 @@ export function BoardsScreen({
           }}
         />
       )}
+      {!currentManaged ? (
+        <MobileCreateAction
+          actions={[
+            {
+              key: 'folder',
+              label: 'Новая папка',
+              description: 'Создать папку в текущем разделе',
+              icon: 'folder',
+              onPress: () => createNode('folder')
+            },
+            {
+              key: 'board',
+              label: 'Новая доска',
+              description: 'Создать новую доску здесь',
+              icon: 'boards',
+              onPress: () => createNode('board')
+            }
+          ]}
+        />
+      ) : null}
       {form && <FormSheet spec={form} close={() => setForm(null)} />}
     </View>
   )
