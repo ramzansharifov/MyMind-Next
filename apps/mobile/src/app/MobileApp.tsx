@@ -211,70 +211,76 @@ export default function MobileApp(): React.JSX.Element {
             <View style={{ paddingHorizontal: 16, paddingTop: 10, paddingBottom: 12 }}>
               <View
                 style={{
-                  minHeight: 66,
+                  minHeight: 80,
                   flexDirection: 'row',
                   alignItems: 'center',
-                  gap: 12,
-                  paddingHorizontal: 14,
-                  paddingVertical: 11,
+                  gap: 14,
+                  paddingHorizontal: 16,
+                  paddingVertical: 15,
                   overflow: 'hidden',
                   borderWidth: 1,
                   borderColor: palette.border,
-                  borderRadius: 22,
+                  borderRadius: 28,
                   backgroundColor: palette.surface,
                   elevation: 2
                 }}
               >
                 <View
+                  pointerEvents="none"
                   style={{
                     position: 'absolute',
-                    top: -54,
-                    right: -24,
-                    width: 132,
-                    height: 132,
-                    borderRadius: 66,
-                    backgroundColor: palette.accent + '0D'
+                    top: -82,
+                    right: 18,
+                    width: 190,
+                    height: 190,
+                    borderRadius: 95,
+                    backgroundColor: palette.accent + '12'
+                  }}
+                />
+                <View
+                  pointerEvents="none"
+                  style={{
+                    position: 'absolute',
+                    bottom: -100,
+                    left: -54,
+                    width: 176,
+                    height: 176,
+                    borderRadius: 88,
+                    backgroundColor: palette.accent + '08'
                   }}
                 />
                 <View
                   style={{
-                    width: 42,
-                    height: 42,
+                    width: 48,
+                    height: 48,
                     alignItems: 'center',
                     justifyContent: 'center',
                     borderWidth: 1,
-                    borderColor: palette.accent + '32',
-                    borderRadius: 14,
-                    backgroundColor: palette.accent + '14'
+                    borderColor: palette.accent + '33',
+                    borderRadius: 16,
+                    backgroundColor: palette.accent + '1A'
                   }}
                 >
-                  <AppIcon name={routeIcons[route]} size={21} color={palette.accent} />
+                  <AppIcon
+                    name={routeIcons[route]}
+                    size={24}
+                    strokeWidth={2}
+                    color={palette.accent}
+                  />
                 </View>
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text
-                    style={{
-                      color: palette.muted,
-                      fontSize: 10,
-                      fontWeight: '700',
-                      letterSpacing: 1.25
-                    }}
-                  >
-                    MYMIND
-                  </Text>
-                  <Text
-                    numberOfLines={1}
-                    style={{
-                      marginTop: 1,
-                      color: palette.text,
-                      fontSize: 21,
-                      lineHeight: 27,
-                      fontWeight: '700',
-                      letterSpacing: -0.35
-                    }}
-                  >
-                    {routeTitles[route]}
-                  </Text>
-                </View>
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    flex: 1,
+                    color: palette.text,
+                    fontSize: 26,
+                    lineHeight: 32,
+                    fontWeight: '600',
+                    letterSpacing: -0.9
+                  }}
+                >
+                  {routeTitles[route]}
+                </Text>
               </View>
             </View>
           ) : null}
