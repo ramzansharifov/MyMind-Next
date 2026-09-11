@@ -205,7 +205,7 @@ export default function MobileApp(): React.JSX.Element {
     <SafeAreaProvider>
       <ThemeContext.Provider value={palette}>
         <SafeAreaView style={{ flex: 1, backgroundColor: palette.background }}>
-          <StatusBar style={dark ? 'light' : 'dark'} backgroundColor={palette.background} />
+          <StatusBar style={dark ? 'light' : 'dark'} />
 
           {!immersive ? (
             <View style={{ paddingHorizontal: 16, paddingTop: 10, paddingBottom: 12 }}>
