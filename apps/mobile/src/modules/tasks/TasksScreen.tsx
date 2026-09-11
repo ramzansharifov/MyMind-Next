@@ -18,7 +18,13 @@ import { ActionMenu } from '../../shared/ui/ActionMenu'
 import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
 import { VisualIconBadge } from '../../shared/ui/VisualPickers'
 import { TASK_GROUP_COLOR_CHOICES, TASK_GROUP_ICON_CHOICES } from '../../shared/ui/visual-options'
-import { choiceField, colorField, iconField, textField, type FormSpec } from '../../shared/ui/form-model'
+import {
+  choiceField,
+  colorField,
+  iconField,
+  textField,
+  type FormSpec
+} from '../../shared/ui/form-model'
 import { AppIcon } from '../../shared/ui/icons'
 import { useTheme } from '../../shared/ui/theme'
 import { quickTaskInput, taskEditorInput, taskSearchText } from './task-presentation'

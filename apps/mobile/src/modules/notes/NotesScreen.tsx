@@ -16,7 +16,13 @@ import { useToast } from '../../shared/ui/ToastProvider'
 import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
 import { VisualIconBadge } from '../../shared/ui/VisualPickers'
 import { FOLDER_ICON_CHOICES } from '../../shared/ui/visual-options'
-import { choiceField, iconField, messageFor, textField, type FormSpec } from '../../shared/ui/form-model'
+import {
+  choiceField,
+  iconField,
+  messageFor,
+  textField,
+  type FormSpec
+} from '../../shared/ui/form-model'
 import {
   Button,
   EmptyState,

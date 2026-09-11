@@ -30,7 +30,13 @@ import StudyMermaidExportDom, {
   type StudyMermaidPdfResult
 } from './StudyMermaidExportDom'
 import { exportStudyMaterialPdf } from './studyPdfExport'
-import { choiceField, iconField, messageFor, textField, type FormSpec } from '../../shared/ui/form-model'
+import {
+  choiceField,
+  iconField,
+  messageFor,
+  textField,
+  type FormSpec
+} from '../../shared/ui/form-model'
 import {
   Button,
   EmptyState,
@@ -507,9 +513,7 @@ export function StudyScreen({
       fields: [
         textField('title', 'Название'),
         ...(node.type === 'folder'
-          ? [
-              iconField('icon', 'Иконка', FOLDER_ICON_CHOICES, 'folder')
-            ]
+          ? [iconField('icon', 'Иконка', FOLDER_ICON_CHOICES, 'folder')]
           : []),
         choiceField('parentId', 'Расположение', folderChoices)
       ],

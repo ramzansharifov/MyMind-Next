@@ -19,7 +19,13 @@ import { ActionMenu } from '../../shared/ui/ActionMenu'
 import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
 import { VisualIconBadge } from '../../shared/ui/VisualPickers'
 import { GROUP_COLOR_CHOICES, HABIT_GROUP_ICON_CHOICES } from '../../shared/ui/visual-options'
-import { choiceField, colorField, iconField, textField, type FormSpec } from '../../shared/ui/form-model'
+import {
+  choiceField,
+  colorField,
+  iconField,
+  textField,
+  type FormSpec
+} from '../../shared/ui/form-model'
 import { HabitsReportsView } from './HabitsReportsView'
 
 export function HabitsScreen(): React.JSX.Element {

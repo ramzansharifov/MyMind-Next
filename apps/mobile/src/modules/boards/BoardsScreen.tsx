@@ -14,7 +14,13 @@ import { ActionMenu } from '../../shared/ui/ActionMenu'
 import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
 import { VisualIconBadge } from '../../shared/ui/VisualPickers'
 import { FOLDER_ICON_CHOICES } from '../../shared/ui/visual-options'
-import { choiceField, iconField, messageFor, textField, type FormSpec } from '../../shared/ui/form-model'
+import {
+  choiceField,
+  iconField,
+  messageFor,
+  textField,
+  type FormSpec
+} from '../../shared/ui/form-model'
 import {
   Button,
   EmptyState,
@@ -194,11 +200,7 @@ export function BoardsScreen({
       initial: { title: '', icon: 'folder' },
       fields: [
         textField('title', 'Название'),
-        ...(type === 'folder'
-          ? [
-              iconField('icon', 'Иконка', FOLDER_ICON_CHOICES, 'folder')
-            ]
-          : [])
+        ...(type === 'folder' ? [iconField('icon', 'Иконка', FOLDER_ICON_CHOICES, 'folder')] : [])
       ],
       preview:
         type === 'folder'

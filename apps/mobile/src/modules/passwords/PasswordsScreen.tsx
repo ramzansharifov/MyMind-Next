@@ -22,7 +22,13 @@ import { VisualIconBadge } from '../../shared/ui/VisualPickers'
 import { GROUP_COLOR_CHOICES, PASSWORD_GROUP_ICON_CHOICES } from '../../shared/ui/visual-options'
 import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
 import { useToast } from '../../shared/ui/ToastProvider'
-import { colorField, iconField, messageFor, textField, type FormSpec } from '../../shared/ui/form-model'
+import {
+  colorField,
+  iconField,
+  messageFor,
+  textField,
+  type FormSpec
+} from '../../shared/ui/form-model'
 import {
   Button,
   EmptyState,

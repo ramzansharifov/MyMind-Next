@@ -9,7 +9,13 @@ import type {
 import type { FinanceRepository } from '@mymind/persistence/finance'
 import { FINANCE_RATE_SCALE, formatMinorPlain, parseMoneyToMinor } from '@mymind/core/finance-money'
 import * as validation from '@mymind/core/validation/finance'
-import { choiceField, iconField, textField, type FormField, type FormSpec } from '../../shared/ui/form-model'
+import {
+  choiceField,
+  iconField,
+  textField,
+  type FormField,
+  type FormSpec
+} from '../../shared/ui/form-model'
 import { FINANCE_ICON_CHOICES } from '../../shared/ui/visual-options'
 
 function localDateKey(timestamp = Date.now()): string {
