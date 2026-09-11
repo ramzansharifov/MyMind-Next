@@ -1,6 +1,6 @@
 import { randomUUID } from 'expo-crypto'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { AppState, BackHandler, FlatList, TextInput, View } from 'react-native'
+import { AppState, BackHandler, FlatList, ScrollView, TextInput, View } from 'react-native'
 import type { NoteDocument, NoteGroup, NoteRecord, NoteSummary } from '@mymind/contracts/notes'
 import type { StudyBoardBlock } from '@mymind/contracts/study'
 import { AutosaveQueue } from '@mymind/core/autosave'
@@ -14,6 +14,7 @@ import { ActionMenu } from '../../shared/ui/ActionMenu'
 import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
 import { useToast } from '../../shared/ui/ToastProvider'
 import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
+import { MobileCreateAction } from '../../shared/ui/MobileCreateAction'
 import { VisualIconBadge } from '../../shared/ui/VisualPickers'
 import { FOLDER_ICON_CHOICES } from '../../shared/ui/visual-options'
 import {
@@ -52,8 +53,8 @@ export function NotesScreen({
   const toast = useToast()
   const overview = useCollection(useCallback(() => api.listNotesOverview(), [api]))
   const [query, setQuery] = useState('')
-  const [groupId, setGroupId] = useState<string | null | undefined>(undefined)
-  const [groupsView, setGroupsView] = useState(false)
+  const [view, setView] = useState<'all' | 'recent' | 'groups' | 'ungrouped'>('all')
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
   const [form, setForm] = useState<FormSpec | null>(null)
   const [record, setRecord] = useState<NoteRecord | null>(null)
   const [document, setDocument] = useState<NoteDocument | null>(null)
@@ -208,15 +209,15 @@ export function NotesScreen({
     })
   }
 
-  const createNote = (): void => {
+  const createNote = (targetGroupId: string | null): void => {
     setForm({
-      title: 'Новая заметка',
-      initial: { title: '', groupId: groupId ?? null },
-      fields: [textField('title', 'Название'), choiceField('groupId', 'Группа', groupChoices)],
+      title: targetGroupId ? 'Новая заметка в группе' : 'Новая заметка',
+      initial: { title: '' },
+      fields: [textField('title', 'Название')],
       save: (values) => {
         const input = notesValidation.createNoteInputSchema.parse({
           title: values.title,
-          groupId: values.groupId
+          groupId: targetGroupId
         })
         const created = api.createNote(input)
         overview.refresh()
@@ -358,61 +359,102 @@ export function NotesScreen({
     )
   }
 
-  const notes = (overview.data?.notes ?? []).filter(
-    (note) => noteMatches(note, query) && (groupId === undefined || note.groupId === groupId)
+  const allNotes = [...(overview.data?.notes ?? [])].sort(
+    (left, right) => right.updatedAt - left.updatedAt
   )
+  const selectedGroup = selectedGroupId
+    ? (overview.data?.groups.find((group) => group.id === selectedGroupId) ?? null)
+    : null
+  const searchedNotes = allNotes.filter((note) => noteMatches(note, query))
+  const notes =
+    view === 'ungrouped'
+      ? searchedNotes.filter((note) => note.groupId === null)
+      : view === 'groups' && selectedGroup
+        ? searchedNotes.filter((note) => note.groupId === selectedGroup.id)
+        : searchedNotes
+  const visibleNotes = view === 'recent' ? notes.slice(0, 20) : notes
+
+  const createActions =
+    view === 'groups' && !selectedGroup
+      ? [
+          {
+            key: 'group',
+            label: 'Новая группа',
+            description: 'Создать новую группу заметок',
+            icon: 'folder' as const,
+            onPress: () => editGroup()
+          }
+        ]
+      : [
+          {
+            key: 'note',
+            label: selectedGroup ? `Новая заметка · ${selectedGroup.title}` : 'Новая заметка',
+            description: selectedGroup
+              ? 'Заметка сразу появится в этой группе'
+              : 'Создать заметку без группы',
+            icon: 'notes' as const,
+            onPress: () => createNote(selectedGroup?.id ?? null)
+          }
+        ]
 
   return (
     <View style={{ flex: 1 }}>
       <View style={{ gap: 10, marginBottom: 12 }}>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          <Button
-            label={groupsView ? 'К заметкам' : 'Группы'}
-            icon={groupsView ? 'notes' : 'folder'}
-            compact
-            onPress={() => setGroupsView((value) => !value)}
-          />
-          <IconButton
-            label={groupsView ? 'Создать группу' : 'Создать заметку'}
-            icon="add"
-            selected
-            onPress={() => (groupsView ? editGroup() : createNote())}
-          />
-        </View>
-        {!groupsView ? (
-          <>
-            <SearchField value={query} onChangeText={setQuery} />
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              <Button
-                label="Все"
-                selected={groupId === undefined}
-                onPress={() => setGroupId(undefined)}
-              />
-              <Button
-                label="Без группы"
-                selected={groupId === null}
-                onPress={() => setGroupId(null)}
-              />
-              {(overview.data?.groups ?? []).map((group) => (
-                <Button
-                  key={group.id}
-                  label={group.title}
-                  selected={groupId === group.id}
-                  onPress={() => setGroupId(group.id)}
-                />
-              ))}
+        {view === 'groups' && selectedGroup ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Button
+              label="Все группы"
+              icon="back"
+              compact
+              onPress={() => setSelectedGroupId(null)}
+            />
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Label>{selectedGroup.title}</Label>
             </View>
-          </>
+          </View>
+        ) : (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 8 }}
+          >
+            <Button label="Все" selected={view === 'all'} onPress={() => setView('all')} />
+            <Button
+              label="Недавние"
+              icon="clock"
+              selected={view === 'recent'}
+              onPress={() => setView('recent')}
+            />
+            <Button
+              label="Группы"
+              icon="folder"
+              selected={view === 'groups'}
+              onPress={() => {
+                setSelectedGroupId(null)
+                setView('groups')
+              }}
+            />
+            <Button
+              label="Без группы"
+              selected={view === 'ungrouped'}
+              onPress={() => setView('ungrouped')}
+            />
+          </ScrollView>
+        )}
+
+        {view !== 'groups' || selectedGroup ? (
+          <SearchField value={query} onChangeText={setQuery} />
         ) : null}
       </View>
 
       {overview.error ? <ErrorState message={overview.error} retry={overview.refresh} /> : null}
       {overview.loading ? (
         <LoadingState />
-      ) : groupsView ? (
+      ) : view === 'groups' && !selectedGroup ? (
         <FlatList
           data={overview.data?.groups ?? []}
           keyExtractor={(item) => item.id}
+          contentContainerStyle={{ paddingBottom: 88 }}
           ListEmptyComponent={<EmptyState text="Групп пока нет." />}
           renderItem={({ item }) => (
             <WorkspaceNodeCard
@@ -422,14 +464,16 @@ export function NotesScreen({
                 ' заметок'
               }
               leading={<VisualIconBadge value={item.icon ?? 'folder'} />}
-              onPress={() => {
-                setGroupId(item.id)
-                setGroupsView(false)
-              }}
+              onPress={() => setSelectedGroupId(item.id)}
               action={
                 <ActionMenu
                   title={item.title}
                   items={[
+                    {
+                      label: 'Новая заметка',
+                      icon: 'add',
+                      onPress: () => createNote(item.id)
+                    },
                     {
                       label: 'Изменить группу',
                       icon: 'edit',
@@ -446,7 +490,7 @@ export function NotesScreen({
                           tone: 'danger',
                           onConfirm: () => {
                             api.deleteNoteGroup(item.id)
-                            if (groupId === item.id) setGroupId(undefined)
+                            if (selectedGroupId === item.id) setSelectedGroupId(null)
                             overview.refresh()
                             notifyDataChanged()
                             toast.success('Группа удалена')
@@ -462,27 +506,47 @@ export function NotesScreen({
         />
       ) : (
         <FlatList
-          data={notes}
+          data={visibleNotes}
           keyExtractor={(item) => item.id}
           refreshing={overview.loading}
           onRefresh={overview.refresh}
-          ListEmptyComponent={<EmptyState text="Заметок пока нет." />}
-          renderItem={({ item }) => (
-            <Row
-              title={item.title}
-              leadingIcon="notes"
-              subtitle={[
-                item.plainText.slice(0, 180),
-                overview.data?.groups.find((group) => group.id === item.groupId)?.title
-              ]
-                .filter(Boolean)
-                .join(' · ')}
-              onPress={() => openNote(item.id)}
+          contentContainerStyle={{ paddingBottom: 88 }}
+          ListEmptyComponent={
+            <EmptyState
+              text={
+                view === 'ungrouped'
+                  ? 'Все заметки уже распределены по группам.'
+                  : selectedGroup
+                    ? 'В этой группе пока нет заметок.'
+                    : view === 'recent'
+                      ? 'Недавних заметок пока нет.'
+                      : 'Заметок пока нет.'
+              }
             />
-          )}
+          }
+          renderItem={({ item }) => {
+            const noteGroup = overview.data?.groups.find((group) => group.id === item.groupId)
+            return (
+              <WorkspaceNodeCard
+                title={item.title}
+                subtitle={[
+                  item.plainText.slice(0, 160),
+                  noteGroup?.title,
+                  new Date(item.updatedAt).toLocaleDateString('ru-RU')
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+                leadingIcon="notes"
+                onPress={() => openNote(item.id)}
+              />
+            )
+          }}
         />
       )}
+
+      <MobileCreateAction actions={createActions} />
       {form && <FormSheet spec={form} close={() => setForm(null)} />}
     </View>
   )
+
 }
