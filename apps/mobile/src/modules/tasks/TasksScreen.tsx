@@ -257,14 +257,22 @@ export function TasksScreen(): React.JSX.Element {
           renderItem={({ item }) => (
             <Row
               title={item.name}
-              subtitle={(state.data?.tasks.filter((task) => task.groupId === item.id).length ?? 0) + ' задач'}
+              subtitle={
+                (state.data?.tasks.filter((task) => task.groupId === item.id).length ?? 0) +
+                ' задач'
+              }
               leadingIcon="folder"
               onPress={() => {
                 setGroup(item.id)
                 setGroupsView(false)
               }}
             >
-              <IconButton label="Изменить группу" icon="edit" compact onPress={() => editGroup(item)} />
+              <IconButton
+                label="Изменить группу"
+                icon="edit"
+                compact
+                onPress={() => editGroup(item)}
+              />
               <IconButton
                 label="Удалить группу"
                 icon="delete"
@@ -310,8 +318,20 @@ export function TasksScreen(): React.JSX.Element {
                   disabled={state.pending}
                   onPress={() => toggle(item)}
                 />
-                <IconButton label="Перенести" icon="move" compact disabled={state.pending} onPress={() => move(item)} />
-                <IconButton label="Изменить" icon="edit" compact disabled={state.pending} onPress={() => edit(item)} />
+                <IconButton
+                  label="Перенести"
+                  icon="move"
+                  compact
+                  disabled={state.pending}
+                  onPress={() => move(item)}
+                />
+                <IconButton
+                  label="Изменить"
+                  icon="edit"
+                  compact
+                  disabled={state.pending}
+                  onPress={() => edit(item)}
+                />
                 <IconButton
                   label="Удалить"
                   icon="delete"

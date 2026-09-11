@@ -157,7 +157,11 @@ export function HabitsScreen(): React.JSX.Element {
           />
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <IconButton label="Предыдущий день" icon="back" onPress={() => setDate(addDays(date, -1))} />
+          <IconButton
+            label="Предыдущий день"
+            icon="back"
+            onPress={() => setDate(addDays(date, -1))}
+          />
           <TextInput
             accessibilityLabel="Дата привычек"
             value={date}
@@ -172,14 +176,23 @@ export function HabitsScreen(): React.JSX.Element {
               borderRadius: 12
             }}
           />
-          <IconButton label="Следующий день" icon="forward" onPress={() => setDate(addDays(date, 1))} />
+          <IconButton
+            label="Следующий день"
+            icon="forward"
+            onPress={() => setDate(addDays(date, 1))}
+          />
           <Button label="Сегодня" onPress={() => setDate(localDateKey())} />
         </View>
         {(view === 'today' || view === 'all') && (
           <SearchField value={query} onChangeText={setQuery} />
         )}
         {group !== undefined && (
-          <Button label="Сбросить группу" icon="reset" compact onPress={() => setGroup(undefined)} />
+          <Button
+            label="Сбросить группу"
+            icon="reset"
+            compact
+            onPress={() => setGroup(undefined)}
+          />
         )}
       </View>
       {state.error && <ErrorState message={state.error} retry={state.refresh} />}
@@ -208,7 +221,12 @@ export function HabitsScreen(): React.JSX.Element {
                 setView('all')
               }}
             >
-              <IconButton label="Изменить группу" icon="edit" compact onPress={() => editGroup(item)} />
+              <IconButton
+                label="Изменить группу"
+                icon="edit"
+                compact
+                onPress={() => editGroup(item)}
+              />
               <IconButton
                 label="Удалить группу"
                 icon="delete"
@@ -250,7 +268,10 @@ export function HabitsScreen(): React.JSX.Element {
                     : (entry?.value ?? 0) >= item.targetValue
                       ? 'Выполнено'
                       : null,
-                  (entry?.value ?? 0) + ' / ' + item.targetValue + (item.unit ? ' ' + item.unit : ''),
+                  (entry?.value ?? 0) +
+                    ' / ' +
+                    item.targetValue +
+                    (item.unit ? ' ' + item.unit : ''),
                   !scheduled ? 'Не запланировано на эту дату' : null
                 ]
                   .filter(Boolean)

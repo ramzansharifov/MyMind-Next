@@ -403,14 +403,22 @@ export function NotesScreen({
           renderItem={({ item }) => (
             <Row
               title={item.title}
-              subtitle={(overview.data?.notes.filter((note) => note.groupId === item.id).length ?? 0) + ' заметок'}
+              subtitle={
+                (overview.data?.notes.filter((note) => note.groupId === item.id).length ?? 0) +
+                ' заметок'
+              }
               leadingIcon="folder"
               onPress={() => {
                 setGroupId(item.id)
                 setGroupsView(false)
               }}
             >
-              <IconButton label="Изменить группу" icon="edit" compact onPress={() => editGroup(item)} />
+              <IconButton
+                label="Изменить группу"
+                icon="edit"
+                compact
+                onPress={() => editGroup(item)}
+              />
               <IconButton
                 label="Удалить группу"
                 icon="delete"

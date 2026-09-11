@@ -455,9 +455,7 @@ function HomeReminderInbox({
         <ReminderCard
           key={'habit-' + reminder.deliveryId}
           title={reminder.title}
-          subtitle={
-            'Привычка · ' + reminder.occurrenceDate + ' · ' + reminder.preferredTime
-          }
+          subtitle={'Привычка · ' + reminder.occurrenceDate + ' · ' + reminder.preferredTime}
           onOpen={openHabits}
           onAcknowledge={() => acknowledgeHabit(reminder.deliveryId)}
         />

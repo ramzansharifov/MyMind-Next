@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
-import { BackHandler, FlatList, Platform, Pressable, Text, useColorScheme, View } from 'react-native'
+import {
+  BackHandler,
+  FlatList,
+  Platform,
+  Pressable,
+  Text,
+  useColorScheme,
+  View
+} from 'react-native'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar'
 import { appearanceTokens } from '@mymind/design'
@@ -10,13 +18,7 @@ import {
 import { appearancePreferencesSchema } from '@mymind/core/validation/preferences'
 import { ServicesContext } from './context'
 import { createMobileServices, type MobileServices } from './services'
-import {
-  moreRoutes,
-  primaryTabs,
-  routeIcons,
-  routeTitles,
-  type Route
-} from './navigation'
+import { moreRoutes, primaryTabs, routeIcons, routeTitles, type Route } from './navigation'
 import { exportMobileBackup, restoreMobileBackup } from '../shared/backup/mobileBackup'
 import { openMobileDatabase } from '../shared/storage/mobileDatabase'
 import { ThemeContext } from '../shared/ui/theme'

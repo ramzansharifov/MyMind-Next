@@ -66,11 +66,7 @@ export function Button({
         paddingVertical: iconOnly ? 0 : compact ? 7 : 9,
         borderRadius: compact ? 11 : designTokens.radius.md,
         borderWidth: 1,
-        borderColor: danger
-          ? theme.error + '35'
-          : selected
-            ? theme.accent + '66'
-            : theme.border,
+        borderColor: danger ? theme.error + '35' : selected ? theme.accent + '66' : theme.border,
         backgroundColor: danger
           ? theme.error + '0E'
           : selected
