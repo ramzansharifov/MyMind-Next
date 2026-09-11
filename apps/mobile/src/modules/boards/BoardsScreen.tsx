@@ -12,6 +12,7 @@ import BoardCanvasDom, { type BoardCanvasDomRef } from './BoardCanvasDom'
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { ActionMenu } from '../../shared/ui/ActionMenu'
 import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
+import { MobileCreateAction } from '../../shared/ui/MobileCreateAction'
 import { VisualIconBadge } from '../../shared/ui/VisualPickers'
 import { FOLDER_ICON_CHOICES } from '../../shared/ui/visual-options'
 import {
@@ -407,7 +408,27 @@ export function BoardsScreen({
             dom={{ scrollEnabled: false, style: { flex: 1 } }}
           />
         </View>
-        {form && <FormSheet spec={form} close={() => setForm(null)} />}
+        {!currentManaged ? (
+        <MobileCreateAction
+          actions={[
+            {
+              key: 'folder',
+              label: 'Новая папка',
+              description: 'Создать папку в текущем разделе',
+              icon: 'folder',
+              onPress: () => createNode('folder')
+            },
+            {
+              key: 'board',
+              label: 'Новая доска',
+              description: 'Создать новую доску здесь',
+              icon: 'boards',
+              onPress: () => createNode('board')
+            }
+          ]}
+        />
+      ) : null}
+      {form && <FormSheet spec={form} close={() => setForm(null)} />}
       </View>
     )
   }
@@ -436,14 +457,9 @@ export function BoardsScreen({
             />
           ))}
         </View>
-        {!currentManaged ? (
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            <Button label="+ Папка" selected onPress={() => createNode('folder')} />
-            <Button label="+ Доска" selected onPress={() => createNode('board')} />
-          </View>
-        ) : (
+        {currentManaged ? (
           <Label muted>Этот раздел управляется связанным модулем MyMind.</Label>
-        )}
+        ) : null}
         <SearchField value={query} onChangeText={setQuery} />
       </View>
 
@@ -455,6 +471,7 @@ export function BoardsScreen({
         <FlatList
           data={children}
           keyExtractor={(item) => item.id}
+          contentContainerStyle={{ paddingBottom: 88 }}
           refreshing={nodes.loading}
           onRefresh={nodes.refresh}
           ListEmptyComponent={
