@@ -37,14 +37,12 @@ export function WorkoutProgressView({
   entries,
   refreshing,
   refresh,
-  onAdd,
   onEdit,
   onDelete
 }: {
   entries: WorkoutProgressEntryRecord[]
   refreshing: boolean
   refresh(): void
-  onAdd(): void
   onEdit(entry: WorkoutProgressEntryRecord): void
   onDelete(entry: WorkoutProgressEntryRecord): void
 }): React.JSX.Element {
@@ -64,16 +62,13 @@ export function WorkoutProgressView({
   return (
     <ScrollView
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
-      contentContainerStyle={{ gap: 14, paddingBottom: 48 }}
+      contentContainerStyle={{ gap: 14, paddingBottom: 96 }}
     >
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 10 }}>
-        <View style={{ flex: 1, gap: 3 }}>
-          <Text style={{ color: theme.text, fontSize: 20, fontWeight: '800' }}>Прогресс</Text>
-          <Text style={{ color: theme.muted, fontSize: 12 }}>
-            Вес, контрольные точки и сравнение фотографий
-          </Text>
-        </View>
-        <Button label="+ Запись" selected onPress={onAdd} />
+      <View style={{ gap: 3 }}>
+        <Text style={{ color: theme.text, fontSize: 20, fontWeight: '800' }}>Прогресс</Text>
+        <Text style={{ color: theme.muted, fontSize: 12 }}>
+          Вес, контрольные точки и сравнение фотографий
+        </Text>
       </View>
 
       {entries.length === 0 ? (

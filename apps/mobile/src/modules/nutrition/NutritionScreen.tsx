@@ -13,6 +13,7 @@ import * as validation from '@mymind/core/validation/nutrition'
 import { useServices } from '../../app/context'
 import { useCollection } from '../../shared/hooks/useCollection'
 import { FormSheet } from '../../shared/ui/FormSheet'
+import { MobileCreateAction } from '../../shared/ui/MobileCreateAction'
 import { choiceField, textField, type FormSpec } from '../../shared/ui/form-model'
 import {
   Button,
@@ -366,18 +367,7 @@ export function NutritionScreen(): React.JSX.Element {
       {tab === 'foods' || tab === 'recipes' ? (
         <SearchField value={query} onChangeText={setQuery} />
       ) : null}
-      {tab === 'diary' ? (
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          <View style={{ flex: 1 }}>
-            <Button label="+ Запись" selected onPress={() => editLog()} />
-          </View>
-          <Button label="Импорт JSON" onPress={importDiary} />
-        </View>
-      ) : null}
-      {tab === 'foods' ? <Button label="+ Продукт" selected onPress={() => editFood()} /> : null}
-      {tab === 'recipes' ? (
-        <Button label="+ Рецепт" selected onPress={() => setRecipeEditor('new')} />
-      ) : null}
+      {tab === 'diary' ? <Button label="Импорт JSON" onPress={importDiary} /> : null}
     </View>
   )
 
@@ -389,7 +379,7 @@ export function NutritionScreen(): React.JSX.Element {
       <View style={{ flex: 1 }}>
         {header}
         {overview.error ? <ErrorState message={overview.error} retry={overview.refresh} /> : null}
-        <ScrollView contentContainerStyle={{ gap: 10, paddingBottom: 40 }}>
+        <ScrollView contentContainerStyle={{ gap: 10, paddingBottom: 96 }}>
           <Row
             title={macroLine(day?.nutrients ?? zeroNutrients)}
             subtitle="Итого за выбранный день"
@@ -443,6 +433,17 @@ export function NutritionScreen(): React.JSX.Element {
             )
           })}
         </ScrollView>
+        <MobileCreateAction
+          actions={[
+            {
+              key: 'entry',
+              label: 'Новая запись',
+              description: 'Добавить еду в выбранный день',
+              icon: 'nutrition',
+              onPress: () => editLog()
+            }
+          ]}
+        />
         {form ? <FormSheet spec={form} close={() => setForm(null)} /> : null}
       </View>
     )
@@ -472,6 +473,7 @@ export function NutritionScreen(): React.JSX.Element {
       <FlatList<ListItem>
         data={list}
         keyExtractor={(item) => `${item.kind}:${item.value.id}`}
+        contentContainerStyle={{ paddingBottom: 96 }}
         refreshing={overview.loading}
         onRefresh={overview.refresh}
         ListEmptyComponent={<EmptyState />}
@@ -524,6 +526,33 @@ export function NutritionScreen(): React.JSX.Element {
             />
           )
         }}
+      />
+      <MobileCreateAction
+        actions={[
+          tab === 'diary'
+            ? {
+                key: 'entry',
+                label: 'Новая запись',
+                description: 'Добавить еду в выбранный день',
+                icon: 'nutrition',
+                onPress: () => editLog()
+              }
+            : tab === 'foods'
+              ? {
+                  key: 'food',
+                  label: 'Новый продукт',
+                  description: 'Добавить продукт в каталог питания',
+                  icon: 'nutrition',
+                  onPress: () => editFood()
+                }
+              : {
+                  key: 'recipe',
+                  label: 'Новый рецепт',
+                  description: 'Собрать рецепт из продуктов',
+                  icon: 'nutrition',
+                  onPress: () => setRecipeEditor('new')
+                }
+        ]}
       />
       {form ? <FormSheet spec={form} close={() => setForm(null)} /> : null}
       {recipeEditor ? (

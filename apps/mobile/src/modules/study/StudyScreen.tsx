@@ -17,6 +17,7 @@ import { DocumentReader, type DocumentRevealRequest } from '../../shared/ui/Docu
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { ActionMenu } from '../../shared/ui/ActionMenu'
 import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
+import { MobileCreateAction } from '../../shared/ui/MobileCreateAction'
 import { VisualIconBadge } from '../../shared/ui/VisualPickers'
 import { FOLDER_ICON_CHOICES } from '../../shared/ui/visual-options'
 import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
@@ -864,13 +865,11 @@ export function StudyScreen({
             />
           ))}
         </View>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          <Button label="+ Папка" selected onPress={createFolder} />
-          <Button label="+ Материал" selected onPress={createMaterial} />
-          {currentFolder ? (
-            <Button label="Код" onPress={() => setCodeNodeId(currentFolder.id)} />
-          ) : null}
-        </View>
+        {currentFolder ? (
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            <Button label="Код папки" onPress={() => setCodeNodeId(currentFolder.id)} />
+          </View>
+        ) : null}
         <SearchField value={query} onChangeText={setQuery} />
       </View>
 
@@ -882,6 +881,7 @@ export function StudyScreen({
         <FlatList
           data={children}
           keyExtractor={(item) => item.id}
+          contentContainerStyle={{ paddingBottom: 88 }}
           refreshing={nodes.loading}
           onRefresh={nodes.refresh}
           ListEmptyComponent={
@@ -933,6 +933,24 @@ export function StudyScreen({
           )}
         />
       )}
+      <MobileCreateAction
+        actions={[
+          {
+            key: 'folder',
+            label: 'Новая папка',
+            description: 'Создать папку в текущем разделе',
+            icon: 'folder',
+            onPress: createFolder
+          },
+          {
+            key: 'material',
+            label: 'Новый материал',
+            description: 'Создать учебный материал здесь',
+            icon: 'study',
+            onPress: createMaterial
+          }
+        ]}
+      />
       {form && <FormSheet spec={form} close={() => setForm(null)} />}
     </View>
   )

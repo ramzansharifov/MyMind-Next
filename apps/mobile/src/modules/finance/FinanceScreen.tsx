@@ -13,6 +13,7 @@ import { useCollection } from '../../shared/hooks/useCollection'
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { ActionMenu } from '../../shared/ui/ActionMenu'
 import { WorkspaceNodeCard, WorkspacePanel, WorkspaceStatCard } from '../../shared/ui/Workspace'
+import { MobileCreateAction, type MobileCreateActionItem } from '../../shared/ui/MobileCreateAction'
 import { VisualIconBadge } from '../../shared/ui/VisualPickers'
 import type { FormSpec } from '../../shared/ui/form-model'
 import {
@@ -347,7 +348,7 @@ export function FinanceScreen(): React.JSX.Element {
   if (tab === 'home') {
     const dashboard = data.dashboard
     content = (
-      <ScrollView contentContainerStyle={{ gap: 10, paddingBottom: 40 }}>
+      <ScrollView contentContainerStyle={{ gap: 10, paddingBottom: 96 }}>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
           <WorkspaceStatCard
             label="Общий баланс"
@@ -368,16 +369,6 @@ export function FinanceScreen(): React.JSX.Element {
             value={formatMoneyMinor(dashboard.netMinor, dashboard.settings.baseCurrencyCode)}
             detail={`Доходы ${formatMoneyMinor(dashboard.incomeMinor, dashboard.settings.baseCurrencyCode)} · расходы ${formatMoneyMinor(dashboard.expenseMinor, dashboard.settings.baseCurrencyCode)}`}
           />
-        </View>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          <Button
-            label="+ Операция"
-            selected
-            onPress={() => openForm(transactionForm(api, accounts, tags, templates))}
-            disabled={!accounts.length || !tags.length}
-          />
-          <Button label="+ Счёт" onPress={() => openForm(accountForm(api))} />
-          <Button label="+ Тег" onPress={() => openForm(tagForm(api))} />
         </View>
         <WorkspacePanel title="Счета" icon="finance">
           {accounts.length ? (
@@ -404,16 +395,7 @@ export function FinanceScreen(): React.JSX.Element {
       <FlatList
         data={transactions}
         keyExtractor={(item) => item.id}
-        ListHeaderComponent={
-          <View style={{ paddingBottom: 12 }}>
-            <Button
-              label="+ Операция"
-              selected
-              disabled={!accounts.length || !tags.length}
-              onPress={() => openForm(transactionForm(api, accounts, tags, templates))}
-            />
-          </View>
-        }
+        contentContainerStyle={{ paddingBottom: 96 }}
         ListEmptyComponent={<EmptyState text="Операций пока нет." />}
         renderItem={renderTransaction}
         refreshing={state.loading}
@@ -425,11 +407,7 @@ export function FinanceScreen(): React.JSX.Element {
       <FlatList
         data={accounts}
         keyExtractor={(item) => item.id}
-        ListHeaderComponent={
-          <View style={{ paddingBottom: 12 }}>
-            <Button label="+ Счёт" selected onPress={() => openForm(accountForm(api))} />
-          </View>
-        }
+        contentContainerStyle={{ paddingBottom: 96 }}
         ListEmptyComponent={<EmptyState text="Создайте первый счёт." />}
         renderItem={renderAccount}
       />
@@ -439,11 +417,7 @@ export function FinanceScreen(): React.JSX.Element {
       <FlatList
         data={tags}
         keyExtractor={(item) => item.id}
-        ListHeaderComponent={
-          <View style={{ paddingBottom: 12 }}>
-            <Button label="+ Тег" selected onPress={() => openForm(tagForm(api))} />
-          </View>
-        }
+        contentContainerStyle={{ paddingBottom: 96 }}
         ListEmptyComponent={<EmptyState text="Создайте первый тег." />}
         renderItem={renderTag}
       />
@@ -453,18 +427,7 @@ export function FinanceScreen(): React.JSX.Element {
       <FlatList
         data={limits}
         keyExtractor={(item) => item.id}
-        ListHeaderComponent={
-          <View style={{ paddingBottom: 12 }}>
-            <Button
-              label="+ Лимит"
-              selected
-              disabled={!accounts.length || !tags.some((tag) => tag.type !== 'income')}
-              onPress={() =>
-                openForm(limitForm(api, accounts, tags, data.dashboard.settings.baseCurrencyCode))
-              }
-            />
-          </View>
-        }
+        contentContainerStyle={{ paddingBottom: 96 }}
         ListEmptyComponent={<EmptyState text="Лимитов пока нет." />}
         renderItem={renderLimit}
       />
@@ -474,16 +437,7 @@ export function FinanceScreen(): React.JSX.Element {
       <FlatList
         data={templates}
         keyExtractor={(item) => item.id}
-        ListHeaderComponent={
-          <View style={{ paddingBottom: 12 }}>
-            <Button
-              label="+ Шаблон"
-              selected
-              disabled={!accounts.length || !tags.length}
-              onPress={() => openForm(templateForm(api, accounts, tags))}
-            />
-          </View>
-        }
+        contentContainerStyle={{ paddingBottom: 96 }}
         ListEmptyComponent={<EmptyState text="Шаблонов пока нет." />}
         renderItem={renderTemplate}
       />
@@ -500,16 +454,11 @@ export function FinanceScreen(): React.JSX.Element {
   } else {
     const base = data.dashboard.settings.baseCurrencyCode
     content = (
-      <ScrollView contentContainerStyle={{ gap: 10, paddingBottom: 40 }}>
+      <ScrollView contentContainerStyle={{ gap: 10, paddingBottom: 96 }}>
         <Row
           title={`Основная валюта · ${base}`}
           subtitle="Все сводные показатели конвертируются в неё."
           onPress={() => openForm(baseCurrencyForm(api, base))}
-        />
-        <Button
-          label="+ Ручной курс"
-          selected
-          onPress={() => openForm(exchangeRateForm(api, base))}
         />
         {rates.map((rate) => (
           <Row
@@ -535,10 +484,106 @@ export function FinanceScreen(): React.JSX.Element {
     )
   }
 
+  const createActions: MobileCreateActionItem[] =
+    tab === 'home'
+      ? [
+          {
+            key: 'transaction',
+            label: 'Новая операция',
+            description: 'Доход, расход или перевод',
+            icon: 'finance',
+            disabled: !accounts.length || !tags.length,
+            onPress: () => openForm(transactionForm(api, accounts, tags, templates))
+          },
+          {
+            key: 'account',
+            label: 'Новый счёт',
+            description: 'Карта, наличные или другой счёт',
+            icon: 'finance',
+            onPress: () => openForm(accountForm(api))
+          },
+          {
+            key: 'tag',
+            label: 'Новый тег',
+            description: 'Категория доходов и расходов',
+            icon: 'folder',
+            onPress: () => openForm(tagForm(api))
+          }
+        ]
+      : tab === 'transactions'
+        ? [
+            {
+              key: 'transaction',
+              label: 'Новая операция',
+              description: 'Доход, расход или перевод',
+              icon: 'finance',
+              disabled: !accounts.length || !tags.length,
+              onPress: () => openForm(transactionForm(api, accounts, tags, templates))
+            }
+          ]
+        : tab === 'accounts'
+          ? [
+              {
+                key: 'account',
+                label: 'Новый счёт',
+                description: 'Добавить новый финансовый счёт',
+                icon: 'finance',
+                onPress: () => openForm(accountForm(api))
+              }
+            ]
+          : tab === 'tags'
+            ? [
+                {
+                  key: 'tag',
+                  label: 'Новый тег',
+                  description: 'Добавить категорию для операций',
+                  icon: 'folder',
+                  onPress: () => openForm(tagForm(api))
+                }
+              ]
+            : tab === 'limits'
+              ? [
+                  {
+                    key: 'limit',
+                    label: 'Новый лимит',
+                    description: 'Ограничить расходы по категории',
+                    icon: 'finance',
+                    disabled: !accounts.length || !tags.some((tag) => tag.type !== 'income'),
+                    onPress: () =>
+                      openForm(
+                        limitForm(api, accounts, tags, data.dashboard.settings.baseCurrencyCode)
+                      )
+                  }
+                ]
+              : tab === 'templates'
+                ? [
+                    {
+                      key: 'template',
+                      label: 'Новый шаблон',
+                      description: 'Сохранить часто используемую операцию',
+                      icon: 'finance',
+                      disabled: !accounts.length || !tags.length,
+                      onPress: () => openForm(templateForm(api, accounts, tags))
+                    }
+                  ]
+                : tab === 'rates'
+                  ? [
+                      {
+                        key: 'rate',
+                        label: 'Новый курс',
+                        description: 'Добавить ручной курс валюты',
+                        icon: 'finance',
+                        onPress: () =>
+                          openForm(exchangeRateForm(api, data.dashboard.settings.baseCurrencyCode))
+                      }
+                    ]
+                  : []
+
   return (
     <View style={{ flex: 1 }}>
       {header}
       <View style={{ flex: 1 }}>{content}</View>
+      <MobileCreateAction actions={createActions} />
       {form ? <FormSheet spec={form} close={() => setForm(null)} /> : null}
     </View>
   )

@@ -18,6 +18,7 @@ import { useServices } from '../../app/context'
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { ActionMenu } from '../../shared/ui/ActionMenu'
 import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
+import { MobileCreateAction } from '../../shared/ui/MobileCreateAction'
 import { VisualIconBadge } from '../../shared/ui/VisualPickers'
 import { GROUP_COLOR_CHOICES, PASSWORD_GROUP_ICON_CHOICES } from '../../shared/ui/visual-options'
 import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
@@ -362,10 +363,7 @@ export function PasswordsScreen(): React.JSX.Element {
   let content: React.JSX.Element
   if (tab === 'groups') {
     content = (
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
-        <View style={{ marginBottom: 12, alignItems: 'flex-start' }}>
-          <Button label="+ Группа" selected onPress={() => editGroup()} />
-        </View>
+      <ScrollView contentContainerStyle={{ paddingBottom: 96 }}>
         {overview.groups.length ? (
           overview.groups.map((group) => (
             <WorkspaceNodeCard
@@ -400,7 +398,7 @@ export function PasswordsScreen(): React.JSX.Element {
     )
   } else if (tab === 'security') {
     content = (
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 96 }}>
         <Row
           title={`${overview.security.total} записей`}
           subtitle={`${overview.security.weak} слабых · ${overview.security.reused} повторяющихся · ${overview.security.old} давно не менялись`}
@@ -426,10 +424,7 @@ export function PasswordsScreen(): React.JSX.Element {
     )
   } else {
     content = (
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 40 }}>
-        <View style={{ alignItems: 'flex-start', marginBottom: 12 }}>
-          <Button label="+ Запись" selected onPress={() => openItem()} />
-        </View>
+      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 96 }}>
         {filteredItems.length ? (
           filteredItems.map((item) => {
             const itemGroup = item.groupId
@@ -567,6 +562,27 @@ export function PasswordsScreen(): React.JSX.Element {
       </View>
 
       <View style={{ flex: 1 }}>{content}</View>
+      {tab !== 'security' ? (
+        <MobileCreateAction
+          actions={[
+            tab === 'groups'
+              ? {
+                  key: 'group',
+                  label: 'Новая группа',
+                  description: 'Создать группу для доступов',
+                  icon: 'folder',
+                  onPress: () => editGroup()
+                }
+              : {
+                  key: 'item',
+                  label: 'Новая запись',
+                  description: 'Добавить логин или пароль',
+                  icon: 'passwords',
+                  onPress: () => openItem()
+                }
+          ]}
+        />
+      ) : null}
       {form ? <FormSheet spec={form} close={() => setForm(null)} /> : null}
       {editingItem !== undefined ? (
         <PasswordItemEditor

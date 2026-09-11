@@ -20,6 +20,7 @@ import { useCollection } from '../../shared/hooks/useCollection'
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { ActionMenu } from '../../shared/ui/ActionMenu'
 import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
+import { MobileCreateAction } from '../../shared/ui/MobileCreateAction'
 import { choiceField, textField, type FormSpec } from '../../shared/ui/form-model'
 import {
   Button,
@@ -339,7 +340,6 @@ export function CalendarScreen(): React.JSX.Element {
         </View>
 
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          <Button label="+ Событие" selected onPress={() => edit()} />
           <Button label="Сегодня" selected={selectedDate === today} onPress={selectToday} />
           {unreadReminders.length > 0 ? (
             <Button
@@ -374,7 +374,7 @@ export function CalendarScreen(): React.JSX.Element {
             state.refresh()
             unread.refresh()
           }}
-          contentContainerStyle={{ paddingBottom: 40 }}
+          contentContainerStyle={{ paddingBottom: 96 }}
           renderItem={({ item }) => (
             <WorkspaceNodeCard
               title={item.title}
@@ -429,6 +429,17 @@ export function CalendarScreen(): React.JSX.Element {
           )}
         />
       )}
+      <MobileCreateAction
+        actions={[
+          {
+            key: 'event',
+            label: 'Новое событие',
+            description: 'Создать событие на выбранную дату',
+            icon: 'calendar',
+            onPress: () => edit()
+          }
+        ]}
+      />
       {form ? <FormSheet spec={form} close={() => setForm(null)} /> : null}
       {inboxOpen ? (
         <CalendarReminderInboxModal

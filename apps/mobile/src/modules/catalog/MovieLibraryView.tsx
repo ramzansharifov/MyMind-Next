@@ -168,7 +168,7 @@ export function MovieLibraryView({
       keyExtractor={(item) => item.id}
       onRefresh={onRefresh}
       refreshing={refreshing}
-      contentContainerStyle={{ paddingBottom: 24 }}
+      contentContainerStyle={{ paddingBottom: 96 }}
       ListHeaderComponent={
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
           <StatCard label="Всего" value={String(stats.total)} />

@@ -16,6 +16,7 @@ import {
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { ActionMenu } from '../../shared/ui/ActionMenu'
 import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
+import { MobileCreateAction } from '../../shared/ui/MobileCreateAction'
 import { VisualIconBadge } from '../../shared/ui/VisualPickers'
 import { TASK_GROUP_COLOR_CHOICES, TASK_GROUP_ICON_CHOICES } from '../../shared/ui/visual-options'
 import {
@@ -187,12 +188,6 @@ export function TasksScreen(): React.JSX.Element {
             compact
             onPress={() => setGroupsView(!groupsView)}
           />
-          <IconButton
-            label={groupsView ? 'Создать группу' : 'Создать задачу'}
-            icon="add"
-            primary
-            onPress={() => (groupsView ? editGroup() : edit())}
-          />
         </View>
 
         {!groupsView && (
@@ -263,6 +258,7 @@ export function TasksScreen(): React.JSX.Element {
         <FlatList
           data={state.data?.groups ?? []}
           keyExtractor={(item) => item.id}
+          contentContainerStyle={{ paddingBottom: 88 }}
           ListEmptyComponent={<EmptyState />}
           renderItem={({ item }) => (
             <WorkspaceNodeCard
@@ -309,6 +305,7 @@ export function TasksScreen(): React.JSX.Element {
         <FlatList
           data={tasks}
           keyExtractor={(item) => item.id}
+          contentContainerStyle={{ paddingBottom: 88 }}
           refreshing={state.loading}
           onRefresh={state.refresh}
           ListEmptyComponent={<EmptyState />}
@@ -462,6 +459,26 @@ export function TasksScreen(): React.JSX.Element {
           }}
         />
       )}
+      <MobileCreateAction
+        disabled={state.pending}
+        actions={[
+          groupsView
+            ? {
+                key: 'group',
+                label: 'Новая группа задач',
+                description: 'Создать отдельный контекст для задач',
+                icon: 'folder',
+                onPress: () => editGroup()
+              }
+            : {
+                key: 'task',
+                label: 'Новая задача',
+                description: 'Открыть полную форму задачи',
+                icon: 'tasks',
+                onPress: () => edit()
+              }
+        ]}
+      />
       {form && <FormSheet spec={form} close={() => setForm(null)} />}
     </View>
   )
