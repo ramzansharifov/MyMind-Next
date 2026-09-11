@@ -1,6 +1,6 @@
 import { randomUUID } from 'expo-crypto'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Alert, AppState, BackHandler, FlatList, TextInput, View } from 'react-native'
+import { AppState, BackHandler, FlatList, TextInput, View } from 'react-native'
 import type { NoteDocument, NoteGroup, NoteRecord, NoteSummary } from '@mymind/contracts/notes'
 import type { StudyBoardBlock } from '@mymind/contracts/study'
 import { STUDY_FOLDER_ICON_NAMES } from '@mymind/contracts/study'
@@ -11,6 +11,9 @@ import { notifyDataChanged } from '../../app/changes'
 import { useCollection } from '../../shared/hooks/useCollection'
 import { DocumentEditor } from '../../shared/ui/DocumentEditor'
 import { FormSheet } from '../../shared/ui/FormSheet'
+import { ActionMenu } from '../../shared/ui/ActionMenu'
+import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
+import { useToast } from '../../shared/ui/ToastProvider'
 import { choiceField, messageFor, textField, type FormSpec } from '../../shared/ui/form-model'
 import {
   Button,
@@ -37,6 +40,8 @@ export function NotesScreen({
 }): React.JSX.Element {
   const { notes: api, boards, documentAssets } = useServices()
   const theme = useTheme()
+  const confirm = useConfirmation()
+  const toast = useToast()
   const overview = useCollection(useCallback(() => api.listNotesOverview(), [api]))
   const [query, setQuery] = useState('')
   const [groupId, setGroupId] = useState<string | null | undefined>(undefined)
@@ -237,33 +242,28 @@ export function NotesScreen({
 
   const deleteCurrentNote = (): void => {
     if (!record) return
-    Alert.alert('Удалить заметку?', 'Заметка и её локальные данные будут удалены.', [
-      { text: 'Отмена', style: 'cancel' },
-      {
-        text: 'Удалить',
-        style: 'destructive',
-        onPress: () => {
-          const id = record.id
-          setClosing(true)
-          void (async () => {
-            try {
-              queueRef.current?.discardPending()
-              await api.deleteNote(id)
-              queueRef.current = null
-              setRecord(null)
-              setDocument(null)
-              setEditorError('')
-              notifyDataChanged()
-              overview.refresh()
-            } catch (reason) {
-              setEditorError(messageFor(reason))
-            } finally {
-              setClosing(false)
-            }
-          })()
+    const id = record.id
+    void confirm({
+      title: 'Удалить заметку?',
+      description: 'Заметка и её локальные данные будут удалены.',
+      tone: 'danger',
+      onConfirm: async () => {
+        setClosing(true)
+        try {
+          queueRef.current?.discardPending()
+          await api.deleteNote(id)
+          queueRef.current = null
+          setRecord(null)
+          setDocument(null)
+          setEditorError('')
+          notifyDataChanged()
+          overview.refresh()
+          toast.success('Заметка удалена')
+        } finally {
+          setClosing(false)
         }
       }
-    ])
+    })
   }
 
   if (record && document) {
@@ -290,18 +290,22 @@ export function NotesScreen({
                   onPress={() => void closeEditor()}
                 />
                 <View style={{ flex: 1 }} />
-                <IconButton
-                  label="Свойства заметки"
-                  icon="edit"
+                <ActionMenu
                   disabled={closing}
-                  onPress={() => editNoteProperties(record)}
-                />
-                <IconButton
-                  label="Удалить заметку"
-                  icon="delete"
-                  danger
-                  disabled={closing}
-                  onPress={deleteCurrentNote}
+                  title="Заметка"
+                  items={[
+                    {
+                      label: 'Свойства заметки',
+                      icon: 'edit',
+                      onPress: () => editNoteProperties(record)
+                    },
+                    {
+                      label: 'Удалить заметку',
+                      icon: 'delete',
+                      danger: true,
+                      onPress: deleteCurrentNote
+                    }
+                  ]}
                 />
               </View>
               <TextInput
@@ -413,40 +417,34 @@ export function NotesScreen({
                 setGroupsView(false)
               }}
             >
-              <IconButton
-                label="Изменить группу"
-                icon="edit"
-                compact
-                onPress={() => editGroup(item)}
-              />
-              <IconButton
-                label="Удалить группу"
-                icon="delete"
-                compact
-                danger
-                onPress={() =>
-                  Alert.alert(
-                    'Удалить группу?',
-                    'Заметки сохранятся и перейдут в раздел «Без группы».',
-                    [
-                      { text: 'Отмена', style: 'cancel' },
-                      {
-                        text: 'Удалить',
-                        style: 'destructive',
-                        onPress: () => {
-                          try {
-                            api.deleteNoteGroup(item.id)
-                            if (groupId === item.id) setGroupId(undefined)
-                            overview.refresh()
-                            notifyDataChanged()
-                          } catch (reason) {
-                            Alert.alert('Не удалось удалить группу', messageFor(reason))
-                          }
+              <ActionMenu
+                title={item.title}
+                items={[
+                  {
+                    label: 'Изменить группу',
+                    icon: 'edit',
+                    onPress: () => editGroup(item)
+                  },
+                  {
+                    label: 'Удалить группу',
+                    icon: 'delete',
+                    danger: true,
+                    onPress: () => {
+                      void confirm({
+                        title: 'Удалить группу?',
+                        description: 'Заметки сохранятся и перейдут в раздел «Без группы».',
+                        tone: 'danger',
+                        onConfirm: () => {
+                          api.deleteNoteGroup(item.id)
+                          if (groupId === item.id) setGroupId(undefined)
+                          overview.refresh()
+                          notifyDataChanged()
+                          toast.success('Группа удалена')
                         }
-                      }
-                    ]
-                  )
-                }
+                      })
+                    }
+                  }
+                ]}
               />
             </Row>
           )}

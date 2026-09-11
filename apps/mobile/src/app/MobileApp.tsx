@@ -25,6 +25,8 @@ import { ThemeContext } from '../shared/ui/theme'
 import { ErrorState, LoadingState } from '../shared/ui/primitives'
 import { AppIcon } from '../shared/ui/icons'
 import { messageFor } from '../shared/ui/form-model'
+import { ConfirmationProvider } from '../shared/ui/ConfirmationProvider'
+import { ToastProvider } from '../shared/ui/ToastProvider'
 import { StudyScreen } from '../modules/study/StudyScreen'
 import { BoardsScreen } from '../modules/boards/BoardsScreen'
 import { TasksScreen } from '../modules/tasks/TasksScreen'
@@ -204,7 +206,9 @@ export default function MobileApp(): React.JSX.Element {
   return (
     <SafeAreaProvider>
       <ThemeContext.Provider value={palette}>
-        <SafeAreaView style={{ flex: 1, backgroundColor: palette.background }}>
+        <ToastProvider>
+          <ConfirmationProvider>
+            <SafeAreaView style={{ flex: 1, backgroundColor: palette.background }}>
           <StatusBar style={dark ? 'light' : 'dark'} />
 
           {!immersive ? (
@@ -455,7 +459,9 @@ export default function MobileApp(): React.JSX.Element {
               ) : null}
             </ServicesContext.Provider>
           )}
-        </SafeAreaView>
+            </SafeAreaView>
+          </ConfirmationProvider>
+        </ToastProvider>
       </ThemeContext.Provider>
     </SafeAreaProvider>
   )
