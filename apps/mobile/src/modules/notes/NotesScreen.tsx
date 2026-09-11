@@ -366,6 +366,14 @@ export function NotesScreen({
     ? (overview.data?.groups.find((group) => group.id === selectedGroupId) ?? null)
     : null
   const searchedNotes = allNotes.filter((note) => noteMatches(note, query))
+  const normalizedQuery = query.trim().toLocaleLowerCase('ru-RU')
+  const visibleGroups = (overview.data?.groups ?? []).filter((group) => {
+    if (!normalizedQuery) return true
+    if (group.title.toLocaleLowerCase('ru-RU').includes(normalizedQuery)) return true
+    return (overview.data?.notes ?? []).some(
+      (note) => note.groupId === group.id && noteMatches(note, query)
+    )
+  })
   const notes =
     view === 'ungrouped'
       ? searchedNotes.filter((note) => note.groupId === null)
@@ -442,9 +450,7 @@ export function NotesScreen({
           </ScrollView>
         )}
 
-        {view !== 'groups' || selectedGroup ? (
-          <SearchField value={query} onChangeText={setQuery} />
-        ) : null}
+        <SearchField value={query} onChangeText={setQuery} />
       </View>
 
       {overview.error ? <ErrorState message={overview.error} retry={overview.refresh} /> : null}
@@ -452,10 +458,14 @@ export function NotesScreen({
         <LoadingState />
       ) : view === 'groups' && !selectedGroup ? (
         <FlatList
-          data={overview.data?.groups ?? []}
+          data={visibleGroups}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ paddingBottom: 88 }}
-          ListEmptyComponent={<EmptyState text="Групп пока нет." />}
+          ListEmptyComponent={
+            <EmptyState
+              text={query.trim() ? 'По этому запросу группы не найдены.' : 'Групп пока нет.'}
+            />
+          }
           renderItem={({ item }) => (
             <WorkspaceNodeCard
               title={item.title}
