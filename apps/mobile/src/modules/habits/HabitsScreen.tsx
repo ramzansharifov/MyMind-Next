@@ -17,6 +17,7 @@ import { FormSheet } from '../../shared/ui/FormSheet'
 import { AppDateField } from '../../shared/ui/FormControls'
 import { ActionMenu } from '../../shared/ui/ActionMenu'
 import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
+import { MobileCreateAction } from '../../shared/ui/MobileCreateAction'
 import { VisualIconBadge } from '../../shared/ui/VisualPickers'
 import { GROUP_COLOR_CHOICES, HABIT_GROUP_ICON_CHOICES } from '../../shared/ui/visual-options'
 import {
@@ -151,12 +152,6 @@ export function HabitsScreen(): React.JSX.Element {
             />
           ))}
           <Button label="Отчёт" selected={view === 'report'} onPress={() => setView('report')} />
-          <IconButton
-            label={view === 'groups' ? 'Создать группу' : 'Создать привычку'}
-            icon="add"
-            selected
-            onPress={() => (view === 'groups' ? editGroup() : edit())}
-          />
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <IconButton
@@ -193,6 +188,7 @@ export function HabitsScreen(): React.JSX.Element {
         <FlatList
           data={state.data?.groups ?? []}
           keyExtractor={(item) => item.id}
+          contentContainerStyle={{ paddingBottom: 88 }}
           ListHeaderComponent={
             <Button
               label="Без группы"
@@ -246,6 +242,7 @@ export function HabitsScreen(): React.JSX.Element {
         <FlatList
           data={visible}
           keyExtractor={(item) => item.id}
+          contentContainerStyle={{ paddingBottom: 88 }}
           ListEmptyComponent={<EmptyState />}
           onRefresh={state.refresh}
           refreshing={state.loading}
@@ -367,6 +364,28 @@ export function HabitsScreen(): React.JSX.Element {
           }}
         />
       )}
+      {view !== 'report' ? (
+        <MobileCreateAction
+          disabled={state.pending}
+          actions={[
+            view === 'groups'
+              ? {
+                  key: 'group',
+                  label: 'Новая группа привычек',
+                  description: 'Организовать привычки в отдельную группу',
+                  icon: 'folder',
+                  onPress: () => editGroup()
+                }
+              : {
+                  key: 'habit',
+                  label: 'Новая привычка',
+                  description: 'Создать привычку с расписанием и целью',
+                  icon: 'habits',
+                  onPress: () => edit()
+                }
+          ]}
+        />
+      ) : null}
       {form && <FormSheet spec={form} close={() => setForm(null)} />}
     </View>
   )
