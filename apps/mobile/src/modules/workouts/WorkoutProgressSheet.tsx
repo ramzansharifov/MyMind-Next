@@ -345,9 +345,7 @@ export function WorkoutProgressSheet({
             )}
           </View>
         ) : (
-          <Label muted>
-            Сохраните запись, затем откройте её снова, чтобы добавить фотографии.
-          </Label>
+          <Label muted>Сохраните запись, затем откройте её снова, чтобы добавить фотографии.</Label>
         )}
 
         <View style={{ gap: 12 }}>

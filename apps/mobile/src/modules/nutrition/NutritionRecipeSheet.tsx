@@ -122,7 +122,12 @@ export function NutritionRecipeSheet({
       footer={
         <>
           <Button label="Отмена" onPress={requestClose} disabled={pending} />
-          <Button label={pending ? 'Сохранение…' : 'Сохранить'} onPress={submit} disabled={pending} primary />
+          <Button
+            label={pending ? 'Сохранение…' : 'Сохранить'}
+            onPress={submit}
+            disabled={pending}
+            primary
+          />
         </>
       }
     >

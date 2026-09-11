@@ -210,8 +210,8 @@ export function AppDialog({
                 justifyContent: 'flex-end',
                 gap: 8,
                 paddingHorizontal: 14,
-              paddingTop: 14,
-              paddingBottom: 14 + (fullscreen || sheet ? insets.bottom : 0),
+                paddingTop: 14,
+                paddingBottom: 14 + (fullscreen || sheet ? insets.bottom : 0),
                 borderTopWidth: 1,
                 borderTopColor: theme.border
               }}

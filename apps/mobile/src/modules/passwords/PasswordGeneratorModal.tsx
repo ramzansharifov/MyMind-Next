@@ -123,7 +123,10 @@ export function PasswordGeneratorModal({
               style={{ color: theme.text, fontSize: 17, minHeight: 44 }}
             />
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              <Button label={visible ? 'Скрыть' : 'Показать'} onPress={() => setVisible(!visible)} />
+              <Button
+                label={visible ? 'Скрыть' : 'Показать'}
+                onPress={() => setVisible(!visible)}
+              />
               <Button label="Копировать" icon="copy" onPress={() => void copy(value)} />
               {onUseValue ? (
                 <Button

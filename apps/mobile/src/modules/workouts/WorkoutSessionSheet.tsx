@@ -283,9 +283,7 @@ export function WorkoutSessionSheet({
             <Label title>Упражнения</Label>
             <Button label="+ Упражнение" disabled={pending} onPress={addExercise} />
           </View>
-          {items.length === 0 ? (
-            <ErrorState message="Добавьте хотя бы одно упражнение." />
-          ) : null}
+          {items.length === 0 ? <ErrorState message="Добавьте хотя бы одно упражнение." /> : null}
           {items.map((item, exerciseIndex) => {
             const exercise = selectedExercise(item.exerciseId)
             const usedByOthers = new Set(
