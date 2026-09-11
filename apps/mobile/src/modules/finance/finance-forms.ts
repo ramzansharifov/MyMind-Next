@@ -217,8 +217,8 @@ export function transactionForm(
         { value: null, label: 'Без шаблона' },
         ...templates.map((template) => ({ value: template.id, label: template.name }))
       ]),
-      textField('date', 'Дата', 'text', 'ГГГГ-ММ-ДД'),
-      textField('time', 'Время', 'text', 'ЧЧ:ММ'),
+      textField('date', 'Дата', 'date'),
+      textField('time', 'Время', 'time'),
       textField('comment', 'Комментарий', 'multiline')
     ],
     save(values) {

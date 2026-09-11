@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { FlatList, TextInput, View } from 'react-native'
+import { FlatList, View } from 'react-native'
 import {
   HABIT_GROUP_COLORS,
   HABIT_GROUP_ICONS,
@@ -20,14 +20,13 @@ import {
   SearchField
 } from '../../shared/ui/primitives'
 import { FormSheet } from '../../shared/ui/FormSheet'
+import { AppDateField } from '../../shared/ui/FormControls'
 import { ActionMenu } from '../../shared/ui/ActionMenu'
 import { choiceField, textField, type FormSpec } from '../../shared/ui/form-model'
-import { useTheme } from '../../shared/ui/theme'
 import { HabitsReportsView } from './HabitsReportsView'
 
 export function HabitsScreen(): React.JSX.Element {
   const { habits: api } = useServices()
-  const theme = useTheme()
   const [date, setDate] = useState(localDateKey())
   const [view, setView] = useState('today')
   const [query, setQuery] = useState('')
@@ -163,20 +162,9 @@ export function HabitsScreen(): React.JSX.Element {
             icon="back"
             onPress={() => setDate(addDays(date, -1))}
           />
-          <TextInput
-            accessibilityLabel="Дата привычек"
-            value={date}
-            onChangeText={setDate}
-            style={{
-              flex: 1,
-              color: theme.text,
-              padding: 12,
-              fontSize: 16,
-              borderColor: theme.border,
-              borderWidth: 1,
-              borderRadius: 12
-            }}
-          />
+          <View style={{ flex: 1 }}>
+            <AppDateField label="Дата привычек" value={date} onChangeText={setDate} />
+          </View>
           <IconButton
             label="Следующий день"
             icon="forward"

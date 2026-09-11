@@ -204,7 +204,7 @@ export function NutritionScreen(): React.JSX.Element {
         notes: entry?.notes ?? ''
       },
       fields: [
-        textField('date', 'Дата', 'text', 'ГГГГ-ММ-ДД'),
+        textField('date', 'Дата', 'date'),
         choiceField(
           'mealType',
           'Приём пищи',

@@ -178,13 +178,13 @@ export function CalendarScreen(): React.JSX.Element {
           { value: 'one_time', label: 'Один раз' },
           { value: 'annual', label: 'Каждый год' }
         ]),
-        textField('date', 'Дата события', 'text', 'ГГГГ-ММ-ДД'),
-        textField('time', 'Время', 'text', 'ЧЧ:ММ, необязательно'),
+        textField('date', 'Дата события', 'date'),
+        textField('time', 'Время', 'time', 'Необязательно'),
         textField(
           'startDate',
           'Отсчитывать время от даты',
-          'text',
-          'Для ежегодных событий; ГГГГ-ММ-ДД'
+          'date',
+          'Для ежегодных событий; необязательно'
         ),
         textField('note', 'Заметка к этому событию', 'multiline'),
         textField('offsets', 'Напомнить за N минут', 'text', 'Через запятую, например: 30, 1440')

@@ -269,7 +269,7 @@ function DiaryDetail({ diary, back }: { diary: DiarySummary; back(): void }): Re
     setForm({
       title: 'Перейти к дате',
       initial: { dayKey: date },
-      fields: [textField('dayKey', 'Дата', 'text', 'ГГГГ-ММ-ДД')],
+      fields: [textField('dayKey', 'Дата', 'date')],
       save: (values) => turnToDate(schema.diaryDayKeySchema.parse(values.dayKey))
     })
 
