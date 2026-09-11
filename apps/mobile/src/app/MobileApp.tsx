@@ -337,7 +337,7 @@ export default function MobileApp(): React.JSX.Element {
                     data={moreRoutes}
                     numColumns={2}
                     keyExtractor={(item) => item}
-                    columnWrapperStyle={{ gap: 10 }}
+                    columnWrapperStyle={{ gap: 10, justifyContent: 'space-between' }}
                     contentContainerStyle={{ paddingBottom: 12, gap: 10 }}
                     renderItem={({ item }) => (
                       <Pressable
@@ -345,7 +345,7 @@ export default function MobileApp(): React.JSX.Element {
                         accessibilityLabel={routeTitles[item]}
                         onPress={() => navigate(item)}
                         style={({ pressed }) => ({
-                          flex: 1,
+                          width: '48.5%',
                           minHeight: 106,
                           justifyContent: 'space-between',
                           padding: 14,
