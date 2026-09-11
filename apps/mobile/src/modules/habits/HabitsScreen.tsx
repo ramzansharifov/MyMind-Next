@@ -14,6 +14,7 @@ import {
   Button,
   EmptyState,
   ErrorState,
+  IconButton,
   LoadingState,
   Row,
   SearchField
@@ -148,14 +149,15 @@ export function HabitsScreen(): React.JSX.Element {
             />
           ))}
           <Button label="Отчёт" selected={view === 'report'} onPress={() => setView('report')} />
-          <Button
-            label={view === 'groups' ? '+ Группа' : '+ Привычка'}
+          <IconButton
+            label={view === 'groups' ? 'Создать группу' : 'Создать привычку'}
+            icon="add"
             selected
             onPress={() => (view === 'groups' ? editGroup() : edit())}
           />
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <Button label="‹" onPress={() => setDate(addDays(date, -1))} />
+          <IconButton label="Предыдущий день" icon="back" onPress={() => setDate(addDays(date, -1))} />
           <TextInput
             accessibilityLabel="Дата привычек"
             value={date}
@@ -170,14 +172,14 @@ export function HabitsScreen(): React.JSX.Element {
               borderRadius: 12
             }}
           />
-          <Button label="›" onPress={() => setDate(addDays(date, 1))} />
+          <IconButton label="Следующий день" icon="forward" onPress={() => setDate(addDays(date, 1))} />
           <Button label="Сегодня" onPress={() => setDate(localDateKey())} />
         </View>
         {(view === 'today' || view === 'all') && (
           <SearchField value={query} onChangeText={setQuery} />
         )}
         {group !== undefined && (
-          <Button label="Сбросить группу" onPress={() => setGroup(undefined)} />
+          <Button label="Сбросить группу" icon="reset" compact onPress={() => setGroup(undefined)} />
         )}
       </View>
       {state.error && <ErrorState message={state.error} retry={state.refresh} />}
@@ -200,14 +202,17 @@ export function HabitsScreen(): React.JSX.Element {
           renderItem={({ item }) => (
             <Row
               title={item.name}
+              leadingIcon="folder"
               onPress={() => {
                 setGroup(item.id)
                 setView('all')
               }}
             >
-              <Button label="Изменить" onPress={() => editGroup(item)} />
-              <Button
-                label="Удалить"
+              <IconButton label="Изменить группу" icon="edit" compact onPress={() => editGroup(item)} />
+              <IconButton
+                label="Удалить группу"
+                icon="delete"
+                compact
                 danger
                 onPress={() =>
                   state.confirmDelete(
@@ -237,14 +242,28 @@ export function HabitsScreen(): React.JSX.Element {
             const scheduled = isHabitScheduledOn(item, date)
             return (
               <Row
-                title={`${entry?.skipped ? 'Пропуск · ' : (entry?.value ?? 0) >= item.targetValue ? '✓ ' : ''}${item.title}`}
-                subtitle={`${entry?.value ?? 0} / ${item.targetValue} ${item.unit}${!scheduled ? ' · Не запланировано на эту дату' : ''}`}
+                title={item.title}
+                leadingIcon="habits"
+                subtitle={[
+                  entry?.skipped
+                    ? 'Пропущено'
+                    : (entry?.value ?? 0) >= item.targetValue
+                      ? 'Выполнено'
+                      : null,
+                  (entry?.value ?? 0) + ' / ' + item.targetValue + (item.unit ? ' ' + item.unit : ''),
+                  !scheduled ? 'Не запланировано на эту дату' : null
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
                 onPress={() => edit(item)}
               >
                 {scheduled && (
                   <>
-                    <Button
-                      label={item.trackingType === 'count' ? '+1' : 'Выполнить'}
+                    <IconButton
+                      label={item.trackingType === 'count' ? 'Добавить единицу' : 'Выполнить'}
+                      icon="check"
+                      compact
+                      selected={(entry?.value ?? 0) >= item.targetValue && !entry?.skipped}
                       disabled={state.pending}
                       onPress={() =>
                         state.mutate(() => {
@@ -259,8 +278,10 @@ export function HabitsScreen(): React.JSX.Element {
                         })
                       }
                     />
-                    <Button
+                    <IconButton
                       label="Пропустить"
+                      icon="skip"
+                      compact
                       onPress={() =>
                         state.mutate(() => {
                           api.upsertHabitEntry({ habitId: item.id, date, value: 0, skipped: true })
@@ -268,8 +289,10 @@ export function HabitsScreen(): React.JSX.Element {
                       }
                     />
                     {entry && (
-                      <Button
-                        label="Сбросить"
+                      <IconButton
+                        label="Сбросить отметку"
+                        icon="reset"
+                        compact
                         onPress={() =>
                           state.mutate(() => {
                             api.deleteHabitEntry({ habitId: item.id, date })
@@ -279,8 +302,10 @@ export function HabitsScreen(): React.JSX.Element {
                     )}
                   </>
                 )}
-                <Button
-                  label="Удалить"
+                <IconButton
+                  label="Удалить привычку"
+                  icon="delete"
+                  compact
                   danger
                   onPress={() =>
                     state.confirmDelete(
