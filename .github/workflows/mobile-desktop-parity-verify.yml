@@ -39,7 +39,30 @@ jobs:
 
       - name: Format changed UI
         run: |
-          npx prettier --write             apps/mobile/src/app/Home.tsx             apps/mobile/src/app/MobileApp.tsx             apps/mobile/src/app/navigation.ts             apps/mobile/src/modules/habits/HabitsScreen.tsx             apps/mobile/src/modules/notes/NotesScreen.tsx             apps/mobile/src/modules/tasks/TasksScreen.tsx             apps/mobile/src/shared/ui/icons.tsx             apps/mobile/src/shared/ui/primitives.tsx             apps/mobile/package.json             package-lock.json             .github/workflows/mobile-desktop-parity-verify.yml
+          npx prettier --write \
+            apps/mobile/src/app/Home.tsx \
+            apps/mobile/src/app/MobileApp.tsx \
+            apps/mobile/src/app/Settings.tsx \
+            apps/mobile/src/app/navigation.ts \
+            apps/mobile/src/modules/boards/BoardsScreen.tsx \
+            apps/mobile/src/modules/finance/FinanceScreen.tsx \
+            apps/mobile/src/modules/habits/HabitsScreen.tsx \
+            apps/mobile/src/modules/notes/NotesScreen.tsx \
+            apps/mobile/src/modules/study/StudyScreen.tsx \
+            apps/mobile/src/modules/tasks/TasksScreen.tsx \
+            apps/mobile/src/shared/hooks/useCollection.ts \
+            apps/mobile/src/shared/ui/ActionMenu.tsx \
+            apps/mobile/src/shared/ui/AppDialog.tsx \
+            apps/mobile/src/shared/ui/ConfirmationProvider.tsx \
+            apps/mobile/src/shared/ui/DeleteConfirmationDialog.tsx \
+            apps/mobile/src/shared/ui/FormControls.tsx \
+            apps/mobile/src/shared/ui/FormSheet.tsx \
+            apps/mobile/src/shared/ui/ToastProvider.tsx \
+            apps/mobile/src/shared/ui/icons.tsx \
+            apps/mobile/src/shared/ui/primitives.tsx \
+            apps/mobile/package.json \
+            package-lock.json \
+            .github/workflows/mobile-desktop-parity-verify.yml
 
       - name: Verify mobile parity changes
         run: |
@@ -55,7 +78,30 @@ jobs:
           if ! git diff --quiet; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add               apps/mobile/src/app/Home.tsx               apps/mobile/src/app/MobileApp.tsx               apps/mobile/src/app/navigation.ts               apps/mobile/src/modules/habits/HabitsScreen.tsx               apps/mobile/src/modules/notes/NotesScreen.tsx               apps/mobile/src/modules/tasks/TasksScreen.tsx               apps/mobile/src/shared/ui/icons.tsx               apps/mobile/src/shared/ui/primitives.tsx               apps/mobile/package.json               package-lock.json               .github/workflows/mobile-desktop-parity-verify.yml
-            git commit -m "chore: align mobile Lucide icon dependencies"
+            git add \
+              apps/mobile/src/app/Home.tsx \
+              apps/mobile/src/app/MobileApp.tsx \
+              apps/mobile/src/app/Settings.tsx \
+              apps/mobile/src/app/navigation.ts \
+              apps/mobile/src/modules/boards/BoardsScreen.tsx \
+              apps/mobile/src/modules/finance/FinanceScreen.tsx \
+              apps/mobile/src/modules/habits/HabitsScreen.tsx \
+              apps/mobile/src/modules/notes/NotesScreen.tsx \
+              apps/mobile/src/modules/study/StudyScreen.tsx \
+              apps/mobile/src/modules/tasks/TasksScreen.tsx \
+              apps/mobile/src/shared/hooks/useCollection.ts \
+              apps/mobile/src/shared/ui/ActionMenu.tsx \
+              apps/mobile/src/shared/ui/AppDialog.tsx \
+              apps/mobile/src/shared/ui/ConfirmationProvider.tsx \
+              apps/mobile/src/shared/ui/DeleteConfirmationDialog.tsx \
+              apps/mobile/src/shared/ui/FormControls.tsx \
+              apps/mobile/src/shared/ui/FormSheet.tsx \
+              apps/mobile/src/shared/ui/ToastProvider.tsx \
+              apps/mobile/src/shared/ui/icons.tsx \
+              apps/mobile/src/shared/ui/primitives.tsx \
+              apps/mobile/package.json \
+              package-lock.json \
+              .github/workflows/mobile-desktop-parity-verify.yml
+            git commit -m "chore: format mobile interaction parity changes"
             git push origin HEAD:agent/mobile-desktop-visual-parity
           fi
