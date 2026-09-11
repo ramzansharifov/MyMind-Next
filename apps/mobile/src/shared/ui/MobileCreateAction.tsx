@@ -10,6 +10,7 @@ export interface MobileCreateActionItem {
   label: string
   description?: string
   icon?: AppIconName
+  disabled?: boolean
   onPress(): void
 }
 
@@ -28,7 +29,7 @@ export function MobileCreateAction({
   if (!actions.length) return null
 
   const launch = (action: MobileCreateActionItem): void => {
-    if (disabled) return
+    if (disabled || action.disabled) return
     if (actions.length === 1) {
       action.onPress()
       return
@@ -36,6 +37,8 @@ export function MobileCreateAction({
     setOpen(false)
     InteractionManager.runAfterInteractions(() => action.onPress())
   }
+
+  const triggerDisabled = disabled || (actions.length === 1 && Boolean(actions[0].disabled))
 
   return (
     <>
@@ -51,8 +54,11 @@ export function MobileCreateAction({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={actions.length === 1 ? actions[0].label : label}
-          accessibilityState={{ disabled, expanded: actions.length > 1 ? open : undefined }}
-          disabled={disabled}
+          accessibilityState={{
+            disabled: triggerDisabled,
+            expanded: actions.length > 1 ? open : undefined
+          }}
+          disabled={triggerDisabled}
           onPress={() => {
             if (actions.length === 1) launch(actions[0])
             else setOpen(true)
@@ -66,7 +72,7 @@ export function MobileCreateAction({
             borderWidth: 1,
             borderColor: theme.accent + '80',
             backgroundColor: theme.accent,
-            opacity: disabled ? 0.4 : pressed ? 0.8 : 1,
+            opacity: triggerDisabled ? 0.4 : pressed ? 0.8 : 1,
             elevation: 8,
             shadowColor: '#000000',
             shadowOpacity: 0.24,
@@ -93,6 +99,8 @@ export function MobileCreateAction({
                 key={action.key}
                 accessibilityRole="button"
                 accessibilityLabel={action.label}
+                accessibilityState={{ disabled: disabled || action.disabled }}
+                disabled={disabled || action.disabled}
                 onPress={() => launch(action)}
                 style={({ pressed }) => ({
                   minHeight: 64,
@@ -105,7 +113,7 @@ export function MobileCreateAction({
                   borderColor: theme.border,
                   borderRadius: 16,
                   backgroundColor: pressed ? theme.raised : theme.surface,
-                  opacity: pressed ? 0.78 : 1
+                  opacity: disabled || action.disabled ? 0.42 : pressed ? 0.78 : 1
                 })}
               >
                 <View
