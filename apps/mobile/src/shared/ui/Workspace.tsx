@@ -106,7 +106,7 @@ export function WorkspaceStatCard({
       </View>
       <Text
         numberOfLines={2}
-        style={{ color: theme.text, fontSize: 20, lineHeight: 26, fontWeight: '750' }}
+        style={{ color: theme.text, fontSize: 20, lineHeight: 26, fontWeight: '700' }}
       >
         {value}
       </Text>
@@ -190,7 +190,7 @@ export function WorkspaceNodeCard({
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text
             numberOfLines={2}
-            style={{ color: theme.text, fontSize: 14.5, lineHeight: 20, fontWeight: '650' }}
+            style={{ color: theme.text, fontSize: 14.5, lineHeight: 20, fontWeight: '600' }}
           >
             {title}
           </Text>
