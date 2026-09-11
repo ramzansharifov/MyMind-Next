@@ -246,10 +246,18 @@ export function HabitsScreen(): React.JSX.Element {
           renderItem={({ item }) => {
             const entry = state.data?.entries.find((e) => e.habitId === item.id)
             const scheduled = isHabitScheduledOn(item, date)
+            const habitGroup = item.groupId
+              ? (state.data?.groups.find((candidate) => candidate.id === item.groupId) ?? null)
+              : null
             return (
               <WorkspaceNodeCard
                 title={item.title}
-                leadingIcon="habits"
+                leading={
+                  habitGroup ? (
+                    <VisualIconBadge value={habitGroup.icon} colorKey={habitGroup.color} />
+                  ) : undefined
+                }
+                leadingIcon={habitGroup ? undefined : 'habits'}
                 subtitle={[
                   entry?.skipped
                     ? 'Пропущено'
@@ -260,6 +268,7 @@ export function HabitsScreen(): React.JSX.Element {
                     ' / ' +
                     item.targetValue +
                     (item.unit ? ' ' + item.unit : ''),
+                  habitGroup?.name ?? null,
                   !scheduled ? 'Не запланировано на эту дату' : null
                 ]
                   .filter(Boolean)

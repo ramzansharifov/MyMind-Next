@@ -383,10 +383,11 @@ export function PasswordsScreen(): React.JSX.Element {
                       onPress: () => deleteGroup(group)
                     }
                   ]}
-                />
-              }
-            />
-          ))
+                  />
+                }
+              />
+            )
+          })
         ) : (
           <EmptyState text="Групп пока нет." />
         )}
@@ -425,17 +426,26 @@ export function PasswordsScreen(): React.JSX.Element {
           <Button label="+ Запись" selected onPress={() => openItem()} />
         </View>
         {filteredItems.length ? (
-          filteredItems.map((item) => (
-            <WorkspaceNodeCard
-              key={item.id}
-              title={`${item.favorite ? '♥ ' : ''}${item.title}`}
-              subtitle={itemSubtitle(item, overview)}
-              leadingIcon="passwords"
-              onPress={() => openItem(item)}
-              action={
-                <ActionMenu
-                  title={item.title}
-                  items={[
+          filteredItems.map((item) => {
+            const itemGroup = item.groupId
+              ? (overview.groups.find((candidate) => candidate.id === item.groupId) ?? null)
+              : null
+            return (
+              <WorkspaceNodeCard
+                key={item.id}
+                title={`${item.favorite ? '♥ ' : ''}${item.title}`}
+                subtitle={itemSubtitle(item, overview)}
+                leading={
+                  itemGroup ? (
+                    <VisualIconBadge value={itemGroup.icon} colorKey={itemGroup.color} />
+                  ) : undefined
+                }
+                leadingIcon={itemGroup ? undefined : 'passwords'}
+                onPress={() => openItem(item)}
+                action={
+                  <ActionMenu
+                    title={item.title}
+                    items={[
                     ...(item.username
                       ? [
                           {

@@ -150,7 +150,7 @@ export function TasksScreen(): React.JSX.Element {
   }
 
   const groupById = useMemo(
-    () => new Map((state.data?.groups ?? []).map((item) => [item.id, item.name])),
+    () => new Map((state.data?.groups ?? []).map((item) => [item.id, item])),
     [state.data?.groups]
   )
   const normalizedQuery = query.trim().toLocaleLowerCase('ru')
@@ -158,14 +158,15 @@ export function TasksScreen(): React.JSX.Element {
     if (filter !== 'all' && task.status !== filter) return false
     if (group !== undefined && task.groupId !== group) return false
     if (!normalizedQuery) return true
-    return taskSearchText(task, task.groupId ? (groupById.get(task.groupId) ?? '') : '').includes(
-      normalizedQuery
-    )
+    return taskSearchText(
+      task,
+      task.groupId ? (groupById.get(task.groupId)?.name ?? '') : ''
+    ).includes(normalizedQuery)
   })
 
   const selectedGroupName =
     typeof group === 'string'
-      ? (groupById.get(group) ?? 'Группа')
+      ? (groupById.get(group)?.name ?? 'Группа')
       : group === null
         ? 'Без группы'
         : null
@@ -306,7 +307,7 @@ export function TasksScreen(): React.JSX.Element {
           onRefresh={state.refresh}
           ListEmptyComponent={<EmptyState />}
           renderItem={({ item }) => {
-            const groupName = item.groupId ? groupById.get(item.groupId) : null
+            const taskGroup = item.groupId ? (groupById.get(item.groupId) ?? null) : null
             const completed = item.status === 'completed'
 
             return (
@@ -391,28 +392,26 @@ export function TasksScreen(): React.JSX.Element {
                     >
                       {item.title}
                     </Text>
-                    {groupName ? (
+                    {taskGroup ? (
                       <View
                         style={{
                           alignSelf: 'flex-start',
                           marginTop: 6,
                           flexDirection: 'row',
                           alignItems: 'center',
-                          gap: 5,
-                          borderRadius: 8,
-                          borderWidth: 1,
-                          borderColor: theme.accent + '2E',
-                          backgroundColor: theme.accent + '14',
-                          paddingHorizontal: 7,
-                          paddingVertical: 3
+                          gap: 5
                         }}
                       >
-                        <AppIcon name="folder" size={11} color={theme.accent} />
+                        <VisualIconBadge
+                          value={taskGroup.icon}
+                          colorKey={taskGroup.color}
+                          size={24}
+                        />
                         <Text
                           numberOfLines={1}
-                          style={{ maxWidth: 120, color: theme.accent, fontSize: 10.5 }}
+                          style={{ maxWidth: 120, color: theme.muted, fontSize: 10.5 }}
                         >
-                          {groupName}
+                          {taskGroup.name}
                         </Text>
                       </View>
                     ) : null}
