@@ -1808,10 +1808,14 @@ export function DocumentEditor({
     emit({ ...currentDocument, blocks })
   }
 
-  const append = (block: StudyBlock): void => {
+  const insertBlockAt = (block: StudyBlock, requestedIndex = insertIndex): void => {
     const currentDocument = documentRef.current
-    emit({ ...currentDocument, blocks: [...currentDocument.blocks, block] })
-    if (clean) setActiveBlockId(block.id)
+    const index = Math.max(0, Math.min(requestedIndex, currentDocument.blocks.length))
+    const blocks = currentDocument.blocks.slice()
+    blocks.splice(index, 0, block)
+    emit({ ...currentDocument, blocks })
+    setActiveBlockId(block.id)
+    setInsertIndex(index + 1)
   }
 
   const duplicate = (index: number): void => {
@@ -1823,12 +1827,22 @@ export function DocumentEditor({
     const blocks = currentDocument.blocks.slice()
     blocks.splice(index + 1, 0, copy)
     emit({ ...currentDocument, blocks })
-    if (clean) setActiveBlockId(copy.id)
+    setActiveBlockId(copy.id)
+  }
+
+  const openInsertAt = (index: number): void => {
+    setInsertIndex(index)
+    setSettingsOpen(false)
+    setRichSettingsOpen(false)
+    setQuickLinkOpen(false)
+    setInsertOpen(true)
   }
 
   const insert = (type: StudyBlockType): void => {
     const block = newBlock(type, createId())
-    if (block) append(block)
+    if (!block) return
+    insertBlockAt(block)
+    setInsertOpen(false)
   }
 
   const insertAsset = async (type: StudyAssetKind): Promise<void> => {
@@ -1837,13 +1851,34 @@ export function DocumentEditor({
     try {
       const asset = await importAsset(type)
       if (!asset) return
-      append(newAssetBlock(type, createId(), asset))
-      if (clean) setInsertOpen(false)
+      insertBlockAt(newAssetBlock(type, createId(), asset))
+      setInsertOpen(false)
     } catch (reason) {
       onAssetError?.(reason)
     } finally {
       setPendingAsset(null)
     }
+  }
+
+  const requestRemove = (index: number): void => {
+    const target = documentRef.current.blocks[index]
+    if (!target) return
+    void confirm({
+      title: 'Удалить блок?',
+      subject: blockLabel(target),
+      description: 'Блок и всё его содержимое будут удалены из документа.',
+      tone: 'danger',
+      onConfirm: () => remove(index)
+    })
+  }
+
+  const toggleCollapsed = (blockId: string): void => {
+    setCollapsedBlockIds((current) => {
+      const next = new Set(current)
+      if (next.has(blockId)) next.delete(blockId)
+      else next.add(blockId)
+      return next
+    })
   }
 
   const activeIndex = activeBlockId
@@ -1860,30 +1895,47 @@ export function DocumentEditor({
       keyExtractor={(block) => block.id}
       keyboardShouldPersistTaps="handled"
       contentContainerStyle={{
-        paddingHorizontal: clean ? 12 : 0,
-        paddingBottom: clean ? 18 : 48
+        paddingHorizontal: 12,
+        paddingBottom: activeBlock?.type === 'text' ? 18 : 48
       }}
       ListHeaderComponent={header ?? null}
       ListEmptyComponent={
-        clean ? null : (
-          <View style={{ paddingVertical: 28 }}>
-            <Label muted>Документ пуст. Добавьте первый блок.</Label>
-          </View>
-        )
+        <View style={{ paddingVertical: 18 }}>
+          <Label muted>Документ пуст. Добавьте первый блок.</Label>
+        </View>
       }
-      renderItem={({ item, index }) =>
-        clean ? (
-          <View
-            onTouchStart={item.type === 'text' ? undefined : () => setActiveBlockId(item.id)}
-            style={{
-              marginBottom: 4,
-              paddingHorizontal: 8,
-              paddingVertical: 5,
-              borderRadius: 14,
-              borderWidth: 1,
-              borderColor: activeBlockId === item.id ? theme.accent + '42' : 'transparent',
-              backgroundColor: activeBlockId === item.id ? theme.accent + '08' : 'transparent'
+      renderItem={({ item, index }) => (
+        <View>
+          <DesktopParityInsertControl onPress={() => openInsertAt(index)} />
+          <DesktopParityBlockCard
+            block={item}
+            active={activeBlockId === item.id}
+            collapsed={collapsedBlockIds.has(item.id)}
+            first={index === 0}
+            last={index === document.blocks.length - 1}
+            activate={() => {
+              setActiveBlockId(item.id)
+              setSettingsOpen(false)
+              if (item.type !== 'text') {
+                setRichSettingsOpen(false)
+                setQuickLinkOpen(false)
+              }
             }}
+            toggleCollapsed={() => toggleCollapsed(item.id)}
+            move={(direction) => move(index, direction)}
+            duplicate={() => duplicate(index)}
+            settings={() => {
+              setActiveBlockId(item.id)
+              if (item.type === 'text') {
+                setSettingsOpen(false)
+                setRichSettingsOpen(true)
+              } else {
+                setRichSettingsOpen(false)
+                setQuickLinkOpen(false)
+                setSettingsOpen(true)
+              }
+            }}
+            remove={() => requestRemove(index)}
           >
             {item.type === 'text' ? (
               <NotesRichTextBlock
@@ -1892,6 +1944,7 @@ export function DocumentEditor({
                 registerRef={(editor) => {
                   if (editor) richTextRefs.current.set(item.id, editor)
                   else richTextRefs.current.delete(item.id)
+                  setRichEditorEpoch((value) => value + 1)
                 }}
                 activate={() => {
                   setActiveBlockId(item.id)
@@ -1910,130 +1963,27 @@ export function DocumentEditor({
                 assetActions={assetActions}
                 openBoard={openBoard}
                 searchInternalLinkTargets={searchInternalLinkTargets}
-                clean
               />
             )}
-          </View>
-        ) : (
-          <View
-            style={{
-              marginBottom: 12,
-              padding: 12,
-              gap: 10,
-              borderRadius: designTokens.radius.lg,
-              borderWidth: 1,
-              borderColor: theme.border,
-              backgroundColor: theme.surface
-            }}
-          >
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
-              <Text style={{ color: theme.muted, fontSize: 12, textTransform: 'uppercase' }}>
-                {item.type}
-              </Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                <Button label="↑" disabled={index === 0} onPress={() => move(index, -1)} />
-                <Button
-                  label="↓"
-                  disabled={index === document.blocks.length - 1}
-                  onPress={() => move(index, 1)}
-                />
-                <Button label="Удалить" danger onPress={() => remove(index)} />
-              </View>
-            </View>
-            <BlockInput
-              block={item}
-              update={(next) => replace(index, next)}
-              assetActions={assetActions}
-              openBoard={openBoard}
-              searchInternalLinkTargets={searchInternalLinkTargets}
-            />
-          </View>
-        )
-      }
+          </DesktopParityBlockCard>
+        </View>
+      )}
       ListFooterComponent={
-        clean ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Добавить новый блок"
-            onPress={() => {
-              setActiveBlockId(null)
-              setSettingsOpen(false)
-              setInsertOpen(true)
-            }}
-            style={({ pressed }) => ({
-              minHeight: 58,
-              marginTop: 8,
-              marginHorizontal: 8,
-              marginBottom: 8,
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 9,
-              borderWidth: 1,
-              borderStyle: 'dashed',
-              borderColor: pressed ? theme.accent + '70' : theme.border,
-              borderRadius: 15,
-              backgroundColor: pressed ? theme.accent + '08' : 'transparent',
-              opacity: pressed ? 0.76 : 1
-            })}
-          >
-            <AppIcon name="add" size={18} color={theme.muted} />
-            <Text style={{ color: theme.muted, fontSize: 13, fontWeight: '600' }}>
-              Добавить новый блок
-            </Text>
-          </Pressable>
-        ) : (
-          <View style={{ gap: 10, paddingTop: 8 }}>
-            <Label muted>Добавить блок</Label>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              {INSERTABLE_BLOCKS.map((item) => (
-                <Button key={item.type} label={item.label} onPress={() => insert(item.type)} />
-              ))}
-              {importAsset
-                ? ASSET_BLOCKS.map((item) => (
-                    <Button
-                      key={item.type}
-                      label={pendingAsset === item.type ? 'Выбор…' : item.label}
-                      disabled={pendingAsset !== null}
-                      onPress={() => void insertAsset(item.type)}
-                    />
-                  ))
-                : null}
-            </View>
-            {saveRecordedAudio ? (
-              <VoiceRecorder
-                saveRecording={saveRecordedAudio}
-                onSaved={(asset) => append(newAssetBlock('audio', createId(), asset))}
-                onError={onAssetError}
-                disabled={pendingAsset !== null}
-              />
-            ) : null}
-          </View>
-        )
+        <DesktopParityInsertControl onPress={() => openInsertAt(document.blocks.length)} />
       }
     />
   )
-
-  if (!clean) return list
 
   return (
     <View style={{ flex: 1, minHeight: 0 }}>
       {list}
 
-      {activeBlock && activeIndex >= 0 ? (
-        <NotesBlockToolbar
-          block={activeBlock}
-          index={activeIndex}
-          count={document.blocks.length}
-          update={(next) => replace(activeIndex, next)}
-          move={(direction) => move(activeIndex, direction)}
-          remove={() => remove(activeIndex)}
-          duplicate={() => duplicate(activeIndex)}
-          openSettings={() => setSettingsOpen(true)}
-          richEditor={activeRichEditor}
-          richState={richTextState}
-          openRichSettings={() => setRichSettingsOpen(true)}
-          openQuickLink={() => setQuickLinkOpen(true)}
+      {activeBlock?.type === 'text' ? (
+        <RichTextFormattingDock
+          editor={activeRichEditor}
+          state={richTextState}
+          openSettings={() => setRichSettingsOpen(true)}
+          openLink={() => setQuickLinkOpen(true)}
         />
       ) : null}
 
@@ -2045,7 +1995,10 @@ export function DocumentEditor({
         close={() => setInsertOpen(false)}
         insert={insert}
         insertAsset={(type) => void insertAsset(type)}
-        appendRecorded={(asset) => append(newAssetBlock('audio', createId(), asset))}
+        appendRecorded={(asset) => {
+          insertBlockAt(newAssetBlock('audio', createId(), asset))
+          setInsertOpen(false)
+        }}
         onAssetError={onAssetError}
       />
 
