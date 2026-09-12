@@ -1157,7 +1157,13 @@ function NotesReadBlock({
 
   switch (block.type) {
     case 'text':
-      return <BoardCanvasDom {...richProps} kind="html" source={readerHtml(block)} />
+      return block.text.trim() ? (
+        <BoardCanvasDom {...richProps} kind="html" source={readerHtml(block)} />
+      ) : (
+        <Text selectable style={{ color: theme.muted, fontSize: 13, lineHeight: 20 }}>
+          Пустой текстовый блок
+        </Text>
+      )
     case 'heading':
       return <NotesReadHeading heading={block} />
     case 'code':
@@ -1430,17 +1436,30 @@ export function DocumentEditor({
         style={{ flex: 1 }}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{
-          paddingHorizontal: 20,
+          paddingHorizontal: 14,
           paddingTop: 4,
           paddingBottom: 48
         }}
       >
         {header}
-        <NotesDocumentReader
-          document={document}
-          assetActions={assetActions}
-          openBoard={openBoard}
-        />
+        <View
+          accessibilityLabel="Содержимое заметки"
+          style={{
+            minHeight: 360,
+            paddingHorizontal: 18,
+            paddingVertical: 22,
+            borderWidth: 1,
+            borderColor: theme.border,
+            borderRadius: 20,
+            backgroundColor: theme.surface
+          }}
+        >
+          <NotesDocumentReader
+            document={document}
+            assetActions={assetActions}
+            openBoard={openBoard}
+          />
+        </View>
       </ScrollView>
     )
   }
