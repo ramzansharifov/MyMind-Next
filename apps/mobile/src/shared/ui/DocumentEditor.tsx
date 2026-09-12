@@ -401,7 +401,7 @@ function BlockInput({
                 backgroundColor: theme.surface
               }}
             >
-              <BoardCanvasDom {...richProps} kind="markdown" source={block.source} />
+              <BoardCanvasDom {...richProps} kind={'markdown' as const} source={block.source} />
             </View>
           ) : null}
         </View>
@@ -440,7 +440,7 @@ function BlockInput({
             >
               <BoardCanvasDom
                 {...richProps}
-                kind="latex"
+                kind={'latex' as const}
                 source={block.source}
                 latexDisplayMode={block.displayMode ?? 'display'}
                 latexAlignment={block.alignment ?? 'center'}
@@ -484,7 +484,7 @@ function BlockInput({
             >
               <BoardCanvasDom
                 {...richProps}
-                kind="mermaid"
+                kind={'mermaid' as const}
                 source={block.source}
                 mermaidTheme={block.theme ?? (colorScheme === 'dark' ? 'dark' : 'default')}
               />

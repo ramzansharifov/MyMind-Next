@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
-type RichContentKind = 'markdown' | 'latex' | 'mermaid'
+export type RichContentKind = 'markdown' | 'latex' | 'mermaid'
 type MermaidTheme = 'dark' | 'default' | 'neutral' | 'forest'
 type TextAlignment = 'left' | 'center' | 'right'
 
