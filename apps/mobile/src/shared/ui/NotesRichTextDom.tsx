@@ -119,9 +119,9 @@ function formattingState(): NotesRichTextFormattingState {
     alignment: mappedAlignment,
     linkActive: Boolean(link),
     href: link instanceof HTMLAnchorElement ? link.href : '',
-    fontSize: textStyle?.style.fontSize || computed?.fontSize || 'default',
-    color: textStyle?.style.color || computed?.color || '',
-    backgroundColor: textStyle?.style.backgroundColor || computed?.backgroundColor || '',
+    fontSize: textStyle?.style.fontSize || 'default',
+    color: textStyle?.style.color || textStyle?.getAttribute('color') || '',
+    backgroundColor: textStyle?.style.backgroundColor || '',
     canUndo: document.queryCommandEnabled('undo'),
     canRedo: document.queryCommandEnabled('redo')
   }
@@ -183,18 +183,26 @@ function selectedHtmlWrap(tag: string): void {
   selection.addRange(next)
 }
 
-function applyFontSize(fontSize: string): void {
-  if (fontSize === 'default') {
-    document.execCommand('removeFormat')
-    return
-  }
-  document.execCommand('fontSize', false, '7')
-  document.querySelectorAll<HTMLFontElement>('font[size="7"]').forEach((font) => {
+function normalizeLegacyFonts(): void {
+  document.querySelectorAll<HTMLFontElement>('font').forEach((font) => {
     const span = document.createElement('span')
-    span.style.fontSize = fontSize
+    const color = font.getAttribute('color')
+    const size = font.getAttribute('data-mymind-font-size')
+    if (color) span.style.color = color
+    if (size) span.style.fontSize = size
     while (font.firstChild) span.appendChild(font.firstChild)
     font.replaceWith(span)
   })
+}
+
+function applyFontSize(fontSize: string): void {
+  const nextSize = fontSize === 'default' ? '1rem' : fontSize
+  document.execCommand('fontSize', false, '7')
+  document.querySelectorAll<HTMLFontElement>('font[size="7"]').forEach((font) => {
+    font.removeAttribute('size')
+    font.setAttribute('data-mymind-font-size', nextSize)
+  })
+  normalizeLegacyFonts()
 }
 
 function selectionHtml(html: string): void {
@@ -348,8 +356,11 @@ export default function NotesRichTextDom({
       },
       setTextColor: async (color) => {
         run(() => {
-          if (!color) document.execCommand('removeFormat')
-          else document.execCommand('foreColor', false, color)
+          const root = editorRef.current
+          if (!root) return
+          const nextColor = color || getComputedStyle(root).color
+          document.execCommand('foreColor', false, nextColor)
+          normalizeLegacyFonts()
         })
       },
       setHighlightColor: async (color) => {
