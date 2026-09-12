@@ -11,9 +11,6 @@ import type {
 } from '@mymind/contracts/study'
 import { designTokens } from '@mymind/design'
 import {
-  AlignCenter,
-  AlignLeft,
-  AlignRight,
   AudioLines,
   Code2,
   FileText,
@@ -23,7 +20,6 @@ import {
   Paperclip,
   Presentation,
   Sigma,
-  SlidersHorizontal,
   Type,
   Video,
   Workflow,
@@ -923,7 +919,8 @@ export function DocumentEditor({
                 }}
                 update={(next) => replace(index, next)}
                 formattingChanged={(state) => {
-                  if (activeBlockId === item.id) setRichTextState(state)
+                  setActiveBlockId(item.id)
+                  setRichTextState(state)
                 }}
               />
             ) : (

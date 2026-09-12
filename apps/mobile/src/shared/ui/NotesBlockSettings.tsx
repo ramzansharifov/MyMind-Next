@@ -472,7 +472,7 @@ function AttachmentSettings({
                 minHeight: 48,
                 borderWidth: 1,
                 borderColor:
-                  normalizedUrl && !urlValid ? theme.warning : theme.border,
+                  normalizedUrl && !urlValid ? '#fbbf24' : theme.border,
                 borderRadius: 12,
                 backgroundColor: theme.surface,
                 color: theme.text,
@@ -481,7 +481,7 @@ function AttachmentSettings({
               }}
             />
             {normalizedUrl && !urlValid ? (
-              <Text style={{ color: theme.warning, fontSize: 11.5, lineHeight: 16 }}>
+              <Text style={{ color: '#fbbf24', fontSize: 11.5, lineHeight: 16 }}>
                 {block.type === 'video'
                   ? 'Используйте HTTPS-ссылку youtube.com или youtu.be.'
                   : 'Используйте прямую HTTPS-ссылку на изображение.'}
