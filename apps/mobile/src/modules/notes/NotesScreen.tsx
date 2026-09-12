@@ -121,12 +121,14 @@ export function NotesScreen({
     return () => subscription.remove()
   }, [closeEditor, record])
 
+  const editorOpen = record !== null
+
   useEffect(() => {
-    onImmersiveChange?.(Boolean(record))
+    onImmersiveChange?.(editorOpen)
     return () => {
-      onImmersiveChange?.(false)
+      if (editorOpen) onImmersiveChange?.(false)
     }
-  }, [onImmersiveChange, record])
+  }, [editorOpen, onImmersiveChange])
 
   useEffect(() => {
     if (!record) return

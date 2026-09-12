@@ -24,7 +24,6 @@ import {
   AlignRight,
   AudioLines,
   Code2,
-  FileCode2,
   FileText,
   Heading2,
   Image as ImageIcon,
@@ -1025,6 +1024,7 @@ export function DocumentEditor({
       keyExtractor={(block) => block.id}
       keyboardShouldPersistTaps="handled"
       contentContainerStyle={{
+        paddingHorizontal: clean ? 12 : 0,
         paddingBottom: clean ? 18 : 48
       }}
       ListHeaderComponent={header ?? null}
