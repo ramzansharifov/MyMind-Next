@@ -1,13 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import {
-  FlatList,
-  Image,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View
-} from 'react-native'
+import { FlatList, Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 import type {
   StudyAssetKind,
   StudyBlock,
@@ -394,22 +386,12 @@ function BlockInput({
           />
         </View>
       ) : (
-        <LocalAssetEditor
-          block={block}
-          update={update}
-          assetActions={assetActions}
-          clean={clean}
-        />
+        <LocalAssetEditor block={block} update={update} assetActions={assetActions} clean={clean} />
       )
     case 'audio':
     case 'file':
       return (
-        <LocalAssetEditor
-          block={block}
-          update={update}
-          assetActions={assetActions}
-          clean={clean}
-        />
+        <LocalAssetEditor block={block} update={update} assetActions={assetActions} clean={clean} />
       )
     case 'divider':
       return (
@@ -475,11 +457,7 @@ function ToolbarButton({
         borderRadius: 10,
         borderWidth: selected ? 1 : 0,
         borderColor: selected ? theme.accent + '55' : 'transparent',
-        backgroundColor: selected
-          ? theme.accent + '16'
-          : pressed
-            ? theme.raised
-            : 'transparent',
+        backgroundColor: selected ? theme.accent + '16' : pressed ? theme.raised : 'transparent',
         opacity: disabled ? 0.32 : pressed ? 0.72 : 1
       })}
     >
@@ -585,16 +563,8 @@ function NotesBlockToolbar({
           </>
         ) : null}
 
-        <ToolbarButton
-          label="↑"
-          disabled={index === 0}
-          onPress={() => move(-1)}
-        />
-        <ToolbarButton
-          label="↓"
-          disabled={index === count - 1}
-          onPress={() => move(1)}
-        />
+        <ToolbarButton label="↑" disabled={index === 0} onPress={() => move(-1)} />
+        <ToolbarButton label="↓" disabled={index === count - 1} onPress={() => move(1)} />
         <ToolbarButton label="Настройки блока" icon="settings" onPress={openSettings} />
         <ToolbarButton label="Удалить блок" icon="delete" danger onPress={remove} />
       </ScrollView>
@@ -1016,7 +986,7 @@ export function DocumentEditor({
   const activeIndex = activeBlockId
     ? document.blocks.findIndex((block) => block.id === activeBlockId)
     : -1
-  const activeBlock = activeIndex >= 0 ? document.blocks[activeIndex] ?? null : null
+  const activeBlock = activeIndex >= 0 ? (document.blocks[activeIndex] ?? null) : null
 
   const list = (
     <FlatList
