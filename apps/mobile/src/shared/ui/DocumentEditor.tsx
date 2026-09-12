@@ -108,6 +108,9 @@ interface DocumentEditorProps {
   saveRecordedAudio?: (input: VoiceRecordingInput) => Promise<StudyLocalAsset>
   openBoard?: OpenDocumentBoard
   searchInternalLinkTargets?: (query: string) => StudyInternalLinkTarget[]
+  resolveInternalLinkTarget?: (
+    input: ResolveStudyInternalLinkTargetInput
+  ) => StudyInternalLinkTarget | null
   onOpenInternalLink?: (target: ResolveStudyInternalLinkTargetInput) => void
   onAssetError?: (reason: unknown) => void
 }
@@ -946,10 +949,53 @@ function escapeReaderHtml(value: string): string {
   return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
 
-function readerHtml(block: Extract<StudyBlock, { type: 'text' }>): string {
+const INTERNAL_LINK_SPAN_PATTERN =
+  /<span\b(?=[^>]*\bdata-study-internal-link\s*=\s*(?:"true"|'true'))([^>]*)>([\s\S]*?)<\/span\s*>/gi
+
+function readerAttribute(attributes: string, name: string): string | null {
+  const escaped = name.replace(/[.*+?^$\{\}()|[\]\\]/g, '\\function readerHtml(block: Extract<StudyBlock, { type: 'text' }>): string {
   if (block.html?.trim()) return block.html
   const plain = escapeReaderHtml(block.text).replace(/\n/g, '<br />')
   return `<p>${plain || '&nbsp;'}</p>`
+}')
+  const match = new RegExp(`(?:^|\\s)${escaped}\\s*=\\s*(?:"([^"]*)"|'([^']*)')`, 'i').exec(
+    attributes
+  )
+  return match?.[1] ?? match?.[2] ?? null
+}
+
+function readerHtml(
+  block: Extract<StudyBlock, { type: 'text' }>,
+  resolveInternalLinkTarget?: (
+    input: ResolveStudyInternalLinkTargetInput
+  ) => StudyInternalLinkTarget | null
+): string {
+  const source = block.html?.trim()
+    ? block.html
+    : `<p>${escapeReaderHtml(block.text).replace(/\n/g, '<br />') || '&nbsp;'}</p>`
+
+  if (!resolveInternalLinkTarget || !/data-study-internal-link\s*=/i.test(source)) return source
+
+  INTERNAL_LINK_SPAN_PATTERN.lastIndex = 0
+  return source.replace(
+    INTERNAL_LINK_SPAN_PATTERN,
+    (match, attributes: string, innerHtml: string) => {
+      const materialId = readerAttribute(attributes, 'data-material-id') ?? ''
+      const kind = readerAttribute(attributes, 'data-target-kind') === 'heading' ? 'heading' : 'material'
+      const headingId = readerAttribute(attributes, 'data-heading-id')
+      const labelMode = readerAttribute(attributes, 'data-label-mode') === 'custom' ? 'custom' : 'auto'
+      const resolved = materialId
+        ? resolveInternalLinkTarget({ kind, materialId, headingId })
+        : null
+      const missing = resolved === null
+      const displayLabel = labelMode === 'custom' ? null : resolved?.title
+      const missingAttribute = missing ? ' data-missing="true"' : ''
+
+      return `<span${attributes}${missingAttribute}>${
+        displayLabel ? escapeReaderHtml(displayLabel) : innerHtml
+      }</span>`
+    }
+  )
 }
 
 function buildNotesReadOutline(blocks: StudyBlock[]): NotesReadNode[] {
@@ -1135,11 +1181,15 @@ function NotesReadBlock({
   block,
   assetActions,
   openBoard,
+  resolveInternalLinkTarget,
   onOpenInternalLink
 }: {
   block: StudyBlock
   assetActions: DocumentAssetActions
   openBoard?: OpenDocumentBoard
+  resolveInternalLinkTarget?: (
+    input: ResolveStudyInternalLinkTargetInput
+  ) => StudyInternalLinkTarget | null
   onOpenInternalLink?: (target: ResolveStudyInternalLinkTargetInput) => void
 }): React.JSX.Element {
   const theme = useTheme()
@@ -1172,7 +1222,7 @@ function NotesReadBlock({
   switch (block.type) {
     case 'text':
       return block.text.trim() ? (
-        <BoardCanvasDom {...richProps} kind={'html' as const} source={readerHtml(block)} />
+        <BoardCanvasDom {...richProps} kind={'html' as const} source={readerHtml(block, resolveInternalLinkTarget)} />
       ) : (
         <Text selectable style={{ color: theme.muted, fontSize: 13, lineHeight: 20 }}>
           Пустой текстовый блок
@@ -1291,12 +1341,16 @@ function NotesReadSection({
   section,
   assetActions,
   openBoard,
+  resolveInternalLinkTarget,
   onOpenInternalLink,
   depth = 0
 }: {
   section: Extract<NotesReadNode, { kind: 'section' }>
   assetActions: DocumentAssetActions
   openBoard?: OpenDocumentBoard
+  resolveInternalLinkTarget?: (
+    input: ResolveStudyInternalLinkTargetInput
+  ) => StudyInternalLinkTarget | null
   onOpenInternalLink?: (target: ResolveStudyInternalLinkTargetInput) => void
   depth?: number
 }): React.JSX.Element {
@@ -1354,6 +1408,7 @@ function NotesReadSection({
                 section={child}
                 assetActions={assetActions}
                 openBoard={openBoard}
+                resolveInternalLinkTarget={resolveInternalLinkTarget}
                 onOpenInternalLink={onOpenInternalLink}
                 depth={depth + 1}
               />
@@ -1363,6 +1418,7 @@ function NotesReadSection({
                 block={child.block}
                 assetActions={assetActions}
                 openBoard={openBoard}
+                resolveInternalLinkTarget={resolveInternalLinkTarget}
                 onOpenInternalLink={onOpenInternalLink}
               />
             )
@@ -1377,11 +1433,15 @@ function NotesDocumentReader({
   document,
   assetActions,
   openBoard,
+  resolveInternalLinkTarget,
   onOpenInternalLink
 }: {
   document: StudyDocument
   assetActions: DocumentAssetActions
   openBoard?: OpenDocumentBoard
+  resolveInternalLinkTarget?: (
+    input: ResolveStudyInternalLinkTargetInput
+  ) => StudyInternalLinkTarget | null
   onOpenInternalLink?: (target: ResolveStudyInternalLinkTargetInput) => void
 }): React.JSX.Element {
   const outline = buildNotesReadOutline(document.blocks)
@@ -1395,6 +1455,7 @@ function NotesDocumentReader({
             section={node}
             assetActions={assetActions}
             openBoard={openBoard}
+            resolveInternalLinkTarget={resolveInternalLinkTarget}
             onOpenInternalLink={onOpenInternalLink}
           />
         ) : (
@@ -1403,6 +1464,7 @@ function NotesDocumentReader({
             block={node.block}
             assetActions={assetActions}
             openBoard={openBoard}
+            resolveInternalLinkTarget={resolveInternalLinkTarget}
             onOpenInternalLink={onOpenInternalLink}
           />
         )
@@ -1424,6 +1486,7 @@ export function DocumentEditor({
   saveRecordedAudio,
   openBoard,
   searchInternalLinkTargets,
+  resolveInternalLinkTarget,
   onOpenInternalLink,
   onAssetError
 }: DocumentEditorProps): React.JSX.Element {
@@ -1481,6 +1544,7 @@ export function DocumentEditor({
             document={document}
             assetActions={assetActions}
             openBoard={openBoard}
+            resolveInternalLinkTarget={resolveInternalLinkTarget}
             onOpenInternalLink={onOpenInternalLink}
           />
         </View>
