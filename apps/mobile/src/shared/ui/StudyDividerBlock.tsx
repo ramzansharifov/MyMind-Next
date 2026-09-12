@@ -1,5 +1,5 @@
 import { View } from 'react-native'
-import Svg, { Polygon } from 'react-native-svg'
+import Svg, { Line, Polygon } from 'react-native-svg'
 import type { StudyBlock } from '@mymind/contracts/study'
 
 import { useTheme } from './theme'
@@ -39,15 +39,19 @@ export function StudyDividerBlock({
           />
         </Svg>
       ) : variant === 'dashed' || variant === 'dotted' ? (
-        <View
-          style={{
-            width: '100%',
-            height: 0,
-            borderTopWidth: thickness,
-            borderTopStyle: variant === 'dashed' ? 'dashed' : 'dotted',
-            borderTopColor: color
-          }}
-        />
+        <Svg width="100%" height={Math.max(thickness, 2)} viewBox="0 0 100 2" preserveAspectRatio="none">
+          <Line
+            x1="0"
+            y1="1"
+            x2="100"
+            y2="1"
+            stroke={color}
+            strokeWidth={thickness}
+            strokeDasharray={variant === 'dashed' ? '6 5' : '1 4'}
+            strokeLinecap={variant === 'dotted' ? 'round' : 'butt'}
+            vectorEffect="non-scaling-stroke"
+          />
+        </Svg>
       ) : (
         <View
           style={{
