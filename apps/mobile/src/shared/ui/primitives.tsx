@@ -27,6 +27,7 @@ export function Label({
 
 export function Button({
   label,
+  accessibilityLabel,
   onPress,
   disabled = false,
   danger = false,
@@ -38,6 +39,7 @@ export function Button({
   compact = false
 }: {
   label: string
+  accessibilityLabel?: string
   onPress(): void
   disabled?: boolean
   danger?: boolean
@@ -60,7 +62,7 @@ export function Button({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={label}
+      accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={{ disabled, selected }}
       disabled={disabled}
       hitSlop={iconOnly ? 4 : undefined}
