@@ -81,7 +81,6 @@ export function NotesRichTextBlock({
   const dom = useMemo(
     () => ({
       scrollEnabled: false,
-      useExpoDOMWebView: false,
       style: { height: Math.max(72, height), backgroundColor: 'transparent' }
     }),
     [height]
