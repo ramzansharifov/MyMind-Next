@@ -5,6 +5,12 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
 export type RichContentKind = 'html' | 'markdown' | 'latex' | 'mermaid'
+
+export interface RichContentInternalLinkTarget {
+  kind: 'material' | 'heading'
+  materialId: string
+  headingId: string | null
+}
 type MermaidTheme = 'dark' | 'default' | 'neutral' | 'forest'
 type TextAlignment = 'left' | 'center' | 'right'
 
@@ -23,6 +29,8 @@ export interface RichContentDomProps {
   latexDisplayMode?: 'display' | 'inline'
   latexAlignment?: TextAlignment
   latexScale?: number
+  onOpenInternalLink?: (target: RichContentInternalLinkTarget) => Promise<void>
+  onOpenExternalLink?: (href: string) => Promise<void>
 }
 
 function messageFor(reason: unknown): string {
@@ -117,8 +125,46 @@ function MermaidContent({
   )
 }
 
-function HtmlContent({ source }: { source: string }): React.JSX.Element {
-  return <article className="html-content" dangerouslySetInnerHTML={{ __html: source }} />
+function HtmlContent({
+  source,
+  onOpenInternalLink,
+  onOpenExternalLink
+}: {
+  source: string
+  onOpenInternalLink?: (target: RichContentInternalLinkTarget) => Promise<void>
+  onOpenExternalLink?: (href: string) => Promise<void>
+}): React.JSX.Element {
+  const openTarget = (event: React.MouseEvent<HTMLElement>): void => {
+    const element = event.target instanceof Element ? event.target : null
+    if (!element) return
+
+    const internalLink = element.closest<HTMLElement>('[data-study-internal-link="true"]')
+    if (internalLink) {
+      event.preventDefault()
+      if (!onOpenInternalLink) return
+      const materialId = internalLink.dataset.materialId ?? ''
+      if (!materialId) return
+      void onOpenInternalLink({
+        kind: internalLink.dataset.targetKind === 'heading' ? 'heading' : 'material',
+        materialId,
+        headingId: internalLink.dataset.headingId ?? null
+      })
+      return
+    }
+
+    const anchor = element.closest<HTMLAnchorElement>('a[href]')
+    if (!anchor || !onOpenExternalLink) return
+    event.preventDefault()
+    void onOpenExternalLink(anchor.href)
+  }
+
+  return (
+    <article
+      className="html-content"
+      onClick={openTarget}
+      dangerouslySetInnerHTML={{ __html: source }}
+    />
+  )
 }
 
 function ErrorPanel({ message }: { message: string }): React.JSX.Element {
@@ -143,7 +189,9 @@ export default function RichContentDom({
   mermaidScale = 1,
   latexDisplayMode = 'display',
   latexAlignment = 'center',
-  latexScale = 1
+  latexScale = 1,
+  onOpenInternalLink,
+  onOpenExternalLink
 }: RichContentDomProps): React.JSX.Element {
   return (
     <main
@@ -159,7 +207,11 @@ export default function RichContentDom({
       }
     >
       {kind === 'html' ? (
-        <HtmlContent source={source} />
+        <HtmlContent
+          source={source}
+          onOpenInternalLink={onOpenInternalLink}
+          onOpenExternalLink={onOpenExternalLink}
+        />
       ) : kind === 'markdown' ? (
         <article className="markdown-content">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{source}</ReactMarkdown>
@@ -222,6 +274,7 @@ const styles = `
   .html-content mark { border-radius: 3px; padding: 0 1px; color: inherit; }
   .html-content [data-study-internal-link="true"] {
     display: inline;
+    cursor: pointer;
     padding: 1px 4px;
     border-radius: 5px;
     color: var(--accent);
