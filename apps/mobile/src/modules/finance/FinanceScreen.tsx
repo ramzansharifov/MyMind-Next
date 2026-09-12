@@ -127,7 +127,7 @@ export function FinanceScreen(): React.JSX.Element {
 
   const header = (
     <View style={{ gap: 10, paddingBottom: 12 }}>
-      <ModuleTabs items={tabs} value={tab} onChange={setTab} />
+      <ModuleTabs<Tab> items={tabs} value={tab} onChange={setTab} />
       {state.error ? <ErrorState message={state.error} retry={state.refresh} /> : null}
     </View>
   )
