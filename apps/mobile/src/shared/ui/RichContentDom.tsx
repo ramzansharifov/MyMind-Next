@@ -19,6 +19,7 @@ export interface RichContentDomProps {
   surfaceColor: string
   accentColor: string
   mermaidTheme?: MermaidTheme
+  mermaidScale?: number
   latexDisplayMode?: 'display' | 'inline'
   latexAlignment?: TextAlignment
   latexScale?: number
@@ -69,11 +70,13 @@ function LatexContent({
 function MermaidContent({
   source,
   theme,
-  colorScheme
+  colorScheme,
+  scale
 }: {
   source: string
   theme: MermaidTheme
   colorScheme: 'light' | 'dark'
+  scale: number
 }): React.JSX.Element {
   const [state, setState] = useState<{ svg: string; error: string | null }>({
     svg: '',
@@ -105,7 +108,13 @@ function MermaidContent({
 
   if (state.error) return <ErrorPanel message={state.error} />
   if (!state.svg) return <p className="muted">Построение диаграммы…</p>
-  return <div className="mermaid-content" dangerouslySetInnerHTML={{ __html: state.svg }} />
+  return (
+    <div
+      className="mermaid-content"
+      style={{ zoom: Math.max(0.5, Math.min(2, scale)) } as React.CSSProperties}
+      dangerouslySetInnerHTML={{ __html: state.svg }}
+    />
+  )
 }
 
 function HtmlContent({ source }: { source: string }): React.JSX.Element {
@@ -131,6 +140,7 @@ export default function RichContentDom({
   surfaceColor,
   accentColor,
   mermaidTheme = 'default',
+  mermaidScale = 1,
   latexDisplayMode = 'display',
   latexAlignment = 'center',
   latexScale = 1
@@ -162,7 +172,12 @@ export default function RichContentDom({
           scale={latexScale}
         />
       ) : (
-        <MermaidContent source={source} theme={mermaidTheme} colorScheme={colorScheme} />
+        <MermaidContent
+          source={source}
+          theme={mermaidTheme}
+          colorScheme={colorScheme}
+          scale={mermaidScale}
+        />
       )}
       <style>{styles}</style>
     </main>
