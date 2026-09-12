@@ -357,12 +357,69 @@ function DiaryDetail({
       }
     })
 
+  const editDiaryMetadata = (): void =>
+    setForm({
+      title: 'Изменить дневник',
+      initial: { title: currentDiary.title, icon: currentDiary.icon },
+      fields: [
+        textField('title', 'Название'),
+        choiceField(
+          'icon',
+          'Значок',
+          DIARY_ICON_NAMES.map((value) => ({ value, label: value }))
+        )
+      ],
+      save: (values) => {
+        const input = schema.createDiaryInputSchema.parse(values)
+        const saved = api.updateDiary({ ...input, id: currentDiary.id })
+        setCurrentDiary(saved)
+        state.refresh()
+      }
+    })
+
+  const deleteDiary = (): void => {
+    if (!canDelete) return
+    state.confirmDelete(
+      'Удалить дневник?',
+      () => {
+        api.deleteDiary({ id: currentDiary.id })
+        back()
+      },
+      'Все страницы, настроения и записи этого дневника будут удалены.'
+    )
+  }
+
   const moodMeta = diaryMoodMeta(state.data?.day?.mood ?? null)
   const palette = diaryAppearancePalette(currentDiary.paperTone, currentDiary.coverTone)
   const calendarCells = useMemo(
     () => buildDiaryCalendarMonth(calendarMonth, state.data?.days ?? [], localDateKey()),
     [calendarMonth, state.data?.days]
   )
+
+  const readerPages = useMemo(
+    () => (state.data?.days ?? []).slice().sort((left, right) => left.dayKey.localeCompare(right.dayKey)),
+    [state.data?.days]
+  )
+  const readerIndex = readerPages.findIndex((item) => item.dayKey === date)
+  const previousReaderPage = readerIndex > 0 ? readerPages[readerIndex - 1] : null
+  const nextReaderPage =
+    readerIndex >= 0 && readerIndex < readerPages.length - 1 ? readerPages[readerIndex + 1] : null
+
+  const openSection = (next: DiaryDetailView): void => {
+    if (next === 'today') {
+      setDate(localDateKey())
+      setView('today')
+      return
+    }
+    if (next === 'reader') {
+      const target = readerIndex >= 0 ? date : (readerPages[0]?.dayKey ?? date)
+      setDate(target)
+      setCalendarMonth(diaryMonthKey(target))
+      setView('reader')
+      return
+    }
+    setView(next)
+  }
 
   return (
     <View style={{ flex: 1 }}>
