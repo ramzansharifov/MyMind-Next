@@ -60,6 +60,7 @@ const MOOD_CHOICES = DIARY_MOODS.map((value) => ({
 
 export function DiaryScreen(): React.JSX.Element {
   const { diary: api } = useServices()
+  const theme = useTheme()
   const state = useCollection(useCallback(() => api.listDiaryOverview(), [api]))
   const [selected, setSelected] = useState<DiarySummary | null>(null)
   const [form, setForm] = useState<FormSpec | null>(null)
@@ -427,9 +428,9 @@ function DiaryDetail({
           marginBottom: 12,
           padding: 6,
           borderWidth: 1,
-          borderColor: useTheme().border,
+          borderColor: theme.border,
           borderRadius: 16,
-          backgroundColor: useTheme().surface
+          backgroundColor: theme.surface
         }}
       >
         <ScrollView
@@ -500,10 +501,10 @@ function DiaryDetail({
             }}
           />
           <View style={{ minWidth: 132, alignItems: 'center' }}>
-            <Text style={{ color: useTheme().text, fontSize: 13, fontWeight: '600' }}>
+            <Text style={{ color: theme.text, fontSize: 13, fontWeight: '600' }}>
               {readerIndex >= 0 ? `${readerIndex + 1} / ${readerPages.length}` : `1 / ${readerPages.length}`}
             </Text>
-            <Text style={{ marginTop: 2, color: useTheme().muted, fontSize: 11 }}>{date}</Text>
+            <Text style={{ marginTop: 2, color: theme.muted, fontSize: 11 }}>{date}</Text>
           </View>
           <Button
             label="›"
