@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { View } from 'react-native'
 import type { StudyTextBlock } from '@mymind/contracts/study'
 
@@ -20,6 +20,8 @@ function initialHtml(block: StudyTextBlock): string {
   return block.html?.trim() ? block.html : `<p>${escapeHtml(block.text)}</p>`
 }
 
+const StableNotesRichTextDom = memo(NotesRichTextDom)
+
 export function NotesRichTextBlock({
   block,
   active,
@@ -37,6 +39,53 @@ export function NotesRichTextBlock({
 }): React.JSX.Element {
   const theme = useTheme()
   const [height, setHeight] = useState(92)
+  const blockRef = useRef(block)
+  const updateRef = useRef(update)
+  const activateRef = useRef(activate)
+  const formattingChangedRef = useRef(formattingChanged)
+  const initialContentRef = useRef({
+    html: initialHtml(block)
+  })
+
+  useEffect(() => {
+    blockRef.current = block
+    updateRef.current = update
+    activateRef.current = activate
+    formattingChangedRef.current = formattingChanged
+  }, [activate, block, formattingChanged, update])
+
+  const handleChange = useCallback(async (html: string, text: string): Promise<void> => {
+    const current = blockRef.current
+    if (html === current.html && text === current.text) return
+    const next = { ...current, html, text }
+    blockRef.current = next
+    updateRef.current(next)
+  }, [])
+
+  const handleFocus = useCallback(async (): Promise<void> => {
+    activateRef.current()
+  }, [])
+
+  const handleFormatting = useCallback(
+    async (state: NotesRichTextFormattingState): Promise<void> => {
+      formattingChangedRef.current(state)
+    },
+    []
+  )
+
+  const handleHeight = useCallback(async (nextHeight: number): Promise<void> => {
+    const normalized = Math.max(72, Math.min(1600, Math.ceil(nextHeight)))
+    setHeight((current) => (Math.abs(current - normalized) >= 2 ? normalized : current))
+  }, [])
+
+  const dom = useMemo(
+    () => ({
+      scrollEnabled: false,
+      useExpoDOMWebView: false,
+      style: { height: Math.max(72, height), backgroundColor: 'transparent' }
+    }),
+    [height]
+  )
 
   return (
     <View
@@ -47,33 +96,19 @@ export function NotesRichTextBlock({
         backgroundColor: active ? theme.accent + '05' : 'transparent'
       }}
     >
-      <NotesRichTextDom
+      <StableNotesRichTextDom
         ref={registerRef}
-        html={initialHtml(block)}
-        plainText={block.text}
+        html={initialContentRef.current.html}
         textColor={theme.text}
         mutedColor={theme.muted}
         borderColor={theme.border}
         surfaceColor={theme.raised}
         accentColor={theme.accent}
-        onChange={async (html, text) => {
-          if (html === block.html && text === block.text) return
-          update({ ...block, html, text })
-        }}
-        onFocusEditor={async () => {
-          activate()
-        }}
-        onFormattingState={async (state) => {
-          formattingChanged(state)
-        }}
-        onHeightChange={async (nextHeight) => {
-          const normalized = Math.max(72, Math.min(1600, Math.ceil(nextHeight)))
-          setHeight((current) => (Math.abs(current - normalized) >= 2 ? normalized : current))
-        }}
-        dom={{
-          scrollEnabled: false,
-          style: { height: Math.max(72, height), backgroundColor: 'transparent' }
-        }}
+        onChange={handleChange}
+        onFocusEditor={handleFocus}
+        onFormattingState={handleFormatting}
+        onHeightChange={handleHeight}
+        dom={dom}
       />
     </View>
   )
