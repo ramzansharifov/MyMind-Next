@@ -1219,7 +1219,11 @@ function NotesReadBlock({
   switch (block.type) {
     case 'text':
       return block.text.trim() ? (
-        <BoardCanvasDom {...richProps} kind={'html' as const} source={readerHtml(block, resolveInternalLinkTarget)} />
+        <BoardCanvasDom
+          {...richProps}
+          kind={'html' as const}
+          source={readerHtml(block, resolveInternalLinkTarget)}
+        />
       ) : (
         <Text selectable style={{ color: theme.muted, fontSize: 13, lineHeight: 20 }}>
           Пустой текстовый блок
