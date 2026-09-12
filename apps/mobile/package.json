@@ -50,7 +50,7 @@
   "scripts": {
     "postinstall": "node ./scripts/patch-expo-sqlite-web.mjs && node ./scripts/patch-expo-dom-webview.mjs",
     "start": "expo start",
-    "android": "expo run:android",
+    "android": "node ./scripts/run-android.mjs",
     "ios": "expo start --ios",
     "web": "node ./scripts/start-web-preview.mjs",
     "web:raw": "expo start --web",
@@ -60,9 +60,9 @@
     "typecheck": "tsc --noEmit",
     "export:android": "node ./scripts/export-android.mjs",
     "test:expo-dom-patch": "node ./scripts/patch-expo-dom-webview.test.mjs",
-    "preandroid": "node ./scripts/prepare-android-native.mjs",
-    "android:clean-native": "node ./scripts/prepare-android-native.mjs --force",
-    "test:android-native-cache": "node ./scripts/prepare-android-native.test.mjs"
+    "android:clean-native": "node ./scripts/run-android.mjs --force",
+    "test:android-native-cache": "node ./scripts/prepare-android-native.test.mjs",
+    "test:android-sdk": "node ./scripts/run-android.test.mjs"
   },
   "private": true
 }
