@@ -35,7 +35,6 @@ import {
   Plus,
   Paperclip,
   Presentation,
-  Settings2,
   Sigma,
   Trash2,
   Type,
@@ -522,12 +521,14 @@ function BlockHeaderIcon({
   icon: Icon,
   disabled = false,
   danger = false,
+  rotation = 0,
   onPress
 }: {
   label: string
   icon: LucideIcon
   disabled?: boolean
   danger?: boolean
+  rotation?: number
   onPress(): void
 }): React.JSX.Element {
   const theme = useTheme()
@@ -540,8 +541,8 @@ function BlockHeaderIcon({
       hitSlop={5}
       onPress={onPress}
       style={({ pressed }) => ({
-        width: 30,
-        height: 30,
+        width: 28,
+        height: 28,
         alignItems: 'center',
         justifyContent: 'center',
         borderRadius: 7,
@@ -549,7 +550,11 @@ function BlockHeaderIcon({
         opacity: disabled ? 0.25 : pressed ? 0.72 : 1
       })}
     >
-      <Icon size={16} color={danger ? theme.error : theme.muted} />
+      <Icon
+        size={16}
+        color={danger ? theme.error : theme.muted}
+        style={{ transform: [{ rotate: `${rotation}deg` }] }}
+      />
     </Pressable>
   )
 }
@@ -564,7 +569,6 @@ function DesktopParityBlockCard({
   toggleCollapsed,
   move,
   duplicate,
-  settings,
   remove,
   children
 }: {
@@ -577,7 +581,6 @@ function DesktopParityBlockCard({
   toggleCollapsed(): void
   move(direction: -1 | 1): void
   duplicate(): void
-  settings(): void
   remove(): void
   children: React.ReactNode
 }): React.JSX.Element {
@@ -607,8 +610,8 @@ function DesktopParityBlockCard({
           accessibilityElementsHidden
           importantForAccessibility="no-hide-descendants"
           style={{
-            width: 30,
-            height: 30,
+            width: 28,
+            height: 28,
             alignItems: 'center',
             justifyContent: 'center',
             opacity: 0.55
@@ -619,6 +622,7 @@ function DesktopParityBlockCard({
         <BlockHeaderIcon
           label={collapsed ? `Развернуть блок «${blockLabel(block)}»` : `Свернуть блок «${blockLabel(block)}»`}
           icon={ChevronRight}
+          rotation={collapsed ? 0 : 90}
           onPress={toggleCollapsed}
         />
         <Text
@@ -649,10 +653,9 @@ function DesktopParityBlockCard({
           onPress={() => move(1)}
         />
         <BlockHeaderIcon label="Дублировать блок" icon={CopyPlus} onPress={duplicate} />
-        <BlockHeaderIcon label="Настройки блока" icon={Settings2} onPress={settings} />
         <BlockHeaderIcon label="Удалить блок" icon={Trash2} danger onPress={remove} />
       </View>
-      {collapsed ? null : children}
+      <View style={{ display: collapsed ? 'none' : 'flex' }}>{children}</View>
     </Pressable>
   )
 }
@@ -1704,17 +1707,6 @@ export function DocumentEditor({
             toggleCollapsed={() => toggleCollapsed(item.id)}
             move={(direction) => move(index, direction)}
             duplicate={() => duplicate(index)}
-            settings={() => {
-              setActiveBlockId(item.id)
-              if (item.type === 'text') {
-                setSettingsOpen(false)
-                setRichSettingsOpen(true)
-              } else {
-                setRichSettingsOpen(false)
-                setQuickLinkOpen(false)
-                setSettingsOpen(true)
-              }
-            }}
             remove={() => requestRemove(index)}
           >
             {item.type === 'text' ? (
@@ -1765,6 +1757,39 @@ export function DocumentEditor({
           openSettings={() => setRichSettingsOpen(true)}
           openLink={() => setQuickLinkOpen(true)}
         />
+      ) : activeBlock ? (
+        <View
+          style={{
+            minHeight: 52,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 10,
+            paddingHorizontal: 12,
+            paddingVertical: 8,
+            borderTopWidth: 1,
+            borderTopColor: theme.border,
+            backgroundColor: theme.surface
+          }}
+        >
+          <View style={{ minWidth: 0, flex: 1 }}>
+            <Text
+              numberOfLines={1}
+              style={{ color: theme.text, fontSize: 13, fontWeight: '600' }}
+            >
+              {blockLabel(activeBlock)}
+            </Text>
+            <Text numberOfLines={1} style={{ marginTop: 2, color: theme.muted, fontSize: 11 }}>
+              Настройки активного блока
+            </Text>
+          </View>
+          <Button
+            label="Настройки"
+            icon="settings"
+            compact
+            onPress={() => setSettingsOpen(true)}
+          />
+        </View>
       ) : null}
 
       <NotesInsertSheet
