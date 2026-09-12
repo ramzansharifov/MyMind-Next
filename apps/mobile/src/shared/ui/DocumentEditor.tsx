@@ -953,11 +953,7 @@ const INTERNAL_LINK_SPAN_PATTERN =
   /<span\b(?=[^>]*\bdata-study-internal-link\s*=\s*(?:"true"|'true'))([^>]*)>([\s\S]*?)<\/span\s*>/gi
 
 function readerAttribute(attributes: string, name: string): string | null {
-  const escaped = name.replace(/[.*+?^$\{\}()|[\]\\]/g, '\\function readerHtml(block: Extract<StudyBlock, { type: 'text' }>): string {
-  if (block.html?.trim()) return block.html
-  const plain = escapeReaderHtml(block.text).replace(/\n/g, '<br />')
-  return `<p>${plain || '&nbsp;'}</p>`
-}')
+  const escaped = name.replace(/[.*+?^$\{\}()|[\]\\]/g, '\\$&')
   const match = new RegExp(`(?:^|\\s)${escaped}\\s*=\\s*(?:"([^"]*)"|'([^']*)')`, 'i').exec(
     attributes
   )
@@ -979,11 +975,13 @@ function readerHtml(
   INTERNAL_LINK_SPAN_PATTERN.lastIndex = 0
   return source.replace(
     INTERNAL_LINK_SPAN_PATTERN,
-    (match, attributes: string, innerHtml: string) => {
+    (_match, attributes: string, innerHtml: string) => {
       const materialId = readerAttribute(attributes, 'data-material-id') ?? ''
-      const kind = readerAttribute(attributes, 'data-target-kind') === 'heading' ? 'heading' : 'material'
+      const kind =
+        readerAttribute(attributes, 'data-target-kind') === 'heading' ? 'heading' : 'material'
       const headingId = readerAttribute(attributes, 'data-heading-id')
-      const labelMode = readerAttribute(attributes, 'data-label-mode') === 'custom' ? 'custom' : 'auto'
+      const labelMode =
+        readerAttribute(attributes, 'data-label-mode') === 'custom' ? 'custom' : 'auto'
       const resolved = materialId
         ? resolveInternalLinkTarget({ kind, materialId, headingId })
         : null
@@ -997,7 +995,6 @@ function readerHtml(
     }
   )
 }
-
 function buildNotesReadOutline(blocks: StudyBlock[]): NotesReadNode[] {
   const root: NotesReadNode[] = []
   const stack: Array<Extract<NotesReadNode, { kind: 'section' }>> = []
