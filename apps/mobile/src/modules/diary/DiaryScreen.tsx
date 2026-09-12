@@ -88,6 +88,7 @@ export function DiaryScreen(): React.JSX.Element {
     return (
       <DiaryDetail
         diary={selected}
+        canDelete={(state.data?.diaries.length ?? 0) > 1}
         back={() => {
           setSelected(null)
           state.refresh()
@@ -108,18 +109,7 @@ export function DiaryScreen(): React.JSX.Element {
           contentContainerStyle={{ paddingBottom: 88 }}
           ListEmptyComponent={<EmptyState />}
           renderItem={({ item }) => (
-            <DiaryNotebookCard
-              diary={item}
-              onOpen={() => setSelected(item)}
-              onEdit={() => editDiary(item)}
-              onDelete={() =>
-                state.confirmDelete(
-                  'Удалить дневник?',
-                  () => api.deleteDiary({ id: item.id }),
-                  'Все дни и записи этого дневника будут удалены.'
-                )
-              }
-            />
+            <DiaryNotebookCard diary={item} onOpen={() => setSelected(item)} />
           )}
         />
       )}
@@ -141,14 +131,10 @@ export function DiaryScreen(): React.JSX.Element {
 
 function DiaryNotebookCard({
   diary,
-  onOpen,
-  onEdit,
-  onDelete
+  onOpen
 }: {
   diary: DiarySummary
   onOpen(): void
-  onEdit(): void
-  onDelete(): void
 }): React.JSX.Element {
   const theme = useTheme()
   const palette = diaryAppearancePalette(diary.paperTone, diary.coverTone)
@@ -199,26 +185,19 @@ function DiaryNotebookCard({
           </Text>
         </View>
       </Pressable>
-      <View
-        style={{
-          flexDirection: 'row',
-          flexWrap: 'wrap',
-          gap: 8,
-          padding: 10,
-          borderTopWidth: 1,
-          borderTopColor: theme.border,
-          backgroundColor: theme.surface
-        }}
-      >
-        <Button label="Открыть" onPress={onOpen} />
-        <Button label="Изменить" onPress={onEdit} />
-        <Button label="Удалить" danger onPress={onDelete} />
-      </View>
     </View>
   )
 }
 
-function DiaryDetail({ diary, back }: { diary: DiarySummary; back(): void }): React.JSX.Element {
+function DiaryDetail({
+  diary,
+  canDelete,
+  back
+}: {
+  diary: DiarySummary
+  canDelete: boolean
+  back(): void
+}): React.JSX.Element {
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
       back()
