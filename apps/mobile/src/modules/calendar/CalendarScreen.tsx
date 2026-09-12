@@ -18,18 +18,17 @@ import { notifyDataChanged, subscribeDataChanges } from '../../app/changes'
 import { useServices } from '../../app/context'
 import { useCollection } from '../../shared/hooks/useCollection'
 import { FormSheet } from '../../shared/ui/FormSheet'
+import { AppDateField } from '../../shared/ui/FormControls'
 import { ActionMenu } from '../../shared/ui/ActionMenu'
-import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
+import { WorkspaceNodeCard, WorkspacePanel } from '../../shared/ui/Workspace'
 import { MobileCreateAction } from '../../shared/ui/MobileCreateAction'
 import { choiceField, textField, type FormSpec } from '../../shared/ui/form-model'
 import {
   Button,
   EmptyState,
   ErrorState,
-  Label,
-  LoadingState,
-  Row,
-  SearchField
+  IconButton,
+  LoadingState
 } from '../../shared/ui/primitives'
 import { useTheme } from '../../shared/ui/theme'
 import { CalendarReminderInboxModal } from './CalendarReminderInboxModal'
@@ -102,7 +101,7 @@ export function CalendarScreen(): React.JSX.Element {
   const today = localDateKey()
   const [month, setMonth] = useState(() => calendarMonthKey(today))
   const [selectedDate, setSelectedDate] = useState(today)
-  const [query, setQuery] = useState('')
+  const [selectedEventKey, setSelectedEventKey] = useState<string | null>(null)
   const [form, setForm] = useState<FormSpec | null>(null)
   const [inboxOpen, setInboxOpen] = useState(false)
   const grid = useMemo(() => calendarMonthGrid(month), [month])
@@ -129,17 +128,16 @@ export function CalendarScreen(): React.JSX.Element {
     return result
   }, [state.data])
 
-  const visibleOccurrences = useMemo(() => {
-    const normalizedQuery = query.trim().toLocaleLowerCase('ru-RU')
-    return (byDay.get(selectedDate) ?? []).filter((item) => {
-      if (!normalizedQuery) return true
-      return `${item.title} ${item.note}`.toLocaleLowerCase('ru-RU').includes(normalizedQuery)
-    })
-  }, [byDay, query, selectedDate])
+  const selectedDayEvents = byDay.get(selectedDate) ?? []
+  const selectedEvent = selectedEventKey
+    ? ((state.data ?? []).find(
+        (item) => `${item.eventId}:${item.occurrenceDate}` === selectedEventKey
+      ) ?? null)
+    : null
 
   const selectDate = (day: string): void => {
     setSelectedDate(day)
-    setQuery('')
+    setSelectedEventKey(null)
     if (!calendarSameMonth(day, month)) setMonth(calendarMonthKey(day))
   }
 
@@ -147,13 +145,13 @@ export function CalendarScreen(): React.JSX.Element {
     const next = calendarShiftMonth(month, offset)
     setMonth(next)
     setSelectedDate(next)
-    setQuery('')
+    setSelectedEventKey(null)
   }
 
   const selectToday = (): void => {
     setMonth(calendarMonthKey(today))
     setSelectedDate(today)
-    setQuery('')
+    setSelectedEventKey(null)
   }
 
   const acknowledgeReminders = (reminders: CalendarUnreadReminderRecord[]): void => {
@@ -227,38 +225,43 @@ export function CalendarScreen(): React.JSX.Element {
       <View style={{ gap: 12, marginBottom: 12 }}>
         <View
           style={{
+            minHeight: 52,
+            padding: 6,
             flexDirection: 'row',
+            flexWrap: 'wrap',
             alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 8
+            gap: 6,
+            borderWidth: 1,
+            borderColor: theme.border,
+            borderRadius: 16,
+            backgroundColor: theme.background
           }}
         >
-          <Button label="‹" onPress={() => shiftMonth(-1)} />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Перейти к сегодняшней дате"
-            onPress={selectToday}
-            style={({ pressed }) => ({
+          <Button label="Сегодня" onPress={selectToday} />
+          <IconButton label="Предыдущий месяц" icon="back" onPress={() => shiftMonth(-1)} />
+          <Text
+            style={{
+              minWidth: 150,
               flex: 1,
-              alignItems: 'center',
-              opacity: pressed ? 0.65 : 1
-            })}
+              textAlign: 'center',
+              color: theme.text,
+              fontSize: 16,
+              fontWeight: '700'
+            }}
           >
-            <Text style={{ color: theme.text, fontSize: 18, fontWeight: '700' }}>
-              {monthTitle(month)}
-            </Text>
-            <Text style={{ color: theme.muted, fontSize: 12, marginTop: 2 }}>
-              Нажмите для сегодня
-            </Text>
-          </Pressable>
-          <Button label="›" onPress={() => shiftMonth(1)} />
+            {monthTitle(month)}
+          </Text>
+          <IconButton label="Следующий месяц" icon="forward" onPress={() => shiftMonth(1)} />
+          <View style={{ minWidth: 170, flexGrow: 1 }}>
+            <AppDateField label="Точная дата календаря" value={selectedDate} onChangeText={selectDate} />
+          </View>
         </View>
 
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           {WEEKDAYS.map((weekday) => (
             <View
               key={weekday}
-              style={{ width: '14.285714%', alignItems: 'center', paddingVertical: 4 }}
+              style={{ width: '14.285714%', alignItems: 'center', paddingVertical: 7 }}
             >
               <Text style={{ color: theme.muted, fontSize: 12, fontWeight: '600' }}>{weekday}</Text>
             </View>
@@ -290,7 +293,7 @@ export function CalendarScreen(): React.JSX.Element {
                 onPress={() => selectDate(day)}
                 style={({ pressed }) => ({
                   width: '14.285714%',
-                  minHeight: 56,
+                  minHeight: 66,
                   paddingHorizontal: 4,
                   paddingVertical: 7,
                   alignItems: 'center',
@@ -302,14 +305,14 @@ export function CalendarScreen(): React.JSX.Element {
                     ? `${theme.accent}22`
                     : currentMonth
                       ? theme.surface
-                      : theme.raised,
-                  opacity: pressed ? 0.65 : currentMonth ? 1 : 0.62
+                      : theme.background,
+                  opacity: pressed ? 0.65 : currentMonth ? 1 : 0.48
                 })}
               >
                 <Text
                   style={{
                     color: selected || isToday ? theme.accent : theme.text,
-                    fontSize: 14,
+                    fontSize: 15,
                     fontWeight: selected || isToday ? '700' : '500'
                   }}
                 >
@@ -325,11 +328,9 @@ export function CalendarScreen(): React.JSX.Element {
                         backgroundColor: theme.accent
                       }}
                     />
-                    {count > 1 ? (
-                      <Text style={{ color: theme.muted, fontSize: 10, fontWeight: '600' }}>
-                        {count}
-                      </Text>
-                    ) : null}
+                    <Text style={{ color: theme.muted, fontSize: 10, fontWeight: '600' }}>
+                      {count}
+                    </Text>
                   </View>
                 ) : (
                   <View style={{ height: 10 }} />
@@ -339,34 +340,56 @@ export function CalendarScreen(): React.JSX.Element {
           })}
         </View>
 
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          <Button label="Сегодня" selected={selectedDate === today} onPress={selectToday} />
-          {unreadReminders.length > 0 ? (
+        <Text style={{ color: theme.text, fontSize: 18, fontWeight: '700' }}>
+          {dayTitle(selectedDate)}
+        </Text>
+
+        {unreadReminders.length > 0 ? (
+          <View style={{ alignItems: 'flex-start' }}>
             <Button
               label={`Напоминания (${unreadReminders.length})`}
-              selected
               onPress={() => setInboxOpen(true)}
             />
-          ) : null}
-        </View>
-
-        <View style={{ gap: 8 }}>
-          <Label title>{dayTitle(selectedDate)}</Label>
-          <SearchField value={query} onChangeText={setQuery} />
-        </View>
+          </View>
+        ) : null}
       </View>
-
       {state.error ? <ErrorState message={state.error} retry={state.refresh} /> : null}
       {unread.error ? <ErrorState message={unread.error} retry={unread.refresh} /> : null}
+      {selectedEvent ? (
+        <View style={{ marginBottom: 12 }}>
+          <WorkspacePanel
+            title={selectedEvent.title}
+            description={occurrenceSubtitle(selectedEvent)}
+            icon="calendar"
+            action={<Button label="Редактировать" icon="edit" onPress={() => edit(selectedEvent)} />}
+          >
+            <View style={{ gap: 10 }}>
+              <Text style={{ color: theme.muted, fontSize: 12, fontWeight: '700' }}>Заметка</Text>
+              <Text style={{ color: theme.text, fontSize: 14, lineHeight: 21 }}>
+                {selectedEvent.note.trim() || 'Для этого дня заметки нет.'}
+              </Text>
+              <Text style={{ marginTop: 4, color: theme.muted, fontSize: 12, fontWeight: '700' }}>
+                Напоминания
+              </Text>
+              <Text style={{ color: theme.text, fontSize: 13, lineHeight: 20 }}>
+                {selectedEvent.reminderOffsets.length
+                  ? selectedEvent.reminderOffsets.map((offset) => `${offset} мин.`).join(' · ')
+                  : 'Напоминания не настроены.'}
+              </Text>
+            </View>
+          </WorkspacePanel>
+        </View>
+      ) : null}
+
       {state.loading ? (
         <LoadingState />
       ) : (
         <FlatList
-          data={visibleOccurrences}
+          data={selectedDayEvents}
           keyExtractor={(item) => `${item.eventId}:${item.occurrenceDate}`}
           ListEmptyComponent={
             <EmptyState
-              text={query.trim() ? 'На этот день ничего не найдено.' : 'На этот день событий нет.'}
+              text="На этот день событий нет."
             />
           }
           refreshing={state.loading}
@@ -380,7 +403,8 @@ export function CalendarScreen(): React.JSX.Element {
               title={item.title}
               subtitle={occurrenceSubtitle(item)}
               leadingIcon="calendar"
-              onPress={() => edit(item)}
+              selected={selectedEventKey === `${item.eventId}:${item.occurrenceDate}`}
+              onPress={() => setSelectedEventKey(`${item.eventId}:${item.occurrenceDate}`)}
               action={
                 <ActionMenu
                   title={item.title}
