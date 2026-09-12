@@ -66,29 +66,31 @@ export function Button({
       hitSlop={iconOnly ? 4 : undefined}
       onPress={onPress}
       style={({ pressed }) => ({
-        minWidth: iconOnly ? (compact ? 38 : 44) : undefined,
-        minHeight: compact ? 38 : 44,
+        minWidth: iconOnly ? 40 : undefined,
+        minHeight: 40,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         gap: iconOnly ? 0 : 8,
-        paddingHorizontal: iconOnly ? 0 : compact ? 11 : 14,
-        paddingVertical: iconOnly ? 0 : compact ? 7 : 9,
-        borderRadius: compact ? 11 : designTokens.radius.md,
+        paddingHorizontal: iconOnly ? 0 : compact ? 12 : 16,
+        paddingVertical: iconOnly ? 0 : 8,
+        borderRadius: 12,
         borderWidth: ghost || primary ? 0 : 1,
         borderColor: danger ? theme.error + '35' : selected ? theme.accent + '66' : theme.border,
         backgroundColor: primary
           ? pressed
-            ? theme.accent + 'D9'
+            ? theme.accent + 'E8'
             : theme.accent
           : ghost
             ? pressed
               ? theme.raised
               : 'transparent'
             : danger
-              ? theme.error + '0E'
+              ? pressed
+                ? theme.error + '14'
+                : theme.surface
               : selected
-                ? theme.accent + '18'
+                ? theme.accent + '14'
                 : pressed
                   ? theme.raised
                   : theme.surface,
@@ -101,8 +103,8 @@ export function Button({
           numberOfLines={1}
           style={{
             color: foreground,
-            fontSize: compact ? 13 : 14,
-            fontWeight: '600'
+            fontSize: 14,
+            fontWeight: '500'
           }}
         >
           {label}
@@ -169,12 +171,11 @@ export function Row({
     <View
       style={{
         backgroundColor: theme.surface,
-        borderRadius: 18,
+        borderRadius: 12,
         borderWidth: 1,
         borderColor: theme.border,
-        marginBottom: 10,
-        overflow: 'hidden',
-        elevation: 1
+        marginBottom: 8,
+        overflow: 'hidden'
       }}
     >
       <Pressable
@@ -184,20 +185,20 @@ export function Row({
         accessibilityLabel={title}
         accessibilityHint={onLongPress ? 'Удерживайте для дополнительных действий' : undefined}
         style={({ pressed }) => ({
-          minHeight: 68,
+          minHeight: 64,
           flexDirection: 'row',
           alignItems: 'center',
           gap: 12,
           paddingHorizontal: 14,
-          paddingVertical: 13,
+          paddingVertical: 12,
           backgroundColor: pressed && onPress ? theme.raised : theme.surface
         })}
       >
         {leadingIcon ? (
           <View
             style={{
-              width: 38,
-              height: 38,
+              width: 40,
+              height: 40,
               alignItems: 'center',
               justifyContent: 'center',
               borderRadius: 12,
@@ -264,7 +265,7 @@ export function SearchField({
   return (
     <View
       style={{
-        minHeight: 46,
+        minHeight: 40,
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
@@ -272,7 +273,7 @@ export function SearchField({
         borderColor: theme.border,
         backgroundColor: theme.surface,
         paddingHorizontal: 12,
-        borderRadius: 14,
+        borderRadius: 12,
         marginBottom: 12
       }}
     >
@@ -286,7 +287,7 @@ export function SearchField({
         clearButtonMode="while-editing"
         style={{
           flex: 1,
-          minHeight: 44,
+          minHeight: 38,
           color: theme.text,
           paddingVertical: 8,
           fontSize: 15
@@ -306,7 +307,7 @@ export function EmptyState({
   return (
     <View
       style={{
-        minHeight: 180,
+        minHeight: 128,
         alignItems: 'center',
         justifyContent: 'center',
         gap: 12,
@@ -315,7 +316,7 @@ export function EmptyState({
         borderWidth: 1,
         borderStyle: 'dashed',
         borderColor: theme.border,
-        borderRadius: 20,
+        borderRadius: 12,
         backgroundColor: theme.surface
       }}
     >
