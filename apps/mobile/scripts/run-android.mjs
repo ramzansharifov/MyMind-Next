@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process'
-import { access, mkdir, readFile, writeFile } from 'node:fs/promises'
+import { access, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
@@ -81,12 +81,19 @@ export async function restoreAndroidLocalProperties({
   const localPropertiesPath = path.join(androidRoot, 'local.properties')
   const content =
     snapshot ??
-    (sdkPath ? `sdk.dir=${sdkPath.replaceAll('\\\\', '/')}\n` : null)
+    (sdkPath ? `sdk.dir=${sdkPath.replaceAll('\\', '/')}\n` : null)
 
   if (!content) return false
 
   await writeFile(localPropertiesPath, content, 'utf8')
   return true
+}
+
+function assertCommandSucceeded(result, label) {
+  if (result?.error) throw result.error
+  if (typeof result?.status === 'number' && result.status !== 0) {
+    throw new Error(`${label} exited with code ${result.status}`)
+  }
 }
 
 export async function runAndroid({
@@ -109,14 +116,13 @@ export async function runAndroid({
     )
   }
 
-  await prepareAndroidNative({
+  const prepared = await prepareAndroidNative({
     mobileRoot,
     repoRoot,
     force: args.includes('--force'),
     log
   })
 
-  const forwardedArgs = args.filter((argument) => argument !== '--force')
   const command = platform === 'win32' ? 'npx.cmd' : 'npx'
   const childEnv = {
     ...env,
@@ -127,25 +133,39 @@ export async function runAndroid({
         }
       : {})
   }
-
-  let result
-  try {
-    result = spawn(command, ['expo', 'run:android', ...forwardedArgs], {
-      cwd: mobileRoot,
-      env: childEnv,
-      stdio: 'inherit'
-    })
-  } finally {
-    const restored = await restoreAndroidLocalProperties({
-      mobileRoot,
-      snapshot: localPropertiesSnapshot,
-      sdkPath
-    })
-
-    if (restored) {
-      log('[MyMind] Android local.properties preserved/restored.')
-    }
+  const spawnOptions = {
+    cwd: mobileRoot,
+    env: childEnv,
+    stdio: 'inherit'
   }
+
+  if (!(await exists(prepared.androidRoot))) {
+    log('[MyMind] Regenerating Expo Android project before Gradle build.')
+    const prebuild = spawn(
+      command,
+      ['expo', 'prebuild', '--platform', 'android', '--no-install'],
+      spawnOptions
+    )
+    assertCommandSucceeded(prebuild, 'Expo Android prebuild')
+  }
+
+  const restoredBeforeBuild = await restoreAndroidLocalProperties({
+    mobileRoot,
+    snapshot: localPropertiesSnapshot,
+    sdkPath
+  })
+  if (restoredBeforeBuild) {
+    log('[MyMind] Android local.properties preserved/restored before Gradle build.')
+  }
+
+  const forwardedArgs = args.filter((argument) => argument !== '--force')
+  const result = spawn(command, ['expo', 'run:android', ...forwardedArgs], spawnOptions)
+
+  await restoreAndroidLocalProperties({
+    mobileRoot,
+    snapshot: localPropertiesSnapshot,
+    sdkPath
+  })
 
   if (result?.error) throw result.error
   if (typeof result?.status === 'number' && result.status !== 0) {
