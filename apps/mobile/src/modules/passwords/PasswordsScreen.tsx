@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AppState, Linking, ScrollView, TextInput, View } from 'react-native'
+import { Heart, KeyRound, ShieldCheck } from 'lucide-react-native'
 import {
   type PasswordGroupRecord,
   type PasswordItemRecord,
@@ -16,6 +17,8 @@ import {
 import type { PasswordsRepository } from '@mymind/persistence/passwords'
 import { useServices } from '../../app/context'
 import { FormSheet } from '../../shared/ui/FormSheet'
+import { AppDialog } from '../../shared/ui/AppDialog'
+import { ModuleTabs } from '../../shared/ui/ModuleTabs'
 import { ActionMenu } from '../../shared/ui/ActionMenu'
 import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
 import { MobileCreateAction } from '../../shared/ui/MobileCreateAction'
@@ -45,7 +48,7 @@ import { PasswordGeneratorModal } from './PasswordGeneratorModal'
 import { PasswordItemEditor } from './PasswordItemEditor'
 import { passwordClipboard } from './passwordClipboard'
 
-type Tab = 'items' | 'favorites' | 'groups' | 'security'
+type Tab = 'items' | 'favorites' | 'security'
 
 const securityLabels = {
   weak: 'Слабый пароль',
@@ -194,6 +197,7 @@ export function PasswordsScreen(): React.JSX.Element {
   const [editingItem, setEditingItem] = useState<PasswordItemRecord | null | undefined>(undefined)
   const [generatorOpen, setGeneratorOpen] = useState(false)
   const [changeMasterOpen, setChangeMasterOpen] = useState(false)
+  const [groupsOpen, setGroupsOpen] = useState(false)
 
   const refresh = useCallback((): void => {
     setLoading(true)
@@ -217,6 +221,7 @@ export function PasswordsScreen(): React.JSX.Element {
     setEditingItem(undefined)
     setGeneratorOpen(false)
     setChangeMasterOpen(false)
+    setGroupsOpen(false)
     setForm(null)
     void passwordClipboard.clearTracked()
   }, [api])
