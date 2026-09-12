@@ -25,6 +25,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Rebuild SQLite for Node
+        run: npm run native:node
+
       - name: Typecheck mobile
         run: npm run typecheck:mobile
 
