@@ -51,7 +51,7 @@ import {
   type OpenDocumentBoard
 } from './DocumentBoardBlock'
 import { AppIcon } from './icons'
-import { NotesRichTextBlock } from './NotesRichTextBlock'
+import { DocumentRichTextViewer, NotesRichTextBlock } from './NotesRichTextBlock'
 import { NotesBlockSettingsSheet } from './NotesBlockSettings'
 import {
   DEFAULT_NOTES_RICH_TEXT_STATE,
@@ -60,6 +60,7 @@ import {
   NotesRichTextSettingsSheet
 } from './NotesRichTextControls'
 import type { NotesRichTextDomRef, NotesRichTextFormattingState } from './NotesRichTextDom'
+import { resolveStudyRichTextHtml } from './richTextHtml'
 import { useConfirmation } from './ConfirmationProvider'
 import { Button, Label } from './primitives'
 import { useTheme } from './theme'
@@ -1433,11 +1434,15 @@ function NotesReadBlock({
 
   switch (block.type) {
     case 'text':
-      return block.text.trim() ? (
-        <BoardCanvasDom
-          {...richProps}
-          kind={'html' as const}
-          source={readerHtml(block, resolveInternalLinkTarget)}
+      return block.text.trim() || block.html?.trim() ? (
+        <DocumentRichTextViewer
+          html={resolveStudyRichTextHtml(block, resolveInternalLinkTarget)}
+          onOpenInternalLink={(target) => onOpenInternalLink?.(target)}
+          onOpenExternalLink={(href) => {
+            void Linking.openURL(href).catch((reason: unknown) => {
+              assetActions.onAssetError?.(reason)
+            })
+          }}
         />
       ) : (
         <Text selectable style={{ color: theme.muted, fontSize: 13, lineHeight: 20 }}>
