@@ -203,6 +203,20 @@ function blockLabel(block: StudyBlock): string {
   }
 }
 
+function headingTypography(level: 1 | 2 | 3): {
+  fontSize: number
+  lineHeight: number
+  letterSpacing: number
+} {
+  if (level === 1) {
+    return { fontSize: 48, lineHeight: 50.4, letterSpacing: -1.68 }
+  }
+  if (level === 2) {
+    return { fontSize: 36, lineHeight: 41.4, letterSpacing: -0.9 }
+  }
+  return { fontSize: 30, lineHeight: 36, letterSpacing: -0.6 }
+}
+
 function LocalAssetEditor({
   block,
   update,
@@ -327,7 +341,9 @@ function BlockInput({
           }}
         />
       )
-    case 'heading':
+    case 'heading': {
+      const typography = headingTypography(block.level)
+      const backgroundScope = block.backgroundScope ?? 'container'
       return (
         <View style={{ gap: 8 }}>
           <TextInput
@@ -335,20 +351,27 @@ function BlockInput({
             placeholder="Заголовок"
             placeholderTextColor={theme.muted}
             value={block.text}
+            multiline
+            scrollEnabled={false}
+            textAlignVertical="top"
             onChangeText={(text) => update({ ...block, text })}
             style={{
-              ...inputStyle,
+              minHeight: typography.lineHeight + 16,
+              maxHeight: 384,
+              paddingHorizontal: 8,
+              paddingVertical: 8,
+              borderWidth: 0,
+              borderRadius: 8,
               color: block.color ?? theme.text,
               backgroundColor:
-                block.backgroundColor ??
-                (clean && block.backgroundScope === 'container'
-                  ? theme.raised
-                  : inputStyle.backgroundColor),
-              fontWeight: '700',
-              fontSize: block.level === 1 ? 26 : block.level === 2 ? 22 : 19,
-              textAlign: block.alignment ?? 'left',
-              borderRadius:
-                clean && block.backgroundScope === 'container' ? 10 : inputStyle.borderRadius
+                backgroundScope === 'container'
+                  ? (block.backgroundColor ?? 'transparent')
+                  : 'transparent',
+              fontWeight: '600',
+              fontSize: typography.fontSize,
+              lineHeight: typography.lineHeight,
+              letterSpacing: typography.letterSpacing,
+              textAlign: block.alignment ?? 'left'
             }}
           />
           {!clean ? (
@@ -365,6 +388,7 @@ function BlockInput({
           ) : null}
         </View>
       )
+    }
     case 'code':
     case 'markdown':
     case 'latex':
@@ -1125,25 +1149,25 @@ function NotesReadHeading({
   const theme = useTheme()
   const backgroundScope = heading.backgroundScope ?? 'container'
   const backgroundColor = heading.backgroundColor ?? 'transparent'
-  const fontSize = heading.level === 1 ? 29 : heading.level === 2 ? 24 : 20
-  const lineHeight = heading.level === 1 ? 36 : heading.level === 2 ? 31 : 27
+  const typography = headingTypography(heading.level)
 
   return (
     <View
       style={{
-        borderRadius: 10,
+        borderRadius: 8,
         backgroundColor: backgroundScope === 'container' ? backgroundColor : 'transparent',
-        paddingHorizontal: backgroundScope === 'container' ? 5 : 0,
-        paddingVertical: 3
+        paddingHorizontal: 4,
+        paddingVertical: 6
       }}
     >
       <Text
         selectable
         style={{
           color: heading.color ?? theme.text,
-          fontSize,
-          lineHeight,
-          fontWeight: '700',
+          fontSize: typography.fontSize,
+          lineHeight: typography.lineHeight,
+          letterSpacing: typography.letterSpacing,
+          fontWeight: '600',
           textAlign: heading.alignment ?? 'left'
         }}
       >
