@@ -40,7 +40,6 @@ import {
   IconButton,
   Label,
   LoadingState,
-  Row,
   SearchField
 } from '../../shared/ui/primitives'
 import { useTheme } from '../../shared/ui/theme'
