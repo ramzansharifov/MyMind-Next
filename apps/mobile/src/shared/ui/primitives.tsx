@@ -275,7 +275,7 @@ export function SearchField({
         borderColor: theme.border,
         backgroundColor: theme.surface,
         paddingHorizontal: 12,
-        borderRadius: 12,
+        borderRadius: 16,
         marginBottom: 12
       }}
     >
