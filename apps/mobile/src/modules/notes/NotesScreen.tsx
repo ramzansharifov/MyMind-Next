@@ -864,6 +864,56 @@ export function NotesScreen({
           data={visibleGroups}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ paddingBottom: 88 }}
+          ListEmptyComponent={
+            <EmptyState
+              text={query.trim() ? 'По этому запросу группы не найдены.' : 'Групп пока нет.'}
+            />
+          }
+          renderItem={({ item }) => (
+            <WorkspaceNodeCard
+              title={item.title}
+              subtitle={
+                (overview.data?.notes.filter((note) => note.groupId === item.id).length ?? 0) +
+                ' заметок'
+              }
+              leading={<VisualIconBadge value={item.icon ?? 'folder'} />}
+              onPress={() => setSelectedGroupId(item.id)}
+              action={
+                <ActionMenu
+                  title={item.title}
+                  items={[
+                    {
+                      label: 'Новая заметка',
+                      icon: 'add',
+                      onPress: () => createNote(item.id)
+                    },
+                    {
+                      label: 'Изменить группу',
+                      icon: 'edit',
+                      onPress: () => editGroup(item)
+                    },
+                    {
+                      label: 'Удалить группу',
+                      icon: 'delete',
+                      danger: true,
+                      onPress: () => deleteGroup(item)
+                    }
+                  ]}
+                />
+              }
+            />
+          )}
+        />
+      ) : (
+        <FlatList
+          key={`notes-${layout}`}
+          data={visibleNotes}
+          keyExtractor={(item) => item.id}
+          numColumns={layout === 'grid' ? 2 : 1}
+          columnWrapperStyle={layout === 'grid' ? { gap: 8 } : undefined}
+          refreshing={overview.loading}
+          onRefresh={overview.refresh}
+          contentContainerStyle={{ paddingBottom: 88 }}
           ListHeaderComponent={
             view === 'all' && (overview.data?.notes.length || overview.data?.groups.length) ? (
               <View style={{ gap: 12, marginBottom: 12 }}>
@@ -938,62 +988,9 @@ export function NotesScreen({
                     ))}
                   </WorkspacePanel>
                 ) : null}
-                <WorkspacePanel title={query.trim() ? 'Результаты поиска' : 'Все заметки'} icon="notes">
-                  <View />
-                </WorkspacePanel>
               </View>
             ) : null
           }
-          ListEmptyComponent={
-            <EmptyState
-              text={query.trim() ? 'По этому запросу группы не найдены.' : 'Групп пока нет.'}
-            />
-          }
-          renderItem={({ item }) => (
-            <WorkspaceNodeCard
-              title={item.title}
-              subtitle={
-                (overview.data?.notes.filter((note) => note.groupId === item.id).length ?? 0) +
-                ' заметок'
-              }
-              leading={<VisualIconBadge value={item.icon ?? 'folder'} />}
-              onPress={() => setSelectedGroupId(item.id)}
-              action={
-                <ActionMenu
-                  title={item.title}
-                  items={[
-                    {
-                      label: 'Новая заметка',
-                      icon: 'add',
-                      onPress: () => createNote(item.id)
-                    },
-                    {
-                      label: 'Изменить группу',
-                      icon: 'edit',
-                      onPress: () => editGroup(item)
-                    },
-                    {
-                      label: 'Удалить группу',
-                      icon: 'delete',
-                      danger: true,
-                      onPress: () => deleteGroup(item)
-                    }
-                  ]}
-                />
-              }
-            />
-          )}
-        />
-      ) : (
-        <FlatList
-          key={`notes-${layout}`}
-          data={visibleNotes}
-          keyExtractor={(item) => item.id}
-          numColumns={layout === 'grid' ? 2 : 1}
-          columnWrapperStyle={layout === 'grid' ? { gap: 8 } : undefined}
-          refreshing={overview.loading}
-          onRefresh={overview.refresh}
-          contentContainerStyle={{ paddingBottom: 88 }}
           ListEmptyComponent={
             <EmptyState
               text={
