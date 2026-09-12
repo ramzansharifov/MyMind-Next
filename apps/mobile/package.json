@@ -49,7 +49,7 @@
     "typescript": "~6.0.3"
   },
   "scripts": {
-    "postinstall": "node ./scripts/patch-expo-sqlite-web.mjs",
+    "postinstall": "node ./scripts/patch-expo-sqlite-web.mjs && node ./scripts/patch-expo-dom-webview.mjs",
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo start --ios",
@@ -59,7 +59,8 @@
     "test:web-sqlite-patch": "node ./scripts/patch-expo-sqlite-web.test.mjs",
     "test:android-runtime": "node ./scripts/verify-android-runtime.mjs",
     "typecheck": "tsc --noEmit",
-    "export:android": "node ./scripts/export-android.mjs"
+    "export:android": "node ./scripts/export-android.mjs",
+    "test:expo-dom-patch": "node ./scripts/patch-expo-dom-webview.test.mjs"
   },
   "private": true
 }
