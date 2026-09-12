@@ -61,13 +61,13 @@ export const primaryTabs = ['home', 'notes', 'tasks', 'habits', 'more'] as const
 export const moreRoutes: Route[] = [
   'study',
   'boards',
-  'calendar',
-  'diary',
   'workouts',
   'nutrition',
-  'finance',
-  'passwords',
+  'calendar',
+  'diary',
   'movies',
   'music',
+  'finance',
+  'passwords',
   'settings'
 ]
