@@ -18,9 +18,10 @@ import type { PasswordsRepository } from '@mymind/persistence/passwords'
 import { useServices } from '../../app/context'
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { AppDialog } from '../../shared/ui/AppDialog'
+import { AppSelect } from '../../shared/ui/FormControls'
 import { ModuleTabs } from '../../shared/ui/ModuleTabs'
 import { ActionMenu } from '../../shared/ui/ActionMenu'
-import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
+import { WorkspaceNodeCard, WorkspaceStatCard } from '../../shared/ui/Workspace'
 import { MobileCreateAction } from '../../shared/ui/MobileCreateAction'
 import { VisualIconBadge } from '../../shared/ui/VisualPickers'
 import { GROUP_COLOR_CHOICES, PASSWORD_GROUP_ICON_CHOICES } from '../../shared/ui/visual-options'
@@ -193,6 +194,8 @@ export function PasswordsScreen(): React.JSX.Element {
   const [tab, setTab] = useState<Tab>('items')
   const [query, setQuery] = useState('')
   const [groupFilter, setGroupFilter] = useState<string | null | undefined>(undefined)
+  const [typeFilter, setTypeFilter] = useState<'all' | 'login' | 'password'>('all')
+  const [issueFilter, setIssueFilter] = useState<'all' | 'weak' | 'reused' | 'old'>('all')
   const [form, setForm] = useState<FormSpec | null>(null)
   const [editingItem, setEditingItem] = useState<PasswordItemRecord | null | undefined>(undefined)
   const [generatorOpen, setGeneratorOpen] = useState(false)
@@ -350,12 +353,14 @@ export function PasswordsScreen(): React.JSX.Element {
     return overview.items.filter((item) => {
       if (tab === 'favorites' && !item.favorite) return false
       if (groupFilter !== undefined && item.groupId !== groupFilter) return false
+      if (typeFilter !== 'all' && item.type !== typeFilter) return false
+      if (issueFilter !== 'all' && !item.securityIssues.includes(issueFilter)) return false
       if (!normalizedQuery) return true
       return `${item.title} ${item.username} ${item.website} ${item.tags.join(' ')}`
         .toLocaleLowerCase('ru-RU')
         .includes(normalizedQuery)
     })
-  }, [groupFilter, overview, query, tab])
+  }, [groupFilter, issueFilter, overview, query, tab, typeFilter])
 
   const groupScopedItems = useMemo(() => {
     if (!overview) return []
@@ -387,11 +392,30 @@ export function PasswordsScreen(): React.JSX.Element {
   let content: React.JSX.Element
   if (tab === 'security') {
     content = (
-      <ScrollView contentContainerStyle={{ paddingBottom: 96 }}>
-        <Row
-          title={`${securitySummary.total} записей`}
-          subtitle={`${securitySummary.weak} слабых · ${securitySummary.reused} повторяющихся · ${securitySummary.old} давно не менялись`}
-        />
+      <ScrollView contentContainerStyle={{ paddingBottom: 96, gap: 12 }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          <WorkspaceStatCard label="Всего" value={String(securitySummary.total)} icon="passwords" />
+          <WorkspaceStatCard label="Слабые" value={String(securitySummary.weak)} icon="info" />
+          <WorkspaceStatCard label="Повторяются" value={String(securitySummary.reused)} icon="copy" />
+          <WorkspaceStatCard label="Старше 180 дней" value={String(securitySummary.old)} icon="lock" />
+        </View>
+        <View
+          style={{
+            padding: 14,
+            borderWidth: 1,
+            borderColor: '#ffffff00',
+            borderRadius: 16
+          }}
+        >
+          <Label>Защита хранилища</Label>
+          <Label muted>
+            Секретные поля и названия групп хранятся зашифрованными. Хранилище блокируется при уходе
+            приложения в фон, а скопированный секрет очищается из буфера обмена автоматически.
+          </Label>
+          <View style={{ marginTop: 10, alignItems: 'flex-start' }}>
+            <Button label="Сменить мастер-пароль" onPress={() => setChangeMasterOpen(true)} />
+          </View>
+        </View>
         {groupScopedItems.some((item) => item.securityIssues.length > 0) ? (
           groupScopedItems
             .filter((item) => item.securityIssues.length > 0)
@@ -502,6 +526,41 @@ export function PasswordsScreen(): React.JSX.Element {
         />
 
         {tab !== 'security' ? <SearchField value={query} onChangeText={setQuery} /> : null}
+        {tab !== 'security' ? (
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            <View style={{ minWidth: 150, flex: 1 }}>
+              <AppSelect
+                label="Тип записи"
+                value={typeFilter}
+                choices={[
+                  { value: 'all', label: 'Все типы' },
+                  { value: 'login', label: 'Логин' },
+                  { value: 'password', label: 'Пароль' }
+                ]}
+                onChange={(value) =>
+                  setTypeFilter(value === 'login' || value === 'password' ? value : 'all')
+                }
+              />
+            </View>
+            <View style={{ minWidth: 170, flex: 1 }}>
+              <AppSelect
+                label="Безопасность"
+                value={issueFilter}
+                choices={[
+                  { value: 'all', label: 'Любая безопасность' },
+                  { value: 'weak', label: 'Слабые' },
+                  { value: 'reused', label: 'Повторяющиеся' },
+                  { value: 'old', label: 'Старые пароли' }
+                ]}
+                onChange={(value) =>
+                  setIssueFilter(
+                    value === 'weak' || value === 'reused' || value === 'old' ? value : 'all'
+                  )
+                }
+              />
+            </View>
+          </View>
+        ) : null}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
