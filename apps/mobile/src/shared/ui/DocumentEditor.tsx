@@ -585,7 +585,7 @@ function ToolbarButton({
   onPress
 }: {
   label: string
-  icon?: 'back' | 'forward' | 'settings' | 'delete'
+  icon?: 'back' | 'forward' | 'settings' | 'delete' | 'copy'
   selected?: boolean
   disabled?: boolean
   danger?: boolean
@@ -640,6 +640,7 @@ function NotesBlockToolbar({
   update,
   move,
   remove,
+  duplicate,
   openSettings,
   richEditor,
   richState,
@@ -652,6 +653,7 @@ function NotesBlockToolbar({
   update(next: StudyBlock): void
   move(direction: -1 | 1): void
   remove(): void
+  duplicate(): void
   openSettings(): void
   richEditor: NotesRichTextDomRef | null
   richState: NotesRichTextFormattingState
@@ -733,6 +735,7 @@ function NotesBlockToolbar({
 
         <ToolbarButton label="↑" disabled={index === 0} onPress={() => move(-1)} />
         <ToolbarButton label="↓" disabled={index === count - 1} onPress={() => move(1)} />
+        <ToolbarButton label="Дублировать блок" icon="copy" onPress={duplicate} />
         {block.type !== 'text' ? (
           <ToolbarButton label="Настройки блока" icon="settings" onPress={openSettings} />
         ) : null}
@@ -992,6 +995,20 @@ export function DocumentEditor({
     if (clean) setActiveBlockId(block.id)
   }
 
+  const duplicate = (index: number): void => {
+    const currentDocument = documentRef.current
+    const source = currentDocument.blocks[index]
+    if (!source) return
+    const copy: StudyBlock =
+      source.type === 'board'
+        ? { id: createId(), type: 'board' }
+        : { ...source, id: createId() }
+    const blocks = currentDocument.blocks.slice()
+    blocks.splice(index + 1, 0, copy)
+    emit({ ...currentDocument, blocks })
+    if (clean) setActiveBlockId(copy.id)
+  }
+
   const insert = (type: StudyBlockType): void => {
     const block = newBlock(type, createId())
     if (block) append(block)
@@ -1194,6 +1211,7 @@ export function DocumentEditor({
           update={(next) => replace(activeIndex, next)}
           move={(direction) => move(activeIndex, direction)}
           remove={() => remove(activeIndex)}
+          duplicate={() => duplicate(activeIndex)}
           openSettings={() => setSettingsOpen(true)}
           richEditor={activeRichEditor}
           richState={richTextState}
