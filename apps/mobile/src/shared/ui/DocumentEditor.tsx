@@ -256,7 +256,7 @@ function LocalAssetEditor({
           resizeMode={block.imageFit ?? 'contain'}
           style={{
             width: '100%',
-            height: block.imageHeight ?? 220,
+            height: block.imageHeight ?? 360,
             borderRadius: clean ? 14 : designTokens.radius.md,
             backgroundColor: theme.raised
           }}
@@ -1215,7 +1215,7 @@ function NotesReadAssetBlock({
           resizeMode={block.imageFit ?? 'contain'}
           style={{
             width: '100%',
-            height: block.imageHeight ?? 260,
+            height: block.imageHeight ?? 360,
             borderRadius: 16,
             backgroundColor: theme.raised
           }}
