@@ -828,6 +828,50 @@ function DesktopParityInsertControl({ onPress }: { onPress(): void }): React.JSX
   )
 }
 
+function RichTextFormattingDock({
+  editor,
+  state,
+  openSettings,
+  openLink
+}: {
+  editor: NotesRichTextDomRef | null
+  state: NotesRichTextFormattingState
+  openSettings(): void
+  openLink(): void
+}): React.JSX.Element {
+  const theme = useTheme()
+  return (
+    <View
+      style={{
+        minHeight: 52,
+        borderTopWidth: 1,
+        borderTopColor: theme.border,
+        backgroundColor: theme.surface
+      }}
+    >
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{
+          minHeight: 52,
+          alignItems: 'center',
+          gap: 3,
+          paddingHorizontal: 10,
+          paddingVertical: 8
+        }}
+      >
+        <NotesRichTextInlineControls
+          editor={editor}
+          state={state}
+          openSettings={openSettings}
+          openLink={openLink}
+        />
+      </ScrollView>
+    </View>
+  )
+}
+
 function NotesBlockToolbar({
   block,
   index,
