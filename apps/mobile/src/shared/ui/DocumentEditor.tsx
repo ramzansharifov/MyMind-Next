@@ -602,7 +602,7 @@ function DesktopParityBlockCard({
           minHeight: 30,
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 2,
+          gap: 8,
           marginBottom: collapsed ? 0 : 8
         }}
       >
@@ -1692,7 +1692,6 @@ export function DocumentEditor({
           <DesktopParityInsertControl onPress={() => openInsertAt(index)} />
           <DesktopParityBlockCard
             block={item}
-            active={activeBlockId === item.id}
             collapsed={collapsedBlockIds.has(item.id)}
             first={index === 0}
             last={index === document.blocks.length - 1}
