@@ -15,6 +15,7 @@ import type {
   StudyBlockType,
   StudyBoardBlock,
   StudyDocument,
+  ResolveStudyInternalLinkTargetInput,
   StudyInternalLinkTarget,
   StudyLocalAsset
 } from '@mymind/contracts/study'
@@ -107,6 +108,7 @@ interface DocumentEditorProps {
   saveRecordedAudio?: (input: VoiceRecordingInput) => Promise<StudyLocalAsset>
   openBoard?: OpenDocumentBoard
   searchInternalLinkTargets?: (query: string) => StudyInternalLinkTarget[]
+  onOpenInternalLink?: (target: ResolveStudyInternalLinkTargetInput) => void
   onAssetError?: (reason: unknown) => void
 }
 
@@ -290,6 +292,16 @@ function BlockInput({
     borderColor: theme.border,
     surfaceColor: theme.raised,
     accentColor: theme.accent,
+    onOpenInternalLink: async (target) => {
+      onOpenInternalLink?.(target)
+    },
+    onOpenExternalLink: async (href) => {
+      try {
+        await Linking.openURL(href)
+      } catch (reason) {
+        assetActions.onAssetError?.(reason)
+      }
+    },
     dom: {
       matchContents: true,
       scrollEnabled: false,
@@ -1132,11 +1144,13 @@ function NotesReadAssetBlock({
 function NotesReadBlock({
   block,
   assetActions,
-  openBoard
+  openBoard,
+  onOpenInternalLink
 }: {
   block: StudyBlock
   assetActions: DocumentAssetActions
   openBoard?: OpenDocumentBoard
+  onOpenInternalLink?: (target: ResolveStudyInternalLinkTargetInput) => void
 }): React.JSX.Element {
   const theme = useTheme()
   const colorScheme = theme.background === appearanceTokens.dark.background ? 'dark' : 'light'
@@ -1158,7 +1172,7 @@ function NotesReadBlock({
   switch (block.type) {
     case 'text':
       return block.text.trim() ? (
-        <BoardCanvasDom {...richProps} kind="html" source={readerHtml(block)} />
+        <BoardCanvasDom {...richProps} kind={'html' as const} source={readerHtml(block)} />
       ) : (
         <Text selectable style={{ color: theme.muted, fontSize: 13, lineHeight: 20 }}>
           Пустой текстовый блок
@@ -1207,12 +1221,12 @@ function NotesReadBlock({
         </View>
       )
     case 'markdown':
-      return <BoardCanvasDom {...richProps} kind="markdown" source={block.source} />
+      return <BoardCanvasDom {...richProps} kind={'markdown' as const} source={block.source} />
     case 'latex':
       return (
         <BoardCanvasDom
           {...richProps}
-          kind="latex"
+          kind={'latex' as const}
           source={block.source}
           latexDisplayMode={block.displayMode ?? 'display'}
           latexAlignment={block.alignment ?? 'center'}
@@ -1223,7 +1237,7 @@ function NotesReadBlock({
       return (
         <BoardCanvasDom
           {...richProps}
-          kind="mermaid"
+          kind={'mermaid' as const}
           source={block.source}
           mermaidTheme={block.theme ?? (colorScheme === 'dark' ? 'dark' : 'default')}
           mermaidScale={(block.scale ?? 100) / 100}
@@ -1277,11 +1291,13 @@ function NotesReadSection({
   section,
   assetActions,
   openBoard,
+  onOpenInternalLink,
   depth = 0
 }: {
   section: Extract<NotesReadNode, { kind: 'section' }>
   assetActions: DocumentAssetActions
   openBoard?: OpenDocumentBoard
+  onOpenInternalLink?: (target: ResolveStudyInternalLinkTargetInput) => void
   depth?: number
 }): React.JSX.Element {
   const theme = useTheme()
@@ -1338,6 +1354,7 @@ function NotesReadSection({
                 section={child}
                 assetActions={assetActions}
                 openBoard={openBoard}
+                onOpenInternalLink={onOpenInternalLink}
                 depth={depth + 1}
               />
             ) : (
@@ -1346,6 +1363,7 @@ function NotesReadSection({
                 block={child.block}
                 assetActions={assetActions}
                 openBoard={openBoard}
+                onOpenInternalLink={onOpenInternalLink}
               />
             )
           )}
@@ -1358,11 +1376,13 @@ function NotesReadSection({
 function NotesDocumentReader({
   document,
   assetActions,
-  openBoard
+  openBoard,
+  onOpenInternalLink
 }: {
   document: StudyDocument
   assetActions: DocumentAssetActions
   openBoard?: OpenDocumentBoard
+  onOpenInternalLink?: (target: ResolveStudyInternalLinkTargetInput) => void
 }): React.JSX.Element {
   const outline = buildNotesReadOutline(document.blocks)
 
@@ -1375,6 +1395,7 @@ function NotesDocumentReader({
             section={node}
             assetActions={assetActions}
             openBoard={openBoard}
+            onOpenInternalLink={onOpenInternalLink}
           />
         ) : (
           <NotesReadBlock
@@ -1382,6 +1403,7 @@ function NotesDocumentReader({
             block={node.block}
             assetActions={assetActions}
             openBoard={openBoard}
+            onOpenInternalLink={onOpenInternalLink}
           />
         )
       )}
@@ -1402,6 +1424,7 @@ export function DocumentEditor({
   saveRecordedAudio,
   openBoard,
   searchInternalLinkTargets,
+  onOpenInternalLink,
   onAssetError
 }: DocumentEditorProps): React.JSX.Element {
   const theme = useTheme()
@@ -1458,6 +1481,7 @@ export function DocumentEditor({
             document={document}
             assetActions={assetActions}
             openBoard={openBoard}
+            onOpenInternalLink={onOpenInternalLink}
           />
         </View>
       </ScrollView>
