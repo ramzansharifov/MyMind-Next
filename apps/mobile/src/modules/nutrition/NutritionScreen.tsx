@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import { FlatList, ScrollView, View } from 'react-native'
+import { FlatList, ScrollView, Text, TextInput, View } from 'react-native'
 import type {
   NutritionFoodCategory,
   NutritionFoodRecord,
@@ -23,10 +23,11 @@ import {
   Row,
   SearchField
 } from '../../shared/ui/primitives'
-import { NutritionRecipeSheet } from './NutritionRecipeSheet'
+import { BarChart3, CalendarDays, Target, Utensils } from 'lucide-react-native'
+import { ModuleTabs } from '../../shared/ui/ModuleTabs'
 import { NutritionReportsView } from './NutritionReportsView'
 
-type Tab = 'today' | 'diary' | 'foods' | 'recipes' | 'report'
+type Tab = 'today' | 'diary' | 'goal' | 'progress'
 type ListItem =
   | { kind: 'entry'; value: NutritionLogEntryRecord }
   | { kind: 'food'; value: NutritionFoodRecord }
@@ -332,42 +333,36 @@ export function NutritionScreen(): React.JSX.Element {
     })
   }
 
-  const tabs: Array<{ key: Tab; label: string }> = [
-    { key: 'today', label: 'Сегодня' },
-    { key: 'diary', label: 'Дневник' },
-    { key: 'foods', label: 'Продукты' },
-    { key: 'recipes', label: 'Рецепты' },
-    { key: 'report', label: 'Прогресс' }
+  const tabs = [
+    { id: 'today' as const, label: 'Сегодня', icon: Utensils },
+    { id: 'diary' as const, label: 'Дневник', icon: CalendarDays },
+    { id: 'goal' as const, label: 'Цель', icon: Target },
+    { id: 'progress' as const, label: 'Прогресс', icon: BarChart3 }
   ]
   const header = (
     <View style={{ gap: 10, paddingBottom: 12 }}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ gap: 8 }}
-      >
-        {tabs.map((item) => (
-          <Button
-            key={item.key}
-            label={item.label}
-            selected={tab === item.key}
-            onPress={() => setTab(item.key)}
-          />
-        ))}
-      </ScrollView>
-      {tab === 'today' || tab === 'diary' ? (
+      <ModuleTabs
+        items={tabs}
+        value={tab}
+        onChange={(next) => {
+          if (next === 'today') setDate(localDateKey())
+          setTab(next)
+        }}
+      />
+      {tab === 'diary' ? (
         <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-          <Button label="‹" onPress={() => setDate((value) => shiftDate(value, -1))} />
+          <Button label="‹" accessibilityLabel="Предыдущий день" onPress={() => setDate((value) => shiftDate(value, -1))} />
           <View style={{ flex: 1 }}>
             <Row title={date === localDateKey() ? 'Сегодня' : date} subtitle={date} />
           </View>
-          <Button label="›" onPress={() => setDate((value) => shiftDate(value, 1))} />
+          <Button label="›" accessibilityLabel="Следующий день" onPress={() => setDate((value) => shiftDate(value, 1))} />
         </View>
       ) : null}
-      {tab === 'foods' || tab === 'recipes' ? (
-        <SearchField value={query} onChangeText={setQuery} />
+      {tab === 'today' || tab === 'diary' ? (
+        <View style={{ alignItems: 'flex-start' }}>
+          <Button label="Добавить из JSON" onPress={importDiary} />
+        </View>
       ) : null}
-      {tab === 'diary' ? <Button label="Импорт JSON" onPress={importDiary} /> : null}
     </View>
   )
 
@@ -449,7 +444,7 @@ export function NutritionScreen(): React.JSX.Element {
     )
   }
 
-  if (tab === 'report') {
+  if (tab === 'progress') {
     return (
       <View style={{ flex: 1 }}>
         {header}
