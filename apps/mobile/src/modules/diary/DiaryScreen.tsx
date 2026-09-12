@@ -390,7 +390,6 @@ function DiaryDetail({
   }
 
   const moodMeta = diaryMoodMeta(state.data?.day?.mood ?? null)
-  const palette = diaryAppearancePalette(currentDiary.paperTone, currentDiary.coverTone)
   const calendarCells = useMemo(
     () => buildDiaryCalendarMonth(calendarMonth, state.data?.days ?? [], localDateKey()),
     [calendarMonth, state.data?.days]
@@ -422,69 +421,104 @@ function DiaryDetail({
   }
 
   return (
-    <View style={{ flex: 1 }}>
-      <View style={{ gap: 10, marginBottom: 12 }}>
-        <Button label="‹ Дневники" onPress={back} />
+    <View style={{ flex: 1, minHeight: 0 }}>
+      <View
+        style={{
+          marginBottom: 12,
+          padding: 6,
+          borderWidth: 1,
+          borderColor: useTheme().border,
+          borderRadius: 16,
+          backgroundColor: useTheme().surface
+        }}
+      >
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ alignItems: 'center', gap: 4 }}
+        >
+          <DiarySectionTab label="Мои дневники" icon={Library} selected={false} onPress={back} />
+          <DiarySectionTab
+            label="Сегодня"
+            icon={SunMedium}
+            selected={view === 'today'}
+            onPress={() => openSection('today')}
+          />
+          <DiarySectionTab
+            label="Просмотр"
+            icon={BookOpen}
+            selected={view === 'reader'}
+            onPress={() => openSection('reader')}
+          />
+          <DiarySectionTab
+            label="Календарь"
+            icon={CalendarDays}
+            selected={view === 'calendar'}
+            onPress={() => openSection('calendar')}
+          />
+          <DiarySectionTab
+            label="Отчёты"
+            icon={BarChart3}
+            selected={view === 'reports'}
+            onPress={() => openSection('reports')}
+          />
+          <DiarySectionTab
+            label="Настройки"
+            icon={Settings2}
+            selected={view === 'settings'}
+            onPress={() => openSection('settings')}
+          />
+        </ScrollView>
+      </View>
+
+      {view === 'today' ? (
+        <View style={{ marginBottom: 10, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          <Button
+            label={moodMeta ? `${moodMeta.emoji} ${moodMeta.label}` : 'Настроение'}
+            onPress={editMood}
+          />
+        </View>
+      ) : null}
+
+      {view === 'reader' && readerPages.length > 0 ? (
         <View
           style={{
-            borderRadius: 16,
-            padding: 14,
-            backgroundColor: palette.coverBackground,
-            gap: 3
+            marginBottom: 10,
+            minHeight: 44,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8
           }}
         >
-          <Text style={{ color: palette.coverText, fontSize: 20, fontWeight: '800' }}>
-            {currentDiary.title}
-          </Text>
-          <Text style={{ color: palette.coverText, opacity: 0.72, fontSize: 12 }}>
-            {currentDiary.pageCount} дней · {currentDiary.entryCount} записей
-          </Text>
-        </View>
-
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          <Button label="День" selected={view === 'day'} onPress={() => setView('day')} />
           <Button
-            label="Календарь"
-            selected={view === 'calendar'}
-            onPress={() => setView('calendar')}
+            label="‹"
+            accessibilityLabel="Предыдущая страница"
+            disabled={!previousReaderPage}
+            onPress={() => {
+              if (previousReaderPage) turnToDate(previousReaderPage.dayKey, -1)
+            }}
           />
-          <Button
-            label="История"
-            selected={view === 'history'}
-            onPress={() => setView('history')}
-          />
-          <Button label="Отчёт" selected={view === 'report'} onPress={() => setView('report')} />
-          <Button
-            label="Оформление"
-            selected={view === 'settings'}
-            onPress={() => setView('settings')}
-          />
-        </View>
-
-        {view === 'day' ? (
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            <Button label="‹" onPress={() => turnToDate(addDays(date, -1), -1)} />
-            <Button label={date} onPress={chooseDate} />
-            <Button label="›" onPress={() => turnToDate(addDays(date, 1), 1)} />
-            <Button label="Сегодня" onPress={() => turnToDate(localDateKey())} />
-            <Button
-              label={moodMeta ? `${moodMeta.emoji} ${moodMeta.label}` : 'Настроение'}
-              onPress={editMood}
-            />
+          <View style={{ minWidth: 132, alignItems: 'center' }}>
+            <Text style={{ color: useTheme().text, fontSize: 13, fontWeight: '600' }}>
+              {readerIndex >= 0 ? `${readerIndex + 1} / ${readerPages.length}` : `1 / ${readerPages.length}`}
+            </Text>
+            <Text style={{ marginTop: 2, color: useTheme().muted, fontSize: 11 }}>{date}</Text>
           </View>
-        ) : null}
-      </View>
+          <Button
+            label="›"
+            accessibilityLabel="Следующая страница"
+            disabled={!nextReaderPage}
+            onPress={() => {
+              if (nextReaderPage) turnToDate(nextReaderPage.dayKey, 1)
+            }}
+          />
+        </View>
+      ) : null}
 
       {state.error ? <ErrorState message={state.error} retry={state.refresh} /> : null}
       {state.loading ? (
         <LoadingState />
-      ) : view === 'history' ? (
-        <DiaryHistory
-          days={state.data?.days ?? []}
-          query={query}
-          setQuery={setQuery}
-          onOpenDay={(dayKey) => turnToDate(dayKey)}
-        />
       ) : view === 'calendar' ? (
         <DiaryCalendar
           monthKey={calendarMonth}
@@ -492,10 +526,32 @@ function DiaryDetail({
           onMonthChange={setCalendarMonth}
           onOpenDay={(dayKey) => turnToDate(dayKey)}
         />
-      ) : view === 'report' ? (
+      ) : view === 'reports' ? (
         <DiaryReportsView diaryId={currentDiary.id} onOpenDay={(dayKey) => turnToDate(dayKey)} />
       ) : view === 'settings' ? (
-        <DiaryAppearancePreview diary={currentDiary} onEdit={editAppearance} />
+        <DiarySettingsMobile
+          diary={currentDiary}
+          canDelete={canDelete}
+          onEdit={editDiaryMetadata}
+          onEditAppearance={editAppearance}
+          onDelete={deleteDiary}
+        />
+      ) : view === 'reader' ? (
+        readerPages.length === 0 ? (
+          <EmptyState
+            text="В дневнике пока нет страниц. Страница появится после записи или настроения."
+          />
+        ) : (
+          <Animated.View style={{ flex: 1, transform: [{ translateX: pageOffset }] }}>
+            <DiaryPaperDay
+              diary={currentDiary}
+              date={date}
+              entries={state.data?.day?.entries ?? []}
+              moodLabel={moodMeta ? `${moodMeta.emoji} ${moodMeta.label}` : null}
+              readOnly
+            />
+          </Animated.View>
+        )
       ) : (
         <Animated.View style={{ flex: 1, transform: [{ translateX: pageOffset }] }}>
           <DiaryPaperDay
@@ -507,23 +563,20 @@ function DiaryDetail({
             onDelete={(entry) =>
               state.confirmDelete('Удалить запись?', () => {
                 api.deleteDiaryEntry({ id: entry.id })
-                const latest = api
-                  .listDiaryOverview()
-                  .diaries.find((item) => item.id === currentDiary.id)
-                if (latest) setCurrentDiary(latest)
+                refreshDetail()
               })
             }
           />
         </Animated.View>
       )}
 
-      {view === 'day' ? (
+      {view === 'today' ? (
         <MobileCreateAction
           actions={[
             {
               key: 'entry',
               label: 'Новая запись',
-              description: 'Добавить запись на выбранный день',
+              description: 'Добавить запись на сегодня',
               icon: 'diary',
               onPress: () => editEntry()
             }
