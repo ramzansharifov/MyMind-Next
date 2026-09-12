@@ -60,7 +60,6 @@ const MOOD_CHOICES = DIARY_MOODS.map((value) => ({
 
 export function DiaryScreen(): React.JSX.Element {
   const { diary: api } = useServices()
-  const theme = useTheme()
   const state = useCollection(useCallback(() => api.listDiaryOverview(), [api]))
   const [selected, setSelected] = useState<DiarySummary | null>(null)
   const [form, setForm] = useState<FormSpec | null>(null)
@@ -244,6 +243,7 @@ function DiaryDetail({
   }, [back])
 
   const { diary: api } = useServices()
+  const theme = useTheme()
   const [currentDiary, setCurrentDiary] = useState(diary)
   const [date, setDate] = useState(localDateKey())
   const [view, setView] = useState<DiaryDetailView>('today')
