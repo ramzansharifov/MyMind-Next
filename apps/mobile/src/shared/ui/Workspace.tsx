@@ -21,7 +21,7 @@ export function WorkspacePanel({
       style={{
         borderWidth: 1,
         borderColor: theme.border,
-        borderRadius: 20,
+        borderRadius: 12,
         backgroundColor: theme.surface,
         overflow: 'hidden'
       }}
@@ -29,12 +29,12 @@ export function WorkspacePanel({
       {title || description || icon || action ? (
         <View
           style={{
-            minHeight: 58,
+            minHeight: 80,
             flexDirection: 'row',
             alignItems: 'center',
-            gap: 11,
-            paddingHorizontal: 14,
-            paddingVertical: 12,
+            gap: 12,
+            paddingHorizontal: 20,
+            paddingVertical: 16,
             borderBottomWidth: 1,
             borderBottomColor: theme.border
           }}
@@ -42,11 +42,13 @@ export function WorkspacePanel({
           {icon ? (
             <View
               style={{
-                width: 34,
-                height: 34,
+                width: 40,
+                height: 40,
                 alignItems: 'center',
                 justifyContent: 'center',
-                borderRadius: 11,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: theme.accent + '26',
                 backgroundColor: theme.accent + '12'
               }}
             >
@@ -68,7 +70,7 @@ export function WorkspacePanel({
           {action}
         </View>
       ) : null}
-      <View style={{ padding: 12 }}>{children}</View>
+      <View style={{ padding: 16 }}>{children}</View>
     </View>
   )
 }
@@ -87,34 +89,56 @@ export function WorkspaceStatCard({
   const theme = useTheme()
   return (
     <View
+      accessibilityLabel={detail ? `${label}: ${value}. ${detail}` : `${label}: ${value}`}
       style={{
         minWidth: 145,
         flex: 1,
-        minHeight: 112,
-        justifyContent: 'space-between',
+        minHeight: 68,
+        flexDirection: 'row',
+        alignItems: 'center',
         gap: 12,
         padding: 14,
         borderWidth: 1,
         borderColor: theme.border,
-        borderRadius: 18,
+        borderRadius: 16,
         backgroundColor: theme.surface
       }}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-        {icon ? <AppIcon name={icon} size={16} color={theme.accent} /> : null}
-        <Text style={{ flex: 1, color: theme.muted, fontSize: 12.5, lineHeight: 17 }}>{label}</Text>
-      </View>
-      <Text
-        numberOfLines={2}
-        style={{ color: theme.text, fontSize: 20, lineHeight: 26, fontWeight: '700' }}
-      >
-        {value}
-      </Text>
-      {detail ? (
-        <Text numberOfLines={2} style={{ color: theme.muted, fontSize: 11.5, lineHeight: 16 }}>
-          {detail}
-        </Text>
+      {icon ? (
+        <View
+          style={{
+            width: 40,
+            height: 40,
+            flexShrink: 0,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderWidth: 1,
+            borderColor: theme.accent + '26',
+            borderRadius: 12,
+            backgroundColor: theme.accent + '12'
+          }}
+        >
+          <AppIcon name={icon} size={17} color={theme.accent} />
+        </View>
       ) : null}
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
+          <Text style={{ color: theme.text, fontSize: 20, lineHeight: 25, fontWeight: '600' }}>
+            {value}
+          </Text>
+          <Text
+            numberOfLines={1}
+            style={{ flex: 1, color: theme.text, fontSize: 12, lineHeight: 17, fontWeight: '500' }}
+          >
+            {label}
+          </Text>
+        </View>
+        {detail ? (
+          <Text numberOfLines={1} style={{ marginTop: 2, color: theme.muted, fontSize: 11 }}>
+            {detail}
+          </Text>
+        ) : null}
+      </View>
     </View>
   )
 }
@@ -142,7 +166,7 @@ export function WorkspaceNodeCard({
   return (
     <View
       style={{
-        minHeight: 68,
+        minHeight: 64,
         marginBottom: 8,
         flexDirection: 'row',
         alignItems: 'stretch',
@@ -162,13 +186,13 @@ export function WorkspaceNodeCard({
         style={({ pressed }) => ({
           flex: 1,
           minWidth: 0,
-          minHeight: 66,
+          minHeight: 62,
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 11,
-          paddingLeft: 13,
-          paddingRight: action ? 6 : 13,
-          paddingVertical: 11,
+          gap: 12,
+          paddingLeft: 14,
+          paddingRight: action ? 6 : 14,
+          paddingVertical: 12,
           backgroundColor: pressed && onPress ? theme.raised : 'transparent'
         })}
       >
@@ -177,12 +201,12 @@ export function WorkspaceNodeCard({
         ) : leadingIcon ? (
           <View
             style={{
-              width: 36,
-              height: 36,
+              width: 40,
+              height: 40,
               flexShrink: 0,
               alignItems: 'center',
               justifyContent: 'center',
-              borderRadius: 11,
+              borderRadius: 12,
               borderWidth: 1,
               borderColor: theme.accent + '28',
               backgroundColor: theme.accent + '12'
