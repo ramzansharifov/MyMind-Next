@@ -12,6 +12,7 @@ import {
   PencilLine,
   Workflow
 } from 'lucide-react-native'
+import { appearanceTokens } from '@mymind/design'
 import type {
   StudyBlock,
   StudyLatexViewMode,
@@ -162,7 +163,7 @@ export function StudySourceBlock({
       latexScale={block.type === 'latex' ? (block.scale ?? 100) : undefined}
       mermaidTheme={block.type === 'mermaid' ? (block.theme ?? 'dark') : undefined}
       mermaidScale={block.type === 'mermaid' ? (block.scale ?? 100) : undefined}
-      colorScheme={theme.background === '#0b0b0f' ? 'dark' : 'light'}
+      colorScheme={theme.background === appearanceTokens.dark.background ? 'dark' : 'light'}
       textColor={theme.text}
       mutedColor={theme.muted}
       borderColor={theme.border}
@@ -281,7 +282,12 @@ export function StudySourceBlock({
         }}
       >
         {header}
-        <View style={{ height: Math.min(height, 200), overflow: 'hidden' }}>{editor}</View>
+        <View
+          style={{
+            height: Math.min(Math.max(56, height), 200),
+            backgroundColor: theme.raised
+          }}
+        />
       </View>
 
       <Modal
