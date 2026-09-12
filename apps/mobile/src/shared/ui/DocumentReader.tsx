@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef } from 'react'
-import { FlatList, Image, Text, View } from 'react-native'
+import { useEffect, useRef } from 'react'
+import { FlatList, Image, Linking, Text, View } from 'react-native'
 import type {
   ResolveStudyInternalLinkTargetInput,
   StudyBlock,
@@ -12,7 +12,9 @@ import BoardCanvasDom from '../../modules/boards/BoardCanvasDom'
 import { DocumentBoardReader, type OpenDocumentBoard } from './DocumentBoardBlock'
 import { AudioAssetPlayer } from './VoiceRecorder'
 import { Button, Label } from './primitives'
-import { parseStudyRichTextSegments, type StudyRichTextInternalLink } from './studyRichText'
+import { DocumentRichTextViewer } from './NotesRichTextBlock'
+import { resolveStudyRichTextHtml } from './richTextHtml'
+import type { StudyRichTextInternalLink } from './studyRichText'
 import { useTheme } from './theme'
 
 export interface DocumentRevealRequest {
@@ -119,63 +121,42 @@ function LocalAttachment({
 function RichTextBlock({
   block,
   resolveInternalLinkTarget,
-  onOpenInternalLink
+  onOpenInternalLink,
+  onAssetError
 }: {
   block: Extract<StudyBlock, { type: 'text' }>
   resolveInternalLinkTarget?: (
     input: ResolveStudyInternalLinkTargetInput
   ) => StudyInternalLinkTarget | null
   onOpenInternalLink?: (link: StudyRichTextInternalLink, sourceBlockId: string) => void
+  onAssetError?: (reason: unknown) => void
 }): React.JSX.Element {
-  const theme = useTheme()
-  const segments = useMemo(
-    () => parseStudyRichTextSegments(block.html, block.text),
-    [block.html, block.text]
-  )
+  const html = resolveStudyRichTextHtml(block, resolveInternalLinkTarget)
 
   return (
-    <Text selectable style={{ color: theme.text, fontSize: 17, lineHeight: 26 }}>
-      {segments.map((segment, index) => {
-        if (segment.type === 'text') return segment.text
-
-        const link = segment.link
-        const resolved = resolveInternalLinkTarget?.({
-          kind: link.kind,
-          materialId: link.materialId,
-          headingId: link.headingId
-        })
-        const missing = resolved === null || !link.materialId
-        const displayLabel =
-          link.labelMode === 'custom' ? link.label : (resolved?.title ?? link.label)
-        const canOpen = !missing && Boolean(onOpenInternalLink)
-
-        return (
-          <Text
-            key={`${link.materialId}:${link.headingId ?? 'material'}:${index}`}
-            accessibilityRole="link"
-            accessibilityLabel={
-              missing
-                ? `Недоступная внутренняя ссылка: ${displayLabel || 'без названия'}`
-                : `Открыть внутреннюю ссылку: ${displayLabel || 'без названия'}`
-            }
-            accessibilityState={{ disabled: missing }}
-            onPress={
-              canOpen
-                ? () => {
-                    onOpenInternalLink?.(link, block.id)
-                  }
-                : undefined
-            }
-            style={{
-              color: missing ? theme.muted : theme.accent,
-              textDecorationLine: missing ? 'line-through' : 'underline'
-            }}
-          >
-            {displayLabel || 'Внутренняя ссылка'}
-          </Text>
+    <DocumentRichTextViewer
+      html={html}
+      onOpenInternalLink={(input) => {
+        const target = resolveInternalLinkTarget?.(input)
+        if (!target || !onOpenInternalLink) return
+        onOpenInternalLink(
+          {
+            kind: target.kind,
+            materialId: target.materialId,
+            headingId: target.headingId,
+            headingLevel: target.headingLevel,
+            labelMode: 'auto',
+            label: target.title,
+            materialTitle: target.materialTitle,
+            folderPath: [...target.folderPath]
+          },
+          block.id
         )
-      })}
-    </Text>
+      }}
+      onOpenExternalLink={(href) => {
+        void Linking.openURL(href).catch((reason) => onAssetError?.(reason))
+      }}
+    />
   )
 }
 
@@ -222,6 +203,7 @@ function ReadBlock({
           block={block}
           resolveInternalLinkTarget={resolveInternalLinkTarget}
           onOpenInternalLink={onOpenInternalLink}
+          onAssetError={onAssetError}
         />
       )
     case 'heading':
