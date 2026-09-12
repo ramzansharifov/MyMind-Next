@@ -19,7 +19,7 @@ import type {
   StudyInternalLinkTarget,
   StudyLocalAsset
 } from '@mymind/contracts/study'
-import { appearanceTokens, designTokens } from '@mymind/design'
+import { designTokens } from '@mymind/design'
 import {
   ArrowDown,
   ArrowUp,
@@ -43,7 +43,6 @@ import {
   Workflow,
   type LucideIcon
 } from 'lucide-react-native'
-import BoardCanvasDom from '../../modules/boards/BoardCanvasDom'
 import { AppDialog } from './AppDialog'
 import {
   DocumentBoardEditor,
@@ -61,6 +60,7 @@ import {
 } from './NotesRichTextControls'
 import type { NotesRichTextDomRef, NotesRichTextFormattingState } from './NotesRichTextDom'
 import { resolveStudyRichTextHtml } from './richTextHtml'
+import { StudySourceBlock } from './StudySourceBlock'
 import { useConfirmation } from './ConfirmationProvider'
 import { Button, Label } from './primitives'
 import { useTheme } from './theme'
@@ -126,21 +126,36 @@ interface DocumentEditorProps {
 function newBlock(type: StudyBlockType, id: string): StudyBlock | null {
   switch (type) {
     case 'text':
-      return { id, type, text: '' }
+      return { id, type, text: '', html: '<p></p>' }
     case 'heading':
-      return { id, type, text: '', level: 2 }
+      return {
+        id,
+        type,
+        text: '',
+        level: 1,
+        alignment: 'left',
+        backgroundScope: 'container'
+      }
     case 'code':
       return { id, type, source: '', language: 'text' }
     case 'markdown':
       return { id, type, source: '', viewMode: 'write' }
     case 'latex':
-      return { id, type, source: '', viewMode: 'write', displayMode: 'display' }
+      return {
+        id,
+        type,
+        source: '',
+        viewMode: 'write',
+        displayMode: 'display',
+        alignment: 'center',
+        scale: 100
+      }
     case 'mermaid':
-      return { id, type, source: '', viewMode: 'write' }
+      return { id, type, source: '', viewMode: 'write', theme: 'dark', scale: 100 }
     case 'board':
       return { id, type }
     case 'divider':
-      return { id, type, variant: 'solid' }
+      return { id, type, variant: 'solid', thickness: 1, color: '#6d5dfc' }
     default:
       return null
   }
@@ -148,7 +163,7 @@ function newBlock(type: StudyBlockType, id: string): StudyBlock | null {
 
 function newAssetBlock(type: StudyAssetKind, id: string, asset: StudyLocalAsset): StudyBlock {
   const source = { type: 'local' as const, asset }
-  if (type === 'image') return { id, type, source, imageFit: 'contain' }
+  if (type === 'image') return { id, type, source, imageFit: 'contain', imageHeight: 360 }
   if (type === 'video') return { id, type, source }
   if (type === 'audio') return { id, type, source }
   return { id, type: 'file', source }
@@ -294,21 +309,6 @@ function BlockInput({
     fontSize: 16
   } as const
   const sourceStyle = { ...inputStyle, minHeight: 120, textAlignVertical: 'top' as const }
-  const colorScheme = theme.background === appearanceTokens.dark.background ? 'dark' : 'light'
-  const richProps = {
-    mode: 'rich' as const,
-    colorScheme,
-    textColor: theme.text,
-    mutedColor: theme.muted,
-    borderColor: theme.border,
-    surfaceColor: theme.raised,
-    accentColor: theme.accent,
-    dom: {
-      matchContents: true,
-      scrollEnabled: false,
-      style: { width: '100%' }
-    }
-  } as const
 
   switch (block.type) {
     case 'text':
@@ -367,158 +367,16 @@ function BlockInput({
         </View>
       )
     case 'code':
+    case 'markdown':
+    case 'latex':
+    case 'mermaid':
       return (
-        <View style={{ gap: 6 }}>
-          <TextInput
-            accessibilityLabel="Язык кода"
-            placeholder="Язык"
-            placeholderTextColor={theme.muted}
-            value={block.language}
-            autoCapitalize="none"
-            onChangeText={(language) => update({ ...block, language })}
-            style={inputStyle}
-          />
-          <TextInput
-            accessibilityLabel="Код"
-            multiline
-            autoCapitalize="none"
-            autoCorrect={false}
-            value={block.source}
-            onChangeText={(source) => update({ ...block, source })}
-            style={{
-              ...sourceStyle,
-              fontFamily: 'monospace',
-              backgroundColor: clean ? theme.surface : theme.raised,
-              borderRadius: clean ? 12 : designTokens.radius.md,
-              paddingHorizontal: 12
-            }}
-          />
-        </View>
+        <StudySourceBlock
+          block={block}
+          editable
+          update={(next) => update(next)}
+        />
       )
-    case 'markdown': {
-      const viewMode = clean ? (block.viewMode ?? 'split') : 'write'
-      return (
-        <View style={{ gap: 10 }}>
-          {viewMode !== 'preview' ? (
-            <TextInput
-              accessibilityLabel="Markdown блок"
-              multiline
-              autoCapitalize="none"
-              autoCorrect={false}
-              value={block.source}
-              onChangeText={(source) => update({ ...block, source })}
-              style={{
-                ...sourceStyle,
-                fontFamily: 'monospace',
-                backgroundColor: clean ? theme.surface : theme.raised,
-                borderRadius: clean ? 12 : designTokens.radius.md,
-                paddingHorizontal: 12
-              }}
-            />
-          ) : null}
-          {clean && viewMode !== 'write' ? (
-            <View
-              style={{
-                padding: 12,
-                borderWidth: 1,
-                borderColor: theme.border,
-                borderRadius: 12,
-                backgroundColor: theme.surface
-              }}
-            >
-              <BoardCanvasDom {...richProps} kind={'markdown' as const} source={block.source} />
-            </View>
-          ) : null}
-        </View>
-      )
-    }
-    case 'latex': {
-      const viewMode = clean ? (block.viewMode ?? 'split') : 'write'
-      return (
-        <View style={{ gap: 10 }}>
-          {viewMode !== 'preview' ? (
-            <TextInput
-              accessibilityLabel="LaTeX блок"
-              multiline
-              autoCapitalize="none"
-              autoCorrect={false}
-              value={block.source}
-              onChangeText={(source) => update({ ...block, source })}
-              style={{
-                ...sourceStyle,
-                fontFamily: 'monospace',
-                backgroundColor: clean ? theme.surface : theme.raised,
-                borderRadius: clean ? 12 : designTokens.radius.md,
-                paddingHorizontal: 12
-              }}
-            />
-          ) : null}
-          {clean && viewMode !== 'write' ? (
-            <View
-              style={{
-                padding: 12,
-                borderWidth: 1,
-                borderColor: theme.border,
-                borderRadius: 12,
-                backgroundColor: theme.surface
-              }}
-            >
-              <BoardCanvasDom
-                {...richProps}
-                kind={'latex' as const}
-                source={block.source}
-                latexDisplayMode={block.displayMode ?? 'display'}
-                latexAlignment={block.alignment ?? 'center'}
-                latexScale={(block.scale ?? 100) / 100}
-              />
-            </View>
-          ) : null}
-        </View>
-      )
-    }
-    case 'mermaid': {
-      const viewMode = clean ? (block.viewMode ?? 'split') : 'write'
-      return (
-        <View style={{ gap: 10 }}>
-          {viewMode !== 'preview' ? (
-            <TextInput
-              accessibilityLabel="Mermaid блок"
-              multiline
-              autoCapitalize="none"
-              autoCorrect={false}
-              value={block.source}
-              onChangeText={(source) => update({ ...block, source })}
-              style={{
-                ...sourceStyle,
-                fontFamily: 'monospace',
-                backgroundColor: clean ? theme.surface : theme.raised,
-                borderRadius: clean ? 12 : designTokens.radius.md,
-                paddingHorizontal: 12
-              }}
-            />
-          ) : null}
-          {clean && viewMode !== 'write' ? (
-            <View
-              style={{
-                padding: 12,
-                borderWidth: 1,
-                borderColor: theme.border,
-                borderRadius: 12,
-                backgroundColor: theme.surface
-              }}
-            >
-              <BoardCanvasDom
-                {...richProps}
-                kind={'mermaid' as const}
-                source={block.source}
-                mermaidTheme={block.theme ?? (colorScheme === 'dark' ? 'dark' : 'default')}
-                mermaidScale={(block.scale ?? 100) / 100}
-              />
-            </View>
-          ) : null}
-        </View>
-      )
-    }
     case 'image':
     case 'video':
       return block.source.type === 'url' ? (
@@ -1406,31 +1264,6 @@ function NotesReadBlock({
   onOpenInternalLink?: (target: ResolveStudyInternalLinkTargetInput) => void
 }): React.JSX.Element {
   const theme = useTheme()
-  const colorScheme = theme.background === appearanceTokens.dark.background ? 'dark' : 'light'
-  const richProps = {
-    mode: 'rich' as const,
-    colorScheme,
-    textColor: theme.text,
-    mutedColor: theme.muted,
-    borderColor: theme.border,
-    surfaceColor: theme.raised,
-    accentColor: theme.accent,
-    onOpenInternalLink: async (target: ResolveStudyInternalLinkTargetInput) => {
-      onOpenInternalLink?.(target)
-    },
-    onOpenExternalLink: async (href: string) => {
-      try {
-        await Linking.openURL(href)
-      } catch (reason) {
-        assetActions.onAssetError?.(reason)
-      }
-    },
-    dom: {
-      matchContents: true,
-      scrollEnabled: false,
-      style: { width: '100%' }
-    }
-  } as const
 
   switch (block.type) {
     case 'text':
@@ -1452,68 +1285,10 @@ function NotesReadBlock({
     case 'heading':
       return <NotesReadHeading heading={block} />
     case 'code':
-      return (
-        <View
-          style={{
-            overflow: 'hidden',
-            borderWidth: 1,
-            borderColor: theme.border,
-            borderRadius: 14,
-            backgroundColor: theme.surface
-          }}
-        >
-          <View
-            style={{
-              paddingHorizontal: 12,
-              paddingVertical: 8,
-              borderBottomWidth: 1,
-              borderBottomColor: theme.border
-            }}
-          >
-            <Text style={{ color: theme.muted, fontSize: 11.5, fontWeight: '700' }}>
-              {block.language || 'text'}
-            </Text>
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <Text
-              selectable
-              style={{
-                minWidth: '100%',
-                padding: 13,
-                color: theme.text,
-                fontFamily: 'monospace',
-                fontSize: 13.5,
-                lineHeight: 21
-              }}
-            >
-              {block.source || ' '}
-            </Text>
-          </ScrollView>
-        </View>
-      )
     case 'markdown':
-      return <BoardCanvasDom {...richProps} kind={'markdown' as const} source={block.source} />
     case 'latex':
-      return (
-        <BoardCanvasDom
-          {...richProps}
-          kind={'latex' as const}
-          source={block.source}
-          latexDisplayMode={block.displayMode ?? 'display'}
-          latexAlignment={block.alignment ?? 'center'}
-          latexScale={(block.scale ?? 100) / 100}
-        />
-      )
     case 'mermaid':
-      return (
-        <BoardCanvasDom
-          {...richProps}
-          kind={'mermaid' as const}
-          source={block.source}
-          mermaidTheme={block.theme ?? (colorScheme === 'dark' ? 'dark' : 'default')}
-          mermaidScale={(block.scale ?? 100) / 100}
-        />
-      )
+      return <StudySourceBlock block={block} editable={false} />
     case 'image':
     case 'video':
     case 'audio':
