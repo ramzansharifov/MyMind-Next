@@ -1,0 +1,64 @@
+name: Temporary Windows Android SDK verification
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'apps/mobile/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/windows-android-sdk-verify.yml'
+
+jobs:
+  windows-android:
+    runs-on: windows-latest
+    timeout-minutes: 55
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify native cache invalidation
+        run: npm run test:android-native-cache --workspace=mymind-mobile
+
+      - name: Verify Android SDK restoration
+        run: npm run test:android-sdk --workspace=mymind-mobile
+
+      - name: Typecheck mobile
+        run: npm run typecheck:mobile
+
+      - name: Generate Android project
+        working-directory: apps/mobile
+        run: npx expo prebuild --platform android --clean --no-install
+
+      - name: Recreate local.properties through MyMind helper
+        shell: pwsh
+        run: |
+          Remove-Item -Force apps/mobile/android/local.properties -ErrorAction SilentlyContinue
+          @'
+          import path from 'node:path'
+          import { resolveAndroidSdkPath, restoreAndroidLocalProperties } from './apps/mobile/scripts/run-android.mjs'
+          const mobileRoot = path.resolve('apps/mobile')
+          const sdkPath = await resolveAndroidSdkPath({ mobileRoot })
+          if (!sdkPath) throw new Error('Android SDK was not detected on Windows runner')
+          const restored = await restoreAndroidLocalProperties({ mobileRoot, snapshot: null, sdkPath })
+          if (!restored) throw new Error('local.properties was not restored')
+          console.log('[CI] Restored Android SDK:', sdkPath)
+          '@ | node --input-type=module
+
+      - name: Compile Android debug native code
+        working-directory: apps/mobile/android
+        run: .\gradlew.bat app:assembleDebug -x lint -x test --no-daemon -PreactNativeArchitectures=x86_64
