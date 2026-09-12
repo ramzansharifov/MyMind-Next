@@ -137,20 +137,7 @@ function MobileNoteCard({
           backgroundColor: pressed ? theme.raised : 'transparent'
         })}
       >
-        <View
-          style={{
-            width: 36,
-            height: 36,
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderRadius: 11,
-            borderWidth: 1,
-            borderColor: theme.accent + '28',
-            backgroundColor: theme.accent + '12'
-          }}
-        >
-          <VisualIconBadge value="notes" />
-        </View>
+        <VisualIconBadge value="notes" size={36} />
         <Text
           numberOfLines={2}
           style={{ color: theme.text, fontSize: 14.5, lineHeight: 20, fontWeight: '700' }}
@@ -406,6 +393,21 @@ export function NotesScreen({
           api.updateNoteGroupIcon(icon.id, icon.icon)
         }
         overview.refresh()
+      }
+    })
+  }
+
+  const deleteGroup = (group: NoteGroup): void => {
+    void confirm({
+      title: 'Удалить группу?',
+      description: 'Заметки сохранятся и перейдут в раздел «Без группы».',
+      tone: 'danger',
+      onConfirm: () => {
+        api.deleteNoteGroup(group.id)
+        if (selectedGroupId === group.id) setSelectedGroupId(null)
+        overview.refresh()
+        notifyDataChanged()
+        toast.success('Группа удалена')
       }
     })
   }
@@ -740,9 +742,31 @@ export function NotesScreen({
               compact
               onPress={() => setSelectedGroupId(null)}
             />
+            <VisualIconBadge value={selectedGroup.icon ?? 'folder'} size={34} />
             <View style={{ flex: 1, minWidth: 0 }}>
               <Label>{selectedGroup.title}</Label>
             </View>
+            <ActionMenu
+              title={selectedGroup.title}
+              items={[
+                {
+                  label: 'Новая заметка',
+                  icon: 'add',
+                  onPress: () => createNote(selectedGroup.id)
+                },
+                {
+                  label: 'Изменить группу',
+                  icon: 'edit',
+                  onPress: () => editGroup(selectedGroup)
+                },
+                {
+                  label: 'Удалить группу',
+                  icon: 'delete',
+                  danger: true,
+                  onPress: () => deleteGroup(selectedGroup)
+                }
+              ]}
+            />
           </View>
         ) : (
           <ScrollView
@@ -825,6 +849,7 @@ export function NotesScreen({
       </View>
 
       {overview.error ? <ErrorState message={overview.error} retry={overview.refresh} /> : null}
+      {editorError ? <ErrorState message={editorError} /> : null}
       {overview.loading ? (
         <LoadingState />
       ) : view === 'groups' && !selectedGroup ? (
@@ -864,20 +889,7 @@ export function NotesScreen({
                       label: 'Удалить группу',
                       icon: 'delete',
                       danger: true,
-                      onPress: () => {
-                        void confirm({
-                          title: 'Удалить группу?',
-                          description: 'Заметки сохранятся и перейдут в раздел «Без группы».',
-                          tone: 'danger',
-                          onConfirm: () => {
-                            api.deleteNoteGroup(item.id)
-                            if (selectedGroupId === item.id) setSelectedGroupId(null)
-                            overview.refresh()
-                            notifyDataChanged()
-                            toast.success('Группа удалена')
-                          }
-                        })
-                      }
+                      onPress: () => deleteGroup(item)
                     }
                   ]}
                 />
