@@ -1,6 +1,6 @@
 'use dom'
 
-import { Editor, mergeAttributes, Node as TiptapNode } from '@tiptap/core'
+import { Editor, Node, mergeAttributes } from '@tiptap/core'
 import Highlight from '@tiptap/extension-highlight'
 import TextAlign from '@tiptap/extension-text-align'
 import { TextStyleKit } from '@tiptap/extension-text-style'
@@ -84,7 +84,7 @@ interface SavedSelection {
   to: number
 }
 
-const StudyInternalLinkExtension = TiptapNode.create({
+const StudyInternalLinkNode = Node.create({
   name: 'studyInternalLink',
   inline: true,
   group: 'inline',
@@ -113,11 +113,13 @@ const StudyInternalLinkExtension = TiptapNode.create({
       headingLevel: {
         default: null,
         parseHTML: (element) => {
-          const level = Number(element.getAttribute('data-heading-level'))
-          return level === 1 || level === 2 || level === 3 ? level : null
+          const value = Number(element.getAttribute('data-heading-level'))
+          return value === 1 || value === 2 || value === 3 ? value : null
         },
         renderHTML: (attributes) =>
-          attributes.headingLevel ? { 'data-heading-level': String(attributes.headingLevel) } : {}
+          attributes.headingLevel
+            ? { 'data-heading-level': String(attributes.headingLevel) }
+            : {}
       },
       labelMode: {
         default: 'auto',
@@ -137,7 +139,18 @@ const StudyInternalLinkExtension = TiptapNode.create({
       },
       folderPath: {
         default: [],
-        parseHTML: (element) => parseFolderPath(element.getAttribute('data-folder-path')),
+        parseHTML: (element) => {
+          const raw = element.getAttribute('data-folder-path')
+          if (!raw) return []
+          try {
+            const parsed: unknown = JSON.parse(raw)
+            return Array.isArray(parsed)
+              ? parsed.filter((item): item is string => typeof item === 'string')
+              : []
+          } catch {
+            return []
+          }
+        },
         renderHTML: (attributes) => ({
           'data-folder-path': JSON.stringify(
             Array.isArray(attributes.folderPath) ? attributes.folderPath : []
@@ -155,7 +168,8 @@ const StudyInternalLinkExtension = TiptapNode.create({
     return [
       'span',
       mergeAttributes(HTMLAttributes, {
-        'data-study-internal-link': 'true'
+        'data-study-internal-link': 'true',
+        contenteditable: 'false'
       }),
       String(node.attrs.label || 'Внутренняя ссылка')
     ]
@@ -165,18 +179,6 @@ const StudyInternalLinkExtension = TiptapNode.create({
     return String(node.attrs.label ?? '')
   }
 })
-
-function parseFolderPath(value: string | null): string[] {
-  if (!value) return []
-  try {
-    const parsed: unknown = JSON.parse(value)
-    return Array.isArray(parsed)
-      ? parsed.filter((item): item is string => typeof item === 'string')
-      : []
-  } catch {
-    return []
-  }
-}
 
 function createExtensions() {
   return [
@@ -196,7 +198,7 @@ function createExtensions() {
         }
       }
     }),
-    StudyInternalLinkExtension,
+    StudyInternalLinkNode,
     TextAlign.configure({
       types: ['paragraph'],
       alignments: ['left', 'center', 'right', 'justify']
@@ -210,15 +212,15 @@ function createExtensions() {
   ]
 }
 
-function normalizeHref(value: string): string | null {
-  const candidate = value.trim()
-  if (!candidate) return null
-  if (/^(https?:|mailto:|tel:)/i.test(candidate)) return candidate
-  if (/^[\w.-]+\.[a-z]{2,}(?:[/#?].*)?$/i.test(candidate)) return `https://${candidate}`
+function normalizeHref(raw: string): string | null {
+  const value = raw.trim()
+  if (!value) return null
+  if (/^(https?:|mailto:|tel:)/i.test(value)) return value
+  if (/^[\w.-]+\.[a-z]{2,}(?:[/#?].*)?$/i.test(value)) return `https://${value}`
   return null
 }
 
-function textAlignment(value: unknown): NotesRichTextAlignment {
+function alignment(value: unknown): NotesRichTextAlignment {
   return value === 'center' || value === 'right' || value === 'justify' ? value : 'left'
 }
 
@@ -237,7 +239,7 @@ function formattingState(editor: Editor): NotesRichTextFormattingState {
     blockquote: editor.isActive('blockquote'),
     bulletList: editor.isActive('bulletList'),
     orderedList: editor.isActive('orderedList'),
-    alignment: textAlignment(paragraph.textAlign),
+    alignment: alignment(paragraph.textAlign),
     linkActive: editor.isActive('link'),
     href: typeof link.href === 'string' ? link.href : '',
     fontSize: typeof textStyle.fontSize === 'string' ? textStyle.fontSize : 'default',
@@ -248,9 +250,22 @@ function formattingState(editor: Editor): NotesRichTextFormattingState {
   }
 }
 
+function safeSelection(editor: Editor, selection: SavedSelection | null): SavedSelection {
+  const max = editor.state.doc.content.size
+  const fallback = {
+    from: editor.state.selection.from,
+    to: editor.state.selection.to
+  }
+  if (!selection) return fallback
+  const from = Math.max(1, Math.min(selection.from, max))
+  const to = Math.max(from, Math.min(selection.to, max))
+  return { from, to }
+}
+
 export default function NotesRichTextDom({
   ref,
   html,
+  plainText: _plainText,
   textColor,
   mutedColor,
   borderColor,
@@ -264,144 +279,54 @@ export default function NotesRichTextDom({
   const mountRef = useRef<HTMLDivElement | null>(null)
   const editorRef = useRef<Editor | null>(null)
   const savedSelectionRef = useRef<SavedSelection | null>(null)
-  const onChangeRef = useRef(onChange)
-  const onFocusEditorRef = useRef(onFocusEditor)
-  const onFormattingStateRef = useRef(onFormattingState)
-  const onHeightChangeRef = useRef(onHeightChange)
+  const lastEmittedHtmlRef = useRef<string | null>(null)
+  const callbacksRef = useRef({
+    onChange,
+    onFocusEditor,
+    onFormattingState,
+    onHeightChange
+  })
 
   useEffect(() => {
-    onChangeRef.current = onChange
-    onFocusEditorRef.current = onFocusEditor
-    onFormattingStateRef.current = onFormattingState
-    onHeightChangeRef.current = onHeightChange
+    callbacksRef.current = {
+      onChange,
+      onFocusEditor,
+      onFormattingState,
+      onHeightChange
+    }
   }, [onChange, onFocusEditor, onFormattingState, onHeightChange])
 
-  const rememberSelection = useCallback((editor: Editor) => {
-    savedSelectionRef.current = {
-      from: editor.state.selection.from,
-      to: editor.state.selection.to
-    }
-  }, [])
-
-  const reportFormatting = useCallback((editor: Editor) => {
+  const emitFormatting = useCallback((editor: Editor): void => {
     if (editor.isDestroyed) return
-    void onFormattingStateRef.current(formattingState(editor))
+    void callbacksRef.current.onFormattingState(formattingState(editor))
   }, [])
 
-  const reportHeight = useCallback(() => {
-    const editor = editorRef.current
-    if (!editor || editor.isDestroyed) return
-    requestAnimationFrame(() => {
+  const rememberSelection = useCallback(
+    (editor: Editor): void => {
       if (editor.isDestroyed) return
-      const height = Math.max(64, Math.ceil(editor.view.dom.scrollHeight + 18))
-      void onHeightChangeRef.current(height)
-    })
-  }, [])
-
-  const commandChain = useCallback((): ReturnType<Editor['chain']> | null => {
-    const editor = editorRef.current
-    if (!editor || editor.isDestroyed) return null
-
-    const chain = editor.chain().focus()
-    const selection = savedSelectionRef.current
-    if (!selection) return chain
-
-    const maxPosition = editor.state.doc.content.size
-    const from = Math.max(1, Math.min(selection.from, maxPosition))
-    const to = Math.max(from, Math.min(selection.to, maxPosition))
-    return chain.setTextSelection({ from, to })
-  }, [])
-
-  useEffect(() => {
-    const mount = mountRef.current
-    if (!mount) return undefined
-
-    const editor = new Editor({
-      element: mount,
-      extensions: createExtensions(),
-      content: html || '<p></p>',
-      editable: true,
-      editorProps: {
-        attributes: {
-          class: 'notes-editor'
-        }
-      },
-      onCreate: ({ editor: createdEditor }) => {
-        editorRef.current = createdEditor
-        rememberSelection(createdEditor)
-        reportFormatting(createdEditor)
-        reportHeight()
-      },
-      onFocus: ({ editor: focusedEditor }) => {
-        rememberSelection(focusedEditor)
-        reportFormatting(focusedEditor)
-        void onFocusEditorRef.current()
-      },
-      onBlur: ({ editor: blurredEditor }) => {
-        rememberSelection(blurredEditor)
-        reportFormatting(blurredEditor)
-      },
-      onSelectionUpdate: ({ editor: updatedEditor }) => {
-        rememberSelection(updatedEditor)
-        reportFormatting(updatedEditor)
-      },
-      onTransaction: ({ editor: updatedEditor }) => {
-        reportFormatting(updatedEditor)
-        reportHeight()
-      },
-      onUpdate: ({ editor: updatedEditor }) => {
-        rememberSelection(updatedEditor)
-        const nextHtml = updatedEditor.getHTML()
-        const nextText = updatedEditor.getText({ blockSeparator: '\n\n' })
-        void onChangeRef.current(nextHtml, nextText)
-        reportHeight()
+      savedSelectionRef.current = {
+        from: editor.state.selection.from,
+        to: editor.state.selection.to
       }
-    })
-    editorRef.current = editor
+      emitFormatting(editor)
+    },
+    [emitFormatting]
+  )
 
-    const observer = new ResizeObserver(() => reportHeight())
-    observer.observe(editor.view.dom)
-    reportHeight()
-
-    return () => {
-      observer.disconnect()
-      if (!editor.isDestroyed) editor.destroy()
-      if (editorRef.current === editor) editorRef.current = null
-    }
-  }, [rememberSelection, reportFormatting, reportHeight])
-
-  useEffect(() => {
-    const editor = editorRef.current
-    if (!editor || editor.isDestroyed || editor.getHTML() === html) return
-    editor.commands.setContent(html || '<p></p>', {
-      emitUpdate: false,
-      errorOnInvalidContent: false
-    })
-    reportHeight()
-    reportFormatting(editor)
-  }, [html, reportFormatting, reportHeight])
+  const commandChain = useCallback((editor: Editor) => {
+    const selection = safeSelection(editor, savedSelectionRef.current)
+    return editor.chain().focus().setTextSelection(selection)
+  }, [])
 
   useDOMImperativeHandle(
     ref,
     () => ({
       command: (...args) => {
-        const command = args[0]
-        if (typeof command !== 'string') return
         const editor = editorRef.current
-        if (!editor || editor.isDestroyed) return
+        const command = args[0]
+        if (!editor || editor.isDestroyed || typeof command !== 'string') return
 
-        if (command === 'undo') {
-          editor.chain().focus().undo().run()
-          return
-        }
-        if (command === 'redo') {
-          editor.chain().focus().redo().run()
-          return
-        }
-
-        let chain = commandChain()
-        if (!chain) return
-
+        const chain = commandChain(editor)
         switch (command) {
           case 'bold':
             chain.toggleBold().run()
@@ -445,59 +370,62 @@ export default function NotesRichTextDom({
           case 'alignJustify':
             chain.setTextAlign('justify').run()
             break
+          case 'undo':
+            editor.chain().focus().undo().run()
+            break
+          case 'redo':
+            editor.chain().focus().redo().run()
+            break
           case 'clearFormatting':
             chain.unsetAllMarks().clearNodes().setTextAlign('left').run()
             break
           case 'unlink':
-            if (editor.isActive('link')) chain = chain.extendMarkRange('link')
+            if (editor.isActive('link')) chain.extendMarkRange('link')
             chain.unsetLink().run()
             break
         }
+        rememberSelection(editor)
       },
-
       setFontSize: (...args) => {
+        const editor = editorRef.current
         const value = args[0]
-        if (typeof value !== 'string') return
-        const chain = commandChain()
-        if (!chain) return
+        if (!editor || editor.isDestroyed || typeof value !== 'string') return
+        const chain = commandChain(editor)
         if (value === 'default') chain.unsetFontSize().run()
         else chain.setFontSize(value).run()
+        rememberSelection(editor)
       },
-
       setTextColor: (...args) => {
+        const editor = editorRef.current
         const value = args[0]
-        if (value !== null && typeof value !== 'string') return
-        const chain = commandChain()
-        if (!chain) return
+        if (!editor || editor.isDestroyed || (value !== null && typeof value !== 'string')) return
+        const chain = commandChain(editor)
         if (value === null) chain.unsetColor().run()
         else chain.setColor(value).run()
+        rememberSelection(editor)
       },
-
       setHighlightColor: (...args) => {
+        const editor = editorRef.current
         const value = args[0]
-        if (value !== null && typeof value !== 'string') return
-        const chain = commandChain()
-        if (!chain) return
+        if (!editor || editor.isDestroyed || (value !== null && typeof value !== 'string')) return
+        const chain = commandChain(editor)
         if (value === null) chain.unsetHighlight().run()
         else chain.setHighlight({ color: value }).run()
+        rememberSelection(editor)
       },
-
       setLink: (...args) => {
+        const editor = editorRef.current
         const rawHref = args[0]
-        if (typeof rawHref !== 'string') return
+        if (!editor || editor.isDestroyed || typeof rawHref !== 'string') return
         const href = normalizeHref(rawHref)
         if (!href) return
-        const editor = editorRef.current
-        const selection = savedSelectionRef.current
-        let chain = commandChain()
-        if (!editor || editor.isDestroyed || !chain) return
+
+        const selection = safeSelection(editor, savedSelectionRef.current)
+        const chain = commandChain(editor)
 
         if (editor.isActive('link')) {
           chain.extendMarkRange('link').setLink({ href }).run()
-          return
-        }
-
-        if (selection && selection.from === selection.to) {
+        } else if (selection.from === selection.to) {
           chain
             .insertContent({
               type: 'text',
@@ -505,34 +433,101 @@ export default function NotesRichTextDom({
               marks: [{ type: 'link', attrs: { href } }]
             })
             .run()
-          return
+        } else {
+          chain.setLink({ href }).run()
         }
-
-        chain.setLink({ href }).run()
+        rememberSelection(editor)
       },
-
       getSelectedText: async () => {
         const editor = editorRef.current
         if (!editor || editor.isDestroyed) return ''
-        const selection = savedSelectionRef.current ?? {
-          from: editor.state.selection.from,
-          to: editor.state.selection.to
-        }
-        return editor.state.doc.textBetween(selection.from, selection.to, ' ').trim()
+        const selection = safeSelection(editor, savedSelectionRef.current)
+        return editor.state.doc.textBetween(selection.from, selection.to, ' ')
       },
-
       insertInternalLink: (...args) => {
+        const editor = editorRef.current
         const linkHtml = args[0]
-        if (typeof linkHtml !== 'string') return
-        commandChain()?.insertContent(linkHtml).run()
+        if (!editor || editor.isDestroyed || typeof linkHtml !== 'string') return
+        commandChain(editor).insertContent(linkHtml).run()
+        rememberSelection(editor)
       },
-
       focusEditor: async () => {
-        commandChain()?.run()
+        const editor = editorRef.current
+        if (!editor || editor.isDestroyed) return
+        commandChain(editor).run()
       }
     }),
-    [commandChain]
+    [commandChain, rememberSelection]
   )
+
+  useEffect(() => {
+    const element = mountRef.current
+    if (!element) return undefined
+
+    const editor = new Editor({
+      element,
+      extensions: createExtensions(),
+      content: html || '<p></p>',
+      immediatelyRender: true,
+      shouldRerenderOnTransaction: false,
+      editorProps: {
+        attributes: {
+          class: 'notes-editor',
+          'aria-label': 'Текстовый блок',
+          role: 'textbox',
+          'aria-multiline': 'true'
+        }
+      },
+      onFocus: ({ editor: current }) => {
+        rememberSelection(current)
+        void callbacksRef.current.onFocusEditor()
+      },
+      onSelectionUpdate: ({ editor: current }) => {
+        rememberSelection(current)
+      },
+      onTransaction: ({ editor: current }) => {
+        emitFormatting(current)
+      },
+      onUpdate: ({ editor: current }) => {
+        const nextHtml = current.getHTML()
+        const nextText = current.getText({ blockSeparator: '\n\n' })
+        lastEmittedHtmlRef.current = nextHtml
+        void callbacksRef.current.onChange(nextHtml, nextText)
+        emitFormatting(current)
+      }
+    })
+
+    editorRef.current = editor
+    rememberSelection(editor)
+
+    const dom = editor.view.dom
+    const reportHeight = (): void => {
+      const height = Math.max(64, Math.ceil(dom.scrollHeight + 18))
+      void callbacksRef.current.onHeightChange(height)
+    }
+
+    const observer = new ResizeObserver(reportHeight)
+    observer.observe(dom)
+    reportHeight()
+
+    return () => {
+      observer.disconnect()
+      if (editorRef.current === editor) editorRef.current = null
+      editor.destroy()
+    }
+  }, [emitFormatting, rememberSelection])
+
+  useEffect(() => {
+    const editor = editorRef.current
+    if (!editor || editor.isDestroyed) return
+    if (html === lastEmittedHtmlRef.current) return
+    if (editor.getHTML() === html) return
+    editor.commands.setContent(html || '<p></p>', {
+      emitUpdate: false,
+      errorOnInvalidContent: false
+    })
+    rememberSelection(editor)
+  }, [html, rememberSelection])
 
   return (
     <main
@@ -547,7 +542,7 @@ export default function NotesRichTextDom({
         } as React.CSSProperties
       }
     >
-      <div ref={mountRef} className="notes-editor-mount" />
+      <div ref={mountRef} />
       <style>{styles}</style>
     </main>
   )
@@ -564,7 +559,6 @@ const styles = `
     background: transparent;
     font: 17px/1.55 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   }
-  .notes-editor-mount { min-height: 64px; }
   .notes-editor {
     width: 100%;
     min-height: 64px;
@@ -572,6 +566,7 @@ const styles = `
     outline: none;
     overflow-wrap: anywhere;
     caret-color: var(--accent);
+    color: var(--text);
   }
   .notes-editor p { margin: 0 0 0.72em; }
   .notes-editor p:last-child { margin-bottom: 0; }
@@ -603,18 +598,13 @@ const styles = `
   .notes-editor ul, .notes-editor ol { margin: 0.5em 0; padding-left: 1.55em; }
   .notes-editor li { margin: 0.22em 0; }
   .notes-editor a { color: var(--accent); text-decoration: underline; }
+  .notes-editor mark { border-radius: 3px; padding: 0 1px; color: inherit; }
   .notes-editor [data-study-internal-link="true"] {
-    display: inline-flex;
-    max-width: 100%;
-    vertical-align: text-bottom;
-    padding: 1px 5px;
-    border-radius: 6px;
+    display: inline;
+    padding: 1px 4px;
+    border-radius: 5px;
     color: var(--accent);
     background: color-mix(in srgb, var(--accent) 12%, transparent);
     font-weight: 600;
-  }
-  .notes-editor .ProseMirror-selectednode[data-study-internal-link="true"] {
-    outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
-    outline-offset: 1px;
   }
 `
