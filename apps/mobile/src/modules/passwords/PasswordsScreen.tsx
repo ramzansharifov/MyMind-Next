@@ -357,6 +357,25 @@ export function PasswordsScreen(): React.JSX.Element {
     })
   }, [groupFilter, overview, query, tab])
 
+  const groupScopedItems = useMemo(() => {
+    if (!overview) return []
+    return overview.items.filter((item) => {
+      if (groupFilter === null) return item.groupId === null
+      if (typeof groupFilter === 'string') return item.groupId === groupFilter
+      return true
+    })
+  }, [groupFilter, overview])
+
+  const securitySummary = useMemo(
+    () => ({
+      total: groupScopedItems.length,
+      weak: groupScopedItems.filter((item) => item.securityIssues.includes('weak')).length,
+      reused: groupScopedItems.filter((item) => item.securityIssues.includes('reused')).length,
+      old: groupScopedItems.filter((item) => item.securityIssues.includes('old')).length
+    }),
+    [groupScopedItems]
+  )
+
   if (!status.unlocked) {
     return <VaultGate api={api} status={status} unlocked={refresh} />
   }
@@ -366,62 +385,26 @@ export function PasswordsScreen(): React.JSX.Element {
     return <ErrorState message={error || 'Не удалось открыть хранилище'} retry={refresh} />
 
   let content: React.JSX.Element
-  if (tab === 'groups') {
-    content = (
-      <ScrollView contentContainerStyle={{ paddingBottom: 96 }}>
-        {overview.groups.length ? (
-          overview.groups.map((group) => (
-            <WorkspaceNodeCard
-              key={group.id}
-              title={group.name}
-              subtitle={`${overview.items.filter((item) => item.groupId === group.id).length} записей`}
-              leading={<VisualIconBadge value={group.icon} colorKey={group.color} />}
-              onPress={() => {
-                setGroupFilter(group.id)
-                setTab('items')
-              }}
-              action={
-                <ActionMenu
-                  title={group.name}
-                  items={[
-                    { label: 'Изменить', icon: 'edit', onPress: () => editGroup(group) },
-                    {
-                      label: 'Удалить',
-                      icon: 'delete',
-                      danger: true,
-                      onPress: () => deleteGroup(group)
-                    }
-                  ]}
-                />
-              }
-            />
-          ))
-        ) : (
-          <EmptyState text="Групп пока нет." />
-        )}
-      </ScrollView>
-    )
-  } else if (tab === 'security') {
+  if (tab === 'security') {
     content = (
       <ScrollView contentContainerStyle={{ paddingBottom: 96 }}>
         <Row
-          title={`${overview.security.total} записей`}
-          subtitle={`${overview.security.weak} слабых · ${overview.security.reused} повторяющихся · ${overview.security.old} давно не менялись`}
+          title={`${securitySummary.total} записей`}
+          subtitle={`${securitySummary.weak} слабых · ${securitySummary.reused} повторяющихся · ${securitySummary.old} давно не менялись`}
         />
-        {overview.security.issues.length ? (
-          overview.security.issues.map((issue) => {
-            const item = overview.items.find((candidate) => candidate.id === issue.itemId)
-            return (
+        {groupScopedItems.some((item) => item.securityIssues.length > 0) ? (
+          groupScopedItems
+            .filter((item) => item.securityIssues.length > 0)
+            .map((item) => (
               <Row
-                key={issue.itemId}
-                title={issue.title}
-                subtitle={[issue.username, ...issue.issues.map((value) => securityLabels[value])]
+                key={item.id}
+                title={item.title}
+                subtitle={[item.username, ...item.securityIssues.map((value) => securityLabels[value])]
                   .filter(Boolean)
                   .join(' · ')}
-                onPress={() => item && openItem(item)}
+                onPress={() => openItem(item)}
               />
-            )
-          })
+            ))
         ) : (
           <EmptyState text="Проблем безопасности не найдено." />
         )}
