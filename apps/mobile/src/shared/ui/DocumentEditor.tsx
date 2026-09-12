@@ -33,6 +33,7 @@ import { AppDialog } from './AppDialog'
 import { DocumentBoardEditor, type OpenDocumentBoard } from './DocumentBoardBlock'
 import { AppIcon } from './icons'
 import { NotesRichTextBlock } from './NotesRichTextBlock'
+import { NotesBlockSettingsSheet } from './NotesBlockSettings'
 import {
   DEFAULT_NOTES_RICH_TEXT_STATE,
   NotesQuickLinkDialog,
@@ -599,156 +600,6 @@ function NotesBlockToolbar({
   )
 }
 
-function NotesBlockSettings({
-  block,
-  update,
-  close
-}: {
-  block: StudyBlock
-  update(next: StudyBlock): void
-  close(): void
-}): React.JSX.Element {
-  const theme = useTheme()
-
-  return (
-    <AppDialog
-      open
-      onOpenChange={(open) => {
-        if (!open) close()
-      }}
-      title="Настройки блока"
-      description={blockLabel(block)}
-      icon="settings"
-      presentation="sheet"
-    >
-      <View style={{ gap: 14, padding: 14, paddingBottom: 22 }}>
-        {block.type === 'heading' ? (
-          <>
-            <View style={{ gap: 8 }}>
-              <Label muted>Размер заголовка</Label>
-              <View style={{ flexDirection: 'row', gap: 8 }}>
-                {([1, 2, 3] as const).map((level) => (
-                  <Button
-                    key={level}
-                    label={`H${level}`}
-                    compact
-                    selected={block.level === level}
-                    onPress={() => update({ ...block, level })}
-                  />
-                ))}
-              </View>
-            </View>
-            <View style={{ gap: 8 }}>
-              <Label muted>Выравнивание</Label>
-              <View style={{ flexDirection: 'row', gap: 8 }}>
-                {[
-                  { value: 'left' as const, label: 'Слева', icon: AlignLeft },
-                  { value: 'center' as const, label: 'Центр', icon: AlignCenter },
-                  { value: 'right' as const, label: 'Справа', icon: AlignRight }
-                ].map((item) => {
-                  const Icon = item.icon
-                  const selected = (block.alignment ?? 'left') === item.value
-                  return (
-                    <Pressable
-                      key={item.value}
-                      accessibilityRole="button"
-                      accessibilityLabel={item.label}
-                      accessibilityState={{ selected }}
-                      onPress={() => update({ ...block, alignment: item.value })}
-                      style={({ pressed }) => ({
-                        width: 48,
-                        height: 44,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        borderRadius: 12,
-                        borderWidth: 1,
-                        borderColor: selected ? theme.accent + '66' : theme.border,
-                        backgroundColor: selected
-                          ? theme.accent + '16'
-                          : pressed
-                            ? theme.raised
-                            : theme.surface,
-                        opacity: pressed ? 0.72 : 1
-                      })}
-                    >
-                      <Icon size={19} color={selected ? theme.accent : theme.muted} />
-                    </Pressable>
-                  )
-                })}
-              </View>
-            </View>
-          </>
-        ) : null}
-
-        {block.type === 'divider' ? (
-          <View style={{ gap: 8 }}>
-            <Label muted>Стиль разделителя</Label>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              {(['solid', 'tapered', 'dashed', 'dotted'] as const).map((variant) => (
-                <Button
-                  key={variant}
-                  label={
-                    variant === 'solid'
-                      ? 'Линия'
-                      : variant === 'tapered'
-                        ? 'Плавный'
-                        : variant === 'dashed'
-                          ? 'Штрихи'
-                          : 'Точки'
-                  }
-                  compact
-                  selected={(block.variant ?? 'solid') === variant}
-                  onPress={() => update({ ...block, variant })}
-                />
-              ))}
-            </View>
-          </View>
-        ) : null}
-
-        {block.type === 'image' ? (
-          <View style={{ gap: 8 }}>
-            <Label muted>Отображение изображения</Label>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              <Button
-                label="Вписать"
-                compact
-                selected={(block.imageFit ?? 'contain') === 'contain'}
-                onPress={() => update({ ...block, imageFit: 'contain' })}
-              />
-              <Button
-                label="Обрезать"
-                compact
-                selected={block.imageFit === 'cover'}
-                onPress={() => update({ ...block, imageFit: 'cover' })}
-              />
-            </View>
-          </View>
-        ) : null}
-
-        {!['heading', 'divider', 'image'].includes(block.type) ? (
-          <View
-            style={{
-              flexDirection: 'row',
-              gap: 10,
-              alignItems: 'center',
-              padding: 12,
-              borderRadius: 14,
-              borderWidth: 1,
-              borderColor: theme.border,
-              backgroundColor: theme.surface
-            }}
-          >
-            <SlidersHorizontal size={18} color={theme.accent} />
-            <Text style={{ flex: 1, color: theme.muted, fontSize: 12.5, lineHeight: 18 }}>
-              Для этого типа блока основные параметры находятся прямо в его содержимом.
-            </Text>
-          </View>
-        ) : null}
-      </View>
-    </AppDialog>
-  )
-}
-
 function NotesInsertSheet({
   open,
   pendingAsset,
@@ -1240,10 +1091,12 @@ export function DocumentEditor({
       ) : null}
 
       {settingsOpen && activeBlock && activeIndex >= 0 && activeBlock.type !== 'text' ? (
-        <NotesBlockSettings
+        <NotesBlockSettingsSheet
           block={activeBlock}
           update={(next) => replace(activeIndex, next)}
           close={() => setSettingsOpen(false)}
+          importAsset={importAsset}
+          onAssetError={onAssetError}
         />
       ) : null}
     </View>
