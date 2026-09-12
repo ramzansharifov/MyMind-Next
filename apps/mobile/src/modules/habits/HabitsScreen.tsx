@@ -144,7 +144,7 @@ export function HabitsScreen(): React.JSX.Element {
   return (
     <View style={{ flex: 1 }}>
       <View style={{ gap: 10, marginBottom: 12 }}>
-        <ModuleTabs
+        <ModuleTabs<'today' | 'all' | 'reports'>
           items={[
             { id: 'today' as const, label: 'Сегодня', icon: CalendarDays },
             { id: 'all' as const, label: 'Все привычки', icon: Target },
