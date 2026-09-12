@@ -226,6 +226,7 @@ function internalLinkHtml(target: StudyInternalLinkTarget, label: string): strin
   const effectiveLabel = label.trim() || target.title
   const attrs = [
     'data-study-internal-link="true"',
+    'contenteditable="false"',
     `data-target-kind="${target.kind}"`,
     `data-material-id="${escapeHtmlAttribute(target.materialId)}"`,
     target.headingId ? `data-heading-id="${escapeHtmlAttribute(target.headingId)}"` : '',
