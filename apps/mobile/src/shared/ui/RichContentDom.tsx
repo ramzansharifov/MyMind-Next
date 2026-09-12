@@ -141,6 +141,7 @@ function HtmlContent({
     const internalLink = element.closest<HTMLElement>('[data-study-internal-link="true"]')
     if (internalLink) {
       event.preventDefault()
+      event.stopPropagation()
       if (!onOpenInternalLink) return
       const materialId = internalLink.dataset.materialId ?? ''
       if (!materialId) return
@@ -155,6 +156,7 @@ function HtmlContent({
     const anchor = element.closest<HTMLAnchorElement>('a[href]')
     if (!anchor || !onOpenExternalLink) return
     event.preventDefault()
+    event.stopPropagation()
     void onOpenExternalLink(anchor.href)
   }
 
@@ -193,9 +195,19 @@ export default function RichContentDom({
   onOpenInternalLink,
   onOpenExternalLink
 }: RichContentDomProps): React.JSX.Element {
+  const openExternalTarget = (event: React.MouseEvent<HTMLElement>): void => {
+    if (!onOpenExternalLink) return
+    const element = event.target instanceof Element ? event.target : null
+    const anchor = element?.closest<HTMLAnchorElement>('a[href]')
+    if (!anchor) return
+    event.preventDefault()
+    void onOpenExternalLink(anchor.href)
+  }
+
   return (
     <main
       className={`rich-root ${colorScheme}`}
+      onClick={openExternalTarget}
       style={
         {
           '--text': textColor,
