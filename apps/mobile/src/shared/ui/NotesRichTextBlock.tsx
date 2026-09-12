@@ -91,14 +91,12 @@ export function DocumentRichTextViewer({
 
 export function NotesRichTextBlock({
   block,
-  active,
   registerRef,
   update,
   activate,
   formattingChanged
 }: {
   block: StudyTextBlock
-  active: boolean
   registerRef(ref: NotesRichTextDomRef | null): void
   update(block: StudyTextBlock): void
   activate(): void
