@@ -9,7 +9,7 @@ import type {
   StudyInternalLinkTarget,
   StudyLocalAsset
 } from '@mymind/contracts/study'
-import { designTokens } from '@mymind/design'
+import { appearanceTokens, designTokens } from '@mymind/design'
 import {
   AudioLines,
   Code2,
@@ -25,6 +25,7 @@ import {
   Workflow,
   type LucideIcon
 } from 'lucide-react-native'
+import BoardCanvasDom from '../../modules/boards/BoardCanvasDom'
 import { AppDialog } from './AppDialog'
 import { DocumentBoardEditor, type OpenDocumentBoard } from './DocumentBoardBlock'
 import { AppIcon } from './icons'
@@ -265,6 +266,21 @@ function BlockInput({
     fontSize: 16
   } as const
   const sourceStyle = { ...inputStyle, minHeight: 120, textAlignVertical: 'top' as const }
+  const colorScheme = theme.background === appearanceTokens.dark.background ? 'dark' : 'light'
+  const richProps = {
+    mode: 'rich' as const,
+    colorScheme,
+    textColor: theme.text,
+    mutedColor: theme.muted,
+    borderColor: theme.border,
+    surfaceColor: theme.raised,
+    accentColor: theme.accent,
+    dom: {
+      matchContents: true,
+      scrollEnabled: false,
+      style: { width: '100%' }
+    }
+  } as const
 
   switch (block.type) {
     case 'text':
@@ -301,9 +317,14 @@ function BlockInput({
             onChangeText={(text) => update({ ...block, text })}
             style={{
               ...inputStyle,
+              color: block.color ?? theme.text,
+              backgroundColor:
+                block.backgroundColor ??
+                (clean && block.backgroundScope === 'container' ? theme.raised : inputStyle.backgroundColor),
               fontWeight: '700',
               fontSize: block.level === 1 ? 26 : block.level === 2 ? 22 : 19,
-              textAlign: block.alignment ?? 'left'
+              textAlign: block.alignment ?? 'left',
+              borderRadius: clean && block.backgroundScope === 'container' ? 10 : inputStyle.borderRadius
             }}
           />
           {!clean ? (
@@ -349,26 +370,129 @@ function BlockInput({
           />
         </View>
       )
-    case 'markdown':
-    case 'latex':
-    case 'mermaid':
+    case 'markdown': {
+      const viewMode = clean ? (block.viewMode ?? 'split') : 'write'
       return (
-        <TextInput
-          accessibilityLabel={`${block.type} блок`}
-          multiline
-          autoCapitalize="none"
-          autoCorrect={false}
-          value={block.source}
-          onChangeText={(source) => update({ ...block, source })}
-          style={{
-            ...sourceStyle,
-            fontFamily: 'monospace',
-            backgroundColor: clean ? theme.surface : theme.raised,
-            borderRadius: clean ? 12 : designTokens.radius.md,
-            paddingHorizontal: 12
-          }}
-        />
+        <View style={{ gap: 10 }}>
+          {viewMode !== 'preview' ? (
+            <TextInput
+              accessibilityLabel="Markdown блок"
+              multiline
+              autoCapitalize="none"
+              autoCorrect={false}
+              value={block.source}
+              onChangeText={(source) => update({ ...block, source })}
+              style={{
+                ...sourceStyle,
+                fontFamily: 'monospace',
+                backgroundColor: clean ? theme.surface : theme.raised,
+                borderRadius: clean ? 12 : designTokens.radius.md,
+                paddingHorizontal: 12
+              }}
+            />
+          ) : null}
+          {clean && viewMode !== 'write' ? (
+            <View
+              style={{
+                padding: 12,
+                borderWidth: 1,
+                borderColor: theme.border,
+                borderRadius: 12,
+                backgroundColor: theme.surface
+              }}
+            >
+              <BoardCanvasDom {...richProps} kind="markdown" source={block.source} />
+            </View>
+          ) : null}
+        </View>
       )
+    }
+    case 'latex': {
+      const viewMode = clean ? (block.viewMode ?? 'split') : 'write'
+      return (
+        <View style={{ gap: 10 }}>
+          {viewMode !== 'preview' ? (
+            <TextInput
+              accessibilityLabel="LaTeX блок"
+              multiline
+              autoCapitalize="none"
+              autoCorrect={false}
+              value={block.source}
+              onChangeText={(source) => update({ ...block, source })}
+              style={{
+                ...sourceStyle,
+                fontFamily: 'monospace',
+                backgroundColor: clean ? theme.surface : theme.raised,
+                borderRadius: clean ? 12 : designTokens.radius.md,
+                paddingHorizontal: 12
+              }}
+            />
+          ) : null}
+          {clean && viewMode !== 'write' ? (
+            <View
+              style={{
+                padding: 12,
+                borderWidth: 1,
+                borderColor: theme.border,
+                borderRadius: 12,
+                backgroundColor: theme.surface
+              }}
+            >
+              <BoardCanvasDom
+                {...richProps}
+                kind="latex"
+                source={block.source}
+                latexDisplayMode={block.displayMode ?? 'display'}
+                latexAlignment={block.alignment ?? 'center'}
+                latexScale={(block.scale ?? 100) / 100}
+              />
+            </View>
+          ) : null}
+        </View>
+      )
+    }
+    case 'mermaid': {
+      const viewMode = clean ? (block.viewMode ?? 'split') : 'write'
+      return (
+        <View style={{ gap: 10 }}>
+          {viewMode !== 'preview' ? (
+            <TextInput
+              accessibilityLabel="Mermaid блок"
+              multiline
+              autoCapitalize="none"
+              autoCorrect={false}
+              value={block.source}
+              onChangeText={(source) => update({ ...block, source })}
+              style={{
+                ...sourceStyle,
+                fontFamily: 'monospace',
+                backgroundColor: clean ? theme.surface : theme.raised,
+                borderRadius: clean ? 12 : designTokens.radius.md,
+                paddingHorizontal: 12
+              }}
+            />
+          ) : null}
+          {clean && viewMode !== 'write' ? (
+            <View
+              style={{
+                padding: 12,
+                borderWidth: 1,
+                borderColor: theme.border,
+                borderRadius: 12,
+                backgroundColor: theme.surface
+              }}
+            >
+              <BoardCanvasDom
+                {...richProps}
+                kind="mermaid"
+                source={block.source}
+                mermaidTheme={block.theme ?? (colorScheme === 'dark' ? 'dark' : 'default')}
+              />
+            </View>
+          ) : null}
+        </View>
+      )
+    }
     case 'image':
     case 'video':
       return block.source.type === 'url' ? (
@@ -398,26 +522,48 @@ function BlockInput({
       return (
         <LocalAssetEditor block={block} update={update} assetActions={assetActions} clean={clean} />
       )
-    case 'divider':
+    case 'divider': {
+      const variant = block.variant ?? 'solid'
+      const thickness = block.thickness ?? 1
+      const color =
+        !block.color || block.color.toLowerCase() === '#6d5dfc' ? theme.accent : block.color
       return (
         <View style={{ gap: 10, paddingVertical: clean ? 16 : 0 }}>
-          <View
-            style={{ height: block.thickness ?? 1, backgroundColor: block.color ?? theme.border }}
-          />
+          {variant === 'dashed' || variant === 'dotted' ? (
+            <View
+              style={{
+                height: Math.max(2, thickness),
+                borderTopWidth: thickness,
+                borderStyle: variant === 'dotted' ? 'dotted' : 'dashed',
+                borderColor: color
+              }}
+            />
+          ) : (
+            <View
+              style={{
+                alignSelf: variant === 'tapered' ? 'center' : 'stretch',
+                width: variant === 'tapered' ? '68%' : undefined,
+                height: thickness,
+                borderRadius: thickness,
+                backgroundColor: color
+              }}
+            />
+          )}
           {!clean ? (
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              {(['solid', 'tapered', 'dashed', 'dotted'] as const).map((variant) => (
+              {(['solid', 'tapered', 'dashed', 'dotted'] as const).map((nextVariant) => (
                 <Button
-                  key={variant}
-                  label={variant}
-                  selected={(block.variant ?? 'solid') === variant}
-                  onPress={() => update({ ...block, variant })}
+                  key={nextVariant}
+                  label={nextVariant}
+                  selected={variant === nextVariant}
+                  onPress={() => update({ ...block, variant: nextVariant })}
                 />
               ))}
             </View>
           ) : null}
         </View>
       )
+    }
     case 'board':
       return (
         <DocumentBoardEditor
