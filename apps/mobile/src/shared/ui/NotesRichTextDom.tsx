@@ -1,0 +1,558 @@
+'use dom'
+
+import { useDOMImperativeHandle, type DOMImperativeFactory } from 'expo/dom'
+import { useCallback, useEffect, useRef, type Ref } from 'react'
+
+export type NotesRichTextAlignment = 'left' | 'center' | 'right' | 'justify'
+
+export interface NotesRichTextFormattingState {
+  bold: boolean
+  italic: boolean
+  underline: boolean
+  strike: boolean
+  code: boolean
+  blockquote: boolean
+  bulletList: boolean
+  orderedList: boolean
+  alignment: NotesRichTextAlignment
+  linkActive: boolean
+  fontSize: string
+  color: string
+  backgroundColor: string
+  canUndo: boolean
+  canRedo: boolean
+}
+
+export type NotesRichTextCommand =
+  | 'bold'
+  | 'italic'
+  | 'underline'
+  | 'strike'
+  | 'code'
+  | 'blockquote'
+  | 'bulletList'
+  | 'orderedList'
+  | 'indent'
+  | 'outdent'
+  | 'alignLeft'
+  | 'alignCenter'
+  | 'alignRight'
+  | 'alignJustify'
+  | 'undo'
+  | 'redo'
+  | 'clearFormatting'
+  | 'unlink'
+
+export interface NotesRichTextDomRef extends DOMImperativeFactory {
+  command: (command: NotesRichTextCommand) => Promise<void>
+  setFontSize: (fontSize: string) => Promise<void>
+  setTextColor: (color: string | null) => Promise<void>
+  setHighlightColor: (color: string | null) => Promise<void>
+  setLink: (href: string) => Promise<void>
+  getSelectedText: () => Promise<string>
+  insertInternalLink: (html: string) => Promise<void>
+  focusEditor: () => Promise<void>
+}
+
+export interface NotesRichTextDomProps {
+  ref: Ref<NotesRichTextDomRef>
+  dom?: import('expo/dom').DOMProps
+  html: string
+  plainText: string
+  textColor: string
+  mutedColor: string
+  borderColor: string
+  surfaceColor: string
+  accentColor: string
+  onChange: (html: string, plainText: string) => Promise<void>
+  onFocusEditor: () => Promise<void>
+  onFormattingState: (state: NotesRichTextFormattingState) => Promise<void>
+  onHeightChange: (height: number) => Promise<void>
+}
+
+const DEFAULT_STATE: NotesRichTextFormattingState = {
+  bold: false,
+  italic: false,
+  underline: false,
+  strike: false,
+  code: false,
+  blockquote: false,
+  bulletList: false,
+  orderedList: false,
+  alignment: 'left',
+  linkActive: false,
+  fontSize: 'default',
+  color: '',
+  backgroundColor: '',
+  canUndo: false,
+  canRedo: false
+}
+
+function safeCommandState(command: string): boolean {
+  try {
+    return document.queryCommandState(command)
+  } catch {
+    return false
+  }
+}
+
+function safeCommandValue(command: string): string {
+  try {
+    return String(document.queryCommandValue(command) ?? '')
+  } catch {
+    return ''
+  }
+}
+
+function closestElement(selection: Selection | null): HTMLElement | null {
+  const node = selection?.anchorNode
+  if (!node) return null
+  return (node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement) as HTMLElement | null
+}
+
+function ancestor(element: HTMLElement | null, selector: string): HTMLElement | null {
+  return element?.closest(selector) as HTMLElement | null
+}
+
+function normalizeColor(value: string): string {
+  if (!value) return ''
+  const probe = document.createElement('span')
+  probe.style.color = value
+  document.body.appendChild(probe)
+  const normalized = getComputedStyle(probe).color
+  probe.remove()
+  return normalized || value
+}
+
+function formattingState(): NotesRichTextFormattingState {
+  const selection = window.getSelection()
+  const element = closestElement(selection)
+  const paragraph = ancestor(element, 'p,div,li,blockquote')
+  const textStyle = ancestor(element, 'span[style],font[style],font[color]')
+  const code = ancestor(element, 'code')
+  const link = ancestor(element, 'a')
+  const blockquote = ancestor(element, 'blockquote')
+  const bulletList = ancestor(element, 'ul')
+  const orderedList = ancestor(element, 'ol')
+  const computed = element ? getComputedStyle(element) : null
+  const alignment = (paragraph ? getComputedStyle(paragraph).textAlign : '') as string
+  const mappedAlignment: NotesRichTextAlignment =
+    alignment === 'center' || alignment === 'right' || alignment === 'justify' ? alignment : 'left'
+
+  return {
+    bold: safeCommandState('bold') || Boolean(computed && Number.parseInt(computed.fontWeight, 10) >= 600),
+    italic: safeCommandState('italic') || computed?.fontStyle === 'italic',
+    underline:
+      safeCommandState('underline') || Boolean(computed?.textDecorationLine.includes('underline')),
+    strike:
+      safeCommandState('strikeThrough') ||
+      Boolean(computed?.textDecorationLine.includes('line-through')),
+    code: Boolean(code),
+    blockquote: Boolean(blockquote),
+    bulletList: Boolean(bulletList),
+    orderedList: Boolean(orderedList),
+    alignment: mappedAlignment,
+    linkActive: Boolean(link),
+    fontSize: textStyle?.style.fontSize || computed?.fontSize || 'default',
+    color: textStyle?.style.color || computed?.color || '',
+    backgroundColor: textStyle?.style.backgroundColor || computed?.backgroundColor || '',
+    canUndo: document.queryCommandEnabled('undo'),
+    canRedo: document.queryCommandEnabled('redo')
+  }
+}
+
+function sanitizeHref(raw: string): string | null {
+  const value = raw.trim()
+  if (!value) return null
+  if (/^(https?:|mailto:|tel:)/i.test(value)) return value
+  if (/^[\w.-]+\.[a-z]{2,}(?:[/#?].*)?$/i.test(value)) return `https://${value}`
+  return null
+}
+
+function isSelectionInside(root: HTMLElement, selection: Selection | null): boolean {
+  const node = selection?.anchorNode
+  return Boolean(node && (node === root || root.contains(node)))
+}
+
+function restoreRange(root: HTMLElement, range: Range | null): void {
+  const selection = window.getSelection()
+  if (!selection) return
+  selection.removeAllRanges()
+  if (range && root.contains(range.commonAncestorContainer)) {
+    selection.addRange(range)
+    return
+  }
+  const fallback = document.createRange()
+  fallback.selectNodeContents(root)
+  fallback.collapse(false)
+  selection.addRange(fallback)
+}
+
+function selectedHtmlWrap(tag: string): void {
+  const selection = window.getSelection()
+  if (!selection || selection.rangeCount === 0) return
+  const range = selection.getRangeAt(0)
+  if (range.collapsed) return
+
+  const parent = closestElement(selection)
+  const existing = ancestor(parent, tag)
+  if (existing) {
+    const fragment = document.createDocumentFragment()
+    while (existing.firstChild) fragment.appendChild(existing.firstChild)
+    existing.replaceWith(fragment)
+    return
+  }
+
+  const wrapper = document.createElement(tag)
+  try {
+    range.surroundContents(wrapper)
+  } catch {
+    const fragment = range.extractContents()
+    wrapper.appendChild(fragment)
+    range.insertNode(wrapper)
+  }
+  selection.removeAllRanges()
+  const next = document.createRange()
+  next.selectNodeContents(wrapper)
+  selection.addRange(next)
+}
+
+function applyFontSize(fontSize: string): void {
+  if (fontSize === 'default') {
+    document.execCommand('removeFormat')
+    return
+  }
+  document.execCommand('fontSize', false, '7')
+  document.querySelectorAll<HTMLFontElement>('font[size="7"]').forEach((font) => {
+    const span = document.createElement('span')
+    span.style.fontSize = fontSize
+    while (font.firstChild) span.appendChild(font.firstChild)
+    font.replaceWith(span)
+  })
+}
+
+function selectionHtml(html: string): void {
+  const selection = window.getSelection()
+  if (!selection || selection.rangeCount === 0) return
+  const range = selection.getRangeAt(0)
+  range.deleteContents()
+  const holder = document.createElement('template')
+  holder.innerHTML = html
+  const fragment = holder.content
+  const last = fragment.lastChild
+  range.insertNode(fragment)
+  if (last) {
+    const next = document.createRange()
+    next.setStartAfter(last)
+    next.collapse(true)
+    selection.removeAllRanges()
+    selection.addRange(next)
+  }
+}
+
+export default function NotesRichTextDom({
+  ref,
+  html,
+  plainText,
+  textColor,
+  mutedColor,
+  borderColor,
+  surfaceColor,
+  accentColor,
+  onChange,
+  onFocusEditor,
+  onFormattingState,
+  onHeightChange
+}: NotesRichTextDomProps): React.JSX.Element {
+  const editorRef = useRef<HTMLDivElement | null>(null)
+  const savedRangeRef = useRef<Range | null>(null)
+  const lastEmittedHtmlRef = useRef<string | null>(null)
+  const emitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const rememberSelection = useCallback(() => {
+    const root = editorRef.current
+    const selection = window.getSelection()
+    if (!root || !selection || selection.rangeCount === 0 || !isSelectionInside(root, selection)) {
+      return
+    }
+    savedRangeRef.current = selection.getRangeAt(0).cloneRange()
+    void onFormattingState(formattingState())
+  }, [onFormattingState])
+
+  const emit = useCallback(() => {
+    const root = editorRef.current
+    if (!root) return
+    const nextHtml = root.innerHTML || '<p></p>'
+    const nextText = root.innerText.replace(/\u00a0/g, ' ')
+    lastEmittedHtmlRef.current = nextHtml
+    void onChange(nextHtml, nextText)
+    void onFormattingState(formattingState())
+  }, [onChange, onFormattingState])
+
+  const scheduleEmit = useCallback(() => {
+    if (emitTimerRef.current) clearTimeout(emitTimerRef.current)
+    emitTimerRef.current = setTimeout(() => {
+      emitTimerRef.current = null
+      emit()
+    }, 0)
+  }, [emit])
+
+  const run = useCallback(
+    (operation: () => void) => {
+      const root = editorRef.current
+      if (!root) return
+      root.focus()
+      restoreRange(root, savedRangeRef.current)
+      operation()
+      rememberSelection()
+      scheduleEmit()
+    },
+    [rememberSelection, scheduleEmit]
+  )
+
+  useDOMImperativeHandle(
+    ref,
+    () => ({
+      command: async (command) => {
+        run(() => {
+          switch (command) {
+            case 'bold':
+              document.execCommand('bold')
+              break
+            case 'italic':
+              document.execCommand('italic')
+              break
+            case 'underline':
+              document.execCommand('underline')
+              break
+            case 'strike':
+              document.execCommand('strikeThrough')
+              break
+            case 'code':
+              selectedHtmlWrap('code')
+              break
+            case 'blockquote': {
+              const active = Boolean(ancestor(closestElement(window.getSelection()), 'blockquote'))
+              document.execCommand('formatBlock', false, active ? 'p' : 'blockquote')
+              break
+            }
+            case 'bulletList':
+              document.execCommand('insertUnorderedList')
+              break
+            case 'orderedList':
+              document.execCommand('insertOrderedList')
+              break
+            case 'indent':
+              document.execCommand('indent')
+              break
+            case 'outdent':
+              document.execCommand('outdent')
+              break
+            case 'alignLeft':
+              document.execCommand('justifyLeft')
+              break
+            case 'alignCenter':
+              document.execCommand('justifyCenter')
+              break
+            case 'alignRight':
+              document.execCommand('justifyRight')
+              break
+            case 'alignJustify':
+              document.execCommand('justifyFull')
+              break
+            case 'undo':
+              document.execCommand('undo')
+              break
+            case 'redo':
+              document.execCommand('redo')
+              break
+            case 'clearFormatting':
+              document.execCommand('removeFormat')
+              document.execCommand('formatBlock', false, 'p')
+              document.execCommand('justifyLeft')
+              break
+            case 'unlink':
+              document.execCommand('unlink')
+              break
+          }
+        })
+      },
+      setFontSize: async (fontSize) => {
+        run(() => applyFontSize(fontSize))
+      },
+      setTextColor: async (color) => {
+        run(() => {
+          if (!color) document.execCommand('removeFormat')
+          else document.execCommand('foreColor', false, color)
+        })
+      },
+      setHighlightColor: async (color) => {
+        run(() => {
+          if (!color) {
+            document.execCommand('hiliteColor', false, 'transparent')
+            document.execCommand('backColor', false, 'transparent')
+          } else if (!document.execCommand('hiliteColor', false, color)) {
+            document.execCommand('backColor', false, color)
+          }
+        })
+      },
+      setLink: async (rawHref) => {
+        const href = sanitizeHref(rawHref)
+        if (!href) return
+        run(() => {
+          const selection = window.getSelection()
+          if (!selection || selection.rangeCount === 0) return
+          if (selection.getRangeAt(0).collapsed) {
+            selectionHtml(
+              `<a href="${href.replace(/&/g, '&amp;').replace(/"/g, '&quot;')}" target="_blank" rel="noopener noreferrer">${rawHref.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</a>`
+            )
+          } else {
+            document.execCommand('createLink', false, href)
+            document.querySelectorAll<HTMLAnchorElement>('a[href]').forEach((link) => {
+              link.target = '_blank'
+              link.rel = 'noopener noreferrer'
+            })
+          }
+        })
+      },
+      getSelectedText: async () => {
+        const root = editorRef.current
+        if (!root) return ''
+        root.focus()
+        restoreRange(root, savedRangeRef.current)
+        return window.getSelection()?.toString() ?? ''
+      },
+      insertInternalLink: async (linkHtml) => {
+        run(() => selectionHtml(linkHtml))
+      },
+      focusEditor: async () => {
+        editorRef.current?.focus()
+        if (editorRef.current) restoreRange(editorRef.current, savedRangeRef.current)
+      }
+    }),
+    [rememberSelection, run, scheduleEmit]
+  )
+
+  useEffect(() => {
+    const root = editorRef.current
+    if (!root) return
+    if (html === lastEmittedHtmlRef.current) return
+    const nextHtml = html || '<p></p>'
+    if (root.innerHTML !== nextHtml) root.innerHTML = nextHtml
+  }, [html])
+
+  useEffect(() => {
+    const root = editorRef.current
+    if (!root) return undefined
+
+    const selectionListener = (): void => rememberSelection()
+    document.addEventListener('selectionchange', selectionListener)
+
+    const observer = new ResizeObserver(() => {
+      const height = Math.max(64, Math.ceil(root.scrollHeight + 20))
+      void onHeightChange(height)
+    })
+    observer.observe(root)
+    void onHeightChange(Math.max(64, Math.ceil(root.scrollHeight + 20)))
+
+    return () => {
+      document.removeEventListener('selectionchange', selectionListener)
+      observer.disconnect()
+      if (emitTimerRef.current) clearTimeout(emitTimerRef.current)
+    }
+  }, [onHeightChange, rememberSelection])
+
+  return (
+    <main
+      className="notes-rich-root"
+      style={
+        {
+          '--text': textColor,
+          '--muted': mutedColor,
+          '--border': borderColor,
+          '--surface': surfaceColor,
+          '--accent': accentColor
+        } as React.CSSProperties
+      }
+    >
+      <div
+        ref={editorRef}
+        className="notes-editor"
+        contentEditable
+        suppressContentEditableWarning
+        role="textbox"
+        aria-multiline="true"
+        aria-label="Текстовый блок"
+        data-placeholder={plainText.trim() ? '' : 'Начните писать…'}
+        onFocus={() => {
+          rememberSelection()
+          void onFocusEditor()
+        }}
+        onInput={() => {
+          rememberSelection()
+          scheduleEmit()
+        }}
+        onKeyUp={rememberSelection}
+        onMouseUp={rememberSelection}
+      />
+      <style>{styles}</style>
+    </main>
+  )
+}
+
+const styles = `
+  html, body, #root { margin: 0; width: 100%; min-height: 1px; background: transparent; }
+  * { box-sizing: border-box; }
+  body { overflow: hidden; }
+  .notes-rich-root {
+    width: 100%;
+    min-height: 64px;
+    color: var(--text);
+    background: transparent;
+    font: 17px/1.55 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .notes-editor {
+    width: 100%;
+    min-height: 64px;
+    padding: 7px 2px 9px;
+    outline: none;
+    overflow-wrap: anywhere;
+    caret-color: var(--accent);
+  }
+  .notes-editor:empty::before {
+    content: attr(data-placeholder);
+    color: var(--muted);
+    pointer-events: none;
+  }
+  .notes-editor p { margin: 0 0 0.72em; }
+  .notes-editor p:last-child { margin-bottom: 0; }
+  .notes-editor strong, .notes-editor b { font-weight: 700; }
+  .notes-editor em, .notes-editor i { font-style: italic; }
+  .notes-editor u { text-decoration: underline; }
+  .notes-editor s, .notes-editor strike { text-decoration: line-through; }
+  .notes-editor code {
+    padding: 1px 5px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.9em;
+  }
+  .notes-editor blockquote {
+    margin: 0.5em 0;
+    padding: 3px 0 3px 12px;
+    border-left: 3px solid var(--accent);
+    color: var(--muted);
+  }
+  .notes-editor ul, .notes-editor ol { margin: 0.5em 0; padding-left: 1.55em; }
+  .notes-editor li { margin: 0.22em 0; }
+  .notes-editor a { color: var(--accent); text-decoration: underline; }
+  .notes-editor [data-study-internal-link="true"] {
+    display: inline;
+    padding: 1px 4px;
+    border-radius: 5px;
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    font-weight: 600;
+  }
+`
