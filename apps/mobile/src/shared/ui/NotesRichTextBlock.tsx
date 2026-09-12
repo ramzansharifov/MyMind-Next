@@ -105,7 +105,7 @@ export function NotesRichTextBlock({
   formattingChanged(state: NotesRichTextFormattingState): void
 }): React.JSX.Element {
   const theme = useTheme()
-  const [height, setHeight] = useState(92)
+  const [height, setHeight] = useState(32)
   const blockRef = useRef(block)
   const updateRef = useRef(update)
   const activateRef = useRef(activate)
@@ -141,14 +141,14 @@ export function NotesRichTextBlock({
   )
 
   const handleHeight = useCallback(async (nextHeight: number): Promise<void> => {
-    const normalized = Math.max(72, Math.min(1600, Math.ceil(nextHeight)))
+    const normalized = Math.max(32, Math.min(1600, Math.ceil(nextHeight)))
     setHeight((current) => (Math.abs(current - normalized) >= 2 ? normalized : current))
   }, [])
 
   const dom = useMemo(
     () => ({
       scrollEnabled: false,
-      style: { height: Math.max(72, height), backgroundColor: 'transparent' }
+      style: { height: Math.max(32, height), backgroundColor: 'transparent' }
     }),
     [height]
   )
@@ -156,10 +156,9 @@ export function NotesRichTextBlock({
   return (
     <View
       style={{
-        minHeight: Math.max(72, height),
+        minHeight: Math.max(32, height),
         overflow: 'hidden',
-        borderRadius: 10,
-        backgroundColor: active ? theme.accent + '05' : 'transparent'
+        backgroundColor: 'transparent'
       }}
     >
       <StableNotesRichTextDom
