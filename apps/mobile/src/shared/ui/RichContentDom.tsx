@@ -142,7 +142,7 @@ function HtmlContent({
     if (internalLink) {
       event.preventDefault()
       event.stopPropagation()
-      if (!onOpenInternalLink) return
+      if (internalLink.dataset.missing === 'true' || !onOpenInternalLink) return
       const materialId = internalLink.dataset.materialId ?? ''
       if (!materialId) return
       void onOpenInternalLink({
@@ -292,6 +292,12 @@ const styles = `
     color: var(--accent);
     background: color-mix(in srgb, var(--accent) 12%, transparent);
     font-weight: 600;
+  }
+  .html-content [data-study-internal-link="true"][data-missing="true"] {
+    cursor: default;
+    color: var(--muted);
+    text-decoration: line-through;
+    background: transparent;
   }
   .markdown-content > :first-child { margin-top: 0; }
   .markdown-content > :last-child { margin-bottom: 0; }
