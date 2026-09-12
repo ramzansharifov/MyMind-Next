@@ -173,7 +173,7 @@ export function Row({
     <View
       style={{
         backgroundColor: theme.surface,
-        borderRadius: 12,
+        borderRadius: 16,
         borderWidth: 1,
         borderColor: theme.border,
         marginBottom: 8,
@@ -267,14 +267,14 @@ export function SearchField({
   return (
     <View
       style={{
-        minHeight: 40,
+        minHeight: 48,
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
         borderWidth: 1,
         borderColor: theme.border,
         backgroundColor: theme.surface,
-        paddingHorizontal: 12,
+        paddingHorizontal: 16,
         borderRadius: 16,
         marginBottom: 12
       }}
@@ -289,7 +289,7 @@ export function SearchField({
         clearButtonMode="while-editing"
         style={{
           flex: 1,
-          minHeight: 38,
+          minHeight: 46,
           color: theme.text,
           paddingVertical: 8,
           fontSize: 15
@@ -318,7 +318,7 @@ export function EmptyState({
         borderWidth: 1,
         borderStyle: 'dashed',
         borderColor: theme.border,
-        borderRadius: 12,
+        borderRadius: 16,
         backgroundColor: theme.surface
       }}
     >
