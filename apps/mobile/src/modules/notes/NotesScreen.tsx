@@ -1,6 +1,6 @@
 import { randomUUID } from 'expo-crypto'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { AppState, BackHandler, FlatList, ScrollView, TextInput, View } from 'react-native'
+import { AppState, BackHandler, FlatList, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 import type { NoteDocument, NoteGroup, NoteRecord, NoteSummary } from '@mymind/contracts/notes'
 import type { StudyBoardBlock } from '@mymind/contracts/study'
 import { AutosaveQueue } from '@mymind/core/autosave'
@@ -36,6 +36,148 @@ import {
 } from '../../shared/ui/primitives'
 import { useTheme } from '../../shared/ui/theme'
 
+type NoteEditorMode = 'edit' | 'read'
+type NoteSaveState = 'saved' | 'dirty' | 'saving' | 'error'
+type NotesLayout = 'grid' | 'list'
+type NotesSort = 'updated' | 'title'
+
+function sortNotes(notes: NoteSummary[], sort: NotesSort): NoteSummary[] {
+  return [...notes].sort((left, right) =>
+    sort === 'title'
+      ? left.title.localeCompare(right.title, 'ru-RU')
+      : right.updatedAt - left.updatedAt
+  )
+}
+
+function noteSaveLabel(state: NoteSaveState): string {
+  if (state === 'saving') return 'Сохранение…'
+  if (state === 'dirty') return 'Есть изменения'
+  if (state === 'error') return 'Ошибка сохранения'
+  return 'Сохранено'
+}
+
+function MobileNoteCard({
+  note,
+  groupTitle,
+  layout,
+  onOpen,
+  onRename,
+  onMove,
+  onDelete
+}: {
+  note: NoteSummary
+  groupTitle?: string
+  layout: NotesLayout
+  onOpen(): void
+  onRename(): void
+  onMove(): void
+  onDelete(): void
+}): React.JSX.Element {
+  const theme = useTheme()
+  const subtitle = note.plainText.trim()
+  const date = new Date(note.updatedAt).toLocaleDateString('ru-RU', {
+    day: 'numeric',
+    month: 'short'
+  })
+  const menu = (
+    <ActionMenu
+      title={note.title}
+      items={[
+        { label: 'Переименовать', icon: 'edit', onPress: onRename },
+        { label: 'Переместить', icon: 'move', onPress: onMove },
+        { label: 'Удалить заметку', icon: 'delete', danger: true, onPress: onDelete }
+      ]}
+    />
+  )
+
+  if (layout === 'list') {
+    return (
+      <WorkspaceNodeCard
+        title={note.title}
+        subtitle={[subtitle.slice(0, 160), groupTitle, date].filter(Boolean).join(' · ')}
+        leadingIcon="notes"
+        onPress={onOpen}
+        action={menu}
+      />
+    )
+  }
+
+  return (
+    <View
+      style={{
+        minHeight: 158,
+        marginBottom: 8,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: theme.border,
+        borderRadius: 17,
+        backgroundColor: theme.surface
+      }}
+    >
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={note.title}
+        onPress={onOpen}
+        style={({ pressed }) => ({
+          flex: 1,
+          minHeight: 118,
+          gap: 9,
+          paddingHorizontal: 13,
+          paddingTop: 13,
+          paddingBottom: 9,
+          backgroundColor: pressed ? theme.raised : 'transparent'
+        })}
+      >
+        <View
+          style={{
+            width: 36,
+            height: 36,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: 11,
+            borderWidth: 1,
+            borderColor: theme.accent + '28',
+            backgroundColor: theme.accent + '12'
+          }}
+        >
+          <VisualIconBadge value="notebook" />
+        </View>
+        <Text
+          numberOfLines={2}
+          style={{ color: theme.text, fontSize: 14.5, lineHeight: 20, fontWeight: '700' }}
+        >
+          {note.title}
+        </Text>
+        {subtitle ? (
+          <Text
+            numberOfLines={3}
+            style={{ color: theme.muted, fontSize: 11.5, lineHeight: 16 }}
+          >
+            {subtitle}
+          </Text>
+        ) : null}
+      </Pressable>
+      <View
+        style={{
+          minHeight: 42,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 6,
+          paddingLeft: 12,
+          paddingRight: 6,
+          borderTopWidth: 1,
+          borderTopColor: theme.border
+        }}
+      >
+        <Text numberOfLines={1} style={{ flex: 1, color: theme.muted, fontSize: 10.5 }}>
+          {[groupTitle, date].filter(Boolean).join(' · ')}
+        </Text>
+        {menu}
+      </View>
+    </View>
+  )
+}
+
 function noteMatches(note: NoteSummary, query: string): boolean {
   const normalized = query.trim().toLocaleLowerCase()
   if (!normalized) return true
@@ -62,6 +204,12 @@ export function NotesScreen({
   const [document, setDocument] = useState<NoteDocument | null>(null)
   const [editorError, setEditorError] = useState('')
   const [closing, setClosing] = useState(false)
+  const [editorMode, setEditorMode] = useState<NoteEditorMode>('edit')
+  const [modeChanging, setModeChanging] = useState(false)
+  const [saveState, setSaveState] = useState<NoteSaveState>('saved')
+  const [layout, setLayout] = useState<NotesLayout>('list')
+  const [sort, setSort] = useState<NotesSort>('updated')
+  const [hideEmptyGroups, setHideEmptyGroups] = useState(false)
   const queueRef = useRef<AutosaveQueue<NoteDocument> | null>(null)
 
   const openNote = useCallback(
@@ -71,15 +219,27 @@ export function NotesScreen({
         setRecord(next)
         setDocument(next.document)
         setEditorError('')
+        setEditorMode('edit')
+        setSaveState('saved')
         queueRef.current = new AutosaveQueue<NoteDocument>(
           async (value) => {
-            const saved = await api.saveNote({ id, document: value })
-            setRecord(saved)
-            notifyDataChanged()
+            setSaveState('saving')
+            try {
+              const saved = await api.saveNote({ id, document: value })
+              setRecord(saved)
+              setSaveState('saved')
+              notifyDataChanged()
+            } catch (reason) {
+              setSaveState('error')
+              throw reason
+            }
           },
           {
             delayMs: 350,
-            onError: (reason) => setEditorError(messageFor(reason))
+            onError: (reason) => {
+              setSaveState('error')
+              setEditorError(messageFor(reason))
+            }
           }
         )
       } catch (reason) {
@@ -92,8 +252,15 @@ export function NotesScreen({
   const flush = useCallback(async (): Promise<void> => {
     const queue = queueRef.current
     if (!queue) return
-    await queue.flush()
-    setEditorError('')
+    if (queue.hasPendingChanges()) setSaveState('saving')
+    try {
+      await queue.flush()
+      setSaveState('saved')
+      setEditorError('')
+    } catch (reason) {
+      setSaveState('error')
+      throw reason
+    }
   }, [])
 
   const closeEditor = useCallback(async (): Promise<void> => {
@@ -104,6 +271,8 @@ export function NotesScreen({
       queueRef.current = null
       setRecord(null)
       setDocument(null)
+      setEditorMode('edit')
+      setSaveState('saved')
       overview.refresh()
     } catch (reason) {
       setEditorError(messageFor(reason))
@@ -143,7 +312,22 @@ export function NotesScreen({
   const changeDocument = (next: NoteDocument): void => {
     setDocument(next)
     setEditorError('')
+    setSaveState('dirty')
     queueRef.current?.schedule(next)
+  }
+
+  const changeEditorMode = (nextMode: NoteEditorMode): void => {
+    if (nextMode === editorMode || modeChanging) return
+    if (nextMode === 'edit') {
+      setEditorMode('edit')
+      return
+    }
+
+    setModeChanging(true)
+    void flush()
+      .then(() => setEditorMode('read'))
+      .catch((reason) => setEditorError(messageFor(reason)))
+      .finally(() => setModeChanging(false))
   }
 
   const openLinkedBoard = useCallback(
@@ -262,6 +446,54 @@ export function NotesScreen({
     })
   }
 
+  const renameListedNote = (note: NoteSummary): void => {
+    setForm({
+      title: 'Переименовать заметку',
+      initial: { title: note.title },
+      fields: [textField('title', 'Название')],
+      save: (values) => {
+        const input = notesValidation.renameNoteInputSchema.parse({
+          id: note.id,
+          title: values.title
+        })
+        api.renameNote(input.id, input.title)
+        overview.refresh()
+        notifyDataChanged()
+      }
+    })
+  }
+
+  const moveListedNote = (note: NoteSummary): void => {
+    setForm({
+      title: 'Переместить заметку',
+      initial: { groupId: note.groupId },
+      fields: [choiceField('groupId', 'Группа', groupChoices)],
+      save: (values) => {
+        const input = notesValidation.moveNoteInputSchema.parse({
+          id: note.id,
+          groupId: values.groupId
+        })
+        api.moveNote(input.id, input.groupId)
+        overview.refresh()
+        notifyDataChanged()
+      }
+    })
+  }
+
+  const deleteListedNote = (note: NoteSummary): void => {
+    void confirm({
+      title: 'Удалить заметку?',
+      description: 'Заметка и её локальные данные будут удалены без возможности восстановления.',
+      tone: 'danger',
+      onConfirm: () => {
+        api.deleteNote(note.id)
+        overview.refresh()
+        notifyDataChanged()
+        toast.success('Заметка удалена')
+      }
+    })
+  }
+
   const deleteCurrentNote = (): void => {
     if (!record) return
     const id = record.id
@@ -297,6 +529,7 @@ export function NotesScreen({
           onChange={changeDocument}
           createId={randomUUID}
           presentation="notes-clean"
+          mode={editorMode}
           importAsset={(kind) => documentAssets.importAsset(record.id, kind)}
           openAsset={documentAssets.openAsset}
           resolveAssetUri={documentAssets.resolveAssetUri}
@@ -328,37 +561,99 @@ export function NotesScreen({
                 disabled={closing}
                 onPress={() => void closeEditor()}
               />
-              <TextInput
-                accessibilityLabel="Название заметки"
-                value={record.title}
-                onChangeText={(title) =>
-                  setRecord((current) => (current ? { ...current, title } : current))
-                }
-                onEndEditing={() => {
-                  try {
-                    const input = notesValidation.renameNoteInputSchema.parse({
-                      id: record.id,
-                      title: record.title
-                    })
-                    const renamed = api.renameNote(input.id, input.title)
-                    setRecord((current) => (current ? { ...current, ...renamed } : current))
-                    overview.refresh()
-                  } catch (reason) {
-                    setEditorError(messageFor(reason))
-                  }
-                }}
+              <View style={{ flex: 1, minWidth: 0 }}>
+                {editorMode === 'edit' ? (
+                  <TextInput
+                    accessibilityLabel="Название заметки"
+                    value={record.title}
+                    onChangeText={(title) =>
+                      setRecord((current) => (current ? { ...current, title } : current))
+                    }
+                    onEndEditing={() => {
+                      try {
+                        const input = notesValidation.renameNoteInputSchema.parse({
+                          id: record.id,
+                          title: record.title
+                        })
+                        const renamed = api.renameNote(input.id, input.title)
+                        setRecord((current) => (current ? { ...current, ...renamed } : current))
+                        overview.refresh()
+                      } catch (reason) {
+                        setEditorError(messageFor(reason))
+                      }
+                    }}
+                    style={{
+                      minHeight: 34,
+                      color: theme.text,
+                      paddingHorizontal: 4,
+                      paddingVertical: 2,
+                      fontSize: 20,
+                      lineHeight: 25,
+                      fontWeight: '700'
+                    }}
+                  />
+                ) : (
+                  <Text
+                    numberOfLines={2}
+                    style={{
+                      color: theme.text,
+                      paddingHorizontal: 4,
+                      fontSize: 20,
+                      lineHeight: 25,
+                      fontWeight: '700'
+                    }}
+                  >
+                    {record.title}
+                  </Text>
+                )}
+                <Text
+                  style={{
+                    marginTop: 1,
+                    paddingHorizontal: 4,
+                    color:
+                      saveState === 'error'
+                        ? theme.error
+                        : saveState === 'dirty'
+                          ? '#f59e0b'
+                          : saveState === 'saved'
+                            ? '#22c55e'
+                            : theme.accent,
+                    fontSize: 10.5,
+                    fontWeight: '600'
+                  }}
+                >
+                  {noteSaveLabel(saveState)}
+                </Text>
+              </View>
+              <View
                 style={{
-                  flex: 1,
-                  minWidth: 0,
-                  minHeight: 44,
-                  color: theme.text,
-                  paddingHorizontal: 4,
-                  paddingVertical: 6,
-                  fontSize: 20,
-                  lineHeight: 25,
-                  fontWeight: '700'
+                  flexDirection: 'row',
+                  padding: 3,
+                  borderWidth: 1,
+                  borderColor: theme.border,
+                  borderRadius: 12,
+                  backgroundColor: theme.surface
                 }}
-              />
+              >
+                <IconButton
+                  label="Режим чтения"
+                  icon="notes"
+                  compact
+                  ghost
+                  selected={editorMode === 'read'}
+                  disabled={modeChanging || closing}
+                  onPress={() => changeEditorMode('read')}
+                />
+                <IconButton
+                  label="Режим редактирования"
+                  icon="edit"
+                  compact
+                  ghost
+                  selected={editorMode === 'edit'}
+                  disabled={modeChanging || closing}
+                  onPress={() => changeEditorMode('edit')}
+                />
+              </View>
               <ActionMenu
                 disabled={closing}
                 title="Заметка"
@@ -384,20 +679,18 @@ export function NotesScreen({
     )
   }
 
-  const allNotes = [...(overview.data?.notes ?? [])].sort(
-    (left, right) => right.updatedAt - left.updatedAt
-  )
+  const allNotes = sortNotes(overview.data?.notes ?? [], sort)
   const selectedGroup = selectedGroupId
     ? (overview.data?.groups.find((group) => group.id === selectedGroupId) ?? null)
     : null
   const searchedNotes = allNotes.filter((note) => noteMatches(note, query))
   const normalizedQuery = query.trim().toLocaleLowerCase('ru-RU')
   const visibleGroups = (overview.data?.groups ?? []).filter((group) => {
+    const groupNotes = overview.data?.notes.filter((note) => note.groupId === group.id) ?? []
+    if (hideEmptyGroups && groupNotes.length === 0) return false
     if (!normalizedQuery) return true
     if (group.title.toLocaleLowerCase('ru-RU').includes(normalizedQuery)) return true
-    return (overview.data?.notes ?? []).some(
-      (note) => note.groupId === group.id && noteMatches(note, query)
-    )
+    return groupNotes.some((note) => noteMatches(note, query))
   })
   const notes =
     view === 'ungrouped'
@@ -405,7 +698,7 @@ export function NotesScreen({
       : view === 'groups' && selectedGroup
         ? searchedNotes.filter((note) => note.groupId === selectedGroup.id)
         : searchedNotes
-  const visibleNotes = view === 'recent' ? notes.slice(0, 20) : notes
+  const visibleNotes = notes
 
   const createActions =
     view === 'groups' && !selectedGroup
@@ -476,6 +769,53 @@ export function NotesScreen({
         )}
 
         <SearchField value={query} onChangeText={setQuery} />
+
+        {view === 'groups' && !selectedGroup ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 8 }}
+          >
+            <Button
+              label="Скрыть пустые"
+              compact
+              selected={hideEmptyGroups}
+              onPress={() => setHideEmptyGroups((current) => !current)}
+            />
+          </ScrollView>
+        ) : (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 8 }}
+          >
+            <Button
+              label="Недавние"
+              compact
+              icon="clock"
+              selected={sort === 'updated'}
+              onPress={() => setSort('updated')}
+            />
+            <Button
+              label="По названию"
+              compact
+              selected={sort === 'title'}
+              onPress={() => setSort('title')}
+            />
+            <Button
+              label="Список"
+              compact
+              selected={layout === 'list'}
+              onPress={() => setLayout('list')}
+            />
+            <Button
+              label="Сетка"
+              compact
+              selected={layout === 'grid'}
+              onPress={() => setLayout('grid')}
+            />
+          </ScrollView>
+        )}
       </View>
 
       {overview.error ? <ErrorState message={overview.error} retry={overview.refresh} /> : null}
@@ -541,8 +881,11 @@ export function NotesScreen({
         />
       ) : (
         <FlatList
+          key={`notes-${layout}`}
           data={visibleNotes}
           keyExtractor={(item) => item.id}
+          numColumns={layout === 'grid' ? 2 : 1}
+          columnWrapperStyle={layout === 'grid' ? { gap: 8 } : undefined}
           refreshing={overview.loading}
           onRefresh={overview.refresh}
           contentContainerStyle={{ paddingBottom: 88 }}
@@ -562,18 +905,17 @@ export function NotesScreen({
           renderItem={({ item }) => {
             const noteGroup = overview.data?.groups.find((group) => group.id === item.groupId)
             return (
-              <WorkspaceNodeCard
-                title={item.title}
-                subtitle={[
-                  item.plainText.slice(0, 160),
-                  noteGroup?.title,
-                  new Date(item.updatedAt).toLocaleDateString('ru-RU')
-                ]
-                  .filter(Boolean)
-                  .join(' · ')}
-                leadingIcon="notes"
-                onPress={() => openNote(item.id)}
-              />
+              <View style={layout === 'grid' ? { flex: 1, maxWidth: '50%' } : undefined}>
+                <MobileNoteCard
+                  note={item}
+                  groupTitle={noteGroup?.title}
+                  layout={layout}
+                  onOpen={() => openNote(item.id)}
+                  onRename={() => renameListedNote(item)}
+                  onMove={() => moveListedNote(item)}
+                  onDelete={() => deleteListedNote(item)}
+                />
+              </View>
             )
           }}
         />
