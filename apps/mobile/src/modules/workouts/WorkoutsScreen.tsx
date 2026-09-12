@@ -190,7 +190,7 @@ export function WorkoutsScreen(): React.JSX.Element {
 
   const header = (
     <View style={{ gap: 10, paddingBottom: 12 }}>
-      <ModuleTabs
+      <ModuleTabs<Tab>
         items={tabs}
         value={tab}
         onChange={(next) => {
