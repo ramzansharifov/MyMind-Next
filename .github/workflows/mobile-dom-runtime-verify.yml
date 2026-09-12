@@ -31,6 +31,9 @@ jobs:
       - name: Typecheck mobile
         run: npm run typecheck:mobile
 
+      - name: Rebuild native SQLite for host Node tests
+        run: npm run native:node
+
       - name: Run mobile tests
         run: npm run test:mobile
 
