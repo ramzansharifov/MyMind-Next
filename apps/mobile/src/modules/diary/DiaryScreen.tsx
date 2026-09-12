@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Animated, BackHandler, FlatList, Pressable, Text, View } from 'react-native'
+import { Animated, BackHandler, FlatList, Pressable, ScrollView, Text, View } from 'react-native'
 import {
   DIARY_COVER_TONES,
   DIARY_ICON_NAMES,
@@ -11,6 +11,17 @@ import {
   type DiarySummary
 } from '@mymind/contracts/diary'
 import * as schema from '@mymind/core/validation/diary'
+import {
+  BarChart3,
+  BookOpen,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Library,
+  Settings2,
+  SunMedium,
+  type LucideIcon
+} from 'lucide-react-native'
 import { addDays, localDateKey } from '@mymind/core/habits'
 import { useServices } from '../../app/context'
 import { useCollection } from '../../shared/hooks/useCollection'
@@ -39,7 +50,7 @@ import {
   shiftDiaryMonth
 } from './diary-presentation'
 
-type DiaryDetailView = 'day' | 'history' | 'calendar' | 'report' | 'settings'
+type DiaryDetailView = 'today' | 'reader' | 'calendar' | 'reports' | 'settings'
 
 const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 const MOOD_CHOICES = DIARY_MOODS.map((value) => ({
