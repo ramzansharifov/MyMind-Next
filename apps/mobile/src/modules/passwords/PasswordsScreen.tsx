@@ -491,55 +491,42 @@ export function PasswordsScreen(): React.JSX.Element {
   return (
     <View style={{ flex: 1 }}>
       <View style={{ gap: 10, paddingBottom: 12 }}>
+        <ModuleTabs
+          items={[
+            { id: 'items' as const, label: 'Хранилище', icon: KeyRound },
+            { id: 'favorites' as const, label: 'Избранное', icon: Heart },
+            { id: 'security' as const, label: 'Безопасность', icon: ShieldCheck }
+          ]}
+          value={tab}
+          onChange={setTab}
+        />
+
+        {tab !== 'security' ? <SearchField value={query} onChangeText={setQuery} /> : null}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: 8 }}
+          contentContainerStyle={{ gap: 8, alignItems: 'center' }}
         >
-          {[
-            { key: 'items' as const, label: 'Все' },
-            { key: 'favorites' as const, label: 'Избранное' },
-            { key: 'groups' as const, label: 'Группы' },
-            { key: 'security' as const, label: 'Безопасность' }
-          ].map((item) => (
+          <Button
+            label="Все записи"
+            selected={groupFilter === undefined}
+            onPress={() => setGroupFilter(undefined)}
+          />
+          <Button
+            label="Без группы"
+            selected={groupFilter === null}
+            onPress={() => setGroupFilter(null)}
+          />
+          {overview.groups.map((group) => (
             <Button
-              key={item.key}
-              label={item.label}
-              selected={tab === item.key}
-              onPress={() => setTab(item.key)}
+              key={group.id}
+              label={group.name}
+              selected={groupFilter === group.id}
+              onPress={() => setGroupFilter(group.id)}
             />
           ))}
+          <Button label="Управление группами" icon="folder" onPress={() => setGroupsOpen(true)} />
         </ScrollView>
-
-        {(tab === 'items' || tab === 'favorites') && (
-          <>
-            <SearchField value={query} onChangeText={setQuery} />
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: 8 }}
-            >
-              <Button
-                label="Все группы"
-                selected={groupFilter === undefined}
-                onPress={() => setGroupFilter(undefined)}
-              />
-              <Button
-                label="Без группы"
-                selected={groupFilter === null}
-                onPress={() => setGroupFilter(null)}
-              />
-              {overview.groups.map((group) => (
-                <Button
-                  key={group.id}
-                  label={group.name}
-                  selected={groupFilter === group.id}
-                  onPress={() => setGroupFilter(group.id)}
-                />
-              ))}
-            </ScrollView>
-          </>
-        )}
 
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           <Button label="Генератор" onPress={() => setGeneratorOpen(true)} />
@@ -550,27 +537,103 @@ export function PasswordsScreen(): React.JSX.Element {
       </View>
 
       <View style={{ flex: 1 }}>{content}</View>
-      {tab !== 'security' ? (
-        <MobileCreateAction
-          actions={[
-            tab === 'groups'
-              ? {
-                  key: 'group',
-                  label: 'Новая группа',
-                  description: 'Создать группу для доступов',
-                  icon: 'folder',
-                  onPress: () => editGroup()
-                }
-              : {
-                  key: 'item',
-                  label: 'Новая запись',
-                  description: 'Добавить логин или пароль',
-                  icon: 'passwords',
-                  onPress: () => openItem()
-                }
-          ]}
-        />
-      ) : null}
+      <MobileCreateAction
+        actions={[
+          {
+            key: 'item',
+            label: 'Новая запись',
+            description: 'Добавить логин или пароль',
+            icon: 'passwords',
+            onPress: () => openItem()
+          },
+          {
+            key: 'group',
+            label: 'Новая группа',
+            description: 'Создать группу для доступов',
+            icon: 'folder',
+            onPress: () => editGroup()
+          }
+        ]}
+      />
+      <AppDialog
+        open={groupsOpen}
+        onOpenChange={setGroupsOpen}
+        title="Группы"
+        description="Фильтр и управление группами хранилища"
+        icon="folder"
+        presentation="sheet"
+      >
+        <ScrollView contentContainerStyle={{ padding: 12, paddingBottom: 24 }}>
+          <WorkspaceNodeCard
+            title="Все записи"
+            subtitle={`${overview.items.length} записей`}
+            leadingIcon="passwords"
+            selected={groupFilter === undefined}
+            onPress={() => {
+              setGroupFilter(undefined)
+              setGroupsOpen(false)
+            }}
+          />
+          <WorkspaceNodeCard
+            title="Без группы"
+            subtitle={`${overview.items.filter((item) => item.groupId === null).length} записей`}
+            leadingIcon="folder"
+            selected={groupFilter === null}
+            onPress={() => {
+              setGroupFilter(null)
+              setGroupsOpen(false)
+            }}
+          />
+          {overview.groups.map((group) => (
+            <WorkspaceNodeCard
+              key={group.id}
+              title={group.name}
+              subtitle={`${overview.items.filter((item) => item.groupId === group.id).length} записей`}
+              leading={<VisualIconBadge value={group.icon} colorKey={group.color} />}
+              selected={groupFilter === group.id}
+              onPress={() => {
+                setGroupFilter(group.id)
+                setGroupsOpen(false)
+              }}
+              action={
+                <ActionMenu
+                  title={group.name}
+                  items={[
+                    {
+                      label: 'Изменить',
+                      icon: 'edit',
+                      onPress: () => {
+                        setGroupsOpen(false)
+                        editGroup(group)
+                      }
+                    },
+                    {
+                      label: 'Удалить',
+                      icon: 'delete',
+                      danger: true,
+                      onPress: () => {
+                        setGroupsOpen(false)
+                        deleteGroup(group)
+                      }
+                    }
+                  ]}
+                />
+              }
+            />
+          ))}
+          <View style={{ marginTop: 8, alignItems: 'flex-start' }}>
+            <Button
+              label="Новая группа"
+              icon="add"
+              primary
+              onPress={() => {
+                setGroupsOpen(false)
+                editGroup()
+              }}
+            />
+          </View>
+        </ScrollView>
+      </AppDialog>
       {form ? <FormSheet spec={form} close={() => setForm(null)} /> : null}
       {editingItem !== undefined ? (
         <PasswordItemEditor
