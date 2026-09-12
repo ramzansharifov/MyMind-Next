@@ -139,6 +139,7 @@ export function NotesRichTextInlineControls({
   openSettings(): void
   openLink(): void
 }): React.JSX.Element {
+  const theme = useTheme()
   return (
     <>
       <ToolIcon
@@ -203,7 +204,7 @@ export function NotesRichTextInlineControls({
           opacity: pressed ? 0.7 : 1
         })}
       >
-        <Text style={{ fontSize: 13, fontWeight: '800' }}>Aa</Text>
+        <Text style={{ color: theme.text, fontSize: 13, fontWeight: '800' }}>Aa</Text>
       </Pressable>
     </>
   )
