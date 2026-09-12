@@ -712,11 +712,12 @@ export function NotesScreen({
     )
   }
 
-  const allNotes = sortNotes(overview.data?.notes ?? [], sort)
+  const notesByRecency = sortNotes(overview.data?.notes ?? [], 'updated')
   const selectedGroup = selectedGroupId
     ? (overview.data?.groups.find((group) => group.id === selectedGroupId) ?? null)
     : null
-  const searchedNotes = allNotes.filter((note) => noteMatches(note, query))
+  const searchedNotes = notesByRecency.filter((note) => noteMatches(note, query))
+  const sortedNotes = sortNotes(searchedNotes, sort)
   const normalizedQuery = query.trim().toLocaleLowerCase('ru-RU')
   const visibleGroups = (overview.data?.groups ?? []).filter((group) => {
     const groupNotes = overview.data?.notes.filter((note) => note.groupId === group.id) ?? []
@@ -727,10 +728,10 @@ export function NotesScreen({
   })
   const notes =
     view === 'ungrouped'
-      ? searchedNotes.filter((note) => note.groupId === null)
+      ? sortedNotes.filter((note) => note.groupId === null)
       : view === 'groups' && selectedGroup
-        ? searchedNotes.filter((note) => note.groupId === selectedGroup.id)
-        : searchedNotes
+        ? sortedNotes.filter((note) => note.groupId === selectedGroup.id)
+        : sortedNotes
   const visibleNotes = notes
 
   const createActions = [
