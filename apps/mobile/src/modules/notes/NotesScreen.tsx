@@ -1,6 +1,15 @@
 import { randomUUID } from 'expo-crypto'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { AppState, BackHandler, FlatList, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
+import {
+  AppState,
+  BackHandler,
+  FlatList,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View
+} from 'react-native'
 import type { NoteDocument, NoteGroup, NoteRecord, NoteSummary } from '@mymind/contracts/notes'
 import type { StudyBoardBlock } from '@mymind/contracts/study'
 import { AutosaveQueue } from '@mymind/core/autosave'
@@ -149,10 +158,7 @@ function MobileNoteCard({
           {note.title}
         </Text>
         {subtitle ? (
-          <Text
-            numberOfLines={3}
-            style={{ color: theme.muted, fontSize: 11.5, lineHeight: 16 }}
-          >
+          <Text numberOfLines={3} style={{ color: theme.muted, fontSize: 11.5, lineHeight: 16 }}>
             {subtitle}
           </Text>
         ) : null}

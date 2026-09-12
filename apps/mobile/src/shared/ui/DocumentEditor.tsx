@@ -1,5 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
-import { FlatList, Image, Linking, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
+import {
+  FlatList,
+  Image,
+  Linking,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View
+} from 'react-native'
 import type {
   StudyAssetKind,
   StudyBlock,
@@ -28,7 +37,11 @@ import {
 } from 'lucide-react-native'
 import BoardCanvasDom from '../../modules/boards/BoardCanvasDom'
 import { AppDialog } from './AppDialog'
-import { DocumentBoardEditor, DocumentBoardReader, type OpenDocumentBoard } from './DocumentBoardBlock'
+import {
+  DocumentBoardEditor,
+  DocumentBoardReader,
+  type OpenDocumentBoard
+} from './DocumentBoardBlock'
 import { AppIcon } from './icons'
 import { NotesRichTextBlock } from './NotesRichTextBlock'
 import { NotesBlockSettingsSheet } from './NotesBlockSettings'
@@ -919,7 +932,6 @@ function NotesInsertSheet({
   )
 }
 
-
 type NotesReadNode =
   | { kind: 'block'; block: StudyBlock }
   | {
@@ -1069,7 +1081,10 @@ function NotesReadAssetBlock({
       ) : null}
 
       {block.title ? (
-        <Text selectable style={{ color: theme.text, fontSize: 14, lineHeight: 20, fontWeight: '600' }}>
+        <Text
+          selectable
+          style={{ color: theme.text, fontSize: 14, lineHeight: 20, fontWeight: '600' }}
+        >
           {block.title}
         </Text>
       ) : null}
@@ -1081,7 +1096,9 @@ function NotesReadAssetBlock({
       ) : null}
 
       {block.source.type === 'local' && localAsset && !localUri ? (
-        <Text style={{ color: theme.muted, fontSize: 12 }}>Локальный файл не найден на этом устройстве.</Text>
+        <Text style={{ color: theme.muted, fontSize: 12 }}>
+          Локальный файл не найден на этом устройстве.
+        </Text>
       ) : null}
 
       {block.source.type === 'local' && localAsset && assetActions.openAsset ? (
