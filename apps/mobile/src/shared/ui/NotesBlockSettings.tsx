@@ -424,7 +424,10 @@ function AttachmentSettings({
                   backgroundColor: theme.surface
                 }}
               >
-                <Text numberOfLines={1} style={{ color: theme.text, fontSize: 13, fontWeight: '600' }}>
+                <Text
+                  numberOfLines={1}
+                  style={{ color: theme.text, fontSize: 13, fontWeight: '600' }}
+                >
                   {block.source.asset.name}
                 </Text>
                 <Text style={{ marginTop: 3, color: theme.muted, fontSize: 11 }}>
@@ -434,7 +437,13 @@ function AttachmentSettings({
             ) : null}
             <ChoiceRow>
               <Button
-                label={picking ? 'Выбор…' : block.source.type === 'local' && block.source.asset ? 'Заменить' : 'Выбрать'}
+                label={
+                  picking
+                    ? 'Выбор…'
+                    : block.source.type === 'local' && block.source.asset
+                      ? 'Заменить'
+                      : 'Выбрать'
+                }
                 selected
                 disabled={!importAsset || picking}
                 onPress={() => void chooseLocal()}
@@ -471,8 +480,7 @@ function AttachmentSettings({
               style={{
                 minHeight: 48,
                 borderWidth: 1,
-                borderColor:
-                  normalizedUrl && !urlValid ? '#fbbf24' : theme.border,
+                borderColor: normalizedUrl && !urlValid ? '#fbbf24' : theme.border,
                 borderRadius: 12,
                 backgroundColor: theme.surface,
                 color: theme.text,

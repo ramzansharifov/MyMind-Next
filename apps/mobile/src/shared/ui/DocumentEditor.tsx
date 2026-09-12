@@ -320,11 +320,14 @@ function BlockInput({
               color: block.color ?? theme.text,
               backgroundColor:
                 block.backgroundColor ??
-                (clean && block.backgroundScope === 'container' ? theme.raised : inputStyle.backgroundColor),
+                (clean && block.backgroundScope === 'container'
+                  ? theme.raised
+                  : inputStyle.backgroundColor),
               fontWeight: '700',
               fontSize: block.level === 1 ? 26 : block.level === 2 ? 22 : 19,
               textAlign: block.alignment ?? 'left',
-              borderRadius: clean && block.backgroundScope === 'container' ? 10 : inputStyle.borderRadius
+              borderRadius:
+                clean && block.backgroundScope === 'container' ? 10 : inputStyle.borderRadius
             }}
           />
           {!clean ? (
@@ -1000,9 +1003,7 @@ export function DocumentEditor({
     const source = currentDocument.blocks[index]
     if (!source) return
     const copy: StudyBlock =
-      source.type === 'board'
-        ? { id: createId(), type: 'board' }
-        : { ...source, id: createId() }
+      source.type === 'board' ? { id: createId(), type: 'board' } : { ...source, id: createId() }
     const blocks = currentDocument.blocks.slice()
     blocks.splice(index + 1, 0, copy)
     emit({ ...currentDocument, blocks })

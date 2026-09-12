@@ -117,9 +117,7 @@ const StudyInternalLinkNode = Node.create({
           return value === 1 || value === 2 || value === 3 ? value : null
         },
         renderHTML: (attributes) =>
-          attributes.headingLevel
-            ? { 'data-heading-level': String(attributes.headingLevel) }
-            : {}
+          attributes.headingLevel ? { 'data-heading-level': String(attributes.headingLevel) } : {}
       },
       labelMode: {
         default: 'auto',
