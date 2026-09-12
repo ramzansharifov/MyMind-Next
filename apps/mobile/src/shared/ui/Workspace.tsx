@@ -21,7 +21,7 @@ export function WorkspacePanel({
       style={{
         borderWidth: 1,
         borderColor: theme.border,
-        borderRadius: 12,
+        borderRadius: 16,
         backgroundColor: theme.surface,
         overflow: 'hidden'
       }}
@@ -29,12 +29,12 @@ export function WorkspacePanel({
       {title || description || icon || action ? (
         <View
           style={{
-            minHeight: 80,
+            minHeight: 64,
             flexDirection: 'row',
             alignItems: 'center',
             gap: 12,
             paddingHorizontal: 20,
-            paddingVertical: 16,
+            paddingVertical: 12,
             borderBottomWidth: 1,
             borderBottomColor: theme.border
           }}
