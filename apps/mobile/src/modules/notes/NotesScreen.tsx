@@ -140,7 +140,7 @@ function MobileNoteCard({
             backgroundColor: theme.accent + '12'
           }}
         >
-          <VisualIconBadge value="notebook" />
+          <VisualIconBadge value="notes" />
         </View>
         <Text
           numberOfLines={2}
