@@ -49,7 +49,7 @@ export function NotesScreen({
   onOpenBoard?: (boardId: string) => void
   onImmersiveChange?: (immersive: boolean) => void
 }): React.JSX.Element {
-  const { notes: api, boards, documentAssets } = useServices()
+  const { notes: api, boards, study, documentAssets } = useServices()
   const theme = useTheme()
   const confirm = useConfirmation()
   const toast = useToast()
@@ -302,6 +302,13 @@ export function NotesScreen({
           resolveAssetUri={documentAssets.resolveAssetUri}
           saveRecordedAudio={(input) => documentAssets.saveRecordedAudio(record.id, input)}
           openBoard={openLinkedBoard}
+          searchInternalLinkTargets={(linkQuery) =>
+            study.searchInternalLinkTargets({
+              query: linkQuery,
+              currentMaterialId: record.id,
+              limit: 40
+            })
+          }
           onAssetError={(reason) => setEditorError(messageFor(reason))}
           header={
             <View

@@ -49,7 +49,7 @@ function targetSubtitle(target: StudyInternalLinkTarget): string {
   return [kind, path].filter(Boolean).join(' · ')
 }
 
-function StudyInternalLinkPicker({
+export function StudyInternalLinkPicker({
   initialLink,
   searchTargets,
   save,

@@ -9,11 +9,8 @@ import type {
   StudyInternalLinkTarget,
   StudyLocalAsset
 } from '@mymind/contracts/study'
-import { designTokens } from '@mymind/design'
+import { appearanceTokens, designTokens } from '@mymind/design'
 import {
-  AlignCenter,
-  AlignLeft,
-  AlignRight,
   AudioLines,
   Code2,
   FileText,
@@ -23,15 +20,24 @@ import {
   Paperclip,
   Presentation,
   Sigma,
-  SlidersHorizontal,
   Type,
   Video,
   Workflow,
   type LucideIcon
 } from 'lucide-react-native'
+import BoardCanvasDom from '../../modules/boards/BoardCanvasDom'
 import { AppDialog } from './AppDialog'
 import { DocumentBoardEditor, type OpenDocumentBoard } from './DocumentBoardBlock'
 import { AppIcon } from './icons'
+import { NotesRichTextBlock } from './NotesRichTextBlock'
+import { NotesBlockSettingsSheet } from './NotesBlockSettings'
+import {
+  DEFAULT_NOTES_RICH_TEXT_STATE,
+  NotesQuickLinkDialog,
+  NotesRichTextInlineControls,
+  NotesRichTextSettingsSheet
+} from './NotesRichTextControls'
+import type { NotesRichTextDomRef, NotesRichTextFormattingState } from './NotesRichTextDom'
 import { StudyRichTextEditor } from './StudyRichTextEditor'
 import { Button, Label } from './primitives'
 import { useTheme } from './theme'
@@ -260,6 +266,21 @@ function BlockInput({
     fontSize: 16
   } as const
   const sourceStyle = { ...inputStyle, minHeight: 120, textAlignVertical: 'top' as const }
+  const colorScheme = theme.background === appearanceTokens.dark.background ? 'dark' : 'light'
+  const richProps = {
+    mode: 'rich' as const,
+    colorScheme,
+    textColor: theme.text,
+    mutedColor: theme.muted,
+    borderColor: theme.border,
+    surfaceColor: theme.raised,
+    accentColor: theme.accent,
+    dom: {
+      matchContents: true,
+      scrollEnabled: false,
+      style: { width: '100%' }
+    }
+  } as const
 
   switch (block.type) {
     case 'text':
@@ -296,9 +317,17 @@ function BlockInput({
             onChangeText={(text) => update({ ...block, text })}
             style={{
               ...inputStyle,
+              color: block.color ?? theme.text,
+              backgroundColor:
+                block.backgroundColor ??
+                (clean && block.backgroundScope === 'container'
+                  ? theme.raised
+                  : inputStyle.backgroundColor),
               fontWeight: '700',
               fontSize: block.level === 1 ? 26 : block.level === 2 ? 22 : 19,
-              textAlign: block.alignment ?? 'left'
+              textAlign: block.alignment ?? 'left',
+              borderRadius:
+                clean && block.backgroundScope === 'container' ? 10 : inputStyle.borderRadius
             }}
           />
           {!clean ? (
@@ -344,26 +373,129 @@ function BlockInput({
           />
         </View>
       )
-    case 'markdown':
-    case 'latex':
-    case 'mermaid':
+    case 'markdown': {
+      const viewMode = clean ? (block.viewMode ?? 'split') : 'write'
       return (
-        <TextInput
-          accessibilityLabel={`${block.type} блок`}
-          multiline
-          autoCapitalize="none"
-          autoCorrect={false}
-          value={block.source}
-          onChangeText={(source) => update({ ...block, source })}
-          style={{
-            ...sourceStyle,
-            fontFamily: 'monospace',
-            backgroundColor: clean ? theme.surface : theme.raised,
-            borderRadius: clean ? 12 : designTokens.radius.md,
-            paddingHorizontal: 12
-          }}
-        />
+        <View style={{ gap: 10 }}>
+          {viewMode !== 'preview' ? (
+            <TextInput
+              accessibilityLabel="Markdown блок"
+              multiline
+              autoCapitalize="none"
+              autoCorrect={false}
+              value={block.source}
+              onChangeText={(source) => update({ ...block, source })}
+              style={{
+                ...sourceStyle,
+                fontFamily: 'monospace',
+                backgroundColor: clean ? theme.surface : theme.raised,
+                borderRadius: clean ? 12 : designTokens.radius.md,
+                paddingHorizontal: 12
+              }}
+            />
+          ) : null}
+          {clean && viewMode !== 'write' ? (
+            <View
+              style={{
+                padding: 12,
+                borderWidth: 1,
+                borderColor: theme.border,
+                borderRadius: 12,
+                backgroundColor: theme.surface
+              }}
+            >
+              <BoardCanvasDom {...richProps} kind={'markdown' as const} source={block.source} />
+            </View>
+          ) : null}
+        </View>
       )
+    }
+    case 'latex': {
+      const viewMode = clean ? (block.viewMode ?? 'split') : 'write'
+      return (
+        <View style={{ gap: 10 }}>
+          {viewMode !== 'preview' ? (
+            <TextInput
+              accessibilityLabel="LaTeX блок"
+              multiline
+              autoCapitalize="none"
+              autoCorrect={false}
+              value={block.source}
+              onChangeText={(source) => update({ ...block, source })}
+              style={{
+                ...sourceStyle,
+                fontFamily: 'monospace',
+                backgroundColor: clean ? theme.surface : theme.raised,
+                borderRadius: clean ? 12 : designTokens.radius.md,
+                paddingHorizontal: 12
+              }}
+            />
+          ) : null}
+          {clean && viewMode !== 'write' ? (
+            <View
+              style={{
+                padding: 12,
+                borderWidth: 1,
+                borderColor: theme.border,
+                borderRadius: 12,
+                backgroundColor: theme.surface
+              }}
+            >
+              <BoardCanvasDom
+                {...richProps}
+                kind={'latex' as const}
+                source={block.source}
+                latexDisplayMode={block.displayMode ?? 'display'}
+                latexAlignment={block.alignment ?? 'center'}
+                latexScale={(block.scale ?? 100) / 100}
+              />
+            </View>
+          ) : null}
+        </View>
+      )
+    }
+    case 'mermaid': {
+      const viewMode = clean ? (block.viewMode ?? 'split') : 'write'
+      return (
+        <View style={{ gap: 10 }}>
+          {viewMode !== 'preview' ? (
+            <TextInput
+              accessibilityLabel="Mermaid блок"
+              multiline
+              autoCapitalize="none"
+              autoCorrect={false}
+              value={block.source}
+              onChangeText={(source) => update({ ...block, source })}
+              style={{
+                ...sourceStyle,
+                fontFamily: 'monospace',
+                backgroundColor: clean ? theme.surface : theme.raised,
+                borderRadius: clean ? 12 : designTokens.radius.md,
+                paddingHorizontal: 12
+              }}
+            />
+          ) : null}
+          {clean && viewMode !== 'write' ? (
+            <View
+              style={{
+                padding: 12,
+                borderWidth: 1,
+                borderColor: theme.border,
+                borderRadius: 12,
+                backgroundColor: theme.surface
+              }}
+            >
+              <BoardCanvasDom
+                {...richProps}
+                kind={'mermaid' as const}
+                source={block.source}
+                mermaidTheme={block.theme ?? (colorScheme === 'dark' ? 'dark' : 'default')}
+              />
+            </View>
+          ) : null}
+        </View>
+      )
+    }
     case 'image':
     case 'video':
       return block.source.type === 'url' ? (
@@ -393,26 +525,48 @@ function BlockInput({
       return (
         <LocalAssetEditor block={block} update={update} assetActions={assetActions} clean={clean} />
       )
-    case 'divider':
+    case 'divider': {
+      const variant = block.variant ?? 'solid'
+      const thickness = block.thickness ?? 1
+      const color =
+        !block.color || block.color.toLowerCase() === '#6d5dfc' ? theme.accent : block.color
       return (
         <View style={{ gap: 10, paddingVertical: clean ? 16 : 0 }}>
-          <View
-            style={{ height: block.thickness ?? 1, backgroundColor: block.color ?? theme.border }}
-          />
+          {variant === 'dashed' || variant === 'dotted' ? (
+            <View
+              style={{
+                height: Math.max(2, thickness),
+                borderTopWidth: thickness,
+                borderStyle: variant === 'dotted' ? 'dotted' : 'dashed',
+                borderColor: color
+              }}
+            />
+          ) : (
+            <View
+              style={{
+                alignSelf: variant === 'tapered' ? 'center' : 'stretch',
+                width: variant === 'tapered' ? '68%' : undefined,
+                height: thickness,
+                borderRadius: thickness,
+                backgroundColor: color
+              }}
+            />
+          )}
           {!clean ? (
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              {(['solid', 'tapered', 'dashed', 'dotted'] as const).map((variant) => (
+              {(['solid', 'tapered', 'dashed', 'dotted'] as const).map((nextVariant) => (
                 <Button
-                  key={variant}
-                  label={variant}
-                  selected={(block.variant ?? 'solid') === variant}
-                  onPress={() => update({ ...block, variant })}
+                  key={nextVariant}
+                  label={nextVariant}
+                  selected={variant === nextVariant}
+                  onPress={() => update({ ...block, variant: nextVariant })}
                 />
               ))}
             </View>
           ) : null}
         </View>
       )
+    }
     case 'board':
       return (
         <DocumentBoardEditor
@@ -434,7 +588,7 @@ function ToolbarButton({
   onPress
 }: {
   label: string
-  icon?: 'back' | 'forward' | 'settings' | 'delete'
+  icon?: 'back' | 'forward' | 'settings' | 'delete' | 'copy'
   selected?: boolean
   disabled?: boolean
   danger?: boolean
@@ -489,7 +643,12 @@ function NotesBlockToolbar({
   update,
   move,
   remove,
-  openSettings
+  duplicate,
+  openSettings,
+  richEditor,
+  richState,
+  openRichSettings,
+  openQuickLink
 }: {
   block: StudyBlock
   index: number
@@ -497,7 +656,12 @@ function NotesBlockToolbar({
   update(next: StudyBlock): void
   move(direction: -1 | 1): void
   remove(): void
+  duplicate(): void
   openSettings(): void
+  richEditor: NotesRichTextDomRef | null
+  richState: NotesRichTextFormattingState
+  openRichSettings(): void
+  openQuickLink(): void
 }): React.JSX.Element {
   const theme = useTheme()
 
@@ -537,6 +701,15 @@ function NotesBlockToolbar({
           </Text>
         </View>
 
+        {block.type === 'text' ? (
+          <NotesRichTextInlineControls
+            editor={richEditor}
+            state={richState}
+            openSettings={openRichSettings}
+            openLink={openQuickLink}
+          />
+        ) : null}
+
         {block.type === 'heading'
           ? ([1, 2, 3] as const).map((level) => (
               <ToolbarButton
@@ -565,160 +738,13 @@ function NotesBlockToolbar({
 
         <ToolbarButton label="↑" disabled={index === 0} onPress={() => move(-1)} />
         <ToolbarButton label="↓" disabled={index === count - 1} onPress={() => move(1)} />
-        <ToolbarButton label="Настройки блока" icon="settings" onPress={openSettings} />
+        <ToolbarButton label="Дублировать блок" icon="copy" onPress={duplicate} />
+        {block.type !== 'text' ? (
+          <ToolbarButton label="Настройки блока" icon="settings" onPress={openSettings} />
+        ) : null}
         <ToolbarButton label="Удалить блок" icon="delete" danger onPress={remove} />
       </ScrollView>
     </View>
-  )
-}
-
-function NotesBlockSettings({
-  block,
-  update,
-  close
-}: {
-  block: StudyBlock
-  update(next: StudyBlock): void
-  close(): void
-}): React.JSX.Element {
-  const theme = useTheme()
-
-  return (
-    <AppDialog
-      open
-      onOpenChange={(open) => {
-        if (!open) close()
-      }}
-      title="Настройки блока"
-      description={blockLabel(block)}
-      icon="settings"
-      presentation="sheet"
-    >
-      <View style={{ gap: 14, padding: 14, paddingBottom: 22 }}>
-        {block.type === 'heading' ? (
-          <>
-            <View style={{ gap: 8 }}>
-              <Label muted>Размер заголовка</Label>
-              <View style={{ flexDirection: 'row', gap: 8 }}>
-                {([1, 2, 3] as const).map((level) => (
-                  <Button
-                    key={level}
-                    label={`H${level}`}
-                    compact
-                    selected={block.level === level}
-                    onPress={() => update({ ...block, level })}
-                  />
-                ))}
-              </View>
-            </View>
-            <View style={{ gap: 8 }}>
-              <Label muted>Выравнивание</Label>
-              <View style={{ flexDirection: 'row', gap: 8 }}>
-                {[
-                  { value: 'left' as const, label: 'Слева', icon: AlignLeft },
-                  { value: 'center' as const, label: 'Центр', icon: AlignCenter },
-                  { value: 'right' as const, label: 'Справа', icon: AlignRight }
-                ].map((item) => {
-                  const Icon = item.icon
-                  const selected = (block.alignment ?? 'left') === item.value
-                  return (
-                    <Pressable
-                      key={item.value}
-                      accessibilityRole="button"
-                      accessibilityLabel={item.label}
-                      accessibilityState={{ selected }}
-                      onPress={() => update({ ...block, alignment: item.value })}
-                      style={({ pressed }) => ({
-                        width: 48,
-                        height: 44,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        borderRadius: 12,
-                        borderWidth: 1,
-                        borderColor: selected ? theme.accent + '66' : theme.border,
-                        backgroundColor: selected
-                          ? theme.accent + '16'
-                          : pressed
-                            ? theme.raised
-                            : theme.surface,
-                        opacity: pressed ? 0.72 : 1
-                      })}
-                    >
-                      <Icon size={19} color={selected ? theme.accent : theme.muted} />
-                    </Pressable>
-                  )
-                })}
-              </View>
-            </View>
-          </>
-        ) : null}
-
-        {block.type === 'divider' ? (
-          <View style={{ gap: 8 }}>
-            <Label muted>Стиль разделителя</Label>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              {(['solid', 'tapered', 'dashed', 'dotted'] as const).map((variant) => (
-                <Button
-                  key={variant}
-                  label={
-                    variant === 'solid'
-                      ? 'Линия'
-                      : variant === 'tapered'
-                        ? 'Плавный'
-                        : variant === 'dashed'
-                          ? 'Штрихи'
-                          : 'Точки'
-                  }
-                  compact
-                  selected={(block.variant ?? 'solid') === variant}
-                  onPress={() => update({ ...block, variant })}
-                />
-              ))}
-            </View>
-          </View>
-        ) : null}
-
-        {block.type === 'image' ? (
-          <View style={{ gap: 8 }}>
-            <Label muted>Отображение изображения</Label>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              <Button
-                label="Вписать"
-                compact
-                selected={(block.imageFit ?? 'contain') === 'contain'}
-                onPress={() => update({ ...block, imageFit: 'contain' })}
-              />
-              <Button
-                label="Обрезать"
-                compact
-                selected={block.imageFit === 'cover'}
-                onPress={() => update({ ...block, imageFit: 'cover' })}
-              />
-            </View>
-          </View>
-        ) : null}
-
-        {!['heading', 'divider', 'image'].includes(block.type) ? (
-          <View
-            style={{
-              flexDirection: 'row',
-              gap: 10,
-              alignItems: 'center',
-              padding: 12,
-              borderRadius: 14,
-              borderWidth: 1,
-              borderColor: theme.border,
-              backgroundColor: theme.surface
-            }}
-          >
-            <SlidersHorizontal size={18} color={theme.accent} />
-            <Text style={{ flex: 1, color: theme.muted, fontSize: 12.5, lineHeight: 18 }}>
-              Для этого типа блока основные параметры находятся прямо в его содержимом.
-            </Text>
-          </View>
-        ) : null}
-      </View>
-    </AppDialog>
   )
 }
 
@@ -911,6 +937,12 @@ export function DocumentEditor({
   const [activeBlockId, setActiveBlockId] = useState<string | null>(null)
   const [insertOpen, setInsertOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [richSettingsOpen, setRichSettingsOpen] = useState(false)
+  const [quickLinkOpen, setQuickLinkOpen] = useState(false)
+  const [richTextState, setRichTextState] = useState<NotesRichTextFormattingState>(
+    DEFAULT_NOTES_RICH_TEXT_STATE
+  )
+  const richTextRefs = useRef(new Map<string, NotesRichTextDomRef>())
   const assetActions = { importAsset, openAsset, resolveAssetUri, onAssetError }
 
   useEffect(() => {
@@ -918,6 +950,9 @@ export function DocumentEditor({
     if (activeBlockId && !document.blocks.some((block) => block.id === activeBlockId)) {
       setActiveBlockId(null)
       setSettingsOpen(false)
+      setRichSettingsOpen(false)
+      setQuickLinkOpen(false)
+      setRichTextState(DEFAULT_NOTES_RICH_TEXT_STATE)
     }
   }, [activeBlockId, document])
 
@@ -963,6 +998,18 @@ export function DocumentEditor({
     if (clean) setActiveBlockId(block.id)
   }
 
+  const duplicate = (index: number): void => {
+    const currentDocument = documentRef.current
+    const source = currentDocument.blocks[index]
+    if (!source) return
+    const copy: StudyBlock =
+      source.type === 'board' ? { id: createId(), type: 'board' } : { ...source, id: createId() }
+    const blocks = currentDocument.blocks.slice()
+    blocks.splice(index + 1, 0, copy)
+    emit({ ...currentDocument, blocks })
+    if (clean) setActiveBlockId(copy.id)
+  }
+
   const insert = (type: StudyBlockType): void => {
     const block = newBlock(type, createId())
     if (block) append(block)
@@ -987,6 +1034,8 @@ export function DocumentEditor({
     ? document.blocks.findIndex((block) => block.id === activeBlockId)
     : -1
   const activeBlock = activeIndex >= 0 ? (document.blocks[activeIndex] ?? null) : null
+  const activeRichEditor =
+    activeBlock?.type === 'text' ? (richTextRefs.current.get(activeBlock.id) ?? null) : null
 
   const list = (
     <FlatList
@@ -1009,7 +1058,7 @@ export function DocumentEditor({
       renderItem={({ item, index }) =>
         clean ? (
           <View
-            onTouchStart={() => setActiveBlockId(item.id)}
+            onTouchStart={item.type === 'text' ? undefined : () => setActiveBlockId(item.id)}
             style={{
               marginBottom: 4,
               paddingHorizontal: 8,
@@ -1020,14 +1069,34 @@ export function DocumentEditor({
               backgroundColor: activeBlockId === item.id ? theme.accent + '08' : 'transparent'
             }}
           >
-            <BlockInput
-              block={item}
-              update={(next) => replace(index, next)}
-              assetActions={assetActions}
-              openBoard={openBoard}
-              searchInternalLinkTargets={searchInternalLinkTargets}
-              clean
-            />
+            {item.type === 'text' ? (
+              <NotesRichTextBlock
+                block={item}
+                active={activeBlockId === item.id}
+                registerRef={(editor) => {
+                  if (editor) richTextRefs.current.set(item.id, editor)
+                  else richTextRefs.current.delete(item.id)
+                }}
+                activate={() => {
+                  setActiveBlockId(item.id)
+                  setSettingsOpen(false)
+                }}
+                update={(next) => replace(index, next)}
+                formattingChanged={(state) => {
+                  setActiveBlockId(item.id)
+                  setRichTextState(state)
+                }}
+              />
+            ) : (
+              <BlockInput
+                block={item}
+                update={(next) => replace(index, next)}
+                assetActions={assetActions}
+                openBoard={openBoard}
+                searchInternalLinkTargets={searchInternalLinkTargets}
+                clean
+              />
+            )}
           </View>
         ) : (
           <View
@@ -1143,7 +1212,12 @@ export function DocumentEditor({
           update={(next) => replace(activeIndex, next)}
           move={(direction) => move(activeIndex, direction)}
           remove={() => remove(activeIndex)}
+          duplicate={() => duplicate(activeIndex)}
           openSettings={() => setSettingsOpen(true)}
+          richEditor={activeRichEditor}
+          richState={richTextState}
+          openRichSettings={() => setRichSettingsOpen(true)}
+          openQuickLink={() => setQuickLinkOpen(true)}
         />
       ) : null}
 
@@ -1159,11 +1233,32 @@ export function DocumentEditor({
         onAssetError={onAssetError}
       />
 
-      {settingsOpen && activeBlock && activeIndex >= 0 ? (
-        <NotesBlockSettings
+      {activeBlock?.type === 'text' ? (
+        <>
+          <NotesRichTextSettingsSheet
+            open={richSettingsOpen}
+            close={() => setRichSettingsOpen(false)}
+            editor={activeRichEditor}
+            state={richTextState}
+            searchTargets={searchInternalLinkTargets}
+          />
+          <NotesQuickLinkDialog
+            key={`${activeBlock.id}:${quickLinkOpen ? 'open' : 'closed'}`}
+            open={quickLinkOpen}
+            close={() => setQuickLinkOpen(false)}
+            editor={activeRichEditor}
+            state={richTextState}
+          />
+        </>
+      ) : null}
+
+      {settingsOpen && activeBlock && activeIndex >= 0 && activeBlock.type !== 'text' ? (
+        <NotesBlockSettingsSheet
           block={activeBlock}
           update={(next) => replace(activeIndex, next)}
           close={() => setSettingsOpen(false)}
+          importAsset={importAsset}
+          onAssetError={onAssetError}
         />
       ) : null}
     </View>
