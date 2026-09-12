@@ -32,6 +32,14 @@ import {
 import { AppDialog } from './AppDialog'
 import { DocumentBoardEditor, type OpenDocumentBoard } from './DocumentBoardBlock'
 import { AppIcon } from './icons'
+import { NotesRichTextBlock } from './NotesRichTextBlock'
+import {
+  DEFAULT_NOTES_RICH_TEXT_STATE,
+  NotesQuickLinkDialog,
+  NotesRichTextInlineControls,
+  NotesRichTextSettingsSheet
+} from './NotesRichTextControls'
+import type { NotesRichTextDomRef, NotesRichTextFormattingState } from './NotesRichTextDom'
 import { StudyRichTextEditor } from './StudyRichTextEditor'
 import { Button, Label } from './primitives'
 import { useTheme } from './theme'
@@ -489,7 +497,11 @@ function NotesBlockToolbar({
   update,
   move,
   remove,
-  openSettings
+  openSettings,
+  richEditor,
+  richState,
+  openRichSettings,
+  openQuickLink
 }: {
   block: StudyBlock
   index: number
@@ -498,6 +510,10 @@ function NotesBlockToolbar({
   move(direction: -1 | 1): void
   remove(): void
   openSettings(): void
+  richEditor: NotesRichTextDomRef | null
+  richState: NotesRichTextFormattingState
+  openRichSettings(): void
+  openQuickLink(): void
 }): React.JSX.Element {
   const theme = useTheme()
 
@@ -537,6 +553,15 @@ function NotesBlockToolbar({
           </Text>
         </View>
 
+        {block.type === 'text' ? (
+          <NotesRichTextInlineControls
+            editor={richEditor}
+            state={richState}
+            openSettings={openRichSettings}
+            openLink={openQuickLink}
+          />
+        ) : null}
+
         {block.type === 'heading'
           ? ([1, 2, 3] as const).map((level) => (
               <ToolbarButton
@@ -565,7 +590,9 @@ function NotesBlockToolbar({
 
         <ToolbarButton label="↑" disabled={index === 0} onPress={() => move(-1)} />
         <ToolbarButton label="↓" disabled={index === count - 1} onPress={() => move(1)} />
-        <ToolbarButton label="Настройки блока" icon="settings" onPress={openSettings} />
+        {block.type !== 'text' ? (
+          <ToolbarButton label="Настройки блока" icon="settings" onPress={openSettings} />
+        ) : null}
         <ToolbarButton label="Удалить блок" icon="delete" danger onPress={remove} />
       </ScrollView>
     </View>
@@ -911,6 +938,11 @@ export function DocumentEditor({
   const [activeBlockId, setActiveBlockId] = useState<string | null>(null)
   const [insertOpen, setInsertOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [richSettingsOpen, setRichSettingsOpen] = useState(false)
+  const [quickLinkOpen, setQuickLinkOpen] = useState(false)
+  const [richTextState, setRichTextState] =
+    useState<NotesRichTextFormattingState>(DEFAULT_NOTES_RICH_TEXT_STATE)
+  const richTextRefs = useRef(new Map<string, NotesRichTextDomRef>())
   const assetActions = { importAsset, openAsset, resolveAssetUri, onAssetError }
 
   useEffect(() => {
@@ -918,6 +950,9 @@ export function DocumentEditor({
     if (activeBlockId && !document.blocks.some((block) => block.id === activeBlockId)) {
       setActiveBlockId(null)
       setSettingsOpen(false)
+      setRichSettingsOpen(false)
+      setQuickLinkOpen(false)
+      setRichTextState(DEFAULT_NOTES_RICH_TEXT_STATE)
     }
   }, [activeBlockId, document])
 
@@ -987,6 +1022,8 @@ export function DocumentEditor({
     ? document.blocks.findIndex((block) => block.id === activeBlockId)
     : -1
   const activeBlock = activeIndex >= 0 ? (document.blocks[activeIndex] ?? null) : null
+  const activeRichEditor =
+    activeBlock?.type === 'text' ? (richTextRefs.current.get(activeBlock.id) ?? null) : null
 
   const list = (
     <FlatList
@@ -1009,7 +1046,7 @@ export function DocumentEditor({
       renderItem={({ item, index }) =>
         clean ? (
           <View
-            onTouchStart={() => setActiveBlockId(item.id)}
+            onTouchStart={item.type === 'text' ? undefined : () => setActiveBlockId(item.id)}
             style={{
               marginBottom: 4,
               paddingHorizontal: 8,
@@ -1020,14 +1057,33 @@ export function DocumentEditor({
               backgroundColor: activeBlockId === item.id ? theme.accent + '08' : 'transparent'
             }}
           >
-            <BlockInput
-              block={item}
-              update={(next) => replace(index, next)}
-              assetActions={assetActions}
-              openBoard={openBoard}
-              searchInternalLinkTargets={searchInternalLinkTargets}
-              clean
-            />
+            {item.type === 'text' ? (
+              <NotesRichTextBlock
+                block={item}
+                active={activeBlockId === item.id}
+                registerRef={(editor) => {
+                  if (editor) richTextRefs.current.set(item.id, editor)
+                  else richTextRefs.current.delete(item.id)
+                }}
+                activate={() => {
+                  setActiveBlockId(item.id)
+                  setSettingsOpen(false)
+                }}
+                update={(next) => replace(index, next)}
+                formattingChanged={(state) => {
+                  if (activeBlockId === item.id) setRichTextState(state)
+                }}
+              />
+            ) : (
+              <BlockInput
+                block={item}
+                update={(next) => replace(index, next)}
+                assetActions={assetActions}
+                openBoard={openBoard}
+                searchInternalLinkTargets={searchInternalLinkTargets}
+                clean
+              />
+            )}
           </View>
         ) : (
           <View
@@ -1144,6 +1200,10 @@ export function DocumentEditor({
           move={(direction) => move(activeIndex, direction)}
           remove={() => remove(activeIndex)}
           openSettings={() => setSettingsOpen(true)}
+          richEditor={activeRichEditor}
+          richState={richTextState}
+          openRichSettings={() => setRichSettingsOpen(true)}
+          openQuickLink={() => setQuickLinkOpen(true)}
         />
       ) : null}
 
@@ -1159,7 +1219,26 @@ export function DocumentEditor({
         onAssetError={onAssetError}
       />
 
-      {settingsOpen && activeBlock && activeIndex >= 0 ? (
+      {activeBlock?.type === 'text' ? (
+        <>
+          <NotesRichTextSettingsSheet
+            open={richSettingsOpen}
+            close={() => setRichSettingsOpen(false)}
+            editor={activeRichEditor}
+            state={richTextState}
+            searchTargets={searchInternalLinkTargets}
+          />
+          <NotesQuickLinkDialog
+            key={`${activeBlock.id}:${quickLinkOpen ? 'open' : 'closed'}`}
+            open={quickLinkOpen}
+            close={() => setQuickLinkOpen(false)}
+            editor={activeRichEditor}
+            state={richTextState}
+          />
+        </>
+      ) : null}
+
+      {settingsOpen && activeBlock && activeIndex >= 0 && activeBlock.type !== 'text' ? (
         <NotesBlockSettings
           block={activeBlock}
           update={(next) => replace(activeIndex, next)}
