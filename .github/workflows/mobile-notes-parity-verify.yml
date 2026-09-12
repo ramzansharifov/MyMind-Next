@@ -1,0 +1,26 @@
+name: Verify mobile notes parity
+
+on:
+  push:
+    branches:
+      - agent/mobile-notes-feature-parity
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx prettier --check apps/mobile/src/modules/notes/NotesScreen.tsx apps/mobile/src/shared/ui/DocumentEditor.tsx apps/mobile/src/shared/ui/RichContentDom.tsx
+      - run: npm run typecheck --workspace=mymind-mobile
+      - run: npm run native:node
+      - run: npm run test:mobile
+      - run: npm run export:android --workspace=mymind-mobile
