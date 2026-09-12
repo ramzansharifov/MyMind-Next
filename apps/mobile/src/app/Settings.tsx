@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { ScrollView, Text, View } from 'react-native'
+import { useEffect, useState } from 'react'
+import { BackHandler, ScrollView, Text, View } from 'react-native'
 import type { AppearancePreferences } from '@mymind/contracts/preferences'
 
 import type { MobileBackupSummary, MobileRestoreResult } from '../shared/backup/mobileBackup'
@@ -45,6 +45,15 @@ export function Settings({
   const [busy, setBusy] = useState<'export' | 'restore' | null>(null)
   const [backupError, setBackupError] = useState('')
   const [backupMessage, setBackupMessage] = useState('')
+
+  useEffect(() => {
+    if (page === 'overview') return undefined
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (!busy) setPage('overview')
+      return true
+    })
+    return () => subscription.remove()
+  }, [busy, page])
 
   const runExport = async (): Promise<void> => {
     if (busy) return
