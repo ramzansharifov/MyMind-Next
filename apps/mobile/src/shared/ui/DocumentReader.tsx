@@ -14,6 +14,7 @@ import { Button, Label } from './primitives'
 import { DocumentRichTextViewer } from './NotesRichTextBlock'
 import { resolveStudyRichTextHtml } from './richTextHtml'
 import { StudySourceBlock } from './StudySourceBlock'
+import { StudyDividerBlock } from './StudyDividerBlock'
 import type { StudyRichTextInternalLink } from './studyRichText'
 import { useTheme } from './theme'
 
@@ -274,16 +275,7 @@ function ReadBlock({
         />
       )
     case 'divider':
-      return (
-        <View
-          accessibilityRole="none"
-          style={{
-            height: Math.max(1, block.thickness ?? 1),
-            backgroundColor: block.color ?? theme.border,
-            opacity: block.variant === 'dotted' || block.variant === 'dashed' ? 0.7 : 1
-          }}
-        />
-      )
+      return <StudyDividerBlock block={block} spacing="read" />
     case 'board':
       return <DocumentBoardReader block={block} openBoard={openBoard} onError={onAssetError} />
   }
