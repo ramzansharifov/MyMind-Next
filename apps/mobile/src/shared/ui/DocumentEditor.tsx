@@ -292,16 +292,6 @@ function BlockInput({
     borderColor: theme.border,
     surfaceColor: theme.raised,
     accentColor: theme.accent,
-    onOpenInternalLink: async (target) => {
-      onOpenInternalLink?.(target)
-    },
-    onOpenExternalLink: async (href) => {
-      try {
-        await Linking.openURL(href)
-      } catch (reason) {
-        assetActions.onAssetError?.(reason)
-      }
-    },
     dom: {
       matchContents: true,
       scrollEnabled: false,
@@ -1162,6 +1152,16 @@ function NotesReadBlock({
     borderColor: theme.border,
     surfaceColor: theme.raised,
     accentColor: theme.accent,
+    onOpenInternalLink: async (target) => {
+      onOpenInternalLink?.(target)
+    },
+    onOpenExternalLink: async (href) => {
+      try {
+        await Linking.openURL(href)
+      } catch (reason) {
+        assetActions.onAssetError?.(reason)
+      }
+    },
     dom: {
       matchContents: true,
       scrollEnabled: false,
