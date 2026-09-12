@@ -4,6 +4,7 @@ import type {
   NutritionFoodCategory,
   NutritionFoodRecord,
   NutritionLogEntryRecord,
+  NutritionTargetRecord,
   NutritionMealType,
   NutritionRecipeRecord,
   NutritionValues
@@ -498,7 +499,7 @@ export function NutritionScreen(): React.JSX.Element {
   ]
   const header = (
     <View style={{ gap: 10, paddingBottom: 12 }}>
-      <ModuleTabs
+      <ModuleTabs<Tab>
         items={tabs}
         value={tab}
         onChange={(next) => {
