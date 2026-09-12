@@ -40,6 +40,16 @@ function alignment(value: 'left' | 'center' | 'right' | undefined): 'left' | 'ce
   return value ?? 'left'
 }
 
+function headingTypography(level: 1 | 2 | 3): {
+  fontSize: number
+  lineHeight: number
+  letterSpacing: number
+} {
+  if (level === 1) return { fontSize: 48, lineHeight: 50.4, letterSpacing: -1.68 }
+  if (level === 2) return { fontSize: 36, lineHeight: 41.4, letterSpacing: -0.9 }
+  return { fontSize: 30, lineHeight: 36, letterSpacing: -0.6 }
+}
+
 function localAssetUri(
   block: Extract<StudyBlock, { type: 'image' | 'video' | 'audio' | 'file' }>,
   resolveAssetUri?: (asset: StudyLocalAsset) => string | null
@@ -74,7 +84,7 @@ function LocalAttachment({
           resizeMode={block.imageFit ?? 'contain'}
           style={{
             width: '100%',
-            height: block.imageHeight ?? 260,
+            height: block.imageHeight ?? 360,
             borderRadius: designTokens.radius.lg,
             backgroundColor: theme.raised
           }}
@@ -170,25 +180,46 @@ function ReadBlock({
           onAssetError={onAssetError}
         />
       )
-    case 'heading':
+    case 'heading': {
+      const typography = headingTypography(block.level)
+      const backgroundScope = block.backgroundScope ?? 'container'
       return (
-        <Text
-          selectable
+        <View
           style={{
-            color: block.color ?? theme.text,
-            backgroundColor: block.backgroundColor,
-            fontSize: block.level === 1 ? 30 : block.level === 2 ? 24 : 20,
-            lineHeight: block.level === 1 ? 38 : block.level === 2 ? 32 : 28,
-            fontWeight: '700',
-            textAlign: alignment(block.alignment),
-            paddingHorizontal: block.backgroundScope === 'container' ? 10 : 0,
-            paddingVertical: block.backgroundScope === 'container' ? 6 : 0,
-            borderRadius: block.backgroundScope === 'container' ? designTokens.radius.md : 0
+            paddingHorizontal: 4,
+            paddingVertical: 6,
+            borderRadius: 8,
+            backgroundColor:
+              backgroundScope === 'container'
+                ? (block.backgroundColor ?? 'transparent')
+                : 'transparent'
           }}
         >
-          {block.text || ' '}
-        </Text>
+          <Text
+            selectable
+            style={{
+              color: block.color ?? theme.text,
+              fontSize: typography.fontSize,
+              lineHeight: typography.lineHeight,
+              letterSpacing: typography.letterSpacing,
+              fontWeight: '600',
+              textAlign: alignment(block.alignment)
+            }}
+          >
+            <Text
+              style={{
+                backgroundColor:
+                  backgroundScope === 'text'
+                    ? (block.backgroundColor ?? 'transparent')
+                    : 'transparent'
+              }}
+            >
+              {block.text || 'Без заголовка'}
+            </Text>
+          </Text>
+        </View>
       )
+    }
     case 'code':
     case 'markdown':
     case 'latex':
@@ -206,7 +237,7 @@ function ReadBlock({
                 resizeMode={block.imageFit ?? 'contain'}
                 style={{
                   width: '100%',
-                  height: block.imageHeight ?? 260,
+                  height: block.imageHeight ?? 360,
                   borderRadius: designTokens.radius.lg,
                   backgroundColor: theme.raised
                 }}
