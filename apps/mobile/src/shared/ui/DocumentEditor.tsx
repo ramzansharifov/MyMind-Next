@@ -586,14 +586,12 @@ function NotesBlockToolbar({
         ) : null}
 
         <ToolbarButton
-          label="Выше"
-          icon="back"
+          label="↑"
           disabled={index === 0}
           onPress={() => move(-1)}
         />
         <ToolbarButton
-          label="Ниже"
-          icon="forward"
+          label="↓"
           disabled={index === count - 1}
           onPress={() => move(1)}
         />
@@ -858,7 +856,10 @@ function NotesInsertSheet({
                   accessibilityLabel={item.label}
                   accessibilityState={{ disabled: pendingAsset !== null }}
                   disabled={pendingAsset !== null}
-                  onPress={() => insertAsset(item.type)}
+                  onPress={() => {
+                    close()
+                    insertAsset(item.type)
+                  }}
                   style={({ pressed }) => ({
                     minHeight: 58,
                     flexDirection: 'row',
