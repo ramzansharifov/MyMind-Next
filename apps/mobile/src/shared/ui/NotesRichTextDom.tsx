@@ -16,6 +16,7 @@ export interface NotesRichTextFormattingState {
   orderedList: boolean
   alignment: NotesRichTextAlignment
   linkActive: boolean
+  href: string
   fontSize: string
   color: string
   backgroundColor: string
@@ -70,37 +71,11 @@ export interface NotesRichTextDomProps {
   onHeightChange: (height: number) => Promise<void>
 }
 
-const DEFAULT_STATE: NotesRichTextFormattingState = {
-  bold: false,
-  italic: false,
-  underline: false,
-  strike: false,
-  code: false,
-  blockquote: false,
-  bulletList: false,
-  orderedList: false,
-  alignment: 'left',
-  linkActive: false,
-  fontSize: 'default',
-  color: '',
-  backgroundColor: '',
-  canUndo: false,
-  canRedo: false
-}
-
 function safeCommandState(command: string): boolean {
   try {
     return document.queryCommandState(command)
   } catch {
     return false
-  }
-}
-
-function safeCommandValue(command: string): string {
-  try {
-    return String(document.queryCommandValue(command) ?? '')
-  } catch {
-    return ''
   }
 }
 
@@ -112,16 +87,6 @@ function closestElement(selection: Selection | null): HTMLElement | null {
 
 function ancestor(element: HTMLElement | null, selector: string): HTMLElement | null {
   return element?.closest(selector) as HTMLElement | null
-}
-
-function normalizeColor(value: string): string {
-  if (!value) return ''
-  const probe = document.createElement('span')
-  probe.style.color = value
-  document.body.appendChild(probe)
-  const normalized = getComputedStyle(probe).color
-  probe.remove()
-  return normalized || value
 }
 
 function formattingState(): NotesRichTextFormattingState {
@@ -153,6 +118,7 @@ function formattingState(): NotesRichTextFormattingState {
     orderedList: Boolean(orderedList),
     alignment: mappedAlignment,
     linkActive: Boolean(link),
+    href: link instanceof HTMLAnchorElement ? link.href : '',
     fontSize: textStyle?.style.fontSize || computed?.fontSize || 'default',
     color: textStyle?.style.color || computed?.color || '',
     backgroundColor: textStyle?.style.backgroundColor || computed?.backgroundColor || '',
