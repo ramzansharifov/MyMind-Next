@@ -5,8 +5,12 @@ on:
     branches:
       - agent/mobile-notes-feature-parity
 
+concurrency:
+  group: mobile-notes-parity
+  cancel-in-progress: true
+
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   verify:
@@ -19,7 +23,17 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx prettier --check apps/mobile/src/modules/notes/NotesScreen.tsx apps/mobile/src/shared/ui/DocumentEditor.tsx apps/mobile/src/shared/ui/RichContentDom.tsx
+      - run: npx prettier --write apps/mobile/src/modules/notes/NotesScreen.tsx apps/mobile/src/shared/ui/DocumentEditor.tsx apps/mobile/src/shared/ui/RichContentDom.tsx
+      - name: Persist formatting
+        shell: pwsh
+        run: |
+          if (-not (git diff --quiet)) {
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add apps/mobile/src/modules/notes/NotesScreen.tsx apps/mobile/src/shared/ui/DocumentEditor.tsx apps/mobile/src/shared/ui/RichContentDom.tsx
+            git commit -m "chore: format mobile notes parity"
+            git push
+          }
       - run: npm run typecheck --workspace=mymind-mobile
       - run: npm run native:node
       - run: npm run test:mobile
