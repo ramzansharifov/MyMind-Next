@@ -94,6 +94,7 @@ function formattingState(): NotesRichTextFormattingState {
   const element = closestElement(selection)
   const paragraph = ancestor(element, 'p,div,li,blockquote')
   const textStyle = ancestor(element, 'span[style],font[style],font[color]')
+  const highlight = ancestor(element, 'mark')
   const code = ancestor(element, 'code')
   const link = ancestor(element, 'a')
   const blockquote = ancestor(element, 'blockquote')
@@ -121,7 +122,8 @@ function formattingState(): NotesRichTextFormattingState {
     href: link instanceof HTMLAnchorElement ? link.href : '',
     fontSize: textStyle?.style.fontSize || 'default',
     color: textStyle?.style.color || textStyle?.getAttribute('color') || '',
-    backgroundColor: textStyle?.style.backgroundColor || '',
+    backgroundColor:
+      highlight?.style.backgroundColor || highlight?.getAttribute('data-color') || '',
     canUndo: document.queryCommandEnabled('undo'),
     canRedo: document.queryCommandEnabled('redo')
   }
@@ -222,6 +224,43 @@ function selectionHtml(html: string): void {
     selection.removeAllRanges()
     selection.addRange(next)
   }
+}
+
+function applyHighlight(color: string | null): void {
+  const selection = window.getSelection()
+  if (!selection || selection.rangeCount === 0) return
+  const range = selection.getRangeAt(0)
+  const current = ancestor(closestElement(selection), 'mark')
+
+  if (!color) {
+    if (!current) return
+    const fragment = document.createDocumentFragment()
+    while (current.firstChild) fragment.appendChild(current.firstChild)
+    current.replaceWith(fragment)
+    return
+  }
+
+  if (current) {
+    current.setAttribute('data-color', color)
+    current.style.backgroundColor = color
+    return
+  }
+
+  if (range.collapsed) return
+  const mark = document.createElement('mark')
+  mark.setAttribute('data-color', color)
+  mark.style.backgroundColor = color
+  try {
+    range.surroundContents(mark)
+  } catch {
+    const fragment = range.extractContents()
+    mark.appendChild(fragment)
+    range.insertNode(mark)
+  }
+  const next = document.createRange()
+  next.selectNodeContents(mark)
+  selection.removeAllRanges()
+  selection.addRange(next)
 }
 
 export default function NotesRichTextDom({
@@ -364,14 +403,7 @@ export default function NotesRichTextDom({
         })
       },
       setHighlightColor: async (color) => {
-        run(() => {
-          if (!color) {
-            document.execCommand('hiliteColor', false, 'transparent')
-            document.execCommand('backColor', false, 'transparent')
-          } else if (!document.execCommand('hiliteColor', false, color)) {
-            document.execCommand('backColor', false, color)
-          }
-        })
+        run(() => applyHighlight(color))
       },
       setLink: async (rawHref) => {
         const href = sanitizeHref(rawHref)
