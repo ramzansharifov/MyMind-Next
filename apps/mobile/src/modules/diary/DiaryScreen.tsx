@@ -6,7 +6,6 @@ import {
   DIARY_MOODS,
   DIARY_PAPER_PATTERNS,
   DIARY_PAPER_TONES,
-  type DiaryDaySummary,
   type DiaryEntry,
   type DiarySummary
 } from '@mymind/contracts/diary'
@@ -22,16 +21,14 @@ import {
   SunMedium,
   type LucideIcon
 } from 'lucide-react-native'
-import { addDays, localDateKey } from '@mymind/core/habits'
+import { localDateKey } from '@mymind/core/habits'
 import { useServices } from '../../app/context'
 import { useCollection } from '../../shared/hooks/useCollection'
 import {
   Button,
   EmptyState,
   ErrorState,
-  LoadingState,
-  Row,
-  SearchField
+  LoadingState
 } from '../../shared/ui/primitives'
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { MobileCreateAction } from '../../shared/ui/MobileCreateAction'
@@ -829,56 +826,6 @@ function DiarySettingsMobile({
         </View>
       </View>
     </ScrollView>
-  )
-}
-
-function DiaryAppearancePreview({
-  diary,
-  onEdit
-}: {
-  diary: DiarySummary
-  onEdit(): void
-}): React.JSX.Element {
-  const theme = useTheme()
-  const palette = diaryAppearancePalette(diary.paperTone, diary.coverTone)
-
-  return (
-    <View style={{ gap: 14 }}>
-      <View
-        style={{
-          borderRadius: 18,
-          borderWidth: 1,
-          borderColor: theme.border,
-          backgroundColor: palette.coverBackground,
-          padding: 18,
-          gap: 12
-        }}
-      >
-        <Text style={{ color: palette.coverText, fontSize: 20, fontWeight: '800' }}>
-          {diary.title}
-        </Text>
-        <View
-          style={{
-            minHeight: 180,
-            borderRadius: 12,
-            overflow: 'hidden',
-            backgroundColor: palette.paperBackground,
-            padding: 16
-          }}
-        >
-          <PaperPattern pattern={diary.paperPattern} lineColor={palette.paperLine} />
-          <Text style={{ color: palette.paperText, fontSize: 17, fontWeight: '700' }}>
-            Предпросмотр страницы
-          </Text>
-          <Text style={{ color: palette.paperMuted, fontSize: 13, lineHeight: 20, marginTop: 10 }}>
-            Разметка «{diaryPaperPatternLabels[diary.paperPattern]}», бумага «
-            {diaryPaperToneLabels[diary.paperTone]}», обложка «
-            {diaryCoverToneLabels[diary.coverTone]}».
-          </Text>
-        </View>
-      </View>
-      <Button label="Изменить оформление" selected onPress={onEdit} />
-    </View>
   )
 }
 
