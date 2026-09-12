@@ -940,8 +940,9 @@ export function DocumentEditor({
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [richSettingsOpen, setRichSettingsOpen] = useState(false)
   const [quickLinkOpen, setQuickLinkOpen] = useState(false)
-  const [richTextState, setRichTextState] =
-    useState<NotesRichTextFormattingState>(DEFAULT_NOTES_RICH_TEXT_STATE)
+  const [richTextState, setRichTextState] = useState<NotesRichTextFormattingState>(
+    DEFAULT_NOTES_RICH_TEXT_STATE
+  )
   const richTextRefs = useRef(new Map<string, NotesRichTextDomRef>())
   const assetActions = { importAsset, openAsset, resolveAssetUri, onAssetError }
 

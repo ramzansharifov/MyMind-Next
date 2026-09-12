@@ -166,12 +166,7 @@ export function NotesRichTextInlineControls({
         active={state.strike}
         onPress={() => run(editor, 'strike')}
       />
-      <ToolIcon
-        label="Код"
-        icon={Code2}
-        active={state.code}
-        onPress={() => run(editor, 'code')}
-      />
+      <ToolIcon label="Код" icon={Code2} active={state.code} onPress={() => run(editor, 'code')} />
       <ToolIcon
         label="Маркированный список"
         icon={List}
@@ -345,32 +340,100 @@ export function NotesRichTextSettingsSheet({
           <View style={{ gap: 8 }}>
             <Label muted>Текст</Label>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-              <ToolIcon label="Жирный" icon={Bold} active={state.bold} onPress={() => run(editor, 'bold')} />
-              <ToolIcon label="Курсив" icon={Italic} active={state.italic} onPress={() => run(editor, 'italic')} />
-              <ToolIcon label="Подчёркивание" icon={Underline} active={state.underline} onPress={() => run(editor, 'underline')} />
-              <ToolIcon label="Зачёркивание" icon={Strikethrough} active={state.strike} onPress={() => run(editor, 'strike')} />
-              <ToolIcon label="Код" icon={Code2} active={state.code} onPress={() => run(editor, 'code')} />
-              <ToolIcon label="Цитата" icon={Quote} active={state.blockquote} onPress={() => run(editor, 'blockquote')} />
+              <ToolIcon
+                label="Жирный"
+                icon={Bold}
+                active={state.bold}
+                onPress={() => run(editor, 'bold')}
+              />
+              <ToolIcon
+                label="Курсив"
+                icon={Italic}
+                active={state.italic}
+                onPress={() => run(editor, 'italic')}
+              />
+              <ToolIcon
+                label="Подчёркивание"
+                icon={Underline}
+                active={state.underline}
+                onPress={() => run(editor, 'underline')}
+              />
+              <ToolIcon
+                label="Зачёркивание"
+                icon={Strikethrough}
+                active={state.strike}
+                onPress={() => run(editor, 'strike')}
+              />
+              <ToolIcon
+                label="Код"
+                icon={Code2}
+                active={state.code}
+                onPress={() => run(editor, 'code')}
+              />
+              <ToolIcon
+                label="Цитата"
+                icon={Quote}
+                active={state.blockquote}
+                onPress={() => run(editor, 'blockquote')}
+              />
             </View>
           </View>
 
           <View style={{ gap: 8 }}>
             <Label muted>Списки</Label>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-              <ToolIcon label="Маркированный список" icon={List} active={state.bulletList} onPress={() => run(editor, 'bulletList')} />
-              <ToolIcon label="Нумерованный список" icon={ListOrdered} active={state.orderedList} onPress={() => run(editor, 'orderedList')} />
-              <ToolIcon label="Увеличить отступ" icon={IndentIncrease} onPress={() => run(editor, 'indent')} />
-              <ToolIcon label="Уменьшить отступ" icon={IndentDecrease} onPress={() => run(editor, 'outdent')} />
+              <ToolIcon
+                label="Маркированный список"
+                icon={List}
+                active={state.bulletList}
+                onPress={() => run(editor, 'bulletList')}
+              />
+              <ToolIcon
+                label="Нумерованный список"
+                icon={ListOrdered}
+                active={state.orderedList}
+                onPress={() => run(editor, 'orderedList')}
+              />
+              <ToolIcon
+                label="Увеличить отступ"
+                icon={IndentIncrease}
+                onPress={() => run(editor, 'indent')}
+              />
+              <ToolIcon
+                label="Уменьшить отступ"
+                icon={IndentDecrease}
+                onPress={() => run(editor, 'outdent')}
+              />
             </View>
           </View>
 
           <View style={{ gap: 8 }}>
             <Label muted>Выравнивание</Label>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-              <ToolIcon label="Слева" icon={AlignLeft} active={state.alignment === 'left'} onPress={() => run(editor, 'alignLeft')} />
-              <ToolIcon label="По центру" icon={AlignCenter} active={state.alignment === 'center'} onPress={() => run(editor, 'alignCenter')} />
-              <ToolIcon label="Справа" icon={AlignRight} active={state.alignment === 'right'} onPress={() => run(editor, 'alignRight')} />
-              <ToolIcon label="По ширине" icon={AlignJustify} active={state.alignment === 'justify'} onPress={() => run(editor, 'alignJustify')} />
+              <ToolIcon
+                label="Слева"
+                icon={AlignLeft}
+                active={state.alignment === 'left'}
+                onPress={() => run(editor, 'alignLeft')}
+              />
+              <ToolIcon
+                label="По центру"
+                icon={AlignCenter}
+                active={state.alignment === 'center'}
+                onPress={() => run(editor, 'alignCenter')}
+              />
+              <ToolIcon
+                label="Справа"
+                icon={AlignRight}
+                active={state.alignment === 'right'}
+                onPress={() => run(editor, 'alignRight')}
+              />
+              <ToolIcon
+                label="По ширине"
+                icon={AlignJustify}
+                active={state.alignment === 'justify'}
+                onPress={() => run(editor, 'alignJustify')}
+              />
             </View>
           </View>
 
@@ -423,9 +486,17 @@ export function NotesRichTextSettingsSheet({
             <Label muted>Ссылки</Label>
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <Button label="Внутренняя" compact disabled={!searchTargets} onPress={openInternal} />
-              <Button label={state.linkActive ? 'Изменить ссылку' : 'Обычная ссылка'} compact onPress={openLink} />
+              <Button
+                label={state.linkActive ? 'Изменить ссылку' : 'Обычная ссылка'}
+                compact
+                onPress={openLink}
+              />
               {state.linkActive ? (
-                <ToolIcon label="Убрать ссылку" icon={Unlink} onPress={() => run(editor, 'unlink')} />
+                <ToolIcon
+                  label="Убрать ссылку"
+                  icon={Unlink}
+                  onPress={() => run(editor, 'unlink')}
+                />
               ) : null}
             </View>
           </View>

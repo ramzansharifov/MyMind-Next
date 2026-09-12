@@ -108,7 +108,9 @@ function formattingState(): NotesRichTextFormattingState {
     alignment === 'center' || alignment === 'right' || alignment === 'justify' ? alignment : 'left'
 
   return {
-    bold: safeCommandState('bold') || Boolean(computed && Number.parseInt(computed.fontWeight, 10) >= 600),
+    bold:
+      safeCommandState('bold') ||
+      Boolean(computed && Number.parseInt(computed.fontWeight, 10) >= 600),
     italic: safeCommandState('italic') || computed?.fontStyle === 'italic',
     underline:
       safeCommandState('underline') || Boolean(computed?.textDecorationLine.includes('underline')),
