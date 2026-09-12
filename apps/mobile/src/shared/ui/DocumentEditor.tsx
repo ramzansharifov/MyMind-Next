@@ -21,16 +21,23 @@ import type {
 } from '@mymind/contracts/study'
 import { appearanceTokens, designTokens } from '@mymind/design'
 import {
+  ArrowDown,
+  ArrowUp,
   AudioLines,
   ChevronRight,
   Code2,
+  CopyPlus,
   FileText,
+  GripVertical,
   Heading2,
   Image as ImageIcon,
   Minus,
+  Plus,
   Paperclip,
   Presentation,
+  Settings2,
   Sigma,
+  Trash2,
   Type,
   Video,
   Workflow,
@@ -53,7 +60,7 @@ import {
   NotesRichTextSettingsSheet
 } from './NotesRichTextControls'
 import type { NotesRichTextDomRef, NotesRichTextFormattingState } from './NotesRichTextDom'
-import { StudyRichTextEditor } from './StudyRichTextEditor'
+import { useConfirmation } from './ConfirmationProvider'
 import { Button, Label } from './primitives'
 import { useTheme } from './theme'
 import { AudioAssetPlayer, VoiceRecorder, type VoiceRecordingInput } from './VoiceRecorder'
@@ -1492,11 +1499,14 @@ export function DocumentEditor({
   onAssetError
 }: DocumentEditorProps): React.JSX.Element {
   const theme = useTheme()
+  const confirm = useConfirmation()
   const documentRef = useRef(document)
   const clean = presentation === 'notes-clean'
   const [pendingAsset, setPendingAsset] = useState<StudyAssetKind | null>(null)
   const [activeBlockId, setActiveBlockId] = useState<string | null>(null)
   const [insertOpen, setInsertOpen] = useState(false)
+  const [insertIndex, setInsertIndex] = useState(document.blocks.length)
+  const [collapsedBlockIds, setCollapsedBlockIds] = useState<Set<string>>(() => new Set())
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [richSettingsOpen, setRichSettingsOpen] = useState(false)
   const [quickLinkOpen, setQuickLinkOpen] = useState(false)
