@@ -1678,6 +1678,7 @@ export function DocumentEditor({
     DEFAULT_NOTES_RICH_TEXT_STATE
   )
   const richTextRefs = useRef(new Map<string, NotesRichTextDomRef>())
+  const [, setRichEditorEpoch] = useState(0)
   const assetActions = { importAsset, openAsset, resolveAssetUri, onAssetError }
 
   useEffect(() => {
