@@ -1,17 +1,28 @@
 import { useEffect, useRef, useState } from 'react'
-import { FlatList, Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
+import {
+  FlatList,
+  Image,
+  Linking,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View
+} from 'react-native'
 import type {
   StudyAssetKind,
   StudyBlock,
   StudyBlockType,
   StudyBoardBlock,
   StudyDocument,
+  ResolveStudyInternalLinkTargetInput,
   StudyInternalLinkTarget,
   StudyLocalAsset
 } from '@mymind/contracts/study'
 import { appearanceTokens, designTokens } from '@mymind/design'
 import {
   AudioLines,
+  ChevronRight,
   Code2,
   FileText,
   Heading2,
@@ -27,7 +38,11 @@ import {
 } from 'lucide-react-native'
 import BoardCanvasDom from '../../modules/boards/BoardCanvasDom'
 import { AppDialog } from './AppDialog'
-import { DocumentBoardEditor, type OpenDocumentBoard } from './DocumentBoardBlock'
+import {
+  DocumentBoardEditor,
+  DocumentBoardReader,
+  type OpenDocumentBoard
+} from './DocumentBoardBlock'
 import { AppIcon } from './icons'
 import { NotesRichTextBlock } from './NotesRichTextBlock'
 import { NotesBlockSettingsSheet } from './NotesBlockSettings'
@@ -86,12 +101,17 @@ interface DocumentEditorProps {
   createId(): string
   header?: React.ReactElement | null
   presentation?: DocumentEditorPresentation
+  mode?: 'edit' | 'read'
   importAsset?: (kind: StudyAssetKind) => Promise<StudyLocalAsset | null>
   openAsset?: (asset: StudyLocalAsset) => Promise<void>
   resolveAssetUri?: (asset: StudyLocalAsset) => string | null
   saveRecordedAudio?: (input: VoiceRecordingInput) => Promise<StudyLocalAsset>
   openBoard?: OpenDocumentBoard
   searchInternalLinkTargets?: (query: string) => StudyInternalLinkTarget[]
+  resolveInternalLinkTarget?: (
+    input: ResolveStudyInternalLinkTargetInput
+  ) => StudyInternalLinkTarget | null
+  onOpenInternalLink?: (target: ResolveStudyInternalLinkTargetInput) => void
   onAssetError?: (reason: unknown) => void
 }
 
@@ -490,6 +510,7 @@ function BlockInput({
                 kind={'mermaid' as const}
                 source={block.source}
                 mermaidTheme={block.theme ?? (colorScheme === 'dark' ? 'dark' : 'default')}
+                mermaidScale={(block.scale ?? 100) / 100}
               />
             </View>
           ) : null}
@@ -916,18 +937,558 @@ function NotesInsertSheet({
   )
 }
 
+type NotesReadNode =
+  | { kind: 'block'; block: StudyBlock }
+  | {
+      kind: 'section'
+      heading: Extract<StudyBlock, { type: 'heading' }>
+      children: NotesReadNode[]
+    }
+
+function escapeReaderHtml(value: string): string {
+  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
+const INTERNAL_LINK_SPAN_PATTERN =
+  /<span\b(?=[^>]*\bdata-study-internal-link\s*=\s*(?:"true"|'true'))([^>]*)>([\s\S]*?)<\/span\s*>/gi
+
+function readerAttribute(attributes: string, name: string): string | null {
+  const escaped = name.replace(/[.*+?^$\{\}()|[\]\\]/g, '\\$&')
+  const match = new RegExp(`(?:^|\\s)${escaped}\\s*=\\s*(?:"([^"]*)"|'([^']*)')`, 'i').exec(
+    attributes
+  )
+  return match?.[1] ?? match?.[2] ?? null
+}
+
+function readerHtml(
+  block: Extract<StudyBlock, { type: 'text' }>,
+  resolveInternalLinkTarget?: (
+    input: ResolveStudyInternalLinkTargetInput
+  ) => StudyInternalLinkTarget | null
+): string {
+  const source = block.html?.trim()
+    ? block.html
+    : `<p>${escapeReaderHtml(block.text).replace(/\n/g, '<br />') || '&nbsp;'}</p>`
+
+  if (!resolveInternalLinkTarget || !/data-study-internal-link\s*=/i.test(source)) return source
+
+  INTERNAL_LINK_SPAN_PATTERN.lastIndex = 0
+  return source.replace(
+    INTERNAL_LINK_SPAN_PATTERN,
+    (_match, attributes: string, innerHtml: string) => {
+      const materialId = readerAttribute(attributes, 'data-material-id') ?? ''
+      const kind =
+        readerAttribute(attributes, 'data-target-kind') === 'heading' ? 'heading' : 'material'
+      const headingId = readerAttribute(attributes, 'data-heading-id')
+      const labelMode =
+        readerAttribute(attributes, 'data-label-mode') === 'custom' ? 'custom' : 'auto'
+      const resolved = materialId
+        ? resolveInternalLinkTarget({ kind, materialId, headingId })
+        : null
+      const missing = resolved === null
+      const displayLabel = labelMode === 'custom' ? null : resolved?.title
+      const missingAttribute = missing ? ' data-missing="true"' : ''
+
+      return `<span${attributes}${missingAttribute}>${
+        displayLabel ? escapeReaderHtml(displayLabel) : innerHtml
+      }</span>`
+    }
+  )
+}
+function buildNotesReadOutline(blocks: StudyBlock[]): NotesReadNode[] {
+  const root: NotesReadNode[] = []
+  const stack: Array<Extract<NotesReadNode, { kind: 'section' }>> = []
+
+  const closeSections = (nextLevel?: 1 | 2 | 3): void => {
+    while (stack.length > 0) {
+      const section = stack[stack.length - 1]
+      if (!section || (nextLevel !== undefined && section.heading.level < nextLevel)) return
+
+      const trailing = section.children[section.children.length - 1]
+      if (trailing?.kind === 'block' && trailing.block.type === 'divider') {
+        section.children.pop()
+        const parent = stack[stack.length - 2]
+        if (parent) parent.children.push(trailing)
+        else root.push(trailing)
+      }
+      stack.pop()
+    }
+  }
+
+  blocks.forEach((block) => {
+    if (block.type === 'heading') {
+      const section: Extract<NotesReadNode, { kind: 'section' }> = {
+        kind: 'section',
+        heading: block,
+        children: []
+      }
+      closeSections(block.level)
+      const parent = stack[stack.length - 1]
+      if (parent) parent.children.push(section)
+      else root.push(section)
+      stack.push(section)
+      return
+    }
+
+    const node: NotesReadNode = { kind: 'block', block }
+    const parent = stack[stack.length - 1]
+    if (parent) parent.children.push(node)
+    else root.push(node)
+  })
+
+  closeSections()
+  return root
+}
+
+function NotesReadHeading({
+  heading
+}: {
+  heading: Extract<StudyBlock, { type: 'heading' }>
+}): React.JSX.Element {
+  const theme = useTheme()
+  const backgroundScope = heading.backgroundScope ?? 'container'
+  const backgroundColor = heading.backgroundColor ?? 'transparent'
+  const fontSize = heading.level === 1 ? 29 : heading.level === 2 ? 24 : 20
+  const lineHeight = heading.level === 1 ? 36 : heading.level === 2 ? 31 : 27
+
+  return (
+    <View
+      style={{
+        borderRadius: 10,
+        backgroundColor: backgroundScope === 'container' ? backgroundColor : 'transparent',
+        paddingHorizontal: backgroundScope === 'container' ? 5 : 0,
+        paddingVertical: 3
+      }}
+    >
+      <Text
+        selectable
+        style={{
+          color: heading.color ?? theme.text,
+          fontSize,
+          lineHeight,
+          fontWeight: '700',
+          textAlign: heading.alignment ?? 'left'
+        }}
+      >
+        <Text
+          style={{
+            backgroundColor: backgroundScope === 'text' ? backgroundColor : 'transparent'
+          }}
+        >
+          {heading.text || 'Без заголовка'}
+        </Text>
+      </Text>
+    </View>
+  )
+}
+
+function NotesReadAssetBlock({
+  block,
+  assetActions
+}: {
+  block: Extract<StudyBlock, { type: 'image' | 'video' | 'audio' | 'file' }>
+  assetActions: DocumentAssetActions
+}): React.JSX.Element {
+  const theme = useTheme()
+  const localAsset = block.source.type === 'local' ? block.source.asset : undefined
+  const localUri = localAsset ? assetActions.resolveAssetUri?.(localAsset) : null
+  const remoteUri = block.source.type === 'url' ? block.source.url : null
+  const displayUri = localUri ?? remoteUri
+
+  return (
+    <View
+      style={{
+        gap: 10,
+        padding: block.type === 'image' ? 0 : 13,
+        borderWidth: block.type === 'image' ? 0 : 1,
+        borderColor: theme.border,
+        borderRadius: 16,
+        backgroundColor: block.type === 'image' ? 'transparent' : theme.surface,
+        overflow: 'hidden'
+      }}
+    >
+      {block.type === 'image' && displayUri ? (
+        <Image
+          accessibilityLabel={block.title || localAsset?.name || 'Изображение'}
+          source={{ uri: displayUri }}
+          resizeMode={block.imageFit ?? 'contain'}
+          style={{
+            width: '100%',
+            height: block.imageHeight ?? 260,
+            borderRadius: 16,
+            backgroundColor: theme.raised
+          }}
+        />
+      ) : null}
+
+      {block.type === 'audio' && localUri ? (
+        <AudioAssetPlayer uri={localUri} onError={assetActions.onAssetError} />
+      ) : null}
+
+      {block.title ? (
+        <Text
+          selectable
+          style={{ color: theme.text, fontSize: 14, lineHeight: 20, fontWeight: '600' }}
+        >
+          {block.title}
+        </Text>
+      ) : null}
+
+      {localAsset ? (
+        <Text selectable style={{ color: theme.muted, fontSize: 12, lineHeight: 17 }}>
+          {localAsset.name} · {formatBytes(localAsset.size)}
+        </Text>
+      ) : null}
+
+      {block.source.type === 'local' && localAsset && !localUri ? (
+        <Text style={{ color: theme.muted, fontSize: 12 }}>
+          Локальный файл не найден на этом устройстве.
+        </Text>
+      ) : null}
+
+      {block.source.type === 'local' && localAsset && assetActions.openAsset ? (
+        <Button
+          label="Открыть / поделиться"
+          compact
+          disabled={!localUri}
+          onPress={() => {
+            void assetActions.openAsset?.(localAsset).catch((reason: unknown) => {
+              assetActions.onAssetError?.(reason)
+            })
+          }}
+        />
+      ) : null}
+
+      {block.type === 'video' && remoteUri ? (
+        <Button
+          label="Открыть видео"
+          compact
+          onPress={() => {
+            void Linking.openURL(remoteUri).catch((reason: unknown) => {
+              assetActions.onAssetError?.(reason)
+            })
+          }}
+        />
+      ) : null}
+    </View>
+  )
+}
+
+function NotesReadBlock({
+  block,
+  assetActions,
+  openBoard,
+  resolveInternalLinkTarget,
+  onOpenInternalLink
+}: {
+  block: StudyBlock
+  assetActions: DocumentAssetActions
+  openBoard?: OpenDocumentBoard
+  resolveInternalLinkTarget?: (
+    input: ResolveStudyInternalLinkTargetInput
+  ) => StudyInternalLinkTarget | null
+  onOpenInternalLink?: (target: ResolveStudyInternalLinkTargetInput) => void
+}): React.JSX.Element {
+  const theme = useTheme()
+  const colorScheme = theme.background === appearanceTokens.dark.background ? 'dark' : 'light'
+  const richProps = {
+    mode: 'rich' as const,
+    colorScheme,
+    textColor: theme.text,
+    mutedColor: theme.muted,
+    borderColor: theme.border,
+    surfaceColor: theme.raised,
+    accentColor: theme.accent,
+    onOpenInternalLink: async (target: ResolveStudyInternalLinkTargetInput) => {
+      onOpenInternalLink?.(target)
+    },
+    onOpenExternalLink: async (href: string) => {
+      try {
+        await Linking.openURL(href)
+      } catch (reason) {
+        assetActions.onAssetError?.(reason)
+      }
+    },
+    dom: {
+      matchContents: true,
+      scrollEnabled: false,
+      style: { width: '100%' }
+    }
+  } as const
+
+  switch (block.type) {
+    case 'text':
+      return block.text.trim() ? (
+        <BoardCanvasDom
+          {...richProps}
+          kind={'html' as const}
+          source={readerHtml(block, resolveInternalLinkTarget)}
+        />
+      ) : (
+        <Text selectable style={{ color: theme.muted, fontSize: 13, lineHeight: 20 }}>
+          Пустой текстовый блок
+        </Text>
+      )
+    case 'heading':
+      return <NotesReadHeading heading={block} />
+    case 'code':
+      return (
+        <View
+          style={{
+            overflow: 'hidden',
+            borderWidth: 1,
+            borderColor: theme.border,
+            borderRadius: 14,
+            backgroundColor: theme.surface
+          }}
+        >
+          <View
+            style={{
+              paddingHorizontal: 12,
+              paddingVertical: 8,
+              borderBottomWidth: 1,
+              borderBottomColor: theme.border
+            }}
+          >
+            <Text style={{ color: theme.muted, fontSize: 11.5, fontWeight: '700' }}>
+              {block.language || 'text'}
+            </Text>
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <Text
+              selectable
+              style={{
+                minWidth: '100%',
+                padding: 13,
+                color: theme.text,
+                fontFamily: 'monospace',
+                fontSize: 13.5,
+                lineHeight: 21
+              }}
+            >
+              {block.source || ' '}
+            </Text>
+          </ScrollView>
+        </View>
+      )
+    case 'markdown':
+      return <BoardCanvasDom {...richProps} kind={'markdown' as const} source={block.source} />
+    case 'latex':
+      return (
+        <BoardCanvasDom
+          {...richProps}
+          kind={'latex' as const}
+          source={block.source}
+          latexDisplayMode={block.displayMode ?? 'display'}
+          latexAlignment={block.alignment ?? 'center'}
+          latexScale={(block.scale ?? 100) / 100}
+        />
+      )
+    case 'mermaid':
+      return (
+        <BoardCanvasDom
+          {...richProps}
+          kind={'mermaid' as const}
+          source={block.source}
+          mermaidTheme={block.theme ?? (colorScheme === 'dark' ? 'dark' : 'default')}
+          mermaidScale={(block.scale ?? 100) / 100}
+        />
+      )
+    case 'image':
+    case 'video':
+    case 'audio':
+    case 'file':
+      return <NotesReadAssetBlock block={block} assetActions={assetActions} />
+    case 'divider': {
+      const variant = block.variant ?? 'solid'
+      const thickness = block.thickness ?? 1
+      const color =
+        !block.color || block.color.toLowerCase() === '#6d5dfc' ? theme.accent : block.color
+      return variant === 'dashed' || variant === 'dotted' ? (
+        <View
+          style={{
+            marginVertical: 10,
+            height: Math.max(2, thickness),
+            borderTopWidth: thickness,
+            borderStyle: variant === 'dotted' ? 'dotted' : 'dashed',
+            borderColor: color
+          }}
+        />
+      ) : (
+        <View
+          style={{
+            alignSelf: variant === 'tapered' ? 'center' : 'stretch',
+            width: variant === 'tapered' ? '68%' : undefined,
+            height: thickness,
+            marginVertical: 12,
+            borderRadius: thickness,
+            backgroundColor: color
+          }}
+        />
+      )
+    }
+    case 'board':
+      return (
+        <DocumentBoardReader
+          block={block}
+          openBoard={openBoard}
+          onError={assetActions.onAssetError}
+        />
+      )
+  }
+}
+
+function NotesReadSection({
+  section,
+  assetActions,
+  openBoard,
+  resolveInternalLinkTarget,
+  onOpenInternalLink,
+  depth = 0
+}: {
+  section: Extract<NotesReadNode, { kind: 'section' }>
+  assetActions: DocumentAssetActions
+  openBoard?: OpenDocumentBoard
+  resolveInternalLinkTarget?: (
+    input: ResolveStudyInternalLinkTargetInput
+  ) => StudyInternalLinkTarget | null
+  onOpenInternalLink?: (target: ResolveStudyInternalLinkTargetInput) => void
+  depth?: number
+}): React.JSX.Element {
+  const theme = useTheme()
+  const [open, setOpen] = useState(true)
+  const hasContent = section.children.length > 0
+
+  return (
+    <View style={{ gap: 10 }}>
+      <Pressable
+        accessibilityRole={hasContent ? 'button' : undefined}
+        accessibilityLabel={
+          hasContent
+            ? `${open ? 'Свернуть' : 'Развернуть'} раздел «${section.heading.text || 'Без заголовка'}»`
+            : undefined
+        }
+        disabled={!hasContent}
+        onPress={() => setOpen((current) => !current)}
+        style={({ pressed }) => ({
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 6,
+          marginLeft: depth ? -3 : 0,
+          paddingVertical: 2,
+          opacity: pressed ? 0.72 : 1
+        })}
+      >
+        <ChevronRight
+          size={16}
+          color={theme.muted}
+          style={{
+            opacity: hasContent ? 1 : 0,
+            transform: [{ rotate: open ? '90deg' : '0deg' }]
+          }}
+        />
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <NotesReadHeading heading={section.heading} />
+        </View>
+      </Pressable>
+
+      {open && hasContent ? (
+        <View
+          style={{
+            gap: 18,
+            marginLeft: 8,
+            paddingLeft: 14,
+            borderLeftWidth: 1,
+            borderLeftColor: theme.border
+          }}
+        >
+          {section.children.map((child) =>
+            child.kind === 'section' ? (
+              <NotesReadSection
+                key={child.heading.id}
+                section={child}
+                assetActions={assetActions}
+                openBoard={openBoard}
+                resolveInternalLinkTarget={resolveInternalLinkTarget}
+                onOpenInternalLink={onOpenInternalLink}
+                depth={depth + 1}
+              />
+            ) : (
+              <NotesReadBlock
+                key={child.block.id}
+                block={child.block}
+                assetActions={assetActions}
+                openBoard={openBoard}
+                resolveInternalLinkTarget={resolveInternalLinkTarget}
+                onOpenInternalLink={onOpenInternalLink}
+              />
+            )
+          )}
+        </View>
+      ) : null}
+    </View>
+  )
+}
+
+function NotesDocumentReader({
+  document,
+  assetActions,
+  openBoard,
+  resolveInternalLinkTarget,
+  onOpenInternalLink
+}: {
+  document: StudyDocument
+  assetActions: DocumentAssetActions
+  openBoard?: OpenDocumentBoard
+  resolveInternalLinkTarget?: (
+    input: ResolveStudyInternalLinkTargetInput
+  ) => StudyInternalLinkTarget | null
+  onOpenInternalLink?: (target: ResolveStudyInternalLinkTargetInput) => void
+}): React.JSX.Element {
+  const outline = buildNotesReadOutline(document.blocks)
+
+  return (
+    <View style={{ gap: 22 }}>
+      {outline.map((node) =>
+        node.kind === 'section' ? (
+          <NotesReadSection
+            key={node.heading.id}
+            section={node}
+            assetActions={assetActions}
+            openBoard={openBoard}
+            resolveInternalLinkTarget={resolveInternalLinkTarget}
+            onOpenInternalLink={onOpenInternalLink}
+          />
+        ) : (
+          <NotesReadBlock
+            key={node.block.id}
+            block={node.block}
+            assetActions={assetActions}
+            openBoard={openBoard}
+            resolveInternalLinkTarget={resolveInternalLinkTarget}
+            onOpenInternalLink={onOpenInternalLink}
+          />
+        )
+      )}
+    </View>
+  )
+}
+
 export function DocumentEditor({
   document,
   onChange,
   createId,
   header,
   presentation = 'default',
+  mode = 'edit',
   importAsset,
   openAsset,
   resolveAssetUri,
   saveRecordedAudio,
   openBoard,
   searchInternalLinkTargets,
+  resolveInternalLinkTarget,
+  onOpenInternalLink,
   onAssetError
 }: DocumentEditorProps): React.JSX.Element {
   const theme = useTheme()
@@ -955,6 +1516,42 @@ export function DocumentEditor({
       setRichTextState(DEFAULT_NOTES_RICH_TEXT_STATE)
     }
   }, [activeBlockId, document])
+
+  if (clean && mode === 'read') {
+    return (
+      <ScrollView
+        style={{ flex: 1 }}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{
+          paddingHorizontal: 14,
+          paddingTop: 4,
+          paddingBottom: 48
+        }}
+      >
+        {header}
+        <View
+          accessibilityLabel="Содержимое заметки"
+          style={{
+            minHeight: 360,
+            paddingHorizontal: 18,
+            paddingVertical: 22,
+            borderWidth: 1,
+            borderColor: theme.border,
+            borderRadius: 20,
+            backgroundColor: theme.surface
+          }}
+        >
+          <NotesDocumentReader
+            document={document}
+            assetActions={assetActions}
+            openBoard={openBoard}
+            resolveInternalLinkTarget={resolveInternalLinkTarget}
+            onOpenInternalLink={onOpenInternalLink}
+          />
+        </View>
+      </ScrollView>
+    )
+  }
 
   const emit = (next: StudyDocument): void => {
     documentRef.current = next

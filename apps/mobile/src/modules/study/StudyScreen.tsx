@@ -2,6 +2,7 @@ import { randomUUID } from 'expo-crypto'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AppState, BackHandler, FlatList, View } from 'react-native'
 import type {
+  ResolveStudyInternalLinkTargetInput,
   StudyBoardBlock,
   StudyDocument,
   StudyMaterial,
@@ -96,9 +97,13 @@ function folderLabel(folder: StudyNode, nodes: StudyNode[]): string {
 }
 
 export function StudyScreen({
+  initialResource = null,
+  onResourceHandled,
   onImmersiveChange,
   onOpenBoard
 }: {
+  initialResource?: ResolveStudyInternalLinkTargetInput | null
+  onResourceHandled?: () => void
   onImmersiveChange?: (active: boolean) => void
   onOpenBoard?: (boardId: string) => void
 }): React.JSX.Element {
@@ -182,6 +187,23 @@ export function StudyScreen({
     },
     [api, requestReveal, setFocus]
   )
+
+  useEffect(() => {
+    if (!initialResource) return
+
+    const target = api.resolveInternalLinkTarget(initialResource)
+    if (!target) {
+      setEditorError('Материал или заголовок был удалён.')
+      onResourceHandled?.()
+      return
+    }
+
+    openMaterial(target.materialId, {
+      mode: 'read',
+      revealBlockId: target.kind === 'heading' ? target.headingId : null
+    })
+    onResourceHandled?.()
+  }, [api, initialResource, onResourceHandled, openMaterial])
 
   const flush = useCallback(async (): Promise<void> => {
     const queue = queueRef.current
