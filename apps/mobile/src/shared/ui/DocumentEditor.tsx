@@ -60,6 +60,7 @@ import {
 import type { NotesRichTextDomRef, NotesRichTextFormattingState } from './NotesRichTextDom'
 import { resolveStudyRichTextHtml } from './richTextHtml'
 import { StudySourceBlock } from './StudySourceBlock'
+import { StudyDividerBlock } from './StudyDividerBlock'
 import { useConfirmation } from './ConfirmationProvider'
 import { Button, Label } from './primitives'
 import { useTheme } from './theme'
@@ -429,48 +430,8 @@ function BlockInput({
       return (
         <LocalAssetEditor block={block} update={update} assetActions={assetActions} clean={clean} />
       )
-    case 'divider': {
-      const variant = block.variant ?? 'solid'
-      const thickness = block.thickness ?? 1
-      const color =
-        !block.color || block.color.toLowerCase() === '#6d5dfc' ? theme.accent : block.color
-      return (
-        <View style={{ gap: 10, paddingVertical: clean ? 16 : 0 }}>
-          {variant === 'dashed' || variant === 'dotted' ? (
-            <View
-              style={{
-                height: Math.max(2, thickness),
-                borderTopWidth: thickness,
-                borderStyle: variant === 'dotted' ? 'dotted' : 'dashed',
-                borderColor: color
-              }}
-            />
-          ) : (
-            <View
-              style={{
-                alignSelf: variant === 'tapered' ? 'center' : 'stretch',
-                width: variant === 'tapered' ? '68%' : undefined,
-                height: thickness,
-                borderRadius: thickness,
-                backgroundColor: color
-              }}
-            />
-          )}
-          {!clean ? (
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              {(['solid', 'tapered', 'dashed', 'dotted'] as const).map((nextVariant) => (
-                <Button
-                  key={nextVariant}
-                  label={nextVariant}
-                  selected={variant === nextVariant}
-                  onPress={() => update({ ...block, variant: nextVariant })}
-                />
-              ))}
-            </View>
-          ) : null}
-        </View>
-      )
-    }
+    case 'divider':
+      return <StudyDividerBlock block={block} spacing="edit" />
     case 'board':
       return (
         <DocumentBoardEditor
@@ -1321,34 +1282,8 @@ function NotesReadBlock({
     case 'audio':
     case 'file':
       return <NotesReadAssetBlock block={block} assetActions={assetActions} />
-    case 'divider': {
-      const variant = block.variant ?? 'solid'
-      const thickness = block.thickness ?? 1
-      const color =
-        !block.color || block.color.toLowerCase() === '#6d5dfc' ? theme.accent : block.color
-      return variant === 'dashed' || variant === 'dotted' ? (
-        <View
-          style={{
-            marginVertical: 10,
-            height: Math.max(2, thickness),
-            borderTopWidth: thickness,
-            borderStyle: variant === 'dotted' ? 'dotted' : 'dashed',
-            borderColor: color
-          }}
-        />
-      ) : (
-        <View
-          style={{
-            alignSelf: variant === 'tapered' ? 'center' : 'stretch',
-            width: variant === 'tapered' ? '68%' : undefined,
-            height: thickness,
-            marginVertical: 12,
-            borderRadius: thickness,
-            backgroundColor: color
-          }}
-        />
-      )
-    }
+    case 'divider':
+      return <StudyDividerBlock block={block} spacing="read" />
     case 'board':
       return (
         <DocumentBoardReader
