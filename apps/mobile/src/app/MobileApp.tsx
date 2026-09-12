@@ -11,6 +11,7 @@ import {
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar'
 import { appearanceTokens } from '@mymind/design'
+import type { ResolveStudyInternalLinkTargetInput } from '@mymind/contracts/study'
 import {
   DEFAULT_APPEARANCE_PREFERENCES,
   type AppearancePreferences
@@ -88,6 +89,8 @@ export default function MobileApp(): React.JSX.Element {
   )
   const [route, setRoute] = useState<Route>('home')
   const [boardResourceId, setBoardResourceId] = useState<string | null>(null)
+  const [studyResourceTarget, setStudyResourceTarget] =
+    useState<ResolveStudyInternalLinkTargetInput | null>(null)
   const [immersive, setImmersive] = useState(false)
   const [backupOperation, setBackupOperation] = useState<BackupOperation | null>(null)
   const [error, setError] = useState('')
@@ -103,6 +106,7 @@ export default function MobileApp(): React.JSX.Element {
       if (backupOperation) return
       setImmersive(false)
       setBoardResourceId(null)
+      setStudyResourceTarget(null)
       setRoute(next)
     },
     [backupOperation]
@@ -117,6 +121,21 @@ export default function MobileApp(): React.JSX.Element {
     },
     [backupOperation]
   )
+
+  const openStudyTarget = useCallback(
+    (target: ResolveStudyInternalLinkTargetInput): void => {
+      if (backupOperation) return
+      setImmersive(false)
+      setBoardResourceId(null)
+      setStudyResourceTarget(target)
+      setRoute('study')
+    },
+    [backupOperation]
+  )
+
+  const handleStudyResourceHandled = useCallback((): void => {
+    setStudyResourceTarget(null)
+  }, [])
 
   useEffect(() => {
     let active = true
@@ -314,11 +333,20 @@ export default function MobileApp(): React.JSX.Element {
                     {route === 'home' ? (
                       <Home services={services} navigate={navigate} />
                     ) : route === 'study' ? (
-                      <StudyScreen onImmersiveChange={setImmersive} onOpenBoard={openBoard} />
+                      <StudyScreen
+                        initialResource={studyResourceTarget}
+                        onResourceHandled={handleStudyResourceHandled}
+                        onImmersiveChange={setImmersive}
+                        onOpenBoard={openBoard}
+                      />
                     ) : route === 'boards' ? (
                       <BoardsScreen initialBoardId={boardResourceId} />
                     ) : route === 'notes' ? (
-                      <NotesScreen onOpenBoard={openBoard} onImmersiveChange={setImmersive} />
+                      <NotesScreen
+                        onOpenBoard={openBoard}
+                        onOpenStudyTarget={openStudyTarget}
+                        onImmersiveChange={setImmersive}
+                      />
                     ) : route === 'tasks' ? (
                       <TasksScreen />
                     ) : route === 'habits' ? (
