@@ -11,7 +11,7 @@ import {
   View
 } from 'react-native'
 import type { NoteDocument, NoteGroup, NoteRecord, NoteSummary } from '@mymind/contracts/notes'
-import type { StudyBoardBlock } from '@mymind/contracts/study'
+import type { ResolveStudyInternalLinkTargetInput, StudyBoardBlock } from '@mymind/contracts/study'
 import { AutosaveQueue } from '@mymind/core/autosave'
 import * as notesValidation from '@mymind/core/validation/notes'
 import { useServices } from '../../app/context'
@@ -178,9 +178,11 @@ function noteMatches(note: NoteSummary, query: string): boolean {
 
 export function NotesScreen({
   onOpenBoard,
+  onOpenStudyTarget,
   onImmersiveChange
 }: {
   onOpenBoard?: (boardId: string) => void
+  onOpenStudyTarget?: (target: ResolveStudyInternalLinkTargetInput) => void
   onImmersiveChange?: (immersive: boolean) => void
 }): React.JSX.Element {
   const { notes: api, boards, study, documentAssets } = useServices()
@@ -321,6 +323,26 @@ export function NotesScreen({
       .catch((reason) => setEditorError(messageFor(reason)))
       .finally(() => setModeChanging(false))
   }
+
+  const openStudyInternalLink = useCallback(
+    (input: ResolveStudyInternalLinkTargetInput): void => {
+      const target = study.resolveInternalLinkTarget(input)
+      if (!target) {
+        toast.error('Материал или заголовок был удалён.', 'notes-link-unavailable')
+        return
+      }
+      if (!onOpenStudyTarget) {
+        toast.error('Переход к материалу сейчас недоступен.', 'notes-link-navigation-unavailable')
+        return
+      }
+      onOpenStudyTarget({
+        kind: target.kind,
+        materialId: target.materialId,
+        headingId: target.headingId
+      })
+    },
+    [onOpenStudyTarget, study, toast]
+  )
 
   const openLinkedBoard = useCallback(
     async (block: StudyBoardBlock): Promise<void> => {
@@ -549,6 +571,7 @@ export function NotesScreen({
               limit: 40
             })
           }
+          onOpenInternalLink={openStudyInternalLink}
           onAssetError={(reason) => setEditorError(messageFor(reason))}
           header={
             <View
