@@ -1152,10 +1152,10 @@ function NotesReadBlock({
     borderColor: theme.border,
     surfaceColor: theme.raised,
     accentColor: theme.accent,
-    onOpenInternalLink: async (target) => {
+    onOpenInternalLink: async (target: ResolveStudyInternalLinkTargetInput) => {
       onOpenInternalLink?.(target)
     },
-    onOpenExternalLink: async (href) => {
+    onOpenExternalLink: async (href: string) => {
       try {
         await Linking.openURL(href)
       } catch (reason) {
