@@ -38,7 +38,8 @@ export async function resolveAndroidSdkPath({
   try {
     const localProperties = await readFile(localPropertiesPath, 'utf8')
     const sdkDir = parseAndroidSdkDir(localProperties)
-    if (sdkDir && (await exists(sdkDir))) return sdkDir
+    const normalizedSdkDir = sdkDir ? path.normalize(sdkDir) : null
+    if (normalizedSdkDir && (await exists(normalizedSdkDir))) return normalizedSdkDir
   } catch {
     // The generated Android project may not exist yet.
   }
@@ -56,7 +57,8 @@ export async function resolveAndroidSdkPath({
   ].filter(Boolean)
 
   for (const candidate of candidates) {
-    if (await exists(candidate)) return candidate
+    const normalizedCandidate = path.normalize(candidate)
+    if (await exists(normalizedCandidate)) return normalizedCandidate
   }
 
   return null
