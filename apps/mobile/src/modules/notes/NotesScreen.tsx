@@ -571,6 +571,7 @@ export function NotesScreen({
               limit: 40
             })
           }
+          resolveInternalLinkTarget={(input) => study.resolveInternalLinkTarget(input)}
           onOpenInternalLink={openStudyInternalLink}
           onAssetError={(reason) => setEditorError(messageFor(reason))}
           header={
