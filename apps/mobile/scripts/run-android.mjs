@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process'
 import { access, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import { createRequire } from 'node:module'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import { prepareAndroidNative } from './prepare-android-native.mjs'
@@ -64,6 +65,40 @@ export async function resolveAndroidSdkPath({
   return null
 }
 
+export async function resolveExpoCliPath({
+  mobileRoot = defaultMobileRoot,
+  repoRoot = defaultRepoRoot
+} = {}) {
+  const packageRequire = createRequire(path.join(mobileRoot, 'package.json'))
+
+  try {
+    const expoPackageJsonPath = packageRequire.resolve('expo/package.json')
+    const expoPackage = JSON.parse(await readFile(expoPackageJsonPath, 'utf8'))
+    const expoBin =
+      typeof expoPackage.bin === 'string' ? expoPackage.bin : expoPackage.bin?.expo
+
+    if (typeof expoBin === 'string') {
+      const cliPath = path.resolve(path.dirname(expoPackageJsonPath), expoBin)
+      if (await exists(cliPath)) return cliPath
+    }
+  } catch {
+    // Fall back to the workspace locations used by npm if package exports block package.json.
+  }
+
+  const candidates = [
+    path.join(repoRoot, 'node_modules', 'expo', 'bin', 'cli'),
+    path.join(mobileRoot, 'node_modules', 'expo', 'bin', 'cli')
+  ]
+
+  for (const candidate of candidates) {
+    if (await exists(candidate)) return candidate
+  }
+
+  throw new Error(
+    '[MyMind] Expo CLI entry was not found. Run npm ci from the repository root and retry.'
+  )
+}
+
 export async function readAndroidLocalProperties(mobileRoot = defaultMobileRoot) {
   try {
     return await readFile(path.join(mobileRoot, 'android', 'local.properties'), 'utf8')
@@ -105,6 +140,8 @@ export async function runAndroid({
   env = process.env,
   platform = process.platform,
   spawn = spawnSync,
+  nodeExecutable = process.execPath,
+  expoCliPath,
   log = console.log
 } = {}) {
   const localPropertiesSnapshot = await readAndroidLocalProperties(mobileRoot)
@@ -125,7 +162,8 @@ export async function runAndroid({
     log
   })
 
-  const command = platform === 'win32' ? 'npx.cmd' : 'npx'
+  const resolvedExpoCliPath =
+    expoCliPath ?? (await resolveExpoCliPath({ mobileRoot, repoRoot }))
   const childEnv = {
     ...env,
     ...(sdkPath
@@ -144,8 +182,8 @@ export async function runAndroid({
   if (!(await exists(prepared.androidRoot))) {
     log('[MyMind] Regenerating Expo Android project before Gradle build.')
     const prebuild = spawn(
-      command,
-      ['expo', 'prebuild', '--platform', 'android', '--no-install'],
+      nodeExecutable,
+      [resolvedExpoCliPath, 'prebuild', '--platform', 'android', '--no-install'],
       spawnOptions
     )
     assertCommandSucceeded(prebuild, 'Expo Android prebuild')
@@ -161,7 +199,11 @@ export async function runAndroid({
   }
 
   const forwardedArgs = args.filter((argument) => argument !== '--force')
-  const result = spawn(command, ['expo', 'run:android', ...forwardedArgs], spawnOptions)
+  const result = spawn(
+    nodeExecutable,
+    [resolvedExpoCliPath, 'run:android', ...forwardedArgs],
+    spawnOptions
+  )
 
   await restoreAndroidLocalProperties({
     mobileRoot,

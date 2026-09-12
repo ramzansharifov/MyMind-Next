@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
 import { mkdirSync, readFileSync } from 'node:fs'
 import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
@@ -7,6 +8,7 @@ import path from 'node:path'
 import {
   parseAndroidSdkDir,
   resolveAndroidSdkPath,
+  resolveExpoCliPath,
   restoreAndroidLocalProperties,
   runAndroid
 } from './run-android.mjs'
@@ -16,6 +18,14 @@ assert.equal(
   'C:\\Users\\ramza\\AppData\\Local\\Android\\Sdk'
 )
 assert.equal(parseAndroidSdkDir('other=value\n'), null)
+
+const realExpoCliPath = await resolveExpoCliPath()
+const expoVersion = spawnSync(process.execPath, [realExpoCliPath, '--version'], {
+  encoding: 'utf8'
+})
+assert.equal(expoVersion.error, undefined)
+assert.equal(expoVersion.status, 0)
+assert.match(`${expoVersion.stdout}${expoVersion.stderr}`, /\d+\.\d+/)
 
 const root = await mkdtemp(path.join(os.tmpdir(), 'mymind-android-sdk-'))
 const mobileRoot = path.join(root, 'apps', 'mobile')
@@ -83,11 +93,15 @@ try {
   await writeFile(path.join(androidRoot, 'stale.txt'), 'stale')
 
   const calls = []
+  const fakeNodeExecutable = path.join(root, 'node.exe')
+  const fakeExpoCliPath = path.join(root, 'expo-cli.js')
   const result = await runAndroid({
     mobileRoot,
     repoRoot: root,
     env: { ANDROID_HOME: fakeSdk },
     platform: 'win32',
+    nodeExecutable: fakeNodeExecutable,
+    expoCliPath: fakeExpoCliPath,
     log() {},
     spawn(command, args, options) {
       calls.push({ command, args, options })
@@ -111,21 +125,22 @@ try {
 
   assert.equal(result.status, 0)
   assert.equal(calls.length, 2)
-  assert.equal(calls[0].command, 'npx.cmd')
+  assert.equal(calls[0].command, fakeNodeExecutable)
   assert.deepEqual(calls[0].args, [
-    'expo',
+    fakeExpoCliPath,
     'prebuild',
     '--platform',
     'android',
     '--no-install'
   ])
-  assert.deepEqual(calls[1].args, ['expo', 'run:android'])
+  assert.equal(calls[1].command, fakeNodeExecutable)
+  assert.deepEqual(calls[1].args, [fakeExpoCliPath, 'run:android'])
   assert.equal(
     await readFile(path.join(androidRoot, 'local.properties'), 'utf8'),
     originalLocalProperties
   )
 
-  console.log('Android SDK local.properties regression passed')
+  console.log('Android SDK + Expo CLI spawn regression passed')
 } finally {
   await rm(root, { recursive: true, force: true })
 }
