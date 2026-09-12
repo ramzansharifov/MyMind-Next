@@ -26,6 +26,7 @@ import {
 import { BarChart3, CalendarDays, Target, Utensils } from 'lucide-react-native'
 import { ModuleTabs } from '../../shared/ui/ModuleTabs'
 import { NutritionReportsView } from './NutritionReportsView'
+import { useTheme } from '../../shared/ui/theme'
 
 type Tab = 'today' | 'diary' | 'goal' | 'progress'
 type ListItem =
@@ -100,6 +101,162 @@ function nutrientsFrom(values: Record<string, unknown>): NutritionValues {
 
 function macroLine(values: NutritionValues): string {
   return `${values.calories} ккал · Б ${values.proteinG} · Ж ${values.fatG} · У ${values.carbsG}`
+}
+
+const goalFields = [
+  { key: 'calories', label: 'Калории', hint: 'ккал' },
+  { key: 'proteinG', label: 'Белки', hint: 'г' },
+  { key: 'fatG', label: 'Жиры', hint: 'г' },
+  { key: 'carbsG', label: 'Углеводы', hint: 'г' },
+  { key: 'fiberG', label: 'Клетчатка', hint: 'г' },
+  { key: 'waterMl', label: 'Вода', hint: 'мл' }
+] as const
+
+type GoalFieldKey = (typeof goalFields)[number]['key']
+type GoalDraft = Record<GoalFieldKey, string>
+
+function goalDraft(target: NutritionTargetRecord | null): GoalDraft {
+  return {
+    calories: target?.calories?.toString() ?? '',
+    proteinG: target?.proteinG?.toString() ?? '',
+    fatG: target?.fatG?.toString() ?? '',
+    carbsG: target?.carbsG?.toString() ?? '',
+    fiberG: target?.fiberG?.toString() ?? '',
+    waterMl: target?.waterMl?.toString() ?? ''
+  }
+}
+
+function optionalPositive(value: string): number | null {
+  if (!value.trim()) return null
+  const parsed = Number(value.replace(',', '.'))
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null
+}
+
+function NutritionGoalCard({
+  target,
+  onSave
+}: {
+  target: NutritionTargetRecord | null
+  onSave(input: {
+    calories: number | null
+    proteinG: number | null
+    fatG: number | null
+    carbsG: number | null
+    fiberG: number | null
+    waterMl: number | null
+  }): void
+}): React.JSX.Element {
+  const theme = useTheme()
+  const [values, setValues] = useState<GoalDraft>(() => goalDraft(target))
+
+  const save = (): void => {
+    const water = optionalPositive(values.waterMl)
+    onSave(
+      validation.setNutritionTargetsInputSchema.parse({
+        calories: optionalPositive(values.calories),
+        proteinG: optionalPositive(values.proteinG),
+        fatG: optionalPositive(values.fatG),
+        carbsG: optionalPositive(values.carbsG),
+        fiberG: optionalPositive(values.fiberG),
+        waterMl: water === null ? null : Math.round(water)
+      })
+    )
+  }
+
+  return (
+    <ScrollView contentContainerStyle={{ paddingBottom: 28 }}>
+      <View
+        style={{
+          overflow: 'hidden',
+          borderWidth: 1,
+          borderColor: theme.border,
+          borderRadius: 16,
+          backgroundColor: theme.surface
+        }}
+      >
+        <View
+          style={{
+            padding: 18,
+            flexDirection: 'row',
+            alignItems: 'flex-start',
+            gap: 12,
+            borderBottomWidth: 1,
+            borderBottomColor: theme.border
+          }}
+        >
+          <View
+            style={{
+              width: 40,
+              height: 40,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 12,
+              backgroundColor: theme.accent + '14'
+            }}
+          >
+            <Target size={20} color={theme.accent} />
+          </View>
+          <View style={{ minWidth: 0, flex: 1 }}>
+            <Text style={{ color: theme.text, fontSize: 16, fontWeight: '700' }}>
+              Общая цель питания
+            </Text>
+            <Text style={{ marginTop: 4, color: theme.muted, fontSize: 12, lineHeight: 19 }}>
+              Единые ориентиры для «Сегодня», «Дневника» и «Прогресса». Пустое поле означает,
+              что цель по показателю не задана.
+            </Text>
+          </View>
+        </View>
+
+        <View
+          style={{
+            padding: 18,
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            gap: 12
+          }}
+        >
+          {goalFields.map((field) => (
+            <View key={field.key} style={{ width: '47%', minWidth: 140, flexGrow: 1, gap: 6 }}>
+              <Text style={{ color: theme.text, fontSize: 13, fontWeight: '600' }}>
+                {field.label} · {field.hint}
+              </Text>
+              <TextInput
+                accessibilityLabel={field.label}
+                value={values[field.key]}
+                placeholder="Не задано"
+                placeholderTextColor={theme.muted}
+                keyboardType="decimal-pad"
+                onChangeText={(value) =>
+                  setValues((current) => ({ ...current, [field.key]: value }))
+                }
+                style={{
+                  minHeight: 44,
+                  paddingHorizontal: 12,
+                  borderWidth: 1,
+                  borderColor: theme.border,
+                  borderRadius: 12,
+                  backgroundColor: theme.background,
+                  color: theme.text,
+                  fontSize: 14
+                }}
+              />
+            </View>
+          ))}
+        </View>
+
+        <View
+          style={{
+            padding: 16,
+            alignItems: 'flex-end',
+            borderTopWidth: 1,
+            borderTopColor: theme.border
+          }}
+        >
+          <Button label="Сохранить цель" icon="check" primary onPress={save} />
+        </View>
+      </View>
+    </ScrollView>
+  )
 }
 
 export function NutritionScreen(): React.JSX.Element {
