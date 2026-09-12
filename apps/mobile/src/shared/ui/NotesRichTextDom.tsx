@@ -67,7 +67,6 @@ export interface NotesRichTextDomProps {
   ref: Ref<NotesRichTextDomRef>
   dom?: import('expo/dom').DOMProps
   html: string
-  plainText: string
   textColor: string
   mutedColor: string
   borderColor: string
@@ -249,10 +248,13 @@ function formattingState(editor: Editor): NotesRichTextFormattingState {
 }
 
 function safeSelection(editor: Editor, selection: SavedSelection | null): SavedSelection {
-  const max = editor.state.doc.content.size
+  // Text selections live inside the document content, not at the outer doc boundary.
+  // Clamping to content.size could produce a position one step past the last text node.
+  const max = Math.max(1, editor.state.doc.content.size - 1)
+  const current = editor.state.selection
   const fallback = {
-    from: editor.state.selection.from,
-    to: editor.state.selection.to
+    from: Math.max(1, Math.min(current.from, max)),
+    to: Math.max(1, Math.min(current.to, max))
   }
   if (!selection) return fallback
   const from = Math.max(1, Math.min(selection.from, max))
@@ -263,7 +265,6 @@ function safeSelection(editor: Editor, selection: SavedSelection | null): SavedS
 export default function NotesRichTextDom({
   ref,
   html,
-  plainText: _plainText,
   textColor,
   mutedColor,
   borderColor,
@@ -277,7 +278,10 @@ export default function NotesRichTextDom({
   const mountRef = useRef<HTMLDivElement | null>(null)
   const editorRef = useRef<Editor | null>(null)
   const savedSelectionRef = useRef<SavedSelection | null>(null)
-  const lastEmittedHtmlRef = useRef<string | null>(null)
+  // The DOM editor owns its document for the lifetime of this mount. Props cross the
+  // Expo DOM bridge asynchronously, so feeding every emitted HTML value back through
+  // setContent can replay an older document over newer input and invalidate DOM selection.
+  const initialHtmlRef = useRef(html || '<p></p>')
   const callbacksRef = useRef({
     onChange,
     onFocusEditor,
@@ -313,7 +317,11 @@ export default function NotesRichTextDom({
 
   const commandChain = useCallback((editor: Editor) => {
     const selection = safeSelection(editor, savedSelectionRef.current)
-    return editor.chain().focus().setTextSelection(selection)
+    const chain = editor.chain()
+    const current = editor.state.selection
+    return current.from === selection.from && current.to === selection.to
+      ? chain
+      : chain.setTextSelection(selection)
   }, [])
 
   useDOMImperativeHandle(
@@ -369,10 +377,10 @@ export default function NotesRichTextDom({
             chain.setTextAlign('justify').run()
             break
           case 'undo':
-            editor.chain().focus().undo().run()
+            editor.chain().undo().run()
             break
           case 'redo':
-            editor.chain().focus().redo().run()
+            editor.chain().redo().run()
             break
           case 'clearFormatting':
             chain.unsetAllMarks().clearNodes().setTextAlign('left').run()
@@ -452,7 +460,8 @@ export default function NotesRichTextDom({
       focusEditor: async () => {
         const editor = editorRef.current
         if (!editor || editor.isDestroyed) return
-        commandChain(editor).run()
+        const selection = safeSelection(editor, savedSelectionRef.current)
+        editor.commands.setTextSelection(selection)
       }
     }),
     [commandChain, rememberSelection]
@@ -465,7 +474,7 @@ export default function NotesRichTextDom({
     const editor = new Editor({
       element,
       extensions: createExtensions(),
-      content: html || '<p></p>',
+      content: initialHtmlRef.current,
       editorProps: {
         attributes: {
           class: 'notes-editor',
@@ -487,7 +496,6 @@ export default function NotesRichTextDom({
       onUpdate: ({ editor: current }) => {
         const nextHtml = current.getHTML()
         const nextText = current.getText({ blockSeparator: '\n\n' })
-        lastEmittedHtmlRef.current = nextHtml
         void callbacksRef.current.onChange(nextHtml, nextText)
         emitFormatting(current)
       }
@@ -512,18 +520,6 @@ export default function NotesRichTextDom({
       editor.destroy()
     }
   }, [emitFormatting, rememberSelection])
-
-  useEffect(() => {
-    const editor = editorRef.current
-    if (!editor || editor.isDestroyed) return
-    if (html === lastEmittedHtmlRef.current) return
-    if (editor.getHTML() === html) return
-    editor.commands.setContent(html || '<p></p>', {
-      emitUpdate: false,
-      errorOnInvalidContent: false
-    })
-    rememberSelection(editor)
-  }, [html, rememberSelection])
 
   return (
     <main
