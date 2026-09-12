@@ -397,7 +397,7 @@ export function PasswordsScreen(): React.JSX.Element {
           <WorkspaceStatCard label="Всего" value={String(securitySummary.total)} icon="passwords" />
           <WorkspaceStatCard label="Слабые" value={String(securitySummary.weak)} icon="info" />
           <WorkspaceStatCard label="Повторяются" value={String(securitySummary.reused)} icon="copy" />
-          <WorkspaceStatCard label="Старше 180 дней" value={String(securitySummary.old)} icon="lock" />
+          <WorkspaceStatCard label="Старше 180 дней" value={String(securitySummary.old)} icon="passwords" />
         </View>
         <View
           style={{
@@ -515,7 +515,7 @@ export function PasswordsScreen(): React.JSX.Element {
   return (
     <View style={{ flex: 1 }}>
       <View style={{ gap: 10, paddingBottom: 12 }}>
-        <ModuleTabs
+        <ModuleTabs<Tab>
           items={[
             { id: 'items' as const, label: 'Хранилище', icon: KeyRound },
             { id: 'favorites' as const, label: 'Избранное', icon: Heart },
