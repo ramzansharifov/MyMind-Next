@@ -1,5 +1,11 @@
 'use dom'
 
+import { Editor, mergeAttributes, Node as TiptapNode, type ChainedCommands } from '@tiptap/core'
+import Highlight from '@tiptap/extension-highlight'
+import TextAlign from '@tiptap/extension-text-align'
+import { TextStyleKit } from '@tiptap/extension-text-style'
+import { Placeholder } from '@tiptap/extensions'
+import StarterKit from '@tiptap/starter-kit'
 import { useDOMImperativeHandle, type DOMImperativeFactory } from 'expo/dom'
 import { useCallback, useEffect, useRef, type Ref } from 'react'
 
@@ -73,204 +79,186 @@ export interface NotesRichTextDomProps {
   onHeightChange: (height: number) => Promise<void>
 }
 
-function safeCommandState(command: string): boolean {
+interface SavedSelection {
+  from: number
+  to: number
+}
+
+const StudyInternalLinkExtension = TiptapNode.create({
+  name: 'studyInternalLink',
+  inline: true,
+  group: 'inline',
+  atom: true,
+  selectable: true,
+
+  addAttributes() {
+    return {
+      targetKind: {
+        default: 'material',
+        parseHTML: (element) =>
+          element.getAttribute('data-target-kind') === 'heading' ? 'heading' : 'material',
+        renderHTML: (attributes) => ({ 'data-target-kind': attributes.targetKind })
+      },
+      materialId: {
+        default: '',
+        parseHTML: (element) => element.getAttribute('data-material-id') ?? '',
+        renderHTML: (attributes) => ({ 'data-material-id': attributes.materialId })
+      },
+      headingId: {
+        default: null,
+        parseHTML: (element) => element.getAttribute('data-heading-id'),
+        renderHTML: (attributes) =>
+          attributes.headingId ? { 'data-heading-id': attributes.headingId } : {}
+      },
+      headingLevel: {
+        default: null,
+        parseHTML: (element) => {
+          const level = Number(element.getAttribute('data-heading-level'))
+          return level === 1 || level === 2 || level === 3 ? level : null
+        },
+        renderHTML: (attributes) =>
+          attributes.headingLevel ? { 'data-heading-level': String(attributes.headingLevel) } : {}
+      },
+      labelMode: {
+        default: 'auto',
+        parseHTML: (element) =>
+          element.getAttribute('data-label-mode') === 'custom' ? 'custom' : 'auto',
+        renderHTML: (attributes) => ({ 'data-label-mode': attributes.labelMode })
+      },
+      label: {
+        default: '',
+        parseHTML: (element) => element.getAttribute('data-label') ?? element.textContent ?? '',
+        renderHTML: (attributes) => ({ 'data-label': attributes.label })
+      },
+      materialTitle: {
+        default: '',
+        parseHTML: (element) => element.getAttribute('data-material-title') ?? '',
+        renderHTML: (attributes) => ({ 'data-material-title': attributes.materialTitle })
+      },
+      folderPath: {
+        default: [],
+        parseHTML: (element) => parseFolderPath(element.getAttribute('data-folder-path')),
+        renderHTML: (attributes) => ({
+          'data-folder-path': JSON.stringify(
+            Array.isArray(attributes.folderPath) ? attributes.folderPath : []
+          )
+        })
+      }
+    }
+  },
+
+  parseHTML() {
+    return [{ tag: 'span[data-study-internal-link="true"]' }]
+  },
+
+  renderHTML({ node, HTMLAttributes }) {
+    return [
+      'span',
+      mergeAttributes(HTMLAttributes, {
+        'data-study-internal-link': 'true'
+      }),
+      String(node.attrs.label || 'Внутренняя ссылка')
+    ]
+  },
+
+  renderText({ node }) {
+    return String(node.attrs.label ?? '')
+  }
+})
+
+function parseFolderPath(value: string | null): string[] {
+  if (!value) return []
   try {
-    return document.queryCommandState(command)
+    const parsed: unknown = JSON.parse(value)
+    return Array.isArray(parsed)
+      ? parsed.filter((item): item is string => typeof item === 'string')
+      : []
+  } catch {
+    return []
+  }
+}
+
+function createExtensions() {
+  return [
+    StarterKit.configure({
+      heading: false,
+      codeBlock: false,
+      horizontalRule: false,
+      link: {
+        autolink: true,
+        linkOnPaste: true,
+        openOnClick: false,
+        enableClickSelection: true,
+        defaultProtocol: 'https',
+        HTMLAttributes: {
+          target: '_blank',
+          rel: 'noopener noreferrer'
+        }
+      }
+    }),
+    StudyInternalLinkExtension,
+    TextAlign.configure({
+      types: ['paragraph'],
+      alignments: ['left', 'center', 'right', 'justify']
+    }),
+    TextStyleKit,
+    Highlight.configure({ multicolor: true }),
+    Placeholder.configure({
+      placeholder: 'Начните писать…',
+      showOnlyWhenEditable: true
+    })
+  ]
+}
+
+function normalizeHref(value: string): string | null {
+  const candidate = value.trim()
+  if (!candidate) return null
+  if (/^(https?:|mailto:|tel:)/i.test(candidate)) return candidate
+  if (/^[\w.-]+\.[a-z]{2,}(?:[/#?].*)?$/i.test(candidate)) return `https://${candidate}`
+  return null
+}
+
+function textAlignment(value: unknown): NotesRichTextAlignment {
+  return value === 'center' || value === 'right' || value === 'justify' ? value : 'left'
+}
+
+function canRun(editor: Editor, command: (chain: ChainedCommands) => boolean): boolean {
+  try {
+    return command(editor.can().chain())
   } catch {
     return false
   }
 }
 
-function closestElement(selection: Selection | null): HTMLElement | null {
-  const node = selection?.anchorNode
-  if (!node) return null
-  return (node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement) as HTMLElement | null
-}
-
-function ancestor(element: HTMLElement | null, selector: string): HTMLElement | null {
-  return element?.closest(selector) as HTMLElement | null
-}
-
-function formattingState(): NotesRichTextFormattingState {
-  const selection = window.getSelection()
-  const element = closestElement(selection)
-  const paragraph = ancestor(element, 'p,div,li,blockquote')
-  const textStyle = ancestor(element, 'span[style],font[style],font[color]')
-  const highlight = ancestor(element, 'mark')
-  const code = ancestor(element, 'code')
-  const link = ancestor(element, 'a')
-  const blockquote = ancestor(element, 'blockquote')
-  const bulletList = ancestor(element, 'ul')
-  const orderedList = ancestor(element, 'ol')
-  const computed = element ? getComputedStyle(element) : null
-  const alignment = (paragraph ? getComputedStyle(paragraph).textAlign : '') as string
-  const mappedAlignment: NotesRichTextAlignment =
-    alignment === 'center' || alignment === 'right' || alignment === 'justify' ? alignment : 'left'
+function formattingState(editor: Editor): NotesRichTextFormattingState {
+  const textStyle = editor.getAttributes('textStyle')
+  const paragraph = editor.getAttributes('paragraph')
+  const link = editor.getAttributes('link')
+  const highlight = editor.getAttributes('highlight')
 
   return {
-    bold:
-      safeCommandState('bold') ||
-      Boolean(computed && Number.parseInt(computed.fontWeight, 10) >= 600),
-    italic: safeCommandState('italic') || computed?.fontStyle === 'italic',
-    underline:
-      safeCommandState('underline') || Boolean(computed?.textDecorationLine.includes('underline')),
-    strike:
-      safeCommandState('strikeThrough') ||
-      Boolean(computed?.textDecorationLine.includes('line-through')),
-    code: Boolean(code),
-    blockquote: Boolean(blockquote),
-    bulletList: Boolean(bulletList),
-    orderedList: Boolean(orderedList),
-    alignment: mappedAlignment,
-    linkActive: Boolean(link),
-    href: link instanceof HTMLAnchorElement ? link.href : '',
-    fontSize: textStyle?.style.fontSize || 'default',
-    color: textStyle?.style.color || textStyle?.getAttribute('color') || '',
-    backgroundColor:
-      highlight?.style.backgroundColor || highlight?.getAttribute('data-color') || '',
-    canUndo: document.queryCommandEnabled('undo'),
-    canRedo: document.queryCommandEnabled('redo')
+    bold: editor.isActive('bold'),
+    italic: editor.isActive('italic'),
+    underline: editor.isActive('underline'),
+    strike: editor.isActive('strike'),
+    code: editor.isActive('code'),
+    blockquote: editor.isActive('blockquote'),
+    bulletList: editor.isActive('bulletList'),
+    orderedList: editor.isActive('orderedList'),
+    alignment: textAlignment(paragraph.textAlign),
+    linkActive: editor.isActive('link'),
+    href: typeof link.href === 'string' ? link.href : '',
+    fontSize: typeof textStyle.fontSize === 'string' ? textStyle.fontSize : 'default',
+    color: typeof textStyle.color === 'string' ? textStyle.color : '',
+    backgroundColor: typeof highlight.color === 'string' ? highlight.color : '',
+    canUndo: canRun(editor, (chain) => chain.undo().run()),
+    canRedo: canRun(editor, (chain) => chain.redo().run())
   }
-}
-
-function sanitizeHref(raw: string): string | null {
-  const value = raw.trim()
-  if (!value) return null
-  if (/^(https?:|mailto:|tel:)/i.test(value)) return value
-  if (/^[\w.-]+\.[a-z]{2,}(?:[/#?].*)?$/i.test(value)) return `https://${value}`
-  return null
-}
-
-function isSelectionInside(root: HTMLElement, selection: Selection | null): boolean {
-  const node = selection?.anchorNode
-  return Boolean(node && (node === root || root.contains(node)))
-}
-
-function restoreRange(root: HTMLElement, range: Range | null): void {
-  const selection = window.getSelection()
-  if (!selection) return
-  selection.removeAllRanges()
-  if (range && root.contains(range.commonAncestorContainer)) {
-    selection.addRange(range)
-    return
-  }
-  const fallback = document.createRange()
-  fallback.selectNodeContents(root)
-  fallback.collapse(false)
-  selection.addRange(fallback)
-}
-
-function selectedHtmlWrap(tag: string): void {
-  const selection = window.getSelection()
-  if (!selection || selection.rangeCount === 0) return
-  const range = selection.getRangeAt(0)
-  if (range.collapsed) return
-
-  const parent = closestElement(selection)
-  const existing = ancestor(parent, tag)
-  if (existing) {
-    const fragment = document.createDocumentFragment()
-    while (existing.firstChild) fragment.appendChild(existing.firstChild)
-    existing.replaceWith(fragment)
-    return
-  }
-
-  const wrapper = document.createElement(tag)
-  try {
-    range.surroundContents(wrapper)
-  } catch {
-    const fragment = range.extractContents()
-    wrapper.appendChild(fragment)
-    range.insertNode(wrapper)
-  }
-  selection.removeAllRanges()
-  const next = document.createRange()
-  next.selectNodeContents(wrapper)
-  selection.addRange(next)
-}
-
-function normalizeLegacyFonts(): void {
-  document.querySelectorAll<HTMLFontElement>('font').forEach((font) => {
-    const span = document.createElement('span')
-    const color = font.getAttribute('color')
-    const size = font.getAttribute('data-mymind-font-size')
-    if (color) span.style.color = color
-    if (size) span.style.fontSize = size
-    while (font.firstChild) span.appendChild(font.firstChild)
-    font.replaceWith(span)
-  })
-}
-
-function applyFontSize(fontSize: string): void {
-  const nextSize = fontSize === 'default' ? '1rem' : fontSize
-  document.execCommand('fontSize', false, '7')
-  document.querySelectorAll<HTMLFontElement>('font[size="7"]').forEach((font) => {
-    font.removeAttribute('size')
-    font.setAttribute('data-mymind-font-size', nextSize)
-  })
-  normalizeLegacyFonts()
-}
-
-function selectionHtml(html: string): void {
-  const selection = window.getSelection()
-  if (!selection || selection.rangeCount === 0) return
-  const range = selection.getRangeAt(0)
-  range.deleteContents()
-  const holder = document.createElement('template')
-  holder.innerHTML = html
-  const fragment = holder.content
-  const last = fragment.lastChild
-  range.insertNode(fragment)
-  if (last) {
-    const next = document.createRange()
-    next.setStartAfter(last)
-    next.collapse(true)
-    selection.removeAllRanges()
-    selection.addRange(next)
-  }
-}
-
-function applyHighlight(color: string | null): void {
-  const selection = window.getSelection()
-  if (!selection || selection.rangeCount === 0) return
-  const range = selection.getRangeAt(0)
-  const current = ancestor(closestElement(selection), 'mark')
-
-  if (!color) {
-    if (!current) return
-    const fragment = document.createDocumentFragment()
-    while (current.firstChild) fragment.appendChild(current.firstChild)
-    current.replaceWith(fragment)
-    return
-  }
-
-  if (current) {
-    current.setAttribute('data-color', color)
-    current.style.backgroundColor = color
-    return
-  }
-
-  if (range.collapsed) return
-  const mark = document.createElement('mark')
-  mark.setAttribute('data-color', color)
-  mark.style.backgroundColor = color
-  try {
-    range.surroundContents(mark)
-  } catch {
-    const fragment = range.extractContents()
-    mark.appendChild(fragment)
-    range.insertNode(mark)
-  }
-  const next = document.createRange()
-  next.selectNodeContents(mark)
-  selection.removeAllRanges()
-  selection.addRange(next)
 }
 
 export default function NotesRichTextDom({
   ref,
   html,
-  plainText,
   textColor,
   mutedColor,
   borderColor,
@@ -281,51 +269,125 @@ export default function NotesRichTextDom({
   onFormattingState,
   onHeightChange
 }: NotesRichTextDomProps): React.JSX.Element {
-  const editorRef = useRef<HTMLDivElement | null>(null)
-  const savedRangeRef = useRef<Range | null>(null)
-  const lastEmittedHtmlRef = useRef<string | null>(null)
-  const emitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const mountRef = useRef<HTMLDivElement | null>(null)
+  const editorRef = useRef<Editor | null>(null)
+  const savedSelectionRef = useRef<SavedSelection | null>(null)
+  const onChangeRef = useRef(onChange)
+  const onFocusEditorRef = useRef(onFocusEditor)
+  const onFormattingStateRef = useRef(onFormattingState)
+  const onHeightChangeRef = useRef(onHeightChange)
 
-  const rememberSelection = useCallback(() => {
-    const root = editorRef.current
-    const selection = window.getSelection()
-    if (!root || !selection || selection.rangeCount === 0 || !isSelectionInside(root, selection)) {
-      return
+  useEffect(() => {
+    onChangeRef.current = onChange
+    onFocusEditorRef.current = onFocusEditor
+    onFormattingStateRef.current = onFormattingState
+    onHeightChangeRef.current = onHeightChange
+  }, [onChange, onFocusEditor, onFormattingState, onHeightChange])
+
+  const rememberSelection = useCallback((editor: Editor) => {
+    savedSelectionRef.current = {
+      from: editor.state.selection.from,
+      to: editor.state.selection.to
     }
-    savedRangeRef.current = selection.getRangeAt(0).cloneRange()
-    void onFormattingState(formattingState())
-  }, [onFormattingState])
+  }, [])
 
-  const emit = useCallback(() => {
-    const root = editorRef.current
-    if (!root) return
-    const nextHtml = root.innerHTML || '<p></p>'
-    const nextText = root.innerText.replace(/\u00a0/g, ' ')
-    lastEmittedHtmlRef.current = nextHtml
-    void onChange(nextHtml, nextText)
-    void onFormattingState(formattingState())
-  }, [onChange, onFormattingState])
+  const reportFormatting = useCallback((editor: Editor) => {
+    if (editor.isDestroyed) return
+    void onFormattingStateRef.current(formattingState(editor))
+  }, [])
 
-  const scheduleEmit = useCallback(() => {
-    if (emitTimerRef.current) clearTimeout(emitTimerRef.current)
-    emitTimerRef.current = setTimeout(() => {
-      emitTimerRef.current = null
-      emit()
-    }, 0)
-  }, [emit])
+  const reportHeight = useCallback(() => {
+    const editor = editorRef.current
+    if (!editor || editor.isDestroyed) return
+    requestAnimationFrame(() => {
+      if (editor.isDestroyed) return
+      const height = Math.max(64, Math.ceil(editor.view.dom.scrollHeight + 18))
+      void onHeightChangeRef.current(height)
+    })
+  }, [])
 
-  const run = useCallback(
-    (operation: () => void) => {
-      const root = editorRef.current
-      if (!root) return
-      root.focus()
-      restoreRange(root, savedRangeRef.current)
-      operation()
-      rememberSelection()
-      scheduleEmit()
-    },
-    [rememberSelection, scheduleEmit]
-  )
+  const commandChain = useCallback((): ChainedCommands | null => {
+    const editor = editorRef.current
+    if (!editor || editor.isDestroyed) return null
+
+    const chain = editor.chain().focus()
+    const selection = savedSelectionRef.current
+    if (!selection) return chain
+
+    const maxPosition = editor.state.doc.content.size
+    const from = Math.max(1, Math.min(selection.from, maxPosition))
+    const to = Math.max(from, Math.min(selection.to, maxPosition))
+    return chain.setTextSelection({ from, to })
+  }, [])
+
+  useEffect(() => {
+    const mount = mountRef.current
+    if (!mount) return undefined
+
+    const editor = new Editor({
+      element: mount,
+      extensions: createExtensions(),
+      content: html || '<p></p>',
+      editable: true,
+      editorProps: {
+        attributes: {
+          class: 'notes-editor'
+        }
+      },
+      onCreate: ({ editor: createdEditor }) => {
+        editorRef.current = createdEditor
+        rememberSelection(createdEditor)
+        reportFormatting(createdEditor)
+        reportHeight()
+      },
+      onFocus: ({ editor: focusedEditor }) => {
+        rememberSelection(focusedEditor)
+        reportFormatting(focusedEditor)
+        void onFocusEditorRef.current()
+      },
+      onBlur: ({ editor: blurredEditor }) => {
+        rememberSelection(blurredEditor)
+        reportFormatting(blurredEditor)
+      },
+      onSelectionUpdate: ({ editor: updatedEditor }) => {
+        rememberSelection(updatedEditor)
+        reportFormatting(updatedEditor)
+      },
+      onTransaction: ({ editor: updatedEditor }) => {
+        reportFormatting(updatedEditor)
+        reportHeight()
+      },
+      onUpdate: ({ editor: updatedEditor }) => {
+        rememberSelection(updatedEditor)
+        const nextHtml = updatedEditor.getHTML()
+        const nextText = updatedEditor.getText({ blockSeparator: '\n\n' })
+        void onChangeRef.current(nextHtml, nextText)
+        reportHeight()
+      }
+    })
+    editorRef.current = editor
+
+    const observer = new ResizeObserver(() => reportHeight())
+    observer.observe(editor.view.dom)
+    reportHeight()
+
+    return () => {
+      observer.disconnect()
+      if (!editor.isDestroyed) editor.destroy()
+      if (editorRef.current === editor) editorRef.current = null
+    }
+  }, [rememberSelection, reportFormatting, reportHeight])
+
+  useEffect(() => {
+    const editor = editorRef.current
+    if (!editor || editor.isDestroyed || editor.getHTML() === html) return
+    editor.commands.setContent(html || '<p></p>', {
+      emitUpdate: false,
+      errorOnInvalidContent: false
+    })
+    reportHeight()
+    reportFormatting(editor)
+  }, [html, reportFormatting, reportHeight])
 
   useDOMImperativeHandle(
     ref,
@@ -333,159 +395,152 @@ export default function NotesRichTextDom({
       command: (...args) => {
         const command = args[0]
         if (typeof command !== 'string') return
-        run(() => {
-          switch (command) {
-            case 'bold':
-              document.execCommand('bold')
-              break
-            case 'italic':
-              document.execCommand('italic')
-              break
-            case 'underline':
-              document.execCommand('underline')
-              break
-            case 'strike':
-              document.execCommand('strikeThrough')
-              break
-            case 'code':
-              selectedHtmlWrap('code')
-              break
-            case 'blockquote': {
-              const active = Boolean(ancestor(closestElement(window.getSelection()), 'blockquote'))
-              document.execCommand('formatBlock', false, active ? 'p' : 'blockquote')
-              break
-            }
-            case 'bulletList':
-              document.execCommand('insertUnorderedList')
-              break
-            case 'orderedList':
-              document.execCommand('insertOrderedList')
-              break
-            case 'indent':
-              document.execCommand('indent')
-              break
-            case 'outdent':
-              document.execCommand('outdent')
-              break
-            case 'alignLeft':
-              document.execCommand('justifyLeft')
-              break
-            case 'alignCenter':
-              document.execCommand('justifyCenter')
-              break
-            case 'alignRight':
-              document.execCommand('justifyRight')
-              break
-            case 'alignJustify':
-              document.execCommand('justifyFull')
-              break
-            case 'undo':
-              document.execCommand('undo')
-              break
-            case 'redo':
-              document.execCommand('redo')
-              break
-            case 'clearFormatting':
-              document.execCommand('removeFormat')
-              document.execCommand('formatBlock', false, 'p')
-              document.execCommand('justifyLeft')
-              break
-            case 'unlink':
-              document.execCommand('unlink')
-              break
-          }
-        })
+        const editor = editorRef.current
+        if (!editor || editor.isDestroyed) return
+
+        if (command === 'undo') {
+          editor.chain().focus().undo().run()
+          return
+        }
+        if (command === 'redo') {
+          editor.chain().focus().redo().run()
+          return
+        }
+
+        let chain = commandChain()
+        if (!chain) return
+
+        switch (command) {
+          case 'bold':
+            chain.toggleBold().run()
+            break
+          case 'italic':
+            chain.toggleItalic().run()
+            break
+          case 'underline':
+            chain.toggleUnderline().run()
+            break
+          case 'strike':
+            chain.toggleStrike().run()
+            break
+          case 'code':
+            chain.toggleCode().run()
+            break
+          case 'blockquote':
+            chain.toggleBlockquote().run()
+            break
+          case 'bulletList':
+            chain.toggleBulletList().run()
+            break
+          case 'orderedList':
+            chain.toggleOrderedList().run()
+            break
+          case 'indent':
+            chain.sinkListItem('listItem').run()
+            break
+          case 'outdent':
+            chain.liftListItem('listItem').run()
+            break
+          case 'alignLeft':
+            chain.setTextAlign('left').run()
+            break
+          case 'alignCenter':
+            chain.setTextAlign('center').run()
+            break
+          case 'alignRight':
+            chain.setTextAlign('right').run()
+            break
+          case 'alignJustify':
+            chain.setTextAlign('justify').run()
+            break
+          case 'clearFormatting':
+            chain.unsetAllMarks().clearNodes().setTextAlign('left').run()
+            break
+          case 'unlink':
+            if (editor.isActive('link')) chain = chain.extendMarkRange('link')
+            chain.unsetLink().run()
+            break
+        }
       },
+
       setFontSize: (...args) => {
-        const fontSize = args[0]
-        if (typeof fontSize !== 'string') return
-        run(() => applyFontSize(fontSize))
+        const value = args[0]
+        if (typeof value !== 'string') return
+        const chain = commandChain()
+        if (!chain) return
+        if (value === 'default') chain.unsetFontSize().run()
+        else chain.setFontSize(value).run()
       },
+
       setTextColor: (...args) => {
         const value = args[0]
         if (value !== null && typeof value !== 'string') return
-        run(() => {
-          const root = editorRef.current
-          if (!root) return
-          const nextColor = value || getComputedStyle(root).color
-          document.execCommand('foreColor', false, nextColor)
-          normalizeLegacyFonts()
-        })
+        const chain = commandChain()
+        if (!chain) return
+        if (value === null) chain.unsetColor().run()
+        else chain.setColor(value).run()
       },
+
       setHighlightColor: (...args) => {
         const value = args[0]
         if (value !== null && typeof value !== 'string') return
-        run(() => applyHighlight(value))
+        const chain = commandChain()
+        if (!chain) return
+        if (value === null) chain.unsetHighlight().run()
+        else chain.setHighlight({ color: value }).run()
       },
+
       setLink: (...args) => {
         const rawHref = args[0]
         if (typeof rawHref !== 'string') return
-        const href = sanitizeHref(rawHref)
+        const href = normalizeHref(rawHref)
         if (!href) return
-        run(() => {
-          const selection = window.getSelection()
-          if (!selection || selection.rangeCount === 0) return
-          if (selection.getRangeAt(0).collapsed) {
-            selectionHtml(
-              `<a href="${href.replace(/&/g, '&amp;').replace(/"/g, '&quot;')}" target="_blank" rel="noopener noreferrer">${rawHref.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</a>`
-            )
-          } else {
-            document.execCommand('createLink', false, href)
-            document.querySelectorAll<HTMLAnchorElement>('a[href]').forEach((link) => {
-              link.target = '_blank'
-              link.rel = 'noopener noreferrer'
+        const editor = editorRef.current
+        const selection = savedSelectionRef.current
+        let chain = commandChain()
+        if (!editor || editor.isDestroyed || !chain) return
+
+        if (editor.isActive('link')) {
+          chain.extendMarkRange('link').setLink({ href }).run()
+          return
+        }
+
+        if (selection && selection.from === selection.to) {
+          chain
+            .insertContent({
+              type: 'text',
+              text: rawHref.trim(),
+              marks: [{ type: 'link', attrs: { href } }]
             })
-          }
-        })
+            .run()
+          return
+        }
+
+        chain.setLink({ href }).run()
       },
+
       getSelectedText: async () => {
-        const root = editorRef.current
-        if (!root) return ''
-        root.focus()
-        restoreRange(root, savedRangeRef.current)
-        return window.getSelection()?.toString() ?? ''
+        const editor = editorRef.current
+        if (!editor || editor.isDestroyed) return ''
+        const selection = savedSelectionRef.current ?? {
+          from: editor.state.selection.from,
+          to: editor.state.selection.to
+        }
+        return editor.state.doc.textBetween(selection.from, selection.to, ' ').trim()
       },
+
       insertInternalLink: (...args) => {
         const linkHtml = args[0]
         if (typeof linkHtml !== 'string') return
-        run(() => selectionHtml(linkHtml))
+        commandChain()?.insertContent(linkHtml).run()
       },
+
       focusEditor: async () => {
-        editorRef.current?.focus()
-        if (editorRef.current) restoreRange(editorRef.current, savedRangeRef.current)
+        commandChain()?.run()
       }
     }),
-    [rememberSelection, run, scheduleEmit]
+    [commandChain]
   )
-
-  useEffect(() => {
-    const root = editorRef.current
-    if (!root) return
-    if (html === lastEmittedHtmlRef.current) return
-    const nextHtml = html || '<p></p>'
-    if (root.innerHTML !== nextHtml) root.innerHTML = nextHtml
-  }, [html])
-
-  useEffect(() => {
-    const root = editorRef.current
-    if (!root) return undefined
-
-    const selectionListener = (): void => rememberSelection()
-    document.addEventListener('selectionchange', selectionListener)
-
-    const observer = new ResizeObserver(() => {
-      const height = Math.max(64, Math.ceil(root.scrollHeight + 20))
-      void onHeightChange(height)
-    })
-    observer.observe(root)
-    void onHeightChange(Math.max(64, Math.ceil(root.scrollHeight + 20)))
-
-    return () => {
-      document.removeEventListener('selectionchange', selectionListener)
-      observer.disconnect()
-      if (emitTimerRef.current) clearTimeout(emitTimerRef.current)
-    }
-  }, [onHeightChange, rememberSelection])
 
   return (
     <main
@@ -500,26 +555,7 @@ export default function NotesRichTextDom({
         } as React.CSSProperties
       }
     >
-      <div
-        ref={editorRef}
-        className="notes-editor"
-        contentEditable
-        suppressContentEditableWarning
-        role="textbox"
-        aria-multiline="true"
-        aria-label="Текстовый блок"
-        data-placeholder={plainText.trim() ? '' : 'Начните писать…'}
-        onFocus={() => {
-          rememberSelection()
-          void onFocusEditor()
-        }}
-        onInput={() => {
-          rememberSelection()
-          scheduleEmit()
-        }}
-        onKeyUp={rememberSelection}
-        onMouseUp={rememberSelection}
-      />
+      <div ref={mountRef} className="notes-editor-mount" />
       <style>{styles}</style>
     </main>
   )
@@ -536,6 +572,7 @@ const styles = `
     background: transparent;
     font: 17px/1.55 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   }
+  .notes-editor-mount { min-height: 64px; }
   .notes-editor {
     width: 100%;
     min-height: 64px;
@@ -544,13 +581,15 @@ const styles = `
     overflow-wrap: anywhere;
     caret-color: var(--accent);
   }
-  .notes-editor:empty::before {
+  .notes-editor p { margin: 0 0 0.72em; }
+  .notes-editor p:last-child { margin-bottom: 0; }
+  .notes-editor p.is-editor-empty:first-child::before {
     content: attr(data-placeholder);
+    float: left;
+    height: 0;
     color: var(--muted);
     pointer-events: none;
   }
-  .notes-editor p { margin: 0 0 0.72em; }
-  .notes-editor p:last-child { margin-bottom: 0; }
   .notes-editor strong, .notes-editor b { font-weight: 700; }
   .notes-editor em, .notes-editor i { font-style: italic; }
   .notes-editor u { text-decoration: underline; }
@@ -573,11 +612,17 @@ const styles = `
   .notes-editor li { margin: 0.22em 0; }
   .notes-editor a { color: var(--accent); text-decoration: underline; }
   .notes-editor [data-study-internal-link="true"] {
-    display: inline;
-    padding: 1px 4px;
-    border-radius: 5px;
+    display: inline-flex;
+    max-width: 100%;
+    vertical-align: text-bottom;
+    padding: 1px 5px;
+    border-radius: 6px;
     color: var(--accent);
     background: color-mix(in srgb, var(--accent) 12%, transparent);
     font-weight: 600;
+  }
+  .notes-editor .ProseMirror-selectednode[data-study-internal-link="true"] {
+    outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+    outline-offset: 1px;
   }
 `
