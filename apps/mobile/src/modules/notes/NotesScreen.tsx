@@ -43,9 +43,11 @@ function noteMatches(note: NoteSummary, query: string): boolean {
 }
 
 export function NotesScreen({
-  onOpenBoard
+  onOpenBoard,
+  onImmersiveChange
 }: {
   onOpenBoard?: (boardId: string) => void
+  onImmersiveChange?: (immersive: boolean) => void
 }): React.JSX.Element {
   const { notes: api, boards, documentAssets } = useServices()
   const theme = useTheme()
@@ -118,6 +120,15 @@ export function NotesScreen({
     })
     return () => subscription.remove()
   }, [closeEditor, record])
+
+  const editorOpen = record !== null
+
+  useEffect(() => {
+    onImmersiveChange?.(editorOpen)
+    return () => {
+      if (editorOpen) onImmersiveChange?.(false)
+    }
+  }, [editorOpen, onImmersiveChange])
 
   useEffect(() => {
     if (!record) return
@@ -285,6 +296,7 @@ export function NotesScreen({
           document={document}
           onChange={changeDocument}
           createId={randomUUID}
+          presentation="notes-clean"
           importAsset={(kind) => documentAssets.importAsset(record.id, kind)}
           openAsset={documentAssets.openAsset}
           resolveAssetUri={documentAssets.resolveAssetUri}
@@ -292,33 +304,23 @@ export function NotesScreen({
           openBoard={openLinkedBoard}
           onAssetError={(reason) => setEditorError(messageFor(reason))}
           header={
-            <View style={{ gap: 12, paddingBottom: 16 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <IconButton
-                  label={closing ? 'Сохранение…' : 'Назад'}
-                  icon="back"
-                  disabled={closing}
-                  onPress={() => void closeEditor()}
-                />
-                <View style={{ flex: 1 }} />
-                <ActionMenu
-                  disabled={closing}
-                  title="Заметка"
-                  items={[
-                    {
-                      label: 'Свойства заметки',
-                      icon: 'edit',
-                      onPress: () => editNoteProperties(record)
-                    },
-                    {
-                      label: 'Удалить заметку',
-                      icon: 'delete',
-                      danger: true,
-                      onPress: deleteCurrentNote
-                    }
-                  ]}
-                />
-              </View>
+            <View
+              style={{
+                minHeight: 58,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 8,
+                paddingBottom: 8
+              }}
+            >
+              <IconButton
+                label={closing ? 'Сохранение…' : 'Назад'}
+                icon="back"
+                compact
+                ghost
+                disabled={closing}
+                onPress={() => void closeEditor()}
+              />
               <TextInput
                 accessibilityLabel="Название заметки"
                 value={record.title}
@@ -339,18 +341,34 @@ export function NotesScreen({
                   }
                 }}
                 style={{
+                  flex: 1,
+                  minWidth: 0,
+                  minHeight: 44,
                   color: theme.text,
-                  backgroundColor: theme.surface,
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                  borderRadius: 12,
-                  minHeight: 52,
-                  paddingHorizontal: 14,
+                  paddingHorizontal: 4,
+                  paddingVertical: 6,
                   fontSize: 20,
+                  lineHeight: 25,
                   fontWeight: '700'
                 }}
               />
-              <Label muted>Изменения содержимого сохраняются автоматически.</Label>
+              <ActionMenu
+                disabled={closing}
+                title="Заметка"
+                items={[
+                  {
+                    label: 'Свойства заметки',
+                    icon: 'edit',
+                    onPress: () => editNoteProperties(record)
+                  },
+                  {
+                    label: 'Удалить заметку',
+                    icon: 'delete',
+                    danger: true,
+                    onPress: deleteCurrentNote
+                  }
+                ]}
+              />
             </View>
           }
         />
