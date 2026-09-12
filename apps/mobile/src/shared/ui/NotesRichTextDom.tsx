@@ -1,6 +1,6 @@
 'use dom'
 
-import { Editor, mergeAttributes, Node as TiptapNode, type ChainedCommands } from '@tiptap/core'
+import { Editor, mergeAttributes, Node as TiptapNode } from '@tiptap/core'
 import Highlight from '@tiptap/extension-highlight'
 import TextAlign from '@tiptap/extension-text-align'
 import { TextStyleKit } from '@tiptap/extension-text-style'
@@ -222,14 +222,6 @@ function textAlignment(value: unknown): NotesRichTextAlignment {
   return value === 'center' || value === 'right' || value === 'justify' ? value : 'left'
 }
 
-function canRun(editor: Editor, command: (chain: ChainedCommands) => boolean): boolean {
-  try {
-    return command(editor.can().chain())
-  } catch {
-    return false
-  }
-}
-
 function formattingState(editor: Editor): NotesRichTextFormattingState {
   const textStyle = editor.getAttributes('textStyle')
   const paragraph = editor.getAttributes('paragraph')
@@ -251,8 +243,8 @@ function formattingState(editor: Editor): NotesRichTextFormattingState {
     fontSize: typeof textStyle.fontSize === 'string' ? textStyle.fontSize : 'default',
     color: typeof textStyle.color === 'string' ? textStyle.color : '',
     backgroundColor: typeof highlight.color === 'string' ? highlight.color : '',
-    canUndo: canRun(editor, (chain) => chain.undo().run()),
-    canRedo: canRun(editor, (chain) => chain.redo().run())
+    canUndo: editor.can().chain().undo().run(),
+    canRedo: editor.can().chain().redo().run()
   }
 }
 
@@ -306,7 +298,7 @@ export default function NotesRichTextDom({
     })
   }, [])
 
-  const commandChain = useCallback((): ChainedCommands | null => {
+  const commandChain = useCallback((): ReturnType<Editor['chain']> | null => {
     const editor = editorRef.current
     if (!editor || editor.isDestroyed) return null
 
