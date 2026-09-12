@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { View } from 'react-native'
-import type { StudyTextBlock } from '@mymind/contracts/study'
+import type { ResolveStudyInternalLinkTargetInput, StudyTextBlock } from '@mymind/contracts/study'
 
 import NotesRichTextDom, {
   type NotesRichTextDomRef,
@@ -21,6 +21,73 @@ function initialHtml(block: StudyTextBlock): string {
 }
 
 const StableNotesRichTextDom = memo(NotesRichTextDom)
+
+const noopChange = async (): Promise<void> => undefined
+const noopFocus = async (): Promise<void> => undefined
+const noopFormatting = async (): Promise<void> => undefined
+
+export function DocumentRichTextViewer({
+  html,
+  onOpenInternalLink,
+  onOpenExternalLink
+}: {
+  html: string
+  onOpenInternalLink?: (target: ResolveStudyInternalLinkTargetInput) => void
+  onOpenExternalLink?: (href: string) => void
+}): React.JSX.Element {
+  const theme = useTheme()
+  const [height, setHeight] = useState(64)
+  const initialHtmlRef = useRef(html || '<p></p>')
+
+  const handleHeight = useCallback(async (nextHeight: number): Promise<void> => {
+    const normalized = Math.max(32, Math.min(2400, Math.ceil(nextHeight)))
+    setHeight((current) => (Math.abs(current - normalized) >= 2 ? normalized : current))
+  }, [])
+
+  const handleInternalLink = useCallback(
+    async (target: ResolveStudyInternalLinkTargetInput): Promise<void> => {
+      onOpenInternalLink?.(target)
+    },
+    [onOpenInternalLink]
+  )
+
+  const handleExternalLink = useCallback(
+    async (href: string): Promise<void> => {
+      onOpenExternalLink?.(href)
+    },
+    [onOpenExternalLink]
+  )
+
+  const dom = useMemo(
+    () => ({
+      scrollEnabled: false,
+      style: { height: Math.max(32, height), backgroundColor: 'transparent' }
+    }),
+    [height]
+  )
+
+  return (
+    <View style={{ minHeight: Math.max(32, height), overflow: 'hidden' }}>
+      <StableNotesRichTextDom
+        ref={null}
+        html={initialHtmlRef.current}
+        editable={false}
+        textColor={theme.text}
+        mutedColor={theme.muted}
+        borderColor={theme.border}
+        surfaceColor={theme.raised}
+        accentColor={theme.accent}
+        onChange={noopChange}
+        onFocusEditor={noopFocus}
+        onFormattingState={noopFormatting}
+        onHeightChange={handleHeight}
+        onOpenInternalLink={handleInternalLink}
+        onOpenExternalLink={handleExternalLink}
+        dom={dom}
+      />
+    </View>
+  )
+}
 
 export function NotesRichTextBlock({
   block,
