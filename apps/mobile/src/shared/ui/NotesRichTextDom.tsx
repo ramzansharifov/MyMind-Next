@@ -468,8 +468,6 @@ export default function NotesRichTextDom({
       element,
       extensions: createExtensions(),
       content: html || '<p></p>',
-      immediatelyRender: true,
-      shouldRerenderOnTransaction: false,
       editorProps: {
         attributes: {
           class: 'notes-editor',
