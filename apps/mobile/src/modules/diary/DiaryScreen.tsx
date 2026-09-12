@@ -589,45 +589,6 @@ function DiaryDetail({
   )
 }
 
-function DiaryHistory({
-  days,
-  query,
-  setQuery,
-  onOpenDay
-}: {
-  days: DiaryDaySummary[]
-  query: string
-  setQuery(value: string): void
-  onOpenDay(dayKey: string): void
-}): React.JSX.Element {
-  const normalized = query.trim().toLocaleLowerCase('ru-RU')
-  const visibleDays = days.filter((day) => {
-    const mood = diaryMoodMeta(day.mood)
-    return `${day.dayKey} ${mood?.label ?? ''}`.toLocaleLowerCase('ru-RU').includes(normalized)
-  })
-
-  return (
-    <>
-      <SearchField value={query} onChangeText={setQuery} />
-      <FlatList
-        data={visibleDays}
-        keyExtractor={(day) => day.id}
-        ListEmptyComponent={<EmptyState />}
-        renderItem={({ item }) => {
-          const mood = diaryMoodMeta(item.mood)
-          return (
-            <Row
-              title={item.dayKey}
-              subtitle={`${item.entryCount} записей${mood ? ` · ${mood.emoji} ${mood.label}` : ''}`}
-              onPress={() => onOpenDay(item.dayKey)}
-            />
-          )
-        }}
-      />
-    </>
-  )
-}
-
 function DiaryCalendar({
   monthKey,
   cells,
@@ -737,6 +698,137 @@ function DiaryCalendar({
         ))}
       </View>
     </View>
+  )
+}
+
+function DiarySettingsMobile({
+  diary,
+  canDelete,
+  onEdit,
+  onEditAppearance,
+  onDelete
+}: {
+  diary: DiarySummary
+  canDelete: boolean
+  onEdit(): void
+  onEditAppearance(): void
+  onDelete(): void
+}): React.JSX.Element {
+  const theme = useTheme()
+  const palette = diaryAppearancePalette(diary.paperTone, diary.coverTone)
+
+  return (
+    <ScrollView contentContainerStyle={{ gap: 14, paddingBottom: 28 }}>
+      <View
+        style={{
+          padding: 18,
+          borderWidth: 1,
+          borderColor: theme.border,
+          borderRadius: 24,
+          backgroundColor: theme.surface
+        }}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 14 }}>
+          <View
+            style={{
+              width: 54,
+              height: 54,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderWidth: 1,
+              borderColor: theme.accent + '26',
+              borderRadius: 16,
+              backgroundColor: theme.accent + '14'
+            }}
+          >
+            <Text style={{ color: theme.accent, fontSize: 12, fontWeight: '700' }}>{diary.icon}</Text>
+          </View>
+          <View style={{ minWidth: 0, flex: 1 }}>
+            <Text numberOfLines={1} style={{ color: theme.text, fontSize: 20, fontWeight: '700' }}>
+              {diary.title}
+            </Text>
+            <Text style={{ marginTop: 7, color: theme.muted, fontSize: 12, lineHeight: 18 }}>
+              {diary.pageCount} страниц · {diary.entryCount} записей
+            </Text>
+          </View>
+        </View>
+        <View style={{ marginTop: 18, alignItems: 'flex-start' }}>
+          <Button label="Изменить название и иконку" icon="edit" onPress={onEdit} />
+        </View>
+      </View>
+
+      <View
+        style={{
+          padding: 18,
+          borderWidth: 1,
+          borderColor: theme.error + '26',
+          borderRadius: 24,
+          backgroundColor: theme.error + '08'
+        }}
+      >
+        <Text style={{ color: theme.error, fontSize: 15, fontWeight: '700' }}>Удаление дневника</Text>
+        <Text style={{ marginTop: 7, color: theme.muted, fontSize: 13, lineHeight: 21 }}>
+          Удаляются все страницы, настроения и записи. Действие необратимо.
+        </Text>
+        <View style={{ marginTop: 16, alignItems: 'flex-start' }}>
+          <Button label="Удалить дневник" icon="delete" danger disabled={!canDelete} onPress={onDelete} />
+        </View>
+        {!canDelete ? (
+          <Text style={{ marginTop: 8, color: theme.muted, fontSize: 11 }}>
+            Последний дневник удалить нельзя.
+          </Text>
+        ) : null}
+      </View>
+
+      <View
+        style={{
+          padding: 18,
+          borderWidth: 1,
+          borderColor: theme.border,
+          borderRadius: 24,
+          backgroundColor: theme.surface
+        }}
+      >
+        <Text style={{ color: theme.text, fontSize: 15, fontWeight: '700' }}>Оформление бумаги</Text>
+        <Text style={{ marginTop: 5, color: theme.muted, fontSize: 13, lineHeight: 20 }}>
+          Разметка, оттенок листов и цвет переплёта применяются ко всему дневнику.
+        </Text>
+        <View
+          style={{
+            marginTop: 16,
+            overflow: 'hidden',
+            borderRadius: 16,
+            backgroundColor: palette.coverBackground,
+            padding: 14
+          }}
+        >
+          <View
+            style={{
+              minHeight: 170,
+              overflow: 'hidden',
+              borderWidth: 1,
+              borderColor: palette.paperLine,
+              borderRadius: 12,
+              backgroundColor: palette.paperBackground,
+              padding: 16
+            }}
+          >
+            <PaperPattern pattern={diary.paperPattern} lineColor={palette.paperLine} />
+            <Text style={{ color: palette.paperText, fontSize: 16, fontWeight: '700' }}>
+              Предпросмотр страницы
+            </Text>
+            <Text style={{ marginTop: 9, color: palette.paperMuted, fontSize: 13, lineHeight: 20 }}>
+              Разметка «{diaryPaperPatternLabels[diary.paperPattern]}» · бумага «
+              {diaryPaperToneLabels[diary.paperTone]}» · переплёт «
+              {diaryCoverToneLabels[diary.coverTone]}».
+            </Text>
+          </View>
+        </View>
+        <View style={{ marginTop: 16, alignItems: 'flex-start' }}>
+          <Button label="Изменить оформление" onPress={onEditAppearance} />
+        </View>
+      </View>
+    </ScrollView>
   )
 }
 
