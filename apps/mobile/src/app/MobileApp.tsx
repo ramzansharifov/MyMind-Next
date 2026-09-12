@@ -386,15 +386,15 @@ export default function MobileApp(): React.JSX.Element {
                             onPress={() => navigate(item)}
                             style={({ pressed }) => ({
                               width: '48.5%',
-                              minHeight: 106,
+                              minHeight: 112,
+                              alignItems: 'flex-start',
                               justifyContent: 'space-between',
-                              padding: 14,
+                              padding: 16,
                               borderWidth: 1,
                               borderColor: palette.border,
-                              borderRadius: 18,
+                              borderRadius: 12,
                               backgroundColor: pressed ? palette.raised : palette.surface,
-                              opacity: pressed ? 0.78 : 1,
-                              elevation: 1
+                              opacity: pressed ? 0.78 : 1
                             })}
                           >
                             <View
@@ -409,23 +409,11 @@ export default function MobileApp(): React.JSX.Element {
                                 backgroundColor: palette.accent + '10'
                               }}
                             >
-                              <AppIcon name={routeIcons[item]} size={18} color={palette.accent} />
+                              <AppIcon name={routeIcons[item]} size={19} color={palette.accent} />
                             </View>
-                            <View
-                              style={{
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                gap: 8
-                              }}
-                            >
-                              <Text
-                                style={{ color: palette.text, fontSize: 14, fontWeight: '600' }}
-                              >
-                                {routeTitles[item]}
-                              </Text>
-                              <AppIcon name="forward" size={17} color={palette.muted} />
-                            </View>
+                            <Text style={{ color: palette.text, fontSize: 15, fontWeight: '600' }}>
+                              {routeTitles[item]}
+                            </Text>
                           </Pressable>
                         )}
                       />

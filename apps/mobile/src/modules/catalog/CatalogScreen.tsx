@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 import { Linking, View } from 'react-native'
+import { Bookmark, Check, Heart, ListMusic, Music2 } from 'lucide-react-native'
 import type { MovieRecord } from '@mymind/contracts/movies'
 import type { MusicItemRecord, MusicPlaylistRecord } from '@mymind/contracts/music'
 import * as moviesSchema from '@mymind/core/validation/movies'
@@ -9,6 +10,7 @@ import { useCollection } from '../../shared/hooks/useCollection'
 import { Button, ErrorState, LoadingState, SearchField } from '../../shared/ui/primitives'
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { MobileCreateAction } from '../../shared/ui/MobileCreateAction'
+import { ModuleTabs } from '../../shared/ui/ModuleTabs'
 import { choiceField, messageFor, textField, type FormSpec } from '../../shared/ui/form-model'
 import { movieFields, movieValues } from './catalog-forms'
 import { CatalogJsonImportModal } from './CatalogJsonImportModal'
@@ -354,67 +356,57 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
   return (
     <View style={{ flex: 1 }}>
       <View style={{ gap: 8, marginBottom: 12 }}>
+        <SearchField value={query} onChangeText={setQuery} />
         {mode === 'movies' ? (
           <>
+            <ModuleTabs
+              items={[
+                { id: 'all' as const, label: 'Все' },
+                { id: 'watchlist' as const, label: 'Хочу посмотреть', icon: Bookmark },
+                { id: 'watched' as const, label: 'Просмотрено', icon: Check },
+                { id: 'favorite' as const, label: 'Избранное', icon: Heart }
+              ]}
+              value={
+                filter === 'watchlist' || filter === 'watched' || filter === 'favorite'
+                  ? filter
+                  : 'all'
+              }
+              onChange={setFilter}
+            />
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              <Button label="Из JSON" onPress={() => setJsonImportOpen(true)} />
               <Button label="Фильтры" onPress={movieFilters} />
-            </View>
-            <SearchField value={query} onChangeText={setQuery} />
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              {[
-                { value: 'all', label: 'Все' },
-                { value: 'watchlist', label: 'В планах' },
-                { value: 'watched', label: 'Просмотрено' },
-                { value: 'favorite', label: 'Избранное' }
-              ].map((item) => (
-                <Button
-                  key={item.value}
-                  label={item.label}
-                  selected={filter === item.value}
-                  onPress={() => setFilter(item.value)}
-                />
-              ))}
+              <Button label="Из JSON" onPress={() => setJsonImportOpen(true)} />
             </View>
           </>
         ) : (
           <>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              {!playlistsView && <Button label="Фильтры" onPress={musicFilters} />}
-            </View>
-            <SearchField value={query} onChangeText={setQuery} />
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              <Button
-                label="Все треки"
-                selected={musicView === 'tracks'}
-                onPress={() => {
-                  setQuery('')
-                  setFilter('all')
-                  setPlaylistId(null)
-                  setPlaylistsView(false)
-                }}
-              />
-              <Button
-                label="Избранное"
-                selected={musicView === 'favorites'}
-                onPress={() => {
-                  setQuery('')
+            <ModuleTabs
+              items={[
+                { id: 'tracks' as const, label: 'Все треки', icon: Music2 },
+                { id: 'favorites' as const, label: 'Избранное', icon: Heart },
+                { id: 'playlists' as const, label: 'Плейлисты', icon: ListMusic }
+              ]}
+              value={musicView === 'playlist' ? 'playlists' : musicView}
+              onChange={(next) => {
+                setQuery('')
+                setPlaylistId(null)
+                if (next === 'favorites') {
                   setFilter('favorite')
-                  setPlaylistId(null)
                   setPlaylistsView(false)
-                }}
-              />
-              <Button
-                label="Плейлисты"
-                selected={musicView === 'playlists' || musicView === 'playlist'}
-                onPress={() => {
-                  setQuery('')
+                } else if (next === 'playlists') {
                   setFilter('all')
-                  setPlaylistId(null)
                   setPlaylistsView(true)
-                }}
-              />
-            </View>
+                } else {
+                  setFilter('all')
+                  setPlaylistsView(false)
+                }
+              }}
+            />
+            {!playlistsView && !playlistId ? (
+              <View style={{ alignItems: 'flex-start' }}>
+                <Button label="Фильтры" onPress={musicFilters} />
+              </View>
+            ) : null}
           </>
         )}
       </View>

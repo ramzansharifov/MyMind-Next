@@ -1,8 +1,10 @@
 import { FlatList, Image, Pressable, Text, View } from 'react-native'
 import type { MovieRecord } from '@mymind/contracts/movies'
-import { Button, EmptyState } from '../../shared/ui/primitives'
+import { Bookmark, Check, Heart, Star } from 'lucide-react-native'
+
+import { EmptyState } from '../../shared/ui/primitives'
 import { useTheme } from '../../shared/ui/theme'
-import { formatMovieRuntime, movieLibraryStats, movieTypeLabel } from './movie-presentation'
+import { movieTypeLabel } from './movie-presentation'
 
 interface MovieLibraryViewProps {
   movies: MovieRecord[]
@@ -13,24 +15,27 @@ interface MovieLibraryViewProps {
   onSearchWeb(movie: MovieRecord): void
 }
 
-function StatCard({ label, value }: { label: string; value: string }): React.JSX.Element {
+function MoviePoster({ movie }: { movie: MovieRecord }): React.JSX.Element {
   const theme = useTheme()
-  return (
+  return movie.posterUrl ? (
+    <Image
+      source={{ uri: movie.posterUrl }}
+      resizeMode="cover"
+      style={{ width: '100%', aspectRatio: 2 / 3 }}
+    />
+  ) : (
     <View
       style={{
-        flexGrow: 1,
-        minWidth: 96,
-        borderRadius: 14,
-        borderWidth: 1,
-        borderColor: theme.border,
-        backgroundColor: theme.surface,
-        paddingHorizontal: 12,
-        paddingVertical: 11,
-        gap: 3
+        width: '100%',
+        aspectRatio: 2 / 3,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: theme.raised
       }}
     >
-      <Text style={{ color: theme.muted, fontSize: 12 }}>{label}</Text>
-      <Text style={{ color: theme.text, fontSize: 20, fontWeight: '800' }}>{value}</Text>
+      <Text style={{ paddingHorizontal: 10, textAlign: 'center', color: theme.muted, fontSize: 11 }}>
+        Постер не указан
+      </Text>
     </View>
   )
 }
@@ -38,116 +43,158 @@ function StatCard({ label, value }: { label: string; value: string }): React.JSX
 function MovieCard({
   movie,
   onOpen,
-  onToggleFavorite,
-  onSearchWeb
+  onToggleFavorite
 }: {
   movie: MovieRecord
   onOpen(): void
   onToggleFavorite(): void
-  onSearchWeb(): void
 }): React.JSX.Element {
   const theme = useTheme()
-  const runtime = formatMovieRuntime(movie.runtimeMinutes)
-  const metadata = [
-    movieTypeLabel(movie.type),
-    movie.year ? String(movie.year) : null,
-    runtime,
-    movie.status === 'watched' ? 'Просмотрено' : 'Хочу посмотреть',
-    movie.rating ? `${movie.rating}/10` : null
-  ].filter(Boolean)
+  const watched = movie.status === 'watched'
 
   return (
     <View
       style={{
-        borderRadius: 16,
+        flex: 1,
+        minWidth: 0,
+        overflow: 'hidden',
         borderWidth: 1,
         borderColor: theme.border,
-        backgroundColor: theme.surface,
-        padding: 12,
-        gap: 12,
-        marginBottom: 10
+        borderRadius: 16,
+        backgroundColor: theme.surface
       }}
     >
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`Открыть ${movie.title}`}
-        onPress={onOpen}
-        style={({ pressed }) => ({
-          flexDirection: 'row',
-          gap: 13,
-          opacity: pressed ? 0.72 : 1
-        })}
-      >
-        <View
-          style={{
-            width: 82,
-            height: 123,
-            borderRadius: 11,
-            overflow: 'hidden',
-            borderWidth: 1,
-            borderColor: theme.border,
-            backgroundColor: theme.raised,
+      <View style={{ position: 'relative', overflow: 'hidden' }}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Открыть фильм «${movie.title}»`}
+          onPress={onOpen}
+          style={({ pressed }) => ({ opacity: pressed ? 0.78 : 1 })}
+        >
+          <MoviePoster movie={movie} />
+          <View
+            pointerEvents="none"
+            style={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: 72,
+              backgroundColor: '#00000055'
+            }}
+          />
+        </Pressable>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={movie.favorite ? 'Убрать из избранного' : 'Добавить в избранное'}
+          accessibilityState={{ selected: movie.favorite }}
+          hitSlop={4}
+          onPress={onToggleFavorite}
+          style={({ pressed }) => ({
+            position: 'absolute',
+            top: 10,
+            right: 10,
+            width: 36,
+            height: 36,
             alignItems: 'center',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            borderWidth: 1,
+            borderColor: movie.favorite ? '#fda4af44' : '#ffffff22',
+            borderRadius: 12,
+            backgroundColor: pressed ? '#000000AA' : '#00000080'
+          })}
+        >
+          <Heart
+            size={16}
+            color={movie.favorite ? '#fda4af' : '#ffffffB3'}
+            fill={movie.favorite ? '#fda4af' : 'none'}
+          />
+        </Pressable>
+
+        <View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            left: 10,
+            right: 10,
+            bottom: 10,
+            flexDirection: 'row',
+            alignItems: 'flex-end',
+            justifyContent: 'space-between',
+            gap: 6
           }}
         >
-          {movie.posterUrl ? (
-            <Image
-              source={{ uri: movie.posterUrl }}
-              resizeMode="cover"
-              style={{ width: '100%', height: '100%' }}
-            />
-          ) : (
-            <Text style={{ color: theme.muted, fontSize: 11, textAlign: 'center' }}>
-              Нет постера
+          <View
+            style={{
+              maxWidth: '72%',
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 4,
+              paddingHorizontal: 7,
+              paddingVertical: 4,
+              borderWidth: 1,
+              borderColor: watched ? '#6ee7b733' : theme.accent + '44',
+              borderRadius: 8,
+              backgroundColor: '#00000088'
+            }}
+          >
+            {watched ? (
+              <Check size={11} color="#a7f3d0" />
+            ) : (
+              <Bookmark size={11} color={theme.accent} />
+            )}
+            <Text
+              numberOfLines={1}
+              style={{ color: watched ? '#a7f3d0' : '#c4b5fd', fontSize: 10.5, fontWeight: '600' }}
+            >
+              {watched ? 'Просмотрено' : 'Хочу посмотреть'}
             </Text>
-          )}
-        </View>
-
-        <View style={{ flex: 1, minWidth: 0, gap: 6 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
-            <View style={{ flex: 1, gap: 2 }}>
-              <Text style={{ color: theme.text, fontSize: 17, fontWeight: '800' }}>
-                {movie.title}
-              </Text>
-              {movie.originalTitle ? (
-                <Text style={{ color: theme.muted, fontSize: 13 }} numberOfLines={1}>
-                  {movie.originalTitle}
-                </Text>
-              ) : null}
-            </View>
-            {movie.favorite ? (
-              <Text accessibilityLabel="В избранном" style={{ color: theme.accent, fontSize: 19 }}>
-                ★
-              </Text>
-            ) : null}
           </View>
 
-          <Text style={{ color: theme.muted, fontSize: 13, lineHeight: 19 }}>
-            {metadata.join(' · ')}
-          </Text>
-          {movie.genres.length > 0 ? (
-            <Text style={{ color: theme.text, fontSize: 13 }} numberOfLines={2}>
-              {movie.genres.join(' · ')}
-            </Text>
-          ) : null}
-          {movie.director ? (
-            <Text style={{ color: theme.muted, fontSize: 13 }} numberOfLines={1}>
-              {movie.director}
-            </Text>
+          {watched && movie.rating !== null ? (
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 3,
+                paddingHorizontal: 7,
+                paddingVertical: 4,
+                borderRadius: 8,
+                backgroundColor: '#00000099'
+              }}
+            >
+              <Star size={11} color="#fde68a" fill="#fde68a" />
+              <Text style={{ color: '#fde68a', fontSize: 10.5, fontWeight: '700' }}>
+                {movie.rating.toFixed(1)}
+              </Text>
+            </View>
           ) : null}
         </View>
-      </Pressable>
-
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-        <Button
-          label={movie.favorite ? '★ Избранное' : '☆ Избранное'}
-          selected={movie.favorite}
-          onPress={onToggleFavorite}
-        />
-        <Button label="В интернете" onPress={onSearchWeb} />
-        <Button label="Подробнее" onPress={onOpen} />
       </View>
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Подробнее о фильме «${movie.title}»`}
+        onPress={onOpen}
+        style={({ pressed }) => ({
+          minHeight: 64,
+          justifyContent: 'center',
+          paddingHorizontal: 14,
+          paddingVertical: 11,
+          borderTopWidth: 1,
+          borderTopColor: theme.border,
+          backgroundColor: pressed ? theme.raised : theme.surface,
+          opacity: pressed ? 0.82 : 1
+        })}
+      >
+        <Text numberOfLines={1} style={{ color: theme.text, fontSize: 14, fontWeight: '700' }}>
+          {movie.title}
+        </Text>
+        <Text style={{ marginTop: 2, color: theme.muted, fontSize: 11 }}>
+          {movieTypeLabel(movie.type)}
+        </Text>
+      </Pressable>
     </View>
   )
 }
@@ -158,37 +205,28 @@ export function MovieLibraryView({
   onRefresh,
   onOpen,
   onToggleFavorite,
-  onSearchWeb
+  onSearchWeb: _onSearchWeb
 }: MovieLibraryViewProps): React.JSX.Element {
-  const stats = movieLibraryStats(movies)
-
   return (
     <FlatList
+      key="desktop-parity-movie-grid"
       data={movies}
       keyExtractor={(item) => item.id}
+      numColumns={2}
+      columnWrapperStyle={{ gap: 12 }}
+      ItemSeparatorComponent={() => <View style={{ height: 18 }} />}
       onRefresh={onRefresh}
       refreshing={refreshing}
       contentContainerStyle={{ paddingBottom: 96 }}
-      ListHeaderComponent={
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
-          <StatCard label="Всего" value={String(stats.total)} />
-          <StatCard label="Просмотрено" value={String(stats.watched)} />
-          <StatCard label="В планах" value={String(stats.watchlist)} />
-          <StatCard label="Избранное" value={String(stats.favorites)} />
-          <StatCard
-            label="Средняя оценка"
-            value={stats.averageRating === null ? '—' : `${stats.averageRating}/10`}
-          />
-        </View>
-      }
       ListEmptyComponent={<EmptyState />}
       renderItem={({ item }) => (
-        <MovieCard
-          movie={item}
-          onOpen={() => onOpen(item)}
-          onToggleFavorite={() => onToggleFavorite(item)}
-          onSearchWeb={() => onSearchWeb(item)}
-        />
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <MovieCard
+            movie={item}
+            onOpen={() => onOpen(item)}
+            onToggleFavorite={() => onToggleFavorite(item)}
+          />
+        </View>
       )}
     />
   )

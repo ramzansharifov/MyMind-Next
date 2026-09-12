@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { FlatList, ScrollView, View } from 'react-native'
+import { BarChart3, Copy, Gauge, Home, Landmark, ReceiptText, Tags } from 'lucide-react-native'
 import type {
   FinanceAccountSummary,
   FinanceLimitStatus,
@@ -11,23 +12,19 @@ import { formatMoneyMinor } from '@mymind/core/finance-money'
 import { useServices } from '../../app/context'
 import { useCollection } from '../../shared/hooks/useCollection'
 import { FormSheet } from '../../shared/ui/FormSheet'
+import { ModuleTabs } from '../../shared/ui/ModuleTabs'
 import { ActionMenu } from '../../shared/ui/ActionMenu'
 import { WorkspaceNodeCard, WorkspacePanel, WorkspaceStatCard } from '../../shared/ui/Workspace'
 import { MobileCreateAction, type MobileCreateActionItem } from '../../shared/ui/MobileCreateAction'
 import { VisualIconBadge } from '../../shared/ui/VisualPickers'
 import type { FormSpec } from '../../shared/ui/form-model'
 import {
-  Button,
   EmptyState,
   ErrorState,
-  Label,
-  LoadingState,
-  Row
+  LoadingState
 } from '../../shared/ui/primitives'
 import {
   accountForm,
-  baseCurrencyForm,
-  exchangeRateForm,
   limitForm,
   tagForm,
   templateForm,
@@ -36,8 +33,7 @@ import {
 import { FinanceReportsView } from './FinanceReportsView'
 import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
 
-type Tab =
-  'home' | 'transactions' | 'accounts' | 'tags' | 'limits' | 'templates' | 'reports' | 'rates'
+type Tab = 'home' | 'transactions' | 'templates' | 'limits' | 'accounts' | 'tags' | 'reports'
 
 function operationTitle(transaction: FinanceTransaction): string {
   if (transaction.type === 'transfer') {
@@ -83,7 +79,6 @@ export function FinanceScreen(): React.JSX.Element {
         tags: api.listTags(),
         limits: api.listLimits(),
         templates: api.listTemplates(),
-        rates: api.listExchangeRates(),
         transactions: api.listTransactions({
           limit: 100,
           offset: 0,
@@ -112,7 +107,6 @@ export function FinanceScreen(): React.JSX.Element {
   const limits = useMemo(() => data?.limits ?? [], [data?.limits])
   const templates = useMemo(() => data?.templates ?? [], [data?.templates])
   const transactions = useMemo(() => data?.transactions ?? [], [data?.transactions])
-  const rates = useMemo(() => data?.rates ?? [], [data?.rates])
 
   if (state.loading) return <LoadingState />
   if (!data) {
@@ -121,33 +115,19 @@ export function FinanceScreen(): React.JSX.Element {
     )
   }
 
-  const tabs: Array<{ key: Tab; label: string }> = [
-    { key: 'home', label: 'Обзор' },
-    { key: 'transactions', label: 'Операции' },
-    { key: 'accounts', label: 'Счета' },
-    { key: 'tags', label: 'Теги' },
-    { key: 'limits', label: 'Лимиты' },
-    { key: 'templates', label: 'Шаблоны' },
-    { key: 'reports', label: 'Отчёт' },
-    { key: 'rates', label: 'Валюты' }
+  const tabs = [
+    { id: 'home' as const, label: 'Главная', icon: Home },
+    { id: 'transactions' as const, label: 'Транзакции', icon: ReceiptText },
+    { id: 'templates' as const, label: 'Шаблоны', icon: Copy },
+    { id: 'limits' as const, label: 'Лимиты', icon: Gauge },
+    { id: 'accounts' as const, label: 'Счета', icon: Landmark },
+    { id: 'tags' as const, label: 'Теги', icon: Tags },
+    { id: 'reports' as const, label: 'Отчёты', icon: BarChart3 }
   ]
 
   const header = (
     <View style={{ gap: 10, paddingBottom: 12 }}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ gap: 8 }}
-      >
-        {tabs.map((item) => (
-          <Button
-            key={item.key}
-            label={item.label}
-            selected={tab === item.key}
-            onPress={() => setTab(item.key)}
-          />
-        ))}
-      </ScrollView>
+      <ModuleTabs<Tab> items={tabs} value={tab} onChange={setTab} />
       {state.error ? <ErrorState message={state.error} retry={state.refresh} /> : null}
     </View>
   )
@@ -442,7 +422,7 @@ export function FinanceScreen(): React.JSX.Element {
         renderItem={renderTemplate}
       />
     )
-  } else if (tab === 'reports') {
+  } else {
     content = (
       <FinanceReportsView
         api={api}
@@ -450,37 +430,6 @@ export function FinanceScreen(): React.JSX.Element {
         tags={tags}
         baseCurrencyCode={data.dashboard.settings.baseCurrencyCode}
       />
-    )
-  } else {
-    const base = data.dashboard.settings.baseCurrencyCode
-    content = (
-      <ScrollView contentContainerStyle={{ gap: 10, paddingBottom: 96 }}>
-        <Row
-          title={`Основная валюта · ${base}`}
-          subtitle="Все сводные показатели конвертируются в неё."
-          onPress={() => openForm(baseCurrencyForm(api, base))}
-        />
-        {rates.map((rate) => (
-          <Row
-            key={rate.currencyCode}
-            title={`${rate.currencyCode} → ${rate.baseCurrencyCode}`}
-            subtitle={`Курс: ${rate.rateScaled / 1_000_000}`}
-            onPress={() => openForm(exchangeRateForm(api, base, rate))}
-          >
-            {rate.currencyCode !== base ? (
-              <Button
-                label="Удалить"
-                danger
-                onPress={() =>
-                  state.confirmDelete(`Удалить курс ${rate.currencyCode}?`, () => {
-                    api.deleteExchangeRate({ currencyCode: rate.currencyCode })
-                  })
-                }
-              />
-            ) : null}
-          </Row>
-        ))}
-      </ScrollView>
     )
   }
 
@@ -566,18 +515,7 @@ export function FinanceScreen(): React.JSX.Element {
                       onPress: () => openForm(templateForm(api, accounts, tags))
                     }
                   ]
-                : tab === 'rates'
-                  ? [
-                      {
-                        key: 'rate',
-                        label: 'Новый курс',
-                        description: 'Добавить ручной курс валюты',
-                        icon: 'finance',
-                        onPress: () =>
-                          openForm(exchangeRateForm(api, data.dashboard.settings.baseCurrencyCode))
-                      }
-                    ]
-                  : []
+                : []
 
   return (
     <View style={{ flex: 1 }}>

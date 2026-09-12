@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { FlatList, ScrollView, View } from 'react-native'
+import { FlatList, View } from 'react-native'
 import type {
   WorkoutExerciseRecord,
   WorkoutProgramRecord,
@@ -13,14 +13,9 @@ import { useCollection } from '../../shared/hooks/useCollection'
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { MobileCreateAction } from '../../shared/ui/MobileCreateAction'
 import { choiceField, textField, type FormField, type FormSpec } from '../../shared/ui/form-model'
-import {
-  Button,
-  EmptyState,
-  ErrorState,
-  LoadingState,
-  Row,
-  SearchField
-} from '../../shared/ui/primitives'
+import { EmptyState, ErrorState, LoadingState, Row, SearchField } from '../../shared/ui/primitives'
+import { BarChart3, Dumbbell, FileText, ListChecks, TrendingUp } from 'lucide-react-native'
+import { ModuleTabs } from '../../shared/ui/ModuleTabs'
 import { WorkoutProgressSheet } from './WorkoutProgressSheet'
 import { WorkoutProgressView } from './WorkoutProgressView'
 import { WorkoutSessionSheet } from './WorkoutSessionSheet'
@@ -185,30 +180,24 @@ export function WorkoutsScreen(): React.JSX.Element {
     })
   }
 
-  const tabs: Array<{ key: Tab; label: string }> = [
-    { key: 'journal', label: 'Журнал' },
-    { key: 'exercises', label: 'Упражнения' },
-    { key: 'programs', label: 'Программы' },
-    { key: 'progress', label: 'Прогресс' },
-    { key: 'reports', label: 'Отчёт' }
+  const tabs = [
+    { id: 'journal' as const, label: 'Тренировки', icon: Dumbbell },
+    { id: 'exercises' as const, label: 'Упражнения', icon: ListChecks },
+    { id: 'programs' as const, label: 'Программы', icon: FileText },
+    { id: 'progress' as const, label: 'Прогресс', icon: TrendingUp },
+    { id: 'reports' as const, label: 'Отчёты', icon: BarChart3 }
   ]
 
   const header = (
     <View style={{ gap: 10, paddingBottom: 12 }}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ gap: 8 }}
-      >
-        {tabs.map((item) => (
-          <Button
-            key={item.key}
-            label={item.label}
-            selected={tab === item.key}
-            onPress={() => setTab(item.key)}
-          />
-        ))}
-      </ScrollView>
+      <ModuleTabs<Tab>
+        items={tabs}
+        value={tab}
+        onChange={(next) => {
+          setTab(next)
+          setQuery('')
+        }}
+      />
       {tab !== 'reports' && tab !== 'progress' ? (
         <SearchField value={query} onChangeText={setQuery} />
       ) : null}

@@ -1,4 +1,5 @@
 import { randomUUID } from 'expo-crypto'
+import { CircleSlash2, Clock3, Folder, StickyNote } from 'lucide-react-native'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   AppState,
@@ -22,8 +23,9 @@ import { FormSheet } from '../../shared/ui/FormSheet'
 import { ActionMenu } from '../../shared/ui/ActionMenu'
 import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
 import { useToast } from '../../shared/ui/ToastProvider'
-import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
+import { WorkspaceNodeCard, WorkspacePanel, WorkspaceStatCard } from '../../shared/ui/Workspace'
 import { MobileCreateAction } from '../../shared/ui/MobileCreateAction'
+import { ModuleTabs } from '../../shared/ui/ModuleTabs'
 import { VisualIconBadge } from '../../shared/ui/VisualPickers'
 import { FOLDER_ICON_CHOICES } from '../../shared/ui/visual-options'
 import {
@@ -710,11 +712,12 @@ export function NotesScreen({
     )
   }
 
-  const allNotes = sortNotes(overview.data?.notes ?? [], sort)
+  const notesByRecency = sortNotes(overview.data?.notes ?? [], 'updated')
   const selectedGroup = selectedGroupId
     ? (overview.data?.groups.find((group) => group.id === selectedGroupId) ?? null)
     : null
-  const searchedNotes = allNotes.filter((note) => noteMatches(note, query))
+  const searchedNotes = notesByRecency.filter((note) => noteMatches(note, query))
+  const sortedNotes = sortNotes(searchedNotes, sort)
   const normalizedQuery = query.trim().toLocaleLowerCase('ru-RU')
   const visibleGroups = (overview.data?.groups ?? []).filter((group) => {
     const groupNotes = overview.data?.notes.filter((note) => note.groupId === group.id) ?? []
@@ -725,34 +728,30 @@ export function NotesScreen({
   })
   const notes =
     view === 'ungrouped'
-      ? searchedNotes.filter((note) => note.groupId === null)
+      ? sortedNotes.filter((note) => note.groupId === null)
       : view === 'groups' && selectedGroup
-        ? searchedNotes.filter((note) => note.groupId === selectedGroup.id)
-        : searchedNotes
+        ? sortedNotes.filter((note) => note.groupId === selectedGroup.id)
+        : sortedNotes
   const visibleNotes = notes
 
-  const createActions =
-    view === 'groups' && !selectedGroup
-      ? [
-          {
-            key: 'group',
-            label: 'Новая группа',
-            description: 'Создать новую группу заметок',
-            icon: 'folder' as const,
-            onPress: () => editGroup()
-          }
-        ]
-      : [
-          {
-            key: 'note',
-            label: selectedGroup ? `Новая заметка · ${selectedGroup.title}` : 'Новая заметка',
-            description: selectedGroup
-              ? 'Заметка сразу появится в этой группе'
-              : 'Создать заметку без группы',
-            icon: 'notes' as const,
-            onPress: () => createNote(selectedGroup?.id ?? null)
-          }
-        ]
+  const createActions = [
+    {
+      key: 'group',
+      label: 'Новая группа',
+      description: 'Создать новую группу заметок',
+      icon: 'folder' as const,
+      onPress: () => editGroup()
+    },
+    {
+      key: 'note',
+      label: selectedGroup ? `Новая заметка · ${selectedGroup.title}` : 'Новая заметка',
+      description: selectedGroup
+        ? 'Заметка сразу появится в этой группе'
+        : 'Создать заметку без группы',
+      icon: 'notes' as const,
+      onPress: () => createNote(selectedGroup?.id ?? null)
+    }
+  ]
 
   return (
     <View style={{ flex: 1 }}>
@@ -792,33 +791,19 @@ export function NotesScreen({
             />
           </View>
         ) : (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: 8 }}
-          >
-            <Button label="Все" selected={view === 'all'} onPress={() => setView('all')} />
-            <Button
-              label="Недавние"
-              icon="clock"
-              selected={view === 'recent'}
-              onPress={() => setView('recent')}
-            />
-            <Button
-              label="Группы"
-              icon="folder"
-              selected={view === 'groups'}
-              onPress={() => {
-                setSelectedGroupId(null)
-                setView('groups')
-              }}
-            />
-            <Button
-              label="Без группы"
-              selected={view === 'ungrouped'}
-              onPress={() => setView('ungrouped')}
-            />
-          </ScrollView>
+          <ModuleTabs
+            items={[
+              { id: 'all' as const, label: 'Все', icon: StickyNote },
+              { id: 'recent' as const, label: 'Недавние', icon: Clock3 },
+              { id: 'groups' as const, label: 'По группам', icon: Folder },
+              { id: 'ungrouped' as const, label: 'Без группы', icon: CircleSlash2 }
+            ]}
+            value={view}
+            onChange={(next) => {
+              if (next === 'groups') setSelectedGroupId(null)
+              setView(next)
+            }}
+          />
         )}
 
         <SearchField value={query} onChangeText={setQuery} />
@@ -930,6 +915,83 @@ export function NotesScreen({
           refreshing={overview.loading}
           onRefresh={overview.refresh}
           contentContainerStyle={{ paddingBottom: 88 }}
+          ListHeaderComponent={
+            view === 'all' && (overview.data?.notes.length || overview.data?.groups.length) ? (
+              <View style={{ gap: 12, marginBottom: 12 }}>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                  <WorkspaceStatCard
+                    label="Всего заметок"
+                    value={String(overview.data?.notes.length ?? 0)}
+                    icon="notes"
+                  />
+                  <WorkspaceStatCard
+                    label="Групп"
+                    value={String(overview.data?.groups.length ?? 0)}
+                    icon="folder"
+                  />
+                  <WorkspaceStatCard
+                    label="Без группы"
+                    value={String((overview.data?.notes ?? []).filter((note) => note.groupId === null).length)}
+                    icon="notes"
+                  />
+                </View>
+                {searchedNotes.slice(0, 4).length ? (
+                  <WorkspacePanel
+                    title="Недавние заметки"
+                    icon="clock"
+                    action={
+                      <Button label="Смотреть все" compact onPress={() => setView('recent')} />
+                    }
+                  >
+                    {searchedNotes.slice(0, 4).map((note) => {
+                      const noteGroup = overview.data?.groups.find((group) => group.id === note.groupId)
+                      return (
+                        <MobileNoteCard
+                          key={note.id}
+                          note={note}
+                          groupTitle={noteGroup?.title}
+                          layout="list"
+                          onOpen={() => openNote(note.id)}
+                          onRename={() => renameListedNote(note)}
+                          onMove={() => moveListedNote(note)}
+                          onDelete={() => deleteListedNote(note)}
+                        />
+                      )
+                    })}
+                  </WorkspacePanel>
+                ) : null}
+                {(overview.data?.groups.length ?? 0) > 0 ? (
+                  <WorkspacePanel
+                    title="Группы"
+                    icon="folder"
+                    action={
+                      <Button
+                        label="Смотреть все"
+                        compact
+                        onPress={() => {
+                          setSelectedGroupId(null)
+                          setView('groups')
+                        }}
+                      />
+                    }
+                  >
+                    {(overview.data?.groups ?? []).slice(0, 3).map((group) => (
+                      <WorkspaceNodeCard
+                        key={group.id}
+                        title={group.title}
+                        subtitle={`${(overview.data?.notes ?? []).filter((note) => note.groupId === group.id).length} заметок`}
+                        leading={<VisualIconBadge value={group.icon ?? 'folder'} />}
+                        onPress={() => {
+                          setSelectedGroupId(group.id)
+                          setView('groups')
+                        }}
+                      />
+                    ))}
+                  </WorkspacePanel>
+                ) : null}
+              </View>
+            ) : null
+          }
           ListEmptyComponent={
             <EmptyState
               text={

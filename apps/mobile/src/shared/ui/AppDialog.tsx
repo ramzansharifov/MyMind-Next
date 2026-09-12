@@ -104,10 +104,10 @@ export function AppDialog({
             overflow: 'hidden',
             borderWidth: fullscreen ? 0 : 1,
             borderColor: tone === 'default' ? theme.border : accent + '38',
-            borderTopLeftRadius: fullscreen ? 0 : sheet ? 28 : 22,
-            borderTopRightRadius: fullscreen ? 0 : sheet ? 28 : 22,
-            borderBottomLeftRadius: fullscreen || sheet ? 0 : 22,
-            borderBottomRightRadius: fullscreen || sheet ? 0 : 22,
+            borderTopLeftRadius: fullscreen ? 0 : 16,
+            borderTopRightRadius: fullscreen ? 0 : 16,
+            borderBottomLeftRadius: fullscreen || sheet ? 0 : 16,
+            borderBottomRightRadius: fullscreen || sheet ? 0 : 16,
             backgroundColor: fullscreen ? theme.background : theme.raised,
             elevation: 18
           }}

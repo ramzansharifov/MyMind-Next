@@ -64,13 +64,15 @@ export function MobileCreateAction({
             else setOpen(true)
           }}
           style={({ pressed }) => ({
-            width: 58,
-            height: 58,
+            minHeight: 44,
+            flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'center',
-            borderRadius: 20,
+            gap: 8,
+            paddingHorizontal: 16,
+            borderRadius: 12,
             borderWidth: 1,
-            borderColor: theme.accent + '80',
+            borderColor: theme.accent + '33',
             backgroundColor: theme.accent,
             opacity: triggerDisabled ? 0.4 : pressed ? 0.8 : 1,
             elevation: 8,
@@ -80,7 +82,10 @@ export function MobileCreateAction({
             shadowOffset: { width: 0, height: 7 }
           })}
         >
-          <AppIcon name="add" size={25} strokeWidth={2.4} color="#ffffff" />
+          <AppIcon name="add" size={17} strokeWidth={2.2} color="#ffffff" />
+          <Text style={{ color: '#ffffff', fontSize: 14, fontWeight: '600' }}>
+            {actions.length === 1 ? actions[0].label : label}
+          </Text>
         </Pressable>
       </View>
 
@@ -103,7 +108,7 @@ export function MobileCreateAction({
                 disabled={disabled || action.disabled}
                 onPress={() => launch(action)}
                 style={({ pressed }) => ({
-                  minHeight: 64,
+                  minHeight: 52,
                   flexDirection: 'row',
                   alignItems: 'center',
                   gap: 12,
@@ -111,15 +116,15 @@ export function MobileCreateAction({
                   paddingVertical: 10,
                   borderWidth: 1,
                   borderColor: theme.border,
-                  borderRadius: 16,
+                  borderRadius: 12,
                   backgroundColor: pressed ? theme.raised : theme.surface,
                   opacity: disabled || action.disabled ? 0.42 : pressed ? 0.78 : 1
                 })}
               >
                 <View
                   style={{
-                    width: 38,
-                    height: 38,
+                    width: 36,
+                    height: 36,
                     alignItems: 'center',
                     justifyContent: 'center',
                     borderRadius: 12,

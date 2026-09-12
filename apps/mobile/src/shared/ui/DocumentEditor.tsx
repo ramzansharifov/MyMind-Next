@@ -21,16 +21,23 @@ import type {
 } from '@mymind/contracts/study'
 import { appearanceTokens, designTokens } from '@mymind/design'
 import {
+  ArrowDown,
+  ArrowUp,
   AudioLines,
   ChevronRight,
   Code2,
+  CopyPlus,
   FileText,
+  GripVertical,
   Heading2,
   Image as ImageIcon,
   Minus,
+  Plus,
   Paperclip,
   Presentation,
+  Settings2,
   Sigma,
+  Trash2,
   Type,
   Video,
   Workflow,
@@ -44,7 +51,7 @@ import {
   type OpenDocumentBoard
 } from './DocumentBoardBlock'
 import { AppIcon } from './icons'
-import { NotesRichTextBlock } from './NotesRichTextBlock'
+import { DocumentRichTextViewer, NotesRichTextBlock } from './NotesRichTextBlock'
 import { NotesBlockSettingsSheet } from './NotesBlockSettings'
 import {
   DEFAULT_NOTES_RICH_TEXT_STATE,
@@ -53,7 +60,8 @@ import {
   NotesRichTextSettingsSheet
 } from './NotesRichTextControls'
 import type { NotesRichTextDomRef, NotesRichTextFormattingState } from './NotesRichTextDom'
-import { StudyRichTextEditor } from './StudyRichTextEditor'
+import { resolveStudyRichTextHtml } from './richTextHtml'
+import { useConfirmation } from './ConfirmationProvider'
 import { Button, Label } from './primitives'
 import { useTheme } from './theme'
 import { AudioAssetPlayer, VoiceRecorder, type VoiceRecordingInput } from './VoiceRecorder'
@@ -304,13 +312,7 @@ function BlockInput({
 
   switch (block.type) {
     case 'text':
-      return searchInternalLinkTargets ? (
-        <StudyRichTextEditor
-          block={block}
-          update={(next) => update(next)}
-          searchTargets={searchInternalLinkTargets}
-        />
-      ) : (
+      return (
         <TextInput
           accessibilityLabel="Текстовый блок"
           multiline
@@ -654,6 +656,220 @@ function ToolbarButton({
         </Text>
       )}
     </Pressable>
+  )
+}
+
+function BlockHeaderIcon({
+  label,
+  icon: Icon,
+  disabled = false,
+  danger = false,
+  onPress
+}: {
+  label: string
+  icon: LucideIcon
+  disabled?: boolean
+  danger?: boolean
+  onPress(): void
+}): React.JSX.Element {
+  const theme = useTheme()
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled }}
+      disabled={disabled}
+      hitSlop={5}
+      onPress={onPress}
+      style={({ pressed }) => ({
+        width: 30,
+        height: 30,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 7,
+        backgroundColor: pressed ? (danger ? '#ef44441A' : theme.raised) : 'transparent',
+        opacity: disabled ? 0.25 : pressed ? 0.72 : 1
+      })}
+    >
+      <Icon size={16} color={danger ? theme.error : theme.muted} />
+    </Pressable>
+  )
+}
+
+function DesktopParityBlockCard({
+  block,
+  active,
+  collapsed,
+  first,
+  last,
+  activate,
+  toggleCollapsed,
+  move,
+  duplicate,
+  settings,
+  remove,
+  children
+}: {
+  block: StudyBlock
+  active: boolean
+  collapsed: boolean
+  first: boolean
+  last: boolean
+  activate(): void
+  toggleCollapsed(): void
+  move(direction: -1 | 1): void
+  duplicate(): void
+  settings(): void
+  remove(): void
+  children: React.ReactNode
+}): React.JSX.Element {
+  const theme = useTheme()
+  return (
+    <Pressable
+      accessibilityRole="none"
+      onPress={activate}
+      style={{
+        padding: active ? 11 : 12,
+        borderWidth: active ? 2 : 1,
+        borderColor: active ? theme.accent + '66' : theme.border,
+        borderRadius: 12,
+        backgroundColor: theme.surface
+      }}
+    >
+      <View
+        style={{
+          minHeight: 30,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 2,
+          marginBottom: collapsed ? 0 : 8
+        }}
+      >
+        <View
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          style={{
+            width: 30,
+            height: 30,
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: 0.55
+          }}
+        >
+          <GripVertical size={16} color={theme.muted} />
+        </View>
+        <BlockHeaderIcon
+          label={collapsed ? `Развернуть блок «${blockLabel(block)}»` : `Свернуть блок «${blockLabel(block)}»`}
+          icon={ChevronRight}
+          onPress={toggleCollapsed}
+        />
+        <Text
+          numberOfLines={1}
+          style={{
+            flex: 1,
+            marginLeft: 4,
+            color: theme.muted,
+            fontSize: 11,
+            lineHeight: 15,
+            fontWeight: '700',
+            letterSpacing: 0.8,
+            textTransform: 'uppercase'
+          }}
+        >
+          {blockLabel(block)}
+        </Text>
+        <BlockHeaderIcon
+          label="Переместить блок вверх"
+          icon={ArrowUp}
+          disabled={first}
+          onPress={() => move(-1)}
+        />
+        <BlockHeaderIcon
+          label="Переместить блок вниз"
+          icon={ArrowDown}
+          disabled={last}
+          onPress={() => move(1)}
+        />
+        <BlockHeaderIcon label="Дублировать блок" icon={CopyPlus} onPress={duplicate} />
+        <BlockHeaderIcon label="Настройки блока" icon={Settings2} onPress={settings} />
+        <BlockHeaderIcon label="Удалить блок" icon={Trash2} danger onPress={remove} />
+      </View>
+      {collapsed ? null : children}
+    </Pressable>
+  )
+}
+
+function DesktopParityInsertControl({ onPress }: { onPress(): void }): React.JSX.Element {
+  const theme = useTheme()
+  return (
+    <View style={{ height: 32, flexDirection: 'row', alignItems: 'center' }}>
+      <View style={{ height: 1, flex: 1, backgroundColor: theme.border }} />
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Добавить блок здесь"
+        hitSlop={8}
+        onPress={onPress}
+        style={({ pressed }) => ({
+          width: 26,
+          height: 26,
+          marginHorizontal: 8,
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderWidth: 1,
+          borderColor: pressed ? theme.accent + '88' : theme.border,
+          borderRadius: 13,
+          backgroundColor: pressed ? theme.accent + '14' : theme.surface,
+          opacity: pressed ? 0.75 : 1
+        })}
+      >
+        <Plus size={14} color={theme.muted} />
+      </Pressable>
+      <View style={{ height: 1, flex: 1, backgroundColor: theme.border }} />
+    </View>
+  )
+}
+
+function RichTextFormattingDock({
+  editor,
+  state,
+  openSettings,
+  openLink
+}: {
+  editor: NotesRichTextDomRef | null
+  state: NotesRichTextFormattingState
+  openSettings(): void
+  openLink(): void
+}): React.JSX.Element {
+  const theme = useTheme()
+  return (
+    <View
+      style={{
+        minHeight: 52,
+        borderTopWidth: 1,
+        borderTopColor: theme.border,
+        backgroundColor: theme.surface
+      }}
+    >
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{
+          minHeight: 52,
+          alignItems: 'center',
+          gap: 3,
+          paddingHorizontal: 10,
+          paddingVertical: 8
+        }}
+      >
+        <NotesRichTextInlineControls
+          editor={editor}
+          state={state}
+          openSettings={openSettings}
+          openLink={openLink}
+        />
+      </ScrollView>
+    </View>
   )
 }
 
@@ -1218,11 +1434,15 @@ function NotesReadBlock({
 
   switch (block.type) {
     case 'text':
-      return block.text.trim() ? (
-        <BoardCanvasDom
-          {...richProps}
-          kind={'html' as const}
-          source={readerHtml(block, resolveInternalLinkTarget)}
+      return block.text.trim() || block.html?.trim() ? (
+        <DocumentRichTextViewer
+          html={resolveStudyRichTextHtml(block, resolveInternalLinkTarget)}
+          onOpenInternalLink={(target) => onOpenInternalLink?.(target)}
+          onOpenExternalLink={(href) => {
+            void Linking.openURL(href).catch((reason: unknown) => {
+              assetActions.onAssetError?.(reason)
+            })
+          }}
         />
       ) : (
         <Text selectable style={{ color: theme.muted, fontSize: 13, lineHeight: 20 }}>
@@ -1492,11 +1712,14 @@ export function DocumentEditor({
   onAssetError
 }: DocumentEditorProps): React.JSX.Element {
   const theme = useTheme()
+  const confirm = useConfirmation()
   const documentRef = useRef(document)
   const clean = presentation === 'notes-clean'
   const [pendingAsset, setPendingAsset] = useState<StudyAssetKind | null>(null)
   const [activeBlockId, setActiveBlockId] = useState<string | null>(null)
   const [insertOpen, setInsertOpen] = useState(false)
+  const [insertIndex, setInsertIndex] = useState(document.blocks.length)
+  const [collapsedBlockIds, setCollapsedBlockIds] = useState<Set<string>>(() => new Set())
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [richSettingsOpen, setRichSettingsOpen] = useState(false)
   const [quickLinkOpen, setQuickLinkOpen] = useState(false)
@@ -1504,6 +1727,7 @@ export function DocumentEditor({
     DEFAULT_NOTES_RICH_TEXT_STATE
   )
   const richTextRefs = useRef(new Map<string, NotesRichTextDomRef>())
+  const [, setRichEditorEpoch] = useState(0)
   const assetActions = { importAsset, openAsset, resolveAssetUri, onAssetError }
 
   useEffect(() => {
@@ -1589,10 +1813,14 @@ export function DocumentEditor({
     emit({ ...currentDocument, blocks })
   }
 
-  const append = (block: StudyBlock): void => {
+  const insertBlockAt = (block: StudyBlock, requestedIndex = insertIndex): void => {
     const currentDocument = documentRef.current
-    emit({ ...currentDocument, blocks: [...currentDocument.blocks, block] })
-    if (clean) setActiveBlockId(block.id)
+    const index = Math.max(0, Math.min(requestedIndex, currentDocument.blocks.length))
+    const blocks = currentDocument.blocks.slice()
+    blocks.splice(index, 0, block)
+    emit({ ...currentDocument, blocks })
+    setActiveBlockId(block.id)
+    setInsertIndex(index + 1)
   }
 
   const duplicate = (index: number): void => {
@@ -1604,12 +1832,22 @@ export function DocumentEditor({
     const blocks = currentDocument.blocks.slice()
     blocks.splice(index + 1, 0, copy)
     emit({ ...currentDocument, blocks })
-    if (clean) setActiveBlockId(copy.id)
+    setActiveBlockId(copy.id)
+  }
+
+  const openInsertAt = (index: number): void => {
+    setInsertIndex(index)
+    setSettingsOpen(false)
+    setRichSettingsOpen(false)
+    setQuickLinkOpen(false)
+    setInsertOpen(true)
   }
 
   const insert = (type: StudyBlockType): void => {
     const block = newBlock(type, createId())
-    if (block) append(block)
+    if (!block) return
+    insertBlockAt(block)
+    setInsertOpen(false)
   }
 
   const insertAsset = async (type: StudyAssetKind): Promise<void> => {
@@ -1618,13 +1856,34 @@ export function DocumentEditor({
     try {
       const asset = await importAsset(type)
       if (!asset) return
-      append(newAssetBlock(type, createId(), asset))
-      if (clean) setInsertOpen(false)
+      insertBlockAt(newAssetBlock(type, createId(), asset))
+      setInsertOpen(false)
     } catch (reason) {
       onAssetError?.(reason)
     } finally {
       setPendingAsset(null)
     }
+  }
+
+  const requestRemove = (index: number): void => {
+    const target = documentRef.current.blocks[index]
+    if (!target) return
+    void confirm({
+      title: 'Удалить блок?',
+      subject: blockLabel(target),
+      description: 'Блок и всё его содержимое будут удалены из документа.',
+      tone: 'danger',
+      onConfirm: () => remove(index)
+    })
+  }
+
+  const toggleCollapsed = (blockId: string): void => {
+    setCollapsedBlockIds((current) => {
+      const next = new Set(current)
+      if (next.has(blockId)) next.delete(blockId)
+      else next.add(blockId)
+      return next
+    })
   }
 
   const activeIndex = activeBlockId
@@ -1641,30 +1900,47 @@ export function DocumentEditor({
       keyExtractor={(block) => block.id}
       keyboardShouldPersistTaps="handled"
       contentContainerStyle={{
-        paddingHorizontal: clean ? 12 : 0,
-        paddingBottom: clean ? 18 : 48
+        paddingHorizontal: 12,
+        paddingBottom: activeBlock?.type === 'text' ? 18 : 48
       }}
       ListHeaderComponent={header ?? null}
       ListEmptyComponent={
-        clean ? null : (
-          <View style={{ paddingVertical: 28 }}>
-            <Label muted>Документ пуст. Добавьте первый блок.</Label>
-          </View>
-        )
+        <View style={{ paddingVertical: 18 }}>
+          <Label muted>Документ пуст. Добавьте первый блок.</Label>
+        </View>
       }
-      renderItem={({ item, index }) =>
-        clean ? (
-          <View
-            onTouchStart={item.type === 'text' ? undefined : () => setActiveBlockId(item.id)}
-            style={{
-              marginBottom: 4,
-              paddingHorizontal: 8,
-              paddingVertical: 5,
-              borderRadius: 14,
-              borderWidth: 1,
-              borderColor: activeBlockId === item.id ? theme.accent + '42' : 'transparent',
-              backgroundColor: activeBlockId === item.id ? theme.accent + '08' : 'transparent'
+      renderItem={({ item, index }) => (
+        <View>
+          <DesktopParityInsertControl onPress={() => openInsertAt(index)} />
+          <DesktopParityBlockCard
+            block={item}
+            active={activeBlockId === item.id}
+            collapsed={collapsedBlockIds.has(item.id)}
+            first={index === 0}
+            last={index === document.blocks.length - 1}
+            activate={() => {
+              setActiveBlockId(item.id)
+              setSettingsOpen(false)
+              if (item.type !== 'text') {
+                setRichSettingsOpen(false)
+                setQuickLinkOpen(false)
+              }
             }}
+            toggleCollapsed={() => toggleCollapsed(item.id)}
+            move={(direction) => move(index, direction)}
+            duplicate={() => duplicate(index)}
+            settings={() => {
+              setActiveBlockId(item.id)
+              if (item.type === 'text') {
+                setSettingsOpen(false)
+                setRichSettingsOpen(true)
+              } else {
+                setRichSettingsOpen(false)
+                setQuickLinkOpen(false)
+                setSettingsOpen(true)
+              }
+            }}
+            remove={() => requestRemove(index)}
           >
             {item.type === 'text' ? (
               <NotesRichTextBlock
@@ -1673,6 +1949,7 @@ export function DocumentEditor({
                 registerRef={(editor) => {
                   if (editor) richTextRefs.current.set(item.id, editor)
                   else richTextRefs.current.delete(item.id)
+                  setRichEditorEpoch((value) => value + 1)
                 }}
                 activate={() => {
                   setActiveBlockId(item.id)
@@ -1691,130 +1968,27 @@ export function DocumentEditor({
                 assetActions={assetActions}
                 openBoard={openBoard}
                 searchInternalLinkTargets={searchInternalLinkTargets}
-                clean
               />
             )}
-          </View>
-        ) : (
-          <View
-            style={{
-              marginBottom: 12,
-              padding: 12,
-              gap: 10,
-              borderRadius: designTokens.radius.lg,
-              borderWidth: 1,
-              borderColor: theme.border,
-              backgroundColor: theme.surface
-            }}
-          >
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
-              <Text style={{ color: theme.muted, fontSize: 12, textTransform: 'uppercase' }}>
-                {item.type}
-              </Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                <Button label="↑" disabled={index === 0} onPress={() => move(index, -1)} />
-                <Button
-                  label="↓"
-                  disabled={index === document.blocks.length - 1}
-                  onPress={() => move(index, 1)}
-                />
-                <Button label="Удалить" danger onPress={() => remove(index)} />
-              </View>
-            </View>
-            <BlockInput
-              block={item}
-              update={(next) => replace(index, next)}
-              assetActions={assetActions}
-              openBoard={openBoard}
-              searchInternalLinkTargets={searchInternalLinkTargets}
-            />
-          </View>
-        )
-      }
+          </DesktopParityBlockCard>
+        </View>
+      )}
       ListFooterComponent={
-        clean ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Добавить новый блок"
-            onPress={() => {
-              setActiveBlockId(null)
-              setSettingsOpen(false)
-              setInsertOpen(true)
-            }}
-            style={({ pressed }) => ({
-              minHeight: 58,
-              marginTop: 8,
-              marginHorizontal: 8,
-              marginBottom: 8,
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 9,
-              borderWidth: 1,
-              borderStyle: 'dashed',
-              borderColor: pressed ? theme.accent + '70' : theme.border,
-              borderRadius: 15,
-              backgroundColor: pressed ? theme.accent + '08' : 'transparent',
-              opacity: pressed ? 0.76 : 1
-            })}
-          >
-            <AppIcon name="add" size={18} color={theme.muted} />
-            <Text style={{ color: theme.muted, fontSize: 13, fontWeight: '600' }}>
-              Добавить новый блок
-            </Text>
-          </Pressable>
-        ) : (
-          <View style={{ gap: 10, paddingTop: 8 }}>
-            <Label muted>Добавить блок</Label>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              {INSERTABLE_BLOCKS.map((item) => (
-                <Button key={item.type} label={item.label} onPress={() => insert(item.type)} />
-              ))}
-              {importAsset
-                ? ASSET_BLOCKS.map((item) => (
-                    <Button
-                      key={item.type}
-                      label={pendingAsset === item.type ? 'Выбор…' : item.label}
-                      disabled={pendingAsset !== null}
-                      onPress={() => void insertAsset(item.type)}
-                    />
-                  ))
-                : null}
-            </View>
-            {saveRecordedAudio ? (
-              <VoiceRecorder
-                saveRecording={saveRecordedAudio}
-                onSaved={(asset) => append(newAssetBlock('audio', createId(), asset))}
-                onError={onAssetError}
-                disabled={pendingAsset !== null}
-              />
-            ) : null}
-          </View>
-        )
+        <DesktopParityInsertControl onPress={() => openInsertAt(document.blocks.length)} />
       }
     />
   )
-
-  if (!clean) return list
 
   return (
     <View style={{ flex: 1, minHeight: 0 }}>
       {list}
 
-      {activeBlock && activeIndex >= 0 ? (
-        <NotesBlockToolbar
-          block={activeBlock}
-          index={activeIndex}
-          count={document.blocks.length}
-          update={(next) => replace(activeIndex, next)}
-          move={(direction) => move(activeIndex, direction)}
-          remove={() => remove(activeIndex)}
-          duplicate={() => duplicate(activeIndex)}
-          openSettings={() => setSettingsOpen(true)}
-          richEditor={activeRichEditor}
-          richState={richTextState}
-          openRichSettings={() => setRichSettingsOpen(true)}
-          openQuickLink={() => setQuickLinkOpen(true)}
+      {activeBlock?.type === 'text' ? (
+        <RichTextFormattingDock
+          editor={activeRichEditor}
+          state={richTextState}
+          openSettings={() => setRichSettingsOpen(true)}
+          openLink={() => setQuickLinkOpen(true)}
         />
       ) : null}
 
@@ -1826,7 +2000,10 @@ export function DocumentEditor({
         close={() => setInsertOpen(false)}
         insert={insert}
         insertAsset={(type) => void insertAsset(type)}
-        appendRecorded={(asset) => append(newAssetBlock('audio', createId(), asset))}
+        appendRecorded={(asset) => {
+          insertBlockAt(newAssetBlock('audio', createId(), asset))
+          setInsertOpen(false)
+        }}
         onAssetError={onAssetError}
       />
 

@@ -1,9 +1,10 @@
 import { useCallback, useMemo, useState } from 'react'
-import { FlatList, ScrollView, View } from 'react-native'
+import { FlatList, ScrollView, Text, TextInput, View } from 'react-native'
 import type {
   NutritionFoodCategory,
   NutritionFoodRecord,
   NutritionLogEntryRecord,
+  NutritionTargetRecord,
   NutritionMealType,
   NutritionRecipeRecord,
   NutritionValues
@@ -23,10 +24,12 @@ import {
   Row,
   SearchField
 } from '../../shared/ui/primitives'
-import { NutritionRecipeSheet } from './NutritionRecipeSheet'
+import { BarChart3, CalendarDays, Target, Utensils } from 'lucide-react-native'
+import { ModuleTabs } from '../../shared/ui/ModuleTabs'
 import { NutritionReportsView } from './NutritionReportsView'
+import { useTheme } from '../../shared/ui/theme'
 
-type Tab = 'today' | 'diary' | 'foods' | 'recipes' | 'report'
+type Tab = 'today' | 'diary' | 'goal' | 'progress'
 type ListItem =
   | { kind: 'entry'; value: NutritionLogEntryRecord }
   | { kind: 'food'; value: NutritionFoodRecord }
@@ -99,6 +102,162 @@ function nutrientsFrom(values: Record<string, unknown>): NutritionValues {
 
 function macroLine(values: NutritionValues): string {
   return `${values.calories} ккал · Б ${values.proteinG} · Ж ${values.fatG} · У ${values.carbsG}`
+}
+
+const goalFields = [
+  { key: 'calories', label: 'Калории', hint: 'ккал' },
+  { key: 'proteinG', label: 'Белки', hint: 'г' },
+  { key: 'fatG', label: 'Жиры', hint: 'г' },
+  { key: 'carbsG', label: 'Углеводы', hint: 'г' },
+  { key: 'fiberG', label: 'Клетчатка', hint: 'г' },
+  { key: 'waterMl', label: 'Вода', hint: 'мл' }
+] as const
+
+type GoalFieldKey = (typeof goalFields)[number]['key']
+type GoalDraft = Record<GoalFieldKey, string>
+
+function goalDraft(target: NutritionTargetRecord | null): GoalDraft {
+  return {
+    calories: target?.calories?.toString() ?? '',
+    proteinG: target?.proteinG?.toString() ?? '',
+    fatG: target?.fatG?.toString() ?? '',
+    carbsG: target?.carbsG?.toString() ?? '',
+    fiberG: target?.fiberG?.toString() ?? '',
+    waterMl: target?.waterMl?.toString() ?? ''
+  }
+}
+
+function optionalPositive(value: string): number | null {
+  if (!value.trim()) return null
+  const parsed = Number(value.replace(',', '.'))
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null
+}
+
+function NutritionGoalCard({
+  target,
+  onSave
+}: {
+  target: NutritionTargetRecord | null
+  onSave(input: {
+    calories: number | null
+    proteinG: number | null
+    fatG: number | null
+    carbsG: number | null
+    fiberG: number | null
+    waterMl: number | null
+  }): void
+}): React.JSX.Element {
+  const theme = useTheme()
+  const [values, setValues] = useState<GoalDraft>(() => goalDraft(target))
+
+  const save = (): void => {
+    const water = optionalPositive(values.waterMl)
+    onSave(
+      validation.setNutritionTargetsInputSchema.parse({
+        calories: optionalPositive(values.calories),
+        proteinG: optionalPositive(values.proteinG),
+        fatG: optionalPositive(values.fatG),
+        carbsG: optionalPositive(values.carbsG),
+        fiberG: optionalPositive(values.fiberG),
+        waterMl: water === null ? null : Math.round(water)
+      })
+    )
+  }
+
+  return (
+    <ScrollView contentContainerStyle={{ paddingBottom: 28 }}>
+      <View
+        style={{
+          overflow: 'hidden',
+          borderWidth: 1,
+          borderColor: theme.border,
+          borderRadius: 16,
+          backgroundColor: theme.surface
+        }}
+      >
+        <View
+          style={{
+            padding: 18,
+            flexDirection: 'row',
+            alignItems: 'flex-start',
+            gap: 12,
+            borderBottomWidth: 1,
+            borderBottomColor: theme.border
+          }}
+        >
+          <View
+            style={{
+              width: 40,
+              height: 40,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 12,
+              backgroundColor: theme.accent + '14'
+            }}
+          >
+            <Target size={20} color={theme.accent} />
+          </View>
+          <View style={{ minWidth: 0, flex: 1 }}>
+            <Text style={{ color: theme.text, fontSize: 16, fontWeight: '700' }}>
+              Общая цель питания
+            </Text>
+            <Text style={{ marginTop: 4, color: theme.muted, fontSize: 12, lineHeight: 19 }}>
+              Единые ориентиры для «Сегодня», «Дневника» и «Прогресса». Пустое поле означает,
+              что цель по показателю не задана.
+            </Text>
+          </View>
+        </View>
+
+        <View
+          style={{
+            padding: 18,
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            gap: 12
+          }}
+        >
+          {goalFields.map((field) => (
+            <View key={field.key} style={{ width: '47%', minWidth: 140, flexGrow: 1, gap: 6 }}>
+              <Text style={{ color: theme.text, fontSize: 13, fontWeight: '600' }}>
+                {field.label} · {field.hint}
+              </Text>
+              <TextInput
+                accessibilityLabel={field.label}
+                value={values[field.key]}
+                placeholder="Не задано"
+                placeholderTextColor={theme.muted}
+                keyboardType="decimal-pad"
+                onChangeText={(value) =>
+                  setValues((current) => ({ ...current, [field.key]: value }))
+                }
+                style={{
+                  minHeight: 44,
+                  paddingHorizontal: 12,
+                  borderWidth: 1,
+                  borderColor: theme.border,
+                  borderRadius: 12,
+                  backgroundColor: theme.background,
+                  color: theme.text,
+                  fontSize: 14
+                }}
+              />
+            </View>
+          ))}
+        </View>
+
+        <View
+          style={{
+            padding: 16,
+            alignItems: 'flex-end',
+            borderTopWidth: 1,
+            borderTopColor: theme.border
+          }}
+        >
+          <Button label="Сохранить цель" icon="check" primary onPress={save} />
+        </View>
+      </View>
+    </ScrollView>
+  )
 }
 
 export function NutritionScreen(): React.JSX.Element {
@@ -332,42 +491,36 @@ export function NutritionScreen(): React.JSX.Element {
     })
   }
 
-  const tabs: Array<{ key: Tab; label: string }> = [
-    { key: 'today', label: 'Сегодня' },
-    { key: 'diary', label: 'Дневник' },
-    { key: 'foods', label: 'Продукты' },
-    { key: 'recipes', label: 'Рецепты' },
-    { key: 'report', label: 'Прогресс' }
+  const tabs = [
+    { id: 'today' as const, label: 'Сегодня', icon: Utensils },
+    { id: 'diary' as const, label: 'Дневник', icon: CalendarDays },
+    { id: 'goal' as const, label: 'Цель', icon: Target },
+    { id: 'progress' as const, label: 'Прогресс', icon: BarChart3 }
   ]
   const header = (
     <View style={{ gap: 10, paddingBottom: 12 }}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ gap: 8 }}
-      >
-        {tabs.map((item) => (
-          <Button
-            key={item.key}
-            label={item.label}
-            selected={tab === item.key}
-            onPress={() => setTab(item.key)}
-          />
-        ))}
-      </ScrollView>
-      {tab === 'today' || tab === 'diary' ? (
+      <ModuleTabs<Tab>
+        items={tabs}
+        value={tab}
+        onChange={(next) => {
+          if (next === 'today') setDate(localDateKey())
+          setTab(next)
+        }}
+      />
+      {tab === 'diary' ? (
         <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-          <Button label="‹" onPress={() => setDate((value) => shiftDate(value, -1))} />
+          <Button label="‹" accessibilityLabel="Предыдущий день" onPress={() => setDate((value) => shiftDate(value, -1))} />
           <View style={{ flex: 1 }}>
             <Row title={date === localDateKey() ? 'Сегодня' : date} subtitle={date} />
           </View>
-          <Button label="›" onPress={() => setDate((value) => shiftDate(value, 1))} />
+          <Button label="›" accessibilityLabel="Следующий день" onPress={() => setDate((value) => shiftDate(value, 1))} />
         </View>
       ) : null}
-      {tab === 'foods' || tab === 'recipes' ? (
-        <SearchField value={query} onChangeText={setQuery} />
+      {tab === 'today' || tab === 'diary' ? (
+        <View style={{ alignItems: 'flex-start' }}>
+          <Button label="Добавить из JSON" onPress={importDiary} />
+        </View>
       ) : null}
-      {tab === 'diary' ? <Button label="Импорт JSON" onPress={importDiary} /> : null}
     </View>
   )
 
@@ -449,7 +602,25 @@ export function NutritionScreen(): React.JSX.Element {
     )
   }
 
-  if (tab === 'report') {
+  if (tab === 'goal') {
+    return (
+      <View style={{ flex: 1 }}>
+        {header}
+        {overview.error ? <ErrorState message={overview.error} retry={overview.refresh} /> : null}
+        <NutritionGoalCard
+          key={data?.currentTarget?.id ?? 'nutrition-goal-empty'}
+          target={data?.currentTarget ?? null}
+          onSave={(input) =>
+            overview.mutate(() => {
+              api.setTargets(input)
+            }, 'Цель питания сохранена')
+          }
+        />
+      </View>
+    )
+  }
+
+  if (tab === 'progress') {
     return (
       <View style={{ flex: 1 }}>
         {header}
@@ -459,114 +630,40 @@ export function NutritionScreen(): React.JSX.Element {
     )
   }
 
-  const list: ListItem[] =
-    tab === 'diary'
-      ? entries.map((value) => ({ kind: 'entry', value }))
-      : tab === 'foods'
-        ? filteredFoods.map((value) => ({ kind: 'food', value }))
-        : filteredRecipes.map((value) => ({ kind: 'recipe', value }))
-
   return (
     <View style={{ flex: 1 }}>
       {header}
       {overview.error ? <ErrorState message={overview.error} retry={overview.refresh} /> : null}
-      <FlatList<ListItem>
-        data={list}
-        keyExtractor={(item) => `${item.kind}:${item.value.id}`}
+      <FlatList<NutritionLogEntryRecord>
+        data={entries}
+        keyExtractor={(entry) => entry.id}
         contentContainerStyle={{ paddingBottom: 96 }}
         refreshing={overview.loading}
         onRefresh={overview.refresh}
         ListEmptyComponent={<EmptyState />}
-        renderItem={({ item }) => {
-          if (item.kind === 'entry') {
-            const entry = item.value
-            return (
-              <Row
-                title={`${mealLabels[entry.mealType]} · ${entry.title}`}
-                subtitle={`${entry.amount} ${unitLabels[entry.unit]} · ${macroLine(entry.nutrients)}`}
-                onPress={() => editLog(entry)}
-                onLongPress={() =>
-                  overview.confirmDelete('Удалить запись?', () =>
-                    api.deleteLogEntry({ id: entry.id })
-                  )
-                }
-              />
-            )
-          }
-          if (item.kind === 'food') {
-            const food = item.value
-            return (
-              <Row
-                title={food.name}
-                subtitle={`${food.brand ? `${food.brand} · ` : ''}${food.baseAmount} ${unitLabels[food.baseUnit]} · ${macroLine(food.nutrients)}`}
-                onPress={() => editFood(food)}
-                onLongPress={() =>
-                  overview.confirmDelete(
-                    'Удалить продукт?',
-                    () => api.deleteFood({ id: food.id }),
-                    'Продукт из рецепта удалить нельзя. Записи дневника сохранят снимок данных.'
-                  )
-                }
-              />
-            )
-          }
-          const recipe = item.value
-          return (
-            <Row
-              title={recipe.name}
-              subtitle={`${recipe.servings} порц. · ${recipe.ingredients.length} ингредиентов · ${macroLine(recipe.perServingNutrients)}`}
-              onPress={() => setRecipeEditor(recipe)}
-              onLongPress={() =>
-                overview.confirmDelete(
-                  'Удалить рецепт?',
-                  () => api.deleteRecipe({ id: recipe.id }),
-                  'Записи дневника сохранят снимок рецепта.'
-                )
-              }
-            />
-          )
-        }}
+        renderItem={({ item: entry }) => (
+          <Row
+            title={`${mealLabels[entry.mealType]} · ${entry.title}`}
+            subtitle={`${entry.amount} ${unitLabels[entry.unit]} · ${macroLine(entry.nutrients)}`}
+            onPress={() => editLog(entry)}
+            onLongPress={() =>
+              overview.confirmDelete('Удалить запись?', () => api.deleteLogEntry({ id: entry.id }))
+            }
+          />
+        )}
       />
       <MobileCreateAction
         actions={[
-          tab === 'diary'
-            ? {
-                key: 'entry',
-                label: 'Новая запись',
-                description: 'Добавить еду в выбранный день',
-                icon: 'nutrition',
-                onPress: () => editLog()
-              }
-            : tab === 'foods'
-              ? {
-                  key: 'food',
-                  label: 'Новый продукт',
-                  description: 'Добавить продукт в каталог питания',
-                  icon: 'nutrition',
-                  onPress: () => editFood()
-                }
-              : {
-                  key: 'recipe',
-                  label: 'Новый рецепт',
-                  description: 'Собрать рецепт из продуктов',
-                  icon: 'nutrition',
-                  onPress: () => setRecipeEditor('new')
-                }
+          {
+            key: 'entry',
+            label: 'Новая запись',
+            description: 'Добавить еду в выбранный день',
+            icon: 'nutrition',
+            onPress: () => editLog()
+          }
         ]}
       />
       {form ? <FormSheet spec={form} close={() => setForm(null)} /> : null}
-      {recipeEditor ? (
-        <NutritionRecipeSheet
-          recipe={recipeEditor === 'new' ? undefined : recipeEditor}
-          foods={foods}
-          save={(input) => {
-            if ('id' in input) api.updateRecipe(input)
-            else api.createRecipe(input)
-            overview.refresh()
-          }}
-          close={() => setRecipeEditor(null)}
-        />
-      ) : null}
     </View>
   )
 }

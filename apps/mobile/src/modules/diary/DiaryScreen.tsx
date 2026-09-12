@@ -1,26 +1,34 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Animated, BackHandler, FlatList, Pressable, Text, View } from 'react-native'
+import { Animated, BackHandler, FlatList, Pressable, ScrollView, Text, View } from 'react-native'
 import {
   DIARY_COVER_TONES,
   DIARY_ICON_NAMES,
   DIARY_MOODS,
   DIARY_PAPER_PATTERNS,
   DIARY_PAPER_TONES,
-  type DiaryDaySummary,
   type DiaryEntry,
   type DiarySummary
 } from '@mymind/contracts/diary'
 import * as schema from '@mymind/core/validation/diary'
-import { addDays, localDateKey } from '@mymind/core/habits'
+import {
+  BarChart3,
+  BookOpen,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Library,
+  Settings2,
+  SunMedium,
+  type LucideIcon
+} from 'lucide-react-native'
+import { localDateKey } from '@mymind/core/habits'
 import { useServices } from '../../app/context'
 import { useCollection } from '../../shared/hooks/useCollection'
 import {
   Button,
   EmptyState,
   ErrorState,
-  LoadingState,
-  Row,
-  SearchField
+  LoadingState
 } from '../../shared/ui/primitives'
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { MobileCreateAction } from '../../shared/ui/MobileCreateAction'
@@ -39,7 +47,7 @@ import {
   shiftDiaryMonth
 } from './diary-presentation'
 
-type DiaryDetailView = 'day' | 'history' | 'calendar' | 'report' | 'settings'
+type DiaryDetailView = 'today' | 'reader' | 'calendar' | 'reports' | 'settings'
 
 const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 const MOOD_CHOICES = DIARY_MOODS.map((value) => ({
@@ -77,6 +85,7 @@ export function DiaryScreen(): React.JSX.Element {
     return (
       <DiaryDetail
         diary={selected}
+        canDelete={(state.data?.diaries.length ?? 0) > 1}
         back={() => {
           setSelected(null)
           state.refresh()
@@ -97,18 +106,7 @@ export function DiaryScreen(): React.JSX.Element {
           contentContainerStyle={{ paddingBottom: 88 }}
           ListEmptyComponent={<EmptyState />}
           renderItem={({ item }) => (
-            <DiaryNotebookCard
-              diary={item}
-              onOpen={() => setSelected(item)}
-              onEdit={() => editDiary(item)}
-              onDelete={() =>
-                state.confirmDelete(
-                  'Удалить дневник?',
-                  () => api.deleteDiary({ id: item.id }),
-                  'Все дни и записи этого дневника будут удалены.'
-                )
-              }
-            />
+            <DiaryNotebookCard diary={item} onOpen={() => setSelected(item)} />
           )}
         />
       )}
@@ -130,14 +128,10 @@ export function DiaryScreen(): React.JSX.Element {
 
 function DiaryNotebookCard({
   diary,
-  onOpen,
-  onEdit,
-  onDelete
+  onOpen
 }: {
   diary: DiarySummary
   onOpen(): void
-  onEdit(): void
-  onDelete(): void
 }): React.JSX.Element {
   const theme = useTheme()
   const palette = diaryAppearancePalette(diary.paperTone, diary.coverTone)
@@ -188,26 +182,55 @@ function DiaryNotebookCard({
           </Text>
         </View>
       </Pressable>
-      <View
-        style={{
-          flexDirection: 'row',
-          flexWrap: 'wrap',
-          gap: 8,
-          padding: 10,
-          borderTopWidth: 1,
-          borderTopColor: theme.border,
-          backgroundColor: theme.surface
-        }}
-      >
-        <Button label="Открыть" onPress={onOpen} />
-        <Button label="Изменить" onPress={onEdit} />
-        <Button label="Удалить" danger onPress={onDelete} />
-      </View>
     </View>
   )
 }
 
-function DiaryDetail({ diary, back }: { diary: DiarySummary; back(): void }): React.JSX.Element {
+function DiarySectionTab({
+  label,
+  icon: Icon,
+  selected,
+  onPress
+}: {
+  label: string
+  icon: LucideIcon
+  selected: boolean
+  onPress(): void
+}): React.JSX.Element {
+  const theme = useTheme()
+  return (
+    <Pressable
+      accessibilityRole="tab"
+      accessibilityState={{ selected }}
+      onPress={onPress}
+      style={({ pressed }) => ({
+        height: 40,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 7,
+        paddingHorizontal: 14,
+        borderRadius: 12,
+        backgroundColor: selected ? theme.accent : pressed ? theme.raised : 'transparent',
+        opacity: pressed ? 0.78 : 1
+      })}
+    >
+      <Icon size={16} color={selected ? '#ffffff' : theme.muted} />
+      <Text style={{ color: selected ? '#ffffff' : theme.muted, fontSize: 13, fontWeight: selected ? '700' : '500' }}>
+        {label}
+      </Text>
+    </Pressable>
+  )
+}
+
+function DiaryDetail({
+  diary,
+  canDelete,
+  back
+}: {
+  diary: DiarySummary
+  canDelete: boolean
+  back(): void
+}): React.JSX.Element {
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
       back()
@@ -217,10 +240,10 @@ function DiaryDetail({ diary, back }: { diary: DiarySummary; back(): void }): Re
   }, [back])
 
   const { diary: api } = useServices()
+  const theme = useTheme()
   const [currentDiary, setCurrentDiary] = useState(diary)
   const [date, setDate] = useState(localDateKey())
-  const [view, setView] = useState<DiaryDetailView>('day')
-  const [query, setQuery] = useState('')
+  const [view, setView] = useState<DiaryDetailView>('today')
   const [form, setForm] = useState<FormSpec | null>(null)
   const [calendarMonth, setCalendarMonth] = useState(() => diaryMonthKey(localDateKey()))
   const [pageOffset] = useState(() => new Animated.Value(0))
@@ -245,7 +268,7 @@ function DiaryDetail({ diary, back }: { diary: DiarySummary; back(): void }): Re
     pageOffset.setValue(direction >= 0 ? 24 : -24)
     setDate(nextDate)
     setCalendarMonth(diaryMonthKey(nextDate))
-    setView('day')
+    setView('reader')
     Animated.timing(pageOffset, {
       toValue: 0,
       duration: 180,
@@ -274,14 +297,6 @@ function DiaryDetail({ diary, back }: { diary: DiarySummary; back(): void }): Re
         }
         refreshDetail()
       }
-    })
-
-  const chooseDate = (): void =>
-    setForm({
-      title: 'Перейти к дате',
-      initial: { dayKey: date },
-      fields: [textField('dayKey', 'Дата', 'date')],
-      save: (values) => turnToDate(schema.diaryDayKeySchema.parse(values.dayKey))
     })
 
   const editMood = (): void =>
@@ -340,77 +355,168 @@ function DiaryDetail({ diary, back }: { diary: DiarySummary; back(): void }): Re
       }
     })
 
+  const editDiaryMetadata = (): void =>
+    setForm({
+      title: 'Изменить дневник',
+      initial: { title: currentDiary.title, icon: currentDiary.icon },
+      fields: [
+        textField('title', 'Название'),
+        choiceField(
+          'icon',
+          'Значок',
+          DIARY_ICON_NAMES.map((value) => ({ value, label: value }))
+        )
+      ],
+      save: (values) => {
+        const input = schema.createDiaryInputSchema.parse(values)
+        const saved = api.updateDiary({ ...input, id: currentDiary.id })
+        setCurrentDiary(saved)
+        state.refresh()
+      }
+    })
+
+  const deleteDiary = (): void => {
+    if (!canDelete) return
+    state.confirmDelete(
+      'Удалить дневник?',
+      () => {
+        api.deleteDiary({ id: currentDiary.id })
+        back()
+      },
+      'Все страницы, настроения и записи этого дневника будут удалены.'
+    )
+  }
+
   const moodMeta = diaryMoodMeta(state.data?.day?.mood ?? null)
-  const palette = diaryAppearancePalette(currentDiary.paperTone, currentDiary.coverTone)
   const calendarCells = useMemo(
     () => buildDiaryCalendarMonth(calendarMonth, state.data?.days ?? [], localDateKey()),
     [calendarMonth, state.data?.days]
   )
 
+  const readerPages = useMemo(
+    () => (state.data?.days ?? []).slice().sort((left, right) => left.dayKey.localeCompare(right.dayKey)),
+    [state.data?.days]
+  )
+  const readerIndex = readerPages.findIndex((item) => item.dayKey === date)
+  const previousReaderPage = readerIndex > 0 ? readerPages[readerIndex - 1] : null
+  const nextReaderPage =
+    readerIndex >= 0 && readerIndex < readerPages.length - 1 ? readerPages[readerIndex + 1] : null
+
+  const openSection = (next: DiaryDetailView): void => {
+    if (next === 'today') {
+      setDate(localDateKey())
+      setView('today')
+      return
+    }
+    if (next === 'reader') {
+      const target = readerIndex >= 0 ? date : (readerPages[0]?.dayKey ?? date)
+      setDate(target)
+      setCalendarMonth(diaryMonthKey(target))
+      setView('reader')
+      return
+    }
+    setView(next)
+  }
+
   return (
-    <View style={{ flex: 1 }}>
-      <View style={{ gap: 10, marginBottom: 12 }}>
-        <Button label="‹ Дневники" onPress={back} />
+    <View style={{ flex: 1, minHeight: 0 }}>
+      <View
+        style={{
+          marginBottom: 12,
+          padding: 6,
+          borderWidth: 1,
+          borderColor: theme.border,
+          borderRadius: 16,
+          backgroundColor: theme.surface
+        }}
+      >
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ alignItems: 'center', gap: 4 }}
+        >
+          <DiarySectionTab label="Мои дневники" icon={Library} selected={false} onPress={back} />
+          <DiarySectionTab
+            label="Сегодня"
+            icon={SunMedium}
+            selected={view === 'today'}
+            onPress={() => openSection('today')}
+          />
+          <DiarySectionTab
+            label="Просмотр"
+            icon={BookOpen}
+            selected={view === 'reader'}
+            onPress={() => openSection('reader')}
+          />
+          <DiarySectionTab
+            label="Календарь"
+            icon={CalendarDays}
+            selected={view === 'calendar'}
+            onPress={() => openSection('calendar')}
+          />
+          <DiarySectionTab
+            label="Отчёты"
+            icon={BarChart3}
+            selected={view === 'reports'}
+            onPress={() => openSection('reports')}
+          />
+          <DiarySectionTab
+            label="Настройки"
+            icon={Settings2}
+            selected={view === 'settings'}
+            onPress={() => openSection('settings')}
+          />
+        </ScrollView>
+      </View>
+
+      {view === 'today' ? (
+        <View style={{ marginBottom: 10, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          <Button
+            label={moodMeta ? `${moodMeta.emoji} ${moodMeta.label}` : 'Настроение'}
+            onPress={editMood}
+          />
+        </View>
+      ) : null}
+
+      {view === 'reader' && readerPages.length > 0 ? (
         <View
           style={{
-            borderRadius: 16,
-            padding: 14,
-            backgroundColor: palette.coverBackground,
-            gap: 3
+            marginBottom: 10,
+            minHeight: 44,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8
           }}
         >
-          <Text style={{ color: palette.coverText, fontSize: 20, fontWeight: '800' }}>
-            {currentDiary.title}
-          </Text>
-          <Text style={{ color: palette.coverText, opacity: 0.72, fontSize: 12 }}>
-            {currentDiary.pageCount} дней · {currentDiary.entryCount} записей
-          </Text>
-        </View>
-
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          <Button label="День" selected={view === 'day'} onPress={() => setView('day')} />
           <Button
-            label="Календарь"
-            selected={view === 'calendar'}
-            onPress={() => setView('calendar')}
+            label="‹"
+            accessibilityLabel="Предыдущая страница"
+            disabled={!previousReaderPage}
+            onPress={() => {
+              if (previousReaderPage) turnToDate(previousReaderPage.dayKey, -1)
+            }}
           />
-          <Button
-            label="История"
-            selected={view === 'history'}
-            onPress={() => setView('history')}
-          />
-          <Button label="Отчёт" selected={view === 'report'} onPress={() => setView('report')} />
-          <Button
-            label="Оформление"
-            selected={view === 'settings'}
-            onPress={() => setView('settings')}
-          />
-        </View>
-
-        {view === 'day' ? (
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            <Button label="‹" onPress={() => turnToDate(addDays(date, -1), -1)} />
-            <Button label={date} onPress={chooseDate} />
-            <Button label="›" onPress={() => turnToDate(addDays(date, 1), 1)} />
-            <Button label="Сегодня" onPress={() => turnToDate(localDateKey())} />
-            <Button
-              label={moodMeta ? `${moodMeta.emoji} ${moodMeta.label}` : 'Настроение'}
-              onPress={editMood}
-            />
+          <View style={{ minWidth: 132, alignItems: 'center' }}>
+            <Text style={{ color: theme.text, fontSize: 13, fontWeight: '600' }}>
+              {readerIndex >= 0 ? `${readerIndex + 1} / ${readerPages.length}` : `1 / ${readerPages.length}`}
+            </Text>
+            <Text style={{ marginTop: 2, color: theme.muted, fontSize: 11 }}>{date}</Text>
           </View>
-        ) : null}
-      </View>
+          <Button
+            label="›"
+            accessibilityLabel="Следующая страница"
+            disabled={!nextReaderPage}
+            onPress={() => {
+              if (nextReaderPage) turnToDate(nextReaderPage.dayKey, 1)
+            }}
+          />
+        </View>
+      ) : null}
 
       {state.error ? <ErrorState message={state.error} retry={state.refresh} /> : null}
       {state.loading ? (
         <LoadingState />
-      ) : view === 'history' ? (
-        <DiaryHistory
-          days={state.data?.days ?? []}
-          query={query}
-          setQuery={setQuery}
-          onOpenDay={(dayKey) => turnToDate(dayKey)}
-        />
       ) : view === 'calendar' ? (
         <DiaryCalendar
           monthKey={calendarMonth}
@@ -418,10 +524,32 @@ function DiaryDetail({ diary, back }: { diary: DiarySummary; back(): void }): Re
           onMonthChange={setCalendarMonth}
           onOpenDay={(dayKey) => turnToDate(dayKey)}
         />
-      ) : view === 'report' ? (
+      ) : view === 'reports' ? (
         <DiaryReportsView diaryId={currentDiary.id} onOpenDay={(dayKey) => turnToDate(dayKey)} />
       ) : view === 'settings' ? (
-        <DiaryAppearancePreview diary={currentDiary} onEdit={editAppearance} />
+        <DiarySettingsMobile
+          diary={currentDiary}
+          canDelete={canDelete}
+          onEdit={editDiaryMetadata}
+          onEditAppearance={editAppearance}
+          onDelete={deleteDiary}
+        />
+      ) : view === 'reader' ? (
+        readerPages.length === 0 ? (
+          <EmptyState
+            text="В дневнике пока нет страниц. Страница появится после записи или настроения."
+          />
+        ) : (
+          <Animated.View style={{ flex: 1, transform: [{ translateX: pageOffset }] }}>
+            <DiaryPaperDay
+              diary={currentDiary}
+              date={date}
+              entries={state.data?.day?.entries ?? []}
+              moodLabel={moodMeta ? `${moodMeta.emoji} ${moodMeta.label}` : null}
+              readOnly
+            />
+          </Animated.View>
+        )
       ) : (
         <Animated.View style={{ flex: 1, transform: [{ translateX: pageOffset }] }}>
           <DiaryPaperDay
@@ -433,23 +561,20 @@ function DiaryDetail({ diary, back }: { diary: DiarySummary; back(): void }): Re
             onDelete={(entry) =>
               state.confirmDelete('Удалить запись?', () => {
                 api.deleteDiaryEntry({ id: entry.id })
-                const latest = api
-                  .listDiaryOverview()
-                  .diaries.find((item) => item.id === currentDiary.id)
-                if (latest) setCurrentDiary(latest)
+                refreshDetail()
               })
             }
           />
         </Animated.View>
       )}
 
-      {view === 'day' ? (
+      {view === 'today' ? (
         <MobileCreateAction
           actions={[
             {
               key: 'entry',
               label: 'Новая запись',
-              description: 'Добавить запись на выбранный день',
+              description: 'Добавить запись на сегодня',
               icon: 'diary',
               onPress: () => editEntry()
             }
@@ -458,45 +583,6 @@ function DiaryDetail({ diary, back }: { diary: DiarySummary; back(): void }): Re
       ) : null}
       {form ? <FormSheet spec={form} close={() => setForm(null)} /> : null}
     </View>
-  )
-}
-
-function DiaryHistory({
-  days,
-  query,
-  setQuery,
-  onOpenDay
-}: {
-  days: DiaryDaySummary[]
-  query: string
-  setQuery(value: string): void
-  onOpenDay(dayKey: string): void
-}): React.JSX.Element {
-  const normalized = query.trim().toLocaleLowerCase('ru-RU')
-  const visibleDays = days.filter((day) => {
-    const mood = diaryMoodMeta(day.mood)
-    return `${day.dayKey} ${mood?.label ?? ''}`.toLocaleLowerCase('ru-RU').includes(normalized)
-  })
-
-  return (
-    <>
-      <SearchField value={query} onChangeText={setQuery} />
-      <FlatList
-        data={visibleDays}
-        keyExtractor={(day) => day.id}
-        ListEmptyComponent={<EmptyState />}
-        renderItem={({ item }) => {
-          const mood = diaryMoodMeta(item.mood)
-          return (
-            <Row
-              title={item.dayKey}
-              subtitle={`${item.entryCount} записей${mood ? ` · ${mood.emoji} ${mood.label}` : ''}`}
-              onPress={() => onOpenDay(item.dayKey)}
-            />
-          )
-        }}
-      />
-    </>
   )
 }
 
@@ -612,53 +698,134 @@ function DiaryCalendar({
   )
 }
 
-function DiaryAppearancePreview({
+function DiarySettingsMobile({
   diary,
-  onEdit
+  canDelete,
+  onEdit,
+  onEditAppearance,
+  onDelete
 }: {
   diary: DiarySummary
+  canDelete: boolean
   onEdit(): void
+  onEditAppearance(): void
+  onDelete(): void
 }): React.JSX.Element {
   const theme = useTheme()
   const palette = diaryAppearancePalette(diary.paperTone, diary.coverTone)
 
   return (
-    <View style={{ gap: 14 }}>
+    <ScrollView contentContainerStyle={{ gap: 14, paddingBottom: 28 }}>
       <View
         style={{
-          borderRadius: 18,
+          padding: 18,
           borderWidth: 1,
           borderColor: theme.border,
-          backgroundColor: palette.coverBackground,
-          padding: 18,
-          gap: 12
+          borderRadius: 24,
+          backgroundColor: theme.surface
         }}
       >
-        <Text style={{ color: palette.coverText, fontSize: 20, fontWeight: '800' }}>
-          {diary.title}
+        <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 14 }}>
+          <View
+            style={{
+              width: 54,
+              height: 54,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderWidth: 1,
+              borderColor: theme.accent + '26',
+              borderRadius: 16,
+              backgroundColor: theme.accent + '14'
+            }}
+          >
+            <Text style={{ color: theme.accent, fontSize: 12, fontWeight: '700' }}>{diary.icon}</Text>
+          </View>
+          <View style={{ minWidth: 0, flex: 1 }}>
+            <Text numberOfLines={1} style={{ color: theme.text, fontSize: 20, fontWeight: '700' }}>
+              {diary.title}
+            </Text>
+            <Text style={{ marginTop: 7, color: theme.muted, fontSize: 12, lineHeight: 18 }}>
+              {diary.pageCount} страниц · {diary.entryCount} записей
+            </Text>
+          </View>
+        </View>
+        <View style={{ marginTop: 18, alignItems: 'flex-start' }}>
+          <Button label="Изменить название и иконку" icon="edit" onPress={onEdit} />
+        </View>
+      </View>
+
+      <View
+        style={{
+          padding: 18,
+          borderWidth: 1,
+          borderColor: theme.error + '26',
+          borderRadius: 24,
+          backgroundColor: theme.error + '08'
+        }}
+      >
+        <Text style={{ color: theme.error, fontSize: 15, fontWeight: '700' }}>Удаление дневника</Text>
+        <Text style={{ marginTop: 7, color: theme.muted, fontSize: 13, lineHeight: 21 }}>
+          Удаляются все страницы, настроения и записи. Действие необратимо.
+        </Text>
+        <View style={{ marginTop: 16, alignItems: 'flex-start' }}>
+          <Button label="Удалить дневник" icon="delete" danger disabled={!canDelete} onPress={onDelete} />
+        </View>
+        {!canDelete ? (
+          <Text style={{ marginTop: 8, color: theme.muted, fontSize: 11 }}>
+            Последний дневник удалить нельзя.
+          </Text>
+        ) : null}
+      </View>
+
+      <View
+        style={{
+          padding: 18,
+          borderWidth: 1,
+          borderColor: theme.border,
+          borderRadius: 24,
+          backgroundColor: theme.surface
+        }}
+      >
+        <Text style={{ color: theme.text, fontSize: 15, fontWeight: '700' }}>Оформление бумаги</Text>
+        <Text style={{ marginTop: 5, color: theme.muted, fontSize: 13, lineHeight: 20 }}>
+          Разметка, оттенок листов и цвет переплёта применяются ко всему дневнику.
         </Text>
         <View
           style={{
-            minHeight: 180,
-            borderRadius: 12,
+            marginTop: 16,
             overflow: 'hidden',
-            backgroundColor: palette.paperBackground,
-            padding: 16
+            borderRadius: 16,
+            backgroundColor: palette.coverBackground,
+            padding: 14
           }}
         >
-          <PaperPattern pattern={diary.paperPattern} lineColor={palette.paperLine} />
-          <Text style={{ color: palette.paperText, fontSize: 17, fontWeight: '700' }}>
-            Предпросмотр страницы
-          </Text>
-          <Text style={{ color: palette.paperMuted, fontSize: 13, lineHeight: 20, marginTop: 10 }}>
-            Разметка «{diaryPaperPatternLabels[diary.paperPattern]}», бумага «
-            {diaryPaperToneLabels[diary.paperTone]}», обложка «
-            {diaryCoverToneLabels[diary.coverTone]}».
-          </Text>
+          <View
+            style={{
+              minHeight: 170,
+              overflow: 'hidden',
+              borderWidth: 1,
+              borderColor: palette.paperLine,
+              borderRadius: 12,
+              backgroundColor: palette.paperBackground,
+              padding: 16
+            }}
+          >
+            <PaperPattern pattern={diary.paperPattern} lineColor={palette.paperLine} />
+            <Text style={{ color: palette.paperText, fontSize: 16, fontWeight: '700' }}>
+              Предпросмотр страницы
+            </Text>
+            <Text style={{ marginTop: 9, color: palette.paperMuted, fontSize: 13, lineHeight: 20 }}>
+              Разметка «{diaryPaperPatternLabels[diary.paperPattern]}» · бумага «
+              {diaryPaperToneLabels[diary.paperTone]}» · переплёт «
+              {diaryCoverToneLabels[diary.coverTone]}».
+            </Text>
+          </View>
+        </View>
+        <View style={{ marginTop: 16, alignItems: 'flex-start' }}>
+          <Button label="Изменить оформление" onPress={onEditAppearance} />
         </View>
       </View>
-      <Button label="Изменить оформление" selected onPress={onEdit} />
-    </View>
+    </ScrollView>
   )
 }
 
@@ -667,6 +834,7 @@ function DiaryPaperDay({
   date,
   entries,
   moodLabel,
+  readOnly = false,
   onEdit,
   onDelete
 }: {
@@ -674,8 +842,9 @@ function DiaryPaperDay({
   date: string
   entries: DiaryEntry[]
   moodLabel: string | null
-  onEdit(entry?: DiaryEntry): void
-  onDelete(entry: DiaryEntry): void
+  readOnly?: boolean
+  onEdit?(entry?: DiaryEntry): void
+  onDelete?(entry: DiaryEntry): void
 }): React.JSX.Element {
   const palette = diaryAppearancePalette(diary.paperTone, diary.coverTone)
 
@@ -706,16 +875,24 @@ function DiaryPaperDay({
           </View>
         }
         ListEmptyComponent={
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Добавить первую запись"
-            onPress={() => onEdit()}
-            style={{ paddingVertical: 36, paddingHorizontal: 8 }}
-          >
-            <Text style={{ color: palette.paperMuted, fontSize: 15, lineHeight: 22 }}>
-              В этот день ещё нет записей. Нажмите, чтобы начать страницу.
-            </Text>
-          </Pressable>
+          readOnly ? (
+            <View style={{ paddingVertical: 36, paddingHorizontal: 8 }}>
+              <Text style={{ color: palette.paperMuted, fontSize: 15, lineHeight: 22 }}>
+                В этот день осталось только настроение.
+              </Text>
+            </View>
+          ) : (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Добавить первую запись"
+              onPress={() => onEdit?.()}
+              style={{ paddingVertical: 36, paddingHorizontal: 8 }}
+            >
+              <Text style={{ color: palette.paperMuted, fontSize: 15, lineHeight: 22 }}>
+                В этот день ещё нет записей. Нажмите, чтобы начать страницу.
+              </Text>
+            </Pressable>
+          )
         }
         renderItem={({ item }) => (
           <View
@@ -730,10 +907,11 @@ function DiaryPaperDay({
             }}
           >
             <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`Изменить запись ${item.text}`}
-              onPress={() => onEdit(item)}
-              style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1, gap: 5 })}
+              accessibilityRole={readOnly ? undefined : 'button'}
+              accessibilityLabel={readOnly ? undefined : `Изменить запись ${item.text}`}
+              disabled={readOnly}
+              onPress={() => onEdit?.(item)}
+              style={({ pressed }) => ({ opacity: pressed && !readOnly ? 0.65 : 1, gap: 5 })}
             >
               <Text style={{ color: palette.paperText, fontSize: 16, lineHeight: 23 }}>
                 {item.text}
@@ -745,10 +923,12 @@ function DiaryPaperDay({
                 })}
               </Text>
             </Pressable>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              <Button label="Изменить" onPress={() => onEdit(item)} />
-              <Button label="Удалить" danger onPress={() => onDelete(item)} />
-            </View>
+            {!readOnly ? (
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <Button label="Изменить" onPress={() => onEdit?.(item)} />
+                <Button label="Удалить" danger onPress={() => onDelete?.(item)} />
+              </View>
+            ) : null}
           </View>
         )}
       />

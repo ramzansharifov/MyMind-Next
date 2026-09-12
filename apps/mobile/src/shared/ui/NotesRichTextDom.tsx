@@ -8,6 +8,7 @@ import { Placeholder } from '@tiptap/extensions'
 import StarterKit from '@tiptap/starter-kit'
 import { useDOMImperativeHandle, type DOMImperativeFactory } from 'expo/dom'
 import { useCallback, useEffect, useRef, type Ref } from 'react'
+import type { ResolveStudyInternalLinkTargetInput } from '@mymind/contracts/study'
 
 export type NotesRichTextAlignment = 'left' | 'center' | 'right' | 'justify'
 
@@ -72,10 +73,13 @@ export interface NotesRichTextDomProps {
   borderColor: string
   surfaceColor: string
   accentColor: string
+  editable?: boolean
   onChange: (html: string, plainText: string) => Promise<void>
   onFocusEditor: () => Promise<void>
   onFormattingState: (state: NotesRichTextFormattingState) => Promise<void>
   onHeightChange: (height: number) => Promise<void>
+  onOpenInternalLink?: (target: ResolveStudyInternalLinkTargetInput) => Promise<void>
+  onOpenExternalLink?: (href: string) => Promise<void>
 }
 
 interface SavedSelection {
@@ -165,6 +169,7 @@ const StudyInternalLinkNode = Node.create({
     return [
       'span',
       mergeAttributes(HTMLAttributes, {
+        class: 'study-internal-link-node',
         'data-study-internal-link': 'true',
         contenteditable: 'false'
       }),
@@ -177,7 +182,7 @@ const StudyInternalLinkNode = Node.create({
   }
 })
 
-function createExtensions() {
+function createExtensions(readOnly: boolean) {
   return [
     StarterKit.configure({
       heading: false,
@@ -187,7 +192,7 @@ function createExtensions() {
         autolink: true,
         linkOnPaste: true,
         openOnClick: false,
-        enableClickSelection: true,
+        enableClickSelection: !readOnly,
         defaultProtocol: 'https',
         HTMLAttributes: {
           target: '_blank',
@@ -203,7 +208,7 @@ function createExtensions() {
     TextStyleKit,
     Highlight.configure({ multicolor: true }),
     Placeholder.configure({
-      placeholder: 'Начните писать…',
+      placeholder: 'Начни писать материал…',
       showOnlyWhenEditable: true
     })
   ]
@@ -270,10 +275,13 @@ export default function NotesRichTextDom({
   borderColor,
   surfaceColor,
   accentColor,
+  editable = true,
   onChange,
   onFocusEditor,
   onFormattingState,
-  onHeightChange
+  onHeightChange,
+  onOpenInternalLink,
+  onOpenExternalLink
 }: NotesRichTextDomProps): React.JSX.Element {
   const mountRef = useRef<HTMLDivElement | null>(null)
   const editorRef = useRef<Editor | null>(null)
@@ -286,7 +294,9 @@ export default function NotesRichTextDom({
     onChange,
     onFocusEditor,
     onFormattingState,
-    onHeightChange
+    onHeightChange,
+    onOpenInternalLink,
+    onOpenExternalLink
   })
 
   useEffect(() => {
@@ -294,9 +304,18 @@ export default function NotesRichTextDom({
       onChange,
       onFocusEditor,
       onFormattingState,
-      onHeightChange
+      onHeightChange,
+      onOpenInternalLink,
+      onOpenExternalLink
     }
-  }, [onChange, onFocusEditor, onFormattingState, onHeightChange])
+  }, [
+    onChange,
+    onFocusEditor,
+    onFormattingState,
+    onHeightChange,
+    onOpenExternalLink,
+    onOpenInternalLink
+  ])
 
   const emitFormatting = useCallback((editor: Editor): void => {
     if (editor.isDestroyed) return
@@ -473,8 +492,9 @@ export default function NotesRichTextDom({
 
     const editor = new Editor({
       element,
-      extensions: createExtensions(),
+      extensions: createExtensions(!editable),
       content: initialHtmlRef.current,
+      editable,
       editorProps: {
         attributes: {
           class: 'notes-editor',
@@ -510,16 +530,44 @@ export default function NotesRichTextDom({
       void callbacksRef.current.onHeightChange(height)
     }
 
+    const handleReadOnlyClick = (event: MouseEvent): void => {
+      if (editable) return
+      const element = event.target instanceof Element ? event.target : null
+      if (!element) return
+
+      const internal = element.closest<HTMLElement>('[data-study-internal-link="true"]')
+      if (internal) {
+        event.preventDefault()
+        const materialId = internal.dataset.materialId ?? ''
+        if (!materialId) return
+        void callbacksRef.current.onOpenInternalLink?.({
+          kind: internal.dataset.targetKind === 'heading' ? 'heading' : 'material',
+          materialId,
+          headingId: internal.dataset.headingId ?? null
+        })
+        return
+      }
+
+      const anchor = element.closest<HTMLAnchorElement>('a[href]')
+      const href = anchor?.getAttribute('href')?.trim()
+      if (href) {
+        event.preventDefault()
+        void callbacksRef.current.onOpenExternalLink?.(href)
+      }
+    }
+
+    dom.addEventListener('click', handleReadOnlyClick)
     const observer = new ResizeObserver(reportHeight)
     observer.observe(dom)
     reportHeight()
 
     return () => {
+      dom.removeEventListener('click', handleReadOnlyClick)
       observer.disconnect()
       if (editorRef.current === editor) editorRef.current = null
       editor.destroy()
     }
-  }, [emitFormatting, rememberSelection])
+  }, [editable, emitFormatting, rememberSelection])
 
   return (
     <main
@@ -546,57 +594,100 @@ const styles = `
   body { overflow: hidden; }
   .notes-rich-root {
     width: 100%;
-    min-height: 64px;
+    min-height: 28px;
     color: var(--text);
     background: transparent;
-    font: 17px/1.55 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   }
   .notes-editor {
     width: 100%;
-    min-height: 64px;
-    padding: 7px 2px 9px;
+    min-height: 28px;
+    padding: 0;
     outline: none;
     overflow-wrap: anywhere;
     caret-color: var(--accent);
     color: var(--text);
+    font-size: 0.9375rem;
+    line-height: 1.75;
   }
-  .notes-editor p { margin: 0 0 0.72em; }
-  .notes-editor p:last-child { margin-bottom: 0; }
+  .notes-editor > * { margin-block: 0; }
+  .notes-editor > * + * { margin-top: 0.75rem; }
+  .notes-editor p { min-height: 1.75rem; white-space: pre-wrap; }
   .notes-editor p.is-editor-empty:first-child::before {
     content: attr(data-placeholder);
     float: left;
     height: 0;
     color: var(--muted);
     pointer-events: none;
+    opacity: 0.65;
   }
-  .notes-editor strong, .notes-editor b { font-weight: 700; }
-  .notes-editor em, .notes-editor i { font-style: italic; }
-  .notes-editor u { text-decoration: underline; }
-  .notes-editor s, .notes-editor strike { text-decoration: line-through; }
-  .notes-editor code {
-    padding: 1px 5px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    background: var(--surface);
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 0.9em;
+  .notes-editor ul,
+  .notes-editor ol {
+    display: grid;
+    gap: 0.25rem;
+    margin: 0;
+    padding-left: 1.5rem;
   }
+  .notes-editor ul { list-style: disc; }
+  .notes-editor ol { list-style: decimal; }
+  .notes-editor li { padding-left: 0.15rem; }
+  .notes-editor li > p { min-height: auto; }
+  .notes-editor li > ul,
+  .notes-editor li > ol { margin-top: 0.25rem; margin-bottom: 0.25rem; }
+  .notes-editor ul ul { list-style-type: circle; }
+  .notes-editor ul ul ul { list-style-type: square; }
+  .notes-editor ol ol { list-style-type: lower-alpha; }
+  .notes-editor ol ol ol { list-style-type: lower-roman; }
   .notes-editor blockquote {
-    margin: 0.5em 0;
-    padding: 3px 0 3px 12px;
-    border-left: 3px solid var(--accent);
+    margin: 0;
+    padding: 0.25rem 0 0.25rem 1rem;
     color: var(--muted);
+    border-left: 2px solid var(--border);
   }
-  .notes-editor ul, .notes-editor ol { margin: 0.5em 0; padding-left: 1.55em; }
-  .notes-editor li { margin: 0.22em 0; }
-  .notes-editor a { color: var(--accent); text-decoration: underline; }
-  .notes-editor mark { border-radius: 3px; padding: 0 1px; color: inherit; }
-  .notes-editor [data-study-internal-link="true"] {
-    display: inline;
-    padding: 1px 4px;
-    border-radius: 5px;
+  .notes-editor code {
+    padding: 0.125rem 0.375rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.9em;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 0.375rem;
+  }
+  .notes-editor a {
     color: var(--accent);
-    background: color-mix(in srgb, var(--accent) 12%, transparent);
-    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+  .notes-editor ::selection {
+    color: #ffffff;
+    background: color-mix(in srgb, var(--accent) 48%, transparent);
+  }
+  .notes-editor mark {
+    padding: 0.08em 0.18em;
+    color: inherit;
+    border-radius: 0.25rem;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+  .study-internal-link-node {
+    display: inline-flex;
+    max-width: min(100%, 28rem);
+    align-items: center;
+    gap: 0.28rem;
+    padding: 0.08rem 0.38rem;
+    color: var(--accent);
+    vertical-align: baseline;
+    background: color-mix(in srgb, var(--accent) 13%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent) 24%, transparent);
+    border-radius: 0.4rem;
+    cursor: pointer;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+  .study-internal-link-node.ProseMirror-selectednode {
+    background: color-mix(in srgb, var(--accent) 26%, transparent);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 16%, transparent);
   }
 `
