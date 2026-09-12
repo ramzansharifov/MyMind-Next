@@ -1651,6 +1651,7 @@ export function DocumentEditor({
           <DesktopParityInsertControl onPress={() => openInsertAt(index)} />
           <DesktopParityBlockCard
             block={item}
+            active={activeBlockId === item.id}
             collapsed={collapsedBlockIds.has(item.id)}
             first={index === 0}
             last={index === document.blocks.length - 1}
@@ -1670,7 +1671,6 @@ export function DocumentEditor({
             {item.type === 'text' ? (
               <NotesRichTextBlock
                 block={item}
-                active={activeBlockId === item.id}
                 registerRef={(editor) => {
                   if (editor) richTextRefs.current.set(item.id, editor)
                   else richTextRefs.current.delete(item.id)
