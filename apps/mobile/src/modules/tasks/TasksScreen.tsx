@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import { FlatList, Pressable, Text, TextInput, View } from 'react-native'
+import { FlatList, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 import { type TaskGroupRecord, type TaskRecord } from '@mymind/contracts/tasks'
 import * as schema from '@mymind/core/validation/tasks'
 import { sortTasks } from '@mymind/core/tasks'
@@ -14,6 +14,8 @@ import {
   SearchField
 } from '../../shared/ui/primitives'
 import { FormSheet } from '../../shared/ui/FormSheet'
+import { AppDialog } from '../../shared/ui/AppDialog'
+import { ModuleTabs } from '../../shared/ui/ModuleTabs'
 import { ActionMenu } from '../../shared/ui/ActionMenu'
 import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
 import { MobileCreateAction } from '../../shared/ui/MobileCreateAction'
@@ -36,9 +38,9 @@ export function TasksScreen(): React.JSX.Element {
   const state = useCollection(useCallback(() => api.listTasksOverview(), [api]))
   const [query, setQuery] = useState('')
   const [quickTitle, setQuickTitle] = useState('')
-  const [filter, setFilter] = useState('all')
+  const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all')
   const [group, setGroup] = useState<string | null | undefined>(undefined)
-  const [groupsView, setGroupsView] = useState(false)
+  const [groupsOpen, setGroupsOpen] = useState(false)
   const [form, setForm] = useState<FormSpec | null>(null)
 
   const groupChoices = useMemo(
@@ -171,136 +173,100 @@ export function TasksScreen(): React.JSX.Element {
     ).includes(normalizedQuery)
   })
 
-  const selectedGroupName =
-    typeof group === 'string'
-      ? (groupById.get(group)?.name ?? 'Группа')
-      : group === null
-        ? 'Без группы'
-        : null
 
   return (
     <View style={{ flex: 1 }}>
       <View style={{ gap: 10, marginBottom: 12 }}>
-        <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+        <SearchField value={query} onChangeText={setQuery} />
+
+        <ModuleTabs
+          items={[
+            { id: 'all' as const, label: 'Все' },
+            { id: 'active' as const, label: 'Активные' },
+            { id: 'completed' as const, label: 'Выполненные' }
+          ]}
+          value={filter}
+          onChange={setFilter}
+          compact
+        />
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 8, alignItems: 'center' }}
+        >
           <Button
-            label={groupsView ? 'К задачам' : 'Группы'}
-            icon={groupsView ? 'tasks' : 'folder'}
-            compact
-            onPress={() => setGroupsView(!groupsView)}
+            label="Все задачи"
+            selected={group === undefined}
+            onPress={() => setGroup(undefined)}
+          />
+          <Button
+            label="Без группы"
+            selected={group === null}
+            onPress={() => setGroup(null)}
+          />
+          {(state.data?.groups ?? []).map((item) => (
+            <Button
+              key={item.id}
+              label={item.name}
+              selected={group === item.id}
+              onPress={() => setGroup(item.id)}
+            />
+          ))}
+          <Button label="Управление группами" icon="folder" onPress={() => setGroupsOpen(true)} />
+        </ScrollView>
+
+        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'stretch' }}>
+          <View
+            style={{
+              width: 36,
+              minHeight: 44,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 12,
+              backgroundColor: theme.accent + '14'
+            }}
+          >
+            <AppIcon name="add" size={16} color={theme.accent} />
+          </View>
+          <TextInput
+            accessibilityLabel="Быстро добавить задачу"
+            placeholder={
+              typeof group === 'string'
+                ? `Новая задача в «${groupById.get(group)?.name ?? ''}»…`
+                : 'Быстро добавить задачу…'
+            }
+            placeholderTextColor={theme.muted}
+            value={quickTitle}
+            onChangeText={setQuickTitle}
+            onSubmitEditing={quickAdd}
+            returnKeyType="done"
+            editable={!state.pending}
+            maxLength={240}
+            style={{
+              flex: 1,
+              minHeight: 44,
+              borderWidth: 1,
+              borderColor: theme.border,
+              backgroundColor: theme.surface,
+              color: theme.text,
+              paddingHorizontal: 14,
+              borderRadius: 12,
+              fontSize: 14
+            }}
+          />
+          <Button
+            label="Добавить"
+            primary
+            disabled={!quickTitle.trim() || state.pending}
+            onPress={quickAdd}
           />
         </View>
-
-        {!groupsView && (
-          <>
-            <View style={{ flexDirection: 'row', gap: 8, alignItems: 'stretch' }}>
-              <TextInput
-                accessibilityLabel="Быстро добавить задачу"
-                placeholder="Быстро добавить задачу…"
-                placeholderTextColor={theme.muted}
-                value={quickTitle}
-                onChangeText={setQuickTitle}
-                onSubmitEditing={quickAdd}
-                returnKeyType="done"
-                editable={!state.pending}
-                style={{
-                  flex: 1,
-                  minHeight: 48,
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                  backgroundColor: theme.surface,
-                  color: theme.text,
-                  paddingHorizontal: 14,
-                  borderRadius: 12,
-                  fontSize: 16
-                }}
-              />
-              <IconButton
-                label="Добавить задачу"
-                icon="add"
-                primary
-                disabled={!quickTitle.trim() || state.pending}
-                onPress={quickAdd}
-              />
-            </View>
-
-            <SearchField value={query} onChangeText={setQuery} />
-            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-              {[
-                { value: 'all', label: 'Все' },
-                { value: 'active', label: 'Активные' },
-                { value: 'completed', label: 'Выполненные' }
-              ].map((item) => (
-                <Button
-                  key={item.value}
-                  label={item.label}
-                  selected={filter === item.value}
-                  onPress={() => setFilter(item.value)}
-                />
-              ))}
-              <Button
-                label="Все группы"
-                selected={group === undefined}
-                onPress={() => setGroup(undefined)}
-              />
-              <Button label="Без группы" selected={group === null} onPress={() => setGroup(null)} />
-              {selectedGroupName && typeof group === 'string' ? (
-                <Button label={selectedGroupName} selected onPress={() => setGroup(undefined)} />
-              ) : null}
-            </View>
-          </>
-        )}
       </View>
 
       {state.error && <ErrorState message={state.error} retry={state.refresh} />}
       {state.loading ? (
         <LoadingState />
-      ) : groupsView ? (
-        <FlatList
-          data={state.data?.groups ?? []}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingBottom: 88 }}
-          ListEmptyComponent={<EmptyState />}
-          renderItem={({ item }) => (
-            <WorkspaceNodeCard
-              title={item.name}
-              subtitle={
-                (state.data?.tasks.filter((task) => task.groupId === item.id).length ?? 0) +
-                ' задач'
-              }
-              leading={<VisualIconBadge value={item.icon} colorKey={item.color} />}
-              onPress={() => {
-                setGroup(item.id)
-                setGroupsView(false)
-              }}
-              action={
-                <ActionMenu
-                  title={item.name}
-                  items={[
-                    {
-                      label: 'Изменить группу',
-                      icon: 'edit',
-                      onPress: () => editGroup(item)
-                    },
-                    {
-                      label: 'Удалить группу',
-                      icon: 'delete',
-                      danger: true,
-                      onPress: () =>
-                        state.confirmDelete(
-                          'Удалить группу?',
-                          () => {
-                            api.deleteTaskGroup({ id: item.id })
-                            if (group === item.id) setGroup(null)
-                          },
-                          'Сами задачи сохранятся и будут перенесены в «Без группы».'
-                        )
-                    }
-                  ]}
-                />
-              }
-            />
-          )}
-        />
       ) : (
         <FlatList
           data={tasks}
@@ -462,23 +428,108 @@ export function TasksScreen(): React.JSX.Element {
       <MobileCreateAction
         disabled={state.pending}
         actions={[
-          groupsView
-            ? {
-                key: 'group',
-                label: 'Новая группа задач',
-                description: 'Создать отдельный контекст для задач',
-                icon: 'folder',
-                onPress: () => editGroup()
-              }
-            : {
-                key: 'task',
-                label: 'Новая задача',
-                description: 'Открыть полную форму задачи',
-                icon: 'tasks',
-                onPress: () => edit()
-              }
+          {
+            key: 'task',
+            label: 'Новая задача',
+            description: 'Открыть полную форму задачи',
+            icon: 'tasks',
+            onPress: () => edit()
+          },
+          {
+            key: 'group',
+            label: 'Новая группа',
+            description: 'Создать отдельный контекст для задач',
+            icon: 'folder',
+            onPress: () => editGroup()
+          }
         ]}
       />
+      <AppDialog
+        open={groupsOpen}
+        onOpenChange={setGroupsOpen}
+        title="Группы"
+        description="Фильтр и управление группами задач"
+        icon="folder"
+        presentation="sheet"
+      >
+        <ScrollView contentContainerStyle={{ padding: 12, paddingBottom: 24 }}>
+          <WorkspaceNodeCard
+            title="Все задачи"
+            subtitle={`${state.data?.tasks.length ?? 0} задач`}
+            leadingIcon="tasks"
+            selected={group === undefined}
+            onPress={() => {
+              setGroup(undefined)
+              setGroupsOpen(false)
+            }}
+          />
+          <WorkspaceNodeCard
+            title="Без группы"
+            subtitle={`${(state.data?.tasks ?? []).filter((task) => task.groupId === null).length} задач`}
+            leadingIcon="folder"
+            selected={group === null}
+            onPress={() => {
+              setGroup(null)
+              setGroupsOpen(false)
+            }}
+          />
+          {(state.data?.groups ?? []).map((item) => (
+            <WorkspaceNodeCard
+              key={item.id}
+              title={item.name}
+              subtitle={`${(state.data?.tasks ?? []).filter((task) => task.groupId === item.id).length} задач`}
+              leading={<VisualIconBadge value={item.icon} colorKey={item.color} />}
+              selected={group === item.id}
+              onPress={() => {
+                setGroup(item.id)
+                setGroupsOpen(false)
+              }}
+              action={
+                <ActionMenu
+                  title={item.name}
+                  items={[
+                    {
+                      label: 'Изменить группу',
+                      icon: 'edit',
+                      onPress: () => {
+                        setGroupsOpen(false)
+                        editGroup(item)
+                      }
+                    },
+                    {
+                      label: 'Удалить группу',
+                      icon: 'delete',
+                      danger: true,
+                      onPress: () => {
+                        setGroupsOpen(false)
+                        state.confirmDelete(
+                          'Удалить группу?',
+                          () => {
+                            api.deleteTaskGroup({ id: item.id })
+                            if (group === item.id) setGroup(null)
+                          },
+                          'Сами задачи сохранятся и будут перенесены в «Без группы».'
+                        )
+                      }
+                    }
+                  ]}
+                />
+              }
+            />
+          ))}
+          <View style={{ marginTop: 8, alignItems: 'flex-start' }}>
+            <Button
+              label="Новая группа"
+              icon="add"
+              primary
+              onPress={() => {
+                setGroupsOpen(false)
+                editGroup()
+              }}
+            />
+          </View>
+        </ScrollView>
+      </AppDialog>
       {form && <FormSheet spec={form} close={() => setForm(null)} />}
     </View>
   )
