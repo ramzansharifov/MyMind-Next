@@ -59,7 +59,10 @@
     "test:android-runtime": "node ./scripts/verify-android-runtime.mjs",
     "typecheck": "tsc --noEmit",
     "export:android": "node ./scripts/export-android.mjs",
-    "test:expo-dom-patch": "node ./scripts/patch-expo-dom-webview.test.mjs"
+    "test:expo-dom-patch": "node ./scripts/patch-expo-dom-webview.test.mjs",
+    "preandroid": "node ./scripts/prepare-android-native.mjs",
+    "android:clean-native": "node ./scripts/prepare-android-native.mjs --force",
+    "test:android-native-cache": "node ./scripts/prepare-android-native.test.mjs"
   },
   "private": true
 }
