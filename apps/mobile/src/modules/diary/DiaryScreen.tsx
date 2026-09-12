@@ -245,8 +245,7 @@ function DiaryDetail({
   const { diary: api } = useServices()
   const [currentDiary, setCurrentDiary] = useState(diary)
   const [date, setDate] = useState(localDateKey())
-  const [view, setView] = useState<DiaryDetailView>('day')
-  const [query, setQuery] = useState('')
+  const [view, setView] = useState<DiaryDetailView>('today')
   const [form, setForm] = useState<FormSpec | null>(null)
   const [calendarMonth, setCalendarMonth] = useState(() => diaryMonthKey(localDateKey()))
   const [pageOffset] = useState(() => new Animated.Value(0))
@@ -271,7 +270,7 @@ function DiaryDetail({
     pageOffset.setValue(direction >= 0 ? 24 : -24)
     setDate(nextDate)
     setCalendarMonth(diaryMonthKey(nextDate))
-    setView('day')
+    setView('reader')
     Animated.timing(pageOffset, {
       toValue: 0,
       duration: 180,
@@ -300,14 +299,6 @@ function DiaryDetail({
         }
         refreshDetail()
       }
-    })
-
-  const chooseDate = (): void =>
-    setForm({
-      title: 'Перейти к дате',
-      initial: { dayKey: date },
-      fields: [textField('dayKey', 'Дата', 'date')],
-      save: (values) => turnToDate(schema.diaryDayKeySchema.parse(values.dayKey))
     })
 
   const editMood = (): void =>
