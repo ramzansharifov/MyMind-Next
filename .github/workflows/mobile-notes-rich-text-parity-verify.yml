@@ -35,6 +35,7 @@ jobs:
             apps/mobile/src/shared/ui/NotesRichTextDom.tsx \
             apps/mobile/src/shared/ui/NotesRichTextBlock.tsx \
             apps/mobile/src/shared/ui/NotesRichTextControls.tsx \
+            apps/mobile/src/shared/ui/NotesBlockSettings.tsx \
             apps/mobile/src/shared/ui/StudyRichTextEditor.tsx \
             apps/mobile/src/shared/ui/DocumentEditor.tsx \
             apps/mobile/src/modules/notes/NotesScreen.tsx \
@@ -58,6 +59,7 @@ jobs:
               apps/mobile/src/shared/ui/NotesRichTextDom.tsx \
               apps/mobile/src/shared/ui/NotesRichTextBlock.tsx \
               apps/mobile/src/shared/ui/NotesRichTextControls.tsx \
+              apps/mobile/src/shared/ui/NotesBlockSettings.tsx \
               apps/mobile/src/shared/ui/StudyRichTextEditor.tsx \
               apps/mobile/src/shared/ui/DocumentEditor.tsx \
               apps/mobile/src/modules/notes/NotesScreen.tsx \
