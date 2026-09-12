@@ -59,6 +59,9 @@ jobs:
           console.log('[CI] Restored Android SDK:', sdkPath)
           '@ | node --input-type=module
 
-      - name: Compile Android debug native code
+      - name: Compile Android debug native code from local.properties only
         working-directory: apps/mobile/android
+        env:
+          ANDROID_HOME: ''
+          ANDROID_SDK_ROOT: ''
         run: .\gradlew.bat app:assembleDebug -x lint -x test --no-daemon -PreactNativeArchitectures=x86_64
