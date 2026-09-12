@@ -189,6 +189,42 @@ function DiaryNotebookCard({
   )
 }
 
+function DiarySectionTab({
+  label,
+  icon: Icon,
+  selected,
+  onPress
+}: {
+  label: string
+  icon: LucideIcon
+  selected: boolean
+  onPress(): void
+}): React.JSX.Element {
+  const theme = useTheme()
+  return (
+    <Pressable
+      accessibilityRole="tab"
+      accessibilityState={{ selected }}
+      onPress={onPress}
+      style={({ pressed }) => ({
+        height: 40,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 7,
+        paddingHorizontal: 14,
+        borderRadius: 12,
+        backgroundColor: selected ? theme.accent : pressed ? theme.raised : 'transparent',
+        opacity: pressed ? 0.78 : 1
+      })}
+    >
+      <Icon size={16} color={selected ? '#ffffff' : theme.muted} />
+      <Text style={{ color: selected ? '#ffffff' : theme.muted, fontSize: 13, fontWeight: selected ? '700' : '500' }}>
+        {label}
+      </Text>
+    </Pressable>
+  )
+}
+
 function DiaryDetail({
   diary,
   canDelete,
