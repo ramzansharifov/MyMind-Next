@@ -311,13 +311,7 @@ function BlockInput({
 
   switch (block.type) {
     case 'text':
-      return searchInternalLinkTargets ? (
-        <StudyRichTextEditor
-          block={block}
-          update={(next) => update(next)}
-          searchTargets={searchInternalLinkTargets}
-        />
-      ) : (
+      return (
         <TextInput
           accessibilityLabel="Текстовый блок"
           multiline
