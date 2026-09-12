@@ -795,6 +795,7 @@ function DiaryPaperDay({
   date,
   entries,
   moodLabel,
+  readOnly = false,
   onEdit,
   onDelete
 }: {
@@ -802,8 +803,9 @@ function DiaryPaperDay({
   date: string
   entries: DiaryEntry[]
   moodLabel: string | null
-  onEdit(entry?: DiaryEntry): void
-  onDelete(entry: DiaryEntry): void
+  readOnly?: boolean
+  onEdit?(entry?: DiaryEntry): void
+  onDelete?(entry: DiaryEntry): void
 }): React.JSX.Element {
   const palette = diaryAppearancePalette(diary.paperTone, diary.coverTone)
 
@@ -834,16 +836,24 @@ function DiaryPaperDay({
           </View>
         }
         ListEmptyComponent={
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Добавить первую запись"
-            onPress={() => onEdit()}
-            style={{ paddingVertical: 36, paddingHorizontal: 8 }}
-          >
-            <Text style={{ color: palette.paperMuted, fontSize: 15, lineHeight: 22 }}>
-              В этот день ещё нет записей. Нажмите, чтобы начать страницу.
-            </Text>
-          </Pressable>
+          readOnly ? (
+            <View style={{ paddingVertical: 36, paddingHorizontal: 8 }}>
+              <Text style={{ color: palette.paperMuted, fontSize: 15, lineHeight: 22 }}>
+                В этот день осталось только настроение.
+              </Text>
+            </View>
+          ) : (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Добавить первую запись"
+              onPress={() => onEdit?.()}
+              style={{ paddingVertical: 36, paddingHorizontal: 8 }}
+            >
+              <Text style={{ color: palette.paperMuted, fontSize: 15, lineHeight: 22 }}>
+                В этот день ещё нет записей. Нажмите, чтобы начать страницу.
+              </Text>
+            </Pressable>
+          )
         }
         renderItem={({ item }) => (
           <View
@@ -858,10 +868,11 @@ function DiaryPaperDay({
             }}
           >
             <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`Изменить запись ${item.text}`}
-              onPress={() => onEdit(item)}
-              style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1, gap: 5 })}
+              accessibilityRole={readOnly ? undefined : 'button'}
+              accessibilityLabel={readOnly ? undefined : `Изменить запись ${item.text}`}
+              disabled={readOnly}
+              onPress={() => onEdit?.(item)}
+              style={({ pressed }) => ({ opacity: pressed && !readOnly ? 0.65 : 1, gap: 5 })}
             >
               <Text style={{ color: palette.paperText, fontSize: 16, lineHeight: 23 }}>
                 {item.text}
@@ -873,10 +884,12 @@ function DiaryPaperDay({
                 })}
               </Text>
             </Pressable>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              <Button label="Изменить" onPress={() => onEdit(item)} />
-              <Button label="Удалить" danger onPress={() => onDelete(item)} />
-            </View>
+            {!readOnly ? (
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <Button label="Изменить" onPress={() => onEdit?.(item)} />
+                <Button label="Удалить" danger onPress={() => onDelete?.(item)} />
+              </View>
+            ) : null}
           </View>
         )}
       />
