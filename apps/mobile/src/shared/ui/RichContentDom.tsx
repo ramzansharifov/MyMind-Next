@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
-export type RichContentKind = 'markdown' | 'latex' | 'mermaid'
+export type RichContentKind = 'html' | 'markdown' | 'latex' | 'mermaid'
 type MermaidTheme = 'dark' | 'default' | 'neutral' | 'forest'
 type TextAlignment = 'left' | 'center' | 'right'
 
@@ -108,6 +108,10 @@ function MermaidContent({
   return <div className="mermaid-content" dangerouslySetInnerHTML={{ __html: state.svg }} />
 }
 
+function HtmlContent({ source }: { source: string }): React.JSX.Element {
+  return <article className="html-content" dangerouslySetInnerHTML={{ __html: source }} />
+}
+
 function ErrorPanel({ message }: { message: string }): React.JSX.Element {
   return (
     <div className="error-panel" role="alert">
@@ -144,7 +148,9 @@ export default function RichContentDom({
         } as React.CSSProperties
       }
     >
-      {kind === 'markdown' ? (
+      {kind === 'html' ? (
+        <HtmlContent source={source} />
+      ) : kind === 'markdown' ? (
         <article className="markdown-content">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{source}</ReactMarkdown>
         </article>
@@ -173,6 +179,39 @@ const styles = `
     background: transparent;
     font: 16px/1.6 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     overflow-wrap: anywhere;
+  }
+  .html-content > :first-child, .markdown-content > :first-child { margin-top: 0; }
+  .html-content > :last-child, .markdown-content > :last-child { margin-bottom: 0; }
+  .html-content p { margin: 0 0 0.72em; }
+  .html-content strong, .html-content b { font-weight: 700; }
+  .html-content em, .html-content i { font-style: italic; }
+  .html-content u { text-decoration: underline; }
+  .html-content s, .html-content strike { text-decoration: line-through; }
+  .html-content a { color: var(--accent); text-decoration: underline; }
+  .html-content blockquote {
+    margin: 0.5em 0;
+    padding: 3px 0 3px 12px;
+    border-left: 3px solid var(--accent);
+    color: var(--muted);
+  }
+  .html-content ul, .html-content ol { margin: 0.5em 0; padding-left: 1.55em; }
+  .html-content li { margin: 0.22em 0; }
+  .html-content code {
+    padding: 1px 5px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.9em;
+  }
+  .html-content mark { border-radius: 3px; padding: 0 1px; color: inherit; }
+  .html-content [data-study-internal-link="true"] {
+    display: inline;
+    padding: 1px 4px;
+    border-radius: 5px;
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    font-weight: 600;
   }
   .markdown-content > :first-child { margin-top: 0; }
   .markdown-content > :last-child { margin-bottom: 0; }
