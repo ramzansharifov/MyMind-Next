@@ -44,14 +44,16 @@ export type NotesRichTextCommand =
   | 'clearFormatting'
   | 'unlink'
 
+type NotesDomBridgeMethod = DOMImperativeFactory[string]
+
 export interface NotesRichTextDomRef extends DOMImperativeFactory {
-  command: (command: NotesRichTextCommand) => Promise<void>
-  setFontSize: (fontSize: string) => Promise<void>
-  setTextColor: (color: string | null) => Promise<void>
-  setHighlightColor: (color: string | null) => Promise<void>
-  setLink: (href: string) => Promise<void>
+  command: NotesDomBridgeMethod
+  setFontSize: NotesDomBridgeMethod
+  setTextColor: NotesDomBridgeMethod
+  setHighlightColor: NotesDomBridgeMethod
+  setLink: NotesDomBridgeMethod
   getSelectedText: () => Promise<string>
-  insertInternalLink: (html: string) => Promise<void>
+  insertInternalLink: NotesDomBridgeMethod
   focusEditor: () => Promise<void>
 }
 
@@ -326,7 +328,9 @@ export default function NotesRichTextDom({
   useDOMImperativeHandle(
     ref,
     () => ({
-      command: async (command) => {
+      command: (...args) => {
+        const command = args[0]
+        if (typeof command !== 'string') return
         run(() => {
           switch (command) {
             case 'bold':
@@ -390,22 +394,30 @@ export default function NotesRichTextDom({
           }
         })
       },
-      setFontSize: async (fontSize) => {
+      setFontSize: (...args) => {
+        const fontSize = args[0]
+        if (typeof fontSize !== 'string') return
         run(() => applyFontSize(fontSize))
       },
-      setTextColor: async (color) => {
+      setTextColor: (...args) => {
+        const value = args[0]
+        if (value !== null && typeof value !== 'string') return
         run(() => {
           const root = editorRef.current
           if (!root) return
-          const nextColor = color || getComputedStyle(root).color
+          const nextColor = value || getComputedStyle(root).color
           document.execCommand('foreColor', false, nextColor)
           normalizeLegacyFonts()
         })
       },
-      setHighlightColor: async (color) => {
-        run(() => applyHighlight(color))
+      setHighlightColor: (...args) => {
+        const value = args[0]
+        if (value !== null && typeof value !== 'string') return
+        run(() => applyHighlight(value))
       },
-      setLink: async (rawHref) => {
+      setLink: (...args) => {
+        const rawHref = args[0]
+        if (typeof rawHref !== 'string') return
         const href = sanitizeHref(rawHref)
         if (!href) return
         run(() => {
@@ -431,7 +443,9 @@ export default function NotesRichTextDom({
         restoreRange(root, savedRangeRef.current)
         return window.getSelection()?.toString() ?? ''
       },
-      insertInternalLink: async (linkHtml) => {
+      insertInternalLink: (...args) => {
+        const linkHtml = args[0]
+        if (typeof linkHtml !== 'string') return
         run(() => selectionHtml(linkHtml))
       },
       focusEditor: async () => {
