@@ -601,6 +601,24 @@ export function NutritionScreen(): React.JSX.Element {
     )
   }
 
+  if (tab === 'goal') {
+    return (
+      <View style={{ flex: 1 }}>
+        {header}
+        {overview.error ? <ErrorState message={overview.error} retry={overview.refresh} /> : null}
+        <NutritionGoalCard
+          key={data?.currentTarget?.id ?? 'nutrition-goal-empty'}
+          target={data?.currentTarget ?? null}
+          onSave={(input) =>
+            overview.mutate(() => {
+              api.setTargets(input)
+            }, 'Цель питания сохранена')
+          }
+        />
+      </View>
+    )
+  }
+
   if (tab === 'progress') {
     return (
       <View style={{ flex: 1 }}>
@@ -611,114 +629,40 @@ export function NutritionScreen(): React.JSX.Element {
     )
   }
 
-  const list: ListItem[] =
-    tab === 'diary'
-      ? entries.map((value) => ({ kind: 'entry', value }))
-      : tab === 'foods'
-        ? filteredFoods.map((value) => ({ kind: 'food', value }))
-        : filteredRecipes.map((value) => ({ kind: 'recipe', value }))
-
   return (
     <View style={{ flex: 1 }}>
       {header}
       {overview.error ? <ErrorState message={overview.error} retry={overview.refresh} /> : null}
-      <FlatList<ListItem>
-        data={list}
-        keyExtractor={(item) => `${item.kind}:${item.value.id}`}
+      <FlatList<NutritionLogEntryRecord>
+        data={entries}
+        keyExtractor={(entry) => entry.id}
         contentContainerStyle={{ paddingBottom: 96 }}
         refreshing={overview.loading}
         onRefresh={overview.refresh}
         ListEmptyComponent={<EmptyState />}
-        renderItem={({ item }) => {
-          if (item.kind === 'entry') {
-            const entry = item.value
-            return (
-              <Row
-                title={`${mealLabels[entry.mealType]} · ${entry.title}`}
-                subtitle={`${entry.amount} ${unitLabels[entry.unit]} · ${macroLine(entry.nutrients)}`}
-                onPress={() => editLog(entry)}
-                onLongPress={() =>
-                  overview.confirmDelete('Удалить запись?', () =>
-                    api.deleteLogEntry({ id: entry.id })
-                  )
-                }
-              />
-            )
-          }
-          if (item.kind === 'food') {
-            const food = item.value
-            return (
-              <Row
-                title={food.name}
-                subtitle={`${food.brand ? `${food.brand} · ` : ''}${food.baseAmount} ${unitLabels[food.baseUnit]} · ${macroLine(food.nutrients)}`}
-                onPress={() => editFood(food)}
-                onLongPress={() =>
-                  overview.confirmDelete(
-                    'Удалить продукт?',
-                    () => api.deleteFood({ id: food.id }),
-                    'Продукт из рецепта удалить нельзя. Записи дневника сохранят снимок данных.'
-                  )
-                }
-              />
-            )
-          }
-          const recipe = item.value
-          return (
-            <Row
-              title={recipe.name}
-              subtitle={`${recipe.servings} порц. · ${recipe.ingredients.length} ингредиентов · ${macroLine(recipe.perServingNutrients)}`}
-              onPress={() => setRecipeEditor(recipe)}
-              onLongPress={() =>
-                overview.confirmDelete(
-                  'Удалить рецепт?',
-                  () => api.deleteRecipe({ id: recipe.id }),
-                  'Записи дневника сохранят снимок рецепта.'
-                )
-              }
-            />
-          )
-        }}
+        renderItem={({ item: entry }) => (
+          <Row
+            title={`${mealLabels[entry.mealType]} · ${entry.title}`}
+            subtitle={`${entry.amount} ${unitLabels[entry.unit]} · ${macroLine(entry.nutrients)}`}
+            onPress={() => editLog(entry)}
+            onLongPress={() =>
+              overview.confirmDelete('Удалить запись?', () => api.deleteLogEntry({ id: entry.id }))
+            }
+          />
+        )}
       />
       <MobileCreateAction
         actions={[
-          tab === 'diary'
-            ? {
-                key: 'entry',
-                label: 'Новая запись',
-                description: 'Добавить еду в выбранный день',
-                icon: 'nutrition',
-                onPress: () => editLog()
-              }
-            : tab === 'foods'
-              ? {
-                  key: 'food',
-                  label: 'Новый продукт',
-                  description: 'Добавить продукт в каталог питания',
-                  icon: 'nutrition',
-                  onPress: () => editFood()
-                }
-              : {
-                  key: 'recipe',
-                  label: 'Новый рецепт',
-                  description: 'Собрать рецепт из продуктов',
-                  icon: 'nutrition',
-                  onPress: () => setRecipeEditor('new')
-                }
+          {
+            key: 'entry',
+            label: 'Новая запись',
+            description: 'Добавить еду в выбранный день',
+            icon: 'nutrition',
+            onPress: () => editLog()
+          }
         ]}
       />
       {form ? <FormSheet spec={form} close={() => setForm(null)} /> : null}
-      {recipeEditor ? (
-        <NutritionRecipeSheet
-          recipe={recipeEditor === 'new' ? undefined : recipeEditor}
-          foods={foods}
-          save={(input) => {
-            if ('id' in input) api.updateRecipe(input)
-            else api.createRecipe(input)
-            overview.refresh()
-          }}
-          close={() => setRecipeEditor(null)}
-        />
-      ) : null}
     </View>
   )
 }
