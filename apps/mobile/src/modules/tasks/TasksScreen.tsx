@@ -179,7 +179,7 @@ export function TasksScreen(): React.JSX.Element {
       <View style={{ gap: 10, marginBottom: 12 }}>
         <SearchField value={query} onChangeText={setQuery} />
 
-        <ModuleTabs
+        <ModuleTabs<'all' | 'active' | 'completed'>
           items={[
             { id: 'all' as const, label: 'Все' },
             { id: 'active' as const, label: 'Активные' },
