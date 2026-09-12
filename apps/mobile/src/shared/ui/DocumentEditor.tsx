@@ -664,6 +664,176 @@ function ToolbarButton({
   )
 }
 
+function BlockHeaderIcon({
+  label,
+  icon: Icon,
+  disabled = false,
+  danger = false,
+  onPress
+}: {
+  label: string
+  icon: LucideIcon
+  disabled?: boolean
+  danger?: boolean
+  onPress(): void
+}): React.JSX.Element {
+  const theme = useTheme()
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled }}
+      disabled={disabled}
+      hitSlop={5}
+      onPress={onPress}
+      style={({ pressed }) => ({
+        width: 30,
+        height: 30,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 7,
+        backgroundColor: pressed ? (danger ? '#ef44441A' : theme.raised) : 'transparent',
+        opacity: disabled ? 0.25 : pressed ? 0.72 : 1
+      })}
+    >
+      <Icon size={16} color={danger ? theme.error : theme.muted} />
+    </Pressable>
+  )
+}
+
+function DesktopParityBlockCard({
+  block,
+  active,
+  collapsed,
+  first,
+  last,
+  activate,
+  toggleCollapsed,
+  move,
+  duplicate,
+  settings,
+  remove,
+  children
+}: {
+  block: StudyBlock
+  active: boolean
+  collapsed: boolean
+  first: boolean
+  last: boolean
+  activate(): void
+  toggleCollapsed(): void
+  move(direction: -1 | 1): void
+  duplicate(): void
+  settings(): void
+  remove(): void
+  children: React.ReactNode
+}): React.JSX.Element {
+  const theme = useTheme()
+  return (
+    <Pressable
+      accessibilityRole="none"
+      onPress={activate}
+      style={{
+        padding: active ? 11 : 12,
+        borderWidth: active ? 2 : 1,
+        borderColor: active ? theme.accent + '66' : theme.border,
+        borderRadius: 12,
+        backgroundColor: theme.surface
+      }}
+    >
+      <View
+        style={{
+          minHeight: 30,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 2,
+          marginBottom: collapsed ? 0 : 8
+        }}
+      >
+        <View
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          style={{
+            width: 30,
+            height: 30,
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: 0.55
+          }}
+        >
+          <GripVertical size={16} color={theme.muted} />
+        </View>
+        <BlockHeaderIcon
+          label={collapsed ? `Развернуть блок «${blockLabel(block)}»` : `Свернуть блок «${blockLabel(block)}»`}
+          icon={ChevronRight}
+          onPress={toggleCollapsed}
+        />
+        <Text
+          numberOfLines={1}
+          style={{
+            flex: 1,
+            marginLeft: 4,
+            color: theme.muted,
+            fontSize: 11,
+            lineHeight: 15,
+            fontWeight: '700',
+            letterSpacing: 0.8,
+            textTransform: 'uppercase'
+          }}
+        >
+          {blockLabel(block)}
+        </Text>
+        <BlockHeaderIcon
+          label="Переместить блок вверх"
+          icon={ArrowUp}
+          disabled={first}
+          onPress={() => move(-1)}
+        />
+        <BlockHeaderIcon
+          label="Переместить блок вниз"
+          icon={ArrowDown}
+          disabled={last}
+          onPress={() => move(1)}
+        />
+        <BlockHeaderIcon label="Дублировать блок" icon={CopyPlus} onPress={duplicate} />
+        <BlockHeaderIcon label="Настройки блока" icon={Settings2} onPress={settings} />
+        <BlockHeaderIcon label="Удалить блок" icon={Trash2} danger onPress={remove} />
+      </View>
+      {collapsed ? null : children}
+    </Pressable>
+  )
+}
+
+function DesktopParityInsertControl({ onPress }: { onPress(): void }): React.JSX.Element {
+  const theme = useTheme()
+  return (
+    <View style={{ height: 32, flexDirection: 'row', alignItems: 'center' }}>
+      <View style={{ height: 1, flex: 1, backgroundColor: theme.border }} />
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Добавить блок здесь"
+        hitSlop={8}
+        onPress={onPress}
+        style={({ pressed }) => ({
+          width: 26,
+          height: 26,
+          marginHorizontal: 8,
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderWidth: 1,
+          borderColor: pressed ? theme.accent + '88' : theme.border,
+          borderRadius: 13,
+          backgroundColor: pressed ? theme.accent + '14' : theme.surface,
+          opacity: pressed ? 0.75 : 1
+        })}
+      >
+        <Plus size={14} color={theme.muted} />
+      </Pressable>
+      <View style={{ height: 1, flex: 1, backgroundColor: theme.border }} />
+    </View>
+  )
+}
+
 function NotesBlockToolbar({
   block,
   index,
