@@ -19,7 +19,7 @@ import type {
   StudyInternalLinkTarget,
   StudyLocalAsset
 } from '@mymind/contracts/study'
-import { appearanceTokens, designTokens } from '@mymind/design'
+import { designTokens } from '@mymind/design'
 import {
   ArrowDown,
   ArrowUp,
@@ -35,7 +35,6 @@ import {
   Plus,
   Paperclip,
   Presentation,
-  Settings2,
   Sigma,
   Trash2,
   Type,
@@ -43,7 +42,6 @@ import {
   Workflow,
   type LucideIcon
 } from 'lucide-react-native'
-import BoardCanvasDom from '../../modules/boards/BoardCanvasDom'
 import { AppDialog } from './AppDialog'
 import {
   DocumentBoardEditor,
@@ -61,6 +59,8 @@ import {
 } from './NotesRichTextControls'
 import type { NotesRichTextDomRef, NotesRichTextFormattingState } from './NotesRichTextDom'
 import { resolveStudyRichTextHtml } from './richTextHtml'
+import { StudySourceBlock } from './StudySourceBlock'
+import { StudyDividerBlock } from './StudyDividerBlock'
 import { useConfirmation } from './ConfirmationProvider'
 import { Button, Label } from './primitives'
 import { useTheme } from './theme'
@@ -126,21 +126,36 @@ interface DocumentEditorProps {
 function newBlock(type: StudyBlockType, id: string): StudyBlock | null {
   switch (type) {
     case 'text':
-      return { id, type, text: '' }
+      return { id, type, text: '', html: '<p></p>' }
     case 'heading':
-      return { id, type, text: '', level: 2 }
+      return {
+        id,
+        type,
+        text: '',
+        level: 1,
+        alignment: 'left',
+        backgroundScope: 'container'
+      }
     case 'code':
       return { id, type, source: '', language: 'text' }
     case 'markdown':
       return { id, type, source: '', viewMode: 'write' }
     case 'latex':
-      return { id, type, source: '', viewMode: 'write', displayMode: 'display' }
+      return {
+        id,
+        type,
+        source: '',
+        viewMode: 'write',
+        displayMode: 'display',
+        alignment: 'center',
+        scale: 100
+      }
     case 'mermaid':
-      return { id, type, source: '', viewMode: 'write' }
+      return { id, type, source: '', viewMode: 'write', theme: 'dark', scale: 100 }
     case 'board':
       return { id, type }
     case 'divider':
-      return { id, type, variant: 'solid' }
+      return { id, type, variant: 'solid', thickness: 1, color: '#6d5dfc' }
     default:
       return null
   }
@@ -148,7 +163,7 @@ function newBlock(type: StudyBlockType, id: string): StudyBlock | null {
 
 function newAssetBlock(type: StudyAssetKind, id: string, asset: StudyLocalAsset): StudyBlock {
   const source = { type: 'local' as const, asset }
-  if (type === 'image') return { id, type, source, imageFit: 'contain' }
+  if (type === 'image') return { id, type, source, imageFit: 'contain', imageHeight: 360 }
   if (type === 'video') return { id, type, source }
   if (type === 'audio') return { id, type, source }
   return { id, type: 'file', source }
@@ -187,6 +202,20 @@ function blockLabel(block: StudyBlock): string {
     case 'board':
       return 'Доска'
   }
+}
+
+function headingTypography(level: 1 | 2 | 3): {
+  fontSize: number
+  lineHeight: number
+  letterSpacing: number
+} {
+  if (level === 1) {
+    return { fontSize: 48, lineHeight: 50.4, letterSpacing: -1.68 }
+  }
+  if (level === 2) {
+    return { fontSize: 36, lineHeight: 41.4, letterSpacing: -0.9 }
+  }
+  return { fontSize: 30, lineHeight: 36, letterSpacing: -0.6 }
 }
 
 function LocalAssetEditor({
@@ -228,7 +257,7 @@ function LocalAssetEditor({
           resizeMode={block.imageFit ?? 'contain'}
           style={{
             width: '100%',
-            height: block.imageHeight ?? 220,
+            height: block.imageHeight ?? 360,
             borderRadius: clean ? 14 : designTokens.radius.md,
             backgroundColor: theme.raised
           }}
@@ -294,21 +323,6 @@ function BlockInput({
     fontSize: 16
   } as const
   const sourceStyle = { ...inputStyle, minHeight: 120, textAlignVertical: 'top' as const }
-  const colorScheme = theme.background === appearanceTokens.dark.background ? 'dark' : 'light'
-  const richProps = {
-    mode: 'rich' as const,
-    colorScheme,
-    textColor: theme.text,
-    mutedColor: theme.muted,
-    borderColor: theme.border,
-    surfaceColor: theme.raised,
-    accentColor: theme.accent,
-    dom: {
-      matchContents: true,
-      scrollEnabled: false,
-      style: { width: '100%' }
-    }
-  } as const
 
   switch (block.type) {
     case 'text':
@@ -328,7 +342,9 @@ function BlockInput({
           }}
         />
       )
-    case 'heading':
+    case 'heading': {
+      const typography = headingTypography(block.level)
+      const backgroundScope = block.backgroundScope ?? 'container'
       return (
         <View style={{ gap: 8 }}>
           <TextInput
@@ -336,20 +352,27 @@ function BlockInput({
             placeholder="Заголовок"
             placeholderTextColor={theme.muted}
             value={block.text}
+            multiline
+            scrollEnabled={false}
+            textAlignVertical="top"
             onChangeText={(text) => update({ ...block, text })}
             style={{
-              ...inputStyle,
+              minHeight: typography.lineHeight + 16,
+              maxHeight: 384,
+              paddingHorizontal: 8,
+              paddingVertical: 8,
+              borderWidth: 0,
+              borderRadius: 8,
               color: block.color ?? theme.text,
               backgroundColor:
-                block.backgroundColor ??
-                (clean && block.backgroundScope === 'container'
-                  ? theme.raised
-                  : inputStyle.backgroundColor),
-              fontWeight: '700',
-              fontSize: block.level === 1 ? 26 : block.level === 2 ? 22 : 19,
-              textAlign: block.alignment ?? 'left',
-              borderRadius:
-                clean && block.backgroundScope === 'container' ? 10 : inputStyle.borderRadius
+                backgroundScope === 'container'
+                  ? (block.backgroundColor ?? 'transparent')
+                  : 'transparent',
+              fontWeight: '600',
+              fontSize: typography.fontSize,
+              lineHeight: typography.lineHeight,
+              letterSpacing: typography.letterSpacing,
+              textAlign: block.alignment ?? 'left'
             }}
           />
           {!clean ? (
@@ -366,159 +389,18 @@ function BlockInput({
           ) : null}
         </View>
       )
+    }
     case 'code':
+    case 'markdown':
+    case 'latex':
+    case 'mermaid':
       return (
-        <View style={{ gap: 6 }}>
-          <TextInput
-            accessibilityLabel="Язык кода"
-            placeholder="Язык"
-            placeholderTextColor={theme.muted}
-            value={block.language}
-            autoCapitalize="none"
-            onChangeText={(language) => update({ ...block, language })}
-            style={inputStyle}
-          />
-          <TextInput
-            accessibilityLabel="Код"
-            multiline
-            autoCapitalize="none"
-            autoCorrect={false}
-            value={block.source}
-            onChangeText={(source) => update({ ...block, source })}
-            style={{
-              ...sourceStyle,
-              fontFamily: 'monospace',
-              backgroundColor: clean ? theme.surface : theme.raised,
-              borderRadius: clean ? 12 : designTokens.radius.md,
-              paddingHorizontal: 12
-            }}
-          />
-        </View>
+        <StudySourceBlock
+          block={block}
+          editable
+          update={(next) => update(next)}
+        />
       )
-    case 'markdown': {
-      const viewMode = clean ? (block.viewMode ?? 'split') : 'write'
-      return (
-        <View style={{ gap: 10 }}>
-          {viewMode !== 'preview' ? (
-            <TextInput
-              accessibilityLabel="Markdown блок"
-              multiline
-              autoCapitalize="none"
-              autoCorrect={false}
-              value={block.source}
-              onChangeText={(source) => update({ ...block, source })}
-              style={{
-                ...sourceStyle,
-                fontFamily: 'monospace',
-                backgroundColor: clean ? theme.surface : theme.raised,
-                borderRadius: clean ? 12 : designTokens.radius.md,
-                paddingHorizontal: 12
-              }}
-            />
-          ) : null}
-          {clean && viewMode !== 'write' ? (
-            <View
-              style={{
-                padding: 12,
-                borderWidth: 1,
-                borderColor: theme.border,
-                borderRadius: 12,
-                backgroundColor: theme.surface
-              }}
-            >
-              <BoardCanvasDom {...richProps} kind={'markdown' as const} source={block.source} />
-            </View>
-          ) : null}
-        </View>
-      )
-    }
-    case 'latex': {
-      const viewMode = clean ? (block.viewMode ?? 'split') : 'write'
-      return (
-        <View style={{ gap: 10 }}>
-          {viewMode !== 'preview' ? (
-            <TextInput
-              accessibilityLabel="LaTeX блок"
-              multiline
-              autoCapitalize="none"
-              autoCorrect={false}
-              value={block.source}
-              onChangeText={(source) => update({ ...block, source })}
-              style={{
-                ...sourceStyle,
-                fontFamily: 'monospace',
-                backgroundColor: clean ? theme.surface : theme.raised,
-                borderRadius: clean ? 12 : designTokens.radius.md,
-                paddingHorizontal: 12
-              }}
-            />
-          ) : null}
-          {clean && viewMode !== 'write' ? (
-            <View
-              style={{
-                padding: 12,
-                borderWidth: 1,
-                borderColor: theme.border,
-                borderRadius: 12,
-                backgroundColor: theme.surface
-              }}
-            >
-              <BoardCanvasDom
-                {...richProps}
-                kind={'latex' as const}
-                source={block.source}
-                latexDisplayMode={block.displayMode ?? 'display'}
-                latexAlignment={block.alignment ?? 'center'}
-                latexScale={(block.scale ?? 100) / 100}
-              />
-            </View>
-          ) : null}
-        </View>
-      )
-    }
-    case 'mermaid': {
-      const viewMode = clean ? (block.viewMode ?? 'split') : 'write'
-      return (
-        <View style={{ gap: 10 }}>
-          {viewMode !== 'preview' ? (
-            <TextInput
-              accessibilityLabel="Mermaid блок"
-              multiline
-              autoCapitalize="none"
-              autoCorrect={false}
-              value={block.source}
-              onChangeText={(source) => update({ ...block, source })}
-              style={{
-                ...sourceStyle,
-                fontFamily: 'monospace',
-                backgroundColor: clean ? theme.surface : theme.raised,
-                borderRadius: clean ? 12 : designTokens.radius.md,
-                paddingHorizontal: 12
-              }}
-            />
-          ) : null}
-          {clean && viewMode !== 'write' ? (
-            <View
-              style={{
-                padding: 12,
-                borderWidth: 1,
-                borderColor: theme.border,
-                borderRadius: 12,
-                backgroundColor: theme.surface
-              }}
-            >
-              <BoardCanvasDom
-                {...richProps}
-                kind={'mermaid' as const}
-                source={block.source}
-                mermaidTheme={block.theme ?? (colorScheme === 'dark' ? 'dark' : 'default')}
-                mermaidScale={(block.scale ?? 100) / 100}
-              />
-            </View>
-          ) : null}
-        </View>
-      )
-    }
     case 'image':
     case 'video':
       return block.source.type === 'url' ? (
@@ -548,48 +430,8 @@ function BlockInput({
       return (
         <LocalAssetEditor block={block} update={update} assetActions={assetActions} clean={clean} />
       )
-    case 'divider': {
-      const variant = block.variant ?? 'solid'
-      const thickness = block.thickness ?? 1
-      const color =
-        !block.color || block.color.toLowerCase() === '#6d5dfc' ? theme.accent : block.color
-      return (
-        <View style={{ gap: 10, paddingVertical: clean ? 16 : 0 }}>
-          {variant === 'dashed' || variant === 'dotted' ? (
-            <View
-              style={{
-                height: Math.max(2, thickness),
-                borderTopWidth: thickness,
-                borderStyle: variant === 'dotted' ? 'dotted' : 'dashed',
-                borderColor: color
-              }}
-            />
-          ) : (
-            <View
-              style={{
-                alignSelf: variant === 'tapered' ? 'center' : 'stretch',
-                width: variant === 'tapered' ? '68%' : undefined,
-                height: thickness,
-                borderRadius: thickness,
-                backgroundColor: color
-              }}
-            />
-          )}
-          {!clean ? (
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              {(['solid', 'tapered', 'dashed', 'dotted'] as const).map((nextVariant) => (
-                <Button
-                  key={nextVariant}
-                  label={nextVariant}
-                  selected={variant === nextVariant}
-                  onPress={() => update({ ...block, variant: nextVariant })}
-                />
-              ))}
-            </View>
-          ) : null}
-        </View>
-      )
-    }
+    case 'divider':
+      return <StudyDividerBlock block={block} spacing="edit" />
     case 'board':
       return (
         <DocumentBoardEditor
@@ -664,12 +506,14 @@ function BlockHeaderIcon({
   icon: Icon,
   disabled = false,
   danger = false,
+  rotation = 0,
   onPress
 }: {
   label: string
   icon: LucideIcon
   disabled?: boolean
   danger?: boolean
+  rotation?: number
   onPress(): void
 }): React.JSX.Element {
   const theme = useTheme()
@@ -682,8 +526,8 @@ function BlockHeaderIcon({
       hitSlop={5}
       onPress={onPress}
       style={({ pressed }) => ({
-        width: 30,
-        height: 30,
+        width: 28,
+        height: 28,
         alignItems: 'center',
         justifyContent: 'center',
         borderRadius: 7,
@@ -691,7 +535,11 @@ function BlockHeaderIcon({
         opacity: disabled ? 0.25 : pressed ? 0.72 : 1
       })}
     >
-      <Icon size={16} color={danger ? theme.error : theme.muted} />
+      <Icon
+        size={16}
+        color={danger ? theme.error : theme.muted}
+        style={{ transform: [{ rotate: `${rotation}deg` }] }}
+      />
     </Pressable>
   )
 }
@@ -706,7 +554,6 @@ function DesktopParityBlockCard({
   toggleCollapsed,
   move,
   duplicate,
-  settings,
   remove,
   children
 }: {
@@ -719,7 +566,6 @@ function DesktopParityBlockCard({
   toggleCollapsed(): void
   move(direction: -1 | 1): void
   duplicate(): void
-  settings(): void
   remove(): void
   children: React.ReactNode
 }): React.JSX.Element {
@@ -741,7 +587,7 @@ function DesktopParityBlockCard({
           minHeight: 30,
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 2,
+          gap: 8,
           marginBottom: collapsed ? 0 : 8
         }}
       >
@@ -749,8 +595,8 @@ function DesktopParityBlockCard({
           accessibilityElementsHidden
           importantForAccessibility="no-hide-descendants"
           style={{
-            width: 30,
-            height: 30,
+            width: 28,
+            height: 28,
             alignItems: 'center',
             justifyContent: 'center',
             opacity: 0.55
@@ -761,6 +607,7 @@ function DesktopParityBlockCard({
         <BlockHeaderIcon
           label={collapsed ? `Развернуть блок «${blockLabel(block)}»` : `Свернуть блок «${blockLabel(block)}»`}
           icon={ChevronRight}
+          rotation={collapsed ? 0 : 90}
           onPress={toggleCollapsed}
         />
         <Text
@@ -791,10 +638,9 @@ function DesktopParityBlockCard({
           onPress={() => move(1)}
         />
         <BlockHeaderIcon label="Дублировать блок" icon={CopyPlus} onPress={duplicate} />
-        <BlockHeaderIcon label="Настройки блока" icon={Settings2} onPress={settings} />
         <BlockHeaderIcon label="Удалить блок" icon={Trash2} danger onPress={remove} />
       </View>
-      {collapsed ? null : children}
+      <View style={{ display: collapsed ? 'none' : 'flex' }}>{children}</View>
     </Pressable>
   )
 }
@@ -1264,25 +1110,25 @@ function NotesReadHeading({
   const theme = useTheme()
   const backgroundScope = heading.backgroundScope ?? 'container'
   const backgroundColor = heading.backgroundColor ?? 'transparent'
-  const fontSize = heading.level === 1 ? 29 : heading.level === 2 ? 24 : 20
-  const lineHeight = heading.level === 1 ? 36 : heading.level === 2 ? 31 : 27
+  const typography = headingTypography(heading.level)
 
   return (
     <View
       style={{
-        borderRadius: 10,
+        borderRadius: 8,
         backgroundColor: backgroundScope === 'container' ? backgroundColor : 'transparent',
-        paddingHorizontal: backgroundScope === 'container' ? 5 : 0,
-        paddingVertical: 3
+        paddingHorizontal: 4,
+        paddingVertical: 6
       }}
     >
       <Text
         selectable
         style={{
           color: heading.color ?? theme.text,
-          fontSize,
-          lineHeight,
-          fontWeight: '700',
+          fontSize: typography.fontSize,
+          lineHeight: typography.lineHeight,
+          letterSpacing: typography.letterSpacing,
+          fontWeight: '600',
           textAlign: heading.alignment ?? 'left'
         }}
       >
@@ -1330,7 +1176,7 @@ function NotesReadAssetBlock({
           resizeMode={block.imageFit ?? 'contain'}
           style={{
             width: '100%',
-            height: block.imageHeight ?? 260,
+            height: block.imageHeight ?? 360,
             borderRadius: 16,
             backgroundColor: theme.raised
           }}
@@ -1406,31 +1252,6 @@ function NotesReadBlock({
   onOpenInternalLink?: (target: ResolveStudyInternalLinkTargetInput) => void
 }): React.JSX.Element {
   const theme = useTheme()
-  const colorScheme = theme.background === appearanceTokens.dark.background ? 'dark' : 'light'
-  const richProps = {
-    mode: 'rich' as const,
-    colorScheme,
-    textColor: theme.text,
-    mutedColor: theme.muted,
-    borderColor: theme.border,
-    surfaceColor: theme.raised,
-    accentColor: theme.accent,
-    onOpenInternalLink: async (target: ResolveStudyInternalLinkTargetInput) => {
-      onOpenInternalLink?.(target)
-    },
-    onOpenExternalLink: async (href: string) => {
-      try {
-        await Linking.openURL(href)
-      } catch (reason) {
-        assetActions.onAssetError?.(reason)
-      }
-    },
-    dom: {
-      matchContents: true,
-      scrollEnabled: false,
-      style: { width: '100%' }
-    }
-  } as const
 
   switch (block.type) {
     case 'text':
@@ -1452,101 +1273,17 @@ function NotesReadBlock({
     case 'heading':
       return <NotesReadHeading heading={block} />
     case 'code':
-      return (
-        <View
-          style={{
-            overflow: 'hidden',
-            borderWidth: 1,
-            borderColor: theme.border,
-            borderRadius: 14,
-            backgroundColor: theme.surface
-          }}
-        >
-          <View
-            style={{
-              paddingHorizontal: 12,
-              paddingVertical: 8,
-              borderBottomWidth: 1,
-              borderBottomColor: theme.border
-            }}
-          >
-            <Text style={{ color: theme.muted, fontSize: 11.5, fontWeight: '700' }}>
-              {block.language || 'text'}
-            </Text>
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <Text
-              selectable
-              style={{
-                minWidth: '100%',
-                padding: 13,
-                color: theme.text,
-                fontFamily: 'monospace',
-                fontSize: 13.5,
-                lineHeight: 21
-              }}
-            >
-              {block.source || ' '}
-            </Text>
-          </ScrollView>
-        </View>
-      )
     case 'markdown':
-      return <BoardCanvasDom {...richProps} kind={'markdown' as const} source={block.source} />
     case 'latex':
-      return (
-        <BoardCanvasDom
-          {...richProps}
-          kind={'latex' as const}
-          source={block.source}
-          latexDisplayMode={block.displayMode ?? 'display'}
-          latexAlignment={block.alignment ?? 'center'}
-          latexScale={(block.scale ?? 100) / 100}
-        />
-      )
     case 'mermaid':
-      return (
-        <BoardCanvasDom
-          {...richProps}
-          kind={'mermaid' as const}
-          source={block.source}
-          mermaidTheme={block.theme ?? (colorScheme === 'dark' ? 'dark' : 'default')}
-          mermaidScale={(block.scale ?? 100) / 100}
-        />
-      )
+      return <StudySourceBlock block={block} editable={false} />
     case 'image':
     case 'video':
     case 'audio':
     case 'file':
       return <NotesReadAssetBlock block={block} assetActions={assetActions} />
-    case 'divider': {
-      const variant = block.variant ?? 'solid'
-      const thickness = block.thickness ?? 1
-      const color =
-        !block.color || block.color.toLowerCase() === '#6d5dfc' ? theme.accent : block.color
-      return variant === 'dashed' || variant === 'dotted' ? (
-        <View
-          style={{
-            marginVertical: 10,
-            height: Math.max(2, thickness),
-            borderTopWidth: thickness,
-            borderStyle: variant === 'dotted' ? 'dotted' : 'dashed',
-            borderColor: color
-          }}
-        />
-      ) : (
-        <View
-          style={{
-            alignSelf: variant === 'tapered' ? 'center' : 'stretch',
-            width: variant === 'tapered' ? '68%' : undefined,
-            height: thickness,
-            marginVertical: 12,
-            borderRadius: thickness,
-            backgroundColor: color
-          }}
-        />
-      )
-    }
+    case 'divider':
+      return <StudyDividerBlock block={block} spacing="read" />
     case 'board':
       return (
         <DocumentBoardReader
@@ -1929,23 +1666,11 @@ export function DocumentEditor({
             toggleCollapsed={() => toggleCollapsed(item.id)}
             move={(direction) => move(index, direction)}
             duplicate={() => duplicate(index)}
-            settings={() => {
-              setActiveBlockId(item.id)
-              if (item.type === 'text') {
-                setSettingsOpen(false)
-                setRichSettingsOpen(true)
-              } else {
-                setRichSettingsOpen(false)
-                setQuickLinkOpen(false)
-                setSettingsOpen(true)
-              }
-            }}
             remove={() => requestRemove(index)}
           >
             {item.type === 'text' ? (
               <NotesRichTextBlock
                 block={item}
-                active={activeBlockId === item.id}
                 registerRef={(editor) => {
                   if (editor) richTextRefs.current.set(item.id, editor)
                   else richTextRefs.current.delete(item.id)
@@ -1990,6 +1715,39 @@ export function DocumentEditor({
           openSettings={() => setRichSettingsOpen(true)}
           openLink={() => setQuickLinkOpen(true)}
         />
+      ) : activeBlock ? (
+        <View
+          style={{
+            minHeight: 52,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 10,
+            paddingHorizontal: 12,
+            paddingVertical: 8,
+            borderTopWidth: 1,
+            borderTopColor: theme.border,
+            backgroundColor: theme.surface
+          }}
+        >
+          <View style={{ minWidth: 0, flex: 1 }}>
+            <Text
+              numberOfLines={1}
+              style={{ color: theme.text, fontSize: 13, fontWeight: '600' }}
+            >
+              {blockLabel(activeBlock)}
+            </Text>
+            <Text numberOfLines={1} style={{ marginTop: 2, color: theme.muted, fontSize: 11 }}>
+              Настройки активного блока
+            </Text>
+          </View>
+          <Button
+            label="Настройки"
+            icon="settings"
+            compact
+            onPress={() => setSettingsOpen(true)}
+          />
+        </View>
       ) : null}
 
       <NotesInsertSheet

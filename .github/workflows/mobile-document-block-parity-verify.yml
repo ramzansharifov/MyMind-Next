@@ -1,0 +1,38 @@
+name: Temporary mobile document block parity
+
+on:
+  push:
+    branches:
+      - fix/mobile-document-block-parity
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: mobile-document-block-parity-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.14.0
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Rebuild SQLite for Node
+        run: npm run native:node
+      - name: Typecheck mobile
+        run: npm run typecheck:mobile
+      - name: Mobile tests
+        run: npm run test:mobile
+      - name: Expo DOM patch regression
+        run: npm run test:expo-dom-patch --workspace=mymind-mobile
+      - name: Android export
+        run: npm run export:android
