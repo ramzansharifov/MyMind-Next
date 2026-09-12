@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
-import { FlatList, View } from 'react-native'
+import { FlatList, ScrollView, View } from 'react-native'
+import { BarChart3, CalendarDays, Target } from 'lucide-react-native'
 import { type HabitGroupRecord, type HabitRecord } from '@mymind/contracts/habits'
 import { addDays, isHabitScheduledOn, localDateKey } from '@mymind/core/habits'
 import * as schema from '@mymind/core/validation/habits'
@@ -14,7 +15,9 @@ import {
   SearchField
 } from '../../shared/ui/primitives'
 import { FormSheet } from '../../shared/ui/FormSheet'
-import { AppDateField } from '../../shared/ui/FormControls'
+import { AppDialog } from '../../shared/ui/AppDialog'
+import { AppDateField, AppSelect } from '../../shared/ui/FormControls'
+import { ModuleTabs } from '../../shared/ui/ModuleTabs'
 import { ActionMenu } from '../../shared/ui/ActionMenu'
 import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
 import { MobileCreateAction } from '../../shared/ui/MobileCreateAction'
@@ -32,9 +35,11 @@ import { HabitsReportsView } from './HabitsReportsView'
 export function HabitsScreen(): React.JSX.Element {
   const { habits: api } = useServices()
   const [date, setDate] = useState(localDateKey())
-  const [view, setView] = useState('today')
+  const [view, setView] = useState<'today' | 'all' | 'reports'>('today')
   const [query, setQuery] = useState('')
   const [group, setGroup] = useState<string | null | undefined>(undefined)
+  const [trackingFilter, setTrackingFilter] = useState<'all' | 'check' | 'count'>('all')
+  const [groupsOpen, setGroupsOpen] = useState(false)
   const [form, setForm] = useState<FormSpec | null>(null)
   const state = useCollection(
     useCallback(
@@ -125,6 +130,7 @@ export function HabitsScreen(): React.JSX.Element {
   const visible = (state.data?.habits ?? []).filter(
     (h) =>
       (view !== 'today' || isHabitScheduledOn(h, date)) &&
+      (view !== 'all' || trackingFilter === 'all' || h.trackingType === trackingFilter) &&
       (group === undefined || h.groupId === group) &&
       h.title.toLocaleLowerCase().includes(query.toLocaleLowerCase())
   )
@@ -138,105 +144,87 @@ export function HabitsScreen(): React.JSX.Element {
   return (
     <View style={{ flex: 1 }}>
       <View style={{ gap: 10, marginBottom: 12 }}>
-        <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-          {[
-            { id: 'today', label: 'День' },
-            { id: 'all', label: 'Все' },
-            { id: 'groups', label: 'Группы' }
-          ].map((v) => (
-            <Button
-              key={v.id}
-              label={v.label}
-              selected={view === v.id}
-              onPress={() => setView(v.id)}
+        <ModuleTabs
+          items={[
+            { id: 'today' as const, label: 'Сегодня', icon: CalendarDays },
+            { id: 'all' as const, label: 'Все привычки', icon: Target },
+            { id: 'reports' as const, label: 'Отчёты', icon: BarChart3 }
+          ]}
+          value={view}
+          onChange={setView}
+          compact
+        />
+
+        {view !== 'reports' ? <SearchField value={query} onChangeText={setQuery} /> : null}
+
+        {view === 'all' ? (
+          <AppSelect
+            label="Фильтр по типу отслеживания"
+            value={trackingFilter}
+            choices={[
+              { value: 'all', label: 'Все типы' },
+              { value: 'check', label: 'Простая отметка' },
+              { value: 'count', label: 'Количество / прогресс' }
+            ]}
+            onChange={(value) =>
+              setTrackingFilter(value === 'check' || value === 'count' ? value : 'all')
+            }
+          />
+        ) : null}
+
+        {view === 'today' ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <IconButton
+              label="Предыдущий день"
+              icon="back"
+              onPress={() => setDate(addDays(date, -1))}
             />
-          ))}
-          <Button label="Отчёт" selected={view === 'report'} onPress={() => setView('report')} />
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <IconButton
-            label="Предыдущий день"
-            icon="back"
-            onPress={() => setDate(addDays(date, -1))}
-          />
-          <View style={{ flex: 1 }}>
-            <AppDateField label="Дата привычек" value={date} onChangeText={setDate} />
+            <View style={{ flex: 1 }}>
+              <AppDateField label="Дата привычек" value={date} onChangeText={setDate} />
+            </View>
+            <IconButton
+              label="Следующий день"
+              icon="forward"
+              disabled={date >= localDateKey()}
+              onPress={() => {
+                const next = addDays(date, 1)
+                setDate(next > localDateKey() ? localDateKey() : next)
+              }}
+            />
+            <Button label="Сегодня" onPress={() => setDate(localDateKey())} />
           </View>
-          <IconButton
-            label="Следующий день"
-            icon="forward"
-            onPress={() => setDate(addDays(date, 1))}
-          />
-          <Button label="Сегодня" onPress={() => setDate(localDateKey())} />
-        </View>
-        {(view === 'today' || view === 'all') && (
-          <SearchField value={query} onChangeText={setQuery} />
-        )}
-        {group !== undefined && (
+        ) : null}
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 8, alignItems: 'center' }}
+        >
           <Button
-            label="Сбросить группу"
-            icon="reset"
-            compact
+            label="Все привычки"
+            selected={group === undefined}
             onPress={() => setGroup(undefined)}
           />
-        )}
+          <Button
+            label="Без группы"
+            selected={group === null}
+            onPress={() => setGroup(null)}
+          />
+          {(state.data?.groups ?? []).map((item) => (
+            <Button
+              key={item.id}
+              label={item.name}
+              selected={group === item.id}
+              onPress={() => setGroup(item.id)}
+            />
+          ))}
+          <Button label="Управление группами" icon="folder" onPress={() => setGroupsOpen(true)} />
+        </ScrollView>
       </View>
       {state.error && <ErrorState message={state.error} retry={state.refresh} />}
       {state.loading ? (
         <LoadingState />
-      ) : view === 'groups' ? (
-        <FlatList
-          data={state.data?.groups ?? []}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingBottom: 88 }}
-          ListHeaderComponent={
-            <Button
-              label="Без группы"
-              onPress={() => {
-                setGroup(null)
-                setView('all')
-              }}
-            />
-          }
-          ListEmptyComponent={<EmptyState />}
-          renderItem={({ item }) => (
-            <WorkspaceNodeCard
-              title={item.name}
-              leading={<VisualIconBadge value={item.icon} colorKey={item.color} />}
-              onPress={() => {
-                setGroup(item.id)
-                setView('all')
-              }}
-              action={
-                <ActionMenu
-                  title={item.name}
-                  items={[
-                    {
-                      label: 'Изменить группу',
-                      icon: 'edit',
-                      onPress: () => editGroup(item)
-                    },
-                    {
-                      label: 'Удалить группу',
-                      icon: 'delete',
-                      danger: true,
-                      onPress: () =>
-                        state.confirmDelete(
-                          'Удалить группу?',
-                          () => {
-                            api.deleteHabitGroup({ id: item.id })
-                            if (group === item.id) setGroup(undefined)
-                          },
-                          'Привычки сохранятся без группы.'
-                        )
-                    }
-                  ]}
-                />
-              }
-            />
-          )}
-        />
-      ) : view === 'report' ? (
+      ) : view === 'reports' ? (
         <HabitsReportsView api={api} groupId={group} scopeLabel={scopeLabel} />
       ) : (
         <FlatList
@@ -364,28 +352,111 @@ export function HabitsScreen(): React.JSX.Element {
           }}
         />
       )}
-      {view !== 'report' ? (
-        <MobileCreateAction
-          disabled={state.pending}
-          actions={[
-            view === 'groups'
-              ? {
-                  key: 'group',
-                  label: 'Новая группа привычек',
-                  description: 'Организовать привычки в отдельную группу',
-                  icon: 'folder',
-                  onPress: () => editGroup()
-                }
-              : {
-                  key: 'habit',
-                  label: 'Новая привычка',
-                  description: 'Создать привычку с расписанием и целью',
-                  icon: 'habits',
-                  onPress: () => edit()
-                }
-          ]}
-        />
-      ) : null}
+      <MobileCreateAction
+        disabled={state.pending}
+        actions={[
+          {
+            key: 'habit',
+            label: 'Новая привычка',
+            description: 'Создать привычку с расписанием и целью',
+            icon: 'habits',
+            onPress: () => edit()
+          },
+          {
+            key: 'group',
+            label: 'Новая группа',
+            description: 'Создать группу привычек',
+            icon: 'folder',
+            onPress: () => editGroup()
+          }
+        ]}
+      />
+      <AppDialog
+        open={groupsOpen}
+        onOpenChange={setGroupsOpen}
+        title="Группы"
+        description="Фильтр и управление группами привычек"
+        icon="folder"
+        presentation="sheet"
+      >
+        <ScrollView contentContainerStyle={{ padding: 12, paddingBottom: 24 }}>
+          <WorkspaceNodeCard
+            title="Все привычки"
+            subtitle={`${state.data?.habits.length ?? 0} привычек`}
+            leadingIcon="habits"
+            selected={group === undefined}
+            onPress={() => {
+              setGroup(undefined)
+              setGroupsOpen(false)
+            }}
+          />
+          <WorkspaceNodeCard
+            title="Без группы"
+            subtitle={`${(state.data?.habits ?? []).filter((item) => item.groupId === null).length} привычек`}
+            leadingIcon="folder"
+            selected={group === null}
+            onPress={() => {
+              setGroup(null)
+              setGroupsOpen(false)
+            }}
+          />
+          {(state.data?.groups ?? []).map((item) => (
+            <WorkspaceNodeCard
+              key={item.id}
+              title={item.name}
+              subtitle={`${(state.data?.habits ?? []).filter((habit) => habit.groupId === item.id).length} привычек`}
+              leading={<VisualIconBadge value={item.icon} colorKey={item.color} />}
+              selected={group === item.id}
+              onPress={() => {
+                setGroup(item.id)
+                setGroupsOpen(false)
+              }}
+              action={
+                <ActionMenu
+                  title={item.name}
+                  items={[
+                    {
+                      label: 'Изменить группу',
+                      icon: 'edit',
+                      onPress: () => {
+                        setGroupsOpen(false)
+                        editGroup(item)
+                      }
+                    },
+                    {
+                      label: 'Удалить группу',
+                      icon: 'delete',
+                      danger: true,
+                      onPress: () => {
+                        setGroupsOpen(false)
+                        state.confirmDelete(
+                          'Удалить группу?',
+                          () => {
+                            api.deleteHabitGroup({ id: item.id })
+                            if (group === item.id) setGroup(undefined)
+                          },
+                          'Привычки сохранятся без группы.'
+                        )
+                      }
+                    }
+                  ]}
+                />
+              }
+            />
+          ))}
+          <View style={{ marginTop: 8, alignItems: 'flex-start' }}>
+            <Button
+              label="Новая группа"
+              icon="add"
+              primary
+              onPress={() => {
+                setGroupsOpen(false)
+                editGroup()
+              }}
+            />
+          </View>
+        </ScrollView>
+      </AppDialog>
       {form && <FormSheet spec={form} close={() => setForm(null)} />}
     </View>
   )
