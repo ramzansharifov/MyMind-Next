@@ -7,13 +7,13 @@ import type {
   StudyInternalLinkTarget,
   StudyLocalAsset
 } from '@mymind/contracts/study'
-import { appearanceTokens, designTokens } from '@mymind/design'
-import BoardCanvasDom from '../../modules/boards/BoardCanvasDom'
+import { designTokens } from '@mymind/design'
 import { DocumentBoardReader, type OpenDocumentBoard } from './DocumentBoardBlock'
 import { AudioAssetPlayer } from './VoiceRecorder'
 import { Button, Label } from './primitives'
 import { DocumentRichTextViewer } from './NotesRichTextBlock'
 import { resolveStudyRichTextHtml } from './richTextHtml'
+import { StudySourceBlock } from './StudySourceBlock'
 import type { StudyRichTextInternalLink } from './studyRichText'
 import { useTheme } from './theme'
 
@@ -38,27 +38,6 @@ interface DocumentReaderProps {
 
 function alignment(value: 'left' | 'center' | 'right' | undefined): 'left' | 'center' | 'right' {
   return value ?? 'left'
-}
-
-function SourceSurface({ label, source }: { label: string; source: string }): React.JSX.Element {
-  const theme = useTheme()
-  return (
-    <View
-      style={{
-        gap: 8,
-        padding: 14,
-        borderRadius: designTokens.radius.lg,
-        borderWidth: 1,
-        borderColor: theme.border,
-        backgroundColor: theme.raised
-      }}
-    >
-      <Label muted>{label}</Label>
-      <Text selectable style={{ color: theme.text, fontFamily: 'monospace', lineHeight: 22 }}>
-        {source || '—'}
-      </Text>
-    </View>
-  )
 }
 
 function localAssetUri(
@@ -180,21 +159,6 @@ function ReadBlock({
   onOpenInternalLink?: (link: StudyRichTextInternalLink, sourceBlockId: string) => void
 }): React.JSX.Element {
   const theme = useTheme()
-  const colorScheme = theme.background === appearanceTokens.dark.background ? 'dark' : 'light'
-  const richProps = {
-    mode: 'rich' as const,
-    colorScheme,
-    textColor: theme.text,
-    mutedColor: theme.muted,
-    borderColor: theme.border,
-    surfaceColor: theme.raised,
-    accentColor: theme.accent,
-    dom: {
-      matchContents: true,
-      scrollEnabled: false,
-      style: { width: '100%' }
-    }
-  } as const
 
   switch (block.type) {
     case 'text':
@@ -226,29 +190,10 @@ function ReadBlock({
         </Text>
       )
     case 'code':
-      return <SourceSurface label={block.language || 'Код'} source={block.source} />
     case 'markdown':
-      return <BoardCanvasDom {...richProps} kind={'markdown' as const} source={block.source} />
     case 'latex':
-      return (
-        <BoardCanvasDom
-          {...richProps}
-          kind={'latex' as const}
-          latexDisplayMode={block.displayMode ?? 'display'}
-          latexAlignment={block.alignment ?? 'center'}
-          latexScale={block.scale ?? 1}
-          source={block.source}
-        />
-      )
     case 'mermaid':
-      return (
-        <BoardCanvasDom
-          {...richProps}
-          kind={'mermaid' as const}
-          mermaidTheme={block.theme ?? (colorScheme === 'dark' ? 'dark' : 'default')}
-          source={block.source}
-        />
-      )
+      return <StudySourceBlock block={block} editable={false} />
     case 'image':
     case 'video':
       if (block.source.type === 'url') {
