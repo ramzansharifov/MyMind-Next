@@ -1095,7 +1095,14 @@ function NotesReadBlock({
     case 'video':
     case 'audio':
     case 'file':
-      return <NotesReadAssetBlock block={block} assetActions={assetActions} />
+      return (
+        <StudyAttachmentBlock
+          block={block}
+          resolveAssetUri={assetActions.resolveAssetUri}
+          openAsset={assetActions.openAsset}
+          onError={assetActions.onAssetError}
+        />
+      )
     case 'divider':
       return <StudyDividerBlock block={block} spacing="read" />
     case 'board':
