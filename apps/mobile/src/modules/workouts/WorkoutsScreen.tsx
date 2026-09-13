@@ -24,6 +24,10 @@ import { WorkoutProgressView } from './WorkoutProgressView'
 import { WorkoutSessionSheet } from './WorkoutSessionSheet'
 import { WorkoutReportsView } from './WorkoutReportsView'
 import {
+  WorkoutMuscleMapSheet,
+  type WorkoutMuscleMapExercise
+} from './WorkoutMuscleMapSheet'
+import {
   filterWorkoutExercises,
   filterWorkoutPrograms,
   filterWorkoutSessions,
@@ -327,7 +331,21 @@ export function WorkoutsScreen(): React.JSX.Element {
                     api.deleteSession({ id: session.id })
                   )
                 }
-              />
+              >
+                <Button
+                  label="Карта мышц"
+                  onPress={() =>
+                    setMuscleMap({
+                      title: `Модель мышц · ${session.programName ?? session.date}`,
+                      description: 'Мышечные зоны, задействованные в этой тренировке.',
+                      exercises: session.exercises.map((exercise) => ({
+                        title: exercise.exerciseTitle,
+                        muscleGroups: exercise.muscleGroups
+                      }))
+                    })
+                  }
+                />
+              </Row>
             )
           }
           if (row.kind === 'exercise') {
@@ -358,7 +376,26 @@ export function WorkoutsScreen(): React.JSX.Element {
                   api.deleteProgram({ id: program.id })
                 )
               }
-            />
+            >
+              <Button
+                label="Карта мышц"
+                onPress={() =>
+                  setMuscleMap({
+                    title: `Карта мышц · ${program.name}`,
+                    description: 'Мышечные зоны, задействованные упражнениями программы.',
+                    exercises: program.exercises
+                      .map((item) => exerciseMap.get(item.exerciseId))
+                      .filter(
+                        (exercise): exercise is WorkoutExerciseRecord => exercise !== undefined
+                      )
+                      .map((exercise) => ({
+                        title: exercise.title,
+                        muscleGroups: exercise.muscleGroups
+                      }))
+                  })
+                }
+              />
+            </Row>
           )
         }}
       />
@@ -400,6 +437,14 @@ export function WorkoutsScreen(): React.JSX.Element {
             overview.refresh()
           }}
           close={() => setProgramEditor(null)}
+        />
+      ) : null}
+      {muscleMap ? (
+        <WorkoutMuscleMapSheet
+          title={muscleMap.title}
+          description={muscleMap.description}
+          exercises={muscleMap.exercises}
+          close={() => setMuscleMap(null)}
         />
       ) : null}
       {sessionEditor ? (
