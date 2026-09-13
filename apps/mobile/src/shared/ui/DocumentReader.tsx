@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { FlatList, Image, Linking, Pressable, Text, View } from 'react-native'
+import { FlatList, Linking, Pressable, Text, View } from 'react-native'
 import type {
   ResolveStudyInternalLinkTargetInput,
   StudyBlock,
@@ -11,11 +11,12 @@ import { designTokens } from '@mymind/design'
 import { ChevronRight } from 'lucide-react-native'
 import { DocumentBoardReader, type OpenDocumentBoard } from './DocumentBoardBlock'
 import { AudioAssetPlayer } from './VoiceRecorder'
-import { Button, Label } from './primitives'
+import { Label } from './primitives'
 import { DocumentRichTextViewer } from './NotesRichTextBlock'
 import { resolveStudyRichTextHtml } from './richTextHtml'
 import { StudySourceBlock } from './StudySourceBlock'
 import { StudyDividerBlock } from './StudyDividerBlock'
+import { StudyAttachmentBlock } from './StudyAttachmentBlock'
 import type { StudyRichTextInternalLink } from './studyRichText'
 import { useTheme } from './theme'
 
@@ -50,63 +51,6 @@ function headingTypography(level: 1 | 2 | 3): {
   if (level === 1) return { fontSize: 48, lineHeight: 50.4, letterSpacing: -1.68 }
   if (level === 2) return { fontSize: 36, lineHeight: 41.4, letterSpacing: -0.9 }
   return { fontSize: 30, lineHeight: 36, letterSpacing: -0.6 }
-}
-
-function localAssetUri(
-  block: Extract<StudyBlock, { type: 'image' | 'video' | 'audio' | 'file' }>,
-  resolveAssetUri?: (asset: StudyLocalAsset) => string | null
-): string | null {
-  if (block.source.type !== 'local' || !block.source.asset) return null
-  return resolveAssetUri?.(block.source.asset) ?? null
-}
-
-function LocalAttachment({
-  block,
-  resolveAssetUri,
-  openAsset,
-  onAssetError
-}: {
-  block: Extract<StudyBlock, { type: 'image' | 'video' | 'audio' | 'file' }>
-  resolveAssetUri?: (asset: StudyLocalAsset) => string | null
-  openAsset?: (asset: StudyLocalAsset) => Promise<void>
-  onAssetError?: (reason: unknown) => void
-}): React.JSX.Element {
-  const theme = useTheme()
-  if (block.source.type !== 'local') return <View />
-  const asset = block.source.asset
-  if (!asset) return <Label muted>Вложение ещё не выбрано.</Label>
-  const uri = localAssetUri(block, resolveAssetUri)
-
-  return (
-    <View style={{ gap: 10 }}>
-      {block.type === 'image' && uri ? (
-        <Image
-          accessibilityLabel={block.title || asset.name}
-          source={{ uri }}
-          resizeMode={block.imageFit ?? 'contain'}
-          style={{
-            width: '100%',
-            height: block.imageHeight ?? 360,
-            borderRadius: designTokens.radius.lg,
-            backgroundColor: theme.raised
-          }}
-        />
-      ) : null}
-      {block.type === 'audio' && uri ? <AudioAssetPlayer uri={uri} onError={onAssetError} /> : null}
-      {block.title ? <Label>{block.title}</Label> : null}
-      <Label muted>{asset.name}</Label>
-      {!uri ? <Label muted>Локальный файл не найден на этом устройстве.</Label> : null}
-      {openAsset ? (
-        <Button
-          label="Открыть / поделиться"
-          disabled={!uri}
-          onPress={() => {
-            void openAsset(asset).catch((reason: unknown) => onAssetError?.(reason))
-          }}
-        />
-      ) : null}
-    </View>
-  )
 }
 
 function RichTextBlock({
@@ -229,50 +173,14 @@ function ReadBlock({
       return <StudySourceBlock block={block} editable={false} />
     case 'image':
     case 'video':
-      if (block.source.type === 'url') {
-        if (block.type === 'image' && block.source.url) {
-          return (
-            <View style={{ gap: 8 }}>
-              <Image
-                accessibilityLabel={block.title || 'Изображение'}
-                source={{ uri: block.source.url }}
-                resizeMode={block.imageFit ?? 'contain'}
-                style={{
-                  width: '100%',
-                  height: block.imageHeight ?? 360,
-                  borderRadius: designTokens.radius.lg,
-                  backgroundColor: theme.raised
-                }}
-              />
-              {block.title ? <Label>{block.title}</Label> : null}
-            </View>
-          )
-        }
-        return (
-          <View style={{ gap: 6 }}>
-            {block.title ? <Label>{block.title}</Label> : null}
-            <Text selectable style={{ color: theme.accent }}>
-              {block.source.url}
-            </Text>
-          </View>
-        )
-      }
-      return (
-        <LocalAttachment
-          block={block}
-          resolveAssetUri={resolveAssetUri}
-          openAsset={openAsset}
-          onAssetError={onAssetError}
-        />
-      )
     case 'audio':
     case 'file':
       return (
-        <LocalAttachment
+        <StudyAttachmentBlock
           block={block}
           resolveAssetUri={resolveAssetUri}
           openAsset={openAsset}
-          onAssetError={onAssetError}
+          onError={onAssetError}
         />
       )
     case 'divider':
