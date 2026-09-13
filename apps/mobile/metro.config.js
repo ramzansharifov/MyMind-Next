@@ -6,6 +6,12 @@ const config = getDefaultConfig(__dirname)
 // expo-sqlite uses a WebAssembly worker on web. Metro must treat .wasm as an asset.
 if (!config.resolver.assetExts.includes('wasm')) config.resolver.assetExts.push('wasm')
 
+// Expo DOM bundles tldraw through Metro as well. Its local typefaces are .woff/.woff2 assets;
+// keeping them in the native bundle avoids runtime network font loads inside Android WebView.
+for (const extension of ['woff', 'woff2']) {
+  if (!config.resolver.assetExts.includes(extension)) config.resolver.assetExts.push(extension)
+}
+
 // SharedArrayBuffer is required by expo-sqlite's web worker.
 const enhanceMiddleware = config.server.enhanceMiddleware
 config.server.enhanceMiddleware = (middleware, metroServer) => {
