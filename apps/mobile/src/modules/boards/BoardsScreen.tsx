@@ -598,7 +598,7 @@ export function BoardsScreen({
                 title={item.title}
                 subtitle={
                   globalSearchActive
-                    ? `${boardNodeTypeLabel(item)} · ${boardNodeLocation(item, allNodes)}`
+                    ? `${boardNodeTypeLabel(item)} · ${boardNodeLocation(item, nodesById)}`
                     : item.type === 'folder' && itemManaged
                       ? 'Управляемая папка'
                       : boardNodeTypeLabel(item)
