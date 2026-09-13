@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react'
-import { FlatList, Image, Linking, Text, View } from 'react-native'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { FlatList, Image, Linking, Pressable, Text, View } from 'react-native'
 import type {
   ResolveStudyInternalLinkTargetInput,
   StudyBlock,
@@ -8,6 +8,7 @@ import type {
   StudyLocalAsset
 } from '@mymind/contracts/study'
 import { designTokens } from '@mymind/design'
+import { ChevronRight } from 'lucide-react-native'
 import { DocumentBoardReader, type OpenDocumentBoard } from './DocumentBoardBlock'
 import { AudioAssetPlayer } from './VoiceRecorder'
 import { Button, Label } from './primitives'
@@ -281,6 +282,121 @@ function ReadBlock({
   }
 }
 
+type ReaderNode =
+  | { kind: 'block'; block: StudyBlock }
+  | {
+      kind: 'section'
+      heading: Extract<StudyBlock, { type: 'heading' }>
+      children: ReaderNode[]
+    }
+
+interface VisibleReaderItem {
+  block: StudyBlock
+  depth: number
+  section: boolean
+  hasChildren: boolean
+}
+
+function buildReaderOutline(blocks: StudyBlock[]): ReaderNode[] {
+  const root: ReaderNode[] = []
+  const stack: Array<Extract<ReaderNode, { kind: 'section' }>> = []
+
+  const closeSections = (nextLevel?: 1 | 2 | 3): void => {
+    while (stack.length > 0) {
+      const section = stack[stack.length - 1]
+      if (!section || (nextLevel !== undefined && section.heading.level < nextLevel)) return
+
+      const trailing = section.children[section.children.length - 1]
+      if (trailing?.kind === 'block' && trailing.block.type === 'divider') {
+        section.children.pop()
+        const parent = stack[stack.length - 2]
+        if (parent) parent.children.push(trailing)
+        else root.push(trailing)
+      }
+
+      stack.pop()
+    }
+  }
+
+  blocks.forEach((block) => {
+    if (block.type === 'heading') {
+      const section: Extract<ReaderNode, { kind: 'section' }> = {
+        kind: 'section',
+        heading: block,
+        children: []
+      }
+
+      closeSections(block.level)
+      const parent = stack[stack.length - 1]
+      if (parent) parent.children.push(section)
+      else root.push(section)
+      stack.push(section)
+      return
+    }
+
+    const node: ReaderNode = { kind: 'block', block }
+    const parent = stack[stack.length - 1]
+    if (parent) parent.children.push(node)
+    else root.push(node)
+  })
+
+  closeSections()
+  return root
+}
+
+function flattenReaderOutline(
+  nodes: ReaderNode[],
+  collapsedHeadingIds: ReadonlySet<string>,
+  depth = 0
+): VisibleReaderItem[] {
+  const visible: VisibleReaderItem[] = []
+
+  nodes.forEach((node) => {
+    if (node.kind === 'block') {
+      visible.push({
+        block: node.block,
+        depth,
+        section: false,
+        hasChildren: false
+      })
+      return
+    }
+
+    visible.push({
+      block: node.heading,
+      depth,
+      section: true,
+      hasChildren: node.children.length > 0
+    })
+
+    if (!collapsedHeadingIds.has(node.heading.id)) {
+      visible.push(...flattenReaderOutline(node.children, collapsedHeadingIds, depth + 1))
+    }
+  })
+
+  return visible
+}
+
+function findReaderAncestors(
+  nodes: ReaderNode[],
+  blockId: string,
+  ancestors: string[] = []
+): string[] | null {
+  for (const node of nodes) {
+    if (node.kind === 'block') {
+      if (node.block.id === blockId) return ancestors
+      continue
+    }
+
+    if (node.heading.id === blockId) return ancestors
+
+    const nested = findReaderAncestors(node.children, blockId, [...ancestors, node.heading.id])
+    if (nested) return nested
+  }
+
+  return null
+}
+
 export function DocumentReader({
   document,
   resolveAssetUri,
@@ -292,27 +408,80 @@ export function DocumentReader({
   reveal,
   header
 }: DocumentReaderProps): React.JSX.Element {
-  const listRef = useRef<FlatList<StudyBlock>>(null)
+  const theme = useTheme()
+  const listRef = useRef<FlatList<VisibleReaderItem>>(null)
+  const [collapsedHeadingIds, setCollapsedHeadingIds] = useState<Set<string>>(() => new Set())
+  const [pendingReveal, setPendingReveal] = useState<DocumentRevealRequest | null>(null)
+
+  const outline = useMemo(() => buildReaderOutline(document.blocks), [document.blocks])
+  const visibleItems = useMemo(
+    () => flattenReaderOutline(outline, collapsedHeadingIds),
+    [collapsedHeadingIds, outline]
+  )
 
   useEffect(() => {
-    if (!reveal) return undefined
+    setCollapsedHeadingIds((current) => {
+      const headingIds = new Set(
+        document.blocks.filter((block) => block.type === 'heading').map((block) => block.id)
+      )
+      const next = new Set([...current].filter((id) => headingIds.has(id)))
+      return next.size === current.size ? current : next
+    })
+  }, [document.blocks])
+
+  useEffect(() => {
+    if (!reveal) return
+
+    if (reveal.blockId === null) {
+      setPendingReveal(reveal)
+      return
+    }
+
+    const ancestors = findReaderAncestors(outline, reveal.blockId)
+    if (!ancestors) return
+
+    setCollapsedHeadingIds((current) => {
+      if (!ancestors.some((id) => current.has(id))) return current
+      const next = new Set(current)
+      ancestors.forEach((id) => next.delete(id))
+      return next
+    })
+    setPendingReveal(reveal)
+  }, [outline, reveal])
+
+  useEffect(() => {
+    if (!pendingReveal) return undefined
+
     const frame = requestAnimationFrame(() => {
-      if (reveal.blockId === null) {
+      if (pendingReveal.blockId === null) {
         listRef.current?.scrollToOffset({ offset: 0, animated: true })
+        setPendingReveal(null)
         return
       }
-      const index = document.blocks.findIndex((block) => block.id === reveal.blockId)
+
+      const index = visibleItems.findIndex((item) => item.block.id === pendingReveal.blockId)
       if (index < 0) return
       listRef.current?.scrollToIndex({ index, viewOffset: 24, animated: true })
+      setPendingReveal(null)
     })
+
     return () => cancelAnimationFrame(frame)
-  }, [document.blocks, reveal])
+  }, [pendingReveal, visibleItems])
+
+  const toggleHeading = (headingId: string): void => {
+    setCollapsedHeadingIds((current) => {
+      const next = new Set(current)
+      if (next.has(headingId)) next.delete(headingId)
+      else next.add(headingId)
+      return next
+    })
+  }
 
   return (
     <FlatList
       ref={listRef}
-      data={document.blocks}
-      keyExtractor={(block) => block.id}
+      data={visibleItems}
+      keyExtractor={(item) => item.block.id}
       contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 64 }}
       ListHeaderComponent={header ?? null}
       ListEmptyComponent={
@@ -329,19 +498,84 @@ export function DocumentReader({
           listRef.current?.scrollToIndex({ index, viewOffset: 24, animated: true })
         }, 120)
       }}
-      renderItem={({ item }) => (
-        <View style={{ marginBottom: 20 }}>
-          <ReadBlock
-            block={item}
-            resolveAssetUri={resolveAssetUri}
-            openAsset={openAsset}
-            onAssetError={onAssetError}
-            openBoard={openBoard}
-            resolveInternalLinkTarget={resolveInternalLinkTarget}
-            onOpenInternalLink={onOpenInternalLink}
-          />
-        </View>
-      )}
+      renderItem={({ item }) => {
+        const collapsed = item.section && collapsedHeadingIds.has(item.block.id)
+        const sectionTitle =
+          item.block.type === 'heading' ? item.block.text || 'Без заголовка' : 'Раздел'
+
+        return (
+          <View
+            style={{
+              marginBottom: item.section ? 12 : 20,
+              marginLeft: item.depth > 0 ? Math.min(item.depth, 3) * 14 : 0,
+              paddingLeft: item.depth > 0 ? 12 : 0,
+              borderLeftWidth: item.depth > 0 ? 1 : 0,
+              borderLeftColor: theme.border
+            }}
+          >
+            {item.section ? (
+              <Pressable
+                accessibilityRole={item.hasChildren ? 'button' : undefined}
+                accessibilityLabel={
+                  item.hasChildren
+                    ? `${collapsed ? 'Развернуть' : 'Свернуть'} раздел «${sectionTitle}»`
+                    : undefined
+                }
+                disabled={!item.hasChildren}
+                onPress={() => toggleHeading(item.block.id)}
+                style={({ pressed }) => ({
+                  flexDirection: 'row',
+                  alignItems: 'flex-start',
+                  gap: 4,
+                  paddingVertical: 2,
+                  paddingRight: 4,
+                  borderRadius: 12,
+                  opacity: pressed ? 0.72 : 1
+                })}
+              >
+                <View
+                  style={{
+                    width: 20,
+                    minHeight: 28,
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <ChevronRight
+                    size={16}
+                    color={theme.muted}
+                    style={{
+                      opacity: item.hasChildren ? 1 : 0,
+                      transform: [{ rotate: collapsed ? '0deg' : '90deg' }]
+                    }}
+                  />
+                </View>
+                <View style={{ minWidth: 0, flex: 1 }}>
+                  <ReadBlock
+                    block={item.block}
+                    resolveAssetUri={resolveAssetUri}
+                    openAsset={openAsset}
+                    onAssetError={onAssetError}
+                    openBoard={openBoard}
+                    resolveInternalLinkTarget={resolveInternalLinkTarget}
+                    onOpenInternalLink={onOpenInternalLink}
+                  />
+                </View>
+              </Pressable>
+            ) : (
+              <ReadBlock
+                block={item.block}
+                resolveAssetUri={resolveAssetUri}
+                openAsset={openAsset}
+                onAssetError={onAssetError}
+                openBoard={openBoard}
+                resolveInternalLinkTarget={resolveInternalLinkTarget}
+                onOpenInternalLink={onOpenInternalLink}
+              />
+            )}
+          </View>
+        )
+      }}
     />
   )
 }
