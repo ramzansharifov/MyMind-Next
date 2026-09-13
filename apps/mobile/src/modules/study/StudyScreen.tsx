@@ -88,7 +88,7 @@ function folderLabel(folder: StudyNode, nodes: StudyNode[]): string {
   let parentId = folder.parentId
   while (parentId && !seen.has(parentId)) {
     seen.add(parentId)
-    const parent = nodesById.get(parentId)
+    const parent = byId.get(parentId)
     if (!parent) break
     path.unshift(parent.title)
     parentId = parent.parentId
@@ -102,7 +102,7 @@ function studyNodeLocation(node: StudyNode, nodesById: Map<string, StudyNode>): 
   let parentId = node.parentId
   while (parentId && !seen.has(parentId)) {
     seen.add(parentId)
-    const parent = byId.get(parentId)
+    const parent = nodesById.get(parentId)
     if (!parent) break
     path.unshift(parent.title)
     parentId = parent.parentId
