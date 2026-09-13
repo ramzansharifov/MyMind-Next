@@ -94,13 +94,19 @@ const boardTopics: InstructionTopic[] = [
   }
 ]
 
-function InstructionTopicCard({ topic }: { topic: InstructionTopic }): React.JSX.Element {
+function InstructionTopicCard({
+  topic,
+  last
+}: {
+  topic: InstructionTopic
+  last: boolean
+}): React.JSX.Element {
   const theme = useTheme()
   return (
     <View
       style={{
         paddingVertical: 14,
-        borderBottomWidth: 1,
+        borderBottomWidth: last ? 0 : 1,
         borderBottomColor: theme.border
       }}
     >
@@ -139,9 +145,11 @@ function InstructionGroup({
     <WorkspacePanel title={title} description={description} icon={icon}>
       <View>
         {topics.map((topic, index) => (
-          <View key={topic.title} style={index === topics.length - 1 ? { marginBottom: -14 } : undefined}>
-            <InstructionTopicCard topic={topic} />
-          </View>
+          <InstructionTopicCard
+            key={topic.title}
+            topic={topic}
+            last={index === topics.length - 1}
+          />
         ))}
       </View>
     </WorkspacePanel>
