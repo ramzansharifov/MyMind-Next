@@ -574,18 +574,18 @@ export default function NotesRichTextDom({
     <>
       <DomViewportMeta />
       <main
-      className="notes-rich-root"
-      style={
-        {
-          '--text': textColor,
-          '--muted': mutedColor,
-          '--border': borderColor,
-          '--surface': surfaceColor,
-          '--accent': accentColor
-        } as React.CSSProperties
-      }
-    >
-      <div ref={mountRef} />
+        className="notes-rich-root"
+        style={
+          {
+            '--text': textColor,
+            '--muted': mutedColor,
+            '--border': borderColor,
+            '--surface': surfaceColor,
+            '--accent': accentColor
+          } as React.CSSProperties
+        }
+      >
+        <div ref={mountRef} />
         <style>{styles}</style>
       </main>
     </>
