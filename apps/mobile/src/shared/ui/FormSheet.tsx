@@ -9,10 +9,11 @@ import { useToast } from './ToastProvider'
 import { notifyDataChanged } from '../../app/changes'
 import { PreferredTimes } from './PreferredTimes'
 import { AppColorGrid, AppIconGrid, VisualGroupPreview } from './VisualPickers'
+import { ReminderOffsetsEditor } from './ReminderOffsetsEditor'
 
 function presentationFor(spec: FormSpec): AppDialogPresentation {
   const complex = spec.fields.some((field) =>
-    ['multiline', 'times', 'multiple', 'icon', 'color'].includes(field.kind ?? 'text')
+    ['multiline', 'times', 'reminders', 'multiple', 'icon', 'color'].includes(field.kind ?? 'text')
   )
   return spec.fields.length <= 4 && !complex ? 'card' : 'sheet'
 }
@@ -114,7 +115,13 @@ export function FormSheet({ spec, close }: { spec: FormSpec; close(): void }): R
           <View key={field.key} style={{ gap: 8 }}>
             <Label>{field.label}</Label>
             {field.hint ? <Label muted>{field.hint}</Label> : null}
-            {field.kind === 'times' ? (
+            {field.kind === 'reminders' ? (
+              <ReminderOffsetsEditor
+                value={values[field.key]}
+                onChange={(value) => set(field.key, value)}
+                disabled={pending}
+              />
+            ) : field.kind === 'times' ? (
               <PreferredTimes
                 value={values[field.key]}
                 onChange={(value) => set(field.key, value)}
