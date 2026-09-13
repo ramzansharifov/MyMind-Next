@@ -88,7 +88,7 @@ function folderLabel(folder: StudyNode, nodes: StudyNode[]): string {
   let parentId = folder.parentId
   while (parentId && !seen.has(parentId)) {
     seen.add(parentId)
-    const parent = byId.get(parentId)
+    const parent = nodesById.get(parentId)
     if (!parent) break
     path.unshift(parent.title)
     parentId = parent.parentId
@@ -96,8 +96,7 @@ function folderLabel(folder: StudyNode, nodes: StudyNode[]): string {
   return path.join(' / ')
 }
 
-function studyNodeLocation(node: StudyNode, nodes: StudyNode[]): string {
-  const byId = new Map(nodes.map((item) => [item.id, item]))
+function studyNodeLocation(node: StudyNode, nodesById: Map<string, StudyNode>): string {
   const path: string[] = []
   const seen = new Set<string>()
   let parentId = node.parentId
@@ -153,6 +152,7 @@ export function StudyScreen({
   const revealSequenceRef = useRef(0)
 
   const allNodes = useMemo(() => nodes.data ?? [], [nodes.data])
+  const nodesById = useMemo(() => new Map(allNodes.map((node) => [node.id, node])), [allNodes])
   const effectiveFolderId =
     folderId && allNodes.some((node) => node.id === folderId) ? folderId : null
   const currentFolder = effectiveFolderId
@@ -890,7 +890,7 @@ export function StudyScreen({
   const children = globalSearchActive
     ? [...allNodes]
         .filter((node) =>
-          `${node.title} ${studyNodeLocation(node, allNodes)}`
+          `${node.title} ${studyNodeLocation(node, nodesById)}`
             .toLocaleLowerCase('ru-RU')
             .includes(normalizedQuery)
         )
@@ -986,7 +986,7 @@ export function StudyScreen({
                           <WorkspaceNodeCard
                             key={`recent:${item.id}`}
                             title={item.title}
-                            subtitle={studyNodeLocation(item, allNodes)}
+                            subtitle={studyNodeLocation(item, nodesById)}
                             leadingIcon="study"
                             onPress={() => openMaterial(item.id)}
                           />
@@ -1009,7 +1009,7 @@ export function StudyScreen({
               title={item.title}
               subtitle={
                 globalSearchActive
-                  ? `${item.type === 'folder' ? 'Папка' : 'Материал'} · ${studyNodeLocation(item, allNodes)}`
+                  ? `${item.type === 'folder' ? 'Папка' : 'Материал'} · ${studyNodeLocation(item, nodesById)}`
                   : item.type === 'folder'
                     ? 'Папка'
                     : 'Материал'
