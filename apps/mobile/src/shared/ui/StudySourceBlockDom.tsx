@@ -17,7 +17,6 @@ import 'prismjs/components/prism-java'
 import 'prismjs/components/prism-markdown'
 import 'prismjs/components/prism-latex'
 import katex from 'katex'
-import 'katex/dist/katex.min.css'
 import mermaid from 'mermaid'
 import ReactMarkdown, { type Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -282,7 +281,7 @@ function LatexPreview({
           throwOnError: true,
           strict: 'warn',
           trust: false,
-          output: 'htmlAndMathml'
+          output: 'mathml'
         }),
         error: ''
       }
@@ -726,7 +725,15 @@ const styles = `
     overflow-x: auto;
     color: var(--text);
   }
-  .latex-preview .katex { color: var(--text); }
+  .latex-preview math {
+    color: var(--text);
+    font-size: 1em;
+  }
+  .latex-preview math[display="block"] {
+    display: block;
+    margin: 0;
+    text-align: inherit;
+  }
   .mermaid-preview {
     width: 100%;
     min-height: 100px;
