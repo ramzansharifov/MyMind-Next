@@ -7,15 +7,17 @@ const mobileRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '.
 const boardPath = path.join(mobileRoot, 'src', 'modules', 'boards', 'BoardCanvasDom.tsx')
 const sourcePath = path.join(mobileRoot, 'src', 'shared', 'ui', 'StudySourceBlockDom.tsx')
 const viewportPath = path.join(mobileRoot, 'src', 'shared', 'ui', 'DomViewportMeta.tsx')
+const domAssetPath = path.join(mobileRoot, 'src', 'shared', 'platform', 'domAssetUrl.ts')
 const richTextPath = path.join(mobileRoot, 'src', 'shared', 'ui', 'NotesRichTextDom.tsx')
 const richContentPath = path.join(mobileRoot, 'src', 'shared', 'ui', 'RichContentDom.tsx')
 const youtubePath = path.join(mobileRoot, 'src', 'shared', 'ui', 'StudyYouTubeDom.tsx')
 const metroPath = path.join(mobileRoot, 'metro.config.js')
 
-const [board, source, viewport, richText, richContent, youtube, metro] = await Promise.all([
+const [board, source, viewport, domAsset, richText, richContent, youtube, metro] = await Promise.all([
   readFile(boardPath, 'utf8'),
   readFile(sourcePath, 'utf8'),
   readFile(viewportPath, 'utf8'),
+  readFile(domAssetPath, 'utf8'),
   readFile(richTextPath, 'utf8'),
   readFile(richContentPath, 'utf8'),
   readFile(youtubePath, 'utf8'),
@@ -38,9 +40,9 @@ assert.match(
   'BoardCanvasDom must normalize Metro asset modules before handing URLs to tldraw'
 )
 assert.match(
-  board,
+  domAsset,
   /data:application\/json/,
-  'BoardCanvasDom must convert bundled translation JSON modules to fetchable data URLs'
+  'The shared DOM asset normalizer must convert bundled translation JSON modules to fetchable data URLs'
 )
 assert.match(
   viewport,
