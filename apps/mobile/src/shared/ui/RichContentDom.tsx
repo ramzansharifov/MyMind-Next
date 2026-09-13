@@ -3,6 +3,7 @@ import mermaid from 'mermaid'
 import { useEffect, useMemo, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { DomViewportMeta } from './DomViewportMeta'
 
 export type RichContentKind = 'html' | 'markdown' | 'latex' | 'mermaid'
 
@@ -205,46 +206,49 @@ export default function RichContentDom({
   }
 
   return (
-    <main
-      className={`rich-root ${colorScheme}`}
-      onClick={openExternalTarget}
-      style={
-        {
-          '--text': textColor,
-          '--muted': mutedColor,
-          '--border': borderColor,
-          '--surface': surfaceColor,
-          '--accent': accentColor
-        } as React.CSSProperties
-      }
-    >
-      {kind === 'html' ? (
-        <HtmlContent
-          source={source}
-          onOpenInternalLink={onOpenInternalLink}
-          onOpenExternalLink={onOpenExternalLink}
-        />
-      ) : kind === 'markdown' ? (
-        <article className="markdown-content">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{source}</ReactMarkdown>
-        </article>
-      ) : kind === 'latex' ? (
-        <LatexContent
-          source={source}
-          displayMode={latexDisplayMode}
-          alignment={latexAlignment}
-          scale={latexScale}
-        />
-      ) : (
-        <MermaidContent
-          source={source}
-          theme={mermaidTheme}
-          colorScheme={colorScheme}
-          scale={mermaidScale}
-        />
-      )}
-      <style>{styles}</style>
-    </main>
+    <>
+      <DomViewportMeta />
+      <main
+        className={`rich-root ${colorScheme}`}
+        onClick={openExternalTarget}
+        style={
+          {
+            '--text': textColor,
+            '--muted': mutedColor,
+            '--border': borderColor,
+            '--surface': surfaceColor,
+            '--accent': accentColor
+          } as React.CSSProperties
+        }
+      >
+        {kind === 'html' ? (
+          <HtmlContent
+            source={source}
+            onOpenInternalLink={onOpenInternalLink}
+            onOpenExternalLink={onOpenExternalLink}
+          />
+        ) : kind === 'markdown' ? (
+          <article className="markdown-content">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{source}</ReactMarkdown>
+          </article>
+        ) : kind === 'latex' ? (
+          <LatexContent
+            source={source}
+            displayMode={latexDisplayMode}
+            alignment={latexAlignment}
+            scale={latexScale}
+          />
+        ) : (
+          <MermaidContent
+            source={source}
+            theme={mermaidTheme}
+            colorScheme={colorScheme}
+            scale={mermaidScale}
+          />
+        )}
+        <style>{styles}</style>
+      </main>
+    </>
   )
 }
 
