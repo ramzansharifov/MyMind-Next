@@ -1,6 +1,6 @@
 'use dom'
 
-import { getAssetUrlsByMetaUrl } from '@tldraw/assets/urls'
+import { getAssetUrlsByImport } from '@tldraw/assets/imports'
 import { useDOMImperativeHandle, type DOMImperativeFactory } from 'expo/dom'
 import { useCallback, useEffect, useRef, useState, type Ref } from 'react'
 import {
@@ -19,7 +19,7 @@ import type { BoardSnapshot } from '@mymind/contracts/boards'
 import { BoardSaveQueue, type BoardSaveState } from '@mymind/core/board-save-queue'
 import RichContentDom, { type RichContentDomProps } from '../../shared/ui/RichContentDom'
 
-const assetUrls = getAssetUrlsByMetaUrl()
+const assetUrls = getAssetUrlsByImport((assetUrl) => assetUrl)
 const AUTOSAVE_DELAY_MS = 800
 
 export interface BoardCanvasDomRef extends DOMImperativeFactory {
