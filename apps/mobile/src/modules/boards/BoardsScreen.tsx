@@ -89,7 +89,7 @@ function folderLabel(folder: BoardNode, nodes: BoardNode[]): string {
   let parentId = folder.parentId
   while (parentId && !visited.has(parentId)) {
     visited.add(parentId)
-    const parent = byId.get(parentId)
+    const parent = nodesById.get(parentId)
     if (!parent) break
     path.unshift(parent.title)
     parentId = parent.parentId
@@ -97,8 +97,7 @@ function folderLabel(folder: BoardNode, nodes: BoardNode[]): string {
   return path.join(' / ')
 }
 
-function boardNodeLocation(node: BoardNode, nodes: BoardNode[]): string {
-  const byId = new Map(nodes.map((item) => [item.id, item]))
+function boardNodeLocation(node: BoardNode, nodesById: Map<string, BoardNode>): string {
   const path: string[] = []
   const visited = new Set<string>()
   let parentId = node.parentId
@@ -145,6 +144,7 @@ export function BoardsScreen({
   const canvasColorScheme = theme.background === appearanceTokens.dark.background ? 'dark' : 'light'
 
   const allNodes = useMemo(() => nodes.data ?? [], [nodes.data])
+  const nodesById = useMemo(() => new Map(allNodes.map((node) => [node.id, node])), [allNodes])
   const managed = useMemo(() => managedNodeIds(allNodes), [allNodes])
   const currentFolder = folderId ? (allNodes.find((node) => node.id === folderId) ?? null) : null
   const effectiveFolderId = folderId && currentFolder ? folderId : null
@@ -474,7 +474,7 @@ export function BoardsScreen({
   const children = globalSearchActive
     ? [...allNodes]
         .filter((node) =>
-          `${node.title} ${boardNodeTypeLabel(node)} ${boardNodeLocation(node, allNodes)}`
+          `${node.title} ${boardNodeTypeLabel(node)} ${boardNodeLocation(node, nodesById)}`
             .toLocaleLowerCase('ru-RU')
             .includes(normalizedQuery)
         )
@@ -571,7 +571,7 @@ export function BoardsScreen({
                           <WorkspaceNodeCard
                             key={`recent:${item.id}`}
                             title={item.title}
-                            subtitle={`${boardNodeTypeLabel(item)} · ${boardNodeLocation(item, allNodes)}`}
+                            subtitle={`${boardNodeTypeLabel(item)} · ${boardNodeLocation(item, nodesById)}`}
                             leadingIcon="boards"
                             onPress={() => openBoard(item)}
                           />
