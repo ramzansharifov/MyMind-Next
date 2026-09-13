@@ -6,11 +6,19 @@ import path from 'node:path'
 const mobileRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const boardPath = path.join(mobileRoot, 'src', 'modules', 'boards', 'BoardCanvasDom.tsx')
 const sourcePath = path.join(mobileRoot, 'src', 'shared', 'ui', 'StudySourceBlockDom.tsx')
+const viewportPath = path.join(mobileRoot, 'src', 'shared', 'ui', 'DomViewportMeta.tsx')
+const richTextPath = path.join(mobileRoot, 'src', 'shared', 'ui', 'NotesRichTextDom.tsx')
+const richContentPath = path.join(mobileRoot, 'src', 'shared', 'ui', 'RichContentDom.tsx')
+const youtubePath = path.join(mobileRoot, 'src', 'shared', 'ui', 'StudyYouTubeDom.tsx')
 const metroPath = path.join(mobileRoot, 'metro.config.js')
 
-const [board, source, metro] = await Promise.all([
+const [board, source, viewport, richText, richContent, youtube, metro] = await Promise.all([
   readFile(boardPath, 'utf8'),
   readFile(sourcePath, 'utf8'),
+  readFile(viewportPath, 'utf8'),
+  readFile(richTextPath, 'utf8'),
+  readFile(richContentPath, 'utf8'),
+  readFile(youtubePath, 'utf8'),
   readFile(metroPath, 'utf8')
 ])
 
@@ -35,15 +43,24 @@ assert.match(
   'BoardCanvasDom must convert bundled translation JSON modules to fetchable data URLs'
 )
 assert.match(
-  board,
+  viewport,
   /name=["']viewport["']/,
-  'BoardCanvasDom must provide the mobile viewport metadata required by tldraw'
+  'Expo DOM surfaces must provide the mobile viewport metadata required by embedded web UI'
 )
 assert.match(
-  board,
-  /viewport-fit=cover/,
-  'BoardCanvasDom viewport must allow tldraw to position controls against mobile safe areas'
+  viewport,
+  /width=device-width, initial-scale=1, viewport-fit=cover/,
+  'Expo DOM viewport must use the device width and mobile safe areas'
 )
+for (const [name, contents] of [
+  ['BoardCanvasDom', board],
+  ['NotesRichTextDom', richText],
+  ['RichContentDom', richContent],
+  ['StudySourceBlockDom', source],
+  ['StudyYouTubeDom', youtube]
+]) {
+  assert.match(contents, /DomViewportMeta/, `${name} must use the shared mobile DOM viewport`)
+}
 assert.match(
   board,
   /locale=["']ru["']/,
