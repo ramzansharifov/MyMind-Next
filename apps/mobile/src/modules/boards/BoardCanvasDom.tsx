@@ -32,22 +32,10 @@ import type { BoardSnapshot } from '@mymind/contracts/boards'
 import { BoardSaveQueue, type BoardSaveState } from '@mymind/core/board-save-queue'
 import RichContentDom, { type RichContentDomProps } from '../../shared/ui/RichContentDom'
 import { DomViewportMeta } from '../../shared/ui/DomViewportMeta'
-
-function normalizeBundledAssetUrl(asset: unknown): string {
-  if (typeof asset === 'string') return asset
-
-  if (asset && typeof asset === 'object') {
-    if ('uri' in asset && typeof asset.uri === 'string') return asset.uri
-    if ('default' in asset) return normalizeBundledAssetUrl(asset.default)
-
-    return `data:application/json;charset=utf-8,${encodeURIComponent(JSON.stringify(asset))}`
-  }
-
-  return String(asset ?? '')
-}
+import { normalizeBundledDomAssetUrl } from '../../shared/platform/domAssetUrl'
 
 const assetUrls = getAssetUrlsByImport((assetUrl) =>
-  normalizeBundledAssetUrl(assetUrl as unknown)
+  normalizeBundledDomAssetUrl(assetUrl as unknown)
 )
 const AUTOSAVE_DELAY_MS = 800
 
