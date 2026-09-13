@@ -1,5 +1,7 @@
 'use dom'
 
+import { DomViewportMeta } from './DomViewportMeta'
+
 export default function StudyYouTubeDom({
   embedUrl,
   title,
@@ -10,7 +12,9 @@ export default function StudyYouTubeDom({
   dom?: import('expo/dom').DOMProps
 }): React.JSX.Element {
   return (
-    <main>
+    <>
+      <DomViewportMeta />
+      <main>
       <iframe
         src={embedUrl}
         title={title}
@@ -37,7 +41,8 @@ export default function StudyYouTubeDom({
           border: 0;
           background: #000;
         }
-      `}</style>
-    </main>
+        `}</style>
+      </main>
+    </>
   )
 }
