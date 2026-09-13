@@ -2,17 +2,30 @@
 
 import { getAssetUrlsByImport } from '@tldraw/assets/imports'
 import { useDOMImperativeHandle, type DOMImperativeFactory } from 'expo/dom'
-import { useCallback, useEffect, useRef, useState, type Ref } from 'react'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type Ref
+} from 'react'
 import {
   createTLStore,
+  DefaultQuickActions,
+  DefaultQuickActionsContent,
   defaultAssetUtils,
   defaultBindingUtils,
   defaultShapeUtils,
   getSnapshot,
   react,
   Tldraw,
+  TldrawUiButton,
   type TLEditorSnapshot,
-  type TLStore
+  type TLStore,
+  type TLUiComponents,
+  type TLUiQuickActionsProps
 } from 'tldraw'
 import 'tldraw/tldraw.css'
 import type { BoardSnapshot } from '@mymind/contracts/boards'
@@ -32,6 +45,8 @@ interface BoardSurfaceProps {
   mode?: 'board'
   snapshot: BoardSnapshot | null
   colorScheme: 'light' | 'dark'
+  focusMode?: boolean
+  onFocusModeChange?: (active: boolean) => Promise<void>
   saveSnapshot: (snapshot: BoardSnapshot) => Promise<void>
   onSaveState: (state: BoardSaveState) => Promise<void>
   onError: (message: string) => Promise<void>
@@ -46,6 +61,43 @@ type BoardCanvasDomProps = BoardSurfaceProps | RichSurfaceProps
 interface StoreState {
   store: TLStore | null
   error: string | null
+}
+
+interface BoardCanvasUiContextValue {
+  focusMode: boolean
+  toggleFocusMode(): void
+}
+
+const BoardCanvasUiContext = createContext<BoardCanvasUiContextValue | null>(null)
+
+const boardCanvasComponents: TLUiComponents = {
+  QuickActions: BoardCanvasQuickActions
+}
+
+function BoardCanvasQuickActions(props: TLUiQuickActionsProps): React.JSX.Element {
+  const controls = useContext(BoardCanvasUiContext)
+
+  return (
+    <DefaultQuickActions {...props}>
+      <DefaultQuickActionsContent />
+      {controls ? (
+        <TldrawUiButton
+          type="icon"
+          aria-label={controls.focusMode ? 'Выйти из полноэкранного режима' : 'Развернуть доску на весь экран'}
+          aria-pressed={controls.focusMode}
+          onClick={controls.toggleFocusMode}
+        >
+          <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            {controls.focusMode ? (
+              <path d="M8 3v5H3M16 3v5h5M8 21v-5H3M16 21v-5h5" />
+            ) : (
+              <path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5" />
+            )}
+          </svg>
+        </TldrawUiButton>
+      ) : null}
+    </DefaultQuickActions>
+  )
 }
 
 function messageFor(reason: unknown): string {
@@ -76,6 +128,8 @@ function BoardSurface({
   ref,
   snapshot,
   colorScheme,
+  focusMode = false,
+  onFocusModeChange,
   saveSnapshot,
   onSaveState,
   onError
@@ -157,15 +211,25 @@ function BoardSurface({
     )
   }
 
+  const controls: BoardCanvasUiContextValue = {
+    focusMode,
+    toggleFocusMode: () => {
+      void onFocusModeChange?.(!focusMode)
+    }
+  }
+
   return (
     <main className="board-root">
-      <Tldraw
-        store={storeState.store}
-        assetUrls={assetUrls}
-        colorScheme={colorScheme}
-        forceMobile
-        autoFocus
-      />
+      <BoardCanvasUiContext.Provider value={controls}>
+        <Tldraw
+          store={storeState.store}
+          assetUrls={assetUrls}
+          colorScheme={colorScheme}
+          components={boardCanvasComponents}
+          forceMobile
+          autoFocus
+        />
+      </BoardCanvasUiContext.Provider>
       <style>{styles}</style>
     </main>
   )
