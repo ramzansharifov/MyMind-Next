@@ -25,6 +25,31 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
+      - name: Inspect installed tldraw assets
+        shell: bash
+        run: |
+          {
+            echo '=== @tldraw/assets package locations ==='
+            find . -path '*/node_modules/@tldraw/assets/package.json' -print
+            echo
+            echo '=== @tldraw/assets files ==='
+            find . -path '*/node_modules/@tldraw/assets/*' -type f -print | sort | head -n 500
+            echo
+            echo '=== installed tldraw font files ==='
+            find . -path '*/node_modules/*' -type f \( -iname '*.woff' -o -iname '*.woff2' -o -iname '*.ttf' -o -iname '*.otf' \) -print | grep -Ei 'tldraw|plex|shantell' | sort || true
+            echo
+            echo '=== imports.js ==='
+            for file in $(find . -path '*/node_modules/@tldraw/assets/imports.js' -print); do
+              echo "--- $file"
+              sed -n '1,260p' "$file"
+            done
+          } > /tmp/tldraw-assets.txt
+          cat /tmp/tldraw-assets.txt
+      - name: Upload tldraw asset diagnostics
+        uses: actions/upload-artifact@v4
+        with:
+          name: tldraw-assets-diagnostics
+          path: /tmp/tldraw-assets.txt
       - name: Rebuild SQLite for Node
         run: npm run native:node
       - name: Typecheck mobile
