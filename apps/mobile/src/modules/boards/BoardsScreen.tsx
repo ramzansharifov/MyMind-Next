@@ -89,7 +89,7 @@ function folderLabel(folder: BoardNode, nodes: BoardNode[]): string {
   let parentId = folder.parentId
   while (parentId && !visited.has(parentId)) {
     visited.add(parentId)
-    const parent = nodesById.get(parentId)
+    const parent = byId.get(parentId)
     if (!parent) break
     path.unshift(parent.title)
     parentId = parent.parentId
@@ -103,7 +103,7 @@ function boardNodeLocation(node: BoardNode, nodesById: Map<string, BoardNode>): 
   let parentId = node.parentId
   while (parentId && !visited.has(parentId)) {
     visited.add(parentId)
-    const parent = byId.get(parentId)
+    const parent = nodesById.get(parentId)
     if (!parent) break
     path.unshift(parent.title)
     parentId = parent.parentId
