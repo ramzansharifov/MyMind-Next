@@ -98,9 +98,11 @@ function folderLabel(folder: BoardNode, nodes: BoardNode[]): string {
 }
 
 export function BoardsScreen({
-  initialBoardId = null
+  initialBoardId = null,
+  onImmersiveChange
 }: {
   initialBoardId?: string | null
+  onImmersiveChange?: (active: boolean) => void
 }): React.JSX.Element {
   const { boards: api } = useServices()
   const confirm = useConfirmation()
@@ -114,6 +116,7 @@ export function BoardsScreen({
   const [error, setError] = useState('')
   const [saveState, setSaveState] = useState<BoardSaveState>('saved')
   const [closingBoard, setClosingBoard] = useState(false)
+  const [focusMode, setFocusMode] = useState(false)
   const canvasRef = useRef<BoardCanvasDomRef>(null)
   const initialBoardRef = useRef<string | null>(null)
   const theme = useTheme()
@@ -129,13 +132,22 @@ export function BoardsScreen({
     notifyDataChanged()
   }
 
+  const setFocus = useCallback(
+    (active: boolean): void => {
+      setFocusMode(active)
+      onImmersiveChange?.(active)
+    },
+    [onImmersiveChange]
+  )
+
   const openBoard = useCallback(
     (node: BoardNode): void => {
+      setFocus(false)
       setError('')
       setSaveState('saved')
       setOpened({ node, document: api.getDocument(node.id) })
     },
-    [api]
+    [api, setFocus]
   )
 
   useEffect(() => {
@@ -167,6 +179,7 @@ export function BoardsScreen({
     setClosingBoard(true)
     try {
       await canvasRef.current?.flush()
+      setFocus(false)
       setOpened(null)
       setError('')
     } catch (reason) {
@@ -174,16 +187,20 @@ export function BoardsScreen({
     } finally {
       setClosingBoard(false)
     }
-  }, [closingBoard, opened])
+  }, [closingBoard, opened, setFocus])
 
   useEffect(() => {
     if (!opened) return undefined
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (focusMode) {
+        setFocus(false)
+        return true
+      }
       void closeBoard()
       return true
     })
     return () => subscription.remove()
-  }, [closeBoard, opened])
+  }, [closeBoard, focusMode, opened, setFocus])
 
   useEffect(() => {
     if (!opened) return undefined
@@ -366,9 +383,9 @@ export function BoardsScreen({
             : 'Сохранено локально'
 
     return (
-      <View style={{ flex: 1, gap: 10 }}>
-        {error ? <ErrorState message={error} /> : null}
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+      <View style={{ flex: 1, gap: focusMode ? 0 : 10 }}>
+        {!focusMode && error ? <ErrorState message={error} /> : null}
+        {!focusMode ? <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           <Button
             label={closingBoard ? 'Сохранение…' : 'Назад'}
             disabled={closingBoard || pending}
@@ -385,17 +402,28 @@ export function BoardsScreen({
             disabled={closingBoard || pending}
             onPress={() => confirmDelete(current)}
           />
-        </View>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
-          <Label title>{current.title}</Label>
-          <Label muted>{saveLabel}</Label>
-        </View>
-        <View style={{ flex: 1, minHeight: 320, overflow: 'hidden', borderRadius: 12 }}>
+        </View> : null}
+        {!focusMode ? (
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
+            <Label title>{current.title}</Label>
+            <Label muted>{saveLabel}</Label>
+          </View>
+        ) : null}
+        <View
+          style={{
+            flex: 1,
+            minHeight: focusMode ? 0 : 320,
+            overflow: 'hidden',
+            borderRadius: focusMode ? 0 : 12
+          }}
+        >
           <BoardCanvasDom
             key={current.id}
             ref={canvasRef}
             snapshot={opened.document.snapshot}
             colorScheme={canvasColorScheme}
+            focusMode={focusMode}
+            onFocusModeChange={async (active) => setFocus(active)}
             saveSnapshot={async (snapshot) => {
               api.saveDocument(current.id, snapshot)
             }}
@@ -408,7 +436,7 @@ export function BoardsScreen({
             dom={{ scrollEnabled: false, style: { flex: 1 } }}
           />
         </View>
-        {form && <FormSheet spec={form} close={() => setForm(null)} />}
+        {!focusMode && form ? <FormSheet spec={form} close={() => setForm(null)} /> : null}
       </View>
     )
   }
