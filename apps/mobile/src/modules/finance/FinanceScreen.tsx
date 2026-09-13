@@ -18,11 +18,7 @@ import { WorkspaceNodeCard, WorkspacePanel, WorkspaceStatCard } from '../../shar
 import { MobileCreateAction, type MobileCreateActionItem } from '../../shared/ui/MobileCreateAction'
 import { VisualIconBadge } from '../../shared/ui/VisualPickers'
 import type { FormSpec } from '../../shared/ui/form-model'
-import {
-  EmptyState,
-  ErrorState,
-  LoadingState
-} from '../../shared/ui/primitives'
+import { EmptyState, ErrorState, LoadingState } from '../../shared/ui/primitives'
 import {
   accountForm,
   limitForm,
@@ -110,9 +106,7 @@ export function FinanceScreen(): React.JSX.Element {
 
   if (state.loading) return <LoadingState />
   if (!data) {
-    return (
-      <ErrorState message={state.error || 'Не удалось загрузить финансы'} retry={state.refresh} />
-    )
+    return <ErrorState message={state.error || 'Не удалось загрузить финансы'} retry={state.refresh} />
   }
 
   const tabs = [
@@ -265,9 +259,7 @@ export function FinanceScreen(): React.JSX.Element {
               label: 'Изменить',
               icon: 'edit',
               onPress: () =>
-                openForm(
-                  limitForm(api, accounts, tags, data.dashboard.settings.baseCurrencyCode, item)
-                )
+                openForm(limitForm(api, accounts, tags, data.dashboard.settings.baseCurrencyCode, item))
             },
             {
               label: item.state === 'active' ? 'Поставить на паузу' : 'Возобновить',
@@ -327,16 +319,15 @@ export function FinanceScreen(): React.JSX.Element {
   let content: React.JSX.Element
   if (tab === 'home') {
     const dashboard = data.dashboard
+    const activeLimits = limits.filter((limit) => limit.state === 'active')
+    const currency = dashboard.settings.baseCurrencyCode
     content = (
       <ScrollView contentContainerStyle={{ gap: 10, paddingBottom: 96 }}>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
           <WorkspaceStatCard
             label="Общий баланс"
             icon="finance"
-            value={formatMoneyMinor(
-              dashboard.totalBalanceMinor,
-              dashboard.settings.baseCurrencyCode
-            )}
+            value={formatMoneyMinor(dashboard.totalBalanceMinor, currency)}
             detail={
               dashboard.totalBalanceComplete
                 ? 'Все счета учтены'
@@ -344,10 +335,22 @@ export function FinanceScreen(): React.JSX.Element {
             }
           />
           <WorkspaceStatCard
-            label="Чистый поток"
+            label="Доходы"
             icon="finance"
-            value={formatMoneyMinor(dashboard.netMinor, dashboard.settings.baseCurrencyCode)}
-            detail={`Доходы ${formatMoneyMinor(dashboard.incomeMinor, dashboard.settings.baseCurrencyCode)} · расходы ${formatMoneyMinor(dashboard.expenseMinor, dashboard.settings.baseCurrencyCode)}`}
+            value={formatMoneyMinor(dashboard.incomeMinor, currency)}
+            detail="За текущий период"
+          />
+          <WorkspaceStatCard
+            label="Расходы"
+            icon="finance"
+            value={formatMoneyMinor(dashboard.expenseMinor, currency)}
+            detail="За текущий период"
+          />
+          <WorkspaceStatCard
+            label="Чистый результат"
+            icon="finance"
+            value={formatMoneyMinor(dashboard.netMinor, currency)}
+            detail="Доходы минус расходы"
           />
         </View>
         <WorkspacePanel title="Счета" icon="finance">
@@ -357,6 +360,15 @@ export function FinanceScreen(): React.JSX.Element {
               .map((account) => <View key={account.id}>{renderAccount({ item: account })}</View>)
           ) : (
             <EmptyState text="Создайте первый счёт." />
+          )}
+        </WorkspacePanel>
+        <WorkspacePanel title="Активные лимиты" icon="finance">
+          {activeLimits.length ? (
+            activeLimits
+              .slice(0, 4)
+              .map((limit) => <View key={limit.id}>{renderLimit({ item: limit })}</View>)
+          ) : (
+            <EmptyState text="Активных лимитов пока нет." />
           )}
         </WorkspacePanel>
         <WorkspacePanel title="Последние операции" icon="finance">
@@ -499,9 +511,7 @@ export function FinanceScreen(): React.JSX.Element {
                     icon: 'finance',
                     disabled: !accounts.length || !tags.some((tag) => tag.type !== 'income'),
                     onPress: () =>
-                      openForm(
-                        limitForm(api, accounts, tags, data.dashboard.settings.baseCurrencyCode)
-                      )
+                      openForm(limitForm(api, accounts, tags, data.dashboard.settings.baseCurrencyCode))
                   }
                 ]
               : tab === 'templates'
