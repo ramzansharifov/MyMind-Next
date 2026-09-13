@@ -41,11 +41,14 @@
     "react-native-svg": "15.15.4",
     "react-native-web": "^0.21.2",
     "remark-gfm": "^4.0.1",
-    "tldraw": "^5.2.5"
+    "tldraw": "^5.2.5",
+    "prismjs": "^1.30.0",
+    "react-simple-code-editor": "^0.14.1"
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "@types/prismjs": "^1.26.6"
   },
   "scripts": {
     "postinstall": "node ./scripts/patch-expo-sqlite-web.mjs && node ./scripts/patch-expo-dom-webview.mjs",

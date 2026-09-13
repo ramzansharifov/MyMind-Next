@@ -13,6 +13,7 @@ import {
 
 import { AppDialog } from './AppDialog'
 import { Button, Label } from './primitives'
+import { STUDY_CODE_LANGUAGE_OPTIONS } from './studySourceLanguages'
 import { useTheme } from './theme'
 
 const HEADING_TEXT_COLORS = [
@@ -46,20 +47,6 @@ const DIVIDER_COLORS = [
   '#fbbf24',
   '#fb7185',
   '#f87171'
-] as const
-
-const CODE_LANGUAGES = [
-  ['text', 'Текст'],
-  ['javascript', 'JavaScript'],
-  ['typescript', 'TypeScript'],
-  ['python', 'Python'],
-  ['html', 'HTML'],
-  ['css', 'CSS'],
-  ['sql', 'SQL'],
-  ['json', 'JSON'],
-  ['bash', 'Bash'],
-  ['cpp', 'C++'],
-  ['java', 'Java']
 ] as const
 
 const MERMAID_TEMPLATES = [
@@ -709,12 +696,12 @@ export function NotesBlockSettingsSheet({
         {block.type === 'code' ? (
           <Section title="Язык">
             <ChoiceRow>
-              {CODE_LANGUAGES.map(([value, label]) => (
+              {STUDY_CODE_LANGUAGE_OPTIONS.map((option) => (
                 <Choice
-                  key={value}
-                  label={label}
-                  selected={(block.language || 'text') === value}
-                  onPress={() => update({ ...block, language: value })}
+                  key={option.value}
+                  label={option.label}
+                  selected={(block.language || 'text') === option.value}
+                  onPress={() => update({ ...block, language: option.value })}
                 />
               ))}
             </ChoiceRow>

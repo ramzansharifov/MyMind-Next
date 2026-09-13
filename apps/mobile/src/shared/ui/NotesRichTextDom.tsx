@@ -526,7 +526,7 @@ export default function NotesRichTextDom({
 
     const dom = editor.view.dom
     const reportHeight = (): void => {
-      const height = Math.max(64, Math.ceil(dom.scrollHeight + 18))
+      const height = Math.max(28, Math.ceil(dom.scrollHeight))
       void callbacksRef.current.onHeightChange(height)
     }
 
