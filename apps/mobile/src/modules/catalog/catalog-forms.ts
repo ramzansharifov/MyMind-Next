@@ -42,7 +42,11 @@ export const movieFields: FormField[] = [
     ...textField('episodeRuntimeMinutes', 'Длительность серии, мин', 'nullableNumber'),
     visibleWhen: { key: 'type', oneOf: ['series', 'animated_series'] }
   },
-  ...commonFields
+  ...commonFields.map((field) =>
+    field.key === 'rating'
+      ? { ...field, visibleWhen: { key: 'status', equals: 'watched' } }
+      : field
+  )
 ]
 export const musicFields: FormField[] = [
   textField('title', 'Название'),
