@@ -590,19 +590,19 @@ export default function StudySourceBlockDom({
     <>
       <DomViewportMeta />
       <main
-      ref={rootRef}
-      className={`source-root ${colorScheme}`}
-      style={
-        {
-          '--text': textColor,
-          '--muted': mutedColor,
-          '--border': borderColor,
-          '--surface': surfaceColor,
-          '--code-surface': codeSurfaceColor,
-          '--accent': accentColor
-        } as React.CSSProperties
-      }
-    >
+        ref={rootRef}
+        className={`source-root ${colorScheme}`}
+        style={
+          {
+            '--text': textColor,
+            '--muted': mutedColor,
+            '--border': borderColor,
+            '--surface': surfaceColor,
+            '--code-surface': codeSurfaceColor,
+            '--accent': accentColor
+          } as React.CSSProperties
+        }
+      >
         {editor}
         <style>{styles}</style>
       </main>
