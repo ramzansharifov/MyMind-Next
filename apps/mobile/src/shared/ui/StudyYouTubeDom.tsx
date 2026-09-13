@@ -15,16 +15,16 @@ export default function StudyYouTubeDom({
     <>
       <DomViewportMeta />
       <main>
-      <iframe
-        src={embedUrl}
-        title={title}
-        loading="lazy"
-        referrerPolicy="strict-origin-when-cross-origin"
-        sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
-        allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; web-share"
-        allowFullScreen
-      />
-      <style>{`
+        <iframe
+          src={embedUrl}
+          title={title}
+          loading="lazy"
+          referrerPolicy="strict-origin-when-cross-origin"
+          sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
+          allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+        />
+        <style>{`
         html, body, #root, main {
           margin: 0;
           width: 100%;
