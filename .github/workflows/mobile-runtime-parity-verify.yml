@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - fix/mobile-runtime-and-full-parity-audit
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 concurrency:
