@@ -9,6 +9,7 @@ import StarterKit from '@tiptap/starter-kit'
 import { useDOMImperativeHandle, type DOMImperativeFactory } from 'expo/dom'
 import { useCallback, useEffect, useRef, type Ref } from 'react'
 import type { ResolveStudyInternalLinkTargetInput } from '@mymind/contracts/study'
+import { DomViewportMeta } from './DomViewportMeta'
 
 export type NotesRichTextAlignment = 'left' | 'center' | 'right' | 'justify'
 
@@ -570,7 +571,9 @@ export default function NotesRichTextDom({
   }, [editable, emitFormatting, rememberSelection])
 
   return (
-    <main
+    <>
+      <DomViewportMeta />
+      <main
       className="notes-rich-root"
       style={
         {
@@ -583,8 +586,9 @@ export default function NotesRichTextDom({
       }
     >
       <div ref={mountRef} />
-      <style>{styles}</style>
-    </main>
+        <style>{styles}</style>
+      </main>
+    </>
   )
 }
 
