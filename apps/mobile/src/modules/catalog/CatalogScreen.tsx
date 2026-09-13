@@ -12,7 +12,7 @@ import { FormSheet } from '../../shared/ui/FormSheet'
 import { MobileCreateAction } from '../../shared/ui/MobileCreateAction'
 import { ModuleTabs } from '../../shared/ui/ModuleTabs'
 import { choiceField, messageFor, textField, type FormSpec } from '../../shared/ui/form-model'
-import { movieFields, movieValues } from './catalog-forms'
+import { movieFields, movieValues, normalizeMovieFormValues } from './catalog-forms'
 import { CatalogJsonImportModal } from './CatalogJsonImportModal'
 import { MovieDetailView } from './MovieDetailView'
 import { MovieLibraryView } from './MovieLibraryView'
@@ -61,10 +61,11 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
       initial: movieValues(item),
       fields: movieFields,
       save: (values) => {
+        const normalized = normalizeMovieFormValues(values)
         const input = moviesSchema.createMovieInputSchema.parse({
-          ...values,
-          posterUrl: values.posterUrl || null,
-          originalTitle: values.originalTitle || null
+          ...normalized,
+          posterUrl: normalized.posterUrl || null,
+          originalTitle: normalized.originalTitle || null
         })
         if (item) services.movies.updateMovie({ ...input, id: item.id })
         else services.movies.createMovie(input)
