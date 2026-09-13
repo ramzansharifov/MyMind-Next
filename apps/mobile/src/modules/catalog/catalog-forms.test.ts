@@ -1,5 +1,22 @@
 import { describe, expect, it } from 'vitest'
-import { normalizeMovieFormValues } from './catalog-forms'
+import { movieFields, normalizeMovieFormValues } from './catalog-forms'
+
+describe('movieFields', () => {
+  it('shows movie and episodic fields only for compatible types', () => {
+    expect(movieFields.find((field) => field.key === 'runtimeMinutes')?.visibleWhen).toEqual({
+      key: 'type',
+      oneOf: ['movie', 'cartoon']
+    })
+    expect(movieFields.find((field) => field.key === 'seasonCount')?.visibleWhen).toEqual({
+      key: 'type',
+      oneOf: ['series', 'animated_series']
+    })
+    expect(movieFields.find((field) => field.key === 'rating')?.visibleWhen).toEqual({
+      key: 'status',
+      equals: 'watched'
+    })
+  })
+})
 
 describe('normalizeMovieFormValues', () => {
   it('clears episodic fields for movies and cartoons', () => {
