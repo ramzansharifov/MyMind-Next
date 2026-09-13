@@ -31,6 +31,7 @@ import 'tldraw/tldraw.css'
 import type { BoardSnapshot } from '@mymind/contracts/boards'
 import { BoardSaveQueue, type BoardSaveState } from '@mymind/core/board-save-queue'
 import RichContentDom, { type RichContentDomProps } from '../../shared/ui/RichContentDom'
+import { DomViewportMeta } from '../../shared/ui/DomViewportMeta'
 
 function normalizeBundledAssetUrl(asset: unknown): string {
   if (typeof asset === 'string') return asset
@@ -235,10 +236,7 @@ function BoardSurface({
 
   return (
     <>
-      <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"
-      />
+      <DomViewportMeta />
       <main className="board-root">
       <BoardCanvasUiContext.Provider value={controls}>
         <Tldraw
