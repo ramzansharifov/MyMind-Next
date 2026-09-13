@@ -11,7 +11,7 @@ import { useCollection } from '../../shared/hooks/useCollection'
 import BoardCanvasDom, { type BoardCanvasDomRef } from './BoardCanvasDom'
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { ActionMenu } from '../../shared/ui/ActionMenu'
-import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
+import { WorkspaceNodeCard, WorkspacePanel, WorkspaceStatCard } from '../../shared/ui/Workspace'
 import { MobileCreateAction } from '../../shared/ui/MobileCreateAction'
 import { VisualIconBadge } from '../../shared/ui/VisualPickers'
 import { FOLDER_ICON_CHOICES } from '../../shared/ui/visual-options'
@@ -95,6 +95,28 @@ function folderLabel(folder: BoardNode, nodes: BoardNode[]): string {
     parentId = parent.parentId
   }
   return path.join(' / ')
+}
+
+function boardNodeLocation(node: BoardNode, nodes: BoardNode[]): string {
+  const byId = new Map(nodes.map((item) => [item.id, item]))
+  const path: string[] = []
+  const visited = new Set<string>()
+  let parentId = node.parentId
+  while (parentId && !visited.has(parentId)) {
+    visited.add(parentId)
+    const parent = byId.get(parentId)
+    if (!parent) break
+    path.unshift(parent.title)
+    parentId = parent.parentId
+  }
+  return path.length > 0 ? path.join(' / ') : 'Корень'
+}
+
+function boardNodeTypeLabel(node: BoardNode): string {
+  if (node.type === 'folder') return 'Папка'
+  if (node.sourceMaterialId) return 'Доска материала'
+  if (node.sourceNoteId) return 'Доска заметки'
+  return 'Доска'
 }
 
 export function BoardsScreen({
@@ -442,26 +464,54 @@ export function BoardsScreen({
   }
 
   const normalizedQuery = query.trim().toLocaleLowerCase('ru-RU')
-  const children = sortNodes(
-    allNodes.filter(
-      (node) =>
-        node.parentId === effectiveFolderId &&
-        (!normalizedQuery || node.title.toLocaleLowerCase('ru-RU').includes(normalizedQuery))
-    )
-  )
+  const isRoot = effectiveFolderId === null
+  const globalSearchActive = isRoot && normalizedQuery.length > 0
+  const folders = allNodes.filter((node) => node.type === 'folder')
+  const boards = allNodes.filter((node) => node.type === 'board')
+  const recentBoards = [...boards]
+    .sort((first, second) => second.updatedAt - first.updatedAt)
+    .slice(0, 6)
+  const children = globalSearchActive
+    ? [...allNodes]
+        .filter((node) =>
+          `${node.title} ${boardNodeTypeLabel(node)} ${boardNodeLocation(node, allNodes)}`
+            .toLocaleLowerCase('ru-RU')
+            .includes(normalizedQuery)
+        )
+        .sort(
+          (first, second) =>
+            first.title.localeCompare(second.title, 'ru-RU') || second.updatedAt - first.updatedAt
+        )
+    : sortNodes(
+        allNodes.filter(
+          (node) =>
+            node.parentId === effectiveFolderId &&
+            (!normalizedQuery || node.title.toLocaleLowerCase('ru-RU').includes(normalizedQuery))
+        )
+      )
   const currentManaged = effectiveFolderId ? managed.has(effectiveFolderId) : false
 
   return (
     <View style={{ flex: 1 }}>
       <View style={{ gap: 10, marginBottom: 12 }}>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          <Button label="Корень" selected={!effectiveFolderId} onPress={() => setFolderId(null)} />
+          <Button
+            label="Корень"
+            selected={!effectiveFolderId}
+            onPress={() => {
+              setFolderId(null)
+              setQuery('')
+            }}
+          />
           {breadcrumbs.map((folder) => (
             <Button
               key={folder.id}
               label={folder.title}
               selected={folder.id === effectiveFolderId}
-              onPress={() => setFolderId(folder.id)}
+              onPress={() => {
+                setFolderId(folder.id)
+                setQuery('')
+              }}
             />
           ))}
         </View>
@@ -482,6 +532,60 @@ export function BoardsScreen({
           contentContainerStyle={{ paddingBottom: 88 }}
           refreshing={nodes.loading}
           onRefresh={nodes.refresh}
+          ListHeaderComponent={
+            isRoot ? (
+              <View style={{ gap: 12, marginBottom: 12 }}>
+                {globalSearchActive ? (
+                  <Label title>Результаты поиска · {children.length}</Label>
+                ) : (
+                  <>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                      <WorkspaceStatCard
+                        label="Досок"
+                        value={String(boards.length)}
+                        detail="Во всём пространстве"
+                        icon="boards"
+                      />
+                      <WorkspaceStatCard
+                        label="Папок"
+                        value={String(folders.length)}
+                        detail="Обычных и связанных"
+                        icon="folder"
+                      />
+                      <WorkspaceStatCard
+                        label="Из обучения"
+                        value={String(
+                          boards.filter((node) => Boolean(node.sourceMaterialId)).length
+                        )}
+                        detail="Связанных с материалами"
+                        icon="study"
+                      />
+                    </View>
+                    <WorkspacePanel
+                      title="Недавние доски"
+                      description="Последние изменённые холсты во всём пространстве"
+                      icon="boards"
+                    >
+                      {recentBoards.length > 0 ? (
+                        recentBoards.map((item) => (
+                          <WorkspaceNodeCard
+                            key={`recent:${item.id}`}
+                            title={item.title}
+                            subtitle={`${boardNodeTypeLabel(item)} · ${boardNodeLocation(item, allNodes)}`}
+                            leadingIcon="boards"
+                            onPress={() => openBoard(item)}
+                          />
+                        ))
+                      ) : (
+                        <Label muted>Здесь появятся недавно изменённые доски.</Label>
+                      )}
+                    </WorkspacePanel>
+                    <Label title>Структура · {children.length}</Label>
+                  </>
+                )}
+              </View>
+            ) : null
+          }
           ListEmptyComponent={
             <EmptyState text={query.trim() ? 'Ничего не найдено.' : 'В этой папке пока пусто.'} />
           }
@@ -493,15 +597,11 @@ export function BoardsScreen({
               <WorkspaceNodeCard
                 title={item.title}
                 subtitle={
-                  item.type === 'folder'
-                    ? itemManaged
+                  globalSearchActive
+                    ? `${boardNodeTypeLabel(item)} · ${boardNodeLocation(item, allNodes)}`
+                    : item.type === 'folder' && itemManaged
                       ? 'Управляемая папка'
-                      : 'Папка'
-                    : item.sourceMaterialId
-                      ? 'Доска материала'
-                      : item.sourceNoteId
-                        ? 'Доска заметки'
-                        : 'Доска'
+                      : boardNodeTypeLabel(item)
                 }
                 leading={
                   item.type === 'folder' ? (
@@ -509,7 +609,11 @@ export function BoardsScreen({
                   ) : undefined
                 }
                 leadingIcon={item.type === 'board' ? 'boards' : undefined}
-                onPress={() => (item.type === 'folder' ? setFolderId(item.id) : openBoard(item))}
+                onPress={() => {
+                  setQuery('')
+                  if (item.type === 'folder') setFolderId(item.id)
+                  else openBoard(item)
+                }}
                 action={
                   <ActionMenu
                     title={item.title}
@@ -525,7 +629,7 @@ export function BoardsScreen({
                             }
                           ]
                         : []),
-                      ...(!itemManaged
+                      ...(!itemManaged && !globalSearchActive
                         ? [
                             {
                               key: 'up',
