@@ -171,7 +171,7 @@ export function CalendarScreen(): React.JSX.Element {
         time: item?.time ?? null,
         startDate: item?.startDate ?? null,
         note: item?.note ?? '',
-        offsets: item?.reminderOffsets.join(', ') ?? ''
+        reminderOffsets: item?.reminderOffsets ?? []
       },
       fields: [
         textField('title', 'Название'),
@@ -188,19 +188,25 @@ export function CalendarScreen(): React.JSX.Element {
           'Для ежегодных событий; необязательно'
         ),
         textField('note', 'Заметка к этому событию', 'multiline'),
-        textField('offsets', 'Напомнить за N минут', 'text', 'Через запятую, например: 30, 1440')
+        {
+          key: 'reminderOffsets',
+          label: 'Напоминания',
+          kind: 'reminders',
+          hint: 'Добавляйте напоминания так же, как на desktop: число + единица времени.'
+        }
       ],
       save: (values) => {
-        const { offsets, ...rest } = values
         const date = String(values.date)
         diaryDayKeySchema.parse(date)
         if (values.startDate) diaryDayKeySchema.parse(values.startDate)
         const input = schema.calendarCreateEventInputSchema.parse({
-          ...rest,
+          ...values,
           date,
           time: values.time || null,
           startDate: values.startDate || null,
-          reminderOffsets: String(offsets).trim() ? String(offsets).split(',').map(Number) : []
+          reminderOffsets: Array.isArray(values.reminderOffsets)
+            ? values.reminderOffsets
+            : []
         })
         if (item) {
           api.updateCalendarEvent({

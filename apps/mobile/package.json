@@ -65,7 +65,8 @@
     "test:expo-dom-patch": "node ./scripts/patch-expo-dom-webview.test.mjs",
     "android:clean-native": "node ./scripts/run-android.mjs --force",
     "test:android-native-cache": "node ./scripts/prepare-android-native.test.mjs",
-    "test:android-sdk": "node ./scripts/run-android.test.mjs"
+    "test:android-sdk": "node ./scripts/run-android.test.mjs",
+    "test:dom-assets": "node ./scripts/mobile-dom-assets.test.mjs"
   },
   "private": true
 }

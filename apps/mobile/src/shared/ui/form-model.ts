@@ -17,9 +17,15 @@ export type FormField = {
     | 'color'
     | 'multiple'
     | 'times'
+    | 'reminders'
   choices?: readonly { value: string | null; label: string }[]
   iconFamily?: import('./visual-options').VisualIconFamily
   hint?: string
+  visibleWhen?: {
+    key: string
+    equals?: unknown
+    oneOf?: readonly unknown[]
+  }
 }
 
 export interface FormPreviewSpec {

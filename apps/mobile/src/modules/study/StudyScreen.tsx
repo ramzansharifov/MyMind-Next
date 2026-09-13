@@ -17,7 +17,7 @@ import { DocumentEditor } from '../../shared/ui/DocumentEditor'
 import { DocumentReader, type DocumentRevealRequest } from '../../shared/ui/DocumentReader'
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { ActionMenu } from '../../shared/ui/ActionMenu'
-import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
+import { WorkspaceNodeCard, WorkspacePanel, WorkspaceStatCard } from '../../shared/ui/Workspace'
 import { MobileCreateAction } from '../../shared/ui/MobileCreateAction'
 import { VisualIconBadge } from '../../shared/ui/VisualPickers'
 import { FOLDER_ICON_CHOICES } from '../../shared/ui/visual-options'
@@ -96,6 +96,20 @@ function folderLabel(folder: StudyNode, nodes: StudyNode[]): string {
   return path.join(' / ')
 }
 
+function studyNodeLocation(node: StudyNode, nodesById: Map<string, StudyNode>): string {
+  const path: string[] = []
+  const seen = new Set<string>()
+  let parentId = node.parentId
+  while (parentId && !seen.has(parentId)) {
+    seen.add(parentId)
+    const parent = nodesById.get(parentId)
+    if (!parent) break
+    path.unshift(parent.title)
+    parentId = parent.parentId
+  }
+  return path.length > 0 ? path.join(' / ') : 'Корень'
+}
+
 export function StudyScreen({
   initialResource = null,
   onResourceHandled,
@@ -138,6 +152,7 @@ export function StudyScreen({
   const revealSequenceRef = useRef(0)
 
   const allNodes = useMemo(() => nodes.data ?? [], [nodes.data])
+  const nodesById = useMemo(() => new Map(allNodes.map((node) => [node.id, node])), [allNodes])
   const effectiveFolderId =
     folderId && allNodes.some((node) => node.id === folderId) ? folderId : null
   const currentFolder = effectiveFolderId
@@ -865,25 +880,53 @@ export function StudyScreen({
   }
 
   const normalizedQuery = query.trim().toLocaleLowerCase('ru-RU')
-  const children = sortNodes(
-    allNodes.filter(
-      (node) =>
-        node.parentId === effectiveFolderId &&
-        (!normalizedQuery || node.title.toLocaleLowerCase('ru-RU').includes(normalizedQuery))
-    )
-  )
+  const isRoot = effectiveFolderId === null
+  const globalSearchActive = isRoot && normalizedQuery.length > 0
+  const folders = allNodes.filter((node) => node.type === 'folder')
+  const materials = allNodes.filter((node) => node.type === 'material')
+  const recentMaterials = [...materials]
+    .sort((first, second) => second.updatedAt - first.updatedAt)
+    .slice(0, 6)
+  const children = globalSearchActive
+    ? [...allNodes]
+        .filter((node) =>
+          `${node.title} ${studyNodeLocation(node, nodesById)}`
+            .toLocaleLowerCase('ru-RU')
+            .includes(normalizedQuery)
+        )
+        .sort(
+          (first, second) =>
+            first.title.localeCompare(second.title, 'ru-RU') || second.updatedAt - first.updatedAt
+        )
+    : sortNodes(
+        allNodes.filter(
+          (node) =>
+            node.parentId === effectiveFolderId &&
+            (!normalizedQuery || node.title.toLocaleLowerCase('ru-RU').includes(normalizedQuery))
+        )
+      )
 
   return (
     <View style={{ flex: 1 }}>
       <View style={{ gap: 10, marginBottom: 12 }}>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          <Button label="Корень" selected={!effectiveFolderId} onPress={() => setFolderId(null)} />
+          <Button
+            label="Корень"
+            selected={!effectiveFolderId}
+            onPress={() => {
+              setFolderId(null)
+              setQuery('')
+            }}
+          />
           {breadcrumbs.map((folder) => (
             <Button
               key={folder.id}
               label={folder.title}
               selected={folder.id === effectiveFolderId}
-              onPress={() => setFolderId(folder.id)}
+              onPress={() => {
+                setFolderId(folder.id)
+                setQuery('')
+              }}
             />
           ))}
         </View>
@@ -906,22 +949,82 @@ export function StudyScreen({
           contentContainerStyle={{ paddingBottom: 88 }}
           refreshing={nodes.loading}
           onRefresh={nodes.refresh}
+          ListHeaderComponent={
+            isRoot ? (
+              <View style={{ gap: 12, marginBottom: 12 }}>
+                {globalSearchActive ? (
+                  <Label title>Результаты поиска · {children.length}</Label>
+                ) : (
+                  <>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                      <WorkspaceStatCard
+                        label="Материалов"
+                        value={String(materials.length)}
+                        detail="Во всей библиотеке"
+                        icon="study"
+                      />
+                      <WorkspaceStatCard
+                        label="Папок"
+                        value={String(folders.length)}
+                        detail="Для структуры знаний"
+                        icon="folder"
+                      />
+                      <WorkspaceStatCard
+                        label="В корне"
+                        value={String(children.length)}
+                        detail="Элементов верхнего уровня"
+                        icon="home"
+                      />
+                    </View>
+                    <WorkspacePanel
+                      title="Недавние материалы"
+                      description="Последние изменённые материалы во всей библиотеке"
+                      icon="study"
+                    >
+                      {recentMaterials.length > 0 ? (
+                        recentMaterials.map((item) => (
+                          <WorkspaceNodeCard
+                            key={`recent:${item.id}`}
+                            title={item.title}
+                            subtitle={studyNodeLocation(item, nodesById)}
+                            leadingIcon="study"
+                            onPress={() => openMaterial(item.id)}
+                          />
+                        ))
+                      ) : (
+                        <Label muted>Здесь появятся недавно изменённые материалы.</Label>
+                      )}
+                    </WorkspacePanel>
+                    <Label title>Структура · {children.length}</Label>
+                  </>
+                )}
+              </View>
+            ) : null
+          }
           ListEmptyComponent={
             <EmptyState text={query.trim() ? 'Ничего не найдено.' : 'В этой папке пока пусто.'} />
           }
           renderItem={({ item, index }) => (
             <WorkspaceNodeCard
               title={item.title}
-              subtitle={item.type === 'folder' ? 'Папка' : 'Материал'}
+              subtitle={
+                globalSearchActive
+                  ? `${item.type === 'folder' ? 'Папка' : 'Материал'} · ${studyNodeLocation(item, nodesById)}`
+                  : item.type === 'folder'
+                    ? 'Папка'
+                    : 'Материал'
+              }
               leading={
                 item.type === 'folder' ? (
                   <VisualIconBadge value={item.icon ?? 'folder'} />
                 ) : undefined
               }
               leadingIcon={item.type === 'material' ? 'study' : undefined}
-              onPress={() =>
-                item.type === 'folder' ? setFolderId(item.id) : openMaterial(item.id)
-              }
+              onPress={() => {
+                setQuery('')
+                if (item.type === 'folder') setFolderId(item.id)
+                else openMaterial(item.id)
+              }}
               action={
                 <ActionMenu
                   title={item.title}
@@ -929,18 +1032,22 @@ export function StudyScreen({
                   items={[
                     { label: 'Изменить', icon: 'edit', onPress: () => editNode(item) },
                     { label: 'Открыть код', icon: 'study', onPress: () => setCodeNodeId(item.id) },
-                    {
-                      label: 'Переместить выше',
-                      icon: 'move',
-                      disabled: index === 0,
-                      onPress: () => reorder(item, -1)
-                    },
-                    {
-                      label: 'Переместить ниже',
-                      icon: 'move',
-                      disabled: index === children.length - 1,
-                      onPress: () => reorder(item, 1)
-                    },
+                    ...(!globalSearchActive
+                      ? [
+                          {
+                            label: 'Переместить выше',
+                            icon: 'move' as const,
+                            disabled: index === 0,
+                            onPress: () => reorder(item, -1)
+                          },
+                          {
+                            label: 'Переместить ниже',
+                            icon: 'move' as const,
+                            disabled: index === children.length - 1,
+                            onPress: () => reorder(item, 1)
+                          }
+                        ]
+                      : []),
                     { label: 'Создать копию', icon: 'add', onPress: () => duplicate(item) },
                     {
                       label: 'Удалить',

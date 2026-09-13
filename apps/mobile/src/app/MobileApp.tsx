@@ -340,7 +340,10 @@ export default function MobileApp(): React.JSX.Element {
                         onOpenBoard={openBoard}
                       />
                     ) : route === 'boards' ? (
-                      <BoardsScreen initialBoardId={boardResourceId} />
+                      <BoardsScreen
+                        initialBoardId={boardResourceId}
+                        onImmersiveChange={setImmersive}
+                      />
                     ) : route === 'notes' ? (
                       <NotesScreen
                         onOpenBoard={openBoard}

@@ -26,11 +26,27 @@ export const movieFields: FormField[] = [
   textField('posterUrl', 'Ссылка на постер'),
   textField('director', 'Режиссёр'),
   textField('actors', 'Актёры', 'list', 'Через запятую'),
-  textField('runtimeMinutes', 'Длительность фильма, мин', 'nullableNumber'),
-  textField('seasonCount', 'Количество сезонов', 'nullableNumber'),
-  textField('episodesPerSeason', 'Серий в сезоне', 'nullableNumber'),
-  textField('episodeRuntimeMinutes', 'Длительность серии, мин', 'nullableNumber'),
-  ...commonFields
+  {
+    ...textField('runtimeMinutes', 'Длительность фильма, мин', 'nullableNumber'),
+    visibleWhen: { key: 'type', oneOf: ['movie', 'cartoon'] }
+  },
+  {
+    ...textField('seasonCount', 'Количество сезонов', 'nullableNumber'),
+    visibleWhen: { key: 'type', oneOf: ['series', 'animated_series'] }
+  },
+  {
+    ...textField('episodesPerSeason', 'Серий в сезоне', 'nullableNumber'),
+    visibleWhen: { key: 'type', oneOf: ['series', 'animated_series'] }
+  },
+  {
+    ...textField('episodeRuntimeMinutes', 'Длительность серии, мин', 'nullableNumber'),
+    visibleWhen: { key: 'type', oneOf: ['series', 'animated_series'] }
+  },
+  ...commonFields.map((field) =>
+    field.key === 'rating'
+      ? { ...field, visibleWhen: { key: 'status', equals: 'watched' } }
+      : field
+  )
 ]
 export const musicFields: FormField[] = [
   textField('title', 'Название'),
@@ -88,5 +104,17 @@ export function musicValues(item?: MusicItemRecord): FormValues {
     favorite: item?.favorite ?? false,
     rating: item?.rating ?? null,
     comments: item?.comments ?? ''
+  }
+}
+
+export function normalizeMovieFormValues(values: FormValues): FormValues {
+  const episodic = values.type === 'series' || values.type === 'animated_series'
+  return {
+    ...values,
+    runtimeMinutes: episodic ? null : values.runtimeMinutes,
+    seasonCount: episodic ? values.seasonCount : null,
+    episodesPerSeason: episodic ? values.episodesPerSeason : null,
+    episodeRuntimeMinutes: episodic ? values.episodeRuntimeMinutes : null,
+    rating: values.status === 'watched' ? values.rating : null
   }
 }
