@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   FlatList,
-  Image,
   Linking,
   Pressable,
   ScrollView,
@@ -61,6 +60,7 @@ import type { NotesRichTextDomRef, NotesRichTextFormattingState } from './NotesR
 import { resolveStudyRichTextHtml } from './richTextHtml'
 import { StudySourceBlock } from './StudySourceBlock'
 import { StudyDividerBlock } from './StudyDividerBlock'
+import { StudyAttachmentBlock } from './StudyAttachmentBlock'
 import { useConfirmation } from './ConfirmationProvider'
 import { Button, Label } from './primitives'
 import { useTheme } from './theme'
@@ -218,83 +218,6 @@ function headingTypography(level: 1 | 2 | 3): {
   return { fontSize: 30, lineHeight: 36, letterSpacing: -0.6 }
 }
 
-function LocalAssetEditor({
-  block,
-  update,
-  assetActions,
-  clean = false
-}: {
-  block: Extract<StudyBlock, { type: 'image' | 'video' | 'audio' | 'file' }>
-  update(next: StudyBlock): void
-  assetActions: DocumentAssetActions
-  clean?: boolean
-}): React.JSX.Element {
-  const theme = useTheme()
-  if (block.source.type !== 'local') return <View />
-  const asset = block.source.asset
-  const uri = asset ? assetActions.resolveAssetUri?.(asset) : null
-  const inputStyle = {
-    color: theme.text,
-    backgroundColor: clean ? 'transparent' : theme.raised,
-    borderWidth: clean ? 0 : 1,
-    borderColor: theme.border,
-    borderRadius: designTokens.radius.md,
-    paddingHorizontal: clean ? 2 : 12,
-    paddingVertical: clean ? 8 : 12,
-    minHeight: 44,
-    fontSize: 16
-  } as const
-
-  return (
-    <View style={{ gap: 8 }}>
-      {block.type === 'audio' && uri ? (
-        <AudioAssetPlayer uri={uri} onError={assetActions.onAssetError} />
-      ) : null}
-      {block.type === 'image' && uri ? (
-        <Image
-          accessibilityLabel={block.title || asset?.name || 'Изображение'}
-          source={{ uri }}
-          resizeMode={block.imageFit ?? 'contain'}
-          style={{
-            width: '100%',
-            height: block.imageHeight ?? 360,
-            borderRadius: clean ? 14 : designTokens.radius.md,
-            backgroundColor: theme.raised
-          }}
-        />
-      ) : null}
-      <TextInput
-        accessibilityLabel="Подпись вложения"
-        placeholder="Подпись"
-        placeholderTextColor={theme.muted}
-        value={block.title ?? ''}
-        onChangeText={(title) => update({ ...block, title: title || undefined })}
-        style={inputStyle}
-      />
-      {asset ? (
-        <Label muted>
-          {asset.name} · {formatBytes(asset.size)}
-        </Label>
-      ) : (
-        <Label muted>Вложение ещё не выбрано.</Label>
-      )}
-      {asset && !uri ? <Label muted>Локальный файл не найден на этом устройстве.</Label> : null}
-      {asset && assetActions.openAsset ? (
-        <Button
-          label="Открыть / поделиться"
-          compact={clean}
-          disabled={!uri}
-          onPress={() => {
-            void assetActions.openAsset?.(asset).catch((reason: unknown) => {
-              assetActions.onAssetError?.(reason)
-            })
-          }}
-        />
-      ) : null}
-    </View>
-  )
-}
-
 function BlockInput({
   block,
   update,
@@ -403,32 +326,15 @@ function BlockInput({
       )
     case 'image':
     case 'video':
-      return block.source.type === 'url' ? (
-        <View style={{ gap: 8 }}>
-          <TextInput
-            accessibilityLabel="Подпись вложения"
-            placeholder="Подпись"
-            placeholderTextColor={theme.muted}
-            value={block.title ?? ''}
-            onChangeText={(title) => update({ ...block, title: title || undefined })}
-            style={inputStyle}
-          />
-          <TextInput
-            accessibilityLabel="Ссылка вложения"
-            autoCapitalize="none"
-            autoCorrect={false}
-            value={block.source.url}
-            onChangeText={(url) => update({ ...block, source: { type: 'url', url } })}
-            style={inputStyle}
-          />
-        </View>
-      ) : (
-        <LocalAssetEditor block={block} update={update} assetActions={assetActions} clean={clean} />
-      )
     case 'audio':
     case 'file':
       return (
-        <LocalAssetEditor block={block} update={update} assetActions={assetActions} clean={clean} />
+        <StudyAttachmentBlock
+          block={block}
+          resolveAssetUri={assetActions.resolveAssetUri}
+          openAsset={assetActions.openAsset}
+          onError={assetActions.onAssetError}
+        />
       )
     case 'divider':
       return <StudyDividerBlock block={block} spacing="edit" />
@@ -1140,98 +1046,6 @@ function NotesReadHeading({
           {heading.text || 'Без заголовка'}
         </Text>
       </Text>
-    </View>
-  )
-}
-
-function NotesReadAssetBlock({
-  block,
-  assetActions
-}: {
-  block: Extract<StudyBlock, { type: 'image' | 'video' | 'audio' | 'file' }>
-  assetActions: DocumentAssetActions
-}): React.JSX.Element {
-  const theme = useTheme()
-  const localAsset = block.source.type === 'local' ? block.source.asset : undefined
-  const localUri = localAsset ? assetActions.resolveAssetUri?.(localAsset) : null
-  const remoteUri = block.source.type === 'url' ? block.source.url : null
-  const displayUri = localUri ?? remoteUri
-
-  return (
-    <View
-      style={{
-        gap: 10,
-        padding: block.type === 'image' ? 0 : 13,
-        borderWidth: block.type === 'image' ? 0 : 1,
-        borderColor: theme.border,
-        borderRadius: 16,
-        backgroundColor: block.type === 'image' ? 'transparent' : theme.surface,
-        overflow: 'hidden'
-      }}
-    >
-      {block.type === 'image' && displayUri ? (
-        <Image
-          accessibilityLabel={block.title || localAsset?.name || 'Изображение'}
-          source={{ uri: displayUri }}
-          resizeMode={block.imageFit ?? 'contain'}
-          style={{
-            width: '100%',
-            height: block.imageHeight ?? 360,
-            borderRadius: 16,
-            backgroundColor: theme.raised
-          }}
-        />
-      ) : null}
-
-      {block.type === 'audio' && localUri ? (
-        <AudioAssetPlayer uri={localUri} onError={assetActions.onAssetError} />
-      ) : null}
-
-      {block.title ? (
-        <Text
-          selectable
-          style={{ color: theme.text, fontSize: 14, lineHeight: 20, fontWeight: '600' }}
-        >
-          {block.title}
-        </Text>
-      ) : null}
-
-      {localAsset ? (
-        <Text selectable style={{ color: theme.muted, fontSize: 12, lineHeight: 17 }}>
-          {localAsset.name} · {formatBytes(localAsset.size)}
-        </Text>
-      ) : null}
-
-      {block.source.type === 'local' && localAsset && !localUri ? (
-        <Text style={{ color: theme.muted, fontSize: 12 }}>
-          Локальный файл не найден на этом устройстве.
-        </Text>
-      ) : null}
-
-      {block.source.type === 'local' && localAsset && assetActions.openAsset ? (
-        <Button
-          label="Открыть / поделиться"
-          compact
-          disabled={!localUri}
-          onPress={() => {
-            void assetActions.openAsset?.(localAsset).catch((reason: unknown) => {
-              assetActions.onAssetError?.(reason)
-            })
-          }}
-        />
-      ) : null}
-
-      {block.type === 'video' && remoteUri ? (
-        <Button
-          label="Открыть видео"
-          compact
-          onPress={() => {
-            void Linking.openURL(remoteUri).catch((reason: unknown) => {
-              assetActions.onAssetError?.(reason)
-            })
-          }}
-        />
-      ) : null}
     </View>
   )
 }
