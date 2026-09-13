@@ -6,10 +6,12 @@ import path from 'node:path'
 const mobileRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const boardPath = path.join(mobileRoot, 'src', 'modules', 'boards', 'BoardCanvasDom.tsx')
 const sourcePath = path.join(mobileRoot, 'src', 'shared', 'ui', 'StudySourceBlockDom.tsx')
+const metroPath = path.join(mobileRoot, 'metro.config.js')
 
-const [board, source] = await Promise.all([
+const [board, source, metro] = await Promise.all([
   readFile(boardPath, 'utf8'),
-  readFile(sourcePath, 'utf8')
+  readFile(sourcePath, 'utf8'),
+  readFile(metroPath, 'utf8')
 ])
 
 assert.match(
@@ -21,6 +23,16 @@ assert.doesNotMatch(
   board,
   /@tldraw\/assets\/urls|getAssetUrlsByMetaUrl/,
   'BoardCanvasDom must not use import.meta/network tldraw asset URLs in Expo DOM'
+)
+assert.match(
+  metro,
+  /['"]woff2['"]/,
+  'Metro must treat tldraw .woff2 fonts as bundled assets'
+)
+assert.match(
+  metro,
+  /resolver\.assetExts/,
+  'Metro font support must be configured through resolver.assetExts'
 )
 
 assert.doesNotMatch(
