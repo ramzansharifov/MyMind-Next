@@ -17,6 +17,7 @@ import { EmptyState, ErrorState, LoadingState, Row, SearchField } from '../../sh
 import { BarChart3, Dumbbell, FileText, ListChecks, TrendingUp } from 'lucide-react-native'
 import { ModuleTabs } from '../../shared/ui/ModuleTabs'
 import { WorkoutProgressSheet } from './WorkoutProgressSheet'
+import { WorkoutProgramSheet } from './WorkoutProgramSheet'
 import { WorkoutProgressView } from './WorkoutProgressView'
 import { WorkoutSessionSheet } from './WorkoutSessionSheet'
 import { WorkoutReportsView } from './WorkoutReportsView'
@@ -65,6 +66,7 @@ export function WorkoutsScreen(): React.JSX.Element {
   const [query, setQuery] = useState('')
   const [form, setForm] = useState<FormSpec | null>(null)
   const [sessionEditor, setSessionEditor] = useState<WorkoutSessionRecord | 'new' | null>(null)
+  const [programEditor, setProgramEditor] = useState<WorkoutProgramRecord | 'new' | null>(null)
   const [progressEditor, setProgressEditor] = useState<WorkoutProgressEntryRecord | 'new' | null>(
     null
   )
@@ -105,17 +107,12 @@ export function WorkoutsScreen(): React.JSX.Element {
       initial: {
         title: exercise?.title ?? '',
         muscleGroups: exercise?.muscleGroups ?? ['shoulders'],
-        usesExternalWeight: exercise?.usesExternalWeight ?? true,
-        status: exercise?.status ?? 'active'
+        usesExternalWeight: exercise?.usesExternalWeight ?? true
       },
       fields: [
         textField('title', 'Название'),
         multiField('muscleGroups', 'Мышечные зоны', muscleChoices),
-        { key: 'usesExternalWeight', label: 'Используется внешний вес', kind: 'boolean' },
-        choiceField('status', 'Статус', [
-          { value: 'active', label: 'Активно' },
-          { value: 'archived', label: 'Архив' }
-        ])
+        { key: 'usesExternalWeight', label: 'Используется внешний вес', kind: 'boolean' }
       ],
       save: (values) => {
         if (exercise) {
@@ -125,7 +122,7 @@ export function WorkoutsScreen(): React.JSX.Element {
               title: values.title,
               muscleGroups: values.muscleGroups,
               usesExternalWeight: values.usesExternalWeight,
-              status: values.status
+              status: 'active'
             })
           )
         } else {
@@ -134,7 +131,7 @@ export function WorkoutsScreen(): React.JSX.Element {
               title: values.title,
               muscleGroups: values.muscleGroups,
               usesExternalWeight: values.usesExternalWeight,
-              status: values.status
+              status: 'active'
             })
           )
         }
@@ -143,42 +140,7 @@ export function WorkoutsScreen(): React.JSX.Element {
     })
   }
 
-  const editProgram = (program?: WorkoutProgramRecord): void => {
-    setForm({
-      title: program ? 'Изменить программу' : 'Новая программа',
-      initial: {
-        name: program?.name ?? '',
-        description: program?.description ?? '',
-        status: program?.status ?? 'active',
-        exerciseIds: program?.exercises.map((item) => item.exerciseId) ?? []
-      },
-      fields: [
-        textField('name', 'Название'),
-        textField('description', 'Описание', 'multiline'),
-        choiceField('status', 'Статус', [
-          { value: 'active', label: 'Активно' },
-          { value: 'archived', label: 'Архив' }
-        ]),
-        multiField('exerciseIds', 'Упражнения', exerciseChoices)
-      ],
-      save: (values) => {
-        const payload = {
-          name: values.name,
-          description: values.description,
-          status: values.status,
-          exercises: (values.exerciseIds as string[]).map((exerciseId) => ({ exerciseId }))
-        }
-        if (program) {
-          api.updateProgram(
-            workoutsValidation.updateWorkoutProgramInputSchema.parse({ id: program.id, ...payload })
-          )
-        } else {
-          api.createProgram(workoutsValidation.createWorkoutProgramInputSchema.parse(payload))
-        }
-        overview.refresh()
-      }
-    })
-  }
+
 
   const tabs = [
     { id: 'journal' as const, label: 'Тренировки', icon: Dumbbell },
@@ -335,7 +297,7 @@ export function WorkoutsScreen(): React.JSX.Element {
             <Row
               title={program.name}
               subtitle={`${program.exercises.length} упражнений${program.description ? ` · ${program.description}` : ''}${program.status === 'archived' ? ' · архив' : ''}`}
-              onPress={() => editProgram(program)}
+              onPress={() => setProgramEditor(program)}
               onLongPress={() =>
                 overview.confirmDelete('Удалить программу?', () =>
                   api.deleteProgram({ id: program.id })
@@ -368,11 +330,23 @@ export function WorkoutsScreen(): React.JSX.Element {
                   label: 'Новая программа',
                   description: 'Собрать программу из упражнений',
                   icon: 'folder',
-                  onPress: () => editProgram()
+                  onPress: () => setProgramEditor('new')
                 }
         ]}
       />
       {form && <FormSheet spec={form} close={() => setForm(null)} />}
+      {programEditor ? (
+        <WorkoutProgramSheet
+          program={programEditor === 'new' ? undefined : programEditor}
+          exercises={exercises}
+          save={(input) => {
+            if ('id' in input) api.updateProgram(input)
+            else api.createProgram(input)
+            overview.refresh()
+          }}
+          close={() => setProgramEditor(null)}
+        />
+      ) : null}
       {sessionEditor ? (
         <WorkoutSessionSheet
           session={sessionEditor === 'new' ? undefined : sessionEditor}
