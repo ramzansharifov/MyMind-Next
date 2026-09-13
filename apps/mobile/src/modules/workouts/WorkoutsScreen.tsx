@@ -2,7 +2,6 @@ import { useCallback, useMemo, useState } from 'react'
 import { FlatList, View } from 'react-native'
 import type {
   WorkoutExerciseRecord,
-  WorkoutMuscleGroup,
   WorkoutProgramRecord,
   WorkoutProgressEntryRecord,
   WorkoutSessionRecord
@@ -14,7 +13,14 @@ import { useCollection } from '../../shared/hooks/useCollection'
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { MobileCreateAction } from '../../shared/ui/MobileCreateAction'
 import { choiceField, textField, type FormField, type FormSpec } from '../../shared/ui/form-model'
-import { EmptyState, ErrorState, LoadingState, Row, SearchField } from '../../shared/ui/primitives'
+import {
+  Button,
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  Row,
+  SearchField
+} from '../../shared/ui/primitives'
 import { BarChart3, Dumbbell, FileText, ListChecks, TrendingUp } from 'lucide-react-native'
 import { ModuleTabs } from '../../shared/ui/ModuleTabs'
 import { AppSelect } from '../../shared/ui/FormControls'
@@ -81,6 +87,11 @@ export function WorkoutsScreen(): React.JSX.Element {
   const [progressEditor, setProgressEditor] = useState<WorkoutProgressEntryRecord | 'new' | null>(
     null
   )
+  const [muscleMap, setMuscleMap] = useState<{
+    title: string
+    description: string
+    exercises: WorkoutMuscleMapExercise[]
+  } | null>(null)
 
   const exercises = overview.data?.exercises ?? []
   const programs = overview.data?.programs ?? []
