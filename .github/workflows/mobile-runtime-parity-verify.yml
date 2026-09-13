@@ -36,4 +36,14 @@ jobs:
       - name: Mobile DOM asset regression
         run: npm run test:dom-assets --workspace=mymind-mobile
       - name: Android export
-        run: npm run export:android
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run export:android 2>&1 | tee /tmp/android-export.log
+      - name: Upload Android export log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-export-log
+          path: /tmp/android-export.log
+          if-no-files-found: ignore
