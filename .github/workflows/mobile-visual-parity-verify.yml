@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - fix/mobile-visual-parity-round2
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 concurrency:
