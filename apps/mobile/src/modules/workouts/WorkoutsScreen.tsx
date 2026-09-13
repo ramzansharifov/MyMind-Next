@@ -31,6 +31,7 @@ import {
   type WorkoutMuscleFilter,
   type WorkoutProgramFilter
 } from './workout-filters'
+import { workoutMuscleLabel } from './workout-muscles'
 
 type Tab = 'journal' | 'exercises' | 'programs' | 'progress' | 'reports'
 
@@ -39,35 +40,12 @@ type WorkoutListItem =
   | { kind: 'exercise'; value: WorkoutExerciseRecord }
   | { kind: 'program'; value: WorkoutProgramRecord }
 
-const muscleLabels: Record<(typeof WORKOUT_MUSCLE_ZONES)[number], string> = {
-  shoulders: 'Плечи',
-  biceps: 'Бицепс',
-  triceps: 'Трицепс',
-  forearms: 'Предплечья',
-  lats: 'Широчайшие',
-  traps: 'Трапеции',
-  lower_back: 'Поясница',
-  chest: 'Грудь',
-  abs: 'Пресс',
-  glutes: 'Ягодицы',
-  quadriceps: 'Квадрицепс',
-  hamstrings: 'Бицепс бедра',
-  calves: 'Икры'
-}
-
 const exerciseCategoryOptions: Array<{ value: WorkoutExerciseCategory; label: string }> = [
   { value: 'arms', label: 'Руки' },
   { value: 'back', label: 'Спина' },
   { value: 'legs', label: 'Ноги' },
   { value: 'core', label: 'Корпус' }
 ]
-
-function workoutMuscleLabel(group: WorkoutMuscleGroup): string {
-  if (group === 'arms') return 'Руки'
-  if (group === 'back') return 'Спина'
-  if (group === 'legs') return 'Ноги'
-  return muscleLabels[group]
-}
 
 function multiField(
   key: string,
@@ -79,7 +57,7 @@ function multiField(
 
 function formatMuscles(exercise: WorkoutExerciseRecord): string {
   return exercise.muscleGroups
-    .map((group) => muscleLabels[group as keyof typeof muscleLabels] ?? group)
+    .map((group) => workoutMuscleLabel(group))
     .join(' · ')
 }
 
@@ -129,7 +107,7 @@ export function WorkoutsScreen(): React.JSX.Element {
 
   const muscleChoices = WORKOUT_MUSCLE_ZONES.map((group) => ({
     value: group,
-    label: muscleLabels[group]
+    label: workoutMuscleLabel(group)
   }))
   const exerciseChoices = exercises
     .filter((exercise) => exercise.status === 'active')
@@ -221,7 +199,7 @@ export function WorkoutsScreen(): React.JSX.Element {
               { value: 'all', label: 'Все группы мышц' },
               ...WORKOUT_MUSCLE_ZONES.map((group) => ({
                 value: group,
-                label: muscleLabels[group]
+                label: workoutMuscleLabel(group)
               }))
             ]}
             onChange={(value) => setMuscleFilter((value ?? 'all') as WorkoutMuscleFilter)}
