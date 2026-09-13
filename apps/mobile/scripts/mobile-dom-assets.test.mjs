@@ -34,7 +34,7 @@ assert.doesNotMatch(
 )
 assert.match(
   board,
-  /normalizeBundledAssetUrl/,
+  /normalizeBundledDomAssetUrl/,
   'BoardCanvasDom must normalize Metro asset modules before handing URLs to tldraw'
 )
 assert.match(
