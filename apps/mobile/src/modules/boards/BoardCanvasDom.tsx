@@ -238,17 +238,17 @@ function BoardSurface({
     <>
       <DomViewportMeta />
       <main className="board-root">
-      <BoardCanvasUiContext.Provider value={controls}>
-        <Tldraw
-          store={storeState.store}
-          assetUrls={assetUrls}
-          colorScheme={colorScheme}
-          components={boardCanvasComponents}
-          forceMobile
-          locale="ru"
-          autoFocus
-        />
-      </BoardCanvasUiContext.Provider>
+        <BoardCanvasUiContext.Provider value={controls}>
+          <Tldraw
+            store={storeState.store}
+            assetUrls={assetUrls}
+            colorScheme={colorScheme}
+            components={boardCanvasComponents}
+            forceMobile
+            locale="ru"
+            autoFocus
+          />
+        </BoardCanvasUiContext.Provider>
         <style>{styles}</style>
       </main>
     </>
