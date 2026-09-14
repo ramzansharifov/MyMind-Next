@@ -1,5 +1,7 @@
 'use dom'
 
+import { DomViewportMeta } from './DomViewportMeta'
+
 export default function StudyYouTubeDom({
   embedUrl,
   title,
@@ -10,17 +12,19 @@ export default function StudyYouTubeDom({
   dom?: import('expo/dom').DOMProps
 }): React.JSX.Element {
   return (
-    <main>
-      <iframe
-        src={embedUrl}
-        title={title}
-        loading="lazy"
-        referrerPolicy="strict-origin-when-cross-origin"
-        sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
-        allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; web-share"
-        allowFullScreen
-      />
-      <style>{`
+    <>
+      <DomViewportMeta />
+      <main>
+        <iframe
+          src={embedUrl}
+          title={title}
+          loading="lazy"
+          referrerPolicy="strict-origin-when-cross-origin"
+          sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
+          allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+        />
+        <style>{`
         html, body, #root, main {
           margin: 0;
           width: 100%;
@@ -37,7 +41,8 @@ export default function StudyYouTubeDom({
           border: 0;
           background: #000;
         }
-      `}</style>
-    </main>
+        `}</style>
+      </main>
+    </>
   )
 }

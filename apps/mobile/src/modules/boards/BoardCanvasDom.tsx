@@ -31,8 +31,12 @@ import 'tldraw/tldraw.css'
 import type { BoardSnapshot } from '@mymind/contracts/boards'
 import { BoardSaveQueue, type BoardSaveState } from '@mymind/core/board-save-queue'
 import RichContentDom, { type RichContentDomProps } from '../../shared/ui/RichContentDom'
+import { DomViewportMeta } from '../../shared/ui/DomViewportMeta'
+import { normalizeBundledDomAssetUrl } from '../../shared/platform/domAssetUrl'
 
-const assetUrls = getAssetUrlsByImport((assetUrl) => assetUrl)
+const assetUrls = getAssetUrlsByImport((assetUrl) =>
+  normalizeBundledDomAssetUrl(assetUrl as unknown)
+)
 const AUTOSAVE_DELAY_MS = 800
 
 export interface BoardCanvasDomRef extends DOMImperativeFactory {
@@ -219,19 +223,23 @@ function BoardSurface({
   }
 
   return (
-    <main className="board-root">
-      <BoardCanvasUiContext.Provider value={controls}>
-        <Tldraw
-          store={storeState.store}
-          assetUrls={assetUrls}
-          colorScheme={colorScheme}
-          components={boardCanvasComponents}
-          forceMobile
-          autoFocus
-        />
-      </BoardCanvasUiContext.Provider>
-      <style>{styles}</style>
-    </main>
+    <>
+      <DomViewportMeta />
+      <main className="board-root">
+        <BoardCanvasUiContext.Provider value={controls}>
+          <Tldraw
+            store={storeState.store}
+            assetUrls={assetUrls}
+            colorScheme={colorScheme}
+            components={boardCanvasComponents}
+            forceMobile
+            locale="ru"
+            autoFocus
+          />
+        </BoardCanvasUiContext.Provider>
+        <style>{styles}</style>
+      </main>
+    </>
   )
 }
 
@@ -246,6 +254,7 @@ const styles = `
     width: 100%;
     height: 100%;
     overflow: hidden;
+    overscroll-behavior: none;
     background: transparent;
   }
   * { box-sizing: border-box; }

@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { FlatList, View } from 'react-native'
 import type {
   WorkoutExerciseRecord,
@@ -13,14 +13,35 @@ import { useCollection } from '../../shared/hooks/useCollection'
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { MobileCreateAction } from '../../shared/ui/MobileCreateAction'
 import { choiceField, textField, type FormField, type FormSpec } from '../../shared/ui/form-model'
-import { EmptyState, ErrorState, LoadingState, Row, SearchField } from '../../shared/ui/primitives'
+import {
+  Button,
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  Row,
+  SearchField
+} from '../../shared/ui/primitives'
 import { BarChart3, Dumbbell, FileText, ListChecks, TrendingUp } from 'lucide-react-native'
 import { ModuleTabs } from '../../shared/ui/ModuleTabs'
+import { AppSelect } from '../../shared/ui/FormControls'
 import { WorkoutProgressSheet } from './WorkoutProgressSheet'
 import { WorkoutProgramSheet } from './WorkoutProgramSheet'
 import { WorkoutProgressView } from './WorkoutProgressView'
 import { WorkoutSessionSheet } from './WorkoutSessionSheet'
 import { WorkoutReportsView } from './WorkoutReportsView'
+import {
+  WorkoutMuscleMapSheet,
+  type WorkoutMuscleMapExercise
+} from './WorkoutMuscleMapSheet'
+import {
+  filterWorkoutExercises,
+  filterWorkoutPrograms,
+  filterWorkoutSessions,
+  type WorkoutExerciseCategory,
+  type WorkoutMuscleFilter,
+  type WorkoutProgramFilter
+} from './workout-filters'
+import { workoutMuscleLabel } from './workout-muscles'
 
 type Tab = 'journal' | 'exercises' | 'programs' | 'progress' | 'reports'
 
@@ -29,21 +50,12 @@ type WorkoutListItem =
   | { kind: 'exercise'; value: WorkoutExerciseRecord }
   | { kind: 'program'; value: WorkoutProgramRecord }
 
-const muscleLabels: Record<(typeof WORKOUT_MUSCLE_ZONES)[number], string> = {
-  shoulders: 'Плечи',
-  biceps: 'Бицепс',
-  triceps: 'Трицепс',
-  forearms: 'Предплечья',
-  lats: 'Широчайшие',
-  traps: 'Трапеции',
-  lower_back: 'Поясница',
-  chest: 'Грудь',
-  abs: 'Пресс',
-  glutes: 'Ягодицы',
-  quadriceps: 'Квадрицепс',
-  hamstrings: 'Бицепс бедра',
-  calves: 'Икры'
-}
+const exerciseCategoryOptions: Array<{ value: WorkoutExerciseCategory; label: string }> = [
+  { value: 'arms', label: 'Руки' },
+  { value: 'back', label: 'Спина' },
+  { value: 'legs', label: 'Ноги' },
+  { value: 'core', label: 'Корпус' }
+]
 
 function multiField(
   key: string,
@@ -55,7 +67,7 @@ function multiField(
 
 function formatMuscles(exercise: WorkoutExerciseRecord): string {
   return exercise.muscleGroups
-    .map((group) => muscleLabels[group as keyof typeof muscleLabels] ?? group)
+    .map((group) => workoutMuscleLabel(group))
     .join(' · ')
 }
 
@@ -64,38 +76,53 @@ export function WorkoutsScreen(): React.JSX.Element {
   const overview = useCollection(useCallback(() => api.listOverview(), [api]))
   const [tab, setTab] = useState<Tab>('journal')
   const [query, setQuery] = useState('')
+  const [programFilter, setProgramFilter] = useState<WorkoutProgramFilter>('all')
+  const [muscleFilter, setMuscleFilter] = useState<WorkoutMuscleFilter>('all')
+  const [exerciseCategoryFilter, setExerciseCategoryFilter] = useState<
+    'all' | WorkoutExerciseCategory
+  >('all')
   const [form, setForm] = useState<FormSpec | null>(null)
   const [sessionEditor, setSessionEditor] = useState<WorkoutSessionRecord | 'new' | null>(null)
   const [programEditor, setProgramEditor] = useState<WorkoutProgramRecord | 'new' | null>(null)
   const [progressEditor, setProgressEditor] = useState<WorkoutProgressEntryRecord | 'new' | null>(
     null
   )
+  const [muscleMap, setMuscleMap] = useState<{
+    title: string
+    description: string
+    exercises: WorkoutMuscleMapExercise[]
+  } | null>(null)
 
   const exercises = overview.data?.exercises ?? []
   const programs = overview.data?.programs ?? []
   const sessions = overview.data?.sessions ?? []
   const progressEntries = overview.data?.progressEntries ?? []
-  const normalizedQuery = query.trim().toLocaleLowerCase('ru-RU')
-
-  const filteredExercises = exercises.filter((exercise) =>
-    `${exercise.title} ${formatMuscles(exercise)}`
-      .toLocaleLowerCase('ru-RU')
-      .includes(normalizedQuery)
+  const exerciseMap = useMemo(
+    () => new Map(exercises.map((exercise) => [exercise.id, exercise])),
+    [exercises]
   )
-  const filteredPrograms = programs.filter((program) =>
-    `${program.name} ${program.description}`.toLocaleLowerCase('ru-RU').includes(normalizedQuery)
+  const filteredExercises = useMemo(
+    () =>
+      filterWorkoutExercises(
+        exercises,
+        query,
+        exerciseCategoryFilter,
+        workoutMuscleLabel
+      ),
+    [exerciseCategoryFilter, exercises, query]
   )
-  const filteredSessions = sessions.filter((session) =>
-    `${session.programName ?? 'Свободная тренировка'} ${session.comment} ${session.exercises
-      .map((exercise) => exercise.exerciseTitle)
-      .join(' ')}`
-      .toLocaleLowerCase('ru-RU')
-      .includes(normalizedQuery)
+  const filteredPrograms = useMemo(
+    () => filterWorkoutPrograms(programs, exerciseMap, query),
+    [exerciseMap, programs, query]
+  )
+  const filteredSessions = useMemo(
+    () => filterWorkoutSessions(sessions, query, programFilter, muscleFilter),
+    [muscleFilter, programFilter, query, sessions]
   )
 
   const muscleChoices = WORKOUT_MUSCLE_ZONES.map((group) => ({
     value: group,
-    label: muscleLabels[group]
+    label: workoutMuscleLabel(group)
   }))
   const exerciseChoices = exercises
     .filter((exercise) => exercise.status === 'active')
@@ -158,10 +185,53 @@ export function WorkoutsScreen(): React.JSX.Element {
         onChange={(next) => {
           setTab(next)
           setQuery('')
+          if (next !== 'journal') {
+            setProgramFilter('all')
+            setMuscleFilter('all')
+          }
+          if (next !== 'exercises') setExerciseCategoryFilter('all')
         }}
       />
       {tab !== 'reports' && tab !== 'progress' ? (
         <SearchField value={query} onChangeText={setQuery} />
+      ) : null}
+      {tab === 'journal' ? (
+        <View style={{ gap: 8 }}>
+          <AppSelect
+            label="Фильтр по программе"
+            value={programFilter}
+            choices={[
+              { value: 'all', label: 'Все программы' },
+              { value: 'custom', label: 'Свободные тренировки' },
+              ...programs.map((program) => ({ value: program.id, label: program.name }))
+            ]}
+            onChange={(value) => setProgramFilter(value ?? 'all')}
+          />
+          <AppSelect
+            label="Фильтр по группе мышц"
+            value={muscleFilter}
+            choices={[
+              { value: 'all', label: 'Все группы мышц' },
+              ...WORKOUT_MUSCLE_ZONES.map((group) => ({
+                value: group,
+                label: workoutMuscleLabel(group)
+              }))
+            ]}
+            onChange={(value) => setMuscleFilter((value ?? 'all') as WorkoutMuscleFilter)}
+          />
+        </View>
+      ) : tab === 'exercises' ? (
+        <AppSelect
+          label="Раздел упражнений"
+          value={exerciseCategoryFilter}
+          choices={[
+            { value: 'all', label: 'Все разделы' },
+            ...exerciseCategoryOptions
+          ]}
+          onChange={(value) =>
+            setExerciseCategoryFilter((value ?? 'all') as 'all' | WorkoutExerciseCategory)
+          }
+        />
       ) : null}
     </View>
   )
@@ -272,7 +342,21 @@ export function WorkoutsScreen(): React.JSX.Element {
                     api.deleteSession({ id: session.id })
                   )
                 }
-              />
+              >
+                <Button
+                  label="Карта мышц"
+                  onPress={() =>
+                    setMuscleMap({
+                      title: `Модель мышц · ${session.programName ?? session.date}`,
+                      description: 'Мышечные зоны, задействованные в этой тренировке.',
+                      exercises: session.exercises.map((exercise) => ({
+                        title: exercise.exerciseTitle,
+                        muscleGroups: exercise.muscleGroups
+                      }))
+                    })
+                  }
+                />
+              </Row>
             )
           }
           if (row.kind === 'exercise') {
@@ -303,7 +387,26 @@ export function WorkoutsScreen(): React.JSX.Element {
                   api.deleteProgram({ id: program.id })
                 )
               }
-            />
+            >
+              <Button
+                label="Карта мышц"
+                onPress={() =>
+                  setMuscleMap({
+                    title: `Карта мышц · ${program.name}`,
+                    description: 'Мышечные зоны, задействованные упражнениями программы.',
+                    exercises: program.exercises
+                      .map((item) => exerciseMap.get(item.exerciseId))
+                      .filter(
+                        (exercise): exercise is WorkoutExerciseRecord => exercise !== undefined
+                      )
+                      .map((exercise) => ({
+                        title: exercise.title,
+                        muscleGroups: exercise.muscleGroups
+                      }))
+                  })
+                }
+              />
+            </Row>
           )
         }}
       />
@@ -345,6 +448,14 @@ export function WorkoutsScreen(): React.JSX.Element {
             overview.refresh()
           }}
           close={() => setProgramEditor(null)}
+        />
+      ) : null}
+      {muscleMap ? (
+        <WorkoutMuscleMapSheet
+          title={muscleMap.title}
+          description={muscleMap.description}
+          exercises={muscleMap.exercises}
+          close={() => setMuscleMap(null)}
         />
       ) : null}
       {sessionEditor ? (

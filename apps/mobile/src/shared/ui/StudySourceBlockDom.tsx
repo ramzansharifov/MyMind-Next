@@ -22,6 +22,7 @@ import ReactMarkdown, { type Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
+import { DomViewportMeta } from './DomViewportMeta'
 import { getStudyCodeLanguage, normalizeStudyCodeLanguage } from './studySourceLanguages'
 
 export type StudySourceKind = 'code' | 'markdown' | 'latex' | 'mermaid'
@@ -586,23 +587,26 @@ export default function StudySourceBlockDom({
   })()
 
   return (
-    <main
-      ref={rootRef}
-      className={`source-root ${colorScheme}`}
-      style={
-        {
-          '--text': textColor,
-          '--muted': mutedColor,
-          '--border': borderColor,
-          '--surface': surfaceColor,
-          '--code-surface': codeSurfaceColor,
-          '--accent': accentColor
-        } as React.CSSProperties
-      }
-    >
-      {editor}
-      <style>{styles}</style>
-    </main>
+    <>
+      <DomViewportMeta />
+      <main
+        ref={rootRef}
+        className={`source-root ${colorScheme}`}
+        style={
+          {
+            '--text': textColor,
+            '--muted': mutedColor,
+            '--border': borderColor,
+            '--surface': surfaceColor,
+            '--code-surface': codeSurfaceColor,
+            '--accent': accentColor
+          } as React.CSSProperties
+        }
+      >
+        {editor}
+        <style>{styles}</style>
+      </main>
+    </>
   )
 }
 

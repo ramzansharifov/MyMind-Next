@@ -15,6 +15,7 @@ import { AppDialog } from '../../shared/ui/AppDialog'
 import { AppSelect, AppTextField } from '../../shared/ui/FormControls'
 import { Button, EmptyState, IconButton, Label } from '../../shared/ui/primitives'
 import { useTheme } from '../../shared/ui/theme'
+import { WorkoutMuscleMapSheet } from './WorkoutMuscleMapSheet'
 
 export function WorkoutProgramSheet({
   program,
@@ -34,6 +35,7 @@ export function WorkoutProgramSheet({
   const [exerciseToAdd, setExerciseToAdd] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState('')
+  const [muscleMapOpen, setMuscleMapOpen] = useState(false)
 
   const exerciseById = useMemo(
     () => new Map(exercises.map((exercise) => [exercise.id, exercise])),
@@ -42,6 +44,10 @@ export function WorkoutProgramSheet({
   const available = exercises.filter(
     (exercise) => exercise.status === 'active' && !items.includes(exercise.id)
   )
+  const muscleMapExercises = items
+    .map((exerciseId) => exerciseById.get(exerciseId))
+    .filter((exercise): exercise is WorkoutExerciseRecord => exercise !== undefined)
+    .map((exercise) => ({ title: exercise.title, muscleGroups: exercise.muscleGroups }))
 
   const add = (): void => {
     if (!exerciseToAdd) return
@@ -172,7 +178,21 @@ export function WorkoutProgramSheet({
         </View>
 
         <View style={{ gap: 8 }}>
-          <Label title>Порядок упражнений</Label>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 10
+            }}
+          >
+            <Label title>Порядок упражнений</Label>
+            <Button
+              label="Карта мышц"
+              disabled={items.length === 0}
+              onPress={() => setMuscleMapOpen(true)}
+            />
+          </View>
           {items.length === 0 ? (
             <EmptyState text="Сначала добавьте упражнения в программу." />
           ) : (
@@ -247,6 +267,14 @@ export function WorkoutProgramSheet({
           )}
         </View>
       </ScrollView>
+      {muscleMapOpen ? (
+        <WorkoutMuscleMapSheet
+          title={`Карта мышц · ${name.trim() || 'Программа'}`}
+          description="Посмотрите, какие мышечные зоны задействованы упражнениями программы."
+          exercises={muscleMapExercises}
+          close={() => setMuscleMapOpen(false)}
+        />
+      ) : null}
     </AppDialog>
   )
 }

@@ -17,6 +17,7 @@ import { Button, EmptyState, ErrorState, IconButton, Label } from '../../shared/
 import { messageFor, nullableNumeric, numeric } from '../../shared/ui/form-model'
 import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
 import { useTheme } from '../../shared/ui/theme'
+import { WorkoutMuscleMapSheet } from './WorkoutMuscleMapSheet'
 
 interface DraftSet {
   key: string
@@ -96,6 +97,7 @@ export function WorkoutSessionSheet({
   const [exerciseToAdd, setExerciseToAdd] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState('')
+  const [muscleMapOpen, setMuscleMapOpen] = useState(false)
 
   const nextKey = (prefix: string): string => `${prefix}-${++counter.current}`
   const requestClose = (): void => {
@@ -148,6 +150,11 @@ export function WorkoutSessionSheet({
     setExerciseToAdd(null)
     setError('')
   }
+
+  const muscleMapExercises = items
+    .map((item) => exerciseById.get(item.exerciseId))
+    .filter((exercise): exercise is WorkoutExerciseRecord => exercise !== undefined)
+    .map((exercise) => ({ title: exercise.title, muscleGroups: exercise.muscleGroups }))
 
   const valid =
     Boolean(date) &&
@@ -342,7 +349,21 @@ export function WorkoutSessionSheet({
         </View>
 
         <View style={{ gap: 12 }}>
-          <Label title>Упражнения</Label>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 10
+            }}
+          >
+            <Label title>Упражнения</Label>
+            <Button
+              label="Карта мышц"
+              disabled={items.length === 0}
+              onPress={() => setMuscleMapOpen(true)}
+            />
+          </View>
           {items.length === 0 ? (
             <EmptyState text="Добавьте упражнения или выберите программу." />
           ) : (
@@ -519,6 +540,14 @@ export function WorkoutSessionSheet({
           )}
         </View>
       </ScrollView>
+      {muscleMapOpen ? (
+        <WorkoutMuscleMapSheet
+          title={`Модель мышц · ${session?.programName || 'Тренировка'}`}
+          description="Посмотрите, какие мышцы задействованы в текущем составе тренировки."
+          exercises={muscleMapExercises}
+          close={() => setMuscleMapOpen(false)}
+        />
+      ) : null}
     </AppDialog>
   )
 }
