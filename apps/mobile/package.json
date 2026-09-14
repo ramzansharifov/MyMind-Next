@@ -51,7 +51,7 @@
     "@types/prismjs": "^1.26.6"
   },
   "scripts": {
-    "postinstall": "node ./scripts/patch-expo-sqlite-web.mjs && node ./scripts/patch-expo-dom-webview.mjs",
+    "postinstall": "node ./scripts/patch-expo-sqlite-web.mjs && node ./scripts/patch-expo-dom-webview.mjs && node ./scripts/patch-tldraw-dom-assets.mjs",
     "start": "expo start",
     "android": "node ./scripts/run-android.mjs",
     "ios": "expo start --ios",
@@ -66,7 +66,8 @@
     "android:clean-native": "node ./scripts/run-android.mjs --force",
     "test:android-native-cache": "node ./scripts/prepare-android-native.test.mjs",
     "test:android-sdk": "node ./scripts/run-android.test.mjs",
-    "test:dom-assets": "node ./scripts/mobile-dom-assets.test.mjs"
+    "test:dom-assets": "node ./scripts/mobile-dom-assets.test.mjs",
+    "test:tldraw-dom-assets": "node ./scripts/patch-tldraw-dom-assets.test.mjs"
   },
   "private": true
 }
