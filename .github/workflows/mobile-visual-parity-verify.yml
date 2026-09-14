@@ -35,5 +35,7 @@ jobs:
         run: npm run test:expo-dom-patch --workspace=mymind-mobile
       - name: Mobile DOM asset regression
         run: npm run test:dom-assets --workspace=mymind-mobile
+      - name: tldraw DOM asset inlining regression
+        run: npm run test:tldraw-dom-assets --workspace=mymind-mobile
       - name: Android export
         run: npm run export:android
