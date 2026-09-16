@@ -6,7 +6,10 @@ import type {
   UpdateLocalProfileInput
 } from '@mymind/contracts/profile-sync'
 
-import { PROFILE_SYNC_IPC_CHANNELS } from '../../shared/contracts/profile-sync'
+import {
+  PROFILE_SYNC_IPC_CHANNELS,
+  type ProfileSyncPrepareResponse
+} from '../../shared/contracts/profile-sync'
 import {
   createLocalProfile,
   getLocalProfile,
@@ -20,6 +23,7 @@ import { mainOperationTracker } from '../services/main-operation-tracker'
 interface RegisterProfileSyncIpcOptions {
   getTrustedWebContents(): WebContents | null
   server: LanSyncServer
+  onPrepareResponse(response: ProfileSyncPrepareResponse): void
 }
 
 function assertTrustedSender(
@@ -95,7 +99,8 @@ export function registerProfileSyncIpcHandlers(options: RegisterProfileSyncIpcOp
     PROFILE_SYNC_IPC_CHANNELS.updateProfile,
     PROFILE_SYNC_IPC_CHANNELS.replaceCredentials,
     PROFILE_SYNC_IPC_CHANNELS.removeProfile,
-    PROFILE_SYNC_IPC_CHANNELS.getLanStatus
+    PROFILE_SYNC_IPC_CHANNELS.getLanStatus,
+    PROFILE_SYNC_IPC_CHANNELS.respondToPrepare
   ]) {
     ipcMain.removeHandler(channel)
   }
@@ -140,5 +145,22 @@ export function registerProfileSyncIpcHandlers(options: RegisterProfileSyncIpcOp
   ipcMain.handle(PROFILE_SYNC_IPC_CHANNELS.getLanStatus, (event) => {
     assertTrustedSender(event, options.getTrustedWebContents)
     return options.server.getStatus()
+  })
+
+  ipcMain.handle(PROFILE_SYNC_IPC_CHANNELS.respondToPrepare, (event, rawResponse: unknown) => {
+    assertTrustedSender(event, options.getTrustedWebContents)
+    const response = record(rawResponse)
+    if (
+      typeof response.requestId !== 'string' ||
+      typeof response.success !== 'boolean' ||
+      (response.message !== undefined && typeof response.message !== 'string')
+    ) {
+      throw new Error('Некорректный ответ подготовки синхронизации')
+    }
+    options.onPrepareResponse({
+      requestId: response.requestId,
+      success: response.success,
+      message: typeof response.message === 'string' ? response.message : undefined
+    })
   })
 }
