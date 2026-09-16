@@ -107,7 +107,11 @@ export function registerProfileSyncIpcHandlers(options: RegisterProfileSyncIpcOp
 
   ipcMain.handle(PROFILE_SYNC_IPC_CHANNELS.createProfile, (event, rawInput: unknown) => {
     assertTrustedSender(event, options.getTrustedWebContents)
-    return mainOperationTracker.run(() => createLocalProfile(parseCreateProfile(rawInput)))
+    return mainOperationTracker.run(async () => {
+      const profile = await createLocalProfile(parseCreateProfile(rawInput))
+      await options.server.invalidateAuthorization()
+      return profile
+    })
   })
 
   ipcMain.handle(PROFILE_SYNC_IPC_CHANNELS.updateProfile, (event, rawInput: unknown) => {
@@ -117,14 +121,20 @@ export function registerProfileSyncIpcHandlers(options: RegisterProfileSyncIpcOp
 
   ipcMain.handle(PROFILE_SYNC_IPC_CHANNELS.replaceCredentials, (event, rawInput: unknown) => {
     assertTrustedSender(event, options.getTrustedWebContents)
-    return mainOperationTracker.run(() =>
-      replaceLocalProfileCredentials(parseReplaceCredentials(rawInput))
-    )
+    return mainOperationTracker.run(async () => {
+      const profile = await replaceLocalProfileCredentials(parseReplaceCredentials(rawInput))
+      await options.server.invalidateAuthorization()
+      return profile
+    })
   })
 
   ipcMain.handle(PROFILE_SYNC_IPC_CHANNELS.removeProfile, (event) => {
     assertTrustedSender(event, options.getTrustedWebContents)
-    return mainOperationTracker.run(() => removeLocalProfile())
+    return mainOperationTracker.run(async () => {
+      const removed = await removeLocalProfile()
+      await options.server.invalidateAuthorization()
+      return removed
+    })
   })
 
   ipcMain.handle(PROFILE_SYNC_IPC_CHANNELS.getLanStatus, (event) => {
