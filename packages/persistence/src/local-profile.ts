@@ -172,7 +172,15 @@ export function createLocalProfileRepository(
       assertValidProfilePassword(input.password)
       const key = await deriveProfileSyncKey(normalizedLogin, input.password)
       const nextSecret = profileSyncKeyToHex(key)
-      const previousSecret = await secret.get()
+      let previousSecret: string | null = null
+      let previousSecretReadable = false
+      try {
+        previousSecret = await secret.get()
+        previousSecretReadable = true
+      } catch {
+        // A copied/restored profile may carry an OS-bound encrypted secret that this device
+        // cannot decrypt. Replacing credentials is the recovery path for that state.
+      }
       const credentialFingerprint = profileSyncKeyFingerprint(key)
       const updatedAt = runtime.now()
 
@@ -186,8 +194,11 @@ export function createLocalProfileRepository(
           )
           .run(login, normalizedLogin, credentialFingerprint, updatedAt, current.id)
       } catch (reason) {
-        if (previousSecret) await secret.set(previousSecret).catch(() => undefined)
-        else await secret.remove().catch(() => undefined)
+        if (previousSecretReadable && previousSecret) {
+          await secret.set(previousSecret).catch(() => undefined)
+        } else {
+          await secret.remove().catch(() => undefined)
+        }
         throw reason
       } finally {
         key.fill(0)
