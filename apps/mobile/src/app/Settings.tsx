@@ -8,11 +8,10 @@ import { messageFor } from '../shared/ui/form-model'
 import { WorkspaceNodeCard, WorkspacePanel } from '../shared/ui/Workspace'
 import { useTheme } from '../shared/ui/theme'
 import { ReminderSettings } from './ReminderSettings'
-import { SettingsInstructions } from './SettingsInstructions'
 import { useConfirmation } from '../shared/ui/ConfirmationProvider'
 import { useToast } from '../shared/ui/ToastProvider'
 
-type SettingsPage = 'overview' | 'appearance' | 'reminders' | 'instructions' | 'data'
+type SettingsPage = 'overview' | 'appearance' | 'reminders' | 'data'
 
 const accentNames = {
   violet: 'Фиолетовый',
@@ -182,15 +181,6 @@ export function Settings({
     )
   }
 
-  if (page === 'instructions') {
-    return (
-      <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
-        {back}
-        <SettingsInstructions />
-      </ScrollView>
-    )
-  }
-
   if (page === 'data') {
     return (
       <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
@@ -202,8 +192,8 @@ export function Settings({
         >
           <View style={{ gap: 12 }}>
             <Label muted>
-              Один локальный файл содержит базу MyMind, вложения обучения и заметок, а также
-              фотографии прогресса тренировок. Хранилище паролей остаётся зашифрованным — открытые
+              Один локальный файл содержит базу MyMind, вложения заметок и фотографии прогресса
+              тренировок. Хранилище паролей остаётся зашифрованным — открытые
               пароли и ключ разблокировки в backup не записываются.
             </Label>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -242,12 +232,6 @@ export function Settings({
           subtitle="Календарь и привычки · системные уведомления телефона"
           leadingIcon="calendar"
           onPress={() => setPage('reminders')}
-        />
-        <WorkspaceNodeCard
-          title="Инструкции"
-          subtitle="Обучение и доски · основные сценарии и правила работы"
-          leadingIcon="info"
-          onPress={() => setPage('instructions')}
         />
         <WorkspaceNodeCard
           title="Локальные данные"
