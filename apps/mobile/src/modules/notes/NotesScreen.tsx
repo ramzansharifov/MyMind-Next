@@ -12,7 +12,6 @@ import {
   View
 } from 'react-native'
 import type { NoteDocument, NoteGroup, NoteRecord, NoteSummary } from '@mymind/contracts/notes'
-import type { ResolveStudyInternalLinkTargetInput, StudyBoardBlock } from '@mymind/contracts/study'
 import { AutosaveQueue } from '@mymind/core/autosave'
 import * as notesValidation from '@mymind/core/validation/notes'
 import { useServices } from '../../app/context'
@@ -179,15 +178,11 @@ function noteMatches(note: NoteSummary, query: string): boolean {
 }
 
 export function NotesScreen({
-  onOpenBoard,
-  onOpenStudyTarget,
   onImmersiveChange
 }: {
-  onOpenBoard?: (boardId: string) => void
-  onOpenStudyTarget?: (target: ResolveStudyInternalLinkTargetInput) => void
   onImmersiveChange?: (immersive: boolean) => void
 }): React.JSX.Element {
-  const { notes: api, boards, study, documentAssets } = useServices()
+  const { notes: api, documentAssets } = useServices()
   const theme = useTheme()
   const confirm = useConfirmation()
   const toast = useToast()
@@ -325,52 +320,6 @@ export function NotesScreen({
       .catch((reason) => setEditorError(messageFor(reason)))
       .finally(() => setModeChanging(false))
   }
-
-  const openStudyInternalLink = useCallback(
-    (input: ResolveStudyInternalLinkTargetInput): void => {
-      const target = study.resolveInternalLinkTarget(input)
-      if (!target) {
-        toast.error('Материал или заголовок был удалён.', 'notes-link-unavailable')
-        return
-      }
-      if (!onOpenStudyTarget) {
-        toast.error('Переход к материалу сейчас недоступен.', 'notes-link-navigation-unavailable')
-        return
-      }
-      onOpenStudyTarget({
-        kind: target.kind,
-        materialId: target.materialId,
-        headingId: target.headingId
-      })
-    },
-    [onOpenStudyTarget, study, toast]
-  )
-
-  const openLinkedBoard = useCallback(
-    async (block: StudyBoardBlock): Promise<void> => {
-      if (!record || !document || !onOpenBoard) {
-        throw new Error('Связанную доску сейчас нельзя открыть')
-      }
-      await flush()
-      const board = boards.ensureNoteBoard({ noteId: record.id, blockId: block.id })
-      if (block.boardId !== board.id || block.title !== board.title) {
-        const nextDocument: NoteDocument = {
-          ...document,
-          blocks: document.blocks.map((item) =>
-            item.id === block.id && item.type === 'board'
-              ? { ...item, boardId: board.id, title: board.title }
-              : item
-          )
-        }
-        setDocument(nextDocument)
-        queueRef.current?.schedule(nextDocument)
-        await flush()
-      }
-      notifyDataChanged()
-      onOpenBoard(board.id)
-    },
-    [boards, document, flush, onOpenBoard, record]
-  )
 
   const groupChoices = [
     { value: null, label: 'Без группы' },
@@ -565,16 +514,6 @@ export function NotesScreen({
           openAsset={documentAssets.openAsset}
           resolveAssetUri={documentAssets.resolveAssetUri}
           saveRecordedAudio={(input) => documentAssets.saveRecordedAudio(record.id, input)}
-          openBoard={openLinkedBoard}
-          searchInternalLinkTargets={(linkQuery) =>
-            study.searchInternalLinkTargets({
-              query: linkQuery,
-              currentMaterialId: record.id,
-              limit: 40
-            })
-          }
-          resolveInternalLinkTarget={(input) => study.resolveInternalLinkTarget(input)}
-          onOpenInternalLink={openStudyInternalLink}
           onAssetError={(reason) => setEditorError(messageFor(reason))}
           header={
             <View
