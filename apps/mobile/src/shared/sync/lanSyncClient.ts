@@ -398,6 +398,21 @@ function parseCommit(value: unknown): SyncCommitResponse {
   return { committedAt: input.committedAt }
 }
 
+function isPrivateIpv4(value: string): boolean {
+  const match = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(value)
+  if (!match) return false
+  const octets = match.slice(1).map(Number)
+  if (octets.some((octet) => !Number.isInteger(octet) || octet < 0 || octet > 255)) return false
+  const [a, b] = octets
+  return (
+    a === 10 ||
+    a === 127 ||
+    (a === 169 && b === 254) ||
+    (a === 172 && b !== undefined && b >= 16 && b <= 31) ||
+    (a === 192 && b === 168)
+  )
+}
+
 function normalizeManualHost(value: string): string {
   const host = value.trim().replace(/^https?:\/\//i, '').replace(/\/.*$/, '')
   const withoutPort = host.replace(/:\d+$/, '')
@@ -405,9 +420,8 @@ function normalizeManualHost(value: string): string {
   if (!/^\d{1,3}(?:\.\d{1,3}){3}$/.test(withoutPort)) {
     throw new Error('Для ручного подключения укажите локальный IPv4-адрес компьютера')
   }
-  const octets = withoutPort.split('.').map(Number)
-  if (octets.some((octet) => octet < 0 || octet > 255)) {
-    throw new Error('Некорректный IPv4-адрес компьютера')
+  if (!isPrivateIpv4(withoutPort)) {
+    throw new Error('Укажите локальный IPv4-адрес компьютера из вашей Wi-Fi / LAN сети')
   }
   return withoutPort
 }
@@ -416,7 +430,12 @@ function subnetHosts(ip: string): string[] {
   const match = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(ip)
   if (!match) return []
   const octets = match.slice(1).map(Number)
-  if (octets.some((value) => !Number.isInteger(value) || value < 0 || value > 255)) return []
+  if (
+    octets.some((value) => !Number.isInteger(value) || value < 0 || value > 255) ||
+    !isPrivateIpv4(ip)
+  ) {
+    return []
+  }
   const prefix = octets.slice(0, 3).join('.')
   const current = octets[3]
   const suffixes = [1, 2, 254, ...Array.from({ length: 254 }, (_, index) => index + 1)]
