@@ -18,8 +18,9 @@
   },
   "dependencies": {
     "@mymind/contracts": "1.0.0",
-    "zod": "^4.4.3",
-    "@noble/hashes": "2.4.0"
+    "@noble/ciphers": "2.4.0",
+    "@noble/hashes": "2.4.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "typescript": "^5.9.3"
