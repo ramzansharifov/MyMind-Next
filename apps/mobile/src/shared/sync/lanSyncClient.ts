@@ -22,6 +22,7 @@ import {
   createProfileSyncProof,
   timingSafeHexEqual
 } from '@mymind/core/profile-sync'
+import { listRemovedSyncAssetReferences } from '@mymind/core/sync-assets'
 import { parseSyncDataSnapshot } from '@mymind/core/sync-protocol'
 import type { LocalProfileRepository } from '@mymind/persistence/local-profile'
 import {
@@ -37,6 +38,7 @@ import {
   encodeSyncBase64,
   normalizeMobileWorkoutPhotoUrls,
   readMobileSyncAssetChunks,
+  removeMobileSyncAssets,
   stageMobileSyncAssetChunk,
   verifyStagedMobileSyncAsset
 } from './mobileSyncAssets'
@@ -599,8 +601,10 @@ export function createMobileLanSyncClient(
           JSON.stringify(currentLocal.modules) === JSON.stringify(localSnapshot.modules)
             ? plan.snapshot
             : mergeSyncSnapshots(currentLocal, plan.snapshot).snapshot
+        const removedAssets = listRemovedSyncAssetReferences(currentLocal, finalSnapshot)
         applySyncSnapshot(database, finalSnapshot)
         normalizeMobileWorkoutPhotoUrls(database, finalSnapshot)
+        removeMobileSyncAssets(removedAssets)
 
         return {
           startedAt,
