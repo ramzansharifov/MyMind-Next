@@ -67,11 +67,13 @@ const DEVICE_META_KEY = 'lan-sync-device-id-v1'
 const AUTH_FAILURE_WINDOW_MS = 60_000
 const AUTH_FAILURE_LIMIT = 5
 const AUTH_BLOCK_MS = 5 * 60_000
+const ACTIVE_CHALLENGE_LIMIT_PER_CLIENT = 8
 const SHA256_PATTERN = /^[0-9a-f]{64}$/
 const BASE64_PATTERN = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/
 
 interface Challenge {
   id: string
+  clientKey: string
   login: string
   clientNonce: string
   serverNonce: string
@@ -603,8 +605,17 @@ export class LanSyncServer {
         return
       }
       const input = parseChallengeRequest(await readJson(request, 16 * 1024))
+      const clientKey = remoteClientKey(request)
+      const activeChallenges = [...this.challenges.values()].filter(
+        (challenge) => challenge.clientKey === clientKey
+      ).length
+      if (activeChallenges >= ACTIVE_CHALLENGE_LIMIT_PER_CLIENT) {
+        errorResponse(response, 429, 'Слишком много незавершённых попыток входа. Повторите позже.')
+        return
+      }
       const challenge: Challenge = {
         id: randomUUID(),
+        clientKey,
         login: profile.normalizedLogin,
         clientNonce: input.clientNonce,
         serverNonce: randomBytes(24).toString('hex'),
@@ -631,8 +642,10 @@ export class LanSyncServer {
       if (
         !challenge ||
         challenge.expiresAt <= Date.now() ||
+        challenge.clientKey !== remoteClientKey(request) ||
         challenge.clientNonce !== input.clientNonce
       ) {
+        this.recordAuthFailure(request)
         errorResponse(response, 401, 'Challenge истёк или не совпадает')
         return
       }
