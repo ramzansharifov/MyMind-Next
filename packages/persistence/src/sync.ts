@@ -398,6 +398,15 @@ function mergeTable(
     throw new Error(`Sync table mismatch for ${definition.table}`)
   }
 
+  for (const table of [left, right]) {
+    for (const row of table.rows) {
+      if (canonicalKey(definition, row.data) !== row.key) {
+        throw new Error(`Неканонический ключ записи sync: ${definition.table}`)
+      }
+    }
+    for (const tombstone of table.tombstones) parseKey(definition, tombstone.key)
+  }
+
   const leftRows = new Map(left.rows.map((row) => [row.key, row]))
   const rightRows = new Map(right.rows.map((row) => [row.key, row]))
   const leftDeleted = new Map(left.tombstones.map((row) => [row.key, row.deletedAt]))
