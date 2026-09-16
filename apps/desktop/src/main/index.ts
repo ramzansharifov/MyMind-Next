@@ -19,6 +19,7 @@ import { focusExistingAppWindow } from './security/single-instance'
 import { AiChatViewController } from './services/ai-chat-view-controller'
 import { CalendarReminderScheduler } from './services/calendar-reminder-scheduler'
 import { HabitReminderScheduler } from './services/habit-reminder-scheduler'
+import { LanSyncRendererCoordinator } from './services/lan-sync-renderer-coordinator'
 import { LanSyncServer } from './services/lan-sync-server'
 import { mainOperationTracker } from './services/main-operation-tracker'
 import { clearTrackedPasswordClipboard } from './services/password-clipboard'
@@ -39,11 +40,26 @@ import {
 import { runStudyPlainTextMaintenance } from './services/study-plain-text-maintenance'
 
 let mainWindow: BrowserWindow | null = null
-const lanSyncServer = new LanSyncServer((modules) => {
-  const window = mainWindow
-  if (!window || window.isDestroyed() || window.webContents.isDestroyed()) return
-  window.webContents.send(PROFILE_SYNC_IPC_CHANNELS.dataChanged, modules)
-})
+const lanSyncRendererCoordinator = new LanSyncRendererCoordinator()
+const lanSyncServer = new LanSyncServer(
+  (modules) => {
+    const window = mainWindow
+    if (!window || window.isDestroyed() || window.webContents.isDestroyed()) return
+    window.webContents.send(PROFILE_SYNC_IPC_CHANNELS.dataChanged, modules)
+  },
+  (modules) =>
+    lanSyncRendererCoordinator.prepare(modules, {
+      isAvailable: () =>
+        Boolean(mainWindow && !mainWindow.isDestroyed() && !mainWindow.webContents.isDestroyed()),
+      send: (request) => {
+        const window = mainWindow
+        if (!window || window.isDestroyed() || window.webContents.isDestroyed()) {
+          throw new Error('Интерфейс MyMind недоступен')
+        }
+        window.webContents.send(PROFILE_SYNC_IPC_CHANNELS.prepareRequested, request)
+      }
+    })
+)
 const aiChatViewController = new AiChatViewController(() => mainWindow)
 const calendarReminderScheduler = new CalendarReminderScheduler(() => mainWindow)
 const habitReminderScheduler = new HabitReminderScheduler(() => mainWindow)
@@ -275,6 +291,7 @@ function createWindow(): void {
     aiChatViewController.onWindowClosed(window)
     if (mainWindow === window) {
       mainWindow = null
+      lanSyncRendererCoordinator.cancelAll('Интерфейс MyMind закрыт')
     }
   })
 
@@ -386,6 +403,7 @@ if (!hasSingleInstanceLock) {
     registerIpcHandlers({
       getTrustedWebContents: () => mainWindow?.webContents ?? null,
       lanSyncServer,
+      onProfileSyncPrepareResponse: (response) => lanSyncRendererCoordinator.respond(response),
       storage: {
         getInfo: getStorageInfo,
         openLocation: async () => {
