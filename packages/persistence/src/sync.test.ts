@@ -447,4 +447,71 @@ describe('LAN sync snapshot merge', () => {
     }
   })
 
+
+  it('refuses concurrent master-password changes for the same password vault lineage', () => {
+    const left = createDatabase()
+    const right = createDatabase()
+    try {
+      const leftDb = adapt(left)
+      const rightDb = adapt(right)
+      ensureSyncInfrastructure(leftDb)
+      ensureSyncInfrastructure(rightDb)
+
+      const insertVault = (db: Database.Database): void => {
+        db.prepare(
+          `INSERT INTO password_vault(
+            id, version, kdf_salt, kdf_n, kdf_r, kdf_p,
+            wrapped_key_nonce, wrapped_key_ciphertext, wrapped_key_tag,
+            created_at, updated_at
+          ) VALUES ('default', 1, 'salt', 32768, 8, 1, 'nonce', 'cipher', 'tag', 10, 10)`
+        ).run()
+      }
+      insertVault(left)
+      insertVault(right)
+
+      const initial = mergeSyncSnapshots(
+        captureSyncSnapshot(leftDb, ['passwords']),
+        captureSyncSnapshot(rightDb, ['passwords'])
+      )
+      applySyncSnapshot(leftDb, initial.snapshot)
+      applySyncSnapshot(rightDb, initial.snapshot)
+
+      left.prepare(
+        `UPDATE password_vault
+         SET kdf_salt = 'left-salt',
+             wrapped_key_nonce = 'left-nonce',
+             wrapped_key_ciphertext = 'left-cipher',
+             wrapped_key_tag = 'left-tag',
+             updated_at = 20
+         WHERE id = 'default'`
+      ).run()
+      right.prepare(
+        `UPDATE password_vault
+         SET kdf_salt = 'right-salt',
+             wrapped_key_nonce = 'right-nonce',
+             wrapped_key_ciphertext = 'right-cipher',
+             wrapped_key_tag = 'right-tag',
+             updated_at = 20
+         WHERE id = 'default'`
+      ).run()
+
+      const leftSnapshot = captureSyncSnapshot(leftDb, ['passwords'])
+      const rightSnapshot = captureSyncSnapshot(rightDb, ['passwords'])
+      const leftVault = leftSnapshot.modules[0]?.tables
+        .find((table) => table.table === 'password_vault')
+        ?.rows[0]
+      const rightVault = rightSnapshot.modules[0]?.tables
+        .find((table) => table.table === 'password_vault')
+        ?.rows[0]
+
+      expect(leftVault?.version).toBe(rightVault?.version)
+      expect(() => mergeSyncSnapshots(leftSnapshot, rightSnapshot)).toThrow(
+        /Мастер-пароль хранилища был изменён на обоих устройствах/
+      )
+    } finally {
+      left.close()
+      right.close()
+    }
+  })
+
 })
