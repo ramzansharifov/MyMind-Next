@@ -596,7 +596,7 @@ export function NotesBlockSettingsSheet({
       case 'divider':
         return 'Настройки разделителя'
       case 'board':
-        return 'Настройки доски'
+        return 'Недоступный блок'
       case 'text':
         return 'Настройки текста'
     }
@@ -922,26 +922,6 @@ export function NotesBlockSettingsSheet({
           </>
         ) : null}
 
-        {block.type === 'board' ? (
-          <View
-            style={{
-              padding: 13,
-              borderWidth: 1,
-              borderColor: theme.border,
-              borderRadius: 14,
-              backgroundColor: theme.surface
-            }}
-          >
-            <Text style={{ color: theme.text, fontSize: 14, fontWeight: '700' }}>
-              {block.title ?? 'Доска заметки'}
-            </Text>
-            <Text style={{ marginTop: 4, color: theme.muted, fontSize: 12, lineHeight: 17 }}>
-              {block.boardId
-                ? 'Связь с доской создана. Содержимое управляется в модуле «Доски».'
-                : 'Доска будет создана при первом открытии блока.'}
-            </Text>
-          </View>
-        ) : null}
       </ScrollView>
     </AppDialog>
   )
