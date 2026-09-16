@@ -141,11 +141,18 @@ function createTriggerSql(definition: SyncTableDefinition): string[] {
   const insertKey = keyExpression('NEW', definition.keyColumns)
   const deleteKey = keyExpression('OLD', definition.keyColumns)
   const enabled = `COALESCE((SELECT value FROM sync_runtime WHERE key = 'applying_remote'), '0') <> '1'`
-  const insertRevision = `COALESCE((
-    SELECT changed_at
-    FROM sync_row_versions
-    WHERE table_name = '${definition.table}' AND row_key = ${insertKey}
-  ), 1) + 1`
+  const insertRevision = `MAX(
+    COALESCE((
+      SELECT changed_at
+      FROM sync_row_versions
+      WHERE table_name = '${definition.table}' AND row_key = ${insertKey}
+    ), 1),
+    COALESCE((
+      SELECT deleted_at
+      FROM sync_tombstones
+      WHERE table_name = '${definition.table}' AND row_key = ${insertKey}
+    ), 1)
+  ) + 1`
   const deleteRevision = `COALESCE((
     SELECT changed_at
     FROM sync_row_versions
