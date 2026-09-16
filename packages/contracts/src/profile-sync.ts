@@ -97,6 +97,7 @@ export interface SyncProofResponse {
 
 export interface LanSyncEncryptedEnvelope {
   version: 1
+  requestId: string
   nonce: string
   ciphertext: string
   tag: string
