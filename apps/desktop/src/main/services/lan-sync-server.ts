@@ -522,9 +522,12 @@ export class LanSyncServer {
   async stop(): Promise<void> {
     const server = this.server
     this.server = null
+    if (server) {
+      // Stop accepting new requests first and wait for in-flight transfers before deleting
+      // staged files or closing/moving the underlying storage.
+      await new Promise<void>((resolvePromise) => server.close(() => resolvePromise()))
+    }
     await this.invalidateAuthorization()
-    if (!server) return
-    await new Promise<void>((resolvePromise) => server.close(() => resolvePromise()))
   }
 
   getStatus(): LanSyncHostStatus {
