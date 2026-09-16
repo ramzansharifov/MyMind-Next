@@ -2,8 +2,6 @@ import type { AppIconName } from '../shared/ui/icons'
 
 export type Route =
   | 'home'
-  | 'study'
-  | 'boards'
   | 'notes'
   | 'tasks'
   | 'habits'
@@ -20,8 +18,6 @@ export type Route =
 
 export const routeTitles: Record<Route, string> = {
   home: 'Главная',
-  study: 'Обучение',
-  boards: 'Доски',
   notes: 'Заметки',
   tasks: 'Задачи',
   habits: 'Привычки',
@@ -39,8 +35,6 @@ export const routeTitles: Record<Route, string> = {
 
 export const routeIcons: Record<Route, AppIconName> = {
   home: 'home',
-  study: 'study',
-  boards: 'boards',
   notes: 'notes',
   tasks: 'tasks',
   habits: 'habits',
@@ -59,8 +53,6 @@ export const routeIcons: Record<Route, AppIconName> = {
 export const primaryTabs = ['home', 'notes', 'tasks', 'habits', 'more'] as const
 
 export const moreRoutes: Route[] = [
-  'study',
-  'boards',
   'workouts',
   'nutrition',
   'calendar',
