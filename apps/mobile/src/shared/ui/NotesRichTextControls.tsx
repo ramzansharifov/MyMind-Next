@@ -1,6 +1,5 @@
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 import { useState } from 'react'
-import type { StudyInternalLinkTarget } from '@mymind/contracts/study'
 import {
   AlignCenter,
   AlignJustify,
@@ -30,7 +29,6 @@ import type {
   NotesRichTextFormattingState,
   NotesRichTextCommand
 } from './NotesRichTextDom'
-import { StudyInternalLinkPicker } from './StudyRichTextEditor'
 import { Button, Label } from './primitives'
 import { useTheme } from './theme'
 
@@ -205,38 +203,6 @@ export function NotesRichTextInlineControls({
   )
 }
 
-function escapeHtmlAttribute(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-}
-
-function escapeHtmlText(value: string): string {
-  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-}
-
-function internalLinkHtml(target: StudyInternalLinkTarget, label: string): string {
-  const effectiveLabel = label.trim() || target.title
-  const attrs = [
-    'data-study-internal-link="true"',
-    'contenteditable="false"',
-    `data-target-kind="${target.kind}"`,
-    `data-material-id="${escapeHtmlAttribute(target.materialId)}"`,
-    target.headingId ? `data-heading-id="${escapeHtmlAttribute(target.headingId)}"` : '',
-    target.headingLevel ? `data-heading-level="${target.headingLevel}"` : '',
-    `data-label-mode="${label.trim() ? 'custom' : 'auto'}"`,
-    `data-label="${escapeHtmlAttribute(effectiveLabel)}"`,
-    `data-material-title="${escapeHtmlAttribute(target.materialTitle)}"`,
-    `data-folder-path="${escapeHtmlAttribute(JSON.stringify(target.folderPath))}"`
-  ]
-    .filter(Boolean)
-    .join(' ')
-  return `<span ${attrs}>${escapeHtmlText(effectiveLabel)}</span>`
-}
-
 function Swatch({
   color,
   selected,
@@ -274,31 +240,20 @@ export function NotesRichTextSettingsSheet({
   open,
   close,
   editor,
-  state,
-  searchTargets
+  state
 }: {
   open: boolean
   close(): void
   editor: NotesRichTextDomRef | null
   state: NotesRichTextFormattingState
-  searchTargets?: (query: string) => StudyInternalLinkTarget[]
 }): React.JSX.Element {
   const theme = useTheme()
   const [linkOpen, setLinkOpen] = useState(false)
   const [href, setHref] = useState('')
-  const [internalOpen, setInternalOpen] = useState(false)
-  const [selectedText, setSelectedText] = useState('')
 
   const openLink = (): void => {
     setHref(state.href)
     setLinkOpen(true)
-  }
-
-  const openInternal = (): void => {
-    void editor?.getSelectedText().then((text) => {
-      setSelectedText(text)
-      setInternalOpen(true)
-    })
   }
 
   return (
@@ -485,7 +440,6 @@ export function NotesRichTextSettingsSheet({
           <View style={{ gap: 8 }}>
             <Label muted>Ссылки</Label>
             <View style={{ flexDirection: 'row', gap: 8 }}>
-              <Button label="Внутренняя" compact disabled={!searchTargets} onPress={openInternal} />
               <Button
                 label={state.linkActive ? 'Изменить ссылку' : 'Обычная ссылка'}
                 compact
@@ -556,17 +510,6 @@ export function NotesRichTextSettingsSheet({
         </View>
       </AppDialog>
 
-      {internalOpen && searchTargets ? (
-        <StudyInternalLinkPicker
-          searchTargets={searchTargets}
-          save={(target, customLabel) => {
-            const label = customLabel.trim() || selectedText.trim()
-            void editor?.insertInternalLink(internalLinkHtml(target, label))
-            setInternalOpen(false)
-          }}
-          close={() => setInternalOpen(false)}
-        />
-      ) : null}
     </>
   )
 }
