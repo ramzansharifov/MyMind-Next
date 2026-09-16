@@ -15,6 +15,7 @@ import { aiChatBoundsSchema, setAiChatOpenInputSchema } from '../../shared/valid
 import { shutdownResponseSchema, systemHealthSchema } from '../../shared/validation/system'
 import { getSqlite } from '../database/client'
 import { mainOperationTracker } from '../services/main-operation-tracker'
+import type { ProfileSyncPrepareResponse } from '../../shared/contracts/profile-sync'
 import type { LanSyncServer } from '../services/lan-sync-server'
 import { registerBoardsIpcHandlers } from './register-boards-ipc'
 import { registerCalendarIpcHandlers } from './register-calendar-ipc'
@@ -49,6 +50,7 @@ interface RegisterIpcHandlersOptions {
     reload(): void
   }
   lanSyncServer: LanSyncServer
+  onProfileSyncPrepareResponse(response: ProfileSyncPrepareResponse): void
   onShutdownResponse(
     response: ReturnType<typeof shutdownResponseSchema.parse>
   ): void | Promise<void>
@@ -100,7 +102,8 @@ export function registerIpcHandlers(options: RegisterIpcHandlersOptions): void {
   registerPreferencesIpcHandlers()
   registerProfileSyncIpcHandlers({
     getTrustedWebContents: options.getTrustedWebContents,
-    server: options.lanSyncServer
+    server: options.lanSyncServer,
+    onPrepareResponse: options.onProfileSyncPrepareResponse
   })
 
   ipcMain.removeHandler(AI_CHAT_IPC_CHANNELS.setOpen)
