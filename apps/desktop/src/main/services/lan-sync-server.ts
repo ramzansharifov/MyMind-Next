@@ -38,6 +38,7 @@ import {
   captureSyncSnapshot,
   ensureSyncInfrastructure,
   mergeSyncSnapshots,
+  reconcileSyncSnapshotForeignKeys,
   summarizeSyncMerge
 } from '@mymind/persistence/sync'
 import type { LanSyncHostStatus } from '../../shared/contracts/profile-sync'
@@ -717,15 +718,16 @@ export class LanSyncServer {
         const database = desktopRepositoryRuntime.database() as SqlDatabasePort
         const localSnapshot = captureSyncSnapshot(database, modules)
         const merged = mergeSyncSnapshots(localSnapshot, remoteSnapshot)
-        const serverAssets = await collectDesktopSyncAssetManifest(merged.snapshot)
-        const transfers = planAssets(merged.snapshot, clientAssets, serverAssets)
+        const reconciledSnapshot = reconcileSyncSnapshotForeignKeys(database, merged.snapshot)
+        const serverAssets = await collectDesktopSyncAssetManifest(reconciledSnapshot)
+        const transfers = planAssets(reconciledSnapshot, clientAssets, serverAssets)
         return {
           localBaseline: localSnapshot,
-          snapshot: merged.snapshot,
+          snapshot: reconciledSnapshot,
           summaries: summarizeSyncMerge(
             localSnapshot,
             remoteSnapshot,
-            merged.snapshot,
+            reconciledSnapshot,
             merged.conflicts
           ),
           serverBaselineAssets: serverAssets,
