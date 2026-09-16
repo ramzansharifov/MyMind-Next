@@ -100,6 +100,7 @@ export interface SyncProofResponse {
 
 export const LAN_SYNC_PROTOCOL_VERSION = 1 as const
 export const LAN_SYNC_DEFAULT_PORT = 49632
+export const LAN_SYNC_PORT_SPAN = 5
 
 export type SyncScalar = string | number | null
 
