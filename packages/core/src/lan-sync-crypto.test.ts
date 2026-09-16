@@ -31,7 +31,7 @@ describe('LAN sync application encryption', () => {
         'POST',
         '/mymind-sync/v1/plan',
         'token',
-        'request-fedcba98'
+        'request-12345678'
       )
     ).toEqual({ secret: 'данные', count: 3 })
   })
@@ -71,6 +71,17 @@ describe('LAN sync application encryption', () => {
         'request-abcdef12'
       )
     ).toThrow()
+    expect(() =>
+      decryptLanSyncJson(
+        envelope,
+        key,
+        'request',
+        'POST',
+        '/mymind-sync/v1/commit',
+        'token-a',
+        'request-other12'
+      )
+    ).toThrow()
   })
 
   it('rejects tampered ciphertext', () => {
@@ -98,7 +109,7 @@ describe('LAN sync application encryption', () => {
         'POST',
         '/mymind-sync/v1/plan',
         'token',
-        'request-fedcba98'
+        'request-12345678'
       )
     ).toThrow()
   })
