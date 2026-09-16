@@ -130,10 +130,6 @@ function quoteIdentifier(value: string): string {
   return `"${value}"`
 }
 
-function nowSql(): string {
-  return `CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER)`
-}
-
 function keyExpression(prefix: 'NEW' | 'OLD', columns: readonly string[]): string {
   return `json_array(${columns
     .map((column) => `${prefix}.${quoteIdentifier(column)}`)
@@ -145,7 +141,16 @@ function createTriggerSql(definition: SyncTableDefinition): string[] {
   const insertKey = keyExpression('NEW', definition.keyColumns)
   const deleteKey = keyExpression('OLD', definition.keyColumns)
   const enabled = `COALESCE((SELECT value FROM sync_runtime WHERE key = 'applying_remote'), '0') <> '1'`
-  const changedAt = nowSql()
+  const insertRevision = `COALESCE((
+    SELECT changed_at
+    FROM sync_row_versions
+    WHERE table_name = '${definition.table}' AND row_key = ${insertKey}
+  ), 1) + 1`
+  const deleteRevision = `COALESCE((
+    SELECT changed_at
+    FROM sync_row_versions
+    WHERE table_name = '${definition.table}' AND row_key = ${deleteKey}
+  ), 1) + 1`
   const triggerPrefix = `sync_${definition.table}`
 
   return [
@@ -154,9 +159,9 @@ function createTriggerSql(definition: SyncTableDefinition): string[] {
       WHEN ${enabled}
       BEGIN
         INSERT INTO sync_row_versions(table_name, row_key, changed_at)
-        VALUES ('${definition.table}', ${insertKey}, ${changedAt})
+        VALUES ('${definition.table}', ${insertKey}, ${insertRevision})
         ON CONFLICT(table_name, row_key)
-        DO UPDATE SET changed_at = MAX(changed_at, excluded.changed_at);
+        DO UPDATE SET changed_at = excluded.changed_at;
         DELETE FROM sync_tombstones
         WHERE table_name = '${definition.table}' AND row_key = ${insertKey};
       END;`,
@@ -165,9 +170,9 @@ function createTriggerSql(definition: SyncTableDefinition): string[] {
       WHEN ${enabled}
       BEGIN
         INSERT INTO sync_row_versions(table_name, row_key, changed_at)
-        VALUES ('${definition.table}', ${insertKey}, ${changedAt})
+        VALUES ('${definition.table}', ${insertKey}, ${insertRevision})
         ON CONFLICT(table_name, row_key)
-        DO UPDATE SET changed_at = MAX(changed_at, excluded.changed_at);
+        DO UPDATE SET changed_at = excluded.changed_at;
         DELETE FROM sync_tombstones
         WHERE table_name = '${definition.table}' AND row_key = ${insertKey};
       END;`,
@@ -176,7 +181,7 @@ function createTriggerSql(definition: SyncTableDefinition): string[] {
       WHEN ${enabled}
       BEGIN
         INSERT INTO sync_tombstones(table_name, row_key, deleted_at)
-        VALUES ('${definition.table}', ${deleteKey}, ${changedAt})
+        VALUES ('${definition.table}', ${deleteKey}, ${deleteRevision})
         ON CONFLICT(table_name, row_key)
         DO UPDATE SET deleted_at = MAX(deleted_at, excluded.deleted_at);
         DELETE FROM sync_row_versions
@@ -271,6 +276,10 @@ export function ensureSyncInfrastructure(database: SqlDatabasePort): void {
     .run()
 
   for (const definition of ALL_TABLES) {
+    const triggerPrefix = `sync_${definition.table}`
+    for (const suffix of ['insert', 'update', 'delete']) {
+      database.prepare(`DROP TRIGGER IF EXISTS "${triggerPrefix}_${suffix}"`).run()
+    }
     for (const sql of createTriggerSql(definition)) database.prepare(sql).run()
   }
 }
@@ -285,12 +294,10 @@ function canonicalKey(definition: SyncTableDefinition, row: Record<string, unkno
   return JSON.stringify(definition.keyColumns.map((column) => scalar(row[column])))
 }
 
-function intrinsicRowVersion(row: Record<string, SyncScalar>): number {
-  for (const key of ['updated_at', 'created_at']) {
-    const value = row[key]
-    if (typeof value === 'number' && Number.isSafeInteger(value) && value >= 0) return value
-  }
-  return 0
+function intrinsicRowVersion(_row: Record<string, SyncScalar>): number {
+  // Revisions are logical, not wall-clock timestamps. Every pre-sync row starts at revision 1;
+  // triggers increment from the last synchronized revision. This avoids clock skew between devices.
+  return 1
 }
 
 function captureTable(database: SqlDatabasePort, definition: SyncTableDefinition): SyncTableSnapshot {
