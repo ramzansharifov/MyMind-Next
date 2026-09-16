@@ -152,3 +152,12 @@ export function listSyncAssetReferences(snapshot: SyncDataSnapshot): SyncAssetRe
   }
   return [...byPath.values()].sort((left, right) => left.path.localeCompare(right.path, 'en'))
 }
+
+
+export function listRemovedSyncAssetReferences(
+  before: SyncDataSnapshot,
+  after: SyncDataSnapshot
+): SyncAssetReference[] {
+  const next = new Set(listSyncAssetReferences(after).map((reference) => reference.path))
+  return listSyncAssetReferences(before).filter((reference) => !next.has(reference.path))
+}
