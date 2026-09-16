@@ -276,6 +276,19 @@ function captureTable(database: SqlDatabasePort, definition: SyncTableDefinition
       const data = Object.fromEntries(
         Object.entries(raw).map(([key, value]) => [key, scalar(value)])
       ) as Record<string, SyncScalar>
+      if (definition.table === 'workout_progress_photos') {
+        const entryId = data.entry_id
+        const assetId = data.asset_id
+        const fileName = data.file_name
+        if (
+          typeof entryId !== 'string' ||
+          typeof assetId !== 'string' ||
+          typeof fileName !== 'string'
+        ) {
+          throw new Error('Некорректная фотография прогресса в sync snapshot')
+        }
+        data.url = `mymind-sync://workouts/${entryId}/${assetId}/${encodeURIComponent(fileName)}`
+      }
       const key = canonicalKey(definition, raw)
       return {
         key,
