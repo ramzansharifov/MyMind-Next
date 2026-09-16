@@ -6,6 +6,8 @@ import { pathToFileURL } from 'node:url'
 
 import windowsIcon from '../../build/icon.ico?asset'
 import icon from '../../resources/icon.png?asset'
+import { CALENDAR_IPC_CHANNELS } from '../shared/contracts/calendar'
+import { HABITS_IPC_CHANNELS } from '../shared/contracts/habits'
 import { PROFILE_SYNC_IPC_CHANNELS } from '../shared/contracts/profile-sync'
 import { IPC_CHANNELS } from '../shared/contracts/system'
 import { closeDatabase, getSqlite, initializeDatabase } from './database/client'
@@ -46,6 +48,12 @@ const lanSyncServer = new LanSyncServer(
     const window = mainWindow
     if (!window || window.isDestroyed() || window.webContents.isDestroyed()) return
     window.webContents.send(PROFILE_SYNC_IPC_CHANNELS.dataChanged, modules)
+    if (modules.includes('calendar')) {
+      window.webContents.send(CALENDAR_IPC_CHANNELS.remindersChanged)
+    }
+    if (modules.includes('habits')) {
+      window.webContents.send(HABITS_IPC_CHANNELS.remindersChanged)
+    }
   },
   (modules) =>
     lanSyncRendererCoordinator.prepare(modules, {
