@@ -85,16 +85,16 @@ describe('local profile repository', () => {
         name: 'Рамзан',
         gender: 'male'
       })
-      expect(profile.credentialFingerprint).toMatch(/^[0-9a-f]{64}$/)
       expect(secret.value).toMatch(/^[0-9a-f]{64}$/)
 
       const stored = db
-        .prepare('SELECT login, normalized_login, credential_fingerprint FROM local_profile')
+        .prepare('SELECT login, normalized_login, name, gender FROM local_profile')
         .get() as Record<string, unknown>
       expect(stored).toEqual({
         login: 'Ramzan',
         normalized_login: 'ramzan',
-        credential_fingerprint: profile.credentialFingerprint
+        name: 'Рамзан',
+        gender: 'male'
       })
       expect(JSON.stringify(stored)).not.toContain('secret')
 
@@ -121,16 +121,17 @@ describe('local profile repository', () => {
         { database: () => adapt(db), createId: randomUUID, now: Date.now },
         secret
       )
-      const original = await repository.createProfile({
+      await repository.createProfile({
         login: 'ramzan',
         password: 'one'
       })
+      const previousSecret = secret.value
       const changed = await repository.replaceCredentials({
         login: 'ramzan-new',
         password: 'two'
       })
       expect(changed.normalizedLogin).toBe('ramzan-new')
-      expect(changed.credentialFingerprint).not.toBe(original.credentialFingerprint)
+      expect(secret.value).not.toBe(previousSecret)
 
       secret.value = null
       expect(await repository.getSyncKey()).toBeNull()
