@@ -162,7 +162,6 @@ function jsonResponse(response: ServerResponse, status: number, value: unknown):
   response.statusCode = status
   response.setHeader('Content-Type', 'application/json; charset=utf-8')
   response.setHeader('Cache-Control', 'no-store')
-  response.setHeader('Access-Control-Allow-Origin', '*')
   response.end(JSON.stringify(value))
 }
 
@@ -605,16 +604,6 @@ export class LanSyncServer {
   }
 
   private async handle(request: IncomingMessage, response: ServerResponse): Promise<void> {
-    response.setHeader('Access-Control-Allow-Origin', '*')
-    response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-    response.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-
-    if (request.method === 'OPTIONS') {
-      response.statusCode = 204
-      response.end()
-      return
-    }
-
     if (!privateRemoteAddress(request.socket.remoteAddress)) {
       errorResponse(response, 403, 'LAN sync accepts private-network clients only')
       return
