@@ -11,7 +11,6 @@ import {
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar'
 import { appearanceTokens } from '@mymind/design'
-import type { ResolveStudyInternalLinkTargetInput } from '@mymind/contracts/study'
 import {
   DEFAULT_APPEARANCE_PREFERENCES,
   type AppearancePreferences
@@ -28,8 +27,6 @@ import { AppIcon } from '../shared/ui/icons'
 import { messageFor } from '../shared/ui/form-model'
 import { ConfirmationProvider } from '../shared/ui/ConfirmationProvider'
 import { ToastProvider } from '../shared/ui/ToastProvider'
-import { StudyScreen } from '../modules/study/StudyScreen'
-import { BoardsScreen } from '../modules/boards/BoardsScreen'
 import { TasksScreen } from '../modules/tasks/TasksScreen'
 import { HabitsScreen } from '../modules/habits/HabitsScreen'
 import { NotesScreen } from '../modules/notes/NotesScreen'
@@ -88,9 +85,6 @@ export default function MobileApp(): React.JSX.Element {
     DEFAULT_APPEARANCE_PREFERENCES
   )
   const [route, setRoute] = useState<Route>('home')
-  const [boardResourceId, setBoardResourceId] = useState<string | null>(null)
-  const [studyResourceTarget, setStudyResourceTarget] =
-    useState<ResolveStudyInternalLinkTargetInput | null>(null)
   const [immersive, setImmersive] = useState(false)
   const [backupOperation, setBackupOperation] = useState<BackupOperation | null>(null)
   const [error, setError] = useState('')
@@ -105,37 +99,10 @@ export default function MobileApp(): React.JSX.Element {
     (next: Route): void => {
       if (backupOperation) return
       setImmersive(false)
-      setBoardResourceId(null)
-      setStudyResourceTarget(null)
       setRoute(next)
     },
     [backupOperation]
   )
-
-  const openBoard = useCallback(
-    (boardId: string): void => {
-      if (backupOperation) return
-      setImmersive(false)
-      setBoardResourceId(boardId)
-      setRoute('boards')
-    },
-    [backupOperation]
-  )
-
-  const openStudyTarget = useCallback(
-    (target: ResolveStudyInternalLinkTargetInput): void => {
-      if (backupOperation) return
-      setImmersive(false)
-      setBoardResourceId(null)
-      setStudyResourceTarget(target)
-      setRoute('study')
-    },
-    [backupOperation]
-  )
-
-  const handleStudyResourceHandled = useCallback((): void => {
-    setStudyResourceTarget(null)
-  }, [])
 
   useEffect(() => {
     let active = true
@@ -332,24 +299,8 @@ export default function MobileApp(): React.JSX.Element {
                   >
                     {route === 'home' ? (
                       <Home services={services} navigate={navigate} />
-                    ) : route === 'study' ? (
-                      <StudyScreen
-                        initialResource={studyResourceTarget}
-                        onResourceHandled={handleStudyResourceHandled}
-                        onImmersiveChange={setImmersive}
-                        onOpenBoard={openBoard}
-                      />
-                    ) : route === 'boards' ? (
-                      <BoardsScreen
-                        initialBoardId={boardResourceId}
-                        onImmersiveChange={setImmersive}
-                      />
                     ) : route === 'notes' ? (
-                      <NotesScreen
-                        onOpenBoard={openBoard}
-                        onOpenStudyTarget={openStudyTarget}
-                        onImmersiveChange={setImmersive}
-                      />
+                      <NotesScreen onImmersiveChange={setImmersive} />
                     ) : route === 'tasks' ? (
                       <TasksScreen />
                     ) : route === 'habits' ? (
