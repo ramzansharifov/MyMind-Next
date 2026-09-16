@@ -206,7 +206,6 @@ export function ensureSyncInfrastructure(database: SqlDatabasePort): void {
         normalized_login TEXT NOT NULL UNIQUE,
         name TEXT,
         gender TEXT,
-        credential_fingerprint TEXT NOT NULL,
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL
       )`
