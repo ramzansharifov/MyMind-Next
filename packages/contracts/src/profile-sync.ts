@@ -55,7 +55,6 @@ export interface LanSyncDevice {
   port: number
   protocolVersion: 1
   profileReady: boolean
-  profileLogin: string | null
   modules: SyncModule[]
 }
 
