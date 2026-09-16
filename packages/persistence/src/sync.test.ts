@@ -55,7 +55,7 @@ function adapt(db: Database.Database): SqlDatabasePort {
 }
 
 describe('LAN sync snapshot merge', () => {
-  it('uses the newest row update and converges both databases', () => {
+  it('resolves equal logical revisions deterministically and converges both databases', () => {
     const left = createDatabase()
     const right = createDatabase()
     try {
@@ -314,6 +314,71 @@ describe('LAN sync snapshot merge', () => {
           captureSyncSnapshot(rightDb, ['passwords'])
         )
       ).toThrow(/разные ключи/)
+    } finally {
+      left.close()
+      right.close()
+    }
+  })
+
+
+  it('uses synchronized logical revisions instead of wall clocks after the first merge', () => {
+    const left = createDatabase()
+    const right = createDatabase()
+    try {
+      const leftDb = adapt(left)
+      const rightDb = adapt(right)
+      ensureSyncInfrastructure(leftDb)
+      ensureSyncInfrastructure(rightDb)
+
+      left
+        .prepare(
+          `INSERT INTO tasks(
+            id, title, description, group_id, status, priority, due_date, due_time,
+            completed_at, created_at, updated_at
+          ) VALUES ('clock-task', 'Слева сначала', '', NULL, 'active', 'normal', NULL, NULL, NULL, 9999999999999, 9999999999999)`
+        )
+        .run()
+
+      const firstMerge = mergeSyncSnapshots(
+        captureSyncSnapshot(leftDb, ['tasks']),
+        captureSyncSnapshot(rightDb, ['tasks'])
+      )
+      applySyncSnapshot(leftDb, firstMerge.snapshot)
+      applySyncSnapshot(rightDb, firstMerge.snapshot)
+
+      // Simulate wildly different device clocks. A single edit on each side must still produce
+      // the same logical revision instead of the future-dated clock permanently winning.
+      left
+        .prepare(
+          "UPDATE tasks SET title = 'Левая правка', updated_at = 9999999999999 WHERE id = 'clock-task'"
+        )
+        .run()
+      right
+        .prepare(
+          "UPDATE tasks SET title = 'Правая правка', updated_at = 1 WHERE id = 'clock-task'"
+        )
+        .run()
+
+      const leftSnapshot = captureSyncSnapshot(leftDb, ['tasks'])
+      const rightSnapshot = captureSyncSnapshot(rightDb, ['tasks'])
+      const leftRow = leftSnapshot.modules[0]?.tables
+        .find((table) => table.table === 'tasks')
+        ?.rows.find((row) => row.data.id === 'clock-task')
+      const rightRow = rightSnapshot.modules[0]?.tables
+        .find((table) => table.table === 'tasks')
+        ?.rows.find((row) => row.data.id === 'clock-task')
+
+      expect(leftRow?.version).toBe(rightRow?.version)
+      expect(leftRow?.version).toBeGreaterThan(1)
+
+      const merged = mergeSyncSnapshots(leftSnapshot, rightSnapshot)
+      expect(merged.conflicts.get('tasks')).toBeGreaterThan(0)
+      applySyncSnapshot(leftDb, merged.snapshot)
+      applySyncSnapshot(rightDb, merged.snapshot)
+
+      expect(captureSyncSnapshot(leftDb, ['tasks']).modules).toEqual(
+        captureSyncSnapshot(rightDb, ['tasks']).modules
+      )
     } finally {
       left.close()
       right.close()
