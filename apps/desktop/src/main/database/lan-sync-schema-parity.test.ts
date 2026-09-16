@@ -75,7 +75,6 @@ interface ComparableColumn {
   name: string
   type: string
   notnull: number
-  defaultValue: string | number | null
   primaryKey: number
 }
 
@@ -84,7 +83,6 @@ function columns(sqlite: Database.Database, table: string): ComparableColumn[] {
     name: string
     type: string
     notnull: number
-    dflt_value: string | number | null
     pk: number
   }>
 
@@ -93,7 +91,6 @@ function columns(sqlite: Database.Database, table: string): ComparableColumn[] {
       name: column.name,
       type: column.type.toLocaleUpperCase('en-US'),
       notnull: column.notnull,
-      defaultValue: column.dflt_value,
       primaryKey: column.pk
     }))
     .sort((left, right) => left.name.localeCompare(right.name, 'en'))
