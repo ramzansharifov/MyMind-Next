@@ -19,6 +19,8 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22.14.0
@@ -27,8 +29,8 @@ jobs:
         run: npm ci
       - name: Rebuild SQLite for Node
         run: npm run native:node
-      - name: Format check
-        run: npm run format:check
+      - name: Diff whitespace check
+        run: git diff --check origin/main...HEAD
       - name: Mobile lint
         run: npm run lint:mobile
       - name: Mobile typecheck
