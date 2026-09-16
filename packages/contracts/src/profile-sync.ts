@@ -6,7 +6,6 @@ export interface LocalProfile {
   normalizedLogin: string
   name: string | null
   gender: ProfileGender
-  credentialFingerprint: string
   createdAt: number
   updatedAt: number
 }
