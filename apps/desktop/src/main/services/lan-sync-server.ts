@@ -450,6 +450,10 @@ export class LanSyncServer {
     this.server = server
   }
 
+  async invalidateAuthorization(): Promise<void> {
+    await this.invalidateAuthorization()
+  }
+
   async stop(): Promise<void> {
     const server = this.server
     this.server = null
