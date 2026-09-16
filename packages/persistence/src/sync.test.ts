@@ -14,6 +14,7 @@ import {
   captureSyncSnapshot,
   ensureSyncInfrastructure,
   mergeSyncSnapshots,
+  reconcileSyncSnapshotForeignKeys,
   summarizeSyncMerge
 } from './sync'
 
@@ -508,6 +509,118 @@ describe('LAN sync snapshot merge', () => {
       expect(() => mergeSyncSnapshots(leftSnapshot, rightSnapshot)).toThrow(
         /Мастер-пароль хранилища был изменён на обоих устройствах/
       )
+    } finally {
+      left.close()
+      right.close()
+    }
+  })
+
+
+  it('reconciles SET NULL foreign keys when a parent deletion races a child edit', () => {
+    const left = createDatabase()
+    const right = createDatabase()
+    try {
+      const leftDb = adapt(left)
+      const rightDb = adapt(right)
+      ensureSyncInfrastructure(leftDb)
+      ensureSyncInfrastructure(rightDb)
+
+      for (const db of [left, right]) {
+        db.prepare(
+          `INSERT INTO task_groups(id, name, icon, color, position, created_at, updated_at)
+           VALUES ('group-1', 'Работа', 'folder', 'violet', 0, 1, 1)`
+        ).run()
+        db.prepare(
+          `INSERT INTO tasks(
+            id, title, description, group_id, status, priority, due_date, due_time,
+            completed_at, created_at, updated_at
+          ) VALUES ('task-fk', 'Задача', '', 'group-1', 'active', 'normal', NULL, NULL, NULL, 1, 1)`
+        ).run()
+      }
+
+      const initial = mergeSyncSnapshots(
+        captureSyncSnapshot(leftDb, ['tasks']),
+        captureSyncSnapshot(rightDb, ['tasks'])
+      )
+      applySyncSnapshot(leftDb, initial.snapshot)
+      applySyncSnapshot(rightDb, initial.snapshot)
+
+      left.prepare("DELETE FROM task_groups WHERE id = 'group-1'").run()
+      right
+        .prepare("UPDATE tasks SET title = 'Изменено справа', updated_at = 2 WHERE id = 'task-fk'")
+        .run()
+
+      const merged = mergeSyncSnapshots(
+        captureSyncSnapshot(leftDb, ['tasks']),
+        captureSyncSnapshot(rightDb, ['tasks'])
+      )
+      const reconciled = reconcileSyncSnapshotForeignKeys(leftDb, merged.snapshot)
+      const task = reconciled.modules[0]?.tables
+        .find((table) => table.table === 'tasks')
+        ?.rows.find((row) => row.data.id === 'task-fk')
+
+      expect(task?.data.group_id).toBeNull()
+      applySyncSnapshot(leftDb, reconciled)
+      applySyncSnapshot(rightDb, reconciled)
+      expect(right.prepare("SELECT group_id FROM tasks WHERE id = 'task-fk'").get()).toEqual({
+        group_id: null
+      })
+    } finally {
+      left.close()
+      right.close()
+    }
+  })
+
+  it('reconciles CASCADE foreign keys when a parent deletion races a child edit', () => {
+    const left = createDatabase()
+    const right = createDatabase()
+    try {
+      const leftDb = adapt(left)
+      const rightDb = adapt(right)
+      ensureSyncInfrastructure(leftDb)
+      ensureSyncInfrastructure(rightDb)
+
+      for (const db of [left, right]) {
+        db.prepare(
+          `INSERT INTO habits(
+            id, title, group_id, tracking_type, target_value, unit, repeat_every_days,
+            preferred_time, created_at, updated_at, reminders_enabled, weekdays
+          ) VALUES ('habit-1', 'Вода', NULL, 'check', 1, '', 1, NULL, 1, 1, 0, '[]')`
+        ).run()
+        db.prepare(
+          `INSERT INTO habit_entries(
+            id, habit_id, date, value, skipped, created_at, updated_at
+          ) VALUES ('entry-fk', 'habit-1', '2026-09-16', 1, 0, 1, 1)`
+        ).run()
+      }
+
+      const initial = mergeSyncSnapshots(
+        captureSyncSnapshot(leftDb, ['habits']),
+        captureSyncSnapshot(rightDb, ['habits'])
+      )
+      applySyncSnapshot(leftDb, initial.snapshot)
+      applySyncSnapshot(rightDb, initial.snapshot)
+
+      left.prepare("DELETE FROM habits WHERE id = 'habit-1'").run()
+      right
+        .prepare("UPDATE habit_entries SET value = 2, updated_at = 2 WHERE id = 'entry-fk'")
+        .run()
+
+      const merged = mergeSyncSnapshots(
+        captureSyncSnapshot(leftDb, ['habits']),
+        captureSyncSnapshot(rightDb, ['habits'])
+      )
+      const reconciled = reconcileSyncSnapshotForeignKeys(leftDb, merged.snapshot)
+      const entries = reconciled.modules[0]?.tables.find(
+        (table) => table.table === 'habit_entries'
+      )
+
+      expect(entries?.rows).toEqual([])
+      expect(entries?.tombstones.some((row) => row.key === '["entry-fk"]')).toBe(true)
+      applySyncSnapshot(rightDb, reconciled)
+      expect(
+        right.prepare("SELECT COUNT(*) AS count FROM habit_entries WHERE id = 'entry-fk'").get()
+      ).toEqual({ count: 0 })
     } finally {
       left.close()
       right.close()
