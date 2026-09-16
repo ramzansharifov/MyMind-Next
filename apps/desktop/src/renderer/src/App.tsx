@@ -32,6 +32,7 @@ function AppContent(): React.JSX.Element {
   const [isSaving, setIsSaving] = useState(false)
   const [flushFailure, setFlushFailure] = useState<AppFlushFailure | null>(null)
   const [forceArmed, setForceArmed] = useState(false)
+  const [syncEpoch, setSyncEpoch] = useState(0)
   const transitionPendingRef = useRef(false)
   const activeModule = getAppModule(activeView)
   const ActiveModule = activeModule.component
@@ -99,6 +100,40 @@ function AppContent(): React.JSX.Element {
 
   useEffect(
     () =>
+      window.api.profileSync.onPrepareRequested((request) => {
+        void flushActiveDrafts()
+          .then(() =>
+            window.api.profileSync.respondToPrepare({
+              requestId: request.requestId,
+              success: true
+            })
+          )
+          .catch((reason: unknown) =>
+            window.api.profileSync.respondToPrepare({
+              requestId: request.requestId,
+              success: false,
+              message: reason instanceof Error ? reason.message : 'Не удалось сохранить изменения.'
+            })
+          )
+          .catch((reason: unknown) => {
+            console.error('Failed to respond to LAN sync preparation', reason)
+          })
+      }),
+    [flushActiveDrafts]
+  )
+
+  useEffect(
+    () =>
+      window.api.profileSync.onDataChanged((modules) => {
+        if (activeView === 'home' || modules.includes(activeView)) {
+          setSyncEpoch((value) => value + 1)
+        }
+      }),
+    [activeView]
+  )
+
+  useEffect(
+    () =>
       window.api.system.onShutdownRequested((request) => {
         transitionPendingRef.current = true
         setIsSaving(true)
@@ -133,11 +168,12 @@ function AppContent(): React.JSX.Element {
     >
       <AppErrorBoundary
         scope={activeModule.id}
-        resetKey={`${activeModule.id}:${activeResourceId ?? ''}`}
+        resetKey={`${activeModule.id}:${activeResourceId ?? ''}:${syncEpoch}`}
       >
         <WorkspaceLayout layout={activeModule.workspaceLayout}>
           <Suspense fallback={<AppViewLoadingFallback label={activeModule.loadingLabel} />}>
             <ActiveModule
+              key={`${activeModule.id}:${syncEpoch}`}
               resourceId={activeResourceId}
               onResourceHandled={() => setActiveResourceId(null)}
               focusMode={focusMode}
