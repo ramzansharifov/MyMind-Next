@@ -83,6 +83,11 @@ describe('desktop/mobile LAN sync schema parity', () => {
     const mobile = createMobileDatabase()
 
     try {
+      const desktopPort = adapt(desktop)
+      const mobilePort = adapt(mobile)
+      ensureSyncInfrastructure(desktopPort)
+      ensureSyncInfrastructure(mobilePort)
+
       const syncedTables = [
         ...new Set(
           SYNC_MODULE_REGISTRY.flatMap((module) => module.tables.map((table) => table.table))
@@ -97,12 +102,7 @@ describe('desktop/mobile LAN sync schema parity', () => {
         expect(desktopColumns, `${table} column order/schema differs`).toEqual(mobileColumns)
       }
 
-      const desktopPort = adapt(desktop)
-      const mobilePort = adapt(mobile)
-      ensureSyncInfrastructure(desktopPort)
-      ensureSyncInfrastructure(mobilePort)
       const modules = SYNC_MODULE_REGISTRY.map((module) => module.module)
-
       expect(captureSyncSnapshot(desktopPort, modules).modules).toEqual(
         captureSyncSnapshot(mobilePort, modules).modules
       )
