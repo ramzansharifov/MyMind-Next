@@ -385,4 +385,66 @@ describe('LAN sync snapshot merge', () => {
     }
   })
 
+
+  it('allows an intentional recreation of the same id to supersede an older tombstone', () => {
+    const left = createDatabase()
+    const right = createDatabase()
+    try {
+      const leftDb = adapt(left)
+      const rightDb = adapt(right)
+      ensureSyncInfrastructure(leftDb)
+      ensureSyncInfrastructure(rightDb)
+
+      left.prepare(
+        `INSERT INTO tasks(
+          id, title, description, group_id, status, priority, due_date, due_time,
+          completed_at, created_at, updated_at
+        ) VALUES ('recreated-task', 'Первая версия', '', NULL, 'active', 'normal', NULL, NULL, NULL, 1, 1)`
+      ).run()
+
+      const initial = mergeSyncSnapshots(
+        captureSyncSnapshot(leftDb, ['tasks']),
+        captureSyncSnapshot(rightDb, ['tasks'])
+      )
+      applySyncSnapshot(leftDb, initial.snapshot)
+      applySyncSnapshot(rightDb, initial.snapshot)
+
+      left.prepare("DELETE FROM tasks WHERE id = 'recreated-task'").run()
+      const deleted = mergeSyncSnapshots(
+        captureSyncSnapshot(leftDb, ['tasks']),
+        captureSyncSnapshot(rightDb, ['tasks'])
+      )
+      applySyncSnapshot(leftDb, deleted.snapshot)
+      applySyncSnapshot(rightDb, deleted.snapshot)
+
+      left.prepare(
+        `INSERT INTO tasks(
+          id, title, description, group_id, status, priority, due_date, due_time,
+          completed_at, created_at, updated_at
+        ) VALUES ('recreated-task', 'Создано заново', '', NULL, 'active', 'normal', NULL, NULL, NULL, 2, 2)`
+      ).run()
+
+      const recreated = captureSyncSnapshot(leftDb, ['tasks'])
+      const recreatedTable = recreated.modules[0]?.tables.find((table) => table.table === 'tasks')
+      const recreatedRow = recreatedTable?.rows.find(
+        (row) => row.data.id === 'recreated-task'
+      )
+      expect(recreatedTable?.tombstones).toEqual([])
+      expect(recreatedRow?.version).toBeGreaterThan(
+        deleted.snapshot.modules[0]?.tables
+          .find((table) => table.table === 'tasks')
+          ?.tombstones.find((row) => row.key === '["recreated-task"]')?.deletedAt ?? 0
+      )
+
+      const merged = mergeSyncSnapshots(recreated, captureSyncSnapshot(rightDb, ['tasks']))
+      applySyncSnapshot(rightDb, merged.snapshot)
+      expect(
+        right.prepare("SELECT title FROM tasks WHERE id = 'recreated-task'").get()
+      ).toEqual({ title: 'Создано заново' })
+    } finally {
+      left.close()
+      right.close()
+    }
+  })
+
 })
