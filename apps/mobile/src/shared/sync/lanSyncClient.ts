@@ -639,47 +639,39 @@ export function createMobileLanSyncClient(
       const modules = [...new Set(requestedModules)].filter((module) => available.has(module))
       if (modules.length === 0) throw new Error('Не выбрано ни одного общего модуля для синхронизации')
 
-      const sessionToken = await authenticate(device, profileRepository)
-      const localSnapshot = captureSyncSnapshot(database, modules)
-      const localAssets = collectMobileSyncAssetManifest(localSnapshot)
+      const session = await authenticate(device, profileRepository)
       const baseUrl = `http://${device.host}:${device.port}/mymind-sync/v1`
-      const plan = parsePlan(
-        await requestJson(
-          `${baseUrl}/plan`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${sessionToken}`
-            },
-            body: JSON.stringify({ snapshot: localSnapshot, assets: localAssets })
-          },
-          REQUEST_TIMEOUT_MS
-        ),
-        modules
-      )
-
-      if (plan.expiresAt <= Date.now()) throw new Error('План синхронизации уже истёк')
+      let plan: SyncPlanResponse | null = null
 
       try {
-        await uploadAssets(baseUrl, sessionToken, plan)
-        await downloadAssets(baseUrl, sessionToken, plan)
+        const localSnapshot = captureSyncSnapshot(database, modules)
+        const localAssets = collectMobileSyncAssetManifest(localSnapshot)
+        plan = parsePlan(
+          await requestSecureJson(
+            baseUrl,
+            '/mymind-sync/v1/plan',
+            session,
+            { snapshot: localSnapshot, assets: localAssets },
+            REQUEST_TIMEOUT_MS
+          ),
+          modules
+        )
+
+        if (plan.expiresAt <= Date.now()) throw new Error('План синхронизации уже истёк')
+
+        await uploadAssets(baseUrl, session, plan)
+        await downloadAssets(baseUrl, session, plan)
 
         // Place received files first. If the remote commit then fails, they are only harmless
         // orphans and no local database row points at them yet.
         commitMobileSyncAssets(plan.planId, plan.downloads)
 
         parseCommit(
-          await requestJson(
-            `${baseUrl}/commit`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${sessionToken}`
-              },
-              body: JSON.stringify({ planId: plan.planId })
-            },
+          await requestSecureJson(
+            baseUrl,
+            '/mymind-sync/v1/commit',
+            session,
+            { planId: plan.planId },
             TRANSFER_TIMEOUT_MS
           )
         )
@@ -703,7 +695,8 @@ export function createMobileLanSyncClient(
           modules: plan.summaries
         }
       } finally {
-        cleanupMobileSyncAssetStage(plan.planId)
+        if (plan) cleanupMobileSyncAssetStage(plan.planId)
+        session.key.fill(0)
       }
     }
   }
