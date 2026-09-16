@@ -114,6 +114,7 @@ export const SYNC_MODULE_REGISTRY: readonly SyncModuleDefinition[] = [
     module: 'passwords',
     tables: [
       { table: 'password_vault', keyColumns: ['id'] },
+      { table: 'password_vault_sync_identity', keyColumns: ['id'] },
       { table: 'password_groups', keyColumns: ['id'] },
       { table: 'password_items', keyColumns: ['id'] }
     ]
@@ -197,6 +198,40 @@ export function ensureSyncInfrastructure(database: SqlDatabasePort): void {
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL
       )`
+    )
+    .run()
+  database
+    .prepare(
+      `CREATE TABLE IF NOT EXISTS password_vault_sync_identity (
+        id TEXT PRIMARY KEY NOT NULL,
+        identity TEXT NOT NULL
+      )`
+    )
+    .run()
+  database
+    .prepare(
+      `INSERT INTO password_vault_sync_identity(id, identity)
+       SELECT
+         id,
+         kdf_salt || ':' || wrapped_key_nonce || ':' || wrapped_key_ciphertext || ':' || wrapped_key_tag
+       FROM password_vault
+       WHERE NOT EXISTS (
+         SELECT 1 FROM password_vault_sync_identity WHERE id = password_vault.id
+       )`
+    )
+    .run()
+  database
+    .prepare(
+      `CREATE TRIGGER IF NOT EXISTS sync_password_vault_seed_identity
+       AFTER INSERT ON password_vault
+       BEGIN
+         INSERT INTO password_vault_sync_identity(id, identity)
+         VALUES (
+           NEW.id,
+           NEW.kdf_salt || ':' || NEW.wrapped_key_nonce || ':' || NEW.wrapped_key_ciphertext || ':' || NEW.wrapped_key_tag
+         )
+         ON CONFLICT(id) DO NOTHING;
+       END;`
     )
     .run()
   database
@@ -382,28 +417,26 @@ function mergeTable(
   return { snapshot: { table: definition.table, rows, tombstones }, conflicts }
 }
 
-function passwordVaultIdentity(module: SyncModuleSnapshot): string | null {
-  const vault = module.tables.find((table) => table.table === 'password_vault')
-  const row = vault?.rows[0]
-  if (!row) return null
+function passwordVaultPresent(module: SyncModuleSnapshot): boolean {
+  return (module.tables.find((table) => table.table === 'password_vault')?.rows.length ?? 0) > 0
+}
 
-  const identity = Object.fromEntries(
-    Object.entries(row.data)
-      .filter(([key]) => key !== 'created_at' && key !== 'updated_at')
-      .sort(([left], [right]) => left.localeCompare(right))
-  )
-  return JSON.stringify(identity)
+function passwordVaultIdentity(module: SyncModuleSnapshot): string | null {
+  const table = module.tables.find((candidate) => candidate.table === 'password_vault_sync_identity')
+  const row = table?.rows.find((candidate) => candidate.data.id === 'default') ?? table?.rows[0]
+  return typeof row?.data.identity === 'string' ? row.data.identity : null
 }
 
 function assertCompatiblePasswordVaults(
   left: SyncModuleSnapshot,
   right: SyncModuleSnapshot
 ): void {
+  if (!passwordVaultPresent(left) || !passwordVaultPresent(right)) return
   const leftIdentity = passwordVaultIdentity(left)
   const rightIdentity = passwordVaultIdentity(right)
-  if (leftIdentity && rightIdentity && leftIdentity !== rightIdentity) {
+  if (!leftIdentity || !rightIdentity || leftIdentity !== rightIdentity) {
     throw new Error(
-      'Хранилища паролей созданы независимо или используют разные ключи. Синхронизация паролей остановлена, чтобы не повредить зашифрованные данные.'
+      'Хранилища паролей созданы независимо и используют разные ключи. Синхронизация паролей остановлена, чтобы не повредить зашифрованные данные.'
     )
   }
 }
