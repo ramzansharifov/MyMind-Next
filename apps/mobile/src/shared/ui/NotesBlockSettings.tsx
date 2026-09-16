@@ -571,8 +571,6 @@ export function NotesBlockSettingsSheet({
   importAsset?: (kind: StudyAssetKind) => Promise<StudyLocalAsset | null>
   onAssetError?: (reason: unknown) => void
 }): React.JSX.Element {
-  const theme = useTheme()
-
   const title = useMemo(() => {
     switch (block.type) {
       case 'heading':
