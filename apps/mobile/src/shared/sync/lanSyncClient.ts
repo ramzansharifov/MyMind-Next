@@ -24,7 +24,11 @@ import {
 } from '@mymind/core/profile-sync'
 import { parseSyncDataSnapshot } from '@mymind/core/sync-protocol'
 import type { LocalProfileRepository } from '@mymind/persistence/local-profile'
-import { applySyncSnapshot, captureSyncSnapshot } from '@mymind/persistence/sync'
+import {
+  applySyncSnapshot,
+  captureSyncSnapshot,
+  mergeSyncSnapshots
+} from '@mymind/persistence/sync'
 import {
   cleanupMobileSyncAssetStage,
   collectMobileSyncAssetManifest,
@@ -33,7 +37,8 @@ import {
   encodeSyncBase64,
   normalizeMobileWorkoutPhotoUrls,
   readMobileSyncAssetChunks,
-  stageMobileSyncAssetChunk
+  stageMobileSyncAssetChunk,
+  verifyStagedMobileSyncAsset
 } from './mobileSyncAssets'
 
 const DISCOVERY_TIMEOUT_MS = 450
@@ -499,6 +504,8 @@ async function downloadAssets(
         throw new Error(`Компьютер вернул неполный файл «${entry.fileName}»`)
       }
     } while (!complete)
+
+    verifyStagedMobileSyncAsset(plan.planId, entry)
   }
 }
 
@@ -566,6 +573,10 @@ export function createMobileLanSyncClient(
         await uploadAssets(baseUrl, sessionToken, plan)
         await downloadAssets(baseUrl, sessionToken, plan)
 
+        // Place received files first. If the remote commit then fails, they are only harmless
+        // orphans and no local database row points at them yet.
+        commitMobileSyncAssets(plan.planId, plan.downloads)
+
         parseCommit(
           await requestJson(
             `${baseUrl}/commit`,
@@ -581,9 +592,15 @@ export function createMobileLanSyncClient(
           )
         )
 
-        commitMobileSyncAssets(plan.planId, plan.downloads)
-        applySyncSnapshot(database, plan.snapshot)
-        normalizeMobileWorkoutPhotoUrls(database, plan.snapshot)
+        // Preserve any local change that happened while files were in flight. The desktop will
+        // receive such a late local change on the next sync instead of it being overwritten here.
+        const currentLocal = captureSyncSnapshot(database, modules)
+        const finalSnapshot =
+          JSON.stringify(currentLocal.modules) === JSON.stringify(localSnapshot.modules)
+            ? plan.snapshot
+            : mergeSyncSnapshots(currentLocal, plan.snapshot).snapshot
+        applySyncSnapshot(database, finalSnapshot)
+        normalizeMobileWorkoutPhotoUrls(database, finalSnapshot)
 
         return {
           startedAt,
