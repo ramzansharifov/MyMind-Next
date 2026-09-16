@@ -36,6 +36,7 @@ import { parseSyncDataSnapshot } from '@mymind/core/sync-protocol'
 import {
   applySyncSnapshot,
   captureSyncSnapshot,
+  ensureSyncInfrastructure,
   mergeSyncSnapshots,
   summarizeSyncMerge
 } from '@mymind/persistence/sync'
@@ -422,6 +423,7 @@ export class LanSyncServer {
 
   async start(): Promise<void> {
     if (this.server) return
+    ensureSyncInfrastructure(desktopRepositoryRuntime.database() as SqlDatabasePort)
     this.deviceId = getOrCreateDeviceId()
     const server = createServer((request, response) => {
       void this.handle(request, response).catch((reason: unknown) => {
