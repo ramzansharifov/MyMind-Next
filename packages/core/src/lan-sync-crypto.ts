@@ -59,18 +59,20 @@ function aad(
   direction: LanSyncCipherDirection,
   method: string,
   path: string,
-  sessionToken: string
+  sessionToken: string,
+  requestId: string
 ): Uint8Array {
   if (
     !sessionToken ||
     sessionToken.length > 256 ||
     !/^[A-Z]+$/.test(method) ||
-    !path.startsWith('/mymind-sync/v1/')
+    !path.startsWith('/mymind-sync/v1/') ||
+    !/^[a-zA-Z0-9_-]{8,128}$/.test(requestId)
   ) {
     throw new Error('Некорректный контекст защищённого LAN сообщения')
   }
   return encoder.encode(
-    ['mymind-lan-sync', 'v1', direction, method, path, sessionToken].join('|')
+    ['mymind-lan-sync', 'v1', direction, method, path, sessionToken, requestId].join('|')
   )
 }
 
@@ -99,20 +101,24 @@ export function encryptLanSyncJson(
   direction: LanSyncCipherDirection,
   method: string,
   path: string,
-  sessionToken: string
+  sessionToken: string,
+  requestId: string
 ): LanSyncEncryptedEnvelope {
   if (sessionKey.length !== SESSION_KEY_BYTES || nonce.length !== GCM_NONCE_BYTES) {
     throw new Error('Некорректный ключ или nonce защищённого LAN сообщения')
   }
   const plaintext = encoder.encode(JSON.stringify(value))
   try {
-    const sealed = gcm(sessionKey, nonce, aad(direction, method, path, sessionToken)).encrypt(
-      plaintext
-    )
+    const sealed = gcm(
+      sessionKey,
+      nonce,
+      aad(direction, method, path, sessionToken, requestId)
+    ).encrypt(plaintext)
     try {
       if (sealed.length < GCM_TAG_BYTES) throw new Error('Не удалось зашифровать LAN сообщение')
       return {
         version: 1,
+        requestId,
         nonce: encodeBase64(nonce),
         ciphertext: encodeBase64(sealed.subarray(0, sealed.length - GCM_TAG_BYTES)),
         tag: encodeBase64(sealed.subarray(sealed.length - GCM_TAG_BYTES))
@@ -131,7 +137,8 @@ export function decryptLanSyncJson(
   direction: LanSyncCipherDirection,
   method: string,
   path: string,
-  sessionToken: string
+  sessionToken: string,
+  requestId: string
 ): unknown {
   if (sessionKey.length !== SESSION_KEY_BYTES) {
     throw new Error('Некорректный ключ защищённого LAN сообщения')
@@ -147,7 +154,11 @@ export function decryptLanSyncJson(
   sealed.set(tag, ciphertext.length)
   let plaintext: Uint8Array | null = null
   try {
-    plaintext = gcm(sessionKey, nonce, aad(direction, method, path, sessionToken)).decrypt(sealed)
+    plaintext = gcm(
+      sessionKey,
+      nonce,
+      aad(direction, method, path, sessionToken, requestId)
+    ).decrypt(sealed)
     try {
       return JSON.parse(decoder.decode(plaintext))
     } catch {
@@ -174,6 +185,8 @@ export function parseLanSyncEncryptedEnvelope(value: unknown): LanSyncEncryptedE
   const record = value as Record<string, unknown>
   if (
     record.version !== 1 ||
+    typeof record.requestId !== 'string' ||
+    !/^[a-zA-Z0-9_-]{8,128}$/.test(record.requestId) ||
     typeof record.nonce !== 'string' ||
     typeof record.ciphertext !== 'string' ||
     typeof record.tag !== 'string' ||
@@ -185,6 +198,7 @@ export function parseLanSyncEncryptedEnvelope(value: unknown): LanSyncEncryptedE
   }
   return {
     version: 1,
+    requestId: record.requestId,
     nonce: record.nonce,
     ciphertext: record.ciphertext,
     tag: record.tag
