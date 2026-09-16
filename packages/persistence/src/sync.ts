@@ -275,12 +275,25 @@ export function ensureSyncInfrastructure(database: SqlDatabasePort): void {
     )
     .run()
 
-  for (const definition of ALL_TABLES) {
-    const triggerPrefix = `sync_${definition.table}`
-    for (const suffix of ['insert', 'update', 'delete']) {
-      database.prepare(`DROP TRIGGER IF EXISTS "${triggerPrefix}_${suffix}"`).run()
+  const triggerVersion = database
+    .prepare("SELECT value FROM sync_runtime WHERE key = 'trigger_version'")
+    .get() as { value: string } | undefined
+
+  if (triggerVersion?.value !== '2') {
+    for (const definition of ALL_TABLES) {
+      const triggerPrefix = `sync_${definition.table}`
+      for (const suffix of ['insert', 'update', 'delete']) {
+        database.prepare(`DROP TRIGGER IF EXISTS "${triggerPrefix}_${suffix}"`).run()
+      }
+      for (const sql of createTriggerSql(definition)) database.prepare(sql).run()
     }
-    for (const sql of createTriggerSql(definition)) database.prepare(sql).run()
+    database
+      .prepare(
+        `INSERT INTO sync_runtime(key, value)
+         VALUES ('trigger_version', '2')
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value`
+      )
+      .run()
   }
 }
 
