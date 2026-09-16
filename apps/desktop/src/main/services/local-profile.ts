@@ -40,11 +40,28 @@ const secretPort: ProfileSecretPort = {
   }
 }
 
-const repository = createLocalProfileRepository(desktopRepositoryRuntime, secretPort)
+let repository: ReturnType<typeof createLocalProfileRepository> | null = null
 
-export const getLocalProfile = repository.getProfile
-export const createLocalProfile = repository.createProfile
-export const updateLocalProfile = repository.updateProfile
-export const replaceLocalProfileCredentials = repository.replaceCredentials
-export const getLocalProfileSyncKey = repository.getSyncKey
-export const removeLocalProfile = repository.removeProfile
+function getRepository(): ReturnType<typeof createLocalProfileRepository> {
+  repository ??= createLocalProfileRepository(desktopRepositoryRuntime, secretPort)
+  return repository
+}
+
+export const getLocalProfile = (): ReturnType<
+  ReturnType<typeof createLocalProfileRepository>['getProfile']
+> => getRepository().getProfile()
+
+export const createLocalProfile = (
+  input: Parameters<ReturnType<typeof createLocalProfileRepository>['createProfile']>[0]
+) => getRepository().createProfile(input)
+
+export const updateLocalProfile = (
+  input: Parameters<ReturnType<typeof createLocalProfileRepository>['updateProfile']>[0]
+) => getRepository().updateProfile(input)
+
+export const replaceLocalProfileCredentials = (
+  input: Parameters<ReturnType<typeof createLocalProfileRepository>['replaceCredentials']>[0]
+) => getRepository().replaceCredentials(input)
+
+export const getLocalProfileSyncKey = () => getRepository().getSyncKey()
+export const removeLocalProfile = () => getRepository().removeProfile()
