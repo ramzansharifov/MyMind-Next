@@ -21,7 +21,11 @@ import {
   type SyncProofResponse
 } from '@mymind/contracts/profile-sync'
 import { createProfileSyncProof, normalizeProfileLogin, timingSafeHexEqual } from '@mymind/core/profile-sync'
-import { listSyncAssetReferences, parseSyncAssetPath } from '@mymind/core/sync-assets'
+import {
+  listRemovedSyncAssetReferences,
+  listSyncAssetReferences,
+  parseSyncAssetPath
+} from '@mymind/core/sync-assets'
 import { parseSyncDataSnapshot } from '@mymind/core/sync-protocol'
 import {
   applySyncSnapshot,
@@ -38,6 +42,7 @@ import {
   commitDesktopSyncAssets,
   normalizeDesktopWorkoutPhotoUrls,
   readDesktopSyncAssetChunk,
+  removeDesktopSyncAssets,
   stageDesktopSyncAssetChunk
 } from './lan-sync-assets'
 import { getLocalProfile, getLocalProfileSyncKey } from './local-profile'
@@ -686,6 +691,7 @@ export class LanSyncServer {
 
       await commitDesktopSyncAssets(plan.id, plan.uploads)
       const modules = plan.snapshot.modules.map((module) => module.module)
+      const removedAssets = listRemovedSyncAssetReferences(plan.localBaseline, plan.snapshot)
       await mainOperationTracker.run(() => {
         const database = desktopRepositoryRuntime.database() as SqlDatabasePort
         const current = captureSyncSnapshot(database, modules)
@@ -697,6 +703,7 @@ export class LanSyncServer {
         applySyncSnapshot(database, plan.snapshot)
         normalizeDesktopWorkoutPhotoUrls(database, plan.snapshot)
       })
+      await removeDesktopSyncAssets(removedAssets)
 
       this.plans.delete(plan.id)
       await cleanupDesktopSyncAssetStage(plan.id, plan.uploads)
