@@ -122,6 +122,7 @@ async function requestSecureJson(
   timeoutMs: number
 ): Promise<unknown> {
   if (session.expiresAt <= Date.now()) throw new Error('Сессия синхронизации истекла')
+  const requestId = randomUUID()
   const nonce = secureNonce()
   const envelope = encryptLanSyncJson(
     value,
@@ -130,7 +131,8 @@ async function requestSecureJson(
     'request',
     'POST',
     path,
-    session.token
+    session.token,
+    requestId
   )
   nonce.fill(0)
 
@@ -155,16 +157,31 @@ async function requestSecureJson(
 
     let decrypted: unknown
     try {
+      const responseEnvelope = parseLanSyncEncryptedEnvelope(raw)
+      if (responseEnvelope.requestId !== requestId) {
+        throw new Error('Ответ компьютера относится к другому запросу')
+      }
       decrypted = decryptLanSyncJson(
-        parseLanSyncEncryptedEnvelope(raw),
+        responseEnvelope,
         session.key,
         'response',
         'POST',
         path,
-        session.token
+        session.token,
+        requestId
       )
     } catch {
-      if (!response.ok) throw new Error(`LAN sync завершился с ошибкой HTTP ${response.status}`)
+      if (!response.ok) {
+        const plain =
+          typeof raw === 'object' && raw !== null && !Array.isArray(raw)
+            ? (raw as Record<string, unknown>).error
+            : null
+        throw new Error(
+          typeof plain === 'string'
+            ? plain
+            : `LAN sync завершился с ошибкой HTTP ${response.status}`
+        )
+      }
       throw new Error('Не удалось проверить защищённый ответ компьютера')
     }
 
