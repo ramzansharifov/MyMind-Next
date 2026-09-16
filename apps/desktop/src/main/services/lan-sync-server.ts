@@ -69,6 +69,7 @@ const AUTH_FAILURE_WINDOW_MS = 60_000
 const AUTH_FAILURE_LIMIT = 5
 const AUTH_BLOCK_MS = 5 * 60_000
 const ACTIVE_CHALLENGE_LIMIT_PER_CLIENT = 8
+const MAX_SESSION_REQUEST_IDS = 20_000
 const SHA256_PATTERN = /^[0-9a-f]{64}$/
 const BASE64_PATTERN = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/
 
@@ -85,6 +86,7 @@ interface Session {
   token: string
   key: Uint8Array
   expiresAt: number
+  seenRequestIds: Set<string>
 }
 
 interface AuthFailureState {
@@ -169,12 +171,15 @@ function errorResponse(response: ServerResponse, status: number, message: string
 }
 
 
+const secureRequestIds = new WeakMap<IncomingMessage, string>()
+
 function secureJsonResponse(
   response: ServerResponse,
   status: number,
   session: Session,
   method: string,
   path: string,
+  requestId: string,
   value: unknown
 ): void {
   const nonce = new Uint8Array(randomBytes(12))
@@ -185,10 +190,25 @@ function secureJsonResponse(
     'response',
     method,
     path,
-    session.token
+    session.token,
+    requestId
   )
   nonce.fill(0)
   jsonResponse(response, status, envelope)
+}
+
+function secureJsonResponseForRequest(
+  request: IncomingMessage,
+  response: ServerResponse,
+  status: number,
+  session: Session,
+  method: string,
+  path: string,
+  value: unknown
+): void {
+  const requestId = secureRequestIds.get(request)
+  if (!requestId) throw new Error('Secure LAN request correlation is unavailable')
+  secureJsonResponse(response, status, session, method, path, requestId, value)
 }
 
 async function readSecureJson(
@@ -199,14 +219,25 @@ async function readSecureJson(
   limit = MAX_JSON_BYTES
 ): Promise<unknown> {
   const envelope = parseLanSyncEncryptedEnvelope(await readJson(request, limit))
-  return decryptLanSyncJson(
+  if (session.seenRequestIds.has(envelope.requestId)) {
+    throw new Error('Повтор защищённого LAN запроса отклонён')
+  }
+  if (session.seenRequestIds.size >= MAX_SESSION_REQUEST_IDS) {
+    throw new Error('Сессия синхронизации исчерпала лимит запросов. Запустите синхронизацию снова.')
+  }
+
+  const value = decryptLanSyncJson(
     envelope,
     session.key,
     'request',
     method,
     path,
-    session.token
+    session.token,
+    envelope.requestId
   )
+  session.seenRequestIds.add(envelope.requestId)
+  secureRequestIds.set(request, envelope.requestId)
+  return value
 }
 
 function cleanupSessions(sessions: Map<string, Session>, now = Date.now()): void {
@@ -459,8 +490,11 @@ export class LanSyncServer {
         try {
           const path = new URL(request.url ?? '/', `http://127.0.0.1:${this.port}`).pathname
           const session = this.sessionFor(request)
-          if (session && request.method === 'POST' && isProtectedPath(path)) {
-            secureJsonResponse(response, 400, session, 'POST', path, { error: message })
+          const requestId = secureRequestIds.get(request)
+          if (session && requestId && request.method === 'POST' && isProtectedPath(path)) {
+            secureJsonResponse(response, 400, session, 'POST', path, requestId, {
+              error: message
+            })
             return
           }
         } catch (encryptionReason) {
@@ -680,7 +714,12 @@ export class LanSyncServer {
           challenge.clientNonce,
           challenge.serverNonce
         )
-        this.sessions.set(sessionToken, { token: sessionToken, key: sessionKey, expiresAt })
+        this.sessions.set(sessionToken, {
+          token: sessionToken,
+          key: sessionKey,
+          expiresAt,
+          seenRequestIds: new Set()
+        })
         const result: SyncProofResponse = {
           sessionToken,
           expiresAt,
@@ -758,7 +797,8 @@ export class LanSyncServer {
         uploads: plan.uploads,
         downloads: plan.downloads
       }
-      secureJsonResponse(
+      secureJsonResponseForRequest(
+        request,
         response,
         200,
         session,
@@ -786,7 +826,8 @@ export class LanSyncServer {
       )
       const plan = this.planFor(session, raw.planId)
       if (!plan) {
-        secureJsonResponse(
+        secureJsonResponseForRequest(
+          request,
           response,
           401,
           session,
@@ -815,7 +856,8 @@ export class LanSyncServer {
         received: staged.received,
         complete: staged.complete
       }
-      secureJsonResponse(
+      secureJsonResponseForRequest(
+        request,
         response,
         200,
         session,
@@ -843,7 +885,8 @@ export class LanSyncServer {
       )
       const plan = this.planFor(session, raw.planId)
       if (!plan) {
-        secureJsonResponse(
+        secureJsonResponseForRequest(
+          request,
           response,
           401,
           session,
@@ -878,7 +921,8 @@ export class LanSyncServer {
         data: bytes.toString('base64'),
         complete: nextOffset === expected.size
       }
-      secureJsonResponse(
+      secureJsonResponseForRequest(
+        request,
         response,
         200,
         session,
@@ -900,7 +944,8 @@ export class LanSyncServer {
       )
       const plan = this.planFor(session, raw.planId)
       if (!plan) {
-        secureJsonResponse(
+        secureJsonResponseForRequest(
+          request,
           response,
           401,
           session,
@@ -955,7 +1000,8 @@ export class LanSyncServer {
       this.lastSyncAt = Date.now()
       this.onDataChanged(modules)
       const result: SyncCommitResponse = { committedAt: this.lastSyncAt }
-      secureJsonResponse(
+      secureJsonResponseForRequest(
+        request,
         response,
         200,
         session,
