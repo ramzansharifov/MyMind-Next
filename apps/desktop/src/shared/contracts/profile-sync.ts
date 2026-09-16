@@ -12,8 +12,21 @@ export const PROFILE_SYNC_IPC_CHANNELS = {
   replaceCredentials: 'profile-sync:replace-credentials',
   removeProfile: 'profile-sync:remove-profile',
   getLanStatus: 'profile-sync:get-lan-status',
+  prepareRequested: 'profile-sync:prepare-requested',
+  respondToPrepare: 'profile-sync:respond-to-prepare',
   dataChanged: 'profile-sync:data-changed'
 } as const
+
+export interface ProfileSyncPrepareRequest {
+  requestId: string
+  modules: string[]
+}
+
+export interface ProfileSyncPrepareResponse {
+  requestId: string
+  success: boolean
+  message?: string
+}
 
 export interface LanSyncHostStatus {
   running: boolean
@@ -32,5 +45,7 @@ export interface ProfileSyncApi {
   replaceCredentials(input: ReplaceProfileCredentialsInput): Promise<LocalProfile>
   removeProfile(): Promise<boolean>
   getLanStatus(): Promise<LanSyncHostStatus>
+  onPrepareRequested(listener: (request: ProfileSyncPrepareRequest) => void): () => void
+  respondToPrepare(response: ProfileSyncPrepareResponse): Promise<void>
   onDataChanged(listener: (modules: string[]) => void): () => void
 }
