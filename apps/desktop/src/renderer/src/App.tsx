@@ -32,6 +32,8 @@ function AppContent(): React.JSX.Element {
   const [isSaving, setIsSaving] = useState(false)
   const [flushFailure, setFlushFailure] = useState<AppFlushFailure | null>(null)
   const [forceArmed, setForceArmed] = useState(false)
+  const [syncEpoch, setSyncEpoch] = useState(0)
+  const [syncRefreshPending, setSyncRefreshPending] = useState(false)
   const transitionPendingRef = useRef(false)
   const activeModule = getAppModule(activeView)
   const ActiveModule = activeModule.component
@@ -60,6 +62,7 @@ function AppContent(): React.JSX.Element {
         await flushActiveDrafts()
         setFlushFailure(null)
         setForceArmed(false)
+        setSyncRefreshPending(false)
         setActiveView(target)
         setActiveResourceId(resourceId)
         setFocusMode(nextFocusMode)
@@ -99,6 +102,48 @@ function AppContent(): React.JSX.Element {
 
   useEffect(
     () =>
+      window.api.profileSync.onPrepareRequested((request) => {
+        void flushActiveDrafts()
+          .then(() =>
+            window.api.profileSync.respondToPrepare({
+              requestId: request.requestId,
+              success: true
+            })
+          )
+          .catch((reason: unknown) =>
+            window.api.profileSync.respondToPrepare({
+              requestId: request.requestId,
+              success: false,
+              message: reason instanceof Error ? reason.message : 'Не удалось сохранить изменения.'
+            })
+          )
+          .catch((reason: unknown) => {
+            console.error('Failed to respond to LAN sync preparation', reason)
+          })
+      }),
+    [flushActiveDrafts]
+  )
+
+  useEffect(
+    () =>
+      window.api.profileSync.onDataChanged((modules) => {
+        if (activeView === 'home') {
+          setSyncEpoch((value) => value + 1)
+          return
+        }
+
+        if (modules.includes(activeView)) {
+          // Do not remount an active module automatically. Many module forms keep unsaved values in
+          // React state, so a forced remount after a remote sync could silently discard user input.
+          // The user can refresh explicitly after saving or simply leave/re-open the module.
+          setSyncRefreshPending(true)
+        }
+      }),
+    [activeView]
+  )
+
+  useEffect(
+    () =>
       window.api.system.onShutdownRequested((request) => {
         transitionPendingRef.current = true
         setIsSaving(true)
@@ -133,11 +178,12 @@ function AppContent(): React.JSX.Element {
     >
       <AppErrorBoundary
         scope={activeModule.id}
-        resetKey={`${activeModule.id}:${activeResourceId ?? ''}`}
+        resetKey={`${activeModule.id}:${activeResourceId ?? ''}:${syncEpoch}`}
       >
         <WorkspaceLayout layout={activeModule.workspaceLayout}>
           <Suspense fallback={<AppViewLoadingFallback label={activeModule.loadingLabel} />}>
             <ActiveModule
+              key={`${activeModule.id}:${syncEpoch}`}
               resourceId={activeResourceId}
               onResourceHandled={() => setActiveResourceId(null)}
               focusMode={focusMode}
@@ -152,6 +198,26 @@ function AppContent(): React.JSX.Element {
           className="fixed right-5 bottom-5 z-[80] rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] px-4 py-3 text-sm shadow-2xl"
         >
           Сохраняем изменения…
+        </div>
+      )}
+      {syncRefreshPending && !flushFailure && (
+        <div
+          role="status"
+          className="fixed right-5 bottom-5 z-[79] flex max-w-md items-center gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-raised)] px-4 py-3 text-sm shadow-2xl"
+        >
+          <span className="text-[var(--app-muted)]">
+            Этот раздел изменился после синхронизации. Сначала сохраните открытые формы, затем обновите данные.
+          </span>
+          <button
+            type="button"
+            className="shrink-0 rounded-lg border border-[var(--app-border-strong)] px-3 py-1.5 font-medium text-[var(--app-text)]"
+            onClick={() => {
+              setSyncRefreshPending(false)
+              setSyncEpoch((value) => value + 1)
+            }}
+          >
+            Обновить
+          </button>
         </div>
       )}
       {flushFailure && (
@@ -235,6 +301,7 @@ function AppContent(): React.JSX.Element {
                   }
 
                   if (flushFailure.kind === 'view') {
+                    setSyncRefreshPending(false)
                     setActiveView(flushFailure.target)
                     setActiveResourceId(flushFailure.resourceId)
                     setFocusMode(flushFailure.focusMode)

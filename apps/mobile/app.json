@@ -42,7 +42,9 @@
           "enableBackgroundPlayback": false
         }
       ],
-      "expo-system-ui"
+      "expo-system-ui",
+      "expo-secure-store",
+      "./plugins/with-local-lan"
     ]
   }
 }

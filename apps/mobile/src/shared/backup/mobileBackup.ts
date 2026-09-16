@@ -137,7 +137,12 @@ async function schemaSignature(db: SQLiteDatabase): Promise<string> {
     tbl_name: string
     sql: string | null
   }>(
-    "SELECT type, name, tbl_name, sql FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' ORDER BY type, name, tbl_name"
+    `SELECT type, name, tbl_name, sql
+     FROM sqlite_master
+     WHERE name NOT LIKE 'sqlite_%'
+       AND name NOT IN ('local_profile', 'password_vault_sync_identity', 'sync_runtime', 'sync_row_versions', 'sync_tombstones')
+       AND name NOT LIKE 'sync_%'
+     ORDER BY type, name, tbl_name`
   )
   return JSON.stringify(rows)
 }

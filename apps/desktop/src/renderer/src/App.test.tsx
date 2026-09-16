@@ -27,6 +27,26 @@ describe('App shell', () => {
           }))
         },
 
+        profileSync: {
+          getProfile: vi.fn().mockResolvedValue(null),
+          createProfile: vi.fn(),
+          updateProfile: vi.fn(),
+          replaceCredentials: vi.fn(),
+          removeProfile: vi.fn(),
+          getLanStatus: vi.fn().mockResolvedValue({
+            running: true,
+            port: 49632,
+            addresses: ['192.168.1.10'],
+            deviceId: 'desktop-test',
+            deviceName: 'Desktop test',
+            profileReady: false,
+            lastSyncAt: null
+          }),
+          onPrepareRequested: vi.fn().mockReturnValue(() => undefined),
+          respondToPrepare: vi.fn().mockResolvedValue(undefined),
+          onDataChanged: vi.fn().mockReturnValue(() => undefined)
+        },
+
         system: {
           getHealth: vi.fn().mockResolvedValue({
             database: 'ready',

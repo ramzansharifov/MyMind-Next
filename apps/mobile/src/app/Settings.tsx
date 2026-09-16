@@ -10,8 +10,9 @@ import { useTheme } from '../shared/ui/theme'
 import { ReminderSettings } from './ReminderSettings'
 import { useConfirmation } from '../shared/ui/ConfirmationProvider'
 import { useToast } from '../shared/ui/ToastProvider'
+import { MobileProfileSyncSettings } from './MobileProfileSyncSettings'
 
-type SettingsPage = 'overview' | 'appearance' | 'reminders' | 'data'
+type SettingsPage = 'overview' | 'profile-sync' | 'appearance' | 'reminders' | 'data'
 
 const accentNames = {
   violet: 'Фиолетовый',
@@ -121,6 +122,15 @@ export function Settings({
     </View>
   ) : null
 
+  if (page === 'profile-sync') {
+    return (
+      <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
+        {back}
+        <MobileProfileSyncSettings />
+      </ScrollView>
+    )
+  }
+
   if (page === 'appearance') {
     return (
       <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
@@ -222,6 +232,12 @@ export function Settings({
     <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
       <View style={{ gap: 10 }}>
         <WorkspaceNodeCard
+          title="Профиль и синхронизация"
+          subtitle="Локальный профиль · синхронизация с компьютером по LAN"
+          leadingIcon="settings"
+          onPress={() => setPage('profile-sync')}
+        />
+        <WorkspaceNodeCard
           title="Внешний вид"
           subtitle={`${themeNames[appearance.theme]} · ${accentNames[appearance.accent]}`}
           leadingIcon="settings"
@@ -251,9 +267,9 @@ export function Settings({
           }}
         >
           <Text style={{ color: theme.muted, fontSize: 12, lineHeight: 19 }}>
-            Настройки, зависящие от Electron — перенос папки хранения и встроенное окно ИИ-чата —
-            не показываются на Android. Мобильные данные остаются локальными и управляются через
-            резервные копии.
+            MyMind не использует облако для профиля и синхронизации: данные передаются напрямую
+            между вашими устройствами в одной локальной сети. Перенос папки хранения и встроенное
+            окно ИИ-чата остаются функциями desktop.
           </Text>
         </View>
       </View>

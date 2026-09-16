@@ -23,6 +23,11 @@ import {
   type AppearancePreferences
 } from '../shared/contracts/preferences'
 import {
+  PROFILE_SYNC_IPC_CHANNELS,
+  type LanSyncHostStatus,
+  type ProfileSyncPrepareRequest
+} from '../shared/contracts/profile-sync'
+import {
   STUDY_IPC_CHANNELS,
   type DuplicateStudyNodeResult,
   type StudyInternalLinkTarget,
@@ -146,6 +151,58 @@ const api: MyMindApi = {
       invoke(PREFERENCES_IPC_CHANNELS.getAppearance) as Promise<AppearancePreferences>,
     updateAppearance: (input) =>
       invoke(PREFERENCES_IPC_CHANNELS.updateAppearance, input) as Promise<AppearancePreferences>
+  },
+
+  profileSync: {
+    getProfile: () => invoke(PROFILE_SYNC_IPC_CHANNELS.getProfile),
+    createProfile: (input) =>
+      invokeWithSuccess(PROFILE_SYNC_IPC_CHANNELS.createProfile, 'Профиль создан', input),
+    updateProfile: (input) =>
+      invokeWithSuccess(PROFILE_SYNC_IPC_CHANNELS.updateProfile, 'Профиль сохранён', input),
+    replaceCredentials: (input) =>
+      invokeWithSuccess(
+        PROFILE_SYNC_IPC_CHANNELS.replaceCredentials,
+        'Логин и пароль обновлены',
+        input
+      ),
+    removeProfile: () =>
+      invokeWithSuccess(PROFILE_SYNC_IPC_CHANNELS.removeProfile, 'Профиль удалён'),
+    getLanStatus: () =>
+      invoke(PROFILE_SYNC_IPC_CHANNELS.getLanStatus) as Promise<LanSyncHostStatus>,
+    onPrepareRequested: (listener) => {
+      const handler = (_event: Electron.IpcRendererEvent, rawRequest: unknown): void => {
+        if (
+          typeof rawRequest !== 'object' ||
+          rawRequest === null ||
+          Array.isArray(rawRequest)
+        ) {
+          return
+        }
+        const request = rawRequest as Record<string, unknown>
+        if (
+          typeof request.requestId !== 'string' ||
+          !Array.isArray(request.modules) ||
+          !request.modules.every((module) => typeof module === 'string')
+        ) {
+          return
+        }
+        listener({
+          requestId: request.requestId,
+          modules: request.modules
+        } satisfies ProfileSyncPrepareRequest)
+      }
+      ipcRenderer.on(PROFILE_SYNC_IPC_CHANNELS.prepareRequested, handler)
+      return () => ipcRenderer.removeListener(PROFILE_SYNC_IPC_CHANNELS.prepareRequested, handler)
+    },
+    respondToPrepare: (response) =>
+      invoke(PROFILE_SYNC_IPC_CHANNELS.respondToPrepare, response) as Promise<void>,
+    onDataChanged: (listener) => {
+      const handler = (_event: Electron.IpcRendererEvent, modules: string[]): void => {
+        listener(modules)
+      }
+      ipcRenderer.on(PROFILE_SYNC_IPC_CHANNELS.dataChanged, handler)
+      return () => ipcRenderer.removeListener(PROFILE_SYNC_IPC_CHANNELS.dataChanged, handler)
+    }
   },
 
   boards: {
