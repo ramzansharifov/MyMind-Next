@@ -231,3 +231,15 @@ export function normalizeDesktopWorkoutPhotoUrls(
     database.prepare("UPDATE sync_runtime SET value = '0' WHERE key = 'applying_remote'").run()
   }
 }
+
+
+export async function removeDesktopSyncAssets(
+  references: readonly SyncAssetReference[]
+): Promise<void> {
+  for (const reference of references) {
+    const filePath = physicalPath(reference)
+    await rm(dirname(filePath), { recursive: true, force: true }).catch((reason: unknown) => {
+      console.warn('Failed to remove obsolete synced asset', reference.path, reason)
+    })
+  }
+}
