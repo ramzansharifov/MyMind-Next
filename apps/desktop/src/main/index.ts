@@ -6,6 +6,7 @@ import { pathToFileURL } from 'node:url'
 
 import windowsIcon from '../../build/icon.ico?asset'
 import icon from '../../resources/icon.png?asset'
+import { PROFILE_SYNC_IPC_CHANNELS } from '../shared/contracts/profile-sync'
 import { IPC_CHANNELS } from '../shared/contracts/system'
 import { closeDatabase, getSqlite, initializeDatabase } from './database/client'
 import { runDatabaseMigrations } from './database/migrate'
@@ -18,6 +19,7 @@ import { focusExistingAppWindow } from './security/single-instance'
 import { AiChatViewController } from './services/ai-chat-view-controller'
 import { CalendarReminderScheduler } from './services/calendar-reminder-scheduler'
 import { HabitReminderScheduler } from './services/habit-reminder-scheduler'
+import { LanSyncServer } from './services/lan-sync-server'
 import { mainOperationTracker } from './services/main-operation-tracker'
 import { clearTrackedPasswordClipboard } from './services/password-clipboard'
 import {
@@ -37,6 +39,11 @@ import {
 import { runStudyPlainTextMaintenance } from './services/study-plain-text-maintenance'
 
 let mainWindow: BrowserWindow | null = null
+const lanSyncServer = new LanSyncServer((modules) => {
+  const window = mainWindow
+  if (!window || window.isDestroyed() || window.webContents.isDestroyed()) return
+  window.webContents.send(PROFILE_SYNC_IPC_CHANNELS.dataChanged, modules)
+})
 const aiChatViewController = new AiChatViewController(() => mainWindow)
 const calendarReminderScheduler = new CalendarReminderScheduler(() => mainWindow)
 const habitReminderScheduler = new HabitReminderScheduler(() => mainWindow)
@@ -163,6 +170,9 @@ async function closeApplicationResources(): Promise<void> {
   }
 
   lockPasswordVault()
+  await lanSyncServer.stop().catch((reason: unknown) => {
+    console.warn('Failed to stop LAN sync server during shutdown', reason)
+  })
   closeDatabase()
 }
 
@@ -361,6 +371,10 @@ if (!hasSingleInstanceLock) {
     initializeDatabase()
     runDatabaseMigrations()
 
+    await lanSyncServer.start().catch((reason: unknown) => {
+      console.warn('LAN sync server is unavailable', reason)
+    })
+
     const plainTextMaintenance = runStudyPlainTextMaintenance()
 
     if (plainTextMaintenance.applied) {
@@ -371,6 +385,7 @@ if (!hasSingleInstanceLock) {
 
     registerIpcHandlers({
       getTrustedWebContents: () => mainWindow?.webContents ?? null,
+      lanSyncServer,
       storage: {
         getInfo: getStorageInfo,
         openLocation: async () => {
@@ -387,6 +402,7 @@ if (!hasSingleInstanceLock) {
           await mainOperationTracker.whenIdle()
           calendarReminderScheduler.stop()
           habitReminderScheduler.stop()
+          await lanSyncServer.stop()
           getSqlite().pragma('wal_checkpoint(TRUNCATE)')
           closeDatabase()
 
@@ -400,6 +416,9 @@ if (!hasSingleInstanceLock) {
           } catch (reason: unknown) {
             initializeDatabase()
             runDatabaseMigrations()
+            await lanSyncServer.start().catch((syncReason: unknown) => {
+              console.warn('LAN sync server did not restart after storage rollback', syncReason)
+            })
             calendarReminderScheduler.start()
             habitReminderScheduler.start()
             mainOperationTracker.resumeNewOperations()
