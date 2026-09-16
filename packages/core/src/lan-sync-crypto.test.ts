@@ -20,7 +20,8 @@ describe('LAN sync application encryption', () => {
       'request',
       'POST',
       '/mymind-sync/v1/plan',
-      'token'
+      'token',
+      'request-12345678'
     )
     expect(
       decryptLanSyncJson(
@@ -29,7 +30,8 @@ describe('LAN sync application encryption', () => {
         'request',
         'POST',
         '/mymind-sync/v1/plan',
-        'token'
+        'token',
+        'request-fedcba98'
       )
     ).toEqual({ secret: 'данные', count: 3 })
   })
@@ -43,7 +45,8 @@ describe('LAN sync application encryption', () => {
       'request',
       'POST',
       '/mymind-sync/v1/commit',
-      'token-a'
+      'token-a',
+      'request-abcdef12'
     )
 
     expect(() =>
@@ -53,7 +56,8 @@ describe('LAN sync application encryption', () => {
         'response',
         'POST',
         '/mymind-sync/v1/commit',
-        'token-a'
+        'token-a',
+        'request-abcdef12'
       )
     ).toThrow()
     expect(() =>
@@ -63,7 +67,8 @@ describe('LAN sync application encryption', () => {
         'request',
         'POST',
         '/mymind-sync/v1/commit',
-        'token-b'
+        'token-b',
+        'request-abcdef12'
       )
     ).toThrow()
   })
@@ -77,7 +82,8 @@ describe('LAN sync application encryption', () => {
       'response',
       'POST',
       '/mymind-sync/v1/plan',
-      'token'
+      'token',
+      'request-12345678'
     )
     const tampered = {
       ...envelope,
@@ -91,7 +97,8 @@ describe('LAN sync application encryption', () => {
         'response',
         'POST',
         '/mymind-sync/v1/plan',
-        'token'
+        'token',
+        'request-fedcba98'
       )
     ).toThrow()
   })
