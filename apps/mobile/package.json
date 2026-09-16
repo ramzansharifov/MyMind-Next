@@ -16,7 +16,6 @@
     "@tiptap/extension-text-style": "^3.27.3",
     "@tiptap/extensions": "^3.27.3",
     "@tiptap/starter-kit": "^3.27.3",
-    "@tldraw/assets": "^5.2.5",
     "expo": "~57.0.21",
     "expo-audio": "~57.0.4",
     "expo-clipboard": "~57.0.1",
@@ -41,7 +40,6 @@
     "react-native-svg": "15.15.4",
     "react-native-web": "^0.21.2",
     "remark-gfm": "^4.0.1",
-    "tldraw": "^5.2.5",
     "prismjs": "^1.30.0",
     "react-simple-code-editor": "^0.14.1"
   },
@@ -51,24 +49,22 @@
     "@types/prismjs": "^1.26.6"
   },
   "scripts": {
-    "postinstall": "node ./scripts/patch-expo-sqlite-web.mjs && node ./scripts/patch-expo-dom-webview.mjs && node ./scripts/patch-tldraw-dom-assets.mjs",
-    "start": "npm run prepare:tldraw-dom-assets && expo start",
-    "android": "npm run prepare:tldraw-dom-assets && node ./scripts/run-android.mjs",
+    "postinstall": "node ./scripts/patch-expo-sqlite-web.mjs && node ./scripts/patch-expo-dom-webview.mjs",
+    "start": "expo start",
+    "android": "node ./scripts/run-android.mjs",
     "ios": "expo start --ios",
-    "web": "npm run prepare:tldraw-dom-assets && node ./scripts/start-web-preview.mjs",
-    "web:raw": "npm run prepare:tldraw-dom-assets && expo start --web",
+    "web": "node ./scripts/start-web-preview.mjs",
+    "web:raw": "expo start --web",
     "test:web-preview": "node ./scripts/web-preview-proxy.test.mjs",
     "test:web-sqlite-patch": "node ./scripts/patch-expo-sqlite-web.test.mjs",
     "test:android-runtime": "node ./scripts/verify-android-runtime.mjs",
     "typecheck": "tsc --noEmit",
-    "export:android": "npm run prepare:tldraw-dom-assets && node ./scripts/export-android.mjs",
+    "export:android": "node ./scripts/export-android.mjs",
     "test:expo-dom-patch": "node ./scripts/patch-expo-dom-webview.test.mjs",
     "android:clean-native": "node ./scripts/run-android.mjs --force",
     "test:android-native-cache": "node ./scripts/prepare-android-native.test.mjs",
     "test:android-sdk": "node ./scripts/run-android.test.mjs",
-    "test:dom-assets": "node ./scripts/mobile-dom-assets.test.mjs",
-    "test:tldraw-dom-assets": "node ./scripts/patch-tldraw-dom-assets.test.mjs",
-    "prepare:tldraw-dom-assets": "node ./scripts/patch-tldraw-dom-assets.mjs"
+    "test:dom-assets": "node ./scripts/mobile-dom-assets.test.mjs"
   },
   "private": true
 }
