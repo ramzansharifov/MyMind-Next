@@ -1,0 +1,34 @@
+name: Verify local profile LAN sync
+
+on:
+  push:
+    branches:
+      - feature/local-profile-lan-sync
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.14.0
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Typecheck packages, desktop and mobile
+        run: npm run typecheck
+      - name: Shared and mobile tests
+        run: npm run test:mobile
+      - name: Desktop tests
+        run: npm run test:run
+      - name: Database schema check
+        run: npm run db:check
+      - name: Desktop production bundle
+        run: npm run build:bundle
+      - name: Android export
+        run: npm run export:android
