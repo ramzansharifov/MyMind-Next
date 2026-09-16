@@ -468,6 +468,31 @@ function assertCompatiblePasswordVaults(
   }
 }
 
+function assertNoConcurrentPasswordVaultCredentialChange(
+  left: SyncModuleSnapshot,
+  right: SyncModuleSnapshot
+): void {
+  const leftVault = left.tables
+    .find((table) => table.table === 'password_vault')
+    ?.rows.find((row) => row.data.id === 'default')
+  const rightVault = right.tables
+    .find((table) => table.table === 'password_vault')
+    ?.rows.find((row) => row.data.id === 'default')
+
+  if (
+    !leftVault ||
+    !rightVault ||
+    leftVault.version !== rightVault.version ||
+    canonicalRow(leftVault) === canonicalRow(rightVault)
+  ) {
+    return
+  }
+
+  throw new Error(
+    'Мастер-пароль хранилища был изменён на обоих устройствах после последней синхронизации. MyMind не будет выбирать один вариант автоматически: сначала оставьте одинаковый мастер-пароль на обоих устройствах, затем повторите синхронизацию.'
+  )
+}
+
 export function mergeSyncSnapshots(
   left: SyncDataSnapshot,
   right: SyncDataSnapshot,
@@ -487,7 +512,10 @@ export function mergeSyncSnapshots(
     const leftModule = leftModules.get(module)
     const rightModule = rightModules.get(module)
     if (!leftModule || !rightModule) throw new Error(`Both devices must provide module ${module}`)
-    if (module === 'passwords') assertCompatiblePasswordVaults(leftModule, rightModule)
+    if (module === 'passwords') {
+      assertCompatiblePasswordVaults(leftModule, rightModule)
+      assertNoConcurrentPasswordVaultCredentialChange(leftModule, rightModule)
+    }
 
     const leftTables = new Map(leftModule.tables.map((table) => [table.table, table]))
     const rightTables = new Map(rightModule.tables.map((table) => [table.table, table]))
