@@ -11,7 +11,6 @@ import {
   deriveProfileSyncKey,
   normalizeOptionalProfileName,
   normalizeProfileLogin,
-  profileSyncKeyFingerprint,
   profileSyncKeyFromHex,
   profileSyncKeyToHex
 } from '@mymind/core/profile-sync'
@@ -38,7 +37,6 @@ interface LocalProfileRow {
   normalized_login: string
   name: string | null
   gender: 'male' | 'female' | null
-  credential_fingerprint: string
   created_at: number
   updated_at: number
 }
@@ -50,7 +48,6 @@ function toProfile(row: LocalProfileRow): LocalProfile {
     normalizedLogin: row.normalized_login,
     name: row.name,
     gender: row.gender,
-    credentialFingerprint: row.credential_fingerprint,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   }
@@ -82,7 +79,7 @@ export function createLocalProfileRepository(
     return (
       (database()
         .prepare(
-          `SELECT id, login, normalized_login, name, gender, credential_fingerprint, created_at, updated_at
+          `SELECT id, login, normalized_login, name, gender, created_at, updated_at
            FROM local_profile
            ORDER BY created_at ASC
            LIMIT 1`
@@ -116,7 +113,6 @@ export function createLocalProfileRepository(
         normalizedLogin,
         name,
         gender,
-        credentialFingerprint: profileSyncKeyFingerprint(key),
         createdAt: now,
         updatedAt: now
       }
@@ -126,8 +122,8 @@ export function createLocalProfileRepository(
         database()
           .prepare(
             `INSERT INTO local_profile(
-              id, login, normalized_login, name, gender, credential_fingerprint, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+              id, login, normalized_login, name, gender, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)`
           )
           .run(
             profile.id,
@@ -135,7 +131,6 @@ export function createLocalProfileRepository(
             profile.normalizedLogin,
             profile.name,
             profile.gender,
-            profile.credentialFingerprint,
             profile.createdAt,
             profile.updatedAt
           )
@@ -181,7 +176,6 @@ export function createLocalProfileRepository(
         // A copied/restored profile may carry an OS-bound encrypted secret that this device
         // cannot decrypt. Replacing credentials is the recovery path for that state.
       }
-      const credentialFingerprint = profileSyncKeyFingerprint(key)
       const updatedAt = runtime.now()
 
       await secret.set(nextSecret)
@@ -189,10 +183,10 @@ export function createLocalProfileRepository(
         database()
           .prepare(
             `UPDATE local_profile
-             SET login = ?, normalized_login = ?, credential_fingerprint = ?, updated_at = ?
+             SET login = ?, normalized_login = ?, updated_at = ?
              WHERE id = ?`
           )
-          .run(login, normalizedLogin, credentialFingerprint, updatedAt, current.id)
+          .run(login, normalizedLogin, updatedAt, current.id)
       } catch (reason) {
         if (previousSecretReadable && previousSecret) {
           await secret.set(previousSecret).catch(() => undefined)
@@ -208,7 +202,6 @@ export function createLocalProfileRepository(
         ...current,
         login,
         normalizedLogin,
-        credentialFingerprint,
         updatedAt
       }
     },
@@ -218,12 +211,7 @@ export function createLocalProfileRepository(
       if (!profile) return null
       const encoded = await secret.get()
       if (!encoded) return null
-      const key = profileSyncKeyFromHex(encoded)
-      if (profileSyncKeyFingerprint(key) !== profile.credentialFingerprint) {
-        key.fill(0)
-        throw new Error('Ключ профиля повреждён. Повторно задайте логин и пароль.')
-      }
-      return key
+      return profileSyncKeyFromHex(encoded)
     },
 
     async removeProfile() {
