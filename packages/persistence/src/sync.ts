@@ -535,6 +535,179 @@ export function mergeSyncSnapshots(
   return { snapshot: { version: 1, generatedAt, modules }, conflicts }
 }
 
+interface ForeignKeyRow {
+  id: number
+  seq: number
+  table: string
+  from: string
+  to: string | null
+  on_delete: string
+}
+
+interface ForeignKeyDefinition {
+  parentTable: string
+  childColumns: string[]
+  parentColumns: string[]
+  onDelete: string
+}
+
+function foreignKeys(database: SqlDatabasePort, table: string): ForeignKeyDefinition[] {
+  const rows = database
+    .prepare(`PRAGMA foreign_key_list(${quoteIdentifier(table)})`)
+    .all() as ForeignKeyRow[]
+  const grouped = new Map<number, ForeignKeyRow[]>()
+  for (const row of rows) {
+    const group = grouped.get(row.id) ?? []
+    group.push(row)
+    grouped.set(row.id, group)
+  }
+
+  return [...grouped.values()].map((group) => {
+    const ordered = [...group].sort((left, right) => left.seq - right.seq)
+    const parentColumns = ordered.map((row) => row.to)
+    if (parentColumns.some((column) => !column)) {
+      throw new Error(`Sync cannot resolve implicit foreign-key columns for ${table}`)
+    }
+    return {
+      parentTable: ordered[0]!.table,
+      childColumns: ordered.map((row) => row.from),
+      parentColumns: parentColumns as string[],
+      onDelete: ordered[0]!.on_delete.toUpperCase()
+    }
+  })
+}
+
+function cloneSyncSnapshot(snapshot: SyncDataSnapshot): SyncDataSnapshot {
+  return {
+    version: snapshot.version,
+    generatedAt: snapshot.generatedAt,
+    modules: snapshot.modules.map((module) => ({
+      module: module.module,
+      tables: module.tables.map((table) => ({
+        table: table.table,
+        rows: table.rows.map((row) => ({ ...row, data: { ...row.data } })),
+        tombstones: table.tombstones.map((tombstone) => ({ ...tombstone }))
+      }))
+    }))
+  }
+}
+
+function parentExists(
+  table: SyncTableSnapshot,
+  parentColumns: readonly string[],
+  values: readonly SyncScalar[]
+): boolean {
+  return table.rows.some((row) =>
+    parentColumns.every((column, index) => row.data[column] === values[index])
+  )
+}
+
+function parentDeleteRevision(
+  parentDefinition: SyncTableDefinition,
+  parentTable: SyncTableSnapshot,
+  parentColumns: readonly string[],
+  values: readonly SyncScalar[]
+): number {
+  if (
+    parentDefinition.keyColumns.length !== parentColumns.length ||
+    parentDefinition.keyColumns.some((column, index) => column !== parentColumns[index])
+  ) {
+    return 0
+  }
+  const key = JSON.stringify(values)
+  return parentTable.tombstones.find((row) => row.key === key)?.deletedAt ?? 0
+}
+
+function nextDerivedRevision(rowVersion: number, parentRevision: number): number {
+  return Math.max(rowVersion, parentRevision, 1) + 1
+}
+
+/**
+ * Reconciles row-level merge results with SQLite foreign-key semantics before either device
+ * applies the snapshot. This prevents a concurrent parent deletion and child edit from producing
+ * an invalid database. CASCADE deletes the orphaned child, SET NULL detaches it, while
+ * RESTRICT/NO ACTION conflicts are surfaced instead of silently discarding data.
+ */
+export function reconcileSyncSnapshotForeignKeys(
+  database: SqlDatabasePort,
+  snapshot: SyncDataSnapshot
+): SyncDataSnapshot {
+  const result = cloneSyncSnapshot(snapshot)
+
+  for (const module of result.modules) {
+    const tables = new Map(module.tables.map((table) => [table.table, table]))
+    let changed = true
+    let passes = 0
+
+    while (changed) {
+      changed = false
+      passes += 1
+      if (passes > module.tables.length + 2) {
+        throw new Error(`Не удалось стабилизировать связи модуля ${module.module}`)
+      }
+
+      for (const table of module.tables) {
+        const childDefinition = TABLE_BY_NAME.get(table.table)
+        if (!childDefinition) continue
+
+        for (const foreignKey of foreignKeys(database, table.table)) {
+          const parentTable = tables.get(foreignKey.parentTable)
+          const parentDefinition = TABLE_BY_NAME.get(foreignKey.parentTable)
+          if (!parentTable || !parentDefinition) continue
+
+          for (const row of [...table.rows]) {
+            const values = foreignKey.childColumns.map((column) => row.data[column] ?? null)
+            // SQLite considers a composite FK satisfied when any child key component is NULL.
+            if (values.some((value) => value === null)) continue
+            if (parentExists(parentTable, foreignKey.parentColumns, values)) continue
+
+            const parentRevision = parentDeleteRevision(
+              parentDefinition,
+              parentTable,
+              foreignKey.parentColumns,
+              values
+            )
+            const revision = nextDerivedRevision(row.version, parentRevision)
+
+            if (foreignKey.onDelete === 'CASCADE') {
+              table.rows = table.rows.filter((candidate) => candidate.key !== row.key)
+              const existing = table.tombstones.find((candidate) => candidate.key === row.key)
+              if (existing) existing.deletedAt = Math.max(existing.deletedAt, revision)
+              else table.tombstones.push({ key: row.key, deletedAt: revision })
+              changed = true
+              continue
+            }
+
+            if (foreignKey.onDelete === 'SET NULL') {
+              for (const column of foreignKey.childColumns) row.data[column] = null
+              row.version = revision
+              changed = true
+              continue
+            }
+
+            if (foreignKey.onDelete === 'SET DEFAULT') {
+              throw new Error(
+                `Конфликт синхронизации: ${table.table} требует значение по умолчанию после удаления ${foreignKey.parentTable}.`
+              )
+            }
+
+            throw new Error(
+              `Конфликт синхронизации: запись ${table.table} всё ещё ссылается на удалённую запись ${foreignKey.parentTable}. Изменения не применены.`
+            )
+          }
+        }
+      }
+    }
+
+    for (const table of module.tables) {
+      table.rows.sort((left, right) => left.key.localeCompare(right.key, 'en'))
+      table.tombstones.sort((left, right) => left.key.localeCompare(right.key, 'en'))
+    }
+  }
+
+  return result
+}
+
 function tableColumns(database: SqlDatabasePort, table: string): string[] {
   const rows = database.prepare(`PRAGMA table_info(${quoteIdentifier(table)})`).all() as Array<{
     name: string
