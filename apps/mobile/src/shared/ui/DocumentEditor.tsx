@@ -12,10 +12,7 @@ import type {
   StudyAssetKind,
   StudyBlock,
   StudyBlockType,
-  StudyBoardBlock,
   StudyDocument,
-  ResolveStudyInternalLinkTargetInput,
-  StudyInternalLinkTarget,
   StudyLocalAsset
 } from '@mymind/contracts/study'
 import { designTokens } from '@mymind/design'
@@ -33,7 +30,6 @@ import {
   Minus,
   Plus,
   Paperclip,
-  Presentation,
   Sigma,
   Trash2,
   Type,
@@ -42,11 +38,6 @@ import {
   type LucideIcon
 } from 'lucide-react-native'
 import { AppDialog } from './AppDialog'
-import {
-  DocumentBoardEditor,
-  DocumentBoardReader,
-  type OpenDocumentBoard
-} from './DocumentBoardBlock'
 import { AppIcon } from './icons'
 import { DocumentRichTextViewer, NotesRichTextBlock } from './NotesRichTextBlock'
 import { NotesBlockSettingsSheet } from './NotesBlockSettings'
@@ -78,7 +69,6 @@ const INSERTABLE_BLOCKS: ReadonlyArray<{
   { type: 'markdown', label: 'Markdown', description: 'Markdown-разметка', icon: FileText },
   { type: 'latex', label: 'LaTeX', description: 'Математическая формула', icon: Sigma },
   { type: 'mermaid', label: 'Mermaid', description: 'Диаграмма Mermaid', icon: Workflow },
-  { type: 'board', label: 'Доска', description: 'Связанная доска', icon: Presentation },
   { type: 'divider', label: 'Разделитель', description: 'Визуальная линия', icon: Minus }
 ]
 
@@ -114,12 +104,6 @@ interface DocumentEditorProps {
   openAsset?: (asset: StudyLocalAsset) => Promise<void>
   resolveAssetUri?: (asset: StudyLocalAsset) => string | null
   saveRecordedAudio?: (input: VoiceRecordingInput) => Promise<StudyLocalAsset>
-  openBoard?: OpenDocumentBoard
-  searchInternalLinkTargets?: (query: string) => StudyInternalLinkTarget[]
-  resolveInternalLinkTarget?: (
-    input: ResolveStudyInternalLinkTargetInput
-  ) => StudyInternalLinkTarget | null
-  onOpenInternalLink?: (target: ResolveStudyInternalLinkTargetInput) => void
   onAssetError?: (reason: unknown) => void
 }
 
@@ -152,8 +136,6 @@ function newBlock(type: StudyBlockType, id: string): StudyBlock | null {
       }
     case 'mermaid':
       return { id, type, source: '', viewMode: 'write', theme: 'dark', scale: 100 }
-    case 'board':
-      return { id, type }
     case 'divider':
       return { id, type, variant: 'solid', thickness: 1, color: '#6d5dfc' }
     default:
@@ -222,15 +204,11 @@ function BlockInput({
   block,
   update,
   assetActions,
-  openBoard,
-  searchInternalLinkTargets,
   clean = false
 }: {
   block: StudyBlock
   update(next: StudyBlock): void
   assetActions: DocumentAssetActions
-  openBoard?: OpenDocumentBoard
-  searchInternalLinkTargets?: (query: string) => StudyInternalLinkTarget[]
   clean?: boolean
 }): React.JSX.Element {
   const theme = useTheme()
@@ -340,12 +318,19 @@ function BlockInput({
       return <StudyDividerBlock block={block} spacing="edit" />
     case 'board':
       return (
-        <DocumentBoardEditor
-          block={block as StudyBoardBlock}
-          update={(next) => update(next)}
-          openBoard={openBoard}
-          onError={assetActions.onAssetError}
-        />
+        <View
+          style={{
+            padding: 14,
+            borderWidth: 1,
+            borderColor: theme.border,
+            borderRadius: 12,
+            backgroundColor: theme.surface
+          }}
+        >
+          <Text style={{ color: theme.muted, fontSize: 13, lineHeight: 19 }}>
+            Этот блок доступен только в desktop-версии MyMind.
+          </Text>
+        </View>
       )
   }
 }
@@ -913,56 +898,6 @@ type NotesReadNode =
       children: NotesReadNode[]
     }
 
-function escapeReaderHtml(value: string): string {
-  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-}
-
-const INTERNAL_LINK_SPAN_PATTERN =
-  /<span\b(?=[^>]*\bdata-study-internal-link\s*=\s*(?:"true"|'true'))([^>]*)>([\s\S]*?)<\/span\s*>/gi
-
-function readerAttribute(attributes: string, name: string): string | null {
-  const escaped = name.replace(/[.*+?^$\{\}()|[\]\\]/g, '\\$&')
-  const match = new RegExp(`(?:^|\\s)${escaped}\\s*=\\s*(?:"([^"]*)"|'([^']*)')`, 'i').exec(
-    attributes
-  )
-  return match?.[1] ?? match?.[2] ?? null
-}
-
-function readerHtml(
-  block: Extract<StudyBlock, { type: 'text' }>,
-  resolveInternalLinkTarget?: (
-    input: ResolveStudyInternalLinkTargetInput
-  ) => StudyInternalLinkTarget | null
-): string {
-  const source = block.html?.trim()
-    ? block.html
-    : `<p>${escapeReaderHtml(block.text).replace(/\n/g, '<br />') || '&nbsp;'}</p>`
-
-  if (!resolveInternalLinkTarget || !/data-study-internal-link\s*=/i.test(source)) return source
-
-  INTERNAL_LINK_SPAN_PATTERN.lastIndex = 0
-  return source.replace(
-    INTERNAL_LINK_SPAN_PATTERN,
-    (_match, attributes: string, innerHtml: string) => {
-      const materialId = readerAttribute(attributes, 'data-material-id') ?? ''
-      const kind =
-        readerAttribute(attributes, 'data-target-kind') === 'heading' ? 'heading' : 'material'
-      const headingId = readerAttribute(attributes, 'data-heading-id')
-      const labelMode =
-        readerAttribute(attributes, 'data-label-mode') === 'custom' ? 'custom' : 'auto'
-      const resolved = materialId
-        ? resolveInternalLinkTarget({ kind, materialId, headingId })
-        : null
-      const missing = resolved === null
-      const displayLabel = labelMode === 'custom' ? null : resolved?.title
-      const missingAttribute = missing ? ' data-missing="true"' : ''
-
-      return `<span${attributes}${missingAttribute}>${
-        displayLabel ? escapeReaderHtml(displayLabel) : innerHtml
-      }</span>`
-    }
-  )
-}
 function buildNotesReadOutline(blocks: StudyBlock[]): NotesReadNode[] {
   const root: NotesReadNode[] = []
   const stack: Array<Extract<NotesReadNode, { kind: 'section' }>> = []
@@ -1052,18 +987,10 @@ function NotesReadHeading({
 
 function NotesReadBlock({
   block,
-  assetActions,
-  openBoard,
-  resolveInternalLinkTarget,
-  onOpenInternalLink
+  assetActions
 }: {
   block: StudyBlock
   assetActions: DocumentAssetActions
-  openBoard?: OpenDocumentBoard
-  resolveInternalLinkTarget?: (
-    input: ResolveStudyInternalLinkTargetInput
-  ) => StudyInternalLinkTarget | null
-  onOpenInternalLink?: (target: ResolveStudyInternalLinkTargetInput) => void
 }): React.JSX.Element {
   const theme = useTheme()
 
@@ -1071,8 +998,7 @@ function NotesReadBlock({
     case 'text':
       return block.text.trim() || block.html?.trim() ? (
         <DocumentRichTextViewer
-          html={resolveStudyRichTextHtml(block, resolveInternalLinkTarget)}
-          onOpenInternalLink={(target) => onOpenInternalLink?.(target)}
+          html={resolveStudyRichTextHtml(block)}
           onOpenExternalLink={(href) => {
             void Linking.openURL(href).catch((reason: unknown) => {
               assetActions.onAssetError?.(reason)
@@ -1107,11 +1033,19 @@ function NotesReadBlock({
       return <StudyDividerBlock block={block} spacing="read" />
     case 'board':
       return (
-        <DocumentBoardReader
-          block={block}
-          openBoard={openBoard}
-          onError={assetActions.onAssetError}
-        />
+        <View
+          style={{
+            padding: 14,
+            borderWidth: 1,
+            borderColor: theme.border,
+            borderRadius: 12,
+            backgroundColor: theme.surface
+          }}
+        >
+          <Text style={{ color: theme.muted, fontSize: 13, lineHeight: 19 }}>
+            Этот блок доступен только в desktop-версии MyMind.
+          </Text>
+        </View>
       )
   }
 }
@@ -1119,18 +1053,10 @@ function NotesReadBlock({
 function NotesReadSection({
   section,
   assetActions,
-  openBoard,
-  resolveInternalLinkTarget,
-  onOpenInternalLink,
   depth = 0
 }: {
   section: Extract<NotesReadNode, { kind: 'section' }>
   assetActions: DocumentAssetActions
-  openBoard?: OpenDocumentBoard
-  resolveInternalLinkTarget?: (
-    input: ResolveStudyInternalLinkTargetInput
-  ) => StudyInternalLinkTarget | null
-  onOpenInternalLink?: (target: ResolveStudyInternalLinkTargetInput) => void
   depth?: number
 }): React.JSX.Element {
   const theme = useTheme()
@@ -1186,9 +1112,6 @@ function NotesReadSection({
                 key={child.heading.id}
                 section={child}
                 assetActions={assetActions}
-                openBoard={openBoard}
-                resolveInternalLinkTarget={resolveInternalLinkTarget}
-                onOpenInternalLink={onOpenInternalLink}
                 depth={depth + 1}
               />
             ) : (
@@ -1196,9 +1119,6 @@ function NotesReadSection({
                 key={child.block.id}
                 block={child.block}
                 assetActions={assetActions}
-                openBoard={openBoard}
-                resolveInternalLinkTarget={resolveInternalLinkTarget}
-                onOpenInternalLink={onOpenInternalLink}
               />
             )
           )}
@@ -1210,18 +1130,10 @@ function NotesReadSection({
 
 function NotesDocumentReader({
   document,
-  assetActions,
-  openBoard,
-  resolveInternalLinkTarget,
-  onOpenInternalLink
+  assetActions
 }: {
   document: StudyDocument
   assetActions: DocumentAssetActions
-  openBoard?: OpenDocumentBoard
-  resolveInternalLinkTarget?: (
-    input: ResolveStudyInternalLinkTargetInput
-  ) => StudyInternalLinkTarget | null
-  onOpenInternalLink?: (target: ResolveStudyInternalLinkTargetInput) => void
 }): React.JSX.Element {
   const outline = buildNotesReadOutline(document.blocks)
 
@@ -1233,18 +1145,12 @@ function NotesDocumentReader({
             key={node.heading.id}
             section={node}
             assetActions={assetActions}
-            openBoard={openBoard}
-            resolveInternalLinkTarget={resolveInternalLinkTarget}
-            onOpenInternalLink={onOpenInternalLink}
           />
         ) : (
           <NotesReadBlock
             key={node.block.id}
             block={node.block}
             assetActions={assetActions}
-            openBoard={openBoard}
-            resolveInternalLinkTarget={resolveInternalLinkTarget}
-            onOpenInternalLink={onOpenInternalLink}
           />
         )
       )}
@@ -1263,10 +1169,6 @@ export function DocumentEditor({
   openAsset,
   resolveAssetUri,
   saveRecordedAudio,
-  openBoard,
-  searchInternalLinkTargets,
-  resolveInternalLinkTarget,
-  onOpenInternalLink,
   onAssetError
 }: DocumentEditorProps): React.JSX.Element {
   const theme = useTheme()
@@ -1323,13 +1225,7 @@ export function DocumentEditor({
             backgroundColor: theme.surface
           }}
         >
-          <NotesDocumentReader
-            document={document}
-            assetActions={assetActions}
-            openBoard={openBoard}
-            resolveInternalLinkTarget={resolveInternalLinkTarget}
-            onOpenInternalLink={onOpenInternalLink}
-          />
+          <NotesDocumentReader document={document} assetActions={assetActions} />
         </View>
       </ScrollView>
     )
@@ -1384,9 +1280,8 @@ export function DocumentEditor({
   const duplicate = (index: number): void => {
     const currentDocument = documentRef.current
     const source = currentDocument.blocks[index]
-    if (!source) return
-    const copy: StudyBlock =
-      source.type === 'board' ? { id: createId(), type: 'board' } : { ...source, id: createId() }
+    if (!source || source.type === 'board') return
+    const copy: StudyBlock = { ...source, id: createId() }
     const blocks = currentDocument.blocks.slice()
     blocks.splice(index + 1, 0, copy)
     emit({ ...currentDocument, blocks })
@@ -1512,8 +1407,6 @@ export function DocumentEditor({
                 block={item}
                 update={(next) => replace(index, next)}
                 assetActions={assetActions}
-                openBoard={openBoard}
-                searchInternalLinkTargets={searchInternalLinkTargets}
               />
             )}
           </DesktopParityBlockCard>
@@ -1536,7 +1429,7 @@ export function DocumentEditor({
           openSettings={() => setRichSettingsOpen(true)}
           openLink={() => setQuickLinkOpen(true)}
         />
-      ) : activeBlock ? (
+      ) : activeBlock && activeBlock.type !== 'board' ? (
         <View
           style={{
             minHeight: 52,
@@ -1593,7 +1486,6 @@ export function DocumentEditor({
             close={() => setRichSettingsOpen(false)}
             editor={activeRichEditor}
             state={richTextState}
-            searchTargets={searchInternalLinkTargets}
           />
           <NotesQuickLinkDialog
             key={`${activeBlock.id}:${quickLinkOpen ? 'open' : 'closed'}`}
@@ -1605,7 +1497,7 @@ export function DocumentEditor({
         </>
       ) : null}
 
-      {settingsOpen && activeBlock && activeIndex >= 0 && activeBlock.type !== 'text' ? (
+      {settingsOpen && activeBlock && activeIndex >= 0 && activeBlock.type !== 'text' && activeBlock.type !== 'board' ? (
         <NotesBlockSettingsSheet
           block={activeBlock}
           update={(next) => replace(activeIndex, next)}
