@@ -1,5 +1,5 @@
 import * as Network from 'expo-network'
-import { randomUUID } from 'expo-crypto'
+import { getRandomValues, randomUUID } from 'expo-crypto'
 import type { SqlDatabasePort } from '@mymind/contracts/storage'
 import {
   LAN_SYNC_DEFAULT_PORT,
@@ -18,6 +18,12 @@ import {
   type SyncProofResponse,
   type SyncResult
 } from '@mymind/contracts/profile-sync'
+import {
+  decryptLanSyncJson,
+  deriveLanSyncSessionKey,
+  encryptLanSyncJson,
+  parseLanSyncEncryptedEnvelope
+} from '@mymind/core/lan-sync-crypto'
 import {
   createProfileSyncProof,
   timingSafeHexEqual
@@ -57,6 +63,13 @@ export interface MobileLanSyncClient {
   sync(device: LanSyncDevice, modules: readonly SyncModule[]): Promise<SyncResult>
 }
 
+
+interface MobileLanSession {
+  token: string
+  key: Uint8Array
+  expiresAt: number
+}
+
 function withTimeout(timeoutMs: number): { signal: AbortSignal; clear(): void } {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
@@ -93,6 +106,77 @@ async function requestJson(
     timeout.clear()
   }
 }
+
+function secureNonce(): Uint8Array {
+  const nonce = new Uint8Array(12)
+  getRandomValues(nonce)
+  return nonce
+}
+
+async function requestSecureJson(
+  baseUrl: string,
+  path: string,
+  session: MobileLanSession,
+  value: unknown,
+  timeoutMs: number
+): Promise<unknown> {
+  if (session.expiresAt <= Date.now()) throw new Error('Сессия синхронизации истекла')
+  const nonce = secureNonce()
+  const envelope = encryptLanSyncJson(
+    value,
+    session.key,
+    nonce,
+    'request',
+    'POST',
+    path,
+    session.token
+  )
+  nonce.fill(0)
+
+  const timeout = withTimeout(timeoutMs)
+  try {
+    const response = await fetch(`${baseUrl}${path.replace('/mymind-sync/v1', '')}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session.token}`
+      },
+      body: JSON.stringify(envelope),
+      signal: timeout.signal
+    })
+    const text = await response.text()
+    let raw: unknown
+    try {
+      raw = text ? JSON.parse(text) : null
+    } catch {
+      throw new Error('Компьютер вернул повреждённый защищённый ответ')
+    }
+
+    let decrypted: unknown
+    try {
+      decrypted = decryptLanSyncJson(
+        parseLanSyncEncryptedEnvelope(raw),
+        session.key,
+        'response',
+        'POST',
+        path,
+        session.token
+      )
+    } catch {
+      if (!response.ok) throw new Error(`LAN sync завершился с ошибкой HTTP ${response.status}`)
+      throw new Error('Не удалось проверить защищённый ответ компьютера')
+    }
+
+    if (!response.ok) {
+      const error = record(decrypted).error
+      throw new Error(typeof error === 'string' ? error : `HTTP ${response.status}`)
+    }
+    return decrypted
+  } finally {
+    timeout.clear()
+  }
+}
+
 
 function record(value: unknown): Record<string, unknown> {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
@@ -373,7 +457,7 @@ async function mapConcurrent<T, R>(
 async function authenticate(
   device: LanSyncDevice,
   profileRepository: LocalProfileRepository
-): Promise<string> {
+): Promise<MobileLanSession> {
   const profile = profileRepository.getProfile()
   if (!profile) throw new Error('Сначала создайте профиль на телефоне')
   const key = await profileRepository.getSyncKey()
@@ -388,7 +472,7 @@ async function authenticate(
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ login: profile.normalizedLogin, clientNonce })
+          body: JSON.stringify({ clientNonce })
         },
         REQUEST_TIMEOUT_MS
       )
@@ -410,7 +494,6 @@ async function authenticate(
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             challengeId: challenge.challengeId,
-            login: profile.normalizedLogin,
             clientNonce,
             proof
           })
@@ -430,7 +513,17 @@ async function authenticate(
       throw new Error('Не удалось подтвердить подлинность компьютера')
     }
     if (authenticated.expiresAt <= Date.now()) throw new Error('Сессия синхронизации истекла')
-    return authenticated.sessionToken
+    const sessionKey = deriveLanSyncSessionKey(
+      key,
+      challenge.challengeId,
+      clientNonce,
+      challenge.serverNonce
+    )
+    return {
+      token: authenticated.sessionToken,
+      key: sessionKey,
+      expiresAt: authenticated.expiresAt
+    }
   } finally {
     key.fill(0)
   }
@@ -438,27 +531,22 @@ async function authenticate(
 
 async function uploadAssets(
   baseUrl: string,
-  sessionToken: string,
+  session: MobileLanSession,
   plan: SyncPlanResponse
 ): Promise<void> {
   for (const entry of plan.uploads) {
     let finalProgress: SyncAssetUploadProgress | null = null
     await readMobileSyncAssetChunks(entry, async (offset, bytes) => {
       finalProgress = parseUploadProgress(
-        await requestJson(
-          `${baseUrl}/assets/upload`,
+        await requestSecureJson(
+          baseUrl,
+          '/mymind-sync/v1/assets/upload',
+          session,
           {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${sessionToken}`
-            },
-            body: JSON.stringify({
-              planId: plan.planId,
-              path: entry.path,
-              offset,
-              data: encodeSyncBase64(bytes)
-            })
+            planId: plan.planId,
+            path: entry.path,
+            offset,
+            data: encodeSyncBase64(bytes)
           },
           TRANSFER_TIMEOUT_MS
         ),
@@ -473,7 +561,7 @@ async function uploadAssets(
 
 async function downloadAssets(
   baseUrl: string,
-  sessionToken: string,
+  session: MobileLanSession,
   plan: SyncPlanResponse
 ): Promise<void> {
   for (const entry of plan.downloads) {
@@ -482,13 +570,15 @@ async function downloadAssets(
 
     do {
       const chunk = parseDownloadChunk(
-        await requestJson(
-          `${baseUrl}/assets/download?planId=${encodeURIComponent(plan.planId)}&path=${encodeURIComponent(
-            entry.path
-          )}&offset=${offset}&length=${ASSET_CHUNK_BYTES}`,
+        await requestSecureJson(
+          baseUrl,
+          '/mymind-sync/v1/assets/download',
+          session,
           {
-            method: 'GET',
-            headers: { Authorization: `Bearer ${sessionToken}` }
+            planId: plan.planId,
+            path: entry.path,
+            offset,
+            length: ASSET_CHUNK_BYTES
           },
           TRANSFER_TIMEOUT_MS
         ),
