@@ -9,6 +9,7 @@ import {
   type SyncResult
 } from '@mymind/contracts/profile-sync'
 
+import { notifyDataChanged } from './changes'
 import { useServices } from './context'
 import { Button, ErrorState, Label } from '../shared/ui/primitives'
 import { WorkspaceNodeCard, WorkspacePanel } from '../shared/ui/Workspace'
@@ -157,6 +158,7 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
     setMessage('')
     try {
       const result = await lanSync.sync(selectedDevice, modules)
+      notifyDataChanged()
       setMessage(resultText(result))
     } catch (reason) {
       setError(messageFor(reason))
