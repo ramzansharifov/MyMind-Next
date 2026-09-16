@@ -12,8 +12,6 @@ import { subscribeDataChanges } from './changes'
 import type { MobileServices } from './services'
 
 const HOME_MODULES: Array<{ route: Exclude<Route, 'home' | 'more' | 'settings'>; title: string }> = [
-  { route: 'study', title: 'Обучение' },
-  { route: 'boards', title: 'Доски' },
   { route: 'notes', title: 'Заметки' },
   { route: 'tasks', title: 'Задачи' },
   { route: 'habits', title: 'Привычки' },
