@@ -535,9 +535,10 @@ async function uploadAssets(
   plan: SyncPlanResponse
 ): Promise<void> {
   for (const entry of plan.uploads) {
-    let finalProgress: SyncAssetUploadProgress | null = null
+    let finalReceived = -1
+    let finalComplete = false
     await readMobileSyncAssetChunks(entry, async (offset, bytes) => {
-      finalProgress = parseUploadProgress(
+      const progress = parseUploadProgress(
         await requestSecureJson(
           baseUrl,
           '/mymind-sync/v1/assets/upload',
@@ -552,8 +553,10 @@ async function uploadAssets(
         ),
         entry
       )
+      finalReceived = progress.received
+      finalComplete = progress.complete
     })
-    if (!finalProgress || finalProgress.received !== entry.size || !finalProgress.complete) {
+    if (finalReceived !== entry.size || !finalComplete) {
       throw new Error(`Файл «${entry.fileName}» не был полностью отправлен`)
     }
   }
