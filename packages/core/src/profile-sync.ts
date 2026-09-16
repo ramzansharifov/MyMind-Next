@@ -9,10 +9,19 @@ const SYNC_KDF_R = 8
 const SYNC_KDF_P = 1
 const SYNC_KDF_MAXMEM = 64 * 1024 * 1024
 
-function toHex(bytes: Uint8Array): string {
+export function profileSyncKeyToHex(bytes: Uint8Array): string {
   let result = ''
   for (const byte of bytes) result += byte.toString(16).padStart(2, '0')
   return result
+}
+
+export function profileSyncKeyFromHex(value: string): Uint8Array {
+  if (!/^[0-9a-f]{64}$/i.test(value)) throw new Error('Некорректный ключ синхронизации')
+  const bytes = new Uint8Array(32)
+  for (let index = 0; index < bytes.length; index += 1) {
+    bytes[index] = Number.parseInt(value.slice(index * 2, index * 2 + 2), 16)
+  }
+  return bytes
 }
 
 function proofMessage(
@@ -73,7 +82,7 @@ export async function deriveProfileSyncKey(login: string, password: string): Pro
 
 export function profileSyncKeyFingerprint(syncKey: Uint8Array): string {
   if (syncKey.length !== SYNC_KEY_BYTES) throw new Error('Некорректный ключ синхронизации')
-  return toHex(sha256(syncKey))
+  return profileSyncKeyToHex(sha256(syncKey))
 }
 
 export function createProfileSyncProof(
@@ -87,7 +96,7 @@ export function createProfileSyncProof(
   if (syncKey.length !== SYNC_KEY_BYTES) throw new Error('Некорректный ключ синхронизации')
   const normalizedLogin = assertValidProfileLogin(login)
   if (!challengeId || !clientNonce || !serverNonce) throw new Error('Некорректный challenge')
-  return toHex(
+  return profileSyncKeyToHex(
     hmac(
       sha256,
       syncKey,
