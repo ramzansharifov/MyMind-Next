@@ -434,7 +434,11 @@ export class LanSyncServer {
   private deviceId = ''
   private lastSyncAt: number | null = null
 
-  constructor(private readonly onDataChanged: (modules: string[]) => void = () => undefined) {}
+  constructor(
+    private readonly onDataChanged: (modules: string[]) => void = () => undefined,
+    private readonly prepareRenderer: (modules: readonly string[]) => Promise<void> = async () =>
+      undefined
+  ) {}
 
   async start(): Promise<void> {
     if (this.server) return
@@ -695,6 +699,7 @@ export class LanSyncServer {
       const clientAssets = parseAssetManifest(raw.assets)
       const modules = remoteSnapshot.modules.map((module) => module.module)
 
+      await this.prepareRenderer(modules)
       const prepared = await mainOperationTracker.run(async () => {
         const database = desktopRepositoryRuntime.database() as SqlDatabasePort
         const localSnapshot = captureSyncSnapshot(database, modules)
@@ -896,6 +901,9 @@ export class LanSyncServer {
         }
       }
 
+      const modules = plan.snapshot.modules.map((module) => module.module)
+      await this.prepareRenderer(modules)
+
       const currentServerAssets = new Map(
         (await collectDesktopSyncAssetManifest(plan.snapshot)).map((asset) => [asset.path, asset])
       )
@@ -913,7 +921,6 @@ export class LanSyncServer {
       }
 
       await commitDesktopSyncAssets(plan.id, plan.uploads)
-      const modules = plan.snapshot.modules.map((module) => module.module)
       const removedAssets = listRemovedSyncAssetReferences(plan.localBaseline, plan.snapshot)
       await mainOperationTracker.run(() => {
         const database = desktopRepositoryRuntime.database() as SqlDatabasePort
