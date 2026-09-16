@@ -199,6 +199,16 @@ function cleanupSessions(sessions: Map<string, Session>, now = Date.now()): void
   }
 }
 
+
+function isProtectedPath(path: string): boolean {
+  return (
+    path === '/mymind-sync/v1/plan' ||
+    path === '/mymind-sync/v1/assets/upload' ||
+    path === '/mymind-sync/v1/assets/download' ||
+    path === '/mymind-sync/v1/commit'
+  )
+}
+
 async function readJson(request: IncomingMessage, limit = MAX_JSON_BYTES): Promise<unknown> {
   const chunks: Buffer[] = []
   let total = 0
@@ -417,8 +427,23 @@ export class LanSyncServer {
       void this.handle(request, response).catch((reason: unknown) => {
         const message = reason instanceof Error ? reason.message : 'Sync request failed'
         console.warn('LAN sync request failed', reason)
-        if (!response.headersSent) errorResponse(response, 400, message)
-        else response.end()
+        if (response.headersSent) {
+          response.end()
+          return
+        }
+
+        try {
+          const path = new URL(request.url ?? '/', `http://127.0.0.1:${this.port}`).pathname
+          const session = this.sessionFor(request)
+          if (session && request.method === 'POST' && isProtectedPath(path)) {
+            secureJsonResponse(response, 400, session, 'POST', path, { error: message })
+            return
+          }
+        } catch (encryptionReason) {
+          console.warn('Failed to encrypt LAN sync error response', encryptionReason)
+        }
+
+        errorResponse(response, 400, 'Sync request failed')
       })
     })
     this.port = await listen(server)
