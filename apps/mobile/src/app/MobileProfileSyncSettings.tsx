@@ -297,7 +297,8 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
               />
               <Label muted>
                 Обычно MyMind найдёт компьютер автоматически. IP нужен только если сеть блокирует
-                автоматический поиск.
+                автоматический поиск. Если компьютер не находится, проверьте, что Windows разрешил
+                MyMind доступ к частной сети в брандмауэре.
               </Label>
             </View>
 
