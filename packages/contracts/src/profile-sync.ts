@@ -74,7 +74,6 @@ export interface SyncResult {
 }
 
 export interface SyncChallengeRequest {
-  login: string
   clientNonce: string
 }
 
@@ -86,7 +85,6 @@ export interface SyncChallengeResponse {
 
 export interface SyncProofRequest {
   challengeId: string
-  login: string
   clientNonce: string
   proof: string
 }
@@ -95,6 +93,13 @@ export interface SyncProofResponse {
   sessionToken: string
   expiresAt: number
   serverProof: string
+}
+
+export interface LanSyncEncryptedEnvelope {
+  version: 1
+  nonce: string
+  ciphertext: string
+  tag: string
 }
 
 export const LAN_SYNC_PROTOCOL_VERSION = 1 as const
