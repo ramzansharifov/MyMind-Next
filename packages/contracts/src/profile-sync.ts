@@ -99,3 +99,42 @@ export interface SyncProofResponse {
 
 export const LAN_SYNC_PROTOCOL_VERSION = 1 as const
 export const LAN_SYNC_DEFAULT_PORT = 49632
+
+export type SyncScalar = string | number | null
+
+export interface SyncSnapshotRow {
+  key: string
+  version: number
+  data: Record<string, SyncScalar>
+}
+
+export interface SyncSnapshotTombstone {
+  key: string
+  deletedAt: number
+}
+
+export interface SyncTableSnapshot {
+  table: string
+  rows: SyncSnapshotRow[]
+  tombstones: SyncSnapshotTombstone[]
+}
+
+export interface SyncModuleSnapshot {
+  module: SyncModule
+  tables: SyncTableSnapshot[]
+}
+
+export interface SyncDataSnapshot {
+  version: 1
+  generatedAt: number
+  modules: SyncModuleSnapshot[]
+}
+
+export interface SyncExchangeRequest {
+  snapshot: SyncDataSnapshot
+}
+
+export interface SyncExchangeResponse {
+  snapshot: SyncDataSnapshot
+  summaries: SyncModuleSummary[]
+}
