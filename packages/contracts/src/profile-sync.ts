@@ -131,11 +131,61 @@ export interface SyncDataSnapshot {
   modules: SyncModuleSnapshot[]
 }
 
-export interface SyncExchangeRequest {
-  snapshot: SyncDataSnapshot
+export type SyncAssetKind = 'note-asset' | 'workout-photo'
+
+export interface SyncAssetReference {
+  path: string
+  kind: SyncAssetKind
+  ownerId: string
+  assetId: string
+  fileName: string
 }
 
-export interface SyncExchangeResponse {
+export interface SyncAssetManifestEntry extends SyncAssetReference {
+  size: number
+  sha256: string
+}
+
+export interface SyncPlanRequest {
+  snapshot: SyncDataSnapshot
+  assets: SyncAssetManifestEntry[]
+}
+
+export interface SyncPlanResponse {
+  planId: string
+  expiresAt: number
   snapshot: SyncDataSnapshot
   summaries: SyncModuleSummary[]
+  uploads: SyncAssetManifestEntry[]
+  downloads: SyncAssetManifestEntry[]
+}
+
+export interface SyncAssetUploadChunk {
+  planId: string
+  path: string
+  offset: number
+  data: string
+}
+
+export interface SyncAssetUploadProgress {
+  path: string
+  received: number
+  complete: boolean
+}
+
+export interface SyncAssetDownloadChunk {
+  path: string
+  offset: number
+  totalSize: number
+  sha256: string
+  data: string
+  complete: boolean
+}
+
+export interface SyncCommitRequest {
+  planId: string
+}
+
+export interface SyncCommitResponse {
+  committedAt: number
 }
