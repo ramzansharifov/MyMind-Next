@@ -627,4 +627,31 @@ describe('LAN sync snapshot merge', () => {
     }
   })
 
+
+  it('rejects snapshot rows whose transport key does not match their primary key data', () => {
+    const db = createDatabase()
+    try {
+      const database = adapt(db)
+      ensureSyncInfrastructure(database)
+      db.prepare(
+        `INSERT INTO tasks(
+          id, title, description, group_id, status, priority, due_date, due_time,
+          completed_at, created_at, updated_at
+        ) VALUES ('canonical-task', 'Задача', '', NULL, 'active', 'normal', NULL, NULL, NULL, 1, 1)`
+      ).run()
+
+      const snapshot = captureSyncSnapshot(database, ['tasks'])
+      const taskTable = snapshot.modules[0]?.tables.find((table) => table.table === 'tasks')
+      const task = taskTable?.rows.find((row) => row.data.id === 'canonical-task')
+      if (!task) throw new Error('test task missing')
+      task.key = '["another-task"]'
+
+      expect(() => mergeSyncSnapshots(snapshot, captureSyncSnapshot(database, ['tasks']))).toThrow(
+        /Неканонический ключ записи sync/
+      )
+    } finally {
+      db.close()
+    }
+  })
+
 })
