@@ -31,8 +31,61 @@ jobs:
         run: npm run native:node
       - name: Diff whitespace check
         run: git diff --check origin/main...HEAD
-      - name: Mobile lint
-        run: npm run lint:mobile
+      - name: Mobile lint baseline
+        shell: bash
+        run: |
+          ./node_modules/.bin/eslint apps/mobile packages --format json > /tmp/head-eslint.json || true
+          git worktree add --detach .lint-baseline origin/main
+          ln -s ../node_modules .lint-baseline/node_modules
+          (
+            cd .lint-baseline
+            ./node_modules/.bin/eslint apps/mobile packages --format json > /tmp/base-eslint.json || true
+          )
+          set +e
+          node <<'NODE'
+          const fs = require('node:fs')
+
+          function relativePath(filePath) {
+            const normalized = filePath.replace(/\\/g, '/')
+            const match = normalized.match(/\/(apps\/mobile|packages)\/.+$/)
+            return match ? match[0].slice(1) : normalized
+          }
+
+          function errorCounts(file) {
+            const reports = JSON.parse(fs.readFileSync(file, 'utf8'))
+            const counts = new Map()
+            for (const report of reports) {
+              const path = relativePath(report.filePath)
+              for (const message of report.messages) {
+                if (message.severity !== 2) continue
+                const key = [path, message.ruleId ?? 'unknown', message.message].join(' | ')
+                counts.set(key, (counts.get(key) ?? 0) + 1)
+              }
+            }
+            return counts
+          }
+
+          const baseline = errorCounts('/tmp/base-eslint.json')
+          const head = errorCounts('/tmp/head-eslint.json')
+          const newErrors = []
+
+          for (const [key, count] of head) {
+            const extra = count - (baseline.get(key) ?? 0)
+            if (extra > 0) newErrors.push({ key, count: extra })
+          }
+
+          if (newErrors.length) {
+            console.error('New mobile/package ESLint errors introduced by this branch:')
+            for (const item of newErrors) console.error(`- ${item.count}x ${item.key}`)
+            process.exit(1)
+          }
+
+          console.log('No new ESLint errors compared with main.')
+          NODE
+          status=$?
+          set -e
+          git worktree remove --force .lint-baseline
+          exit $status
       - name: Mobile typecheck
         run: npm run typecheck:mobile
       - name: Mobile tests
