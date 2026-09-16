@@ -12,6 +12,7 @@ import { createWorkoutsRepository } from '@mymind/persistence/workouts'
 import { createNutritionRepository } from '@mymind/persistence/nutrition'
 import { createFinanceRepository } from '@mymind/persistence/finance'
 import { createPasswordsRepository } from '@mymind/persistence/passwords'
+import { createLocalProfileRepository } from '@mymind/persistence/local-profile'
 import {
   createWorkoutProgressAssetHooks,
   reconcileWorkoutProgressAssets
@@ -19,6 +20,8 @@ import {
 import { mobilePasswordCrypto } from '../modules/passwords/passwordCrypto'
 import { createMobileDocumentAssetStore } from '../shared/platform/documentAssets'
 import { adaptSqlite } from '../shared/storage/sqlite'
+import { createMobileLanSyncClient } from '../shared/sync/lanSyncClient'
+import { mobileProfileSecret } from '../shared/sync/profileSecret'
 
 export interface MobileServices {
   tasks: ReturnType<typeof createTasksRepository>
@@ -32,6 +35,8 @@ export interface MobileServices {
   nutrition: ReturnType<typeof createNutritionRepository>
   finance: ReturnType<typeof createFinanceRepository>
   passwords: ReturnType<typeof createPasswordsRepository>
+  profile: ReturnType<typeof createLocalProfileRepository>
+  lanSync: ReturnType<typeof createMobileLanSyncClient>
   documentAssets: ReturnType<typeof createMobileDocumentAssetStore>
   settings: { get(key: string): string | null; set(key: string, value: string): void }
 }
@@ -40,6 +45,8 @@ export function createMobileServices(db: SQLiteDatabase): MobileServices {
   const database = adaptSqlite(db)
   const runtime = { database: () => database, createId: randomUUID, now: Date.now }
   const documentAssets = createMobileDocumentAssetStore()
+  const profile = createLocalProfileRepository(runtime, mobileProfileSecret)
+  const lanSync = createMobileLanSyncClient(database, profile)
   const notes = createNotesRepository(runtime, {
     validateDocumentAssets: documentAssets.validateDocumentAssets,
     afterDocumentSaved: async (noteId, document) => {
@@ -88,6 +95,8 @@ export function createMobileServices(db: SQLiteDatabase): MobileServices {
     nutrition: createNutritionRepository(runtime),
     finance: createFinanceRepository(runtime),
     passwords: createPasswordsRepository(runtime, mobilePasswordCrypto),
+    profile,
+    lanSync,
     documentAssets,
     settings: {
       get: (key: string) =>
