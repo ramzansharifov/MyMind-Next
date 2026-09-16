@@ -3,7 +3,6 @@ import { createReadStream } from 'node:fs'
 import {
   appendFile,
   mkdir,
-  readFile,
   rename,
   writeFile,
   rm,
@@ -199,31 +198,36 @@ export function normalizeDesktopWorkoutPhotoUrls(
   const photos = workouts?.tables.find((table) => table.table === 'workout_progress_photos')
   if (!photos) return
 
-  const statement = database.prepare(
-    'UPDATE workout_progress_photos SET url = ? WHERE id = ? AND entry_id = ? AND asset_id = ?'
-  )
-  for (const row of photos.rows) {
-    const id = row.data.id
-    const entryId = row.data.entry_id
-    const assetId = row.data.asset_id
-    const fileName = row.data.file_name
-    if (
-      typeof id !== 'string' ||
-      typeof entryId !== 'string' ||
-      typeof assetId !== 'string' ||
-      typeof fileName !== 'string'
-    ) {
-      throw new Error('Некорректная фотография прогресса в sync snapshot')
-    }
-    statement.run(
-      createCanonicalStudyAssetUrl({
-        materialId: `workout-progress-${entryId}`,
-        assetId,
-        fileName
-      }),
-      id,
-      entryId,
-      assetId
+  database.prepare("UPDATE sync_runtime SET value = '1' WHERE key = 'applying_remote'").run()
+  try {
+    const statement = database.prepare(
+      'UPDATE workout_progress_photos SET url = ? WHERE id = ? AND entry_id = ? AND asset_id = ?'
     )
+    for (const row of photos.rows) {
+      const id = row.data.id
+      const entryId = row.data.entry_id
+      const assetId = row.data.asset_id
+      const fileName = row.data.file_name
+      if (
+        typeof id !== 'string' ||
+        typeof entryId !== 'string' ||
+        typeof assetId !== 'string' ||
+        typeof fileName !== 'string'
+      ) {
+        throw new Error('Некорректная фотография прогресса в sync snapshot')
+      }
+      statement.run(
+        createCanonicalStudyAssetUrl({
+          materialId: `workout-progress-${entryId}`,
+          assetId,
+          fileName
+        }),
+        id,
+        entryId,
+        assetId
+      )
+    }
+  } finally {
+    database.prepare("UPDATE sync_runtime SET value = '0' WHERE key = 'applying_remote'").run()
   }
 }
