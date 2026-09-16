@@ -96,6 +96,14 @@ function columns(sqlite: Database.Database, table: string): ComparableColumn[] {
     .sort((left, right) => left.name.localeCompare(right.name, 'en'))
 }
 
+function snapshotShape(database: SqlDatabasePort): Array<{ module: string; tables: string[] }> {
+  const modules = SYNC_MODULE_REGISTRY.map((module) => module.module)
+  return captureSyncSnapshot(database, modules).modules.map((module) => ({
+    module: module.module,
+    tables: module.tables.map((table) => table.table)
+  }))
+}
+
 describe('desktop/mobile LAN sync schema parity', () => {
   it('keeps every synchronized table structurally compatible on both platforms', async () => {
     const desktop = await createDesktopDatabase()
@@ -121,10 +129,10 @@ describe('desktop/mobile LAN sync schema parity', () => {
         expect(desktopColumns, `${table} schema differs`).toEqual(mobileColumns)
       }
 
-      const modules = SYNC_MODULE_REGISTRY.map((module) => module.module)
-      expect(captureSyncSnapshot(desktopPort, modules).modules).toEqual(
-        captureSyncSnapshot(mobilePort, modules).modules
-      )
+      // Fresh installations may intentionally have different seed rows (for example the desktop
+      // diary seed). Sync operates on explicit rows, so parity here means both platforms can build
+      // the same module/table snapshot shape; the first sync then merges the seed data normally.
+      expect(snapshotShape(desktopPort)).toEqual(snapshotShape(mobilePort))
     } finally {
       desktop.close()
       mobile.close()
