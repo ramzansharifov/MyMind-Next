@@ -16,7 +16,6 @@ import {
   Dumbbell,
   Film,
   Folder,
-  GraduationCap,
   House,
   Info,
   KeyRound,
@@ -26,7 +25,6 @@ import {
   Notebook,
   Pencil,
   Plus,
-  Presentation,
   Repeat2,
   RotateCcw,
   Search,
@@ -40,8 +38,6 @@ import {
 
 export type AppIconName =
   | 'home'
-  | 'study'
-  | 'boards'
   | 'notes'
   | 'tasks'
   | 'habits'
@@ -76,8 +72,6 @@ export type AppIconName =
 
 const icons: Record<AppIconName, LucideIcon> = {
   home: House,
-  study: GraduationCap,
-  boards: Presentation,
   notes: Notebook,
   tasks: ListTodo,
   habits: Repeat2,
