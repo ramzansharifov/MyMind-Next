@@ -97,6 +97,6 @@ jobs:
           test ! -d apps/mobile/src/modules/boards
           test ! -f apps/mobile/scripts/patch-tldraw-dom-assets.mjs
           test ! -f apps/mobile/src/shared/ui/DocumentBoardBlock.tsx
-          ! grep -R --include='*.ts' --include='*.tsx' --include='*.mjs' --include='package.json' -E "StudyScreen|BoardsScreen|@tldraw/assets|from ['\"]tldraw['\"]|modules/(study|boards)" apps/mobile
+          ! grep -R --exclude-dir=node_modules --include='*.ts' --include='*.tsx' --include='*.mjs' --include='package.json' -E "StudyScreen|BoardsScreen|@tldraw/assets|from ['\"]tldraw['\"]|modules/(study|boards)" apps/mobile
       - name: Android export
         run: npm run export:android
