@@ -50,7 +50,7 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
   const [devices, setDevices] = useState<LanSyncDevice[]>([])
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null)
   const [selectedModules, setSelectedModules] = useState<Set<SyncModule>>(
-    () => new Set(SYNC_MODULES)
+    () => new Set()
   )
   const [busy, setBusy] = useState<'profile' | 'scan' | 'sync' | null>(null)
   const [error, setError] = useState('')
@@ -329,6 +329,10 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
                   }}
                 />
                 <Label title>Что синхронизировать</Label>
+                <Label muted>
+                  Для одного модуля просто выберите его ниже. Можно выбрать несколько, а для полного
+                  обмена используйте отдельную кнопку «Синхронизировать все данные».
+                </Label>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                   {SYNC_MODULES.filter((module) => selectedDevice.modules.includes(module)).map(
                     (module) => (
@@ -369,9 +373,9 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
                 </View>
 
                 <Label muted>
-                  Для одного модуля оставьте выбранным только его. «Обучение» и «Доски» являются
-                  desktop-only и здесь намеренно отсутствуют. Если хранилища паролей создавались
-                  независимо, MyMind остановит синхронизацию паролей вместо риска повредить vault.
+                  «Обучение» и «Доски» являются desktop-only и здесь намеренно отсутствуют. Если
+                  хранилища паролей создавались независимо, MyMind остановит синхронизацию паролей
+                  вместо риска повредить vault.
                 </Label>
               </View>
             ) : null}
