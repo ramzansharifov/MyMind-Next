@@ -24,7 +24,8 @@ import {
 } from '../shared/contracts/preferences'
 import {
   PROFILE_SYNC_IPC_CHANNELS,
-  type LanSyncHostStatus
+  type LanSyncHostStatus,
+  type ProfileSyncPrepareRequest
 } from '../shared/contracts/profile-sync'
 import {
   STUDY_IPC_CHANNELS,
@@ -168,6 +169,33 @@ const api: MyMindApi = {
       invokeWithSuccess(PROFILE_SYNC_IPC_CHANNELS.removeProfile, 'Профиль удалён'),
     getLanStatus: () =>
       invoke(PROFILE_SYNC_IPC_CHANNELS.getLanStatus) as Promise<LanSyncHostStatus>,
+    onPrepareRequested: (listener) => {
+      const handler = (_event: Electron.IpcRendererEvent, rawRequest: unknown): void => {
+        if (
+          typeof rawRequest !== 'object' ||
+          rawRequest === null ||
+          Array.isArray(rawRequest)
+        ) {
+          return
+        }
+        const request = rawRequest as Record<string, unknown>
+        if (
+          typeof request.requestId !== 'string' ||
+          !Array.isArray(request.modules) ||
+          !request.modules.every((module) => typeof module === 'string')
+        ) {
+          return
+        }
+        listener({
+          requestId: request.requestId,
+          modules: request.modules
+        } satisfies ProfileSyncPrepareRequest)
+      }
+      ipcRenderer.on(PROFILE_SYNC_IPC_CHANNELS.prepareRequested, handler)
+      return () => ipcRenderer.removeListener(PROFILE_SYNC_IPC_CHANNELS.prepareRequested, handler)
+    },
+    respondToPrepare: (response) =>
+      invoke(PROFILE_SYNC_IPC_CHANNELS.respondToPrepare, response) as Promise<void>,
     onDataChanged: (listener) => {
       const handler = (_event: Electron.IpcRendererEvent, modules: string[]): void => {
         listener(modules)
