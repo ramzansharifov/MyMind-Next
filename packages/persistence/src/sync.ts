@@ -187,6 +187,20 @@ function createTriggerSql(definition: SyncTableDefinition): string[] {
 export function ensureSyncInfrastructure(database: SqlDatabasePort): void {
   database
     .prepare(
+      `CREATE TABLE IF NOT EXISTS local_profile (
+        id TEXT PRIMARY KEY NOT NULL,
+        login TEXT NOT NULL,
+        normalized_login TEXT NOT NULL UNIQUE,
+        name TEXT,
+        gender TEXT,
+        credential_fingerprint TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      )`
+    )
+    .run()
+  database
+    .prepare(
       `CREATE TABLE IF NOT EXISTS sync_runtime (
         key TEXT PRIMARY KEY NOT NULL,
         value TEXT NOT NULL
