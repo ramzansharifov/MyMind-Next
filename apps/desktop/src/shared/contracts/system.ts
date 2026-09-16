@@ -10,6 +10,7 @@ import type { NotesApi } from './notes'
 import type { NutritionApi } from './nutrition'
 import type { PasswordsApi } from './passwords'
 import type { PreferencesApi } from './preferences'
+import type { ProfileSyncApi } from './profile-sync'
 import type { StudyApi } from './study'
 import type { StudyPdfApi } from './study-pdf'
 import type { TasksApi } from './tasks'
@@ -98,4 +99,5 @@ export interface MyMindApi {
   workouts: WorkoutsApi
   nutrition: NutritionApi
   preferences: PreferencesApi
+  profileSync: ProfileSyncApi
 }
