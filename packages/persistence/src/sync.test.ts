@@ -180,4 +180,144 @@ describe('LAN sync snapshot merge', () => {
       right.close()
     }
   })
+
+  it('canonicalizes workout photo URLs so platform paths do not create conflicts', () => {
+    const left = createDatabase()
+    const right = createDatabase()
+    try {
+      const leftDb = adapt(left)
+      const rightDb = adapt(right)
+      ensureSyncInfrastructure(leftDb)
+      ensureSyncInfrastructure(rightDb)
+
+      for (const [db, url] of [
+        [left, 'mymind-asset://local/workout-progress-entry-1/asset-1/progress.jpg'],
+        [right, 'file:///data/user/0/com.mymind.mobile/files/workout-progress/entry-1/asset-1/progress.jpg']
+      ] as const) {
+        db.prepare(
+          `INSERT INTO workout_progress_entries(
+            id, date, body_weight_milli_kg, wellbeing, notes, created_at, updated_at
+          ) VALUES ('entry-1', '2026-09-16', NULL, '', '', 10, 10)`
+        ).run()
+        db.prepare(
+          `INSERT INTO workout_progress_photos(
+            id, entry_id, asset_id, file_name, mime_type, size, url, view, created_at
+          ) VALUES ('photo-1', 'entry-1', 'asset-1', 'progress.jpg', 'image/jpeg', 12, ?, 'custom', 10)`
+        ).run(url)
+      }
+
+      const leftSnapshot = captureSyncSnapshot(leftDb, ['workouts'])
+      const rightSnapshot = captureSyncSnapshot(rightDb, ['workouts'])
+      const leftPhoto = leftSnapshot.modules[0]?.tables
+        .find((table) => table.table === 'workout_progress_photos')
+        ?.rows[0]
+      const rightPhoto = rightSnapshot.modules[0]?.tables
+        .find((table) => table.table === 'workout_progress_photos')
+        ?.rows[0]
+
+      expect(leftPhoto?.data.url).toBe(
+        'mymind-sync://workouts/entry-1/asset-1/progress.jpg'
+      )
+      expect(rightPhoto).toEqual(leftPhoto)
+      expect(mergeSyncSnapshots(leftSnapshot, rightSnapshot).conflicts.get('workouts')).toBe(0)
+    } finally {
+      left.close()
+      right.close()
+    }
+  })
+
+  it('keeps a password vault lineage stable when the master-password wrapper changes', () => {
+    const left = createDatabase()
+    const right = createDatabase()
+    try {
+      const leftDb = adapt(left)
+      const rightDb = adapt(right)
+      ensureSyncInfrastructure(leftDb)
+      ensureSyncInfrastructure(rightDb)
+
+      const insertVault = (db: Database.Database): void => {
+        db.prepare(
+          `INSERT INTO password_vault(
+            id, version, kdf_salt, kdf_n, kdf_r, kdf_p,
+            wrapped_key_nonce, wrapped_key_ciphertext, wrapped_key_tag,
+            created_at, updated_at
+          ) VALUES ('default', 1, 'salt', 32768, 8, 1, 'nonce', 'cipher', 'tag', 10, 10)`
+        ).run()
+      }
+      insertVault(left)
+      insertVault(right)
+
+      const before = left
+        .prepare("SELECT identity FROM password_vault_sync_identity WHERE id = 'default'")
+        .get() as { identity: string }
+      expect(
+        right
+          .prepare("SELECT identity FROM password_vault_sync_identity WHERE id = 'default'")
+          .get()
+      ).toEqual(before)
+
+      left
+        .prepare(
+          `UPDATE password_vault
+           SET kdf_salt = 'new-salt',
+               wrapped_key_nonce = 'new-nonce',
+               wrapped_key_ciphertext = 'new-cipher',
+               wrapped_key_tag = 'new-tag',
+               updated_at = 20
+           WHERE id = 'default'`
+        )
+        .run()
+
+      const after = left
+        .prepare("SELECT identity FROM password_vault_sync_identity WHERE id = 'default'")
+        .get() as { identity: string }
+      expect(after).toEqual(before)
+
+      const merged = mergeSyncSnapshots(
+        captureSyncSnapshot(leftDb, ['passwords']),
+        captureSyncSnapshot(rightDb, ['passwords'])
+      )
+      const vault = merged.snapshot.modules[0]?.tables
+        .find((table) => table.table === 'password_vault')
+        ?.rows[0]
+      expect(vault?.data.kdf_salt).toBe('new-salt')
+    } finally {
+      left.close()
+      right.close()
+    }
+  })
+
+  it('refuses to merge independently-created password vaults', () => {
+    const left = createDatabase()
+    const right = createDatabase()
+    try {
+      const leftDb = adapt(left)
+      const rightDb = adapt(right)
+      ensureSyncInfrastructure(leftDb)
+      ensureSyncInfrastructure(rightDb)
+
+      const insertVault = (db: Database.Database, suffix: string): void => {
+        db.prepare(
+          `INSERT INTO password_vault(
+            id, version, kdf_salt, kdf_n, kdf_r, kdf_p,
+            wrapped_key_nonce, wrapped_key_ciphertext, wrapped_key_tag,
+            created_at, updated_at
+          ) VALUES ('default', 1, ?, 32768, 8, 1, ?, ?, ?, 10, 10)`
+        ).run(`salt-${suffix}`, `nonce-${suffix}`, `cipher-${suffix}`, `tag-${suffix}`)
+      }
+      insertVault(left, 'left')
+      insertVault(right, 'right')
+
+      expect(() =>
+        mergeSyncSnapshots(
+          captureSyncSnapshot(leftDb, ['passwords']),
+          captureSyncSnapshot(rightDb, ['passwords'])
+        )
+      ).toThrow(/разные ключи/)
+    } finally {
+      left.close()
+      right.close()
+    }
+  })
+
 })
