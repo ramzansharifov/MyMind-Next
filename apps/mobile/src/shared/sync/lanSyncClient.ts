@@ -7,9 +7,14 @@ import {
   LAN_SYNC_PROTOCOL_VERSION,
   SYNC_MODULES,
   type LanSyncDevice,
+  type SyncAssetDownloadChunk,
+  type SyncAssetManifestEntry,
+  type SyncAssetUploadProgress,
   type SyncChallengeResponse,
+  type SyncCommitResponse,
   type SyncModule,
   type SyncModuleSummary,
+  type SyncPlanResponse,
   type SyncProofResponse,
   type SyncResult
 } from '@mymind/contracts/profile-sync'
@@ -20,11 +25,24 @@ import {
 import { parseSyncDataSnapshot } from '@mymind/core/sync-protocol'
 import type { LocalProfileRepository } from '@mymind/persistence/local-profile'
 import { applySyncSnapshot, captureSyncSnapshot } from '@mymind/persistence/sync'
+import {
+  cleanupMobileSyncAssetStage,
+  collectMobileSyncAssetManifest,
+  commitMobileSyncAssets,
+  decodeSyncBase64,
+  encodeSyncBase64,
+  normalizeMobileWorkoutPhotoUrls,
+  readMobileSyncAssetChunks,
+  stageMobileSyncAssetChunk
+} from './mobileSyncAssets'
 
 const DISCOVERY_TIMEOUT_MS = 450
 const REQUEST_TIMEOUT_MS = 15_000
-const DISCOVERY_CONCURRENCY = 40
+const TRANSFER_TIMEOUT_MS = 45_000
+const DISCOVERY_CONCURRENCY = 20
 const MAX_DISCOVERY_HOSTS = 254
+const ASSET_CHUNK_BYTES = 1024 * 1024
+const SHA256_PATTERN = /^[0-9a-f]{64}$/
 const SUPPORTED_MODULES = new Set<string>(SYNC_MODULES)
 
 export interface MobileLanSyncClient {
@@ -133,6 +151,39 @@ function parseProof(value: unknown): SyncProofResponse {
   }
 }
 
+function parseAssetManifest(value: unknown): SyncAssetManifestEntry[] {
+  if (!Array.isArray(value)) throw new Error('Некорректный список файлов синхронизации')
+  const seen = new Set<string>()
+  return value.map((raw) => {
+    const input = record(raw)
+    if (
+      typeof input.path !== 'string' ||
+      (input.kind !== 'note-asset' && input.kind !== 'workout-photo') ||
+      typeof input.ownerId !== 'string' ||
+      typeof input.assetId !== 'string' ||
+      typeof input.fileName !== 'string' ||
+      typeof input.size !== 'number' ||
+      !Number.isSafeInteger(input.size) ||
+      input.size < 0 ||
+      typeof input.sha256 !== 'string' ||
+      !SHA256_PATTERN.test(input.sha256)
+    ) {
+      throw new Error('Некорректное описание файла синхронизации')
+    }
+    if (seen.has(input.path)) throw new Error('Повторяющийся файл синхронизации')
+    seen.add(input.path)
+    return {
+      path: input.path,
+      kind: input.kind,
+      ownerId: input.ownerId,
+      assetId: input.assetId,
+      fileName: input.fileName,
+      size: input.size,
+      sha256: input.sha256
+    }
+  })
+}
+
 function parseSummaries(value: unknown, modules: readonly SyncModule[]): SyncModuleSummary[] {
   if (!Array.isArray(value)) throw new Error('Некорректный итог синхронизации')
   const allowed = new Set(modules)
@@ -158,12 +209,96 @@ function parseSummaries(value: unknown, modules: readonly SyncModule[]): SyncMod
   })
 }
 
+function parsePlan(value: unknown, modules: readonly SyncModule[]): SyncPlanResponse {
+  const input = record(value)
+  if (
+    typeof input.planId !== 'string' ||
+    typeof input.expiresAt !== 'number' ||
+    !Number.isSafeInteger(input.expiresAt)
+  ) {
+    throw new Error('Некорректный план синхронизации')
+  }
+  const snapshot = parseSyncDataSnapshot(input.snapshot)
+  const snapshotModules = snapshot.modules.map((module) => module.module)
+  if (
+    snapshotModules.length !== modules.length ||
+    modules.some((module) => !snapshotModules.includes(module))
+  ) {
+    throw new Error('Компьютер вернул неполный набор модулей синхронизации')
+  }
+  return {
+    planId: input.planId,
+    expiresAt: input.expiresAt,
+    snapshot,
+    summaries: parseSummaries(input.summaries, modules),
+    uploads: parseAssetManifest(input.uploads),
+    downloads: parseAssetManifest(input.downloads)
+  }
+}
+
+function parseUploadProgress(value: unknown, expected: SyncAssetManifestEntry): SyncAssetUploadProgress {
+  const input = record(value)
+  if (
+    input.path !== expected.path ||
+    typeof input.received !== 'number' ||
+    !Number.isSafeInteger(input.received) ||
+    input.received < 0 ||
+    input.received > expected.size ||
+    typeof input.complete !== 'boolean'
+  ) {
+    throw new Error('Некорректный ответ загрузки файла')
+  }
+  return {
+    path: expected.path,
+    received: input.received,
+    complete: input.complete
+  }
+}
+
+function parseDownloadChunk(
+  value: unknown,
+  expected: SyncAssetManifestEntry,
+  offset: number
+): SyncAssetDownloadChunk {
+  const input = record(value)
+  if (
+    input.path !== expected.path ||
+    input.offset !== offset ||
+    input.totalSize !== expected.size ||
+    input.sha256 !== expected.sha256 ||
+    typeof input.data !== 'string' ||
+    typeof input.complete !== 'boolean'
+  ) {
+    throw new Error('Некорректный ответ скачивания файла')
+  }
+  return {
+    path: expected.path,
+    offset,
+    totalSize: expected.size,
+    sha256: expected.sha256,
+    data: input.data,
+    complete: input.complete
+  }
+}
+
+function parseCommit(value: unknown): SyncCommitResponse {
+  const input = record(value)
+  if (typeof input.committedAt !== 'number' || !Number.isSafeInteger(input.committedAt)) {
+    throw new Error('Некорректный ответ завершения синхронизации')
+  }
+  return { committedAt: input.committedAt }
+}
+
 function normalizeManualHost(value: string): string {
   const host = value.trim().replace(/^https?:\/\//i, '').replace(/\/.*$/, '')
   const withoutPort = host.replace(/:\d+$/, '')
   if (!withoutPort) throw new Error('Введите IP-адрес компьютера')
-  if (!/^[0-9a-fA-F:.]+$/.test(withoutPort)) {
-    throw new Error('Для ручного подключения укажите локальный IP-адрес компьютера')
+  if (!/^\d{1,3}(?:\.\d{1,3}){3}$/.test(withoutPort)) {
+    throw new Error('Для ручного подключения укажите локальный IPv4-адрес компьютера')
+  }
+  const octets = withoutPort.split('.').map(Number)
+  if (octets.some((octet) => octet < 0 || octet > 255)) {
+    throw new Error('Некорректный IPv4-адрес компьютера')
   }
   return withoutPort
 }
@@ -294,6 +429,79 @@ async function authenticate(
   }
 }
 
+async function uploadAssets(
+  baseUrl: string,
+  sessionToken: string,
+  plan: SyncPlanResponse
+): Promise<void> {
+  for (const entry of plan.uploads) {
+    let finalProgress: SyncAssetUploadProgress | null = null
+    await readMobileSyncAssetChunks(entry, async (offset, bytes) => {
+      finalProgress = parseUploadProgress(
+        await requestJson(
+          `${baseUrl}/assets/upload`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${sessionToken}`
+            },
+            body: JSON.stringify({
+              planId: plan.planId,
+              path: entry.path,
+              offset,
+              data: encodeSyncBase64(bytes)
+            })
+          },
+          TRANSFER_TIMEOUT_MS
+        ),
+        entry
+      )
+    })
+    if (!finalProgress || finalProgress.received !== entry.size || !finalProgress.complete) {
+      throw new Error(`Файл «${entry.fileName}» не был полностью отправлен`)
+    }
+  }
+}
+
+async function downloadAssets(
+  baseUrl: string,
+  sessionToken: string,
+  plan: SyncPlanResponse
+): Promise<void> {
+  for (const entry of plan.downloads) {
+    let offset = 0
+    let complete = false
+
+    do {
+      const chunk = parseDownloadChunk(
+        await requestJson(
+          `${baseUrl}/assets/download?planId=${encodeURIComponent(plan.planId)}&path=${encodeURIComponent(
+            entry.path
+          )}&offset=${offset}&length=${ASSET_CHUNK_BYTES}`,
+          {
+            method: 'GET',
+            headers: { Authorization: `Bearer ${sessionToken}` }
+          },
+          TRANSFER_TIMEOUT_MS
+        ),
+        entry,
+        offset
+      )
+      const bytes = decodeSyncBase64(chunk.data)
+      if (bytes.length === 0 && entry.size !== 0 && !chunk.complete) {
+        throw new Error(`Скачивание «${entry.fileName}» остановилось раньше времени`)
+      }
+      stageMobileSyncAssetChunk(plan.planId, entry, offset, bytes)
+      offset += bytes.length
+      complete = chunk.complete
+      if (complete !== (offset === entry.size)) {
+        throw new Error(`Компьютер вернул неполный файл «${entry.fileName}»`)
+      }
+    } while (!complete)
+  }
+}
+
 export function createMobileLanSyncClient(
   database: SqlDatabasePort,
   profileRepository: LocalProfileRepository
@@ -334,36 +542,57 @@ export function createMobileLanSyncClient(
 
       const sessionToken = await authenticate(device, profileRepository)
       const localSnapshot = captureSyncSnapshot(database, modules)
+      const localAssets = collectMobileSyncAssetManifest(localSnapshot)
       const baseUrl = `http://${device.host}:${device.port}/mymind-sync/v1`
-      const response = record(
+      const plan = parsePlan(
         await requestJson(
-          `${baseUrl}/exchange`,
+          `${baseUrl}/plan`,
           {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               Authorization: `Bearer ${sessionToken}`
             },
-            body: JSON.stringify({ snapshot: localSnapshot })
+            body: JSON.stringify({ snapshot: localSnapshot, assets: localAssets })
           },
           REQUEST_TIMEOUT_MS
-        )
+        ),
+        modules
       )
-      const merged = parseSyncDataSnapshot(response.snapshot)
-      const receivedModules = merged.modules.map((module) => module.module)
-      if (
-        receivedModules.length !== modules.length ||
-        modules.some((module) => !receivedModules.includes(module))
-      ) {
-        throw new Error('Компьютер вернул неполный набор модулей синхронизации')
-      }
 
-      applySyncSnapshot(database, merged)
-      return {
-        startedAt,
-        completedAt: Date.now(),
-        device,
-        modules: parseSummaries(response.summaries, modules)
+      if (plan.expiresAt <= Date.now()) throw new Error('План синхронизации уже истёк')
+
+      try {
+        await uploadAssets(baseUrl, sessionToken, plan)
+        await downloadAssets(baseUrl, sessionToken, plan)
+
+        parseCommit(
+          await requestJson(
+            `${baseUrl}/commit`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${sessionToken}`
+              },
+              body: JSON.stringify({ planId: plan.planId })
+            },
+            TRANSFER_TIMEOUT_MS
+          )
+        )
+
+        commitMobileSyncAssets(plan.planId, plan.downloads)
+        applySyncSnapshot(database, plan.snapshot)
+        normalizeMobileWorkoutPhotoUrls(database, plan.snapshot)
+
+        return {
+          startedAt,
+          completedAt: Date.now(),
+          device,
+          modules: plan.summaries
+        }
+      } finally {
+        cleanupMobileSyncAssetStage(plan.planId)
       }
     }
   }
