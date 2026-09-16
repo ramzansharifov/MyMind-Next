@@ -34,7 +34,8 @@ import type { LocalProfileRepository } from '@mymind/persistence/local-profile'
 import {
   applySyncSnapshot,
   captureSyncSnapshot,
-  mergeSyncSnapshots
+  mergeSyncSnapshots,
+  reconcileSyncSnapshotForeignKeys
 } from '@mymind/persistence/sync'
 import {
   cleanupMobileSyncAssetStage,
@@ -682,10 +683,11 @@ export function createMobileLanSyncClient(
         // Preserve any local change that happened while files were in flight. The desktop will
         // receive such a late local change on the next sync instead of it being overwritten here.
         const currentLocal = captureSyncSnapshot(database, modules)
-        const finalSnapshot =
+        const mergedAfterTransfer =
           JSON.stringify(currentLocal.modules) === JSON.stringify(localSnapshot.modules)
             ? plan.snapshot
             : mergeSyncSnapshots(currentLocal, plan.snapshot).snapshot
+        const finalSnapshot = reconcileSyncSnapshotForeignKeys(database, mergedAfterTransfer)
         const removedAssets = listRemovedSyncAssetReferences(currentLocal, finalSnapshot)
         applySyncSnapshot(database, finalSnapshot)
         normalizeMobileWorkoutPhotoUrls(database, finalSnapshot)
