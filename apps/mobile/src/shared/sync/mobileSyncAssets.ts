@@ -319,3 +319,20 @@ export function normalizeMobileWorkoutPhotoUrls(
     database.prepare("UPDATE sync_runtime SET value = '0' WHERE key = 'applying_remote'").run()
   }
 }
+
+
+export function removeMobileSyncAssets(references: readonly SyncAssetReference[]): void {
+  for (const reference of references) {
+    const file = assetFile(reference)
+    const parent =
+      reference.kind === 'note-asset'
+        ? new Directory(Paths.document, 'document-assets', reference.ownerId, reference.assetId)
+        : new Directory(Paths.document, 'workout-progress', reference.ownerId, reference.assetId)
+    try {
+      if (parent.exists) parent.delete()
+      else if (file.exists) file.delete()
+    } catch (reason) {
+      console.warn('Failed to remove obsolete synced asset', reference.path, reason)
+    }
+  }
+}
