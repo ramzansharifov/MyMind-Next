@@ -40,7 +40,9 @@
     "react-native-web": "^0.21.2",
     "remark-gfm": "^4.0.1",
     "prismjs": "^1.30.0",
-    "react-simple-code-editor": "^0.14.1"
+    "react-simple-code-editor": "^0.14.1",
+    "expo-network": "57.0.2",
+    "expo-secure-store": "57.0.4"
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
