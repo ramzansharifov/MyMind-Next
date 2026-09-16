@@ -71,14 +71,36 @@ function createMobileDatabase(): Database.Database {
   return sqlite
 }
 
-function columns(sqlite: Database.Database, table: string): string[] {
-  return (
-    sqlite.prepare(`PRAGMA table_info("${table}")`).all() as Array<{ name: string }>
-  ).map((column) => column.name)
+interface ComparableColumn {
+  name: string
+  type: string
+  notnull: number
+  defaultValue: string | number | null
+  primaryKey: number
+}
+
+function columns(sqlite: Database.Database, table: string): ComparableColumn[] {
+  const rows = sqlite.prepare(`PRAGMA table_info("${table}")`).all() as Array<{
+    name: string
+    type: string
+    notnull: number
+    dflt_value: string | number | null
+    pk: number
+  }>
+
+  return rows
+    .map((column) => ({
+      name: column.name,
+      type: column.type.toLocaleUpperCase('en-US'),
+      notnull: column.notnull,
+      defaultValue: column.dflt_value,
+      primaryKey: column.pk
+    }))
+    .sort((left, right) => left.name.localeCompare(right.name, 'en'))
 }
 
 describe('desktop/mobile LAN sync schema parity', () => {
-  it('keeps every synchronized table structurally identical on both platforms', async () => {
+  it('keeps every synchronized table structurally compatible on both platforms', async () => {
     const desktop = await createDesktopDatabase()
     const mobile = createMobileDatabase()
 
@@ -99,7 +121,7 @@ describe('desktop/mobile LAN sync schema parity', () => {
         const mobileColumns = columns(mobile, table)
         expect(desktopColumns, `${table} is missing from desktop`).not.toEqual([])
         expect(mobileColumns, `${table} is missing from mobile`).not.toEqual([])
-        expect(desktopColumns, `${table} column order/schema differs`).toEqual(mobileColumns)
+        expect(desktopColumns, `${table} schema differs`).toEqual(mobileColumns)
       }
 
       const modules = SYNC_MODULE_REGISTRY.map((module) => module.module)
