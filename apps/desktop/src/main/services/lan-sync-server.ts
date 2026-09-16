@@ -20,7 +20,13 @@ import {
   type SyncProofRequest,
   type SyncProofResponse
 } from '@mymind/contracts/profile-sync'
-import { createProfileSyncProof, normalizeProfileLogin, timingSafeHexEqual } from '@mymind/core/profile-sync'
+import {
+  decryptLanSyncJson,
+  deriveLanSyncSessionKey,
+  encryptLanSyncJson,
+  parseLanSyncEncryptedEnvelope
+} from '@mymind/core/lan-sync-crypto'
+import { createProfileSyncProof, timingSafeHexEqual } from '@mymind/core/profile-sync'
 import {
   listRemovedSyncAssetReferences,
   listSyncAssetReferences,
@@ -70,6 +76,7 @@ interface Challenge {
 
 interface Session {
   token: string
+  key: Uint8Array
   expiresAt: number
 }
 
@@ -143,6 +150,55 @@ function errorResponse(response: ServerResponse, status: number, message: string
   jsonResponse(response, status, { error: message })
 }
 
+
+function secureJsonResponse(
+  response: ServerResponse,
+  status: number,
+  session: Session,
+  method: string,
+  path: string,
+  value: unknown
+): void {
+  const nonce = new Uint8Array(randomBytes(12))
+  const envelope = encryptLanSyncJson(
+    value,
+    session.key,
+    nonce,
+    'response',
+    method,
+    path,
+    session.token
+  )
+  nonce.fill(0)
+  jsonResponse(response, status, envelope)
+}
+
+async function readSecureJson(
+  request: IncomingMessage,
+  session: Session,
+  method: string,
+  path: string,
+  limit = MAX_JSON_BYTES
+): Promise<unknown> {
+  const envelope = parseLanSyncEncryptedEnvelope(await readJson(request, limit))
+  return decryptLanSyncJson(
+    envelope,
+    session.key,
+    'request',
+    method,
+    path,
+    session.token
+  )
+}
+
+function cleanupSessions(sessions: Map<string, Session>, now = Date.now()): void {
+  for (const [token, session] of sessions) {
+    if (session.expiresAt > now) continue
+    session.key.fill(0)
+    sessions.delete(token)
+  }
+}
+
 async function readJson(request: IncomingMessage, limit = MAX_JSON_BYTES): Promise<unknown> {
   const chunks: Buffer[] = []
   let total = 0
@@ -170,21 +226,19 @@ function record(value: unknown): Record<string, unknown> {
 function parseChallengeRequest(value: unknown): SyncChallengeRequest {
   const input = record(value)
   if (
-    typeof input.login !== 'string' ||
     typeof input.clientNonce !== 'string' ||
     input.clientNonce.length < 16 ||
     input.clientNonce.length > 256
   ) {
     throw new Error('Invalid sync challenge')
   }
-  return { login: input.login, clientNonce: input.clientNonce }
+  return { clientNonce: input.clientNonce }
 }
 
 function parseProofRequest(value: unknown): SyncProofRequest {
   const input = record(value)
   if (
     typeof input.challengeId !== 'string' ||
-    typeof input.login !== 'string' ||
     typeof input.clientNonce !== 'string' ||
     typeof input.proof !== 'string'
   ) {
@@ -192,7 +246,6 @@ function parseProofRequest(value: unknown): SyncProofRequest {
   }
   return {
     challengeId: input.challengeId,
-    login: input.login,
     clientNonce: input.clientNonce,
     proof: input.proof
   }
@@ -376,6 +429,7 @@ export class LanSyncServer {
     const server = this.server
     this.server = null
     this.challenges.clear()
+    for (const session of this.sessions.values()) session.key.fill(0)
     this.sessions.clear()
     const plans = [...this.plans.values()]
     this.plans.clear()
@@ -410,12 +464,12 @@ export class LanSyncServer {
     }
   }
 
-  private sessionToken(request: IncomingMessage): string | null {
-    cleanupMap(this.sessions)
+  private sessionFor(request: IncomingMessage): Session | null {
+    cleanupSessions(this.sessions)
     const token = bearer(request)
     if (!token) return null
     const session = this.sessions.get(token)
-    return session && session.expiresAt > Date.now() ? token : null
+    return session && session.expiresAt > Date.now() ? session : null
   }
 
   private async cleanupExpiredPlans(): Promise<void> {
@@ -427,11 +481,10 @@ export class LanSyncServer {
     }
   }
 
-  private planFor(request: IncomingMessage, planId: unknown): SyncPlan | null {
-    const token = this.sessionToken(request)
-    if (!token || typeof planId !== 'string') return null
+  private planFor(session: Session, planId: unknown): SyncPlan | null {
+    if (typeof planId !== 'string') return null
     const plan = this.plans.get(planId)
-    if (!plan || plan.sessionToken !== token || plan.expiresAt <= Date.now()) return null
+    if (!plan || plan.sessionToken !== session.token || plan.expiresAt <= Date.now()) return null
     return plan
   }
 
