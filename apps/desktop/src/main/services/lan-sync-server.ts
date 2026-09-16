@@ -520,10 +520,6 @@ export class LanSyncServer {
         return
       }
       const input = parseChallengeRequest(await readJson(request, 16 * 1024))
-      if (normalizeProfileLogin(input.login) !== profile.normalizedLogin) {
-        errorResponse(response, 401, 'Профиль не совпадает')
-        return
-      }
       const challenge: Challenge = {
         id: randomUUID(),
         login: profile.normalizedLogin,
@@ -548,8 +544,7 @@ export class LanSyncServer {
       if (
         !challenge ||
         challenge.expiresAt <= Date.now() ||
-        challenge.clientNonce !== input.clientNonce ||
-        challenge.login !== normalizeProfileLogin(input.login)
+        challenge.clientNonce !== input.clientNonce
       ) {
         errorResponse(response, 401, 'Challenge истёк или не совпадает')
         return
@@ -576,7 +571,13 @@ export class LanSyncServer {
         }
         const sessionToken = randomBytes(32).toString('hex')
         const expiresAt = Date.now() + SESSION_TTL_MS
-        this.sessions.set(sessionToken, { token: sessionToken, expiresAt })
+        const sessionKey = deriveLanSyncSessionKey(
+          key,
+          challenge.id,
+          challenge.clientNonce,
+          challenge.serverNonce
+        )
+        this.sessions.set(sessionToken, { token: sessionToken, key: sessionKey, expiresAt })
         const result: SyncProofResponse = {
           sessionToken,
           expiresAt,
@@ -597,12 +598,14 @@ export class LanSyncServer {
     }
 
     if (request.method === 'POST' && url.pathname === '/mymind-sync/v1/plan') {
-      const sessionToken = this.sessionToken(request)
-      if (!sessionToken) {
+      const session = this.sessionFor(request)
+      if (!session) {
         errorResponse(response, 401, 'Sync session is not authorized')
         return
       }
-      const raw = record(await readJson(request))
+      const raw = record(
+        await readSecureJson(request, session, 'POST', '/mymind-sync/v1/plan')
+      )
       const remoteSnapshot = parseSyncDataSnapshot(raw.snapshot)
       const clientAssets = parseAssetManifest(raw.assets)
       const modules = remoteSnapshot.modules.map((module) => module.module)
@@ -631,7 +634,7 @@ export class LanSyncServer {
       const expiresAt = Date.now() + PLAN_TTL_MS
       const plan: SyncPlan = {
         id: planId,
-        sessionToken,
+        sessionToken: session.token,
         expiresAt,
         localBaseline: prepared.localBaseline,
         snapshot: prepared.snapshot,
@@ -650,15 +653,42 @@ export class LanSyncServer {
         uploads: plan.uploads,
         downloads: plan.downloads
       }
-      jsonResponse(response, 200, result)
+      secureJsonResponse(
+        response,
+        200,
+        session,
+        'POST',
+        '/mymind-sync/v1/plan',
+        result
+      )
       return
     }
 
     if (request.method === 'POST' && url.pathname === '/mymind-sync/v1/assets/upload') {
-      const raw = record(await readJson(request, 2 * 1024 * 1024))
-      const plan = this.planFor(request, raw.planId)
+      const session = this.sessionFor(request)
+      if (!session) {
+        errorResponse(response, 401, 'Sync session is not authorized')
+        return
+      }
+      const raw = record(
+        await readSecureJson(
+          request,
+          session,
+          'POST',
+          '/mymind-sync/v1/assets/upload',
+          2 * 1024 * 1024
+        )
+      )
+      const plan = this.planFor(session, raw.planId)
       if (!plan) {
-        errorResponse(response, 401, 'Sync plan is not authorized or expired')
+        secureJsonResponse(
+          response,
+          401,
+          session,
+          'POST',
+          '/mymind-sync/v1/assets/upload',
+          { error: 'Sync plan is not authorized or expired' }
+        )
         return
       }
       if (
@@ -680,20 +710,54 @@ export class LanSyncServer {
         received: staged.received,
         complete: staged.complete
       }
-      jsonResponse(response, 200, result)
+      secureJsonResponse(
+        response,
+        200,
+        session,
+        'POST',
+        '/mymind-sync/v1/assets/upload',
+        result
+      )
       return
     }
 
-    if (request.method === 'GET' && url.pathname === '/mymind-sync/v1/assets/download') {
-      const plan = this.planFor(request, url.searchParams.get('planId'))
-      if (!plan) {
-        errorResponse(response, 401, 'Sync plan is not authorized or expired')
+    if (request.method === 'POST' && url.pathname === '/mymind-sync/v1/assets/download') {
+      const session = this.sessionFor(request)
+      if (!session) {
+        errorResponse(response, 401, 'Sync session is not authorized')
         return
       }
-      const path = url.searchParams.get('path')
-      const offset = Number(url.searchParams.get('offset'))
-      const length = Number(url.searchParams.get('length'))
-      if (!path || !Number.isSafeInteger(offset) || !Number.isSafeInteger(length)) {
+      const raw = record(
+        await readSecureJson(
+          request,
+          session,
+          'POST',
+          '/mymind-sync/v1/assets/download',
+          64 * 1024
+        )
+      )
+      const plan = this.planFor(session, raw.planId)
+      if (!plan) {
+        secureJsonResponse(
+          response,
+          401,
+          session,
+          'POST',
+          '/mymind-sync/v1/assets/download',
+          { error: 'Sync plan is not authorized or expired' }
+        )
+        return
+      }
+      const path = raw.path
+      const offset = raw.offset
+      const length = raw.length
+      if (
+        typeof path !== 'string' ||
+        typeof offset !== 'number' ||
+        !Number.isSafeInteger(offset) ||
+        typeof length !== 'number' ||
+        !Number.isSafeInteger(length)
+      ) {
         throw new Error('Некорректный диапазон sync asset')
       }
       const expected = plan.downloads.find((asset) => asset.path === path)
@@ -709,15 +773,36 @@ export class LanSyncServer {
         data: bytes.toString('base64'),
         complete: nextOffset === expected.size
       }
-      jsonResponse(response, 200, result)
+      secureJsonResponse(
+        response,
+        200,
+        session,
+        'POST',
+        '/mymind-sync/v1/assets/download',
+        result
+      )
       return
     }
 
     if (request.method === 'POST' && url.pathname === '/mymind-sync/v1/commit') {
-      const raw = record(await readJson(request, 16 * 1024))
-      const plan = this.planFor(request, raw.planId)
+      const session = this.sessionFor(request)
+      if (!session) {
+        errorResponse(response, 401, 'Sync session is not authorized')
+        return
+      }
+      const raw = record(
+        await readSecureJson(request, session, 'POST', '/mymind-sync/v1/commit', 16 * 1024)
+      )
+      const plan = this.planFor(session, raw.planId)
       if (!plan) {
-        errorResponse(response, 401, 'Sync plan is not authorized or expired')
+        secureJsonResponse(
+          response,
+          401,
+          session,
+          'POST',
+          '/mymind-sync/v1/commit',
+          { error: 'Sync plan is not authorized or expired' }
+        )
         return
       }
       for (const asset of plan.uploads) {
@@ -763,7 +848,14 @@ export class LanSyncServer {
       this.lastSyncAt = Date.now()
       this.onDataChanged(modules)
       const result: SyncCommitResponse = { committedAt: this.lastSyncAt }
-      jsonResponse(response, 200, result)
+      secureJsonResponse(
+        response,
+        200,
+        session,
+        'POST',
+        '/mymind-sync/v1/commit',
+        result
+      )
       return
     }
 
