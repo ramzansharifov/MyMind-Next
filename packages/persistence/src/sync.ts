@@ -369,6 +369,32 @@ function mergeTable(
   return { snapshot: { table: definition.table, rows, tombstones }, conflicts }
 }
 
+function passwordVaultIdentity(module: SyncModuleSnapshot): string | null {
+  const vault = module.tables.find((table) => table.table === 'password_vault')
+  const row = vault?.rows[0]
+  if (!row) return null
+
+  const identity = Object.fromEntries(
+    Object.entries(row.data)
+      .filter(([key]) => key !== 'created_at' && key !== 'updated_at')
+      .sort(([left], [right]) => left.localeCompare(right))
+  )
+  return JSON.stringify(identity)
+}
+
+function assertCompatiblePasswordVaults(
+  left: SyncModuleSnapshot,
+  right: SyncModuleSnapshot
+): void {
+  const leftIdentity = passwordVaultIdentity(left)
+  const rightIdentity = passwordVaultIdentity(right)
+  if (leftIdentity && rightIdentity && leftIdentity !== rightIdentity) {
+    throw new Error(
+      'Хранилища паролей созданы независимо или используют разные ключи. Синхронизация паролей остановлена, чтобы не повредить зашифрованные данные.'
+    )
+  }
+}
+
 export function mergeSyncSnapshots(
   left: SyncDataSnapshot,
   right: SyncDataSnapshot,
@@ -388,6 +414,7 @@ export function mergeSyncSnapshots(
     const leftModule = leftModules.get(module)
     const rightModule = rightModules.get(module)
     if (!leftModule || !rightModule) throw new Error(`Both devices must provide module ${module}`)
+    if (module === 'passwords') assertCompatiblePasswordVaults(leftModule, rightModule)
 
     const leftTables = new Map(leftModule.tables.map((table) => [table.table, table]))
     const rightTables = new Map(rightModule.tables.map((table) => [table.table, table]))
