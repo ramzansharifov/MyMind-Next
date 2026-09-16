@@ -6,6 +6,7 @@ import {
   Settings,
   Sparkles,
   TriangleAlert,
+  UserRound,
   type LucideIcon
 } from 'lucide-react'
 import * as Switch from '@radix-ui/react-switch'
@@ -19,6 +20,7 @@ import { cn } from '../../shared/lib/cn'
 import { ModuleHeader } from '../../shared/ui/ModuleHeader'
 import { StandardModulePage } from '../../shared/ui/StandardModulePage'
 import { AppearanceSettingsSection } from './AppearanceSettingsSection'
+import { ProfileSyncSettingsPage } from './ProfileSyncSettingsPage'
 import { StorageSettingsSection } from './StorageSettingsSection'
 import { SettingsBreadcrumbs, type SettingsBreadcrumbItem } from './SettingsBreadcrumbs'
 import {
@@ -49,6 +51,7 @@ type SettingsRoute =
   | { page: 'overview' }
   | { page: 'appearance' }
   | { page: 'ai-chat' }
+  | { page: 'profile-sync' }
   | { page: 'instructions' }
   | { page: 'learning' }
   | { page: 'learning-topic'; topicId: LearningInstructionTopicId }
@@ -65,6 +68,8 @@ export function SettingsPage({ error }: SettingsPageProps): React.JSX.Element {
     content = <AppearanceSettingsPage />
   } else if (route.page === 'ai-chat') {
     content = <AiChatSettingsPage />
+  } else if (route.page === 'profile-sync') {
+    content = <ProfileSyncSettingsPage />
   } else if (route.page === 'instructions') {
     content = (
       <InstructionsOverviewPage
@@ -107,6 +112,7 @@ export function SettingsPage({ error }: SettingsPageProps): React.JSX.Element {
         error={error}
         onOpenAppearance={() => setRoute({ page: 'appearance' })}
         onOpenAiChat={() => setRoute({ page: 'ai-chat' })}
+        onOpenProfileSync={() => setRoute({ page: 'profile-sync' })}
         onOpenInstructions={() => setRoute({ page: 'instructions' })}
       />
     )
@@ -147,6 +153,11 @@ function getSettingsBreadcrumbItems(
 
   if (route.page === 'ai-chat') {
     items.push({ label: 'ИИ-чат' })
+    return items
+  }
+
+  if (route.page === 'profile-sync') {
+    items.push({ label: 'Профиль и синхронизация' })
     return items
   }
 
@@ -196,11 +207,13 @@ function SettingsOverview({
   error,
   onOpenAppearance,
   onOpenAiChat,
+  onOpenProfileSync,
   onOpenInstructions
 }: {
   error: string | null
   onOpenAppearance: () => void
   onOpenAiChat: () => void
+  onOpenProfileSync: () => void
   onOpenInstructions: () => void
 }): React.JSX.Element {
   const { preferences } = useAppearance()
@@ -229,6 +242,15 @@ function SettingsOverview({
         <SettingsNavigationCard title="ИИ-чат" icon={Bot} onClick={onOpenAiChat}>
           <SettingsValueBadge>{showLauncher ? 'Кнопка видна' : 'Кнопка скрыта'}</SettingsValueBadge>
           <SettingsValueBadge>Ctrl + Alt + Z</SettingsValueBadge>
+        </SettingsNavigationCard>
+
+        <SettingsNavigationCard
+          title="Профиль и синхронизация"
+          icon={UserRound}
+          onClick={onOpenProfileSync}
+        >
+          <SettingsValueBadge>Локальная сеть</SettingsValueBadge>
+          <SettingsValueBadge>Без облака</SettingsValueBadge>
         </SettingsNavigationCard>
 
         <SettingsNavigationCard title="Инструкции" icon={BookOpen} onClick={onOpenInstructions}>
