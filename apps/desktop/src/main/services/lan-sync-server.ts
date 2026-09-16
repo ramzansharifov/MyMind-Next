@@ -64,6 +64,9 @@ const MAX_ASSET_BYTES = 2 * 1024 * 1024 * 1024
 const MAX_TOTAL_ASSET_BYTES = 4 * 1024 * 1024 * 1024
 const ASSET_CHUNK_BYTES = 1024 * 1024
 const DEVICE_META_KEY = 'lan-sync-device-id-v1'
+const AUTH_FAILURE_WINDOW_MS = 60_000
+const AUTH_FAILURE_LIMIT = 5
+const AUTH_BLOCK_MS = 5 * 60_000
 const SHA256_PATTERN = /^[0-9a-f]{64}$/
 const BASE64_PATTERN = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/
 
@@ -79,6 +82,12 @@ interface Session {
   token: string
   key: Uint8Array
   expiresAt: number
+}
+
+interface AuthFailureState {
+  windowStartedAt: number
+  failures: number
+  blockedUntil: number
 }
 
 interface SyncPlan {
@@ -121,6 +130,11 @@ function privateRemoteAddress(value: string | undefined): boolean {
     (a === 172 && b !== undefined && b >= 16 && b <= 31) ||
     (a === 192 && b === 168)
   )
+}
+
+function remoteClientKey(request: IncomingMessage): string {
+  const value = request.socket.remoteAddress ?? 'unknown'
+  return value.startsWith('::ffff:') ? value.slice(7) : value
 }
 
 function lanAddresses(): string[] {
@@ -415,6 +429,7 @@ export class LanSyncServer {
   private port = LAN_SYNC_DEFAULT_PORT
   private readonly challenges = new Map<string, Challenge>()
   private readonly sessions = new Map<string, Session>()
+  private readonly authFailures = new Map<string, AuthFailureState>()
   private readonly plans = new Map<string, SyncPlan>()
   private deviceId = ''
   private lastSyncAt: number | null = null
@@ -453,20 +468,21 @@ export class LanSyncServer {
   }
 
   async invalidateAuthorization(): Promise<void> {
-    await this.invalidateAuthorization()
-  }
-
-  async stop(): Promise<void> {
-    const server = this.server
-    this.server = null
     this.challenges.clear()
     for (const session of this.sessions.values()) session.key.fill(0)
     this.sessions.clear()
+    this.authFailures.clear()
     const plans = [...this.plans.values()]
     this.plans.clear()
     await Promise.all(
       plans.map((plan) => cleanupDesktopSyncAssetStage(plan.id, plan.uploads))
     ).catch(() => undefined)
+  }
+
+  async stop(): Promise<void> {
+    const server = this.server
+    this.server = null
+    await this.invalidateAuthorization()
     if (!server) return
     await new Promise<void>((resolvePromise) => server.close(() => resolvePromise()))
   }
@@ -493,6 +509,34 @@ export class LanSyncServer {
       profileReady: getLocalProfile() !== null,
       modules: [...SYNC_MODULES]
     }
+  }
+
+  private authBlocked(request: IncomingMessage, now = Date.now()): boolean {
+    const key = remoteClientKey(request)
+    const state = this.authFailures.get(key)
+    if (!state) return false
+    if (state.blockedUntil > now) return true
+    if (now - state.windowStartedAt > AUTH_FAILURE_WINDOW_MS) {
+      this.authFailures.delete(key)
+      return false
+    }
+    return false
+  }
+
+  private recordAuthFailure(request: IncomingMessage, now = Date.now()): void {
+    const key = remoteClientKey(request)
+    const current = this.authFailures.get(key)
+    const state =
+      !current || now - current.windowStartedAt > AUTH_FAILURE_WINDOW_MS
+        ? { windowStartedAt: now, failures: 0, blockedUntil: 0 }
+        : current
+    state.failures += 1
+    if (state.failures >= AUTH_FAILURE_LIMIT) state.blockedUntil = now + AUTH_BLOCK_MS
+    this.authFailures.set(key, state)
+  }
+
+  private clearAuthFailures(request: IncomingMessage): void {
+    this.authFailures.delete(remoteClientKey(request))
   }
 
   private sessionFor(request: IncomingMessage): Session | null {
@@ -545,6 +589,10 @@ export class LanSyncServer {
 
     if (request.method === 'POST' && url.pathname === '/mymind-sync/v1/challenge') {
       cleanupMap(this.challenges)
+      if (this.authBlocked(request)) {
+        errorResponse(response, 429, 'Слишком много попыток входа. Повторите позже.')
+        return
+      }
       const profile = getLocalProfile()
       if (!profile) {
         errorResponse(response, 409, 'На компьютере не создан профиль')
@@ -570,6 +618,10 @@ export class LanSyncServer {
 
     if (request.method === 'POST' && url.pathname === '/mymind-sync/v1/prove') {
       cleanupMap(this.challenges)
+      if (this.authBlocked(request)) {
+        errorResponse(response, 429, 'Слишком много попыток входа. Повторите позже.')
+        return
+      }
       const input = parseProofRequest(await readJson(request, 16 * 1024))
       const challenge = this.challenges.get(input.challengeId)
       if (
@@ -597,9 +649,11 @@ export class LanSyncServer {
           challenge.serverNonce
         )
         if (!timingSafeHexEqual(expected, input.proof)) {
+          this.recordAuthFailure(request)
           errorResponse(response, 401, 'Неверный логин или пароль')
           return
         }
+        this.clearAuthFailures(request)
         const sessionToken = randomBytes(32).toString('hex')
         const expiresAt = Date.now() + SESSION_TTL_MS
         const sessionKey = deriveLanSyncSessionKey(
