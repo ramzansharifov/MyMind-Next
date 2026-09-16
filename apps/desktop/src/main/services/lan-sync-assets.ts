@@ -5,6 +5,7 @@ import {
   mkdir,
   readFile,
   rename,
+  writeFile,
   rm,
   stat
 } from 'node:fs/promises'
@@ -63,7 +64,7 @@ export async function collectDesktopSyncAssetManifest(
   for (const reference of listSyncAssetReferences(snapshot)) {
     const path = physicalPath(reference)
     const info = await stat(path).catch(() => null)
-    if (!info?.isFile() || info.size <= 0) continue
+    if (!info?.isFile()) continue
     result.push({
       ...reference,
       size: info.size,
@@ -113,7 +114,7 @@ export async function stageDesktopSyncAssetChunk(
   bytes: Uint8Array
 ): Promise<{ received: number; complete: boolean }> {
   const reference = parseSyncAssetPath(expected.path)
-  if (bytes.byteLength === 0 || bytes.byteLength > MAX_CHUNK_BYTES) {
+  if (bytes.byteLength > MAX_CHUNK_BYTES || (bytes.byteLength === 0 && expected.size !== 0)) {
     throw new Error('Некорректный размер sync asset chunk')
   }
   if (!Number.isSafeInteger(offset) || offset < 0 || offset > expected.size) {
@@ -129,7 +130,8 @@ export async function stageDesktopSyncAssetChunk(
   }
 
   await mkdir(dirname(temp), { recursive: true })
-  await appendFile(temp, bytes)
+  if (expected.size === 0 && offset === 0 && bytes.byteLength === 0) await writeFile(temp, bytes)
+  else await appendFile(temp, bytes)
   const received = offset + bytes.byteLength
   const complete = received === expected.size
 
@@ -151,7 +153,12 @@ export async function commitDesktopSyncAssets(
   for (const entry of uploads) {
     const reference = parseSyncAssetPath(entry.path)
     const temp = temporaryPath(reference, planId)
-    const staged = await stat(temp).catch(() => null)
+    let staged = await stat(temp).catch(() => null)
+    if (!staged && entry.size === 0) {
+      await mkdir(dirname(temp), { recursive: true })
+      await writeFile(temp, new Uint8Array())
+      staged = await stat(temp)
+    }
     if (!staged?.isFile() || staged.size !== entry.size) {
       throw new Error(`Файл «${entry.fileName}» загружен не полностью`)
     }
