@@ -26,6 +26,8 @@ jobs:
         run: npm ci
       - name: Typecheck packages, desktop and mobile
         run: npm run typecheck
+      - name: Rebuild SQLite for Node tests
+        run: npm run native:node
       - name: Shared and mobile tests
         run: npm run test:mobile
       - name: Desktop tests
