@@ -257,7 +257,6 @@ export class LanSyncServer {
       port: this.port,
       protocolVersion: LAN_SYNC_PROTOCOL_VERSION,
       profileReady: profile !== null,
-      profileLogin: profile?.login ?? null,
       modules: [...SYNC_MODULES]
     }
   }
