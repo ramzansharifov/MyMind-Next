@@ -72,10 +72,12 @@ interface SyncPlan {
   id: string
   sessionToken: string
   expiresAt: number
+  localBaseline: SyncDataSnapshot
   snapshot: SyncDataSnapshot
   summaries: SyncModuleSummary[]
   uploads: SyncAssetManifestEntry[]
   downloads: SyncAssetManifestEntry[]
+  serverBaselineAssets: SyncAssetManifestEntry[]
   uploadProgress: Map<string, number>
 }
 
@@ -554,6 +556,7 @@ export class LanSyncServer {
         const serverAssets = await collectDesktopSyncAssetManifest(merged.snapshot)
         const transfers = planAssets(merged.snapshot, clientAssets, serverAssets)
         return {
+          localBaseline: localSnapshot,
           snapshot: merged.snapshot,
           summaries: summarizeSyncMerge(
             localSnapshot,
@@ -561,6 +564,7 @@ export class LanSyncServer {
             merged.snapshot,
             merged.conflicts
           ),
+          serverBaselineAssets: serverAssets,
           ...transfers
         }
       })
@@ -571,10 +575,12 @@ export class LanSyncServer {
         id: planId,
         sessionToken,
         expiresAt,
+        localBaseline: prepared.localBaseline,
         snapshot: prepared.snapshot,
         summaries: prepared.summaries,
         uploads: prepared.uploads,
         downloads: prepared.downloads,
+        serverBaselineAssets: prepared.serverBaselineAssets,
         uploadProgress: new Map(prepared.uploads.map((asset) => [asset.path, 0]))
       }
       this.plans.set(plan.id, plan)
@@ -662,10 +668,32 @@ export class LanSyncServer {
         }
       }
 
+      const currentServerAssets = new Map(
+        (await collectDesktopSyncAssetManifest(plan.snapshot)).map((asset) => [asset.path, asset])
+      )
+      for (const baseline of plan.serverBaselineAssets) {
+        const current = currentServerAssets.get(baseline.path)
+        if (
+          !current ||
+          current.size !== baseline.size ||
+          current.sha256 !== baseline.sha256
+        ) {
+          throw new Error(
+            `Файл «${baseline.fileName}» изменился на компьютере во время синхронизации. Повторите синхронизацию.`
+          )
+        }
+      }
+
       await commitDesktopSyncAssets(plan.id, plan.uploads)
       const modules = plan.snapshot.modules.map((module) => module.module)
       await mainOperationTracker.run(() => {
         const database = desktopRepositoryRuntime.database() as SqlDatabasePort
+        const current = captureSyncSnapshot(database, modules)
+        if (JSON.stringify(current.modules) !== JSON.stringify(plan.localBaseline.modules)) {
+          throw new Error(
+            'Данные на компьютере изменились во время синхронизации. Запустите синхронизацию ещё раз.'
+          )
+        }
         applySyncSnapshot(database, plan.snapshot)
         normalizeDesktopWorkoutPhotoUrls(database, plan.snapshot)
       })
