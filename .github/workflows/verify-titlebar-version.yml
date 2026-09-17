@@ -40,7 +40,7 @@ jobs:
       - run: npm ci
 
       - name: Check changed-file formatting
-        run: npx prettier --check apps/desktop/src/renderer/src/app/AppTitleBar.tsx apps/desktop/electron.vite.config.ts apps/desktop/src/renderer/src/env.d.ts apps/desktop/package.json package-lock.json
+        run: npx prettier --check apps/desktop/src/renderer/src/app/AppTitleBar.tsx apps/desktop/electron.vite.config.ts apps/desktop/vitest.config.ts apps/desktop/src/renderer/src/env.d.ts apps/desktop/package.json package-lock.json
 
       - name: Lint changed renderer code
         run: npx eslint apps/desktop/src/renderer/src/app/AppTitleBar.tsx
