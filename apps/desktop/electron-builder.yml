@@ -23,6 +23,11 @@ extraResources:
     to: drizzle
     filter:
       - '**/*'
+publish:
+  provider: github
+  owner: ramzansharifov
+  repo: MyMind-Next
+  releaseType: release
 win:
   executableName: MyMind
   icon: build/icon.ico
@@ -48,4 +53,3 @@ linux:
 appImage:
   artifactName: ${name}-${version}.${ext}
 # Native modules are rebuilt by electron-builder install-app-deps.
-# Auto-update publishing will be configured later.

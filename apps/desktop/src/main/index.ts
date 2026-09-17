@@ -20,6 +20,7 @@ import { installPermissionPolicy } from './security/permissions'
 import { focusExistingAppWindow } from './security/single-instance'
 import { AiChatViewController } from './services/ai-chat-view-controller'
 import { CalendarReminderScheduler } from './services/calendar-reminder-scheduler'
+import { DesktopAutoUpdateService } from './services/desktop-auto-update'
 import { HabitReminderScheduler } from './services/habit-reminder-scheduler'
 import { LanSyncRendererCoordinator } from './services/lan-sync-renderer-coordinator'
 import { LanSyncServer } from './services/lan-sync-server'
@@ -186,6 +187,7 @@ async function closeApplicationResources(): Promise<void> {
   aiChatViewController.destroy()
   calendarReminderScheduler.stop()
   habitReminderScheduler.stop()
+  desktopAutoUpdateService.stop()
 
   try {
     await clearTrackedPasswordClipboard()
@@ -208,7 +210,21 @@ const shutdownCoordinator = new ShutdownCoordinator({
   resolveFallback: resolveShutdownFallback
 })
 
-function requestWindowShutdown(window: BrowserWindow): void {
+const desktopAutoUpdateService = new DesktopAutoUpdateService({
+  getWindow: () => mainWindow,
+  onInstallRequested: requestAutoUpdateInstall
+})
+
+function requestWindowShutdown(
+  window: BrowserWindow,
+  close: () => void = (): void => {
+    if (!window.isDestroyed()) {
+      window.destroy()
+    }
+
+    app.quit()
+  }
+): void {
   shutdownCoordinator.requestShutdown({
     sendRequest: (requestId) => {
       window.webContents.send(IPC_CHANNELS.shutdownRequested, {
@@ -216,24 +232,27 @@ function requestWindowShutdown(window: BrowserWindow): void {
       })
     },
     isAvailable: () => !window.isDestroyed() && !window.webContents.isDestroyed(),
-    close: () => {
-      if (!window.isDestroyed()) {
-        window.destroy()
-      }
-
-      app.quit()
-    }
+    close
   })
 }
 
-function requestHeadlessShutdown(): void {
+function requestHeadlessShutdown(close: () => void = (): void => app.quit()): void {
   void shutdownCoordinator.requestShutdownWithoutRenderer({
     sendRequest: () => undefined,
     isAvailable: () => true,
-    close: () => {
-      app.quit()
-    }
+    close
   })
+}
+
+function requestAutoUpdateInstall(): void {
+  const install = (): void => desktopAutoUpdateService.installDownloadedUpdate()
+
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    requestWindowShutdown(mainWindow, install)
+    return
+  }
+
+  requestHeadlessShutdown(install)
 }
 
 function createWindow(): void {
@@ -463,6 +482,7 @@ if (!hasSingleInstanceLock) {
     createWindow()
     calendarReminderScheduler.start()
     habitReminderScheduler.start()
+    desktopAutoUpdateService.start()
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) {

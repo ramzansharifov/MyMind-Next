@@ -27,6 +27,7 @@
     "build": "npm run build --workspace=mymind-next",
     "build:unpack": "npm run build:unpack --workspace=mymind-next",
     "build:win": "npm run build:win --workspace=mymind-next",
+    "release:win": "npm run release:win --workspace=mymind-next",
     "build:mac": "npm run build:mac --workspace=mymind-next",
     "build:linux": "npm run build:linux --workspace=mymind-next",
     "native:node": "npm run native:node --workspace=mymind-next",
