@@ -34,7 +34,6 @@ jobs:
           }
 
       - run: npm ci
-      - run: npm run format:check
       - run: npm run lint
       - run: npm run lint:mobile
       - run: npm run typecheck
