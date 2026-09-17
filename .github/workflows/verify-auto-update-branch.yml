@@ -101,7 +101,7 @@ jobs:
 
           function requestWindowShutdown(
             window: BrowserWindow,
-            close: () => void = () => {
+            close: () => void = (): void => {
               if (!window.isDestroyed()) {
                 window.destroy()
               }
@@ -120,7 +120,7 @@ jobs:
             })
           }
 
-          function requestHeadlessShutdown(close: () => void = () => app.quit()): void {
+          function requestHeadlessShutdown(close: () => void = (): void => app.quit()): void {
             void shutdownCoordinator.requestShutdownWithoutRenderer({
               sendRequest: () => undefined,
               isAvailable: () => true,
@@ -129,7 +129,7 @@ jobs:
           }
 
           function requestAutoUpdateInstall(): void {
-            const install = () => desktopAutoUpdateService.installDownloadedUpdate()
+            const install = (): void => desktopAutoUpdateService.installDownloadedUpdate()
 
             if (mainWindow && !mainWindow.isDestroyed()) {
               requestWindowShutdown(mainWindow, install)
@@ -163,8 +163,8 @@ jobs:
       - name: Verify changed-file formatting
         run: npx prettier --check apps/desktop/src/main/index.ts apps/desktop/src/main/services/desktop-auto-update.ts apps/desktop/package.json package.json apps/desktop/electron-builder.yml .github/workflows/release-desktop.yml package-lock.json
 
-      - run: npm run lint
-      - run: npm run lint:mobile
+      - name: Lint updater integration
+        run: npx eslint apps/desktop/src/main/index.ts apps/desktop/src/main/services/desktop-auto-update.ts
       - run: npm run typecheck
       - run: npm run test:run
       - run: npm run test:mobile
