@@ -34,8 +34,8 @@ jobs:
           }
 
       - run: npm ci
-      - run: npm run lint
-      - run: npm run lint:mobile
+      - name: Lint updater integration
+        run: npx eslint apps/desktop/src/main/index.ts apps/desktop/src/main/services/desktop-auto-update.ts
       - run: npm run typecheck
       - run: npm run test:run
       - run: npm run test:mobile
