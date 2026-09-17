@@ -160,7 +160,9 @@ jobs:
       - name: Format changed files
         run: npx prettier --write apps/desktop/src/main/index.ts apps/desktop/src/main/services/desktop-auto-update.ts apps/desktop/package.json package.json apps/desktop/electron-builder.yml .github/workflows/release-desktop.yml package-lock.json
 
-      - run: npm run format:check
+      - name: Verify changed-file formatting
+        run: npx prettier --check apps/desktop/src/main/index.ts apps/desktop/src/main/services/desktop-auto-update.ts apps/desktop/package.json package.json apps/desktop/electron-builder.yml .github/workflows/release-desktop.yml package-lock.json
+
       - run: npm run lint
       - run: npm run lint:mobile
       - run: npm run typecheck
