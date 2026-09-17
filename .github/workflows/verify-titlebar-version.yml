@@ -1,0 +1,52 @@
+name: Verify titlebar version 1.1.1
+
+on:
+  push:
+    branches:
+      - feature/titlebar-version-1.1.1
+    paths:
+      - '.github/workflows/verify-titlebar-version.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  verify-windows:
+    runs-on: windows-latest
+    timeout-minutes: 40
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/titlebar-version-1.1.1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Sync lockfile workspace version
+        shell: pwsh
+        run: |
+          node -e "const fs=require('fs'); const path='package-lock.json'; const lock=JSON.parse(fs.readFileSync(path,'utf8')); lock.packages['apps/desktop'].version='1.1.1'; fs.writeFileSync(path, JSON.stringify(lock,null,2)+'\n');"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          if (-not (git diff --cached --quiet)) {
+            git commit -m "chore: sync lockfile desktop version"
+            git push origin HEAD:feature/titlebar-version-1.1.1
+          }
+
+      - run: npm ci
+
+      - name: Check changed-file formatting
+        run: npx prettier --check apps/desktop/src/renderer/src/app/AppTitleBar.tsx apps/desktop/electron.vite.config.ts apps/desktop/src/renderer/src/env.d.ts apps/desktop/package.json package-lock.json
+
+      - name: Lint changed renderer code
+        run: npx eslint apps/desktop/src/renderer/src/app/AppTitleBar.tsx
+
+      - run: npm run typecheck
+      - run: npm run test:run
+      - run: npm run test:mobile
+      - run: npm run db:check
+      - run: npm run build:win
