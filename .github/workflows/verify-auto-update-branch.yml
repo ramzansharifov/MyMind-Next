@@ -1,0 +1,183 @@
+name: Verify desktop auto-update branch
+
+on:
+  push:
+    branches:
+      - feature/desktop-auto-update
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Wire updater into desktop lifecycle
+        shell: pwsh
+        run: |
+          $script = @'
+          const fs = require('node:fs')
+          const path = 'apps/desktop/src/main/index.ts'
+          let source = fs.readFileSync(path, 'utf8')
+
+          function replaceOnce(needle, replacement, label) {
+            const first = source.indexOf(needle)
+            if (first < 0) throw new Error(`Missing patch target: ${label}`)
+            if (source.indexOf(needle, first + needle.length) >= 0) {
+              throw new Error(`Patch target is not unique: ${label}`)
+            }
+            source = source.replace(needle, replacement)
+          }
+
+          replaceOnce(
+            "import { CalendarReminderScheduler } from './services/calendar-reminder-scheduler'\n",
+            "import { CalendarReminderScheduler } from './services/calendar-reminder-scheduler'\nimport { DesktopAutoUpdateService } from './services/desktop-auto-update'\n",
+            'auto-update import'
+          )
+
+          replaceOnce(
+            "  aiChatViewController.destroy()\n  calendarReminderScheduler.stop()\n  habitReminderScheduler.stop()\n",
+            "  aiChatViewController.destroy()\n  calendarReminderScheduler.stop()\n  habitReminderScheduler.stop()\n  desktopAutoUpdateService.stop()\n",
+            'shutdown timers'
+          )
+
+          replaceOnce(
+            `const shutdownCoordinator = new ShutdownCoordinator({
+            closeResources: closeApplicationResources,
+            waitForOperations: () => mainOperationTracker.whenIdle(),
+            pauseOperations: () => mainOperationTracker.pauseNewOperations(),
+            resumeOperations: () => mainOperationTracker.resumeNewOperations(),
+            resolveFallback: resolveShutdownFallback
+          })
+
+          function requestWindowShutdown(window: BrowserWindow): void {
+            shutdownCoordinator.requestShutdown({
+              sendRequest: (requestId) => {
+                window.webContents.send(IPC_CHANNELS.shutdownRequested, {
+                  requestId
+                })
+              },
+              isAvailable: () => !window.isDestroyed() && !window.webContents.isDestroyed(),
+              close: () => {
+                if (!window.isDestroyed()) {
+                  window.destroy()
+                }
+
+                app.quit()
+              }
+            })
+          }
+
+          function requestHeadlessShutdown(): void {
+            void shutdownCoordinator.requestShutdownWithoutRenderer({
+              sendRequest: () => undefined,
+              isAvailable: () => true,
+              close: () => {
+                app.quit()
+              }
+            })
+          }
+          `,
+            `const shutdownCoordinator = new ShutdownCoordinator({
+            closeResources: closeApplicationResources,
+            waitForOperations: () => mainOperationTracker.whenIdle(),
+            pauseOperations: () => mainOperationTracker.pauseNewOperations(),
+            resumeOperations: () => mainOperationTracker.resumeNewOperations(),
+            resolveFallback: resolveShutdownFallback
+          })
+
+          const desktopAutoUpdateService = new DesktopAutoUpdateService({
+            getWindow: () => mainWindow,
+            onInstallRequested: requestAutoUpdateInstall
+          })
+
+          function requestWindowShutdown(
+            window: BrowserWindow,
+            close: () => void = () => {
+              if (!window.isDestroyed()) {
+                window.destroy()
+              }
+
+              app.quit()
+            }
+          ): void {
+            shutdownCoordinator.requestShutdown({
+              sendRequest: (requestId) => {
+                window.webContents.send(IPC_CHANNELS.shutdownRequested, {
+                  requestId
+                })
+              },
+              isAvailable: () => !window.isDestroyed() && !window.webContents.isDestroyed(),
+              close
+            })
+          }
+
+          function requestHeadlessShutdown(close: () => void = () => app.quit()): void {
+            void shutdownCoordinator.requestShutdownWithoutRenderer({
+              sendRequest: () => undefined,
+              isAvailable: () => true,
+              close
+            })
+          }
+
+          function requestAutoUpdateInstall(): void {
+            const install = () => desktopAutoUpdateService.installDownloadedUpdate()
+
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              requestWindowShutdown(mainWindow, install)
+              return
+            }
+
+            requestHeadlessShutdown(install)
+          }
+          `,
+            'shutdown integration'
+          )
+
+          replaceOnce(
+            "    createWindow()\n    calendarReminderScheduler.start()\n    habitReminderScheduler.start()\n",
+            "    createWindow()\n    calendarReminderScheduler.start()\n    habitReminderScheduler.start()\n    desktopAutoUpdateService.start()\n",
+            'updater startup'
+          )
+
+          fs.writeFileSync(path, source)
+          '@
+          $script | node -
+
+      - name: Refresh lockfile
+        run: npm install --package-lock-only --ignore-scripts
+
+      - run: npm ci
+
+      - name: Format changed files
+        run: npx prettier --write apps/desktop/src/main/index.ts apps/desktop/src/main/services/desktop-auto-update.ts apps/desktop/package.json package.json apps/desktop/electron-builder.yml .github/workflows/release-desktop.yml package-lock.json
+
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run lint:mobile
+      - run: npm run typecheck
+      - run: npm run test:run
+      - run: npm run test:mobile
+      - run: npm run db:check
+      - run: npm run build:win
+
+      - name: Commit generated lockfile and lifecycle wiring
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/desktop/src/main/index.ts apps/desktop/src/main/services/desktop-auto-update.ts apps/desktop/package.json package.json package-lock.json apps/desktop/electron-builder.yml .github/workflows/release-desktop.yml
+          if (git diff --cached --quiet) {
+            Write-Host "No generated changes to commit"
+            exit 0
+          }
+          git commit -m "build: finalize desktop auto-update integration"
+          git push origin HEAD:feature/desktop-auto-update
