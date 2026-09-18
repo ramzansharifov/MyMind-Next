@@ -11,26 +11,47 @@ const requireFromHere = createRequire(import.meta.url)
 const expoPackageJsonPath = requireFromHere.resolve('expo/package.json')
 const expoCliPath = path.join(path.dirname(expoPackageJsonPath), 'bin', 'cli')
 
-function run(command, args, options = {}) {
-  const result = spawnSync(command, args, {
-    cwd: options.cwd ?? mobileRoot,
-    env: process.env,
-    stdio: 'inherit',
-    shell: false
-  })
-
-  if (result.error) throw result.error
-  if (result.signal) process.kill(process.pid, result.signal)
-  if (result.status !== 0) {
-    throw new Error(`${command} exited with code ${result.status ?? 1}`)
-  }
-}
-
 await prepareAndroidNative({ mobileRoot })
 
-run(process.execPath, [expoCliPath, 'prebuild', '--platform', 'android', '--no-install'])
-run(process.execPath, [path.join(scriptDirectory, 'configure-android-release-signing.mjs')])
+const prebuild = spawnSync(
+  process.execPath,
+  [expoCliPath, 'prebuild', '--platform', 'android', '--no-install'],
+  {
+    cwd: mobileRoot,
+    env: process.env,
+    stdio: 'inherit'
+  }
+)
+if (prebuild.error) throw prebuild.error
+if (prebuild.signal) process.kill(process.pid, prebuild.signal)
+if (prebuild.status !== 0) {
+  throw new Error(`Expo prebuild exited with code ${prebuild.status ?? 1}`)
+}
+
+const configureSigning = spawnSync(
+  process.execPath,
+  [path.join(scriptDirectory, 'configure-android-release-signing.mjs')],
+  {
+    cwd: mobileRoot,
+    env: process.env,
+    stdio: 'inherit'
+  }
+)
+if (configureSigning.error) throw configureSigning.error
+if (configureSigning.signal) process.kill(process.pid, configureSigning.signal)
+if (configureSigning.status !== 0) {
+  throw new Error(`Release signing configuration exited with code ${configureSigning.status ?? 1}`)
+}
 
 const androidRoot = path.join(mobileRoot, 'android')
 const gradleCommand = process.platform === 'win32' ? 'gradlew.bat' : './gradlew'
-run(gradleCommand, ['assembleRelease'], { cwd: androidRoot })
+const gradle = spawnSync(gradleCommand, ['assembleRelease'], {
+  cwd: androidRoot,
+  env: process.env,
+  stdio: 'inherit'
+})
+if (gradle.error) throw gradle.error
+if (gradle.signal) process.kill(process.pid, gradle.signal)
+if (gradle.status !== 0) {
+  throw new Error(`Android release build exited with code ${gradle.status ?? 1}`)
+}
