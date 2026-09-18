@@ -47,10 +47,19 @@ vi.mock('electron-updater', () => ({
   }
 }))
 
-vi.mock('node:fs', () => ({
-  appendFileSync: mocks.appendFileSync,
-  mkdirSync: mocks.mkdirSync
-}))
+vi.mock('node:fs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs')>()
+  const mocked = {
+    ...actual,
+    appendFileSync: mocks.appendFileSync,
+    mkdirSync: mocks.mkdirSync
+  }
+
+  return {
+    ...mocked,
+    default: mocked
+  }
+})
 
 function emit(event: string, value?: unknown): void {
   for (const listener of mocks.listeners.get(event) ?? []) {
