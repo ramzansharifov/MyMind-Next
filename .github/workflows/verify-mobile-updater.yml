@@ -1,0 +1,124 @@
+name: Verify mobile updater UX
+
+on:
+  push:
+    branches:
+      - dev
+    paths:
+      - '.github/workflows/verify-mobile-updater.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  verify-android:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Sync mobile update dependencies
+        shell: pwsh
+        run: |
+          npm install expo-application@~57.0.3 expo-intent-launcher@~57.0.1 --workspace=mymind-mobile --save
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/mobile/package.json package-lock.json
+          git diff --cached --quiet
+          if ($LASTEXITCODE -ne 0) {
+            git commit -m "chore(mobile): sync updater dependencies"
+            git push origin HEAD:dev
+          }
+
+      - name: Format updater files
+        run: >
+          npx prettier --write
+          apps/mobile/app.json
+          apps/mobile/package.json
+          package-lock.json
+          apps/mobile/src/app/MobileApp.tsx
+          apps/mobile/src/app/MobileNavigationDrawer.tsx
+          apps/mobile/src/app/MobileUpdateSettings.tsx
+          apps/mobile/src/app/Settings.tsx
+          apps/mobile/src/app/useMobileUpdater.ts
+          apps/mobile/src/shared/update/mobileUpdate.ts
+          apps/mobile/src/shared/update/mobileUpdate.web.ts
+          apps/mobile/src/shared/update/mobileUpdateCore.ts
+          apps/mobile/src/shared/update/mobileUpdateCore.test.ts
+          apps/mobile/src/shared/ui/icons.tsx
+
+      - name: Commit formatting if needed
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/mobile/app.json apps/mobile/package.json package-lock.json apps/mobile/src/app/MobileApp.tsx apps/mobile/src/app/MobileNavigationDrawer.tsx apps/mobile/src/app/MobileUpdateSettings.tsx apps/mobile/src/app/Settings.tsx apps/mobile/src/app/useMobileUpdater.ts apps/mobile/src/shared/update/mobileUpdate.ts apps/mobile/src/shared/update/mobileUpdate.web.ts apps/mobile/src/shared/update/mobileUpdateCore.ts apps/mobile/src/shared/update/mobileUpdateCore.test.ts apps/mobile/src/shared/ui/icons.tsx
+          git diff --cached --quiet
+          if ($LASTEXITCODE -ne 0) {
+            git commit -m "style(mobile): format updater UX"
+            git push origin HEAD:dev
+          }
+
+      - name: Check formatting
+        run: >
+          npx prettier --check
+          apps/mobile/app.json
+          apps/mobile/package.json
+          package-lock.json
+          apps/mobile/src/app/MobileApp.tsx
+          apps/mobile/src/app/MobileNavigationDrawer.tsx
+          apps/mobile/src/app/MobileUpdateSettings.tsx
+          apps/mobile/src/app/Settings.tsx
+          apps/mobile/src/app/useMobileUpdater.ts
+          apps/mobile/src/shared/update/mobileUpdate.ts
+          apps/mobile/src/shared/update/mobileUpdate.web.ts
+          apps/mobile/src/shared/update/mobileUpdateCore.ts
+          apps/mobile/src/shared/update/mobileUpdateCore.test.ts
+          apps/mobile/src/shared/ui/icons.tsx
+
+      - name: Lint updater files
+        run: >
+          npx eslint
+          apps/mobile/src/app/MobileApp.tsx
+          apps/mobile/src/app/MobileNavigationDrawer.tsx
+          apps/mobile/src/app/MobileUpdateSettings.tsx
+          apps/mobile/src/app/Settings.tsx
+          apps/mobile/src/app/useMobileUpdater.ts
+          apps/mobile/src/shared/update/mobileUpdate.ts
+          apps/mobile/src/shared/update/mobileUpdate.web.ts
+          apps/mobile/src/shared/update/mobileUpdateCore.ts
+          apps/mobile/src/shared/update/mobileUpdateCore.test.ts
+          apps/mobile/src/shared/ui/icons.tsx
+
+      - run: npm run typecheck:mobile
+      - run: npm run native:node
+      - run: npm run test:mobile
+      - run: npm run export:android
+
+      - name: Generate Android project
+        working-directory: apps/mobile
+        run: npx expo prebuild --platform android --no-install
+
+      - name: Verify updater manifest permission
+        shell: pwsh
+        run: |
+          $manifest = Get-Content apps/mobile/android/app/src/main/AndroidManifest.xml -Raw
+          if ($manifest -notmatch "android.permission.REQUEST_INSTALL_PACKAGES") {
+            throw "REQUEST_INSTALL_PACKAGES permission is missing"
+          }
+
+      - name: Build Android debug APK
+        working-directory: apps/mobile/android
+        run: .\gradlew.bat assembleDebug
