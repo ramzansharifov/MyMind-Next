@@ -58,7 +58,7 @@ function updateStatusCopy(status: DesktopUpdateStatus): {
         title: status.availableVersion
           ? `Доступна версия ${status.availableVersion}`
           : 'Доступно обновление',
-        detail: 'Загрузка начнётся автоматически.',
+        detail: 'Нажмите «Обновить», чтобы скачать новую версию.',
         tone: 'default'
       }
     case 'downloading': {
@@ -75,7 +75,7 @@ function updateStatusCopy(status: DesktopUpdateStatus): {
         title: status.availableVersion
           ? `MyMind ${status.availableVersion} готов к установке`
           : 'Обновление готово к установке',
-        detail: 'Можно перезапустить приложение сейчас или установить обновление при закрытии.',
+        detail: 'Нажмите «Перезапустить и установить», когда будете готовы.',
         tone: 'success'
       }
     case 'up-to-date':
@@ -92,21 +92,21 @@ function updateStatusCopy(status: DesktopUpdateStatus): {
       }
     case 'unsupported':
       return {
-        title: 'Автообновление доступно в установленной Windows-версии',
+        title: 'Обновления доступны в установленной Windows-версии',
         detail: 'В режиме разработки проверка обновлений отключена.',
         tone: 'default'
       }
     default:
       return {
-        title: 'Автоматические обновления включены',
-        detail: 'MyMind проверяет новую версию после запуска и затем периодически в фоне.',
+        title: 'Автоматическая проверка включена',
+        detail: 'MyMind сообщает о новой версии, но скачивает её только после вашего подтверждения.',
         tone: 'default'
       }
   }
 }
 
 function StatusIcon({ phase }: { phase: DesktopUpdatePhase }): React.JSX.Element {
-  if (phase === 'checking' || phase === 'available' || phase === 'downloading') {
+  if (phase === 'checking' || phase === 'downloading') {
     return <LoaderCircle aria-hidden="true" className="size-5 animate-spin" />
   }
 
@@ -174,6 +174,16 @@ export function UpdateSettingsPage(): React.JSX.Element {
       })
   }
 
+  const handleDownload = (): void => {
+    setActionError(null)
+    void window.api.updates
+      .download()
+      .then(setStatus)
+      .catch((reason: unknown) => {
+        setActionError(reason instanceof Error ? reason.message : String(reason))
+      })
+  }
+
   const handleInstall = (): void => {
     setActionError(null)
     void window.api.updates.install().catch((reason: unknown) => {
@@ -181,10 +191,13 @@ export function UpdateSettingsPage(): React.JSX.Element {
     })
   }
 
-  const isBusy =
-    status?.phase === 'checking' || status?.phase === 'available' || status?.phase === 'downloading'
+  const isBusy = status?.phase === 'checking' || status?.phase === 'downloading'
   const canCheck = Boolean(
-    status && status.phase !== 'unsupported' && status.phase !== 'downloaded'
+    status &&
+      status.phase !== 'unsupported' &&
+      status.phase !== 'available' &&
+      status.phase !== 'downloading' &&
+      status.phase !== 'downloaded'
   )
   const progress = Math.max(0, Math.min(100, status?.percent ?? 0))
   const transferred = formatBytes(status?.transferred ?? null)
@@ -210,7 +223,7 @@ export function UpdateSettingsPage(): React.JSX.Element {
           <div>
             <h2 className="text-base font-semibold text-[var(--app-text)]">MyMind Desktop</h2>
             <p className="mt-0.5 text-xs leading-5 text-[var(--app-muted)]">
-              Обновления проверяются автоматически и загружаются в фоне.
+              Новые версии проверяются автоматически, но скачиваются только по вашему запросу.
             </p>
           </div>
         </header>
@@ -269,6 +282,17 @@ export function UpdateSettingsPage(): React.JSX.Element {
           </div>
 
           <div className="flex flex-wrap gap-2">
+            {status?.phase === 'available' && (
+              <button
+                type="button"
+                className="border-accent-500/25 bg-accent-500/10 text-accent-200 hover:bg-accent-500/15 inline-flex h-9 items-center gap-2 rounded-lg border px-3 text-sm font-medium transition-colors"
+                onClick={handleDownload}
+              >
+                <Download aria-hidden="true" className="size-4" />
+                Обновить
+              </button>
+            )}
+
             <button
               type="button"
               disabled={!canCheck || isBusy}
@@ -292,9 +316,9 @@ export function UpdateSettingsPage(): React.JSX.Element {
           </div>
 
           <p className="text-xs leading-5 text-[var(--app-muted)]">
-            После запуска MyMind проверяет обновления примерно через 15 секунд, затем повторяет
-            проверку раз в 4 часа. При закрытии уже скачанное обновление устанавливается
-            автоматически.
+            После запуска MyMind проверяет наличие новой версии примерно через 15 секунд, затем
+            повторяет проверку раз в 4 часа. Скачивание и установка начинаются только после вашего
+            действия.
           </p>
 
           {actionError && (
