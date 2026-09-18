@@ -29,18 +29,12 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - name: Sync mobile update dependencies
+      - run: npm ci
+
+      - name: Verify mobile update dependencies
         shell: pwsh
         run: |
-          npm install expo-application@~57.0.3 expo-intent-launcher@~57.0.1 --workspace=mymind-mobile --save
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add apps/mobile/package.json package-lock.json
-          git diff --cached --quiet
-          if ($LASTEXITCODE -ne 0) {
-            git commit -m "chore(mobile): sync updater dependencies"
-            git push origin HEAD:dev
-          }
+          npm ls expo-application expo-intent-launcher --workspace=mymind-mobile
 
       - name: Format updater files
         run: >
