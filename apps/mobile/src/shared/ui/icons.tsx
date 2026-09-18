@@ -13,6 +13,7 @@ import {
   ChevronRight,
   CircleHelp,
   Disc3,
+  Download,
   Dumbbell,
   Film,
   Folder,
@@ -48,6 +49,7 @@ export type AppIconName =
   | 'music'
   | 'calendar'
   | 'diary'
+  | 'download'
   | 'workouts'
   | 'nutrition'
   | 'finance'
@@ -83,6 +85,7 @@ const icons: Record<AppIconName, LucideIcon> = {
   music: Disc3,
   calendar: CalendarDays,
   diary: BookHeart,
+  download: Download,
   workouts: Dumbbell,
   nutrition: Utensils,
   finance: Wallet,
