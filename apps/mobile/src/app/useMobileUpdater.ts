@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import {
   checkRemoteMobileRelease,
@@ -28,6 +28,7 @@ export interface MobileUpdaterController {
 }
 
 export function useMobileUpdater(): MobileUpdaterController {
+  const busyRef = useRef(false)
   const [status, setStatus] = useState<MobileUpdateStatus>(() => {
     const currentVersion = getInstalledMobileVersion()
     if (!mobileUpdatesSupported()) {
@@ -40,7 +41,8 @@ export function useMobileUpdater(): MobileUpdaterController {
   })
 
   const check = useCallback(async (): Promise<void> => {
-    if (!mobileUpdatesSupported()) return
+    if (!mobileUpdatesSupported() || busyRef.current) return
+    busyRef.current = true
 
     setStatus((current) => {
       if (current.phase === 'downloading' || current.phase === 'installing') return current
@@ -76,12 +78,15 @@ export function useMobileUpdater(): MobileUpdaterController {
         lastCheckedAt: new Date().toISOString(),
         error: errorMessage(reason)
       }))
+    } finally {
+      busyRef.current = false
     }
   }, [])
 
   const update = useCallback(async (): Promise<void> => {
     const release = status.available
-    if (!release || !mobileUpdatesSupported()) return
+    if (!release || !mobileUpdatesSupported() || busyRef.current) return
+    busyRef.current = true
 
     setStatus((current) => ({
       ...current,
@@ -105,7 +110,7 @@ export function useMobileUpdater(): MobileUpdaterController {
 
       setStatus((current) => ({
         ...current,
-        phase: 'installing',
+        phase: 'available',
         percent: 100,
         transferred: current.total ?? current.transferred,
         error: null
@@ -116,6 +121,8 @@ export function useMobileUpdater(): MobileUpdaterController {
         phase: 'error',
         error: errorMessage(reason)
       }))
+    } finally {
+      busyRef.current = false
     }
   }, [status.available])
 
