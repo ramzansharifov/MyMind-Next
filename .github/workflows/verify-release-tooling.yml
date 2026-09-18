@@ -96,11 +96,11 @@ jobs:
           $desktop = Get-Content apps/desktop/package.json -Raw | ConvertFrom-Json
           $mobile = Get-Content apps/mobile/package.json -Raw | ConvertFrom-Json
           $app = Get-Content apps/mobile/app.json -Raw | ConvertFrom-Json
-          $lock = Get-Content package-lock.json -Raw | ConvertFrom-Json
+          $lock = Get-Content package-lock.json -Raw | ConvertFrom-Json -AsHashtable
           if ($desktop.version -ne '1.1.4') { throw 'Desktop bump failed' }
           if ($mobile.version -ne '1.1.4') { throw 'Mobile bump failed' }
           if ($app.expo.version -ne '1.1.4') { throw 'Expo bump failed' }
           if ([int]$app.expo.android.versionCode -ne 10104) { throw 'Android versionCode bump failed' }
-          if ($lock.packages.'apps/desktop'.version -ne '1.1.4') { throw 'Desktop lock bump failed' }
-          if ($lock.packages.'apps/mobile'.version -ne '1.1.4') { throw 'Mobile lock bump failed' }
+          if ($lock['packages']['apps/desktop']['version'] -ne '1.1.4') { throw 'Desktop lock bump failed' }
+          if ($lock['packages']['apps/mobile']['version'] -ne '1.1.4') { throw 'Mobile lock bump failed' }
           git reset --hard HEAD
