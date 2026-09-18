@@ -8,7 +8,7 @@ on:
       - '.github/workflows/verify-updater-ux.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   verify-windows:
@@ -25,6 +25,25 @@ jobs:
           cache: npm
 
       - run: npm ci
+
+      - name: Format updater changes
+        run: >
+          npx prettier --write
+          apps/desktop/src/main/services/desktop-auto-update.ts
+          apps/desktop/src/preload/index.ts
+          apps/desktop/src/renderer/src/app/AppTitleBar.tsx
+          apps/desktop/src/renderer/src/modules/settings/UpdateSettingsPage.tsx
+
+      - name: Commit formatting if needed
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/desktop/src/main/services/desktop-auto-update.ts apps/desktop/src/preload/index.ts apps/desktop/src/renderer/src/app/AppTitleBar.tsx apps/desktop/src/renderer/src/modules/settings/UpdateSettingsPage.tsx
+          if (-not (git diff --cached --quiet)) {
+            git commit -m "style: format updater UX changes"
+            git push origin HEAD:feature/update-progress-settings-1.1.2
+          }
 
       - name: Check changed-file formatting
         run: >
