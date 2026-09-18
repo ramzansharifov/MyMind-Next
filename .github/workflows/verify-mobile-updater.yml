@@ -109,8 +109,8 @@ jobs:
       - name: Create disposable release keystore
         shell: pwsh
         run: |
-          $keystore = Join-Path $env:RUNNER_TEMP "mymind-ci-release.p12"
-          keytool -genkeypair -noprompt -storetype PKCS12 -keystore $keystore -storepass "mymind-ci-store-pass" -keypass "mymind-ci-key-pass" -alias "mymind-ci" -keyalg RSA -keysize 2048 -validity 3650 -dname "CN=MyMind CI, OU=CI, O=MyMind, L=Test, ST=Test, C=US"
+          $keystore = Join-Path $env:RUNNER_TEMP "mymind-ci-release.jks"
+          keytool -genkeypair -noprompt -storetype JKS -keystore $keystore -storepass "mymind-ci-store-pass" -keypass "mymind-ci-key-pass" -alias "mymind-ci" -keyalg RSA -keysize 2048 -validity 3650 -dname "CN=MyMind CI, OU=CI, O=MyMind, L=Test, ST=Test, C=US"
           "MYMIND_ANDROID_KEYSTORE_PATH=$keystore" | Out-File -FilePath $env:GITHUB_ENV -Append
           "MYMIND_ANDROID_KEYSTORE_PASSWORD=mymind-ci-store-pass" | Out-File -FilePath $env:GITHUB_ENV -Append
           "MYMIND_ANDROID_KEY_ALIAS=mymind-ci" | Out-File -FilePath $env:GITHUB_ENV -Append
