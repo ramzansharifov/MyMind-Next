@@ -48,7 +48,15 @@ export function AppTitleBar(): React.JSX.Element {
           <BrainCircuit aria-hidden="true" className="size-3.5" />
         </span>
 
-        <span className="truncate text-xs font-semibold tracking-[-0.01em]">MyMind</span>
+        <div className="flex min-w-0 items-baseline gap-1.5">
+          <span className="truncate text-xs font-semibold tracking-[-0.01em]">MyMind</span>
+          <span
+            aria-label={`Версия ${__APP_VERSION__}`}
+            className="shrink-0 text-[10px] font-medium text-[var(--app-muted)] opacity-70"
+          >
+            v{__APP_VERSION__}
+          </span>
+        </div>
       </div>
 
       <div data-titlebar-controls className="ml-auto flex h-full shrink-0 items-stretch">
