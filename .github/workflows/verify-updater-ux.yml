@@ -1,4 +1,4 @@
-name: Verify updater UX 1.1.2
+name: Verify updater UX 1.1.2 final
 
 on:
   push:
