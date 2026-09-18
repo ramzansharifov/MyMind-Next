@@ -5,7 +5,6 @@ export type Route =
   | 'notes'
   | 'tasks'
   | 'habits'
-  | 'more'
   | 'movies'
   | 'music'
   | 'calendar'
@@ -21,7 +20,6 @@ export const routeTitles: Record<Route, string> = {
   notes: 'Заметки',
   tasks: 'Задачи',
   habits: 'Привычки',
-  more: 'Ещё',
   movies: 'Фильмы',
   music: 'Музыка',
   calendar: 'Календарь',
@@ -38,7 +36,6 @@ export const routeIcons: Record<Route, AppIconName> = {
   notes: 'notes',
   tasks: 'tasks',
   habits: 'habits',
-  more: 'more',
   movies: 'movies',
   music: 'music',
   calendar: 'calendar',
@@ -50,9 +47,11 @@ export const routeIcons: Record<Route, AppIconName> = {
   settings: 'settings'
 }
 
-export const primaryTabs = ['home', 'notes', 'tasks', 'habits', 'more'] as const
-
-export const moreRoutes: Route[] = [
+export const navigationRoutes: Route[] = [
+  'home',
+  'notes',
+  'tasks',
+  'habits',
   'workouts',
   'nutrition',
   'calendar',
