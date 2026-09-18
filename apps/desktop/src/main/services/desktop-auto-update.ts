@@ -45,8 +45,6 @@ export class DesktopAutoUpdateService {
   private status = initialStatus()
 
   private readonly updater = electronUpdater.autoUpdater
-  private readonly logPath = join(app.getPath('userData'), 'logs', 'desktop-updater.log')
-
   constructor(private readonly options: DesktopAutoUpdateOptions) {}
 
   start(): void {
@@ -268,8 +266,9 @@ export class DesktopAutoUpdateService {
 
   private writeLog(level: string, message: string): void {
     try {
-      mkdirSync(dirname(this.logPath), { recursive: true })
-      appendFileSync(this.logPath, `[${new Date().toISOString()}] [${level}] ${message}\n`, 'utf8')
+      const logPath = join(app.getPath('userData'), 'logs', 'desktop-updater.log')
+      mkdirSync(dirname(logPath), { recursive: true })
+      appendFileSync(logPath, `[${new Date().toISOString()}] [${level}] ${message}\n`, 'utf8')
     } catch (reason: unknown) {
       console.warn('Failed to write desktop updater log', reason)
     }
