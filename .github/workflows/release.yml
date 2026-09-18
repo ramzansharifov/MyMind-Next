@@ -33,6 +33,19 @@ jobs:
           $mobileApp = Get-Content apps/mobile/app.json -Raw | ConvertFrom-Json
           $mobileAppVersion = $mobileApp.expo.version
           $mobileVersionCode = [int]$mobileApp.expo.android.versionCode
+          $versionParts = $tagVersion.Split('.')
+          if ($versionParts.Count -ne 3) {
+            throw "Release tag must use major.minor.patch"
+          }
+
+          $major = [int]$versionParts[0]
+          $minor = [int]$versionParts[1]
+          $patch = [int]$versionParts[2]
+          if ($minor -gt 99 -or $patch -gt 99) {
+            throw "Minor and patch versions must stay below 100 for Android versionCode mapping"
+          }
+
+          $expectedVersionCode = ($major * 10000) + ($minor * 100) + $patch
 
           if ($desktopVersion -ne $tagVersion) {
             throw "Desktop version $desktopVersion does not match tag $tagVersion"
@@ -43,8 +56,8 @@ jobs:
           if ($mobileAppVersion -ne $tagVersion) {
             throw "Mobile app version $mobileAppVersion does not match tag $tagVersion"
           }
-          if ($mobileVersionCode -le 0) {
-            throw "Mobile Android versionCode must be positive"
+          if ($mobileVersionCode -ne $expectedVersionCode) {
+            throw "Mobile Android versionCode $mobileVersionCode does not match expected $expectedVersionCode"
           }
 
       - run: npm ci
