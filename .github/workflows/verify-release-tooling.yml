@@ -32,9 +32,23 @@ jobs:
           .github/workflows/release.yml
           apps/mobile/app.json
           apps/mobile/ANDROID_RELEASE_SIGNING.md
-          apps/mobile/scripts/setup-android-release-signing.ps1
           scripts/set-release-version.mjs
           package.json
+
+      - name: Validate PowerShell signing helper
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [Management.Automation.Language.Parser]::ParseFile(
+            "apps/mobile/scripts/setup-android-release-signing.ps1",
+            [ref]$tokens,
+            [ref]$errors
+          ) | Out-Null
+          if ($errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Error $_.Message }
+            throw "PowerShell signing helper has syntax errors"
+          }
 
       - name: Lint release JavaScript
         run: >
