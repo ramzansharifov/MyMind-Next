@@ -14,6 +14,7 @@ import type { ProfileSyncApi } from './profile-sync'
 import type { StudyApi } from './study'
 import type { StudyPdfApi } from './study-pdf'
 import type { TasksApi } from './tasks'
+import type { DesktopUpdatesApi } from './updates'
 import type { WorkoutsApi } from './workouts'
 
 export const IPC_CHANNELS = {
@@ -69,6 +70,7 @@ export interface OperationFeedback {
 
 export interface MyMindApi {
   aiChat: AiChatApi
+  updates: DesktopUpdatesApi
 
   system: {
     getHealth(): Promise<SystemHealth>
