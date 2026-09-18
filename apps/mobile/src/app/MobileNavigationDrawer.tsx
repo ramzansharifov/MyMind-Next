@@ -40,11 +40,7 @@ export function MobileNavigationDrawer({
           borderWidth: 1,
           borderColor: selected ? theme.accent + '33' : 'transparent',
           borderRadius: 14,
-          backgroundColor: selected
-            ? theme.accent + '14'
-            : pressed
-              ? theme.raised
-              : 'transparent',
+          backgroundColor: selected ? theme.accent + '14' : pressed ? theme.raised : 'transparent',
           opacity: pressed ? 0.78 : 1
         })}
       >
