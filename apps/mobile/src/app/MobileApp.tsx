@@ -117,12 +117,6 @@ export default function MobileApp(): React.JSX.Element {
   }, [attempt])
 
   useEffect(() => {
-    if (backupOperation) {
-      setNavigationOpen(false)
-    }
-  }, [backupOperation])
-
-  useEffect(() => {
     if (Platform.OS !== 'android') return
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
       if (navigationOpen) {
@@ -155,6 +149,7 @@ export default function MobileApp(): React.JSX.Element {
 
   const exportBackup = useCallback(async () => {
     if (backupOperation) throw new Error('Операция резервного копирования уже выполняется')
+    setNavigationOpen(false)
     setBackupOperation('export')
     setError('')
     await new Promise<void>((resolve) => setTimeout(resolve, 0))
@@ -170,6 +165,7 @@ export default function MobileApp(): React.JSX.Element {
 
   const restoreBackup = useCallback(async () => {
     if (backupOperation) throw new Error('Операция резервного копирования уже выполняется')
+    setNavigationOpen(false)
     setBackupOperation('restore')
     setError('')
     await new Promise<void>((resolve) => setTimeout(resolve, 0))
