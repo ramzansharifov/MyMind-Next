@@ -27,6 +27,33 @@ describe('App shell', () => {
           }))
         },
 
+        updates: {
+          getStatus: vi.fn().mockResolvedValue({
+            currentVersion: '1.1.2',
+            phase: 'idle',
+            availableVersion: null,
+            percent: null,
+            transferred: null,
+            total: null,
+            bytesPerSecond: null,
+            lastCheckedAt: null,
+            error: null
+          }),
+          check: vi.fn().mockResolvedValue({
+            currentVersion: '1.1.2',
+            phase: 'up-to-date',
+            availableVersion: null,
+            percent: null,
+            transferred: null,
+            total: null,
+            bytesPerSecond: null,
+            lastCheckedAt: '2026-09-18T05:00:00.000Z',
+            error: null
+          }),
+          install: vi.fn().mockResolvedValue(undefined),
+          onStatusChanged: vi.fn().mockReturnValue(() => undefined)
+        },
+
         profileSync: {
           getProfile: vi.fn().mockResolvedValue(null),
           createProfile: vi.fn(),
@@ -144,6 +171,46 @@ describe('App shell', () => {
     ).toBeInTheDocument()
 
     expect(screen.getByRole('button', { name: /Внешний вид/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Обновления/ })).toBeInTheDocument()
+  })
+
+  it('checks updates manually from settings', async () => {
+    const user = userEvent.setup()
+
+    render(<App />)
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Настройки'
+      })
+    )
+
+    await user.click(
+      await screen.findByRole(
+        'button',
+        {
+          name: /Обновления/
+        },
+        {
+          timeout: LAZY_MODULE_TIMEOUT_MS
+        }
+      )
+    )
+
+    expect(
+      screen.getByRole('heading', {
+        name: 'Обновления'
+      })
+    ).toBeInTheDocument()
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Проверить обновления'
+      })
+    )
+
+    expect(window.api.updates.check).toHaveBeenCalledTimes(1)
+    expect(await screen.findByText('Установлена последняя версия')).toBeInTheDocument()
   })
 
   it('applies theme and accent changes from settings immediately', async () => {
