@@ -66,5 +66,6 @@ jobs:
           apps/mobile/src/shared/ui/icons.tsx
 
       - run: npm run typecheck:mobile
+      - run: npm run native:node
       - run: npm run test:mobile
       - run: npm run export:android
