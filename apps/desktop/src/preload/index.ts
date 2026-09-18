@@ -107,6 +107,7 @@ const api: MyMindApi = {
   updates: {
     getStatus: () => invoke(UPDATE_IPC_CHANNELS.getStatus) as Promise<DesktopUpdateStatus>,
     check: () => invoke(UPDATE_IPC_CHANNELS.check) as Promise<DesktopUpdateStatus>,
+    download: () => invoke(UPDATE_IPC_CHANNELS.download) as Promise<DesktopUpdateStatus>,
     install: () => invoke(UPDATE_IPC_CHANNELS.install) as Promise<void>,
     onStatusChanged: (listener) => {
       const handler = (_event: Electron.IpcRendererEvent, status: DesktopUpdateStatus): void => {

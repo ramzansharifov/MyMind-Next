@@ -60,8 +60,8 @@ export class DesktopAutoUpdateService {
     this.started = true
     this.configureLogger()
 
-    this.updater.autoDownload = true
-    this.updater.autoInstallOnAppQuit = true
+    this.updater.autoDownload = false
+    this.updater.autoInstallOnAppQuit = false
     this.updater.allowPrerelease = false
     this.updater.disableWebInstaller = true
 
@@ -140,7 +140,10 @@ export class DesktopAutoUpdateService {
       void this.checkForUpdates()
     }, PERIODIC_CHECK_INTERVAL_MS)
 
-    this.writeLog('INFO', `Desktop updater started for MyMind ${this.status.currentVersion}`)
+    this.writeLog(
+      'INFO',
+      `Desktop updater started for MyMind ${this.status.currentVersion} (manual download mode)`
+    )
     this.emitStatus()
   }
 
@@ -190,6 +193,35 @@ export class DesktopAutoUpdateService {
       })
     } finally {
       this.checking = false
+    }
+
+    return this.getStatus()
+  }
+
+  async downloadUpdate(): Promise<DesktopUpdateStatus> {
+    if (!this.started || this.status.phase !== 'available') {
+      return this.getStatus()
+    }
+
+    this.setStatus({
+      phase: 'downloading',
+      percent: 0,
+      transferred: 0,
+      total: null,
+      bytesPerSecond: null,
+      error: null
+    })
+
+    try {
+      await this.updater.downloadUpdate()
+    } catch (reason: unknown) {
+      const message = errorMessage(reason)
+      this.writeLog('ERROR', `Update download failed: ${message}`)
+      console.warn('Desktop update download failed', reason)
+      this.setStatus({
+        phase: 'error',
+        error: message
+      })
     }
 
     return this.getStatus()
@@ -286,7 +318,7 @@ export class DesktopAutoUpdateService {
         title: 'Обновление MyMind готово',
         message: `MyMind ${version} уже скачан.`,
         detail:
-          'Можно перезапустить приложение сейчас. Перед установкой MyMind сначала безопасно сохранит открытые изменения. Если выбрать «Позже», обновление установится при обычном завершении приложения.',
+          'Можно перезапустить приложение сейчас. Перед установкой MyMind сначала безопасно сохранит открытые изменения. Если выбрать «Позже», установка не начнётся без вашего подтверждения.',
         buttons: ['Перезапустить и установить', 'Позже'],
         defaultId: 0,
         cancelId: 1,

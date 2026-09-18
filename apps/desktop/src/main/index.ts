@@ -443,6 +443,7 @@ if (!hasSingleInstanceLock) {
       updates: {
         getStatus: () => desktopAutoUpdateService.getStatus(),
         check: () => desktopAutoUpdateService.checkForUpdates(),
+        download: () => desktopAutoUpdateService.downloadUpdate(),
         requestInstall: () => desktopAutoUpdateService.requestInstall()
       },
       storage: {

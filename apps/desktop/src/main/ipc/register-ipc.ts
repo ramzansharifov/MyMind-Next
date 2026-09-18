@@ -55,6 +55,7 @@ interface RegisterIpcHandlersOptions {
   updates: {
     getStatus(): DesktopUpdateStatus
     check(): Promise<DesktopUpdateStatus>
+    download(): Promise<DesktopUpdateStatus>
     requestInstall(): void
   }
   onShutdownResponse(
@@ -126,6 +127,7 @@ export function registerIpcHandlers(options: RegisterIpcHandlersOptions): void {
   ipcMain.removeHandler(IPC_CHANNELS.windowClose)
   ipcMain.removeHandler(UPDATE_IPC_CHANNELS.getStatus)
   ipcMain.removeHandler(UPDATE_IPC_CHANNELS.check)
+  ipcMain.removeHandler(UPDATE_IPC_CHANNELS.download)
   ipcMain.removeHandler(UPDATE_IPC_CHANNELS.install)
 
   ipcMain.handle(AI_CHAT_IPC_CHANNELS.setOpen, (event, rawInput: unknown) => {
@@ -206,6 +208,11 @@ export function registerIpcHandlers(options: RegisterIpcHandlersOptions): void {
   ipcMain.handle(UPDATE_IPC_CHANNELS.check, (event) => {
     getTrustedWindow(event, options.getTrustedWebContents)
     return options.updates.check()
+  })
+
+  ipcMain.handle(UPDATE_IPC_CHANNELS.download, (event) => {
+    getTrustedWindow(event, options.getTrustedWebContents)
+    return options.updates.download()
   })
 
   ipcMain.handle(UPDATE_IPC_CHANNELS.install, (event) => {
