@@ -134,7 +134,7 @@ jobs:
             }
           }
 
-          $keystorePath = Join-Path $env:RUNNER_TEMP "mymind-android-release.p12"
+          $keystorePath = Join-Path $env:RUNNER_TEMP "mymind-android-release.jks"
           [IO.File]::WriteAllBytes(
             $keystorePath,
             [Convert]::FromBase64String($env:MYMIND_ANDROID_KEYSTORE_BASE64)
