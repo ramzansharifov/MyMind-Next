@@ -268,7 +268,7 @@ function SettingsOverview({
 
         <SettingsNavigationCard title="Обновления" icon={RefreshCw} onClick={onOpenUpdates}>
           <SettingsValueBadge>v{__APP_VERSION__}</SettingsValueBadge>
-          <SettingsValueBadge>Автоматически</SettingsValueBadge>
+          <SettingsValueBadge>Скачивание вручную</SettingsValueBadge>
         </SettingsNavigationCard>
 
         <SettingsNavigationCard title="Инструкции" icon={BookOpen} onClick={onOpenInstructions}>
