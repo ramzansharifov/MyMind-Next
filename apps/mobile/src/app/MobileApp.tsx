@@ -33,6 +33,7 @@ import { PasswordsScreen } from '../modules/passwords/PasswordsScreen'
 import { Home } from './Home'
 import { Settings } from './Settings'
 import { ReminderStatus } from './ReminderStatus'
+import { useMobileUpdater } from './useMobileUpdater'
 
 export type { Route } from './navigation'
 
@@ -83,6 +84,7 @@ export default function MobileApp(): React.JSX.Element {
   const [backupOperation, setBackupOperation] = useState<BackupOperation | null>(null)
   const [error, setError] = useState('')
   const [attempt, setAttempt] = useState(0)
+  const updater = useMobileUpdater()
   const dark = (appearance.theme === 'system' ? (system ?? 'dark') : appearance.theme) === 'dark'
   const palette = {
     ...(dark ? appearanceTokens.dark : appearanceTokens.light),
@@ -199,6 +201,7 @@ export default function MobileApp(): React.JSX.Element {
               <MobileNavigationDrawer
                 visible={navigationOpen}
                 currentRoute={route}
+                updater={updater}
                 close={() => setNavigationOpen(false)}
                 navigate={navigate}
               />
@@ -246,6 +249,50 @@ export default function MobileApp(): React.JSX.Element {
                       }}
                     />
 
+                    <View
+                      style={{
+                        flex: 1,
+                        minWidth: 0,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 12
+                      }}
+                    >
+                      <View
+                        style={{
+                          width: 48,
+                          height: 48,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderWidth: 1,
+                          borderColor: palette.accent + '33',
+                          borderRadius: 16,
+                          backgroundColor: palette.accent + '14'
+                        }}
+                      >
+                        <AppIcon
+                          name={routeIcons[route]}
+                          size={23}
+                          strokeWidth={2}
+                          color={palette.accent}
+                        />
+                      </View>
+
+                      <Text
+                        numberOfLines={1}
+                        style={{
+                          flex: 1,
+                          color: palette.text,
+                          fontSize: 25,
+                          lineHeight: 31,
+                          fontWeight: '600',
+                          letterSpacing: -0.8
+                        }}
+                      >
+                        {routeTitles[route]}
+                      </Text>
+                    </View>
+
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel="Открыть меню навигации"
@@ -253,51 +300,19 @@ export default function MobileApp(): React.JSX.Element {
                       hitSlop={6}
                       onPress={() => setNavigationOpen(true)}
                       style={({ pressed }) => ({
-                        width: 48,
-                        height: 48,
+                        width: 44,
+                        height: 44,
                         alignItems: 'center',
                         justifyContent: 'center',
                         borderWidth: 1,
-                        borderColor: palette.accent + '33',
-                        borderRadius: 16,
-                        backgroundColor: pressed ? palette.accent + '22' : palette.accent + '14',
+                        borderColor: palette.border,
+                        borderRadius: 14,
+                        backgroundColor: pressed ? palette.raised : palette.background + '99',
                         opacity: backupOperation ? 0.45 : pressed ? 0.76 : 1
                       })}
                     >
-                      <AppIcon name="menu" size={23} strokeWidth={2} color={palette.accent} />
+                      <AppIcon name="menu" size={21} strokeWidth={2} color={palette.muted} />
                     </Pressable>
-
-                    <View
-                      style={{
-                        width: 38,
-                        height: 38,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        borderRadius: 12,
-                        backgroundColor: palette.background + '99'
-                      }}
-                    >
-                      <AppIcon
-                        name={routeIcons[route]}
-                        size={19}
-                        strokeWidth={2}
-                        color={palette.accent}
-                      />
-                    </View>
-
-                    <Text
-                      numberOfLines={1}
-                      style={{
-                        flex: 1,
-                        color: palette.text,
-                        fontSize: 25,
-                        lineHeight: 31,
-                        fontWeight: '600',
-                        letterSpacing: -0.8
-                      }}
-                    >
-                      {routeTitles[route]}
-                    </Text>
                   </View>
                 </View>
               ) : null}
@@ -354,6 +369,7 @@ export default function MobileApp(): React.JSX.Element {
                     ) : (
                       <Settings
                         appearance={appearance}
+                        updater={updater}
                         save={saveAppearance}
                         exportBackup={exportBackup}
                         restoreBackup={restoreBackup}
