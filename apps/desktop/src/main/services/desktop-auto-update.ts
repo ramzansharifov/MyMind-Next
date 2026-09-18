@@ -209,11 +209,34 @@ export class DesktopAutoUpdateService {
   }
 
   private configureLogger(): void {
+    const log = (level: string, message?: unknown, ...optionalParams: unknown[]): void => {
+      const values = [message, ...optionalParams].filter((value) => value !== undefined)
+      this.writeLog(
+        level,
+        values
+          .map((value) => {
+            if (value instanceof Error) return value.stack ?? value.message
+            if (typeof value === 'string') return value
+
+            try {
+              return JSON.stringify(value)
+            } catch {
+              return String(value)
+            }
+          })
+          .join(' ')
+      )
+    }
+
     this.updater.logger = {
-      info: (message: string) => this.writeLog('INFO', message),
-      warn: (message: string) => this.writeLog('WARN', message),
-      error: (message: string) => this.writeLog('ERROR', message),
-      debug: (message: string) => this.writeLog('DEBUG', message)
+      info: (message?: unknown, ...optionalParams: unknown[]) =>
+        log('INFO', message, ...optionalParams),
+      warn: (message?: unknown, ...optionalParams: unknown[]) =>
+        log('WARN', message, ...optionalParams),
+      error: (message?: unknown, ...optionalParams: unknown[]) =>
+        log('ERROR', message, ...optionalParams),
+      debug: (message?: unknown, ...optionalParams: unknown[]) =>
+        log('DEBUG', message, ...optionalParams)
     }
   }
 
