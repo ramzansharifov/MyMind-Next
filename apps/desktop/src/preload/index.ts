@@ -49,6 +49,7 @@ import {
   type SystemWindowState
 } from '../shared/contracts/system'
 import { TASKS_IPC_CHANNELS } from '../shared/contracts/tasks'
+import { UPDATE_IPC_CHANNELS, type DesktopUpdateStatus } from '../shared/contracts/updates'
 import { WORKOUTS_IPC_CHANNELS } from '../shared/contracts/workouts'
 import { toFriendlyIpcError } from './friendly-ipc-error'
 import { parseShutdownRequest } from './shutdown-request'
@@ -101,6 +102,21 @@ const api: MyMindApi = {
     setOpen: (input) => invoke(AI_CHAT_IPC_CHANNELS.setOpen, input),
     setBounds: (bounds) => invoke(AI_CHAT_IPC_CHANNELS.setBounds, bounds),
     reload: () => invoke(AI_CHAT_IPC_CHANNELS.reload)
+  },
+
+  updates: {
+    getStatus: () => invoke(UPDATE_IPC_CHANNELS.getStatus) as Promise<DesktopUpdateStatus>,
+    check: () => invoke(UPDATE_IPC_CHANNELS.check) as Promise<DesktopUpdateStatus>,
+    install: () => invoke(UPDATE_IPC_CHANNELS.install) as Promise<void>,
+    onStatusChanged: (listener) => {
+      const handler = (_event: Electron.IpcRendererEvent, status: DesktopUpdateStatus): void => {
+        listener(status)
+      }
+      ipcRenderer.on(UPDATE_IPC_CHANNELS.statusChanged, handler)
+      return () => {
+        ipcRenderer.removeListener(UPDATE_IPC_CHANNELS.statusChanged, handler)
+      }
+    }
   },
 
   system: {
