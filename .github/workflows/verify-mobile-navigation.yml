@@ -1,0 +1,69 @@
+name: Verify mobile drawer navigation
+
+on:
+  push:
+    branches:
+      - dev
+    paths:
+      - '.github/workflows/verify-mobile-navigation.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Format changed files
+        run: >
+          npx prettier --write
+          apps/mobile/src/app/MobileApp.tsx
+          apps/mobile/src/app/MobileNavigationDrawer.tsx
+          apps/mobile/src/app/navigation.ts
+          apps/mobile/src/app/mobile-scope.test.ts
+          apps/mobile/src/shared/ui/icons.tsx
+
+      - name: Commit formatting if needed
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/mobile/src/app/MobileApp.tsx apps/mobile/src/app/MobileNavigationDrawer.tsx apps/mobile/src/app/navigation.ts apps/mobile/src/app/mobile-scope.test.ts apps/mobile/src/shared/ui/icons.tsx
+          if ! git diff --cached --quiet; then
+            git commit -m "style(mobile): format drawer navigation"
+            git push origin HEAD:dev
+          fi
+
+      - name: Check formatting
+        run: >
+          npx prettier --check
+          apps/mobile/src/app/MobileApp.tsx
+          apps/mobile/src/app/MobileNavigationDrawer.tsx
+          apps/mobile/src/app/navigation.ts
+          apps/mobile/src/app/mobile-scope.test.ts
+          apps/mobile/src/shared/ui/icons.tsx
+
+      - name: Lint changed mobile files
+        run: >
+          npx eslint
+          apps/mobile/src/app/MobileApp.tsx
+          apps/mobile/src/app/MobileNavigationDrawer.tsx
+          apps/mobile/src/app/navigation.ts
+          apps/mobile/src/app/mobile-scope.test.ts
+          apps/mobile/src/shared/ui/icons.tsx
+
+      - run: npm run typecheck:mobile
+      - run: npm run test:mobile
+      - run: npm run export:android
