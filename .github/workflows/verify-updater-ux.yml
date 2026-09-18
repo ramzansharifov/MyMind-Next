@@ -1,0 +1,65 @@
+name: Verify updater UX 1.1.2
+
+on:
+  push:
+    branches:
+      - feature/update-progress-settings-1.1.2
+    paths:
+      - '.github/workflows/verify-updater-ux.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify-windows:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/update-progress-settings-1.1.2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Check changed-file formatting
+        run: >
+          npx prettier --check
+          .github/workflows/release-desktop.yml
+          apps/desktop/package.json
+          package-lock.json
+          apps/desktop/src/shared/contracts/system.ts
+          apps/desktop/src/shared/contracts/updates.ts
+          apps/desktop/src/main/index.ts
+          apps/desktop/src/main/ipc/register-ipc.ts
+          apps/desktop/src/main/services/desktop-auto-update.ts
+          apps/desktop/src/main/services/desktop-auto-update.test.ts
+          apps/desktop/src/preload/index.ts
+          apps/desktop/src/renderer/src/App.test.tsx
+          apps/desktop/src/renderer/src/app/AppTitleBar.tsx
+          apps/desktop/src/renderer/src/modules/settings/SettingsPage.tsx
+          apps/desktop/src/renderer/src/modules/settings/UpdateSettingsPage.tsx
+
+      - name: Lint updater changes
+        run: >
+          npx eslint
+          apps/desktop/src/shared/contracts/updates.ts
+          apps/desktop/src/main/index.ts
+          apps/desktop/src/main/ipc/register-ipc.ts
+          apps/desktop/src/main/services/desktop-auto-update.ts
+          apps/desktop/src/main/services/desktop-auto-update.test.ts
+          apps/desktop/src/preload/index.ts
+          apps/desktop/src/renderer/src/App.test.tsx
+          apps/desktop/src/renderer/src/app/AppTitleBar.tsx
+          apps/desktop/src/renderer/src/modules/settings/SettingsPage.tsx
+          apps/desktop/src/renderer/src/modules/settings/UpdateSettingsPage.tsx
+
+      - run: npm run typecheck
+      - run: npm run test:run
+      - run: npm run test:mobile
+      - run: npm run db:check
+      - run: npm run build:win
