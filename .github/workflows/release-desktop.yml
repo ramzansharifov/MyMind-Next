@@ -35,7 +35,17 @@ jobs:
 
       - run: npm ci
       - name: Lint updater integration
-        run: npx eslint apps/desktop/src/main/index.ts apps/desktop/src/main/services/desktop-auto-update.ts
+        run: >
+          npx eslint
+          apps/desktop/src/shared/contracts/updates.ts
+          apps/desktop/src/main/index.ts
+          apps/desktop/src/main/ipc/register-ipc.ts
+          apps/desktop/src/main/services/desktop-auto-update.ts
+          apps/desktop/src/main/services/desktop-auto-update.test.ts
+          apps/desktop/src/preload/index.ts
+          apps/desktop/src/renderer/src/app/AppTitleBar.tsx
+          apps/desktop/src/renderer/src/modules/settings/SettingsPage.tsx
+          apps/desktop/src/renderer/src/modules/settings/UpdateSettingsPage.tsx
       - run: npm run typecheck
       - run: npm run test:run
       - run: npm run test:mobile
