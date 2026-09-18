@@ -1,6 +1,8 @@
 import { Image, Modal, Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+import myMindIcon from '../../assets/icon.png'
+
 import { navigationRoutes, routeIcons, routeTitles, type Route } from './navigation'
 import type { MobileUpdaterController } from './useMobileUpdater'
 import { AppIcon } from '../shared/ui/icons'
@@ -154,7 +156,7 @@ export function MobileNavigationDrawer({
               }}
             >
               <Image
-                source={require('../../assets/icon.png')}
+                source={myMindIcon}
                 resizeMode="contain"
                 style={{ width: 30, height: 30 }}
               />
