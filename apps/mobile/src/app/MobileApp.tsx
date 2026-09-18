@@ -1,13 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import {
-  BackHandler,
-  FlatList,
-  Platform,
-  Pressable,
-  Text,
-  useColorScheme,
-  View
-} from 'react-native'
+import { BackHandler, Platform, Pressable, Text, useColorScheme, View } from 'react-native'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar'
 import { appearanceTokens } from '@mymind/design'
@@ -18,7 +10,8 @@ import {
 import { appearancePreferencesSchema } from '@mymind/core/validation/preferences'
 import { ServicesContext } from './context'
 import { createMobileServices, type MobileServices } from './services'
-import { moreRoutes, primaryTabs, routeIcons, routeTitles, type Route } from './navigation'
+import { routeIcons, routeTitles, type Route } from './navigation'
+import { MobileNavigationDrawer } from './MobileNavigationDrawer'
 import { exportMobileBackup, restoreMobileBackup } from '../shared/backup/mobileBackup'
 import { openMobileDatabase } from '../shared/storage/mobileDatabase'
 import { ThemeContext } from '../shared/ui/theme'
@@ -85,6 +78,7 @@ export default function MobileApp(): React.JSX.Element {
     DEFAULT_APPEARANCE_PREFERENCES
   )
   const [route, setRoute] = useState<Route>('home')
+  const [navigationOpen, setNavigationOpen] = useState(false)
   const [immersive, setImmersive] = useState(false)
   const [backupOperation, setBackupOperation] = useState<BackupOperation | null>(null)
   const [error, setError] = useState('')
@@ -98,6 +92,7 @@ export default function MobileApp(): React.JSX.Element {
   const navigate = useCallback(
     (next: Route): void => {
       if (backupOperation) return
+      setNavigationOpen(false)
       setImmersive(false)
       setRoute(next)
     },
@@ -122,16 +117,26 @@ export default function MobileApp(): React.JSX.Element {
   }, [attempt])
 
   useEffect(() => {
+    if (backupOperation) {
+      setNavigationOpen(false)
+    }
+  }, [backupOperation])
+
+  useEffect(() => {
     if (Platform.OS !== 'android') return
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (navigationOpen) {
+        setNavigationOpen(false)
+        return true
+      }
       if (backupOperation) return true
       if (immersive) return false
       if (route === 'home') return false
-      navigate(['notes', 'tasks', 'habits', 'more'].includes(route) ? 'home' : 'more')
+      navigate('home')
       return true
     })
     return () => subscription.remove()
-  }, [backupOperation, immersive, navigate, route])
+  }, [backupOperation, immersive, navigate, navigationOpen, route])
 
   const saveAppearance = useCallback(
     (next: AppearancePreferences): void => {
@@ -187,8 +192,6 @@ export default function MobileApp(): React.JSX.Element {
     }
   }, [backupOperation])
 
-  const inMore = !['home', 'notes', 'tasks', 'habits', 'more'].includes(route)
-
   return (
     <SafeAreaProvider>
       <ThemeContext.Provider value={palette}>
@@ -197,6 +200,13 @@ export default function MobileApp(): React.JSX.Element {
             <SafeAreaView style={{ flex: 1, backgroundColor: palette.background }}>
               <StatusBar style={dark ? 'light' : 'dark'} />
 
+              <MobileNavigationDrawer
+                visible={navigationOpen}
+                currentRoute={route}
+                close={() => setNavigationOpen(false)}
+                navigate={navigate}
+              />
+
               {!immersive ? (
                 <View style={{ paddingHorizontal: 16, paddingTop: 10, paddingBottom: 12 }}>
                   <View
@@ -204,9 +214,9 @@ export default function MobileApp(): React.JSX.Element {
                       minHeight: 80,
                       flexDirection: 'row',
                       alignItems: 'center',
-                      gap: 14,
-                      paddingHorizontal: 16,
-                      paddingVertical: 15,
+                      gap: 10,
+                      paddingHorizontal: 12,
+                      paddingVertical: 12,
                       overflow: 'hidden',
                       borderWidth: 1,
                       borderColor: palette.border,
@@ -239,8 +249,14 @@ export default function MobileApp(): React.JSX.Element {
                         backgroundColor: palette.accent + '08'
                       }}
                     />
-                    <View
-                      style={{
+
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Открыть меню навигации"
+                      disabled={backupOperation !== null}
+                      hitSlop={6}
+                      onPress={() => setNavigationOpen(true)}
+                      style={({ pressed }) => ({
                         width: 48,
                         height: 48,
                         alignItems: 'center',
@@ -248,25 +264,40 @@ export default function MobileApp(): React.JSX.Element {
                         borderWidth: 1,
                         borderColor: palette.accent + '33',
                         borderRadius: 16,
-                        backgroundColor: palette.accent + '1A'
+                        backgroundColor: pressed ? palette.accent + '22' : palette.accent + '14',
+                        opacity: backupOperation ? 0.45 : pressed ? 0.76 : 1
+                      })}
+                    >
+                      <AppIcon name="menu" size={23} strokeWidth={2} color={palette.accent} />
+                    </Pressable>
+
+                    <View
+                      style={{
+                        width: 38,
+                        height: 38,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderRadius: 12,
+                        backgroundColor: palette.background + '99'
                       }}
                     >
                       <AppIcon
                         name={routeIcons[route]}
-                        size={24}
+                        size={19}
                         strokeWidth={2}
                         color={palette.accent}
                       />
                     </View>
+
                     <Text
                       numberOfLines={1}
                       style={{
                         flex: 1,
                         color: palette.text,
-                        fontSize: 26,
-                        lineHeight: 32,
+                        fontSize: 25,
+                        lineHeight: 31,
                         fontWeight: '600',
-                        letterSpacing: -0.9
+                        letterSpacing: -0.8
                       }}
                     >
                       {routeTitles[route]}
@@ -294,7 +325,12 @@ export default function MobileApp(): React.JSX.Element {
                   {!backupOperation ? <ReminderStatus services={services} /> : null}
 
                   <View
-                    style={{ flex: 1, paddingHorizontal: immersive ? 0 : 16, minHeight: 0 }}
+                    style={{
+                      flex: 1,
+                      paddingHorizontal: immersive ? 0 : 16,
+                      paddingBottom: immersive ? 0 : 8,
+                      minHeight: 0
+                    }}
                     key={route}
                   >
                     {route === 'home' ? (
@@ -319,116 +355,15 @@ export default function MobileApp(): React.JSX.Element {
                       <FinanceScreen />
                     ) : route === 'passwords' ? (
                       <PasswordsScreen />
-                    ) : route === 'settings' ? (
+                    ) : (
                       <Settings
                         appearance={appearance}
                         save={saveAppearance}
                         exportBackup={exportBackup}
                         restoreBackup={restoreBackup}
                       />
-                    ) : (
-                      <FlatList
-                        data={moreRoutes}
-                        numColumns={2}
-                        keyExtractor={(item) => item}
-                        columnWrapperStyle={{ gap: 10, justifyContent: 'space-between' }}
-                        contentContainerStyle={{ paddingBottom: 12, gap: 10 }}
-                        renderItem={({ item }) => (
-                          <Pressable
-                            accessibilityRole="button"
-                            accessibilityLabel={routeTitles[item]}
-                            onPress={() => navigate(item)}
-                            style={({ pressed }) => ({
-                              width: '48.5%',
-                              minHeight: 112,
-                              alignItems: 'flex-start',
-                              justifyContent: 'space-between',
-                              padding: 16,
-                              borderWidth: 1,
-                              borderColor: palette.border,
-                              borderRadius: 12,
-                              backgroundColor: pressed ? palette.raised : palette.surface,
-                              opacity: pressed ? 0.78 : 1
-                            })}
-                          >
-                            <View
-                              style={{
-                                width: 36,
-                                height: 36,
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                borderRadius: 12,
-                                borderWidth: 1,
-                                borderColor: palette.accent + '26',
-                                backgroundColor: palette.accent + '10'
-                              }}
-                            >
-                              <AppIcon name={routeIcons[item]} size={19} color={palette.accent} />
-                            </View>
-                            <Text style={{ color: palette.text, fontSize: 15, fontWeight: '600' }}>
-                              {routeTitles[item]}
-                            </Text>
-                          </Pressable>
-                        )}
-                      />
                     )}
                   </View>
-
-                  {!immersive && !backupOperation ? (
-                    <View
-                      style={{
-                        marginHorizontal: 10,
-                        marginTop: 8,
-                        marginBottom: 6,
-                        padding: 5,
-                        flexDirection: 'row',
-                        borderWidth: 1,
-                        borderColor: palette.border,
-                        borderRadius: 22,
-                        backgroundColor: palette.surface,
-                        elevation: 4
-                      }}
-                    >
-                      {primaryTabs.map((tab) => {
-                        const selected = route === tab || (tab === 'more' && inMore)
-                        return (
-                          <Pressable
-                            key={tab}
-                            accessibilityRole="tab"
-                            accessibilityLabel={routeTitles[tab]}
-                            accessibilityState={{ selected }}
-                            onPress={() => navigate(tab)}
-                            style={({ pressed }) => ({
-                              flex: 1,
-                              minHeight: 54,
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: 3,
-                              borderRadius: 17,
-                              backgroundColor: selected ? palette.accent + '16' : 'transparent',
-                              opacity: pressed ? 0.68 : 1
-                            })}
-                          >
-                            <AppIcon
-                              name={routeIcons[tab]}
-                              size={20}
-                              color={selected ? palette.accent : palette.muted}
-                            />
-                            <Text
-                              style={{
-                                fontSize: 10.5,
-                                lineHeight: 13,
-                                fontWeight: selected ? '700' : '600',
-                                color: selected ? palette.accent : palette.muted
-                              }}
-                            >
-                              {routeTitles[tab]}
-                            </Text>
-                          </Pressable>
-                        )
-                      })}
-                    </View>
-                  ) : null}
                 </ServicesContext.Provider>
               )}
             </SafeAreaView>
