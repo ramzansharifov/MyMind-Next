@@ -41,6 +41,16 @@ jobs:
       - run: npm run test:mobile
       - run: npm run db:check
 
+      - name: Ensure GitHub release exists
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view "${{ github.ref_name }}" --repo "$env:GITHUB_REPOSITORY" *> $null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create "${{ github.ref_name }}" --repo "$env:GITHUB_REPOSITORY" --title "${{ github.ref_name }}" --notes ""
+          }
+
       - name: Build and publish Windows release
         run: npm run release:win
         env:
