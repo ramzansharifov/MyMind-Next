@@ -1,4 +1,4 @@
-import { BrainCircuit, Copy, Minus, Square, X } from 'lucide-react'
+import { BrainCircuit, Copy, Download, Minus, Square, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import type { DesktopUpdateStatus } from '../../../shared/contracts/updates'
@@ -125,6 +125,21 @@ export function AppTitleBar(): React.JSX.Element {
       </div>
 
       <div data-titlebar-controls className="ml-auto flex h-full shrink-0 items-stretch">
+        {updateStatus?.phase === 'available' && (
+          <button
+            type="button"
+            className="border-accent-500/20 bg-accent-500/10 text-accent-200 hover:bg-accent-500/15 flex h-full items-center gap-1.5 border-x px-3 text-[11px] font-medium transition-colors outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-accent-500/50"
+            onClick={() => {
+              void window.api.updates.download().catch((reason: unknown) => {
+                console.error('Failed to start desktop update download', reason)
+              })
+            }}
+          >
+            <Download aria-hidden="true" className="size-3.5" />
+            Обновить
+          </button>
+        )}
+
         <Tooltip content="Свернуть" side="bottom">
           <button
             type="button"
