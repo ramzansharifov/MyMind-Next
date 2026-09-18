@@ -13,8 +13,10 @@ export async function checkRemoteMobileRelease(): Promise<MobileReleaseAsset | n
 }
 
 export async function downloadAndOpenMobileUpdate(
-  _release: MobileReleaseAsset,
-  _onProgress: (progress: { transferred: number; total: number; percent: number }) => void
+  release: MobileReleaseAsset,
+  onProgress: (progress: { transferred: number; total: number; percent: number }) => void
 ): Promise<void> {
+  void release
+  void onProgress
   throw new Error('Обновление APK доступно только в Android-версии MyMind')
 }
