@@ -29,7 +29,7 @@ describe('App shell', () => {
 
         updates: {
           getStatus: vi.fn().mockResolvedValue({
-            currentVersion: '1.1.2',
+            currentVersion: '1.1.3',
             phase: 'idle',
             availableVersion: null,
             percent: null,
@@ -40,7 +40,7 @@ describe('App shell', () => {
             error: null
           }),
           check: vi.fn().mockResolvedValue({
-            currentVersion: '1.1.2',
+            currentVersion: '1.1.3',
             phase: 'up-to-date',
             availableVersion: null,
             percent: null,
@@ -51,9 +51,9 @@ describe('App shell', () => {
             error: null
           }),
           download: vi.fn().mockResolvedValue({
-            currentVersion: '1.1.2',
+            currentVersion: '1.1.3',
             phase: 'downloading',
-            availableVersion: '1.1.3',
+            availableVersion: '1.1.4',
             percent: 0,
             transferred: 0,
             total: null,
@@ -227,9 +227,9 @@ describe('App shell', () => {
   it('shows an update button in the title bar and downloads only after a click', async () => {
     const user = userEvent.setup()
     vi.mocked(window.api.updates.getStatus).mockResolvedValueOnce({
-      currentVersion: '1.1.2',
+      currentVersion: '1.1.3',
       phase: 'available',
-      availableVersion: '1.1.3',
+      availableVersion: '1.1.4',
       percent: null,
       transferred: null,
       total: null,
