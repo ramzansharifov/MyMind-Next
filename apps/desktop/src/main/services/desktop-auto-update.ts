@@ -1,5 +1,9 @@
 import { app, dialog, type BrowserWindow } from 'electron'
 import electronUpdater from 'electron-updater'
+import { appendFileSync, mkdirSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+
+import type { DesktopUpdateStatus } from '../../shared/contracts/updates'
 
 const STARTUP_CHECK_DELAY_MS = 15_000
 const PERIODIC_CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000
@@ -7,6 +11,29 @@ const PERIODIC_CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000
 interface DesktopAutoUpdateOptions {
   getWindow(): BrowserWindow | null
   onInstallRequested(): void
+  onStatusChanged(status: DesktopUpdateStatus): void
+}
+
+function initialStatus(): DesktopUpdateStatus {
+  return {
+    currentVersion: app.getVersion(),
+    phase: app.isPackaged && process.platform === 'win32' ? 'idle' : 'unsupported',
+    availableVersion: null,
+    percent: null,
+    transferred: null,
+    total: null,
+    bytesPerSecond: null,
+    lastCheckedAt: null,
+    error: null
+  }
+}
+
+function errorMessage(reason: unknown): string {
+  if (reason instanceof Error) {
+    return reason.message
+  }
+
+  return String(reason)
 }
 
 export class DesktopAutoUpdateService {
@@ -15,28 +42,94 @@ export class DesktopAutoUpdateService {
   private restartPromptOpen = false
   private startupTimer: ReturnType<typeof setTimeout> | null = null
   private periodicTimer: ReturnType<typeof setInterval> | null = null
+  private status = initialStatus()
 
   private readonly updater = electronUpdater.autoUpdater
+  private readonly logPath = join(app.getPath('userData'), 'logs', 'desktop-updater.log')
 
   constructor(private readonly options: DesktopAutoUpdateOptions) {}
 
   start(): void {
-    if (this.started || !app.isPackaged || process.platform !== 'win32') {
+    if (this.started) {
+      return
+    }
+
+    if (!app.isPackaged || process.platform !== 'win32') {
+      this.setStatus({ phase: 'unsupported' })
       return
     }
 
     this.started = true
-    this.updater.logger = console
+    this.configureLogger()
+
     this.updater.autoDownload = true
     this.updater.autoInstallOnAppQuit = true
     this.updater.allowPrerelease = false
     this.updater.disableWebInstaller = true
 
+    this.updater.on('checking-for-update', () => {
+      this.setStatus({
+        phase: 'checking',
+        error: null,
+        percent: null,
+        transferred: null,
+        total: null,
+        bytesPerSecond: null
+      })
+    })
+
+    this.updater.on('update-available', (info) => {
+      this.setStatus({
+        phase: 'available',
+        availableVersion: info.version,
+        lastCheckedAt: new Date().toISOString(),
+        error: null
+      })
+    })
+
+    this.updater.on('update-not-available', () => {
+      this.setStatus({
+        phase: 'up-to-date',
+        availableVersion: null,
+        percent: null,
+        transferred: null,
+        total: null,
+        bytesPerSecond: null,
+        lastCheckedAt: new Date().toISOString(),
+        error: null
+      })
+    })
+
+    this.updater.on('download-progress', (progress) => {
+      this.setStatus({
+        phase: 'downloading',
+        percent: Math.max(0, Math.min(100, progress.percent)),
+        transferred: progress.transferred,
+        total: progress.total,
+        bytesPerSecond: progress.bytesPerSecond,
+        error: null
+      })
+    })
+
     this.updater.on('error', (reason) => {
+      const message = errorMessage(reason)
+      this.writeLog('ERROR', message)
       console.warn('Desktop auto-update check failed', reason)
+      this.setStatus({
+        phase: 'error',
+        error: message,
+        lastCheckedAt: new Date().toISOString()
+      })
     })
 
     this.updater.on('update-downloaded', (info) => {
+      this.setStatus({
+        phase: 'downloaded',
+        availableVersion: info.version,
+        percent: 100,
+        transferred: this.status.total ?? this.status.transferred,
+        error: null
+      })
       void this.promptForRestart(info.version)
     })
 
@@ -48,6 +141,9 @@ export class DesktopAutoUpdateService {
     this.periodicTimer = setInterval(() => {
       void this.checkForUpdates()
     }, PERIODIC_CHECK_INTERVAL_MS)
+
+    this.writeLog('INFO', `Desktop updater started for MyMind ${this.status.currentVersion}`)
+    this.emitStatus()
   }
 
   stop(): void {
@@ -62,23 +158,97 @@ export class DesktopAutoUpdateService {
     }
   }
 
-  installDownloadedUpdate(): void {
-    this.updater.quitAndInstall(false, true)
+  getStatus(): DesktopUpdateStatus {
+    return { ...this.status }
   }
 
-  private async checkForUpdates(): Promise<void> {
+  async checkForUpdates(): Promise<DesktopUpdateStatus> {
     if (!this.started || this.checking) {
-      return
+      return this.getStatus()
+    }
+
+    if (this.status.phase === 'downloading' || this.status.phase === 'downloaded') {
+      return this.getStatus()
+    }
+
+    if (this.startupTimer) {
+      clearTimeout(this.startupTimer)
+      this.startupTimer = null
     }
 
     this.checking = true
+    this.setStatus({ phase: 'checking', error: null })
 
     try {
       await this.updater.checkForUpdates()
     } catch (reason: unknown) {
+      const message = errorMessage(reason)
+      this.writeLog('ERROR', `Update check request failed: ${message}`)
       console.warn('Desktop auto-update request failed', reason)
+      this.setStatus({
+        phase: 'error',
+        error: message,
+        lastCheckedAt: new Date().toISOString()
+      })
     } finally {
       this.checking = false
+    }
+
+    return this.getStatus()
+  }
+
+  requestInstall(): void {
+    if (this.status.phase === 'downloaded') {
+      this.options.onInstallRequested()
+    }
+  }
+
+  installDownloadedUpdate(): void {
+    this.writeLog('INFO', 'Installing downloaded update')
+    this.updater.quitAndInstall(false, true)
+  }
+
+  private configureLogger(): void {
+    this.updater.logger = {
+      info: (message: string) => this.writeLog('INFO', message),
+      warn: (message: string) => this.writeLog('WARN', message),
+      error: (message: string) => this.writeLog('ERROR', message),
+      debug: (message: string) => this.writeLog('DEBUG', message)
+    }
+  }
+
+  private setStatus(patch: Partial<DesktopUpdateStatus>): void {
+    this.status = {
+      ...this.status,
+      ...patch
+    }
+
+    this.writeLog(
+      'STATUS',
+      JSON.stringify({
+        phase: this.status.phase,
+        currentVersion: this.status.currentVersion,
+        availableVersion: this.status.availableVersion,
+        percent:
+          this.status.percent === null ? null : Math.round(this.status.percent * 10) / 10,
+        transferred: this.status.transferred,
+        total: this.status.total,
+        error: this.status.error
+      })
+    )
+    this.emitStatus()
+  }
+
+  private emitStatus(): void {
+    this.options.onStatusChanged(this.getStatus())
+  }
+
+  private writeLog(level: string, message: string): void {
+    try {
+      mkdirSync(dirname(this.logPath), { recursive: true })
+      appendFileSync(this.logPath, `[${new Date().toISOString()}] [${level}] ${message}\n`, 'utf8')
+    } catch (reason: unknown) {
+      console.warn('Failed to write desktop updater log', reason)
     }
   }
 
