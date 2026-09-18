@@ -44,7 +44,8 @@
     "check:fix": "npm run format && npm run check",
     "lint:mobile": "eslint apps/mobile packages",
     "test:mobile": "vitest run --config vitest.mobile.config.ts",
-    "export:android": "npm run export:android --workspace=mymind-mobile"
+    "export:android": "npm run export:android --workspace=mymind-mobile",
+    "release:version": "node ./scripts/set-release-version.mjs"
   },
   "allowScripts": {
     "esbuild@0.18.20": true,
