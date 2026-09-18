@@ -125,7 +125,6 @@ describe('DesktopAutoUpdateService', () => {
     expect(mocks.checkForUpdates).toHaveBeenCalledTimes(1)
   })
 
-
   it('does not download an available update until the user requests it', async () => {
     const { DesktopAutoUpdateService } = await loadService()
     const service = new DesktopAutoUpdateService({
@@ -135,6 +134,11 @@ describe('DesktopAutoUpdateService', () => {
     })
 
     service.start()
+    const { default: electronUpdater } = await import('electron-updater')
+
+    expect(electronUpdater.autoUpdater.autoDownload).toBe(false)
+    expect(electronUpdater.autoUpdater.autoInstallOnAppQuit).toBe(false)
+
     emit('update-available', { version: '1.1.3' })
 
     expect(service.getStatus()).toMatchObject({
