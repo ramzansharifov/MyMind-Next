@@ -8,10 +8,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
-import type {
-  DesktopUpdatePhase,
-  DesktopUpdateStatus
-} from '../../../../shared/contracts/updates'
+import type { DesktopUpdatePhase, DesktopUpdateStatus } from '../../../../shared/contracts/updates'
 import { ModuleHeader } from '../../shared/ui/ModuleHeader'
 
 function formatBytes(value: number | null): string | null {
@@ -185,10 +182,10 @@ export function UpdateSettingsPage(): React.JSX.Element {
   }
 
   const isBusy =
-    status?.phase === 'checking' ||
-    status?.phase === 'available' ||
-    status?.phase === 'downloading'
-  const canCheck = Boolean(status && status.phase !== 'unsupported' && status.phase !== 'downloaded')
+    status?.phase === 'checking' || status?.phase === 'available' || status?.phase === 'downloading'
+  const canCheck = Boolean(
+    status && status.phase !== 'unsupported' && status.phase !== 'downloaded'
+  )
   const progress = Math.max(0, Math.min(100, status?.percent ?? 0))
   const transferred = formatBytes(status?.transferred ?? null)
   const total = formatBytes(status?.total ?? null)
@@ -278,10 +275,7 @@ export function UpdateSettingsPage(): React.JSX.Element {
               className="inline-flex h-9 items-center gap-2 rounded-lg border border-[var(--app-border-strong)] bg-[var(--app-control)] px-3 text-sm font-medium text-[var(--app-text)] transition-colors hover:bg-[var(--app-control-hover)] disabled:cursor-not-allowed disabled:opacity-50"
               onClick={handleCheck}
             >
-              <RotateCcw
-                aria-hidden="true"
-                className={`size-4 ${isBusy ? 'animate-spin' : ''}`}
-              />
+              <RotateCcw aria-hidden="true" className={`size-4 ${isBusy ? 'animate-spin' : ''}`} />
               {isBusy ? 'Проверяем…' : 'Проверить обновления'}
             </button>
 

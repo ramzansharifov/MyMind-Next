@@ -86,7 +86,6 @@ export function AppTitleBar(): React.JSX.Element {
 
   const updateLabel = titlebarUpdateLabel(updateStatus)
 
-
   return (
     <header
       data-app-titlebar

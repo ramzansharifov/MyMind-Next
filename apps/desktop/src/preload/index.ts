@@ -187,11 +187,7 @@ const api: MyMindApi = {
       invoke(PROFILE_SYNC_IPC_CHANNELS.getLanStatus) as Promise<LanSyncHostStatus>,
     onPrepareRequested: (listener) => {
       const handler = (_event: Electron.IpcRendererEvent, rawRequest: unknown): void => {
-        if (
-          typeof rawRequest !== 'object' ||
-          rawRequest === null ||
-          Array.isArray(rawRequest)
-        ) {
+        if (typeof rawRequest !== 'object' || rawRequest === null || Array.isArray(rawRequest)) {
           return
         }
         const request = rawRequest as Record<string, unknown>

@@ -250,8 +250,7 @@ export class DesktopAutoUpdateService {
         phase: this.status.phase,
         currentVersion: this.status.currentVersion,
         availableVersion: this.status.availableVersion,
-        percent:
-          this.status.percent === null ? null : Math.round(this.status.percent * 10) / 10,
+        percent: this.status.percent === null ? null : Math.round(this.status.percent * 10) / 10,
         transferred: this.status.transferred,
         total: this.status.total,
         error: this.status.error
