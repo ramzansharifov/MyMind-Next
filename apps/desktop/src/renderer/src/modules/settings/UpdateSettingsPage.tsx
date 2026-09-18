@@ -86,7 +86,9 @@ function updateStatusCopy(status: DesktopUpdateStatus): {
       }
     case 'error':
       return {
-        title: 'Не удалось проверить обновления',
+        title: status.availableVersion
+          ? 'Не удалось скачать обновление'
+          : 'Не удалось проверить обновления',
         detail: status.error ?? 'Проверьте подключение к интернету и повторите попытку.',
         tone: 'error'
       }
@@ -191,7 +193,7 @@ export function UpdateSettingsPage(): React.JSX.Element {
     })
   }
 
-  const isBusy = status?.phase === 'checking' || status?.phase === 'downloading'
+  const isChecking = status?.phase === 'checking'
   const canCheck = Boolean(
     status &&
       status.phase !== 'unsupported' &&
@@ -295,12 +297,15 @@ export function UpdateSettingsPage(): React.JSX.Element {
 
             <button
               type="button"
-              disabled={!canCheck || isBusy}
+              disabled={!canCheck}
               className="inline-flex h-9 items-center gap-2 rounded-lg border border-[var(--app-border-strong)] bg-[var(--app-control)] px-3 text-sm font-medium text-[var(--app-text)] transition-colors hover:bg-[var(--app-control-hover)] disabled:cursor-not-allowed disabled:opacity-50"
               onClick={handleCheck}
             >
-              <RotateCcw aria-hidden="true" className={`size-4 ${isBusy ? 'animate-spin' : ''}`} />
-              {isBusy ? 'Проверяем…' : 'Проверить обновления'}
+              <RotateCcw
+                aria-hidden="true"
+                className={`size-4 ${isChecking ? 'animate-spin' : ''}`}
+              />
+              {isChecking ? 'Проверяем…' : 'Проверить обновления'}
             </button>
 
             {status?.phase === 'downloaded' && (
