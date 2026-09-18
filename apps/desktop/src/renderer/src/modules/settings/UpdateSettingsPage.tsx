@@ -101,7 +101,8 @@ function updateStatusCopy(status: DesktopUpdateStatus): {
     default:
       return {
         title: 'Автоматическая проверка включена',
-        detail: 'MyMind сообщает о новой версии, но скачивает её только после вашего подтверждения.',
+        detail:
+          'MyMind сообщает о новой версии, но скачивает её только после вашего подтверждения.',
         tone: 'default'
       }
   }
@@ -196,10 +197,10 @@ export function UpdateSettingsPage(): React.JSX.Element {
   const isChecking = status?.phase === 'checking'
   const canCheck = Boolean(
     status &&
-      status.phase !== 'unsupported' &&
-      status.phase !== 'available' &&
-      status.phase !== 'downloading' &&
-      status.phase !== 'downloaded'
+    status.phase !== 'unsupported' &&
+    status.phase !== 'available' &&
+    status.phase !== 'downloading' &&
+    status.phase !== 'downloaded'
   )
   const progress = Math.max(0, Math.min(100, status?.percent ?? 0))
   const transferred = formatBytes(status?.transferred ?? null)

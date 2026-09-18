@@ -128,7 +128,7 @@ export function AppTitleBar(): React.JSX.Element {
         {updateStatus?.phase === 'available' && (
           <button
             type="button"
-            className="border-accent-500/20 bg-accent-500/10 text-accent-200 hover:bg-accent-500/15 flex h-full items-center gap-1.5 border-x px-3 text-[11px] font-medium transition-colors outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-accent-500/50"
+            className="border-accent-500/20 bg-accent-500/10 text-accent-200 hover:bg-accent-500/15 focus-visible:ring-accent-500/50 flex h-full items-center gap-1.5 border-x px-3 text-[11px] font-medium transition-colors outline-none focus-visible:ring-1 focus-visible:ring-inset"
             onClick={() => {
               void window.api.updates.download().catch((reason: unknown) => {
                 console.error('Failed to start desktop update download', reason)

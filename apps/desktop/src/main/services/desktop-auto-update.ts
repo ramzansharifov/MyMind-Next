@@ -140,7 +140,10 @@ export class DesktopAutoUpdateService {
       void this.checkForUpdates()
     }, PERIODIC_CHECK_INTERVAL_MS)
 
-    this.writeLog('INFO', `Desktop updater started for MyMind ${this.status.currentVersion} (manual download mode)`)
+    this.writeLog(
+      'INFO',
+      `Desktop updater started for MyMind ${this.status.currentVersion} (manual download mode)`
+    )
     this.emitStatus()
   }
 
