@@ -11,8 +11,10 @@ import { ReminderSettings } from './ReminderSettings'
 import { useConfirmation } from '../shared/ui/ConfirmationProvider'
 import { useToast } from '../shared/ui/ToastProvider'
 import { MobileProfileSyncSettings } from './MobileProfileSyncSettings'
+import { MobileUpdateSettings } from './MobileUpdateSettings'
+import type { MobileUpdaterController } from './useMobileUpdater'
 
-type SettingsPage = 'overview' | 'profile-sync' | 'appearance' | 'reminders' | 'data'
+type SettingsPage = 'overview' | 'profile-sync' | 'appearance' | 'reminders' | 'updates' | 'data'
 
 const accentNames = {
   violet: 'Фиолетовый',
@@ -30,11 +32,13 @@ const themeNames = {
 
 export function Settings({
   appearance,
+  updater,
   save,
   exportBackup,
   restoreBackup
 }: {
   appearance: AppearancePreferences
+  updater: MobileUpdaterController
   save(value: AppearancePreferences): void
   exportBackup(): Promise<MobileBackupSummary>
   restoreBackup(): Promise<MobileRestoreResult>
@@ -191,6 +195,15 @@ export function Settings({
     )
   }
 
+  if (page === 'updates') {
+    return (
+      <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
+        {back}
+        <MobileUpdateSettings updater={updater} />
+      </ScrollView>
+    )
+  }
+
   if (page === 'data') {
     return (
       <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
@@ -248,6 +261,16 @@ export function Settings({
           subtitle="Календарь и привычки · системные уведомления телефона"
           leadingIcon="calendar"
           onPress={() => setPage('reminders')}
+        />
+        <WorkspaceNodeCard
+          title="Обновления"
+          subtitle={
+            updater.status.phase === 'available' && updater.status.available
+              ? `Доступна v${updater.status.available.version}`
+              : `Установлена v${updater.status.currentVersion}`
+          }
+          leadingIcon="download"
+          onPress={() => setPage('updates')}
         />
         <WorkspaceNodeCard
           title="Локальные данные"
