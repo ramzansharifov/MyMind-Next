@@ -20,7 +20,7 @@ import {
   Info,
   KeyRound,
   ListTodo,
-  MoreHorizontal,
+  Menu,
   MoveRight,
   Notebook,
   Pencil,
@@ -41,8 +41,8 @@ export type AppIconName =
   | 'notes'
   | 'tasks'
   | 'habits'
-  | 'more'
   | 'movies'
+  | 'menu'
   | 'music'
   | 'calendar'
   | 'diary'
@@ -75,8 +75,8 @@ const icons: Record<AppIconName, LucideIcon> = {
   notes: Notebook,
   tasks: ListTodo,
   habits: Repeat2,
-  more: MoreHorizontal,
   movies: Film,
+  menu: Menu,
   music: Disc3,
   calendar: CalendarDays,
   diary: BookHeart,
