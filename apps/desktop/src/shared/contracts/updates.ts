@@ -1,6 +1,7 @@
 export const UPDATE_IPC_CHANNELS = {
   getStatus: 'updates:get-status',
   check: 'updates:check',
+  download: 'updates:download',
   install: 'updates:install',
   statusChanged: 'updates:status-changed'
 } as const
@@ -30,6 +31,7 @@ export interface DesktopUpdateStatus {
 export interface DesktopUpdatesApi {
   getStatus(): Promise<DesktopUpdateStatus>
   check(): Promise<DesktopUpdateStatus>
+  download(): Promise<DesktopUpdateStatus>
   install(): Promise<void>
   onStatusChanged(listener: (status: DesktopUpdateStatus) => void): () => void
 }
