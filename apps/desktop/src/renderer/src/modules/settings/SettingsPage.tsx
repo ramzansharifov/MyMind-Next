@@ -3,6 +3,7 @@ import {
   BookOpen,
   Bot,
   Palette,
+  RefreshCw,
   Settings,
   Sparkles,
   TriangleAlert,
@@ -22,6 +23,7 @@ import { StandardModulePage } from '../../shared/ui/StandardModulePage'
 import { AppearanceSettingsSection } from './AppearanceSettingsSection'
 import { ProfileSyncSettingsPage } from './ProfileSyncSettingsPage'
 import { StorageSettingsSection } from './StorageSettingsSection'
+import { UpdateSettingsPage } from './UpdateSettingsPage'
 import { SettingsBreadcrumbs, type SettingsBreadcrumbItem } from './SettingsBreadcrumbs'
 import {
   BoardsInstructionArticlePage,
@@ -52,6 +54,7 @@ type SettingsRoute =
   | { page: 'appearance' }
   | { page: 'ai-chat' }
   | { page: 'profile-sync' }
+  | { page: 'updates' }
   | { page: 'instructions' }
   | { page: 'learning' }
   | { page: 'learning-topic'; topicId: LearningInstructionTopicId }
@@ -70,6 +73,8 @@ export function SettingsPage({ error }: SettingsPageProps): React.JSX.Element {
     content = <AiChatSettingsPage />
   } else if (route.page === 'profile-sync') {
     content = <ProfileSyncSettingsPage />
+  } else if (route.page === 'updates') {
+    content = <UpdateSettingsPage />
   } else if (route.page === 'instructions') {
     content = (
       <InstructionsOverviewPage
@@ -113,6 +118,7 @@ export function SettingsPage({ error }: SettingsPageProps): React.JSX.Element {
         onOpenAppearance={() => setRoute({ page: 'appearance' })}
         onOpenAiChat={() => setRoute({ page: 'ai-chat' })}
         onOpenProfileSync={() => setRoute({ page: 'profile-sync' })}
+        onOpenUpdates={() => setRoute({ page: 'updates' })}
         onOpenInstructions={() => setRoute({ page: 'instructions' })}
       />
     )
@@ -158,6 +164,11 @@ function getSettingsBreadcrumbItems(
 
   if (route.page === 'profile-sync') {
     items.push({ label: 'Профиль и синхронизация' })
+    return items
+  }
+
+  if (route.page === 'updates') {
+    items.push({ label: 'Обновления' })
     return items
   }
 
@@ -208,12 +219,14 @@ function SettingsOverview({
   onOpenAppearance,
   onOpenAiChat,
   onOpenProfileSync,
+  onOpenUpdates,
   onOpenInstructions
 }: {
   error: string | null
   onOpenAppearance: () => void
   onOpenAiChat: () => void
   onOpenProfileSync: () => void
+  onOpenUpdates: () => void
   onOpenInstructions: () => void
 }): React.JSX.Element {
   const { preferences } = useAppearance()
@@ -251,6 +264,11 @@ function SettingsOverview({
         >
           <SettingsValueBadge>Локальная сеть</SettingsValueBadge>
           <SettingsValueBadge>Без облака</SettingsValueBadge>
+        </SettingsNavigationCard>
+
+        <SettingsNavigationCard title="Обновления" icon={RefreshCw} onClick={onOpenUpdates}>
+          <SettingsValueBadge>v{__APP_VERSION__}</SettingsValueBadge>
+          <SettingsValueBadge>Автоматически</SettingsValueBadge>
         </SettingsNavigationCard>
 
         <SettingsNavigationCard title="Инструкции" icon={BookOpen} onClick={onOpenInstructions}>
