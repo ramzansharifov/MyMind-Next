@@ -10,6 +10,7 @@ import { CALENDAR_IPC_CHANNELS } from '../shared/contracts/calendar'
 import { HABITS_IPC_CHANNELS } from '../shared/contracts/habits'
 import { PROFILE_SYNC_IPC_CHANNELS } from '../shared/contracts/profile-sync'
 import { IPC_CHANNELS } from '../shared/contracts/system'
+import { UPDATE_IPC_CHANNELS } from '../shared/contracts/updates'
 import { closeDatabase, getSqlite, initializeDatabase } from './database/client'
 import { runDatabaseMigrations } from './database/migrate'
 import { registerIpcHandlers } from './ipc/register-ipc'
@@ -212,7 +213,15 @@ const shutdownCoordinator = new ShutdownCoordinator({
 
 const desktopAutoUpdateService = new DesktopAutoUpdateService({
   getWindow: () => mainWindow,
-  onInstallRequested: requestAutoUpdateInstall
+  onInstallRequested: requestAutoUpdateInstall,
+  onStatusChanged: (status) => {
+    const window = mainWindow
+    if (!window || window.isDestroyed() || window.webContents.isDestroyed()) {
+      return
+    }
+
+    window.webContents.send(UPDATE_IPC_CHANNELS.statusChanged, status)
+  }
 })
 
 function requestWindowShutdown(
@@ -431,6 +440,11 @@ if (!hasSingleInstanceLock) {
       getTrustedWebContents: () => mainWindow?.webContents ?? null,
       lanSyncServer,
       onProfileSyncPrepareResponse: (response) => lanSyncRendererCoordinator.respond(response),
+      updates: {
+        getStatus: () => desktopAutoUpdateService.getStatus(),
+        check: () => desktopAutoUpdateService.checkForUpdates(),
+        requestInstall: () => desktopAutoUpdateService.requestInstall()
+      },
       storage: {
         getInfo: getStorageInfo,
         openLocation: async () => {

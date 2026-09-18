@@ -1,12 +1,36 @@
 import { BrainCircuit, Copy, Minus, Square, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
+import type { DesktopUpdateStatus } from '../../../shared/contracts/updates'
 import { cn } from '../shared/lib/cn'
 import { Tooltip } from '../shared/ui/tooltip'
 import './window-layout.css'
 
+function titlebarUpdateLabel(status: DesktopUpdateStatus | null): string | null {
+  if (!status) return null
+
+  if (status.phase === 'checking') {
+    return 'Проверка обновлений…'
+  }
+
+  if (status.phase === 'available') {
+    return status.availableVersion ? `Доступна v${status.availableVersion}` : 'Доступно обновление'
+  }
+
+  if (status.phase === 'downloading') {
+    return `Обновление ${Math.round(status.percent ?? 0)}%`
+  }
+
+  if (status.phase === 'downloaded') {
+    return 'Обновление готово'
+  }
+
+  return null
+}
+
 export function AppTitleBar(): React.JSX.Element {
   const [isMaximized, setIsMaximized] = useState(false)
+  const [updateStatus, setUpdateStatus] = useState<DesktopUpdateStatus | null>(null)
 
   useEffect(() => {
     let active = true
@@ -34,6 +58,34 @@ export function AppTitleBar(): React.JSX.Element {
     }
   }, [])
 
+  useEffect(() => {
+    let active = true
+
+    void window.api.updates
+      .getStatus()
+      .then((status) => {
+        if (active) {
+          setUpdateStatus(status)
+        }
+      })
+      .catch((reason: unknown) => {
+        console.error('Failed to read desktop update status', reason)
+      })
+
+    const unsubscribe = window.api.updates.onStatusChanged((status) => {
+      if (active) {
+        setUpdateStatus(status)
+      }
+    })
+
+    return () => {
+      active = false
+      unsubscribe()
+    }
+  }, [])
+
+  const updateLabel = titlebarUpdateLabel(updateStatus)
+
   return (
     <header
       data-app-titlebar
@@ -56,6 +108,19 @@ export function AppTitleBar(): React.JSX.Element {
           >
             v{__APP_VERSION__}
           </span>
+          {updateLabel && (
+            <>
+              <span aria-hidden="true" className="text-[10px] text-[var(--app-muted)] opacity-40">
+                ·
+              </span>
+              <span
+                aria-live="polite"
+                className="text-accent-300 max-w-48 truncate text-[10px] font-medium"
+              >
+                {updateLabel}
+              </span>
+            </>
+          )}
         </div>
       </div>
 

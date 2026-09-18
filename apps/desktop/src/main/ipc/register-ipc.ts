@@ -12,6 +12,7 @@ import {
   type SystemWindowState
 } from '../../shared/contracts/system'
 import { aiChatBoundsSchema, setAiChatOpenInputSchema } from '../../shared/validation/ai-chat'
+import { UPDATE_IPC_CHANNELS, type DesktopUpdateStatus } from '../../shared/contracts/updates'
 import { shutdownResponseSchema, systemHealthSchema } from '../../shared/validation/system'
 import { getSqlite } from '../database/client'
 import { mainOperationTracker } from '../services/main-operation-tracker'
@@ -51,6 +52,11 @@ interface RegisterIpcHandlersOptions {
   }
   lanSyncServer: LanSyncServer
   onProfileSyncPrepareResponse(response: ProfileSyncPrepareResponse): void
+  updates: {
+    getStatus(): DesktopUpdateStatus
+    check(): Promise<DesktopUpdateStatus>
+    requestInstall(): void
+  }
   onShutdownResponse(
     response: ReturnType<typeof shutdownResponseSchema.parse>
   ): void | Promise<void>
@@ -118,6 +124,9 @@ export function registerIpcHandlers(options: RegisterIpcHandlersOptions): void {
   ipcMain.removeHandler(IPC_CHANNELS.windowMinimize)
   ipcMain.removeHandler(IPC_CHANNELS.windowToggleMaximize)
   ipcMain.removeHandler(IPC_CHANNELS.windowClose)
+  ipcMain.removeHandler(UPDATE_IPC_CHANNELS.getStatus)
+  ipcMain.removeHandler(UPDATE_IPC_CHANNELS.check)
+  ipcMain.removeHandler(UPDATE_IPC_CHANNELS.install)
 
   ipcMain.handle(AI_CHAT_IPC_CHANNELS.setOpen, (event, rawInput: unknown) => {
     getTrustedWindow(event, options.getTrustedWebContents)
@@ -187,6 +196,21 @@ export function registerIpcHandlers(options: RegisterIpcHandlersOptions): void {
   ipcMain.handle(IPC_CHANNELS.windowClose, (event) => {
     const window = getTrustedWindow(event, options.getTrustedWebContents)
     window.close()
+  })
+
+  ipcMain.handle(UPDATE_IPC_CHANNELS.getStatus, (event) => {
+    getTrustedWindow(event, options.getTrustedWebContents)
+    return options.updates.getStatus()
+  })
+
+  ipcMain.handle(UPDATE_IPC_CHANNELS.check, (event) => {
+    getTrustedWindow(event, options.getTrustedWebContents)
+    return options.updates.check()
+  })
+
+  ipcMain.handle(UPDATE_IPC_CHANNELS.install, (event) => {
+    getTrustedWindow(event, options.getTrustedWebContents)
+    options.updates.requestInstall()
   })
 
   ipcMain.handle(IPC_CHANNELS.respondToShutdown, (event, rawResponse: unknown) => {
