@@ -18,8 +18,10 @@
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.mymind.mobile",
-      "versionCode": 113,
-      "permissions": ["android.permission.REQUEST_INSTALL_PACKAGES"]
+      "versionCode": 10103,
+      "permissions": [
+        "android.permission.REQUEST_INSTALL_PACKAGES"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
