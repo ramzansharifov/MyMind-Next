@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => {
     listeners,
     isPackaged: true,
     checkForUpdates: vi.fn<() => Promise<void>>(),
+    downloadUpdate: vi.fn<() => Promise<string[]>>(),
     quitAndInstall: vi.fn(),
     showMessageBox: vi.fn(),
     on: vi.fn((event: string, listener: (value?: unknown) => void) => {
@@ -24,7 +25,7 @@ vi.mock('electron', () => ({
     get isPackaged() {
       return mocks.isPackaged
     },
-    getVersion: () => '1.1.1',
+    getVersion: () => '1.1.2',
     getPath: () => 'C:\\MyMindTest'
   },
   dialog: {
@@ -42,6 +43,7 @@ vi.mock('electron-updater', () => ({
       logger: null,
       on: mocks.on,
       checkForUpdates: mocks.checkForUpdates,
+      downloadUpdate: mocks.downloadUpdate,
       quitAndInstall: mocks.quitAndInstall
     }
   }
@@ -77,6 +79,7 @@ beforeEach(() => {
   mocks.listeners.clear()
   mocks.isPackaged = true
   mocks.checkForUpdates.mockReset().mockResolvedValue(undefined)
+  mocks.downloadUpdate.mockReset().mockResolvedValue([])
   mocks.quitAndInstall.mockReset()
   mocks.showMessageBox.mockReset().mockResolvedValue({ response: 1 })
   mocks.on.mockClear()
@@ -122,6 +125,30 @@ describe('DesktopAutoUpdateService', () => {
     expect(mocks.checkForUpdates).toHaveBeenCalledTimes(1)
   })
 
+
+  it('does not download an available update until the user requests it', async () => {
+    const { DesktopAutoUpdateService } = await loadService()
+    const service = new DesktopAutoUpdateService({
+      getWindow: () => null,
+      onInstallRequested: vi.fn(),
+      onStatusChanged: vi.fn()
+    })
+
+    service.start()
+    emit('update-available', { version: '1.1.3' })
+
+    expect(service.getStatus()).toMatchObject({
+      phase: 'available',
+      availableVersion: '1.1.3'
+    })
+    expect(mocks.downloadUpdate).not.toHaveBeenCalled()
+
+    await service.downloadUpdate()
+
+    expect(mocks.downloadUpdate).toHaveBeenCalledTimes(1)
+    expect(service.getStatus().phase).toBe('downloading')
+  })
+
   it('publishes download progress to the renderer status', async () => {
     const { DesktopAutoUpdateService } = await loadService()
     const onStatusChanged = vi.fn()
@@ -132,7 +159,7 @@ describe('DesktopAutoUpdateService', () => {
     })
 
     service.start()
-    emit('update-available', { version: '1.1.2' })
+    emit('update-available', { version: '1.1.3' })
     emit('download-progress', {
       percent: 42.4,
       transferred: 42_400,
@@ -141,8 +168,8 @@ describe('DesktopAutoUpdateService', () => {
     })
 
     expect(service.getStatus()).toMatchObject({
-      currentVersion: '1.1.1',
-      availableVersion: '1.1.2',
+      currentVersion: '1.1.2',
+      availableVersion: '1.1.3',
       phase: 'downloading',
       percent: 42.4,
       transferred: 42_400,
@@ -169,12 +196,12 @@ describe('DesktopAutoUpdateService', () => {
     })
 
     service.start()
-    emit('update-downloaded', { version: '1.1.2' })
+    emit('update-downloaded', { version: '1.1.3' })
 
     await vi.waitFor(() => expect(onInstallRequested).toHaveBeenCalledTimes(1))
     expect(service.getStatus()).toMatchObject({
       phase: 'downloaded',
-      availableVersion: '1.1.2',
+      availableVersion: '1.1.3',
       percent: 100
     })
   })
