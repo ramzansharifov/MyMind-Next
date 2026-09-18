@@ -50,6 +50,17 @@ describe('App shell', () => {
             lastCheckedAt: '2026-09-18T05:00:00.000Z',
             error: null
           }),
+          download: vi.fn().mockResolvedValue({
+            currentVersion: '1.1.2',
+            phase: 'downloading',
+            availableVersion: '1.1.3',
+            percent: 0,
+            transferred: 0,
+            total: null,
+            bytesPerSecond: null,
+            lastCheckedAt: '2026-09-18T06:00:00.000Z',
+            error: null
+          }),
           install: vi.fn().mockResolvedValue(undefined),
           onStatusChanged: vi.fn().mockReturnValue(() => undefined)
         },
@@ -211,6 +222,31 @@ describe('App shell', () => {
 
     expect(window.api.updates.check).toHaveBeenCalledTimes(1)
     expect(await screen.findByText('Установлена последняя версия')).toBeInTheDocument()
+  })
+
+  it('shows an update button in the title bar and downloads only after a click', async () => {
+    const user = userEvent.setup()
+    vi.mocked(window.api.updates.getStatus).mockResolvedValueOnce({
+      currentVersion: '1.1.2',
+      phase: 'available',
+      availableVersion: '1.1.3',
+      percent: null,
+      transferred: null,
+      total: null,
+      bytesPerSecond: null,
+      lastCheckedAt: '2026-09-18T06:00:00.000Z',
+      error: null
+    })
+
+    render(<App />)
+
+    const updateButton = await screen.findByRole('button', {
+      name: 'Обновить'
+    })
+
+    expect(window.api.updates.download).not.toHaveBeenCalled()
+    await user.click(updateButton)
+    expect(window.api.updates.download).toHaveBeenCalledTimes(1)
   })
 
   it('applies theme and accent changes from settings immediately', async () => {
