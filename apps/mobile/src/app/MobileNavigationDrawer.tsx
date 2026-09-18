@@ -1,24 +1,42 @@
-import { Modal, Pressable, ScrollView, Text, View } from 'react-native'
+import { Image, Modal, Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { navigationRoutes, routeIcons, routeTitles, type Route } from './navigation'
+import type { MobileUpdaterController } from './useMobileUpdater'
 import { AppIcon } from '../shared/ui/icons'
 import { useTheme } from '../shared/ui/theme'
 
 const moduleRoutes = navigationRoutes.filter((route) => route !== 'settings')
 
+function updateLabel(updater: MobileUpdaterController): string | null {
+  const { status } = updater
+  if (status.phase === 'available' && status.available) {
+    return `Доступна v${status.available.version}`
+  }
+  if (status.phase === 'downloading') {
+    return `Скачивание ${Math.round(status.percent ?? 0)}%`
+  }
+  if (status.phase === 'installing') {
+    return 'Открыт установщик Android'
+  }
+  return null
+}
+
 export function MobileNavigationDrawer({
   visible,
   currentRoute,
+  updater,
   close,
   navigate
 }: {
   visible: boolean
   currentRoute: Route
+  updater: MobileUpdaterController
   close(): void
   navigate(route: Route): void
 }): React.JSX.Element {
   const theme = useTheme()
+  const updateText = updateLabel(updater)
 
   const renderRoute = (route: Route): React.JSX.Element => {
     const selected = route === currentRoute
@@ -124,23 +142,28 @@ export function MobileNavigationDrawer({
           >
             <View
               style={{
-                width: 40,
-                height: 40,
+                width: 42,
+                height: 42,
                 alignItems: 'center',
                 justifyContent: 'center',
+                overflow: 'hidden',
                 borderWidth: 1,
                 borderColor: theme.accent + '30',
                 borderRadius: 13,
                 backgroundColor: theme.accent + '12'
               }}
             >
-              <AppIcon name="home" size={19} color={theme.accent} />
+              <Image
+                source={require('../../assets/icon.png')}
+                resizeMode="contain"
+                style={{ width: 30, height: 30 }}
+              />
             </View>
 
             <View style={{ flex: 1 }}>
               <Text style={{ color: theme.text, fontSize: 17, fontWeight: '700' }}>MyMind</Text>
               <Text style={{ marginTop: 2, color: theme.muted, fontSize: 11 }}>
-                Навигация по разделам
+                v{updater.status.currentVersion}
               </Text>
             </View>
 
@@ -162,6 +185,44 @@ export function MobileNavigationDrawer({
               <AppIcon name="close" size={20} color={theme.muted} />
             </Pressable>
           </View>
+
+          {updateText ? (
+            <View style={{ paddingHorizontal: 12, paddingTop: 10 }}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={
+                  updater.status.phase === 'available' ? 'Обновить MyMind' : updateText
+                }
+                disabled={updater.status.phase !== 'available'}
+                onPress={() => void updater.update()}
+                style={({ pressed }) => ({
+                  minHeight: 48,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 10,
+                  paddingHorizontal: 12,
+                  borderWidth: 1,
+                  borderColor: theme.accent + '33',
+                  borderRadius: 14,
+                  backgroundColor: theme.accent + (pressed ? '1F' : '12'),
+                  opacity: updater.status.phase === 'available' && pressed ? 0.75 : 1
+                })}
+              >
+                <AppIcon name="download" size={18} color={theme.accent} />
+                <Text
+                  numberOfLines={1}
+                  style={{ flex: 1, color: theme.text, fontSize: 13, fontWeight: '600' }}
+                >
+                  {updateText}
+                </Text>
+                {updater.status.phase === 'available' ? (
+                  <Text style={{ color: theme.accent, fontSize: 12, fontWeight: '700' }}>
+                    Обновить
+                  </Text>
+                ) : null}
+              </Pressable>
+            </View>
+          ) : null}
 
           <ScrollView
             showsVerticalScrollIndicator={false}
