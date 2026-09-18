@@ -46,11 +46,7 @@ export async function checkRemoteMobileRelease(
 
 export async function downloadAndOpenMobileUpdate(
   release: MobileReleaseAsset,
-  onProgress: (progress: {
-    transferred: number
-    total: number
-    percent: number
-  }) => void
+  onProgress: (progress: { transferred: number; total: number; percent: number }) => void
 ): Promise<void> {
   if (!mobileUpdatesSupported()) {
     throw new Error('Установка APK поддерживается только на Android')

@@ -120,11 +120,12 @@ export function Settings({
     })
   }
 
-  const back = page !== 'overview' ? (
-    <View style={{ marginBottom: 12, alignItems: 'flex-start' }}>
-      <Button label="Назад к настройкам" icon="back" onPress={() => setPage('overview')} />
-    </View>
-  ) : null
+  const back =
+    page !== 'overview' ? (
+      <View style={{ marginBottom: 12, alignItems: 'flex-start' }}>
+        <Button label="Назад к настройкам" icon="back" onPress={() => setPage('overview')} />
+      </View>
+    ) : null
 
   if (page === 'profile-sync') {
     return (
@@ -216,8 +217,8 @@ export function Settings({
           <View style={{ gap: 12 }}>
             <Label muted>
               Один локальный файл содержит базу MyMind, вложения заметок и фотографии прогресса
-              тренировок. Хранилище паролей остаётся зашифрованным — открытые
-              пароли и ключ разблокировки в backup не записываются.
+              тренировок. Хранилище паролей остаётся зашифрованным — открытые пароли и ключ
+              разблокировки в backup не записываются.
             </Label>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               <Button

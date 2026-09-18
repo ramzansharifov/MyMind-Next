@@ -72,7 +72,11 @@ export function findLatestMobileRelease(
 
     for (const rawAsset of release.assets) {
       const asset = record(rawAsset)
-      if (!asset || typeof asset.name !== 'string' || typeof asset.browser_download_url !== 'string') {
+      if (
+        !asset ||
+        typeof asset.name !== 'string' ||
+        typeof asset.browser_download_url !== 'string'
+      ) {
         continue
       }
 
@@ -93,9 +97,7 @@ export function findLatestMobileRelease(
     }
   }
 
-  return (
-    candidates.sort((left, right) => compareVersions(right.version, left.version))[0] ?? null
-  )
+  return candidates.sort((left, right) => compareVersions(right.version, left.version))[0] ?? null
 }
 
 export function initialMobileUpdateStatus(currentVersion: string): MobileUpdateStatus {

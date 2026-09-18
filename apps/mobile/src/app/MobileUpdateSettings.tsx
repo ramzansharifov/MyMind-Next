@@ -18,7 +18,9 @@ function statusText(updater: MobileUpdaterController): string {
     case 'checking':
       return 'Проверяем наличие новой версии…'
     case 'available':
-      return status.available ? `Доступна версия ${status.available.version}` : 'Доступно обновление'
+      return status.available
+        ? `Доступна версия ${status.available.version}`
+        : 'Доступно обновление'
     case 'downloading':
       return `Скачивание обновления: ${Math.round(status.percent ?? 0)}%`
     case 'installing':
