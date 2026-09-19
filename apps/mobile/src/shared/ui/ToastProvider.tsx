@@ -37,7 +37,8 @@ type ToastApi = {
 const ToastContext = createContext<ToastApi | null>(null)
 
 function toastId(input: ToastInput): string {
-  return `${input.kind}:${input.key ?? 'app'}`
+  if (input.kind === 'info' && input.key) return `${input.kind}:${input.key}`
+  return `${input.kind}:${input.key ?? 'app'}:${input.message}`
 }
 
 function defaultDuration(kind: ToastKind): number {
