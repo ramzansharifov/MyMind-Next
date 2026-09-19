@@ -15,10 +15,8 @@ import {
 } from '../../shared/ui/primitives'
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { AppDialog } from '../../shared/ui/AppDialog'
-import { ModuleTabs } from '../../shared/ui/ModuleTabs'
 import { ActionMenu } from '../../shared/ui/ActionMenu'
 import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
-import { MobileCreateAction } from '../../shared/ui/MobileCreateAction'
 import { VisualIconBadge } from '../../shared/ui/VisualPickers'
 import { TASK_GROUP_COLOR_CHOICES, TASK_GROUP_ICON_CHOICES } from '../../shared/ui/visual-options'
 import {
@@ -28,9 +26,19 @@ import {
   textField,
   type FormSpec
 } from '../../shared/ui/form-model'
-import { AppIcon } from '../../shared/ui/icons'
+import { AppIcon, type AppIconName } from '../../shared/ui/icons'
 import { useTheme } from '../../shared/ui/theme'
 import { quickTaskInput, taskEditorInput, taskSearchText } from './task-presentation'
+
+const STATUS_FILTERS: ReadonlyArray<{
+  id: 'all' | 'active' | 'completed'
+  label: string
+  icon: AppIconName
+}> = [
+  { id: 'all', label: 'Все задачи', icon: 'tasks' },
+  { id: 'active', label: 'Активные задачи', icon: 'circle' },
+  { id: 'completed', label: 'Выполненные задачи', icon: 'completed' }
+]
 
 export function TasksScreen(): React.JSX.Element {
   const { tasks: api } = useServices()
@@ -130,7 +138,7 @@ export function TasksScreen(): React.JSX.Element {
 
   const move = (task: TaskRecord): void =>
     setForm({
-      title: 'Перенести задачу',
+      title: 'Группа задачи',
       initial: { groupId: task.groupId },
       fields: [choiceField('groupId', 'Группа', groupChoices)],
       save: (values) => {
@@ -162,6 +170,14 @@ export function TasksScreen(): React.JSX.Element {
     () => new Map((state.data?.groups ?? []).map((item) => [item.id, item])),
     [state.data?.groups]
   )
+
+  const activeGroupLabel =
+    group === undefined
+      ? 'Все задачи'
+      : group === null
+        ? 'Без группы'
+        : (groupById.get(group)?.name ?? 'Группа')
+
   const normalizedQuery = query.trim().toLocaleLowerCase('ru')
   const tasks = sortTasks(state.data?.tasks ?? []).filter((task) => {
     if (filter !== 'all' && task.status !== filter) return false
@@ -173,107 +189,129 @@ export function TasksScreen(): React.JSX.Element {
     ).includes(normalizedQuery)
   })
 
-
   return (
-    <View style={{ flex: 1 }}>
-      <View style={{ gap: 10, marginBottom: 12 }}>
+    <View style={{ flex: 1, minHeight: 0 }}>
+      <View style={{ marginBottom: 12 }}>
         <SearchField value={query} onChangeText={setQuery} />
 
-        <ModuleTabs<'all' | 'active' | 'completed'>
-          items={[
-            { id: 'all' as const, label: 'Все' },
-            { id: 'active' as const, label: 'Активные' },
-            { id: 'completed' as const, label: 'Выполненные' }
-          ]}
-          value={filter}
-          onChange={setFilter}
-          compact
-        />
-
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: 8, alignItems: 'center' }}
+        <View
+          style={{
+            minHeight: 50,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 4,
+            padding: 4,
+            borderWidth: 1,
+            borderColor: theme.border,
+            borderRadius: 16,
+            backgroundColor: theme.surface
+          }}
         >
-          <Button
-            label="Все задачи"
-            selected={group === undefined}
-            onPress={() => setGroup(undefined)}
-          />
-          <Button
-            label="Без группы"
-            selected={group === null}
-            onPress={() => setGroup(null)}
-          />
-          {(state.data?.groups ?? []).map((item) => (
-            <Button
-              key={item.id}
-              label={item.name}
-              selected={group === item.id}
-              onPress={() => setGroup(item.id)}
-            />
-          ))}
-          <Button label="Управление группами" icon="folder" onPress={() => setGroupsOpen(true)} />
-        </ScrollView>
+          {STATUS_FILTERS.map((item) => {
+            const selected = filter === item.id
 
-        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'stretch' }}>
+            return (
+              <Pressable
+                key={item.id}
+                accessibilityRole="button"
+                accessibilityLabel={item.label}
+                accessibilityState={{ selected }}
+                disabled={state.pending}
+                onPress={() => setFilter(item.id)}
+                style={({ pressed }) => ({
+                  flex: 1,
+                  minWidth: 0,
+                  height: 40,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: 12,
+                  backgroundColor: selected
+                    ? theme.accent + '18'
+                    : pressed
+                      ? theme.raised
+                      : 'transparent',
+                  opacity: state.pending ? 0.45 : pressed ? 0.72 : 1
+                })}
+              >
+                <AppIcon
+                  name={item.icon}
+                  size={19}
+                  strokeWidth={selected ? 2.4 : 2}
+                  color={selected ? theme.accent : theme.muted}
+                />
+              </Pressable>
+            )
+          })}
+
           <View
             style={{
-              width: 36,
-              minHeight: 44,
+              width: 1,
+              height: 26,
+              marginHorizontal: 2,
+              backgroundColor: theme.border
+            }}
+          />
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Группы. Сейчас: ${activeGroupLabel}`}
+            accessibilityState={{ selected: group !== undefined }}
+            disabled={state.pending}
+            onPress={() => setGroupsOpen(true)}
+            style={({ pressed }) => ({
+              position: 'relative',
+              flex: 1,
+              minWidth: 0,
+              height: 40,
               alignItems: 'center',
               justifyContent: 'center',
               borderRadius: 12,
-              backgroundColor: theme.accent + '14'
-            }}
+              backgroundColor:
+                group !== undefined
+                  ? theme.accent + '18'
+                  : pressed
+                    ? theme.raised
+                    : 'transparent',
+              opacity: state.pending ? 0.45 : pressed ? 0.72 : 1
+            })}
           >
-            <AppIcon name="add" size={16} color={theme.accent} />
-          </View>
-          <TextInput
-            accessibilityLabel="Быстро добавить задачу"
-            placeholder={
-              typeof group === 'string'
-                ? `Новая задача в «${groupById.get(group)?.name ?? ''}»…`
-                : 'Быстро добавить задачу…'
-            }
-            placeholderTextColor={theme.muted}
-            value={quickTitle}
-            onChangeText={setQuickTitle}
-            onSubmitEditing={quickAdd}
-            returnKeyType="done"
-            editable={!state.pending}
-            maxLength={240}
-            style={{
-              flex: 1,
-              minHeight: 44,
-              borderWidth: 1,
-              borderColor: theme.border,
-              backgroundColor: theme.surface,
-              color: theme.text,
-              paddingHorizontal: 14,
-              borderRadius: 12,
-              fontSize: 14
-            }}
-          />
-          <Button
-            label="Добавить"
-            primary
-            disabled={!quickTitle.trim() || state.pending}
-            onPress={quickAdd}
-          />
+            <AppIcon
+              name="folder"
+              size={19}
+              strokeWidth={group !== undefined ? 2.4 : 2}
+              color={group !== undefined ? theme.accent : theme.muted}
+            />
+            {group !== undefined ? (
+              <View
+                pointerEvents="none"
+                style={{
+                  position: 'absolute',
+                  top: 7,
+                  right: 12,
+                  width: 6,
+                  height: 6,
+                  borderRadius: 3,
+                  backgroundColor: theme.accent
+                }}
+              />
+            ) : null}
+          </Pressable>
         </View>
       </View>
 
       {state.error && <ErrorState message={state.error} retry={state.refresh} />}
+
       {state.loading ? (
         <LoadingState />
       ) : (
         <FlatList
+          style={{ flex: 1 }}
           data={tasks}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingBottom: 88 }}
+          contentContainerStyle={{ paddingBottom: 8 }}
           refreshing={state.loading}
           onRefresh={state.refresh}
+          keyboardShouldPersistTaps="handled"
           ListEmptyComponent={<EmptyState />}
           renderItem={({ item }) => {
             const taskGroup = item.groupId ? (groupById.get(item.groupId) ?? null) : null
@@ -334,6 +372,7 @@ export function TasksScreen(): React.JSX.Element {
                     style={{
                       width: 22,
                       height: 22,
+                      flexShrink: 0,
                       alignItems: 'center',
                       justifyContent: 'center',
                       borderRadius: 11,
@@ -347,44 +386,21 @@ export function TasksScreen(): React.JSX.Element {
                     ) : null}
                   </View>
 
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text
-                      numberOfLines={2}
-                      style={{
-                        color: completed ? theme.muted : theme.text,
-                        fontSize: 14,
-                        lineHeight: 20,
-                        fontWeight: '600',
-                        textDecorationLine: completed ? 'line-through' : 'none',
-                        textDecorationColor: completed ? theme.success : undefined
-                      }}
-                    >
-                      {item.title}
-                    </Text>
-                    {taskGroup ? (
-                      <View
-                        style={{
-                          alignSelf: 'flex-start',
-                          marginTop: 6,
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          gap: 5
-                        }}
-                      >
-                        <VisualIconBadge
-                          value={taskGroup.icon}
-                          colorKey={taskGroup.color}
-                          size={24}
-                        />
-                        <Text
-                          numberOfLines={1}
-                          style={{ maxWidth: 120, color: theme.muted, fontSize: 10.5 }}
-                        >
-                          {taskGroup.name}
-                        </Text>
-                      </View>
-                    ) : null}
-                  </View>
+                  <Text
+                    numberOfLines={3}
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                      color: completed ? theme.muted : theme.text,
+                      fontSize: 14,
+                      lineHeight: 20,
+                      fontWeight: '600',
+                      textDecorationLine: completed ? 'line-through' : 'none',
+                      textDecorationColor: completed ? theme.success : undefined
+                    }}
+                  >
+                    {item.title}
+                  </Text>
                 </Pressable>
 
                 <View
@@ -399,8 +415,9 @@ export function TasksScreen(): React.JSX.Element {
                     title={item.title}
                     items={[
                       {
-                        label: 'Перенести',
-                        icon: 'move',
+                        key: 'group',
+                        label: `Группа: ${taskGroup?.name ?? 'Без группы'}`,
+                        icon: 'folder',
                         onPress: () => move(item)
                       },
                       {
@@ -425,30 +442,66 @@ export function TasksScreen(): React.JSX.Element {
           }}
         />
       )}
-      <MobileCreateAction
-        disabled={state.pending}
-        actions={[
-          {
-            key: 'task',
-            label: 'Новая задача',
-            description: 'Открыть полную форму задачи',
-            icon: 'tasks',
-            onPress: () => edit()
-          },
-          {
-            key: 'group',
-            label: 'Новая группа',
-            description: 'Создать отдельный контекст для задач',
-            icon: 'folder',
-            onPress: () => editGroup()
-          }
-        ]}
-      />
+
+      <View
+        style={{
+          paddingTop: 10,
+          paddingBottom: 2,
+          borderTopWidth: 1,
+          borderTopColor: theme.border,
+          backgroundColor: theme.background
+        }}
+      >
+        <View
+          style={{
+            minHeight: 50,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8
+          }}
+        >
+          <TextInput
+            accessibilityLabel="Быстро добавить задачу"
+            placeholder={
+              typeof group === 'string'
+                ? `Новая задача в «${groupById.get(group)?.name ?? ''}»…`
+                : 'Новая задача…'
+            }
+            placeholderTextColor={theme.muted}
+            value={quickTitle}
+            onChangeText={setQuickTitle}
+            onSubmitEditing={quickAdd}
+            returnKeyType="send"
+            editable={!state.pending}
+            maxLength={240}
+            style={{
+              flex: 1,
+              minHeight: 48,
+              borderWidth: 1,
+              borderColor: theme.border,
+              borderRadius: 16,
+              backgroundColor: theme.surface,
+              color: theme.text,
+              paddingHorizontal: 15,
+              paddingVertical: 10,
+              fontSize: 14
+            }}
+          />
+          <IconButton
+            label="Добавить задачу"
+            icon="add"
+            primary
+            disabled={!quickTitle.trim() || state.pending}
+            onPress={quickAdd}
+          />
+        </View>
+      </View>
+
       <AppDialog
         open={groupsOpen}
         onOpenChange={setGroupsOpen}
         title="Группы"
-        description="Фильтр и управление группами задач"
+        description="Выберите группу, измените её или создайте новую"
         icon="folder"
         presentation="sheet"
       >
@@ -519,7 +572,7 @@ export function TasksScreen(): React.JSX.Element {
           ))}
           <View style={{ marginTop: 8, alignItems: 'flex-start' }}>
             <Button
-              label="Новая группа"
+              label="Создать группу"
               icon="add"
               primary
               onPress={() => {
@@ -530,6 +583,7 @@ export function TasksScreen(): React.JSX.Element {
           </View>
         </ScrollView>
       </AppDialog>
+
       {form && <FormSheet spec={form} close={() => setForm(null)} />}
     </View>
   )
