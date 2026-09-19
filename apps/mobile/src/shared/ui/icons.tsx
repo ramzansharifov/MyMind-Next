@@ -11,6 +11,8 @@ import {
   Copy,
   ChevronLeft,
   ChevronRight,
+  Circle,
+  CircleCheckBig,
   CircleHelp,
   Disc3,
   Download,
@@ -48,6 +50,8 @@ export type AppIconName =
   | 'more'
   | 'music'
   | 'calendar'
+  | 'circle'
+  | 'completed'
   | 'diary'
   | 'download'
   | 'workouts'
@@ -84,6 +88,8 @@ const icons: Record<AppIconName, LucideIcon> = {
   more: MoreHorizontal,
   music: Disc3,
   calendar: CalendarDays,
+  circle: Circle,
+  completed: CircleCheckBig,
   diary: BookHeart,
   download: Download,
   workouts: Dumbbell,
