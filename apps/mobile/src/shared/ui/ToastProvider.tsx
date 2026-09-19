@@ -82,10 +82,13 @@ export function ToastProvider({ children }: PropsWithChildren): React.JSX.Elemen
 
     timers.current.set(
       id,
-      setTimeout(() => {
-        timers.current.delete(id)
-        setToasts((current) => current.filter((toast) => toast.id !== id))
-      }, input.durationMs ?? defaultDuration(input.kind))
+      setTimeout(
+        () => {
+          timers.current.delete(id)
+          setToasts((current) => current.filter((toast) => toast.id !== id))
+        },
+        input.durationMs ?? defaultDuration(input.kind)
+      )
     )
   }, [])
 
