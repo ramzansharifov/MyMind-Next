@@ -267,11 +267,7 @@ export function TasksScreen(): React.JSX.Element {
               justifyContent: 'center',
               borderRadius: 12,
               backgroundColor:
-                group !== undefined
-                  ? theme.accent + '18'
-                  : pressed
-                    ? theme.raised
-                    : 'transparent',
+                group !== undefined ? theme.accent + '18' : pressed ? theme.raised : 'transparent',
               opacity: state.pending ? 0.45 : pressed ? 0.72 : 1
             })}
           >
