@@ -1,7 +1,6 @@
 import { Modal, Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
-
 import { navigationRoutes, routeIcons, routeTitles, type Route } from './navigation'
 import type { MobileUpdaterController } from './useMobileUpdater'
 import { AppIcon } from '../shared/ui/icons'
