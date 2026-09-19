@@ -1,7 +1,6 @@
-import { Image, Modal, Pressable, ScrollView, Text, View } from 'react-native'
+import { Modal, Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
-import myMindIcon from '../../assets/icon.png'
 
 import { navigationRoutes, routeIcons, routeTitles, type Route } from './navigation'
 import type { MobileUpdaterController } from './useMobileUpdater'
