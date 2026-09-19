@@ -29,20 +29,20 @@ function Read-PlainTextPassword {
 
 function Set-GitHubSecret {
   param(
-    [Parameter(Mandatory = $true)][string]$Name,
+    [Parameter(Mandatory = $true)][ValidatePattern("^[A-Z0-9_]+$")][string]$Name,
     [Parameter(Mandatory = $true)][string]$Value,
-    [Parameter(Mandatory = $true)][string]$Repo
+    [Parameter(Mandatory = $true)][ValidatePattern("^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")][string]$Repo
   )
 
-  $startInfo = [Diagnostics.ProcessStartInfo]::new()
+  $startInfo = New-Object Diagnostics.ProcessStartInfo
   $startInfo.FileName = "gh"
+  $startInfo.Arguments = "secret set $Name --repo $Repo"
   $startInfo.UseShellExecute = $false
   $startInfo.RedirectStandardInput = $true
   $startInfo.RedirectStandardOutput = $true
   $startInfo.RedirectStandardError = $true
-  if ($Name -notmatch '^[A-Z0-9_]+
 
-  $process = [Diagnostics.Process]::new()
+  $process = New-Object Diagnostics.Process
   $process.StartInfo = $startInfo
 
   if (-not $process.Start()) {
