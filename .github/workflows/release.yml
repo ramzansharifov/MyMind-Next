@@ -152,6 +152,28 @@ jobs:
             $keystorePath,
             [Convert]::FromBase64String($env:MYMIND_ANDROID_KEYSTORE_BASE64)
           )
+
+          $expectedFingerprint = "75fbc676fa8e8b8ed89824fc12f95e03a33fc057b33f034edab85f9a9d890508"
+          $keytoolOutput = keytool -list -v `
+            -keystore $keystorePath `
+            -storepass $env:MYMIND_ANDROID_KEYSTORE_PASSWORD `
+            -alias $env:MYMIND_ANDROID_KEY_ALIAS | Out-String
+
+          if ($LASTEXITCODE -ne 0) {
+            throw "Android release keystore could not be opened"
+          }
+
+          $fingerprintMatch = [regex]::Match($keytoolOutput, "SHA256:\s*([0-9A-Fa-f:]+)")
+          if (-not $fingerprintMatch.Success) {
+            throw "Could not read Android release certificate SHA-256 fingerprint"
+          }
+
+          $actualFingerprint = $fingerprintMatch.Groups[1].Value.Replace(":", "").ToLowerInvariant()
+          if ($actualFingerprint -ne $expectedFingerprint) {
+            throw "Android release signing key fingerprint does not match the permanent MyMind key"
+          }
+
+          Write-Host "[MyMind] Permanent Android signing key fingerprint verified."
           "MYMIND_ANDROID_KEYSTORE_PATH=$keystorePath" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - name: Build signed Android release APK
