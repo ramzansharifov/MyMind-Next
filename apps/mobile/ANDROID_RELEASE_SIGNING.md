@@ -53,6 +53,18 @@ Configure these repository secrets:
 The release workflow reconstructs the JKS only inside the ephemeral GitHub Actions runner,
 builds the signed APK, verifies it with Android `apksigner`, and then discards the runner.
 
+## Permanent signing certificate
+
+The production key is pinned by its public SHA-256 certificate fingerprint:
+
+```text
+75fbc676fa8e8b8ed89824fc12f95e03a33fc057b33f034edab85f9a9d890508
+```
+
+The release workflow verifies this fingerprint before building Android. Replacing the GitHub
+Secrets with another keystore will fail the release instead of publishing an APK that Android
+cannot install over existing MyMind installations.
+
 ## Release invariant
 
 Never replace the signing key after publishing the first production APK. Every later
