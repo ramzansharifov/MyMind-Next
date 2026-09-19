@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { messageFor } from '../ui/form-model'
 import { notifyDataChanged } from '../../app/changes'
 import { useConfirmation } from '../ui/ConfirmationProvider'
-import { useToast } from '../ui/ToastProvider'
+import { useToast } from '../ui/toast-context'
 
 interface CollectionState<T> {
   data: T | null
