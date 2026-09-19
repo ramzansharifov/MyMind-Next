@@ -153,7 +153,7 @@ export function MobileNavigationDrawer({
                 backgroundColor: theme.accent + '12'
               }}
             >
-              <Image source={myMindIcon} resizeMode="contain" style={{ width: 30, height: 30 }} />
+              <AppIcon name="brand" size={22} strokeWidth={2} color={theme.accent} />
             </View>
 
             <View style={{ flex: 1 }}>
