@@ -1,0 +1,49 @@
+name: Verify mobile habits redesign
+
+on:
+  push:
+    branches:
+      - dev
+    paths:
+      - '.github/workflows/verify-mobile-habits-redesign.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Format changed mobile file
+        run: npx prettier --write apps/mobile/src/modules/habits/HabitsScreen.tsx
+
+      - name: Commit formatting if needed
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/mobile/src/modules/habits/HabitsScreen.tsx
+          git diff --cached --quiet
+          if ($LASTEXITCODE -ne 0) {
+            git commit -m "style(mobile): format habits redesign"
+            git push origin HEAD:dev
+          }
+
+      - run: npx prettier --check apps/mobile/src/modules/habits/HabitsScreen.tsx
+      - run: npx eslint apps/mobile/src/modules/habits/HabitsScreen.tsx
+      - run: npm run typecheck:mobile
+      - run: npm run native:node
+      - run: npm run test:mobile
+      - run: npm run export:android
