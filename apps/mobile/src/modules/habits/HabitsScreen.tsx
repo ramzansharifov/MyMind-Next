@@ -37,6 +37,7 @@ import {
 } from '../../shared/ui/form-model'
 import { AppIcon } from '../../shared/ui/icons'
 import { useTheme } from '../../shared/ui/theme'
+import { useToast } from '../../shared/ui/ToastProvider'
 import { HabitsReportsView } from './HabitsReportsView'
 
 const VIEW_FILTERS: ReadonlyArray<{
@@ -62,6 +63,7 @@ const TRACKING_FILTERS: ReadonlyArray<{
 export function HabitsScreen(): React.JSX.Element {
   const { habits: api } = useServices()
   const theme = useTheme()
+  const toast = useToast()
   const [date, setDate] = useState(localDateKey())
   const [view, setView] = useState<'today' | 'all' | 'reports'>('today')
   const [query, setQuery] = useState('')
@@ -228,7 +230,11 @@ export function HabitsScreen(): React.JSX.Element {
                 accessibilityLabel={item.label}
                 accessibilityState={{ selected }}
                 disabled={state.pending}
-                onPress={() => setView(item.id)}
+                onPress={() => {
+                  if (selected) return
+                  setView(item.id)
+                  toast.info(item.label, 'habits-view-filter')
+                }}
                 style={({ pressed }) => ({
                   flex: 1,
                   minWidth: 0,
@@ -330,7 +336,11 @@ export function HabitsScreen(): React.JSX.Element {
                   accessibilityRole="button"
                   accessibilityLabel={item.label}
                   accessibilityState={{ selected }}
-                  onPress={() => setTrackingFilter(item.id)}
+                  onPress={() => {
+                    if (selected) return
+                    setTrackingFilter(item.id)
+                    toast.info(item.label, 'habits-tracking-filter')
+                  }}
                   style={({ pressed }) => ({
                     flex: 1,
                     height: 36,
