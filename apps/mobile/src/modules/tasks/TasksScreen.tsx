@@ -28,7 +28,7 @@ import {
 } from '../../shared/ui/form-model'
 import { AppIcon, type AppIconName } from '../../shared/ui/icons'
 import { useTheme } from '../../shared/ui/theme'
-import { useToast } from '../../shared/ui/ToastProvider'
+import { useToast } from '../../shared/ui/toast-context'
 import { quickTaskInput, taskEditorInput, taskSearchText } from './task-presentation'
 
 const STATUS_FILTERS: ReadonlyArray<{
