@@ -3,6 +3,7 @@ import {
   ArrowLeft,
   ArrowRight,
   BookHeart,
+  BrainCircuit,
   CalendarDays,
   Check,
   ChevronDown,
@@ -41,6 +42,7 @@ import {
 } from 'lucide-react-native'
 
 export type AppIconName =
+  | 'brand'
   | 'home'
   | 'notes'
   | 'tasks'
@@ -79,6 +81,7 @@ export type AppIconName =
   | 'help'
 
 const icons: Record<AppIconName, LucideIcon> = {
+  brand: BrainCircuit,
   home: House,
   notes: Notebook,
   tasks: ListTodo,
