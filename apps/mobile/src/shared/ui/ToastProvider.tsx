@@ -1,15 +1,22 @@
-import {
-  type PropsWithChildren,
-  useCallback,
-  useEffect,
-  useRef,
-  useState
-} from 'react'
+import { type PropsWithChildren, useCallback, useEffect, useRef, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+
 import { AppIcon } from './icons'
+import {
+  ToastContext,
+  type ToastApi,
+  type ToastInput,
+  type ToastKind,
+  type ToastPlacement
+} from './toast-context'
 import { useTheme } from './theme'
-import { ToastContext, function toastId(input: ToastInput): string {
+
+type ToastRecord = ToastInput & {
+  id: string
+}
+
+function toastId(input: ToastInput): string {
   if (input.kind === 'info' && input.key) return `${input.kind}:${input.key}`
   return `${input.kind}:${input.key ?? 'app'}:${input.message}`
 }
@@ -55,13 +62,10 @@ export function ToastProvider({ children }: PropsWithChildren): React.JSX.Elemen
 
     timers.current.set(
       id,
-      setTimeout(
-        () => {
-          timers.current.delete(id)
-          setToasts((current) => current.filter((toast) => toast.id !== id))
-        },
-        input.durationMs ?? defaultDuration(input.kind)
-      )
+      setTimeout(() => {
+        timers.current.delete(id)
+        setToasts((current) => current.filter((toast) => toast.id !== id))
+      }, input.durationMs ?? defaultDuration(input.kind))
     )
   }, [])
 
@@ -123,11 +127,12 @@ export function ToastProvider({ children }: PropsWithChildren): React.JSX.Elemen
           }}
         >
           <AppIcon
-            name={toast.kind === 'error' ? 'info' : toast.kind === 'info' ? 'info' : 'check'}
+            name={toast.kind === 'success' ? 'check' : 'info'}
             size={toast.kind === 'info' ? 14 : 16}
             color={color}
           />
         </View>
+
         <Text
           numberOfLines={2}
           style={{
@@ -185,4 +190,3 @@ export function ToastProvider({ children }: PropsWithChildren): React.JSX.Elemen
     </ToastContext.Provider>
   )
 }
-
