@@ -28,6 +28,7 @@ import {
 } from '../../shared/ui/form-model'
 import { AppIcon, type AppIconName } from '../../shared/ui/icons'
 import { useTheme } from '../../shared/ui/theme'
+import { useToast } from '../../shared/ui/ToastProvider'
 import { quickTaskInput, taskEditorInput, taskSearchText } from './task-presentation'
 
 const STATUS_FILTERS: ReadonlyArray<{
@@ -43,6 +44,7 @@ const STATUS_FILTERS: ReadonlyArray<{
 export function TasksScreen(): React.JSX.Element {
   const { tasks: api } = useServices()
   const theme = useTheme()
+  const toast = useToast()
   const state = useCollection(useCallback(() => api.listTasksOverview(), [api]))
   const [query, setQuery] = useState('')
   const [quickTitle, setQuickTitle] = useState('')
@@ -217,7 +219,11 @@ export function TasksScreen(): React.JSX.Element {
                 accessibilityLabel={item.label}
                 accessibilityState={{ selected }}
                 disabled={state.pending}
-                onPress={() => setFilter(item.id)}
+                onPress={() => {
+                  if (selected) return
+                  setFilter(item.id)
+                  toast.info(item.label, 'tasks-status-filter')
+                }}
                 style={({ pressed }) => ({
                   flex: 1,
                   minWidth: 0,
