@@ -1,0 +1,35 @@
+name: Verify signing helper PowerShell 5.1
+
+on:
+  push:
+    branches:
+      - dev
+    paths:
+      - '.github/workflows/verify-signing-helper-ps51.yml'
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+      - name: Parse helper with Windows PowerShell 5.1
+        shell: powershell
+        run: |
+          $tokens = $null
+          $errors = $null
+          [Management.Automation.Language.Parser]::ParseFile(
+            'apps/mobile/scripts/setup-android-release-signing.ps1',
+            [ref]$tokens,
+            [ref]$errors
+          ) | Out-Null
+          if ($errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Error $_.Message }
+            throw 'PowerShell 5.1 parse failed'
+          }
+          $psi = [Diagnostics.ProcessStartInfo]::new()
+          if ($null -eq $psi.Arguments) {
+            throw 'ProcessStartInfo.Arguments is unavailable'
+          }
+          Write-Host 'Windows PowerShell 5.1 compatibility check passed.'
