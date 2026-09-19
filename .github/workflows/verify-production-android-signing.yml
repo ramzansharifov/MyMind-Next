@@ -1,0 +1,103 @@
+name: Verify production Android signing
+
+on:
+  push:
+    branches:
+      - dev
+    paths:
+      - '.github/workflows/verify-production-android-signing.yml'
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    env:
+      MYMIND_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.MYMIND_ANDROID_KEYSTORE_PASSWORD }}
+      MYMIND_ANDROID_KEY_ALIAS: ${{ secrets.MYMIND_ANDROID_KEY_ALIAS }}
+      MYMIND_ANDROID_KEY_PASSWORD: ${{ secrets.MYMIND_ANDROID_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - run: npm ci
+
+      - name: Verify required signing secrets are available
+        shell: pwsh
+        env:
+          MYMIND_ANDROID_KEYSTORE_BASE64: ${{ secrets.MYMIND_ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          $required = @{
+            MYMIND_ANDROID_KEYSTORE_BASE64 = $env:MYMIND_ANDROID_KEYSTORE_BASE64
+            MYMIND_ANDROID_KEYSTORE_PASSWORD = $env:MYMIND_ANDROID_KEYSTORE_PASSWORD
+            MYMIND_ANDROID_KEY_ALIAS = $env:MYMIND_ANDROID_KEY_ALIAS
+            MYMIND_ANDROID_KEY_PASSWORD = $env:MYMIND_ANDROID_KEY_PASSWORD
+          }
+
+          foreach ($entry in $required.GetEnumerator()) {
+            if ([string]::IsNullOrWhiteSpace($entry.Value)) {
+              throw "Missing required GitHub secret: $($entry.Key)"
+            }
+            Write-Host "[MyMind] Secret available: $($entry.Key)"
+          }
+
+      - name: Restore production JKS inside runner
+        shell: pwsh
+        env:
+          MYMIND_ANDROID_KEYSTORE_BASE64: ${{ secrets.MYMIND_ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          $keystorePath = Join-Path $env:RUNNER_TEMP 'mymind-android-release.jks'
+          [IO.File]::WriteAllBytes(
+            $keystorePath,
+            [Convert]::FromBase64String($env:MYMIND_ANDROID_KEYSTORE_BASE64)
+          )
+          "MYMIND_ANDROID_KEYSTORE_PATH=$keystorePath" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+          keytool -list -v `
+            -keystore $keystorePath `
+            -storepass $env:MYMIND_ANDROID_KEYSTORE_PASSWORD `
+            -alias $env:MYMIND_ANDROID_KEY_ALIAS | Select-String 'Owner:|SHA256:'
+
+          if ($LASTEXITCODE -ne 0) {
+            throw 'Production JKS could not be opened with configured secrets'
+          }
+
+      - name: Build production-signed Android release APK
+        run: npm run build:android:release --workspace=mymind-mobile
+
+      - name: Verify production APK signature
+        shell: pwsh
+        run: |
+          $apk = 'apps/mobile/android/app/build/outputs/apk/release/app-release.apk'
+          if (-not (Test-Path $apk)) {
+            throw 'Production release APK was not generated'
+          }
+
+          $apksigner = Get-ChildItem "$env:ANDROID_HOME\build-tools\*\apksigner.bat" |
+            Sort-Object { [version]$_.Directory.Name } -Descending |
+            Select-Object -First 1
+
+          if (-not $apksigner) {
+            throw 'Android apksigner was not found'
+          }
+
+          & $apksigner.FullName verify --verbose --print-certs $apk
+          if ($LASTEXITCODE -ne 0) {
+            throw 'Production APK signature verification failed'
+          }
+
+          $size = (Get-Item $apk).Length
+          if ($size -le 0) {
+            throw 'Production APK is empty'
+          }
+          Write-Host "[MyMind] Production APK verified. Size: $size bytes"
