@@ -37,7 +37,7 @@ import {
 } from '../../shared/ui/form-model'
 import { AppIcon } from '../../shared/ui/icons'
 import { useTheme } from '../../shared/ui/theme'
-import { useToast } from '../../shared/ui/ToastProvider'
+import { useToast } from '../../shared/ui/toast-context'
 import { HabitsReportsView } from './HabitsReportsView'
 
 const VIEW_FILTERS: ReadonlyArray<{
