@@ -1,8 +1,6 @@
 import {
-  createContext,
   type PropsWithChildren,
   useCallback,
-  useContext,
   useEffect,
   useRef,
   useState
@@ -11,32 +9,7 @@ import { Pressable, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { AppIcon } from './icons'
 import { useTheme } from './theme'
-
-export type ToastKind = 'success' | 'error' | 'info'
-export type ToastPlacement = 'top' | 'bottom'
-
-export type ToastInput = {
-  kind: ToastKind
-  message: string
-  key?: string
-  durationMs?: number
-  placement?: ToastPlacement
-}
-
-type ToastRecord = ToastInput & {
-  id: string
-}
-
-type ToastApi = {
-  show(input: ToastInput): void
-  success(message: string, key?: string): void
-  error(message: string, key?: string): void
-  info(message: string, key?: string, durationMs?: number): void
-}
-
-const ToastContext = createContext<ToastApi | null>(null)
-
-function toastId(input: ToastInput): string {
+import { ToastContext, function toastId(input: ToastInput): string {
   if (input.kind === 'info' && input.key) return `${input.kind}:${input.key}`
   return `${input.kind}:${input.key ?? 'app'}:${input.message}`
 }
@@ -213,8 +186,3 @@ export function ToastProvider({ children }: PropsWithChildren): React.JSX.Elemen
   )
 }
 
-export function useToast(): ToastApi {
-  const value = useContext(ToastContext)
-  if (!value) throw new Error('useToast must be used inside ToastProvider')
-  return value
-}
