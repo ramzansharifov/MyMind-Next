@@ -13,6 +13,29 @@ function Require-Command {
   }
 }
 
+function Resolve-GitHubCliPath {
+  $command = Get-Command "gh" -ErrorAction SilentlyContinue
+  if ($command) {
+    return $command.Source
+  }
+
+  $candidates = @()
+  if ($env:ProgramFiles) {
+    $candidates += (Join-Path $env:ProgramFiles "GitHub CLI\gh.exe")
+  }
+  if (${env:ProgramFiles(x86)}) {
+    $candidates += (Join-Path ${env:ProgramFiles(x86)} "GitHub CLI\gh.exe")
+  }
+
+  foreach ($candidate in $candidates) {
+    if (Test-Path $candidate) {
+      return $candidate
+    }
+  }
+
+  throw "GitHub CLI was not found. Install it from https://cli.github.com/ and retry."
+}
+
 function Read-PlainTextPassword {
   param([Parameter(Mandatory = $true)][string]$Prompt)
 
@@ -31,11 +54,12 @@ function Set-GitHubSecret {
   param(
     [Parameter(Mandatory = $true)][ValidatePattern("^[A-Z0-9_]+$")][string]$Name,
     [Parameter(Mandatory = $true)][string]$Value,
-    [Parameter(Mandatory = $true)][ValidatePattern("^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")][string]$Repo
+    [Parameter(Mandatory = $true)][ValidatePattern("^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")][string]$Repo,
+    [Parameter(Mandatory = $true)][string]$GitHubCliPath
   )
 
   $startInfo = New-Object System.Diagnostics.ProcessStartInfo
-  $startInfo.FileName = "gh"
+  $startInfo.FileName = $GitHubCliPath
   $startInfo.Arguments = "secret set $Name --repo $Repo"
   $startInfo.UseShellExecute = $false
   $startInfo.RedirectStandardInput = $true
@@ -64,10 +88,11 @@ function Set-GitHubSecret {
 }
 
 Require-Command "keytool"
-Require-Command "gh"
+$githubCliPath = Resolve-GitHubCliPath
 
+Write-Host "[MyMind] GitHub CLI: $githubCliPath"
 Write-Host "[MyMind] Checking GitHub CLI authentication..."
-& gh auth status
+& $githubCliPath auth status
 if ($LASTEXITCODE -ne 0) {
   throw "GitHub CLI is not authenticated. Run 'gh auth login' and retry."
 }
@@ -121,10 +146,10 @@ try {
   $keystoreBase64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes($KeystorePath))
 
   Write-Host "[MyMind] Uploading encrypted release material to GitHub Actions secrets..."
-  Set-GitHubSecret -Name "MYMIND_ANDROID_KEYSTORE_BASE64" -Value $keystoreBase64 -Repo $Repository
-  Set-GitHubSecret -Name "MYMIND_ANDROID_KEYSTORE_PASSWORD" -Value $password -Repo $Repository
-  Set-GitHubSecret -Name "MYMIND_ANDROID_KEY_ALIAS" -Value $alias -Repo $Repository
-  Set-GitHubSecret -Name "MYMIND_ANDROID_KEY_PASSWORD" -Value $password -Repo $Repository
+  Set-GitHubSecret -Name "MYMIND_ANDROID_KEYSTORE_BASE64" -Value $keystoreBase64 -Repo $Repository -GitHubCliPath $githubCliPath
+  Set-GitHubSecret -Name "MYMIND_ANDROID_KEYSTORE_PASSWORD" -Value $password -Repo $Repository -GitHubCliPath $githubCliPath
+  Set-GitHubSecret -Name "MYMIND_ANDROID_KEY_ALIAS" -Value $alias -Repo $Repository -GitHubCliPath $githubCliPath
+  Set-GitHubSecret -Name "MYMIND_ANDROID_KEY_PASSWORD" -Value $password -Repo $Repository -GitHubCliPath $githubCliPath
 
   Write-Host ""
   Write-Host "[MyMind] Android production signing is configured."
