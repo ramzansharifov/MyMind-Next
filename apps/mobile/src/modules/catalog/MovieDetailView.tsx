@@ -147,11 +147,19 @@ export function MovieDetailView({
           backgroundColor: theme.surface
         }}
       >
-        <IconButton label="К библиотеке" icon="back" ghost onPress={onBack} disabled={busy} />
+        <Button
+          label="Назад"
+          icon="back"
+          compact
+          ghost
+          onPress={onBack}
+          disabled={busy}
+        />
         <View style={{ flex: 1 }} />
-        <IconButton
-          label="Смотреть фильм"
+        <Button
+          label="Смотреть"
           icon="play"
+          compact
           primary
           onPress={() => onSearchWeb(`Смотреть фильм ${movie.title}`)}
           disabled={busy}
@@ -178,8 +186,7 @@ export function MovieDetailView({
               onPress={() => setPosterOpen(true)}
               style={({ pressed }) => ({
                 width: wide ? 250 : '100%',
-                aspectRatio: wide ? 2 / 3 : 4 / 5,
-                maxHeight: wide ? undefined : 430,
+                aspectRatio: 2 / 3,
                 overflow: 'hidden',
                 backgroundColor: theme.background,
                 alignItems: 'center',
@@ -190,7 +197,7 @@ export function MovieDetailView({
               {movie.posterUrl ? (
                 <Image
                   source={{ uri: movie.posterUrl }}
-                  resizeMode="cover"
+                  resizeMode="contain"
                   style={{ width: '100%', height: '100%' }}
                 />
               ) : (
