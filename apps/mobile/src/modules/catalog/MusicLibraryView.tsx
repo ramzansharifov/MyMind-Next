@@ -206,7 +206,11 @@ function PlaylistCover({ playlist }: { playlist: MusicPlaylistRecord }): React.J
       }}
     >
       {playlist.coverUrl ? (
-        <Image source={{ uri: playlist.coverUrl }} resizeMode="cover" style={{ width: 48, height: 48 }} />
+        <Image
+          source={{ uri: playlist.coverUrl }}
+          resizeMode="cover"
+          style={{ width: 48, height: 48 }}
+        />
       ) : (
         <ListMusic size={20} color={theme.accent} />
       )}
