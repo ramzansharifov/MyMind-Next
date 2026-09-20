@@ -1,4 +1,4 @@
-import { InteractionManager, Pressable, Text, View } from 'react-native'
+import { Pressable, Text, View } from 'react-native'
 import { useState } from 'react'
 
 import { AppDialog } from './AppDialog'
@@ -12,6 +12,19 @@ export interface MobileCreateActionItem {
   icon?: AppIconName
   disabled?: boolean
   onPress(): void
+}
+
+type IdleGlobal = typeof globalThis & {
+  requestIdleCallback?: (callback: () => void) => number
+}
+
+function runWhenIdle(callback: () => void): void {
+  const requestIdle = (globalThis as IdleGlobal).requestIdleCallback
+  if (typeof requestIdle === 'function') {
+    requestIdle(callback)
+    return
+  }
+  setTimeout(callback, 0)
 }
 
 export function MobileCreateAction({
@@ -37,7 +50,7 @@ export function MobileCreateAction({
       return
     }
     setOpen(false)
-    InteractionManager.runAfterInteractions(() => action.onPress())
+    runWhenIdle(() => action.onPress())
   }
 
   const triggerDisabled = disabled || (actions.length === 1 && Boolean(actions[0].disabled))
