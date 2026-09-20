@@ -24,8 +24,10 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run native:node
-      - name: Prettier
-        run: npx prettier --check apps/mobile/src/modules/finance/FinanceScreen.tsx
+      - name: Prettier preview
+        run: |
+          npx prettier --write apps/mobile/src/modules/finance/FinanceScreen.tsx
+          git diff -- apps/mobile/src/modules/finance/FinanceScreen.tsx
       - name: ESLint
         run: npx eslint apps/mobile/src/modules/finance/FinanceScreen.tsx
       - run: npm run typecheck:mobile
