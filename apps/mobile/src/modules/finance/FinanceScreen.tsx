@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import { FlatList, Pressable, ScrollView, Text, View } from 'react-native'
 import {
   BarChart3,
@@ -27,7 +27,7 @@ import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
 import { MobileCreateAction, type MobileCreateActionItem } from '../../shared/ui/MobileCreateAction'
 import { VisualIconBadge } from '../../shared/ui/VisualPickers'
 import type { FormSpec } from '../../shared/ui/form-model'
-import { EmptyState, ErrorState, LoadingState } from '../../shared/ui/primitives'
+import { ErrorState, LoadingState } from '../../shared/ui/primitives'
 import {
   accountForm,
   limitForm,
@@ -107,7 +107,7 @@ function FinanceSection({
 }: {
   title: string
   icon: LucideIcon
-  children: React.ReactNode
+  children: ReactNode
 }): React.JSX.Element {
   const theme = useTheme()
 
@@ -625,7 +625,7 @@ export function FinanceScreen(): React.JSX.Element {
         data={transactions}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingBottom: 96 }}
-        ListEmptyComponent={<EmptyState text="Операций пока нет." />}
+        ListEmptyComponent={<FinanceEmpty text="Операций пока нет." icon={ReceiptText} />}
         renderItem={renderTransaction}
         refreshing={state.loading}
         onRefresh={state.refresh}
@@ -637,7 +637,7 @@ export function FinanceScreen(): React.JSX.Element {
         data={accounts}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingBottom: 96 }}
-        ListEmptyComponent={<EmptyState text="Создайте первый счёт." />}
+        ListEmptyComponent={<FinanceEmpty text="Создайте первый счёт." icon={Landmark} />}
         renderItem={renderAccount}
       />
     )
@@ -647,7 +647,7 @@ export function FinanceScreen(): React.JSX.Element {
         data={tags}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingBottom: 96 }}
-        ListEmptyComponent={<EmptyState text="Создайте первый тег." />}
+        ListEmptyComponent={<FinanceEmpty text="Создайте первый тег." icon={Tags} />}
         renderItem={renderTag}
       />
     )
@@ -657,7 +657,7 @@ export function FinanceScreen(): React.JSX.Element {
         data={limits}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingBottom: 96 }}
-        ListEmptyComponent={<EmptyState text="Лимитов пока нет." />}
+        ListEmptyComponent={<FinanceEmpty text="Лимитов пока нет." icon={Gauge} />}
         renderItem={renderLimit}
       />
     )
@@ -667,7 +667,7 @@ export function FinanceScreen(): React.JSX.Element {
         data={templates}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingBottom: 96 }}
-        ListEmptyComponent={<EmptyState text="Шаблонов пока нет." />}
+        ListEmptyComponent={<FinanceEmpty text="Шаблонов пока нет." icon={Copy} />}
         renderItem={renderTemplate}
       />
     )
