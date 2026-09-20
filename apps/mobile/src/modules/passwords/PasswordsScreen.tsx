@@ -248,6 +248,7 @@ export function PasswordsScreen(): React.JSX.Element {
   const { passwords: api } = useServices()
   const confirm = useConfirmation()
   const toast = useToast()
+  const theme = useTheme()
   const [status, setStatus] = useState<PasswordVaultStatus>(() => api.getPasswordVaultStatus())
   const [overview, setOverview] = useState<PasswordsOverview | null>(null)
   const [loading, setLoading] = useState(false)
@@ -539,7 +540,7 @@ export function PasswordsScreen(): React.JSX.Element {
         )}
       </ScrollView>
     )
-  } elseelse {
+  } else {
     content = (
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 96 }}>
         {filteredItems.length ? (
