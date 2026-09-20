@@ -4,6 +4,7 @@ import {
   ArrowRight,
   BookHeart,
   BrainCircuit,
+  Braces,
   CalendarDays,
   Check,
   ChevronDown,
@@ -79,6 +80,7 @@ export type AppIconName =
   | 'folder'
   | 'info'
   | 'help'
+  | 'json'
 
 const icons: Record<AppIconName, LucideIcon> = {
   brand: BrainCircuit,
@@ -117,7 +119,8 @@ const icons: Record<AppIconName, LucideIcon> = {
   close: X,
   folder: Folder,
   info: Info,
-  help: CircleHelp
+  help: CircleHelp,
+  json: Braces
 }
 
 export function AppIcon({
