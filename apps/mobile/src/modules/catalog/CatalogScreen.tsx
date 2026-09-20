@@ -601,12 +601,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
                   : pressed
                     ? theme.raised
                     : 'transparent',
-                opacity:
-                  state.pending || playlistsView || playlistId
-                    ? 0.34
-                    : pressed
-                      ? 0.72
-                      : 1
+                opacity: state.pending || playlistsView || playlistId ? 0.34 : pressed ? 0.72 : 1
               })}
             >
               <SlidersHorizontal
