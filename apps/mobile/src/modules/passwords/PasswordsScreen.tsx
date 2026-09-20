@@ -85,8 +85,7 @@ function SecurityMetric({
   tone?: 'default' | 'warning' | 'danger'
 }): React.JSX.Element {
   const theme = useTheme()
-  const valueColor =
-    tone === 'danger' ? theme.error : tone === 'warning' ? '#fbbf24' : theme.text
+  const valueColor = tone === 'danger' ? theme.error : tone === 'warning' ? '#fbbf24' : theme.text
 
   return (
     <View
@@ -529,7 +528,10 @@ export function PasswordsScreen(): React.JSX.Element {
               <WorkspaceNodeCard
                 key={item.id}
                 title={item.title}
-                subtitle={[item.username, ...item.securityIssues.map((value) => securityLabels[value])]
+                subtitle={[
+                  item.username,
+                  ...item.securityIssues.map((value) => securityLabels[value])
+                ]
                   .filter(Boolean)
                   .join(' · ')}
                 leadingIcon="info"
