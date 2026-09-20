@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { InteractionManager, Pressable, Text, View } from 'react-native'
+import { Pressable, Text, View } from 'react-native'
 import { AppDialog } from './AppDialog'
 import { AppIcon, type AppIconName } from './icons'
 import { IconButton } from './primitives'
@@ -14,15 +14,30 @@ export type ActionMenuItem = {
   onPress(): void
 }
 
+type IdleGlobal = typeof globalThis & {
+  requestIdleCallback?: (callback: () => void) => number
+}
+
+function runWhenIdle(callback: () => void): void {
+  const requestIdle = (globalThis as IdleGlobal).requestIdleCallback
+  if (typeof requestIdle === 'function') {
+    requestIdle(callback)
+    return
+  }
+  setTimeout(callback, 0)
+}
+
 export function ActionMenu({
   items,
   title = 'Действия',
+  description = 'Выберите действие',
   triggerLabel = 'Дополнительные действия',
   compact = true,
   disabled = false
 }: {
   items: ActionMenuItem[]
   title?: string
+  description?: string
   triggerLabel?: string
   compact?: boolean
   disabled?: boolean
@@ -43,7 +58,7 @@ export function ActionMenu({
         open={open}
         onOpenChange={setOpen}
         title={title}
-        description="Выберите действие"
+        description={description}
         icon="more"
         presentation="sheet"
       >
@@ -59,7 +74,7 @@ export function ActionMenu({
                 onPress={() => {
                   if (item.disabled) return
                   setOpen(false)
-                  InteractionManager.runAfterInteractions(() => item.onPress())
+                  runWhenIdle(() => item.onPress())
                 }}
                 style={({ pressed }) => ({
                   minHeight: 52,
