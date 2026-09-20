@@ -9,7 +9,6 @@ import {
   Heart,
   Layers,
   List,
-  Play,
   Star,
   Tags,
   Users,
@@ -18,7 +17,7 @@ import {
 
 import { AppDialog } from '../../shared/ui/AppDialog'
 import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
-import { Button } from '../../shared/ui/primitives'
+import { Button, IconButton } from '../../shared/ui/primitives'
 import { useTheme } from '../../shared/ui/theme'
 import { formatMovieRuntime, isEpisodicMovieType, movieTypeLabel } from './movie-presentation'
 
@@ -136,16 +135,42 @@ export function MovieDetailView({
     <View style={{ flex: 1 }}>
       <View
         style={{
+          minHeight: 52,
           marginBottom: 12,
           flexDirection: 'row',
-          flexWrap: 'wrap',
           alignItems: 'center',
-          gap: 8
+          gap: 4,
+          padding: 5,
+          borderWidth: 1,
+          borderColor: theme.border,
+          borderRadius: 16,
+          backgroundColor: theme.surface
         }}
       >
-        <Button label="К библиотеке" icon="back" onPress={onBack} disabled={busy} />
-        <Button label="Изменить" icon="edit" onPress={onEdit} disabled={busy} />
-        <Button label="Удалить" icon="delete" danger disabled={busy} onPress={onDelete} />
+        <IconButton
+          label="К библиотеке"
+          icon="back"
+          ghost
+          onPress={onBack}
+          disabled={busy}
+        />
+        <View style={{ flex: 1 }} />
+        <IconButton
+          label="Смотреть фильм"
+          icon="play"
+          primary
+          onPress={() => onSearchWeb(`Смотреть фильм ${movie.title}`)}
+          disabled={busy}
+        />
+        <IconButton label="Изменить" icon="edit" ghost onPress={onEdit} disabled={busy} />
+        <IconButton
+          label="Удалить"
+          icon="delete"
+          danger
+          ghost
+          disabled={busy}
+          onPress={onDelete}
+        />
       </View>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 44 }}>
@@ -154,7 +179,7 @@ export function MovieDetailView({
             overflow: 'hidden',
             borderWidth: 1,
             borderColor: theme.border,
-            borderRadius: 28,
+            borderRadius: 22,
             backgroundColor: theme.surface
           }}
         >
@@ -186,7 +211,7 @@ export function MovieDetailView({
               )}
             </Pressable>
 
-            <View style={{ minWidth: 0, flex: 1, padding: wide ? 28 : 18 }}>
+            <View style={{ minWidth: 0, flex: 1, padding: wide ? 28 : 16 }}>
               <View
                 style={{
                   paddingBottom: 20,
@@ -375,11 +400,6 @@ export function MovieDetailView({
                     </Text>
                   </Pressable>
                 </View>
-                <Button
-                  label="Посмотреть"
-                  primary
-                  onPress={() => onSearchWeb(`Смотреть фильм ${movie.title}`)}
-                />
               </View>
 
               {movie.description ? (
