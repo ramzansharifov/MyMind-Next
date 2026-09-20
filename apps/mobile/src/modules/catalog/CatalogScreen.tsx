@@ -203,11 +203,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
     })
 
   const musicFilters = (): void => {
-    const movieAdvancedFiltersActive = Boolean(
-    genre || type || year || director || actor || minRating || sort !== 'recent'
-  )
-
-  const musicItems = (state.data?.items ?? []) as MusicItemRecord[]
+    const musicItems = (state.data?.items ?? []) as MusicItemRecord[]
     setForm({
       title: 'Фильтры библиотеки',
       initial: { artist: musicArtist, year: musicYear },
@@ -285,6 +281,10 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
             ? (b.year ?? 0) - (a.year ?? 0)
             : b.updatedAt - a.updatedAt
     )
+
+  const movieAdvancedFiltersActive = Boolean(
+    genre || type || year || director || actor || minRating || sort !== 'recent'
+  )
 
   const musicItems = (state.data?.items ?? []) as MusicItemRecord[]
   const musicPlaylists = state.data?.playlists ?? []
