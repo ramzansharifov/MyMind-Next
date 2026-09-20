@@ -276,70 +276,56 @@ function PlaylistCard({
   )
 }
 
-function SectionHeader({
-  view,
+function PlaylistHeader({
   selectedPlaylist,
   onBackToPlaylists,
   onEditPlaylist,
   onDeletePlaylist
 }: {
-  view: MobileMusicView
-  selectedPlaylist: MusicPlaylistRecord | null
+  selectedPlaylist: MusicPlaylistRecord
   onBackToPlaylists(): void
   onEditPlaylist(playlist: MusicPlaylistRecord): void
   onDeletePlaylist(playlist: MusicPlaylistRecord): void
 }): React.JSX.Element {
   const theme = useTheme()
-  const isFavorites = view === 'favorites'
-  const isPlaylists = view === 'playlists' || view === 'playlist'
-  const title =
-    view === 'favorites'
-      ? 'Избранное'
-      : view === 'playlists'
-        ? 'Плейлисты'
-        : view === 'playlist'
-          ? (selectedPlaylist?.name ?? 'Плейлист')
-          : 'Все треки'
-  const Icon = isFavorites ? Heart : isPlaylists ? ListMusic : Music2
 
   return (
     <View
       style={{
         minHeight: 52,
         marginBottom: 10,
-        paddingHorizontal: 16,
+        paddingHorizontal: 12,
         paddingVertical: 10,
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 10,
+        gap: 8,
         borderWidth: 1,
         borderColor: theme.border,
         borderRadius: 16,
         backgroundColor: theme.surface
       }}
     >
-      {view === 'playlist' ? (
-        <IconAction label="К списку плейлистов" icon={ArrowLeft} onPress={onBackToPlaylists} />
-      ) : null}
-      <Icon size={19} color={theme.accent} />
-      <Text numberOfLines={1} style={{ minWidth: 0, flex: 1, color: theme.text, fontSize: 16, fontWeight: '700' }}>
-        {title}
+      <IconAction label="К списку плейлистов" icon={ArrowLeft} onPress={onBackToPlaylists} />
+      <ListMusic size={18} color={theme.accent} />
+      <Text
+        numberOfLines={1}
+        style={{ minWidth: 0, flex: 1, color: theme.text, fontSize: 15, fontWeight: '700' }}
+      >
+        {selectedPlaylist.name}
       </Text>
-      {view === 'playlist' && selectedPlaylist ? (
-        <View style={{ flexDirection: 'row', gap: 1 }}>
-          <IconAction
-            label={`Редактировать плейлист «${selectedPlaylist.name}»`}
-            icon={Pencil}
-            onPress={() => onEditPlaylist(selectedPlaylist)}
-          />
-          <IconAction
-            label={`Удалить плейлист «${selectedPlaylist.name}»`}
-            icon={Trash2}
-            danger
-            onPress={() => onDeletePlaylist(selectedPlaylist)}
-          />
-        </View>
-      ) : null}
+      <View style={{ flexDirection: 'row', gap: 1 }}>
+        <IconAction
+          label={`Редактировать плейлист «${selectedPlaylist.name}»`}
+          icon={Pencil}
+          onPress={() => onEditPlaylist(selectedPlaylist)}
+        />
+        <IconAction
+          label={`Удалить плейлист «${selectedPlaylist.name}»`}
+          icon={Trash2}
+          danger
+          onPress={() => onDeletePlaylist(selectedPlaylist)}
+        />
+      </View>
     </View>
   )
 }
@@ -371,15 +357,15 @@ export function MusicLibraryView({
           ? 'В этом плейлисте пока нет треков.'
           : 'Треков пока нет.'
 
-  const header = (
-    <SectionHeader
-      view={view}
-      selectedPlaylist={selectedPlaylist}
-      onBackToPlaylists={onBackToPlaylists}
-      onEditPlaylist={onEditPlaylist}
-      onDeletePlaylist={onDeletePlaylist}
-    />
-  )
+  const header =
+    view === 'playlist' && selectedPlaylist ? (
+      <PlaylistHeader
+        selectedPlaylist={selectedPlaylist}
+        onBackToPlaylists={onBackToPlaylists}
+        onEditPlaylist={onEditPlaylist}
+        onDeletePlaylist={onDeletePlaylist}
+      />
+    ) : null
 
   if (view === 'playlists') {
     return (
