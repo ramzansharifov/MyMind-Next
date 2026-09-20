@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { groupColorValue } from './VisualPickers'
+import { groupColorValue } from './visual-colors'
 
 describe('mobile visual group colors', () => {
   it('keeps legacy violet groups tied to the current app accent like desktop', () => {
