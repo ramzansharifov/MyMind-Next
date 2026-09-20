@@ -28,13 +28,7 @@ import { MobileCreateAction, type MobileCreateActionItem } from '../../shared/ui
 import { VisualIconBadge } from '../../shared/ui/VisualPickers'
 import type { FormSpec } from '../../shared/ui/form-model'
 import { ErrorState, LoadingState } from '../../shared/ui/primitives'
-import {
-  accountForm,
-  limitForm,
-  tagForm,
-  templateForm,
-  transactionForm
-} from './finance-forms'
+import { accountForm, limitForm, tagForm, templateForm, transactionForm } from './finance-forms'
 import { FinanceReportsView } from './FinanceReportsView'
 import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
 import { useTheme } from '../../shared/ui/theme'
@@ -126,7 +120,9 @@ function FinanceSection({
         >
           <Icon size={14} color={theme.accent} />
         </View>
-        <Text style={{ flex: 1, color: theme.text, fontSize: 14, lineHeight: 19, fontWeight: '700' }}>
+        <Text
+          style={{ flex: 1, color: theme.text, fontSize: 14, lineHeight: 19, fontWeight: '700' }}
+        >
           {title}
         </Text>
       </View>
@@ -135,13 +131,7 @@ function FinanceSection({
   )
 }
 
-function FinanceEmpty({
-  text,
-  icon: Icon
-}: {
-  text: string
-  icon: LucideIcon
-}): React.JSX.Element {
+function FinanceEmpty({ text, icon: Icon }: { text: string; icon: LucideIcon }): React.JSX.Element {
   const theme = useTheme()
 
   return (
@@ -254,7 +244,9 @@ export function FinanceScreen(): React.JSX.Element {
 
   if (state.loading) return <LoadingState />
   if (!data) {
-    return <ErrorState message={state.error || 'Не удалось загрузить финансы'} retry={state.refresh} />
+    return (
+      <ErrorState message={state.error || 'Не удалось загрузить финансы'} retry={state.refresh} />
+    )
   }
 
   const header = (
@@ -449,7 +441,9 @@ export function FinanceScreen(): React.JSX.Element {
               label: 'Изменить',
               icon: 'edit',
               onPress: () =>
-                openForm(limitForm(api, accounts, tags, data.dashboard.settings.baseCurrencyCode, item))
+                openForm(
+                  limitForm(api, accounts, tags, data.dashboard.settings.baseCurrencyCode, item)
+                )
             },
             {
               label: item.state === 'active' ? 'Поставить на паузу' : 'Возобновить',
@@ -582,10 +576,7 @@ export function FinanceScreen(): React.JSX.Element {
             value={formatMoneyMinor(dashboard.expenseMinor, currency)}
             tone="danger"
           />
-          <FinanceMetric
-            label="Итог"
-            value={formatMoneyMinor(dashboard.netMinor, currency)}
-          />
+          <FinanceMetric label="Итог" value={formatMoneyMinor(dashboard.netMinor, currency)} />
         </View>
 
         <FinanceSection title="Счета" icon={Landmark}>
@@ -748,7 +739,9 @@ export function FinanceScreen(): React.JSX.Element {
                     icon: 'finance',
                     disabled: !accounts.length || !tags.some((tag) => tag.type !== 'income'),
                     onPress: () =>
-                      openForm(limitForm(api, accounts, tags, data.dashboard.settings.baseCurrencyCode))
+                      openForm(
+                        limitForm(api, accounts, tags, data.dashboard.settings.baseCurrencyCode)
+                      )
                   }
                 ]
               : tab === 'templates'
