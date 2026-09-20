@@ -248,9 +248,8 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
     }
   }
 
-  const movieItems = (
-    mode === 'movies' ? ((state.data?.items ?? []) as MovieRecord[]) : []
-  ).filter((item) => {
+  const movieItems = (mode === 'movies' ? ((state.data?.items ?? []) as MovieRecord[]) : [])
+    .filter((item) => {
       const minRatingNumber = Number(minRating)
       return (
         (filter === 'all' || (filter === 'favorite' && item.favorite) || item.status === filter) &&
@@ -296,8 +295,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
     genre || type || year || director || actor || minRating || sort !== 'recent'
   )
 
-  const musicItems =
-    mode === 'music' ? ((state.data?.items ?? []) as MusicItemRecord[]) : []
+  const musicItems = mode === 'music' ? ((state.data?.items ?? []) as MusicItemRecord[]) : []
   const musicPlaylists = mode === 'music' ? (state.data?.playlists ?? []) : []
   const selectedPlaylist = playlistId
     ? (musicPlaylists.find((playlist) => playlist.id === playlistId) ?? null)
