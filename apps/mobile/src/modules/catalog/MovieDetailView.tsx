@@ -147,13 +147,7 @@ export function MovieDetailView({
           backgroundColor: theme.surface
         }}
       >
-        <IconButton
-          label="К библиотеке"
-          icon="back"
-          ghost
-          onPress={onBack}
-          disabled={busy}
-        />
+        <IconButton label="К библиотеке" icon="back" ghost onPress={onBack} disabled={busy} />
         <View style={{ flex: 1 }} />
         <IconButton
           label="Смотреть фильм"
@@ -163,14 +157,7 @@ export function MovieDetailView({
           disabled={busy}
         />
         <IconButton label="Изменить" icon="edit" ghost onPress={onEdit} disabled={busy} />
-        <IconButton
-          label="Удалить"
-          icon="delete"
-          danger
-          ghost
-          disabled={busy}
-          onPress={onDelete}
-        />
+        <IconButton label="Удалить" icon="delete" danger ghost disabled={busy} onPress={onDelete} />
       </View>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 44 }}>
@@ -266,7 +253,9 @@ export function MovieDetailView({
 
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel={movie.favorite ? 'Убрать из избранного' : 'Добавить в избранное'}
+                    accessibilityLabel={
+                      movie.favorite ? 'Убрать из избранного' : 'Добавить в избранное'
+                    }
                     accessibilityState={{ selected: movie.favorite, disabled: busy }}
                     disabled={busy}
                     onPress={() => onUpdate({ ...movie, favorite: !movie.favorite })}
@@ -278,7 +267,11 @@ export function MovieDetailView({
                       borderWidth: 1,
                       borderColor: movie.favorite ? '#fb718533' : theme.border,
                       borderRadius: 16,
-                      backgroundColor: movie.favorite ? '#fb718514' : pressed ? theme.raised : theme.surface,
+                      backgroundColor: movie.favorite
+                        ? '#fb718514'
+                        : pressed
+                          ? theme.raised
+                          : theme.surface,
                       opacity: busy ? 0.45 : pressed ? 0.78 : 1
                     })}
                   >
@@ -293,7 +286,9 @@ export function MovieDetailView({
 
               <View style={{ marginTop: 20, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                 <MetadataChip icon={Film} label={movieTypeLabel(movie.type)} />
-                {movie.year !== null ? <MetadataChip icon={CalendarDays} label={String(movie.year)} /> : null}
+                {movie.year !== null ? (
+                  <MetadataChip icon={CalendarDays} label={String(movie.year)} />
+                ) : null}
                 {!episodic && runtime ? <MetadataChip icon={Clock3} label={runtime} /> : null}
                 {episodic && movie.seasonCount !== null ? (
                   <MetadataChip icon={Layers} label={`Сезонов: ${movie.seasonCount}`} />
@@ -324,7 +319,14 @@ export function MovieDetailView({
                 <View style={{ marginTop: 16 }}>
                   <PersonRow label="Режиссёр" icon={Clapperboard}>
                     <Pressable onPress={() => onSearchWeb(movie.director)}>
-                      <Text style={{ color: theme.text, fontSize: 13, lineHeight: 22, fontWeight: '600' }}>
+                      <Text
+                        style={{
+                          color: theme.text,
+                          fontSize: 13,
+                          lineHeight: 22,
+                          fontWeight: '600'
+                        }}
+                      >
                         {movie.director}
                       </Text>
                     </Pressable>
@@ -337,7 +339,14 @@ export function MovieDetailView({
                   <PersonRow label="Актёры" icon={Users}>
                     {movie.actors.map((actor) => (
                       <Pressable key={actor} onPress={() => onSearchWeb(actor)}>
-                        <Text style={{ color: theme.text, fontSize: 13, lineHeight: 22, fontWeight: '600' }}>
+                        <Text
+                          style={{
+                            color: theme.text,
+                            fontSize: 13,
+                            lineHeight: 22,
+                            fontWeight: '600'
+                          }}
+                        >
                           {actor}
                         </Text>
                       </Pressable>
@@ -372,14 +381,31 @@ export function MovieDetailView({
                       borderWidth: watched ? 1 : 0,
                       borderColor: '#34d39933',
                       borderRadius: 8,
-                      backgroundColor: watched ? '#34d39914' : pressed ? theme.raised : 'transparent'
+                      backgroundColor: watched
+                        ? '#34d39914'
+                        : pressed
+                          ? theme.raised
+                          : 'transparent'
                     })}
                   >
-                    <Text style={{ color: watched ? '#6ee7b7' : theme.muted, fontSize: 13, fontWeight: watched ? '700' : '500' }}>
+                    <Text
+                      style={{
+                        color: watched ? '#6ee7b7' : theme.muted,
+                        fontSize: 13,
+                        fontWeight: watched ? '700' : '500'
+                      }}
+                    >
                       Просмотрено
                     </Text>
                   </Pressable>
-                  <View style={{ width: 1, height: 20, marginHorizontal: 4, backgroundColor: theme.border }} />
+                  <View
+                    style={{
+                      width: 1,
+                      height: 20,
+                      marginHorizontal: 4,
+                      backgroundColor: theme.border
+                    }}
+                  />
                   <Pressable
                     accessibilityRole="button"
                     accessibilityState={{ selected: !watched, disabled: busy }}
@@ -392,10 +418,20 @@ export function MovieDetailView({
                       borderWidth: !watched ? 1 : 0,
                       borderColor: theme.accent + '44',
                       borderRadius: 8,
-                      backgroundColor: !watched ? theme.accent + '14' : pressed ? theme.raised : 'transparent'
+                      backgroundColor: !watched
+                        ? theme.accent + '14'
+                        : pressed
+                          ? theme.raised
+                          : 'transparent'
                     })}
                   >
-                    <Text style={{ color: !watched ? theme.accent : theme.muted, fontSize: 13, fontWeight: !watched ? '700' : '500' }}>
+                    <Text
+                      style={{
+                        color: !watched ? theme.accent : theme.muted,
+                        fontSize: 13,
+                        fontWeight: !watched ? '700' : '500'
+                      }}
+                    >
                       Хочу посмотреть
                     </Text>
                   </Pressable>
@@ -413,7 +449,9 @@ export function MovieDetailView({
                     backgroundColor: theme.background
                   }}
                 >
-                  <Text style={{ color: theme.text, fontSize: 14, fontWeight: '700' }}>Описание</Text>
+                  <Text style={{ color: theme.text, fontSize: 14, fontWeight: '700' }}>
+                    Описание
+                  </Text>
                   <Text style={{ marginTop: 10, color: theme.muted, fontSize: 14, lineHeight: 25 }}>
                     {movie.description}
                   </Text>
@@ -491,10 +529,20 @@ export function MovieDetailView({
                   borderColor: pendingRating === rating ? '#fbbf2459' : theme.border,
                   borderRadius: 12,
                   backgroundColor:
-                    pendingRating === rating ? '#fbbf2426' : pressed ? theme.raised : theme.background
+                    pendingRating === rating
+                      ? '#fbbf2426'
+                      : pressed
+                        ? theme.raised
+                        : theme.background
                 })}
               >
-                <Text style={{ color: pendingRating === rating ? '#fde68a' : theme.muted, fontSize: 14, fontWeight: '600' }}>
+                <Text
+                  style={{
+                    color: pendingRating === rating ? '#fde68a' : theme.muted,
+                    fontSize: 14,
+                    fontWeight: '600'
+                  }}
+                >
                   {rating}
                 </Text>
               </Pressable>
@@ -530,7 +578,11 @@ export function MovieDetailView({
             <Text style={{ color: '#fff', fontSize: 22 }}>×</Text>
           </Pressable>
           {movie.posterUrl ? (
-            <Image source={{ uri: movie.posterUrl }} resizeMode="contain" style={{ flex: 1, width: '100%' }} />
+            <Image
+              source={{ uri: movie.posterUrl }}
+              resizeMode="contain"
+              style={{ flex: 1, width: '100%' }}
+            />
           ) : null}
         </View>
       </Modal>
