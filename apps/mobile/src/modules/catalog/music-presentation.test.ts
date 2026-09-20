@@ -8,6 +8,7 @@ import {
   musicRecordToUpdateInput,
   musicTrackDraftFromItem,
   musicTrackInputFromDraft,
+  musicYoutubeSearchUrl,
   parseMusicDuration
 } from './music-presentation'
 
@@ -103,6 +104,15 @@ describe('mobile music presentation helpers', () => {
     expect(input).not.toHaveProperty('createdAt')
     expect(input).not.toHaveProperty('updatedAt')
     expect(updateMusicItemInputSchema.parse(input)).toEqual(input)
+  })
+
+  it('builds the same YouTube search URL as desktop track playback', () => {
+    expect(musicYoutubeSearchUrl(track())).toBe(
+      'https://www.youtube.com/results?search_query=Blinding%20Lights%20The%20Weeknd'
+    )
+    expect(musicYoutubeSearchUrl(track({ title: 'Молитва', artists: ['БИ-2'] }))).toBe(
+      'https://www.youtube.com/results?search_query=%D0%9C%D0%BE%D0%BB%D0%B8%D1%82%D0%B2%D0%B0%20%D0%91%D0%98-2'
+    )
   })
 
   it('derives stable artist and year filter choices from existing records', () => {
