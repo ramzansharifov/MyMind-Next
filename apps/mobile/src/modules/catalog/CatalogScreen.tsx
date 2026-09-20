@@ -33,6 +33,7 @@ import {
   musicFilterYears,
   musicRecordToUpdateInput,
   musicTrackDraftFromItem,
+  musicYoutubeSearchUrl,
   musicTrackInputFromDraft
 } from './music-presentation'
 
@@ -656,8 +657,10 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
           onOpenTrack={editTrack}
           onToggleFavorite={(item) => updateMusic({ ...item, favorite: !item.favorite })}
           onSearchWeb={(item) => {
-            const artist = item.artists[0]
-            void webSearch(`Слушать ${item.title}${artist ? ` ${artist}` : ''}`)
+            setWebError('')
+            void Linking.openURL(musicYoutubeSearchUrl(item)).catch((reason) => {
+              setWebError(messageFor(reason))
+            })
           }}
           onDeleteTrack={(item) =>
             state.confirmDelete(
