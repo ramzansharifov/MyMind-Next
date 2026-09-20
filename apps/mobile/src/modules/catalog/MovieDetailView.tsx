@@ -147,14 +147,7 @@ export function MovieDetailView({
           backgroundColor: theme.surface
         }}
       >
-        <Button
-          label="Назад"
-          icon="back"
-          compact
-          ghost
-          onPress={onBack}
-          disabled={busy}
-        />
+        <Button label="Назад" icon="back" compact ghost onPress={onBack} disabled={busy} />
         <View style={{ flex: 1 }} />
         <Button
           label="Смотреть"
