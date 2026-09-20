@@ -1,6 +1,15 @@
 import { useCallback, useState } from 'react'
-import { Linking, View } from 'react-native'
-import { Bookmark, Check, Heart, ListMusic, Music2 } from 'lucide-react-native'
+import { Linking, Pressable, View } from 'react-native'
+import {
+  Bookmark,
+  Check,
+  Film,
+  Heart,
+  ListMusic,
+  Music2,
+  SlidersHorizontal,
+  type LucideIcon
+} from 'lucide-react-native'
 import type { MovieRecord } from '@mymind/contracts/movies'
 import type { MusicItemRecord, MusicPlaylistRecord } from '@mymind/contracts/music'
 import * as moviesSchema from '@mymind/core/validation/movies'
@@ -12,6 +21,8 @@ import { FormSheet } from '../../shared/ui/FormSheet'
 import { MobileCreateAction } from '../../shared/ui/MobileCreateAction'
 import { ModuleTabs } from '../../shared/ui/ModuleTabs'
 import { choiceField, messageFor, textField, type FormSpec } from '../../shared/ui/form-model'
+import { useTheme } from '../../shared/ui/theme'
+import { useToast } from '../../shared/ui/toast-context'
 import { movieFields, movieValues, normalizeMovieFormValues } from './catalog-forms'
 import { CatalogJsonImportModal } from './CatalogJsonImportModal'
 import { MovieDetailView } from './MovieDetailView'
@@ -26,8 +37,21 @@ import {
   musicTrackInputFromDraft
 } from './music-presentation'
 
+const MOVIE_STATUS_FILTERS: ReadonlyArray<{
+  id: 'all' | 'watchlist' | 'watched' | 'favorite'
+  label: string
+  icon: LucideIcon
+}> = [
+  { id: 'all', label: 'Все фильмы', icon: Film },
+  { id: 'watchlist', label: 'Хочу посмотреть', icon: Bookmark },
+  { id: 'watched', label: 'Просмотрено', icon: Check },
+  { id: 'favorite', label: 'Избранное', icon: Heart }
+]
+
 export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX.Element {
   const services = useServices()
+  const theme = useTheme()
+  const toast = useToast()
   const state = useCollection(
     useCallback(() => {
       if (mode === 'movies') {
@@ -179,7 +203,11 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
     })
 
   const musicFilters = (): void => {
-    const musicItems = (state.data?.items ?? []) as MusicItemRecord[]
+    const movieAdvancedFiltersActive = Boolean(
+    genre || type || year || director || actor || minRating || sort !== 'recent'
+  )
+
+  const musicItems = (state.data?.items ?? []) as MusicItemRecord[]
     setForm({
       title: 'Фильтры библиотеки',
       initial: { artist: musicArtist, year: musicYear },
@@ -359,26 +387,111 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
       <View style={{ gap: 8, marginBottom: 12 }}>
         <SearchField value={query} onChangeText={setQuery} />
         {mode === 'movies' ? (
-          <>
-            <ModuleTabs
-              items={[
-                { id: 'all' as const, label: 'Все' },
-                { id: 'watchlist' as const, label: 'Хочу посмотреть', icon: Bookmark },
-                { id: 'watched' as const, label: 'Просмотрено', icon: Check },
-                { id: 'favorite' as const, label: 'Избранное', icon: Heart }
-              ]}
-              value={
-                filter === 'watchlist' || filter === 'watched' || filter === 'favorite'
-                  ? filter
-                  : 'all'
-              }
-              onChange={setFilter}
+          <View
+            style={{
+              minHeight: 50,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 4,
+              padding: 4,
+              borderWidth: 1,
+              borderColor: theme.border,
+              borderRadius: 16,
+              backgroundColor: theme.surface
+            }}
+          >
+            {MOVIE_STATUS_FILTERS.map((item) => {
+              const selected = filter === item.id
+              const Icon = item.icon
+
+              return (
+                <Pressable
+                  key={item.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={item.label}
+                  accessibilityState={{ selected }}
+                  disabled={state.pending}
+                  onPress={() => {
+                    if (selected) return
+                    setFilter(item.id)
+                    toast.info(item.label, 'movies-status-filter')
+                  }}
+                  style={({ pressed }) => ({
+                    flex: 1,
+                    minWidth: 0,
+                    height: 40,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: 12,
+                    backgroundColor: selected
+                      ? theme.accent + '18'
+                      : pressed
+                        ? theme.raised
+                        : 'transparent',
+                    opacity: state.pending ? 0.45 : pressed ? 0.72 : 1
+                  })}
+                >
+                  <Icon
+                    size={19}
+                    strokeWidth={selected ? 2.4 : 2}
+                    color={selected ? theme.accent : theme.muted}
+                  />
+                </Pressable>
+              )
+            })}
+
+            <View
+              style={{
+                width: 1,
+                height: 26,
+                marginHorizontal: 2,
+                backgroundColor: theme.border
+              }}
             />
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              <Button label="Фильтры" onPress={movieFilters} />
-              <Button label="Из JSON" onPress={() => setJsonImportOpen(true)} />
-            </View>
-          </>
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Фильтры и сортировка"
+              accessibilityState={{ selected: movieAdvancedFiltersActive }}
+              disabled={state.pending}
+              onPress={movieFilters}
+              style={({ pressed }) => ({
+                position: 'relative',
+                flex: 1,
+                minWidth: 0,
+                height: 40,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 12,
+                backgroundColor: movieAdvancedFiltersActive
+                  ? theme.accent + '18'
+                  : pressed
+                    ? theme.raised
+                    : 'transparent',
+                opacity: state.pending ? 0.45 : pressed ? 0.72 : 1
+              })}
+            >
+              <SlidersHorizontal
+                size={19}
+                strokeWidth={movieAdvancedFiltersActive ? 2.4 : 2}
+                color={movieAdvancedFiltersActive ? theme.accent : theme.muted}
+              />
+              {movieAdvancedFiltersActive ? (
+                <View
+                  pointerEvents="none"
+                  style={{
+                    position: 'absolute',
+                    top: 7,
+                    right: 10,
+                    width: 6,
+                    height: 6,
+                    borderRadius: 3,
+                    backgroundColor: theme.accent
+                  }}
+                />
+              ) : null}
+            </Pressable>
+          </View>
         ) : (
           <>
             <ModuleTabs
@@ -466,15 +579,24 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
       )}
 
       <MobileCreateAction
+        label={mode === 'movies' ? 'Добавить фильм' : 'Создать'}
+        iconOnly={mode === 'movies'}
         actions={
           mode === 'movies'
             ? [
                 {
-                  key: 'movie',
-                  label: 'Добавить фильм',
-                  description: 'Создать запись фильма или сериала',
+                  key: 'movie-form',
+                  label: 'Заполнить форму',
+                  description: 'Добавить фильм или сериал вручную',
                   icon: 'movies',
                   onPress: () => editMovie()
+                },
+                {
+                  key: 'movie-json',
+                  label: 'Из JSON',
+                  description: 'Импортировать одну или несколько записей',
+                  icon: 'json',
+                  onPress: () => setJsonImportOpen(true)
                 }
               ]
             : [
