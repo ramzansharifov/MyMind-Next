@@ -1,0 +1,33 @@
+name: Verify mobile movie poster UI
+
+on:
+  push:
+    branches:
+      - dev
+    paths:
+      - "apps/mobile/src/modules/catalog/MovieDetailView.tsx"
+      - ".github/workflows/verify-mobile-movie-poster-ui.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run native:node
+      - name: Prettier
+        run: npx prettier --check apps/mobile/src/modules/catalog/MovieDetailView.tsx
+      - name: ESLint
+        run: npx eslint apps/mobile/src/modules/catalog/MovieDetailView.tsx
+      - run: npm run typecheck:mobile
+      - run: npm run test:mobile
+      - run: npm run export:android
