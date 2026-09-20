@@ -91,8 +91,9 @@ function SecurityMetric({
   return (
     <View
       style={{
-        minWidth: 0,
-        flex: 1,
+        minWidth: 140,
+        flexGrow: 1,
+        flexBasis: '46%',
         minHeight: 76,
         paddingHorizontal: 12,
         paddingVertical: 10,
@@ -481,7 +482,7 @@ export function PasswordsScreen(): React.JSX.Element {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 96, gap: 16 }}
       >
-        <View style={{ flexDirection: 'row', gap: 8 }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           <SecurityMetric label="Всего" value={securitySummary.total} />
           <SecurityMetric label="Слабые" value={securitySummary.weak} tone="danger" />
           <SecurityMetric label="Повторы" value={securitySummary.reused} tone="warning" />
