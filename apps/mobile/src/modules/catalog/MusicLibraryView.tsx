@@ -156,7 +156,7 @@ function TrackCard({
         items={[
           {
             key: 'play',
-            label: 'Найти и слушать',
+            label: 'Открыть на YouTube',
             icon: 'play',
             onPress: onSearchWeb
           },
