@@ -72,6 +72,7 @@ import {
 } from 'lucide-react-native'
 import type { VisualIconFamily } from './visual-options'
 import { AppIcon } from './icons'
+import { groupColorValue } from './visual-colors'
 import { useTheme } from './theme'
 
 const visualIcons: Record<string, LucideIcon> = {
@@ -158,21 +159,6 @@ const visualIcons: Record<string, LucideIcon> = {
   'trending-up': TrendingUp,
   'repeat-2': Repeat2,
   tag: Tag
-}
-
-export function groupColorValue(value: string | null | undefined, accent: string): string {
-  // Desktop keeps the legacy "violet" group value semantic: it follows the app accent.
-  if (!value || value === 'accent' || value === 'violet') return accent
-  const colors: Record<string, string> = {
-    blue: '#60a5fa',
-    cyan: '#22d3ee',
-    emerald: '#34d399',
-    amber: '#fbbf24',
-    orange: '#fb923c',
-    rose: '#fb7185',
-    pink: '#f472b6'
-  }
-  return colors[value] ?? accent
 }
 
 export function VisualIconGlyph({
