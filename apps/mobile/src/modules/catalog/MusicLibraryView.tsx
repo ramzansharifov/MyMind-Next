@@ -1,6 +1,6 @@
 import { FlatList, Image, Pressable, Text, View } from 'react-native'
 import type { MusicItemRecord, MusicPlaylistRecord } from '@mymind/contracts/music'
-import { ArrowLeft, ListMusic, Music2, Pencil, Trash2, type LucideIcon } from 'lucide-react-native'
+import { ArrowLeft, Heart, ListMusic, Music2, Pencil, Trash2, type LucideIcon } from 'lucide-react-native'
 
 import { ActionMenu } from '../../shared/ui/ActionMenu'
 import { EmptyState } from '../../shared/ui/primitives'
