@@ -21,6 +21,7 @@ import {
   Dumbbell,
   Film,
   Folder,
+  Heart,
   House,
   Info,
   KeyRound,
@@ -30,6 +31,7 @@ import {
   MoveRight,
   Notebook,
   Pencil,
+  Play,
   Plus,
   Repeat2,
   RotateCcw,
@@ -81,6 +83,8 @@ export type AppIconName =
   | 'info'
   | 'help'
   | 'json'
+  | 'favorite'
+  | 'play'
 
 const icons: Record<AppIconName, LucideIcon> = {
   brand: BrainCircuit,
@@ -120,7 +124,9 @@ const icons: Record<AppIconName, LucideIcon> = {
   folder: Folder,
   info: Info,
   help: CircleHelp,
-  json: Braces
+  json: Braces,
+  favorite: Heart,
+  play: Play
 }
 
 export function AppIcon({
