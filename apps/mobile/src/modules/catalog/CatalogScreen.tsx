@@ -16,10 +16,9 @@ import * as moviesSchema from '@mymind/core/validation/movies'
 import * as musicSchema from '@mymind/core/validation/music'
 import { useServices } from '../../app/context'
 import { useCollection } from '../../shared/hooks/useCollection'
-import { Button, ErrorState, LoadingState, SearchField } from '../../shared/ui/primitives'
+import { ErrorState, LoadingState, SearchField } from '../../shared/ui/primitives'
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { MobileCreateAction } from '../../shared/ui/MobileCreateAction'
-import { ModuleTabs } from '../../shared/ui/ModuleTabs'
 import { choiceField, messageFor, textField, type FormSpec } from '../../shared/ui/form-model'
 import { useTheme } from '../../shared/ui/theme'
 import { useToast } from '../../shared/ui/toast-context'
@@ -46,6 +45,16 @@ const MOVIE_STATUS_FILTERS: ReadonlyArray<{
   { id: 'watchlist', label: 'Хочу посмотреть', icon: Bookmark },
   { id: 'watched', label: 'Просмотрено', icon: Check },
   { id: 'favorite', label: 'Избранное', icon: Heart }
+]
+
+const MUSIC_VIEW_FILTERS: ReadonlyArray<{
+  id: 'tracks' | 'favorites' | 'playlists'
+  label: string
+  icon: LucideIcon
+}> = [
+  { id: 'tracks', label: 'Все треки', icon: Music2 },
+  { id: 'favorites', label: 'Избранное', icon: Heart },
+  { id: 'playlists', label: 'Плейлисты', icon: ListMusic }
 ]
 
 export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX.Element {
@@ -319,6 +328,7 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
         : 'tracks'
   const musicEmptyBecauseFilter =
     Boolean(normalizedQuery) || Boolean(musicArtist) || Boolean(musicYear)
+  const musicAdvancedFiltersActive = Boolean(musicArtist || musicYear)
 
   const selectedMovie = selectedMovieId
     ? ((state.data?.items as MovieRecord[] | undefined)?.find(
@@ -493,35 +503,133 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
             </Pressable>
           </View>
         ) : (
-          <>
-            <ModuleTabs
-              items={[
-                { id: 'tracks' as const, label: 'Все треки', icon: Music2 },
-                { id: 'favorites' as const, label: 'Избранное', icon: Heart },
-                { id: 'playlists' as const, label: 'Плейлисты', icon: ListMusic }
-              ]}
-              value={musicView === 'playlist' ? 'playlists' : musicView}
-              onChange={(next) => {
-                setQuery('')
-                setPlaylistId(null)
-                if (next === 'favorites') {
-                  setFilter('favorite')
-                  setPlaylistsView(false)
-                } else if (next === 'playlists') {
-                  setFilter('all')
-                  setPlaylistsView(true)
-                } else {
-                  setFilter('all')
-                  setPlaylistsView(false)
-                }
+          <View
+            style={{
+              minHeight: 50,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 4,
+              padding: 4,
+              borderWidth: 1,
+              borderColor: theme.border,
+              borderRadius: 16,
+              backgroundColor: theme.surface
+            }}
+          >
+            {MUSIC_VIEW_FILTERS.map((item) => {
+              const selected =
+                musicView === item.id || (musicView === 'playlist' && item.id === 'playlists')
+              const Icon = item.icon
+
+              return (
+                <Pressable
+                  key={item.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={item.label}
+                  accessibilityState={{ selected }}
+                  disabled={state.pending}
+                  onPress={() => {
+                    if (selected && musicView !== 'playlist') return
+                    setQuery('')
+                    setPlaylistId(null)
+
+                    if (item.id === 'favorites') {
+                      setFilter('favorite')
+                      setPlaylistsView(false)
+                    } else if (item.id === 'playlists') {
+                      setFilter('all')
+                      setPlaylistsView(true)
+                    } else {
+                      setFilter('all')
+                      setPlaylistsView(false)
+                    }
+
+                    toast.info(item.label, 'music-view-filter')
+                  }}
+                  style={({ pressed }) => ({
+                    flex: 1,
+                    minWidth: 0,
+                    height: 40,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: 12,
+                    backgroundColor: selected
+                      ? theme.accent + '18'
+                      : pressed
+                        ? theme.raised
+                        : 'transparent',
+                    opacity: state.pending ? 0.45 : pressed ? 0.72 : 1
+                  })}
+                >
+                  <Icon
+                    size={19}
+                    strokeWidth={selected ? 2.4 : 2}
+                    color={selected ? theme.accent : theme.muted}
+                  />
+                </Pressable>
+              )
+            })}
+
+            <View
+              style={{
+                width: 1,
+                height: 26,
+                marginHorizontal: 2,
+                backgroundColor: theme.border
               }}
             />
-            {!playlistsView && !playlistId ? (
-              <View style={{ alignItems: 'flex-start' }}>
-                <Button label="Фильтры" onPress={musicFilters} />
-              </View>
-            ) : null}
-          </>
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Фильтры музыки"
+              accessibilityState={{
+                disabled: playlistsView || Boolean(playlistId),
+                selected: musicAdvancedFiltersActive
+              }}
+              disabled={state.pending || playlistsView || Boolean(playlistId)}
+              onPress={musicFilters}
+              style={({ pressed }) => ({
+                position: 'relative',
+                flex: 1,
+                minWidth: 0,
+                height: 40,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 12,
+                backgroundColor: musicAdvancedFiltersActive
+                  ? theme.accent + '18'
+                  : pressed
+                    ? theme.raised
+                    : 'transparent',
+                opacity:
+                  state.pending || playlistsView || playlistId
+                    ? 0.34
+                    : pressed
+                      ? 0.72
+                      : 1
+              })}
+            >
+              <SlidersHorizontal
+                size={19}
+                strokeWidth={musicAdvancedFiltersActive ? 2.4 : 2}
+                color={musicAdvancedFiltersActive ? theme.accent : theme.muted}
+              />
+              {musicAdvancedFiltersActive ? (
+                <View
+                  pointerEvents="none"
+                  style={{
+                    position: 'absolute',
+                    top: 7,
+                    right: 10,
+                    width: 6,
+                    height: 6,
+                    borderRadius: 3,
+                    backgroundColor: theme.accent
+                  }}
+                />
+              ) : null}
+            </Pressable>
+          </View>
         )}
       </View>
 
@@ -579,8 +687,8 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
       )}
 
       <MobileCreateAction
-        label={mode === 'movies' ? 'Добавить фильм' : 'Создать'}
-        iconOnly={mode === 'movies'}
+        label={mode === 'movies' ? 'Добавить фильм' : 'Добавить музыку'}
+        iconOnly
         actions={
           mode === 'movies'
             ? [
@@ -609,8 +717,8 @@ export function CatalogScreen({ mode }: { mode: 'movies' | 'music' }): React.JSX
                 },
                 {
                   key: 'playlist',
-                  label: 'Новый плейлист',
-                  description: 'Создать плейлист и добавить в него треки',
+                  label: 'Создать плейлист',
+                  description: 'Создать плейлист и затем добавить в него треки',
                   icon: 'folder',
                   onPress: () => editPlaylist()
                 }
