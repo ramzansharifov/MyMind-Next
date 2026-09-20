@@ -1,6 +1,16 @@
 import { useCallback, useMemo, useState } from 'react'
-import { FlatList, ScrollView, View } from 'react-native'
-import { BarChart3, Copy, Gauge, Home, Landmark, ReceiptText, Tags } from 'lucide-react-native'
+import { FlatList, Pressable, ScrollView, Text, View } from 'react-native'
+import {
+  BarChart3,
+  Copy,
+  Gauge,
+  Home,
+  Landmark,
+  ReceiptText,
+  Tags,
+  Wallet,
+  type LucideIcon
+} from 'lucide-react-native'
 import type {
   FinanceAccountSummary,
   FinanceLimitStatus,
@@ -12,9 +22,8 @@ import { formatMoneyMinor } from '@mymind/core/finance-money'
 import { useServices } from '../../app/context'
 import { useCollection } from '../../shared/hooks/useCollection'
 import { FormSheet } from '../../shared/ui/FormSheet'
-import { ModuleTabs } from '../../shared/ui/ModuleTabs'
 import { ActionMenu } from '../../shared/ui/ActionMenu'
-import { WorkspaceNodeCard, WorkspacePanel, WorkspaceStatCard } from '../../shared/ui/Workspace'
+import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
 import { MobileCreateAction, type MobileCreateActionItem } from '../../shared/ui/MobileCreateAction'
 import { VisualIconBadge } from '../../shared/ui/VisualPickers'
 import type { FormSpec } from '../../shared/ui/form-model'
@@ -28,8 +37,145 @@ import {
 } from './finance-forms'
 import { FinanceReportsView } from './FinanceReportsView'
 import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
+import { useTheme } from '../../shared/ui/theme'
+import { useToast } from '../../shared/ui/toast-context'
 
 type Tab = 'home' | 'transactions' | 'templates' | 'limits' | 'accounts' | 'tags' | 'reports'
+
+const FINANCE_TABS: ReadonlyArray<{ id: Tab; label: string; icon: LucideIcon }> = [
+  { id: 'home', label: 'Главная', icon: Home },
+  { id: 'transactions', label: 'Транзакции', icon: ReceiptText },
+  { id: 'templates', label: 'Шаблоны', icon: Copy },
+  { id: 'limits', label: 'Лимиты', icon: Gauge },
+  { id: 'accounts', label: 'Счета', icon: Landmark },
+  { id: 'tags', label: 'Теги', icon: Tags },
+  { id: 'reports', label: 'Отчёты', icon: BarChart3 }
+]
+
+function FinanceMetric({
+  label,
+  value,
+  tone = 'default'
+}: {
+  label: string
+  value: string
+  tone?: 'default' | 'accent' | 'danger'
+}): React.JSX.Element {
+  const theme = useTheme()
+  const valueColor = tone === 'accent' ? theme.accent : tone === 'danger' ? theme.error : theme.text
+
+  return (
+    <View
+      accessibilityLabel={`${label}: ${value}`}
+      style={{
+        minWidth: 0,
+        flex: 1,
+        minHeight: 76,
+        paddingHorizontal: 11,
+        paddingVertical: 10,
+        borderWidth: 1,
+        borderColor: theme.border,
+        borderRadius: 14,
+        backgroundColor: theme.surface
+      }}
+    >
+      <Text numberOfLines={1} style={{ color: theme.muted, fontSize: 10.5, lineHeight: 15 }}>
+        {label}
+      </Text>
+      <Text
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.72}
+        style={{
+          marginTop: 7,
+          color: valueColor,
+          fontSize: 16,
+          lineHeight: 21,
+          fontWeight: '700'
+        }}
+      >
+        {value}
+      </Text>
+    </View>
+  )
+}
+
+function FinanceSection({
+  title,
+  icon: Icon,
+  children
+}: {
+  title: string
+  icon: LucideIcon
+  children: React.ReactNode
+}): React.JSX.Element {
+  const theme = useTheme()
+
+  return (
+    <View style={{ gap: 8 }}>
+      <View style={{ minHeight: 30, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <View
+          style={{
+            width: 28,
+            height: 28,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: 9,
+            backgroundColor: theme.accent + '10'
+          }}
+        >
+          <Icon size={14} color={theme.accent} />
+        </View>
+        <Text style={{ flex: 1, color: theme.text, fontSize: 14, lineHeight: 19, fontWeight: '700' }}>
+          {title}
+        </Text>
+      </View>
+      {children}
+    </View>
+  )
+}
+
+function FinanceEmpty({
+  text,
+  icon: Icon
+}: {
+  text: string
+  icon: LucideIcon
+}): React.JSX.Element {
+  const theme = useTheme()
+
+  return (
+    <View
+      style={{
+        minHeight: 66,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 11,
+        paddingHorizontal: 13,
+        paddingVertical: 11,
+        borderWidth: 1,
+        borderStyle: 'dashed',
+        borderColor: theme.border,
+        borderRadius: 14,
+        backgroundColor: theme.surface
+      }}
+    >
+      <View
+        style={{
+          width: 34,
+          height: 34,
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: 11,
+          backgroundColor: theme.accent + '0D'
+        }}
+      >
+        <Icon size={16} color={theme.muted} />
+      </View>
+      <Text style={{ flex: 1, color: theme.muted, fontSize: 12.5, lineHeight: 18 }}>{text}</Text>
+    </View>
+  )
+}
 
 function operationTitle(transaction: FinanceTransaction): string {
   if (transaction.type === 'transfer') {
@@ -66,6 +212,8 @@ function operationSubtitle(transaction: FinanceTransaction): string {
 export function FinanceScreen(): React.JSX.Element {
   const { finance: api } = useServices()
   const confirm = useConfirmation()
+  const theme = useTheme()
+  const toast = useToast()
   const state = useCollection(
     useCallback(() => {
       const dashboard = api.getDashboard()
@@ -109,19 +257,61 @@ export function FinanceScreen(): React.JSX.Element {
     return <ErrorState message={state.error || 'Не удалось загрузить финансы'} retry={state.refresh} />
   }
 
-  const tabs = [
-    { id: 'home' as const, label: 'Главная', icon: Home },
-    { id: 'transactions' as const, label: 'Транзакции', icon: ReceiptText },
-    { id: 'templates' as const, label: 'Шаблоны', icon: Copy },
-    { id: 'limits' as const, label: 'Лимиты', icon: Gauge },
-    { id: 'accounts' as const, label: 'Счета', icon: Landmark },
-    { id: 'tags' as const, label: 'Теги', icon: Tags },
-    { id: 'reports' as const, label: 'Отчёты', icon: BarChart3 }
-  ]
-
   const header = (
     <View style={{ gap: 10, paddingBottom: 12 }}>
-      <ModuleTabs<Tab> items={tabs} value={tab} onChange={setTab} />
+      <View
+        accessibilityRole="tablist"
+        style={{
+          minHeight: 50,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 2,
+          padding: 4,
+          borderWidth: 1,
+          borderColor: theme.border,
+          borderRadius: 16,
+          backgroundColor: theme.surface
+        }}
+      >
+        {FINANCE_TABS.map((item) => {
+          const selected = tab === item.id
+          const Icon = item.icon
+
+          return (
+            <Pressable
+              key={item.id}
+              accessibilityRole="tab"
+              accessibilityLabel={item.label}
+              accessibilityState={{ selected }}
+              onPress={() => {
+                if (selected) return
+                setTab(item.id)
+                toast.info(item.label, 'finance-tab')
+              }}
+              style={({ pressed }) => ({
+                flex: 1,
+                minWidth: 0,
+                height: 40,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 12,
+                backgroundColor: selected
+                  ? theme.accent + '18'
+                  : pressed
+                    ? theme.raised
+                    : 'transparent',
+                opacity: pressed ? 0.72 : 1
+              })}
+            >
+              <Icon
+                size={18}
+                strokeWidth={selected ? 2.4 : 2}
+                color={selected ? theme.accent : theme.muted}
+              />
+            </Pressable>
+          )
+        })}
+      </View>
       {state.error ? <ErrorState message={state.error} retry={state.refresh} /> : null}
     </View>
   )
@@ -322,64 +512,111 @@ export function FinanceScreen(): React.JSX.Element {
     const activeLimits = limits.filter((limit) => limit.state === 'active')
     const currency = dashboard.settings.baseCurrencyCode
     content = (
-      <ScrollView contentContainerStyle={{ gap: 10, paddingBottom: 96 }}>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-          <WorkspaceStatCard
-            label="Общий баланс"
-            icon="finance"
-            value={formatMoneyMinor(dashboard.totalBalanceMinor, currency)}
-            detail={
-              dashboard.totalBalanceComplete
-                ? 'Все счета учтены'
-                : `Нет курсов: ${dashboard.missingRateCurrencies.join(', ')}`
-            }
-          />
-          <WorkspaceStatCard
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ gap: 18, paddingBottom: 96 }}
+      >
+        <View
+          style={{
+            padding: 16,
+            borderWidth: 1,
+            borderColor: theme.border,
+            borderRadius: 18,
+            backgroundColor: theme.surface
+          }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View
+              style={{
+                width: 44,
+                height: 44,
+                flexShrink: 0,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 14,
+                borderWidth: 1,
+                borderColor: theme.accent + '26',
+                backgroundColor: theme.accent + '12'
+              }}
+            >
+              <Wallet size={20} color={theme.accent} />
+            </View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={{ color: theme.muted, fontSize: 11.5, lineHeight: 16 }}>
+                Общий баланс
+              </Text>
+              <Text
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.7}
+                style={{
+                  marginTop: 2,
+                  color: theme.text,
+                  fontSize: 26,
+                  lineHeight: 32,
+                  fontWeight: '700'
+                }}
+              >
+                {formatMoneyMinor(dashboard.totalBalanceMinor, currency)}
+              </Text>
+            </View>
+          </View>
+          <Text
+            numberOfLines={2}
+            style={{ marginTop: 10, color: theme.muted, fontSize: 11, lineHeight: 16 }}
+          >
+            {dashboard.totalBalanceComplete
+              ? 'Все счета учтены'
+              : `Нет курсов: ${dashboard.missingRateCurrencies.join(', ')}`}
+          </Text>
+        </View>
+
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <FinanceMetric
             label="Доходы"
-            icon="finance"
             value={formatMoneyMinor(dashboard.incomeMinor, currency)}
-            detail="За текущий период"
+            tone="accent"
           />
-          <WorkspaceStatCard
+          <FinanceMetric
             label="Расходы"
-            icon="finance"
             value={formatMoneyMinor(dashboard.expenseMinor, currency)}
-            detail="За текущий период"
+            tone="danger"
           />
-          <WorkspaceStatCard
-            label="Чистый результат"
-            icon="finance"
+          <FinanceMetric
+            label="Итог"
             value={formatMoneyMinor(dashboard.netMinor, currency)}
-            detail="Доходы минус расходы"
           />
         </View>
-        <WorkspacePanel title="Счета" icon="finance">
+
+        <FinanceSection title="Счета" icon={Landmark}>
           {accounts.length ? (
             accounts
               .slice(0, 4)
               .map((account) => <View key={account.id}>{renderAccount({ item: account })}</View>)
           ) : (
-            <EmptyState text="Создайте первый счёт." />
+            <FinanceEmpty text="Создайте первый счёт." icon={Landmark} />
           )}
-        </WorkspacePanel>
-        <WorkspacePanel title="Активные лимиты" icon="finance">
+        </FinanceSection>
+
+        <FinanceSection title="Активные лимиты" icon={Gauge}>
           {activeLimits.length ? (
             activeLimits
               .slice(0, 4)
               .map((limit) => <View key={limit.id}>{renderLimit({ item: limit })}</View>)
           ) : (
-            <EmptyState text="Активных лимитов пока нет." />
+            <FinanceEmpty text="Активных лимитов пока нет." icon={Gauge} />
           )}
-        </WorkspacePanel>
-        <WorkspacePanel title="Последние операции" icon="finance">
+        </FinanceSection>
+
+        <FinanceSection title="Последние операции" icon={ReceiptText}>
           {dashboard.recentTransactions.length ? (
             dashboard.recentTransactions.map((transaction) => (
               <View key={transaction.id}>{renderTransaction({ item: transaction })}</View>
             ))
           ) : (
-            <EmptyState text="Операций пока нет." />
+            <FinanceEmpty text="Операций пока нет." icon={ReceiptText} />
           )}
-        </WorkspacePanel>
+        </FinanceSection>
       </ScrollView>
     )
   } else if (tab === 'transactions') {
@@ -531,7 +768,7 @@ export function FinanceScreen(): React.JSX.Element {
     <View style={{ flex: 1 }}>
       {header}
       <View style={{ flex: 1 }}>{content}</View>
-      <MobileCreateAction actions={createActions} />
+      <MobileCreateAction actions={createActions} iconOnly />
       {form ? <FormSheet spec={form} close={() => setForm(null)} /> : null}
     </View>
   )
