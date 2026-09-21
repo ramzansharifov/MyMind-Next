@@ -654,4 +654,108 @@ describe('LAN sync snapshot merge', () => {
     }
   })
 
+
+  it('merges a concurrent desktop note edit with a mobile append block', () => {
+    const left = createDatabase()
+    const right = createDatabase()
+    try {
+      const leftDb = adapt(left)
+      const rightDb = adapt(right)
+      ensureSyncInfrastructure(leftDb)
+      ensureSyncInfrastructure(rightDb)
+
+      const baseDocument = {
+        version: 1,
+        blocks: [
+          { id: 'heading-1', type: 'heading', text: 'Исходный заголовок', level: 2 },
+          { id: 'code-1', type: 'code', source: 'const value = 1', language: 'ts' }
+        ]
+      } as const
+
+      for (const db of [left, right]) {
+        db.prepare(
+          `INSERT INTO notes(
+            id, group_id, title, document, plain_text, created_at, updated_at
+          ) VALUES ('note-sync', NULL, 'Заметка', ?, 'Исходный заголовок', 1, 1)`
+        ).run(JSON.stringify(baseDocument))
+      }
+
+      const desktopDocument = {
+        version: 1,
+        blocks: [
+          { id: 'heading-1', type: 'heading', text: 'Заголовок с desktop', level: 2 },
+          { id: 'code-1', type: 'code', source: 'const value = 2', language: 'ts' }
+        ]
+      } as const
+      const mobileDocument = {
+        version: 1,
+        blocks: [
+          ...baseDocument.blocks,
+          {
+            id: 'mobile-append-abc',
+            type: 'text',
+            text: 'Дополнение с телефона',
+            html: '<p>Дополнение с телефона</p>'
+          }
+        ]
+      } as const
+
+      left
+        .prepare(
+          "UPDATE notes SET document = ?, plain_text = ?, updated_at = 20 WHERE id = 'note-sync'"
+        )
+        .run(JSON.stringify(desktopDocument), 'Заголовок с desktop')
+      right
+        .prepare(
+          "UPDATE notes SET document = ?, plain_text = ?, updated_at = 30 WHERE id = 'note-sync'"
+        )
+        .run(
+          JSON.stringify(mobileDocument),
+          'Исходный заголовок\n\nconst value = 1\n\nДополнение с телефона'
+        )
+
+      const leftSnapshot = captureSyncSnapshot(leftDb, ['notes'])
+      const rightSnapshot = captureSyncSnapshot(rightDb, ['notes'])
+      const leftRow = leftSnapshot.modules[0]?.tables
+        .find((table) => table.table === 'notes')
+        ?.rows.find((row) => row.data.id === 'note-sync')
+      const rightRow = rightSnapshot.modules[0]?.tables
+        .find((table) => table.table === 'notes')
+        ?.rows.find((row) => row.data.id === 'note-sync')
+      expect(leftRow?.version).toBe(rightRow?.version)
+
+      const merged = mergeSyncSnapshots(leftSnapshot, rightSnapshot)
+      const row = merged.snapshot.modules[0]?.tables
+        .find((table) => table.table === 'notes')
+        ?.rows.find((candidate) => candidate.data.id === 'note-sync')
+      if (!row || typeof row.data.document !== 'string') throw new Error('merged note missing')
+      const mergedDocument = JSON.parse(row.data.document) as {
+        blocks: Array<{ id: string; type: string; text?: string; source?: string }>
+      }
+
+      expect(mergedDocument.blocks).toEqual([
+        { id: 'heading-1', type: 'heading', text: 'Заголовок с desktop', level: 2 },
+        { id: 'code-1', type: 'code', source: 'const value = 2', language: 'ts' },
+        {
+          id: 'mobile-append-abc',
+          type: 'text',
+          text: 'Дополнение с телефона',
+          html: '<p>Дополнение с телефона</p>'
+        }
+      ])
+      expect(row.data.plain_text).toContain('Заголовок с desktop')
+      expect(row.data.plain_text).toContain('Дополнение с телефона')
+      expect(merged.conflicts.get('notes')).toBeGreaterThan(0)
+
+      applySyncSnapshot(leftDb, merged.snapshot)
+      applySyncSnapshot(rightDb, merged.snapshot)
+      expect(captureSyncSnapshot(leftDb, ['notes']).modules).toEqual(
+        captureSyncSnapshot(rightDb, ['notes']).modules
+      )
+    } finally {
+      left.close()
+      right.close()
+    }
+  })
+
 })
