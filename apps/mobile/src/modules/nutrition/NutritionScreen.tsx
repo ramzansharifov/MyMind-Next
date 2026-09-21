@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import { FlatList, ScrollView, Text, TextInput, View } from 'react-native'
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 import type {
   NutritionFoodCategory,
   NutritionFoodRecord,
@@ -16,16 +16,10 @@ import { useCollection } from '../../shared/hooks/useCollection'
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { MobileCreateAction } from '../../shared/ui/MobileCreateAction'
 import { choiceField, textField, type FormSpec } from '../../shared/ui/form-model'
-import {
-  Button,
-  EmptyState,
-  ErrorState,
-  LoadingState,
-  Row,
-  SearchField
-} from '../../shared/ui/primitives'
-import { BarChart3, CalendarDays, Target, Utensils } from 'lucide-react-native'
-import { ModuleTabs } from '../../shared/ui/ModuleTabs'
+import { Button, ErrorState, IconButton, LoadingState } from '../../shared/ui/primitives'
+import { BarChart3, CalendarDays, ChevronDown, Droplets, Flame, Target, Utensils } from 'lucide-react-native'
+import { ActionMenu } from '../../shared/ui/ActionMenu'
+import { useToast } from '../../shared/ui/toast-context'
 import { NutritionReportsView } from './NutritionReportsView'
 import { useTheme } from '../../shared/ui/theme'
 
@@ -131,6 +125,375 @@ function optionalPositive(value: string): number | null {
   if (!value.trim()) return null
   const parsed = Number(value.replace(',', '.'))
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null
+}
+
+function formatNutritionNumber(value: number, maximumFractionDigits = 1): string {
+  return value.toLocaleString('ru-RU', { maximumFractionDigits })
+}
+
+function nutritionProgress(value: number, target: number | null): number {
+  if (!target || target <= 0) return 0
+  return Math.min(100, Math.max(0, (value / target) * 100))
+}
+
+function nutritionDateTitle(value: string): string {
+  const formatted = new Intl.DateTimeFormat('ru-RU', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'long'
+  }).format(new Date(`${value}T12:00:00`))
+  return formatted.charAt(0).toUpperCase() + formatted.slice(1)
+}
+
+function NutritionMacroMetric({
+  label,
+  value,
+  target
+}: {
+  label: string
+  value: number
+  target: number | null
+}): React.JSX.Element {
+  const theme = useTheme()
+  return (
+    <View style={{ flex: 1, minWidth: 0, gap: 6 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 4 }}>
+        <Text numberOfLines={1} style={{ color: theme.text, fontSize: 11, fontWeight: '700' }}>
+          {label}
+        </Text>
+        <Text numberOfLines={1} style={{ color: theme.muted, fontSize: 9.5 }}>
+          {formatNutritionNumber(value)}
+          {target ? ` / ${formatNutritionNumber(target)}` : ''} г
+        </Text>
+      </View>
+      <View style={{ height: 5, overflow: 'hidden', borderRadius: 99, backgroundColor: theme.raised }}>
+        <View
+          style={{
+            width: `${nutritionProgress(value, target)}%`,
+            height: '100%',
+            borderRadius: 99,
+            backgroundColor: theme.accent
+          }}
+        />
+      </View>
+    </View>
+  )
+}
+
+function NutritionDaySummary({
+  nutrients,
+  target,
+  waterMl,
+  onWaterChange,
+  onEditWater,
+  onEditTargets
+}: {
+  nutrients: NutritionValues
+  target: NutritionTargetRecord | null
+  waterMl: number
+  onWaterChange(delta: number): void
+  onEditWater(): void
+  onEditTargets(): void
+}): React.JSX.Element {
+  const theme = useTheme()
+  const [detailsOpen, setDetailsOpen] = useState(false)
+  const calorieTarget = target?.calories ?? null
+
+  return (
+    <View
+      style={{
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: theme.border,
+        borderRadius: 18,
+        backgroundColor: theme.surface
+      }}
+    >
+      <View style={{ padding: 16, gap: 14 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <View
+            style={{
+              width: 42,
+              height: 42,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 14,
+              borderWidth: 1,
+              borderColor: theme.accent + '26',
+              backgroundColor: theme.accent + '12'
+            }}
+          >
+            <Flame size={19} color={theme.accent} />
+          </View>
+          <View style={{ minWidth: 0, flex: 1 }}>
+            <Text style={{ color: theme.muted, fontSize: 10.5, fontWeight: '600' }}>За день</Text>
+            <View style={{ marginTop: 2, flexDirection: 'row', alignItems: 'baseline', gap: 5 }}>
+              <Text style={{ color: theme.text, fontSize: 27, lineHeight: 31, fontWeight: '800' }}>
+                {formatNutritionNumber(nutrients.calories, 0)}
+              </Text>
+              <Text style={{ color: theme.muted, fontSize: 11.5 }}>
+                {calorieTarget ? `/ ${formatNutritionNumber(calorieTarget, 0)} ккал` : 'ккал'}
+              </Text>
+            </View>
+          </View>
+          {!target ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Настроить цель питания"
+              onPress={onEditTargets}
+              style={({ pressed }) => ({
+                paddingHorizontal: 9,
+                paddingVertical: 7,
+                borderRadius: 10,
+                backgroundColor: pressed ? theme.accent + '1F' : theme.accent + '10',
+                opacity: pressed ? 0.72 : 1
+              })}
+            >
+              <Text style={{ color: theme.accent, fontSize: 10.5, fontWeight: '700' }}>Цель</Text>
+            </Pressable>
+          ) : null}
+        </View>
+
+        <View style={{ height: 7, overflow: 'hidden', borderRadius: 99, backgroundColor: theme.raised }}>
+          <View
+            style={{
+              width: `${nutritionProgress(nutrients.calories, calorieTarget)}%`,
+              height: '100%',
+              borderRadius: 99,
+              backgroundColor: theme.accent
+            }}
+          />
+        </View>
+
+        <View style={{ flexDirection: 'row', gap: 12 }}>
+          <NutritionMacroMetric
+            label="Белки"
+            value={nutrients.proteinG}
+            target={target?.proteinG ?? null}
+          />
+          <NutritionMacroMetric
+            label="Жиры"
+            value={nutrients.fatG}
+            target={target?.fatG ?? null}
+          />
+          <NutritionMacroMetric
+            label="Углеводы"
+            value={nutrients.carbsG}
+            target={target?.carbsG ?? null}
+          />
+        </View>
+      </View>
+
+      <View
+        style={{
+          paddingHorizontal: 14,
+          paddingVertical: 12,
+          borderTopWidth: 1,
+          borderTopColor: theme.border,
+          gap: 10
+        }}
+      >
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Указать точное количество воды"
+          onPress={onEditWater}
+          style={({ pressed }) => ({
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 10,
+            opacity: pressed ? 0.72 : 1
+          })}
+        >
+          <View
+            style={{
+              width: 34,
+              height: 34,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 11,
+              backgroundColor: '#22d3ee14'
+            }}
+          >
+            <Droplets size={16} color="#22d3ee" />
+          </View>
+          <View style={{ minWidth: 0, flex: 1, gap: 5 }}>
+            <Text style={{ color: theme.text, fontSize: 12.5, fontWeight: '700' }}>
+              Вода · {waterMl}
+              {target?.waterMl ? ` / ${target.waterMl}` : ''} мл
+            </Text>
+            <View style={{ height: 5, overflow: 'hidden', borderRadius: 99, backgroundColor: theme.raised }}>
+              <View
+                style={{
+                  width: `${nutritionProgress(waterMl, target?.waterMl ?? null)}%`,
+                  height: '100%',
+                  borderRadius: 99,
+                  backgroundColor: '#22d3ee'
+                }}
+              />
+            </View>
+          </View>
+        </Pressable>
+
+        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 7 }}>
+          <Button label="+250 мл" compact onPress={() => onWaterChange(250)} />
+          <Button label="−250 мл" compact disabled={waterMl === 0} onPress={() => onWaterChange(-250)} />
+        </View>
+      </View>
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={detailsOpen ? 'Скрыть дополнительные показатели' : 'Показать дополнительные показатели'}
+        accessibilityState={{ expanded: detailsOpen }}
+        onPress={() => setDetailsOpen((current) => !current)}
+        style={({ pressed }) => ({
+          minHeight: 38,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 6,
+          borderTopWidth: 1,
+          borderTopColor: theme.border,
+          backgroundColor: pressed ? theme.raised : 'transparent',
+          opacity: pressed ? 0.78 : 1
+        })}
+      >
+        <Text style={{ color: theme.muted, fontSize: 10.5, fontWeight: '600' }}>Подробнее</Text>
+        <ChevronDown
+          size={14}
+          color={theme.muted}
+          style={{ transform: [{ rotate: detailsOpen ? '180deg' : '0deg' }] }}
+        />
+      </Pressable>
+
+      {detailsOpen ? (
+        <View
+          style={{
+            flexDirection: 'row',
+            gap: 8,
+            padding: 12,
+            paddingTop: 0
+          }}
+        >
+          {[
+            ['Клетчатка', `${formatNutritionNumber(nutrients.fiberG)} г`],
+            ['Сахар', `${formatNutritionNumber(nutrients.sugarG)} г`],
+            ['Натрий', `${formatNutritionNumber(nutrients.sodiumMg, 0)} мг`]
+          ].map(([label, value]) => (
+            <View
+              key={label}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                paddingHorizontal: 9,
+                paddingVertical: 9,
+                borderRadius: 11,
+                backgroundColor: theme.background
+              }}
+            >
+              <Text numberOfLines={1} style={{ color: theme.muted, fontSize: 9 }}>
+                {label}
+              </Text>
+              <Text numberOfLines={1} style={{ marginTop: 2, color: theme.text, fontSize: 11.5, fontWeight: '700' }}>
+                {value}
+              </Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
+    </View>
+  )
+}
+
+function NutritionMealSection({
+  mealType,
+  label,
+  entries,
+  onAdd,
+  onEdit,
+  onDelete
+}: {
+  mealType: NutritionMealType
+  label: string
+  entries: NutritionLogEntryRecord[]
+  onAdd(): void
+  onEdit(entry: NutritionLogEntryRecord): void
+  onDelete(entry: NutritionLogEntryRecord): void
+}): React.JSX.Element {
+  const theme = useTheme()
+  const calories = entries.reduce((sum, entry) => sum + entry.nutrients.calories, 0)
+
+  return (
+    <View
+      style={{
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: theme.border,
+        borderRadius: 16,
+        backgroundColor: theme.surface
+      }}
+    >
+      <View
+        style={{
+          minHeight: 54,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 10,
+          paddingLeft: 13,
+          paddingRight: 7,
+          paddingVertical: 7
+        }}
+      >
+        <View style={{ minWidth: 0, flex: 1 }}>
+          <Text style={{ color: theme.text, fontSize: 13.5, fontWeight: '700' }}>{label}</Text>
+          <Text numberOfLines={1} style={{ marginTop: 2, color: theme.muted, fontSize: 10.5 }}>
+            {entries.length ? `${formatNutritionNumber(calories, 0)} ккал · ${entries.length} поз.` : 'Нет записей'}
+          </Text>
+        </View>
+        <IconButton label={`Добавить в «${label}»`} icon="add" compact onPress={onAdd} />
+      </View>
+
+      {entries.map((entry) => (
+        <Pressable
+          key={entry.id}
+          accessibilityRole="button"
+          accessibilityLabel={`Изменить «${entry.title}»`}
+          onPress={() => onEdit(entry)}
+          onLongPress={() => onDelete(entry)}
+          style={({ pressed }) => ({
+            minHeight: 58,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8,
+            paddingLeft: 13,
+            paddingRight: 5,
+            paddingVertical: 9,
+            borderTopWidth: 1,
+            borderTopColor: theme.border,
+            backgroundColor: pressed ? theme.raised : 'transparent',
+            opacity: pressed ? 0.78 : 1
+          })}
+        >
+          <View style={{ minWidth: 0, flex: 1 }}>
+            <Text numberOfLines={1} style={{ color: theme.text, fontSize: 12.5, fontWeight: '600' }}>
+              {entry.title}
+            </Text>
+            <Text numberOfLines={1} style={{ marginTop: 2, color: theme.muted, fontSize: 10 }}>
+              {formatNutritionNumber(entry.amount)} {unitLabels[entry.unit]} · {macroLine(entry.nutrients)}
+              {mealType === 'other' && entry.customMealName ? ` · ${entry.customMealName}` : ''}
+            </Text>
+          </View>
+          <ActionMenu
+            title={entry.title}
+            description={`${label} · ${formatNutritionNumber(entry.nutrients.calories, 0)} ккал`}
+            items={[
+              { label: 'Изменить', icon: 'edit', onPress: () => onEdit(entry) },
+              { label: 'Удалить', icon: 'delete', danger: true, onPress: () => onDelete(entry) }
+            ]}
+          />
+        </Pressable>
+      ))}
+    </View>
+  )
 }
 
 function NutritionGoalCard({
@@ -262,6 +625,7 @@ function NutritionGoalCard({
 
 export function NutritionScreen(): React.JSX.Element {
   const { nutrition: api } = useServices()
+  const toast = useToast()
   const [date, setDate] = useState(localDateKey())
   const overview = useCollection(useCallback(() => api.listOverview({ date }), [api, date]))
   const [tab, setTab] = useState<Tab>('today')
@@ -486,6 +850,7 @@ export function NutritionScreen(): React.JSX.Element {
         )
         api.importMeals(input)
         setDate(input.date)
+        setTab(input.date === localDateKey() ? 'today' : 'diary')
         overview.refresh()
       }
     })
@@ -497,96 +862,195 @@ export function NutritionScreen(): React.JSX.Element {
     { id: 'goal' as const, label: 'Цель', icon: Target },
     { id: 'progress' as const, label: 'Прогресс', icon: BarChart3 }
   ]
+
+  const chooseDiaryDate = (): void => {
+    setForm({
+      title: 'Дата дневника',
+      initial: { date },
+      fields: [textField('date', 'Дата', 'date')],
+      save: (values) => {
+        const next = validation.nutritionOverviewInputSchema.parse({ date: values.date }).date
+        setDate(next)
+      }
+    })
+  }
+
   const header = (
     <View style={{ gap: 10, paddingBottom: 12 }}>
-      <ModuleTabs<Tab>
-        items={tabs}
-        value={tab}
-        onChange={(next) => {
-          if (next === 'today') setDate(localDateKey())
-          setTab(next)
+      <View
+        accessibilityRole="tablist"
+        style={{
+          minHeight: 50,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 2,
+          padding: 4,
+          borderWidth: 1,
+          borderColor: useTheme().border,
+          borderRadius: 16,
+          backgroundColor: useTheme().surface
         }}
-      />
+      >
+        {tabs.map((item) => {
+          const selected = tab === item.id
+          const Icon = item.icon
+          const currentTheme = useTheme()
+          return (
+            <Pressable
+              key={item.id}
+              accessibilityRole="tab"
+              accessibilityLabel={item.label}
+              accessibilityState={{ selected }}
+              onPress={() => {
+                if (selected) return
+                if (item.id === 'today') setDate(localDateKey())
+                setTab(item.id)
+                toast.info(item.label, 'nutrition-tab')
+              }}
+              style={({ pressed }) => ({
+                flex: 1,
+                minWidth: 0,
+                height: 40,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 12,
+                backgroundColor: selected
+                  ? currentTheme.accent + '18'
+                  : pressed
+                    ? currentTheme.raised
+                    : 'transparent',
+                opacity: pressed ? 0.72 : 1
+              })}
+            >
+              <Icon
+                size={18}
+                strokeWidth={selected ? 2.4 : 2}
+                color={selected ? currentTheme.accent : currentTheme.muted}
+              />
+            </Pressable>
+          )
+        })}
+      </View>
+
       {tab === 'diary' ? (
-        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-          <Button label="‹" accessibilityLabel="Предыдущий день" onPress={() => setDate((value) => shiftDate(value, -1))} />
-          <View style={{ flex: 1 }}>
-            <Row title={date === localDateKey() ? 'Сегодня' : date} subtitle={date} />
-          </View>
-          <Button label="›" accessibilityLabel="Следующий день" onPress={() => setDate((value) => shiftDate(value, 1))} />
-        </View>
-      ) : null}
-      {tab === 'today' || tab === 'diary' ? (
-        <View style={{ alignItems: 'flex-start' }}>
-          <Button label="Добавить из JSON" onPress={importDiary} />
+        <View
+          style={{
+            minHeight: 54,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 4,
+            paddingHorizontal: 5,
+            paddingVertical: 5,
+            borderWidth: 1,
+            borderColor: useTheme().border,
+            borderRadius: 15,
+            backgroundColor: useTheme().surface
+          }}
+        >
+          <IconButton
+            label="Предыдущий день"
+            icon="back"
+            ghost
+            onPress={() => setDate((value) => shiftDate(value, -1))}
+          />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Выбрать дату дневника"
+            onPress={chooseDiaryDate}
+            style={({ pressed }) => ({
+              minWidth: 0,
+              flex: 1,
+              alignItems: 'center',
+              paddingHorizontal: 8,
+              paddingVertical: 4,
+              borderRadius: 10,
+              backgroundColor: pressed ? useTheme().raised : 'transparent',
+              opacity: pressed ? 0.74 : 1
+            })}
+          >
+            <Text numberOfLines={1} style={{ color: useTheme().text, fontSize: 12.5, fontWeight: '700' }}>
+              {nutritionDateTitle(date)}
+            </Text>
+            <Text style={{ marginTop: 1, color: useTheme().muted, fontSize: 9.5 }}>
+              {date === localDateKey() ? 'Сегодня' : date}
+            </Text>
+          </Pressable>
+          <IconButton
+            label="Следующий день"
+            icon="forward"
+            ghost
+            onPress={() => setDate((value) => shiftDate(value, 1))}
+          />
         </View>
       ) : null}
     </View>
   )
 
   if (overview.loading) return <LoadingState />
-  if (tab === 'today') {
+  if (tab === 'today' || tab === 'diary') {
     const day = data?.day
     const target = data?.currentTarget
+    const visibleMeals: NutritionMealType[] = ['breakfast', 'lunch', 'dinner', 'snack']
+    const otherEntries = entries.filter((entry) => entry.mealType === 'other')
+    const deleteEntry = (entry: NutritionLogEntryRecord): void => {
+      overview.confirmDelete(
+        `Удалить «${entry.title}»?`,
+        () => api.deleteLogEntry({ id: entry.id }),
+        'Запись перестанет учитываться в дневнике и прогрессе.'
+      )
+    }
+
     return (
       <View style={{ flex: 1 }}>
         {header}
         {overview.error ? <ErrorState message={overview.error} retry={overview.refresh} /> : null}
-        <ScrollView contentContainerStyle={{ gap: 10, paddingBottom: 96 }}>
-          <Row
-            title={macroLine(day?.nutrients ?? zeroNutrients)}
-            subtitle="Итого за выбранный день"
-          />
-          <Row
-            title={`Вода · ${day?.waterMl ?? 0}${target?.waterMl ? ` / ${target.waterMl}` : ''} мл`}
-            subtitle="Нажмите, чтобы указать точное значение"
-            onPress={editWater}
-          >
-            <Button
-              label="+250 мл"
-              onPress={() =>
-                overview.mutate(() =>
-                  api.setWater({ date, waterMl: Math.min(100_000, (day?.waterMl ?? 0) + 250) })
-                )
-              }
-            />
-            <Button
-              label="−250 мл"
-              disabled={(day?.waterMl ?? 0) === 0}
-              onPress={() =>
-                overview.mutate(() =>
-                  api.setWater({ date, waterMl: Math.max(0, (day?.waterMl ?? 0) - 250) })
-                )
-              }
-            />
-          </Row>
-          <Row
-            title={target?.calories ? `Цель · ${target.calories} ккал` : 'Цели не заданы'}
-            subtitle={
-              target
-                ? `Б ${target.proteinG ?? '—'} · Ж ${target.fatG ?? '—'} · У ${target.carbsG ?? '—'}`
-                : 'Задайте калории, макронутриенты и воду'
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ gap: 12, paddingBottom: 96 }}
+        >
+          <NutritionDaySummary
+            nutrients={day?.nutrients ?? zeroNutrients}
+            target={target ?? null}
+            waterMl={day?.waterMl ?? 0}
+            onEditWater={editWater}
+            onEditTargets={editTargets}
+            onWaterChange={(delta) =>
+              overview.mutate(() =>
+                api.setWater({
+                  date,
+                  waterMl: Math.min(100_000, Math.max(0, (day?.waterMl ?? 0) + delta))
+                })
+              )
             }
-            onPress={editTargets}
           />
-          {NUTRITION_MEAL_TYPES.map((mealType) => {
-            const mealEntries = entries.filter((entry) => entry.mealType === mealType)
-            const calories = mealEntries.reduce((sum, entry) => sum + entry.nutrients.calories, 0)
-            return (
-              <Row
+
+          <View style={{ gap: 8 }}>
+            {visibleMeals.map((mealType) => (
+              <NutritionMealSection
                 key={mealType}
-                title={`${mealLabels[mealType]} · ${Math.round(calories)} ккал`}
-                subtitle={
-                  mealEntries.length
-                    ? mealEntries.map((entry) => entry.title).join(' · ')
-                    : 'Нет записей'
-                }
-                onPress={() => editLog()}
+                mealType={mealType}
+                label={mealLabels[mealType]}
+                entries={entries.filter((entry) => entry.mealType === mealType)}
+                onAdd={() => editLog()}
+                onEdit={editLog}
+                onDelete={deleteEntry}
               />
-            )
-          })}
+            ))}
+            {otherEntries.length ? (
+              <NutritionMealSection
+                mealType="other"
+                label="Другое"
+                entries={otherEntries}
+                onAdd={() => editLog()}
+                onEdit={editLog}
+                onDelete={deleteEntry}
+              />
+            ) : null}
+          </View>
         </ScrollView>
+
         <MobileCreateAction
+          iconOnly
           actions={[
             {
               key: 'entry',
@@ -594,6 +1058,13 @@ export function NutritionScreen(): React.JSX.Element {
               description: 'Добавить еду в выбранный день',
               icon: 'nutrition',
               onPress: () => editLog()
+            },
+            {
+              key: 'json',
+              label: 'Добавить из JSON',
+              description: 'Импортировать готовый дневник питания',
+              icon: 'json',
+              onPress: importDiary
             }
           ]}
         />
@@ -630,40 +1101,5 @@ export function NutritionScreen(): React.JSX.Element {
     )
   }
 
-  return (
-    <View style={{ flex: 1 }}>
-      {header}
-      {overview.error ? <ErrorState message={overview.error} retry={overview.refresh} /> : null}
-      <FlatList<NutritionLogEntryRecord>
-        data={entries}
-        keyExtractor={(entry) => entry.id}
-        contentContainerStyle={{ paddingBottom: 96 }}
-        refreshing={overview.loading}
-        onRefresh={overview.refresh}
-        ListEmptyComponent={<EmptyState />}
-        renderItem={({ item: entry }) => (
-          <Row
-            title={`${mealLabels[entry.mealType]} · ${entry.title}`}
-            subtitle={`${entry.amount} ${unitLabels[entry.unit]} · ${macroLine(entry.nutrients)}`}
-            onPress={() => editLog(entry)}
-            onLongPress={() =>
-              overview.confirmDelete('Удалить запись?', () => api.deleteLogEntry({ id: entry.id }))
-            }
-          />
-        )}
-      />
-      <MobileCreateAction
-        actions={[
-          {
-            key: 'entry',
-            label: 'Новая запись',
-            description: 'Добавить еду в выбранный день',
-            icon: 'nutrition',
-            onPress: () => editLog()
-          }
-        ]}
-      />
-      {form ? <FormSheet spec={form} close={() => setForm(null)} /> : null}
-    </View>
-  )
+  return <View style={{ flex: 1 }}>{header}</View>
 }
