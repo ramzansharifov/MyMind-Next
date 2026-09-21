@@ -1,0 +1,35 @@
+name: Final verify mobile workouts removal
+
+on:
+  push:
+    branches:
+      - agent/remove-mobile-workouts
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Scope guard
+        shell: bash
+        run: |
+          test ! -d apps/mobile/src/modules/workouts
+          ! grep -R "route: 'workouts'" apps/mobile/src/app
+          ! grep -R "route === 'workouts'" apps/mobile/src/app
+          ! grep -R "createWorkoutsRepository" apps/mobile/src/app
+          ! grep -R "normalizeMobileWorkoutPhotoUrls" apps/mobile/src
+          ! grep -R "expo-image-picker" apps/mobile/src
+          ! grep -q '"expo-image-picker"' apps/mobile/package.json
+          grep -q "module !== 'workouts'" apps/mobile/src/shared/sync/lanSyncClient.ts
+      - run: npx prettier --check apps/mobile/src apps/mobile/package.json
+      - run: npx eslint apps/mobile/src
+      - run: npm run typecheck:mobile
+      - run: npm run native:node
+      - run: npm run test:mobile
+      - run: npm run export:android
