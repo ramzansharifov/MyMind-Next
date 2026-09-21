@@ -127,13 +127,17 @@ describe('LAN sync snapshot merge', () => {
       const remote = captureSyncSnapshot(rightDb, ['tasks'])
       const merged = mergeSyncSnapshots(local, remote)
 
-      expect(merged.snapshot.modules[0]?.tables.find((table) => table.table === 'tasks')).toMatchObject({
+      expect(
+        merged.snapshot.modules[0]?.tables.find((table) => table.table === 'tasks')
+      ).toMatchObject({
         rows: [],
         tombstones: [{ key: '["task-delete"]' }]
       })
 
       applySyncSnapshot(rightDb, merged.snapshot)
-      expect(right.prepare("SELECT COUNT(*) AS count FROM tasks WHERE id = 'task-delete'").get()).toEqual({
+      expect(
+        right.prepare("SELECT COUNT(*) AS count FROM tasks WHERE id = 'task-delete'").get()
+      ).toEqual({
         count: 0
       })
     } finally {
@@ -151,18 +155,22 @@ describe('LAN sync snapshot merge', () => {
       ensureSyncInfrastructure(leftDb)
       ensureSyncInfrastructure(rightDb)
 
-      left.prepare(
-        `INSERT INTO tasks(
+      left
+        .prepare(
+          `INSERT INTO tasks(
           id, title, description, group_id, status, priority, due_date, due_time,
           completed_at, created_at, updated_at
         ) VALUES ('left-task', 'Локальная', '', NULL, 'active', 'normal', NULL, NULL, NULL, 10, 10)`
-      ).run()
-      right.prepare(
-        `INSERT INTO tasks(
+        )
+        .run()
+      right
+        .prepare(
+          `INSERT INTO tasks(
           id, title, description, group_id, status, priority, due_date, due_time,
           completed_at, created_at, updated_at
         ) VALUES ('right-task', 'Удалённая', '', NULL, 'active', 'normal', NULL, NULL, NULL, 20, 20)`
-      ).run()
+        )
+        .run()
 
       const local = captureSyncSnapshot(leftDb, ['tasks'])
       const remote = captureSyncSnapshot(rightDb, ['tasks'])
@@ -193,7 +201,10 @@ describe('LAN sync snapshot merge', () => {
 
       for (const [db, url] of [
         [left, 'mymind-asset://local/workout-progress-entry-1/asset-1/progress.jpg'],
-        [right, 'file:///data/user/0/com.mymind.mobile/files/workout-progress/entry-1/asset-1/progress.jpg']
+        [
+          right,
+          'file:///data/user/0/com.mymind.mobile/files/workout-progress/entry-1/asset-1/progress.jpg'
+        ]
       ] as const) {
         db.prepare(
           `INSERT INTO workout_progress_entries(
@@ -209,16 +220,14 @@ describe('LAN sync snapshot merge', () => {
 
       const leftSnapshot = captureSyncSnapshot(leftDb, ['workouts'])
       const rightSnapshot = captureSyncSnapshot(rightDb, ['workouts'])
-      const leftPhoto = leftSnapshot.modules[0]?.tables
-        .find((table) => table.table === 'workout_progress_photos')
-        ?.rows[0]
-      const rightPhoto = rightSnapshot.modules[0]?.tables
-        .find((table) => table.table === 'workout_progress_photos')
-        ?.rows[0]
+      const leftPhoto = leftSnapshot.modules[0]?.tables.find(
+        (table) => table.table === 'workout_progress_photos'
+      )?.rows[0]
+      const rightPhoto = rightSnapshot.modules[0]?.tables.find(
+        (table) => table.table === 'workout_progress_photos'
+      )?.rows[0]
 
-      expect(leftPhoto?.data.url).toBe(
-        'mymind-sync://workouts/entry-1/asset-1/progress.jpg'
-      )
+      expect(leftPhoto?.data.url).toBe('mymind-sync://workouts/entry-1/asset-1/progress.jpg')
       expect(rightPhoto).toEqual(leftPhoto)
       expect(mergeSyncSnapshots(leftSnapshot, rightSnapshot).conflicts.get('workouts')).toBe(0)
     } finally {
@@ -278,9 +287,9 @@ describe('LAN sync snapshot merge', () => {
         captureSyncSnapshot(leftDb, ['passwords']),
         captureSyncSnapshot(rightDb, ['passwords'])
       )
-      const vault = merged.snapshot.modules[0]?.tables
-        .find((table) => table.table === 'password_vault')
-        ?.rows[0]
+      const vault = merged.snapshot.modules[0]?.tables.find(
+        (table) => table.table === 'password_vault'
+      )?.rows[0]
       expect(vault?.data.kdf_salt).toBe('new-salt')
     } finally {
       left.close()
@@ -321,7 +330,6 @@ describe('LAN sync snapshot merge', () => {
     }
   })
 
-
   it('uses synchronized logical revisions instead of wall clocks after the first merge', () => {
     const left = createDatabase()
     const right = createDatabase()
@@ -355,9 +363,7 @@ describe('LAN sync snapshot merge', () => {
         )
         .run()
       right
-        .prepare(
-          "UPDATE tasks SET title = 'Правая правка', updated_at = 1 WHERE id = 'clock-task'"
-        )
+        .prepare("UPDATE tasks SET title = 'Правая правка', updated_at = 1 WHERE id = 'clock-task'")
         .run()
 
       const leftSnapshot = captureSyncSnapshot(leftDb, ['tasks'])
@@ -386,7 +392,6 @@ describe('LAN sync snapshot merge', () => {
     }
   })
 
-
   it('allows an intentional recreation of the same id to supersede an older tombstone', () => {
     const left = createDatabase()
     const right = createDatabase()
@@ -396,12 +401,14 @@ describe('LAN sync snapshot merge', () => {
       ensureSyncInfrastructure(leftDb)
       ensureSyncInfrastructure(rightDb)
 
-      left.prepare(
-        `INSERT INTO tasks(
+      left
+        .prepare(
+          `INSERT INTO tasks(
           id, title, description, group_id, status, priority, due_date, due_time,
           completed_at, created_at, updated_at
         ) VALUES ('recreated-task', 'Первая версия', '', NULL, 'active', 'normal', NULL, NULL, NULL, 1, 1)`
-      ).run()
+        )
+        .run()
 
       const initial = mergeSyncSnapshots(
         captureSyncSnapshot(leftDb, ['tasks']),
@@ -418,18 +425,18 @@ describe('LAN sync snapshot merge', () => {
       applySyncSnapshot(leftDb, deleted.snapshot)
       applySyncSnapshot(rightDb, deleted.snapshot)
 
-      left.prepare(
-        `INSERT INTO tasks(
+      left
+        .prepare(
+          `INSERT INTO tasks(
           id, title, description, group_id, status, priority, due_date, due_time,
           completed_at, created_at, updated_at
         ) VALUES ('recreated-task', 'Создано заново', '', NULL, 'active', 'normal', NULL, NULL, NULL, 2, 2)`
-      ).run()
+        )
+        .run()
 
       const recreated = captureSyncSnapshot(leftDb, ['tasks'])
       const recreatedTable = recreated.modules[0]?.tables.find((table) => table.table === 'tasks')
-      const recreatedRow = recreatedTable?.rows.find(
-        (row) => row.data.id === 'recreated-task'
-      )
+      const recreatedRow = recreatedTable?.rows.find((row) => row.data.id === 'recreated-task')
       expect(recreatedTable?.tombstones).toEqual([])
       expect(recreatedRow?.version).toBeGreaterThan(
         deleted.snapshot.modules[0]?.tables
@@ -439,15 +446,14 @@ describe('LAN sync snapshot merge', () => {
 
       const merged = mergeSyncSnapshots(recreated, captureSyncSnapshot(rightDb, ['tasks']))
       applySyncSnapshot(rightDb, merged.snapshot)
-      expect(
-        right.prepare("SELECT title FROM tasks WHERE id = 'recreated-task'").get()
-      ).toEqual({ title: 'Создано заново' })
+      expect(right.prepare("SELECT title FROM tasks WHERE id = 'recreated-task'").get()).toEqual({
+        title: 'Создано заново'
+      })
     } finally {
       left.close()
       right.close()
     }
   })
-
 
   it('refuses concurrent master-password changes for the same password vault lineage', () => {
     const left = createDatabase()
@@ -477,33 +483,37 @@ describe('LAN sync snapshot merge', () => {
       applySyncSnapshot(leftDb, initial.snapshot)
       applySyncSnapshot(rightDb, initial.snapshot)
 
-      left.prepare(
-        `UPDATE password_vault
+      left
+        .prepare(
+          `UPDATE password_vault
          SET kdf_salt = 'left-salt',
              wrapped_key_nonce = 'left-nonce',
              wrapped_key_ciphertext = 'left-cipher',
              wrapped_key_tag = 'left-tag',
              updated_at = 20
          WHERE id = 'default'`
-      ).run()
-      right.prepare(
-        `UPDATE password_vault
+        )
+        .run()
+      right
+        .prepare(
+          `UPDATE password_vault
          SET kdf_salt = 'right-salt',
              wrapped_key_nonce = 'right-nonce',
              wrapped_key_ciphertext = 'right-cipher',
              wrapped_key_tag = 'right-tag',
              updated_at = 20
          WHERE id = 'default'`
-      ).run()
+        )
+        .run()
 
       const leftSnapshot = captureSyncSnapshot(leftDb, ['passwords'])
       const rightSnapshot = captureSyncSnapshot(rightDb, ['passwords'])
-      const leftVault = leftSnapshot.modules[0]?.tables
-        .find((table) => table.table === 'password_vault')
-        ?.rows[0]
-      const rightVault = rightSnapshot.modules[0]?.tables
-        .find((table) => table.table === 'password_vault')
-        ?.rows[0]
+      const leftVault = leftSnapshot.modules[0]?.tables.find(
+        (table) => table.table === 'password_vault'
+      )?.rows[0]
+      const rightVault = rightSnapshot.modules[0]?.tables.find(
+        (table) => table.table === 'password_vault'
+      )?.rows[0]
 
       expect(leftVault?.version).toBe(rightVault?.version)
       expect(() => mergeSyncSnapshots(leftSnapshot, rightSnapshot)).toThrow(
@@ -514,7 +524,6 @@ describe('LAN sync snapshot merge', () => {
       right.close()
     }
   })
-
 
   it('reconciles SET NULL foreign keys when a parent deletion races a child edit', () => {
     const left = createDatabase()
@@ -611,9 +620,7 @@ describe('LAN sync snapshot merge', () => {
         captureSyncSnapshot(rightDb, ['habits'])
       )
       const reconciled = reconcileSyncSnapshotForeignKeys(leftDb, merged.snapshot)
-      const entries = reconciled.modules[0]?.tables.find(
-        (table) => table.table === 'habit_entries'
-      )
+      const entries = reconciled.modules[0]?.tables.find((table) => table.table === 'habit_entries')
 
       expect(entries?.rows).toEqual([])
       expect(entries?.tombstones.some((row) => row.key === '["entry-fk"]')).toBe(true)
@@ -626,7 +633,6 @@ describe('LAN sync snapshot merge', () => {
       right.close()
     }
   })
-
 
   it('rejects snapshot rows whose transport key does not match their primary key data', () => {
     const db = createDatabase()
@@ -653,7 +659,6 @@ describe('LAN sync snapshot merge', () => {
       db.close()
     }
   })
-
 
   it('merges a concurrent desktop note edit with a mobile append block', () => {
     const left = createDatabase()
@@ -757,5 +762,4 @@ describe('LAN sync snapshot merge', () => {
       right.close()
     }
   })
-
 })

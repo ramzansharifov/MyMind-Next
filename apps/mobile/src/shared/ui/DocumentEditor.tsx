@@ -1,13 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import {
-  FlatList,
-  Linking,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View
-} from 'react-native'
+import { FlatList, Linking, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 import type {
   StudyAssetKind,
   StudyBlock,
@@ -297,13 +289,7 @@ function BlockInput({
     case 'markdown':
     case 'latex':
     case 'mermaid':
-      return (
-        <StudySourceBlock
-          block={block}
-          editable
-          update={(next) => update(next)}
-        />
-      )
+      return <StudySourceBlock block={block} editable update={(next) => update(next)} />
     case 'image':
     case 'video':
     case 'audio':
@@ -498,7 +484,11 @@ function DesktopParityBlockCard({
           <GripVertical size={16} color={theme.muted} />
         </View>
         <BlockHeaderIcon
-          label={collapsed ? `Развернуть блок «${blockLabel(block)}»` : `Свернуть блок «${blockLabel(block)}»`}
+          label={
+            collapsed
+              ? `Развернуть блок «${blockLabel(block)}»`
+              : `Свернуть блок «${blockLabel(block)}»`
+          }
           icon={ChevronRight}
           rotation={collapsed ? 0 : 90}
           onPress={toggleCollapsed}
@@ -1149,17 +1139,9 @@ function NotesDocumentReader({
     <View style={{ gap: 22 }}>
       {outline.map((node) =>
         node.kind === 'section' ? (
-          <NotesReadSection
-            key={node.heading.id}
-            section={node}
-            assetActions={assetActions}
-          />
+          <NotesReadSection key={node.heading.id} section={node} assetActions={assetActions} />
         ) : (
-          <NotesReadBlock
-            key={node.block.id}
-            block={node.block}
-            assetActions={assetActions}
-          />
+          <NotesReadBlock key={node.block.id} block={node.block} assetActions={assetActions} />
         )
       )}
     </View>
@@ -1465,22 +1447,14 @@ export function DocumentEditor({
           }}
         >
           <View style={{ minWidth: 0, flex: 1 }}>
-            <Text
-              numberOfLines={1}
-              style={{ color: theme.text, fontSize: 13, fontWeight: '600' }}
-            >
+            <Text numberOfLines={1} style={{ color: theme.text, fontSize: 13, fontWeight: '600' }}>
               {blockLabel(activeBlock)}
             </Text>
             <Text numberOfLines={1} style={{ marginTop: 2, color: theme.muted, fontSize: 11 }}>
               Настройки активного блока
             </Text>
           </View>
-          <Button
-            label="Настройки"
-            icon="settings"
-            compact
-            onPress={() => setSettingsOpen(true)}
-          />
+          <Button label="Настройки" icon="settings" compact onPress={() => setSettingsOpen(true)} />
         </View>
       ) : null}
 
@@ -1518,7 +1492,11 @@ export function DocumentEditor({
         </>
       ) : null}
 
-      {settingsOpen && activeBlock && activeIndex >= 0 && activeBlock.type !== 'text' && activeBlock.type !== 'board' ? (
+      {settingsOpen &&
+      activeBlock &&
+      activeIndex >= 0 &&
+      activeBlock.type !== 'text' &&
+      activeBlock.type !== 'board' ? (
         <NotesBlockSettingsSheet
           block={activeBlock}
           update={(next) => replace(activeIndex, next)}

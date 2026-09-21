@@ -46,11 +46,7 @@ import {
 } from '../../shared/ui/primitives'
 import { useTheme } from '../../shared/ui/theme'
 import { MobileNoteAppendEditor } from './MobileNoteAppendEditor'
-import {
-  createMobileAppendTextBlock,
-  isTextOnlyNote,
-  withoutNoteBlock
-} from './mobile-note-policy'
+import { createMobileAppendTextBlock, isTextOnlyNote, withoutNoteBlock } from './mobile-note-policy'
 
 type NoteEditorMode = 'edit' | 'read'
 type NoteSaveState = 'saved' | 'dirty' | 'saving' | 'error'
@@ -558,7 +554,9 @@ export function NotesScreen({
   if (record && document) {
     const textOnly = isTextOnlyNote(document)
     const appendMode = editorMode === 'edit' && !textOnly
-    const visibleDocument = appendMode ? withoutNoteBlock(document, appendBlock?.id ?? null) : document
+    const visibleDocument = appendMode
+      ? withoutNoteBlock(document, appendBlock?.id ?? null)
+      : document
 
     return (
       <View style={{ flex: 1 }}>
@@ -933,7 +931,9 @@ export function NotesScreen({
                   />
                   <WorkspaceStatCard
                     label="Без группы"
-                    value={String((overview.data?.notes ?? []).filter((note) => note.groupId === null).length)}
+                    value={String(
+                      (overview.data?.notes ?? []).filter((note) => note.groupId === null).length
+                    )}
                     icon="notes"
                   />
                 </View>
@@ -946,7 +946,9 @@ export function NotesScreen({
                     }
                   >
                     {searchedNotes.slice(0, 4).map((note) => {
-                      const noteGroup = overview.data?.groups.find((group) => group.id === note.groupId)
+                      const noteGroup = overview.data?.groups.find(
+                        (group) => group.id === note.groupId
+                      )
                       return (
                         <MobileNoteCard
                           key={note.id}

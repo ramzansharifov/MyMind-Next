@@ -116,7 +116,6 @@ describe('shared notes persistence', () => {
     expect(db.prepare('SELECT COUNT(*) AS count FROM notes').get()).toEqual({ count: 0 })
   })
 
-
   it('upserts a mobile text block without rewriting existing desktop blocks', async () => {
     const { runtime } = setup()
     const notes = createNotesRepository(runtime)

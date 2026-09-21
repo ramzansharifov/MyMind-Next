@@ -1,11 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { NoteDocument } from '@mymind/contracts/notes'
 
-import {
-  createMobileAppendTextBlock,
-  isTextOnlyNote,
-  withoutNoteBlock
-} from './mobile-note-policy'
+import { createMobileAppendTextBlock, isTextOnlyNote, withoutNoteBlock } from './mobile-note-policy'
 
 describe('mobile note editing policy', () => {
   it('treats only text blocks as directly editable on mobile', () => {
