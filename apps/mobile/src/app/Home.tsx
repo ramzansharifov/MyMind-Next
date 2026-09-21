@@ -15,7 +15,6 @@ const HOME_MODULES: Array<{ route: Exclude<Route, 'home' | 'more' | 'settings'>;
   { route: 'notes', title: 'Заметки' },
   { route: 'tasks', title: 'Задачи' },
   { route: 'habits', title: 'Привычки' },
-  { route: 'workouts', title: 'Тренировки' },
   { route: 'nutrition', title: 'Питание' },
   { route: 'calendar', title: 'Календарь' },
   { route: 'diary', title: 'Дневник' },
