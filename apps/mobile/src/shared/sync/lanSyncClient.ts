@@ -57,7 +57,7 @@ export const MOBILE_SYNC_MODULES = SYNC_MODULES.filter(
   (module): module is Exclude<SyncModule, 'workouts'> => module !== 'workouts'
 )
 
-const SUPPORTED_MODULES = new Set<SyncModule>(MOBILE_SYNC_MODULES)
+const SUPPORTED_MODULES = new Set<string>(MOBILE_SYNC_MODULES)
 
 export interface MobileLanSyncClient {
   discover(manualHost?: string): Promise<LanSyncDevice[]>
