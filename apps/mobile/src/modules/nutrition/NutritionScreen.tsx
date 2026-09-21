@@ -1,15 +1,12 @@
 import { useCallback, useMemo, useState } from 'react'
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 import type {
-  NutritionFoodCategory,
-  NutritionFoodRecord,
   NutritionLogEntryRecord,
   NutritionTargetRecord,
   NutritionMealType,
-  NutritionRecipeRecord,
   NutritionValues
 } from '@mymind/contracts/nutrition'
-import { NUTRITION_FOOD_CATEGORIES, NUTRITION_MEAL_TYPES } from '@mymind/contracts/nutrition'
+import { NUTRITION_MEAL_TYPES } from '@mymind/contracts/nutrition'
 import * as validation from '@mymind/core/validation/nutrition'
 import { useServices } from '../../app/context'
 import { useCollection } from '../../shared/hooks/useCollection'
@@ -32,28 +29,11 @@ import { NutritionReportsView } from './NutritionReportsView'
 import { useTheme } from '../../shared/ui/theme'
 
 type Tab = 'today' | 'diary' | 'goal' | 'progress'
-type ListItem =
-  | { kind: 'entry'; value: NutritionLogEntryRecord }
-  | { kind: 'food'; value: NutritionFoodRecord }
-  | { kind: 'recipe'; value: NutritionRecipeRecord }
-
 const mealLabels: Record<NutritionMealType, string> = {
   breakfast: 'Завтрак',
   lunch: 'Обед',
   dinner: 'Ужин',
   snack: 'Перекус',
-  other: 'Другое'
-}
-const categoryLabels: Record<NutritionFoodCategory, string> = {
-  protein: 'Белковые',
-  dairy: 'Молочные',
-  grains: 'Крупы',
-  vegetables: 'Овощи',
-  fruits: 'Фрукты',
-  fats: 'Жиры',
-  drinks: 'Напитки',
-  sweets: 'Сладкое',
-  prepared: 'Готовые блюда',
   other: 'Другое'
 }
 const unitLabels = { g: 'г', ml: 'мл', piece: 'шт.', serving: 'порц.' } as const
@@ -668,82 +648,11 @@ export function NutritionScreen(): React.JSX.Element {
   const [date, setDate] = useState(localDateKey())
   const overview = useCollection(useCallback(() => api.listOverview({ date }), [api, date]))
   const [tab, setTab] = useState<Tab>('today')
-  const [query, setQuery] = useState('')
   const [form, setForm] = useState<FormSpec | null>(null)
-  const [recipeEditor, setRecipeEditor] = useState<NutritionRecipeRecord | 'new' | null>(null)
   const data = overview.data
   const foods = useMemo(() => data?.foods ?? [], [data?.foods])
   const recipes = useMemo(() => data?.recipes ?? [], [data?.recipes])
   const entries = data?.entries ?? []
-  const normalizedQuery = query.trim().toLocaleLowerCase('ru-RU')
-
-  const filteredFoods = useMemo(
-    () =>
-      foods.filter((food) =>
-        `${food.name} ${food.brand} ${categoryLabels[food.category]}`
-          .toLocaleLowerCase('ru-RU')
-          .includes(normalizedQuery)
-      ),
-    [foods, normalizedQuery]
-  )
-  const filteredRecipes = useMemo(
-    () =>
-      recipes.filter((recipe) =>
-        `${recipe.name} ${recipe.description}`.toLocaleLowerCase('ru-RU').includes(normalizedQuery)
-      ),
-    [recipes, normalizedQuery]
-  )
-
-  const editFood = (food?: NutritionFoodRecord): void => {
-    const nutrients = food?.nutrients ?? zeroNutrients
-    setForm({
-      title: food ? 'Изменить продукт' : 'Новый продукт',
-      initial: {
-        name: food?.name ?? '',
-        brand: food?.brand ?? '',
-        category: food?.category ?? 'other',
-        baseAmount: food?.baseAmount ?? 100,
-        baseUnit: food?.baseUnit ?? 'g',
-        ...nutrients,
-        notes: food?.notes ?? ''
-      },
-      fields: [
-        textField('name', 'Название'),
-        textField('brand', 'Бренд'),
-        choiceField(
-          'category',
-          'Категория',
-          NUTRITION_FOOD_CATEGORIES.map((value) => ({ value, label: categoryLabels[value] }))
-        ),
-        textField('baseAmount', 'Базовое количество', 'number'),
-        choiceField('baseUnit', 'Единица', [
-          { value: 'g', label: 'г' },
-          { value: 'ml', label: 'мл' },
-          { value: 'piece', label: 'шт.' }
-        ]),
-        ...nutrientFields(),
-        textField('notes', 'Заметки', 'multiline')
-      ],
-      save: (values) => {
-        const payload = {
-          name: values.name,
-          brand: values.brand,
-          category: values.category,
-          baseAmount: values.baseAmount,
-          baseUnit: values.baseUnit,
-          nutrients: nutrientsFrom(values),
-          notes: values.notes
-        }
-        if (food)
-          api.updateFood(
-            validation.updateNutritionFoodInputSchema.parse({ id: food.id, ...payload })
-          )
-        else api.createFood(validation.createNutritionFoodInputSchema.parse(payload))
-        overview.refresh()
-      }
-    })
-  }
-
   const editLog = (
     entry?: NutritionLogEntryRecord,
     preferredMealType?: NutritionMealType
