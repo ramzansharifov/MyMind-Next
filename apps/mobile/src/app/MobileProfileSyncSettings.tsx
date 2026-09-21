@@ -50,9 +50,7 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
   const [manualHost, setManualHost] = useState('')
   const [devices, setDevices] = useState<LanSyncDevice[]>([])
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null)
-  const [selectedModules, setSelectedModules] = useState<Set<MobileSyncModule>>(
-    () => new Set()
-  )
+  const [selectedModules, setSelectedModules] = useState<Set<MobileSyncModule>>(() => new Set())
   const [busy, setBusy] = useState<'profile' | 'scan' | 'sync' | null>(null)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
@@ -336,17 +334,17 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
                   обмена используйте отдельную кнопку «Синхронизировать все данные».
                 </Label>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                  {MOBILE_SYNC_MODULES.filter((module) => selectedDevice.modules.includes(module)).map(
-                    (module) => (
-                      <Button
-                        key={module}
-                        label={moduleLabels[module]}
-                        selected={selectedModules.has(module)}
-                        disabled={Boolean(busy)}
-                        onPress={() => toggleModule(module)}
-                      />
-                    )
-                  )}
+                  {MOBILE_SYNC_MODULES.filter((module) =>
+                    selectedDevice.modules.includes(module)
+                  ).map((module) => (
+                    <Button
+                      key={module}
+                      label={moduleLabels[module]}
+                      selected={selectedModules.has(module)}
+                      disabled={Boolean(busy)}
+                      onPress={() => toggleModule(module)}
+                    />
+                  ))}
                 </View>
 
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -368,7 +366,9 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
                     disabled={Boolean(busy)}
                     onPress={() =>
                       void runSync(
-                        MOBILE_SYNC_MODULES.filter((module) => selectedDevice.modules.includes(module))
+                        MOBILE_SYNC_MODULES.filter((module) =>
+                          selectedDevice.modules.includes(module)
+                        )
                       )
                     }
                   />
@@ -376,9 +376,8 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
 
                 <Label muted>
                   «Обучение», «Доски» и «Тренировки» являются desktop-only и здесь намеренно
-                  отсутствуют. Если
-                  хранилища паролей создавались независимо, MyMind остановит синхронизацию паролей
-                  вместо риска повредить vault.
+                  отсутствуют. Если хранилища паролей создавались независимо, MyMind остановит
+                  синхронизацию паролей вместо риска повредить vault.
                 </Label>
               </View>
             ) : null}

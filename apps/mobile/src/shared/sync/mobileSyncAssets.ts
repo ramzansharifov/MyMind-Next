@@ -203,10 +203,7 @@ function sortedParts(planId: string, reference: SyncAssetReference): File[] {
     )
 }
 
-export function verifyStagedMobileSyncAsset(
-  planId: string,
-  entry: SyncAssetManifestEntry
-): void {
+export function verifyStagedMobileSyncAsset(planId: string, entry: SyncAssetManifestEntry): void {
   const reference = parseSyncAssetPath(entry.path)
   const digest = sha256.create()
   let expectedOffset = 0

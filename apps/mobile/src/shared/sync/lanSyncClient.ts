@@ -24,10 +24,7 @@ import {
   encryptLanSyncJson,
   parseLanSyncEncryptedEnvelope
 } from '@mymind/core/lan-sync-crypto'
-import {
-  createProfileSyncProof,
-  timingSafeHexEqual
-} from '@mymind/core/profile-sync'
+import { createProfileSyncProof, timingSafeHexEqual } from '@mymind/core/profile-sync'
 import { listRemovedSyncAssetReferences } from '@mymind/core/sync-assets'
 import { parseSyncDataSnapshot } from '@mymind/core/sync-protocol'
 import type { LocalProfileRepository } from '@mymind/persistence/local-profile'
@@ -66,7 +63,6 @@ export interface MobileLanSyncClient {
   discover(manualHost?: string): Promise<LanSyncDevice[]>
   sync(device: LanSyncDevice, modules: readonly SyncModule[]): Promise<SyncResult>
 }
-
 
 interface MobileLanSession {
   token: string
@@ -197,7 +193,6 @@ async function requestSecureJson(
     timeout.clear()
   }
 }
-
 
 function record(value: unknown): Record<string, unknown> {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
@@ -348,7 +343,10 @@ function parsePlan(value: unknown, modules: readonly SyncModule[]): SyncPlanResp
   }
 }
 
-function parseUploadProgress(value: unknown, expected: SyncAssetManifestEntry): SyncAssetUploadProgress {
+function parseUploadProgress(
+  value: unknown,
+  expected: SyncAssetManifestEntry
+): SyncAssetUploadProgress {
   const input = record(value)
   if (
     input.path !== expected.path ||
@@ -417,7 +415,10 @@ function isPrivateIpv4(value: string): boolean {
 }
 
 function normalizeManualHost(value: string): string {
-  const host = value.trim().replace(/^https?:\/\//i, '').replace(/\/.*$/, '')
+  const host = value
+    .trim()
+    .replace(/^https?:\/\//i, '')
+    .replace(/\/.*$/, '')
   const withoutPort = host.replace(/:\d+$/, '')
   if (!withoutPort) throw new Error('Введите IP-адрес компьютера')
   if (!/^\d{1,3}(?:\.\d{1,3}){3}$/.test(withoutPort)) {
@@ -454,7 +455,10 @@ function subnetHosts(ip: string): string[] {
 }
 
 async function discoverHost(host: string): Promise<LanSyncDevice | null> {
-  const ports = Array.from({ length: LAN_SYNC_PORT_SPAN }, (_, index) => LAN_SYNC_DEFAULT_PORT + index)
+  const ports = Array.from(
+    { length: LAN_SYNC_PORT_SPAN },
+    (_, index) => LAN_SYNC_DEFAULT_PORT + index
+  )
   const results = await Promise.all(
     ports.map(async (port) => {
       try {
@@ -479,17 +483,14 @@ async function mapConcurrent<T, R>(
 ): Promise<R[]> {
   const results = new Array<R>(items.length)
   let cursor = 0
-  const workers = Array.from(
-    { length: Math.min(concurrency, items.length) },
-    async () => {
-      while (true) {
-        const index = cursor
-        cursor += 1
-        if (index >= items.length) return
-        results[index] = await operation(items[index]!)
-      }
+  const workers = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+    while (true) {
+      const index = cursor
+      cursor += 1
+      if (index >= items.length) return
+      results[index] = await operation(items[index]!)
     }
-  )
+  })
   await Promise.all(workers)
   return results
 }
@@ -682,7 +683,8 @@ export function createMobileLanSyncClient(
       const modules = [...new Set(requestedModules)].filter(
         (module) => available.has(module) && SUPPORTED_MODULES.has(module)
       )
-      if (modules.length === 0) throw new Error('Не выбрано ни одного общего модуля для синхронизации')
+      if (modules.length === 0)
+        throw new Error('Не выбрано ни одного общего модуля для синхронизации')
 
       const session = await authenticate(device, profileRepository)
       const baseUrl = `http://${device.host}:${device.port}/mymind-sync/v1`
