@@ -17,7 +17,15 @@ import { FormSheet } from '../../shared/ui/FormSheet'
 import { MobileCreateAction } from '../../shared/ui/MobileCreateAction'
 import { choiceField, textField, type FormSpec } from '../../shared/ui/form-model'
 import { Button, ErrorState, IconButton, LoadingState } from '../../shared/ui/primitives'
-import { BarChart3, CalendarDays, ChevronDown, Droplets, Flame, Target, Utensils } from 'lucide-react-native'
+import {
+  BarChart3,
+  CalendarDays,
+  ChevronDown,
+  Droplets,
+  Flame,
+  Target,
+  Utensils
+} from 'lucide-react-native'
 import { ActionMenu } from '../../shared/ui/ActionMenu'
 import { useToast } from '../../shared/ui/toast-context'
 import { NutritionReportsView } from './NutritionReportsView'
@@ -157,7 +165,14 @@ function NutritionMacroMetric({
   const theme = useTheme()
   return (
     <View style={{ flex: 1, minWidth: 0, gap: 6 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 4 }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'baseline',
+          justifyContent: 'space-between',
+          gap: 4
+        }}
+      >
         <Text numberOfLines={1} style={{ color: theme.text, fontSize: 11, fontWeight: '700' }}>
           {label}
         </Text>
@@ -166,7 +181,9 @@ function NutritionMacroMetric({
           {target ? ` / ${formatNutritionNumber(target)}` : ''} г
         </Text>
       </View>
-      <View style={{ height: 5, overflow: 'hidden', borderRadius: 99, backgroundColor: theme.raised }}>
+      <View
+        style={{ height: 5, overflow: 'hidden', borderRadius: 99, backgroundColor: theme.raised }}
+      >
         <View
           style={{
             width: `${nutritionProgress(value, target)}%`,
@@ -254,7 +271,9 @@ function NutritionDaySummary({
           ) : null}
         </View>
 
-        <View style={{ height: 7, overflow: 'hidden', borderRadius: 99, backgroundColor: theme.raised }}>
+        <View
+          style={{ height: 7, overflow: 'hidden', borderRadius: 99, backgroundColor: theme.raised }}
+        >
           <View
             style={{
               width: `${nutritionProgress(nutrients.calories, calorieTarget)}%`,
@@ -271,11 +290,7 @@ function NutritionDaySummary({
             value={nutrients.proteinG}
             target={target?.proteinG ?? null}
           />
-          <NutritionMacroMetric
-            label="Жиры"
-            value={nutrients.fatG}
-            target={target?.fatG ?? null}
-          />
+          <NutritionMacroMetric label="Жиры" value={nutrients.fatG} target={target?.fatG ?? null} />
           <NutritionMacroMetric
             label="Углеводы"
             value={nutrients.carbsG}
@@ -321,7 +336,14 @@ function NutritionDaySummary({
               Вода · {waterMl}
               {target?.waterMl ? ` / ${target.waterMl}` : ''} мл
             </Text>
-            <View style={{ height: 5, overflow: 'hidden', borderRadius: 99, backgroundColor: theme.raised }}>
+            <View
+              style={{
+                height: 5,
+                overflow: 'hidden',
+                borderRadius: 99,
+                backgroundColor: theme.raised
+              }}
+            >
               <View
                 style={{
                   width: `${nutritionProgress(waterMl, target?.waterMl ?? null)}%`,
@@ -336,13 +358,20 @@ function NutritionDaySummary({
 
         <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 7 }}>
           <Button label="+250 мл" compact onPress={() => onWaterChange(250)} />
-          <Button label="−250 мл" compact disabled={waterMl === 0} onPress={() => onWaterChange(-250)} />
+          <Button
+            label="−250 мл"
+            compact
+            disabled={waterMl === 0}
+            onPress={() => onWaterChange(-250)}
+          />
         </View>
       </View>
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={detailsOpen ? 'Скрыть дополнительные показатели' : 'Показать дополнительные показатели'}
+        accessibilityLabel={
+          detailsOpen ? 'Скрыть дополнительные показатели' : 'Показать дополнительные показатели'
+        }
         accessibilityState={{ expanded: detailsOpen }}
         onPress={() => setDetailsOpen((current) => !current)}
         style={({ pressed }) => ({
@@ -393,7 +422,10 @@ function NutritionDaySummary({
               <Text numberOfLines={1} style={{ color: theme.muted, fontSize: 9 }}>
                 {label}
               </Text>
-              <Text numberOfLines={1} style={{ marginTop: 2, color: theme.text, fontSize: 11.5, fontWeight: '700' }}>
+              <Text
+                numberOfLines={1}
+                style={{ marginTop: 2, color: theme.text, fontSize: 11.5, fontWeight: '700' }}
+              >
                 {value}
               </Text>
             </View>
@@ -446,7 +478,9 @@ function NutritionMealSection({
         <View style={{ minWidth: 0, flex: 1 }}>
           <Text style={{ color: theme.text, fontSize: 13.5, fontWeight: '700' }}>{label}</Text>
           <Text numberOfLines={1} style={{ marginTop: 2, color: theme.muted, fontSize: 10.5 }}>
-            {entries.length ? `${formatNutritionNumber(calories, 0)} ккал · ${entries.length} поз.` : 'Нет записей'}
+            {entries.length
+              ? `${formatNutritionNumber(calories, 0)} ккал · ${entries.length} поз.`
+              : 'Нет записей'}
           </Text>
         </View>
         <IconButton label={`Добавить в «${label}»`} icon="add" compact onPress={onAdd} />
@@ -474,11 +508,15 @@ function NutritionMealSection({
           })}
         >
           <View style={{ minWidth: 0, flex: 1 }}>
-            <Text numberOfLines={1} style={{ color: theme.text, fontSize: 12.5, fontWeight: '600' }}>
+            <Text
+              numberOfLines={1}
+              style={{ color: theme.text, fontSize: 12.5, fontWeight: '600' }}
+            >
               {entry.title}
             </Text>
             <Text numberOfLines={1} style={{ marginTop: 2, color: theme.muted, fontSize: 10 }}>
-              {formatNutritionNumber(entry.amount)} {unitLabels[entry.unit]} · {macroLine(entry.nutrients)}
+              {formatNutritionNumber(entry.amount)} {unitLabels[entry.unit]} ·{' '}
+              {macroLine(entry.nutrients)}
               {mealType === 'other' && entry.customMealName ? ` · ${entry.customMealName}` : ''}
             </Text>
           </View>
@@ -565,8 +603,8 @@ function NutritionGoalCard({
               Общая цель питания
             </Text>
             <Text style={{ marginTop: 4, color: theme.muted, fontSize: 12, lineHeight: 19 }}>
-              Единые ориентиры для «Сегодня», «Дневника» и «Прогресса». Пустое поле означает,
-              что цель по показателю не задана.
+              Единые ориентиры для «Сегодня», «Дневника» и «Прогресса». Пустое поле означает, что
+              цель по показателю не задана.
             </Text>
           </View>
         </View>
@@ -706,7 +744,10 @@ export function NutritionScreen(): React.JSX.Element {
     })
   }
 
-  const editLog = (entry?: NutritionLogEntryRecord, preferredMealType?: NutritionMealType): void => {
+  const editLog = (
+    entry?: NutritionLogEntryRecord,
+    preferredMealType?: NutritionMealType
+  ): void => {
     const source = entry
       ? entry.sourceType === 'custom'
         ? 'custom'
@@ -968,7 +1009,10 @@ export function NutritionScreen(): React.JSX.Element {
               opacity: pressed ? 0.74 : 1
             })}
           >
-            <Text numberOfLines={1} style={{ color: theme.text, fontSize: 12.5, fontWeight: '700' }}>
+            <Text
+              numberOfLines={1}
+              style={{ color: theme.text, fontSize: 12.5, fontWeight: '700' }}
+            >
               {nutritionDateTitle(date)}
             </Text>
             <Text style={{ marginTop: 1, color: theme.muted, fontSize: 9.5 }}>
