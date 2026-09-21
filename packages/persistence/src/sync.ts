@@ -9,6 +9,9 @@ import type {
   SyncTableSnapshot
 } from '@mymind/contracts/profile-sync'
 import type { SqlDatabasePort } from '@mymind/contracts/storage'
+import { MOBILE_NOTE_APPEND_BLOCK_PREFIX, type NoteDocument } from '@mymind/contracts/notes'
+import { documentToPlainText } from '@mymind/core/study-document'
+import { noteDocumentSchema } from '@mymind/core/validation/notes'
 
 interface SyncTableDefinition {
   table: string
@@ -123,7 +126,9 @@ export const SYNC_MODULE_REGISTRY: readonly SyncModuleDefinition[] = [
 
 const ALL_TABLES = SYNC_MODULE_REGISTRY.flatMap((definition) => definition.tables)
 const TABLE_BY_NAME = new Map(ALL_TABLES.map((definition) => [definition.table, definition]))
-const MODULE_BY_NAME = new Map(SYNC_MODULE_REGISTRY.map((definition) => [definition.module, definition]))
+const MODULE_BY_NAME = new Map(
+  SYNC_MODULE_REGISTRY.map((definition) => [definition.module, definition])
+)
 
 function quoteIdentifier(value: string): string {
   if (!/^[a-z0-9_]+$/.test(value)) throw new Error(`Unsafe SQL identifier: ${value}`)
@@ -131,9 +136,7 @@ function quoteIdentifier(value: string): string {
 }
 
 function keyExpression(prefix: 'NEW' | 'OLD', columns: readonly string[]): string {
-  return `json_array(${columns
-    .map((column) => `${prefix}.${quoteIdentifier(column)}`)
-    .join(', ')})`
+  return `json_array(${columns.map((column) => `${prefix}.${quoteIdentifier(column)}`).join(', ')})`
 }
 
 function createTriggerSql(definition: SyncTableDefinition): string[] {
@@ -319,7 +322,10 @@ function intrinsicRowVersion(_row: Record<string, SyncScalar>): number {
   return 1
 }
 
-function captureTable(database: SqlDatabasePort, definition: SyncTableDefinition): SyncTableSnapshot {
+function captureTable(
+  database: SqlDatabasePort,
+  definition: SyncTableDefinition
+): SyncTableSnapshot {
   const versionRows = database
     .prepare('SELECT row_key, changed_at FROM sync_row_versions WHERE table_name = ?')
     .all(definition.table) as Array<{ row_key: string; changed_at: number }>
@@ -327,9 +333,9 @@ function captureTable(database: SqlDatabasePort, definition: SyncTableDefinition
     .prepare('SELECT row_key, deleted_at FROM sync_tombstones WHERE table_name = ?')
     .all(definition.table) as Array<{ row_key: string; deleted_at: number }>
   const versions = new Map(versionRows.map((row) => [row.row_key, row.changed_at]))
-  const rows = database.prepare(`SELECT * FROM ${quoteIdentifier(definition.table)}`).all() as Array<
-    Record<string, unknown>
-  >
+  const rows = database
+    .prepare(`SELECT * FROM ${quoteIdentifier(definition.table)}`)
+    .all() as Array<Record<string, unknown>>
 
   return {
     table: definition.table,
@@ -384,8 +390,117 @@ export function captureSyncSnapshot(
 }
 
 function canonicalRow(row: SyncSnapshotRow): string {
-  const sorted = Object.fromEntries(Object.entries(row.data).sort(([left], [right]) => left.localeCompare(right)))
+  const sorted = Object.fromEntries(
+    Object.entries(row.data).sort(([left], [right]) => left.localeCompare(right))
+  )
   return JSON.stringify(sorted)
+}
+
+function noteDocumentFromRow(row: SyncSnapshotRow): NoteDocument | null {
+  const serialized = row.data.document
+  if (typeof serialized !== 'string') return null
+  try {
+    return noteDocumentSchema.parse(JSON.parse(serialized))
+  } catch {
+    return null
+  }
+}
+
+function withoutMobileAppendBlocks(document: NoteDocument): NoteDocument {
+  return {
+    ...document,
+    blocks: document.blocks.filter(
+      (block) => !(block.type === 'text' && block.id.startsWith(MOBILE_NOTE_APPEND_BLOCK_PREFIX))
+    )
+  }
+}
+
+function mobileAppendBlocks(
+  document: NoteDocument
+): Array<Extract<NoteDocument['blocks'][number], { type: 'text' }>> {
+  return document.blocks.filter(
+    (block): block is Extract<NoteDocument['blocks'][number], { type: 'text' }> =>
+      block.type === 'text' && block.id.startsWith(MOBILE_NOTE_APPEND_BLOCK_PREFIX)
+  )
+}
+
+function mergeConcurrentNoteRows(
+  left: SyncSnapshotRow,
+  right: SyncSnapshotRow
+): SyncSnapshotRow | null {
+  const leftDocument = noteDocumentFromRow(left)
+  const rightDocument = noteDocumentFromRow(right)
+  if (!leftDocument || !rightDocument) return null
+
+  const leftAppend = mobileAppendBlocks(leftDocument)
+  const rightAppend = mobileAppendBlocks(rightDocument)
+  if (leftAppend.length === 0 && rightAppend.length === 0) return null
+
+  const leftBase = withoutMobileAppendBlocks(leftDocument)
+  const rightBase = withoutMobileAppendBlocks(rightDocument)
+  const leftBaseCanonical = JSON.stringify(leftBase)
+  const rightBaseCanonical = JSON.stringify(rightBase)
+
+  let baseRow = left
+  let baseDocument = leftBase
+  if (rightAppend.length < leftAppend.length) {
+    baseRow = right
+    baseDocument = rightBase
+  } else if (rightAppend.length === leftAppend.length) {
+    if (right.version > left.version) {
+      baseRow = right
+      baseDocument = rightBase
+    } else if (right.version === left.version && rightBaseCanonical > leftBaseCanonical) {
+      baseRow = right
+      baseDocument = rightBase
+    }
+  }
+
+  const appendById = new Map<string, Extract<NoteDocument['blocks'][number], { type: 'text' }>>()
+  for (const block of [...leftAppend, ...rightAppend]) {
+    const existing = appendById.get(block.id)
+    if (!existing || JSON.stringify(block) > JSON.stringify(existing)) {
+      appendById.set(block.id, block)
+    }
+  }
+
+  const mergedDocument = noteDocumentSchema.parse({
+    version: 1,
+    blocks: [
+      ...baseDocument.blocks,
+      ...[...appendById.values()].sort((leftBlock, rightBlock) =>
+        leftBlock.id.localeCompare(rightBlock.id, 'en')
+      )
+    ]
+  })
+  const updatedAt = Math.max(
+    typeof left.data.updated_at === 'number' ? left.data.updated_at : 0,
+    typeof right.data.updated_at === 'number' ? right.data.updated_at : 0
+  )
+
+  const mergedCanonical = JSON.stringify(mergedDocument)
+  const matchesLeft =
+    mergedCanonical === JSON.stringify(leftDocument) && canonicalRow(baseRow) === canonicalRow(left)
+  const matchesRight =
+    mergedCanonical === JSON.stringify(rightDocument) &&
+    canonicalRow(baseRow) === canonicalRow(right)
+  const version =
+    matchesLeft && left.version >= right.version
+      ? left.version
+      : matchesRight && right.version >= left.version
+        ? right.version
+        : Math.max(left.version, right.version) + 1
+
+  return {
+    key: baseRow.key,
+    version,
+    data: {
+      ...baseRow.data,
+      document: JSON.stringify(mergedDocument),
+      plain_text: documentToPlainText(mergedDocument),
+      updated_at: updatedAt
+    }
+  }
 }
 
 function mergeTable(
@@ -437,7 +552,20 @@ function mergeTable(
     }
 
     let winner: SyncSnapshotRow | undefined
-    if (leftVersion > rightVersion) winner = leftRow
+    if (leftRow && rightRow && definition.table === 'notes') {
+      const leftCanonical = canonicalRow(leftRow)
+      const rightCanonical = canonicalRow(rightRow)
+      const mergedNote = mergeConcurrentNoteRows(leftRow, rightRow)
+      if (mergedNote) {
+        if (leftCanonical !== rightCanonical) conflicts += 1
+        winner = mergedNote
+      } else if (leftVersion > rightVersion) winner = leftRow
+      else if (rightVersion > leftVersion) winner = rightRow
+      else {
+        if (leftCanonical !== rightCanonical) conflicts += 1
+        winner = leftCanonical >= rightCanonical ? leftRow : rightRow
+      }
+    } else if (leftVersion > rightVersion) winner = leftRow
     else if (rightVersion > leftVersion) winner = rightRow
     else if (leftRow && rightRow) {
       const leftCanonical = canonicalRow(leftRow)
@@ -457,15 +585,14 @@ function passwordVaultPresent(module: SyncModuleSnapshot): boolean {
 }
 
 function passwordVaultIdentity(module: SyncModuleSnapshot): string | null {
-  const table = module.tables.find((candidate) => candidate.table === 'password_vault_sync_identity')
+  const table = module.tables.find(
+    (candidate) => candidate.table === 'password_vault_sync_identity'
+  )
   const row = table?.rows.find((candidate) => candidate.data.id === 'default') ?? table?.rows[0]
   return typeof row?.data.identity === 'string' ? row.data.identity : null
 }
 
-function assertCompatiblePasswordVaults(
-  left: SyncModuleSnapshot,
-  right: SyncModuleSnapshot
-): void {
+function assertCompatiblePasswordVaults(left: SyncModuleSnapshot, right: SyncModuleSnapshot): void {
   if (!passwordVaultPresent(left) || !passwordVaultPresent(right)) return
   const leftIdentity = passwordVaultIdentity(left)
   const rightIdentity = passwordVaultIdentity(right)
@@ -506,7 +633,8 @@ export function mergeSyncSnapshots(
   right: SyncDataSnapshot,
   generatedAt = Date.now()
 ): { snapshot: SyncDataSnapshot; conflicts: Map<SyncModule, number> } {
-  if (left.version !== 1 || right.version !== 1) throw new Error('Unsupported sync snapshot version')
+  if (left.version !== 1 || right.version !== 1)
+    throw new Error('Unsupported sync snapshot version')
 
   const leftModules = new Map(left.modules.map((module) => [module.module, module]))
   const rightModules = new Map(right.modules.map((module) => [module.module, module]))
@@ -531,7 +659,8 @@ export function mergeSyncSnapshots(
     const tables = definition.tables.map((table) => {
       const leftTable = leftTables.get(table.table)
       const rightTable = rightTables.get(table.table)
-      if (!leftTable || !rightTable) throw new Error(`Missing table ${table.table} in sync snapshot`)
+      if (!leftTable || !rightTable)
+        throw new Error(`Missing table ${table.table} in sync snapshot`)
       const merged = mergeTable(table, leftTable, rightTable)
       moduleConflicts += merged.conflicts
       return merged.snapshot
@@ -746,9 +875,7 @@ function deleteByKey(
   const where = definition.keyColumns
     .map((column) => `${quoteIdentifier(column)} IS ?`)
     .join(' AND ')
-  database
-    .prepare(`DELETE FROM ${quoteIdentifier(definition.table)} WHERE ${where}`)
-    .run(...values)
+  database.prepare(`DELETE FROM ${quoteIdentifier(definition.table)} WHERE ${where}`).run(...values)
 }
 
 function upsertRow(
@@ -762,7 +889,8 @@ function upsertRow(
     if (!columns.includes(column)) throw new Error(`Unknown column ${definition.table}.${column}`)
   }
   for (const keyColumn of definition.keyColumns) {
-    if (!dataColumns.includes(keyColumn)) throw new Error(`Missing key column ${definition.table}.${keyColumn}`)
+    if (!dataColumns.includes(keyColumn))
+      throw new Error(`Missing key column ${definition.table}.${keyColumn}`)
   }
 
   const placeholders = dataColumns.map(() => '?').join(', ')
@@ -851,7 +979,10 @@ export function applySyncSnapshot(database: SqlDatabasePort, snapshot: SyncDataS
   transaction()
 }
 
-function countDifferences(from: SyncModuleSnapshot, to: SyncModuleSnapshot): {
+function countDifferences(
+  from: SyncModuleSnapshot,
+  to: SyncModuleSnapshot
+): {
   changed: number
   deleted: number
 } {

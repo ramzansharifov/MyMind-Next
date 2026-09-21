@@ -23,6 +23,7 @@ export const NOTE_BLOCK_TYPES = [
 
 export type NoteBlockType = (typeof NOTE_BLOCK_TYPES)[number]
 export type NoteBlock = Extract<StudyBlock, { type: NoteBlockType }>
+export const MOBILE_NOTE_APPEND_BLOCK_PREFIX = 'mobile-append-' as const
 export type NoteAssetKind = StudyAssetKind
 export type NoteLocalAsset = StudyLocalAsset
 export type OpenNoteAssetInput = OpenStudyAssetInput

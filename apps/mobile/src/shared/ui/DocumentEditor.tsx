@@ -1,13 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import {
-  FlatList,
-  Linking,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View
-} from 'react-native'
+import { FlatList, Linking, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 import type {
   StudyAssetKind,
   StudyBlock,
@@ -98,8 +90,10 @@ interface DocumentEditorProps {
   onChange(document: StudyDocument): void
   createId(): string
   header?: React.ReactElement | null
+  readFooter?: React.ReactElement | null
   presentation?: DocumentEditorPresentation
   mode?: 'edit' | 'read'
+  allowedBlockTypes?: readonly StudyBlockType[]
   importAsset?: (kind: StudyAssetKind) => Promise<StudyLocalAsset | null>
   openAsset?: (asset: StudyLocalAsset) => Promise<void>
   resolveAssetUri?: (asset: StudyLocalAsset) => string | null
@@ -295,13 +289,7 @@ function BlockInput({
     case 'markdown':
     case 'latex':
     case 'mermaid':
-      return (
-        <StudySourceBlock
-          block={block}
-          editable
-          update={(next) => update(next)}
-        />
-      )
+      return <StudySourceBlock block={block} editable update={(next) => update(next)} />
     case 'image':
     case 'video':
     case 'audio':
@@ -496,7 +484,11 @@ function DesktopParityBlockCard({
           <GripVertical size={16} color={theme.muted} />
         </View>
         <BlockHeaderIcon
-          label={collapsed ? `Развернуть блок «${blockLabel(block)}»` : `Свернуть блок «${blockLabel(block)}»`}
+          label={
+            collapsed
+              ? `Развернуть блок «${blockLabel(block)}»`
+              : `Свернуть блок «${blockLabel(block)}»`
+          }
           icon={ChevronRight}
           rotation={collapsed ? 0 : 90}
           onPress={toggleCollapsed}
@@ -725,6 +717,7 @@ function NotesBlockToolbar({
 function NotesInsertSheet({
   open,
   pendingAsset,
+  allowedBlockTypes,
   importAsset,
   saveRecordedAudio,
   close,
@@ -735,6 +728,7 @@ function NotesInsertSheet({
 }: {
   open: boolean
   pendingAsset: StudyAssetKind | null
+  allowedBlockTypes?: readonly StudyBlockType[]
   importAsset?: (kind: StudyAssetKind) => Promise<StudyLocalAsset | null>
   saveRecordedAudio?: (input: VoiceRecordingInput) => Promise<StudyLocalAsset>
   close(): void
@@ -762,7 +756,9 @@ function NotesInsertSheet({
       >
         <View style={{ gap: 8 }}>
           <Label muted>Содержимое</Label>
-          {INSERTABLE_BLOCKS.map((item) => {
+          {INSERTABLE_BLOCKS.filter(
+            (item) => !allowedBlockTypes || allowedBlockTypes.includes(item.type)
+          ).map((item) => {
             const Icon = item.icon
             return (
               <Pressable
@@ -817,7 +813,9 @@ function NotesInsertSheet({
         {importAsset ? (
           <View style={{ gap: 8 }}>
             <Label muted>Файлы и медиа</Label>
-            {ASSET_BLOCKS.map((item) => {
+            {ASSET_BLOCKS.filter(
+              (item) => !allowedBlockTypes || allowedBlockTypes.includes(item.type)
+            ).map((item) => {
               const Icon = item.icon
               return (
                 <Pressable
@@ -871,7 +869,7 @@ function NotesInsertSheet({
           </View>
         ) : null}
 
-        {saveRecordedAudio ? (
+        {saveRecordedAudio && (!allowedBlockTypes || allowedBlockTypes.includes('audio')) ? (
           <View style={{ gap: 8 }}>
             <Label muted>Голосовая запись</Label>
             <VoiceRecorder
@@ -1141,17 +1139,9 @@ function NotesDocumentReader({
     <View style={{ gap: 22 }}>
       {outline.map((node) =>
         node.kind === 'section' ? (
-          <NotesReadSection
-            key={node.heading.id}
-            section={node}
-            assetActions={assetActions}
-          />
+          <NotesReadSection key={node.heading.id} section={node} assetActions={assetActions} />
         ) : (
-          <NotesReadBlock
-            key={node.block.id}
-            block={node.block}
-            assetActions={assetActions}
-          />
+          <NotesReadBlock key={node.block.id} block={node.block} assetActions={assetActions} />
         )
       )}
     </View>
@@ -1163,8 +1153,10 @@ export function DocumentEditor({
   onChange,
   createId,
   header,
+  readFooter,
   presentation = 'default',
   mode = 'edit',
+  allowedBlockTypes,
   importAsset,
   openAsset,
   resolveAssetUri,
@@ -1227,9 +1219,13 @@ export function DocumentEditor({
         >
           <NotesDocumentReader document={document} assetActions={assetActions} />
         </View>
+        {readFooter ? <View style={{ marginTop: 14 }}>{readFooter}</View> : null}
       </ScrollView>
     )
   }
+
+  const blockAllowed = (type: StudyBlockType): boolean =>
+    !allowedBlockTypes || allowedBlockTypes.includes(type)
 
   const emit = (next: StudyDocument): void => {
     documentRef.current = next
@@ -1293,10 +1289,16 @@ export function DocumentEditor({
     setSettingsOpen(false)
     setRichSettingsOpen(false)
     setQuickLinkOpen(false)
+    if (allowedBlockTypes?.length === 1 && allowedBlockTypes[0] === 'text') {
+      const block = newBlock('text', createId())
+      if (block) insertBlockAt(block, index)
+      return
+    }
     setInsertOpen(true)
   }
 
   const insert = (type: StudyBlockType): void => {
+    if (!blockAllowed(type)) return
     const block = newBlock(type, createId())
     if (!block) return
     insertBlockAt(block)
@@ -1304,7 +1306,7 @@ export function DocumentEditor({
   }
 
   const insertAsset = async (type: StudyAssetKind): Promise<void> => {
-    if (!importAsset || pendingAsset) return
+    if (!blockAllowed(type) || !importAsset || pendingAsset) return
     setPendingAsset(type)
     try {
       const asset = await importAsset(type)
@@ -1445,28 +1447,21 @@ export function DocumentEditor({
           }}
         >
           <View style={{ minWidth: 0, flex: 1 }}>
-            <Text
-              numberOfLines={1}
-              style={{ color: theme.text, fontSize: 13, fontWeight: '600' }}
-            >
+            <Text numberOfLines={1} style={{ color: theme.text, fontSize: 13, fontWeight: '600' }}>
               {blockLabel(activeBlock)}
             </Text>
             <Text numberOfLines={1} style={{ marginTop: 2, color: theme.muted, fontSize: 11 }}>
               Настройки активного блока
             </Text>
           </View>
-          <Button
-            label="Настройки"
-            icon="settings"
-            compact
-            onPress={() => setSettingsOpen(true)}
-          />
+          <Button label="Настройки" icon="settings" compact onPress={() => setSettingsOpen(true)} />
         </View>
       ) : null}
 
       <NotesInsertSheet
         open={insertOpen}
         pendingAsset={pendingAsset}
+        allowedBlockTypes={allowedBlockTypes}
         importAsset={importAsset}
         saveRecordedAudio={saveRecordedAudio}
         close={() => setInsertOpen(false)}
@@ -1497,7 +1492,11 @@ export function DocumentEditor({
         </>
       ) : null}
 
-      {settingsOpen && activeBlock && activeIndex >= 0 && activeBlock.type !== 'text' && activeBlock.type !== 'board' ? (
+      {settingsOpen &&
+      activeBlock &&
+      activeIndex >= 0 &&
+      activeBlock.type !== 'text' &&
+      activeBlock.type !== 'board' ? (
         <NotesBlockSettingsSheet
           block={activeBlock}
           update={(next) => replace(activeIndex, next)}

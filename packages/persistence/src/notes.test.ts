@@ -115,4 +115,46 @@ describe('shared notes persistence', () => {
     await expect(deleting).resolves.toBe(true)
     expect(db.prepare('SELECT COUNT(*) AS count FROM notes').get()).toEqual({ count: 0 })
   })
+
+  it('upserts a mobile text block without rewriting existing desktop blocks', async () => {
+    const { runtime } = setup()
+    const notes = createNotesRepository(runtime)
+    const note = notes.createNote({ groupId: null, title: 'Смешанная заметка' })
+    const desktopDocument: NoteDocument = {
+      version: 1,
+      blocks: [
+        { id: 'heading-1', type: 'heading', text: 'Раздел', level: 2 },
+        { id: 'code-1', type: 'code', source: 'const value = 1', language: 'ts' }
+      ]
+    }
+    await notes.saveNote({ id: note.id, document: desktopDocument })
+
+    const first = await notes.upsertTextBlock(note.id, {
+      id: 'mobile-append-1',
+      type: 'text',
+      text: 'Дополнение с телефона',
+      html: '<p>Дополнение с телефона</p>'
+    })
+
+    expect(first.document.blocks.slice(0, 2)).toEqual(desktopDocument.blocks)
+    expect(first.document.blocks[2]).toMatchObject({
+      id: 'mobile-append-1',
+      type: 'text',
+      text: 'Дополнение с телефона'
+    })
+
+    const second = await notes.upsertTextBlock(note.id, {
+      id: 'mobile-append-1',
+      type: 'text',
+      text: 'Обновлённое дополнение',
+      html: '<p>Обновлённое дополнение</p>'
+    })
+
+    expect(second.document.blocks).toHaveLength(3)
+    expect(second.document.blocks.slice(0, 2)).toEqual(desktopDocument.blocks)
+    expect(second.document.blocks[2]).toMatchObject({
+      id: 'mobile-append-1',
+      text: 'Обновлённое дополнение'
+    })
+  })
 })

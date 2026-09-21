@@ -8,7 +8,7 @@ import type {
   NotesOverview,
   SaveNoteInput
 } from '@mymind/contracts/notes'
-import type { StudyFolderIconName } from '@mymind/contracts/study'
+import type { StudyFolderIconName, StudyTextBlock } from '@mymind/contracts/study'
 import { documentToPlainText } from '@mymind/core/study-document'
 import {
   createNoteInputSchema,
@@ -36,6 +36,7 @@ export interface NotesRepository {
   moveNote(id: string, groupId: string | null): NoteSummary
   getNote(id: string): NoteRecord
   saveNote(input: SaveNoteInput): Promise<NoteRecord>
+  upsertTextBlock(id: string, block: StudyTextBlock): Promise<NoteRecord>
   deleteNote(id: string): Promise<boolean>
   listUngroupedNotes(): NoteSummary[]
 }
@@ -264,26 +265,45 @@ export function createNotesRepository(
     return requireNote(id)
   }
 
+  async function persistDocument(id: string, document: NoteDocument): Promise<NoteRecord> {
+    const validDocument = noteDocumentSchema.parse(document)
+    await hooks.validateDocumentAssets?.(id, validDocument)
+    const existing = requireNote(id)
+    const now = runtime.now()
+    const saved = noteRecordSchema.parse({
+      ...existing,
+      document: validDocument,
+      plainText: documentToPlainText(validDocument),
+      updatedAt: now
+    })
+    const result = runtime
+      .database()
+      .prepare('UPDATE notes SET document = ?, plain_text = ?, updated_at = ? WHERE id = ?')
+      .run(JSON.stringify(saved.document), saved.plainText, now, id)
+    if (result.changes === 0) throw new Error('Заметка не найдена')
+    await hooks.afterDocumentSaved?.(id, saved.document)
+    return saved
+  }
+
   async function saveNote(input: SaveNoteInput): Promise<NoteRecord> {
     const valid = saveNoteInputSchema.parse(input)
-    return runExclusive(valid.id, async () => {
-      const document = noteDocumentSchema.parse(valid.document)
-      await hooks.validateDocumentAssets?.(valid.id, document)
-      const existing = requireNote(valid.id)
-      const now = runtime.now()
-      const saved = noteRecordSchema.parse({
-        ...existing,
-        document,
-        plainText: documentToPlainText(document),
-        updatedAt: now
-      })
-      const result = runtime
-        .database()
-        .prepare('UPDATE notes SET document = ?, plain_text = ?, updated_at = ? WHERE id = ?')
-        .run(JSON.stringify(saved.document), saved.plainText, now, valid.id)
-      if (result.changes === 0) throw new Error('Заметка не найдена')
-      await hooks.afterDocumentSaved?.(valid.id, saved.document)
-      return saved
+    return runExclusive(valid.id, () => persistDocument(valid.id, valid.document))
+  }
+
+  function upsertTextBlock(id: string, block: StudyTextBlock): Promise<NoteRecord> {
+    return runExclusive(id, async () => {
+      const existing = requireNote(id)
+      const blocks = existing.document.blocks.slice()
+      const index = blocks.findIndex((candidate) => candidate.id === block.id)
+      if (index >= 0) {
+        if (blocks[index]?.type !== 'text') {
+          throw new Error('Нельзя заменить нетекстовый блок с телефона')
+        }
+        blocks[index] = block
+      } else {
+        blocks.push(block)
+      }
+      return persistDocument(id, { version: 1, blocks })
     })
   }
 
@@ -314,6 +334,7 @@ export function createNotesRepository(
     moveNote,
     getNote,
     saveNote,
+    upsertTextBlock,
     deleteNote,
     listUngroupedNotes
   }

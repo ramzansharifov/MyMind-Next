@@ -127,13 +127,17 @@ describe('LAN sync snapshot merge', () => {
       const remote = captureSyncSnapshot(rightDb, ['tasks'])
       const merged = mergeSyncSnapshots(local, remote)
 
-      expect(merged.snapshot.modules[0]?.tables.find((table) => table.table === 'tasks')).toMatchObject({
+      expect(
+        merged.snapshot.modules[0]?.tables.find((table) => table.table === 'tasks')
+      ).toMatchObject({
         rows: [],
         tombstones: [{ key: '["task-delete"]' }]
       })
 
       applySyncSnapshot(rightDb, merged.snapshot)
-      expect(right.prepare("SELECT COUNT(*) AS count FROM tasks WHERE id = 'task-delete'").get()).toEqual({
+      expect(
+        right.prepare("SELECT COUNT(*) AS count FROM tasks WHERE id = 'task-delete'").get()
+      ).toEqual({
         count: 0
       })
     } finally {
@@ -151,18 +155,22 @@ describe('LAN sync snapshot merge', () => {
       ensureSyncInfrastructure(leftDb)
       ensureSyncInfrastructure(rightDb)
 
-      left.prepare(
-        `INSERT INTO tasks(
+      left
+        .prepare(
+          `INSERT INTO tasks(
           id, title, description, group_id, status, priority, due_date, due_time,
           completed_at, created_at, updated_at
         ) VALUES ('left-task', 'Локальная', '', NULL, 'active', 'normal', NULL, NULL, NULL, 10, 10)`
-      ).run()
-      right.prepare(
-        `INSERT INTO tasks(
+        )
+        .run()
+      right
+        .prepare(
+          `INSERT INTO tasks(
           id, title, description, group_id, status, priority, due_date, due_time,
           completed_at, created_at, updated_at
         ) VALUES ('right-task', 'Удалённая', '', NULL, 'active', 'normal', NULL, NULL, NULL, 20, 20)`
-      ).run()
+        )
+        .run()
 
       const local = captureSyncSnapshot(leftDb, ['tasks'])
       const remote = captureSyncSnapshot(rightDb, ['tasks'])
@@ -193,7 +201,10 @@ describe('LAN sync snapshot merge', () => {
 
       for (const [db, url] of [
         [left, 'mymind-asset://local/workout-progress-entry-1/asset-1/progress.jpg'],
-        [right, 'file:///data/user/0/com.mymind.mobile/files/workout-progress/entry-1/asset-1/progress.jpg']
+        [
+          right,
+          'file:///data/user/0/com.mymind.mobile/files/workout-progress/entry-1/asset-1/progress.jpg'
+        ]
       ] as const) {
         db.prepare(
           `INSERT INTO workout_progress_entries(
@@ -209,16 +220,14 @@ describe('LAN sync snapshot merge', () => {
 
       const leftSnapshot = captureSyncSnapshot(leftDb, ['workouts'])
       const rightSnapshot = captureSyncSnapshot(rightDb, ['workouts'])
-      const leftPhoto = leftSnapshot.modules[0]?.tables
-        .find((table) => table.table === 'workout_progress_photos')
-        ?.rows[0]
-      const rightPhoto = rightSnapshot.modules[0]?.tables
-        .find((table) => table.table === 'workout_progress_photos')
-        ?.rows[0]
+      const leftPhoto = leftSnapshot.modules[0]?.tables.find(
+        (table) => table.table === 'workout_progress_photos'
+      )?.rows[0]
+      const rightPhoto = rightSnapshot.modules[0]?.tables.find(
+        (table) => table.table === 'workout_progress_photos'
+      )?.rows[0]
 
-      expect(leftPhoto?.data.url).toBe(
-        'mymind-sync://workouts/entry-1/asset-1/progress.jpg'
-      )
+      expect(leftPhoto?.data.url).toBe('mymind-sync://workouts/entry-1/asset-1/progress.jpg')
       expect(rightPhoto).toEqual(leftPhoto)
       expect(mergeSyncSnapshots(leftSnapshot, rightSnapshot).conflicts.get('workouts')).toBe(0)
     } finally {
@@ -278,9 +287,9 @@ describe('LAN sync snapshot merge', () => {
         captureSyncSnapshot(leftDb, ['passwords']),
         captureSyncSnapshot(rightDb, ['passwords'])
       )
-      const vault = merged.snapshot.modules[0]?.tables
-        .find((table) => table.table === 'password_vault')
-        ?.rows[0]
+      const vault = merged.snapshot.modules[0]?.tables.find(
+        (table) => table.table === 'password_vault'
+      )?.rows[0]
       expect(vault?.data.kdf_salt).toBe('new-salt')
     } finally {
       left.close()
@@ -321,7 +330,6 @@ describe('LAN sync snapshot merge', () => {
     }
   })
 
-
   it('uses synchronized logical revisions instead of wall clocks after the first merge', () => {
     const left = createDatabase()
     const right = createDatabase()
@@ -355,9 +363,7 @@ describe('LAN sync snapshot merge', () => {
         )
         .run()
       right
-        .prepare(
-          "UPDATE tasks SET title = 'Правая правка', updated_at = 1 WHERE id = 'clock-task'"
-        )
+        .prepare("UPDATE tasks SET title = 'Правая правка', updated_at = 1 WHERE id = 'clock-task'")
         .run()
 
       const leftSnapshot = captureSyncSnapshot(leftDb, ['tasks'])
@@ -386,7 +392,6 @@ describe('LAN sync snapshot merge', () => {
     }
   })
 
-
   it('allows an intentional recreation of the same id to supersede an older tombstone', () => {
     const left = createDatabase()
     const right = createDatabase()
@@ -396,12 +401,14 @@ describe('LAN sync snapshot merge', () => {
       ensureSyncInfrastructure(leftDb)
       ensureSyncInfrastructure(rightDb)
 
-      left.prepare(
-        `INSERT INTO tasks(
+      left
+        .prepare(
+          `INSERT INTO tasks(
           id, title, description, group_id, status, priority, due_date, due_time,
           completed_at, created_at, updated_at
         ) VALUES ('recreated-task', 'Первая версия', '', NULL, 'active', 'normal', NULL, NULL, NULL, 1, 1)`
-      ).run()
+        )
+        .run()
 
       const initial = mergeSyncSnapshots(
         captureSyncSnapshot(leftDb, ['tasks']),
@@ -418,18 +425,18 @@ describe('LAN sync snapshot merge', () => {
       applySyncSnapshot(leftDb, deleted.snapshot)
       applySyncSnapshot(rightDb, deleted.snapshot)
 
-      left.prepare(
-        `INSERT INTO tasks(
+      left
+        .prepare(
+          `INSERT INTO tasks(
           id, title, description, group_id, status, priority, due_date, due_time,
           completed_at, created_at, updated_at
         ) VALUES ('recreated-task', 'Создано заново', '', NULL, 'active', 'normal', NULL, NULL, NULL, 2, 2)`
-      ).run()
+        )
+        .run()
 
       const recreated = captureSyncSnapshot(leftDb, ['tasks'])
       const recreatedTable = recreated.modules[0]?.tables.find((table) => table.table === 'tasks')
-      const recreatedRow = recreatedTable?.rows.find(
-        (row) => row.data.id === 'recreated-task'
-      )
+      const recreatedRow = recreatedTable?.rows.find((row) => row.data.id === 'recreated-task')
       expect(recreatedTable?.tombstones).toEqual([])
       expect(recreatedRow?.version).toBeGreaterThan(
         deleted.snapshot.modules[0]?.tables
@@ -439,15 +446,14 @@ describe('LAN sync snapshot merge', () => {
 
       const merged = mergeSyncSnapshots(recreated, captureSyncSnapshot(rightDb, ['tasks']))
       applySyncSnapshot(rightDb, merged.snapshot)
-      expect(
-        right.prepare("SELECT title FROM tasks WHERE id = 'recreated-task'").get()
-      ).toEqual({ title: 'Создано заново' })
+      expect(right.prepare("SELECT title FROM tasks WHERE id = 'recreated-task'").get()).toEqual({
+        title: 'Создано заново'
+      })
     } finally {
       left.close()
       right.close()
     }
   })
-
 
   it('refuses concurrent master-password changes for the same password vault lineage', () => {
     const left = createDatabase()
@@ -477,33 +483,37 @@ describe('LAN sync snapshot merge', () => {
       applySyncSnapshot(leftDb, initial.snapshot)
       applySyncSnapshot(rightDb, initial.snapshot)
 
-      left.prepare(
-        `UPDATE password_vault
+      left
+        .prepare(
+          `UPDATE password_vault
          SET kdf_salt = 'left-salt',
              wrapped_key_nonce = 'left-nonce',
              wrapped_key_ciphertext = 'left-cipher',
              wrapped_key_tag = 'left-tag',
              updated_at = 20
          WHERE id = 'default'`
-      ).run()
-      right.prepare(
-        `UPDATE password_vault
+        )
+        .run()
+      right
+        .prepare(
+          `UPDATE password_vault
          SET kdf_salt = 'right-salt',
              wrapped_key_nonce = 'right-nonce',
              wrapped_key_ciphertext = 'right-cipher',
              wrapped_key_tag = 'right-tag',
              updated_at = 20
          WHERE id = 'default'`
-      ).run()
+        )
+        .run()
 
       const leftSnapshot = captureSyncSnapshot(leftDb, ['passwords'])
       const rightSnapshot = captureSyncSnapshot(rightDb, ['passwords'])
-      const leftVault = leftSnapshot.modules[0]?.tables
-        .find((table) => table.table === 'password_vault')
-        ?.rows[0]
-      const rightVault = rightSnapshot.modules[0]?.tables
-        .find((table) => table.table === 'password_vault')
-        ?.rows[0]
+      const leftVault = leftSnapshot.modules[0]?.tables.find(
+        (table) => table.table === 'password_vault'
+      )?.rows[0]
+      const rightVault = rightSnapshot.modules[0]?.tables.find(
+        (table) => table.table === 'password_vault'
+      )?.rows[0]
 
       expect(leftVault?.version).toBe(rightVault?.version)
       expect(() => mergeSyncSnapshots(leftSnapshot, rightSnapshot)).toThrow(
@@ -514,7 +524,6 @@ describe('LAN sync snapshot merge', () => {
       right.close()
     }
   })
-
 
   it('reconciles SET NULL foreign keys when a parent deletion races a child edit', () => {
     const left = createDatabase()
@@ -611,9 +620,7 @@ describe('LAN sync snapshot merge', () => {
         captureSyncSnapshot(rightDb, ['habits'])
       )
       const reconciled = reconcileSyncSnapshotForeignKeys(leftDb, merged.snapshot)
-      const entries = reconciled.modules[0]?.tables.find(
-        (table) => table.table === 'habit_entries'
-      )
+      const entries = reconciled.modules[0]?.tables.find((table) => table.table === 'habit_entries')
 
       expect(entries?.rows).toEqual([])
       expect(entries?.tombstones.some((row) => row.key === '["entry-fk"]')).toBe(true)
@@ -626,7 +633,6 @@ describe('LAN sync snapshot merge', () => {
       right.close()
     }
   })
-
 
   it('rejects snapshot rows whose transport key does not match their primary key data', () => {
     const db = createDatabase()
@@ -654,4 +660,214 @@ describe('LAN sync snapshot merge', () => {
     }
   })
 
+  it('merges a concurrent desktop note edit with a mobile append block', () => {
+    const left = createDatabase()
+    const right = createDatabase()
+    try {
+      const leftDb = adapt(left)
+      const rightDb = adapt(right)
+      ensureSyncInfrastructure(leftDb)
+      ensureSyncInfrastructure(rightDb)
+
+      const baseDocument = {
+        version: 1,
+        blocks: [
+          { id: 'heading-1', type: 'heading', text: 'Исходный заголовок', level: 2 },
+          { id: 'code-1', type: 'code', source: 'const value = 1', language: 'ts' }
+        ]
+      } as const
+
+      for (const db of [left, right]) {
+        db.prepare(
+          `INSERT INTO notes(
+            id, group_id, title, document, plain_text, created_at, updated_at
+          ) VALUES ('note-sync', NULL, 'Заметка', ?, 'Исходный заголовок', 1, 1)`
+        ).run(JSON.stringify(baseDocument))
+      }
+
+      const desktopDocument = {
+        version: 1,
+        blocks: [
+          { id: 'heading-1', type: 'heading', text: 'Заголовок с desktop', level: 2 },
+          { id: 'code-1', type: 'code', source: 'const value = 2', language: 'ts' }
+        ]
+      } as const
+      const mobileDocument = {
+        version: 1,
+        blocks: [
+          ...baseDocument.blocks,
+          {
+            id: 'mobile-append-abc',
+            type: 'text',
+            text: 'Дополнение с телефона',
+            html: '<p>Дополнение с телефона</p>'
+          }
+        ]
+      } as const
+
+      left
+        .prepare(
+          "UPDATE notes SET document = ?, plain_text = ?, updated_at = 20 WHERE id = 'note-sync'"
+        )
+        .run(JSON.stringify(desktopDocument), 'Заголовок с desktop')
+      left
+        .prepare(
+          "UPDATE notes SET document = ?, plain_text = ?, updated_at = 21 WHERE id = 'note-sync'"
+        )
+        .run(JSON.stringify(desktopDocument), 'Заголовок с desktop')
+      right
+        .prepare(
+          "UPDATE notes SET document = ?, plain_text = ?, updated_at = 30 WHERE id = 'note-sync'"
+        )
+        .run(
+          JSON.stringify(mobileDocument),
+          'Исходный заголовок\n\nconst value = 1\n\nДополнение с телефона'
+        )
+
+      const leftSnapshot = captureSyncSnapshot(leftDb, ['notes'])
+      const rightSnapshot = captureSyncSnapshot(rightDb, ['notes'])
+      const leftRow = leftSnapshot.modules[0]?.tables
+        .find((table) => table.table === 'notes')
+        ?.rows.find((row) => row.data.id === 'note-sync')
+      const rightRow = rightSnapshot.modules[0]?.tables
+        .find((table) => table.table === 'notes')
+        ?.rows.find((row) => row.data.id === 'note-sync')
+      expect(leftRow?.version).toBeGreaterThan(rightRow?.version ?? 0)
+
+      const merged = mergeSyncSnapshots(leftSnapshot, rightSnapshot)
+      const row = merged.snapshot.modules[0]?.tables
+        .find((table) => table.table === 'notes')
+        ?.rows.find((candidate) => candidate.data.id === 'note-sync')
+      if (!row || typeof row.data.document !== 'string') throw new Error('merged note missing')
+      const mergedDocument = JSON.parse(row.data.document) as {
+        blocks: Array<{ id: string; type: string; text?: string; source?: string }>
+      }
+
+      expect(mergedDocument.blocks).toEqual([
+        { id: 'heading-1', type: 'heading', text: 'Заголовок с desktop', level: 2 },
+        { id: 'code-1', type: 'code', source: 'const value = 2', language: 'ts' },
+        {
+          id: 'mobile-append-abc',
+          type: 'text',
+          text: 'Дополнение с телефона',
+          html: '<p>Дополнение с телефона</p>'
+        }
+      ])
+      expect(row.data.plain_text).toContain('Заголовок с desktop')
+      expect(row.data.plain_text).toContain('Дополнение с телефона')
+      expect(row.version).toBeGreaterThan(leftRow?.version ?? 0)
+      expect(merged.conflicts.get('notes')).toBeGreaterThan(0)
+
+      applySyncSnapshot(leftDb, merged.snapshot)
+      applySyncSnapshot(rightDb, merged.snapshot)
+      expect(captureSyncSnapshot(leftDb, ['notes']).modules).toEqual(
+        captureSyncSnapshot(rightDb, ['notes']).modules
+      )
+    } finally {
+      left.close()
+      right.close()
+    }
+  })
+
+  it('preserves the desktop base when mobile append revisions are newer', () => {
+    const left = createDatabase()
+    const right = createDatabase()
+    try {
+      const leftDb = adapt(left)
+      const rightDb = adapt(right)
+      ensureSyncInfrastructure(leftDb)
+      ensureSyncInfrastructure(rightDb)
+
+      const baseDocument = {
+        version: 1,
+        blocks: [
+          { id: 'heading-2', type: 'heading', text: 'База', level: 2 },
+          { id: 'code-2', type: 'code', source: 'const value = 1', language: 'ts' }
+        ]
+      } as const
+      for (const db of [left, right]) {
+        db.prepare(
+          `INSERT INTO notes(
+            id, group_id, title, document, plain_text, created_at, updated_at
+          ) VALUES ('note-newer-mobile', NULL, 'Заметка', ?, 'База', 1, 1)`
+        ).run(JSON.stringify(baseDocument))
+      }
+
+      const desktopDocument = {
+        version: 1,
+        blocks: [
+          { id: 'heading-2', type: 'heading', text: 'Новая desktop-база', level: 2 },
+          { id: 'code-2', type: 'code', source: 'const value = 9', language: 'ts' }
+        ]
+      } as const
+      const mobileDocument = {
+        version: 1,
+        blocks: [
+          ...baseDocument.blocks,
+          {
+            id: 'mobile-append-newer',
+            type: 'text',
+            text: 'Последняя версия дополнения',
+            html: '<p>Последняя версия дополнения</p>'
+          }
+        ]
+      } as const
+
+      left
+        .prepare(
+          "UPDATE notes SET document = ?, plain_text = ?, updated_at = 20 WHERE id = 'note-newer-mobile'"
+        )
+        .run(JSON.stringify(desktopDocument), 'Новая desktop-база')
+      right
+        .prepare(
+          "UPDATE notes SET document = ?, plain_text = ?, updated_at = 30 WHERE id = 'note-newer-mobile'"
+        )
+        .run(JSON.stringify(mobileDocument), 'База\n\nПоследняя версия дополнения')
+      right
+        .prepare(
+          "UPDATE notes SET document = ?, plain_text = ?, updated_at = 31 WHERE id = 'note-newer-mobile'"
+        )
+        .run(JSON.stringify(mobileDocument), 'База\n\nПоследняя версия дополнения')
+
+      const leftSnapshot = captureSyncSnapshot(leftDb, ['notes'])
+      const rightSnapshot = captureSyncSnapshot(rightDb, ['notes'])
+      const leftRow = leftSnapshot.modules[0]?.tables
+        .find((table) => table.table === 'notes')
+        ?.rows.find((row) => row.data.id === 'note-newer-mobile')
+      const rightRow = rightSnapshot.modules[0]?.tables
+        .find((table) => table.table === 'notes')
+        ?.rows.find((row) => row.data.id === 'note-newer-mobile')
+      expect(rightRow?.version).toBeGreaterThan(leftRow?.version ?? 0)
+
+      const merged = mergeSyncSnapshots(leftSnapshot, rightSnapshot)
+      const row = merged.snapshot.modules[0]?.tables
+        .find((table) => table.table === 'notes')
+        ?.rows.find((candidate) => candidate.data.id === 'note-newer-mobile')
+      if (!row || typeof row.data.document !== 'string') throw new Error('merged note missing')
+      const mergedDocument = JSON.parse(row.data.document) as {
+        blocks: Array<{ id: string; type: string; text?: string; source?: string }>
+      }
+
+      expect(mergedDocument.blocks).toEqual([
+        { id: 'heading-2', type: 'heading', text: 'Новая desktop-база', level: 2 },
+        { id: 'code-2', type: 'code', source: 'const value = 9', language: 'ts' },
+        {
+          id: 'mobile-append-newer',
+          type: 'text',
+          text: 'Последняя версия дополнения',
+          html: '<p>Последняя версия дополнения</p>'
+        }
+      ])
+      expect(row.version).toBeGreaterThan(rightRow?.version ?? 0)
+
+      applySyncSnapshot(leftDb, merged.snapshot)
+      applySyncSnapshot(rightDb, merged.snapshot)
+      expect(captureSyncSnapshot(leftDb, ['notes']).modules).toEqual(
+        captureSyncSnapshot(rightDb, ['notes']).modules
+      )
+    } finally {
+      left.close()
+      right.close()
+    }
+  })
 })
