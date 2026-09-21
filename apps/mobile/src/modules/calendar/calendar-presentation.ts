@@ -1,7 +1,4 @@
-import type {
-  CalendarElapsedDuration,
-  CalendarOccurrenceRecord
-} from '@mymind/contracts/calendar'
+import type { CalendarElapsedDuration, CalendarOccurrenceRecord } from '@mymind/contracts/calendar'
 
 function plural(value: number, forms: [string, string, string]): string {
   const mod10 = value % 10
@@ -36,9 +33,7 @@ export function calendarElapsedLabel(elapsed: CalendarElapsedDuration | null): s
     parts.push(`${elapsed.years} ${plural(elapsed.years, ['год', 'года', 'лет'])}`)
   }
   if (elapsed.months) {
-    parts.push(
-      `${elapsed.months} ${plural(elapsed.months, ['месяц', 'месяца', 'месяцев'])}`
-    )
+    parts.push(`${elapsed.months} ${plural(elapsed.months, ['месяц', 'месяца', 'месяцев'])}`)
   }
   parts.push(`${elapsed.days} ${plural(elapsed.days, ['день', 'дня', 'дней'])}`)
 
@@ -47,11 +42,7 @@ export function calendarElapsedLabel(elapsed: CalendarElapsedDuration | null): s
 
 export function calendarOccurrenceSubtitle(item: CalendarOccurrenceRecord): string {
   const elapsed = calendarElapsedLabel(item.elapsed)
-  return [
-    item.time,
-    item.kind === 'annual' ? 'Каждый год' : '',
-    elapsed ? `Прошло ${elapsed}` : ''
-  ]
+  return [item.time, item.kind === 'annual' ? 'Каждый год' : '', elapsed ? `Прошло ${elapsed}` : '']
     .filter(Boolean)
     .join(' · ')
 }
