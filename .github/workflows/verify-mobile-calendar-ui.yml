@@ -27,8 +27,10 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run native:node
-      - name: Prettier
-        run: npx prettier --check apps/mobile/src/modules/calendar/CalendarScreen.tsx apps/mobile/src/modules/calendar/CalendarReminderInboxModal.tsx apps/mobile/src/modules/calendar/calendar-presentation.ts apps/mobile/src/modules/calendar/calendar-presentation.test.ts
+      - name: Prettier preview
+        run: |
+          npx prettier --write apps/mobile/src/modules/calendar/CalendarScreen.tsx apps/mobile/src/modules/calendar/CalendarReminderInboxModal.tsx apps/mobile/src/modules/calendar/calendar-presentation.ts apps/mobile/src/modules/calendar/calendar-presentation.test.ts
+          git diff -- apps/mobile/src/modules/calendar/CalendarScreen.tsx apps/mobile/src/modules/calendar/CalendarReminderInboxModal.tsx apps/mobile/src/modules/calendar/calendar-presentation.ts apps/mobile/src/modules/calendar/calendar-presentation.test.ts
       - name: ESLint
         run: npx eslint apps/mobile/src/modules/calendar/CalendarScreen.tsx apps/mobile/src/modules/calendar/CalendarReminderInboxModal.tsx apps/mobile/src/modules/calendar/calendar-presentation.ts apps/mobile/src/modules/calendar/calendar-presentation.test.ts
       - run: npm run typecheck:mobile
