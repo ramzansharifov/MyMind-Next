@@ -428,7 +428,6 @@ function mergeConcurrentNoteRows(
   left: SyncSnapshotRow,
   right: SyncSnapshotRow
 ): SyncSnapshotRow | null {
-  if (left.version !== right.version) return null
   const leftDocument = noteDocumentFromRow(left)
   const rightDocument = noteDocumentFromRow(right)
   if (!leftDocument || !rightDocument) return null
@@ -447,9 +446,14 @@ function mergeConcurrentNoteRows(
   if (rightAppend.length < leftAppend.length) {
     baseRow = right
     baseDocument = rightBase
-  } else if (rightAppend.length === leftAppend.length && rightBaseCanonical > leftBaseCanonical) {
-    baseRow = right
-    baseDocument = rightBase
+  } else if (rightAppend.length === leftAppend.length) {
+    if (right.version > left.version) {
+      baseRow = right
+      baseDocument = rightBase
+    } else if (right.version === left.version && rightBaseCanonical > leftBaseCanonical) {
+      baseRow = right
+      baseDocument = rightBase
+    }
   }
 
   const appendById = new Map<string, Extract<NoteDocument['blocks'][number], { type: 'text' }>>()
@@ -474,9 +478,21 @@ function mergeConcurrentNoteRows(
     typeof right.data.updated_at === 'number' ? right.data.updated_at : 0
   )
 
+  const mergedCanonical = JSON.stringify(mergedDocument)
+  const matchesLeft =
+    mergedCanonical === JSON.stringify(leftDocument) && canonicalRow(baseRow) === canonicalRow(left)
+  const matchesRight =
+    mergedCanonical === JSON.stringify(rightDocument) && canonicalRow(baseRow) === canonicalRow(right)
+  const version =
+    matchesLeft && left.version >= right.version
+      ? left.version
+      : matchesRight && right.version >= left.version
+        ? right.version
+        : Math.max(left.version, right.version) + 1
+
   return {
     key: baseRow.key,
-    version: left.version,
+    version,
     data: {
       ...baseRow.data,
       document: JSON.stringify(mergedDocument),
@@ -535,15 +551,26 @@ function mergeTable(
     }
 
     let winner: SyncSnapshotRow | undefined
-    if (leftVersion > rightVersion) winner = leftRow
+    if (leftRow && rightRow && definition.table === 'notes') {
+      const leftCanonical = canonicalRow(leftRow)
+      const rightCanonical = canonicalRow(rightRow)
+      const mergedNote = mergeConcurrentNoteRows(leftRow, rightRow)
+      if (mergedNote) {
+        if (leftCanonical !== rightCanonical) conflicts += 1
+        winner = mergedNote
+      } else if (leftVersion > rightVersion) winner = leftRow
+      else if (rightVersion > leftVersion) winner = rightRow
+      else {
+        if (leftCanonical !== rightCanonical) conflicts += 1
+        winner = leftCanonical >= rightCanonical ? leftRow : rightRow
+      }
+    } else if (leftVersion > rightVersion) winner = leftRow
     else if (rightVersion > leftVersion) winner = rightRow
     else if (leftRow && rightRow) {
       const leftCanonical = canonicalRow(leftRow)
       const rightCanonical = canonicalRow(rightRow)
       if (leftCanonical !== rightCanonical) conflicts += 1
-      const mergedNote =
-        definition.table === 'notes' ? mergeConcurrentNoteRows(leftRow, rightRow) : null
-      winner = mergedNote ?? (leftCanonical >= rightCanonical ? leftRow : rightRow)
+      winner = leftCanonical >= rightCanonical ? leftRow : rightRow
     } else winner = leftRow ?? rightRow
 
     if (winner) rows.push(winner)
