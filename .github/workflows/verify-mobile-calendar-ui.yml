@@ -1,4 +1,5 @@
 name: Verify mobile calendar UI
+# Latest-head verification checkpoint
 
 on:
   push:
