@@ -1,6 +1,5 @@
 import { Directory, File, FileMode, Paths } from 'expo-file-system'
 import { sha256 } from '@noble/hashes/sha2.js'
-import type { SqlDatabasePort } from '@mymind/contracts/storage'
 import type {
   SyncAssetManifestEntry,
   SyncAssetReference,
@@ -58,23 +57,22 @@ export function decodeSyncBase64(value: string): Uint8Array {
   return output
 }
 
-function assetFile(reference: SyncAssetReference): File {
+function assertMobileAsset(reference: SyncAssetReference): void {
   parseSyncAssetPath(reference.path)
-  return reference.kind === 'note-asset'
-    ? new File(
-        Paths.document,
-        'document-assets',
-        reference.ownerId,
-        reference.assetId,
-        reference.fileName
-      )
-    : new File(
-        Paths.document,
-        'workout-progress',
-        reference.ownerId,
-        reference.assetId,
-        reference.fileName
-      )
+  if (reference.kind !== 'note-asset') {
+    throw new Error('Этот тип файла не поддерживается мобильной синхронизацией')
+  }
+}
+
+function assetFile(reference: SyncAssetReference): File {
+  assertMobileAsset(reference)
+  return new File(
+    Paths.document,
+    'document-assets',
+    reference.ownerId,
+    reference.assetId,
+    reference.fileName
+  )
 }
 
 function hashFile(file: File): string {
@@ -147,11 +145,12 @@ export function readMobileSyncAssetChunks(
 
 function stageDirectory(planId: string, reference: SyncAssetReference): Directory {
   if (!/^[a-zA-Z0-9_-]{1,120}$/.test(planId)) throw new Error('Некорректный sync plan id')
+  assertMobileAsset(reference)
   return new Directory(
     Paths.cache,
     'mymind-sync',
     planId,
-    reference.kind === 'note-asset' ? 'notes' : 'workouts',
+    'notes',
     reference.ownerId,
     reference.assetId,
     reference.fileName
@@ -244,10 +243,13 @@ export function commitMobileSyncAssets(
     verifyStagedMobileSyncAsset(planId, entry)
     const reference = parseSyncAssetPath(entry.path)
     const target = assetFile(reference)
-    const parent =
-      reference.kind === 'note-asset'
-        ? new Directory(Paths.document, 'document-assets', reference.ownerId, reference.assetId)
-        : new Directory(Paths.document, 'workout-progress', reference.ownerId, reference.assetId)
+    assertMobileAsset(reference)
+    const parent = new Directory(
+      Paths.document,
+      'document-assets',
+      reference.ownerId,
+      reference.assetId
+    )
     parent.create({ intermediates: true, idempotent: true })
 
     target.create({ overwrite: true })
@@ -284,50 +286,16 @@ export function cleanupMobileSyncAssetStage(planId: string): void {
   if (directory.exists) directory.delete()
 }
 
-export function normalizeMobileWorkoutPhotoUrls(
-  database: SqlDatabasePort,
-  snapshot: SyncDataSnapshot
-): void {
-  const workouts = snapshot.modules.find((module) => module.module === 'workouts')
-  const photos = workouts?.tables.find((table) => table.table === 'workout_progress_photos')
-  if (!photos) return
-
-  database.prepare("UPDATE sync_runtime SET value = '1' WHERE key = 'applying_remote'").run()
-  try {
-    const statement = database.prepare(
-      'UPDATE workout_progress_photos SET url = ? WHERE id = ? AND entry_id = ? AND asset_id = ?'
-    )
-    for (const row of photos.rows) {
-      const id = row.data.id
-      const entryId = row.data.entry_id
-      const assetId = row.data.asset_id
-      const fileName = row.data.file_name
-      if (
-        typeof id !== 'string' ||
-        typeof entryId !== 'string' ||
-        typeof assetId !== 'string' ||
-        typeof fileName !== 'string'
-      ) {
-        throw new Error('Некорректная фотография прогресса в sync snapshot')
-      }
-      const reference = parseSyncAssetPath(
-        `workouts/${entryId}/${assetId}/${fileName}`
-      )
-      statement.run(assetFile(reference).uri, id, entryId, assetId)
-    }
-  } finally {
-    database.prepare("UPDATE sync_runtime SET value = '0' WHERE key = 'applying_remote'").run()
-  }
-}
-
-
 export function removeMobileSyncAssets(references: readonly SyncAssetReference[]): void {
   for (const reference of references) {
+    if (reference.kind !== 'note-asset') continue
     const file = assetFile(reference)
-    const parent =
-      reference.kind === 'note-asset'
-        ? new Directory(Paths.document, 'document-assets', reference.ownerId, reference.assetId)
-        : new Directory(Paths.document, 'workout-progress', reference.ownerId, reference.assetId)
+    const parent = new Directory(
+      Paths.document,
+      'document-assets',
+      reference.ownerId,
+      reference.assetId
+    )
     try {
       if (parent.exists) parent.delete()
       else if (file.exists) file.delete()
