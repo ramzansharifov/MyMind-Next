@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { AppState, Linking, ScrollView, TextInput, View } from 'react-native'
-import { Heart, KeyRound, ShieldCheck } from 'lucide-react-native'
+import { AppState, Linking, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
+import {
+  Heart,
+  KeyRound,
+  MoreHorizontal,
+  ShieldCheck,
+  SlidersHorizontal,
+  type LucideIcon
+} from 'lucide-react-native'
 import {
   type PasswordGroupRecord,
   type PasswordItemRecord,
@@ -19,14 +26,13 @@ import { useServices } from '../../app/context'
 import { FormSheet } from '../../shared/ui/FormSheet'
 import { AppDialog } from '../../shared/ui/AppDialog'
 import { AppSelect } from '../../shared/ui/FormControls'
-import { ModuleTabs } from '../../shared/ui/ModuleTabs'
 import { ActionMenu } from '../../shared/ui/ActionMenu'
-import { WorkspaceNodeCard, WorkspaceStatCard } from '../../shared/ui/Workspace'
+import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
 import { MobileCreateAction } from '../../shared/ui/MobileCreateAction'
 import { VisualIconBadge } from '../../shared/ui/VisualPickers'
 import { GROUP_COLOR_CHOICES, PASSWORD_GROUP_ICON_CHOICES } from '../../shared/ui/visual-options'
 import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
-import { useToast } from '../../shared/ui/ToastProvider'
+import { useToast } from '../../shared/ui/toast-context'
 import {
   colorField,
   iconField,
@@ -40,7 +46,6 @@ import {
   ErrorState,
   Label,
   LoadingState,
-  Row,
   SearchField
 } from '../../shared/ui/primitives'
 import { useTheme } from '../../shared/ui/theme'
@@ -50,6 +55,68 @@ import { PasswordItemEditor } from './PasswordItemEditor'
 import { passwordClipboard } from './passwordClipboard'
 
 type Tab = 'items' | 'favorites' | 'security'
+
+const PASSWORD_TABS: ReadonlyArray<{ id: Tab; label: string; icon: LucideIcon }> = [
+  { id: 'items', label: 'Хранилище', icon: KeyRound },
+  { id: 'favorites', label: 'Избранное', icon: Heart },
+  { id: 'security', label: 'Безопасность', icon: ShieldCheck }
+]
+
+type IdleGlobal = typeof globalThis & {
+  requestIdleCallback?: (callback: () => void) => number
+}
+
+function runWhenIdle(callback: () => void): void {
+  const requestIdle = (globalThis as IdleGlobal).requestIdleCallback
+  if (typeof requestIdle === 'function') {
+    requestIdle(callback)
+    return
+  }
+  setTimeout(callback, 0)
+}
+
+function SecurityMetric({
+  label,
+  value,
+  tone = 'default'
+}: {
+  label: string
+  value: number
+  tone?: 'default' | 'warning' | 'danger'
+}): React.JSX.Element {
+  const theme = useTheme()
+  const valueColor = tone === 'danger' ? theme.error : tone === 'warning' ? '#fbbf24' : theme.text
+
+  return (
+    <View
+      style={{
+        minWidth: 140,
+        flexGrow: 1,
+        flexBasis: '46%',
+        minHeight: 76,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        borderWidth: 1,
+        borderColor: theme.border,
+        borderRadius: 14,
+        backgroundColor: theme.surface
+      }}
+    >
+      <Text style={{ color: theme.muted, fontSize: 10.5, lineHeight: 15 }}>{label}</Text>
+      <Text
+        style={{
+          marginTop: 7,
+          color: valueColor,
+          fontSize: 20,
+          lineHeight: 24,
+          fontWeight: '700'
+        }}
+      >
+        {value}
+      </Text>
+    </View>
+  )
+}
 
 const securityLabels = {
   weak: 'Слабый пароль',
@@ -172,13 +239,7 @@ function VaultGate({
 
 function itemSubtitle(item: PasswordItemSummary, overview: PasswordsOverview): string {
   const group = overview.groups.find((candidate) => candidate.id === item.groupId)?.name
-  return [
-    item.username,
-    group,
-    item.type === 'login' ? 'Логин' : 'Пароль',
-    item.favorite ? 'Избранное' : '',
-    ...item.securityIssues.map((issue) => securityLabels[issue])
-  ]
+  return [item.username, group, item.type === 'login' ? 'Логин' : 'Пароль']
     .filter(Boolean)
     .join(' · ')
 }
@@ -187,6 +248,7 @@ export function PasswordsScreen(): React.JSX.Element {
   const { passwords: api } = useServices()
   const confirm = useConfirmation()
   const toast = useToast()
+  const theme = useTheme()
   const [status, setStatus] = useState<PasswordVaultStatus>(() => api.getPasswordVaultStatus())
   const [overview, setOverview] = useState<PasswordsOverview | null>(null)
   const [loading, setLoading] = useState(false)
@@ -201,6 +263,8 @@ export function PasswordsScreen(): React.JSX.Element {
   const [generatorOpen, setGeneratorOpen] = useState(false)
   const [changeMasterOpen, setChangeMasterOpen] = useState(false)
   const [groupsOpen, setGroupsOpen] = useState(false)
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [toolsOpen, setToolsOpen] = useState(false)
 
   const refresh = useCallback((): void => {
     setLoading(true)
@@ -225,6 +289,8 @@ export function PasswordsScreen(): React.JSX.Element {
     setGeneratorOpen(false)
     setChangeMasterOpen(false)
     setGroupsOpen(false)
+    setFiltersOpen(false)
+    setToolsOpen(false)
     setForm(null)
     void passwordClipboard.clearTracked()
   }, [api])
@@ -381,6 +447,25 @@ export function PasswordsScreen(): React.JSX.Element {
     [groupScopedItems]
   )
 
+  const activeGroupLabel =
+    groupFilter === undefined
+      ? 'Все записи'
+      : groupFilter === null
+        ? 'Без группы'
+        : (overview?.groups.find((group) => group.id === groupFilter)?.name ?? 'Группа')
+
+  const filtersActive =
+    groupFilter !== undefined ||
+    (tab !== 'security' && (typeFilter !== 'all' || issueFilter !== 'all'))
+
+  const groupSelectValue =
+    groupFilter === undefined ? '__all__' : groupFilter === null ? '__none__' : groupFilter
+
+  const openTool = (action: () => void): void => {
+    setToolsOpen(false)
+    runWhenIdle(action)
+  }
+
   if (!status.unlocked) {
     return <VaultGate api={api} status={status} unlocked={refresh} />
   }
@@ -392,40 +477,64 @@ export function PasswordsScreen(): React.JSX.Element {
   let content: React.JSX.Element
   if (tab === 'security') {
     content = (
-      <ScrollView contentContainerStyle={{ paddingBottom: 96, gap: 12 }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 96, gap: 16 }}
+      >
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          <WorkspaceStatCard label="Всего" value={String(securitySummary.total)} icon="passwords" />
-          <WorkspaceStatCard label="Слабые" value={String(securitySummary.weak)} icon="info" />
-          <WorkspaceStatCard label="Повторяются" value={String(securitySummary.reused)} icon="copy" />
-          <WorkspaceStatCard label="Старше 180 дней" value={String(securitySummary.old)} icon="passwords" />
+          <SecurityMetric label="Всего" value={securitySummary.total} />
+          <SecurityMetric label="Слабые" value={securitySummary.weak} tone="danger" />
+          <SecurityMetric label="Повторы" value={securitySummary.reused} tone="warning" />
+          <SecurityMetric label="Старые" value={securitySummary.old} tone="warning" />
         </View>
+
         <View
           style={{
             padding: 14,
             borderWidth: 1,
-            borderColor: '#ffffff00',
-            borderRadius: 16
+            borderColor: theme.border,
+            borderRadius: 16,
+            backgroundColor: theme.surface
           }}
         >
-          <Label>Защита хранилища</Label>
-          <Label muted>
-            Секретные поля и названия групп хранятся зашифрованными. Хранилище блокируется при уходе
-            приложения в фон, а скопированный секрет очищается из буфера обмена автоматически.
-          </Label>
-          <View style={{ marginTop: 10, alignItems: 'flex-start' }}>
-            <Button label="Сменить мастер-пароль" onPress={() => setChangeMasterOpen(true)} />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <View
+              style={{
+                width: 36,
+                height: 36,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 12,
+                backgroundColor: theme.accent + '10'
+              }}
+            >
+              <ShieldCheck size={17} color={theme.accent} />
+            </View>
+            <View style={{ minWidth: 0, flex: 1 }}>
+              <Text style={{ color: theme.text, fontSize: 14, fontWeight: '700' }}>
+                Защита хранилища
+              </Text>
+              <Text style={{ marginTop: 3, color: theme.muted, fontSize: 11.5, lineHeight: 17 }}>
+                Шифрование, автоблокировка и очистка скопированных секретов включены.
+              </Text>
+            </View>
           </View>
         </View>
+
         {groupScopedItems.some((item) => item.securityIssues.length > 0) ? (
           groupScopedItems
             .filter((item) => item.securityIssues.length > 0)
             .map((item) => (
-              <Row
+              <WorkspaceNodeCard
                 key={item.id}
                 title={item.title}
-                subtitle={[item.username, ...item.securityIssues.map((value) => securityLabels[value])]
+                subtitle={[
+                  item.username,
+                  ...item.securityIssues.map((value) => securityLabels[value])
+                ]
                   .filter(Boolean)
                   .join(' · ')}
+                leadingIcon="info"
                 onPress={() => openItem(item)}
               />
             ))
@@ -445,7 +554,7 @@ export function PasswordsScreen(): React.JSX.Element {
             return (
               <WorkspaceNodeCard
                 key={item.id}
-                title={`${item.favorite ? '♥ ' : ''}${item.title}`}
+                title={item.title}
                 subtitle={itemSubtitle(item, overview)}
                 leading={
                   itemGroup ? (
@@ -513,90 +622,138 @@ export function PasswordsScreen(): React.JSX.Element {
   }
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, minHeight: 0 }}>
       <View style={{ gap: 10, paddingBottom: 12 }}>
-        <ModuleTabs<Tab>
-          items={[
-            { id: 'items' as const, label: 'Хранилище', icon: KeyRound },
-            { id: 'favorites' as const, label: 'Избранное', icon: Heart },
-            { id: 'security' as const, label: 'Безопасность', icon: ShieldCheck }
-          ]}
-          value={tab}
-          onChange={setTab}
-        />
-
         {tab !== 'security' ? <SearchField value={query} onChangeText={setQuery} /> : null}
-        {tab !== 'security' ? (
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            <View style={{ minWidth: 150, flex: 1 }}>
-              <AppSelect
-                label="Тип записи"
-                value={typeFilter}
-                choices={[
-                  { value: 'all', label: 'Все типы' },
-                  { value: 'login', label: 'Логин' },
-                  { value: 'password', label: 'Пароль' }
-                ]}
-                onChange={(value) =>
-                  setTypeFilter(value === 'login' || value === 'password' ? value : 'all')
-                }
-              />
-            </View>
-            <View style={{ minWidth: 170, flex: 1 }}>
-              <AppSelect
-                label="Безопасность"
-                value={issueFilter}
-                choices={[
-                  { value: 'all', label: 'Любая безопасность' },
-                  { value: 'weak', label: 'Слабые' },
-                  { value: 'reused', label: 'Повторяющиеся' },
-                  { value: 'old', label: 'Старые пароли' }
-                ]}
-                onChange={(value) =>
-                  setIssueFilter(
-                    value === 'weak' || value === 'reused' || value === 'old' ? value : 'all'
-                  )
-                }
-              />
-            </View>
-          </View>
-        ) : null}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: 8, alignItems: 'center' }}
-        >
-          <Button
-            label="Все записи"
-            selected={groupFilter === undefined}
-            onPress={() => setGroupFilter(undefined)}
-          />
-          <Button
-            label="Без группы"
-            selected={groupFilter === null}
-            onPress={() => setGroupFilter(null)}
-          />
-          {overview.groups.map((group) => (
-            <Button
-              key={group.id}
-              label={group.name}
-              selected={groupFilter === group.id}
-              onPress={() => setGroupFilter(group.id)}
-            />
-          ))}
-          <Button label="Управление группами" icon="folder" onPress={() => setGroupsOpen(true)} />
-        </ScrollView>
 
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          <Button label="Генератор" onPress={() => setGeneratorOpen(true)} />
-          <Button label="Сменить мастер-пароль" onPress={() => setChangeMasterOpen(true)} />
-          <Button label="Заблокировать" onPress={lock} />
+        <View
+          style={{
+            minHeight: 50,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 4,
+            padding: 4,
+            borderWidth: 1,
+            borderColor: theme.border,
+            borderRadius: 16,
+            backgroundColor: theme.surface
+          }}
+        >
+          {PASSWORD_TABS.map((item) => {
+            const selected = tab === item.id
+            const Icon = item.icon
+
+            return (
+              <Pressable
+                key={item.id}
+                accessibilityRole="button"
+                accessibilityLabel={item.label}
+                accessibilityState={{ selected }}
+                onPress={() => {
+                  if (selected) return
+                  setTab(item.id)
+                  toast.info(item.label, 'passwords-tab')
+                }}
+                style={({ pressed }) => ({
+                  flex: 1,
+                  minWidth: 0,
+                  height: 40,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: 12,
+                  backgroundColor: selected
+                    ? theme.accent + '18'
+                    : pressed
+                      ? theme.raised
+                      : 'transparent',
+                  opacity: pressed ? 0.72 : 1
+                })}
+              >
+                <Icon
+                  size={19}
+                  strokeWidth={selected ? 2.4 : 2}
+                  color={selected ? theme.accent : theme.muted}
+                />
+              </Pressable>
+            )
+          })}
+
+          <View
+            style={{
+              width: 1,
+              height: 26,
+              marginHorizontal: 2,
+              backgroundColor: theme.border
+            }}
+          />
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Фильтры. Группа: ${activeGroupLabel}`}
+            accessibilityState={{ selected: filtersActive }}
+            onPress={() => setFiltersOpen(true)}
+            style={({ pressed }) => ({
+              position: 'relative',
+              flex: 1,
+              minWidth: 0,
+              height: 40,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 12,
+              backgroundColor: filtersActive
+                ? theme.accent + '18'
+                : pressed
+                  ? theme.raised
+                  : 'transparent',
+              opacity: pressed ? 0.72 : 1
+            })}
+          >
+            <SlidersHorizontal
+              size={19}
+              strokeWidth={filtersActive ? 2.4 : 2}
+              color={filtersActive ? theme.accent : theme.muted}
+            />
+            {filtersActive ? (
+              <View
+                pointerEvents="none"
+                style={{
+                  position: 'absolute',
+                  top: 7,
+                  right: 10,
+                  width: 6,
+                  height: 6,
+                  borderRadius: 3,
+                  backgroundColor: theme.accent
+                }}
+              />
+            ) : null}
+          </Pressable>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Действия хранилища"
+            onPress={() => setToolsOpen(true)}
+            style={({ pressed }) => ({
+              flex: 1,
+              minWidth: 0,
+              height: 40,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 12,
+              backgroundColor: pressed ? theme.raised : 'transparent',
+              opacity: pressed ? 0.72 : 1
+            })}
+          >
+            <MoreHorizontal size={19} color={theme.muted} />
+          </Pressable>
         </View>
+
         {error ? <ErrorState message={error} retry={refresh} /> : null}
       </View>
 
       <View style={{ flex: 1 }}>{content}</View>
       <MobileCreateAction
+        iconOnly
         actions={[
           {
             key: 'item',
@@ -614,6 +771,114 @@ export function PasswordsScreen(): React.JSX.Element {
           }
         ]}
       />
+      <AppDialog
+        open={filtersOpen}
+        onOpenChange={setFiltersOpen}
+        title="Фильтры"
+        description="Оставьте на экране только нужные записи"
+        icon="search"
+        presentation="sheet"
+      >
+        <ScrollView contentContainerStyle={{ padding: 12, paddingBottom: 24, gap: 12 }}>
+          <AppSelect
+            label="Группа"
+            value={groupSelectValue}
+            choices={[
+              { value: '__all__', label: 'Все записи' },
+              { value: '__none__', label: 'Без группы' },
+              ...overview.groups.map((group) => ({ value: group.id, label: group.name }))
+            ]}
+            onChange={(value) => {
+              if (value === '__all__') setGroupFilter(undefined)
+              else if (value === '__none__') setGroupFilter(null)
+              else setGroupFilter(value)
+            }}
+          />
+
+          {tab !== 'security' ? (
+            <>
+              <AppSelect
+                label="Тип записи"
+                value={typeFilter}
+                choices={[
+                  { value: 'all', label: 'Все типы' },
+                  { value: 'login', label: 'Логин' },
+                  { value: 'password', label: 'Пароль' }
+                ]}
+                onChange={(value) =>
+                  setTypeFilter(value === 'login' || value === 'password' ? value : 'all')
+                }
+              />
+              <AppSelect
+                label="Безопасность"
+                value={issueFilter}
+                choices={[
+                  { value: 'all', label: 'Любая безопасность' },
+                  { value: 'weak', label: 'Слабые' },
+                  { value: 'reused', label: 'Повторяющиеся' },
+                  { value: 'old', label: 'Старые пароли' }
+                ]}
+                onChange={(value) =>
+                  setIssueFilter(
+                    value === 'weak' || value === 'reused' || value === 'old' ? value : 'all'
+                  )
+                }
+              />
+            </>
+          ) : null}
+
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            <Button
+              label="Сбросить"
+              icon="reset"
+              onPress={() => {
+                setGroupFilter(undefined)
+                setTypeFilter('all')
+                setIssueFilter('all')
+              }}
+            />
+            <Button
+              label="Группы"
+              icon="folder"
+              onPress={() => {
+                setFiltersOpen(false)
+                runWhenIdle(() => setGroupsOpen(true))
+              }}
+            />
+          </View>
+        </ScrollView>
+      </AppDialog>
+
+      <AppDialog
+        open={toolsOpen}
+        onOpenChange={setToolsOpen}
+        title="Хранилище"
+        description="Служебные действия"
+        icon="passwords"
+        presentation="sheet"
+      >
+        <View style={{ padding: 12, paddingBottom: 20, gap: 6 }}>
+          <WorkspaceNodeCard
+            title="Генератор паролей"
+            subtitle="Создать стойкий пароль и скопировать его"
+            leadingIcon="passwords"
+            onPress={() => openTool(() => setGeneratorOpen(true))}
+          />
+          <WorkspaceNodeCard
+            title="Сменить мастер-пароль"
+            subtitle="Обновить ключ доступа к хранилищу"
+            leadingIcon="edit"
+            onPress={() => openTool(() => setChangeMasterOpen(true))}
+          />
+          <WorkspaceNodeCard
+            title="Заблокировать"
+            subtitle="Закрыть хранилище и очистить секрет из памяти"
+            leadingIcon="close"
+            onPress={() => openTool(lock)}
+          />
+        </View>
+      </AppDialog>
+
       <AppDialog
         open={groupsOpen}
         onOpenChange={setGroupsOpen}

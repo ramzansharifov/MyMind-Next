@@ -6,11 +6,11 @@ import {
   ListMusic,
   Music2,
   Pencil,
-  Play,
   Trash2,
   type LucideIcon
 } from 'lucide-react-native'
 
+import { ActionMenu } from '../../shared/ui/ActionMenu'
 import { EmptyState } from '../../shared/ui/primitives'
 import { useTheme } from '../../shared/ui/theme'
 import { formatMusicDuration } from './music-presentation'
@@ -83,24 +83,6 @@ function IconAction({
   )
 }
 
-function MetaBadge({ value }: { value: string }): React.JSX.Element {
-  const theme = useTheme()
-  return (
-    <View
-      style={{
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: theme.border,
-        backgroundColor: theme.surface,
-        paddingHorizontal: 8,
-        paddingVertical: 4
-      }}
-    >
-      <Text style={{ color: theme.muted, fontSize: 10.5 }}>{value}</Text>
-    </View>
-  )
-}
-
 function TrackCard({
   item,
   onOpen,
@@ -117,73 +99,88 @@ function TrackCard({
   const theme = useTheme()
   const artist = item.artists[0] || 'Исполнитель не указан'
   const duration = formatMusicDuration(item.durationSeconds)
+  const details = [artist, item.year !== null ? String(item.year) : '', duration]
+    .filter(Boolean)
+    .join(' • ')
 
   return (
     <View
       style={{
         minWidth: 0,
+        minHeight: 68,
         marginBottom: 10,
-        padding: 16,
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
         borderWidth: 1,
         borderColor: theme.border,
         borderRadius: 16,
         backgroundColor: theme.background
       }}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Редактировать трек «${item.title}»`}
-          onPress={onOpen}
-          style={({ pressed }) => ({
-            flex: 1,
-            minWidth: 0,
-            opacity: pressed ? 0.72 : 1
-          })}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Music2 size={14} color={theme.accent} />
-            <Text
-              numberOfLines={1}
-              style={{ flex: 1, color: theme.text, fontSize: 14, fontWeight: '700' }}
-            >
-              {item.title}
-            </Text>
-          </View>
-          <Text
-            numberOfLines={1}
-            style={{ marginTop: 4, paddingLeft: 22, color: theme.muted, fontSize: 12 }}
-          >
-            {artist}
-          </Text>
-          {item.year !== null || duration ? (
-            <View
-              style={{
-                marginTop: 12,
-                paddingLeft: 22,
-                flexDirection: 'row',
-                flexWrap: 'wrap',
-                gap: 6
-              }}
-            >
-              {item.year !== null ? <MetaBadge value={String(item.year)} /> : null}
-              {duration ? <MetaBadge value={duration} /> : null}
-            </View>
-          ) : null}
-        </Pressable>
-
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 1 }}>
-          <IconAction label={`Найти «${item.title}»`} icon={Play} onPress={onSearchWeb} />
-          <IconAction label={`Редактировать «${item.title}»`} icon={Pencil} onPress={onOpen} />
-          <IconAction label={`Удалить «${item.title}»`} icon={Trash2} danger onPress={onDelete} />
-          <IconAction
-            label={item.favorite ? 'Убрать из избранного' : 'Добавить в избранное'}
-            icon={Heart}
-            active={item.favorite}
-            onPress={onToggleFavorite}
-          />
-        </View>
+      <View
+        style={{
+          width: 34,
+          height: 34,
+          flexShrink: 0,
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: 11,
+          backgroundColor: theme.accent + '10'
+        }}
+      >
+        <Music2 size={16} color={theme.accent} />
       </View>
+
+      <View style={{ minWidth: 0, flex: 1 }}>
+        <Text
+          numberOfLines={1}
+          style={{ color: theme.text, fontSize: 14, lineHeight: 19, fontWeight: '700' }}
+        >
+          {item.title}
+        </Text>
+        <Text
+          numberOfLines={1}
+          style={{ marginTop: 3, color: theme.muted, fontSize: 12, lineHeight: 17 }}
+        >
+          {artist}
+        </Text>
+      </View>
+
+      <ActionMenu
+        title={item.title}
+        description={details}
+        triggerLabel={`Действия с треком «${item.title}»`}
+        items={[
+          {
+            key: 'play',
+            label: 'Открыть на YouTube',
+            icon: 'play',
+            onPress: onSearchWeb
+          },
+          {
+            key: 'favorite',
+            label: item.favorite ? 'Убрать из избранного' : 'Добавить в избранное',
+            icon: 'favorite',
+            onPress: onToggleFavorite
+          },
+          {
+            key: 'edit',
+            label: 'Редактировать',
+            icon: 'edit',
+            onPress: onOpen
+          },
+          {
+            key: 'delete',
+            label: 'Удалить',
+            icon: 'delete',
+            danger: true,
+            onPress: onDelete
+          }
+        ]}
+      />
     </View>
   )
 }
@@ -206,7 +203,11 @@ function PlaylistCover({ playlist }: { playlist: MusicPlaylistRecord }): React.J
       }}
     >
       {playlist.coverUrl ? (
-        <Image source={{ uri: playlist.coverUrl }} resizeMode="cover" style={{ width: 48, height: 48 }} />
+        <Image
+          source={{ uri: playlist.coverUrl }}
+          resizeMode="cover"
+          style={{ width: 48, height: 48 }}
+        />
       ) : (
         <ListMusic size={20} color={theme.accent} />
       )}
@@ -276,70 +277,56 @@ function PlaylistCard({
   )
 }
 
-function SectionHeader({
-  view,
+function PlaylistHeader({
   selectedPlaylist,
   onBackToPlaylists,
   onEditPlaylist,
   onDeletePlaylist
 }: {
-  view: MobileMusicView
-  selectedPlaylist: MusicPlaylistRecord | null
+  selectedPlaylist: MusicPlaylistRecord
   onBackToPlaylists(): void
   onEditPlaylist(playlist: MusicPlaylistRecord): void
   onDeletePlaylist(playlist: MusicPlaylistRecord): void
 }): React.JSX.Element {
   const theme = useTheme()
-  const isFavorites = view === 'favorites'
-  const isPlaylists = view === 'playlists' || view === 'playlist'
-  const title =
-    view === 'favorites'
-      ? 'Избранное'
-      : view === 'playlists'
-        ? 'Плейлисты'
-        : view === 'playlist'
-          ? (selectedPlaylist?.name ?? 'Плейлист')
-          : 'Все треки'
-  const Icon = isFavorites ? Heart : isPlaylists ? ListMusic : Music2
 
   return (
     <View
       style={{
         minHeight: 52,
         marginBottom: 10,
-        paddingHorizontal: 16,
+        paddingHorizontal: 12,
         paddingVertical: 10,
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 10,
+        gap: 8,
         borderWidth: 1,
         borderColor: theme.border,
         borderRadius: 16,
         backgroundColor: theme.surface
       }}
     >
-      {view === 'playlist' ? (
-        <IconAction label="К списку плейлистов" icon={ArrowLeft} onPress={onBackToPlaylists} />
-      ) : null}
-      <Icon size={19} color={theme.accent} />
-      <Text numberOfLines={1} style={{ minWidth: 0, flex: 1, color: theme.text, fontSize: 16, fontWeight: '700' }}>
-        {title}
+      <IconAction label="К списку плейлистов" icon={ArrowLeft} onPress={onBackToPlaylists} />
+      <ListMusic size={18} color={theme.accent} />
+      <Text
+        numberOfLines={1}
+        style={{ minWidth: 0, flex: 1, color: theme.text, fontSize: 15, fontWeight: '700' }}
+      >
+        {selectedPlaylist.name}
       </Text>
-      {view === 'playlist' && selectedPlaylist ? (
-        <View style={{ flexDirection: 'row', gap: 1 }}>
-          <IconAction
-            label={`Редактировать плейлист «${selectedPlaylist.name}»`}
-            icon={Pencil}
-            onPress={() => onEditPlaylist(selectedPlaylist)}
-          />
-          <IconAction
-            label={`Удалить плейлист «${selectedPlaylist.name}»`}
-            icon={Trash2}
-            danger
-            onPress={() => onDeletePlaylist(selectedPlaylist)}
-          />
-        </View>
-      ) : null}
+      <View style={{ flexDirection: 'row', gap: 1 }}>
+        <IconAction
+          label={`Редактировать плейлист «${selectedPlaylist.name}»`}
+          icon={Pencil}
+          onPress={() => onEditPlaylist(selectedPlaylist)}
+        />
+        <IconAction
+          label={`Удалить плейлист «${selectedPlaylist.name}»`}
+          icon={Trash2}
+          danger
+          onPress={() => onDeletePlaylist(selectedPlaylist)}
+        />
+      </View>
     </View>
   )
 }
@@ -371,15 +358,15 @@ export function MusicLibraryView({
           ? 'В этом плейлисте пока нет треков.'
           : 'Треков пока нет.'
 
-  const header = (
-    <SectionHeader
-      view={view}
-      selectedPlaylist={selectedPlaylist}
-      onBackToPlaylists={onBackToPlaylists}
-      onEditPlaylist={onEditPlaylist}
-      onDeletePlaylist={onDeletePlaylist}
-    />
-  )
+  const header =
+    view === 'playlist' && selectedPlaylist ? (
+      <PlaylistHeader
+        selectedPlaylist={selectedPlaylist}
+        onBackToPlaylists={onBackToPlaylists}
+        onEditPlaylist={onEditPlaylist}
+        onDeletePlaylist={onDeletePlaylist}
+      />
+    ) : null
 
   if (view === 'playlists') {
     return (

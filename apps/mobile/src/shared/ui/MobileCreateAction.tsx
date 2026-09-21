@@ -1,4 +1,4 @@
-import { InteractionManager, Pressable, Text, View } from 'react-native'
+import { Pressable, Text, View } from 'react-native'
 import { useState } from 'react'
 
 import { AppDialog } from './AppDialog'
@@ -14,14 +14,29 @@ export interface MobileCreateActionItem {
   onPress(): void
 }
 
+type IdleGlobal = typeof globalThis & {
+  requestIdleCallback?: (callback: () => void) => number
+}
+
+function runWhenIdle(callback: () => void): void {
+  const requestIdle = (globalThis as IdleGlobal).requestIdleCallback
+  if (typeof requestIdle === 'function') {
+    requestIdle(callback)
+    return
+  }
+  setTimeout(callback, 0)
+}
+
 export function MobileCreateAction({
   actions,
   disabled = false,
-  label = 'Создать'
+  label = 'Создать',
+  iconOnly = false
 }: {
   actions: readonly MobileCreateActionItem[]
   disabled?: boolean
   label?: string
+  iconOnly?: boolean
 }): React.JSX.Element | null {
   const theme = useTheme()
   const [open, setOpen] = useState(false)
@@ -35,7 +50,7 @@ export function MobileCreateAction({
       return
     }
     setOpen(false)
-    InteractionManager.runAfterInteractions(() => action.onPress())
+    runWhenIdle(() => action.onPress())
   }
 
   const triggerDisabled = disabled || (actions.length === 1 && Boolean(actions[0].disabled))
@@ -64,13 +79,15 @@ export function MobileCreateAction({
             else setOpen(true)
           }}
           style={({ pressed }) => ({
-            minHeight: 44,
+            width: iconOnly ? 52 : undefined,
+            height: iconOnly ? 52 : undefined,
+            minHeight: iconOnly ? 52 : 44,
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 8,
-            paddingHorizontal: 16,
-            borderRadius: 12,
+            gap: iconOnly ? 0 : 8,
+            paddingHorizontal: iconOnly ? 0 : 16,
+            borderRadius: iconOnly ? 26 : 12,
             borderWidth: 1,
             borderColor: theme.accent + '33',
             backgroundColor: theme.accent,
@@ -82,10 +99,17 @@ export function MobileCreateAction({
             shadowOffset: { width: 0, height: 7 }
           })}
         >
-          <AppIcon name="add" size={17} strokeWidth={2.2} color="#ffffff" />
-          <Text style={{ color: '#ffffff', fontSize: 14, fontWeight: '600' }}>
-            {actions.length === 1 ? actions[0].label : label}
-          </Text>
+          <AppIcon
+            name="add"
+            size={iconOnly ? 21 : 17}
+            strokeWidth={iconOnly ? 2.4 : 2.2}
+            color="#ffffff"
+          />
+          {!iconOnly ? (
+            <Text style={{ color: '#ffffff', fontSize: 14, fontWeight: '600' }}>
+              {actions.length === 1 ? actions[0].label : label}
+            </Text>
+          ) : null}
         </Pressable>
       </View>
 

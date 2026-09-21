@@ -114,6 +114,13 @@ export function musicRecordToUpdateInput(item: MusicItemRecord): UpdateMusicItem
   }
 }
 
+export function musicYoutubeSearchUrl(item: Pick<MusicItemRecord, 'title' | 'artists'>): string {
+  const artist = item.artists[0] || 'Исполнитель не указан'
+  return `https://www.youtube.com/results?search_query=${encodeURIComponent(
+    `${item.title} ${artist}`
+  )}`
+}
+
 export function musicFilterArtists(items: readonly MusicItemRecord[]): string[] {
   return Array.from(
     new Set(items.flatMap((item) => item.artists.map((artist) => artist.trim())).filter(Boolean))

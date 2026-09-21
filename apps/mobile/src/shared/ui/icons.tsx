@@ -3,6 +3,8 @@ import {
   ArrowLeft,
   ArrowRight,
   BookHeart,
+  BrainCircuit,
+  Braces,
   CalendarDays,
   Check,
   ChevronDown,
@@ -11,19 +13,25 @@ import {
   Copy,
   ChevronLeft,
   ChevronRight,
+  Circle,
+  CircleCheckBig,
   CircleHelp,
   Disc3,
+  Download,
   Dumbbell,
   Film,
   Folder,
+  Heart,
   House,
   Info,
   KeyRound,
   ListTodo,
+  Menu,
   MoreHorizontal,
   MoveRight,
   Notebook,
   Pencil,
+  Play,
   Plus,
   Repeat2,
   RotateCcw,
@@ -37,15 +45,20 @@ import {
 } from 'lucide-react-native'
 
 export type AppIconName =
+  | 'brand'
   | 'home'
   | 'notes'
   | 'tasks'
   | 'habits'
-  | 'more'
   | 'movies'
+  | 'menu'
+  | 'more'
   | 'music'
   | 'calendar'
+  | 'circle'
+  | 'completed'
   | 'diary'
+  | 'download'
   | 'workouts'
   | 'nutrition'
   | 'finance'
@@ -69,17 +82,25 @@ export type AppIconName =
   | 'folder'
   | 'info'
   | 'help'
+  | 'json'
+  | 'favorite'
+  | 'play'
 
 const icons: Record<AppIconName, LucideIcon> = {
+  brand: BrainCircuit,
   home: House,
   notes: Notebook,
   tasks: ListTodo,
   habits: Repeat2,
-  more: MoreHorizontal,
   movies: Film,
+  menu: Menu,
+  more: MoreHorizontal,
   music: Disc3,
   calendar: CalendarDays,
+  circle: Circle,
+  completed: CircleCheckBig,
   diary: BookHeart,
+  download: Download,
   workouts: Dumbbell,
   nutrition: Utensils,
   finance: Wallet,
@@ -102,7 +123,10 @@ const icons: Record<AppIconName, LucideIcon> = {
   close: X,
   folder: Folder,
   info: Info,
-  help: CircleHelp
+  help: CircleHelp,
+  json: Braces,
+  favorite: Heart,
+  play: Play
 }
 
 export function AppIcon({

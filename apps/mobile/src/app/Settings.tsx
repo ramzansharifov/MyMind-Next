@@ -9,10 +9,12 @@ import { WorkspaceNodeCard, WorkspacePanel } from '../shared/ui/Workspace'
 import { useTheme } from '../shared/ui/theme'
 import { ReminderSettings } from './ReminderSettings'
 import { useConfirmation } from '../shared/ui/ConfirmationProvider'
-import { useToast } from '../shared/ui/ToastProvider'
+import { useToast } from '../shared/ui/toast-context'
 import { MobileProfileSyncSettings } from './MobileProfileSyncSettings'
+import { MobileUpdateSettings } from './MobileUpdateSettings'
+import type { MobileUpdaterController } from './useMobileUpdater'
 
-type SettingsPage = 'overview' | 'profile-sync' | 'appearance' | 'reminders' | 'data'
+type SettingsPage = 'overview' | 'profile-sync' | 'appearance' | 'reminders' | 'updates' | 'data'
 
 const accentNames = {
   violet: 'Фиолетовый',
@@ -30,11 +32,13 @@ const themeNames = {
 
 export function Settings({
   appearance,
+  updater,
   save,
   exportBackup,
   restoreBackup
 }: {
   appearance: AppearancePreferences
+  updater: MobileUpdaterController
   save(value: AppearancePreferences): void
   exportBackup(): Promise<MobileBackupSummary>
   restoreBackup(): Promise<MobileRestoreResult>
@@ -116,11 +120,12 @@ export function Settings({
     })
   }
 
-  const back = page !== 'overview' ? (
-    <View style={{ marginBottom: 12, alignItems: 'flex-start' }}>
-      <Button label="Назад к настройкам" icon="back" onPress={() => setPage('overview')} />
-    </View>
-  ) : null
+  const back =
+    page !== 'overview' ? (
+      <View style={{ marginBottom: 12, alignItems: 'flex-start' }}>
+        <Button label="Назад к настройкам" icon="back" onPress={() => setPage('overview')} />
+      </View>
+    ) : null
 
   if (page === 'profile-sync') {
     return (
@@ -191,6 +196,15 @@ export function Settings({
     )
   }
 
+  if (page === 'updates') {
+    return (
+      <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
+        {back}
+        <MobileUpdateSettings updater={updater} />
+      </ScrollView>
+    )
+  }
+
   if (page === 'data') {
     return (
       <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
@@ -203,8 +217,8 @@ export function Settings({
           <View style={{ gap: 12 }}>
             <Label muted>
               Один локальный файл содержит базу MyMind, вложения заметок и фотографии прогресса
-              тренировок. Хранилище паролей остаётся зашифрованным — открытые
-              пароли и ключ разблокировки в backup не записываются.
+              тренировок. Хранилище паролей остаётся зашифрованным — открытые пароли и ключ
+              разблокировки в backup не записываются.
             </Label>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               <Button
@@ -248,6 +262,16 @@ export function Settings({
           subtitle="Календарь и привычки · системные уведомления телефона"
           leadingIcon="calendar"
           onPress={() => setPage('reminders')}
+        />
+        <WorkspaceNodeCard
+          title="Обновления"
+          subtitle={
+            updater.status.phase === 'available' && updater.status.available
+              ? `Доступна v${updater.status.available.version}`
+              : `Установлена v${updater.status.currentVersion}`
+          }
+          leadingIcon="download"
+          onPress={() => setPage('updates')}
         />
         <WorkspaceNodeCard
           title="Локальные данные"
