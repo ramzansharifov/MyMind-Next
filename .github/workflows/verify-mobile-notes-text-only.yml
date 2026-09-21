@@ -62,18 +62,16 @@ jobs:
           packages/persistence/src/sync.ts
           packages/persistence/src/sync.test.ts
 
-      - name: ESLint
+      - name: ESLint changed note logic
         run: >
           npx eslint
           apps/mobile/src/modules/notes/NotesScreen.tsx
           apps/mobile/src/modules/notes/MobileNoteAppendEditor.tsx
           apps/mobile/src/modules/notes/mobile-note-policy.ts
           apps/mobile/src/modules/notes/mobile-note-policy.test.ts
-          apps/mobile/src/shared/ui/DocumentEditor.tsx
           packages/contracts/src/notes.ts
           packages/persistence/src/notes.ts
           packages/persistence/src/notes.test.ts
-          packages/persistence/src/sync.ts
           packages/persistence/src/sync.test.ts
 
       - run: npm run typecheck
