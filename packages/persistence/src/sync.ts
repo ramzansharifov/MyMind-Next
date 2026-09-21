@@ -9,7 +9,7 @@ import type {
   SyncTableSnapshot
 } from '@mymind/contracts/profile-sync'
 import type { SqlDatabasePort } from '@mymind/contracts/storage'
-import type { NoteDocument } from '@mymind/contracts/notes'
+import { MOBILE_NOTE_APPEND_BLOCK_PREFIX, type NoteDocument } from '@mymind/contracts/notes'
 import { documentToPlainText } from '@mymind/core/study-document'
 import { noteDocumentSchema } from '@mymind/core/validation/notes'
 
@@ -392,8 +392,6 @@ function canonicalRow(row: SyncSnapshotRow): string {
 }
 
 
-const MOBILE_NOTE_APPEND_PREFIX = 'mobile-append-'
-
 function noteDocumentFromRow(row: SyncSnapshotRow): NoteDocument | null {
   const serialized = row.data.document
   if (typeof serialized !== 'string') return null
@@ -408,7 +406,7 @@ function withoutMobileAppendBlocks(document: NoteDocument): NoteDocument {
   return {
     ...document,
     blocks: document.blocks.filter(
-      (block) => !(block.type === 'text' && block.id.startsWith(MOBILE_NOTE_APPEND_PREFIX))
+      (block) => !(block.type === 'text' && block.id.startsWith(MOBILE_NOTE_APPEND_BLOCK_PREFIX))
     )
   }
 }
@@ -416,7 +414,7 @@ function withoutMobileAppendBlocks(document: NoteDocument): NoteDocument {
 function mobileAppendBlocks(document: NoteDocument): Array<Extract<NoteDocument['blocks'][number], { type: 'text' }>> {
   return document.blocks.filter(
     (block): block is Extract<NoteDocument['blocks'][number], { type: 'text' }> =>
-      block.type === 'text' && block.id.startsWith(MOBILE_NOTE_APPEND_PREFIX)
+      block.type === 'text' && block.id.startsWith(MOBILE_NOTE_APPEND_BLOCK_PREFIX)
   )
 }
 
