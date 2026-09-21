@@ -231,7 +231,7 @@ export function CalendarScreen(): React.JSX.Element {
         kind: item?.kind ?? 'one_time',
         date: item?.occurrenceDate ?? createDate,
         time: item?.time ?? null,
-        startYear: item?.startDate?.slice(0, 4) ?? null,
+        startYear: item?.startDate?.slice(0, 4) ?? String(new Date().getFullYear()),
         note: item?.note ?? '',
         reminderOffsets: item?.reminderOffsets ?? []
       },
