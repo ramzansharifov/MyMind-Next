@@ -26,7 +26,9 @@ const MONTHS = [
 function occurrenceLabel(reminder: CalendarUnreadReminderRecord): string {
   const date = calendarParseDate(reminder.occurrenceDate)
   const day = `${date.getDate()} ${MONTHS[date.getMonth()]} ${date.getFullYear()}`
-  return [day, reminder.eventTime, calendarReminderLabel(reminder.offsetMinutes)].filter(Boolean).join(' · ')
+  return [day, reminder.eventTime, calendarReminderLabel(reminder.offsetMinutes)]
+    .filter(Boolean)
+    .join(' · ')
 }
 
 export function CalendarReminderInboxModal({
