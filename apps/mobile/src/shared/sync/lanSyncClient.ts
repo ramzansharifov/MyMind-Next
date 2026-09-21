@@ -43,7 +43,6 @@ import {
   commitMobileSyncAssets,
   decodeSyncBase64,
   encodeSyncBase64,
-  normalizeMobileWorkoutPhotoUrls,
   readMobileSyncAssetChunks,
   removeMobileSyncAssets,
   stageMobileSyncAssetChunk,
@@ -57,7 +56,11 @@ const DISCOVERY_CONCURRENCY = 20
 const MAX_DISCOVERY_HOSTS = 254
 const ASSET_CHUNK_BYTES = 1024 * 1024
 const SHA256_PATTERN = /^[0-9a-f]{64}$/
-const SUPPORTED_MODULES = new Set<string>(SYNC_MODULES)
+export const MOBILE_SYNC_MODULES = SYNC_MODULES.filter(
+  (module): module is Exclude<SyncModule, 'workouts'> => module !== 'workouts'
+)
+
+const SUPPORTED_MODULES = new Set<SyncModule>(MOBILE_SYNC_MODULES)
 
 export interface MobileLanSyncClient {
   discover(manualHost?: string): Promise<LanSyncDevice[]>
@@ -267,7 +270,7 @@ function parseAssetManifest(value: unknown): SyncAssetManifestEntry[] {
     const input = record(raw)
     if (
       typeof input.path !== 'string' ||
-      (input.kind !== 'note-asset' && input.kind !== 'workout-photo') ||
+      input.kind !== 'note-asset' ||
       typeof input.ownerId !== 'string' ||
       typeof input.assetId !== 'string' ||
       typeof input.fileName !== 'string' ||
@@ -676,7 +679,9 @@ export function createMobileLanSyncClient(
     async sync(device, requestedModules) {
       const startedAt = Date.now()
       const available = new Set(device.modules)
-      const modules = [...new Set(requestedModules)].filter((module) => available.has(module))
+      const modules = [...new Set(requestedModules)].filter(
+        (module) => available.has(module) && SUPPORTED_MODULES.has(module)
+      )
       if (modules.length === 0) throw new Error('Не выбрано ни одного общего модуля для синхронизации')
 
       const session = await authenticate(device, profileRepository)
@@ -726,7 +731,6 @@ export function createMobileLanSyncClient(
         const finalSnapshot = reconcileSyncSnapshotForeignKeys(database, mergedAfterTransfer)
         const removedAssets = listRemovedSyncAssetReferences(currentLocal, finalSnapshot)
         applySyncSnapshot(database, finalSnapshot)
-        normalizeMobileWorkoutPhotoUrls(database, finalSnapshot)
         removeMobileSyncAssets(removedAssets)
 
         return {
