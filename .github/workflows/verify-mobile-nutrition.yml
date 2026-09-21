@@ -44,5 +44,6 @@ jobs:
         run: npx eslint apps/mobile/src/modules/nutrition/NutritionScreen.tsx apps/mobile/src/modules/nutrition/NutritionReportsView.tsx
 
       - run: npm run typecheck:mobile
+      - run: npm run native:node
       - run: npm run test:mobile
       - run: npm run export:android
