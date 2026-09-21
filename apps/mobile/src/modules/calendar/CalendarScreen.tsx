@@ -276,9 +276,7 @@ export function CalendarScreen(): React.JSX.Element {
           time: values.time || null,
           startDate,
           note: values.note,
-          reminderOffsets: Array.isArray(values.reminderOffsets)
-            ? values.reminderOffsets
-            : []
+          reminderOffsets: Array.isArray(values.reminderOffsets) ? values.reminderOffsets : []
         })
 
         if (item) {
@@ -343,12 +341,7 @@ export function CalendarScreen(): React.JSX.Element {
               selected={selectedDate === today}
               onPress={selectToday}
             />
-            <IconButton
-              label="Предыдущий месяц"
-              icon="back"
-              ghost
-              onPress={() => shiftMonth(-1)}
-            />
+            <IconButton label="Предыдущий месяц" icon="back" ghost onPress={() => shiftMonth(-1)} />
             <Text
               numberOfLines={1}
               adjustsFontSizeToFit
@@ -706,12 +699,7 @@ export function CalendarScreen(): React.JSX.Element {
         presentation="sheet"
         footer={
           selectedEvent ? (
-            <Button
-              label="Редактировать"
-              icon="edit"
-              primary
-              onPress={editSelectedEvent}
-            />
+            <Button label="Редактировать" icon="edit" primary onPress={editSelectedEvent} />
           ) : undefined
         }
       >
@@ -777,9 +765,7 @@ export function CalendarScreen(): React.JSX.Element {
                 }}
               >
                 <Text style={{ color: theme.muted, fontSize: 10.5 }}>Существует с</Text>
-                <Text
-                  style={{ marginTop: 4, color: theme.text, fontSize: 14, fontWeight: '700' }}
-                >
+                <Text style={{ marginTop: 4, color: theme.text, fontSize: 14, fontWeight: '700' }}>
                   {selectedEvent.startDate.slice(0, 4)} года
                 </Text>
                 {calendarElapsedLabel(selectedEvent.elapsed) ? (
@@ -803,7 +789,13 @@ export function CalendarScreen(): React.JSX.Element {
                   backgroundColor: theme.surface
                 }}
               >
-                <Text style={{ color: selectedEvent.note.trim() ? theme.text : theme.muted, fontSize: 13, lineHeight: 20 }}>
+                <Text
+                  style={{
+                    color: selectedEvent.note.trim() ? theme.text : theme.muted,
+                    fontSize: 13,
+                    lineHeight: 20
+                  }}
+                >
                   {selectedEvent.note.trim() || 'Для этого дня заметки нет.'}
                 </Text>
               </View>
@@ -838,9 +830,7 @@ export function CalendarScreen(): React.JSX.Element {
                   ))}
                 </View>
               ) : (
-                <Text style={{ color: theme.muted, fontSize: 12 }}>
-                  Напоминания не настроены.
-                </Text>
+                <Text style={{ color: theme.muted, fontSize: 12 }}>Напоминания не настроены.</Text>
               )}
 
               {!selectedEvent.time && selectedEvent.reminderOffsets.length ? (
