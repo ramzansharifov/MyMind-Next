@@ -95,7 +95,7 @@ function nutrientsFrom(values: Record<string, unknown>): NutritionValues {
 }
 
 function macroLine(values: NutritionValues): string {
-  return `${values.calories} ккал · Б ${values.proteinG} · Ж ${values.fatG} · У ${values.carbsG}`
+  return `${formatNutritionNumber(values.calories, 0)} ккал · Б ${formatNutritionNumber(values.proteinG)} · Ж ${formatNutritionNumber(values.fatG)} · У ${formatNutritionNumber(values.carbsG)}`
 }
 
 const goalFields = [
@@ -625,6 +625,7 @@ function NutritionGoalCard({
 
 export function NutritionScreen(): React.JSX.Element {
   const { nutrition: api } = useServices()
+  const theme = useTheme()
   const toast = useToast()
   const [date, setDate] = useState(localDateKey())
   const overview = useCollection(useCallback(() => api.listOverview({ date }), [api, date]))
@@ -705,7 +706,7 @@ export function NutritionScreen(): React.JSX.Element {
     })
   }
 
-  const editLog = (entry?: NutritionLogEntryRecord): void => {
+  const editLog = (entry?: NutritionLogEntryRecord, preferredMealType?: NutritionMealType): void => {
     const source = entry
       ? entry.sourceType === 'custom'
         ? 'custom'
@@ -718,7 +719,7 @@ export function NutritionScreen(): React.JSX.Element {
       title: entry ? 'Изменить запись' : 'Добавить в дневник',
       initial: {
         date: entry?.date ?? date,
-        mealType: entry?.mealType ?? 'breakfast',
+        mealType: entry?.mealType ?? preferredMealType ?? 'breakfast',
         customMealName: entry?.customMealName ?? '',
         source,
         amount: entry?.amount ?? 1,
@@ -886,15 +887,14 @@ export function NutritionScreen(): React.JSX.Element {
           gap: 2,
           padding: 4,
           borderWidth: 1,
-          borderColor: useTheme().border,
+          borderColor: theme.border,
           borderRadius: 16,
-          backgroundColor: useTheme().surface
+          backgroundColor: theme.surface
         }}
       >
         {tabs.map((item) => {
           const selected = tab === item.id
           const Icon = item.icon
-          const currentTheme = useTheme()
           return (
             <Pressable
               key={item.id}
@@ -915,9 +915,9 @@ export function NutritionScreen(): React.JSX.Element {
                 justifyContent: 'center',
                 borderRadius: 12,
                 backgroundColor: selected
-                  ? currentTheme.accent + '18'
+                  ? theme.accent + '18'
                   : pressed
-                    ? currentTheme.raised
+                    ? theme.raised
                     : 'transparent',
                 opacity: pressed ? 0.72 : 1
               })}
@@ -925,7 +925,7 @@ export function NutritionScreen(): React.JSX.Element {
               <Icon
                 size={18}
                 strokeWidth={selected ? 2.4 : 2}
-                color={selected ? currentTheme.accent : currentTheme.muted}
+                color={selected ? theme.accent : theme.muted}
               />
             </Pressable>
           )
@@ -942,9 +942,9 @@ export function NutritionScreen(): React.JSX.Element {
             paddingHorizontal: 5,
             paddingVertical: 5,
             borderWidth: 1,
-            borderColor: useTheme().border,
+            borderColor: theme.border,
             borderRadius: 15,
-            backgroundColor: useTheme().surface
+            backgroundColor: theme.surface
           }}
         >
           <IconButton
@@ -964,14 +964,14 @@ export function NutritionScreen(): React.JSX.Element {
               paddingHorizontal: 8,
               paddingVertical: 4,
               borderRadius: 10,
-              backgroundColor: pressed ? useTheme().raised : 'transparent',
+              backgroundColor: pressed ? theme.raised : 'transparent',
               opacity: pressed ? 0.74 : 1
             })}
           >
-            <Text numberOfLines={1} style={{ color: useTheme().text, fontSize: 12.5, fontWeight: '700' }}>
+            <Text numberOfLines={1} style={{ color: theme.text, fontSize: 12.5, fontWeight: '700' }}>
               {nutritionDateTitle(date)}
             </Text>
-            <Text style={{ marginTop: 1, color: useTheme().muted, fontSize: 9.5 }}>
+            <Text style={{ marginTop: 1, color: theme.muted, fontSize: 9.5 }}>
               {date === localDateKey() ? 'Сегодня' : date}
             </Text>
           </Pressable>
@@ -1031,7 +1031,7 @@ export function NutritionScreen(): React.JSX.Element {
                 mealType={mealType}
                 label={mealLabels[mealType]}
                 entries={entries.filter((entry) => entry.mealType === mealType)}
-                onAdd={() => editLog()}
+                onAdd={() => editLog(undefined, mealType)}
                 onEdit={editLog}
                 onDelete={deleteEntry}
               />
@@ -1041,7 +1041,7 @@ export function NutritionScreen(): React.JSX.Element {
                 mealType="other"
                 label="Другое"
                 entries={otherEntries}
-                onAdd={() => editLog()}
+                onAdd={() => editLog(undefined, 'other')}
                 onEdit={editLog}
                 onDelete={deleteEntry}
               />
