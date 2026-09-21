@@ -9,7 +9,6 @@ export type Route =
   | 'music'
   | 'calendar'
   | 'diary'
-  | 'workouts'
   | 'nutrition'
   | 'finance'
   | 'passwords'
@@ -24,7 +23,6 @@ export const routeTitles: Record<Route, string> = {
   music: 'Музыка',
   calendar: 'Календарь',
   diary: 'Дневник',
-  workouts: 'Тренировки',
   nutrition: 'Питание',
   finance: 'Финансы',
   passwords: 'Пароли',
@@ -40,7 +38,6 @@ export const routeIcons: Record<Route, AppIconName> = {
   music: 'music',
   calendar: 'calendar',
   diary: 'diary',
-  workouts: 'workouts',
   nutrition: 'nutrition',
   finance: 'finance',
   passwords: 'passwords',
@@ -52,7 +49,6 @@ export const navigationRoutes: Route[] = [
   'notes',
   'tasks',
   'habits',
-  'workouts',
   'nutrition',
   'calendar',
   'diary',

@@ -29,13 +29,6 @@
       "expo-sqlite",
       "expo-notifications",
       [
-        "expo-image-picker",
-        {
-          "photosPermission": "MyMind использует выбранные вами фотографии для локального дневника прогресса.",
-          "cameraPermission": "MyMind использует камеру для фотографий прогресса."
-        }
-      ],
-      [
         "expo-audio",
         {
           "microphonePermission": "MyMind использует микрофон только когда вы записываете голосовую заметку.",

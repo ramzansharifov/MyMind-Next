@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Text, TextInput, View } from 'react-native'
 import {
-  SYNC_MODULES,
   type LanSyncDevice,
   type LocalProfile,
   type ProfileGender,
@@ -15,8 +14,11 @@ import { Button, ErrorState, Label } from '../shared/ui/primitives'
 import { WorkspaceNodeCard, WorkspacePanel } from '../shared/ui/Workspace'
 import { useTheme } from '../shared/ui/theme'
 import { messageFor } from '../shared/ui/form-model'
+import { MOBILE_SYNC_MODULES } from '../shared/sync/lanSyncClient'
 
-const moduleLabels: Record<SyncModule, string> = {
+type MobileSyncModule = Exclude<SyncModule, 'workouts'>
+
+const moduleLabels: Record<MobileSyncModule, string> = {
   notes: 'Заметки',
   tasks: 'Задачи',
   habits: 'Привычки',
@@ -24,7 +26,6 @@ const moduleLabels: Record<SyncModule, string> = {
   music: 'Музыка',
   calendar: 'Календарь',
   diary: 'Дневник',
-  workouts: 'Тренировки',
   nutrition: 'Питание',
   finance: 'Финансы',
   passwords: 'Пароли'
@@ -49,19 +50,24 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
   const [manualHost, setManualHost] = useState('')
   const [devices, setDevices] = useState<LanSyncDevice[]>([])
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null)
-  const [selectedModules, setSelectedModules] = useState<Set<SyncModule>>(
-    () => new Set()
-  )
+  const [selectedModules, setSelectedModules] = useState<Set<MobileSyncModule>>(() => new Set())
   const [busy, setBusy] = useState<'profile' | 'scan' | 'sync' | null>(null)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
 
   useEffect(() => {
-    const current = profileApi.getProfile()
-    setProfile(current)
-    setLogin(current?.login ?? '')
-    setName(current?.name ?? '')
-    setGender(current?.gender ?? null)
+    let active = true
+    queueMicrotask(() => {
+      if (!active) return
+      const current = profileApi.getProfile()
+      setProfile(current)
+      setLogin(current?.login ?? '')
+      setName(current?.name ?? '')
+      setGender(current?.gender ?? null)
+    })
+    return () => {
+      active = false
+    }
   }, [profileApi])
 
   const selectedDevice = useMemo(
@@ -167,7 +173,7 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
     }
   }
 
-  const toggleModule = (module: SyncModule): void => {
+  const toggleModule = (module: MobileSyncModule): void => {
     setSelectedModules((current) => {
       const next = new Set(current)
       if (next.has(module)) next.delete(module)
@@ -335,17 +341,17 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
                   обмена используйте отдельную кнопку «Синхронизировать все данные».
                 </Label>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                  {SYNC_MODULES.filter((module) => selectedDevice.modules.includes(module)).map(
-                    (module) => (
-                      <Button
-                        key={module}
-                        label={moduleLabels[module]}
-                        selected={selectedModules.has(module)}
-                        disabled={Boolean(busy)}
-                        onPress={() => toggleModule(module)}
-                      />
-                    )
-                  )}
+                  {MOBILE_SYNC_MODULES.filter((module) =>
+                    selectedDevice.modules.includes(module)
+                  ).map((module) => (
+                    <Button
+                      key={module}
+                      label={moduleLabels[module]}
+                      selected={selectedModules.has(module)}
+                      disabled={Boolean(busy)}
+                      onPress={() => toggleModule(module)}
+                    />
+                  ))}
                 </View>
 
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -355,7 +361,7 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
                     disabled={Boolean(busy) || selectedModules.size === 0}
                     onPress={() =>
                       void runSync(
-                        SYNC_MODULES.filter(
+                        MOBILE_SYNC_MODULES.filter(
                           (module) =>
                             selectedModules.has(module) && selectedDevice.modules.includes(module)
                         )
@@ -367,16 +373,18 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
                     disabled={Boolean(busy)}
                     onPress={() =>
                       void runSync(
-                        SYNC_MODULES.filter((module) => selectedDevice.modules.includes(module))
+                        MOBILE_SYNC_MODULES.filter((module) =>
+                          selectedDevice.modules.includes(module)
+                        )
                       )
                     }
                   />
                 </View>
 
                 <Label muted>
-                  «Обучение» и «Доски» являются desktop-only и здесь намеренно отсутствуют. Если
-                  хранилища паролей создавались независимо, MyMind остановит синхронизацию паролей
-                  вместо риска повредить vault.
+                  «Обучение», «Доски» и «Тренировки» являются desktop-only и здесь намеренно
+                  отсутствуют. Если хранилища паролей создавались независимо, MyMind остановит
+                  синхронизацию паролей вместо риска повредить vault.
                 </Label>
               </View>
             ) : null}

@@ -11,19 +11,19 @@ import { routeIcons, type Route } from './navigation'
 import { subscribeDataChanges } from './changes'
 import type { MobileServices } from './services'
 
-const HOME_MODULES: Array<{ route: Exclude<Route, 'home' | 'more' | 'settings'>; title: string }> = [
-  { route: 'notes', title: 'Заметки' },
-  { route: 'tasks', title: 'Задачи' },
-  { route: 'habits', title: 'Привычки' },
-  { route: 'workouts', title: 'Тренировки' },
-  { route: 'nutrition', title: 'Питание' },
-  { route: 'calendar', title: 'Календарь' },
-  { route: 'diary', title: 'Дневник' },
-  { route: 'movies', title: 'Фильмы' },
-  { route: 'music', title: 'Музыка' },
-  { route: 'finance', title: 'Финансы' },
-  { route: 'passwords', title: 'Пароли' }
-]
+const HOME_MODULES: Array<{ route: Exclude<Route, 'home' | 'more' | 'settings'>; title: string }> =
+  [
+    { route: 'notes', title: 'Заметки' },
+    { route: 'tasks', title: 'Задачи' },
+    { route: 'habits', title: 'Привычки' },
+    { route: 'nutrition', title: 'Питание' },
+    { route: 'calendar', title: 'Календарь' },
+    { route: 'diary', title: 'Дневник' },
+    { route: 'movies', title: 'Фильмы' },
+    { route: 'music', title: 'Музыка' },
+    { route: 'finance', title: 'Финансы' },
+    { route: 'passwords', title: 'Пароли' }
+  ]
 
 export function Home({
   services,
@@ -246,7 +246,10 @@ function ReminderInbox({
               onPress={open}
               style={({ pressed }) => ({ flex: 1, minWidth: 0, opacity: pressed ? 0.68 : 1 })}
             >
-              <Text numberOfLines={1} style={{ color: theme.text, fontSize: 13, fontWeight: '600' }}>
+              <Text
+                numberOfLines={1}
+                style={{ color: theme.text, fontSize: 13, fontWeight: '600' }}
+              >
                 {reminder.title}
               </Text>
               <Text numberOfLines={1} style={{ marginTop: 2, color: theme.muted, fontSize: 11 }}>

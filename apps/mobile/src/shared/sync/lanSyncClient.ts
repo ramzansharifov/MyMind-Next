@@ -24,10 +24,7 @@ import {
   encryptLanSyncJson,
   parseLanSyncEncryptedEnvelope
 } from '@mymind/core/lan-sync-crypto'
-import {
-  createProfileSyncProof,
-  timingSafeHexEqual
-} from '@mymind/core/profile-sync'
+import { createProfileSyncProof, timingSafeHexEqual } from '@mymind/core/profile-sync'
 import { listRemovedSyncAssetReferences } from '@mymind/core/sync-assets'
 import { parseSyncDataSnapshot } from '@mymind/core/sync-protocol'
 import type { LocalProfileRepository } from '@mymind/persistence/local-profile'
@@ -43,7 +40,6 @@ import {
   commitMobileSyncAssets,
   decodeSyncBase64,
   encodeSyncBase64,
-  normalizeMobileWorkoutPhotoUrls,
   readMobileSyncAssetChunks,
   removeMobileSyncAssets,
   stageMobileSyncAssetChunk,
@@ -57,13 +53,16 @@ const DISCOVERY_CONCURRENCY = 20
 const MAX_DISCOVERY_HOSTS = 254
 const ASSET_CHUNK_BYTES = 1024 * 1024
 const SHA256_PATTERN = /^[0-9a-f]{64}$/
-const SUPPORTED_MODULES = new Set<string>(SYNC_MODULES)
+export const MOBILE_SYNC_MODULES = SYNC_MODULES.filter(
+  (module): module is Exclude<SyncModule, 'workouts'> => module !== 'workouts'
+)
+
+const SUPPORTED_MODULES = new Set<string>(MOBILE_SYNC_MODULES)
 
 export interface MobileLanSyncClient {
   discover(manualHost?: string): Promise<LanSyncDevice[]>
   sync(device: LanSyncDevice, modules: readonly SyncModule[]): Promise<SyncResult>
 }
-
 
 interface MobileLanSession {
   token: string
@@ -195,7 +194,6 @@ async function requestSecureJson(
   }
 }
 
-
 function record(value: unknown): Record<string, unknown> {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     throw new Error('Некорректный ответ LAN sync')
@@ -215,7 +213,8 @@ function parseHello(value: unknown, host: string, port: number): LanSyncDevice {
     throw new Error('Это не совместимое устройство MyMind')
   }
   const modules = input.modules.filter(
-    (module): module is SyncModule => typeof module === 'string' && SUPPORTED_MODULES.has(module)
+    (module): module is SyncModule =>
+      typeof module === 'string' && (MOBILE_SYNC_MODULES as readonly string[]).includes(module)
   )
   return {
     deviceId: input.deviceId,
@@ -267,7 +266,7 @@ function parseAssetManifest(value: unknown): SyncAssetManifestEntry[] {
     const input = record(raw)
     if (
       typeof input.path !== 'string' ||
-      (input.kind !== 'note-asset' && input.kind !== 'workout-photo') ||
+      input.kind !== 'note-asset' ||
       typeof input.ownerId !== 'string' ||
       typeof input.assetId !== 'string' ||
       typeof input.fileName !== 'string' ||
@@ -345,7 +344,10 @@ function parsePlan(value: unknown, modules: readonly SyncModule[]): SyncPlanResp
   }
 }
 
-function parseUploadProgress(value: unknown, expected: SyncAssetManifestEntry): SyncAssetUploadProgress {
+function parseUploadProgress(
+  value: unknown,
+  expected: SyncAssetManifestEntry
+): SyncAssetUploadProgress {
   const input = record(value)
   if (
     input.path !== expected.path ||
@@ -414,7 +416,10 @@ function isPrivateIpv4(value: string): boolean {
 }
 
 function normalizeManualHost(value: string): string {
-  const host = value.trim().replace(/^https?:\/\//i, '').replace(/\/.*$/, '')
+  const host = value
+    .trim()
+    .replace(/^https?:\/\//i, '')
+    .replace(/\/.*$/, '')
   const withoutPort = host.replace(/:\d+$/, '')
   if (!withoutPort) throw new Error('Введите IP-адрес компьютера')
   if (!/^\d{1,3}(?:\.\d{1,3}){3}$/.test(withoutPort)) {
@@ -451,7 +456,10 @@ function subnetHosts(ip: string): string[] {
 }
 
 async function discoverHost(host: string): Promise<LanSyncDevice | null> {
-  const ports = Array.from({ length: LAN_SYNC_PORT_SPAN }, (_, index) => LAN_SYNC_DEFAULT_PORT + index)
+  const ports = Array.from(
+    { length: LAN_SYNC_PORT_SPAN },
+    (_, index) => LAN_SYNC_DEFAULT_PORT + index
+  )
   const results = await Promise.all(
     ports.map(async (port) => {
       try {
@@ -476,17 +484,14 @@ async function mapConcurrent<T, R>(
 ): Promise<R[]> {
   const results = new Array<R>(items.length)
   let cursor = 0
-  const workers = Array.from(
-    { length: Math.min(concurrency, items.length) },
-    async () => {
-      while (true) {
-        const index = cursor
-        cursor += 1
-        if (index >= items.length) return
-        results[index] = await operation(items[index]!)
-      }
+  const workers = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+    while (true) {
+      const index = cursor
+      cursor += 1
+      if (index >= items.length) return
+      results[index] = await operation(items[index]!)
     }
-  )
+  })
   await Promise.all(workers)
   return results
 }
@@ -676,8 +681,11 @@ export function createMobileLanSyncClient(
     async sync(device, requestedModules) {
       const startedAt = Date.now()
       const available = new Set(device.modules)
-      const modules = [...new Set(requestedModules)].filter((module) => available.has(module))
-      if (modules.length === 0) throw new Error('Не выбрано ни одного общего модуля для синхронизации')
+      const modules = [...new Set(requestedModules)].filter(
+        (module) => available.has(module) && SUPPORTED_MODULES.has(module)
+      )
+      if (modules.length === 0)
+        throw new Error('Не выбрано ни одного общего модуля для синхронизации')
 
       const session = await authenticate(device, profileRepository)
       const baseUrl = `http://${device.host}:${device.port}/mymind-sync/v1`
@@ -726,7 +734,6 @@ export function createMobileLanSyncClient(
         const finalSnapshot = reconcileSyncSnapshotForeignKeys(database, mergedAfterTransfer)
         const removedAssets = listRemovedSyncAssetReferences(currentLocal, finalSnapshot)
         applySyncSnapshot(database, finalSnapshot)
-        normalizeMobileWorkoutPhotoUrls(database, finalSnapshot)
         removeMobileSyncAssets(removedAssets)
 
         return {
