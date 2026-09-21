@@ -1,5 +1,14 @@
 import { randomUUID } from 'expo-crypto'
-import { ArrowDownAZ, CircleSlash2, Clock3, Folder, Grid2X2, List, StickyNote, type LucideIcon } from 'lucide-react-native'
+import {
+  ArrowDownAZ,
+  CircleSlash2,
+  Clock3,
+  Folder,
+  Grid2X2,
+  List,
+  StickyNote,
+  type LucideIcon
+} from 'lucide-react-native'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { AppState, BackHandler, FlatList, Pressable, Text, TextInput, View } from 'react-native'
 import type { NoteDocument, NoteGroup, NoteRecord, NoteSummary } from '@mymind/contracts/notes'
@@ -49,7 +58,6 @@ function sortNotes(notes: NoteSummary[], sort: NotesSort): NoteSummary[] {
       : right.updatedAt - left.updatedAt
   )
 }
-
 
 const NOTES_VIEWS: ReadonlyArray<{
   id: NotesView
@@ -160,7 +168,9 @@ function NotesControl({
     >
       <Icon size={15} color={active ? theme.accent : theme.muted} />
       {!iconOnly ? (
-        <Text style={{ color: active ? theme.accent : theme.text, fontSize: 11.5, fontWeight: '700' }}>
+        <Text
+          style={{ color: active ? theme.accent : theme.text, fontSize: 11.5, fontWeight: '700' }}
+        >
           {label}
         </Text>
       ) : null}
@@ -311,10 +321,7 @@ function MobileNoteCard({
         ) : (
           <Text style={{ color: theme.muted, fontSize: 11 }}>Пустая заметка</Text>
         )}
-        <Text
-          numberOfLines={1}
-          style={{ marginTop: 'auto', color: theme.muted, fontSize: 9.5 }}
-        >
+        <Text numberOfLines={1} style={{ marginTop: 'auto', color: theme.muted, fontSize: 9.5 }}>
           {meta || 'Без группы'}
         </Text>
       </Pressable>
@@ -1018,7 +1025,9 @@ export function NotesScreen({
                   label={sort === 'updated' ? 'Недавние' : 'А–Я'}
                   icon={sort === 'updated' ? Clock3 : ArrowDownAZ}
                   active
-                  onPress={() => setSort((current) => (current === 'updated' ? 'title' : 'updated'))}
+                  onPress={() =>
+                    setSort((current) => (current === 'updated' ? 'title' : 'updated'))
+                  }
                 />
               ) : null}
               <NotesControl
@@ -1129,5 +1138,4 @@ export function NotesScreen({
       {form && <FormSheet spec={form} close={() => setForm(null)} />}
     </View>
   )
-
 }
