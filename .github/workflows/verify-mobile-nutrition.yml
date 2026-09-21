@@ -5,6 +5,9 @@ on:
     branches:
       - agent/mobile-nutrition-redesign
 
+permissions:
+  contents: write
+
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -18,6 +21,21 @@ jobs:
           cache: npm
 
       - run: npm ci
+
+      - name: Format nutrition files
+        run: npx prettier --write apps/mobile/src/modules/nutrition/NutritionScreen.tsx apps/mobile/src/modules/nutrition/NutritionReportsView.tsx
+
+      - name: Commit formatting if needed
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/mobile/src/modules/nutrition/NutritionScreen.tsx apps/mobile/src/modules/nutrition/NutritionReportsView.tsx
+          git commit -m "style(mobile): format nutrition redesign"
+          git push origin HEAD:agent/mobile-nutrition-redesign
 
       - name: Prettier
         run: npx prettier --check apps/mobile/src/modules/nutrition/NutritionScreen.tsx apps/mobile/src/modules/nutrition/NutritionReportsView.tsx
