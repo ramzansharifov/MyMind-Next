@@ -213,7 +213,8 @@ function parseHello(value: unknown, host: string, port: number): LanSyncDevice {
     throw new Error('Это не совместимое устройство MyMind')
   }
   const modules = input.modules.filter(
-    (module): module is SyncModule => typeof module === 'string' && SUPPORTED_MODULES.has(module)
+    (module): module is SyncModule =>
+      typeof module === 'string' && (MOBILE_SYNC_MODULES as readonly string[]).includes(module)
   )
   return {
     deviceId: input.deviceId,
