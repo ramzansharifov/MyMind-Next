@@ -414,31 +414,29 @@ export function CalendarScreen(): React.JSX.Element {
                     borderRightWidth: index % 7 === 6 ? 0 : 1,
                     borderBottomWidth: index >= 35 ? 0 : 1,
                     borderColor: theme.border,
-                    backgroundColor: selected
-                      ? theme.accent + '12'
-                      : currentMonth
-                        ? theme.surface
-                        : theme.background,
+                    backgroundColor: currentMonth ? theme.surface : theme.background,
                     opacity: pressed ? 0.64 : currentMonth ? 1 : 0.42
                   })}
                 >
                   <View
                     style={{
-                      width: 25,
-                      height: 25,
+                      width: 26,
+                      height: 26,
                       alignItems: 'center',
                       justifyContent: 'center',
-                      borderRadius: 8,
-                      backgroundColor: isToday
+                      borderWidth: isToday && !selected ? 1 : 0,
+                      borderColor: theme.accent,
+                      borderRadius: 13,
+                      backgroundColor: selected
                         ? theme.accent
-                        : selected
-                          ? theme.accent + '18'
+                        : isToday
+                          ? theme.accent + '12'
                           : 'transparent'
                     }}
                   >
                     <Text
                       style={{
-                        color: isToday ? '#ffffff' : selected ? theme.accent : theme.text,
+                        color: selected ? '#ffffff' : isToday ? theme.accent : theme.text,
                         fontSize: 12,
                         fontWeight: isToday || selected ? '800' : '500'
                       }}
