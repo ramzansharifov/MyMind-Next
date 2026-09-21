@@ -710,6 +710,11 @@ describe('LAN sync snapshot merge', () => {
           "UPDATE notes SET document = ?, plain_text = ?, updated_at = 20 WHERE id = 'note-sync'"
         )
         .run(JSON.stringify(desktopDocument), 'Заголовок с desktop')
+      left
+        .prepare(
+          "UPDATE notes SET document = ?, plain_text = ?, updated_at = 21 WHERE id = 'note-sync'"
+        )
+        .run(JSON.stringify(desktopDocument), 'Заголовок с desktop')
       right
         .prepare(
           "UPDATE notes SET document = ?, plain_text = ?, updated_at = 30 WHERE id = 'note-sync'"
@@ -727,7 +732,7 @@ describe('LAN sync snapshot merge', () => {
       const rightRow = rightSnapshot.modules[0]?.tables
         .find((table) => table.table === 'notes')
         ?.rows.find((row) => row.data.id === 'note-sync')
-      expect(leftRow?.version).toBe(rightRow?.version)
+      expect(leftRow?.version).toBeGreaterThan(rightRow?.version ?? 0)
 
       const merged = mergeSyncSnapshots(leftSnapshot, rightSnapshot)
       const row = merged.snapshot.modules[0]?.tables
@@ -750,6 +755,7 @@ describe('LAN sync snapshot merge', () => {
       ])
       expect(row.data.plain_text).toContain('Заголовок с desktop')
       expect(row.data.plain_text).toContain('Дополнение с телефона')
+      expect(row.version).toBeGreaterThan(leftRow?.version ?? 0)
       expect(merged.conflicts.get('notes')).toBeGreaterThan(0)
 
       applySyncSnapshot(leftDb, merged.snapshot)
@@ -761,5 +767,108 @@ describe('LAN sync snapshot merge', () => {
       left.close()
       right.close()
     }
+
   })
+
+  it('preserves the desktop base when mobile append revisions are newer', () => {
+    const left = createDatabase()
+    const right = createDatabase()
+    try {
+      const leftDb = adapt(left)
+      const rightDb = adapt(right)
+      ensureSyncInfrastructure(leftDb)
+      ensureSyncInfrastructure(rightDb)
+
+      const baseDocument = {
+        version: 1,
+        blocks: [
+          { id: 'heading-2', type: 'heading', text: 'База', level: 2 },
+          { id: 'code-2', type: 'code', source: 'const value = 1', language: 'ts' }
+        ]
+      } as const
+      for (const db of [left, right]) {
+        db.prepare(
+          `INSERT INTO notes(
+            id, group_id, title, document, plain_text, created_at, updated_at
+          ) VALUES ('note-newer-mobile', NULL, 'Заметка', ?, 'База', 1, 1)`
+        ).run(JSON.stringify(baseDocument))
+      }
+
+      const desktopDocument = {
+        version: 1,
+        blocks: [
+          { id: 'heading-2', type: 'heading', text: 'Новая desktop-база', level: 2 },
+          { id: 'code-2', type: 'code', source: 'const value = 9', language: 'ts' }
+        ]
+      } as const
+      const mobileDocument = {
+        version: 1,
+        blocks: [
+          ...baseDocument.blocks,
+          {
+            id: 'mobile-append-newer',
+            type: 'text',
+            text: 'Последняя версия дополнения',
+            html: '<p>Последняя версия дополнения</p>'
+          }
+        ]
+      } as const
+
+      left
+        .prepare(
+          "UPDATE notes SET document = ?, plain_text = ?, updated_at = 20 WHERE id = 'note-newer-mobile'"
+        )
+        .run(JSON.stringify(desktopDocument), 'Новая desktop-база')
+      right
+        .prepare(
+          "UPDATE notes SET document = ?, plain_text = ?, updated_at = 30 WHERE id = 'note-newer-mobile'"
+        )
+        .run(JSON.stringify(mobileDocument), 'База\n\nПоследняя версия дополнения')
+      right
+        .prepare(
+          "UPDATE notes SET document = ?, plain_text = ?, updated_at = 31 WHERE id = 'note-newer-mobile'"
+        )
+        .run(JSON.stringify(mobileDocument), 'База\n\nПоследняя версия дополнения')
+
+      const leftSnapshot = captureSyncSnapshot(leftDb, ['notes'])
+      const rightSnapshot = captureSyncSnapshot(rightDb, ['notes'])
+      const leftRow = leftSnapshot.modules[0]?.tables
+        .find((table) => table.table === 'notes')
+        ?.rows.find((row) => row.data.id === 'note-newer-mobile')
+      const rightRow = rightSnapshot.modules[0]?.tables
+        .find((table) => table.table === 'notes')
+        ?.rows.find((row) => row.data.id === 'note-newer-mobile')
+      expect(rightRow?.version).toBeGreaterThan(leftRow?.version ?? 0)
+
+      const merged = mergeSyncSnapshots(leftSnapshot, rightSnapshot)
+      const row = merged.snapshot.modules[0]?.tables
+        .find((table) => table.table === 'notes')
+        ?.rows.find((candidate) => candidate.data.id === 'note-newer-mobile')
+      if (!row || typeof row.data.document !== 'string') throw new Error('merged note missing')
+      const mergedDocument = JSON.parse(row.data.document) as {
+        blocks: Array<{ id: string; type: string; text?: string; source?: string }>
+      }
+
+      expect(mergedDocument.blocks).toEqual([
+        { id: 'heading-2', type: 'heading', text: 'Новая desktop-база', level: 2 },
+        { id: 'code-2', type: 'code', source: 'const value = 9', language: 'ts' },
+        {
+          id: 'mobile-append-newer',
+          type: 'text',
+          text: 'Последняя версия дополнения',
+          html: '<p>Последняя версия дополнения</p>'
+        }
+      ])
+      expect(row.version).toBeGreaterThan(rightRow?.version ?? 0)
+
+      applySyncSnapshot(leftDb, merged.snapshot)
+      applySyncSnapshot(rightDb, merged.snapshot)
+      expect(captureSyncSnapshot(leftDb, ['notes']).modules).toEqual(
+        captureSyncSnapshot(rightDb, ['notes']).modules
+      )
+    } finally {
+      left.close()
+      right.close()
+    }
+
 })
