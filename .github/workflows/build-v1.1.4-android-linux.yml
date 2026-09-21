@@ -1,0 +1,75 @@
+name: Build MyMind 1.1.4 Android Linux
+
+on:
+  push:
+    branches:
+      - agent/build-v1.1.4-android-linux
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      MYMIND_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.MYMIND_ANDROID_KEYSTORE_PASSWORD }}
+      MYMIND_ANDROID_KEY_ALIAS: ${{ secrets.MYMIND_ANDROID_KEY_ALIAS }}
+      MYMIND_ANDROID_KEY_PASSWORD: ${{ secrets.MYMIND_ANDROID_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - run: npm ci
+
+      - name: Prepare Android release keystore
+        shell: bash
+        env:
+          MYMIND_ANDROID_KEYSTORE_BASE64: ${{ secrets.MYMIND_ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          keystore_path="$RUNNER_TEMP/mymind-android-release.jks"
+          printf '%s' "$MYMIND_ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore_path"
+
+          expected="75fbc676fa8e8b8ed89824fc12f95e03a33fc057b33f034edab85f9a9d890508"
+          keytool_output="$(keytool -list -v             -keystore "$keystore_path"             -storepass "$MYMIND_ANDROID_KEYSTORE_PASSWORD"             -alias "$MYMIND_ANDROID_KEY_ALIAS")"
+          actual="$(printf '%s\n' "$keytool_output" |
+            sed -n 's/.*SHA256: *//p' |
+            head -n 1 |
+            tr -d ':' |
+            tr '[:upper:]' '[:lower:]')"
+          test "$actual" = "$expected"
+          echo "MYMIND_ANDROID_KEYSTORE_PATH=$keystore_path" >> "$GITHUB_ENV"
+
+      - name: Build signed APK
+        run: npm run build:android:release --workspace=mymind-mobile
+
+      - name: Verify and stage APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          source="apps/mobile/android/app/build/outputs/apk/release/app-release.apk"
+          target="apps/mobile/release/mymind-mobile-1.1.4.apk"
+          mkdir -p apps/mobile/release
+          cp "$source" "$target"
+          apksigner="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          "$apksigner" verify --verbose --print-certs "$target"
+          sha256sum "$target"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-release-1.1.4-linux
+          if-no-files-found: error
+          path: apps/mobile/release/mymind-mobile-1.1.4.apk
+          retention-days: 7
