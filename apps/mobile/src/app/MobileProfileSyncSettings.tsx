@@ -56,11 +56,18 @@ export function MobileProfileSyncSettings(): React.JSX.Element {
   const [message, setMessage] = useState('')
 
   useEffect(() => {
-    const current = profileApi.getProfile()
-    setProfile(current)
-    setLogin(current?.login ?? '')
-    setName(current?.name ?? '')
-    setGender(current?.gender ?? null)
+    let active = true
+    queueMicrotask(() => {
+      if (!active) return
+      const current = profileApi.getProfile()
+      setProfile(current)
+      setLogin(current?.login ?? '')
+      setName(current?.name ?? '')
+      setGender(current?.gender ?? null)
+    })
+    return () => {
+      active = false
+    }
   }, [profileApi])
 
   const selectedDevice = useMemo(
