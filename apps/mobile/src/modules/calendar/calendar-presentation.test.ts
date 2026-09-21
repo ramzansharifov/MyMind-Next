@@ -32,13 +32,13 @@ describe('calendar mobile presentation', () => {
   })
 
   it('formats elapsed annual-event time with Russian plural forms', () => {
-    expect(calendarElapsedLabel({ years: 2, months: 3, days: 1 })).toBe(
-      '2 года, 3 месяца, 1 день'
-    )
+    expect(calendarElapsedLabel({ years: 2, months: 3, days: 1 })).toBe('2 года, 3 месяца, 1 день')
   })
 
   it('keeps the day-list subtitle compact', () => {
-    expect(calendarOccurrenceSubtitle(occurrence())).toBe('18:30 · Каждый год · Прошло 6 лет, 0 дней')
+    expect(calendarOccurrenceSubtitle(occurrence())).toBe(
+      '18:30 · Каждый год · Прошло 6 лет, 0 дней'
+    )
     expect(
       calendarOccurrenceSubtitle(
         occurrence({ kind: 'one_time', time: null, elapsed: null, startDate: null })
