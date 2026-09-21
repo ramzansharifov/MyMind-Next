@@ -110,7 +110,7 @@ export function useMobileUpdater(): MobileUpdaterController {
 
       setStatus((current) => ({
         ...current,
-        phase: 'available',
+        phase: 'installing',
         percent: 100,
         transferred: current.total ?? current.transferred,
         error: null

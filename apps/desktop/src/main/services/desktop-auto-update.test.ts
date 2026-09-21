@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+const ORIGINAL_PLATFORM = process.platform
+
 const mocks = vi.hoisted(() => {
   const listeners = new Map<string, Array<(value?: unknown) => void>>()
 
@@ -76,6 +78,10 @@ async function loadService(): Promise<typeof import('./desktop-auto-update')> {
 beforeEach(() => {
   vi.resetModules()
   vi.useFakeTimers()
+  Object.defineProperty(process, 'platform', {
+    configurable: true,
+    value: 'win32'
+  })
   mocks.listeners.clear()
   mocks.isPackaged = true
   mocks.checkForUpdates.mockReset().mockResolvedValue(undefined)
@@ -88,6 +94,10 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  Object.defineProperty(process, 'platform', {
+    configurable: true,
+    value: ORIGINAL_PLATFORM
+  })
   vi.useRealTimers()
 })
 
