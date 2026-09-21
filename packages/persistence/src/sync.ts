@@ -9,6 +9,9 @@ import type {
   SyncTableSnapshot
 } from '@mymind/contracts/profile-sync'
 import type { SqlDatabasePort } from '@mymind/contracts/storage'
+import type { NoteDocument } from '@mymind/contracts/notes'
+import { documentToPlainText } from '@mymind/core/study-document'
+import { noteDocumentSchema } from '@mymind/core/validation/notes'
 
 interface SyncTableDefinition {
   table: string
@@ -388,6 +391,103 @@ function canonicalRow(row: SyncSnapshotRow): string {
   return JSON.stringify(sorted)
 }
 
+
+const MOBILE_NOTE_APPEND_PREFIX = 'mobile-append-'
+
+function noteDocumentFromRow(row: SyncSnapshotRow): NoteDocument | null {
+  const serialized = row.data.document
+  if (typeof serialized !== 'string') return null
+  try {
+    return noteDocumentSchema.parse(JSON.parse(serialized))
+  } catch {
+    return null
+  }
+}
+
+function withoutMobileAppendBlocks(document: NoteDocument): NoteDocument {
+  return {
+    ...document,
+    blocks: document.blocks.filter(
+      (block) => !(block.type === 'text' && block.id.startsWith(MOBILE_NOTE_APPEND_PREFIX))
+    )
+  }
+}
+
+function mobileAppendBlocks(document: NoteDocument): Array<Extract<NoteDocument['blocks'][number], { type: 'text' }>> {
+  return document.blocks.filter(
+    (block): block is Extract<NoteDocument['blocks'][number], { type: 'text' }> =>
+      block.type === 'text' && block.id.startsWith(MOBILE_NOTE_APPEND_PREFIX)
+  )
+}
+
+function mergeConcurrentNoteRows(
+  left: SyncSnapshotRow,
+  right: SyncSnapshotRow
+): SyncSnapshotRow | null {
+  if (left.version !== right.version) return null
+  const leftDocument = noteDocumentFromRow(left)
+  const rightDocument = noteDocumentFromRow(right)
+  if (!leftDocument || !rightDocument) return null
+
+  const leftAppend = mobileAppendBlocks(leftDocument)
+  const rightAppend = mobileAppendBlocks(rightDocument)
+  if (leftAppend.length === 0 && rightAppend.length === 0) return null
+
+  const leftBase = withoutMobileAppendBlocks(leftDocument)
+  const rightBase = withoutMobileAppendBlocks(rightDocument)
+  const leftBaseCanonical = JSON.stringify(leftBase)
+  const rightBaseCanonical = JSON.stringify(rightBase)
+
+  let baseRow = left
+  let baseDocument = leftBase
+  if (rightAppend.length < leftAppend.length) {
+    baseRow = right
+    baseDocument = rightBase
+  } else if (
+    rightAppend.length === leftAppend.length &&
+    rightBaseCanonical > leftBaseCanonical
+  ) {
+    baseRow = right
+    baseDocument = rightBase
+  }
+
+  const appendById = new Map<
+    string,
+    Extract<NoteDocument['blocks'][number], { type: 'text' }>
+  >()
+  for (const block of [...leftAppend, ...rightAppend]) {
+    const existing = appendById.get(block.id)
+    if (!existing || JSON.stringify(block) > JSON.stringify(existing)) {
+      appendById.set(block.id, block)
+    }
+  }
+
+  const mergedDocument = noteDocumentSchema.parse({
+    version: 1,
+    blocks: [
+      ...baseDocument.blocks,
+      ...[...appendById.values()].sort((leftBlock, rightBlock) =>
+        leftBlock.id.localeCompare(rightBlock.id, 'en')
+      )
+    ]
+  })
+  const updatedAt = Math.max(
+    typeof left.data.updated_at === 'number' ? left.data.updated_at : 0,
+    typeof right.data.updated_at === 'number' ? right.data.updated_at : 0
+  )
+
+  return {
+    key: baseRow.key,
+    version: left.version,
+    data: {
+      ...baseRow.data,
+      document: JSON.stringify(mergedDocument),
+      plain_text: documentToPlainText(mergedDocument),
+      updated_at: updatedAt
+    }
+  }
+}
+
 function mergeTable(
   definition: SyncTableDefinition,
   left: SyncTableSnapshot,
@@ -443,7 +543,9 @@ function mergeTable(
       const leftCanonical = canonicalRow(leftRow)
       const rightCanonical = canonicalRow(rightRow)
       if (leftCanonical !== rightCanonical) conflicts += 1
-      winner = leftCanonical >= rightCanonical ? leftRow : rightRow
+      const mergedNote =
+        definition.table === 'notes' ? mergeConcurrentNoteRows(leftRow, rightRow) : null
+      winner = mergedNote ?? (leftCanonical >= rightCanonical ? leftRow : rightRow)
     } else winner = leftRow ?? rightRow
 
     if (winner) rows.push(winner)
