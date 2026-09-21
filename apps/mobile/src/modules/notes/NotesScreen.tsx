@@ -1,16 +1,16 @@
 import { randomUUID } from 'expo-crypto'
-import { CircleSlash2, Clock3, Folder, StickyNote } from 'lucide-react-native'
-import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  AppState,
-  BackHandler,
-  FlatList,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View
-} from 'react-native'
+  ArrowDownAZ,
+  CircleSlash2,
+  Clock3,
+  Folder,
+  Grid2X2,
+  List,
+  StickyNote,
+  type LucideIcon
+} from 'lucide-react-native'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { AppState, BackHandler, FlatList, Pressable, Text, TextInput, View } from 'react-native'
 import type { NoteDocument, NoteGroup, NoteRecord, NoteSummary } from '@mymind/contracts/notes'
 import type { StudyTextBlock } from '@mymind/contracts/study'
 import { AutosaveQueue } from '@mymind/core/autosave'
@@ -23,9 +23,8 @@ import { FormSheet } from '../../shared/ui/FormSheet'
 import { ActionMenu } from '../../shared/ui/ActionMenu'
 import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
 import { useToast } from '../../shared/ui/toast-context'
-import { WorkspaceNodeCard, WorkspacePanel, WorkspaceStatCard } from '../../shared/ui/Workspace'
+import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
 import { MobileCreateAction } from '../../shared/ui/MobileCreateAction'
-import { ModuleTabs } from '../../shared/ui/ModuleTabs'
 import { VisualIconBadge } from '../../shared/ui/VisualPickers'
 import { FOLDER_ICON_CHOICES } from '../../shared/ui/visual-options'
 import {
@@ -36,11 +35,9 @@ import {
   type FormSpec
 } from '../../shared/ui/form-model'
 import {
-  Button,
   EmptyState,
   ErrorState,
   IconButton,
-  Label,
   LoadingState,
   SearchField
 } from '../../shared/ui/primitives'
@@ -52,12 +49,132 @@ type NoteEditorMode = 'edit' | 'read'
 type NoteSaveState = 'saved' | 'dirty' | 'saving' | 'error'
 type NotesLayout = 'grid' | 'list'
 type NotesSort = 'updated' | 'title'
+type NotesView = 'all' | 'recent' | 'groups' | 'ungrouped'
 
 function sortNotes(notes: NoteSummary[], sort: NotesSort): NoteSummary[] {
   return [...notes].sort((left, right) =>
     sort === 'title'
       ? left.title.localeCompare(right.title, 'ru-RU')
       : right.updatedAt - left.updatedAt
+  )
+}
+
+const NOTES_VIEWS: ReadonlyArray<{
+  id: NotesView
+  label: string
+  icon: LucideIcon
+}> = [
+  { id: 'all', label: 'Все', icon: StickyNote },
+  { id: 'recent', label: 'Недавние', icon: Clock3 },
+  { id: 'groups', label: 'По группам', icon: Folder },
+  { id: 'ungrouped', label: 'Без группы', icon: CircleSlash2 }
+]
+
+function NotesTabBar({
+  value,
+  onChange
+}: {
+  value: NotesView
+  onChange(value: NotesView): void
+}): React.JSX.Element {
+  const theme = useTheme()
+
+  return (
+    <View
+      accessibilityRole="tablist"
+      style={{
+        minHeight: 50,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 2,
+        padding: 4,
+        borderWidth: 1,
+        borderColor: theme.border,
+        borderRadius: 16,
+        backgroundColor: theme.surface
+      }}
+    >
+      {NOTES_VIEWS.map((item) => {
+        const selected = value === item.id
+        const Icon = item.icon
+        return (
+          <Pressable
+            key={item.id}
+            accessibilityRole="tab"
+            accessibilityLabel={item.label}
+            accessibilityState={{ selected }}
+            onPress={() => onChange(item.id)}
+            style={({ pressed }) => ({
+              flex: 1,
+              minWidth: 0,
+              height: 40,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 12,
+              backgroundColor: selected
+                ? theme.accent + '18'
+                : pressed
+                  ? theme.raised
+                  : 'transparent',
+              opacity: pressed ? 0.72 : 1
+            })}
+          >
+            <Icon
+              size={18}
+              strokeWidth={selected ? 2.4 : 2}
+              color={selected ? theme.accent : theme.muted}
+            />
+          </Pressable>
+        )
+      })}
+    </View>
+  )
+}
+
+function NotesControl({
+  label,
+  icon: Icon,
+  active = false,
+  iconOnly = false,
+  onPress
+}: {
+  label: string
+  icon: LucideIcon
+  active?: boolean
+  iconOnly?: boolean
+  onPress(): void
+}): React.JSX.Element {
+  const theme = useTheme()
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ selected: active }}
+      onPress={onPress}
+      style={({ pressed }) => ({
+        minWidth: iconOnly ? 38 : undefined,
+        height: 38,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: iconOnly ? 0 : 6,
+        paddingHorizontal: iconOnly ? 0 : 10,
+        borderWidth: 1,
+        borderColor: active ? theme.accent + '55' : theme.border,
+        borderRadius: 11,
+        backgroundColor: active ? theme.accent + '10' : pressed ? theme.raised : theme.surface,
+        opacity: pressed ? 0.72 : 1
+      })}
+    >
+      <Icon size={15} color={active ? theme.accent : theme.muted} />
+      {!iconOnly ? (
+        <Text
+          style={{ color: active ? theme.accent : theme.text, fontSize: 11.5, fontWeight: '700' }}
+        >
+          {label}
+        </Text>
+      ) : null}
+    </Pressable>
   )
 }
 
@@ -101,28 +218,79 @@ function MobileNoteCard({
       ]}
     />
   )
+  const meta = [groupTitle, date].filter(Boolean).join(' · ')
 
   if (layout === 'list') {
     return (
-      <WorkspaceNodeCard
-        title={note.title}
-        subtitle={[subtitle.slice(0, 160), groupTitle, date].filter(Boolean).join(' · ')}
-        leadingIcon="notes"
-        onPress={onOpen}
-        action={menu}
-      />
+      <View
+        style={{
+          minHeight: 78,
+          marginBottom: 8,
+          flexDirection: 'row',
+          alignItems: 'stretch',
+          overflow: 'hidden',
+          borderWidth: 1,
+          borderColor: theme.border,
+          borderRadius: 16,
+          backgroundColor: theme.surface
+        }}
+      >
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={note.title}
+          onPress={onOpen}
+          style={({ pressed }) => ({
+            minWidth: 0,
+            flex: 1,
+            flexDirection: 'row',
+            alignItems: 'flex-start',
+            gap: 11,
+            paddingLeft: 12,
+            paddingRight: 4,
+            paddingVertical: 12,
+            backgroundColor: pressed ? theme.raised : 'transparent'
+          })}
+        >
+          <VisualIconBadge value="notes" size={36} />
+          <View style={{ minWidth: 0, flex: 1 }}>
+            <Text
+              numberOfLines={1}
+              style={{ color: theme.text, fontSize: 14, lineHeight: 19, fontWeight: '700' }}
+            >
+              {note.title}
+            </Text>
+            {subtitle ? (
+              <Text
+                numberOfLines={2}
+                style={{ marginTop: 3, color: theme.muted, fontSize: 11.5, lineHeight: 16 }}
+              >
+                {subtitle}
+              </Text>
+            ) : null}
+            <Text
+              numberOfLines={1}
+              style={{ marginTop: subtitle ? 6 : 4, color: theme.muted, fontSize: 10 }}
+            >
+              {meta || 'Без группы'}
+            </Text>
+          </View>
+        </Pressable>
+        <View style={{ alignItems: 'center', justifyContent: 'center', paddingRight: 6 }}>
+          {menu}
+        </View>
+      </View>
     )
   }
 
   return (
     <View
       style={{
-        minHeight: 158,
+        minHeight: 152,
         marginBottom: 8,
         overflow: 'hidden',
         borderWidth: 1,
         borderColor: theme.border,
-        borderRadius: 17,
+        borderRadius: 16,
         backgroundColor: theme.surface
       }}
     >
@@ -131,45 +299,33 @@ function MobileNoteCard({
         accessibilityLabel={note.title}
         onPress={onOpen}
         style={({ pressed }) => ({
+          minHeight: 150,
           flex: 1,
-          minHeight: 118,
-          gap: 9,
-          paddingHorizontal: 13,
-          paddingTop: 13,
-          paddingBottom: 9,
+          gap: 8,
+          padding: 12,
+          paddingRight: 42,
           backgroundColor: pressed ? theme.raised : 'transparent'
         })}
       >
-        <VisualIconBadge value="notes" size={36} />
+        <VisualIconBadge value="notes" size={34} />
         <Text
           numberOfLines={2}
-          style={{ color: theme.text, fontSize: 14.5, lineHeight: 20, fontWeight: '700' }}
+          style={{ color: theme.text, fontSize: 13.5, lineHeight: 18, fontWeight: '700' }}
         >
           {note.title}
         </Text>
         {subtitle ? (
-          <Text numberOfLines={3} style={{ color: theme.muted, fontSize: 11.5, lineHeight: 16 }}>
+          <Text numberOfLines={3} style={{ color: theme.muted, fontSize: 11, lineHeight: 15 }}>
             {subtitle}
           </Text>
-        ) : null}
-      </Pressable>
-      <View
-        style={{
-          minHeight: 42,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 6,
-          paddingLeft: 12,
-          paddingRight: 6,
-          borderTopWidth: 1,
-          borderTopColor: theme.border
-        }}
-      >
-        <Text numberOfLines={1} style={{ flex: 1, color: theme.muted, fontSize: 10.5 }}>
-          {[groupTitle, date].filter(Boolean).join(' · ')}
+        ) : (
+          <Text style={{ color: theme.muted, fontSize: 11 }}>Пустая заметка</Text>
+        )}
+        <Text numberOfLines={1} style={{ marginTop: 'auto', color: theme.muted, fontSize: 9.5 }}>
+          {meta || 'Без группы'}
         </Text>
-        {menu}
-      </View>
+      </Pressable>
+      <View style={{ position: 'absolute', top: 5, right: 4 }}>{menu}</View>
     </View>
   )
 }
@@ -191,7 +347,7 @@ export function NotesScreen({
   const toast = useToast()
   const overview = useCollection(useCallback(() => api.listNotesOverview(), [api]))
   const [query, setQuery] = useState('')
-  const [view, setView] = useState<'all' | 'recent' | 'groups' | 'ungrouped'>('all')
+  const [view, setView] = useState<NotesView>('all')
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
   const [form, setForm] = useState<FormSpec | null>(null)
   const [record, setRecord] = useState<NoteRecord | null>(null)
@@ -712,27 +868,30 @@ export function NotesScreen({
     )
   }
 
-  const notesByRecency = sortNotes(overview.data?.notes ?? [], 'updated')
+  const allNotes = overview.data?.notes ?? []
+  const allGroups = overview.data?.groups ?? []
+  const notesByRecency = sortNotes(allNotes, 'updated')
   const selectedGroup = selectedGroupId
-    ? (overview.data?.groups.find((group) => group.id === selectedGroupId) ?? null)
+    ? (allGroups.find((group) => group.id === selectedGroupId) ?? null)
     : null
   const searchedNotes = notesByRecency.filter((note) => noteMatches(note, query))
   const sortedNotes = sortNotes(searchedNotes, sort)
   const normalizedQuery = query.trim().toLocaleLowerCase('ru-RU')
-  const visibleGroups = (overview.data?.groups ?? []).filter((group) => {
-    const groupNotes = overview.data?.notes.filter((note) => note.groupId === group.id) ?? []
+  const visibleGroups = allGroups.filter((group) => {
+    const groupNotes = allNotes.filter((note) => note.groupId === group.id)
     if (hideEmptyGroups && groupNotes.length === 0) return false
     if (!normalizedQuery) return true
     if (group.title.toLocaleLowerCase('ru-RU').includes(normalizedQuery)) return true
     return groupNotes.some((note) => noteMatches(note, query))
   })
-  const notes =
-    view === 'ungrouped'
-      ? sortedNotes.filter((note) => note.groupId === null)
-      : view === 'groups' && selectedGroup
-        ? sortedNotes.filter((note) => note.groupId === selectedGroup.id)
-        : sortedNotes
-  const visibleNotes = notes
+  const visibleNotes =
+    view === 'recent'
+      ? searchedNotes
+      : view === 'ungrouped'
+        ? sortedNotes.filter((note) => note.groupId === null)
+        : view === 'groups' && selectedGroup
+          ? sortedNotes.filter((note) => note.groupId === selectedGroup.id)
+          : sortedNotes
 
   const createActions = [
     {
@@ -753,20 +912,50 @@ export function NotesScreen({
     }
   ]
 
+  const changeView = (next: NotesView): void => {
+    if (next === view) return
+    if (next === 'groups') setSelectedGroupId(null)
+    if (next === 'recent') setSort('updated')
+    setView(next)
+    toast.info(NOTES_VIEWS.find((item) => item.id === next)?.label ?? 'Заметки', 'notes-view')
+  }
+
   return (
     <View style={{ flex: 1 }}>
-      <View style={{ gap: 10, marginBottom: 12 }}>
+      <View style={{ gap: 10, marginBottom: 10 }}>
         {view === 'groups' && selectedGroup ? (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Button
-              label="Все группы"
+          <View
+            style={{
+              minHeight: 54,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 9,
+              paddingHorizontal: 7,
+              paddingVertical: 6,
+              borderWidth: 1,
+              borderColor: theme.border,
+              borderRadius: 15,
+              backgroundColor: theme.surface
+            }}
+          >
+            <IconButton
+              label="Назад к группам"
               icon="back"
               compact
+              ghost
               onPress={() => setSelectedGroupId(null)}
             />
             <VisualIconBadge value={selectedGroup.icon ?? 'folder'} size={34} />
             <View style={{ flex: 1, minWidth: 0 }}>
-              <Label>{selectedGroup.title}</Label>
+              <Text
+                numberOfLines={1}
+                style={{ color: theme.text, fontSize: 13.5, fontWeight: '700' }}
+              >
+                {selectedGroup.title}
+              </Text>
+              <Text style={{ marginTop: 1, color: theme.muted, fontSize: 10.5 }}>
+                {allNotes.filter((note) => note.groupId === selectedGroup.id).length} заметок
+              </Text>
             </View>
             <ActionMenu
               title={selectedGroup.title}
@@ -791,68 +980,65 @@ export function NotesScreen({
             />
           </View>
         ) : (
-          <ModuleTabs
-            items={[
-              { id: 'all' as const, label: 'Все', icon: StickyNote },
-              { id: 'recent' as const, label: 'Недавние', icon: Clock3 },
-              { id: 'groups' as const, label: 'По группам', icon: Folder },
-              { id: 'ungrouped' as const, label: 'Без группы', icon: CircleSlash2 }
-            ]}
-            value={view}
-            onChange={(next) => {
-              if (next === 'groups') setSelectedGroupId(null)
-              setView(next)
-            }}
-          />
+          <NotesTabBar value={view} onChange={changeView} />
         )}
 
         <SearchField value={query} onChangeText={setQuery} />
 
         {view === 'groups' && !selectedGroup ? (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: 8 }}
+          <View
+            style={{
+              minHeight: 38,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 10
+            }}
           >
-            <Button
+            <Text style={{ color: theme.muted, fontSize: 11.5 }}>
+              {visibleGroups.length} из {allGroups.length} групп
+            </Text>
+            <NotesControl
               label="Скрыть пустые"
-              compact
-              selected={hideEmptyGroups}
+              icon={CircleSlash2}
+              active={hideEmptyGroups}
               onPress={() => setHideEmptyGroups((current) => !current)}
             />
-          </ScrollView>
+          </View>
         ) : (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: 8 }}
+          <View
+            style={{
+              minHeight: 38,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 10
+            }}
           >
-            <Button
-              label="Недавние"
-              compact
-              icon="clock"
-              selected={sort === 'updated'}
-              onPress={() => setSort('updated')}
-            />
-            <Button
-              label="По названию"
-              compact
-              selected={sort === 'title'}
-              onPress={() => setSort('title')}
-            />
-            <Button
-              label="Список"
-              compact
-              selected={layout === 'list'}
-              onPress={() => setLayout('list')}
-            />
-            <Button
-              label="Сетка"
-              compact
-              selected={layout === 'grid'}
-              onPress={() => setLayout('grid')}
-            />
-          </ScrollView>
+            <Text numberOfLines={1} style={{ flex: 1, color: theme.muted, fontSize: 11.5 }}>
+              {visibleNotes.length} заметок
+              {view === 'all' && allGroups.length ? ` · ${allGroups.length} групп` : ''}
+            </Text>
+            <View style={{ flexDirection: 'row', gap: 6 }}>
+              {view !== 'recent' ? (
+                <NotesControl
+                  label={sort === 'updated' ? 'Недавние' : 'А–Я'}
+                  icon={sort === 'updated' ? Clock3 : ArrowDownAZ}
+                  active
+                  onPress={() =>
+                    setSort((current) => (current === 'updated' ? 'title' : 'updated'))
+                  }
+                />
+              ) : null}
+              <NotesControl
+                label={layout === 'list' ? 'Список' : 'Сетка'}
+                icon={layout === 'list' ? List : Grid2X2}
+                iconOnly
+                active
+                onPress={() => setLayout((current) => (current === 'list' ? 'grid' : 'list'))}
+              />
+            </View>
+          </View>
         )}
       </View>
 
@@ -864,7 +1050,8 @@ export function NotesScreen({
         <FlatList
           data={visibleGroups}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingBottom: 88 }}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 96 }}
           ListEmptyComponent={
             <EmptyState
               text={query.trim() ? 'По этому запросу группы не найдены.' : 'Групп пока нет.'}
@@ -873,10 +1060,7 @@ export function NotesScreen({
           renderItem={({ item }) => (
             <WorkspaceNodeCard
               title={item.title}
-              subtitle={
-                (overview.data?.notes.filter((note) => note.groupId === item.id).length ?? 0) +
-                ' заметок'
-              }
+              subtitle={`${allNotes.filter((note) => note.groupId === item.id).length} заметок`}
               leading={<VisualIconBadge value={item.icon ?? 'folder'} />}
               onPress={() => setSelectedGroupId(item.id)}
               action={
@@ -912,105 +1096,27 @@ export function NotesScreen({
           keyExtractor={(item) => item.id}
           numColumns={layout === 'grid' ? 2 : 1}
           columnWrapperStyle={layout === 'grid' ? { gap: 8 } : undefined}
+          showsVerticalScrollIndicator={false}
           refreshing={overview.loading}
           onRefresh={overview.refresh}
-          contentContainerStyle={{ paddingBottom: 88 }}
-          ListHeaderComponent={
-            view === 'all' && (overview.data?.notes.length || overview.data?.groups.length) ? (
-              <View style={{ gap: 12, marginBottom: 12 }}>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                  <WorkspaceStatCard
-                    label="Всего заметок"
-                    value={String(overview.data?.notes.length ?? 0)}
-                    icon="notes"
-                  />
-                  <WorkspaceStatCard
-                    label="Групп"
-                    value={String(overview.data?.groups.length ?? 0)}
-                    icon="folder"
-                  />
-                  <WorkspaceStatCard
-                    label="Без группы"
-                    value={String(
-                      (overview.data?.notes ?? []).filter((note) => note.groupId === null).length
-                    )}
-                    icon="notes"
-                  />
-                </View>
-                {searchedNotes.slice(0, 4).length ? (
-                  <WorkspacePanel
-                    title="Недавние заметки"
-                    icon="clock"
-                    action={
-                      <Button label="Смотреть все" compact onPress={() => setView('recent')} />
-                    }
-                  >
-                    {searchedNotes.slice(0, 4).map((note) => {
-                      const noteGroup = overview.data?.groups.find(
-                        (group) => group.id === note.groupId
-                      )
-                      return (
-                        <MobileNoteCard
-                          key={note.id}
-                          note={note}
-                          groupTitle={noteGroup?.title}
-                          layout="list"
-                          onOpen={() => openNote(note.id)}
-                          onRename={() => renameListedNote(note)}
-                          onMove={() => moveListedNote(note)}
-                          onDelete={() => deleteListedNote(note)}
-                        />
-                      )
-                    })}
-                  </WorkspacePanel>
-                ) : null}
-                {(overview.data?.groups.length ?? 0) > 0 ? (
-                  <WorkspacePanel
-                    title="Группы"
-                    icon="folder"
-                    action={
-                      <Button
-                        label="Смотреть все"
-                        compact
-                        onPress={() => {
-                          setSelectedGroupId(null)
-                          setView('groups')
-                        }}
-                      />
-                    }
-                  >
-                    {(overview.data?.groups ?? []).slice(0, 3).map((group) => (
-                      <WorkspaceNodeCard
-                        key={group.id}
-                        title={group.title}
-                        subtitle={`${(overview.data?.notes ?? []).filter((note) => note.groupId === group.id).length} заметок`}
-                        leading={<VisualIconBadge value={group.icon ?? 'folder'} />}
-                        onPress={() => {
-                          setSelectedGroupId(group.id)
-                          setView('groups')
-                        }}
-                      />
-                    ))}
-                  </WorkspacePanel>
-                ) : null}
-              </View>
-            ) : null
-          }
+          contentContainerStyle={{ paddingBottom: 96 }}
           ListEmptyComponent={
             <EmptyState
               text={
-                view === 'ungrouped'
-                  ? 'Все заметки уже распределены по группам.'
-                  : selectedGroup
-                    ? 'В этой группе пока нет заметок.'
-                    : view === 'recent'
-                      ? 'Недавних заметок пока нет.'
-                      : 'Заметок пока нет.'
+                query.trim()
+                  ? 'По этому запросу заметки не найдены.'
+                  : view === 'ungrouped'
+                    ? 'Все заметки уже распределены по группам.'
+                    : selectedGroup
+                      ? 'В этой группе пока нет заметок.'
+                      : view === 'recent'
+                        ? 'Недавних заметок пока нет.'
+                        : 'Заметок пока нет.'
               }
             />
           }
           renderItem={({ item }) => {
-            const noteGroup = overview.data?.groups.find((group) => group.id === item.groupId)
+            const noteGroup = allGroups.find((group) => group.id === item.groupId)
             return (
               <View style={layout === 'grid' ? { flex: 1, maxWidth: '50%' } : undefined}>
                 <MobileNoteCard
@@ -1028,7 +1134,7 @@ export function NotesScreen({
         />
       )}
 
-      <MobileCreateAction actions={createActions} />
+      <MobileCreateAction actions={createActions} iconOnly />
       {form && <FormSheet spec={form} close={() => setForm(null)} />}
     </View>
   )
