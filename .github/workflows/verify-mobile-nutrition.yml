@@ -1,0 +1,30 @@
+name: Verify mobile nutrition redesign
+
+on:
+  push:
+    branches:
+      - agent/mobile-nutrition-redesign
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Prettier
+        run: npx prettier --check apps/mobile/src/modules/nutrition/NutritionScreen.tsx apps/mobile/src/modules/nutrition/NutritionReportsView.tsx
+
+      - name: ESLint
+        run: npx eslint apps/mobile/src/modules/nutrition/NutritionScreen.tsx apps/mobile/src/modules/nutrition/NutritionReportsView.tsx
+
+      - run: npm run typecheck:mobile
+      - run: npm run test:mobile
+      - run: npm run export:android
