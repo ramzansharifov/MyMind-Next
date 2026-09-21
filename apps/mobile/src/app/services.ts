@@ -8,15 +8,10 @@ import { createMusicRepository } from '@mymind/persistence/music'
 import { createCalendarRepository } from '@mymind/persistence/calendar'
 import { createDiaryRepository } from '@mymind/persistence/diary'
 import { createNotesRepository } from '@mymind/persistence/notes'
-import { createWorkoutsRepository } from '@mymind/persistence/workouts'
 import { createNutritionRepository } from '@mymind/persistence/nutrition'
 import { createFinanceRepository } from '@mymind/persistence/finance'
 import { createPasswordsRepository } from '@mymind/persistence/passwords'
 import { createLocalProfileRepository } from '@mymind/persistence/local-profile'
-import {
-  createWorkoutProgressAssetHooks,
-  reconcileWorkoutProgressAssets
-} from '../modules/workouts/workoutProgressAssets'
 import { mobilePasswordCrypto } from '../modules/passwords/passwordCrypto'
 import { createMobileDocumentAssetStore } from '../shared/platform/documentAssets'
 import { adaptSqlite } from '../shared/storage/sqlite'
@@ -31,7 +26,6 @@ export interface MobileServices {
   calendar: ReturnType<typeof createCalendarRepository>
   diary: ReturnType<typeof createDiaryRepository>
   notes: ReturnType<typeof createNotesRepository>
-  workouts: ReturnType<typeof createWorkoutsRepository>
   nutrition: ReturnType<typeof createNutritionRepository>
   finance: ReturnType<typeof createFinanceRepository>
   passwords: ReturnType<typeof createPasswordsRepository>
@@ -61,16 +55,6 @@ export function createMobileServices(db: SQLiteDatabase): MobileServices {
     }
   })
 
-  const workouts = createWorkoutsRepository(runtime, createWorkoutProgressAssetHooks())
-  try {
-    const photos = workouts.listOverview().progressEntries.flatMap((entry) => entry.photos)
-    for (const id of reconcileWorkoutProgressAssets(photos)) {
-      void workouts.deleteProgressPhoto({ id }).catch(() => undefined)
-    }
-  } catch (reason) {
-    console.error('Failed to reconcile workout progress photos', reason)
-  }
-
   try {
     const documents = new Map<string, StudyDocument>()
     for (const note of notes.listNotesOverview().notes) {
@@ -91,7 +75,6 @@ export function createMobileServices(db: SQLiteDatabase): MobileServices {
     calendar: createCalendarRepository(runtime),
     diary: createDiaryRepository(runtime),
     notes,
-    workouts,
     nutrition: createNutritionRepository(runtime),
     finance: createFinanceRepository(runtime),
     passwords: createPasswordsRepository(runtime, mobilePasswordCrypto),
