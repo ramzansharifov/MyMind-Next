@@ -406,8 +406,8 @@ export function CalendarScreen(): React.JSX.Element {
                   }}
                   style={({ pressed }) => ({
                     width: '14.285714%',
-                    minHeight: 48,
-                    paddingVertical: 4,
+                    minHeight: 54,
+                    paddingVertical: 5,
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: 3,
@@ -424,11 +424,11 @@ export function CalendarScreen(): React.JSX.Element {
                 >
                   <View
                     style={{
-                      width: 27,
-                      height: 27,
+                      width: 25,
+                      height: 25,
                       alignItems: 'center',
                       justifyContent: 'center',
-                      borderRadius: 9,
+                      borderRadius: 8,
                       backgroundColor: isToday
                         ? theme.accent
                         : selected
@@ -439,7 +439,7 @@ export function CalendarScreen(): React.JSX.Element {
                     <Text
                       style={{
                         color: isToday ? '#ffffff' : selected ? theme.accent : theme.text,
-                        fontSize: 13,
+                        fontSize: 12,
                         fontWeight: isToday || selected ? '800' : '500'
                       }}
                     >
