@@ -1,16 +1,7 @@
 import { randomUUID } from 'expo-crypto'
 import { ArrowDownAZ, CircleSlash2, Clock3, Folder, Grid2X2, List, StickyNote, type LucideIcon } from 'lucide-react-native'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import {
-  AppState,
-  BackHandler,
-  FlatList,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View
-} from 'react-native'
+import { AppState, BackHandler, FlatList, Pressable, Text, TextInput, View } from 'react-native'
 import type { NoteDocument, NoteGroup, NoteRecord, NoteSummary } from '@mymind/contracts/notes'
 import type { StudyTextBlock } from '@mymind/contracts/study'
 import { AutosaveQueue } from '@mymind/core/autosave'
@@ -35,11 +26,9 @@ import {
   type FormSpec
 } from '../../shared/ui/form-model'
 import {
-  Button,
   EmptyState,
   ErrorState,
   IconButton,
-  Label,
   LoadingState,
   SearchField
 } from '../../shared/ui/primitives'
