@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { ScrollView, Text, View } from 'react-native'
 import type { StudyTextBlock } from '@mymind/contracts/study'
 
@@ -23,7 +23,7 @@ export function MobileNoteAppendEditor({
   update(block: StudyTextBlock): void
 }): React.JSX.Element {
   const theme = useTheme()
-  const editorRef = useRef<NotesRichTextDomRef | null>(null)
+  const [editor, setEditor] = useState<NotesRichTextDomRef | null>(null)
   const [formatting, setFormatting] = useState<NotesRichTextFormattingState>(
     DEFAULT_NOTES_RICH_TEXT_STATE
   )
@@ -58,9 +58,7 @@ export function MobileNoteAppendEditor({
       <View style={{ minHeight: 112, paddingHorizontal: 12, paddingBottom: 8 }}>
         <NotesRichTextBlock
           block={block}
-          registerRef={(editor) => {
-            editorRef.current = editor
-          }}
+          registerRef={setEditor}
           activate={() => undefined}
           update={update}
           formattingChanged={setFormatting}
@@ -88,7 +86,7 @@ export function MobileNoteAppendEditor({
           }}
         >
           <NotesRichTextInlineControls
-            editor={editorRef.current}
+            editor={editor}
             state={formatting}
             openSettings={() => setSettingsOpen(true)}
             openLink={() => setLinkOpen(true)}
@@ -99,14 +97,14 @@ export function MobileNoteAppendEditor({
       <NotesRichTextSettingsSheet
         open={settingsOpen}
         close={() => setSettingsOpen(false)}
-        editor={editorRef.current}
+        editor={editor}
         state={formatting}
       />
       <NotesQuickLinkDialog
         key={linkOpen ? 'open' : 'closed'}
         open={linkOpen}
         close={() => setLinkOpen(false)}
-        editor={editorRef.current}
+        editor={editor}
         state={formatting}
       />
     </View>
