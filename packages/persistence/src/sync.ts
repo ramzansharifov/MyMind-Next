@@ -482,7 +482,8 @@ function mergeConcurrentNoteRows(
   const matchesLeft =
     mergedCanonical === JSON.stringify(leftDocument) && canonicalRow(baseRow) === canonicalRow(left)
   const matchesRight =
-    mergedCanonical === JSON.stringify(rightDocument) && canonicalRow(baseRow) === canonicalRow(right)
+    mergedCanonical === JSON.stringify(rightDocument) &&
+    canonicalRow(baseRow) === canonicalRow(right)
   const version =
     matchesLeft && left.version >= right.version
       ? left.version

@@ -767,7 +767,6 @@ describe('LAN sync snapshot merge', () => {
       left.close()
       right.close()
     }
-
   })
 
   it('preserves the desktop base when mobile append revisions are newer', () => {
