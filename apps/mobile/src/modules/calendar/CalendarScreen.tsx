@@ -363,48 +363,6 @@ export function CalendarScreen(): React.JSX.Element {
               ghost
               onPress={() => shiftMonth(1)}
             />
-            <IconButton label="Перейти к дате" icon="calendar" ghost onPress={openDateJump} />
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={
-                unreadReminders.length
-                  ? `Напоминания: ${unreadReminders.length} непрочитанных`
-                  : 'Напоминания'
-              }
-              onPress={() => setInboxOpen(true)}
-              style={({ pressed }) => ({
-                position: 'relative',
-                width: 40,
-                height: 40,
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: 12,
-                backgroundColor: pressed ? theme.raised : 'transparent',
-                opacity: pressed ? 0.72 : 1
-              })}
-            >
-              <Bell size={18} color={unreadReminders.length ? theme.accent : theme.muted} />
-              {unreadReminders.length ? (
-                <View
-                  style={{
-                    position: 'absolute',
-                    top: 4,
-                    right: 3,
-                    minWidth: 16,
-                    height: 16,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    paddingHorizontal: 3,
-                    borderRadius: 8,
-                    backgroundColor: theme.accent
-                  }}
-                >
-                  <Text style={{ color: '#ffffff', fontSize: 9, fontWeight: '800' }}>
-                    {Math.min(unreadReminders.length, 99)}
-                  </Text>
-                </View>
-              ) : null}
-            </Pressable>
           </View>
 
           <View
@@ -549,22 +507,66 @@ export function CalendarScreen(): React.JSX.Element {
               {dayTitle(selectedDate)}
             </Text>
           </View>
-          <View
-            style={{
-              minWidth: 32,
-              height: 28,
-              alignItems: 'center',
-              justifyContent: 'center',
-              paddingHorizontal: 9,
-              borderWidth: 1,
-              borderColor: theme.border,
-              borderRadius: 10,
-              backgroundColor: theme.surface
-            }}
-          >
-            <Text style={{ color: theme.muted, fontSize: 11, fontWeight: '700' }}>
-              {selectedDayEvents.length}
-            </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+            <View
+              style={{
+                minWidth: 30,
+                height: 28,
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingHorizontal: 8,
+                borderWidth: 1,
+                borderColor: theme.border,
+                borderRadius: 10,
+                backgroundColor: theme.surface
+              }}
+            >
+              <Text style={{ color: theme.muted, fontSize: 10.5, fontWeight: '700' }}>
+                {selectedDayEvents.length}
+              </Text>
+            </View>
+            <IconButton label="Перейти к дате" icon="calendar" ghost onPress={openDateJump} />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={
+                unreadReminders.length
+                  ? `Напоминания: ${unreadReminders.length} непрочитанных`
+                  : 'Напоминания'
+              }
+              onPress={() => setInboxOpen(true)}
+              style={({ pressed }) => ({
+                position: 'relative',
+                width: 40,
+                height: 40,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 12,
+                backgroundColor: pressed ? theme.raised : 'transparent',
+                opacity: pressed ? 0.72 : 1
+              })}
+            >
+              <Bell size={18} color={unreadReminders.length ? theme.accent : theme.muted} />
+              {unreadReminders.length ? (
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: 3,
+                    right: 2,
+                    minWidth: 16,
+                    height: 16,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    paddingHorizontal: 3,
+                    borderRadius: 8,
+                    backgroundColor: theme.accent
+                  }}
+                >
+                  <Text style={{ color: '#ffffff', fontSize: 9, fontWeight: '800' }}>
+                    {Math.min(unreadReminders.length, 99)}
+                  </Text>
+                </View>
+              ) : null}
+            </Pressable>
           </View>
         </View>
       </View>
