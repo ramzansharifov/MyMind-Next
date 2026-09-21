@@ -26,7 +26,6 @@ import { NotesScreen } from '../modules/notes/NotesScreen'
 import { CatalogScreen } from '../modules/catalog/CatalogScreen'
 import { CalendarScreen } from '../modules/calendar/CalendarScreen'
 import { DiaryScreen } from '../modules/diary/DiaryScreen'
-import { WorkoutsScreen } from '../modules/workouts/WorkoutsScreen'
 import { NutritionScreen } from '../modules/nutrition/NutritionScreen'
 import { FinanceScreen } from '../modules/finance/FinanceScreen'
 import { PasswordsScreen } from '../modules/passwords/PasswordsScreen'
@@ -358,8 +357,6 @@ export default function MobileApp(): React.JSX.Element {
                       <CalendarScreen />
                     ) : route === 'diary' ? (
                       <DiaryScreen />
-                    ) : route === 'workouts' ? (
-                      <WorkoutsScreen />
                     ) : route === 'nutrition' ? (
                       <NutritionScreen />
                     ) : route === 'finance' ? (
