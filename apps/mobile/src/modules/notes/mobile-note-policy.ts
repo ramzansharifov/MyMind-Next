@@ -1,7 +1,5 @@
-import type { NoteDocument } from '@mymind/contracts/notes'
+import { MOBILE_NOTE_APPEND_BLOCK_PREFIX, type NoteDocument } from '@mymind/contracts/notes'
 import type { StudyTextBlock } from '@mymind/contracts/study'
-
-export const MOBILE_NOTE_APPEND_PREFIX = 'mobile-append-'
 
 export function isTextOnlyNote(document: NoteDocument): boolean {
   return document.blocks.every((block) => block.type === 'text')
@@ -9,7 +7,7 @@ export function isTextOnlyNote(document: NoteDocument): boolean {
 
 export function createMobileAppendTextBlock(id: string): StudyTextBlock {
   return {
-    id: `${MOBILE_NOTE_APPEND_PREFIX}${id}`,
+    id: `${MOBILE_NOTE_APPEND_BLOCK_PREFIX}${id}`,
     type: 'text',
     text: '',
     html: '<p></p>'
