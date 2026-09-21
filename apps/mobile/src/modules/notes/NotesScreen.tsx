@@ -12,6 +12,7 @@ import {
   View
 } from 'react-native'
 import type { NoteDocument, NoteGroup, NoteRecord, NoteSummary } from '@mymind/contracts/notes'
+import type { StudyTextBlock } from '@mymind/contracts/study'
 import { AutosaveQueue } from '@mymind/core/autosave'
 import * as notesValidation from '@mymind/core/validation/notes'
 import { useServices } from '../../app/context'
@@ -44,6 +45,12 @@ import {
   SearchField
 } from '../../shared/ui/primitives'
 import { useTheme } from '../../shared/ui/theme'
+import { MobileNoteAppendEditor } from './MobileNoteAppendEditor'
+import {
+  createMobileAppendTextBlock,
+  isTextOnlyNote,
+  withoutNoteBlock
+} from './mobile-note-policy'
 
 type NoteEditorMode = 'edit' | 'read'
 type NoteSaveState = 'saved' | 'dirty' | 'saving' | 'error'
@@ -198,10 +205,12 @@ export function NotesScreen({
   const [editorMode, setEditorMode] = useState<NoteEditorMode>('edit')
   const [modeChanging, setModeChanging] = useState(false)
   const [saveState, setSaveState] = useState<NoteSaveState>('saved')
+  const [appendBlock, setAppendBlock] = useState<StudyTextBlock | null>(null)
   const [layout, setLayout] = useState<NotesLayout>('list')
   const [sort, setSort] = useState<NotesSort>('updated')
   const [hideEmptyGroups, setHideEmptyGroups] = useState(false)
   const queueRef = useRef<AutosaveQueue<NoteDocument> | null>(null)
+  const appendQueueRef = useRef<AutosaveQueue<StudyTextBlock> | null>(null)
 
   const openNote = useCallback(
     (id: string): void => {
@@ -209,8 +218,9 @@ export function NotesScreen({
         const next = api.getNote(id)
         setRecord(next)
         setDocument(next.document)
+        setAppendBlock(null)
         setEditorError('')
-        setEditorMode('edit')
+        setEditorMode(isTextOnlyNote(next.document) ? 'edit' : 'read')
         setSaveState('saved')
         queueRef.current = new AutosaveQueue<NoteDocument>(
           async (value) => {
@@ -218,6 +228,29 @@ export function NotesScreen({
             try {
               const saved = await api.saveNote({ id, document: value })
               setRecord(saved)
+              setSaveState('saved')
+              notifyDataChanged()
+            } catch (reason) {
+              setSaveState('error')
+              throw reason
+            }
+          },
+          {
+            delayMs: 350,
+            onError: (reason) => {
+              setSaveState('error')
+              setEditorError(messageFor(reason))
+            }
+          }
+        )
+
+        appendQueueRef.current = new AutosaveQueue<StudyTextBlock>(
+          async (block) => {
+            setSaveState('saving')
+            try {
+              const saved = await api.upsertTextBlock(id, block)
+              setRecord(saved)
+              setDocument(saved.document)
               setSaveState('saved')
               notifyDataChanged()
             } catch (reason) {
@@ -241,11 +274,15 @@ export function NotesScreen({
   )
 
   const flush = useCallback(async (): Promise<void> => {
-    const queue = queueRef.current
-    if (!queue) return
-    if (queue.hasPendingChanges()) setSaveState('saving')
+    const documentQueue = queueRef.current
+    const appendQueue = appendQueueRef.current
+    if (!documentQueue && !appendQueue) return
+    if (documentQueue?.hasPendingChanges() || appendQueue?.hasPendingChanges()) {
+      setSaveState('saving')
+    }
     try {
-      await queue.flush()
+      await documentQueue?.flush()
+      await appendQueue?.flush()
       setSaveState('saved')
       setEditorError('')
     } catch (reason) {
@@ -260,8 +297,10 @@ export function NotesScreen({
     try {
       await flush()
       queueRef.current = null
+      appendQueueRef.current = null
       setRecord(null)
       setDocument(null)
+      setAppendBlock(null)
       setEditorMode('edit')
       setSaveState('saved')
       overview.refresh()
@@ -307,16 +346,29 @@ export function NotesScreen({
     queueRef.current?.schedule(next)
   }
 
+  const changeAppendBlock = (next: StudyTextBlock): void => {
+    setAppendBlock(next)
+    setEditorError('')
+    setSaveState('dirty')
+    appendQueueRef.current?.schedule(next)
+  }
+
   const changeEditorMode = (nextMode: NoteEditorMode): void => {
-    if (nextMode === editorMode || modeChanging) return
+    if (nextMode === editorMode || modeChanging || !document) return
     if (nextMode === 'edit') {
+      if (!isTextOnlyNote(document)) {
+        setAppendBlock(createMobileAppendTextBlock(randomUUID()))
+      }
       setEditorMode('edit')
       return
     }
 
     setModeChanging(true)
     void flush()
-      .then(() => setEditorMode('read'))
+      .then(() => {
+        setAppendBlock(null)
+        setEditorMode('read')
+      })
       .catch((reason) => setEditorError(messageFor(reason)))
       .finally(() => setModeChanging(false))
   }
@@ -485,10 +537,13 @@ export function NotesScreen({
         setClosing(true)
         try {
           queueRef.current?.discardPending()
+          appendQueueRef.current?.discardPending()
           await api.deleteNote(id)
           queueRef.current = null
+          appendQueueRef.current = null
           setRecord(null)
           setDocument(null)
+          setAppendBlock(null)
           setEditorError('')
           notifyDataChanged()
           overview.refresh()
@@ -501,19 +556,27 @@ export function NotesScreen({
   }
 
   if (record && document) {
+    const textOnly = isTextOnlyNote(document)
+    const appendMode = editorMode === 'edit' && !textOnly
+    const visibleDocument = appendMode ? withoutNoteBlock(document, appendBlock?.id ?? null) : document
+
     return (
       <View style={{ flex: 1 }}>
         {editorError ? <ErrorState message={editorError} retry={() => void flush()} /> : null}
         <DocumentEditor
-          document={document}
+          document={visibleDocument}
           onChange={changeDocument}
           createId={randomUUID}
           presentation="notes-clean"
-          mode={editorMode}
-          importAsset={(kind) => documentAssets.importAsset(record.id, kind)}
+          mode={appendMode ? 'read' : editorMode}
+          allowedBlockTypes={['text']}
+          readFooter={
+            appendMode && appendBlock ? (
+              <MobileNoteAppendEditor block={appendBlock} update={changeAppendBlock} />
+            ) : null
+          }
           openAsset={documentAssets.openAsset}
           resolveAssetUri={documentAssets.resolveAssetUri}
-          saveRecordedAudio={(input) => documentAssets.saveRecordedAudio(record.id, input)}
           onAssetError={(reason) => setEditorError(messageFor(reason))}
           header={
             <View
