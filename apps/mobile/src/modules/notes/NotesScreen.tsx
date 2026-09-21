@@ -595,7 +595,7 @@ export function NotesScreen({
                 onPress={() => void closeEditor()}
               />
               <View style={{ flex: 1, minWidth: 0 }}>
-                {editorMode === 'edit' ? (
+                {editorMode === 'edit' && !appendMode ? (
                   <TextInput
                     accessibilityLabel="Название заметки"
                     value={record.title}
