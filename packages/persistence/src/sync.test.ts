@@ -870,5 +870,5 @@ describe('LAN sync snapshot merge', () => {
       left.close()
       right.close()
     }
-
+  })
 })
