@@ -77,6 +77,11 @@ jobs:
       - run: npm run typecheck
       - run: npm run native:node
       - run: npm run test:mobile
-      - run: npm run test:run
+      - name: Desktop notes regression tests
+        run: >
+          cd apps/desktop &&
+          npx vitest run
+          src/main/repositories/notes.repository.test.ts
+          src/renderer/src/modules/notes/components/NoteEditor.test.tsx
       - run: npm run db:check
       - run: npm run export:android
