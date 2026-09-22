@@ -97,7 +97,7 @@ function LimitAccountPicker({
         </Text>
       ) : null}
 
-      <View accessibilityRole="group" style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         {canSelectAll ? (
           <Pressable
             accessibilityRole="checkbox"
