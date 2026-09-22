@@ -665,7 +665,10 @@ export function FinanceScreen(): React.JSX.Element {
             {amount}
           </Text>
           <View style={{ marginTop: 5, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Text numberOfLines={1} style={{ minWidth: 0, flex: 1, color: theme.muted, fontSize: 10.5 }}>
+            <Text
+              numberOfLines={1}
+              style={{ minWidth: 0, flex: 1, color: theme.muted, fontSize: 10.5 }}
+            >
               {meta || 'Без привязки'}
             </Text>
             <Text style={{ color: tone, fontSize: 10.5, fontWeight: '800' }}>{typeLabel}</Text>

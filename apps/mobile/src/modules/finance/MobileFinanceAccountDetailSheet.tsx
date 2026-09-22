@@ -83,16 +83,24 @@ export function MobileFinanceAccountDetailSheet({
       .map((entry) => ({ transaction, entry }))
   )
   const income = accountEntries
-    .filter(({ transaction, entry }) => transaction.type === 'income' && entry.signedAmountMinor > 0)
+    .filter(
+      ({ transaction, entry }) => transaction.type === 'income' && entry.signedAmountMinor > 0
+    )
     .reduce((sum, { entry }) => sum + entry.signedAmountMinor, 0)
   const expense = accountEntries
-    .filter(({ transaction, entry }) => transaction.type === 'expense' && entry.signedAmountMinor < 0)
+    .filter(
+      ({ transaction, entry }) => transaction.type === 'expense' && entry.signedAmountMinor < 0
+    )
     .reduce((sum, { entry }) => sum + Math.abs(entry.signedAmountMinor), 0)
   const transferIn = accountEntries
-    .filter(({ transaction, entry }) => transaction.type === 'transfer' && entry.signedAmountMinor > 0)
+    .filter(
+      ({ transaction, entry }) => transaction.type === 'transfer' && entry.signedAmountMinor > 0
+    )
     .reduce((sum, { entry }) => sum + entry.signedAmountMinor, 0)
   const transferOut = accountEntries
-    .filter(({ transaction, entry }) => transaction.type === 'transfer' && entry.signedAmountMinor < 0)
+    .filter(
+      ({ transaction, entry }) => transaction.type === 'transfer' && entry.signedAmountMinor < 0
+    )
     .reduce((sum, { entry }) => sum + Math.abs(entry.signedAmountMinor), 0)
 
   return (
@@ -194,13 +202,22 @@ export function MobileFinanceAccountDetailSheet({
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                     <Text
                       numberOfLines={1}
-                      style={{ minWidth: 0, flex: 1, color: theme.text, fontSize: 12.5, fontWeight: '700' }}
+                      style={{
+                        minWidth: 0,
+                        flex: 1,
+                        color: theme.text,
+                        fontSize: 12.5,
+                        fontWeight: '700'
+                      }}
                     >
                       {historyTitle(transaction)}
                     </Text>
                     <Text style={{ color: tone, fontSize: 12, fontWeight: '700' }}>
                       {entry.signedAmountMinor > 0 ? '+' : '−'}
-                      {formatMoneyMinor(Math.abs(entry.signedAmountMinor), entry.accountCurrencyCode)}
+                      {formatMoneyMinor(
+                        Math.abs(entry.signedAmountMinor),
+                        entry.accountCurrencyCode
+                      )}
                     </Text>
                   </View>
                   <Text style={{ marginTop: 4, color: theme.muted, fontSize: 10.5 }}>

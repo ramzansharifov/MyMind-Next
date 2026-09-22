@@ -67,7 +67,6 @@ function percentChange(value: number | null): string {
   return `${rounded > 0 ? '+' : ''}${rounded}%`
 }
 
-
 function ReportChip({
   label,
   selected,
@@ -95,7 +94,9 @@ function ReportChip({
         opacity: pressed ? 0.74 : 1
       })}
     >
-      <Text style={{ color: selected ? theme.accent : theme.text, fontSize: 11.5, fontWeight: '700' }}>
+      <Text
+        style={{ color: selected ? theme.accent : theme.text, fontSize: 11.5, fontWeight: '700' }}
+      >
         {label}
       </Text>
     </Pressable>
@@ -128,7 +129,13 @@ function ReportMetricCard({
       <Text
         numberOfLines={2}
         adjustsFontSizeToFit
-        style={{ marginTop: 8, color: tone ?? theme.text, fontSize: 16, lineHeight: 21, fontWeight: '800' }}
+        style={{
+          marginTop: 8,
+          color: tone ?? theme.text,
+          fontSize: 16,
+          lineHeight: 21,
+          fontWeight: '800'
+        }}
       >
         {value}
       </Text>
@@ -377,10 +384,7 @@ export function FinanceReportsView({
             value={formatMoneyMinor(report.netMinor, report.currencyCode)}
             tone={report.netMinor < 0 ? expenseTone : incomeTone}
           />
-          <ReportMetricCard
-            label="Операции"
-            value={String(report.operationCount)}
-          />
+          <ReportMetricCard label="Операции" value={String(report.operationCount)} />
         </View>
 
         <View
@@ -404,7 +408,9 @@ export function FinanceReportsView({
         </View>
 
         {report.missingRateCurrencies.length ? (
-          <ErrorState message={`Не хватает текущих курсов: ${report.missingRateCurrencies.join(', ')}`} />
+          <ErrorState
+            message={`Не хватает текущих курсов: ${report.missingRateCurrencies.join(', ')}`}
+          />
         ) : null}
         {report.comparisonMissingRateCurrencies.length ? (
           <ErrorState
@@ -449,51 +455,62 @@ export function FinanceReportsView({
         <View style={{ gap: 8 }}>
           <Text style={{ color: theme.text, fontSize: 14, fontWeight: '700' }}>Динамика</Text>
           {report.timeline.length ? (
-            report.timeline.slice(-8).map((point) => (
-              <Row
-                key={point.key}
-                title={`${point.label} · ${formatMoneyMinor(point.netMinor, report.currencyCode)}`}
-                subtitle={`Доход ${formatMoneyMinor(point.incomeMinor, report.currencyCode)} · расход ${formatMoneyMinor(point.expenseMinor, report.currencyCode)}`}
-              />
-            ))
+            report.timeline
+              .slice(-8)
+              .map((point) => (
+                <Row
+                  key={point.key}
+                  title={`${point.label} · ${formatMoneyMinor(point.netMinor, report.currencyCode)}`}
+                  subtitle={`Доход ${formatMoneyMinor(point.incomeMinor, report.currencyCode)} · расход ${formatMoneyMinor(point.expenseMinor, report.currencyCode)}`}
+                />
+              ))
           ) : (
             <EmptyState text="Нет данных для динамики." />
           )}
         </View>
 
         <View style={{ gap: 8 }}>
-          <Text style={{ color: theme.text, fontSize: 14, fontWeight: '700' }}>Расходы по тегам</Text>
+          <Text style={{ color: theme.text, fontSize: 14, fontWeight: '700' }}>
+            Расходы по тегам
+          </Text>
           {report.expenseByTag.length ? (
-            report.expenseByTag.slice(0, 6).map((item) => (
-              <Row
-                key={`${item.tagId ?? 'none'}:${item.label}:expense`}
-                title={item.label}
-                subtitle={`${formatMoneyMinor(item.amountMinor, report.currencyCode)} · ${Math.round(item.sharePercent)}%`}
-              />
-            ))
+            report.expenseByTag
+              .slice(0, 6)
+              .map((item) => (
+                <Row
+                  key={`${item.tagId ?? 'none'}:${item.label}:expense`}
+                  title={item.label}
+                  subtitle={`${formatMoneyMinor(item.amountMinor, report.currencyCode)} · ${Math.round(item.sharePercent)}%`}
+                />
+              ))
           ) : (
             <EmptyState text="Нет расходов за выбранный период." />
           )}
         </View>
 
         <View style={{ gap: 8 }}>
-          <Text style={{ color: theme.text, fontSize: 14, fontWeight: '700' }}>Доходы по тегам</Text>
+          <Text style={{ color: theme.text, fontSize: 14, fontWeight: '700' }}>
+            Доходы по тегам
+          </Text>
           {report.incomeByTag.length ? (
-            report.incomeByTag.slice(0, 6).map((item) => (
-              <Row
-                key={`${item.tagId ?? 'none'}:${item.label}:income`}
-                title={item.label}
-                subtitle={`${formatMoneyMinor(item.amountMinor, report.currencyCode)} · ${Math.round(item.sharePercent)}%`}
-              />
-            ))
+            report.incomeByTag
+              .slice(0, 6)
+              .map((item) => (
+                <Row
+                  key={`${item.tagId ?? 'none'}:${item.label}:income`}
+                  title={item.label}
+                  subtitle={`${formatMoneyMinor(item.amountMinor, report.currencyCode)} · ${Math.round(item.sharePercent)}%`}
+                />
+              ))
           ) : (
             <EmptyState text="Нет доходов за выбранный период." />
           )}
         </View>
 
-
         <View style={{ gap: 8 }}>
-          <Text style={{ color: theme.text, fontSize: 14, fontWeight: '700' }}>Активность по счетам</Text>
+          <Text style={{ color: theme.text, fontSize: 14, fontWeight: '700' }}>
+            Активность по счетам
+          </Text>
           {report.accountActivity.length ? (
             report.accountActivity.map((account) => (
               <Row
@@ -510,20 +527,24 @@ export function FinanceReportsView({
         <View style={{ gap: 8 }}>
           <Text style={{ color: theme.text, fontSize: 14, fontWeight: '700' }}>Переводы</Text>
           {report.transferFlows.length ? (
-            report.transferFlows.slice(0, 8).map((flow) => (
-              <Row
-                key={`${flow.sourceAccountId}:${flow.destinationAccountId}:${flow.sourceCurrencyCode}:${flow.destinationCurrencyCode}`}
-                title={`${flow.sourceAccountName} → ${flow.destinationAccountName}`}
-                subtitle={`${flow.count} переводов · ${formatMoneyMinor(flow.sourceAmountMinor, flow.sourceCurrencyCode)} → ${formatMoneyMinor(flow.destinationAmountMinor, flow.destinationCurrencyCode)}`}
-              />
-            ))
+            report.transferFlows
+              .slice(0, 8)
+              .map((flow) => (
+                <Row
+                  key={`${flow.sourceAccountId}:${flow.destinationAccountId}:${flow.sourceCurrencyCode}:${flow.destinationCurrencyCode}`}
+                  title={`${flow.sourceAccountName} → ${flow.destinationAccountName}`}
+                  subtitle={`${flow.count} переводов · ${formatMoneyMinor(flow.sourceAmountMinor, flow.sourceCurrencyCode)} → ${formatMoneyMinor(flow.destinationAmountMinor, flow.destinationCurrencyCode)}`}
+                />
+              ))
           ) : (
             <EmptyState text="Переводов за период нет." />
           )}
         </View>
 
         <View style={{ gap: 8 }}>
-          <Text style={{ color: theme.text, fontSize: 14, fontWeight: '700' }}>Активные лимиты</Text>
+          <Text style={{ color: theme.text, fontSize: 14, fontWeight: '700' }}>
+            Активные лимиты
+          </Text>
           {report.limits.length ? (
             report.limits.map((limit) => (
               <Row
@@ -639,5 +660,4 @@ export function FinanceReportsView({
       </AppDialog>
     </View>
   )
-
 }

@@ -7,7 +7,15 @@ import { Button } from '../../shared/ui/primitives'
 import { useTheme } from '../../shared/ui/theme'
 import { financeOperationTone } from './finance-semantic-colors'
 
-function DetailRow({ label, value, tone }: { label: string; value: string; tone?: string }): React.JSX.Element {
+function DetailRow({
+  label,
+  value,
+  tone
+}: {
+  label: string
+  value: string
+  tone?: string
+}): React.JSX.Element {
   const theme = useTheme()
   return (
     <View
@@ -125,7 +133,10 @@ export function MobileFinanceTransactionDetailSheet({
               label="Сумма списания"
               value={
                 outgoing
-                  ? formatMoneyMinor(Math.abs(outgoing.signedAmountMinor), outgoing.accountCurrencyCode)
+                  ? formatMoneyMinor(
+                      Math.abs(outgoing.signedAmountMinor),
+                      outgoing.accountCurrencyCode
+                    )
                   : '—'
               }
             />
@@ -146,7 +157,11 @@ export function MobileFinanceTransactionDetailSheet({
               label="Тег"
               value={
                 transaction.tagNameSnapshot ??
-                (transaction.type === 'income' ? 'Доход' : transaction.type === 'expense' ? 'Расход' : '—')
+                (transaction.type === 'income'
+                  ? 'Доход'
+                  : transaction.type === 'expense'
+                    ? 'Расход'
+                    : '—')
               }
               tone={tone}
             />
