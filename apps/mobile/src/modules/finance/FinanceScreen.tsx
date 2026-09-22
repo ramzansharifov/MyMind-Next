@@ -16,7 +16,8 @@ import type {
   FinanceLimitStatus,
   FinanceTagSummary,
   FinanceTemplate,
-  FinanceTransaction
+  FinanceTransaction,
+  FinanceUserTransactionType
 } from '@mymind/contracts/finance'
 import { formatMoneyMinor } from '@mymind/core/finance-money'
 import { useServices } from '../../app/context'
@@ -28,8 +29,9 @@ import { MobileCreateAction, type MobileCreateActionItem } from '../../shared/ui
 import { VisualIconBadge } from '../../shared/ui/VisualPickers'
 import type { FormSpec } from '../../shared/ui/form-model'
 import { ErrorState, LoadingState } from '../../shared/ui/primitives'
-import { accountForm, limitForm, tagForm, templateForm, transactionForm } from './finance-forms'
+import { accountForm, limitForm, tagForm, templateForm } from './finance-forms'
 import { FinanceReportsView } from './FinanceReportsView'
+import { MobileFinanceTransactionSheet } from './MobileFinanceTransactionSheet'
 import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
 import { useTheme } from '../../shared/ui/theme'
 import { useToast } from '../../shared/ui/toast-context'
@@ -224,6 +226,10 @@ export function FinanceScreen(): React.JSX.Element {
   )
   const [tab, setTab] = useState<Tab>('home')
   const [form, setForm] = useState<FormSpec | null>(null)
+  const [transactionSheet, setTransactionSheet] = useState<{
+    type: FinanceUserTransactionType
+    transaction: FinanceTransaction | null
+  } | null>(null)
 
   const openForm = (next: FormSpec): void => {
     setForm({
@@ -234,6 +240,20 @@ export function FinanceScreen(): React.JSX.Element {
       }
     })
   }
+
+  const openTransaction = (
+    type: FinanceUserTransactionType,
+    transaction: FinanceTransaction | null = null
+  ): void => {
+    setTransactionSheet({ type, transaction })
+  }
+
+  const transactionType = (transaction: FinanceTransaction): FinanceUserTransactionType =>
+    transaction.type === 'income'
+      ? 'income'
+      : transaction.type === 'transfer'
+        ? 'transfer'
+        : 'expense'
 
   const data = state.data
   const accounts = useMemo(() => data?.accounts ?? [], [data?.accounts])
@@ -341,7 +361,7 @@ export function FinanceScreen(): React.JSX.Element {
     <WorkspaceNodeCard
       title={operationTitle(item)}
       subtitle={operationSubtitle(item)}
-      onPress={() => openForm(transactionForm(api, accounts, tags, templates, item))}
+      onPress={() => openTransaction(transactionType(item), item)}
       onLongPress={() => deleteTransaction(item)}
       action={
         <ActionMenu
@@ -350,7 +370,7 @@ export function FinanceScreen(): React.JSX.Element {
             {
               label: 'Изменить',
               icon: 'edit',
-              onPress: () => openForm(transactionForm(api, accounts, tags, templates, item))
+              onPress: () => openTransaction(transactionType(item), item)
             },
             {
               label: 'Удалить',
@@ -673,17 +693,39 @@ export function FinanceScreen(): React.JSX.Element {
     )
   }
 
+  const transactionActions: MobileCreateActionItem[] = [
+    {
+      key: 'income',
+      label: 'Доход',
+      description: 'Зачислить деньги на выбранный счёт',
+      icon: 'income',
+      disabled:
+        !accounts.length || !tags.some((tag) => tag.type === 'income' || tag.type === 'both'),
+      onPress: () => openTransaction('income')
+    },
+    {
+      key: 'expense',
+      label: 'Расход',
+      description: 'Записать расход со счёта и выбрать тег',
+      icon: 'expense',
+      disabled:
+        !accounts.length || !tags.some((tag) => tag.type === 'expense' || tag.type === 'both'),
+      onPress: () => openTransaction('expense')
+    },
+    {
+      key: 'transfer',
+      label: 'Перевод',
+      description: 'Перевести деньги между двумя счетами',
+      icon: 'transfer',
+      disabled: accounts.length < 2,
+      onPress: () => openTransaction('transfer')
+    }
+  ]
+
   const createActions: MobileCreateActionItem[] =
     tab === 'home'
       ? [
-          {
-            key: 'transaction',
-            label: 'Новая операция',
-            description: 'Доход, расход или перевод',
-            icon: 'finance',
-            disabled: !accounts.length || !tags.length,
-            onPress: () => openForm(transactionForm(api, accounts, tags, templates))
-          },
+          ...transactionActions,
           {
             key: 'account',
             label: 'Новый счёт',
@@ -700,16 +742,7 @@ export function FinanceScreen(): React.JSX.Element {
           }
         ]
       : tab === 'transactions'
-        ? [
-            {
-              key: 'transaction',
-              label: 'Новая операция',
-              description: 'Доход, расход или перевод',
-              icon: 'finance',
-              disabled: !accounts.length || !tags.length,
-              onPress: () => openForm(transactionForm(api, accounts, tags, templates))
-            }
-          ]
+        ? transactionActions
         : tab === 'accounts'
           ? [
               {
@@ -763,6 +796,17 @@ export function FinanceScreen(): React.JSX.Element {
       <View style={{ flex: 1 }}>{content}</View>
       <MobileCreateAction actions={createActions} iconOnly />
       {form ? <FormSheet spec={form} close={() => setForm(null)} /> : null}
+      {transactionSheet ? (
+        <MobileFinanceTransactionSheet
+          api={api}
+          accounts={accounts}
+          tags={tags}
+          initialType={transactionSheet.type}
+          transaction={transactionSheet.transaction}
+          onClose={() => setTransactionSheet(null)}
+          onSaved={state.refresh}
+        />
+      ) : null}
     </View>
   )
 }

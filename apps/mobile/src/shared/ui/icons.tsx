@@ -1,7 +1,10 @@
 import type { StyleProp, ViewStyle } from 'react-native'
 import {
+  ArrowDownLeft,
   ArrowLeft,
   ArrowRight,
+  ArrowRightLeft,
+  ArrowUpRight,
   BookHeart,
   BrainCircuit,
   Braces,
@@ -60,6 +63,9 @@ export type AppIconName =
   | 'download'
   | 'nutrition'
   | 'finance'
+  | 'income'
+  | 'expense'
+  | 'transfer'
   | 'passwords'
   | 'settings'
   | 'search'
@@ -101,6 +107,9 @@ const icons: Record<AppIconName, LucideIcon> = {
   download: Download,
   nutrition: Utensils,
   finance: Wallet,
+  income: ArrowDownLeft,
+  expense: ArrowUpRight,
+  transfer: ArrowRightLeft,
   passwords: KeyRound,
   settings: Settings,
   search: Search,
