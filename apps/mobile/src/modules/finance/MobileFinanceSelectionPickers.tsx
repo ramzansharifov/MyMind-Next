@@ -1,5 +1,4 @@
 import { Pressable, Text, View } from 'react-native'
-import { ArrowDownLeft, ArrowRightLeft, ArrowUpRight, type LucideIcon } from 'lucide-react-native'
 import type {
   FinanceAccountSummary,
   FinanceTagSummary,
@@ -11,16 +10,7 @@ import { VisualIconBadge, VisualIconGlyph } from '../../shared/ui/VisualPickers'
 import { useTheme } from '../../shared/ui/theme'
 import { financeOperationTone, financeTagTone } from './finance-semantic-colors'
 
-export const FINANCE_OPERATION_OPTIONS: ReadonlyArray<{
-  value: FinanceUserTransactionType
-  label: string
-  icon: LucideIcon
-}> = [
-  { value: 'income', label: 'Доход', icon: ArrowDownLeft },
-  { value: 'expense', label: 'Расход', icon: ArrowUpRight },
-  { value: 'transfer', label: 'Перевод', icon: ArrowRightLeft }
-]
-
+import { FINANCE_OPERATION_OPTIONS } from './finance-operation-options'
 export function MobileFinanceOperationTypePicker({
   value,
   disabled,
