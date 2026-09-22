@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import {
   Animated,
   Easing,
@@ -209,8 +209,8 @@ export function FinanceScreen(): React.JSX.Element {
   const theme = useTheme()
   const toast = useToast()
   const { width: screenWidth } = useWindowDimensions()
-  const tabTranslateX = useRef(new Animated.Value(0)).current
-  const swipeAnimating = useRef(false)
+  const [tabTranslateX] = useState(() => new Animated.Value(0))
+  const [swipeAnimating, setSwipeAnimating] = useState(false)
   const state = useCollection(
     useCallback(() => {
       const dashboard = api.getDashboard()
@@ -266,7 +266,7 @@ export function FinanceScreen(): React.JSX.Element {
 
   const switchTab = useCallback(
     (nextTab: FinanceTab): void => {
-      if (nextTab === tab || swipeAnimating.current) return
+      if (nextTab === tab || swipeAnimating) return
       tabTranslateX.stopAnimation()
       tabTranslateX.setValue(0)
       setTab(nextTab)
@@ -277,12 +277,12 @@ export function FinanceScreen(): React.JSX.Element {
 
   const completeSwipe = useCallback(
     (nextTab: FinanceTab, direction: FinanceTabSwipeDirection): void => {
-      if (nextTab === tab || swipeAnimating.current) {
+      if (nextTab === tab || swipeAnimating) {
         resetSwipePosition()
         return
       }
 
-      swipeAnimating.current = true
+      setSwipeAnimating(true)
       const exitX = direction === 'next' ? -tabPageWidth : tabPageWidth
       const enterX = direction === 'next' ? tabPageWidth : -tabPageWidth
 
@@ -293,7 +293,7 @@ export function FinanceScreen(): React.JSX.Element {
         useNativeDriver: true
       }).start(({ finished }) => {
         if (!finished) {
-          swipeAnimating.current = false
+          setSwipeAnimating(false)
           resetSwipePosition()
           return
         }
@@ -309,7 +309,7 @@ export function FinanceScreen(): React.JSX.Element {
             easing: Easing.out(Easing.cubic),
             useNativeDriver: true
           }).start(() => {
-            swipeAnimating.current = false
+            setSwipeAnimating(false)
           })
         })
       })
@@ -322,7 +322,7 @@ export function FinanceScreen(): React.JSX.Element {
       _event: GestureResponderEvent,
       gesture: PanResponderGestureState
     ): boolean => {
-      if (swipeAnimating.current || gesture.numberActiveTouches !== 1) return false
+      if (swipeAnimating || gesture.numberActiveTouches !== 1) return false
       const horizontal = Math.abs(gesture.dx)
       const vertical = Math.abs(gesture.dy)
       return horizontal >= 10 && horizontal > vertical * 1.35
@@ -336,7 +336,7 @@ export function FinanceScreen(): React.JSX.Element {
         tabTranslateX.stopAnimation()
       },
       onPanResponderMove: (_event, gesture) => {
-        if (swipeAnimating.current) return
+        if (swipeAnimating) return
 
         const direction: FinanceTabSwipeDirection = gesture.dx < 0 ? 'next' : 'previous'
         const nextTab = adjacentFinanceTab(tab, direction)
@@ -347,7 +347,7 @@ export function FinanceScreen(): React.JSX.Element {
       },
       onPanResponderTerminationRequest: () => false,
       onPanResponderRelease: (_event, gesture) => {
-        if (swipeAnimating.current) return
+        if (swipeAnimating) return
 
         const direction = financeSwipeDirection(gesture.dx, gesture.dy, gesture.vx)
         if (!direction) {
@@ -364,7 +364,7 @@ export function FinanceScreen(): React.JSX.Element {
         completeSwipe(nextTab, direction)
       },
       onPanResponderTerminate: () => {
-        if (!swipeAnimating.current) resetSwipePosition()
+        if (!swipeAnimating) resetSwipePosition()
       }
     })
   }, [completeSwipe, resetSwipePosition, tab, tabPageWidth, tabTranslateX])
