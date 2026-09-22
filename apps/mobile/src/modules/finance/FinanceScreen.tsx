@@ -3,6 +3,8 @@ import { FlatList, Pressable, ScrollView, Text, View } from 'react-native'
 import {
   BarChart3,
   Copy,
+  Eye,
+  EyeOff,
   Gauge,
   Home,
   Landmark,
@@ -220,6 +222,7 @@ export function FinanceScreen(): React.JSX.Element {
   const [transactionDetail, setTransactionDetail] = useState<FinanceTransaction | null>(null)
   const [templateDetail, setTemplateDetail] = useState<FinanceTemplate | null>(null)
   const [accountDetail, setAccountDetail] = useState<FinanceAccountSummary | null>(null)
+  const [balanceHidden, setBalanceHidden] = useState(false)
 
   const openForm = (next: FormSpec): void => {
     setForm({
@@ -742,6 +745,7 @@ export function FinanceScreen(): React.JSX.Element {
                 numberOfLines={1}
                 adjustsFontSizeToFit
                 minimumFontScale={0.7}
+                accessibilityLabel={balanceHidden ? 'Общий баланс скрыт' : 'Общий баланс'}
                 style={{
                   marginTop: 2,
                   color: theme.text,
@@ -750,9 +754,32 @@ export function FinanceScreen(): React.JSX.Element {
                   fontWeight: '700'
                 }}
               >
-                {formatMoneyMinor(dashboard.totalBalanceMinor, currency)}
+                {balanceHidden ? '******' : formatMoneyMinor(dashboard.totalBalanceMinor, currency)}
               </Text>
             </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={balanceHidden ? 'Показать общий баланс' : 'Скрыть общий баланс'}
+              onPress={() => setBalanceHidden((hidden) => !hidden)}
+              style={({ pressed }) => ({
+                width: 38,
+                height: 38,
+                flexShrink: 0,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderWidth: 1,
+                borderColor: theme.border,
+                borderRadius: 12,
+                backgroundColor: pressed ? theme.raised : theme.background,
+                opacity: pressed ? 0.72 : 1
+              })}
+            >
+              {balanceHidden ? (
+                <EyeOff size={18} color={theme.muted} />
+              ) : (
+                <Eye size={18} color={theme.muted} />
+              )}
+            </Pressable>
           </View>
           <Text
             numberOfLines={2}
