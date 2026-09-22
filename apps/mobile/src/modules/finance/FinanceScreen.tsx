@@ -761,7 +761,7 @@ export function FinanceScreen(): React.JSX.Element {
             key: 'tag',
             label: 'Новый тег',
             description: 'Категория доходов и расходов',
-            icon: 'folder',
+            icon: 'tag',
             onPress: () => setTagSheet('new')
           }
         ]
@@ -783,7 +783,7 @@ export function FinanceScreen(): React.JSX.Element {
                   key: 'tag',
                   label: 'Новый тег',
                   description: 'Добавить категорию для операций',
-                  icon: 'folder',
+                  icon: 'tag',
                   onPress: () => setTagSheet('new')
                 }
               ]
