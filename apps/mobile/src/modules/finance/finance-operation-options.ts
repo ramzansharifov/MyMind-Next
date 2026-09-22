@@ -1,9 +1,4 @@
-import {
-  ArrowDownLeft,
-  ArrowRightLeft,
-  ArrowUpRight,
-  type LucideIcon
-} from 'lucide-react-native'
+import { ArrowDownLeft, ArrowRightLeft, ArrowUpRight, type LucideIcon } from 'lucide-react-native'
 import type { FinanceUserTransactionType } from '@mymind/contracts/finance'
 
 export const FINANCE_OPERATION_OPTIONS: ReadonlyArray<{

@@ -8,11 +8,7 @@ import type {
   FinanceUserTransactionType
 } from '@mymind/contracts/finance'
 import type { FinanceRepository } from '@mymind/persistence/finance'
-import {
-  FINANCE_RATE_SCALE,
-  formatMinorPlain,
-  parseMoneyToMinor
-} from '@mymind/core/finance-money'
+import { FINANCE_RATE_SCALE, formatMinorPlain, parseMoneyToMinor } from '@mymind/core/finance-money'
 import * as validation from '@mymind/core/validation/finance'
 
 import { notifyDataChanged } from '../../app/changes'
