@@ -1,11 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
-import {
-  ArrowDownLeft,
-  ArrowRightLeft,
-  ArrowUpRight,
-  type LucideIcon
-} from 'lucide-react-native'
+import { ArrowDownLeft, ArrowRightLeft, ArrowUpRight, type LucideIcon } from 'lucide-react-native'
 import type {
   FinanceAccountSummary,
   FinanceLimitImpact,
@@ -308,11 +303,7 @@ function TagPicker({
               borderWidth: 1,
               borderColor: selected ? tag.color + '88' : theme.border,
               borderRadius: 13,
-              backgroundColor: selected
-                ? tag.color + '1F'
-                : pressed
-                  ? theme.raised
-                  : theme.surface,
+              backgroundColor: selected ? tag.color + '1F' : pressed ? theme.raised : theme.surface,
               opacity: disabled ? 0.45 : pressed ? 0.76 : 1
             })}
           >
@@ -370,9 +361,7 @@ function ImpactNotice({
         backgroundColor: '#f59e0b0C'
       }}
     >
-      <Text style={{ color: '#fbbf24', fontSize: 12.5, fontWeight: '700' }}>
-        Влияние на лимиты
-      </Text>
+      <Text style={{ color: '#fbbf24', fontSize: 12.5, fontWeight: '700' }}>Влияние на лимиты</Text>
       {impact.items.map((item) => {
         const label = tags.find((tag) => tag.id === item.limit.tagId)?.name ?? 'Лимит'
         const after =

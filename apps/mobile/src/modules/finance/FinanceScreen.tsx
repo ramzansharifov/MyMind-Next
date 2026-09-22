@@ -699,7 +699,8 @@ export function FinanceScreen(): React.JSX.Element {
       label: 'Доход',
       description: 'Зачислить деньги на выбранный счёт',
       icon: 'income',
-      disabled: !accounts.length || !tags.some((tag) => tag.type === 'income' || tag.type === 'both'),
+      disabled:
+        !accounts.length || !tags.some((tag) => tag.type === 'income' || tag.type === 'both'),
       onPress: () => openTransaction('income')
     },
     {
@@ -707,7 +708,8 @@ export function FinanceScreen(): React.JSX.Element {
       label: 'Расход',
       description: 'Записать расход со счёта и выбрать тег',
       icon: 'expense',
-      disabled: !accounts.length || !tags.some((tag) => tag.type === 'expense' || tag.type === 'both'),
+      disabled:
+        !accounts.length || !tags.some((tag) => tag.type === 'expense' || tag.type === 'both'),
       onPress: () => openTransaction('expense')
     },
     {
@@ -787,7 +789,6 @@ export function FinanceScreen(): React.JSX.Element {
                     }
                   ]
                 : []
-
 
   return (
     <View style={{ flex: 1 }}>
