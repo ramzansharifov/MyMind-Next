@@ -26,12 +26,13 @@ import { FormSheet } from '../../shared/ui/FormSheet'
 import { ActionMenu } from '../../shared/ui/ActionMenu'
 import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
 import { MobileCreateAction, type MobileCreateActionItem } from '../../shared/ui/MobileCreateAction'
-import { VisualIconBadge } from '../../shared/ui/VisualPickers'
+import { VisualIconBadge, VisualIconGlyph } from '../../shared/ui/VisualPickers'
 import type { FormSpec } from '../../shared/ui/form-model'
 import { ErrorState, LoadingState } from '../../shared/ui/primitives'
 import { accountForm, limitForm, tagForm, templateForm } from './finance-forms'
 import { FinanceReportsView } from './FinanceReportsView'
 import { MobileFinanceTransactionSheet } from './MobileFinanceTransactionSheet'
+import { financeOperationTone, financeTagTone } from './finance-semantic-colors'
 import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
 import { useTheme } from '../../shared/ui/theme'
 import { useToast } from '../../shared/ui/toast-context'
@@ -419,11 +420,29 @@ export function FinanceScreen(): React.JSX.Element {
     />
   )
 
-  const renderTag = ({ item }: { item: FinanceTagSummary }): React.JSX.Element => (
+  const renderTag = ({ item }: { item: FinanceTagSummary }): React.JSX.Element => {
+    const tone = financeTagTone(item.type, theme.accent)
+    return (
     <WorkspaceNodeCard
       title={item.name}
       subtitle={`${item.type === 'income' ? 'Доход' : item.type === 'expense' ? 'Расход' : 'Доход и расход'} · ${item.transactionCount} операций`}
-      leading={<VisualIconBadge value={item.icon} />}
+      subtitleColor={tone}
+      leading={
+        <View
+          style={{
+            width: 40,
+            height: 40,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: tone + '45',
+            backgroundColor: tone + '16'
+          }}
+        >
+          <VisualIconGlyph value={item.icon} size={18} color={tone} />
+        </View>
+      }
       onPress={() => openForm(tagForm(api, item))}
       action={
         <ActionMenu
@@ -444,7 +463,8 @@ export function FinanceScreen(): React.JSX.Element {
         />
       }
     />
-  )
+    )
+  }
 
   const renderLimit = ({ item }: { item: FinanceLimitStatus }): React.JSX.Element => (
     <WorkspaceNodeCard
@@ -699,6 +719,7 @@ export function FinanceScreen(): React.JSX.Element {
       label: 'Доход',
       description: 'Зачислить деньги на выбранный счёт',
       icon: 'income',
+      color: financeOperationTone('income', theme.accent),
       disabled:
         !accounts.length || !tags.some((tag) => tag.type === 'income' || tag.type === 'both'),
       onPress: () => openTransaction('income')
@@ -708,6 +729,7 @@ export function FinanceScreen(): React.JSX.Element {
       label: 'Расход',
       description: 'Записать расход со счёта и выбрать тег',
       icon: 'expense',
+      color: financeOperationTone('expense', theme.accent),
       disabled:
         !accounts.length || !tags.some((tag) => tag.type === 'expense' || tag.type === 'both'),
       onPress: () => openTransaction('expense')
@@ -717,6 +739,7 @@ export function FinanceScreen(): React.JSX.Element {
       label: 'Перевод',
       description: 'Перевести деньги между двумя счетами',
       icon: 'transfer',
+      color: financeOperationTone('transfer', theme.accent),
       disabled: accounts.length < 2,
       onPress: () => openTransaction('transfer')
     }
