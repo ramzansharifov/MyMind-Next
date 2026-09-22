@@ -243,9 +243,7 @@ export function MobileFinanceLimitSheet({
   const [amount, setAmount] = useState(
     limit ? formatMinorPlain(limit.amountMinor, limit.currencyCode) : ''
   )
-  const [periodType, setPeriodType] = useState<FinanceLimitPeriodType>(
-    limit?.periodType ?? 'month'
-  )
+  const [periodType, setPeriodType] = useState<FinanceLimitPeriodType>(limit?.periodType ?? 'month')
   const [warningPercent, setWarningPercent] = useState(String(limit?.warningPercent ?? 80))
   const [pending, setPending] = useState(false)
   const [error, setError] = useState('')
