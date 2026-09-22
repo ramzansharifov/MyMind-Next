@@ -20,10 +20,14 @@ import * as validation from '@mymind/core/validation/finance'
 import { notifyDataChanged } from '../../app/changes'
 import { AppDialog } from '../../shared/ui/AppDialog'
 import { AppDateField, AppTextField, AppTimeField } from '../../shared/ui/FormControls'
-import { VisualIconBadge } from '../../shared/ui/VisualPickers'
+import { VisualIconBadge, VisualIconGlyph } from '../../shared/ui/VisualPickers'
 import { Button, ErrorState, Label } from '../../shared/ui/primitives'
 import { useTheme } from '../../shared/ui/theme'
 import { useToast } from '../../shared/ui/toast-context'
+import {
+  financeOperationTone,
+  financeTagTone
+} from './finance-semantic-colors'
 
 type OperationType = FinanceUserTransactionType
 
@@ -31,11 +35,10 @@ const TYPE_OPTIONS: ReadonlyArray<{
   value: OperationType
   label: string
   icon: LucideIcon
-  tone: string
 }> = [
-  { value: 'income', label: 'Доход', icon: ArrowDownLeft, tone: '#34d399' },
-  { value: 'expense', label: 'Расход', icon: ArrowUpRight, tone: '#f87171' },
-  { value: 'transfer', label: 'Перевод', icon: ArrowRightLeft, tone: '#38bdf8' }
+  { value: 'income', label: 'Доход', icon: ArrowDownLeft },
+  { value: 'expense', label: 'Расход', icon: ArrowUpRight },
+  { value: 'transfer', label: 'Перевод', icon: ArrowRightLeft }
 ]
 
 function localDateKey(timestamp = Date.now()): string {
@@ -116,6 +119,7 @@ function FinanceOperationTypePicker({
     <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', gap: 7 }}>
       {TYPE_OPTIONS.map((option) => {
         const selected = value === option.value
+        const optionTone = financeOperationTone(option.value, theme.accent)
         const Icon = option.icon
         return (
           <Pressable
@@ -134,20 +138,20 @@ function FinanceOperationTypePicker({
               justifyContent: 'center',
               gap: 6,
               borderWidth: 1,
-              borderColor: selected ? option.tone + '80' : theme.border,
+              borderColor: selected ? optionTone + '80' : theme.border,
               borderRadius: 13,
               backgroundColor: selected
-                ? option.tone + '1F'
+                ? optionTone + '1F'
                 : pressed
                   ? theme.surface
                   : theme.background,
               opacity: disabled ? 0.45 : pressed ? 0.75 : 1
             })}
           >
-            <Icon size={16} color={selected ? option.tone : theme.muted} />
+            <Icon size={16} color={selected ? optionTone : theme.muted} />
             <Text
               style={{
-                color: selected ? option.tone : theme.text,
+                color: selected ? optionTone : theme.text,
                 fontSize: 12.5,
                 fontWeight: '700'
               }}
@@ -285,8 +289,7 @@ function TagPicker({
     <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7 }}>
       {tags.map((tag) => {
         const selected = tag.id === value
-        const selectedTone =
-          tag.type === 'expense' ? '#f87171' : tag.type === 'income' ? '#34d399' : theme.accent
+        const tone = financeTagTone(tag.type, theme.accent)
         return (
           <Pressable
             key={tag.id}
@@ -303,13 +306,13 @@ function TagPicker({
               paddingHorizontal: 6,
               paddingVertical: 8,
               borderWidth: 1,
-              borderColor: selected ? selectedTone + '99' : theme.border,
+              borderColor: selected ? tone + '99' : tone + '35',
               borderRadius: 13,
               backgroundColor: selected
-                ? selectedTone + '1F'
+                ? tone + '1F'
                 : pressed
-                  ? theme.raised
-                  : theme.surface,
+                  ? tone + '13'
+                  : tone + '0A',
               opacity: disabled ? 0.45 : pressed ? 0.76 : 1
             })}
           >
@@ -321,11 +324,11 @@ function TagPicker({
                 justifyContent: 'center',
                 borderRadius: 10,
                 borderWidth: 1,
-                borderColor: tag.color + '32',
-                backgroundColor: tag.color + '18'
+                borderColor: tone + '45',
+                backgroundColor: tone + '16'
               }}
             >
-              <VisualIconBadge value={tag.icon} size={30} />
+              <VisualIconGlyph value={tag.icon} size={16} color={tone} />
             </View>
             <Text
               numberOfLines={1}
@@ -430,6 +433,7 @@ export function MobileFinanceTransactionSheet({
   const selectedDestination = accounts.find((account) => account.id === destinationAccountId)
   const compatibleTags = tags.filter((tag) => tag.type === 'both' || tag.type === type)
   const currentOption = TYPE_OPTIONS.find((option) => option.value === type) ?? TYPE_OPTIONS[0]
+  const currentTone = financeOperationTone(type, theme.accent)
   const CurrentIcon = currentOption.icon
 
   const clearImpact = (): void => {
@@ -583,13 +587,13 @@ export function MobileFinanceTransactionSheet({
               gap: 8,
               paddingHorizontal: 11,
               borderWidth: 1,
-              borderColor: currentOption.tone + '55',
+              borderColor: currentTone + '55',
               borderRadius: 12,
-              backgroundColor: currentOption.tone + '12'
+              backgroundColor: currentTone + '12'
             }}
           >
-            <CurrentIcon size={16} color={currentOption.tone} />
-            <Text style={{ color: currentOption.tone, fontSize: 12.5, fontWeight: '700' }}>
+            <CurrentIcon size={16} color={currentTone} />
+            <Text style={{ color: currentTone, fontSize: 12.5, fontWeight: '700' }}>
               {currentOption.label}
             </Text>
           </View>
