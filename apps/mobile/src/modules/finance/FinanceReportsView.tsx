@@ -440,6 +440,10 @@ export function FinanceReportsView({
             title={`Сбережения: ${report.savingsRatePercent === null ? 'нет данных' : `${Math.round(report.savingsRatePercent * 10) / 10}%`}`}
             subtitle={`К прошлому периоду: доход ${percentChange(report.incomeChangePercent)} · расход ${percentChange(report.expenseChangePercent)} · итог ${percentChange(report.netChangePercent)}`}
           />
+          <Row
+            title={`${report.incomeCount} доходов · ${report.expenseCount} расходов · ${report.transferCount} переводов`}
+            subtitle={`Оборот переводов: ${formatMoneyMinor(report.transferVolumeMinor, report.currencyCode)}`}
+          />
         </View>
 
         <View style={{ gap: 8 }}>
@@ -484,6 +488,52 @@ export function FinanceReportsView({
             ))
           ) : (
             <EmptyState text="Нет доходов за выбранный период." />
+          )}
+        </View>
+
+
+        <View style={{ gap: 8 }}>
+          <Text style={{ color: theme.text, fontSize: 14, fontWeight: '700' }}>Активность по счетам</Text>
+          {report.accountActivity.length ? (
+            report.accountActivity.map((account) => (
+              <Row
+                key={account.accountId}
+                title={`${account.accountName} · ${formatMoneyMinor(account.netMinor, report.currencyCode)}`}
+                subtitle={`${account.operationCount} операций · доход ${formatMoneyMinor(account.incomeMinor, report.currencyCode)} · расход ${formatMoneyMinor(account.expenseMinor, report.currencyCode)}`}
+              />
+            ))
+          ) : (
+            <EmptyState text="Нет активности по счетам." />
+          )}
+        </View>
+
+        <View style={{ gap: 8 }}>
+          <Text style={{ color: theme.text, fontSize: 14, fontWeight: '700' }}>Переводы</Text>
+          {report.transferFlows.length ? (
+            report.transferFlows.slice(0, 8).map((flow) => (
+              <Row
+                key={`${flow.sourceAccountId}:${flow.destinationAccountId}:${flow.sourceCurrencyCode}:${flow.destinationCurrencyCode}`}
+                title={`${flow.sourceAccountName} → ${flow.destinationAccountName}`}
+                subtitle={`${flow.count} переводов · ${formatMoneyMinor(flow.sourceAmountMinor, flow.sourceCurrencyCode)} → ${formatMoneyMinor(flow.destinationAmountMinor, flow.destinationCurrencyCode)}`}
+              />
+            ))
+          ) : (
+            <EmptyState text="Переводов за период нет." />
+          )}
+        </View>
+
+        <View style={{ gap: 8 }}>
+          <Text style={{ color: theme.text, fontSize: 14, fontWeight: '700' }}>Активные лимиты</Text>
+          {report.limits.length ? (
+            report.limits.map((limit) => (
+              <Row
+                key={limit.id}
+                title={`${limit.tagId ? (tags.find((tag) => tag.id === limit.tagId)?.name ?? 'Лимит') : 'Лимит'} · ${formatMoneyMinor(limit.amountMinor, limit.currencyCode)}`}
+                subtitle={`${formatMoneyMinor(limit.spentMinor, limit.currencyCode)} использовано · ${Math.round(limit.usagePercent)}%`}
+              />
+            ))
+          ) : (
+            <EmptyState text="Активных лимитов для периода нет." />
           )}
         </View>
       </ScrollView>
