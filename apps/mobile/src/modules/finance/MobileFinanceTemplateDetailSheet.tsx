@@ -38,6 +38,7 @@ export function MobileFinanceTemplateDetailSheet({
   accounts,
   tags,
   onClose,
+  onUse,
   onEdit,
   onDelete
 }: {
@@ -45,6 +46,7 @@ export function MobileFinanceTemplateDetailSheet({
   accounts: FinanceAccountSummary[]
   tags: FinanceTagSummary[]
   onClose(): void
+  onUse(): void
   onEdit(): void
   onDelete(): void
 }): React.JSX.Element {
@@ -70,7 +72,8 @@ export function MobileFinanceTemplateDetailSheet({
         <>
           <Button label="Закрыть" onPress={onClose} />
           <Button label="Удалить" icon="delete" danger onPress={onDelete} />
-          <Button label="Изменить" icon="edit" primary onPress={onEdit} />
+          <Button label="Изменить" icon="edit" onPress={onEdit} />
+          <Button label="Использовать" icon="check" primary onPress={onUse} />
         </>
       }
     >
