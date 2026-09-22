@@ -352,6 +352,7 @@ export function FinanceScreen(): React.JSX.Element {
   const [transactionSheet, setTransactionSheet] = useState<{
     type: FinanceUserTransactionType
     transaction: FinanceTransaction | null
+    template: FinanceTemplate | null
   } | null>(null)
   const [templateSheet, setTemplateSheet] = useState<FinanceTemplate | 'new' | null>(null)
   const [tagSheet, setTagSheet] = useState<FinanceTagSummary | 'new' | null>(null)
@@ -507,9 +508,10 @@ export function FinanceScreen(): React.JSX.Element {
 
   const openTransaction = (
     type: FinanceUserTransactionType,
-    transaction: FinanceTransaction | null = null
+    transaction: FinanceTransaction | null = null,
+    template: FinanceTemplate | null = null
   ): void => {
-    setTransactionSheet({ type, transaction })
+    setTransactionSheet({ type, transaction, template })
   }
 
   const transactionType = (transaction: FinanceTransaction): FinanceUserTransactionType =>
@@ -1084,6 +1086,11 @@ export function FinanceScreen(): React.JSX.Element {
           accounts={accounts}
           tags={tags}
           onClose={() => setTemplateDetail(null)}
+          onUse={() => {
+            const template = templateDetail
+            setTemplateDetail(null)
+            requestAnimationFrame(() => openTransaction(template.type, null, template))
+          }}
           onEdit={() => {
             const template = templateDetail
             setTemplateDetail(null)
@@ -1188,6 +1195,7 @@ export function FinanceScreen(): React.JSX.Element {
           tags={tags}
           initialType={transactionSheet.type}
           transaction={transactionSheet.transaction}
+          template={transactionSheet.template}
           onClose={() => setTransactionSheet(null)}
           onSaved={state.refresh}
         />
