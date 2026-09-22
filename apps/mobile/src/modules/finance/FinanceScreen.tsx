@@ -808,8 +808,8 @@ export function FinanceScreen(): React.JSX.Element {
                       key: 'template',
                       label: 'Новый шаблон',
                       description: 'Сохранить часто используемую операцию',
-                      icon: 'finance',
-                      disabled: !accounts.length || !tags.length,
+                      icon: 'copy',
+                      disabled: !accounts.length,
                       onPress: () => setTemplateSheet('new')
                     }
                   ]
