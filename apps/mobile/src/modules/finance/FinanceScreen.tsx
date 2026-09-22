@@ -272,7 +272,7 @@ export function FinanceScreen(): React.JSX.Element {
       setTab(nextTab)
       announceTab(nextTab)
     },
-    [announceTab, tab, tabTranslateX]
+    [announceTab, swipeAnimating, tab, tabTranslateX]
   )
 
   const completeSwipe = useCallback(
@@ -314,7 +314,7 @@ export function FinanceScreen(): React.JSX.Element {
         })
       })
     },
-    [announceTab, resetSwipePosition, tab, tabPageWidth, tabTranslateX]
+    [announceTab, resetSwipePosition, swipeAnimating, tab, tabPageWidth, tabTranslateX]
   )
 
   const tabSwipeResponder = useMemo(() => {
@@ -367,7 +367,7 @@ export function FinanceScreen(): React.JSX.Element {
         if (!swipeAnimating) resetSwipePosition()
       }
     })
-  }, [completeSwipe, resetSwipePosition, tab, tabPageWidth, tabTranslateX])
+  }, [completeSwipe, resetSwipePosition, swipeAnimating, tab, tabPageWidth, tabTranslateX])
 
   const tabSwipeOpacity = tabTranslateX.interpolate({
     inputRange: [-tabPageWidth, 0, tabPageWidth],
