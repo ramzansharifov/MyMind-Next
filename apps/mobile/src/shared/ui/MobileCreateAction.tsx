@@ -10,6 +10,7 @@ export interface MobileCreateActionItem {
   label: string
   description?: string
   icon?: AppIconName
+  color?: string
   disabled?: boolean
   onPress(): void
 }
@@ -123,69 +124,72 @@ export function MobileCreateAction({
           presentation="sheet"
         >
           <View style={{ gap: 8, padding: 12, paddingBottom: 18 }}>
-            {actions.map((action) => (
-              <Pressable
-                key={action.key}
-                accessibilityRole="button"
-                accessibilityLabel={action.label}
-                accessibilityState={{ disabled: disabled || action.disabled }}
-                disabled={disabled || action.disabled}
-                onPress={() => launch(action)}
-                style={({ pressed }) => ({
-                  minHeight: 52,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 12,
-                  paddingHorizontal: 13,
-                  paddingVertical: 10,
-                  borderWidth: 1,
-                  borderColor: theme.border,
-                  borderRadius: 12,
-                  backgroundColor: pressed ? theme.raised : theme.surface,
-                  opacity: disabled || action.disabled ? 0.42 : pressed ? 0.78 : 1
-                })}
-              >
-                <View
-                  style={{
-                    width: 36,
-                    height: 36,
+            {actions.map((action) => {
+              const actionColor = action.color ?? theme.accent
+              return (
+                <Pressable
+                  key={action.key}
+                  accessibilityRole="button"
+                  accessibilityLabel={action.label}
+                  accessibilityState={{ disabled: disabled || action.disabled }}
+                  disabled={disabled || action.disabled}
+                  onPress={() => launch(action)}
+                  style={({ pressed }) => ({
+                    minHeight: 52,
+                    flexDirection: 'row',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    borderRadius: 12,
+                    gap: 12,
+                    paddingHorizontal: 13,
+                    paddingVertical: 10,
                     borderWidth: 1,
-                    borderColor: theme.accent + '2F',
-                    backgroundColor: theme.accent + '12'
-                  }}
+                    borderColor: theme.border,
+                    borderRadius: 12,
+                    backgroundColor: pressed ? theme.raised : theme.surface,
+                    opacity: disabled || action.disabled ? 0.42 : pressed ? 0.78 : 1
+                  })}
                 >
-                  <AppIcon name={action.icon ?? 'add'} size={18} color={theme.accent} />
-                </View>
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text
+                  <View
                     style={{
-                      color: theme.text,
-                      fontSize: 14.5,
-                      lineHeight: 20,
-                      fontWeight: '700'
+                      width: 36,
+                      height: 36,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: 12,
+                      borderWidth: 1,
+                      borderColor: actionColor + '42',
+                      backgroundColor: actionColor + '16'
                     }}
                   >
-                    {action.label}
-                  </Text>
-                  {action.description ? (
+                    <AppIcon name={action.icon ?? 'add'} size={18} color={actionColor} />
+                  </View>
+                  <View style={{ flex: 1, minWidth: 0 }}>
                     <Text
                       style={{
-                        marginTop: 2,
-                        color: theme.muted,
-                        fontSize: 12,
-                        lineHeight: 17
+                        color: theme.text,
+                        fontSize: 14.5,
+                        lineHeight: 20,
+                        fontWeight: '700'
                       }}
                     >
-                      {action.description}
+                      {action.label}
                     </Text>
-                  ) : null}
-                </View>
-                <AppIcon name="forward" size={17} color={theme.muted} />
-              </Pressable>
-            ))}
+                    {action.description ? (
+                      <Text
+                        style={{
+                          marginTop: 2,
+                          color: theme.muted,
+                          fontSize: 12,
+                          lineHeight: 17
+                        }}
+                      >
+                        {action.description}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <AppIcon name="forward" size={17} color={theme.muted} />
+                </Pressable>
+              )
+            })}
           </View>
         </AppDialog>
       ) : null}
