@@ -10,6 +10,7 @@ export interface MobileCreateActionItem {
   label: string
   description?: string
   icon?: AppIconName
+  color?: string
   disabled?: boolean
   onPress(): void
 }
@@ -123,7 +124,9 @@ export function MobileCreateAction({
           presentation="sheet"
         >
           <View style={{ gap: 8, padding: 12, paddingBottom: 18 }}>
-            {actions.map((action) => (
+            {actions.map((action) => {
+              const actionColor = action.color ?? theme.accent
+              return (
               <Pressable
                 key={action.key}
                 accessibilityRole="button"
@@ -153,11 +156,11 @@ export function MobileCreateAction({
                     justifyContent: 'center',
                     borderRadius: 12,
                     borderWidth: 1,
-                    borderColor: theme.accent + '2F',
-                    backgroundColor: theme.accent + '12'
+                    borderColor: actionColor + '42',
+                    backgroundColor: actionColor + '16'
                   }}
                 >
-                  <AppIcon name={action.icon ?? 'add'} size={18} color={theme.accent} />
+                  <AppIcon name={action.icon ?? 'add'} size={18} color={actionColor} />
                 </View>
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text
@@ -185,7 +188,8 @@ export function MobileCreateAction({
                 </View>
                 <AppIcon name="forward" size={17} color={theme.muted} />
               </Pressable>
-            ))}
+              )
+            })}
           </View>
         </AppDialog>
       ) : null}
