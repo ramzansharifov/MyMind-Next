@@ -1,0 +1,110 @@
+name: Publish MyMind 1.1.6 Linux fallback
+
+on:
+  push:
+    branches:
+      - agent/publish-v1.1.6-linux
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      MYMIND_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.MYMIND_ANDROID_KEYSTORE_PASSWORD }}
+      MYMIND_ANDROID_KEY_ALIAS: ${{ secrets.MYMIND_ANDROID_KEY_ALIAS }}
+      MYMIND_ANDROID_KEY_PASSWORD: ${{ secrets.MYMIND_ANDROID_KEY_PASSWORD }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - run: npm ci
+
+      - name: Verify release metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(node -p "require('./apps/mobile/package.json').version")" = "1.1.6"
+          test "$(node -p "require('./apps/mobile/app.json').expo.android.versionCode")" = "10106"
+
+      - name: Prepare Android release keystore
+        shell: bash
+        env:
+          MYMIND_ANDROID_KEYSTORE_BASE64: ${{ secrets.MYMIND_ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          for name in             MYMIND_ANDROID_KEYSTORE_BASE64             MYMIND_ANDROID_KEYSTORE_PASSWORD             MYMIND_ANDROID_KEY_ALIAS             MYMIND_ANDROID_KEY_PASSWORD
+          do
+            test -n "${!name:-}"
+          done
+
+          keystore_path="$RUNNER_TEMP/mymind-android-release.jks"
+          printf '%s' "$MYMIND_ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore_path"
+
+          expected="75fbc676fa8e8b8ed89824fc12f95e03a33fc057b33f034edab85f9a9d890508"
+          actual="$(keytool -list -v             -keystore "$keystore_path"             -storepass "$MYMIND_ANDROID_KEYSTORE_PASSWORD"             -alias "$MYMIND_ANDROID_KEY_ALIAS" |
+            sed -n 's/.*SHA256: *//p' |
+            head -n 1 |
+            tr -d ':' |
+            tr '[:upper:]' '[:lower:]')"
+          test "$actual" = "$expected"
+
+          echo "MYMIND_ANDROID_KEYSTORE_PATH=$keystore_path" >> "$GITHUB_ENV"
+
+      - name: Build signed Android release APK
+        run: npm run build:android:release --workspace=mymind-mobile
+
+      - name: Verify and stage Android APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          source="apps/mobile/android/app/build/outputs/apk/release/app-release.apk"
+          target="release/android/mymind-mobile-1.1.6.apk"
+          mkdir -p release/android
+          cp "$source" "$target"
+
+          apksigner="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          test -n "$apksigner"
+          "$apksigner" verify --verbose --print-certs "$target"
+          sha256sum "$target"
+
+      - name: Download completed Windows artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release/windows
+          gh run download 35743916449             --repo "$GITHUB_REPOSITORY"             --name windows-release-1.1.6             --dir release/windows
+          test -s release/windows/latest.yml
+          test -s release/windows/mymind-next-1.1.6-setup.exe
+          test -s release/windows/mymind-next-1.1.6-setup.exe.blockmap
+
+      - name: Publish GitHub Release v1.1.6
+        shell: bash
+        run: |
+          set -euo pipefail
+          target_sha="$(git rev-parse HEAD)"
+
+          if gh release view v1.1.6 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release v1.1.6 already exists; assets will be replaced."
+          else
+            gh release create v1.1.6               --repo "$GITHUB_REPOSITORY"               --target "$target_sha"               --title "1.1.6"               --notes "MyMind 1.1.6: улучшенный mobile Finance — просмотр транзакций, шаблонов и счетов, мобильные отчёты и скрытие общего баланса."
+          fi
+
+          gh release upload v1.1.6             --repo "$GITHUB_REPOSITORY"             --clobber             release/windows/latest.yml             release/windows/mymind-next-1.1.6-setup.exe             release/windows/mymind-next-1.1.6-setup.exe.blockmap             release/android/mymind-mobile-1.1.6.apk
+
+          gh release edit v1.1.6             --repo "$GITHUB_REPOSITORY"             --draft=false             --prerelease=false             --latest
