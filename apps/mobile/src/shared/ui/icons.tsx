@@ -7,6 +7,7 @@ import {
   ArrowUpRight,
   BookHeart,
   BrainCircuit,
+  BarChart3,
   Braces,
   CalendarDays,
   Check,
@@ -58,6 +59,7 @@ export type AppIconName =
   | 'more'
   | 'music'
   | 'calendar'
+  | 'chart'
   | 'circle'
   | 'completed'
   | 'diary'
@@ -103,6 +105,7 @@ const icons: Record<AppIconName, LucideIcon> = {
   more: MoreHorizontal,
   music: Disc3,
   calendar: CalendarDays,
+  chart: BarChart3,
   circle: Circle,
   completed: CircleCheckBig,
   diary: BookHeart,
