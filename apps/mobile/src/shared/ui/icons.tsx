@@ -39,6 +39,7 @@ import {
   RotateCcw,
   Search,
   Settings,
+  Tag,
   Trash2,
   Utensils,
   Wallet,
@@ -84,6 +85,7 @@ export type AppIconName =
   | 'skip'
   | 'close'
   | 'folder'
+  | 'tag'
   | 'info'
   | 'help'
   | 'json'
@@ -128,6 +130,7 @@ const icons: Record<AppIconName, LucideIcon> = {
   skip: ArrowRight,
   close: X,
   folder: Folder,
+  tag: Tag,
   info: Info,
   help: CircleHelp,
   json: Braces,
