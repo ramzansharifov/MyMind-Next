@@ -29,10 +29,12 @@ import { MobileCreateAction, type MobileCreateActionItem } from '../../shared/ui
 import { VisualIconBadge, VisualIconGlyph } from '../../shared/ui/VisualPickers'
 import type { FormSpec } from '../../shared/ui/form-model'
 import { ErrorState, LoadingState } from '../../shared/ui/primitives'
-import { accountForm, limitForm, tagForm } from './finance-forms'
+import { accountForm } from './finance-forms'
 import { FinanceReportsView } from './FinanceReportsView'
 import { MobileFinanceTransactionSheet } from './MobileFinanceTransactionSheet'
 import { MobileFinanceTemplateSheet } from './MobileFinanceTemplateSheet'
+import { MobileFinanceTagSheet } from './MobileFinanceTagSheet'
+import { MobileFinanceLimitSheet } from './MobileFinanceLimitSheet'
 import { financeOperationTone, financeTagTone } from './finance-semantic-colors'
 import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
 import { useTheme } from '../../shared/ui/theme'
@@ -233,6 +235,8 @@ export function FinanceScreen(): React.JSX.Element {
     transaction: FinanceTransaction | null
   } | null>(null)
   const [templateSheet, setTemplateSheet] = useState<FinanceTemplate | 'new' | null>(null)
+  const [tagSheet, setTagSheet] = useState<FinanceTagSummary | 'new' | null>(null)
+  const [limitSheet, setLimitSheet] = useState<FinanceLimitStatus | 'new' | null>(null)
 
   const openForm = (next: FormSpec): void => {
     setForm({
@@ -445,12 +449,12 @@ export function FinanceScreen(): React.JSX.Element {
             <VisualIconGlyph value={item.icon} size={18} color={tone} />
           </View>
         }
-        onPress={() => openForm(tagForm(api, item))}
+        onPress={() => setTagSheet(item)}
         action={
           <ActionMenu
             title={item.name}
             items={[
-              { label: 'Изменить', icon: 'edit', onPress: () => openForm(tagForm(api, item)) },
+              { label: 'Изменить', icon: 'edit', onPress: () => setTagSheet(item) },
               {
                 label: 'Удалить',
                 icon: 'delete',
@@ -472,9 +476,7 @@ export function FinanceScreen(): React.JSX.Element {
     <WorkspaceNodeCard
       title={`${item.tagId ? (tags.find((tag) => tag.id === item.tagId)?.name ?? 'Лимит') : 'Лимит'} · ${formatMoneyMinor(item.amountMinor, item.currencyCode)}`}
       subtitle={`${formatMoneyMinor(item.spentMinor, item.currencyCode)} использовано · ${Math.round(item.usagePercent)}% · ${item.state === 'active' ? 'активен' : 'пауза'}`}
-      onPress={() =>
-        openForm(limitForm(api, accounts, tags, data.dashboard.settings.baseCurrencyCode, item))
-      }
+      onPress={() => setLimitSheet(item)}
       action={
         <ActionMenu
           title="Лимит"
@@ -482,10 +484,7 @@ export function FinanceScreen(): React.JSX.Element {
             {
               label: 'Изменить',
               icon: 'edit',
-              onPress: () =>
-                openForm(
-                  limitForm(api, accounts, tags, data.dashboard.settings.baseCurrencyCode, item)
-                )
+              onPress: () => setLimitSheet(item)
             },
             {
               label: item.state === 'active' ? 'Поставить на паузу' : 'Возобновить',
@@ -762,8 +761,8 @@ export function FinanceScreen(): React.JSX.Element {
             key: 'tag',
             label: 'Новый тег',
             description: 'Категория доходов и расходов',
-            icon: 'folder',
-            onPress: () => openForm(tagForm(api))
+            icon: 'tag',
+            onPress: () => setTagSheet('new')
           }
         ]
       : tab === 'transactions'
@@ -784,8 +783,8 @@ export function FinanceScreen(): React.JSX.Element {
                   key: 'tag',
                   label: 'Новый тег',
                   description: 'Добавить категорию для операций',
-                  icon: 'folder',
-                  onPress: () => openForm(tagForm(api))
+                  icon: 'tag',
+                  onPress: () => setTagSheet('new')
                 }
               ]
             : tab === 'limits'
@@ -796,10 +795,7 @@ export function FinanceScreen(): React.JSX.Element {
                     description: 'Ограничить расходы по категории',
                     icon: 'finance',
                     disabled: !accounts.length || !tags.some((tag) => tag.type !== 'income'),
-                    onPress: () =>
-                      openForm(
-                        limitForm(api, accounts, tags, data.dashboard.settings.baseCurrencyCode)
-                      )
+                    onPress: () => setLimitSheet('new')
                   }
                 ]
               : tab === 'templates'
@@ -839,6 +835,24 @@ export function FinanceScreen(): React.JSX.Element {
           tags={tags}
           template={templateSheet === 'new' ? null : templateSheet}
           onClose={() => setTemplateSheet(null)}
+          onSaved={state.refresh}
+        />
+      ) : null}
+      {tagSheet ? (
+        <MobileFinanceTagSheet
+          api={api}
+          tag={tagSheet === 'new' ? null : tagSheet}
+          onClose={() => setTagSheet(null)}
+          onSaved={state.refresh}
+        />
+      ) : null}
+      {limitSheet ? (
+        <MobileFinanceLimitSheet
+          api={api}
+          accounts={accounts}
+          tags={tags}
+          limit={limitSheet === 'new' ? null : limitSheet}
+          onClose={() => setLimitSheet(null)}
           onSaved={state.refresh}
         />
       ) : null}
