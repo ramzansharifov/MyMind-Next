@@ -185,29 +185,6 @@ function operationTitle(transaction: FinanceTransaction): string {
   return transaction.tagNameSnapshot ?? (transaction.type === 'income' ? 'Доход' : 'Расход')
 }
 
-function operationSubtitle(transaction: FinanceTransaction): string {
-  if (transaction.type === 'transfer') {
-    const source = transaction.entries.find((entry) => entry.signedAmountMinor < 0)
-    const destination = transaction.entries.find((entry) => entry.signedAmountMinor > 0)
-    const amounts = [
-      source
-        ? formatMoneyMinor(Math.abs(source.signedAmountMinor), source.accountCurrencyCode)
-        : null,
-      destination
-        ? formatMoneyMinor(destination.signedAmountMinor, destination.accountCurrencyCode)
-        : null
-    ]
-      .filter(Boolean)
-      .join(' → ')
-    return `${amounts} · ${new Date(transaction.occurredAt).toLocaleDateString('ru-RU')}`
-  }
-  const entry = transaction.entries[0]
-  const amount = entry
-    ? formatMoneyMinor(Math.abs(entry.signedAmountMinor), entry.accountCurrencyCode)
-    : '—'
-  return `${transaction.type === 'income' ? '+' : '−'}${amount} · ${new Date(transaction.occurredAt).toLocaleDateString('ru-RU')}${transaction.comment ? ` · ${transaction.comment}` : ''}`
-}
-
 export function FinanceScreen(): React.JSX.Element {
   const { finance: api } = useServices()
   const confirm = useConfirmation()
