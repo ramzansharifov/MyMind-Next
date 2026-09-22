@@ -29,9 +29,10 @@ import { MobileCreateAction, type MobileCreateActionItem } from '../../shared/ui
 import { VisualIconBadge, VisualIconGlyph } from '../../shared/ui/VisualPickers'
 import type { FormSpec } from '../../shared/ui/form-model'
 import { ErrorState, LoadingState } from '../../shared/ui/primitives'
-import { accountForm, limitForm, tagForm, templateForm } from './finance-forms'
+import { accountForm, limitForm, tagForm } from './finance-forms'
 import { FinanceReportsView } from './FinanceReportsView'
 import { MobileFinanceTransactionSheet } from './MobileFinanceTransactionSheet'
+import { MobileFinanceTemplateSheet } from './MobileFinanceTemplateSheet'
 import { financeOperationTone, financeTagTone } from './finance-semantic-colors'
 import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
 import { useTheme } from '../../shared/ui/theme'
@@ -231,6 +232,7 @@ export function FinanceScreen(): React.JSX.Element {
     type: FinanceUserTransactionType
     transaction: FinanceTransaction | null
   } | null>(null)
+  const [templateSheet, setTemplateSheet] = useState<FinanceTemplate | 'new' | null>(null)
 
   const openForm = (next: FormSpec): void => {
     setForm({
@@ -515,7 +517,7 @@ export function FinanceScreen(): React.JSX.Element {
     <WorkspaceNodeCard
       title={item.name}
       subtitle={`${item.type === 'income' ? 'Доход' : item.type === 'expense' ? 'Расход' : 'Перевод'} · ${item.comment || 'без комментария'}`}
-      onPress={() => openForm(templateForm(api, accounts, tags, item))}
+      onPress={() => setTemplateSheet(item)}
       action={
         <ActionMenu
           title={item.name}
@@ -523,7 +525,7 @@ export function FinanceScreen(): React.JSX.Element {
             {
               label: 'Изменить',
               icon: 'edit',
-              onPress: () => openForm(templateForm(api, accounts, tags, item))
+              onPress: () => setTemplateSheet(item)
             },
             {
               label: 'Удалить',
@@ -806,9 +808,9 @@ export function FinanceScreen(): React.JSX.Element {
                       key: 'template',
                       label: 'Новый шаблон',
                       description: 'Сохранить часто используемую операцию',
-                      icon: 'finance',
-                      disabled: !accounts.length || !tags.length,
-                      onPress: () => openForm(templateForm(api, accounts, tags))
+                      icon: 'copy',
+                      disabled: !accounts.length,
+                      onPress: () => setTemplateSheet('new')
                     }
                   ]
                 : []
@@ -827,6 +829,16 @@ export function FinanceScreen(): React.JSX.Element {
           initialType={transactionSheet.type}
           transaction={transactionSheet.transaction}
           onClose={() => setTransactionSheet(null)}
+          onSaved={state.refresh}
+        />
+      ) : null}
+      {templateSheet ? (
+        <MobileFinanceTemplateSheet
+          api={api}
+          accounts={accounts}
+          tags={tags}
+          template={templateSheet === 'new' ? null : templateSheet}
+          onClose={() => setTemplateSheet(null)}
           onSaved={state.refresh}
         />
       ) : null}
