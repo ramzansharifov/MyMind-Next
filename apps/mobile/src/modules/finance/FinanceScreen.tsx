@@ -701,7 +701,9 @@ export function FinanceScreen(): React.JSX.Element {
   }
 
   const renderLimit = ({ item }: { item: FinanceLimitStatus }): React.JSX.Element => {
-    const tagName = item.tagId ? (tags.find((tag) => tag.id === item.tagId)?.name ?? 'Лимит') : 'Лимит'
+    const tagName = item.tagId
+      ? (tags.find((tag) => tag.id === item.tagId)?.name ?? 'Лимит')
+      : 'Лимит'
     const usageTone =
       item.usagePercent >= 100 ? theme.error : item.warningReached ? '#fbbf24' : theme.accent
 

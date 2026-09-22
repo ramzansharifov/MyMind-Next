@@ -163,12 +163,13 @@ export function MobileFinanceLimitDetailSheet({
           </View>
         </View>
 
-        <DetailRow
-          label="Лимит"
-          value={formatMoneyMinor(limit.amountMinor, limit.currencyCode)}
-        />
+        <DetailRow label="Лимит" value={formatMoneyMinor(limit.amountMinor, limit.currencyCode)} />
         <DetailRow label="Период" value={PERIOD_LABELS[limit.periodType]} />
-        <DetailRow label="Состояние" value={stateLabel} tone={limit.state === 'active' ? theme.accent : '#fbbf24'} />
+        <DetailRow
+          label="Состояние"
+          value={stateLabel}
+          tone={limit.state === 'active' ? theme.accent : '#fbbf24'}
+        />
         <DetailRow label="Предупреждение" value={`${limit.warningPercent}%`} />
         <DetailRow label="Счета" value={linkedAccounts} />
       </ScrollView>

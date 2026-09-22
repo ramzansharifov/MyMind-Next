@@ -77,7 +77,13 @@ export function MobileFinanceTagDetailSheet({
       footer={
         <>
           <Button label="Закрыть" onPress={onClose} />
-          <Button label="Удалить" icon="delete" danger disabled={deleteDisabled} onPress={onDelete} />
+          <Button
+            label="Удалить"
+            icon="delete"
+            danger
+            disabled={deleteDisabled}
+            onPress={onDelete}
+          />
           <Button label="Изменить" icon="edit" primary onPress={onEdit} />
         </>
       }
