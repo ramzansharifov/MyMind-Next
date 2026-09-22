@@ -25,6 +25,7 @@ import {
   MobileFinanceTagPicker
 } from './MobileFinanceSelectionPickers'
 import { FINANCE_OPERATION_OPTIONS } from './finance-operation-options'
+import { financeTemplateTransactionDefaults } from './finance-template-transaction'
 
 type OperationType = FinanceUserTransactionType
 
@@ -80,22 +81,7 @@ function initialValues(
     }
   }
 
-  if (template) {
-    const sourceCurrency =
-      accounts.find((account) => account.id === template.sourceAccountId)?.currencyCode ?? 'TJS'
-    return {
-      type: template.type,
-      accountId: template.sourceAccountId ?? '',
-      destinationAccountId: template.destinationAccountId ?? '',
-      tagId: template.tagId ?? '',
-      amount: template.sourceAccountId
-        ? formatMinorPlain(template.sourceAmountMinor, sourceCurrency)
-        : '',
-      date: localDateKey(),
-      time: localTimeKey(),
-      comment: template.comment
-    }
-  }
+  if (template) return financeTemplateTransactionDefaults(template, accounts)
 
   return {
     type,
