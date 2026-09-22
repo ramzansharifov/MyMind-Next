@@ -151,7 +151,8 @@ export function WorkspaceNodeCard({
   onPress,
   onLongPress,
   action,
-  selected = false
+  selected = false,
+  subtitleColor
 }: {
   title: string
   subtitle?: string
@@ -161,6 +162,7 @@ export function WorkspaceNodeCard({
   onLongPress?(): void
   action?: ReactNode
   selected?: boolean
+  subtitleColor?: string
 }): React.JSX.Element {
   const theme = useTheme()
   return (
@@ -225,7 +227,7 @@ export function WorkspaceNodeCard({
           {subtitle ? (
             <Text
               numberOfLines={3}
-              style={{ marginTop: 3, color: theme.muted, fontSize: 12, lineHeight: 17 }}
+              style={{ marginTop: 3, color: subtitleColor ?? theme.muted, fontSize: 12, lineHeight: 17 }}
             >
               {subtitle}
             </Text>
