@@ -37,8 +37,6 @@ import { formatMoneyMinor } from '@mymind/core/finance-money'
 import { useServices } from '../../app/context'
 import { useCollection } from '../../shared/hooks/useCollection'
 import { FormSheet } from '../../shared/ui/FormSheet'
-import { ActionMenu } from '../../shared/ui/ActionMenu'
-import { WorkspaceNodeCard } from '../../shared/ui/Workspace'
 import { MobileCreateAction, type MobileCreateActionItem } from '../../shared/ui/MobileCreateAction'
 import { VisualIconBadge, VisualIconGlyph } from '../../shared/ui/VisualPickers'
 import type { FormSpec } from '../../shared/ui/form-model'
@@ -52,6 +50,8 @@ import { MobileFinanceLimitSheet } from './MobileFinanceLimitSheet'
 import { MobileFinanceTransactionDetailSheet } from './MobileFinanceTransactionDetailSheet'
 import { MobileFinanceTemplateDetailSheet } from './MobileFinanceTemplateDetailSheet'
 import { MobileFinanceAccountDetailSheet } from './MobileFinanceAccountDetailSheet'
+import { MobileFinanceTagDetailSheet } from './MobileFinanceTagDetailSheet'
+import { MobileFinanceLimitDetailSheet } from './MobileFinanceLimitDetailSheet'
 import { financeOperationTone, financeTagTone } from './finance-semantic-colors'
 import {
   adjacentFinanceTab,
@@ -194,6 +194,124 @@ function FinanceEmpty({ text, icon: Icon }: { text: string; icon: LucideIcon }):
   )
 }
 
+function FinanceListCard({
+  title,
+  titleColor,
+  subtitle,
+  subtitleColor,
+  rightPrimary,
+  rightPrimaryColor,
+  rightSecondary,
+  rightSecondaryColor,
+  leading,
+  accessibilityLabel,
+  onPress
+}: {
+  title: string
+  titleColor?: string
+  subtitle?: string
+  subtitleColor?: string
+  rightPrimary?: string
+  rightPrimaryColor?: string
+  rightSecondary?: string
+  rightSecondaryColor?: string
+  leading?: ReactNode
+  accessibilityLabel: string
+  onPress(): void
+}): React.JSX.Element {
+  const theme = useTheme()
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      onPress={onPress}
+      style={({ pressed }) => ({
+        minHeight: 78,
+        marginBottom: 8,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 11,
+        paddingHorizontal: 12,
+        paddingVertical: 11,
+        borderWidth: 1,
+        borderColor: theme.border,
+        borderRadius: 16,
+        backgroundColor: pressed ? theme.raised : theme.surface,
+        opacity: pressed ? 0.78 : 1
+      })}
+    >
+      {leading}
+      <View style={{ minWidth: 0, flex: 1 }}>
+        <Text
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.76}
+          style={{
+            color: titleColor ?? theme.text,
+            fontSize: 14,
+            lineHeight: 19,
+            fontWeight: '800',
+            fontVariant: ['tabular-nums']
+          }}
+        >
+          {title}
+        </Text>
+        {subtitle ? (
+          <Text
+            numberOfLines={1}
+            style={{
+              marginTop: 4,
+              color: subtitleColor ?? theme.muted,
+              fontSize: 10.5,
+              lineHeight: 14,
+              fontWeight: subtitleColor ? '700' : '500'
+            }}
+          >
+            {subtitle}
+          </Text>
+        ) : null}
+      </View>
+      {rightPrimary || rightSecondary ? (
+        <View style={{ maxWidth: '42%', alignItems: 'flex-end' }}>
+          {rightPrimary ? (
+            <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.76}
+              style={{
+                color: rightPrimaryColor ?? theme.text,
+                fontSize: 12.5,
+                lineHeight: 17,
+                fontWeight: '800',
+                fontVariant: ['tabular-nums'],
+                textAlign: 'right'
+              }}
+            >
+              {rightPrimary}
+            </Text>
+          ) : null}
+          {rightSecondary ? (
+            <Text
+              numberOfLines={1}
+              style={{
+                marginTop: 4,
+                color: rightSecondaryColor ?? theme.muted,
+                fontSize: 9.5,
+                lineHeight: 13,
+                fontWeight: rightSecondaryColor ? '700' : '500',
+                textAlign: 'right'
+              }}
+            >
+              {rightSecondary}
+            </Text>
+          ) : null}
+        </View>
+      ) : null}
+    </Pressable>
+  )
+}
+
 function operationTitle(transaction: FinanceTransaction): string {
   if (transaction.type === 'transfer') {
     const source = transaction.entries.find((entry) => entry.signedAmountMinor < 0)
@@ -241,6 +359,8 @@ export function FinanceScreen(): React.JSX.Element {
   const [transactionDetail, setTransactionDetail] = useState<FinanceTransaction | null>(null)
   const [templateDetail, setTemplateDetail] = useState<FinanceTemplate | null>(null)
   const [accountDetail, setAccountDetail] = useState<FinanceAccountSummary | null>(null)
+  const [tagDetail, setTagDetail] = useState<FinanceTagSummary | null>(null)
+  const [limitDetail, setLimitDetail] = useState<FinanceLimitStatus | null>(null)
   const [balanceHidden, setBalanceHidden] = useState(false)
 
   const tabPageWidth = Math.max(screenWidth - 28, 280)
@@ -510,174 +630,49 @@ export function FinanceScreen(): React.JSX.Element {
       : '—'
     const title = operationTitle(item)
     const date = new Date(item.occurredAt).toLocaleDateString('ru-RU')
+    const typeLabel =
+      item.type === 'income'
+        ? 'Доход'
+        : item.type === 'expense'
+          ? 'Расход'
+          : item.type === 'transfer'
+            ? 'Перевод'
+            : 'Корректировка'
 
     return (
-      <View
-        style={{
-          minHeight: 82,
-          marginBottom: 8,
-          flexDirection: 'row',
-          alignItems: 'stretch',
-          overflow: 'hidden',
-          borderWidth: 1,
-          borderColor: theme.border,
-          borderRadius: 16,
-          backgroundColor: theme.surface
-        }}
-      >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`${amount}, ${title}`}
-          onPress={() => setTransactionDetail(item)}
-          onLongPress={() => deleteTransaction(item)}
-          style={({ pressed }) => ({
-            minWidth: 0,
-            flex: 1,
-            paddingHorizontal: 13,
-            paddingVertical: 11,
-            backgroundColor: pressed ? theme.raised : 'transparent'
-          })}
-        >
-          <Text
-            numberOfLines={1}
-            adjustsFontSizeToFit
-            minimumFontScale={0.78}
-            style={{
-              color: tone,
-              fontSize: 18,
-              lineHeight: 23,
-              fontWeight: '800',
-              fontVariant: ['tabular-nums']
-            }}
-          >
-            {amount}
-          </Text>
-          <Text
-            numberOfLines={1}
-            style={{
-              marginTop: 5,
-              color: theme.text,
-              fontSize: 12.5,
-              lineHeight: 17,
-              fontWeight: '700'
-            }}
-          >
-            {title}
-          </Text>
-          <Text style={{ marginTop: 2, color: theme.muted, fontSize: 10.5 }}>{date}</Text>
-        </Pressable>
-        <View style={{ alignItems: 'center', justifyContent: 'center', paddingRight: 6 }}>
-          <ActionMenu
-            title={title}
-            items={[
-              {
-                label: 'Изменить',
-                icon: 'edit',
-                disabled: item.isSystem,
-                onPress: () => openTransaction(transactionType(item), item)
-              },
-              {
-                label: 'Удалить',
-                icon: 'delete',
-                danger: true,
-                disabled: item.isSystem,
-                onPress: () => deleteTransaction(item)
-              }
-            ]}
-          />
-        </View>
-      </View>
+      <FinanceListCard
+        title={amount}
+        titleColor={tone}
+        subtitle={title}
+        rightPrimary={date}
+        rightSecondary={typeLabel}
+        rightSecondaryColor={tone}
+        accessibilityLabel={`${amount}, ${title}, ${date}`}
+        onPress={() => setTransactionDetail(item)}
+      />
     )
   }
 
   const renderAccount = ({ item }: { item: FinanceAccountSummary }): React.JSX.Element => (
-    <View
-      style={{
-        minHeight: 94,
-        marginBottom: 8,
-        flexDirection: 'row',
-        alignItems: 'stretch',
-        overflow: 'hidden',
-        borderWidth: 1,
-        borderColor: theme.border,
-        borderRadius: 16,
-        backgroundColor: theme.surface
-      }}
-    >
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`${item.name}, ${formatMoneyMinor(item.balanceMinor, item.currencyCode)}`}
-        onPress={() => setAccountDetail(item)}
-        style={({ pressed }) => ({
-          minWidth: 0,
-          flex: 1,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 11,
-          paddingHorizontal: 12,
-          paddingVertical: 11,
-          backgroundColor: pressed ? theme.raised : 'transparent'
-        })}
-      >
-        <VisualIconBadge value={item.icon} size={40} />
-        <View style={{ minWidth: 0, flex: 1 }}>
-          <Text numberOfLines={1} style={{ color: theme.text, fontSize: 13.5, fontWeight: '700' }}>
-            {item.name}
-          </Text>
-          <Text style={{ marginTop: 2, color: theme.muted, fontSize: 10.5 }}>
-            {item.currencyCode} · {item.transactionCount} операций
-          </Text>
-          <Text
-            numberOfLines={1}
-            adjustsFontSizeToFit
-            style={{
-              marginTop: 7,
-              color: item.balanceMinor < 0 ? theme.error : theme.text,
-              fontSize: 17,
-              fontWeight: '800',
-              fontVariant: ['tabular-nums']
-            }}
-          >
-            {formatMoneyMinor(item.balanceMinor, item.currencyCode)}
-          </Text>
-        </View>
-      </Pressable>
-      <View style={{ alignItems: 'center', justifyContent: 'center', paddingRight: 6 }}>
-        <ActionMenu
-          title={item.name}
-          items={[
-            { label: 'Изменить', icon: 'edit', onPress: () => openForm(accountForm(api, item)) },
-            item.transactionCount > 0
-              ? {
-                  key: 'clear',
-                  label: 'Очистить историю',
-                  icon: 'reset',
-                  danger: true,
-                  onPress: () => clearHistory(item)
-                }
-              : {
-                  key: 'delete',
-                  label: 'Удалить',
-                  icon: 'delete',
-                  danger: true,
-                  onPress: () =>
-                    state.confirmDelete(`Удалить счёт «${item.name}»?`, () => {
-                      api.deleteAccount({ id: item.id })
-                    })
-                }
-          ]}
-        />
-      </View>
-    </View>
+    <FinanceListCard
+      leading={<VisualIconBadge value={item.icon} size={40} />}
+      title={item.name}
+      subtitle={`${item.currencyCode} · ${item.transactionCount} операций`}
+      rightPrimary={formatMoneyMinor(item.balanceMinor, item.currencyCode)}
+      rightPrimaryColor={item.balanceMinor < 0 ? theme.error : theme.text}
+      rightSecondary="Баланс"
+      accessibilityLabel={`${item.name}, ${formatMoneyMinor(item.balanceMinor, item.currencyCode)}`}
+      onPress={() => setAccountDetail(item)}
+    />
   )
 
   const renderTag = ({ item }: { item: FinanceTagSummary }): React.JSX.Element => {
     const tone = financeTagTone(item.type, theme.accent)
+    const typeLabel =
+      item.type === 'income' ? 'Доход' : item.type === 'expense' ? 'Расход' : 'Доход и расход'
+
     return (
-      <WorkspaceNodeCard
-        title={item.name}
-        subtitle={`${item.type === 'income' ? 'Доход' : item.type === 'expense' ? 'Расход' : 'Доход и расход'} · ${item.transactionCount} операций`}
-        subtitleColor={tone}
+      <FinanceListCard
         leading={
           <View
             style={{
@@ -694,68 +689,40 @@ export function FinanceScreen(): React.JSX.Element {
             <VisualIconGlyph value={item.icon} size={18} color={tone} />
           </View>
         }
-        onPress={() => setTagSheet(item)}
-        action={
-          <ActionMenu
-            title={item.name}
-            items={[
-              { label: 'Изменить', icon: 'edit', onPress: () => setTagSheet(item) },
-              {
-                label: 'Удалить',
-                icon: 'delete',
-                danger: true,
-                disabled: item.transactionCount > 0 || item.linkedLimitCount > 0,
-                onPress: () =>
-                  state.confirmDelete(`Удалить тег «${item.name}»?`, () => {
-                    api.deleteTag({ id: item.id })
-                  })
-              }
-            ]}
-          />
-        }
+        title={item.name}
+        subtitle={typeLabel}
+        subtitleColor={tone}
+        rightPrimary={String(item.transactionCount)}
+        rightSecondary={item.linkedLimitCount ? `${item.linkedLimitCount} лимитов` : 'операций'}
+        accessibilityLabel={`${item.name}, ${typeLabel}, ${item.transactionCount} операций`}
+        onPress={() => setTagDetail(item)}
       />
     )
   }
 
-  const renderLimit = ({ item }: { item: FinanceLimitStatus }): React.JSX.Element => (
-    <WorkspaceNodeCard
-      title={`${item.tagId ? (tags.find((tag) => tag.id === item.tagId)?.name ?? 'Лимит') : 'Лимит'} · ${formatMoneyMinor(item.amountMinor, item.currencyCode)}`}
-      subtitle={`${formatMoneyMinor(item.spentMinor, item.currencyCode)} использовано · ${Math.round(item.usagePercent)}% · ${item.state === 'active' ? 'активен' : 'пауза'}`}
-      onPress={() => setLimitSheet(item)}
-      action={
-        <ActionMenu
-          title="Лимит"
-          items={[
-            {
-              label: 'Изменить',
-              icon: 'edit',
-              onPress: () => setLimitSheet(item)
-            },
-            {
-              label: item.state === 'active' ? 'Поставить на паузу' : 'Возобновить',
-              icon: 'reset',
-              onPress: () =>
-                state.mutate(() => {
-                  api.setLimitState({
-                    id: item.id,
-                    state: item.state === 'active' ? 'paused' : 'active'
-                  })
-                })
-            },
-            {
-              label: 'Удалить',
-              icon: 'delete',
-              danger: true,
-              onPress: () =>
-                state.confirmDelete('Удалить лимит?', () => {
-                  api.deleteLimit({ id: item.id })
-                })
-            }
-          ]}
-        />
-      }
-    />
-  )
+  const renderLimit = ({ item }: { item: FinanceLimitStatus }): React.JSX.Element => {
+    const tagName = item.tagId
+      ? (tags.find((tag) => tag.id === item.tagId)?.name ?? 'Лимит')
+      : 'Лимит'
+    const usageTone =
+      item.usagePercent >= 100 ? theme.error : item.warningReached ? '#fbbf24' : theme.accent
+
+    return (
+      <FinanceListCard
+        title={tagName}
+        subtitle={`${formatMoneyMinor(item.spentMinor, item.currencyCode)} из ${formatMoneyMinor(
+          item.amountMinor,
+          item.currencyCode
+        )}`}
+        rightPrimary={`${Math.round(item.usagePercent)}%`}
+        rightPrimaryColor={usageTone}
+        rightSecondary={item.state === 'active' ? 'Активен' : 'На паузе'}
+        rightSecondaryColor={item.state === 'active' ? theme.accent : '#fbbf24'}
+        accessibilityLabel={`${tagName}, использовано ${Math.round(item.usagePercent)} процентов`}
+        onPress={() => setLimitDetail(item)}
+      />
+    )
+  }
 
   const renderTemplate = ({ item }: { item: FinanceTemplate }): React.JSX.Element => {
     const source = accounts.find((account) => account.id === item.sourceAccountId)
@@ -773,79 +740,15 @@ export function FinanceScreen(): React.JSX.Element {
         : [source?.name, tag?.name].filter(Boolean).join(' · ')
 
     return (
-      <View
-        style={{
-          minHeight: 92,
-          marginBottom: 8,
-          flexDirection: 'row',
-          alignItems: 'stretch',
-          overflow: 'hidden',
-          borderWidth: 1,
-          borderColor: theme.border,
-          borderRadius: 16,
-          backgroundColor: theme.surface
-        }}
-      >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={item.name}
-          onPress={() => setTemplateDetail(item)}
-          style={({ pressed }) => ({
-            minWidth: 0,
-            flex: 1,
-            paddingHorizontal: 13,
-            paddingVertical: 11,
-            backgroundColor: pressed ? theme.raised : 'transparent'
-          })}
-        >
-          <Text numberOfLines={1} style={{ color: theme.text, fontSize: 14, fontWeight: '700' }}>
-            {item.name}
-          </Text>
-          <Text
-            numberOfLines={1}
-            style={{
-              marginTop: 5,
-              color: theme.text,
-              fontSize: 13,
-              lineHeight: 18,
-              fontWeight: '700',
-              fontVariant: ['tabular-nums']
-            }}
-          >
-            {amount}
-          </Text>
-          <View style={{ marginTop: 5, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Text
-              numberOfLines={1}
-              style={{ minWidth: 0, flex: 1, color: theme.muted, fontSize: 10.5 }}
-            >
-              {meta || 'Без привязки'}
-            </Text>
-            <Text style={{ color: tone, fontSize: 10.5, fontWeight: '800' }}>{typeLabel}</Text>
-          </View>
-        </Pressable>
-        <View style={{ alignItems: 'center', justifyContent: 'center', paddingRight: 6 }}>
-          <ActionMenu
-            title={item.name}
-            items={[
-              {
-                label: 'Изменить',
-                icon: 'edit',
-                onPress: () => setTemplateSheet(item)
-              },
-              {
-                label: 'Удалить',
-                icon: 'delete',
-                danger: true,
-                onPress: () =>
-                  state.confirmDelete(`Удалить шаблон «${item.name}»?`, () => {
-                    api.deleteTemplate({ id: item.id })
-                  })
-              }
-            ]}
-          />
-        </View>
-      </View>
+      <FinanceListCard
+        title={item.name}
+        subtitle={meta || 'Без привязки'}
+        rightPrimary={amount}
+        rightSecondary={typeLabel}
+        rightSecondaryColor={tone}
+        accessibilityLabel={`${item.name}, ${amount}, ${typeLabel}`}
+        onPress={() => setTemplateDetail(item)}
+      />
     )
   }
 
@@ -1168,6 +1071,11 @@ export function FinanceScreen(): React.JSX.Element {
             setTransactionDetail(null)
             openTransaction(transactionType(transaction), transaction)
           }}
+          onDelete={() => {
+            const transaction = transactionDetail
+            setTransactionDetail(null)
+            requestAnimationFrame(() => deleteTransaction(transaction))
+          }}
         />
       ) : null}
       {templateDetail ? (
@@ -1181,6 +1089,15 @@ export function FinanceScreen(): React.JSX.Element {
             setTemplateDetail(null)
             setTemplateSheet(template)
           }}
+          onDelete={() => {
+            const template = templateDetail
+            setTemplateDetail(null)
+            requestAnimationFrame(() =>
+              state.confirmDelete(`Удалить шаблон «${template.name}»?`, () => {
+                api.deleteTemplate({ id: template.id })
+              })
+            )
+          }}
         />
       ) : null}
       {accountDetail ? (
@@ -1192,6 +1109,74 @@ export function FinanceScreen(): React.JSX.Element {
             const account = accountDetail
             setAccountDetail(null)
             openForm(accountForm(api, account))
+          }}
+          onClearHistory={() => {
+            const account = accountDetail
+            setAccountDetail(null)
+            requestAnimationFrame(() => clearHistory(account))
+          }}
+          onDelete={() => {
+            const account = accountDetail
+            setAccountDetail(null)
+            requestAnimationFrame(() =>
+              state.confirmDelete(`Удалить счёт «${account.name}»?`, () => {
+                api.deleteAccount({ id: account.id })
+              })
+            )
+          }}
+        />
+      ) : null}
+      {tagDetail ? (
+        <MobileFinanceTagDetailSheet
+          tag={tagDetail}
+          onClose={() => setTagDetail(null)}
+          onEdit={() => {
+            const tag = tagDetail
+            setTagDetail(null)
+            setTagSheet(tag)
+          }}
+          onDelete={() => {
+            const tag = tagDetail
+            setTagDetail(null)
+            requestAnimationFrame(() =>
+              state.confirmDelete(`Удалить тег «${tag.name}»?`, () => {
+                api.deleteTag({ id: tag.id })
+              })
+            )
+          }}
+        />
+      ) : null}
+      {limitDetail ? (
+        <MobileFinanceLimitDetailSheet
+          limit={limitDetail}
+          accounts={accounts}
+          tags={tags}
+          onClose={() => setLimitDetail(null)}
+          onEdit={() => {
+            const limit = limitDetail
+            setLimitDetail(null)
+            setLimitSheet(limit)
+          }}
+          onToggleState={() => {
+            const limit = limitDetail
+            setLimitDetail(null)
+            requestAnimationFrame(() =>
+              state.mutate(() => {
+                api.setLimitState({
+                  id: limit.id,
+                  state: limit.state === 'active' ? 'paused' : 'active'
+                })
+              })
+            )
+          }}
+          onDelete={() => {
+            const limit = limitDetail
+            setLimitDetail(null)
+            requestAnimationFrame(() =>
+              state.confirmDelete('Удалить лимит?', () => {
+                api.deleteLimit({ id: limit.id })
+              })
+            )
           }}
         />
       ) : null}

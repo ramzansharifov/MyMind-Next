@@ -49,11 +49,13 @@ function DetailRow({
 export function MobileFinanceTransactionDetailSheet({
   transaction,
   onClose,
-  onEdit
+  onEdit,
+  onDelete
 }: {
   transaction: FinanceTransaction
   onClose(): void
   onEdit(): void
+  onDelete(): void
 }): React.JSX.Element {
   const theme = useTheme()
   const outgoing = transaction.entries.find((entry) => entry.signedAmountMinor < 0)
@@ -94,7 +96,10 @@ export function MobileFinanceTransactionDetailSheet({
         <>
           <Button label="Закрыть" onPress={onClose} />
           {!transaction.isSystem ? (
-            <Button label="Изменить" icon="edit" primary onPress={onEdit} />
+            <>
+              <Button label="Удалить" icon="delete" danger onPress={onDelete} />
+              <Button label="Изменить" icon="edit" primary onPress={onEdit} />
+            </>
           ) : null}
         </>
       }

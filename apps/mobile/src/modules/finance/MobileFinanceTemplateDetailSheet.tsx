@@ -38,13 +38,15 @@ export function MobileFinanceTemplateDetailSheet({
   accounts,
   tags,
   onClose,
-  onEdit
+  onEdit,
+  onDelete
 }: {
   template: FinanceTemplate
   accounts: FinanceAccountSummary[]
   tags: FinanceTagSummary[]
   onClose(): void
   onEdit(): void
+  onDelete(): void
 }): React.JSX.Element {
   const theme = useTheme()
   const tone = financeOperationTone(template.type, theme.accent)
@@ -67,6 +69,7 @@ export function MobileFinanceTemplateDetailSheet({
       footer={
         <>
           <Button label="Закрыть" onPress={onClose} />
+          <Button label="Удалить" icon="delete" danger onPress={onDelete} />
           <Button label="Изменить" icon="edit" primary onPress={onEdit} />
         </>
       }

@@ -57,12 +57,16 @@ export function MobileFinanceAccountDetailSheet({
   api,
   account,
   onClose,
-  onEdit
+  onEdit,
+  onClearHistory,
+  onDelete
 }: {
   api: FinanceRepository
   account: FinanceAccountSummary
   onClose(): void
   onEdit(): void
+  onClearHistory(): void
+  onDelete(): void
 }): React.JSX.Element {
   const theme = useTheme()
   const transactions = useMemo(
@@ -116,6 +120,11 @@ export function MobileFinanceAccountDetailSheet({
       footer={
         <>
           <Button label="Закрыть" onPress={onClose} />
+          {account.transactionCount > 0 ? (
+            <Button label="Очистить историю" icon="reset" danger onPress={onClearHistory} />
+          ) : (
+            <Button label="Удалить" icon="delete" danger onPress={onDelete} />
+          )}
           <Button label="Изменить" icon="edit" primary onPress={onEdit} />
         </>
       }
