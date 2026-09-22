@@ -11,7 +11,6 @@ import type { FinanceRepository } from '@mymind/persistence/finance'
 import {
   FINANCE_RATE_SCALE,
   formatMinorPlain,
-  formatMoneyMinor,
   parseMoneyToMinor
 } from '@mymind/core/finance-money'
 import * as validation from '@mymind/core/validation/finance'
@@ -24,11 +23,11 @@ import { useTheme } from '../../shared/ui/theme'
 import { useToast } from '../../shared/ui/toast-context'
 import { financeOperationTone } from './finance-semantic-colors'
 import {
-  FINANCE_OPERATION_OPTIONS,
   MobileFinanceAccountPicker,
   MobileFinanceOperationTypePicker,
   MobileFinanceTagPicker
 } from './MobileFinanceSelectionPickers'
+import { FINANCE_OPERATION_OPTIONS } from './finance-operation-options'
 
 type OperationType = FinanceUserTransactionType
 
