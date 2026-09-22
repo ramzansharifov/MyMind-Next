@@ -158,7 +158,9 @@ export function MobileFinanceTemplateSheet({
 
       setPending(true)
       if (template) {
-        api.updateTemplate(validation.updateFinanceTemplateInputSchema.parse({ id: template.id, ...input }))
+        api.updateTemplate(
+          validation.updateFinanceTemplateInputSchema.parse({ id: template.id, ...input })
+        )
       } else {
         api.createTemplate(validation.createFinanceTemplateInputSchema.parse(input))
       }

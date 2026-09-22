@@ -57,11 +57,7 @@ export function MobileFinanceOperationTypePicker({
               borderWidth: 1,
               borderColor: selected ? tone + '80' : theme.border,
               borderRadius: 13,
-              backgroundColor: selected
-                ? tone + '1F'
-                : pressed
-                  ? theme.surface
-                  : theme.background,
+              backgroundColor: selected ? tone + '1F' : pressed ? theme.surface : theme.background,
               opacity: disabled ? 0.45 : pressed ? 0.75 : 1
             })}
           >

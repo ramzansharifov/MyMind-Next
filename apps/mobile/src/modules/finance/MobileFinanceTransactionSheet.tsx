@@ -178,7 +178,9 @@ export function MobileFinanceTransactionSheet({
   const selectedAccount = accounts.find((account) => account.id === accountId)
   const selectedDestination = accounts.find((account) => account.id === destinationAccountId)
   const compatibleTags = tags.filter((tag) => tag.type === 'both' || tag.type === type)
-  const currentOption = FINANCE_OPERATION_OPTIONS.find((option) => option.value === type) ?? FINANCE_OPERATION_OPTIONS[0]
+  const currentOption =
+    FINANCE_OPERATION_OPTIONS.find((option) => option.value === type) ??
+    FINANCE_OPERATION_OPTIONS[0]
   const currentTone = financeOperationTone(type, theme.accent)
   const CurrentIcon = currentOption.icon
 
