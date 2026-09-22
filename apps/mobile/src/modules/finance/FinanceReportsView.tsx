@@ -306,11 +306,7 @@ export function FinanceReportsView({
             </Pressable>
           </View>
 
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: 7, paddingRight: 4 }}
-          >
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7 }}>
             {reportRangeOptions.map((option) => (
               <ReportChip
                 key={option.key}
@@ -322,7 +318,7 @@ export function FinanceReportsView({
                 }}
               />
             ))}
-          </ScrollView>
+          </View>
         </View>
 
         {reportRange === 'custom' ? (

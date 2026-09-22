@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState, type ReactNode } from 'react'
-import { FlatList, Pressable, ScrollView, Text, View } from 'react-native'
+import { FlatList, PanResponder, Pressable, ScrollView, Text, View } from 'react-native'
 import {
   BarChart3,
   Copy,
@@ -41,13 +41,12 @@ import { MobileFinanceTransactionDetailSheet } from './MobileFinanceTransactionD
 import { MobileFinanceTemplateDetailSheet } from './MobileFinanceTemplateDetailSheet'
 import { MobileFinanceAccountDetailSheet } from './MobileFinanceAccountDetailSheet'
 import { financeOperationTone, financeTagTone } from './finance-semantic-colors'
+import { adjacentFinanceTab, type FinanceTab } from './finance-tab-navigation'
 import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
 import { useTheme } from '../../shared/ui/theme'
 import { useToast } from '../../shared/ui/toast-context'
 
-type Tab = 'home' | 'transactions' | 'templates' | 'limits' | 'accounts' | 'tags' | 'reports'
-
-const FINANCE_TABS: ReadonlyArray<{ id: Tab; label: string; icon: LucideIcon }> = [
+const FINANCE_TABS: ReadonlyArray<{ id: FinanceTab; label: string; icon: LucideIcon }> = [
   { id: 'home', label: 'Главная', icon: Home },
   { id: 'transactions', label: 'Транзакции', icon: ReceiptText },
   { id: 'templates', label: 'Шаблоны', icon: Copy },
@@ -210,7 +209,7 @@ export function FinanceScreen(): React.JSX.Element {
       }
     }, [api])
   )
-  const [tab, setTab] = useState<Tab>('home')
+  const [tab, setTab] = useState<FinanceTab>('home')
   const [form, setForm] = useState<FormSpec | null>(null)
   const [transactionSheet, setTransactionSheet] = useState<{
     type: FinanceUserTransactionType
@@ -223,6 +222,40 @@ export function FinanceScreen(): React.JSX.Element {
   const [templateDetail, setTemplateDetail] = useState<FinanceTemplate | null>(null)
   const [accountDetail, setAccountDetail] = useState<FinanceAccountSummary | null>(null)
   const [balanceHidden, setBalanceHidden] = useState(false)
+
+  const switchTab = useCallback(
+    (nextTab: FinanceTab): void => {
+      if (nextTab === tab) return
+      setTab(nextTab)
+      const label = FINANCE_TABS.find((item) => item.id === nextTab)?.label
+      if (label) toast.info(label, 'finance-tab')
+    },
+    [tab, toast]
+  )
+
+  const tabSwipeResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => false,
+        onMoveShouldSetPanResponder: (_event, gesture) => {
+          if (gesture.numberActiveTouches !== 1) return false
+          const horizontal = Math.abs(gesture.dx)
+          const vertical = Math.abs(gesture.dy)
+          return horizontal >= 18 && horizontal > vertical * 1.45
+        },
+        onPanResponderTerminationRequest: () => true,
+        onPanResponderRelease: (_event, gesture) => {
+          const horizontal = Math.abs(gesture.dx)
+          const vertical = Math.abs(gesture.dy)
+          if (horizontal < 72 || horizontal <= vertical * 1.35) return
+
+          const direction = gesture.dx < 0 ? 'next' : 'previous'
+          const nextTab = adjacentFinanceTab(tab, direction)
+          if (nextTab !== tab) switchTab(nextTab)
+        }
+      }),
+    [switchTab, tab]
+  )
 
   const openForm = (next: FormSpec): void => {
     setForm({
@@ -288,11 +321,7 @@ export function FinanceScreen(): React.JSX.Element {
               accessibilityRole="tab"
               accessibilityLabel={item.label}
               accessibilityState={{ selected }}
-              onPress={() => {
-                if (selected) return
-                setTab(item.id)
-                toast.info(item.label, 'finance-tab')
-              }}
+              onPress={() => switchTab(item.id)}
               style={({ pressed }) => ({
                 flex: 1,
                 minWidth: 0,
@@ -999,7 +1028,9 @@ export function FinanceScreen(): React.JSX.Element {
   return (
     <View style={{ flex: 1 }}>
       {header}
-      <View style={{ flex: 1 }}>{content}</View>
+      <View style={{ flex: 1 }} {...tabSwipeResponder.panHandlers}>
+        {content}
+      </View>
       <MobileCreateAction actions={createActions} iconOnly />
       {transactionDetail ? (
         <MobileFinanceTransactionDetailSheet
