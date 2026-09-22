@@ -29,6 +29,7 @@ jobs:
           apps/mobile/src/modules/finance/MobileFinanceTransactionSheet.tsx
           apps/mobile/src/modules/finance/MobileFinanceTemplateSheet.tsx
           apps/mobile/src/modules/finance/MobileFinanceSelectionPickers.tsx
+          apps/mobile/src/modules/finance/finance-operation-options.ts
 
       - name: Commit formatting if needed
         shell: bash
@@ -39,6 +40,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add             apps/mobile/src/modules/finance/FinanceScreen.tsx             apps/mobile/src/modules/finance/MobileFinanceTransactionSheet.tsx             apps/mobile/src/modules/finance/MobileFinanceTemplateSheet.tsx             apps/mobile/src/modules/finance/MobileFinanceSelectionPickers.tsx
+          apps/mobile/src/modules/finance/finance-operation-options.ts
           git commit -m "style(mobile): format finance template sheet"
           git push origin HEAD:agent/mobile-finance-template-sheet
 
@@ -49,6 +51,7 @@ jobs:
           apps/mobile/src/modules/finance/MobileFinanceTransactionSheet.tsx
           apps/mobile/src/modules/finance/MobileFinanceTemplateSheet.tsx
           apps/mobile/src/modules/finance/MobileFinanceSelectionPickers.tsx
+          apps/mobile/src/modules/finance/finance-operation-options.ts
 
       - name: ESLint
         run: >
@@ -57,6 +60,7 @@ jobs:
           apps/mobile/src/modules/finance/MobileFinanceTransactionSheet.tsx
           apps/mobile/src/modules/finance/MobileFinanceTemplateSheet.tsx
           apps/mobile/src/modules/finance/MobileFinanceSelectionPickers.tsx
+          apps/mobile/src/modules/finance/finance-operation-options.ts
 
       - run: npm run typecheck:mobile
       - run: npm run native:node
