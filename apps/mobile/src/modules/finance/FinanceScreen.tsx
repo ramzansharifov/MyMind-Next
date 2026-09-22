@@ -1,5 +1,17 @@
 import { useCallback, useMemo, useState, type ReactNode } from 'react'
-import { FlatList, PanResponder, Pressable, ScrollView, Text, View } from 'react-native'
+import {
+  Animated,
+  Easing,
+  FlatList,
+  PanResponder,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+  useWindowDimensions,
+  type GestureResponderEvent,
+  type PanResponderGestureState
+} from 'react-native'
 import {
   BarChart3,
   Copy,
@@ -41,7 +53,12 @@ import { MobileFinanceTransactionDetailSheet } from './MobileFinanceTransactionD
 import { MobileFinanceTemplateDetailSheet } from './MobileFinanceTemplateDetailSheet'
 import { MobileFinanceAccountDetailSheet } from './MobileFinanceAccountDetailSheet'
 import { financeOperationTone, financeTagTone } from './finance-semantic-colors'
-import { adjacentFinanceTab, type FinanceTab } from './finance-tab-navigation'
+import {
+  adjacentFinanceTab,
+  financeSwipeDirection,
+  type FinanceTab,
+  type FinanceTabSwipeDirection
+} from './finance-tab-navigation'
 import { useConfirmation } from '../../shared/ui/ConfirmationProvider'
 import { useTheme } from '../../shared/ui/theme'
 import { useToast } from '../../shared/ui/toast-context'
@@ -191,6 +208,9 @@ export function FinanceScreen(): React.JSX.Element {
   const confirm = useConfirmation()
   const theme = useTheme()
   const toast = useToast()
+  const { width: screenWidth } = useWindowDimensions()
+  const [tabTranslateX] = useState(() => new Animated.Value(0))
+  const [swipeAnimating, setSwipeAnimating] = useState(false)
   const state = useCollection(
     useCallback(() => {
       const dashboard = api.getDashboard()
@@ -223,39 +243,137 @@ export function FinanceScreen(): React.JSX.Element {
   const [accountDetail, setAccountDetail] = useState<FinanceAccountSummary | null>(null)
   const [balanceHidden, setBalanceHidden] = useState(false)
 
-  const switchTab = useCallback(
+  const tabPageWidth = Math.max(screenWidth - 28, 280)
+
+  const announceTab = useCallback(
     (nextTab: FinanceTab): void => {
-      if (nextTab === tab) return
-      setTab(nextTab)
       const label = FINANCE_TABS.find((item) => item.id === nextTab)?.label
       if (label) toast.info(label, 'finance-tab')
     },
-    [tab, toast]
+    [toast]
   )
 
-  const tabSwipeResponder = useMemo(
-    () =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => false,
-        onMoveShouldSetPanResponder: (_event, gesture) => {
-          if (gesture.numberActiveTouches !== 1) return false
-          const horizontal = Math.abs(gesture.dx)
-          const vertical = Math.abs(gesture.dy)
-          return horizontal >= 18 && horizontal > vertical * 1.45
-        },
-        onPanResponderTerminationRequest: () => true,
-        onPanResponderRelease: (_event, gesture) => {
-          const horizontal = Math.abs(gesture.dx)
-          const vertical = Math.abs(gesture.dy)
-          if (horizontal < 72 || horizontal <= vertical * 1.35) return
+  const resetSwipePosition = useCallback((): void => {
+    Animated.spring(tabTranslateX, {
+      toValue: 0,
+      damping: 24,
+      stiffness: 260,
+      mass: 0.72,
+      overshootClamping: true,
+      useNativeDriver: true
+    }).start()
+  }, [tabTranslateX])
 
-          const direction = gesture.dx < 0 ? 'next' : 'previous'
-          const nextTab = adjacentFinanceTab(tab, direction)
-          if (nextTab !== tab) switchTab(nextTab)
+  const switchTab = useCallback(
+    (nextTab: FinanceTab): void => {
+      if (nextTab === tab || swipeAnimating) return
+      tabTranslateX.stopAnimation()
+      tabTranslateX.setValue(0)
+      setTab(nextTab)
+      announceTab(nextTab)
+    },
+    [announceTab, swipeAnimating, tab, tabTranslateX]
+  )
+
+  const completeSwipe = useCallback(
+    (nextTab: FinanceTab, direction: FinanceTabSwipeDirection): void => {
+      if (nextTab === tab || swipeAnimating) {
+        resetSwipePosition()
+        return
+      }
+
+      setSwipeAnimating(true)
+      const exitX = direction === 'next' ? -tabPageWidth : tabPageWidth
+      const enterX = direction === 'next' ? tabPageWidth : -tabPageWidth
+
+      Animated.timing(tabTranslateX, {
+        toValue: exitX,
+        duration: 135,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true
+      }).start(({ finished }) => {
+        if (!finished) {
+          setSwipeAnimating(false)
+          resetSwipePosition()
+          return
         }
-      }),
-    [switchTab, tab]
+
+        setTab(nextTab)
+        announceTab(nextTab)
+        tabTranslateX.setValue(enterX)
+
+        requestAnimationFrame(() => {
+          Animated.timing(tabTranslateX, {
+            toValue: 0,
+            duration: 190,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true
+          }).start(() => {
+            setSwipeAnimating(false)
+          })
+        })
+      })
+    },
+    [announceTab, resetSwipePosition, swipeAnimating, tab, tabPageWidth, tabTranslateX]
   )
+
+  const tabSwipeResponder = useMemo(() => {
+    const shouldClaimHorizontalSwipe = (
+      _event: GestureResponderEvent,
+      gesture: PanResponderGestureState
+    ): boolean => {
+      if (swipeAnimating || gesture.numberActiveTouches !== 1) return false
+      const horizontal = Math.abs(gesture.dx)
+      const vertical = Math.abs(gesture.dy)
+      return horizontal >= 10 && horizontal > vertical * 1.35
+    }
+
+    return PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: shouldClaimHorizontalSwipe,
+      onMoveShouldSetPanResponderCapture: shouldClaimHorizontalSwipe,
+      onPanResponderGrant: () => {
+        tabTranslateX.stopAnimation()
+      },
+      onPanResponderMove: (_event, gesture) => {
+        if (swipeAnimating) return
+
+        const direction: FinanceTabSwipeDirection = gesture.dx < 0 ? 'next' : 'previous'
+        const nextTab = adjacentFinanceTab(tab, direction)
+        const atEdge = nextTab === tab
+        const raw = atEdge ? gesture.dx * 0.18 : gesture.dx
+        const clamped = Math.max(-tabPageWidth, Math.min(tabPageWidth, raw))
+        tabTranslateX.setValue(clamped)
+      },
+      onPanResponderTerminationRequest: () => false,
+      onPanResponderRelease: (_event, gesture) => {
+        if (swipeAnimating) return
+
+        const direction = financeSwipeDirection(gesture.dx, gesture.dy, gesture.vx)
+        if (!direction) {
+          resetSwipePosition()
+          return
+        }
+
+        const nextTab = adjacentFinanceTab(tab, direction)
+        if (nextTab === tab) {
+          resetSwipePosition()
+          return
+        }
+
+        completeSwipe(nextTab, direction)
+      },
+      onPanResponderTerminate: () => {
+        if (!swipeAnimating) resetSwipePosition()
+      }
+    })
+  }, [completeSwipe, resetSwipePosition, swipeAnimating, tab, tabPageWidth, tabTranslateX])
+
+  const tabSwipeOpacity = tabTranslateX.interpolate({
+    inputRange: [-tabPageWidth, 0, tabPageWidth],
+    outputRange: [0.9, 1, 0.9],
+    extrapolate: 'clamp'
+  })
 
   const openForm = (next: FormSpec): void => {
     setForm({
@@ -1028,8 +1146,17 @@ export function FinanceScreen(): React.JSX.Element {
   return (
     <View style={{ flex: 1 }}>
       {header}
-      <View style={{ flex: 1 }} {...tabSwipeResponder.panHandlers}>
-        {content}
+      <View style={{ flex: 1, overflow: 'hidden' }}>
+        <Animated.View
+          style={{
+            flex: 1,
+            opacity: tabSwipeOpacity,
+            transform: [{ translateX: tabTranslateX }]
+          }}
+          {...tabSwipeResponder.panHandlers}
+        >
+          {content}
+        </Animated.View>
       </View>
       <MobileCreateAction actions={createActions} iconOnly />
       {transactionDetail ? (
