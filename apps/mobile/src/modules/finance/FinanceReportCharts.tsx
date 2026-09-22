@@ -104,10 +104,7 @@ function CashFlowChart({
   )
 
   return (
-    <ChartSurface
-      title="Денежный поток"
-      description="Доходы и расходы за последние интервалы."
-    >
+    <ChartSurface title="Денежный поток" description="Доходы и расходы за последние интервалы.">
       {points.length === 0 ? (
         <ChartEmpty text="Нет данных для денежного потока." />
       ) : (
@@ -169,7 +166,12 @@ function CashFlowChart({
                     numberOfLines={1}
                     adjustsFontSizeToFit
                     minimumFontScale={0.72}
-                    style={{ width: '100%', color: theme.muted, fontSize: 8.5, textAlign: 'center' }}
+                    style={{
+                      width: '100%',
+                      color: theme.muted,
+                      fontSize: 8.5,
+                      textAlign: 'center'
+                    }}
                   >
                     {point.label}
                   </Text>
@@ -192,9 +194,7 @@ function BalanceChart({
 }): React.JSX.Element {
   const theme = useTheme()
   const expenseTone = financeOperationTone('expense', theme.accent)
-  const points = timeline
-    .slice(-7)
-    .filter((point) => point.balanceMinor !== null)
+  const points = timeline.slice(-7).filter((point) => point.balanceMinor !== null)
   const domain = financeChartDomain(points.map((point) => point.balanceMinor))
   const halfHeight = 44
 
@@ -309,7 +309,13 @@ function BreakdownChart({
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 10 }}>
                 <Text
                   numberOfLines={1}
-                  style={{ minWidth: 0, flex: 1, color: theme.text, fontSize: 11.5, fontWeight: '700' }}
+                  style={{
+                    minWidth: 0,
+                    flex: 1,
+                    color: theme.text,
+                    fontSize: 11.5,
+                    fontWeight: '700'
+                  }}
                 >
                   {item.label}
                 </Text>
@@ -380,7 +386,13 @@ function TransferChart({
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 10 }}>
                   <Text
                     numberOfLines={1}
-                    style={{ minWidth: 0, flex: 1, color: theme.text, fontSize: 11.5, fontWeight: '700' }}
+                    style={{
+                      minWidth: 0,
+                      flex: 1,
+                      color: theme.text,
+                      fontSize: 11.5,
+                      fontWeight: '700'
+                    }}
                   >
                     {flow.sourceAccountName} → {flow.destinationAccountName}
                   </Text>
