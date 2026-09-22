@@ -4,6 +4,7 @@ import type {
   FinanceAccountSummary,
   FinanceLimitImpact,
   FinanceTagSummary,
+  FinanceTemplate,
   FinanceTransaction,
   FinanceUserTransactionType
 } from '@mymind/contracts/finance'
@@ -49,7 +50,8 @@ function timestampFrom(date: string, time: string): number {
 function initialValues(
   type: OperationType,
   accounts: FinanceAccountSummary[],
-  transaction?: FinanceTransaction | null
+  transaction?: FinanceTransaction | null,
+  template?: FinanceTemplate | null
 ): {
   type: OperationType
   accountId: string
@@ -75,6 +77,23 @@ function initialValues(
       date: localDateKey(transaction.occurredAt),
       time: localTimeKey(transaction.occurredAt),
       comment: transaction.comment
+    }
+  }
+
+  if (template) {
+    const sourceCurrency =
+      accounts.find((account) => account.id === template.sourceAccountId)?.currencyCode ?? 'TJS'
+    return {
+      type: template.type,
+      accountId: template.sourceAccountId ?? '',
+      destinationAccountId: template.destinationAccountId ?? '',
+      tagId: template.tagId ?? '',
+      amount: template.sourceAccountId
+        ? formatMinorPlain(template.sourceAmountMinor, sourceCurrency)
+        : '',
+      date: localDateKey(),
+      time: localTimeKey(),
+      comment: template.comment
     }
   }
 
@@ -140,6 +159,7 @@ export function MobileFinanceTransactionSheet({
   tags,
   initialType,
   transaction = null,
+  template = null,
   onClose,
   onSaved
 }: {
@@ -148,14 +168,15 @@ export function MobileFinanceTransactionSheet({
   tags: FinanceTagSummary[]
   initialType: OperationType
   transaction?: FinanceTransaction | null
+  template?: FinanceTemplate | null
   onClose(): void
   onSaved(): void
 }): React.JSX.Element {
   const theme = useTheme()
   const toast = useToast()
   const defaults = useMemo(
-    () => initialValues(initialType, accounts, transaction),
-    [accounts, initialType, transaction]
+    () => initialValues(initialType, accounts, transaction, template),
+    [accounts, initialType, template, transaction]
   )
   const [type, setType] = useState<OperationType>(defaults.type)
   const [accountId, setAccountId] = useState(defaults.accountId)
@@ -185,7 +206,7 @@ export function MobileFinanceTransactionSheet({
   }
 
   const chooseType = (next: OperationType): void => {
-    if (transaction || next === type) return
+    if (transaction || template || next === type) return
     setType(next)
     clearImpact()
     if (next === 'transfer') {
@@ -242,7 +263,7 @@ export function MobileFinanceTransactionSheet({
           exchangeRateScaled: FINANCE_RATE_SCALE,
           occurredAt,
           comment,
-          templateId: transaction?.templateId ?? null
+          templateId: template?.id ?? transaction?.templateId ?? null
         })
         if (transaction) api.updateTransaction({ id: transaction.id, transaction: payload })
         else api.createTransaction(payload)
@@ -255,7 +276,7 @@ export function MobileFinanceTransactionSheet({
           tagId,
           occurredAt,
           comment,
-          templateId: transaction?.templateId ?? null
+          templateId: template?.id ?? transaction?.templateId ?? null
         })
         if (transaction) api.updateTransaction({ id: transaction.id, transaction: payload })
         else api.createTransaction(payload)
@@ -274,11 +295,13 @@ export function MobileFinanceTransactionSheet({
 
   const title = transaction
     ? 'Изменить операцию'
-    : type === 'income'
-      ? 'Новый доход'
-      : type === 'expense'
-        ? 'Новый расход'
-        : 'Новый перевод'
+    : template
+      ? `Операция по шаблону «${template.name}»`
+      : type === 'income'
+        ? 'Новый доход'
+        : type === 'expense'
+          ? 'Новый расход'
+          : 'Новый перевод'
 
   return (
     <AppDialog
@@ -319,7 +342,7 @@ export function MobileFinanceTransactionSheet({
       >
         {error ? <ErrorState message={error} /> : null}
 
-        {!transaction ? (
+        {!transaction && !template ? (
           <MobileFinanceOperationTypePicker value={type} disabled={pending} onChange={chooseType} />
         ) : (
           <View
