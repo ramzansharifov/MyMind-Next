@@ -8,7 +8,9 @@ import {
   ScrollView,
   Text,
   View,
-  useWindowDimensions
+  useWindowDimensions,
+  type GestureResponderEvent,
+  type PanResponderGestureState
 } from 'react-native'
 import {
   BarChart3,
@@ -317,8 +319,8 @@ export function FinanceScreen(): React.JSX.Element {
 
   const tabSwipeResponder = useMemo(() => {
     const shouldClaimHorizontalSwipe = (
-      _event: unknown,
-      gesture: { numberActiveTouches: number; dx: number; dy: number }
+      _event: GestureResponderEvent,
+      gesture: PanResponderGestureState
     ): boolean => {
       if (swipeAnimating.current || gesture.numberActiveTouches !== 1) return false
       const horizontal = Math.abs(gesture.dx)
