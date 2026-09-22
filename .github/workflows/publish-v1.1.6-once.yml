@@ -1,0 +1,237 @@
+name: Publish MyMind 1.1.6
+
+on:
+  push:
+    branches:
+      - agent/publish-v1.1.6
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-mymind-1-1-6
+  cancel-in-progress: false
+
+jobs:
+  verify-main:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Verify release metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(node -p "require('./apps/desktop/package.json').version")" = "1.1.6"
+          test "$(node -p "require('./apps/mobile/package.json').version")" = "1.1.6"
+          test "$(node -p "require('./apps/mobile/app.json').expo.version")" = "1.1.6"
+          test "$(node -p "require('./apps/mobile/app.json').expo.android.versionCode")" = "10106"
+
+  build-windows:
+    needs: verify-main
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build:win
+
+      - name: Verify Windows updater artifacts
+        shell: pwsh
+        run: |
+          $files = @(
+            "apps/desktop/dist/latest.yml",
+            "apps/desktop/dist/mymind-next-1.1.6-setup.exe",
+            "apps/desktop/dist/mymind-next-1.1.6-setup.exe.blockmap"
+          )
+          foreach ($file in $files) {
+            if (-not (Test-Path $file)) {
+              throw "Missing Windows release artifact: $file"
+            }
+          }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-release-1.1.6
+          if-no-files-found: error
+          path: |
+            apps/desktop/dist/latest.yml
+            apps/desktop/dist/mymind-next-1.1.6-setup.exe
+            apps/desktop/dist/mymind-next-1.1.6-setup.exe.blockmap
+
+  build-android:
+    needs: verify-main
+    runs-on: windows-latest
+    timeout-minutes: 55
+    env:
+      MYMIND_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.MYMIND_ANDROID_KEYSTORE_PASSWORD }}
+      MYMIND_ANDROID_KEY_ALIAS: ${{ secrets.MYMIND_ANDROID_KEY_ALIAS }}
+      MYMIND_ANDROID_KEY_PASSWORD: ${{ secrets.MYMIND_ANDROID_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - run: npm ci
+
+      - name: Prepare Android release keystore
+        shell: pwsh
+        env:
+          MYMIND_ANDROID_KEYSTORE_BASE64: ${{ secrets.MYMIND_ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          $required = @{
+            MYMIND_ANDROID_KEYSTORE_BASE64 = $env:MYMIND_ANDROID_KEYSTORE_BASE64
+            MYMIND_ANDROID_KEYSTORE_PASSWORD = $env:MYMIND_ANDROID_KEYSTORE_PASSWORD
+            MYMIND_ANDROID_KEY_ALIAS = $env:MYMIND_ANDROID_KEY_ALIAS
+            MYMIND_ANDROID_KEY_PASSWORD = $env:MYMIND_ANDROID_KEY_PASSWORD
+          }
+
+          foreach ($entry in $required.GetEnumerator()) {
+            if ([string]::IsNullOrWhiteSpace($entry.Value)) {
+              throw "Missing required GitHub secret: $($entry.Key)"
+            }
+          }
+
+          $keystorePath = Join-Path $env:RUNNER_TEMP "mymind-android-release.jks"
+          [IO.File]::WriteAllBytes(
+            $keystorePath,
+            [Convert]::FromBase64String($env:MYMIND_ANDROID_KEYSTORE_BASE64)
+          )
+
+          $expectedFingerprint = "75fbc676fa8e8b8ed89824fc12f95e03a33fc057b33f034edab85f9a9d890508"
+          $keytoolOutput = keytool -list -v `
+            -keystore $keystorePath `
+            -storepass $env:MYMIND_ANDROID_KEYSTORE_PASSWORD `
+            -alias $env:MYMIND_ANDROID_KEY_ALIAS | Out-String
+
+          if ($LASTEXITCODE -ne 0) {
+            throw "Android release keystore could not be opened"
+          }
+
+          $fingerprintMatch = [regex]::Match($keytoolOutput, "SHA256:\s*([0-9A-Fa-f:]+)")
+          if (-not $fingerprintMatch.Success) {
+            throw "Could not read Android release certificate SHA-256 fingerprint"
+          }
+
+          $actualFingerprint = $fingerprintMatch.Groups[1].Value.Replace(":", "").ToLowerInvariant()
+          if ($actualFingerprint -ne $expectedFingerprint) {
+            throw "Android release signing key fingerprint does not match the permanent MyMind key"
+          }
+
+          "MYMIND_ANDROID_KEYSTORE_PATH=$keystorePath" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Build signed Android release APK
+        run: npm run build:android:release --workspace=mymind-mobile
+
+      - name: Verify and stage signed Android APK
+        shell: pwsh
+        run: |
+          $source = "apps/mobile/android/app/build/outputs/apk/release/app-release.apk"
+          $targetDirectory = "apps/mobile/release"
+          $target = "$targetDirectory/mymind-mobile-1.1.6.apk"
+
+          if (-not (Test-Path $source)) {
+            throw "Missing Android release APK: $source"
+          }
+
+          New-Item -ItemType Directory -Force -Path $targetDirectory | Out-Null
+          Copy-Item $source $target
+
+          $apksigner = Get-ChildItem "$env:ANDROID_HOME\build-tools\*\apksigner.bat" |
+            Sort-Object { [version]$_.Directory.Name } -Descending |
+            Select-Object -First 1
+
+          if (-not $apksigner) {
+            throw "Android apksigner was not found"
+          }
+
+          & $apksigner.FullName verify --verbose --print-certs $target
+          if ($LASTEXITCODE -ne 0) {
+            throw "APK signature verification failed"
+          }
+
+          $sha = (Get-FileHash $target -Algorithm SHA256).Hash.ToLowerInvariant()
+          Write-Host "APK_SHA256=$sha"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-release-1.1.6
+          if-no-files-found: error
+          path: apps/mobile/release/mymind-mobile-1.1.6.apk
+
+  publish:
+    needs:
+      - build-windows
+      - build-android
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-release-1.1.6
+          path: release/windows
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: android-release-1.1.6
+          path: release/android
+
+      - name: Verify complete release payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s release/windows/latest.yml
+          test -s release/windows/mymind-next-1.1.6-setup.exe
+          test -s release/windows/mymind-next-1.1.6-setup.exe.blockmap
+          test -s release/android/mymind-mobile-1.1.6.apk
+          grep -q "version: 1.1.6" release/windows/latest.yml
+
+      - name: Publish GitHub Release v1.1.6
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          target_sha="$(git rev-parse HEAD)"
+
+          if gh release view v1.1.6 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release v1.1.6 already exists; assets will be replaced."
+          else
+            gh release create v1.1.6               --repo "$GITHUB_REPOSITORY"               --target "$target_sha"               --title "1.1.6"               --notes "MyMind 1.1.6: улучшенный mobile Finance — просмотр транзакций, шаблонов и счетов, мобильные отчёты и скрытие общего баланса."
+          fi
+
+          gh release upload v1.1.6             --repo "$GITHUB_REPOSITORY"             --clobber             release/windows/latest.yml             release/windows/mymind-next-1.1.6-setup.exe             release/windows/mymind-next-1.1.6-setup.exe.blockmap             release/android/mymind-mobile-1.1.6.apk
+
+          gh release edit v1.1.6             --repo "$GITHUB_REPOSITORY"             --draft=false             --prerelease=false             --latest
