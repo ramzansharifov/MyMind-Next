@@ -423,46 +423,46 @@ export function FinanceScreen(): React.JSX.Element {
   const renderTag = ({ item }: { item: FinanceTagSummary }): React.JSX.Element => {
     const tone = financeTagTone(item.type, theme.accent)
     return (
-    <WorkspaceNodeCard
-      title={item.name}
-      subtitle={`${item.type === 'income' ? 'Доход' : item.type === 'expense' ? 'Расход' : 'Доход и расход'} · ${item.transactionCount} операций`}
-      subtitleColor={tone}
-      leading={
-        <View
-          style={{
-            width: 40,
-            height: 40,
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: tone + '45',
-            backgroundColor: tone + '16'
-          }}
-        >
-          <VisualIconGlyph value={item.icon} size={18} color={tone} />
-        </View>
-      }
-      onPress={() => openForm(tagForm(api, item))}
-      action={
-        <ActionMenu
-          title={item.name}
-          items={[
-            { label: 'Изменить', icon: 'edit', onPress: () => openForm(tagForm(api, item)) },
-            {
-              label: 'Удалить',
-              icon: 'delete',
-              danger: true,
-              disabled: item.transactionCount > 0 || item.linkedLimitCount > 0,
-              onPress: () =>
-                state.confirmDelete(`Удалить тег «${item.name}»?`, () => {
-                  api.deleteTag({ id: item.id })
-                })
-            }
-          ]}
-        />
-      }
-    />
+      <WorkspaceNodeCard
+        title={item.name}
+        subtitle={`${item.type === 'income' ? 'Доход' : item.type === 'expense' ? 'Расход' : 'Доход и расход'} · ${item.transactionCount} операций`}
+        subtitleColor={tone}
+        leading={
+          <View
+            style={{
+              width: 40,
+              height: 40,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: tone + '45',
+              backgroundColor: tone + '16'
+            }}
+          >
+            <VisualIconGlyph value={item.icon} size={18} color={tone} />
+          </View>
+        }
+        onPress={() => openForm(tagForm(api, item))}
+        action={
+          <ActionMenu
+            title={item.name}
+            items={[
+              { label: 'Изменить', icon: 'edit', onPress: () => openForm(tagForm(api, item)) },
+              {
+                label: 'Удалить',
+                icon: 'delete',
+                danger: true,
+                disabled: item.transactionCount > 0 || item.linkedLimitCount > 0,
+                onPress: () =>
+                  state.confirmDelete(`Удалить тег «${item.name}»?`, () => {
+                    api.deleteTag({ id: item.id })
+                  })
+              }
+            ]}
+          />
+        }
+      />
     )
   }
 

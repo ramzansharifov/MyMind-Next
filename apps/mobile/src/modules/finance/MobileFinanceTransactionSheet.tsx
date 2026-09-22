@@ -24,10 +24,7 @@ import { VisualIconBadge, VisualIconGlyph } from '../../shared/ui/VisualPickers'
 import { Button, ErrorState, Label } from '../../shared/ui/primitives'
 import { useTheme } from '../../shared/ui/theme'
 import { useToast } from '../../shared/ui/toast-context'
-import {
-  financeOperationTone,
-  financeTagTone
-} from './finance-semantic-colors'
+import { financeOperationTone, financeTagTone } from './finance-semantic-colors'
 
 type OperationType = FinanceUserTransactionType
 
@@ -308,11 +305,7 @@ function TagPicker({
               borderWidth: 1,
               borderColor: selected ? tone + '99' : tone + '35',
               borderRadius: 13,
-              backgroundColor: selected
-                ? tone + '1F'
-                : pressed
-                  ? tone + '13'
-                  : tone + '0A',
+              backgroundColor: selected ? tone + '1F' : pressed ? tone + '13' : tone + '0A',
               opacity: disabled ? 0.45 : pressed ? 0.76 : 1
             })}
           >

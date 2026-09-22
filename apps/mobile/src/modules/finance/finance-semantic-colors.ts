@@ -4,10 +4,7 @@ import {
   type FinanceUserTransactionType
 } from '@mymind/contracts/finance'
 
-export function financeOperationTone(
-  type: FinanceUserTransactionType,
-  accent: string
-): string {
+export function financeOperationTone(type: FinanceUserTransactionType, accent: string): string {
   return type === 'income'
     ? FINANCE_TAG_COLORS.income
     : type === 'expense'

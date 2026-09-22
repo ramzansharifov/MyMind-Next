@@ -227,7 +227,12 @@ export function WorkspaceNodeCard({
           {subtitle ? (
             <Text
               numberOfLines={3}
-              style={{ marginTop: 3, color: subtitleColor ?? theme.muted, fontSize: 12, lineHeight: 17 }}
+              style={{
+                marginTop: 3,
+                color: subtitleColor ?? theme.muted,
+                fontSize: 12,
+                lineHeight: 17
+              }}
             >
               {subtitle}
             </Text>
