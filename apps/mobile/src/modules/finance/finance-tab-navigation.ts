@@ -22,7 +22,6 @@ export function adjacentFinanceTab(
   return FINANCE_TAB_IDS[Math.max(0, Math.min(FINANCE_TAB_IDS.length - 1, nextIndex))]
 }
 
-
 export function financeSwipeDirection(
   dx: number,
   dy: number,
