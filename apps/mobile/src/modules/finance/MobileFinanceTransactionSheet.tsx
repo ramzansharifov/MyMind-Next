@@ -285,6 +285,8 @@ function TagPicker({
     <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7 }}>
       {tags.map((tag) => {
         const selected = tag.id === value
+        const selectedTone =
+          tag.type === 'expense' ? '#f87171' : tag.type === 'income' ? '#34d399' : theme.accent
         return (
           <Pressable
             key={tag.id}
@@ -301,9 +303,13 @@ function TagPicker({
               paddingHorizontal: 6,
               paddingVertical: 8,
               borderWidth: 1,
-              borderColor: selected ? tag.color + '88' : theme.border,
+              borderColor: selected ? selectedTone + '99' : theme.border,
               borderRadius: 13,
-              backgroundColor: selected ? tag.color + '1F' : pressed ? theme.raised : theme.surface,
+              backgroundColor: selected
+                ? selectedTone + '1F'
+                : pressed
+                  ? theme.raised
+                  : theme.surface,
               opacity: disabled ? 0.45 : pressed ? 0.76 : 1
             })}
           >
@@ -326,7 +332,7 @@ function TagPicker({
               style={{
                 maxWidth: '100%',
                 marginTop: 5,
-                color: selected ? tag.color : theme.text,
+                color: theme.text,
                 fontSize: 10.5,
                 fontWeight: selected ? '700' : '600'
               }}
