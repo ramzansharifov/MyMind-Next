@@ -226,9 +226,7 @@ function DateCalendar({
               opacity: pressed ? 0.74 : 1
             })}
           >
-            <Text style={{ color: theme.muted, fontSize: 12.5, fontWeight: '600' }}>
-              Очистить
-            </Text>
+            <Text style={{ color: theme.muted, fontSize: 12.5, fontWeight: '600' }}>Очистить</Text>
           </Pressable>
         ) : null}
 
@@ -247,9 +245,7 @@ function DateCalendar({
             opacity: todayAllowed ? (pressed ? 0.78 : 1) : 0.35
           })}
         >
-          <Text style={{ color: theme.accent, fontSize: 12.5, fontWeight: '700' }}>
-            Сегодня
-          </Text>
+          <Text style={{ color: theme.accent, fontSize: 12.5, fontWeight: '700' }}>Сегодня</Text>
         </Pressable>
       </View>
     </View>
